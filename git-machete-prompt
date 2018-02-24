@@ -2,27 +2,36 @@
 
 _git_machete() {
 	cmds="add d diff down e edit file fork-point format g go help next prev prune-branches reapply root slide-out s status up update"
-	short_opts="-d -f -h -l -o -r -s -v"
-	long_opts="--down-fork-point --fork-point --help --list-commits --onto --remote --stat --verbose"
+	common_opts="-h --help -v --verbose"
+	add_opts="-o --onto"
+	diff_opts="-s --stat"
+	reapply_opts="-f --fork-point"
+	slide_out_opts="-d --down-fork-point"
+	status_opts="-l --list-commits -r --remote"
+	update_opts="-f --fork-point"
 	directions="down next prev root up"
 
 	prev="${COMP_WORDS[COMP_CWORD-1]}"
 
-	if [[ ${cur} == --* ]] ; then
-		__gitcomp "$long_opts"
-	elif [[ ${cur} == -* ]] ; then
-		__gitcomp "$short_opts $long_opts"
+	if [[ ${cur} == -* ]] ; then
+		case "$prev" in
+			add) __gitcomp "$common_opts $add_opts" ;;
+			d|diff) __gitcomp "$common_opts $diff_opts" ;;
+			reapply) __gitcomp "$common_opts $reapply_opts" ;;
+			slide-out) __gitcomp "$common_opts $slide_out_opts" ;;
+			s|status) __gitcomp "$common_opts $status_opts" ;;
+			update) __gitcomp "$common_opts $update_opts" ;;
+			*) __gitcomp "$common_opts" ;;
+		esac
 	elif [[ ${#COMP_WORDS[@]} -eq 3 ]]; then
 		__gitcomp "$cmds"
-	elif [[ "$prev" == "g" ]] || [[ "$prev" == "go" ]]; then
-		__gitcomp "$directions"
-	elif [[ "$prev" == "help" ]]; then
-		__gitcomp "$cmds"
-	elif [[ "$prev" == "add" ]] || [[ "$prev" == "d" ]] || [[ "$prev" == "diff" ]] || [[ "$prev" == "down" ]] || [[ "$prev" == "fork-point" ]] || [[ "$prev" == "next" ]] || [[ "$prev" == "prev" ]] ||\
-		[[ "$prev" == "root" ]] || [[ "$prev" == "slide-out" ]] || [[ "$prev" == "up" ]]; then
-		__gitcomp_nl "$(__git_heads)"
 	else
-		COMPREPLY=()
+		case "$prev" in
+			g|go) __gitcomp "$directions" ;;
+			help|--help|-h) __gitcomp "$cmds" ;;
+			add|d|diff|down|fork-point|next|prev|root|slide-out|up) __gitcomp_nl "$(__git_heads)" ;;
+			*) COMPREPLY=() ;;
+		esac
 	fi
 }
 
