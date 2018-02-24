@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+_git_machete() {
+	cmds="add d diff down e edit file fork-point format g go help next prev prune-branches reapply root slide-out s status up update"
+	COMPREPLY=( $(compgen -W "$cmds" -- $cur) )
+}
+
