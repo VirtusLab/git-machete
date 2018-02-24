@@ -1,0 +1,853 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import getopt
+import itertools
+import os
+import subprocess
+import sys
+import textwrap
+
+
+# Core utils
+
+class MacheteException(Exception):
+    def __init__(self, value):
+        self.parameter = value
+
+    def __str__(self):
+        return str(self.parameter)
+
+
+ENDC = '\033[0m'
+BOLD = '\033[1m'
+UNDERLINE = '\033[4m'
+GREEN = '\033[92m'
+GREY = '\033[37m'
+RED = '\033[91m'
+
+
+def non_empty_lines(s):
+    return filter(None, s.split("\n"))
+
+
+def excluding(l, s):
+    return filter(lambda x: x not in s, l)
+
+
+def join_branch_names(bs, sep):
+    return sep.join("`%s'" % x for x in bs)
+
+
+def split_array(arr, sep):
+    res = []
+    start_new = True
+    for elem in arr:
+        if elem == sep:
+            start_new = True
+        else:
+            if start_new:
+                res.append([])
+                start_new = False
+            res[-1].append(elem)
+    return res
+
+
+def replace_in_array(arr, orig, dst):
+    for i in range(len(arr)):
+        if arr[i] == orig:
+            arr[i] = dst
+
+
+def pick(choices, name):
+    xs = "".join("[%i] %s\n" % (idx + 1, x) for x, idx in zip(choices, range(len(choices))))
+    msg = xs + "Specify " + name + " or hit <return> to skip: "
+    try:
+        idx = int(raw_input(msg)) - 1
+    except ValueError:
+        sys.exit(1)
+    if idx not in range(len(choices)):
+        raise MacheteException("Invalid index: %i" % (idx + 1))
+    return choices[idx]
+
+
+def run_cmd(cmd, *args):
+    return subprocess.call([cmd] + list(args))
+
+
+def popen_cmd(cmd, *args):
+    process = subprocess.Popen([cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdoutdata, stderrdata = process.communicate()
+    return process.returncode, stdoutdata
+
+
+# Git core
+
+def run_git(git_cmd, *args, **kwargs):
+    flat_cmd = " ".join(["git", git_cmd] + list(args))
+    if opt_verbose:
+        print >> sys.stderr, " ".join(["git", git_cmd] + list(args))
+    status = run_cmd("git", git_cmd, *args)
+    if not kwargs.get("allow_non_zero") and status != 0:
+        raise MacheteException("`%s' returned %i" % (flat_cmd, status))
+    return status
+
+
+def popen_git(git_cmd, *args):
+    flat_cmd = " ".join(["git", git_cmd] + list(args))
+    if opt_verbose:
+        print >> sys.stderr, flat_cmd
+    status, stdout = popen_cmd("git", git_cmd, *args)
+    if status != 0:
+        raise MacheteException("`%s' returned %i" % (flat_cmd, status))
+    return stdout
+
+
+# Manipulation with definition file/tree of branches
+
+def expect_in_branch_tree(b):
+    if b not in all_branches:
+        raise MacheteException("Branch `%s' not found in the tree. "
+                              "Use `git machete add %s' or `git machete edit'" % (b, b))
+
+
+def read_definition_file():
+    global definition_file, indent, all_branches, down_branches, up_branch, roots
+
+    with open(definition_file) as f:
+        ldr = [l.rstrip() for l in f.readlines() if not l.isspace()]
+
+    all_branches = []
+    down_branches = {}
+    up_branch = {}
+    indent = None
+    roots = []
+    at_depth = {}
+    last_depth = -1
+    hint = "Edit the definition file manually with `git machete edit'"
+
+    for idx, l in enumerate(ldr):
+        pfx = "".join(itertools.takewhile(str.isspace, l))
+        if pfx and not indent:
+            indent = pfx
+
+        b = l.strip()
+        if b in all_branches:
+            raise MacheteException("%s, line %i: branch `%s' re-appears in the tree definition. %s" %
+                                   (definition_file, idx + 1, b, hint))
+        all_branches += [b]
+
+        depth = len(pfx) / len(indent) if pfx else 0
+        if depth > last_depth + 1:
+            raise MacheteException("%s, line %i: too much indent for the branch `%s'. %s" %
+                                   (definition_file, idx + 1, b, hint))
+        last_depth = depth
+
+        at_depth[depth] = b
+        if depth:
+            p = at_depth[depth - 1]
+            up_branch[b] = p
+            if p in down_branches:
+                down_branches[p] += [b]
+            else:
+                down_branches[p] = [b]
+        else:
+            roots += [b]
+
+
+def render_definition_file():
+    global roots, down_branches, indent
+    if not indent:
+        indent = "\t"
+    def render_dfs(u, d):
+        res = [d * indent + u]
+        for v in down_branches.get(u) or []:
+            res += render_dfs(v, d + 1)
+        return res
+
+    total = []
+    for r in roots:
+        total += render_dfs(r, 0)
+    return total
+
+
+def save_definition_file():
+    with open(definition_file, "w") as f:
+        f.write("\n".join(render_definition_file()))
+
+
+def down(b, pick_mode):
+    expect_in_branch_tree(b)
+    dbs = down_branches.get(b)
+    if not dbs or len(dbs) == 0:
+        raise MacheteException("Branch `%s' has no downstream branch" % b)
+    elif len(dbs) == 1:
+        return dbs[0]
+    elif pick_mode:
+        return pick(dbs, "downstream branch")
+    else:
+        return "\n".join(dbs)
+
+
+def next_branch(b):
+    expect_in_branch_tree(b)
+    idx = all_branches.index(b) + 1
+    if idx == len(all_branches):
+        raise MacheteException("Branch `%s' has no successor" % b)
+    return all_branches[idx]
+
+
+def prev_branch(b):
+    expect_in_branch_tree(b)
+    idx = all_branches.index(b) - 1
+    if idx == -1:
+        raise MacheteException("Branch `%s' has no predecessor" % b)
+    return all_branches[idx]
+
+
+def root_branch(b):
+    expect_in_branch_tree(b)
+    u = up_branch.get(b)
+    if not u:
+        raise MacheteException("Branch `%s' is already a root" % b)
+    while u:
+        b = u
+        u = up_branch.get(b)
+    return b
+
+
+def up(b):
+    expect_in_branch_tree(b)
+    pb = up_branch.get(b)
+    if pb:
+        return pb
+    else:
+        raise MacheteException("Branch `%s' has no upstream branch" % b)
+
+
+def add(b):
+    global roots
+
+    if b in all_branches:
+        raise MacheteException("Branch `%s' already exists in the tree" % b)
+
+    if not sha_by_revision(b):
+        raise MacheteException("Branch `%s' does not exist" % b)
+
+    onto = opt_onto
+    if onto:
+        expect_in_branch_tree(onto)
+    if not roots:
+        roots = [b]
+    else:
+        if not onto:
+            h = head()
+            if b != h:
+                onto = h
+            else:
+                raise MacheteException("Specify the desired upstream (parent) branch for `%s' with `--onto'" % b)
+
+        up_branch[b] = onto
+        if onto in down_branches:
+            down_branches[onto].append(b)
+        else:
+            down_branches[onto] = [b]
+    save_definition_file()
+
+
+# Git/shell commands impl
+
+def edit():
+    return run_cmd(os.environ.get("EDITOR") or "vim", definition_file)
+
+
+def root_dir():
+    return popen_git("rev-parse", "--show-toplevel").strip()
+
+
+def sha_by_revision(rev):
+    try:
+        return popen_git("rev-parse", "--verify", "--quiet", rev).rstrip()
+    except MacheteException:
+        return None
+
+
+def branch_by_revision(rev):
+    try:
+        return popen_git("rev-parse", "--abbrev-ref", rev).strip()
+    except MacheteException:
+        return None
+
+
+def head():
+    try:
+        return popen_git("symbolic-ref", "--short", "--quiet", "HEAD").strip()
+    except MacheteException:
+        raise MacheteException("Not currently on any branch")
+
+
+def is_ancestor(earlier, later):
+    return run_git("merge-base", "--is-ancestor", earlier, later, allow_non_zero=True) == 0
+
+
+def log(branch):
+    return non_empty_lines(popen_git("log", "--format=%H", branch, "--"))
+
+
+reflogs_cached = {}
+
+
+def reflog(b):
+    # %H - full hash
+    # %gs - reflog subject
+    if b not in reflogs_cached:
+        reflogs_cached[b] = [entry.split("|") for entry in non_empty_lines(popen_git("reflog", "--format=%H|%gs", b, "--"))]
+    return reflogs_cached[b]
+
+
+def fork_point(b):
+    expect_in_branch_tree(b)
+    if b not in up_branch:
+        raise MacheteException("Cannot find fork point for a root branch `%s'. Upstream branch must be defined." % b)
+
+    log_this_branch = log(b)
+    other_branches = excluding(branches(), [b])
+    reflogs_other_branches = sum(map(reflog, other_branches), [])
+    reflogs_other_branches_no_create = set(h for (h, gs) in reflogs_other_branches if not (
+            (gs.startswith("branch: Created from") and not gs.startswith("branch: Created from refs/remotes/"))
+            or gs.startswith("branch: Reset to " + b)))
+    for h in log_this_branch:
+        if h in reflogs_other_branches_no_create:
+            return h
+    raise MacheteException("Cannot find fork point for branch `%s'" % b)
+
+
+def branches(extra_option = None):
+    return map(lambda b: b[2:], non_empty_lines(popen_git("branch", *([extra_option] if extra_option else []))))
+
+
+def go(branch):
+    run_git("checkout", "--quiet", branch, "--")
+
+
+def update(branch, fork_commit):
+    run_git("rebase", "--interactive", "--onto", up(branch), fork_commit, branch)
+
+
+def reapply(branch, fork_commit):
+    run_git("rebase", "--interactive", "--onto", fork_commit, fork_commit, branch)
+
+
+def diff(branch):
+    params = (["--stat"] if opt_stat else []) + [fork_point(branch if branch else head())] + ([branch] if branch else []) + ["--"]
+    run_git("diff", *params)
+
+
+def prune_branches():
+    merged_bs = excluding(branches("--merged"), all_branches)
+    unmerged_bs = excluding(branches("--no-merged"), all_branches)
+    all_to_prune = merged_bs + unmerged_bs
+    if all_to_prune:
+        for b in all_to_prune:
+            is_merged = b in merged_bs
+            msg = "Remove the branch `%s' (%s to HEAD)? [y/n] " % (b, "merged" if is_merged else "unmerged")
+            if raw_input(msg).lower() not in ('y', 'yes'):
+                continue
+            run_git("branch", "-d" if is_merged else "-D", b)
+    else:
+        print >> sys.stderr, "No branches to remove"
+
+
+def slide_out(b):
+    expect_in_branch_tree(b)
+    u = up_branch.get(b)
+    if not u:
+        raise MacheteException("No upstream branch defined for `%s', cannot slide out" % b)
+    dbs = down_branches.get(b)
+    if not dbs or len(dbs) == 0:
+        raise MacheteException("No downstream branch defined for `%s', cannot slide out" % b)
+    elif len(dbs) > 1:
+        flat_dbs = join_branch_names(dbs, ", ")
+        raise MacheteException("Multiple downstream branches defined for `%s': %s; cannot slide out" % (b, flat_dbs))
+    d = dbs[0]
+    go(d)
+    up_branch[d] = up_branch[b]
+    up_branch[b] = None
+    down_branches[u] = [(d if x == b else x) for x in down_branches[u]]
+    down_branches[b] = None
+    save_definition_file()
+    update(d, opt_down_fork_point or fork_point(d))
+    print >> sys.stderr, "Note: branch `" + b + "' not removed. You can now decide to remove it manually."
+
+
+def check_needs_sync_with_remote(b):
+    b_sha = sha_by_revision(b)
+    if not b_sha:
+        raise MacheteException("Branch `%s' does not exist" % b)
+    b_origin_sha = sha_by_revision((opt_remote or "origin") + "/" + b)
+    if not b_origin_sha:
+        return False
+    return b_sha != b_origin_sha
+
+
+def commits_between(earlier, later):
+    return non_empty_lines(popen_git("log", "--format=%s", "^" + earlier, later, "--"))
+
+
+def status():
+    dfs_res = []
+
+    def dfs(u, pfx):
+        dfs_res.append((u, pfx))
+        if down_branches.get(u):
+            for (v, nv) in zip(down_branches[u][:-1], down_branches[u][1:]):
+                dfs(v, pfx + [nv])
+            dfs(down_branches[u][-1], pfx + [None])
+
+    for u in roots:
+        dfs(u, [])
+
+    needs_sync_with_up_branch = {}
+    needs_sync_with_remote = {}
+    commits_cached = {}
+    for b, pfx in dfs_res:
+        if b in up_branch:
+            needs_sync_with_up_branch[b] = not is_ancestor(up_branch[b], b)
+            if opt_list_commits:
+                commits_cached[b] = reversed(commits_between(fork_point(b), b))
+        needs_sync_with_remote[b] = check_needs_sync_with_remote(b)
+
+    def edge_color(b):
+        return RED if needs_sync_with_up_branch[b] else GREEN
+
+    def print_line_prefix(b, suffix):
+        sys.stdout.write("  ")
+        for p in pfx[:-1]:
+            if not p:
+                sys.stdout.write("  ")
+            else:
+                sys.stdout.write(edge_color(p) + "│ " + ENDC)
+        sys.stdout.write(edge_color(b) + suffix + ENDC)
+
+    try:
+        h = head()
+    except MacheteException:
+        h = None
+
+    for b, pfx in dfs_res:
+        current = UNDERLINE + b + ENDC if b == h else b
+        if b in up_branch:
+            print_line_prefix(b, "│ \n")
+            if opt_list_commits:
+                for msg in commits_cached[b]:
+                    print_line_prefix(b, "│ " + GREY + msg + "\n")
+            print_line_prefix(b, "└─")
+        else:
+            if b != dfs_res[0][0]:
+                print
+            sys.stdout.write("  ")
+        print "%s%s%s%s" % (BOLD, current, ENDC, RED + " (out of sync with " + (opt_remote or "origin") + ")" + ENDC if needs_sync_with_remote[b] else "")
+
+
+# Main
+
+def usage(c=None):
+    short_docs = {
+        "add": "Add a branch on the top of the current or other specified branch",
+        "diff": "Diff current working tree or a given branch against a computed fork point",
+        "down": "Print name(s) of the downstream branch(es) for a branch (aka its children in the tree)",
+        "edit": "Edit the definition file",
+        "file": "Print path of the definition file",
+        "fork-point": "Print SHA of the computed fork point commit of a branch",
+        "format": "Format of the definition file",
+        "go": "Check out the branch relative to the position of the current branch, accepts down/next/root/prev/up argument",
+        "help": "Print this overview, or print detailed help for a specified command",
+        "next": "Print name of the next branch for a branch",
+        "prev": "Print name of the previous branch for a branch",
+        "prune-branches": "Remove local branches that are not in the definition file",
+        "reapply": "Rebase the current branch onto its computed fork point",
+        "root": "Print name of the root branch of the tree where a branch is located",
+        "slide-out": "Slide the current branch out and rebase its downstream (child) branch onto its upstream (parent) branch",
+        "status": "Print tree-shaped status of branches listed in the definition file, including info on their sync with upstream branch and remote",
+        "up": "Print name of the upstream branch for a branch (aka parent in the tree)",
+        "update": "Rebase the current branch onto its upstream (parent) branch"
+    }
+    long_docs = {
+        "add": """
+            Usage: git machete add [-o|--onto=<target-upstream-branch>] [<branch>]
+
+            Adds the given branch (or the current branch, if none specified) to the definition file.
+            If the definition file is empty, the branch will be added as the first root of the tree.
+            Otherwise, the branch will be added on the top of the current branch.
+            If the current branch is the same as the branch to be added (esp. in the case when the new branch to add has not been specified at all),
+            the target parent branch must be explicitly specified with `--onto' option.
+
+            Note: the same effect can be always achieved by manually editing the definition file.
+
+            Options:
+            -o, --onto=<target-upstream-branch>    Specifies the target parent branch to add the new branch onto.
+        """,
+        "diff": """
+            Usage: git machete d[iff] [-s|--stat] [<branch>]
+
+            Runs `git diff' of the given branch tip against its fork point or, if none specified, of the current working tree against the fork point of the currently checked out branch.
+            See `git machete help fork-point' for more details on meaning of the "fork point".
+
+            Options:
+            -s, --stat    Makes `git machete diff' pass `--stat' option to `git diff', so that only summary (diffstat) will be output.
+        """,
+        "down":  """
+            Usage: git machete down [<branch>]
+
+            Outputs name of the branch (or branches, if many) that are direct children of the given branch (or current branch, if none specified).
+        """,
+        "edit": """
+            Usage: git machete e[dit]
+
+            Opens the editor (as defined by the `EDITOR' environment variable, or `vim' if undefined) and lets you edit the definition file manually.
+            The definition file can be always accessed under path returned by `git machete file' (currently fixed to <repo-root>/.git/machete).
+        """,
+        "file": """
+            Usage: git machete file
+
+            Outputs the path of the machete definition file (currently fixed to <repo-root>/.git/machete).
+        """,
+        "fork-point": """
+            Usage: git machete fork-point [<branch>]
+
+            Outputs SHA of the fork point commit for the given branch (the commit at which the history of the branch actually diverges from history of any other branch).
+            If no branch is specified, the currently checked out branch is assumed.
+            The given branch cannot be a root, i.e. its upstream (parent) branch must be defined.
+
+            The returned fork point will be assumed as the default place where the history of the branch starts in the commands `diff', `reapply', `slide-out', and most notably `update'.
+            In other words, `git machete' treats the fork point as the most recent commit in the log of the given branch that has NOT been introduced on that very branch, but on some other (usually earlier) branch.
+
+            Note: to determine this place in history, `git machete' uses a heuristics based on reflogs of local branches.
+            This yields a correct result in typical cases, but there are some situations (esp. when some local branches have been deleted) where the fork point might not be determined correctly.
+            Thus, all rebase-involving operations (`reapply', `slide-out' and `update') run `git rebase' in the interactive mode and allow to specify the fork point explictly by a command-line option.
+
+            Also, `git machete fork-point' is different (and more powerful) than `git merge-base --fork-point', since the latter takes into account only the reflog of the one provided upstream branch,
+            while the former scans reflogs of all local branches.
+            This makes machete's `fork-point' work correctly even when the tree definition has been modified and one or more of the branches changed their corresponding upstream branch.
+        """,
+        "format": """
+            The format of the definition file should be as follows:
+
+            develop
+                adjust-reads-prec
+                    block-cancel-order
+                        change-table
+                            drop-location-type
+                edit-margin-not-allowed
+                    full-load-gatling
+                grep-errors-script
+            master
+                hotfix/receipt-trigger
+
+            In the above example `develop' and `master' are roots of the branch tree.
+            Branches `adjust-reads-prec', `edit-margin-not-allowed' and `grep-errors-script' are direct downstream branches for `develop'.
+            `block-cancel-order' is a downstream branch of `adjust-reads-prec', `change-table' is a downstream branch of `block-cancel-order' and so on.
+
+            Tabs or any number of spaces can be used as indentation.
+            It's only important to be consistent wrt. the sequence of characters used for indentation between all lines.
+        """,
+        "go": """
+            Usage: git machete g[o] <direction>
+            where <direction> is one of: d[own], n[ext], p[rev], r[oot], u[p]
+
+            Checks out the branch specified by the given direction relative to the currently checked out branch.
+            Roughly equivalent to `git checkout $(git machete <direction>)'.
+        """,
+        "help": """
+            Usage: git machete help [<command>]
+
+            Prints a summary of this tool, or a detailed info on a command if defined.
+        """,
+        "next": """
+            Usage: git machete next [<branch>]
+
+            Outputs name of the branch that directly follows the given branch (or current branch, if none specified) in the definition file.
+        """,
+        "prev": """
+            Usage: git machete prev [<branch>]
+
+            Outputs name of the branch that directly precedes the given branch (or current branch, if none specified) in the definition file.
+        """,
+        "prune-branches": """
+            Usage: git machete prune-branches
+
+            Goes one-by-one through all the local git branches that don't exist in the definition file, and ask to remove each of them (with `git branch -d' or `git branch -D') if confirmed by user.
+            No branch will be removed unless explicitly confirmed by the user.
+
+            Note: this should be used with care since removing local branches can sometimes make it impossible for `git machete' to properly compute fork points.
+            See `git machete help fork-point' for more details.
+        """,
+        "reapply": """
+            Usage: git machete reapply [-f|--fork-point=<fork-point-commit>]
+
+            Interactively rebase the current branch on the top of its computed fork point.
+            This is useful e.g. for squashing the commits on the current branch to make history more condensed before push to the remote.
+            The chunk of the history to be rebased starts at the automatically computed fork point of the current branch by default, but can also be set explicitly by `--fork-point'.
+            See `git machete help fork-point' for more details on meaning of the "fork point".
+
+            Options:
+            -f, --fork-point=<fork-point-commit>    Specifies the alternative fork point commit after which the rebased part of history is meant to start.
+        """,
+        "root": """
+            Usage: git machete root [<branch>]
+
+            Outputs name of the branch that is the root of the tree where the given branch (or current branch, if none specified) is located.
+            Depending on your case, this will typically be something like `develop' or `master', since all branches are usually meant to be ultimately merged to one of those.
+        """,
+        "slide-out": """
+            Usage: git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [<branch>]
+
+            Removes the current branch from the machete and rebases the downstream (child) branch of the current branch on the top of the upstream (parent) branch of the current branch.
+
+            Note: slide-out will return an error if the current branch has no downstream branches, has more than one downstream branch, or is a root (has no upstream branch).
+            In other words, slide-out works only when the branch has exactly one upstream branch and exactly one downstream branch.
+
+            -d, --down-fork-point=<down-fork-point-commit>    Specifies the alternative fork-point commit after which the rebased part of history of the downstream branch should start.
+                                                              See also doc for `--fork-point' option for `git machete help reapply' and `git machete help update'.
+        """,
+        "status": """
+            Usage: git machete s[tatus] [-l|--list-commits] [-r|--remote=<remote-name>]
+
+            Outputs a tree-shaped status of the branches listed in the definition file.
+
+            Apart from simply ASCII-formatting the definition file, this also:
+            * prints `(out of sync with <remote>)' message for each branch that differs from its remote counterpart (in the `origin' remote by default);
+            * colors the edges between upstream (parent) and downstream (children) branches depending on whether downstream branch commit is a direct descendant of the upstream branch commit:
+              - green edge means that the downstream branch commit is direct descendant of the upstream branch commit (basically, the downstream branch is in sync with its upstream branch),
+              - red edge means the opposite (so the downstream branch is out of sync);
+            * optionally list commits introduced on each branch if `--list-commits' is supplied.
+
+            Options:
+            -l, --list-commits            Additionally lists the messages of commits introduced on each branch.
+            -r, --remote=<remote-name>    Specifies the alternative name of the remote (`origin' by default).
+        """,
+        "up": """
+            Usage: git machete up [<branch>]
+
+            Outputs name of the branch that is the direct parent of the given branch (or current branch, if none specified).
+        """,
+        "update": """
+            Usage: git machete update [-f|--fork-point=<fork-point-commit>]
+
+            Interactively rebase the current branch on the top of its upstream (parent) branch.
+            This is useful e.g. for syncing the current branch with changes introduced by an upstream branch like `develop', or changes commited on the parent branches.
+            The chunk of the history to be rebased starts at the automatically computed fork point of the current branch by default, but can also be set explicitly by `--fork-point'.
+            See `git machete help fork-point' for more details on meaning of the "fork point".
+
+            Options:
+            -f, --fork-point=<fork-point-commit>    Specifies the alternative fork point commit after which the rebased part of history is meant to start.
+        """
+    }
+    aliases = {
+        "diff": "d",
+        "edit": "e",
+        "go": "g",
+        "status": "s"
+    }
+    groups = [
+        ("General topics", ["format", "help"]),
+        ("Modify and display the tree of branches", ["add", "edit", "file", "status"]),
+        ("Navigate between the branches", ["down", "go", "next", "prev", "root", "up"]),
+        ("Determine changes specific to the given branch", ["diff", "fork-point"]),
+        ("Update history in accordance with the tree of branches", ["reapply", "slide-out", "update"]),
+        ("Tidy up git branches", ["prune-branches"])
+    ]
+    if c and c in short_docs:
+        print >> sys.stderr, textwrap.dedent(long_docs[c])
+    else:
+        short_usage()
+        if c and c not in short_docs:
+            print >> sys.stderr, "\nUnknown command: `%s'" % c
+        print >> sys.stderr, "\n%sTL;DR tip%s\n\n    Get familiar with the help for %sformat%s, %sedit%s, %sstatus%s and %supdate%s, in this order.\n" % (
+            UNDERLINE, ENDC, BOLD, ENDC, BOLD, ENDC, BOLD, ENDC, BOLD, ENDC
+        )
+        for hdr, cmds in groups:
+            print >> sys.stderr, UNDERLINE + hdr + ENDC + "\n"
+            for cm in cmds:
+                alias = (", " + aliases[cm]) if cm in aliases else ""
+                print >> sys.stderr, "    %s%-16s%s%s" % (BOLD, cm + alias, ENDC, short_docs[cm])
+            print >> sys.stderr
+        print >> sys.stderr, textwrap.dedent("""
+            %sGeneral options%s\n
+                -h, --help       Prints help and exits.
+                -v, --verbose    Logs the executed git commands.
+        """[1:] % (UNDERLINE, ENDC))
+
+
+def short_usage():
+    print >> sys.stderr, "Usage: git machete [--help] [--verbose] <command> [command-specific options] [command-specific argument]"
+
+
+def parse_options(in_args, short_opts="", long_opts=[], gnu=True):
+    global cmd, opt_down_fork_point, opt_fork_point, opt_list_commits, opt_onto, opt_remote, opt_stat, opt_verbose
+
+    fun = getopt.gnu_getopt if gnu else getopt.getopt
+    opts, rest = fun(in_args, short_opts + "hv", long_opts + ['help', 'verbose'])
+
+    for opt, arg in opts:
+        if opt in ("-d", "--down-fork-point"):
+            opt_down_fork_point = arg
+        elif opt in ("-f", "--fork-point"):
+            opt_fork_point = arg
+        elif opt in ("-h", "--help"):
+            usage(cmd)
+            sys.exit()
+        elif opt in ("-l", "--list-commits"):
+            opt_list_commits = True
+        elif opt in ("-o", "--onto"):
+            opt_onto = arg
+        elif opt in ("-r", "--remote"):
+            opt_remote = arg
+        elif opt in ("-s", "--stat"):
+            opt_stat = True
+        elif opt in ("-v", "--verbose"):
+            opt_verbose = True
+    return rest
+
+
+def expect_no_param(in_args, extra_explanation = ''):
+    if len(in_args) == 2:
+        raise MacheteException("No argument expected for `%s'%s" % (cmd, extra_explanation))
+
+
+def check_optional_param(in_args):
+    if not in_args:
+        return None
+    elif len(in_args) > 1:
+        raise MacheteException("`%s' accepts at most one argument" % cmd)
+    elif not in_args[0]:
+        raise MacheteException("Argument to `%s' cannot be empty" % cmd)
+    elif in_args[0][0] == "-":
+        raise MacheteException("option `%s' not recognized" % in_args[0])
+    else:
+        return in_args[0]
+
+
+def check_required_param(in_args):
+    if not in_args or len(in_args) > 1:
+        raise MacheteException("`%s' requires exactly one argument" % cmd)
+    elif not in_args[0]:
+        raise MacheteException("Argument to `%s' cannot be empty" % cmd)
+    elif in_args[0][0] == "-":
+        raise MacheteException("option `%s' not recognized" % in_args[0])
+    else:
+        return in_args[0]
+
+
+try:
+    cmd = None
+    opt_down_fork_point = None
+    opt_fork_point = None
+    opt_list_commits = False
+    opt_onto = None
+    opt_remote = None
+    opt_stat = False
+    opt_verbose = False
+
+    all_args = parse_options(sys.argv[1:], gnu=False)
+    if not all_args:
+        usage()
+        sys.exit(2)
+    cmd = all_args[0]
+    args = all_args[1:]
+
+    if cmd not in ("format", "help"):
+        try:
+            git_root = root_dir()
+        except MacheteException:
+            raise MacheteException("Not a git repository")
+
+        definition_file = os.path.join(git_root, ".git", "machete")
+        if not os.path.exists(definition_file):
+            open(definition_file, 'w').close()
+
+    if cmd not in ("e", "edit", "file", "format", "help"):
+        read_definition_file()
+
+    if cmd == "add":
+        param = check_optional_param(parse_options(args, "o:", ["onto="]))
+        add(param or head())
+    elif cmd in ("d", "diff"):
+        param = check_optional_param(parse_options(args, "s", ["stat"]))
+        diff(param) # passing None if not specified
+    elif cmd == "down":
+        param = check_optional_param(parse_options(args))
+        print down(param or head(), pick_mode=False)
+    elif cmd in ("e", "edit"):
+        expect_no_param(parse_options(args))
+        edit()
+    elif cmd == "file":
+        expect_no_param(parse_options(args))
+        print definition_file
+    elif cmd == "fork-point":
+        param = check_optional_param(parse_options(args))
+        print fork_point(param or head())
+    elif cmd == "format":
+        usage("format")
+    elif cmd in ("g", "go"):
+        param = check_required_param(parse_options(args))
+        h = head()
+        if param in ("d", "down"):
+            dest = down(h, pick_mode=True)
+        elif param in ("n", "next"):
+            dest = next_branch(h)
+        elif param in ("p", "prev"):
+            dest = prev_branch(h)
+        elif param in ("r", "root"):
+            dest = root_branch(h)
+        elif param in ("u", "up"):
+            dest = up(h)
+        else:
+            raise MacheteException("Usage: git machete go <d[own]|n[ext]|p[rev]|r[oot]|u[p]>")
+        if dest != h:
+            go(dest)
+    elif cmd == "help":
+        param = check_optional_param(parse_options(args))
+        usage(param)
+    elif cmd == "next":
+        param = check_optional_param(parse_options(args))
+        print next_branch(param or head())
+    elif cmd == "prev":
+        param = check_optional_param(parse_options(args))
+        print prev_branch(param or head())
+    elif cmd == "prune-branches":
+        expect_no_param(parse_options(args, "f", ["force"]))
+        prune_branches()
+    elif cmd == "reapply":
+        args1 = parse_options(args, "f:", ["fork-point="])
+        expect_no_param(args1, ". Use `-f' or `--fork-point' to specify the fork point commit")
+        h = head()
+        reapply(h, opt_fork_point or fork_point(h))
+    elif cmd == "root":
+        param = check_optional_param(parse_options(args))
+        print root_branch(param or head())
+    elif cmd == "slide-out":
+        param = check_optional_param(parse_options(args, "d:", ["down-fork-point="]))
+        slide_out(param or head())
+    elif cmd in ("s", "status"):
+        expect_no_param(parse_options(args, "lr:", ["list-commits", "remote="]))
+        status()
+    elif cmd == "up":
+        param = check_optional_param(parse_options(args))
+        print up(param or head())
+    elif cmd == "update":
+        args1 = parse_options(args, "f:", ["fork-point="])
+        expect_no_param(args1, ". Use `-f' or `--fork-point' to specify the fork point commit")
+        h = head()
+        update(h, opt_fork_point or fork_point(h))
+    else:
+        short_usage()
+        raise MacheteException("\nUnknown command: `%s'. Use `git machete help' to list possible commands" % cmd)
+
+except MacheteException as e:
+    print >> sys.stderr, str(e)
+    sys.exit(1)
+except getopt.GetoptError as e:
+    short_usage()
+    print >> sys.stderr, str(e)
+    sys.exit(2)
