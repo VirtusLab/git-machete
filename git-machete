@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 # -*- coding: utf-8 -*-
 
 import getopt
@@ -22,9 +22,9 @@ class MacheteException(Exception):
 ENDC = '\033[0m'
 BOLD = '\033[1m'
 UNDERLINE = '\033[4m'
-GREEN = '\033[92m'
+GREEN = '\033[32m'
 GREY = '\033[37m'
-ORANGE = '\033[91m'
+ORANGE = '\033[93m'
 RED = '\033[91m'
 
 
@@ -315,14 +315,18 @@ def reflog(b):
     return reflogs_cached[b]
 
 
+branches_cached = None
 
-def compute_fork_point(b):
+def fork_point(b):
+    global branches_cached
     expect_in_branch_tree(b)
     if b not in up_branch:
         raise MacheteException("Cannot find fork point for a root branch `%s'. Upstream branch must be defined." % b)
 
     log_this_branch = log(b)
-    other_branches = excluding(branches(), [b])
+    if not branches_cached:
+        branches_cached = branches()
+    other_branches = excluding(branches_cached, [b])
     reflogs_other_branches = sum(map(reflog, other_branches), [])
     reflogs_other_branches_no_create = set(h for (h, gs) in reflogs_other_branches if not (
             (gs.startswith("branch: Created from") and not gs.startswith("branch: Created from refs/remotes/"))
@@ -331,15 +335,6 @@ def compute_fork_point(b):
         if h in reflogs_other_branches_no_create:
             return h
     raise MacheteException("Cannot find fork point for branch `%s'" % b)
-
-
-fork_points_cached = {}
-
-def fork_point(b):
-    global fork_points_cached
-    if b not in fork_points_cached:
-        fork_points_cached[b] = compute_fork_point(b)
-    return fork_points_cached[b]
 
 
 def branches(extra_option = None):
@@ -370,7 +365,7 @@ def prune_branches():
     if all_to_prune:
         for b in all_to_prune:
             is_merged = b in merged_bs
-            msg = "Remove the branch `%s' (%s to HEAD)? [y/n] " % (b, "merged" if is_merged else "unmerged")
+            msg = "Remove the branch %s%s%s (%s to HEAD)? [y/n] " % (BOLD, b, ENDC, "merged" if is_merged else "unmerged")
             if raw_input(msg).lower() not in ('y', 'yes'):
                 continue
             run_git("branch", "-d" if is_merged else "-D", b)
@@ -430,15 +425,17 @@ def status():
     needs_sync_with_up_branch = {}
     needs_sync_with_remote = {}
     commits_cached = {}
+    fork_points_cached = {}
     for b, pfx in dfs_res:
         if b in up_branch:
             needs_sync_with_up_branch[b] = not is_ancestor(up_branch[b], b)
+            fork_points_cached[b] = fork_point(b)
             if opt_list_commits:
-                commits_cached[b] = reversed(commits_between(fork_point(b), b))
+                commits_cached[b] = reversed(commits_between(fork_points_cached[b], b))
         needs_sync_with_remote[b] = check_needs_sync_with_remote(b)
 
     def edge_color(b):
-        return RED if needs_sync_with_up_branch[b] else (GREEN )
+        return RED if needs_sync_with_up_branch[b] else (GREEN if sha_by_revision(up_branch[b]) == fork_points_cached[b] else ORANGE)
 
     def print_line_prefix(b, suffix):
         sys.stdout.write("  ")
