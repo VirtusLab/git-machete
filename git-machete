@@ -635,9 +635,13 @@ def usage(c=None):
             Apart from simply ASCII-formatting the definition file, this also:
             * prints `(out of sync with <remote>)' message for each branch that differs from its remote counterpart (in the `origin' remote by default);
             * colors the edges between upstream (parent) and downstream (children) branches depending on whether downstream branch commit is a direct descendant of the upstream branch commit:
-              - green edge means that the downstream branch commit is direct descendant of the upstream branch commit (basically, the downstream branch is in sync with its upstream branch),
-              - red edge means the opposite (so the downstream branch is out of sync);
-            * optionally list commits introduced on each branch if `--list-commits' is supplied.
+              - red edge means that the downstream branch commit is NOT a direct descendant of the upstream branch commit (basically, the downstream branch is out of sync with its upstream branch),
+              - yellow means that the opposite holds true, i.e. the downstream branch is in sync with its upstream branch, but the fork point of the downstream branch is a different commit than upstream branch tip,
+              - green means that downstream branch is in sync with its upstream branch (so just like for yellow edge and the fork point of downstream branch is EQUAL to the upstream branch tip.
+            * optionally lists commits introduced on each branch if `--list-commits' is supplied.
+
+            Note: in practice, both yellow and red edges suggest that the downstream branch should be updated against its upstream.
+            Yellow typically indicates that there are/were commits from some other branches on the path between upstream and downstream and that a closer look at the log of the downstream branch might be necessary.
 
             Options:
             -l, --list-commits            Additionally lists the messages of commits introduced on each branch.
