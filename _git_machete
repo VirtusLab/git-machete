@@ -2,6 +2,27 @@
 
 _git_machete() {
 	cmds="add d diff down e edit file fork-point format g go help next prev prune-branches reapply root slide-out s status up update"
-	COMPREPLY=( $(compgen -W "$cmds" -- $cur) )
+	short_opts="-d -f -h -l -o -r -s -v"
+	long_opts="--down-fork-point --fork-point --help --list-commits --onto --remote --stat --verbose"
+	directions="down next prev root up"
+
+	prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+	if [[ ${cur} == --* ]] ; then
+		__gitcomp "$long_opts"
+	elif [[ ${cur} == -* ]] ; then
+		__gitcomp "$short_opts $long_opts"
+	elif [[ ${#COMP_WORDS[@]} -eq 3 ]]; then
+		__gitcomp "$cmds"
+	elif [[ "$prev" == "g" ]] || [[ "$prev" == "go" ]]; then
+		__gitcomp "$directions"
+	elif [[ "$prev" == "help" ]]; then
+		__gitcomp "$cmds"
+	elif [[ "$prev" == "add" ]] || [[ "$prev" == "d" ]] || [[ "$prev" == "diff" ]] || [[ "$prev" == "down" ]] || [[ "$prev" == "fork-point" ]] || [[ "$prev" == "next" ]] || [[ "$prev" == "prev" ]] ||\
+		[[ "$prev" == "root" ]] || [[ "$prev" == "slide-out" ]] || [[ "$prev" == "up" ]]; then
+		__gitcomp_nl "$(__git_heads)"
+	else
+		COMPREPLY=()
+	fi
 }
 
