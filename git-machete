@@ -24,6 +24,7 @@ BOLD = '\033[1m'
 UNDERLINE = '\033[4m'
 GREEN = '\033[92m'
 GREY = '\033[37m'
+ORANGE = '\033[91m'
 RED = '\033[91m'
 
 
@@ -265,11 +266,20 @@ def root_dir():
     return popen_git("rev-parse", "--show-toplevel").strip()
 
 
-def sha_by_revision(rev):
+def compute_sha_by_revision(rev):
     try:
         return popen_git("rev-parse", "--verify", "--quiet", rev).rstrip()
     except MacheteException:
         return None
+
+
+shas_cached = {}
+
+def sha_by_revision(rev):
+    global shas_cached
+    if rev not in shas_cached:
+        shas_cached[rev] = compute_sha_by_revision(rev)
+    return shas_cached[rev]
 
 
 def branch_by_revision(rev):
@@ -296,16 +306,17 @@ def log(branch):
 
 reflogs_cached = {}
 
-
 def reflog(b):
-    # %H - full hash
-    # %gs - reflog subject
+    global reflogs_cached
     if b not in reflogs_cached:
+        # %H - full hash
+        # %gs - reflog subject
         reflogs_cached[b] = [entry.split("|") for entry in non_empty_lines(popen_git("reflog", "--format=%H|%gs", b, "--"))]
     return reflogs_cached[b]
 
 
-def fork_point(b):
+
+def compute_fork_point(b):
     expect_in_branch_tree(b)
     if b not in up_branch:
         raise MacheteException("Cannot find fork point for a root branch `%s'. Upstream branch must be defined." % b)
@@ -320,6 +331,15 @@ def fork_point(b):
         if h in reflogs_other_branches_no_create:
             return h
     raise MacheteException("Cannot find fork point for branch `%s'" % b)
+
+
+fork_points_cached = {}
+
+def fork_point(b):
+    global fork_points_cached
+    if b not in fork_points_cached:
+        fork_points_cached[b] = compute_fork_point(b)
+    return fork_points_cached[b]
 
 
 def branches(extra_option = None):
@@ -418,7 +438,7 @@ def status():
         needs_sync_with_remote[b] = check_needs_sync_with_remote(b)
 
     def edge_color(b):
-        return RED if needs_sync_with_up_branch[b] else GREEN
+        return RED if needs_sync_with_up_branch[b] else (GREEN )
 
     def print_line_prefix(b, suffix):
         sys.stdout.write("  ")
