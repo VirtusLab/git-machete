@@ -1,8 +1,8 @@
-PREFIX ?= /usr/local
-EXEC_PREFIX ?= $(PREFIX)
-BINDIR ?= $(EXEC_PREFIX)/bin
+BINDIR ?= /usr/local/bin
+BINFILE = git-machete
 
-EXEC_FILES = git-machete
+COMPDIR ?= /etc/bash_completion.d
+COMPFILE = git-machete-prompt
 
 .PHONY: all install uninstall
 
@@ -12,10 +12,15 @@ all:
 
 install:
 	mkdir -p $(BINDIR)
-	install -m 0755 $(EXEC_FILES) $(BINDIR)
+	install -m 0755 $(BINFILE) $(BINDIR)
+	mkdir -p $(COMPDIR)
+	install -m 0644 $(COMPFILE) $(COMPDIR)
 
 uninstall:
-	test -d $(BINDIR) && \
-	cd $(BINDIR) && \
-	rm -f $(EXEC_FILES)
+	test -d $(BINDIR)
+	cd $(BINDIR)
+	rm -f $(BINDIR)/$(BINFILE)
+	test -d $(COMPDIR)
+	cd $(COMPDIR)
+	rm -f $(COMPDIR)/$(COMPFILE)
 
