@@ -429,7 +429,10 @@ def status():
     for b, pfx in dfs_res:
         if b in up_branch:
             needs_sync_with_up_branch[b] = not is_ancestor(up_branch[b], b)
-            fork_points_cached[b] = fork_point(b)
+            try:
+                fork_points_cached[b] = fork_point(b)
+            except MacheteException:
+                fork_points_cached[b] = None
             if opt_list_commits:
                 commits_cached[b] = reversed(commits_between(fork_points_cached[b], b))
         needs_sync_with_remote[b] = check_needs_sync_with_remote(b)
