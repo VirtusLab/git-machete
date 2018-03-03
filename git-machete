@@ -434,7 +434,7 @@ def status():
             except MacheteException:
                 fork_points_cached[b] = None
             if opt_list_commits:
-                commits_cached[b] = reversed(commits_between(fork_points_cached[b], b))
+                commits_cached[b] = reversed(commits_between(fork_points_cached[b], b)) if fork_points_cached[b] else []
         needs_sync_with_remote[b] = check_needs_sync_with_remote(b)
 
     def edge_color(b):
