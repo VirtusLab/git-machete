@@ -323,14 +323,19 @@ def fork_point(b):
     if b not in up_branch:
         raise MacheteException("Cannot find fork point for a root branch `%s'. Upstream branch must be defined." % b)
 
+    def valid_subject(gs):
+        return not (
+            (gs.startswith("branch: Created from") and not gs.startswith("branch: Created from refs/remotes/")) or
+            gs.startswith("branch: Reset to " + b) or
+            gs.startswith("branch: Reset to HEAD")
+        )
+
     log_this_branch = log(b)
     if not branches_cached:
         branches_cached = branches()
     other_branches = excluding(branches_cached, [b])
     reflogs_other_branches = sum(map(reflog, other_branches), [])
-    reflogs_other_branches_no_create = set(h for (h, gs) in reflogs_other_branches if not (
-            (gs.startswith("branch: Created from") and not gs.startswith("branch: Created from refs/remotes/"))
-            or gs.startswith("branch: Reset to " + b)))
+    reflogs_other_branches_no_create = set(h for (h, gs) in reflogs_other_branches if valid_subject(gs))
     for h in log_this_branch:
         if h in reflogs_other_branches_no_create:
             return h
@@ -735,7 +740,7 @@ def parse_options(in_args, short_opts="", long_opts=[], gnu=True):
 
 
 def expect_no_param(in_args, extra_explanation = ''):
-    if len(in_args) == 2:
+    if len(in_args) > 0:
         raise MacheteException("No argument expected for `%s'%s" % (cmd, extra_explanation))
 
 
@@ -875,3 +880,4 @@ except getopt.GetoptError as e:
     short_usage()
     print >> sys.stderr, str(e)
     sys.exit(2)
+
