@@ -1,6 +1,6 @@
 # git-machete
 
-> See what topic branches are out of sync with their parent (upstream) branches and automatically rebase them, even when some of them are stacked atop other ones
+If you work a with a git rebase flow, git machete will (vastly!) help you manage the jungle of branches stacking on top of each other when you're, for example, working on a couple of different PRs in parallel.
 
 ## Install
 
