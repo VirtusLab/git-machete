@@ -24,7 +24,7 @@ BOLD = '\033[1m'
 UNDERLINE = '\033[4m'
 GREEN = '\033[32m'
 GREY = '\033[37m'
-ORANGE = '\033[93m'
+YELLOW = '\033[93m'
 RED = '\033[91m'
 
 
@@ -443,7 +443,7 @@ def status():
         needs_sync_with_remote[b] = check_needs_sync_with_remote(b)
 
     def edge_color(b):
-        return RED if needs_sync_with_up_branch[b] else (GREEN if sha_by_revision(up_branch[b]) == fork_points_cached[b] else ORANGE)
+        return RED if needs_sync_with_up_branch[b] else (GREEN if sha_by_revision(up_branch[b]) == fork_points_cached[b] else YELLOW)
 
     def print_line_prefix(b, suffix):
         sys.stdout.write("  ")
@@ -645,7 +645,7 @@ def usage(c=None):
             * colors the edges between upstream (parent) and downstream (children) branches depending on whether downstream branch commit is a direct descendant of the upstream branch commit:
               - red edge means that the downstream branch commit is NOT a direct descendant of the upstream branch commit (basically, the downstream branch is out of sync with its upstream branch),
               - yellow means that the opposite holds true, i.e. the downstream branch is in sync with its upstream branch, but the fork point of the downstream branch is a different commit than upstream branch tip,
-              - green means that downstream branch is in sync with its upstream branch (so just like for yellow edge and the fork point of downstream branch is EQUAL to the upstream branch tip.
+              - green means that downstream branch is in sync with its upstream branch (so just like for yellow edge) and the fork point of downstream branch is EQUAL to the upstream branch tip.
             * optionally lists commits introduced on each branch if `--list-commits' is supplied.
 
             Note: in practice, both yellow and red edges suggest that the downstream branch should be updated against its upstream.

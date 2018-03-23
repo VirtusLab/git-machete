@@ -29,7 +29,8 @@ _git_machete() {
 		case "$prev" in
 			g|go) __gitcomp "$directions" ;;
 			help|--help|-h) __gitcomp "$cmds" ;;
-			add|d|diff|down|fork-point|next|prev|root|slide-out|up) __gitcomp_nl "$(__git_heads)" ;;
+			add|d|diff|down|fork-point|next|-o|--onto|prev|root|slide-out|up) __gitcomp_nl "$(__git_heads)" ;;
+			-r|--remote) __gitcomp_nl "$(__git_remotes)" ;;
 			*) COMPREPLY=() ;;
 		esac
 	fi
