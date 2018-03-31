@@ -4,17 +4,13 @@ If you work a with a git rebase flow, git machete will (vastly!) help you manage
 
 ## Install
 
-You can install it either using `curl`
-
-```bash
-$ curl -L https://raw.githubusercontent.com/PawelLipski/git-machete/master/install.sh | sudo sh
-```
-
-Or by cloning and manually installing it
+Run the following commands to install git machete:
 
 ```bash
 $ git clone https://github.com/PawelLipski/git-machete.git
 $ cd git-machete
 $ sudo make install
 ```
+
+Take a look at [https://virtuslab.com/blog/make-way-git-rebase-jungle-git-machete/](https://virtuslab.com/blog/make-way-git-rebase-jungle-git-machete/) for a guide on how to use the tool.
 
