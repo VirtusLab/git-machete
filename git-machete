@@ -8,6 +8,8 @@ import subprocess
 import sys
 import textwrap
 
+VERSION = '1.0.1'
+
 
 # Core utils
 
@@ -109,7 +111,7 @@ def popen_git(git_cmd, *args):
 def expect_in_branch_tree(b):
     if b not in all_branches:
         raise MacheteException("Branch `%s' not found in the tree. "
-                              "Use `git machete add %s' or `git machete edit'" % (b, b))
+                               "Use `git machete add %s' or `git machete edit'" % (b, b))
 
 
 def read_definition_file():
@@ -160,6 +162,7 @@ def render_definition_file():
     global roots, down_branches, indent
     if not indent:
         indent = "\t"
+
     def render_dfs(u, d):
         res = [d * indent + u]
         for v in down_branches.get(u) or []:
@@ -275,6 +278,7 @@ def compute_sha_by_revision(rev):
 
 shas_cached = {}
 
+
 def sha_by_revision(rev):
     global shas_cached
     if rev not in shas_cached:
@@ -306,6 +310,7 @@ def log(branch):
 
 reflogs_cached = {}
 
+
 def reflog(b):
     global reflogs_cached
     if b not in reflogs_cached:
@@ -316,6 +321,7 @@ def reflog(b):
 
 
 branches_cached = None
+
 
 def fork_point(b):
     global branches_cached
@@ -343,7 +349,9 @@ def fork_point(b):
 
 
 def branches(extra_option = None):
-    return map(lambda b: b[2:], non_empty_lines(popen_git("branch", *([extra_option] if extra_option else []))))
+    lines = non_empty_lines(popen_git("branch", *([extra_option] if extra_option else [])))
+    # Filter out e.g. `* (no branch, rebasing ...)` entry during an ongoing rebase
+    return [b[2:] for b in lines if not b.startswith("* (")]
 
 
 def go(branch):
@@ -705,18 +713,23 @@ def usage(c=None):
             %sGeneral options%s\n
                 -h, --help       Prints help and exits.
                 -v, --verbose    Logs the executed git commands.
+                --version        Prints version and exits.
         """[1:] % (UNDERLINE, ENDC))
 
 
 def short_usage():
-    print >> sys.stderr, "Usage: git machete [--help] [--verbose] <command> [command-specific options] [command-specific argument]"
+    print >> sys.stderr, "Usage: git machete [--help] [--verbose] [--version] <command> [command-specific options] [command-specific argument]"
+
+
+def version():
+    print 'git-machete version ' + VERSION
 
 
 def parse_options(in_args, short_opts="", long_opts=[], gnu=True):
     global cmd, opt_down_fork_point, opt_fork_point, opt_list_commits, opt_onto, opt_remote, opt_stat, opt_verbose
 
     fun = getopt.gnu_getopt if gnu else getopt.getopt
-    opts, rest = fun(in_args, short_opts + "hv", long_opts + ['help', 'verbose'])
+    opts, rest = fun(in_args, short_opts + "hv", long_opts + ['help', 'verbose', 'version'])
 
     for opt, arg in opts:
         if opt in ("-d", "--down-fork-point"):
@@ -736,6 +749,9 @@ def parse_options(in_args, short_opts="", long_opts=[], gnu=True):
             opt_stat = True
         elif opt in ("-v", "--verbose"):
             opt_verbose = True
+        elif opt == "--version":
+            version()
+            sys.exit()
     return rest
 
 
