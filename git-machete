@@ -62,6 +62,10 @@ def replace_in_array(arr, orig, dst):
             arr[i] = dst
 
 
+def ask_if(msg):
+    return raw_input(msg).lower() in ('y', 'yes')
+
+
 def pick(choices, name):
     xs = "".join("[%i] %s\n" % (idx + 1, x) for x, idx in zip(choices, range(len(choices))))
     msg = xs + "Specify " + name + " or hit <return> to skip: "
@@ -175,27 +179,32 @@ def read_definition_file():
             roots += [b]
 
 
-def render_definition_file():
+def render_tree():
     global roots, down_branches, indent, annotations
     if not indent:
         indent = "\t"
 
-    def render_dfs(u, d):
-        annotation = (" " + annotations[u]) if u in annotations else ""
-        res = [d * indent + u + annotation]
-        for v in down_branches.get(u) or []:
-            res += render_dfs(v, d + 1)
+    def render_dfs(b, depth):
+        annotation = (" " + annotations[b]) if b in annotations else ""
+        res = [depth * indent + b + annotation]
+        for d in down_branches.get(b) or []:
+            res += render_dfs(d, depth + 1)
         return res
 
     total = []
     for r in roots:
-        total += render_dfs(r, 0)
+        total += render_dfs(r, depth=0)
     return total
+
+
+def backup_definition_file():
+    with open(definition_file + "~", "w") as backup:
+        backup.write(open(definition_file).read())
 
 
 def save_definition_file():
     with open(definition_file, "w") as f:
-        f.write("\n".join(render_definition_file()))
+        f.write("\n".join(render_tree()))
 
 
 def down(b, pick_mode):
@@ -263,11 +272,16 @@ def add(b):
         roots = [b]
     else:
         if not onto:
-            h = head()
-            if b != h:
-                onto = h
+            u = infer_upstream(b)
+            if u and u in managed_branches:
+                msg = "The upstream (parent) branch for `%s' has been inferred to be `%s'. Add `%s' onto `%s'? [y/n] " % (b, u, b, u)
+                if ask_if(msg):
+                    onto = u
+                else:
+                    return
             else:
-                raise MacheteException("Specify the desired upstream (parent) branch for `%s' with `--onto'" % b)
+                raise MacheteException("Could not automatically infer upstream (parent) branch. "
+                                       "Specify the desired upstream branch for `%s' with `--onto'" % b)
 
         up_branch[b] = onto
         if onto in down_branches:
@@ -357,11 +371,18 @@ def is_ancestor(earlier, later):
     return run_git("merge-base", "--is-ancestor", earlier, later, allow_non_zero=True) == 0
 
 
-def log(branch):
-    return non_empty_lines(popen_git("log", "--format=%H", branch, "--"))
+logs_cached = {}
+
+
+def log(refspec):
+    global logs_cached
+    if refspec not in logs_cached:
+        logs_cached[refspec] = non_empty_lines(popen_git("log", "--format=%H", refspec, "--"))
+    return logs_cached[refspec]
 
 
 reflogs_cached = {}
+adjusted_reflogs_cached = {}
 
 
 def reflog(b):
@@ -369,33 +390,85 @@ def reflog(b):
     if b not in reflogs_cached:
         # %H - full hash
         # %gs - reflog subject
-        reflogs_cached[b] = [entry.split("|") for entry in non_empty_lines(popen_git("reflog", "--format=%H|%gs", b, "--"))]
+        reflogs_cached[b] = [entry.split(":", 1) for entry in non_empty_lines(popen_git("reflog", "--format=%H:%gs", b, "--"))]
     return reflogs_cached[b]
 
 
-branches_cached = None
+def relevant_reflog_subject(gs, b=None):
+    return not (
+        (gs.startswith("branch: Created from") and not gs.startswith("branch: Created from refs/remotes/")) or
+        (b and gs.startswith("branch: Reset to " + b)) or
+        gs.startswith("branch: Reset to HEAD")
+    )
+
+
+def adjusted_reflog(b):
+    global adjusted_reflogs_cached
+    if b not in adjusted_reflogs_cached:
+        adjusted_reflogs_cached[b] = [h for (h, gs) in reflog(b) if relevant_reflog_subject(gs)]
+    return adjusted_reflogs_cached[b]
+
+
+all_branches = None
+
+
+def infer_upstream(b):
+    global all_branches
+    if not all_branches:
+        all_branches = branches()
+
+    start_point, start_point_subject = reflog(b)[-1]
+    for c in log(start_point):
+        for ob in all_branches:
+            if ob != b and c in adjusted_reflog(ob):
+                return ob
+    return None
+
+
+def infer_tree():
+    global all_branches, managed_branches, roots, down_branches, up_branch, indent
+    all_branches = managed_branches = branches()
+    roots = []
+    down_branches = {}
+    up_branch = {}
+    indent = "\t"
+
+    for b in all_branches:
+        u = infer_upstream(b)
+        if u:
+            up_branch[b] = u
+            if u in down_branches:
+                down_branches[u].append(b)
+            else:
+                down_branches[u] = [b]
+        else:
+            roots += [b]
+
+    print BOLD + 'Inferred tree:' + ENDC
+    status()
+    print
+    msg = "Save the above tree to `%s'? The existing definition file will be backed up as `%s~' (y[es]/e[dit]/n[o]) " % (definition_file, definition_file)
+    reply = raw_input(msg).lower()
+    if reply in ('y', 'yes'):
+        backup_definition_file()
+        save_definition_file()
+    elif reply in ('e', 'edit'):
+        backup_definition_file()
+        save_definition_file()
+        edit()
 
 
 def fork_point(b):
-    global branches_cached
+    global all_branches
     if not is_a_branch(b):
         raise MacheteException("Branch `%s' does not exist" % b)
 
-    def valid_subject(gs):
-        return not (
-            (gs.startswith("branch: Created from") and not gs.startswith("branch: Created from refs/remotes/")) or
-            gs.startswith("branch: Reset to " + b) or
-            gs.startswith("branch: Reset to HEAD")
-        )
-
-    log_this_branch = log(b)
-    if not branches_cached:
-        branches_cached = branches()
-    other_branches = excluding(branches_cached, [b])
-    reflogs_other_branches = sum(map(reflog, other_branches), [])
-    reflogs_other_branches_no_create = set(h for (h, gs) in reflogs_other_branches if valid_subject(gs))
-    for h in log_this_branch:
-        if h in reflogs_other_branches_no_create:
+    if not all_branches:
+        all_branches = branches()
+    other_branches = excluding(all_branches, [b])
+    adjusted_reflogs_other_branches = sum(map(adjusted_reflog, other_branches), [])
+    for h in log(b):
+        if h in adjusted_reflogs_other_branches:
             return h
     raise MacheteException("Cannot find fork point for branch `%s'" % b)
 
@@ -430,12 +503,12 @@ def prune_branches():
     if all_to_prune:
         for b in all_to_prune:
             is_merged = b in merged_bs
-            msg = "Remove the branch %s%s%s (%s to HEAD)? [y/n] " % (BOLD, b, ENDC, "merged" if is_merged else "unmerged")
-            if raw_input(msg).lower() not in ('y', 'yes'):
+            msg = "Delete branch %s`%s'%s (%s to HEAD)? [y/n] " % (BOLD, b, ENDC, "merged" if is_merged else "unmerged")
+            if not ask_if(msg):
                 continue
             run_git("branch", "-d" if is_merged else "-D", b)
     else:
-        print >> sys.stderr, "No branches to remove"
+        print >> sys.stderr, "No branches to delete"
 
 
 def slide_out(bs):
@@ -572,15 +645,15 @@ def commits_between(earlier, later):
 def status():
     dfs_res = []
 
-    def dfs(u, pfx):
-        dfs_res.append((u, pfx))
+    def prefix_dfs(u, prefix):
+        dfs_res.append((u, prefix))
         if down_branches.get(u):
             for (v, nv) in zip(down_branches[u][:-1], down_branches[u][1:]):
-                dfs(v, pfx + [nv])
-            dfs(down_branches[u][-1], pfx + [None])
+                prefix_dfs(v, prefix + [nv])
+            prefix_dfs(down_branches[u][-1], prefix + [None])
 
     for u in roots:
-        dfs(u, [])
+        prefix_dfs(u, prefix=[])
 
     needs_sync_with_up_branch = {}
     remote_sync_status = {}
@@ -645,15 +718,16 @@ def status():
 
 def usage(c=None):
     short_docs = {
-        "add": "Add a branch on the top of the current or other specified branch",
-        "diff": "Diff current working tree or a given branch against a computed fork point",
+        "add": "Add a branch to the tree",
+        "diff": "Diff current working directory or a given branch against a computed fork point",
         "down": "Print name(s) of the downstream branch(es) for a branch (aka its children in the tree)",
         "edit": "Edit the definition file",
         "file": "Print path of the definition file",
         "fork-point": "Print SHA of the computed fork point commit of a branch",
-        "format": "Format of the definition file",
+        "format": "Print information about the format of the definition file",
         "go": "Check out the branch relative to the position of the current branch, accepts down/next/root/prev/up argument",
         "help": "Print this overview, or print detailed help for a specified command",
+        "infer": "Automatically infer tree of branch dependencies",
         "list": "Lists all branches that fall into one of pre-defined categories (mostly for internal use)",
         "next": "Print name of the next branch for a branch",
         "prev": "Print name of the previous branch for a branch",
@@ -661,7 +735,7 @@ def usage(c=None):
         "reapply": "Rebase the current branch onto its computed fork point",
         "root": "Print name of the root branch of the tree where a branch is located",
         "slide-out": "Slide the current branch out and rebase its downstream (child) branch onto its upstream (parent) branch",
-        "status": "Print tree-shaped status of branches listed in the definition file, including info on their sync with upstream branch and remote",
+        "status": "Print formatted tree of branch dependencies, including info on their sync with upstream branch and with remote",
         "traverse": "Walk through the tree and ask to rebase and/or push branches, one by one",
         "up": "Print name of the upstream branch for a branch (aka parent in the tree)",
         "update": "Rebase the current branch onto its upstream (parent) branch"
@@ -672,9 +746,9 @@ def usage(c=None):
 
             Adds the given branch (or the current branch, if none specified) to the definition file.
             If the definition file is empty, the branch will be added as the first root of the tree.
-            Otherwise, the branch will be added on the top of the current branch.
-            If the current branch is the same as the branch to be added (esp. in the case when the new branch to add has not been specified at all),
-            the target parent branch must be explicitly specified with `--onto' option.
+            Otherwise, the desired upstream (parent) branch can be specified with `--onto`.
+            This option is not mandatory, however; if skipped, git machete will try to automatically infer the target upstream.
+            If the upstream branch can be inferred, the user will be presented with inferred branch and asked to confirm.
 
             Note: the same effect can be always achieved by manually editing the definition file.
 
@@ -741,7 +815,7 @@ def usage(c=None):
             master
                 hotfix/receipt-trigger PR #236
 
-            In the above example `develop' and `master' are roots of the branch tree.
+            In the above example `develop' and `master' are roots of the tree of branch dependencies.
             Branches `adjust-reads-prec', `edit-margin-not-allowed' and `grep-errors-script' are direct downstream branches for `develop'.
             `block-cancel-order' is a downstream branch of `adjust-reads-prec', `change-table' is a downstream branch of `block-cancel-order' and so on.
 
@@ -757,6 +831,13 @@ def usage(c=None):
 
             Checks out the branch specified by the given direction relative to the currently checked out branch.
             Roughly equivalent to `git checkout $(git machete <direction>)'.
+        """,
+        "infer": """
+            Usage: git machete infer
+
+            Infers tree of branch dependencies using a heuristic based on reflog and asks whether to overwrite the existing definition file with the new inferred tree.
+            If confirmed with a `y[es]` or `e[dit]` reply, backs up the existing file as `.git/machete~` and saves the new tree to the usual `.git/machete` file.
+            If the reply was `e[dit]`, additionally an editor is opened (as in `git machete edit` subcommand) after saving the new definition file.
         """,
         "help": """
             Usage: git machete help [<command>]
@@ -912,10 +993,10 @@ def usage(c=None):
     }
     groups = [
         ("General topics", ["format", "help"]),
-        ("Modify and display the tree of branches", ["add", "edit", "file", "list", "status"]),
+        ("Build, display and modify the tree of branch dependencies", ["add", "edit", "file", "infer", "list", "status"]),
         ("Navigate between the branches", ["down", "go", "next", "prev", "root", "up"]),
         ("Determine changes specific to the given branch", ["diff", "fork-point"]),
-        ("Update history in accordance with the tree of branches", ["reapply", "slide-out", "traverse", "update"]),
+        ("Update git history in accordance with the tree of branch dependencies", ["reapply", "slide-out", "traverse", "update"]),
         ("Tidy up git branches", ["prune-branches"])
     ]
     if c and c in short_docs:
@@ -1032,7 +1113,7 @@ try:
         if not os.path.exists(definition_file):
             open(definition_file, 'w').close()
 
-    if cmd not in ("d", "diff", "e", "edit", "file", "fork-point", "format", "help", "reapply"):
+    if cmd not in ("d", "diff", "e", "edit", "file", "fork-point", "format", "help", "infer", "reapply"):
         read_definition_file()
 
     if cmd == "add":
@@ -1076,6 +1157,9 @@ try:
     elif cmd == "help":
         param = check_optional_param(parse_options(args))
         usage(param)
+    elif cmd == "infer":
+        expect_no_param(parse_options(args))
+        infer_tree()
     elif cmd == "list":
         allowed_values = "managed|slidable|unmanaged"
         param = check_required_param(parse_options(args), allowed_values)
@@ -1133,4 +1217,3 @@ except getopt.GetoptError as e:
     short_usage()
     print >> sys.stderr, str(e)
     sys.exit(2)
-
