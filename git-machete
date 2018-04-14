@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '1.1.0'
+VERSION = '1.2.0'
 
 
 # Core utils
@@ -385,26 +385,34 @@ def prune_branches():
         print >> sys.stderr, "No branches to remove"
 
 
-def slide_out(b):
-    expect_in_managed_branches(b)
-    u = up_branch.get(b)
-    if not u:
-        raise MacheteException("No upstream branch defined for `%s', cannot slide out" % b)
-    dbs = down_branches.get(b)
-    if not dbs or len(dbs) == 0:
-        raise MacheteException("No downstream branch defined for `%s', cannot slide out" % b)
-    elif len(dbs) > 1:
-        flat_dbs = join_branch_names(dbs, ", ")
-        raise MacheteException("Multiple downstream branches defined for `%s': %s; cannot slide out" % (b, flat_dbs))
-    d = dbs[0]
+def slide_out(bs):
+    for b in bs:
+        expect_in_managed_branches(b)
+        u = up_branch.get(b)
+        if not u:
+            raise MacheteException("No upstream branch defined for `%s', cannot slide out" % b)
+        dbs = down_branches.get(b)
+        if not dbs or len(dbs) == 0:
+            raise MacheteException("No downstream branch defined for `%s', cannot slide out" % b)
+        elif len(dbs) > 1:
+            flat_dbs = join_branch_names(dbs, ", ")
+            raise MacheteException("Multiple downstream branches defined for `%s': %s; cannot slide out" % (b, flat_dbs))
+
+    for bu, bd in zip(bs[:-1], bs[1:]):
+        if up_branch[bd] != bu:
+            raise MacheteException("`%s' is not upstream of `%s', cannot slide out" % (bu, bd))
+
+    u = up_branch[bs[0]]
+    d = down_branches[bs[-1]][0]
+    for b in bs:
+        up_branch[b] = None
+        down_branches[b] = None
+
     go(d)
-    up_branch[d] = up_branch[b]
-    up_branch[b] = None
-    down_branches[u] = [(d if x == b else x) for x in down_branches[u]]
-    down_branches[b] = None
+    up_branch[d] = u
+    down_branches[u] = [(d if x == bs[0] else x) for x in down_branches[u]]
     save_definition_file()
     update(d, opt_down_fork_point or fork_point(d))
-    print >> sys.stderr, "Note: branch `" + b + "' not removed. You can now decide to remove it manually."
 
 
 def check_needs_sync_with_remote(b):
@@ -637,13 +645,37 @@ def usage(c=None):
             Depending on your case, this will typically be something like `develop' or `master', since all branches are usually meant to be ultimately merged to one of those.
         """,
         "slide-out": """
-            Usage: git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [<branch>]
+            Usage: git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] <branch> [<branch> [<branch> ...]]
 
-            Removes the current branch from the machete and rebases the downstream (child) branch of the current branch on the top of the upstream (parent) branch of the current branch.
+            Removes the given branch (or multiple branches) from the branch tree definition.
+            Then, rebases the downstream (child) branch of the last specified branch on the top of the upstream (parent) branch of the first specified branch.
+            The most common use is to slide out a single branch whose upstream was a `develop'/`master' branch and that has been recently merged.
 
-            Note: slide-out will return an error if the current branch has no downstream branches, has more than one downstream branch, or is a root (has no upstream branch).
-            In other words, slide-out works only when the branch has exactly one upstream branch and exactly one downstream branch.
+            Since this tool is designed to perform only one rebase at the end, provided branches must form a chain, i.e the following conditions must be met:
+            * (n+1)-th branch must be the ONLY downstream branch of the n-th branch.
+            * all provided branches must have exactly one downstream branch (even if only one branch is to be slid out)
+            * all provided branches must have an upstream branch (so, in other words, roots of branch dependency tree cannot be slid out - also applies if only one branch is specified).
 
+            For example, let's assume the following dependency tree:
+
+            develop
+                adjust-reads-prec
+                    block-cancel-order
+                        change-table
+                            drop-location-type
+
+            And now let's assume that `adjust-reads-prec' and later `block-cancel-order' were merged to develop.
+            After running `git machete slide-out adjust-reads-prec block-cancel-order` the tree will be reduced to:
+
+            develop
+                change-table
+                    drop-location-type
+
+            and `change-table` will be rebased onto develop (fork point for this rebase is configurable, see `-d' option below).
+
+            Note: This command doesn't delete any branches from git, just removes them from the tree of branch dependencies.
+
+            Options:
             -d, --down-fork-point=<down-fork-point-commit>    Specifies the alternative fork-point commit after which the rebased part of history of the downstream branch should start.
                                                               See also doc for `--fork-point' option for `git machete help reapply' and `git machete help update'.
         """,
@@ -876,8 +908,8 @@ try:
         param = check_optional_param(parse_options(args))
         print root_branch(param or head())
     elif cmd == "slide-out":
-        param = check_optional_param(parse_options(args, "d:", ["down-fork-point="]))
-        slide_out(param or head())
+        params = parse_options(args, "d:", ["down-fork-point="])
+        slide_out(params or [head()])
     elif cmd in ("s", "status"):
         expect_no_param(parse_options(args, "lr:", ["list-commits", "remote="]))
         status()

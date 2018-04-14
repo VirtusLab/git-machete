@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 1.2.0
+
+- changed: allow to specify multiple branches when doing a `slide-out`
+
 ## New in git-machete 1.1.0
 
 - changed: loosen requirements for `diff`, `fork-point` and `reapply` commands

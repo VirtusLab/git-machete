@@ -31,8 +31,14 @@ _git_machete() {
 			help|--help|-h) __gitcomp "$cmds" ;;
 			add|d|diff|down|fork-point|next|-o|--onto|prev|root|slide-out|up) __gitcomp_nl "$(__git_heads)" ;;
 			-r|--remote) __gitcomp_nl "$(__git_remotes)" ;;
-			*) COMPREPLY=() ;;
+			-d|--down-fork-point|-f|--fork-point) __gitcomp_nl "$(__git_refs)" ;;
+			*)
+			    if [[ "${COMP_WORDS[2]}" == slide-out ]]; then
+			        __gitcomp_nl "$(__git_heads)"
+			    else
+			        COMPREPLY=()
+			    fi
+			    ;;
 		esac
 	fi
 }
-
