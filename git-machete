@@ -272,9 +272,9 @@ def add(b):
         roots = [b]
     else:
         if not onto:
-            u = infer_upstream(b)
+            u = infer_upstream2(b)
             if u and u in managed_branches:
-                msg = "The upstream (parent) branch for `%s' has been inferred to be `%s'. Add `%s' onto `%s'? [y/n] " % (b, u, b, u)
+                msg = "The upstream (parent) branch for `%s' has been inferred to be `%s'.\nAdd `%s' onto `%s'? [y/n] " % (b, u, b, u)
                 if ask_if(msg):
                     onto = u
                 else:
@@ -398,14 +398,15 @@ def relevant_reflog_subject(gs, b=None):
     return not (
         (gs.startswith("branch: Created from") and not gs.startswith("branch: Created from refs/remotes/")) or
         (b and gs.startswith("branch: Reset to " + b)) or
-        gs.startswith("branch: Reset to HEAD")
+        gs.startswith("branch: Reset to HEAD") or
+        (gs.startswith("reset: moving to ") and not (b and gs.endswith("/" + b)))
     )
 
 
 def adjusted_reflog(b):
     global adjusted_reflogs_cached
     if b not in adjusted_reflogs_cached:
-        adjusted_reflogs_cached[b] = [h for (h, gs) in reflog(b) if relevant_reflog_subject(gs)]
+        adjusted_reflogs_cached[b] = [h for (h, gs) in reflog(b) if relevant_reflog_subject(gs, b)]
     return adjusted_reflogs_cached[b]
 
 
@@ -425,6 +426,20 @@ def infer_upstream(b):
     return None
 
 
+def infer_upstream2(b):
+    global all_branches
+    if not all_branches:
+        all_branches = branches()
+
+    # TODO why it works? ;)
+    start_point, start_point_subject = (filter(lambda (c, gs): gs.startswith('commit: '), reflog(b))[:1] or [reflog(b)[-1]])[0]
+    for c in log(start_point):
+        for ob in all_branches:
+            if ob != b and c in adjusted_reflog(ob):
+                return ob
+    return None
+
+
 def infer_tree():
     global all_branches, managed_branches, roots, down_branches, up_branch, indent
     all_branches = managed_branches = branches()
@@ -434,7 +449,7 @@ def infer_tree():
     indent = "\t"
 
     for b in all_branches:
-        u = infer_upstream(b)
+        u = infer_upstream2(b)
         if u:
             up_branch[b] = u
             if u in down_branches:
