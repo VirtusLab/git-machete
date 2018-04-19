@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '1.2.0'
+VERSION = '1.3.0'
 
 
 # Core utils
@@ -115,7 +115,7 @@ def expect_in_managed_branches(b):
 
 
 def read_definition_file():
-    global definition_file, indent, managed_branches, down_branches, up_branch, roots
+    global definition_file, indent, managed_branches, down_branches, up_branch, roots, annotations
 
     with open(definition_file) as f:
         ldr = [l.rstrip() for l in f.readlines() if not l.isspace()]
@@ -125,6 +125,7 @@ def read_definition_file():
     up_branch = {}
     indent = None
     roots = []
+    annotations = {}
     at_depth = {}
     last_depth = -1
     hint = "Edit the definition file manually with `git machete edit'"
@@ -134,7 +135,10 @@ def read_definition_file():
         if pfx and not indent:
             indent = pfx
 
-        b = l.strip()
+        b_a = l.strip().split(" ", 1)
+        b = b_a[0]
+        if len(b_a) > 1:
+            annotations[b] = b_a[1]
         if b in managed_branches:
             raise MacheteException("%s, line %i: branch `%s' re-appears in the tree definition. %s" %
                                    (definition_file, idx + 1, b, hint))
@@ -159,12 +163,13 @@ def read_definition_file():
 
 
 def render_definition_file():
-    global roots, down_branches, indent
+    global roots, down_branches, indent, annotations
     if not indent:
         indent = "\t"
 
     def render_dfs(u, d):
-        res = [d * indent + u]
+        annotation = (" " + annotations[u]) if u in annotations else ""
+        res = [d * indent + u + annotation]
         for v in down_branches.get(u) or []:
             res += render_dfs(v, d + 1)
         return res
@@ -475,7 +480,8 @@ def status():
         h = None
 
     for b, pfx in dfs_res:
-        current = UNDERLINE + b + ENDC if b == h else b
+        current = BOLD + b + ENDC + "  " + GREY + annotations[b] + ENDC if b in annotations else BOLD + b + ENDC
+        current_ul = UNDERLINE + current + ENDC if b == h else current
         if b in up_branch:
             print_line_prefix(b, "│ \n")
             if opt_list_commits:
@@ -486,7 +492,7 @@ def status():
             if b != dfs_res[0][0]:
                 print
             sys.stdout.write("  ")
-        print "%s%s%s%s" % (BOLD, current, ENDC, RED + " (out of sync with " + (opt_remote or "origin") + ")" + ENDC if needs_sync_with_remote[b] else "")
+        print current_ul + (RED + " (out of sync with " + (opt_remote or "origin") + ")" + ENDC if needs_sync_with_remote[b] else "")
 
 
 # Main
@@ -577,19 +583,22 @@ def usage(c=None):
             The format of the definition file should be as follows:
 
             develop
-                adjust-reads-prec
-                    block-cancel-order
+                adjust-reads-prec PR #234
+                    block-cancel-order PR #235
                         change-table
                             drop-location-type
                 edit-margin-not-allowed
                     full-load-gatling
                 grep-errors-script
             master
-                hotfix/receipt-trigger
+                hotfix/receipt-trigger PR #236
 
             In the above example `develop' and `master' are roots of the branch tree.
             Branches `adjust-reads-prec', `edit-margin-not-allowed' and `grep-errors-script' are direct downstream branches for `develop'.
             `block-cancel-order' is a downstream branch of `adjust-reads-prec', `change-table' is a downstream branch of `block-cancel-order' and so on.
+
+            Every branch name can be followed (after a single space as a delimiter) by a custom annotation - a PR number in the above example.
+            The annotation doesn't influence the way `git machete` operates other than that those annotation are displayed in the output of the `status` subcommand.
 
             Tabs or any number of spaces can be used as indentation.
             It's only important to be consistent wrt. the sequence of characters used for indentation between all lines.
@@ -690,6 +699,7 @@ def usage(c=None):
               - red edge means that the downstream branch commit is NOT a direct descendant of the upstream branch commit (basically, the downstream branch is out of sync with its upstream branch),
               - yellow means that the opposite holds true, i.e. the downstream branch is in sync with its upstream branch, but the fork point of the downstream branch is a different commit than upstream branch tip,
               - green means that downstream branch is in sync with its upstream branch (so just like for yellow edge) and the fork point of downstream branch is EQUAL to the upstream branch tip.
+            * displays the custom annotations (see help on `format') next to each branch, if present;
             * optionally lists commits introduced on each branch if `--list-commits' is supplied.
 
             Note: in practice, both yellow and red edges suggest that the downstream branch should be updated against its upstream.

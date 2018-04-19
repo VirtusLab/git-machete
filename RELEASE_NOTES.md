@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 1.3.0
+
+- added: custom annotations (e.g. PR number) allowed next to branch name in the definition file
+
 ## New in git-machete 1.2.0
 
 - changed: allow to specify multiple branches when doing a `slide-out`
