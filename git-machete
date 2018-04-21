@@ -441,12 +441,13 @@ def infer_upstream2(b):
 
 
 def infer_tree():
-    global all_branches, managed_branches, roots, down_branches, up_branch, indent
+    global all_branches, managed_branches, roots, down_branches, up_branch, indent, annotations
     all_branches = managed_branches = branches()
     roots = []
     down_branches = {}
     up_branch = {}
     indent = "\t"
+    annotations = {}
 
     for b in all_branches:
         u = infer_upstream2(b)
@@ -560,7 +561,9 @@ def traverse():
     global up_branch, empty_line_status, managed_branches
 
     def flush():
-        global reflogs_cached, shas_cached
+        global adjusted_reflogs_cached, logs_cached, reflogs_cached, shas_cached
+        adjusted_reflogs_cached = {}
+        logs_cached = {}
         reflogs_cached = {}
         shas_cached = {}
 
@@ -848,11 +851,14 @@ def usage(c=None):
             Roughly equivalent to `git checkout $(git machete <direction>)'.
         """,
         "infer": """
-            Usage: git machete infer
+            Usage: git machete infer [-l|--list-commits]
 
-            Infers tree of branch dependencies using a heuristic based on reflog and asks whether to overwrite the existing definition file with the new inferred tree.
+            Infers and prints tree of branch dependencies using a heuristic based on reflog and asks whether to overwrite the existing definition file with the new inferred tree.
             If confirmed with a `y[es]` or `e[dit]` reply, backs up the existing file as `.git/machete~` and saves the new tree to the usual `.git/machete` file.
-            If the reply was `e[dit]`, additionally an editor is opened (as in `git machete edit` subcommand) after saving the new definition file.
+            If the reply was `e[dit]`, additionally an editor is opened (as in `git machete edit`) after saving the new definition file.
+
+            Options:
+            -l, --list-commits            When printing the inferred tree, additionally lists the messages of commits introduced on each branch (as for `git machete status`).
         """,
         "help": """
             Usage: git machete help [<command>]
@@ -1173,7 +1179,7 @@ try:
         param = check_optional_param(parse_options(args))
         usage(param)
     elif cmd == "infer":
-        expect_no_param(parse_options(args))
+        expect_no_param(parse_options(args, "l", ["list-commits"]))
         infer_tree()
     elif cmd == "list":
         allowed_values = "managed|slidable|unmanaged"
