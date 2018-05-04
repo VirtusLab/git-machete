@@ -265,8 +265,8 @@ def edit():
     return run_cmd(os.environ.get("EDITOR") or "vim", definition_file)
 
 
-def root_dir():
-    return popen_git("rev-parse", "--show-toplevel").strip()
+def get_git_dir():
+    return popen_git("rev-parse", "--git-dir").strip()
 
 
 def compute_sha_by_revision(rev):
@@ -803,11 +803,11 @@ try:
 
     if cmd not in ("format", "help"):
         try:
-            git_root = root_dir()
+            git_dir = get_git_dir()
         except MacheteException:
             raise MacheteException("Not a git repository")
 
-        definition_file = os.path.join(git_root, ".git", "machete")
+        definition_file = os.path.join(git_dir, "machete")
         if not os.path.exists(definition_file):
             open(definition_file, 'w').close()
 
