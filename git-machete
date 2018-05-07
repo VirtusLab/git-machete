@@ -325,9 +325,8 @@ branches_cached = None
 
 def fork_point(b):
     global branches_cached
-    expect_in_branch_tree(b)
-    if b not in up_branch:
-        raise MacheteException("Cannot find fork point for a root branch `%s'. Upstream branch must be defined." % b)
+    if not sha_by_revision(b):
+        raise MacheteException("Branch `%s' does not exist" % b)
 
     def valid_subject(gs):
         return not (
@@ -526,6 +525,8 @@ def usage(c=None):
             Runs `git diff' of the given branch tip against its fork point or, if none specified, of the current working tree against the fork point of the currently checked out branch.
             See `git machete help fork-point' for more details on meaning of the "fork point".
 
+            Since the result of the command does not depend on the tree of branch dependencies, the branch in question does not need to occur in the definition file.
+
             Options:
             -s, --stat    Makes `git machete diff' pass `--stat' option to `git diff', so that only summary (diffstat) will be output.
         """,
@@ -550,10 +551,11 @@ def usage(c=None):
 
             Outputs SHA of the fork point commit for the given branch (the commit at which the history of the branch actually diverges from history of any other branch).
             If no branch is specified, the currently checked out branch is assumed.
-            The given branch cannot be a root, i.e. its upstream (parent) branch must be defined.
 
             The returned fork point will be assumed as the default place where the history of the branch starts in the commands `diff', `reapply', `slide-out', and most notably `update'.
             In other words, `git machete' treats the fork point as the most recent commit in the log of the given branch that has NOT been introduced on that very branch, but on some other (usually earlier) branch.
+
+            Since the result of the command does not depend on the tree of branch dependencies, the branch in question does not need to occur in the definition file.
 
             Note: to determine this place in history, `git machete' uses a heuristics based on reflogs of local branches.
             This yields a correct result in typical cases, but there are some situations (esp. when some local branches have been deleted) where the fork point might not be determined correctly.
@@ -622,6 +624,8 @@ def usage(c=None):
             This is useful e.g. for squashing the commits on the current branch to make history more condensed before push to the remote.
             The chunk of the history to be rebased starts at the automatically computed fork point of the current branch by default, but can also be set explicitly by `--fork-point'.
             See `git machete help fork-point' for more details on meaning of the "fork point".
+
+            Since the result of the command does not depend on the tree of branch dependencies, the current reapplied branch does not need to occur in the definition file.
 
             Options:
             -f, --fork-point=<fork-point-commit>    Specifies the alternative fork point commit after which the rebased part of history is meant to start.
@@ -811,7 +815,7 @@ try:
         if not os.path.exists(definition_file):
             open(definition_file, 'w').close()
 
-    if cmd not in ("e", "edit", "file", "format", "help"):
+    if cmd not in ("d", "diff", "e", "edit", "file", "fork-point", "format", "help", "reapply"):
         read_definition_file()
 
     if cmd == "add":
