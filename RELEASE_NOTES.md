@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 1.4.0
+
+- added: `traverse` subcommand that semi-automatically syncs the entire branch dependency tree
+
 ## New in git-machete 1.3.1
 
 - added: extra checks for indent errors in the definition file 

@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '1.3.0'
+VERSION = '1.4.0'
 
 
 # Core utils
@@ -364,7 +364,7 @@ def fork_point(b):
 
 def branches(extra_option = None):
     lines = non_empty_lines(popen_git("branch", *([extra_option] if extra_option else [])))
-    # Filter out e.g. `* (no branch, rebasing ...)` entry during an ongoing rebase
+    # Filter out e.g. `* (no branch, rebasing ...)' entry during an ongoing rebase
     return [b[2:] for b in lines if not b.startswith("* (")]
 
 
@@ -428,6 +428,63 @@ def slide_out(bs):
     down_branches[u] = [(d if x == bs[0] else x) for x in down_branches[u]]
     save_definition_file()
     update(d, opt_down_fork_point or fork_point(d))
+
+
+def traverse():
+    global up_branch, empty_line_status, managed_branches
+
+    def flush():
+        global reflogs_cached, shas_cached
+        reflogs_cached = {}
+        shas_cached = {}
+
+    empty_line_status = True
+
+    def print_new_line(new_status):
+        global empty_line_status
+        if not empty_line_status:
+            print
+        empty_line_status = new_status
+
+    hb = head()
+    expect_in_managed_branches(hb)
+
+    for b in itertools.dropwhile(lambda x: x != hb, managed_branches):
+        u = up_branch.get(b)
+        needs_rebase = u and not (is_ancestor(u, b) and sha_by_refspec(u) == fork_point(b))
+        needs_push = check_needs_sync_with_remote(b)
+
+        if b != hb and (needs_rebase or needs_push):
+            print_new_line(False)
+            print >> sys.stderr, "Checking out %s%s%s" % (BOLD, b, ENDC)
+            go(b)
+            hb = b
+            print_new_line(False)
+            status()
+            print_new_line(True)
+        if needs_rebase:
+            print_new_line(False)
+            ans = raw_input("Rebase %s%s%s onto %s%s%s? [y/n/q] " % (BOLD, b, ENDC, BOLD, u, ENDC)).lower()
+            if ans in ('y', 'yes'):
+                update(b, fork_point(b))
+                flush()
+                needs_push = check_needs_sync_with_remote(b)
+            elif ans in ('q', 'quit'):
+                return
+        if needs_push:
+            remote = opt_remote or "origin"
+            print_new_line(False)
+            ans = raw_input("Push %s%s%s with force to %s%s%s? [y/n/q] " % (BOLD, b, ENDC, BOLD, remote, ENDC)).lower()
+            if ans in ('y', 'yes'):
+                run_git("push", "--force", "--", remote, b)
+                flush()
+            elif ans in ('q', 'quit'):
+                return
+    print_new_line(False)
+    status()
+    print
+    msg = "Reached branch %s%s%s which has no successor" if hb == managed_branches[-1] else "No successor of %s%s%s needs sync with upstream branch or remote"
+    print >> sys.stderr, msg % (BOLD, hb, ENDC) + "; nothing left to update"
 
 
 def check_needs_sync_with_remote(b):
@@ -525,6 +582,7 @@ def usage(c=None):
         "root": "Print name of the root branch of the tree where a branch is located",
         "slide-out": "Slide the current branch out and rebase its downstream (child) branch onto its upstream (parent) branch",
         "status": "Print tree-shaped status of branches listed in the definition file, including info on their sync with upstream branch and remote",
+        "traverse": "Walk through the tree and ask to rebase and/or push branches, one by one",
         "up": "Print name of the upstream branch for a branch (aka parent in the tree)",
         "update": "Rebase the current branch onto its upstream (parent) branch"
     }
@@ -608,7 +666,7 @@ def usage(c=None):
             `block-cancel-order' is a downstream branch of `adjust-reads-prec', `change-table' is a downstream branch of `block-cancel-order' and so on.
 
             Every branch name can be followed (after a single space as a delimiter) by a custom annotation - a PR number in the above example.
-            The annotation doesn't influence the way `git machete` operates other than that those annotation are displayed in the output of the `status` subcommand.
+            The annotation doesn't influence the way `git machete' operates other than that those annotation are displayed in the output of the `status' subcommand.
 
             Tabs or any number of spaces can be used as indentation.
             It's only important to be consistent wrt. the sequence of characters used for indentation between all lines.
@@ -684,13 +742,13 @@ def usage(c=None):
                             drop-location-type
 
             And now let's assume that `adjust-reads-prec' and later `block-cancel-order' were merged to develop.
-            After running `git machete slide-out adjust-reads-prec block-cancel-order` the tree will be reduced to:
+            After running `git machete slide-out adjust-reads-prec block-cancel-order' the tree will be reduced to:
 
             develop
                 change-table
                     drop-location-type
 
-            and `change-table` will be rebased onto develop (fork point for this rebase is configurable, see `-d' option below).
+            and `change-table' will be rebased onto develop (fork point for this rebase is configurable, see `-d' option below).
 
             Note: This command doesn't delete any branches from git, just removes them from the tree of branch dependencies.
 
@@ -718,6 +776,20 @@ def usage(c=None):
             Options:
             -l, --list-commits            Additionally lists the messages of commits introduced on each branch.
             -r, --remote=<remote-name>    Specifies the alternative name of the remote (`origin' by default).
+        """,
+        "traverse": """
+            Usage: git machete traverse [-l|--list-commits]
+
+            Traverses the branch dependency in pre-order (i.e. simply in the order as they occur in the definition file) and for each branch:
+            * if the branch is not in "green" sync with its parent/upstream - see help for `status':
+              - prompts the user whether to rebase the branch onto into its upstream branch - equivalent to `git machete update' with no options passed;
+            * if the branch is out of sync with its remote counterpart:
+              - prompts the user whether to push the branch (with `--force');
+            * if user confirmed either of those operations:
+              - prints the updated `status'.
+
+            Options:
+            -l, --list-commits    Additionally lists the messages of commits introduced on each branch when printing the status.
         """,
         "up": """
             Usage: git machete up [<branch>]
@@ -747,7 +819,7 @@ def usage(c=None):
         ("Modify and display the tree of branches", ["add", "edit", "file", "status"]),
         ("Navigate between the branches", ["down", "go", "next", "prev", "root", "up"]),
         ("Determine changes specific to the given branch", ["diff", "fork-point"]),
-        ("Update history in accordance with the tree of branches", ["reapply", "slide-out", "update"]),
+        ("Update history in accordance with the tree of branches", ["reapply", "slide-out", "traverse", "update"]),
         ("Tidy up git branches", ["prune-branches"])
     ]
     if c and c in short_docs:
@@ -933,6 +1005,9 @@ try:
     elif cmd in ("s", "status"):
         expect_no_param(parse_options(args, "lr:", ["list-commits", "remote="]))
         status()
+    elif cmd == "traverse":
+        expect_no_param(parse_options(args, "lr:", ["list-commits", "remote="]))
+        traverse()
     elif cmd == "up":
         param = check_optional_param(parse_options(args))
         print up(param or head())
