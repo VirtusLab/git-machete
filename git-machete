@@ -96,12 +96,12 @@ def run_git(git_cmd, *args, **kwargs):
     return status
 
 
-def popen_git(git_cmd, *args):
+def popen_git(git_cmd, *args, **kwargs):
     flat_cmd = " ".join(["git", git_cmd] + list(args))
     if opt_verbose:
         print >> sys.stderr, flat_cmd
     status, stdout = popen_cmd("git", git_cmd, *args)
-    if status != 0:
+    if not kwargs.get("allow_non_zero") and status != 0:
         raise MacheteException("`%s' returned %i" % (flat_cmd, status))
     return stdout
 
@@ -250,7 +250,7 @@ def add(b):
     if b in managed_branches:
         raise MacheteException("Branch `%s' already exists in the tree" % b)
 
-    if not sha_by_refspec(b):
+    if not is_a_branch(b):
         raise MacheteException("Branch `%s' does not exist" % b)
 
     onto = opt_onto
@@ -318,11 +318,12 @@ def sha_by_refspec(refspec):
     return shas_cached[refspec]
 
 
-def branch_by_refspec(refspec):
+def is_a_branch(refspec):
     try:
-        return popen_git("rev-parse", "--abbrev-ref", refspec).strip()
+        result = popen_git("rev-parse", "--abbrev-ref", refspec).strip()
+        return result != ''
     except MacheteException:
-        return None
+        return False
 
 
 def head():
@@ -357,7 +358,7 @@ branches_cached = None
 
 def fork_point(b):
     global branches_cached
-    if not sha_by_refspec(b):
+    if not is_a_branch(b):
         raise MacheteException("Branch `%s' does not exist" % b)
 
     def valid_subject(gs):
@@ -532,7 +533,7 @@ def get_remote_sync_status(b):
     if not remote:
         return UNTRACKED
     rb = remote + "/" + b
-    if not sha_by_refspec(rb):
+    if not is_a_branch(rb):
         return UNTRACKED_ON % b
     if is_ancestor(b, rb):
         return IN_SYNC_WITH_REMOTE if is_ancestor(rb, b) else BEHIND_REMOTE % remote
@@ -562,7 +563,7 @@ def status():
     commits_cached = {}
     fork_points_cached = {}
     for b, pfx in dfs_res:
-        if not sha_by_refspec(b):
+        if not is_a_branch(b):
             raise MacheteException("Branch `%s' does not exist" % b)
         if b in up_branch:
             needs_sync_with_up_branch[b] = not is_ancestor(up_branch[b], b)
@@ -572,10 +573,11 @@ def status():
                 fork_points_cached[b] = None
             if opt_list_commits:
                 commits_cached[b] = reversed(commits_between(fork_points_cached[b], b)) if fork_points_cached[b] else []
+        shas_cached[b] = compute_sha_by_refspec(b)
         remote_sync_status[b] = get_remote_sync_status(b)
 
     def edge_color(b):
-        return RED if needs_sync_with_up_branch[b] else (GREEN if sha_by_refspec(up_branch[b]) == fork_points_cached[b] else YELLOW)
+        return RED if needs_sync_with_up_branch[b] else (GREEN if shas_cached[up_branch[b]] == fork_points_cached[b] else YELLOW)
 
     def print_line_prefix(b, suffix):
         sys.stdout.write("  ")
@@ -604,7 +606,7 @@ def status():
             if b != dfs_res[0][0]:
                 print
             sys.stdout.write("  ")
-        print current_ul + (RED + " (out of sync with " + (opt_remote or "origin") + ")" + ENDC if remote_sync_status[b] else "")
+        print current_ul + remote_sync_status[b]
 
 
 # Main
