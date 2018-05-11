@@ -326,6 +326,13 @@ def is_a_branch(refspec):
         return False
 
 
+def remote_tracking_branch(b):
+    try:
+        return popen_git("rev-parse", "--abbrev-ref", b + "@{upstream}").strip()
+    except MacheteException:
+        return None
+
+
 def head():
     try:
         return popen_git("symbolic-ref", "--short", "--quiet", "HEAD").strip()
@@ -470,7 +477,8 @@ def traverse():
     for b in itertools.dropwhile(lambda x: x != hb, managed_branches):
         u = up_branch.get(b)
         needs_rebase = u and not (is_ancestor(u, b) and sha_by_refspec(u) == fork_point(b))
-        needs_push = needs_sync_with_remote(b)
+        s, remote = get_remote_sync_status(b)
+        needs_push = s in (UNTRACKED, AHEAD_OF_REMOTE, DIVERGED_FROM_REMOTE)
 
         if b != hb and (needs_rebase or needs_push):
             print_new_line(False)
@@ -486,15 +494,20 @@ def traverse():
             if ans in ('y', 'yes'):
                 update(b, fork_point(b))
                 flush()
-                needs_push = needs_sync_with_remote(b)
+                s, remote = get_remote_sync_status(b)
+                needs_push = s in (UNTRACKED, AHEAD_OF_REMOTE, DIVERGED_FROM_REMOTE)
             elif ans in ('q', 'quit'):
                 return
         if needs_push:
-            remote = opt_remote or "origin"
+            needs_force = s == DIVERGED_FROM_REMOTE
+            force_string = " with force" if needs_force else ""
+            target_string = " to %s%s%s" % (BOLD, remote, ENDC) if remote else ""
+
             print_new_line(False)
-            ans = raw_input("Push %s%s%s with force to %s%s%s? [y/n/q] " % (BOLD, b, ENDC, BOLD, remote, ENDC)).lower()
+            ans = raw_input("Push %s%s%s%s%s? [y/n/q] " % (BOLD, b, ENDC, force_string, target_string)).lower()
             if ans in ('y', 'yes'):
-                run_git("push", "--force", "--", remote, b)
+                params = (["--force"] if needs_force else []) + ([remote] if remote else ["--set-upstream"])
+                run_git("push", *params)
                 flush()
             elif ans in ('q', 'quit'):
                 return
@@ -505,40 +518,28 @@ def traverse():
     print >> sys.stderr, msg % (BOLD, hb, ENDC) + "; nothing left to update"
 
 
-def needs_sync_with_remote(b):
-    b_sha = sha_by_refspec(b)
-    if not b_sha:
-        raise MacheteException("Branch `%s' does not exist" % b)
-    if not remotes():
-        return False
-    remote = remote_for_branch(b)
-    b_origin_sha = sha_by_refspec(remote + "/" + b)
-    if not b_origin_sha:
-        return False
-    return b_sha != b_origin_sha
+NO_REMOTES = 0
+UNTRACKED = 1
+UNTRACKED_ON = 2
+IN_SYNC_WITH_REMOTE = 3
+BEHIND_REMOTE = 4
+AHEAD_OF_REMOTE = 5
+DIVERGED_FROM_REMOTE = 6
 
 
 def get_remote_sync_status(b):
-    NO_REMOTES = ""
-    UNTRACKED = YELLOW + " (untracked)" + ENDC
-    UNTRACKED_ON = RED + " (untracked on %s)" + ENDC
-    IN_SYNC_WITH_REMOTE = ""
-    BEHIND_REMOTE = RED + " (behind `%s')" + ENDC
-    AHEAD_OF_REMOTE = RED + " (ahead of `%s')" + ENDC
-    DIVERGED_FROM_REMOTE = RED + " (diverged from `%s')" + ENDC
-
     if not remotes():
-        return NO_REMOTES
+        return NO_REMOTES, None
     remote = remote_for_branch(b)
     if not remote:
-        return UNTRACKED
-    rb = remote + "/" + b
-    if not is_a_branch(rb):
-        return UNTRACKED_ON % b
+        return UNTRACKED, None
+    rb = remote_tracking_branch(b)
+    if not rb:
+        return UNTRACKED_ON, remote
     if is_ancestor(b, rb):
-        return IN_SYNC_WITH_REMOTE if is_ancestor(rb, b) else BEHIND_REMOTE % remote
+        return (IN_SYNC_WITH_REMOTE, remote) if is_ancestor(rb, b) else (BEHIND_REMOTE, remote)
     else:
-        return AHEAD_OF_REMOTE % remote if is_ancestor(rb, b) else DIVERGED_FROM_REMOTE % remote
+        return (AHEAD_OF_REMOTE, remote) if is_ancestor(rb, b) else (DIVERGED_FROM_REMOTE, remote)
 
 
 def commits_between(earlier, later):
@@ -563,8 +564,6 @@ def status():
     commits_cached = {}
     fork_points_cached = {}
     for b, pfx in dfs_res:
-        if not is_a_branch(b):
-            raise MacheteException("Branch `%s' does not exist" % b)
         if b in up_branch:
             needs_sync_with_up_branch[b] = not is_ancestor(up_branch[b], b)
             try:
@@ -606,7 +605,16 @@ def status():
             if b != dfs_res[0][0]:
                 print
             sys.stdout.write("  ")
-        print current_ul + remote_sync_status[b]
+        s, remote = remote_sync_status[b]
+        sync_status_string = {
+            NO_REMOTES: "",
+            UNTRACKED: YELLOW + " (untracked)" + ENDC,
+            IN_SYNC_WITH_REMOTE: "",
+            BEHIND_REMOTE: RED + " (behind %s)" % remote + ENDC,
+            AHEAD_OF_REMOTE: RED + " (ahead of %s)" % remote + ENDC,
+            DIVERGED_FROM_REMOTE: RED + " (diverged from %s)" % remote + ENDC
+        }
+        print current_ul + sync_status_string[s]
 
 
 # Main
