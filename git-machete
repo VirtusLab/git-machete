@@ -291,6 +291,23 @@ def compute_sha_by_refspec(refspec):
         return None
 
 
+remotes_cached = None
+
+
+def remotes():
+    global remotes_cached
+    if remotes_cached is None:
+        remotes_cached = non_empty_lines(popen_git("remote"))
+    return remotes_cached
+
+
+def remote_for_branch(b):
+    try:
+        return popen_git("config", "branch." + b + ".remote").rstrip()
+    except MacheteException:
+        return None
+
+
 shas_cached = {}
 
 
@@ -452,7 +469,7 @@ def traverse():
     for b in itertools.dropwhile(lambda x: x != hb, managed_branches):
         u = up_branch.get(b)
         needs_rebase = u and not (is_ancestor(u, b) and sha_by_refspec(u) == fork_point(b))
-        needs_push = check_needs_sync_with_remote(b)
+        needs_push = needs_sync_with_remote(b)
 
         if b != hb and (needs_rebase or needs_push):
             print_new_line(False)
@@ -468,7 +485,7 @@ def traverse():
             if ans in ('y', 'yes'):
                 update(b, fork_point(b))
                 flush()
-                needs_push = check_needs_sync_with_remote(b)
+                needs_push = needs_sync_with_remote(b)
             elif ans in ('q', 'quit'):
                 return
         if needs_push:
@@ -487,14 +504,40 @@ def traverse():
     print >> sys.stderr, msg % (BOLD, hb, ENDC) + "; nothing left to update"
 
 
-def check_needs_sync_with_remote(b):
+def needs_sync_with_remote(b):
     b_sha = sha_by_refspec(b)
     if not b_sha:
         raise MacheteException("Branch `%s' does not exist" % b)
-    b_origin_sha = sha_by_refspec((opt_remote or "origin") + "/" + b)
+    if not remotes():
+        return False
+    remote = remote_for_branch(b)
+    b_origin_sha = sha_by_refspec(remote + "/" + b)
     if not b_origin_sha:
         return False
     return b_sha != b_origin_sha
+
+
+def get_remote_sync_status(b):
+    NO_REMOTES = ""
+    UNTRACKED = YELLOW + " (untracked)" + ENDC
+    UNTRACKED_ON = RED + " (untracked on %s)" + ENDC
+    IN_SYNC_WITH_REMOTE = ""
+    BEHIND_REMOTE = RED + " (behind `%s')" + ENDC
+    AHEAD_OF_REMOTE = RED + " (ahead of `%s')" + ENDC
+    DIVERGED_FROM_REMOTE = RED + " (diverged from `%s')" + ENDC
+
+    if not remotes():
+        return NO_REMOTES
+    remote = remote_for_branch(b)
+    if not remote:
+        return UNTRACKED
+    rb = remote + "/" + b
+    if not sha_by_refspec(rb):
+        return UNTRACKED_ON % b
+    if is_ancestor(b, rb):
+        return IN_SYNC_WITH_REMOTE if is_ancestor(rb, b) else BEHIND_REMOTE % remote
+    else:
+        return AHEAD_OF_REMOTE % remote if is_ancestor(rb, b) else DIVERGED_FROM_REMOTE % remote
 
 
 def commits_between(earlier, later):
@@ -515,10 +558,12 @@ def status():
         dfs(u, [])
 
     needs_sync_with_up_branch = {}
-    needs_sync_with_remote = {}
+    remote_sync_status = {}
     commits_cached = {}
     fork_points_cached = {}
     for b, pfx in dfs_res:
+        if not sha_by_refspec(b):
+            raise MacheteException("Branch `%s' does not exist" % b)
         if b in up_branch:
             needs_sync_with_up_branch[b] = not is_ancestor(up_branch[b], b)
             try:
@@ -527,7 +572,7 @@ def status():
                 fork_points_cached[b] = None
             if opt_list_commits:
                 commits_cached[b] = reversed(commits_between(fork_points_cached[b], b)) if fork_points_cached[b] else []
-        needs_sync_with_remote[b] = check_needs_sync_with_remote(b)
+        remote_sync_status[b] = get_remote_sync_status(b)
 
     def edge_color(b):
         return RED if needs_sync_with_up_branch[b] else (GREEN if sha_by_refspec(up_branch[b]) == fork_points_cached[b] else YELLOW)
@@ -559,7 +604,7 @@ def status():
             if b != dfs_res[0][0]:
                 print
             sys.stdout.write("  ")
-        print current_ul + (RED + " (out of sync with " + (opt_remote or "origin") + ")" + ENDC if needs_sync_with_remote[b] else "")
+        print current_ul + (RED + " (out of sync with " + (opt_remote or "origin") + ")" + ENDC if remote_sync_status[b] else "")
 
 
 # Main
