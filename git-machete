@@ -831,12 +831,13 @@ def usage(c=None):
                                                               See also doc for `--fork-point' option for `git machete help reapply' and `git machete help update'.
         """,
         "status": """
-            Usage: git machete s[tatus] [-l|--list-commits] [-r|--remote=<remote-name>]
+            Usage: git machete s[tatus] [-l|--list-commits]
 
             Outputs a tree-shaped status of the branches listed in the definition file.
 
             Apart from simply ASCII-formatting the definition file, this also:
-            * prints `(out of sync with <remote>)' message for each branch that differs from its remote counterpart (in the `origin' remote by default);
+            * if any remotes are defined for the repository:
+              - prints `(untracked/ahead of <remote>/behind <remote>/diverged from <remote>)' message for each branch that is not in sync with its remote counterpart;
             * colors the edges between upstream (parent) and downstream (children) branches depending on whether downstream branch commit is a direct descendant of the upstream branch commit:
               - red edge means that the downstream branch commit is NOT a direct descendant of the upstream branch commit (basically, the downstream branch is out of sync with its upstream branch),
               - yellow means that the opposite holds true, i.e. the downstream branch is in sync with its upstream branch, but the fork point of the downstream branch is a different commit than upstream branch tip,
@@ -849,7 +850,6 @@ def usage(c=None):
 
             Options:
             -l, --list-commits            Additionally lists the messages of commits introduced on each branch.
-            -r, --remote=<remote-name>    Specifies the alternative name of the remote (`origin' by default).
         """,
         "traverse": """
             Usage: git machete traverse [-l|--list-commits]
@@ -928,7 +928,7 @@ def version():
 
 
 def parse_options(in_args, short_opts="", long_opts=[], gnu=True):
-    global cmd, opt_down_fork_point, opt_fork_point, opt_list_commits, opt_onto, opt_remote, opt_stat, opt_verbose
+    global cmd, opt_down_fork_point, opt_fork_point, opt_list_commits, opt_onto, opt_stat, opt_verbose
 
     fun = getopt.gnu_getopt if gnu else getopt.getopt
     opts, rest = fun(in_args, short_opts + "hv", long_opts + ['help', 'verbose', 'version'])
@@ -945,8 +945,6 @@ def parse_options(in_args, short_opts="", long_opts=[], gnu=True):
             opt_list_commits = True
         elif opt in ("-o", "--onto"):
             opt_onto = arg
-        elif opt in ("-r", "--remote"):
-            opt_remote = arg
         elif opt in ("-s", "--stat"):
             opt_stat = True
         elif opt in ("-v", "--verbose"):
@@ -992,7 +990,6 @@ try:
     opt_fork_point = None
     opt_list_commits = False
     opt_onto = None
-    opt_remote = None
     opt_stat = False
     opt_verbose = False
 

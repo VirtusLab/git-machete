@@ -10,8 +10,8 @@ _git_machete() {
 	diff_opts="-s --stat"
 	reapply_opts="-f --fork-point"
 	slide_out_opts="-d --down-fork-point"
-	status_opts="-l --list-commits -r --remote"
-	traverse_opts="-l --list-commits -r --remote"
+	status_opts="-l --list-commits"
+	traverse_opts="-l --list-commits"
 	update_opts="-f --fork-point"
 
 	prev="${COMP_WORDS[COMP_CWORD-1]}"
