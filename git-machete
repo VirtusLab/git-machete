@@ -262,12 +262,21 @@ def add(b):
     if b in managed_branches:
         raise MacheteException("Branch `%s' already exists in the tree" % b)
 
-    if not is_a_branch(b):
-        raise MacheteException("Branch `%s' does not exist" % b)
-
     onto = opt_onto
     if onto:
         expect_in_managed_branches(onto)
+
+    if not is_a_branch(b):
+        msg = "A branch `%s' does not exist. Create? " % b
+        if ask_if(msg):
+            if roots and not onto:
+                h = head_or_none()
+                if h and h in managed_branches:
+                    onto = h
+            create_branch(b)
+        else:
+            return
+
     if not roots:
         roots = [b]
     else:
@@ -360,15 +369,27 @@ def remote_tracking_branch(b):
         return None
 
 
-def head():
+def head_or_none():
     try:
         return popen_git("symbolic-ref", "--short", "--quiet", "HEAD").strip()
     except MacheteException:
+        return None
+
+
+def head():
+    res = head_or_none()
+    if res:
+        return res
+    else:
         raise MacheteException("Not currently on any branch")
 
 
 def is_ancestor(earlier, later):
     return run_git("merge-base", "--is-ancestor", earlier, later, allow_non_zero=True) == 0
+
+
+def create_branch(b):
+    return run_git("checkout", "-b", b)
 
 
 logs_cached = {}
@@ -701,10 +722,7 @@ def status():
                 sys.stdout.write(edge_color(p) + "│ " + ENDC)
         sys.stdout.write(edge_color(b) + suffix + ENDC)
 
-    try:
-        h = head()
-    except MacheteException:
-        h = None
+    h = head_or_none()
 
     for b, pfx in dfs_res:
         current = BOLD + b + ENDC + "  " + GREY + annotations[b] + ENDC if b in annotations else BOLD + b + ENDC
