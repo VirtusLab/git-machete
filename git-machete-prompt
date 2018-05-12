@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 
 _git_machete() {
-	cmds="add d diff down e edit file fork-point format g go help next prev prune-branches reapply root slide-out s status traverse up update"
+	cmds="add d diff down e edit file fork-point format g go help list next prev prune-branches reapply root slide-out s status traverse up update"
+	categories="managed slidable unmanaged"
+	directions="down next prev root up"
+
 	common_opts="-h --help -v --verbose"
 	add_opts="-o --onto"
 	diff_opts="-s --stat"
@@ -10,11 +13,10 @@ _git_machete() {
 	status_opts="-l --list-commits -r --remote"
 	traverse_opts="-l --list-commits -r --remote"
 	update_opts="-f --fork-point"
-	directions="down next prev root up"
 
 	prev="${COMP_WORDS[COMP_CWORD-1]}"
 
-	if [[ ${cur} == -* ]] ; then
+	if [[ "$cur" == -* ]] ; then
 		case "$prev" in
 			add) __gitcomp "$common_opts $add_opts" ;;
 			d|diff) __gitcomp "$common_opts $diff_opts" ;;
@@ -25,22 +27,29 @@ _git_machete() {
 			update) __gitcomp "$common_opts $update_opts" ;;
 			*) __gitcomp "$common_opts" ;;
 		esac
-	elif [[ ${#COMP_WORDS[@]} -eq 3 ]]; then
+	elif [[ "$COMP_CWORD" -eq 2 ]]; then
 		__gitcomp "$cmds"
 	else
 		case "$prev" in
-			g|go) __gitcomp "$directions" ;;
-			help|--help|-h) __gitcomp "$cmds" ;;
-			add|d|diff|down|fork-point|next|-o|--onto|prev|root|slide-out|up) __gitcomp_nl "$(__git_heads)" ;;
-			-r|--remote) __gitcomp_nl "$(__git_remotes)" ;;
-			-d|--down-fork-point|-f|--fork-point) __gitcomp_nl "$(__git_refs)" ;;
+			-d|--down-fork-point|-f|--fork-point) __gitcomp "$(__git_refs)" ;;
+			-h|--help) __gitcomp "$cmds" ;;
+			-o|--onto) __gitcomp_nl "$(git machete list managed)" ;;
 			*)
-			    if [[ "${COMP_WORDS[2]}" == slide-out ]]; then
-			        __gitcomp_nl "$(__git_heads)"
-			    else
-			        COMPREPLY=()
-			    fi
-			    ;;
+				case "${COMP_WORDS[2]}" in
+					add) __gitcomp_nl "$(git machete list unmanaged)" ;;
+					d|diff|fork-point) __gitcomp "$(__git_heads)" ;;
+					down|next|prev|root|up) __gitcomp_nl "$(git machete list managed)" ;;
+					g|go) __gitcomp "$directions" ;;
+					help) __gitcomp "$cmds" ;;
+					list) __gitcomp "$categories" ;;
+					slide-out)
+						if [[ "$COMP_CWORD" -eq 3 ]]; then
+							__gitcomp_nl "$(git machete list slidable)"
+						else
+							__gitcomp_nl "$(git machete next "${COMP_WORDS[COMP_CWORD-1]}" 2>/dev/null)"
+						fi ;;
+					*) COMPREPLY=() ;;
+				esac ;;
 		esac
 	fi
 }

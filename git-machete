@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '1.4.0'
+VERSION = '1.5.0'
 
 
 # Core utils
@@ -575,6 +575,7 @@ def usage(c=None):
         "format": "Format of the definition file",
         "go": "Check out the branch relative to the position of the current branch, accepts down/next/root/prev/up argument",
         "help": "Print this overview, or print detailed help for a specified command",
+        "list": "Lists all branches that fall into one of pre-defined categories (mostly for internal use)",
         "next": "Print name of the next branch for a branch",
         "prev": "Print name of the previous branch for a branch",
         "prune-branches": "Remove local branches that are not in the definition file",
@@ -682,6 +683,17 @@ def usage(c=None):
             Usage: git machete help [<command>]
 
             Prints a summary of this tool, or a detailed info on a command if defined.
+        """,
+        "list": """
+            Usage: git machete list <category>
+            where <category> is one of: managed, slidable, unmanaged
+
+            Lists all branches that fall into one of the specified categories:
+            - `managed': all branches that appear in the definition file,
+            - `slidable': all managed branches that have exactly one upstream and one downstream (i.e. the ones that can be slid out with `slide-out' subcommand),
+            - `unmanaged': all local branches that don't appear in the definition file.
+
+            This command is generally not meant for a day-to-day use, it's mostly needed for the sake of branch name completion in shell.
         """,
         "next": """
             Usage: git machete next [<branch>]
@@ -816,7 +828,7 @@ def usage(c=None):
     }
     groups = [
         ("General topics", ["format", "help"]),
-        ("Modify and display the tree of branches", ["add", "edit", "file", "status"]),
+        ("Modify and display the tree of branches", ["add", "edit", "file", "list", "status"]),
         ("Navigate between the branches", ["down", "go", "next", "prev", "root", "up"]),
         ("Determine changes specific to the given branch", ["diff", "fork-point"]),
         ("Update history in accordance with the tree of branches", ["reapply", "slide-out", "traverse", "update"]),
@@ -901,11 +913,11 @@ def check_optional_param(in_args):
         return in_args[0]
 
 
-def check_required_param(in_args):
+def check_required_param(in_args, allowed_values):
     if not in_args or len(in_args) > 1:
-        raise MacheteException("`%s' requires exactly one argument" % cmd)
+        raise MacheteException("`%s' expects an argument: one of %s" % (cmd, allowed_values))
     elif not in_args[0]:
-        raise MacheteException("Argument to `%s' cannot be empty" % cmd)
+        raise MacheteException("Argument to `%s' cannot be empty; expected one of %s" % (cmd, allowed_values))
     elif in_args[0][0] == "-":
         raise MacheteException("option `%s' not recognized" % in_args[0])
     else:
@@ -963,7 +975,8 @@ try:
     elif cmd == "format":
         usage("format")
     elif cmd in ("g", "go"):
-        param = check_required_param(parse_options(args))
+        allowed_values = "d[own]|n[ext]|p[rev]|r[oot]|u[p]"
+        param = check_required_param(parse_options(args), allowed_values)
         h = head()
         if param in ("d", "down"):
             dest = down(h, pick_mode=True)
@@ -976,12 +989,24 @@ try:
         elif param in ("u", "up"):
             dest = up(h)
         else:
-            raise MacheteException("Usage: git machete go <d[own]|n[ext]|p[rev]|r[oot]|u[p]>")
+            raise MacheteException("Usage: git machete go " + allowed_values)
         if dest != h:
             go(dest)
     elif cmd == "help":
         param = check_optional_param(parse_options(args))
         usage(param)
+    elif cmd == "list":
+        allowed_values = "managed|slidable|unmanaged"
+        param = check_required_param(parse_options(args), allowed_values)
+        if param == "managed":
+            res = managed_branches
+        elif param == "slidable":
+            res = [b for b in managed_branches if b in up_branch and b in down_branches and len(down_branches[b]) == 1]
+        elif param == "unmanaged":
+            res = excluding(branches(), managed_branches)
+        else:
+            raise MacheteException("Usage: git machete list " + allowed_values)
+        print "\n".join(res),
     elif cmd == "next":
         param = check_optional_param(parse_options(args))
         print next_branch(param or head())

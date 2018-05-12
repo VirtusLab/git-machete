@@ -1,5 +1,10 @@
 # Release notes
 
+## New in git-machete 1.5.0
+
+- improved: branch name completion in shell
+- added: `list` subcommand (mostly for internal use of branch name completion)
+
 ## New in git-machete 1.4.0
 
 - added: `traverse` subcommand that semi-automatically syncs the entire branch dependency tree
