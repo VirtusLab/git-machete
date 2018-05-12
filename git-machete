@@ -478,9 +478,9 @@ def traverse():
         u = up_branch.get(b)
         needs_rebase = u and not (is_ancestor(u, b) and sha_by_refspec(u) == fork_point(b))
         s, remote = get_remote_sync_status(b)
-        needs_push = s in (UNTRACKED, AHEAD_OF_REMOTE, DIVERGED_FROM_REMOTE)
+        needs_remote_sync = s in (UNTRACKED, AHEAD_OF_REMOTE, BEHIND_REMOTE, DIVERGED_FROM_REMOTE)
 
-        if b != hb and (needs_rebase or needs_push):
+        if b != hb and (needs_rebase or needs_remote_sync):
             print_new_line(False)
             print >> sys.stderr, "Checking out %s%s%s" % (BOLD, b, ENDC)
             go(b)
@@ -495,22 +495,29 @@ def traverse():
                 update(b, fork_point(b))
                 flush()
                 s, remote = get_remote_sync_status(b)
-                needs_push = s in (UNTRACKED, AHEAD_OF_REMOTE, DIVERGED_FROM_REMOTE)
+                needs_remote_sync = s in (UNTRACKED, AHEAD_OF_REMOTE, BEHIND_REMOTE, DIVERGED_FROM_REMOTE)
             elif ans in ('q', 'quit'):
                 return
-        if needs_push:
-            needs_force = s == DIVERGED_FROM_REMOTE
-            force_string = " with force" if needs_force else ""
-            target_string = " to %s%s%s" % (BOLD, remote, ENDC) if remote else ""
+        if needs_remote_sync:
+            if s in (UNTRACKED, AHEAD_OF_REMOTE, DIVERGED_FROM_REMOTE):
+                needs_force = s == DIVERGED_FROM_REMOTE
+                force_string = " with force" if needs_force else ""
+                target_string = " to %s%s%s" % (BOLD, remote, ENDC) if remote else ""
 
-            print_new_line(False)
-            ans = raw_input("Push %s%s%s%s%s? [y/n/q] " % (BOLD, b, ENDC, force_string, target_string)).lower()
-            if ans in ('y', 'yes'):
-                params = (["--force"] if needs_force else []) + ([remote] if remote else ["--set-upstream"])
-                run_git("push", *params)
-                flush()
-            elif ans in ('q', 'quit'):
-                return
+                print_new_line(False)
+                ans = raw_input("Push %s%s%s%s%s? [y/n/q] " % (BOLD, b, ENDC, force_string, target_string)).lower()
+                if ans in ('y', 'yes'):
+                    params = (["--force"] if needs_force else []) + ([remote] if remote else ["--set-upstream"])
+                    run_git("push", *params)
+                    flush()
+                elif ans in ('q', 'quit'):
+                    return
+            elif s == BEHIND_REMOTE:
+                ans = raw_input("Pull %s%s%s from %s%s%s? [y/n/q] " % (BOLD, b, ENDC, BOLD, remote, ENDC)).lower()
+                if ans in ('y', 'yes'):
+                    run_git("pull", remote, b)
+                elif ans in ('q', 'quit'):
+                    return
     print_new_line(False)
     status()
     print
