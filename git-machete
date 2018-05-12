@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '1.5.0'
+VERSION = '2.0.0'
 
 
 # Core utils
@@ -96,12 +96,12 @@ def run_git(git_cmd, *args, **kwargs):
     return status
 
 
-def popen_git(git_cmd, *args, **kwargs):
+def popen_git(git_cmd, *args):
     flat_cmd = " ".join(["git", git_cmd] + list(args))
     if opt_verbose:
         print >> sys.stderr, flat_cmd
     status, stdout = popen_cmd("git", git_cmd, *args)
-    if not kwargs.get("allow_non_zero") and status != 0:
+    if status != 0:
         raise MacheteException("`%s' returned %i" % (flat_cmd, status))
     return stdout
 
@@ -118,7 +118,7 @@ def read_definition_file():
     global definition_file, indent, managed_branches, down_branches, up_branch, roots, annotations
 
     with open(definition_file) as f:
-        ldr = [l.rstrip() for l in f.readlines() if not l.isspace()]
+        lines = [l.rstrip() for l in f.readlines() if not l.isspace()]
 
     managed_branches = []
     down_branches = {}
@@ -130,7 +130,7 @@ def read_definition_file():
     last_depth = -1
     hint = "Edit the definition file manually with `git machete edit'"
 
-    for idx, l in enumerate(ldr):
+    for idx, l in enumerate(lines):
         pfx = "".join(itertools.takewhile(str.isspace, l))
         if pfx and not indent:
             indent = pfx
@@ -141,6 +141,9 @@ def read_definition_file():
             annotations[b] = b_a[1]
         if b in managed_branches:
             raise MacheteException("%s, line %i: branch `%s' re-appears in the tree definition. %s" %
+                                   (definition_file, idx + 1, b, hint))
+        if not is_a_branch(b):
+            raise MacheteException("%s, line %i: branch `%s' does not exist. %s" %
                                    (definition_file, idx + 1, b, hint))
         managed_branches += [b]
 
@@ -284,13 +287,6 @@ def get_git_dir():
     return popen_git("rev-parse", "--git-dir").strip()
 
 
-def compute_sha_by_refspec(refspec):
-    try:
-        return popen_git("rev-parse", "--verify", "--quiet", refspec).rstrip()
-    except MacheteException:
-        return None
-
-
 remotes_cached = None
 
 
@@ -308,6 +304,13 @@ def remote_for_branch(b):
         return None
 
 
+def compute_sha_by_refspec(refspec):
+    try:
+        return popen_git("rev-parse", "--verify", "--quiet", refspec).rstrip()
+    except MacheteException:
+        return None
+
+
 shas_cached = {}
 
 
@@ -318,12 +321,22 @@ def sha_by_refspec(refspec):
     return shas_cached[refspec]
 
 
-def is_a_branch(refspec):
+def get_is_a_branch(refspec):
     try:
-        result = popen_git("rev-parse", "--abbrev-ref", refspec).strip()
+        result = popen_git("branch", "--list", refspec).strip()
         return result != ''
     except MacheteException:
         return False
+
+
+is_a_branch_cached = {}
+
+
+def is_a_branch(refspec):
+    global is_a_branch_cached
+    if refspec not in is_a_branch_cached:
+        is_a_branch_cached[refspec] = get_is_a_branch(refspec)
+    return is_a_branch_cached[refspec]
 
 
 def remote_tracking_branch(b):
@@ -478,7 +491,8 @@ def traverse():
         u = up_branch.get(b)
         needs_rebase = u and not (is_ancestor(u, b) and sha_by_refspec(u) == fork_point(b))
         s, remote = get_remote_sync_status(b)
-        needs_remote_sync = s in (UNTRACKED, AHEAD_OF_REMOTE, BEHIND_REMOTE, DIVERGED_FROM_REMOTE)
+        statuses_to_sync = (UNTRACKED, UNTRACKED_ON, AHEAD_OF_REMOTE, BEHIND_REMOTE, DIVERGED_FROM_REMOTE)
+        needs_remote_sync = s in statuses_to_sync
 
         if b != hb and (needs_rebase or needs_remote_sync):
             print_new_line(False)
@@ -495,11 +509,17 @@ def traverse():
                 update(b, fork_point(b))
                 flush()
                 s, remote = get_remote_sync_status(b)
-                needs_remote_sync = s in (UNTRACKED, AHEAD_OF_REMOTE, BEHIND_REMOTE, DIVERGED_FROM_REMOTE)
+                needs_remote_sync = s in statuses_to_sync
             elif ans in ('q', 'quit'):
                 return
         if needs_remote_sync:
-            if s in (UNTRACKED, AHEAD_OF_REMOTE, DIVERGED_FROM_REMOTE):
+            if s == BEHIND_REMOTE:
+                ans = raw_input("Pull %s%s%s from %s%s%s? [y/n/q] " % (BOLD, b, ENDC, BOLD, remote, ENDC)).lower()
+                if ans in ('y', 'yes'):
+                    run_git("pull", remote, b)
+                elif ans in ('q', 'quit'):
+                    return
+            else:
                 needs_force = s == DIVERGED_FROM_REMOTE
                 force_string = " with force" if needs_force else ""
                 target_string = " to %s%s%s" % (BOLD, remote, ENDC) if remote else ""
@@ -510,12 +530,6 @@ def traverse():
                     params = (["--force"] if needs_force else []) + ([remote] if remote else ["--set-upstream"])
                     run_git("push", *params)
                     flush()
-                elif ans in ('q', 'quit'):
-                    return
-            elif s == BEHIND_REMOTE:
-                ans = raw_input("Pull %s%s%s from %s%s%s? [y/n/q] " % (BOLD, b, ENDC, BOLD, remote, ENDC)).lower()
-                if ans in ('y', 'yes'):
-                    run_git("pull", remote, b)
                 elif ans in ('q', 'quit'):
                     return
     print_new_line(False)
@@ -616,6 +630,7 @@ def status():
         sync_status_string = {
             NO_REMOTES: "",
             UNTRACKED: YELLOW + " (untracked)" + ENDC,
+            UNTRACKED_ON: YELLOW + " (untracked on %s)" % remote + ENDC,
             IN_SYNC_WITH_REMOTE: "",
             BEHIND_REMOTE: RED + " (behind %s)" % remote + ENDC,
             AHEAD_OF_REMOTE: RED + " (ahead of %s)" % remote + ENDC,
@@ -837,7 +852,7 @@ def usage(c=None):
 
             Apart from simply ASCII-formatting the definition file, this also:
             * if any remotes are defined for the repository:
-              - prints `(untracked/ahead of <remote>/behind <remote>/diverged from <remote>)' message for each branch that is not in sync with its remote counterpart;
+              - prints `(untracked [on <remote>]/ahead of <remote>/behind <remote>/diverged from <remote>)' message for each branch that is not in sync with its remote counterpart;
             * colors the edges between upstream (parent) and downstream (children) branches depending on whether downstream branch commit is a direct descendant of the upstream branch commit:
               - red edge means that the downstream branch commit is NOT a direct descendant of the upstream branch commit (basically, the downstream branch is out of sync with its upstream branch),
               - yellow means that the opposite holds true, i.e. the downstream branch is in sync with its upstream branch, but the fork point of the downstream branch is a different commit than upstream branch tip,
@@ -855,12 +870,17 @@ def usage(c=None):
             Usage: git machete traverse [-l|--list-commits]
 
             Traverses the branch dependency in pre-order (i.e. simply in the order as they occur in the definition file) and for each branch:
-            * if the branch is not in "green" sync with its parent/upstream - see help for `status':
+            * if the branch is not in "green" sync with its parent/upstream (see help for `status'):
               - prompts the user whether to rebase the branch onto into its upstream branch - equivalent to `git machete update' with no options passed;
-            * if the branch is out of sync with its remote counterpart:
-              - prompts the user whether to push the branch (with `--force');
-            * if user confirmed either of those operations:
+            * if the branch is not tracked on a remote, ahead its remote counterpart or diverged from the counterpart:
+              - prompts the user whether to push the branch (possibly with `--force' if the branches diverged);
+            * alternatively, if the branch is behind its remote counterpart:
+              - prompts the user whether to pull the branch;
+            * and finally, if user confirmed any of those operations:
               - prints the updated `status'.
+
+            Note that even if the traverse flow is stopped (typically due to rebase conflicts), running `git machete traverse' after the rebase is done will pick up the job where it stopped.
+            In other words, there is no need to explicitly ask to "continue" as it is the case with e.g. `git rebase'.
 
             Options:
             -l, --list-commits    Additionally lists the messages of commits introduced on each branch when printing the status.
