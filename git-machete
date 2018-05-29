@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.0.0'
+VERSION = '1.5.0'
 
 
 # Core utils
@@ -517,6 +517,8 @@ def traverse():
                 ans = raw_input("Pull %s%s%s from %s%s%s? [y/n/q] " % (BOLD, b, ENDC, BOLD, remote, ENDC)).lower()
                 if ans in ('y', 'yes'):
                     run_git("pull", remote, b)
+                    flush()
+                    print
                 elif ans in ('q', 'quit'):
                     return
             else:
