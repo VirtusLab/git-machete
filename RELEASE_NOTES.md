@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 1.3.1
+
+- added: extra checks for indent errors in the definition file 
+
 ## New in git-machete 1.3.0
 
 - added: custom annotations (e.g. PR number) allowed next to branch name in the definition file

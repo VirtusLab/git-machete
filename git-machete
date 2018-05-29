@@ -144,10 +144,20 @@ def read_definition_file():
                                    (definition_file, idx + 1, b, hint))
         managed_branches += [b]
 
-        depth = len(pfx) / len(indent) if pfx else 0
+        if pfx:
+            depth = len(pfx) / len(indent)
+            if pfx != indent * depth:
+                mapping = { " ": "<SPACE>", "\t": "<TAB>" }
+                pfx_expanded = "".join(mapping[c] for c in pfx)
+                indent_expanded = "".join(mapping[c] for c in indent)
+                raise MacheteException("%s, line %i: invalid indent `%s`, expected a multiply of `%s`. %s" %
+                                       (definition_file, idx + 1, pfx_expanded, indent_expanded, hint))
+        else:
+            depth = 0
+
         if depth > last_depth + 1:
-            raise MacheteException("%s, line %i: too much indent for the branch `%s'. %s" %
-                                   (definition_file, idx + 1, b, hint))
+            raise MacheteException("%s, line %i: too much indent (level %s, expected at most %s) for the branch `%s'. %s" %
+                                   (definition_file, idx + 1, depth, last_depth + 1, b, hint))
         last_depth = depth
 
         at_depth[depth] = b
