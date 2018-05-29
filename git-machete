@@ -545,7 +545,7 @@ def prune_branches():
     if all_to_prune:
         for b in all_to_prune:
             is_merged = b in merged_bs
-            msg = "Delete branch %s`%s'%s (%s to HEAD)? [y/n] " % (BOLD, b, ENDC, "merged" if is_merged else "unmerged")
+            msg = "Delete branch %s%s%s (%s to HEAD)? [y/n] " % (BOLD, b, ENDC, "merged" if is_merged else "unmerged")
             if not ask_if(msg):
                 continue
             run_git("branch", "-d" if is_merged else "-D", b)
