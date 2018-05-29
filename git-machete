@@ -281,7 +281,7 @@ def add(b):
         roots = [b]
     else:
         if not onto:
-            u = infer_upstream2(b)
+            u = infer_upstream(b, cond=lambda u: True)
             if u and u in managed_branches:
                 msg = "The upstream (parent) branch for `%s' has been inferred to be `%s'.\nAdd `%s' onto `%s'? [y/n] " % (b, u, b, u)
                 if ask_if(msg):
@@ -434,34 +434,7 @@ def adjusted_reflog(b):
 all_branches = None
 
 
-def infer_upstream(b):
-    global all_branches
-    if not all_branches:
-        all_branches = branches()
-
-    start_point, start_point_subject = reflog(b)[-1]
-    for c in log(start_point):
-        for ob in all_branches:
-            if ob != b and c in adjusted_reflog(ob):
-                return ob
-    return None
-
-
-def infer_upstream2(b):
-    global all_branches
-    if not all_branches:
-        all_branches = branches()
-
-    # TODO why it works? ;)
-    start_point, start_point_subject = (filter(lambda (c, gs): gs.startswith('commit: '), reflog(b))[-1:] or [reflog(b)[-1]])[0]
-    for c in log(start_point):
-        for ob in all_branches:
-            if ob != b and c in adjusted_reflog(ob):
-                return ob
-    return None
-
-
-def infer_upstream_gen(b):
+def infer_upstream(b, cond):
     global all_branches
     if not all_branches:
         all_branches = branches()
@@ -469,12 +442,19 @@ def infer_upstream_gen(b):
     commits = list(reversed([c for (c, gs) in reflog(b) if gs.startswith('commit: ')]))
     start_points = commits or [reflog(b)[-1][0]]
 
-    for start_point in start_points:
-        print "    Start point candidate for `%s' = `%s'" % (b, start_point)
-        for c in log(start_point):
-            for ob in all_branches:
-                if ob != b and c in adjusted_reflog(ob):
-                    yield ob
+    def candidates():
+        for start_point in start_points:
+            print "    Start point candidate for `%s' = `%s'" % (b, start_point)
+            for c in log(start_point):
+                for ob in all_branches:
+                    if ob != b and c in adjusted_reflog(ob):
+                        yield ob
+
+    for u in candidates():
+        if cond(u):
+            return u
+        print "  Rejected parent candidate for `%s': `%s'" % (b, u)
+    return None
 
 
 def infer_tree():
@@ -493,15 +473,8 @@ def infer_tree():
             root_of[b] = get_root_of(root_of[b])
         return root_of[b]
 
-    def final_upstream(b):
-        for u in infer_upstream_gen(b):
-            if get_root_of(u) != b:
-                return u
-            print "  Rejected parent candidate for `%s': `%s'" % (b, u)
-        return None
-
     for b in all_branches:
-        u = final_upstream(b)
+        u = infer_upstream(b, cond=lambda u: get_root_of(u) != b)
         if u:
             print "Parent of `%s' = `%s'" % (b, u)
             up_branch[b] = u
@@ -513,7 +486,7 @@ def infer_tree():
         else:
             roots += [b]
 
-    print BOLD + 'Inferred tree:' + ENDC
+    print BOLD + 'Inferred tree:\n' + ENDC
     status()
     print
     msg = "Save the above tree to `%s'? The existing definition file will be backed up as `%s~' (y[es]/e[dit]/n[o]) " % (definition_file, definition_file)
