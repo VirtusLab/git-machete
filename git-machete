@@ -466,13 +466,15 @@ def infer_upstream_gen(b):
     if not all_branches:
         all_branches = branches()
 
-    # TODO why it works? ;)
-    start_point, start_point_subject = (filter(lambda (c, gs): gs.startswith('commit: '), reflog(b))[-1:] or [reflog(b)[-1]])[0]
-    print "Start point for `%s' = `%s'" % (b, start_point)
-    for c in log(start_point):
-        for ob in all_branches:
-            if ob != b and c in adjusted_reflog(ob):
-                yield ob
+    commits = list(reversed([c for (c, gs) in reflog(b) if gs.startswith('commit: ')]))
+    start_points = commits or [reflog(b)[-1][0]]
+
+    for start_point in start_points:
+        print "    Start point candidate for `%s' = `%s'" % (b, start_point)
+        for c in log(start_point):
+            for ob in all_branches:
+                if ob != b and c in adjusted_reflog(ob):
+                    yield ob
 
 
 def infer_tree():
