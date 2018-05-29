@@ -267,7 +267,7 @@ def add(b):
         expect_in_managed_branches(onto)
 
     if not is_a_branch(b):
-        msg = "A branch `%s' does not exist. Create? " % b
+        msg = "A branch `%s' does not exist. Create? [y/n] " % b
         if ask_if(msg):
             if roots and not onto:
                 h = head_or_none()
@@ -279,24 +279,27 @@ def add(b):
 
     if not roots:
         roots = [b]
+        print "Added branch `%s' as a new root" % b
     else:
         if not onto:
             u = infer_upstream(b, cond=lambda u: True)
             if u and u in managed_branches:
-                msg = "The upstream (parent) branch for `%s' has been inferred to be `%s'.\nAdd `%s' onto `%s'? [y/n] " % (b, u, b, u)
+                msg = "The upstream (parent) branch for `%s' has been inferred to `%s'.\nAdd `%s' onto `%s'? [y/n] " % (b, u, b, u)
                 if ask_if(msg):
                     onto = u
                 else:
                     return
             else:
-                raise MacheteException("Could not automatically infer upstream (parent) branch. "
-                                       "Specify the desired upstream branch for `%s' with `--onto'" % b)
+                raise MacheteException("Could not automatically infer upstream (parent) branch for `%s'."
+                                       "Specify the desired upstream branch with `--onto'" % b)
 
         up_branch[b] = onto
         if onto in down_branches:
             down_branches[onto].append(b)
         else:
             down_branches[onto] = [b]
+        print "Added branch `%s' onto `%s'" % (b, onto)
+
     save_definition_file()
 
 
