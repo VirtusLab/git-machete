@@ -453,12 +453,26 @@ def infer_upstream2(b):
         all_branches = branches()
 
     # TODO why it works? ;)
-    start_point, start_point_subject = (filter(lambda (c, gs): gs.startswith('commit: '), reflog(b))[:1] or [reflog(b)[-1]])[0]
+    start_point, start_point_subject = (filter(lambda (c, gs): gs.startswith('commit: '), reflog(b))[-1:] or [reflog(b)[-1]])[0]
     for c in log(start_point):
         for ob in all_branches:
             if ob != b and c in adjusted_reflog(ob):
                 return ob
     return None
+
+
+def infer_upstream_gen(b):
+    global all_branches
+    if not all_branches:
+        all_branches = branches()
+
+    # TODO why it works? ;)
+    start_point, start_point_subject = (filter(lambda (c, gs): gs.startswith('commit: '), reflog(b))[-1:] or [reflog(b)[-1]])[0]
+    print "Start point for `%s' = `%s'" % (b, start_point)
+    for c in log(start_point):
+        for ob in all_branches:
+            if ob != b and c in adjusted_reflog(ob):
+                yield ob
 
 
 def infer_tree():
@@ -470,10 +484,26 @@ def infer_tree():
     indent = "\t"
     annotations = {}
 
+    root_of = dict((b, b) for b in all_branches)
+
+    def get_root_of(b):
+        if b != root_of[b]:
+            root_of[b] = get_root_of(root_of[b])
+        return root_of[b]
+
+    def final_upstream(b):
+        for u in infer_upstream_gen(b):
+            if get_root_of(u) != b:
+                return u
+            print "  Rejected parent candidate for `%s': `%s'" % (b, u)
+        return None
+
     for b in all_branches:
-        u = infer_upstream2(b)
+        u = final_upstream(b)
         if u:
+            print "Parent of `%s' = `%s'" % (b, u)
             up_branch[b] = u
+            root_of[b] = u
             if u in down_branches:
                 down_branches[u].append(b)
             else:
