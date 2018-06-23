@@ -197,7 +197,7 @@ def render_tree():
     return total
 
 
-def backup_definition_file():
+def back_up_definition_file():
     with open(definition_file + "~", "w") as backup:
         backup.write(open(definition_file).read())
 
@@ -492,13 +492,17 @@ def infer_tree():
     print BOLD + 'Inferred tree:\n' + ENDC
     status()
     print
-    msg = "Save the above tree to `%s'? The existing definition file will be backed up as `%s~' (y[es]/e[dit]/n[o]) " % (definition_file, definition_file)
+    do_backup = os.path.exists(definition_file)
+    backup_msg = ("The existing definition file will be backed up as `%s~' " % definition_file) if do_backup else ""
+    msg = "Save the above tree to `%s'? %s(y[es]/e[dit]/n[o]) " % (definition_file, backup_msg)
     reply = raw_input(msg).lower()
     if reply in ('y', 'yes'):
-        backup_definition_file()
+        if do_backup:
+            back_up_definition_file()
         save_definition_file()
     elif reply in ('e', 'edit'):
-        backup_definition_file()
+        if do_backup:
+            back_up_definition_file()
         save_definition_file()
         edit()
 
@@ -880,7 +884,7 @@ def usage(c=None):
             Usage: git machete infer [-l|--list-commits]
 
             Infers and prints tree of branch dependencies using a heuristic based on reflog and asks whether to overwrite the existing definition file with the new inferred tree.
-            If confirmed with a `y[es]` or `e[dit]` reply, backs up the existing file as `.git/machete~` and saves the new tree to the usual `.git/machete` file.
+            If confirmed with a `y[es]` or `e[dit]` reply, backs up the current definition file as `.git/machete~` (if exists) and saves the new tree under the usual `.git/machete` path.
             If the reply was `e[dit]`, additionally an editor is opened (as in `git machete edit`) after saving the new definition file.
 
             Options:
@@ -1157,7 +1161,7 @@ try:
             raise MacheteException("Not a git repository")
 
         definition_file = os.path.join(git_dir, "machete")
-        if not os.path.exists(definition_file):
+        if cmd != "infer" and not os.path.exists(definition_file):
             open(definition_file, 'w').close()
 
     if cmd not in ("d", "diff", "e", "edit", "file", "fork-point", "format", "help", "infer", "reapply"):
