@@ -1,5 +1,10 @@
 # Release notes
 
+## New in git-machete 2.1.2
+
+- fixed: some initial `git` commands were skipped from logs when `--verbose` flag was passed
+- fixed: faster validation of branches included in the definition file
+
 ## New in git-machete 2.1.1
 
 - fixed: Makefile commands for install/uninstall

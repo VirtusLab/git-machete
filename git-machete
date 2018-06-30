@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.1.1'
+VERSION = '2.1.2'
 
 
 # Core utils
@@ -146,8 +146,8 @@ def read_definition_file():
         if b in managed_branches:
             raise MacheteException("%s, line %i: branch `%s' re-appears in the tree definition. %s" %
                                    (definition_file, idx + 1, b, hint))
-        if not is_a_branch(b):
-            raise MacheteException("%s, line %i: branch `%s' does not exist. %s" %
+        if b not in get_all_branches():
+            raise MacheteException("%s, line %i: `%s' is not a local branch. %s" %
                                    (definition_file, idx + 1, b, hint))
         managed_branches += [b]
 
@@ -266,9 +266,9 @@ def add(b):
     if onto:
         expect_in_managed_branches(onto)
 
-    if not is_a_branch(b):
+    if b not in get_all_branches():
         out_of = ("`"  + onto + "'") if onto else "the current HEAD"
-        msg = "A branch `%s' does not exist. Create (out of %s)? [y/n] " % (b, out_of)
+        msg = "A local branch `%s' does not exist. Create (out of %s)? [y/n] " % (b, out_of)
         if ask_if(msg):
             if roots and not onto:
                 h = head_or_none()
@@ -351,24 +351,6 @@ def sha_by_refspec(refspec):
     return shas_cached[refspec]
 
 
-def get_is_a_branch(refspec):
-    try:
-        result = popen_git("branch", "--list", refspec).strip()
-        return result != ''
-    except MacheteException:
-        return False
-
-
-is_a_branch_cached = {}
-
-
-def is_a_branch(refspec):
-    global is_a_branch_cached
-    if refspec not in is_a_branch_cached:
-        is_a_branch_cached[refspec] = get_is_a_branch(refspec)
-    return is_a_branch_cached[refspec]
-
-
 def remote_tracking_branch(b):
     try:
         return popen_git("rev-parse", "--abbrev-ref", b + "@{upstream}").strip()
@@ -438,7 +420,14 @@ def adjusted_reflog(b):
     return adjusted_reflogs_cached[b]
 
 
-all_branches = None
+all_branches_cached = None
+
+
+def get_all_branches():
+    global all_branches_cached
+    if all_branches_cached is None:
+        all_branches_cached = branches()
+    return all_branches_cached
 
 
 def infer_upstream(b, filter=lambda u: True):
@@ -452,7 +441,7 @@ def infer_upstream(b, filter=lambda u: True):
     def candidates():
         for start_point in start_points:
             for c in log(start_point):
-                for ob in all_branches:
+                for ob in get_all_branches():
                     if ob != b and c in adjusted_reflog(ob):
                         yield ob
 
@@ -463,8 +452,8 @@ def infer_upstream(b, filter=lambda u: True):
 
 
 def infer_tree():
-    global all_branches, managed_branches, roots, down_branches, up_branch, indent, annotations
-    all_branches = managed_branches = branches()
+    global managed_branches, roots, down_branches, up_branch, indent, annotations
+    all_branches = managed_branches = get_all_branches()
     roots = []
     down_branches = {}
     up_branch = {}
@@ -509,13 +498,10 @@ def infer_tree():
 
 
 def fork_point(b):
-    global all_branches
-    if not is_a_branch(b):
-        raise MacheteException("Branch `%s' does not exist" % b)
+    if b not in get_all_branches():
+        raise MacheteException("`%s' is not a local branch" % b)
 
-    if not all_branches:
-        all_branches = branches()
-    other_branches = excluding(all_branches, [b])
+    other_branches = excluding(get_all_branches(), [b])
     adjusted_reflogs_other_branches = sum(map(adjusted_reflog, other_branches), [])
     for h in log(b):
         if h in adjusted_reflogs_other_branches:
@@ -547,16 +533,15 @@ def diff(branch):
 
 
 def prune_branches():
-    merged_bs = excluding(branches("--merged"), managed_branches)
-    unmerged_bs = excluding(branches("--no-merged"), managed_branches)
+    merged_branches = branches("--merged")
+    unmanaged_branches = excluding(get_all_branches(), managed_branches)
     h = head_or_none()
-    all_to_prune = merged_bs + unmerged_bs
-    if h and h in all_to_prune:
-        all_to_prune = excluding(all_to_prune, [h])
+    if h and h in unmanaged_branches:
+        unmanaged_branches = excluding(unmanaged_branches, [h])
         print "Skipping current branch `%s'" % h
-    if all_to_prune:
-        for b in all_to_prune:
-            is_merged = b in merged_bs
+    if unmanaged_branches:
+        for b in unmanaged_branches:
+            is_merged = b in merged_branches
             msg = "Delete branch %s%s%s (%s to HEAD)? [y/n/q] " % (BOLD, b, ENDC, "merged" if is_merged else "unmerged")
             ans = raw_input(msg).lower()
             if ans in ('y', 'yes'):
@@ -1204,35 +1189,40 @@ try:
         if cmd != "infer" and not os.path.exists(definition_file):
             open(definition_file, 'w').close()
 
-    if cmd not in ("d", "diff", "e", "edit", "file", "fork-point", "format", "help", "infer", "reapply"):
-        read_definition_file()
-
     directions = "d[own]|n[ext]|p[rev]|r[oot]|u[p]"
     if cmd == "add":
         param = check_optional_param(parse_options(args, "o:", ["onto="]))
+        read_definition_file()
         add(param or head())
     elif cmd == "anno":
         params = parse_options(args)
+        read_definition_file()
         if params:
             annotate(params)
         else:
             print_annotation()
     elif cmd in ("d", "diff"):
         param = check_optional_param(parse_options(args, "s", ["stat"]))
+        # No need to read definition file.
         diff(param) # passing None if not specified
     elif cmd in ("e", "edit"):
         expect_no_param(parse_options(args))
+        # No need to read definition file.
         edit()
     elif cmd == "file":
         expect_no_param(parse_options(args))
+        # No need to read definition file.
         print definition_file
     elif cmd == "fork-point":
         param = check_optional_param(parse_options(args))
+        # No need to read definition file.
         print fork_point(param or head())
     elif cmd == "format":
+        # No need to read definition file.
         usage("format")
     elif cmd in ("g", "go"):
         param = check_required_param(parse_options(args), directions)
+        read_definition_file()
         h = head()
         if param in ("d", "down"):
             dest = down(h, pick_mode=True)
@@ -1250,9 +1240,11 @@ try:
             go(dest)
     elif cmd == "help":
         param = check_optional_param(parse_options(args))
+        # No need to read definition file.
         usage(param)
     elif cmd == "infer":
         expect_no_param(parse_options(args, "l", ["list-commits"]))
+        # No need to read definition file.
         infer_tree()
     elif cmd == "list":
         allowed_values = "managed|slidable|slidable-after <branch>|unmanaged"
@@ -1269,6 +1261,7 @@ try:
             raise MacheteException("`%s %s' requires an extra <branch> argument" % (cmd, in_args[0]))
 
         param = in_args[0]
+        read_definition_file()
         if param == "managed":
             res = managed_branches
         elif param == "slidable":
@@ -1284,14 +1277,17 @@ try:
         print "\n".join(res),
     elif cmd == "prune-branches":
         expect_no_param(parse_options(args))
+        read_definition_file()
         prune_branches()
     elif cmd == "reapply":
         args1 = parse_options(args, "f:", ["fork-point="])
         expect_no_param(args1, ". Use `-f' or `--fork-point' to specify the fork point commit")
+        # No need to read definition file.
         h = head()
         reapply(h, opt_fork_point or fork_point(h))
     elif cmd == "show":
         param = check_required_param(parse_options(args), directions)
+        read_definition_file()
         h = head()
         if param in ("d", "down"):
             res = down(h, pick_mode=False)
@@ -1308,16 +1304,20 @@ try:
         print res
     elif cmd == "slide-out":
         params = parse_options(args, "d:", ["down-fork-point="])
+        read_definition_file()
         slide_out(params or [head()])
     elif cmd in ("s", "status"):
         expect_no_param(parse_options(args, "lr:", ["list-commits", "remote="]))
+        read_definition_file()
         status()
     elif cmd == "traverse":
         expect_no_param(parse_options(args, "lr:", ["list-commits", "remote="]))
+        read_definition_file()
         traverse()
     elif cmd == "update":
         args1 = parse_options(args, "f:", ["fork-point="])
         expect_no_param(args1, ". Use `-f' or `--fork-point' to specify the fork point commit")
+        read_definition_file()
         h = head()
         update(h, opt_fork_point or fork_point(h))
     else:
