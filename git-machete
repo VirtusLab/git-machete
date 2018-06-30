@@ -267,7 +267,7 @@ def add(b):
         expect_in_managed_branches(onto)
 
     if not is_a_branch(b):
-        msg = "A branch `%s' does not exist. Create? [y/n] " % b
+        msg = "A branch `%s' does not exist. Create (out of the current HEAD)? [y/n] " % b
         if ask_if(msg):
             if roots and not onto:
                 h = head_or_none()
@@ -284,14 +284,14 @@ def add(b):
         if not onto:
             u = infer_upstream(b, cond=lambda u: True)
             if u and u in managed_branches:
-                msg = "The upstream (parent) branch for `%s' has been inferred to `%s'.\nAdd `%s' onto `%s'? [y/n] " % (b, u, b, u)
+                msg = "Add `%s' onto the inferred upstream (parent) branch `%s'? [y/n] " % (b, u)
                 if ask_if(msg):
                     onto = u
                 else:
                     return
             else:
-                raise MacheteException("Could not automatically infer upstream (parent) branch for `%s'."
-                                       "Specify the desired upstream branch with `--onto'" % b)
+                raise MacheteException("Could not automatically infer upstream (parent) branch for `%s'. "
+                                       "Specify the desired upstream branch with `--onto' or add manually with `git machete edit'" % b)
 
         up_branch[b] = onto
         if onto in down_branches:
@@ -447,7 +447,6 @@ def infer_upstream(b, cond):
 
     def candidates():
         for start_point in start_points:
-            print "    Start point candidate for `%s' = `%s'" % (b, start_point)
             for c in log(start_point):
                 for ob in all_branches:
                     if ob != b and c in adjusted_reflog(ob):
@@ -456,7 +455,6 @@ def infer_upstream(b, cond):
     for u in candidates():
         if cond(u):
             return u
-        print "  Rejected parent candidate for `%s': `%s'" % (b, u)
     return None
 
 
@@ -479,7 +477,6 @@ def infer_tree():
     for b in all_branches:
         u = infer_upstream(b, cond=lambda u: get_root_of(u) != b)
         if u:
-            print "Parent of `%s' = `%s'" % (b, u)
             up_branch[b] = u
             root_of[b] = u
             if u in down_branches:
