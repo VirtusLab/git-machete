@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.0.0'
+VERSION = '2.0.1'
 
 
 # Core utils
@@ -549,14 +549,20 @@ def diff(branch):
 def prune_branches():
     merged_bs = excluding(branches("--merged"), managed_branches)
     unmerged_bs = excluding(branches("--no-merged"), managed_branches)
+    h = head_or_none()
     all_to_prune = merged_bs + unmerged_bs
+    if h and h in all_to_prune:
+        all_to_prune = excluding(all_to_prune, [h])
+        print "Skipping current branch `%s'" % h
     if all_to_prune:
         for b in all_to_prune:
             is_merged = b in merged_bs
-            msg = "Delete branch %s%s%s (%s to HEAD)? [y/n] " % (BOLD, b, ENDC, "merged" if is_merged else "unmerged")
-            if not ask_if(msg):
-                continue
-            run_git("branch", "-d" if is_merged else "-D", b)
+            msg = "Delete branch %s%s%s (%s to HEAD)? [y/n/q] " % (BOLD, b, ENDC, "merged" if is_merged else "unmerged")
+            ans = raw_input(msg).lower()
+            if ans in ('y', 'yes'):
+                run_git("branch", "-d" if is_merged else "-D", b)
+            elif ans in ('q', 'quit'):
+                break
     else:
         print >> sys.stderr, "No branches to delete"
 
@@ -1236,7 +1242,7 @@ try:
             raise MacheteException("Usage: git machete list " + allowed_values)
         print "\n".join(res),
     elif cmd == "prune-branches":
-        expect_no_param(parse_options(args, "f", ["force"]))
+        expect_no_param(parse_options(args))
         prune_branches()
     elif cmd == "reapply":
         args1 = parse_options(args, "f:", ["fork-point="])
