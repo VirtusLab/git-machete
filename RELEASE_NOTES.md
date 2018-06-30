@@ -1,5 +1,14 @@
 # Release notes
 
+## New in git-machete 2.0.0
+
+- added: `infer` subcommand
+- added: `show` subcommand
+- improved: `add` command behavior, including inference of desired upstream when possible
+- improved: remote sync-ness information displayed by `status` (now corresponds to how git tracks remote counterparts)
+- removed: `down`/`next`/`prev`/`root`/`up` subcommands
+- removed: `-r`/`--remote` option to `status` and `traverse` subcommands
+
 ## New in git-machete 1.5.0
 
 - improved: branch name completion in shell
