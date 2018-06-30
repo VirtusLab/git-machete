@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.0.1'
+VERSION = '2.1.0'
 
 
 # Core utils
@@ -784,11 +784,31 @@ def status():
         print current_ul + sync_status_string[s]
 
 
+def annotate(words):
+    global annotations
+    h = head()
+    expect_in_managed_branches(h)
+    if h in annotations and words == ['']:
+        del annotations[h]
+    else:
+        annotations[h] = " ".join(words)
+    save_definition_file()
+
+
+def print_annotation():
+    global annotations
+    h = head()
+    expect_in_managed_branches(h)
+    if h in annotations:
+        print annotations[h]
+
+
 # Main
 
 def usage(c=None):
     short_docs = {
         "add": "Add a branch to the tree of branch dependencies",
+        "anno": "Manage custom annotations",
         "diff": "Diff current working directory or a given branch against a computed fork point",
         "edit": "Edit the definition file",
         "file": "Print path of the definition file",
@@ -821,6 +841,20 @@ def usage(c=None):
 
             Options:
             -o, --onto=<target-upstream-branch>    Specifies the target parent branch to add the new branch onto.
+        """,
+        "anno": """
+            Usage: git machete anno [<annotation text>]
+
+            If invoked without any argument, prints out the custom annotation for the current branch.
+            
+            If invoked with a single empty string argument, like:
+            $ git machete anno ''
+            clears the annotation set the current branch.
+            
+            In any other case, sets the annotation for the current branch to the given argument.
+            If multiple arguments are passed to the command, they are concatenated with single spaces.
+
+            Note: the same effect can be always achieved by manually editing the definition file.
         """,
         "diff": """
             Usage: git machete d[iff] [-s|--stat] [<branch>]
@@ -883,6 +917,7 @@ def usage(c=None):
 
             Every branch name can be followed (after a single space as a delimiter) by a custom annotation - a PR number in the above example.
             The annotation doesn't influence the way `git machete' operates other than that those annotation are displayed in the output of the `status' subcommand.
+            Also see help for the `anno' subcommand.
 
             Tabs or any number of spaces can be used as indentation.
             It's only important to be consistent wrt. the sequence of characters used for indentation between all lines.
@@ -1050,7 +1085,7 @@ def usage(c=None):
     }
     groups = [
         ("General topics", ["file", "format", "help"]),
-        ("Build, display and modify the tree of branch dependencies", ["add", "edit", "infer", "status"]),
+        ("Build, display and modify the tree of branch dependencies", ["add", "anno", "edit", "infer", "status"]),
         ("List, checkout and delete branches", ["go", "list", "prune-branches", "show"]),
         ("Determine changes specific to the given branch", ["diff", "fork-point"]),
         ("Update git history in accordance with the tree of branch dependencies", ["reapply", "slide-out", "traverse", "update"])
@@ -1176,6 +1211,12 @@ try:
     if cmd == "add":
         param = check_optional_param(parse_options(args, "o:", ["onto="]))
         add(param or head())
+    elif cmd == "anno":
+        params = parse_options(args)
+        if params:
+            annotate(params)
+        else:
+            print_annotation()
     elif cmd in ("d", "diff"):
         param = check_optional_param(parse_options(args, "s", ["stat"]))
         diff(param) # passing None if not specified

@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.1.0
+
+- added: `anno` subcommand
+
 ## New in git-machete 2.0.1
 
 - fixed: `prune-branches` crashing when the currently checked-out branch was unmanaged
