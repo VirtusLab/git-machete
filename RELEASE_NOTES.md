@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.1.1
+
+- fixed: Makefile commands for install/uninstall
+
 ## New in git-machete 2.1.0
 
 - added: `anno` subcommand
