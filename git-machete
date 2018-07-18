@@ -114,7 +114,7 @@ def popen_git(git_cmd, *args):
 
 def expect_in_managed_branches(b):
     if b not in managed_branches:
-        raise MacheteException("Branch `%s' not found in the tree. "
+        raise MacheteException("Branch `%s' not found in the tree of branch dependencies. "
                                "Use `git machete add %s' or `git machete edit'" % (b, b))
 
 
@@ -260,20 +260,21 @@ def add(b):
     global roots
 
     if b in managed_branches:
-        raise MacheteException("Branch `%s' already exists in the tree" % b)
+        raise MacheteException("Branch `%s' already exists in the tree of branch dependencies" % b)
 
     onto = opt_onto
     if onto:
         expect_in_managed_branches(onto)
 
     if not is_a_branch(b):
-        msg = "A branch `%s' does not exist. Create (out of the current HEAD)? [y/n] " % b
+        out_of = ("`"  + onto + "'") if onto else "the current HEAD"
+        msg = "A branch `%s' does not exist. Create (out of %s)? [y/n] " % (b, out_of)
         if ask_if(msg):
             if roots and not onto:
                 h = head_or_none()
                 if h and h in managed_branches:
                     onto = h
-            create_branch(b)
+            create_branch(b, onto)
         else:
             return
 
@@ -283,15 +284,18 @@ def add(b):
     else:
         if not onto:
             u = infer_upstream(b)
-            if u and u in managed_branches:
+            if not u:
+                raise MacheteException("Could not automatically infer upstream (parent) branch for `%s'.\n"
+                                       "Specify the desired upstream branch with `--onto' or edit the definition file manually with `git machete edit'" % b)
+            elif u not in managed_branches:
+                raise MacheteException("Inferred upstream (parent) branch for `%s' is `%s', but `%s' does not exist in the tree of branch dependencies.\n"
+                                       "Specify other upstream branch with `--onto' or edit the definition file manually with `git machete edit'" % (b, u, u))
+            else:
                 msg = "Add `%s' onto the inferred upstream (parent) branch `%s'? [y/n] " % (b, u)
                 if ask_if(msg):
                     onto = u
                 else:
                     return
-            else:
-                raise MacheteException("Could not automatically infer upstream (parent) branch for `%s'. "
-                                       "Specify the desired upstream branch with `--onto' or add manually with `git machete edit'" % b)
 
         up_branch[b] = onto
         if onto in down_branches:
@@ -391,8 +395,8 @@ def is_ancestor(earlier, later):
     return run_git("merge-base", "--is-ancestor", earlier, later, allow_non_zero=True) == 0
 
 
-def create_branch(b):
-    return run_git("checkout", "-b", b)
+def create_branch(b, out_of):
+    return run_git("checkout", "-b", b, *([out_of] if out_of else []))
 
 
 logs_cached = {}
@@ -486,7 +490,7 @@ def infer_tree():
         else:
             roots += [b]
 
-    print BOLD + 'Inferred tree:\n' + ENDC
+    print BOLD + 'Inferred tree of branch dependencies:\n' + ENDC
     status()
     print
     do_backup = os.path.exists(definition_file)
@@ -763,7 +767,7 @@ def status():
 
 def usage(c=None):
     short_docs = {
-        "add": "Add a branch to the tree",
+        "add": "Add a branch to the tree of branch dependencies",
         "diff": "Diff current working directory or a given branch against a computed fork point",
         "down": "Print name(s) of the downstream branch(es) for a branch (aka its children in the tree)",
         "edit": "Edit the definition file",
@@ -781,7 +785,7 @@ def usage(c=None):
         "root": "Print name of the root branch of the tree where a branch is located",
         "slide-out": "Slide the current branch out and rebase its downstream (child) branch onto its upstream (parent) branch",
         "status": "Print formatted tree of branch dependencies, including info on their sync with upstream branch and with remote",
-        "traverse": "Walk through the tree and ask to rebase and/or push branches, one by one",
+        "traverse": "Walk through the tree of branch dependencies and ask to rebase and/or push branches, one by one",
         "up": "Print name of the upstream branch for a branch (aka parent in the tree)",
         "update": "Rebase the current branch onto its upstream (parent) branch"
     }
@@ -790,12 +794,13 @@ def usage(c=None):
             Usage: git machete add [-o|--onto=<target-upstream-branch>] [<branch>]
 
             Adds the given branch (or the current branch, if none specified) to the definition file.
-            If the definition file is empty, the branch will be added as the first root of the tree.
+            If the definition file is empty, the branch will be added as the first root of the tree of branch dependencies.
             Otherwise, the desired upstream (parent) branch can be specified with `--onto`.
             This option is not mandatory, however; if skipped, git machete will try to automatically infer the target upstream.
             If the upstream branch can be inferred, the user will be presented with inferred branch and asked to confirm.
+            Also, if the given branch does not exist, user will be asked whether it should be created.
 
-            Note: the same effect can be always achieved by manually editing the definition file.
+            Note: the same effect (except branch creation) can be always achieved by manually editing the definition file.
 
             Options:
             -o, --onto=<target-upstream-branch>    Specifies the target parent branch to add the new branch onto.
@@ -1106,7 +1111,7 @@ def parse_options(in_args, short_opts="", long_opts=[], gnu=True):
     return rest
 
 
-def expect_no_param(in_args, extra_explanation = ''):
+def expect_no_param(in_args, extra_explanation=''):
     if len(in_args) > 0:
         raise MacheteException("No argument expected for `%s'%s" % (cmd, extra_explanation))
 
