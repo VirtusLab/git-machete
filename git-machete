@@ -431,10 +431,6 @@ def get_all_branches():
 
 
 def infer_upstream(b, filter=lambda u: True):
-    global all_branches
-    if not all_branches:
-        all_branches = branches()
-
     commits = list(reversed([c for (c, gs) in reflog(b) if gs.startswith('commit: ')]))
     start_points = commits or [reflog(b)[-1][0]]
 
@@ -533,14 +529,16 @@ def diff(branch):
 
 
 def prune_branches():
-    merged_branches = branches("--merged")
-    unmanaged_branches = excluding(get_all_branches(), managed_branches)
+    branches_to_prune = excluding(get_all_branches(), managed_branches)
     h = head_or_none()
-    if h and h in unmanaged_branches:
-        unmanaged_branches = excluding(unmanaged_branches, [h])
+    if h and h in branches_to_prune:
+        branches_to_prune = excluding(branches_to_prune, [h])
         print "Skipping current branch `%s'" % h
-    if unmanaged_branches:
-        for b in unmanaged_branches:
+    if branches_to_prune:
+        merged_branches = branches("--merged")
+        merged_branches_to_prune = [b for b in branches_to_prune if b in merged_branches]
+        unmerged_branches_to_prune = [b for b in branches_to_prune if b not in merged_branches]
+        for b in merged_branches_to_prune + unmerged_branches_to_prune:
             is_merged = b in merged_branches
             msg = "Delete branch %s%s%s (%s to HEAD)? [y/n/q] " % (BOLD, b, ENDC, "merged" if is_merged else "unmerged")
             ans = raw_input(msg).lower()
