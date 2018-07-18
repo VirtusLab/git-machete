@@ -282,7 +282,7 @@ def add(b):
         print "Added branch `%s' as a new root" % b
     else:
         if not onto:
-            u = infer_upstream(b, cond=lambda u: True)
+            u = infer_upstream(b)
             if u and u in managed_branches:
                 msg = "Add `%s' onto the inferred upstream (parent) branch `%s'? [y/n] " % (b, u)
                 if ask_if(msg):
@@ -437,7 +437,7 @@ def adjusted_reflog(b):
 all_branches = None
 
 
-def infer_upstream(b, cond):
+def infer_upstream(b, filter=lambda u: True):
     global all_branches
     if not all_branches:
         all_branches = branches()
@@ -453,7 +453,7 @@ def infer_upstream(b, cond):
                         yield ob
 
     for u in candidates():
-        if cond(u):
+        if filter(u):
             return u
     return None
 
@@ -475,7 +475,7 @@ def infer_tree():
         return root_of[b]
 
     for b in all_branches:
-        u = infer_upstream(b, cond=lambda u: get_root_of(u) != b)
+        u = infer_upstream(b, filter=lambda u: get_root_of(u) != b)
         if u:
             up_branch[b] = u
             root_of[b] = u
