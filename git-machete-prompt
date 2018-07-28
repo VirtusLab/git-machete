@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 _git_machete() {
-	cmds="add anno d diff e edit file fork-point format g go help infer list prune-branches reapply show slide-out s status traverse update"
+	cmds="add anno d diff e edit file fork-point format g go help infer list log prune-branches reapply show slide-out s status traverse update"
 	categories="managed slidable slidable-after unmanaged"
 	directions="down first last next prev root up"
 
@@ -39,7 +39,7 @@ _git_machete() {
 			*)
 				case "${COMP_WORDS[2]}" in
 					add) __gitcomp_nl "$(git machete list unmanaged)" ;;
-					d|diff|fork-point) __gitcomp "$(__git_heads)" ;;
+					d|diff|fork-point|log) __gitcomp "$(__git_heads)" ;;
 					g|go|show) __gitcomp "$directions" ;;
 					help) __gitcomp "$cmds" ;;
 					list)

@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.2.0'
+VERSION = '2.3.0'
 
 
 # Core utils
@@ -399,7 +399,7 @@ def create_branch(b, out_of):
 logs_cached = {}
 
 
-def log(refspec):
+def log_shas(refspec):
     global logs_cached
     if refspec not in logs_cached:
         logs_cached[refspec] = non_empty_lines(popen_git("log", "--format=%H", refspec, "--"))
@@ -451,7 +451,7 @@ def infer_upstream(b, filter=lambda u: True):
 
     def candidates():
         for start_point in start_points:
-            for c in log(start_point):
+            for c in log_shas(start_point):
                 for ob in get_all_branches():
                     if ob != b and c in adjusted_reflog(ob):
                         yield ob
@@ -514,7 +514,7 @@ def fork_point(b):
 
     other_branches = excluding(get_all_branches(), [b])
     adjusted_reflogs_other_branches = sum(map(adjusted_reflog, other_branches), [])
-    for h in log(b):
+    for h in log_shas(b):
         if h in adjusted_reflogs_other_branches:
             return h
     raise MacheteException("Cannot find fork point for branch `%s'" % b)
@@ -541,6 +541,10 @@ def reapply(branch, fork_commit):
 def diff(branch):
     params = (["--stat"] if opt_stat else []) + [fork_point(branch if branch else head())] + ([branch] if branch else []) + ["--"]
     run_git("diff", *params)
+
+
+def log(branch):
+    run_git("log", "^" + fork_point(branch), branch)
 
 
 def prune_branches():
@@ -807,7 +811,7 @@ def usage(c=None):
     short_docs = {
         "add": "Add a branch to the tree of branch dependencies",
         "anno": "Manage custom annotations",
-        "diff": "Diff current working directory or a given branch against a computed fork point",
+        "diff": "Diff current working directory or a given branch against its computed fork point",
         "edit": "Edit the definition file",
         "file": "Print path of the definition file",
         "fork-point": "Print SHA of the computed fork point commit of a branch",
@@ -815,7 +819,8 @@ def usage(c=None):
         "go": "Check out the branch relative to the position of the current branch, accepts down/next/root/prev/up argument",
         "help": "Print this overview, or print detailed help for a specified command",
         "infer": "Automatically infer tree of branch dependencies",
-        "list": "Lists all branches that fall into one of pre-defined categories (mostly for internal use)",
+        "list": "List all branches that fall into one of pre-defined categories (mostly for internal use)",
+        "log": "Log the part of history specific to the given branch",
         "prune-branches": "Remove local branches that are not in the definition file",
         "reapply": "Rebase the current branch onto its computed fork point",
         "show": "Print name(s) of the branch(es) relative to the position of the current branch, accepts down/next/root/prev/up argument",
@@ -955,6 +960,14 @@ def usage(c=None):
 
             This command is generally not meant for a day-to-day use, it's mostly needed for the sake of branch name completion in shell.
         """,
+        "log": """
+            Usage: git machete log [<branch>]
+
+            Runs `git log' for the range of commits from tip of the given branch (or current branch, if none specified) back to its fork point.
+            See `git machete help fork-point' for more details on meaning of the "fork point".
+
+            Since the result of the command does not depend on the tree of branch dependencies, the branch in question does not need to occur in the definition file.
+        """,
         "prune-branches": """
             Usage: git machete prune-branches
 
@@ -1088,7 +1101,7 @@ def usage(c=None):
         ("General topics", ["file", "format", "help"]),
         ("Build, display and modify the tree of branch dependencies", ["add", "anno", "edit", "infer", "status"]),
         ("List, checkout and delete branches", ["go", "list", "prune-branches", "show"]),
-        ("Determine changes specific to the given branch", ["diff", "fork-point"]),
+        ("Determine changes specific to the given branch", ["diff", "fork-point", "log"]),
         ("Update git history in accordance with the tree of branch dependencies", ["reapply", "slide-out", "traverse", "update"])
     ]
     if c and c in short_docs:
@@ -1299,6 +1312,10 @@ try:
         else:
             raise MacheteException("Usage: git machete list " + allowed_values)
         print "\n".join(res),
+    elif cmd == "log":
+        param = check_optional_param(parse_options(args))
+        # No need to read definition file.
+        log(param or head())
     elif cmd == "prune-branches":
         expect_no_param(parse_options(args))
         read_definition_file()

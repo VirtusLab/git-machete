@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.3.0
+
+- added: `log` subcommand
+
 ## New in git-machete 2.2.0
 
 - added: `first` and `last` params to `go` and `show` subcommands
