@@ -591,6 +591,21 @@ def slide_out(bs):
     update(d, opt_down_fork_point or fork_point(d))
 
 
+def slidable():
+    return [b for b in managed_branches if b in up_branch and b in down_branches and len(down_branches[b]) == 1]
+
+
+def slidable_after(b):
+    if b in up_branch:
+        dbs = down_branches.get(b)
+        if dbs and len(dbs) == 1:
+            d = dbs[0]
+            ddbs = down_branches.get(d)
+            if ddbs and len(ddbs) == 1:
+                return [d]
+    return []
+
+
 def traverse():
     global up_branch, empty_line_status, managed_branches
 
@@ -890,11 +905,12 @@ def usage(c=None):
         """,
         "list": """
             Usage: git machete list <category>
-            where <category> is one of: managed, slidable, unmanaged
+            where <category> is one of: managed, slidable, slidable-after <branch>, unmanaged
 
             Lists all branches that fall into one of the specified categories:
             - `managed': all branches that appear in the definition file,
             - `slidable': all managed branches that have exactly one upstream and one downstream (i.e. the ones that can be slid out with `slide-out' subcommand),
+            - `slidable-after <branch>': the downstream branch of the <branch>, if it exists and is the only downstream of <branch> (i.e. the one that can be slid out immediately following <branch>),
             - `unmanaged': all local branches that don't appear in the definition file.
 
             This command is generally not meant for a day-to-day use, it's mostly needed for the sake of branch name completion in shell.
@@ -1192,12 +1208,28 @@ try:
         expect_no_param(parse_options(args, "l", ["list-commits"]))
         infer_tree()
     elif cmd == "list":
-        allowed_values = "managed|slidable|unmanaged"
-        param = check_required_param(parse_options(args), allowed_values)
+        allowed_values = "managed|slidable|slidable-after <branch>|unmanaged"
+        in_args = parse_options(args)
+        if not in_args or len(in_args) > 2:
+            raise MacheteException("`%s' expects argument(s): %s" % (cmd, allowed_values))
+        elif not in_args[0]:
+            raise MacheteException("Argument to `%s' cannot be empty; expected %s" % (cmd, allowed_values))
+        elif in_args[0][0] == "-":
+            raise MacheteException("option `%s' not recognized" % in_args[0])
+        elif in_args[0] in ("managed", "slidable", "unmanaged") and len(in_args) == 2:
+            raise MacheteException("`%s %s' doesn't expect an extra argument" % (cmd, in_args[0]))
+        elif in_args[0] == "slidable-after" and len(in_args) == 1:
+            raise MacheteException("`%s %s' requires an extra <branch> argument" % (cmd, in_args[0]))
+
+        param = in_args[0]
         if param == "managed":
             res = managed_branches
         elif param == "slidable":
-            res = [b for b in managed_branches if b in up_branch and b in down_branches and len(down_branches[b]) == 1]
+            res = slidable()
+        elif param == "slidable-after":
+            b = in_args[1]
+            expect_in_managed_branches(b)
+            res = slidable_after(b)
         elif param == "unmanaged":
             res = excluding(branches(), managed_branches)
         else:

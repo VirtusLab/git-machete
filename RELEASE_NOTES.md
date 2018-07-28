@@ -4,6 +4,7 @@
 
 - added: `infer` subcommand
 - added: `show` subcommand
+- added: `list` subcommand has new category `slidable-after`
 - improved: `add` command behavior, including inference of desired upstream when possible
 - improved: remote sync-ness information displayed by `status` (now corresponds to how git tracks remote counterparts)
 - removed: `down`/`next`/`prev`/`root`/`up` subcommands
