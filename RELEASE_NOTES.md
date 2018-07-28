@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.2.0
+
+- added: `first` and `last` params to `go` and `show` subcommands
+
 ## New in git-machete 2.1.2
 
 - fixed: some initial `git` commands were skipped from logs when `--verbose` flag was passed

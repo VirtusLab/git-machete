@@ -3,7 +3,7 @@
 _git_machete() {
 	cmds="add anno d diff e edit file fork-point format g go help infer list prune-branches reapply show slide-out s status traverse update"
 	categories="managed slidable slidable-after unmanaged"
-	directions="down next prev root up"
+	directions="down first last next prev root up"
 
 	common_opts="-h --help -v --verbose"
 	add_opts="-o --onto"
