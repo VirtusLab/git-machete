@@ -769,7 +769,6 @@ def usage(c=None):
     short_docs = {
         "add": "Add a branch to the tree of branch dependencies",
         "diff": "Diff current working directory or a given branch against a computed fork point",
-        "down": "Print name(s) of the downstream branch(es) for a branch (aka its children in the tree)",
         "edit": "Edit the definition file",
         "file": "Print path of the definition file",
         "fork-point": "Print SHA of the computed fork point commit of a branch",
@@ -778,15 +777,12 @@ def usage(c=None):
         "help": "Print this overview, or print detailed help for a specified command",
         "infer": "Automatically infer tree of branch dependencies",
         "list": "Lists all branches that fall into one of pre-defined categories (mostly for internal use)",
-        "next": "Print name of the next branch for a branch",
-        "prev": "Print name of the previous branch for a branch",
         "prune-branches": "Remove local branches that are not in the definition file",
         "reapply": "Rebase the current branch onto its computed fork point",
-        "root": "Print name of the root branch of the tree where a branch is located",
+        "show": "Print name(s) of the branch(es) relative to the position of the current branch, accepts down/next/root/prev/up argument",
         "slide-out": "Slide the current branch out and rebase its downstream (child) branch onto its upstream (parent) branch",
         "status": "Print formatted tree of branch dependencies, including info on their sync with upstream branch and with remote",
         "traverse": "Walk through the tree of branch dependencies and ask to rebase and/or push branches, one by one",
-        "up": "Print name of the upstream branch for a branch (aka parent in the tree)",
         "update": "Rebase the current branch onto its upstream (parent) branch"
     }
     long_docs = {
@@ -815,11 +811,6 @@ def usage(c=None):
 
             Options:
             -s, --stat    Makes `git machete diff' pass `--stat' option to `git diff', so that only summary (diffstat) will be output.
-        """,
-        "down":  """
-            Usage: git machete down [<branch>]
-
-            Outputs name of the branch (or branches, if many) that are direct children of the given branch (or current branch, if none specified).
         """,
         "edit": """
             Usage: git machete e[dit]
@@ -880,7 +871,7 @@ def usage(c=None):
             where <direction> is one of: d[own], n[ext], p[rev], r[oot], u[p]
 
             Checks out the branch specified by the given direction relative to the currently checked out branch.
-            Roughly equivalent to `git checkout $(git machete <direction>)'.
+            Roughly equivalent to `git checkout $(git machete show <direction>)'.
         """,
         "infer": """
             Usage: git machete infer [-l|--list-commits]
@@ -908,16 +899,6 @@ def usage(c=None):
 
             This command is generally not meant for a day-to-day use, it's mostly needed for the sake of branch name completion in shell.
         """,
-        "next": """
-            Usage: git machete next [<branch>]
-
-            Outputs name of the branch that directly follows the given branch (or current branch, if none specified) in the definition file.
-        """,
-        "prev": """
-            Usage: git machete prev [<branch>]
-
-            Outputs name of the branch that directly precedes the given branch (or current branch, if none specified) in the definition file.
-        """,
         "prune-branches": """
             Usage: git machete prune-branches
 
@@ -940,11 +921,17 @@ def usage(c=None):
             Options:
             -f, --fork-point=<fork-point-commit>    Specifies the alternative fork point commit after which the rebased part of history is meant to start.
         """,
-        "root": """
-            Usage: git machete root [<branch>]
+        "show": """
+            Usage: git machete show [<direction>]
+            where <direction> is one of: d[own], n[ext], p[rev], r[oot], u[p]
 
-            Outputs name of the branch that is the root of the tree where the given branch (or current branch, if none specified) is located.
-            Depending on your case, this will typically be something like `develop' or `master', since all branches are usually meant to be ultimately merged to one of those.
+            Outputs name of the branch (or possibly multiple branches, in case of `down') that is:
+
+            * `down': the direct children/downstream branch of the current branch.
+            * `next': the direct successor of the current branch in the definition file.
+            * `prev': the direct predeccessor of the current branch in the definition file.
+            * `root': the root of the tree where the current branch is located. Note: this will typically be something like `develop' or `master', since all branches are usually meant to be ultimately merged to one of those.
+            * `up':   the direct parent/upstream branch of the current branch.
         """,
         "slide-out": """
             Usage: git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] <branch> [<branch> [<branch> ...]]
@@ -1021,11 +1008,6 @@ def usage(c=None):
             Options:
             -l, --list-commits    Additionally lists the messages of commits introduced on each branch when printing the status.
         """,
-        "up": """
-            Usage: git machete up [<branch>]
-
-            Outputs name of the branch that is the direct parent of the given branch (or current branch, if none specified).
-        """,
         "update": """
             Usage: git machete update [-f|--fork-point=<fork-point-commit>]
 
@@ -1045,12 +1027,11 @@ def usage(c=None):
         "status": "s"
     }
     groups = [
-        ("General topics", ["format", "help"]),
-        ("Build, display and modify the tree of branch dependencies", ["add", "edit", "file", "infer", "list", "status"]),
-        ("Navigate between the branches", ["down", "go", "next", "prev", "root", "up"]),
+        ("General topics", ["file", "format", "help"]),
+        ("Build, display and modify the tree of branch dependencies", ["add", "edit", "infer", "status"]),
+        ("List, checkout and delete branches", ["go", "list", "prune-branches", "show"]),
         ("Determine changes specific to the given branch", ["diff", "fork-point"]),
-        ("Update git history in accordance with the tree of branch dependencies", ["reapply", "slide-out", "traverse", "update"]),
-        ("Tidy up git branches", ["prune-branches"])
+        ("Update git history in accordance with the tree of branch dependencies", ["reapply", "slide-out", "traverse", "update"])
     ]
     if c and c in short_docs:
         print >> sys.stderr, textwrap.dedent(long_docs[c])
@@ -1169,15 +1150,13 @@ try:
     if cmd not in ("d", "diff", "e", "edit", "file", "fork-point", "format", "help", "infer", "reapply"):
         read_definition_file()
 
+    directions = "d[own]|n[ext]|p[rev]|r[oot]|u[p]"
     if cmd == "add":
         param = check_optional_param(parse_options(args, "o:", ["onto="]))
         add(param or head())
     elif cmd in ("d", "diff"):
         param = check_optional_param(parse_options(args, "s", ["stat"]))
         diff(param) # passing None if not specified
-    elif cmd == "down":
-        param = check_optional_param(parse_options(args))
-        print down(param or head(), pick_mode=False)
     elif cmd in ("e", "edit"):
         expect_no_param(parse_options(args))
         edit()
@@ -1190,8 +1169,7 @@ try:
     elif cmd == "format":
         usage("format")
     elif cmd in ("g", "go"):
-        allowed_values = "d[own]|n[ext]|p[rev]|r[oot]|u[p]"
-        param = check_required_param(parse_options(args), allowed_values)
+        param = check_required_param(parse_options(args), directions)
         h = head()
         if param in ("d", "down"):
             dest = down(h, pick_mode=True)
@@ -1204,7 +1182,7 @@ try:
         elif param in ("u", "up"):
             dest = up(h)
         else:
-            raise MacheteException("Usage: git machete go " + allowed_values)
+            raise MacheteException("Usage: git machete go " + directions)
         if dest != h:
             go(dest)
     elif cmd == "help":
@@ -1225,12 +1203,6 @@ try:
         else:
             raise MacheteException("Usage: git machete list " + allowed_values)
         print "\n".join(res),
-    elif cmd == "next":
-        param = check_optional_param(parse_options(args))
-        print next_branch(param or head())
-    elif cmd == "prev":
-        param = check_optional_param(parse_options(args))
-        print prev_branch(param or head())
     elif cmd == "prune-branches":
         expect_no_param(parse_options(args, "f", ["force"]))
         prune_branches()
@@ -1239,9 +1211,22 @@ try:
         expect_no_param(args1, ". Use `-f' or `--fork-point' to specify the fork point commit")
         h = head()
         reapply(h, opt_fork_point or fork_point(h))
-    elif cmd == "root":
-        param = check_optional_param(parse_options(args))
-        print root_branch(param or head())
+    elif cmd == "show":
+        param = check_required_param(parse_options(args), directions)
+        h = head()
+        if param in ("d", "down"):
+            res = down(h, pick_mode=False)
+        elif param in ("n", "next"):
+            res = next_branch(h)
+        elif param in ("p", "prev"):
+            res = prev_branch(h)
+        elif param in ("r", "root"):
+            res = root_branch(h)
+        elif param in ("u", "up"):
+            res = up(h)
+        else:
+            raise MacheteException("Usage: git machete show " + directions)
+        print res
     elif cmd == "slide-out":
         params = parse_options(args, "d:", ["down-fork-point="])
         slide_out(params or [head()])
@@ -1251,9 +1236,6 @@ try:
     elif cmd == "traverse":
         expect_no_param(parse_options(args, "lr:", ["list-commits", "remote="]))
         traverse()
-    elif cmd == "up":
-        param = check_optional_param(parse_options(args))
-        print up(param or head())
     elif cmd == "update":
         args1 = parse_options(args, "f:", ["fork-point="])
         expect_no_param(args1, ". Use `-f' or `--fork-point' to specify the fork point commit")

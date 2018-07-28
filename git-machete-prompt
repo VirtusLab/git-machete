@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 _git_machete() {
-	cmds="add d diff down e edit file fork-point format g go help infer list next prev prune-branches reapply root slide-out s status traverse up update"
+	cmds="add d diff e edit file fork-point format g go help infer list prune-branches reapply show slide-out s status traverse update"
 	categories="managed slidable unmanaged"
 	directions="down next prev root up"
 
@@ -41,7 +41,7 @@ _git_machete() {
 					add) __gitcomp_nl "$(git machete list unmanaged)" ;;
 					d|diff|fork-point) __gitcomp "$(__git_heads)" ;;
 					down|next|prev|root|up) __gitcomp_nl "$(git machete list managed)" ;;
-					g|go) __gitcomp "$directions" ;;
+					g|go|show) __gitcomp "$directions" ;;
 					help) __gitcomp "$cmds" ;;
 					list) __gitcomp "$categories" ;;
 					slide-out)
