@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.3.0'
+VERSION = '2.4.0'
 
 
 # Core utils
@@ -262,13 +262,26 @@ def root_branch(b, accept_self):
     return b
 
 
-def up(b):
-    expect_in_managed_branches(b)
-    pb = up_branch.get(b)
-    if pb:
-        return pb
+def up(b, prompt_if_inferred):
+    if b in managed_branches:
+        u = up_branch.get(b)
+        if u:
+            return u
+        else:
+            raise MacheteException("Branch `%s' has no upstream branch" % b)
     else:
-        raise MacheteException("Branch `%s' has no upstream branch" % b)
+        u = infer_upstream(b)
+        if u:
+            if prompt_if_inferred:
+                if ask_if("Branch `%s' not found in the tree of branch dependencies; rebase onto the inferred upstream `%s'? [y/n] " % (b, u)):
+                    return u
+                else:
+                    sys.exit(1)
+            else:
+                print >> sys.stderr, "Warn: branch `%s' not found in the tree of branch dependencies; the upstream has been inferred to `%s'" % (b, u)
+                return u
+        else:
+            raise MacheteException("Branch `%s' not found in the tree of branch dependencies and its upstream could not be inferred" % b)
 
 
 def add(b):
@@ -531,7 +544,7 @@ def go(branch):
 
 
 def update(branch, fork_commit):
-    run_git("rebase", "--interactive", "--onto", up(branch), fork_commit, branch)
+    run_git("rebase", "--interactive", "--onto", up(branch, prompt_if_inferred=True), fork_commit, branch)
 
 
 def reapply(branch, fork_commit):
@@ -1234,7 +1247,7 @@ try:
         elif param in ("r", "root"):
             return root_branch(h, accept_self=False)
         elif param in ("u", "up"):
-            return up(h)
+            return up(h, prompt_if_inferred=False)
         else:
             raise MacheteException("Usage: git machete %s %s" % (cmd, directions))
 

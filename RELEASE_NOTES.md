@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.4.0
+
+- improved: `show up`, `go up` and `update` use inferred parent branch if the current branch isn't managed
+
 ## New in git-machete 2.3.0
 
 - added: `log` subcommand
