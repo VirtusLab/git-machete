@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.4.1
+
+- fixed: use apostrophes instead of backticks in user-facing messages to comply with git's conventions
+
 ## New in git-machete 2.4.0
 
 - improved: `show up`, `go up` and `update` use inferred parent branch if the current branch isn't managed

@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.4.0'
+VERSION = '2.4.1'
 
 
 # Core utils
@@ -299,9 +299,9 @@ def add(b):
         msg = "A local branch '%s' does not exist. Create (out of %s)? [y/n] " % (b, out_of)
         if ask_if(msg):
             if roots and not onto:
-                h = head_or_none()
-                if h and h in managed_branches:
-                    onto = h
+                cb = current_branch_or_none()
+                if cb and cb in managed_branches:
+                    onto = cb
             create_branch(b, onto)
         else:
             return
@@ -386,15 +386,15 @@ def remote_tracking_branch(b):
         return None
 
 
-def head_or_none():
+def current_branch_or_none():
     try:
         return popen_git("symbolic-ref", "--short", "--quiet", "HEAD").strip()
     except MacheteException:
         return None
 
 
-def head():
-    res = head_or_none()
+def current_branch():
+    res = current_branch_or_none()
     if res:
         return res
     else:
@@ -444,7 +444,7 @@ def relevant_reflog_subject(gs, b=None):
 def adjusted_reflog(b):
     global adjusted_reflogs_cached
     if b not in adjusted_reflogs_cached:
-        adjusted_reflogs_cached[b] = [h for (h, gs) in reflog(b) if relevant_reflog_subject(gs, b)]
+        adjusted_reflogs_cached[b] = [sha for (sha, gs) in reflog(b) if relevant_reflog_subject(gs, b)]
     return adjusted_reflogs_cached[b]
 
 
@@ -527,9 +527,9 @@ def fork_point(b):
 
     other_branches = excluding(get_all_branches(), [b])
     adjusted_reflogs_other_branches = sum(map(adjusted_reflog, other_branches), [])
-    for h in log_shas(b):
-        if h in adjusted_reflogs_other_branches:
-            return h
+    for sha in log_shas(b):
+        if sha in adjusted_reflogs_other_branches:
+            return sha
     raise MacheteException("Cannot find fork point for branch '%s'" % b)
 
 
@@ -552,7 +552,7 @@ def reapply(branch, fork_commit):
 
 
 def diff(branch):
-    params = (["--stat"] if opt_stat else []) + [fork_point(branch if branch else head())] + ([branch] if branch else []) + ["--"]
+    params = (["--stat"] if opt_stat else []) + [fork_point(branch if branch else current_branch())] + ([branch] if branch else []) + ["--"]
     run_git("diff", *params)
 
 
@@ -562,10 +562,10 @@ def log(branch):
 
 def prune_branches():
     branches_to_prune = excluding(get_all_branches(), managed_branches)
-    h = head_or_none()
-    if h and h in branches_to_prune:
-        branches_to_prune = excluding(branches_to_prune, [h])
-        print "Skipping current branch '%s'" % h
+    cb = current_branch_or_none()
+    if cb and cb in branches_to_prune:
+        branches_to_prune = excluding(branches_to_prune, [cb])
+        print "Skipping current branch '%s'" % cb
     if branches_to_prune:
         merged_branches = branches("--merged")
         merged_branches_to_prune = [b for b in branches_to_prune if b in merged_branches]
@@ -645,21 +645,21 @@ def traverse():
             print
         empty_line_status = new_status
 
-    hb = head()
-    expect_in_managed_branches(hb)
+    cb = current_branch()
+    expect_in_managed_branches(cb)
 
-    for b in itertools.dropwhile(lambda x: x != hb, managed_branches):
+    for b in itertools.dropwhile(lambda x: x != cb, managed_branches):
         u = up_branch.get(b)
         needs_rebase = u and not (is_ancestor(u, b) and sha_by_refspec(u) == fork_point(b))
         s, remote = get_remote_sync_status(b)
         statuses_to_sync = (UNTRACKED, UNTRACKED_ON, AHEAD_OF_REMOTE, BEHIND_REMOTE, DIVERGED_FROM_REMOTE)
         needs_remote_sync = s in statuses_to_sync
 
-        if b != hb and (needs_rebase or needs_remote_sync):
+        if b != cb and (needs_rebase or needs_remote_sync):
             print_new_line(False)
             print >> sys.stderr, "Checking out %s%s%s" % (BOLD, b, ENDC)
             go(b)
-            hb = b
+            cb = b
             print_new_line(False)
             status()
             print_new_line(True)
@@ -698,8 +698,8 @@ def traverse():
     print_new_line(False)
     status()
     print
-    msg = "Reached branch %s%s%s which has no successor" if hb == managed_branches[-1] else "No successor of %s%s%s needs sync with upstream branch or remote"
-    print >> sys.stderr, msg % (BOLD, hb, ENDC) + "; nothing left to update"
+    msg = "Reached branch %s%s%s which has no successor" if cb == managed_branches[-1] else "No successor of %s%s%s needs sync with upstream branch or remote"
+    print >> sys.stderr, msg % (BOLD, cb, ENDC) + "; nothing left to update"
 
 
 NO_REMOTES = 0
@@ -771,11 +771,11 @@ def status():
                 sys.stdout.write(edge_color(p) + "│ " + ENDC)
         sys.stdout.write(edge_color(b) + suffix + ENDC)
 
-    h = head_or_none()
+    cb = current_branch_or_none()
 
     for b, pfx in dfs_res:
         current = BOLD + b + ENDC + "  " + GREY + annotations[b] + ENDC if b in annotations else BOLD + b + ENDC
-        current_ul = UNDERLINE + current + ENDC if b == h else current
+        current_ul = UNDERLINE + current + ENDC if b == cb else current
         if b in up_branch:
             print_line_prefix(b, "│ \n")
             if opt_list_commits:
@@ -801,21 +801,21 @@ def status():
 
 def annotate(words):
     global annotations
-    h = head()
-    expect_in_managed_branches(h)
-    if h in annotations and words == ['']:
-        del annotations[h]
+    cb = current_branch()
+    expect_in_managed_branches(cb)
+    if cb in annotations and words == ['']:
+        del annotations[cb]
     else:
-        annotations[h] = " ".join(words)
+        annotations[cb] = " ".join(words)
     save_definition_file()
 
 
 def print_annotation():
     global annotations
-    h = head()
-    expect_in_managed_branches(h)
-    if h in annotations:
-        print annotations[h]
+    cb = current_branch()
+    expect_in_managed_branches(cb)
+    if cb in annotations:
+        print annotations[cb]
 
 
 # Main
@@ -1233,28 +1233,28 @@ try:
 
     directions = "d[own]|f[irst]|l[ast]|n[ext]|p[rev]|r[oot]|u[p]"
 
-    def parse_direction(h, down_pick_mode):
+    def parse_direction(cb, down_pick_mode):
         if param in ("d", "down"):
-            return down(h, pick_mode=down_pick_mode)
+            return down(cb, pick_mode=down_pick_mode)
         elif param in ("f", "first"):
-            return first_branch(h)
+            return first_branch(cb)
         elif param in ("l", "last"):
-            return last_branch(h)
+            return last_branch(cb)
         elif param in ("n", "next"):
-            return next_branch(h)
+            return next_branch(cb)
         elif param in ("p", "prev"):
-            return prev_branch(h)
+            return prev_branch(cb)
         elif param in ("r", "root"):
-            return root_branch(h, accept_self=False)
+            return root_branch(cb, accept_self=False)
         elif param in ("u", "up"):
-            return up(h, prompt_if_inferred=False)
+            return up(cb, prompt_if_inferred=False)
         else:
             raise MacheteException("Usage: git machete %s %s" % (cmd, directions))
 
     if cmd == "add":
         param = check_optional_param(parse_options(args, "o:", ["onto="]))
         read_definition_file()
-        add(param or head())
+        add(param or current_branch())
     elif cmd == "anno":
         params = parse_options(args)
         read_definition_file()
@@ -1277,16 +1277,16 @@ try:
     elif cmd == "fork-point":
         param = check_optional_param(parse_options(args))
         # No need to read definition file.
-        print fork_point(param or head())
+        print fork_point(param or current_branch())
     elif cmd == "format":
         # No need to read definition file.
         usage("format")
     elif cmd in ("g", "go"):
         param = check_required_param(parse_options(args), directions)
         read_definition_file()
-        h = head()
-        dest = parse_direction(h, down_pick_mode=True)
-        if dest != h:
+        cb = current_branch()
+        dest = parse_direction(cb, down_pick_mode=True)
+        if dest != cb:
             go(dest)
     elif cmd == "help":
         param = check_optional_param(parse_options(args))
@@ -1328,7 +1328,7 @@ try:
     elif cmd == "log":
         param = check_optional_param(parse_options(args))
         # No need to read definition file.
-        log(param or head())
+        log(param or current_branch())
     elif cmd == "prune-branches":
         expect_no_param(parse_options(args))
         read_definition_file()
@@ -1337,16 +1337,16 @@ try:
         args1 = parse_options(args, "f:", ["fork-point="])
         expect_no_param(args1, ". Use '-f' or '--fork-point' to specify the fork point commit")
         # No need to read definition file.
-        h = head()
-        reapply(h, opt_fork_point or fork_point(h))
+        cb = current_branch()
+        reapply(cb, opt_fork_point or fork_point(cb))
     elif cmd == "show":
         param = check_required_param(parse_options(args), directions)
         read_definition_file()
-        print parse_direction(head(), down_pick_mode=False)
+        print parse_direction(current_branch(), down_pick_mode=False)
     elif cmd == "slide-out":
         params = parse_options(args, "d:", ["down-fork-point="])
         read_definition_file()
-        slide_out(params or [head()])
+        slide_out(params or [current_branch()])
     elif cmd in ("s", "status"):
         expect_no_param(parse_options(args, "lr:", ["list-commits", "remote="]))
         read_definition_file()
@@ -1359,8 +1359,8 @@ try:
         args1 = parse_options(args, "f:", ["fork-point="])
         expect_no_param(args1, ". Use '-f' or '--fork-point' to specify the fork point commit")
         read_definition_file()
-        h = head()
-        update(h, opt_fork_point or fork_point(h))
+        cb = current_branch()
+        update(cb, opt_fork_point or fork_point(cb))
     else:
         short_usage()
         raise MacheteException("\nUnknown command: '%s'. Use 'git machete help' to list possible commands" % cmd)
