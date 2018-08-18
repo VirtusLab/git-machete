@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.4.3
+
+- improved: `status` now works faster for large repositories
+
 ## New in git-machete 2.4.2
 
 - updated: repository url in README.md
