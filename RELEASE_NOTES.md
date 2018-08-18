@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.4.5
+
+- fixed: corner cases in algorithm for computing fork point of a given branch
+
 ## New in git-machete 2.4.4
 
 - fixed: `prune-branches` crashing when deleting a branch merged to HEAD but not to its remote tracking branch

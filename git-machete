@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.4.4'
+VERSION = '2.4.5'
 
 
 # Core utils
@@ -379,11 +379,21 @@ def sha_by_refspec(refspec):
     return shas_cached[refspec]
 
 
-def remote_tracking_branch(b):
+remote_tracking_branches_cached = {}
+
+
+def compute_remote_tracking_branch(b):
     try:
         return popen_git("rev-parse", "--abbrev-ref", b + "@{upstream}").strip()
     except MacheteException:
         return None
+
+
+def remote_tracking_branch(b):
+    global remote_tracking_branches_cached
+    if b not in remote_tracking_branches_cached:
+        remote_tracking_branches_cached[b] = compute_remote_tracking_branch(b)
+    return remote_tracking_branches_cached[b]
 
 
 def current_branch_or_none():
@@ -427,12 +437,24 @@ def reflog(b):
     return reflogs_cached[b]
 
 
-def relevant_reflog_subject(gs, b=None):
+def relevant_reflog_subject(gs, b):
+    def is_created_from_remote_counterpart(b):
+        if gs.startswith("branch: Created from refs/remotes/"):
+            return True
+        rb = remote_tracking_branch(b)
+        return rb and gs.startswith("branch: Created from " + rb)
+
+    def is_reset_to_remote_counterpart(b):
+        if gs.startswith("reset: moving to refs/remotes/"):
+            return True
+        rb = remote_tracking_branch(b)
+        return rb and gs.startswith("reset: moving to " + rb)
+
     return not (
-        (gs.startswith("branch: Created from") and not gs.startswith("branch: Created from refs/remotes/")) or
-        (b and gs.startswith("branch: Reset to " + b)) or
+        (gs.startswith("branch: Created from") and not is_created_from_remote_counterpart(b)) or
+        gs.startswith("branch: Reset to " + b) or
         gs.startswith("branch: Reset to HEAD") or
-        (gs.startswith("reset: moving to ") and not (b and gs.endswith("/" + b)))
+        (gs.startswith("reset: moving to ") and not is_reset_to_remote_counterpart(b))
     )
 
 
