@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.4.1'
+VERSION = '2.4.2'
 
 
 # Core utils

@@ -1,5 +1,10 @@
 # Release notes
 
+## New in git-machete 2.4.2
+
+- updated: repository url in README.md
+- removed: unused install.sh script
+
 ## New in git-machete 2.4.1
 
 - fixed: use apostrophes instead of backticks in user-facing messages to comply with git's conventions
