@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.4.3'
+VERSION = '2.4.4'
 
 
 # Core utils
@@ -568,17 +568,29 @@ def prune_branches():
         branches_to_prune = excluding(branches_to_prune, [cb])
         print "Skipping current branch '%s'" % cb
     if branches_to_prune:
-        merged_branches = branches("--merged")
-        merged_branches_to_prune = [b for b in branches_to_prune if b in merged_branches]
-        unmerged_branches_to_prune = [b for b in branches_to_prune if b not in merged_branches]
-        for b in merged_branches_to_prune + unmerged_branches_to_prune:
-            is_merged = b in merged_branches
-            msg = "Delete branch %s%s%s (%s to HEAD)? [y/n/q] " % (BOLD, b, ENDC, "merged" if is_merged else "unmerged")
+        branches_merged_to_head = branches("--merged")
+
+        branches_to_prune_merged_to_head = [b for b in branches_to_prune if b in branches_merged_to_head]
+        for b in branches_to_prune_merged_to_head:
+            rb = remote_tracking_branch(b)
+            is_merged_to_remote = is_ancestor(b, rb) if rb else True
+            msg = "Delete branch %s%s%s (merged to HEAD%s)? [y/n/q] " % (
+                BOLD, b, ENDC, "" if is_merged_to_remote else (", but not merged to " + rb)
+            )
             ans = raw_input(msg).lower()
             if ans in ('y', 'yes'):
-                run_git("branch", "-d" if is_merged else "-D", b)
+                run_git("branch", "-d" if is_merged_to_remote else "-D", b)
             elif ans in ('q', 'quit'):
-                break
+                return
+
+        branches_to_prune_unmerged_to_head = [b for b in branches_to_prune if b not in branches_merged_to_head]
+        for b in branches_to_prune_unmerged_to_head:
+            msg = "Delete branch %s%s%s (unmerged to HEAD)? [y/n/q] " % (BOLD, b, ENDC)
+            ans = raw_input(msg).lower()
+            if ans in ('y', 'yes'):
+                run_git("branch", "-D", b)
+            elif ans in ('q', 'quit'):
+                return
     else:
         print >> sys.stderr, "No branches to delete"
 
@@ -1196,7 +1208,7 @@ def check_optional_param(in_args):
 
 def check_required_param(in_args, allowed_values):
     if not in_args or len(in_args) > 1:
-        raise MacheteException("'%s' expects an argument: one of %s" % (cmd, allowed_values))
+        raise MacheteException("'%s' expects exactly one argument: one of %s" % (cmd, allowed_values))
     elif not in_args[0]:
         raise MacheteException("Argument to '%s' cannot be empty; expected one of %s" % (cmd, allowed_values))
     elif in_args[0][0] == "-":

@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.4.4
+
+- fixed: `prune-branches` crashing when deleting a branch merged to HEAD but not to its remote tracking branch
+
 ## New in git-machete 2.4.3
 
 - improved: `status` now works faster for large repositories
