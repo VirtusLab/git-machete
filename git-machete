@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.4.5'
+VERSION = '2.4.6'
 
 
 # Core utils
@@ -424,6 +424,8 @@ def log_shas(refspec, max_count):
     return non_empty_lines(popen_git("log", *opts))
 
 
+MAX_COUNT_FOR_INITIAL_LOG = 10
+
 reflogs_cached = {}
 adjusted_reflogs_cached = {}
 
@@ -475,19 +477,23 @@ def get_all_branches():
     return all_branches_cached
 
 
-def infer_upstream(b, filter=lambda u: True):
+def infer_upstream(b, condition=lambda u: True):
     commits = list(reversed([c for (c, gs) in reflog(b) if gs.startswith('commit: ')]))
     start_points = commits or [reflog(b)[-1][0]]
 
     def candidates():
         for start_point in start_points:
-            for c in log_shas(start_point, max_count=None):
+            for c in log_shas(start_point, max_count=MAX_COUNT_FOR_INITIAL_LOG):
+                for ob in get_all_branches():
+                    if ob != b and c in adjusted_reflog(ob):
+                        yield ob
+            for c in log_shas(start_point, max_count=None)[MAX_COUNT_FOR_INITIAL_LOG:]:
                 for ob in get_all_branches():
                     if ob != b and c in adjusted_reflog(ob):
                         yield ob
 
     for u in candidates():
-        if filter(u):
+        if condition(u):
             return u
     return None
 
@@ -509,7 +515,7 @@ def infer_tree():
         return root_of[b]
 
     for b in all_branches:
-        u = infer_upstream(b, filter=lambda u: get_root_of(u) != b)
+        u = infer_upstream(b, condition=lambda u: get_root_of(u) != b)
         if u:
             up_branch[b] = u
             root_of[b] = u
@@ -545,12 +551,12 @@ def fork_point(b):
     other_branches = excluding(get_all_branches(), [b])
     adjusted_reflogs_other_branches = sum(map(adjusted_reflog, other_branches), [])
     # Since getting the full history of a branch can be an expensive operation for large repositories (compared to all other underlying git operations),
-    # there's a simple optimization in place: we first fetch only first 10 commits in the history,
+    # there's a simple optimization in place: we first fetch only a couple of first commits in the history,
     # and only fetch the rest if none of them occurs on reflog of any other branch.
-    for sha in log_shas(b, max_count=10):
+    for sha in log_shas(b, max_count=MAX_COUNT_FOR_INITIAL_LOG):
         if sha in adjusted_reflogs_other_branches:
             return sha
-    for sha in log_shas(b, max_count=None):
+    for sha in log_shas(b, max_count=None)[MAX_COUNT_FOR_INITIAL_LOG:]:
         if sha in adjusted_reflogs_other_branches:
             return sha
     raise MacheteException("Cannot find fork point for branch '%s'" % b)

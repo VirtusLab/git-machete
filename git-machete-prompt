@@ -5,7 +5,7 @@ _git_machete() {
 	categories="managed slidable slidable-after unmanaged"
 	directions="down first last next prev root up"
 
-	common_opts="-h --help -v --verbose"
+	common_opts="-h --help -v --verbose --version"
 	add_opts="-o --onto"
 	diff_opts="-s --stat"
 	infer_opts="-l --list-commits"

@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.4.6
+
+- improved: `infer` now works faster for large repositories
+
 ## New in git-machete 2.4.5
 
 - fixed: corner cases in algorithm for computing fork point of a given branch
