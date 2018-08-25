@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 
 _git_machete() {
-	cmds="add anno d diff e edit file fork-point format g go help infer list log prune-branches reapply show slide-out s status traverse update"
+	cmds="add anno d diff discover e edit file fork-point format g go help infer list log prune-branches reapply show slide-out s status traverse update"
 	categories="managed slidable slidable-after unmanaged"
 	directions="down first last next prev root up"
 
 	common_opts="-h --help -v --verbose --version"
 	add_opts="-o --onto"
 	diff_opts="-s --stat"
+	discover_opts="-l --list-commits"
 	infer_opts="-l --list-commits"
 	reapply_opts="-f --fork-point"
 	slide_out_opts="-d --down-fork-point"
@@ -21,6 +22,7 @@ _git_machete() {
 		case "$prev" in
 			add) __gitcomp "$common_opts $add_opts" ;;
 			d|diff) __gitcomp "$common_opts $diff_opts" ;;
+			discover) __gitcomp "$common_opts $discover_opts" ;;
 			infer) __gitcomp "$common_opts $infer_opts" ;;
 			reapply) __gitcomp "$common_opts $reapply_opts" ;;
 			slide-out) __gitcomp "$common_opts $slide_out_opts" ;;

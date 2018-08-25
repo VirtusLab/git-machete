@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.4.6'
+VERSION = '2.5.0'
 
 
 # Core utils
@@ -498,7 +498,7 @@ def infer_upstream(b, condition=lambda u: True):
     return None
 
 
-def infer_tree():
+def discover_tree():
     global managed_branches, roots, down_branches, up_branch, indent, annotations
     all_branches = managed_branches = get_all_branches()
     roots = []
@@ -526,7 +526,7 @@ def infer_tree():
         else:
             roots += [b]
 
-    print BOLD + 'Inferred tree of branch dependencies:\n' + ENDC
+    print BOLD + 'Discovered tree of branch dependencies:\n' + ENDC
     status()
     print
     do_backup = os.path.exists(definition_file)
@@ -865,13 +865,14 @@ def usage(c=None):
         "add": "Add a branch to the tree of branch dependencies",
         "anno": "Manage custom annotations",
         "diff": "Diff current working directory or a given branch against its computed fork point",
+        "discover": "Automatically discover tree of branch dependencies",
         "edit": "Edit the definition file",
         "file": "Print path of the definition file",
         "fork-point": "Print SHA of the computed fork point commit of a branch",
         "format": "Print information about the format of the definition file",
         "go": "Check out the branch relative to the position of the current branch, accepts down/next/root/prev/up argument",
         "help": "Print this overview, or print detailed help for a specified command",
-        "infer": "Automatically infer tree of branch dependencies",
+        "infer": "Automatically discover tree of branch dependencies (alias for 'discover')",
         "list": "List all branches that fall into one of pre-defined categories (mostly for internal use)",
         "log": "Log the part of history specific to the given branch",
         "prune-branches": "Remove local branches that are not in the definition file",
@@ -902,11 +903,11 @@ def usage(c=None):
             Usage: git machete anno [<annotation text>]
 
             If invoked without any argument, prints out the custom annotation for the current branch.
-            
+
             If invoked with a single empty string argument, like:
             $ git machete anno ''
             clears the annotation set the current branch.
-            
+
             In any other case, sets the annotation for the current branch to the given argument.
             If multiple arguments are passed to the command, they are concatenated with single spaces.
 
@@ -922,6 +923,16 @@ def usage(c=None):
 
             Options:
             -s, --stat    Makes 'git machete diff' pass '--stat' option to 'git diff', so that only summary (diffstat) will be output.
+        """,
+        "discover": """
+            Usage: git machete discover [-l|--list-commits]
+
+            Discovers and prints tree of branch dependencies using a heuristic based on reflogs and asks whether to overwrite the existing definition file with the new discovered tree.
+            If confirmed with a 'y[es]' or 'e[dit]' reply, backs up the current definition file as '.git/machete~' (if exists) and saves the new tree under the usual '.git/machete' path.
+            If the reply was 'e[dit]', additionally an editor is opened (as in 'git machete edit') after saving the new definition file.
+
+            Options:
+            -l, --list-commits            When printing the discovered tree, additionally lists the messages of commits introduced on each branch (as for 'git machete status').
         """,
         "edit": """
             Usage: git machete e[dit]
@@ -989,12 +1000,10 @@ def usage(c=None):
         "infer": """
             Usage: git machete infer [-l|--list-commits]
 
-            Infers and prints tree of branch dependencies using a heuristic based on reflog and asks whether to overwrite the existing definition file with the new inferred tree.
-            If confirmed with a 'y[es]' or 'e[dit]' reply, backs up the current definition file as '.git/machete~' (if exists) and saves the new tree under the usual '.git/machete' path.
-            If the reply was 'e[dit]', additionally an editor is opened (as in 'git machete edit') after saving the new definition file.
+            Alias for 'discover'. Retained for compatibility, to be removed in one of next major releases.
 
             Options:
-            -l, --list-commits            When printing the inferred tree, additionally lists the messages of commits introduced on each branch (as for 'git machete status').
+            -l, --list-commits            When printing the discovered tree, additionally lists the messages of commits introduced on each branch (as for 'git machete status').
         """,
         "help": """
             Usage: git machete help [<command>]
@@ -1152,7 +1161,7 @@ def usage(c=None):
     }
     groups = [
         ("General topics", ["file", "format", "help"]),
-        ("Build, display and modify the tree of branch dependencies", ["add", "anno", "edit", "infer", "status"]),
+        ("Build, display and modify the tree of branch dependencies", ["add", "anno", "discover", "edit", "status"]), # 'infer' is skipped for the main docs
         ("List, checkout and delete branches", ["go", "list", "prune-branches", "show"]),
         ("Determine changes specific to the given branch", ["diff", "fork-point", "log"]),
         ("Update git history in accordance with the tree of branch dependencies", ["reapply", "slide-out", "traverse", "update"])
@@ -1268,7 +1277,7 @@ try:
             raise MacheteException("Not a git repository")
 
         definition_file = os.path.join(git_dir, "machete")
-        if cmd != "infer" and not os.path.exists(definition_file):
+        if cmd not in ("discover", "infer") and not os.path.exists(definition_file):
             open(definition_file, 'w').close()
 
     directions = "d[own]|f[irst]|l[ast]|n[ext]|p[rev]|r[oot]|u[p]"
@@ -1306,6 +1315,10 @@ try:
         param = check_optional_param(parse_options(args, "s", ["stat"]))
         # No need to read definition file.
         diff(param) # passing None if not specified
+    elif cmd == "discover":
+        expect_no_param(parse_options(args, "l", ["list-commits"]))
+        # No need to read definition file.
+        discover_tree()
     elif cmd in ("e", "edit"):
         expect_no_param(parse_options(args))
         # No need to read definition file.
@@ -1335,7 +1348,7 @@ try:
     elif cmd == "infer":
         expect_no_param(parse_options(args, "l", ["list-commits"]))
         # No need to read definition file.
-        infer_tree()
+        discover_tree()
     elif cmd == "list":
         allowed_values = "managed|slidable|slidable-after <branch>|unmanaged"
         in_args = parse_options(args)

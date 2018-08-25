@@ -1,5 +1,10 @@
 # Release notes
 
+## New in git-machete 2.5.0
+
+- added: `discover` is the new name for `infer` subcommand
+- deprecated: `infer` subcommand (retained for backward compatibility)
+
 ## New in git-machete 2.4.6
 
 - improved: `infer` now works faster for large repositories
@@ -59,7 +64,7 @@
 - added: `infer` subcommand
 - added: `show` subcommand
 - added: `list` subcommand has new category `slidable-after`
-- improved: `add` command behavior, including inference of desired upstream when possible
+- improved: `add` subcommand behavior, including inference of desired upstream when possible
 - improved: remote sync-ness information displayed by `status` (now corresponds to how git tracks remote counterparts)
 - removed: `down`/`next`/`prev`/`root`/`up` subcommands
 - removed: `-r`/`--remote` option to `status` and `traverse` subcommands
