@@ -3,7 +3,9 @@
 ## New in git-machete 2.5.0
 
 - added: `discover` is the new name for `infer` subcommand
+- added: `l` is an alias for `log`
 - deprecated: `infer` subcommand (retained for backward compatibility)
+- improved: README
 
 ## New in git-machete 2.4.6
 

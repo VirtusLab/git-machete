@@ -1023,7 +1023,7 @@ def usage(c=None):
             This command is generally not meant for a day-to-day use, it's mostly needed for the sake of branch name completion in shell.
         """,
         "log": """
-            Usage: git machete log [<branch>]
+            Usage: git machete l[og] [<branch>]
 
             Runs 'git log' for the range of commits from tip of the given branch (or current branch, if none specified) back to its fork point.
             See 'git machete help fork-point' for more details on meaning of the "fork point".
@@ -1157,6 +1157,7 @@ def usage(c=None):
         "diff": "d",
         "edit": "e",
         "go": "g",
+        "log": "l",
         "status": "s"
     }
     groups = [
@@ -1378,7 +1379,7 @@ try:
         else:
             raise MacheteException("Usage: git machete list " + allowed_values)
         print "\n".join(res),
-    elif cmd == "log":
+    elif cmd in ("l", "log"):
         param = check_optional_param(parse_options(args))
         # No need to read definition file.
         log(param or current_branch())
