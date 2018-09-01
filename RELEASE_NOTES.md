@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.5.1
+
+- fixed: various issues with `help` subcommand, esp. when run for an alias
+
 ## New in git-machete 2.5.0
 
 - added: `discover` is the new name for `infer` subcommand

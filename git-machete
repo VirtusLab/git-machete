@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.5.0'
+VERSION = '2.5.1'
 
 
 # Core utils
@@ -870,14 +870,14 @@ def usage(c=None):
         "file": "Print path of the definition file",
         "fork-point": "Print SHA of the computed fork point commit of a branch",
         "format": "Print information about the format of the definition file",
-        "go": "Check out the branch relative to the position of the current branch, accepts down/next/root/prev/up argument",
+        "go": "Check out the branch relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument",
         "help": "Print this overview, or print detailed help for a specified command",
         "infer": "Automatically discover tree of branch dependencies (deprecated alias for 'discover')",
         "list": "List all branches that fall into one of pre-defined categories (mostly for internal use)",
         "log": "Log the part of history specific to the given branch",
         "prune-branches": "Remove local branches that are not in the definition file",
         "reapply": "Rebase the current branch onto its computed fork point",
-        "show": "Print name(s) of the branch(es) relative to the position of the current branch, accepts down/next/root/prev/up argument",
+        "show": "Print name(s) of the branch(es) relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument",
         "slide-out": "Slide the current branch out and rebase its downstream (child) branch onto its upstream (parent) branch",
         "status": "Print formatted tree of branch dependencies, including info on their sync with upstream branch and with remote",
         "traverse": "Walk through the tree of branch dependencies and ask to rebase and/or push branches, one by one",
@@ -1160,6 +1160,7 @@ def usage(c=None):
         "log": "l",
         "status": "s"
     }
+    inv_aliases = {v: k for k, v in aliases.iteritems()}
     groups = [
         ("General topics", ["file", "format", "help"]),
         ("Build, display and modify the tree of branch dependencies", ["add", "anno", "discover", "edit", "status"]), # 'infer' is skipped for the main docs
@@ -1167,22 +1168,24 @@ def usage(c=None):
         ("Determine changes specific to the given branch", ["diff", "fork-point", "log"]),
         ("Update git history in accordance with the tree of branch dependencies", ["reapply", "slide-out", "traverse", "update"])
     ]
-    if c and c in short_docs:
-        print >> sys.stderr, textwrap.dedent(long_docs[c])
+    if c and c in inv_aliases:
+        c = inv_aliases[c]
+    if c and c in long_docs:
+        print textwrap.dedent(long_docs[c])
     else:
         short_usage()
-        if c and c not in short_docs:
-            print >> sys.stderr, "\nUnknown command: '%s'" % c
-        print >> sys.stderr, "\n%sTL;DR tip%s\n\n    Get familiar with the help for %sformat%s, %sedit%s, %sstatus%s and %supdate%s, in this order.\n" % (
+        if c and c not in long_docs:
+            print "\nUnknown command: '%s'" % c
+        print "\n%sTL;DR tip%s\n\n    Get familiar with the help for %sformat%s, %sedit%s, %sstatus%s and %supdate%s, in this order.\n" % (
             UNDERLINE, ENDC, BOLD, ENDC, BOLD, ENDC, BOLD, ENDC, BOLD, ENDC
         )
         for hdr, cmds in groups:
-            print >> sys.stderr, UNDERLINE + hdr + ENDC + "\n"
+            print UNDERLINE + hdr + ENDC + "\n"
             for cm in cmds:
                 alias = (", " + aliases[cm]) if cm in aliases else ""
-                print >> sys.stderr, "    %s%-16s%s%s" % (BOLD, cm + alias, ENDC, short_docs[cm])
+                print "    %s%-16s%s%s" % (BOLD, cm + alias, ENDC, short_docs[cm])
             print >> sys.stderr
-        print >> sys.stderr, textwrap.dedent("""
+        print textwrap.dedent("""
             %sGeneral options%s\n
                 -h, --help       Prints help and exits.
                 -v, --verbose    Logs the executed git commands.
@@ -1191,7 +1194,7 @@ def usage(c=None):
 
 
 def short_usage():
-    print >> sys.stderr, "Usage: git machete [--help] [--verbose] [--version] <command> [command-specific options] [command-specific argument]"
+    print "Usage: git machete [--help] [--verbose] [--version] <command> [command-specific options] [command-specific argument]"
 
 
 def version():
