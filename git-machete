@@ -872,7 +872,7 @@ def usage(c=None):
         "format": "Print information about the format of the definition file",
         "go": "Check out the branch relative to the position of the current branch, accepts down/next/root/prev/up argument",
         "help": "Print this overview, or print detailed help for a specified command",
-        "infer": "Automatically discover tree of branch dependencies (alias for 'discover')",
+        "infer": "Automatically discover tree of branch dependencies (deprecated alias for 'discover')",
         "list": "List all branches that fall into one of pre-defined categories (mostly for internal use)",
         "log": "Log the part of history specific to the given branch",
         "prune-branches": "Remove local branches that are not in the definition file",
@@ -1000,7 +1000,7 @@ def usage(c=None):
         "infer": """
             Usage: git machete infer [-l|--list-commits]
 
-            Alias for 'discover'. Retained for compatibility, to be removed in one of next major releases.
+            A deprecated alias for 'discover'. Retained for compatibility, to be removed in one of next major releases.
 
             Options:
             -l, --list-commits            When printing the discovered tree, additionally lists the messages of commits introduced on each branch (as for 'git machete status').
