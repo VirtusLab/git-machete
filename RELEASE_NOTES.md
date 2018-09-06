@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.5.2
+
+- added: link to the new blog post in README.md
+
 ## New in git-machete 2.5.1
 
 - fixed: various issues with `help` subcommand, esp. when run for an alias

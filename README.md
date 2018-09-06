@@ -28,3 +28,7 @@ $ git machete traverse
 ## Reference
 
 Take a look at [https://virtuslab.com/blog/make-way-git-rebase-jungle-git-machete/](https://virtuslab.com/blog/make-way-git-rebase-jungle-git-machete/) for a guide on how to use the tool.
+
+The more advanced features like automated traversal, upstream inference and tree discovery are described in the second part of the series:
+[https://virtuslab.com/blog/git-machete-strikes-traverse-git-rebase-jungle-even-faster-v2-0/](https://virtuslab.com/blog/git-machete-strikes-traverse-git-rebase-jungle-even-faster-v2-0/)
+
