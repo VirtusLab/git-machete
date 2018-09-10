@@ -479,7 +479,8 @@ def get_all_branches():
 
 def infer_upstream(b, condition=lambda u: True):
     commits = list(reversed([c for (c, gs) in reflog(b) if gs.startswith('commit: ')]))
-    start_points = commits or [reflog(b)[-1][0]]
+    # Reflog of any branch can be empty due to e.g. reflog expiration.
+    start_points = commits or (reflog and [reflog(b)[-1][0]])
 
     def candidates():
         for start_point in start_points:
