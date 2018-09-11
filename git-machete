@@ -468,23 +468,38 @@ def local_branches():
 
 
 def infer_upstream(b, condition=lambda u: True):
-    commits = list(reversed([c for (c, gs) in reflog(b) if gs.startswith('commit: ')]))
-    start_points = commits or [b]
+    reflog_commit_entries = list(reversed([c for (c, gs) in reflog(b) if gs.startswith('commit: ')]))
+
+    if reflog_commit_entries:
+        debug("infer_upstream(%s)" % b, "reflog commit entries become the origin evidence points: %s" % ", ".join(reflog_commit_entries))
+        origin_evidence_points = reflog_commit_entries
+    else:
+        debug("infer_upstream(%s)" % b, "reflog commit entries empty; branch head becomes the only origin evidence point")
+        origin_evidence_points = [b]
 
     def candidates():
-        for start_point in start_points:
-            for c in log_shas(start_point, max_count=MAX_COUNT_FOR_INITIAL_LOG):
+        for oep in origin_evidence_points:
+            for c in log_shas(oep, max_count=MAX_COUNT_FOR_INITIAL_LOG):
+                debug("infer_upstream(%s) -> candidates()" % b, "checking commit %s" % c)
                 for ob in local_branches():
                     if ob != b and c in adjusted_reflog(ob):
+                        debug("infer_upstream(%s) -> candidates()" % b,
+                              "commit %s, an ancestor of the origin evidence point %s, found on adjusted reflog of %s; %s becomes candidate for upstream of %s" % (c, oep, ob, ob, b))
                         yield ob
-            for c in log_shas(start_point, max_count=None)[MAX_COUNT_FOR_INITIAL_LOG:]:
+            for c in log_shas(oep, max_count=None)[MAX_COUNT_FOR_INITIAL_LOG:]:
+                debug("infer_upstream(%s) -> candidates()" % b, "checking commit %s" % c)
                 for ob in local_branches():
                     if ob != b and c in adjusted_reflog(ob):
+                        debug("infer_upstream(%s) -> candidates()" % b,
+                              "commit %s, an ancestor of the origin evidence point %s, found on adjusted reflog of %s; %s becomes candidate for upstream of %s" % (c, oep, ob, ob, b))
                         yield ob
 
     for u in candidates():
         if condition(u):
+            debug("infer_upstream(%s)" % b, "upstream candidate %s accepted" % u)
             return u
+        else:
+            debug("infer_upstream(%s)" % b, "upstream candidate %s rejected" % u)
     return None
 
 
@@ -509,6 +524,8 @@ def discover_tree():
     for b in managed_branches:
         u = infer_upstream(b, condition=lambda u: get_root_of(u) != b)
         if u:
+            debug("discover_tree()" , "inferred upstream of %s "
+                                      "is %s, attaching %s as a child of %s" % (b, u, b, u))
             up_branch[b] = u
             root_of[b] = u
             if u in down_branches:
@@ -516,6 +533,7 @@ def discover_tree():
             else:
                 down_branches[u] = [b]
         else:
+            debug("discover_tree()", "inferred no upstream for %s, attaching %s as a new root" % (b, b))
             roots += [b]
 
     print BOLD + 'Discovered tree of branch dependencies:\n' + ENDC
