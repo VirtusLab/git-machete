@@ -58,6 +58,10 @@ def pick(choices, name):
     return choices[idx]
 
 
+def debug(hdr, msg):
+    print >> sys.stderr, "%s%s%s: %s%s%s" % (BOLD, hdr, ENDC, GREY, msg, ENDC)
+
+
 def run_cmd(cmd, *args):
     return subprocess.call([cmd] + list(args))
 
@@ -432,18 +436,24 @@ def relevant_reflog_subject(gs, b):
         rb = remote_tracking_branch(b)
         return rb and gs.startswith("reset: moving to " + rb)
 
-    return not (
+    result = not (
         (gs.startswith("branch: Created from") and not is_created_from_remote_counterpart(b)) or
         gs.startswith("branch: Reset to " + b) or
         gs.startswith("branch: Reset to HEAD") or
         (gs.startswith("reset: moving to ") and not is_reset_to_remote_counterpart(b))
     )
+    debug("relevant_reflog_subject(<<%s>>, %s)" % (gs, b), "result: %s" % result)
+    return result
 
 
 def adjusted_reflog(b):
     global adjusted_reflogs_cached
     if b not in adjusted_reflogs_cached:
-        adjusted_reflogs_cached[b] = [sha for (sha, gs) in reflog(b) if relevant_reflog_subject(gs, b)]
+        raw_reflog = reflog(b)
+        debug("adjusted_reflog(%s)" % b, "computing adjusted reflog, raw reflog: %s" % raw_reflog)
+
+        adjusted_reflogs_cached[b] = [sha for (sha, gs) in raw_reflog if relevant_reflog_subject(gs, b)]
+        debug("adjusted_reflog(%s)" % b, "computed adjusted reflog: %s" % ", ".join(adjusted_reflogs_cached[b]))
     return adjusted_reflogs_cached[b]
 
 
@@ -532,15 +542,24 @@ def fork_point(b):
 
     other_branches = excluding(local_branches(), [b])
     adjusted_reflogs_other_branches = sum(map(adjusted_reflog, other_branches), [])
+    debug("fork_point(%s)" % b, "adjusted reflogs of %s combined: %s" % (", ".join(other_branches), ", ".join(adjusted_reflogs_other_branches)))
+
     # Since getting the full history of a branch can be an expensive operation for large repositories (compared to all other underlying git operations),
     # there's a simple optimization in place: we first fetch only a couple of first commits in the history,
     # and only fetch the rest if none of them occurs on reflog of any other branch.
     for sha in log_shas(b, max_count=MAX_COUNT_FOR_INITIAL_LOG):
         if sha in adjusted_reflogs_other_branches:
+            debug("fork_point(%s)" % b, "candidate commit %s found in adjusted reflogs, accepting" % sha)
             return sha
+        else:
+            debug("fork_point(%s)" % b, "candidate commit %s not found in adjusted reflogs, rejecting" % sha)
+
     for sha in log_shas(b, max_count=None)[MAX_COUNT_FOR_INITIAL_LOG:]:
         if sha in adjusted_reflogs_other_branches:
+            debug("fork_point(%s)" % b, "candidate commit %s found in adjusted reflogs, accepting" % sha)
             return sha
+        else:
+            debug("fork_point(%s)" % b, "candidate commit %s not found in adjusted reflogs, rejecting" % sha)
     raise MacheteException("Cannot find fork point for branch '%s'" % b)
 
 
