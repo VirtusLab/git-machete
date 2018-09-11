@@ -2,6 +2,7 @@
 
 ## New in git-machete 2.6.0
 
+- added: `--debug` flag
 - added: `delete-unmanaged` is the new name for `prune-branches` subcommand
 - deprecated: `prune-branches` subcommand (retained for backward compatibility)
 - added: ISSUE_TEMPLATE.md

@@ -59,7 +59,8 @@ def pick(choices, name):
 
 
 def debug(hdr, msg):
-    print >> sys.stderr, "%s%s%s: %s%s%s" % (BOLD, hdr, ENDC, GREY, msg, ENDC)
+    if opt_debug:
+        print >> sys.stderr, "%s%s%s: %s%s%s" % (BOLD, hdr, ENDC, GREY, msg, ENDC)
 
 
 def run_cmd(cmd, *args):
@@ -1208,6 +1209,7 @@ def usage(c=None):
             print >> sys.stderr
         print textwrap.dedent("""
             %sGeneral options%s\n
+                --debug          Logs some detailed diagnostic info, especially wrt. fork points and upstream inference.
                 -h, --help       Prints help and exits.
                 -v, --verbose    Logs the executed git commands.
                 --version        Prints version and exits.
@@ -1223,14 +1225,16 @@ def version():
 
 
 def parse_options(in_args, short_opts="", long_opts=[], gnu=True):
-    global cmd, opt_down_fork_point, opt_fork_point, opt_list_commits, opt_onto, opt_stat, opt_verbose
+    global cmd, opt_debug, opt_down_fork_point, opt_fork_point, opt_list_commits, opt_onto, opt_stat, opt_verbose
 
     fun = getopt.gnu_getopt if gnu else getopt.getopt
-    opts, rest = fun(in_args, short_opts + "hv", long_opts + ['help', 'verbose', 'version'])
+    opts, rest = fun(in_args, short_opts + "hv", long_opts + ['debug', 'help', 'verbose', 'version'])
 
     for opt, arg in opts:
         if opt in ("-d", "--down-fork-point"):
             opt_down_fork_point = arg
+        elif opt == "--debug":
+            opt_debug = True
         elif opt in ("-f", "--fork-point"):
             opt_fork_point = arg
         elif opt in ("-h", "--help"):
@@ -1281,6 +1285,7 @@ def check_required_param(in_args, allowed_values):
 
 try:
     cmd = None
+    opt_debug = False
     opt_down_fork_point = None
     opt_fork_point = None
     opt_list_commits = False
