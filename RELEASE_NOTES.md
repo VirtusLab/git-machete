@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.5.4
+
+- improved: fetching the list of local branches
+
 ## New in git-machete 2.5.3
 
 - fixed: upstream inference crashing for branches whose reflog is empty (due to e.g. expiry)

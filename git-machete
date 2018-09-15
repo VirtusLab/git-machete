@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.5.3'
+VERSION = '2.5.4'
 
 
 # Core utils
@@ -40,26 +40,6 @@ def excluding(l, s):
 
 def join_branch_names(bs, sep):
     return sep.join("'%s'" % x for x in bs)
-
-
-def split_array(arr, sep):
-    res = []
-    start_new = True
-    for elem in arr:
-        if elem == sep:
-            start_new = True
-        else:
-            if start_new:
-                res.append([])
-                start_new = False
-            res[-1].append(elem)
-    return res
-
-
-def replace_in_array(arr, orig, dst):
-    for i in range(len(arr)):
-        if arr[i] == orig:
-            arr[i] = dst
 
 
 def ask_if(msg):
@@ -146,7 +126,7 @@ def read_definition_file():
         if b in managed_branches:
             raise MacheteException("%s, line %i: branch '%s' re-appears in the tree definition. %s" %
                                    (definition_file, idx + 1, b, hint))
-        if b not in get_all_branches():
+        if b not in local_branches():
             raise MacheteException("%s, line %i: '%s' is not a local branch. %s" %
                                    (definition_file, idx + 1, b, hint))
         managed_branches += [b]
@@ -294,7 +274,7 @@ def add(b):
     if onto:
         expect_in_managed_branches(onto)
 
-    if b not in get_all_branches():
+    if b not in local_branches():
         out_of = ("'"  + onto + "'") if onto else "the current HEAD"
         msg = "A local branch '%s' does not exist. Create (out of %s)? [y/n] " % (b, out_of)
         if ask_if(msg):
@@ -467,14 +447,14 @@ def adjusted_reflog(b):
     return adjusted_reflogs_cached[b]
 
 
-all_branches_cached = None
+local_branches_cached = None
 
 
-def get_all_branches():
-    global all_branches_cached
-    if all_branches_cached is None:
-        all_branches_cached = branches()
-    return all_branches_cached
+def local_branches():
+    global local_branches_cached
+    if local_branches_cached is None:
+        local_branches_cached = get_local_branches()
+    return local_branches_cached
 
 
 def infer_upstream(b, condition=lambda u: True):
@@ -484,11 +464,11 @@ def infer_upstream(b, condition=lambda u: True):
     def candidates():
         for start_point in start_points:
             for c in log_shas(start_point, max_count=MAX_COUNT_FOR_INITIAL_LOG):
-                for ob in get_all_branches():
+                for ob in local_branches():
                     if ob != b and c in adjusted_reflog(ob):
                         yield ob
             for c in log_shas(start_point, max_count=None)[MAX_COUNT_FOR_INITIAL_LOG:]:
-                for ob in get_all_branches():
+                for ob in local_branches():
                     if ob != b and c in adjusted_reflog(ob):
                         yield ob
 
@@ -500,21 +480,21 @@ def infer_upstream(b, condition=lambda u: True):
 
 def discover_tree():
     global managed_branches, roots, down_branches, up_branch, indent, annotations
-    all_branches = managed_branches = get_all_branches()
+    managed_branches = local_branches()
     roots = []
     down_branches = {}
     up_branch = {}
     indent = "\t"
     annotations = {}
 
-    root_of = dict((b, b) for b in all_branches)
+    root_of = dict((b, b) for b in managed_branches)
 
     def get_root_of(b):
         if b != root_of[b]:
             root_of[b] = get_root_of(root_of[b])
         return root_of[b]
 
-    for b in all_branches:
+    for b in managed_branches:
         u = infer_upstream(b, condition=lambda u: get_root_of(u) != b)
         if u:
             up_branch[b] = u
@@ -545,10 +525,10 @@ def discover_tree():
 
 
 def fork_point(b):
-    if b not in get_all_branches():
+    if b not in local_branches():
         raise MacheteException("'%s' is not a local branch" % b)
 
-    other_branches = excluding(get_all_branches(), [b])
+    other_branches = excluding(local_branches(), [b])
     adjusted_reflogs_other_branches = sum(map(adjusted_reflog, other_branches), [])
     # Since getting the full history of a branch can be an expensive operation for large repositories (compared to all other underlying git operations),
     # there's a simple optimization in place: we first fetch only a couple of first commits in the history,
@@ -562,10 +542,8 @@ def fork_point(b):
     raise MacheteException("Cannot find fork point for branch '%s'" % b)
 
 
-def branches(extra_option = None):
-    lines = non_empty_lines(popen_git("branch", *([extra_option] if extra_option else [])))
-    # Filter out e.g. '* (no branch, rebasing ...)' entry during an ongoing rebase
-    return [b[2:] for b in lines if not b.startswith("* (")]
+def get_local_branches(extra_option = None):
+    return non_empty_lines(popen_git("for-each-ref", "--format=%(refname:short)", "refs/heads", *([extra_option] if extra_option else [])))
 
 
 def go(branch):
@@ -590,13 +568,13 @@ def log(branch):
 
 
 def prune_branches():
-    branches_to_prune = excluding(get_all_branches(), managed_branches)
+    branches_to_prune = excluding(local_branches(), managed_branches)
     cb = current_branch_or_none()
     if cb and cb in branches_to_prune:
         branches_to_prune = excluding(branches_to_prune, [cb])
         print "Skipping current branch '%s'" % cb
     if branches_to_prune:
-        branches_merged_to_head = branches("--merged")
+        branches_merged_to_head = get_local_branches("--merged")
 
         branches_to_prune_merged_to_head = [b for b in branches_to_prune if b in branches_merged_to_head]
         for b in branches_to_prune_merged_to_head:
@@ -1378,7 +1356,7 @@ try:
             expect_in_managed_branches(b)
             res = slidable_after(b)
         elif param == "unmanaged":
-            res = excluding(branches(), managed_branches)
+            res = excluding(local_branches(), managed_branches)
         else:
             raise MacheteException("Usage: git machete list " + allowed_values)
         print "\n".join(res),
