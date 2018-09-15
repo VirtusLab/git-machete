@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.5.4'
+VERSION = '2.5.5'
 
 
 # Core utils
@@ -481,6 +481,8 @@ def infer_upstream(b, condition=lambda u: True):
 def discover_tree():
     global managed_branches, roots, down_branches, up_branch, indent, annotations
     managed_branches = local_branches()
+    if not managed_branches:
+        raise MacheteException("No local branches found")
     roots = []
     down_branches = {}
     up_branch = {}

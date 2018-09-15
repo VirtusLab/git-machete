@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.5.5
+
+- fixed: behavior of `discover` in a repository where no local branches exist (e.g. a newly-created one)
+
 ## New in git-machete 2.5.4
 
 - improved: fetching the list of local branches
