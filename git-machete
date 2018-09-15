@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.6.1'
+VERSION = '2.6.2'
 
 
 # Core utils
@@ -428,33 +428,21 @@ def reflog(b):
     return reflogs_cached[b]
 
 
-def relevant_reflog_subject(gs, b):
-    def is_created_from_remote_counterpart(b):
-        if gs.startswith("branch: Created from refs/remotes/"):
-            return True
-        rb = remote_tracking_branch(b)
-        return rb and gs.startswith("branch: Created from " + rb)
-
-    def is_reset_to_remote_counterpart(b):
-        if gs.startswith("reset: moving to refs/remotes/"):
-            return True
-        rb = remote_tracking_branch(b)
-        return rb and gs.startswith("reset: moving to " + rb)
-
+def is_relevant_reflog_subject(gs, b):
     result = not (
-        (gs.startswith("branch: Created from") and not is_created_from_remote_counterpart(b)) or
+        gs.startswith("branch: Created from") or
         gs.startswith("branch: Reset to " + b) or
         gs.startswith("branch: Reset to HEAD") or
-        (gs.startswith("reset: moving to ") and not is_reset_to_remote_counterpart(b))
+        gs.startswith("reset: moving to ")
     )
-    debug("relevant_reflog_subject(<<%s>>, %s)" % (gs, b), "result: %s" % result)
+    debug("is_relevant_reflog_subject(<<%s>>, %s)" % (gs, b), "result: %s" % result)
     return result
 
 
 def adjusted_reflog(b):
     global adjusted_reflogs_cached
     if b not in adjusted_reflogs_cached:
-        adjusted_reflogs_cached[b] = [sha for (sha, gs) in reflog(b) if relevant_reflog_subject(gs, b)]
+        adjusted_reflogs_cached[b] = [sha for (sha, gs) in reflog(b) if is_relevant_reflog_subject(gs, b)]
         debug("adjusted_reflog(%s)" % b, "computed adjusted reflog (= reflog without branch creation and branch reset events irrelevant for fork point/upstream inference): %s" %
               (", ".join(adjusted_reflogs_cached[b]) or "<empty>"))
     return adjusted_reflogs_cached[b]
@@ -566,22 +554,24 @@ def fork_point(b):
     if b not in local_branches():
         raise MacheteException("'%s' is not a local branch" % b)
 
-    other_branches = excluding(local_branches(), [b])
-    adjusted_reflogs_other_branches = sum(map(adjusted_reflog, other_branches), [])
-    debug("fork_point(%s)" % b, "adjusted reflogs of %s combined: %s" % (", ".join(other_branches), ", ".join(adjusted_reflogs_other_branches)))
+    other_local_branches = excluding(local_branches(), [b])
+    remote_counterparts_of_other_local_branches = filter(None, map(remote_tracking_branch, other_local_branches))
+    branches_to_check = other_local_branches + remote_counterparts_of_other_local_branches
+    adjusted_reflogs_to_check = sum(map(adjusted_reflog, branches_to_check), [])
+    debug("fork_point(%s)" % b, "adjusted reflogs of %s combined: %s" % (", ".join(branches_to_check), ", ".join(adjusted_reflogs_to_check)))
 
     # Since getting the full history of a branch can be an expensive operation for large repositories (compared to all other underlying git operations),
     # there's a simple optimization in place: we first fetch only a couple of first commits in the history,
     # and only fetch the rest if none of them occurs on reflog of any other branch.
     for sha in log_shas(b, max_count=MAX_COUNT_FOR_INITIAL_LOG):
-        if sha in adjusted_reflogs_other_branches:
+        if sha in adjusted_reflogs_to_check:
             debug("fork_point(%s)" % b, "candidate commit %s found in adjusted reflogs, accepting" % sha)
             return sha
         else:
             debug("fork_point(%s)" % b, "candidate commit %s not found in adjusted reflogs, rejecting" % sha)
 
     for sha in log_shas(b, max_count=None)[MAX_COUNT_FOR_INITIAL_LOG:]:
-        if sha in adjusted_reflogs_other_branches:
+        if sha in adjusted_reflogs_to_check:
             debug("fork_point(%s)" % b, "candidate commit %s found in adjusted reflogs, accepting" % sha)
             return sha
         else:
