@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.6.1
+
+- improved: simplified the upstream inference algorithm (now more aligned with the fork-point algorithm)
+
 ## New in git-machete 2.6.0
 
 - added: `--debug` flag

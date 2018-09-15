@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.6.0'
+VERSION = '2.6.1'
 
 
 # Core utils
@@ -471,31 +471,21 @@ def local_branches():
 
 
 def infer_upstream(b, condition=lambda u: True):
-    reflog_commit_entries = list(reversed([c for (c, gs) in reflog(b) if gs.startswith('commit: ')]))
-
-    if reflog_commit_entries:
-        debug("infer_upstream(%s)" % b, "reflog commit entries become the origin evidence points: %s" % ", ".join(reflog_commit_entries))
-        origin_evidence_points = reflog_commit_entries
-    else:
-        debug("infer_upstream(%s)" % b, "reflog commit entries empty; branch head becomes the only origin evidence point")
-        origin_evidence_points = [b]
-
     def candidates():
-        for oep in origin_evidence_points:
-            for c in log_shas(oep, max_count=MAX_COUNT_FOR_INITIAL_LOG):
-                debug("infer_upstream(%s) -> candidates()" % b, "checking commit %s" % c)
-                for ob in local_branches():
-                    if ob != b and c in adjusted_reflog(ob):
-                        debug("infer_upstream(%s) -> candidates()" % b,
-                              "commit %s, an ancestor of the origin evidence point %s, found on adjusted reflog of %s; %s becomes candidate for upstream of %s" % (c, oep, ob, ob, b))
-                        yield ob
-            for c in log_shas(oep, max_count=None)[MAX_COUNT_FOR_INITIAL_LOG:]:
-                debug("infer_upstream(%s) -> candidates()" % b, "checking commit %s" % c)
-                for ob in local_branches():
-                    if ob != b and c in adjusted_reflog(ob):
-                        debug("infer_upstream(%s) -> candidates()" % b,
-                              "commit %s, an ancestor of the origin evidence point %s, found on adjusted reflog of %s; %s becomes candidate for upstream of %s" % (c, oep, ob, ob, b))
-                        yield ob
+        for c in log_shas(b, max_count=MAX_COUNT_FOR_INITIAL_LOG):
+            debug("infer_upstream(%s) -> candidates()" % b, "checking commit %s" % c)
+            for ob in local_branches():
+                if ob != b and c in adjusted_reflog(ob):
+                    debug("infer_upstream(%s) -> candidates()" % b,
+                          "commit %s found on adjusted reflog of %s; %s becomes candidate for upstream of %s" % (c, ob, ob, b))
+                    yield ob
+        for c in log_shas(b, max_count=None)[MAX_COUNT_FOR_INITIAL_LOG:]:
+            debug("infer_upstream(%s) -> candidates()" % b, "checking commit %s" % c)
+            for ob in local_branches():
+                if ob != b and c in adjusted_reflog(ob):
+                    debug("infer_upstream(%s) -> candidates()" % b,
+                          "commit %s found on adjusted reflog of %s; %s becomes candidate for upstream of %s" % (c, ob, ob, b))
+                    yield ob
 
     for u in candidates():
         if condition(u):
