@@ -1,5 +1,10 @@
 # Release notes
 
+## New in git-machete 2.6.0
+
+- added: `delete-unmanaged` is the new name for `prune-branches` subcommand
+- deprecated: `prune-branches` subcommand (retained for backward compatibility)
+
 ## New in git-machete 2.5.5
 
 - fixed: behavior of `discover` in a repository where no local branches exist (e.g. a newly-created one)

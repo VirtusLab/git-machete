@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.5.5'
+VERSION = '2.6.0'
 
 
 # Core utils
@@ -569,17 +569,17 @@ def log(branch):
     run_git("log", "^" + fork_point(branch), branch)
 
 
-def prune_branches():
-    branches_to_prune = excluding(local_branches(), managed_branches)
+def delete_unmanaged():
+    branches_to_delete = excluding(local_branches(), managed_branches)
     cb = current_branch_or_none()
-    if cb and cb in branches_to_prune:
-        branches_to_prune = excluding(branches_to_prune, [cb])
+    if cb and cb in branches_to_delete:
+        branches_to_delete = excluding(branches_to_delete, [cb])
         print "Skipping current branch '%s'" % cb
-    if branches_to_prune:
+    if branches_to_delete:
         branches_merged_to_head = get_local_branches("--merged")
 
-        branches_to_prune_merged_to_head = [b for b in branches_to_prune if b in branches_merged_to_head]
-        for b in branches_to_prune_merged_to_head:
+        branches_to_delete_merged_to_head = [b for b in branches_to_delete if b in branches_merged_to_head]
+        for b in branches_to_delete_merged_to_head:
             rb = remote_tracking_branch(b)
             is_merged_to_remote = is_ancestor(b, rb) if rb else True
             msg = "Delete branch %s%s%s (merged to HEAD%s)? [y/n/q] " % (
@@ -591,8 +591,8 @@ def prune_branches():
             elif ans in ('q', 'quit'):
                 return
 
-        branches_to_prune_unmerged_to_head = [b for b in branches_to_prune if b not in branches_merged_to_head]
-        for b in branches_to_prune_unmerged_to_head:
+        branches_to_delete_unmerged_to_head = [b for b in branches_to_delete if b not in branches_merged_to_head]
+        for b in branches_to_delete_unmerged_to_head:
             msg = "Delete branch %s%s%s (unmerged to HEAD)? [y/n/q] " % (BOLD, b, ENDC)
             ans = raw_input(msg).lower()
             if ans in ('y', 'yes'):
@@ -844,6 +844,7 @@ def usage(c=None):
     short_docs = {
         "add": "Add a branch to the tree of branch dependencies",
         "anno": "Manage custom annotations",
+        "delete-unmanaged": "Delete local branches that are not present in the definition file",
         "diff": "Diff current working directory or a given branch against its computed fork point",
         "discover": "Automatically discover tree of branch dependencies",
         "edit": "Edit the definition file",
@@ -852,10 +853,8 @@ def usage(c=None):
         "format": "Print information about the format of the definition file",
         "go": "Check out the branch relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument",
         "help": "Print this overview, or print detailed help for a specified command",
-        "infer": "Automatically discover tree of branch dependencies (deprecated alias for 'discover')",
         "list": "List all branches that fall into one of pre-defined categories (mostly for internal use)",
         "log": "Log the part of history specific to the given branch",
-        "prune-branches": "Remove local branches that are not in the definition file",
         "reapply": "Rebase the current branch onto its computed fork point",
         "show": "Print name(s) of the branch(es) relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument",
         "slide-out": "Slide the current branch out and rebase its downstream (child) branch onto its upstream (parent) branch",
@@ -892,6 +891,15 @@ def usage(c=None):
             If multiple arguments are passed to the command, they are concatenated with single spaces.
 
             Note: the same effect can be always achieved by manually editing the definition file.
+        """,
+        "delete-unmanaged": """
+            Usage: git machete delete-unmanaged
+
+            Goes one-by-one through all the local git branches that don't exist in the definition file, and ask to delete each of them (with 'git branch -d' or 'git branch -D') if confirmed by user.
+            No branch will be deleted unless explicitly confirmed by the user.
+
+            Note: this should be used with care since deleting local branches can sometimes make it impossible for 'git machete' to properly compute fork points.
+            See 'git machete help fork-point' for more details.
         """,
         "diff": """
             Usage: git machete d[iff] [-s|--stat] [<branch>]
@@ -1013,11 +1021,7 @@ def usage(c=None):
         "prune-branches": """
             Usage: git machete prune-branches
 
-            Goes one-by-one through all the local git branches that don't exist in the definition file, and ask to remove each of them (with 'git branch -d' or 'git branch -D') if confirmed by user.
-            No branch will be removed unless explicitly confirmed by the user.
-
-            Note: this should be used with care since removing local branches can sometimes make it impossible for 'git machete' to properly compute fork points.
-            See 'git machete help fork-point' for more details.
+            A deprecated alias for 'delete-unmanaged'. Retained for compatibility, to be removed in one of next major releases.
         """,
         "reapply": """
             Usage: git machete reapply [-f|--fork-point=<fork-point-commit>]
@@ -1143,8 +1147,8 @@ def usage(c=None):
     inv_aliases = {v: k for k, v in aliases.iteritems()}
     groups = [
         ("General topics", ["file", "format", "help"]),
-        ("Build, display and modify the tree of branch dependencies", ["add", "anno", "discover", "edit", "status"]), # 'infer' is skipped for the main docs
-        ("List, checkout and delete branches", ["go", "list", "prune-branches", "show"]),
+        ("Build, display and modify the tree of branch dependencies", ["add", "anno", "discover", "edit", "status"]), # 'infer' is skipped from the main docs
+        ("List, checkout and delete branches", ["delete-unmanaged", "go", "list", "show"]), # 'prune-branches' is skipped from the main docs
         ("Determine changes specific to the given branch", ["diff", "fork-point", "log"]),
         ("Update git history in accordance with the tree of branch dependencies", ["reapply", "slide-out", "traverse", "update"])
     ]
@@ -1163,7 +1167,7 @@ def usage(c=None):
             print UNDERLINE + hdr + ENDC + "\n"
             for cm in cmds:
                 alias = (", " + aliases[cm]) if cm in aliases else ""
-                print "    %s%-16s%s%s" % (BOLD, cm + alias, ENDC, short_docs[cm])
+                print "    %s%-18s%s%s" % (BOLD, cm + alias, ENDC, short_docs[cm])
             print >> sys.stderr
         print textwrap.dedent("""
             %sGeneral options%s\n
@@ -1295,6 +1299,10 @@ try:
             annotate(params)
         else:
             print_annotation()
+    elif cmd == "delete-unmanaged":
+        expect_no_param(parse_options(args))
+        read_definition_file()
+        delete_unmanaged()
     elif cmd in ("d", "diff"):
         param = check_optional_param(parse_options(args, "s", ["stat"]))
         # No need to read definition file.
@@ -1369,7 +1377,7 @@ try:
     elif cmd == "prune-branches":
         expect_no_param(parse_options(args))
         read_definition_file()
-        prune_branches()
+        delete_unmanaged()
     elif cmd == "reapply":
         args1 = parse_options(args, "f:", ["fork-point="])
         expect_no_param(args1, ". Use '-f' or '--fork-point' to specify the fork point commit")

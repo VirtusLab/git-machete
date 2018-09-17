@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 _git_machete() {
-	cmds="add anno d diff discover e edit file fork-point format g go help infer l list log prune-branches reapply show slide-out s status traverse update"
+	cmds="add anno d delete-unmanaged diff discover e edit file fork-point format g go help infer l list log prune-branches reapply show slide-out s status traverse update"
 	categories="managed slidable slidable-after unmanaged"
 	directions="down first last next prev root up"
 
