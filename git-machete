@@ -545,17 +545,30 @@ def match_log_to_adjusted_reflogs(b):
     def generate_entries():
         other_local_branches = excluding(local_branches(), [b])
         for ob in other_local_branches:
+            ob_shas = set()
             for sha in adjusted_reflog(ob):
+                ob_shas.add(sha)
                 yield sha, (ob, ob)
             rob = remote_tracking_branch(ob)
             if rob:
                 for sha in adjusted_reflog(rob):
-                    yield sha, (ob, rob)
+                    if sha not in ob_shas:
+                        yield sha, (ob, rob)
 
-    sorted_entries = sorted(generate_entries(), key = lambda (sha, branch_def): sha)
-    grouped_entries = itertools.groupby(sorted_entries, key = lambda (sha, branch_def): sha)
-    branch_defs_by_sha_in_reflog = { sha: map(lambda (sha, branch_def): branch_def, pairs) for sha, pairs in grouped_entries }
-    debug("match_log_to_adjusted_reflogs(%s)" % b, "branches containing the given SHA in their adjusted reflog: %s" % branch_defs_by_sha_in_reflog)
+    branch_defs_by_sha_in_reflog = {}
+    for sha, branch_def in generate_entries():
+        if sha in branch_defs_by_sha_in_reflog:
+            # The practice shows that it's rather unlikely for a given commit to appear on adjusted reflogs of two unrelated branches
+            # ("unrelated" as in, not a local branch and its remote counterpart) but need to handle this case anyway.
+            branch_defs_by_sha_in_reflog[sha] += [branch_def]
+        else:
+            branch_defs_by_sha_in_reflog[sha] = [branch_def]
+
+    def log_output():
+        for sha, branch_defs in branch_defs_by_sha_in_reflog.items():
+            yield "%s%s%s => %s%s%s" % \
+                  (GREY, sha, ENDC, GREY, ", ". join(map(lambda (ob, rob): ob if ob == rob else "%s (remote counterpart of %s)" % (rob, ob), branch_defs)), ENDC)
+    debug("match_log_to_adjusted_reflogs(%s)" % b, "branches containing the given SHA in their adjusted reflog: \n%s" % "\n".join(log_output()))
 
     for sha in spoonfeed_log_shas(b):
         if sha in branch_defs_by_sha_in_reflog:
