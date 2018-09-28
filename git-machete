@@ -548,14 +548,14 @@ def discover_tree():
         edit()
 
 
-def fork_point(b):
+def fork_point_and_base_branches(b):
     if b not in local_branches():
         raise MacheteException("'%s' is not a local branch" % b)
 
     other_local_branches = excluding(local_branches(), [b])
     remote_counterparts_of_other_local_branches = filter(None, map(remote_tracking_branch, other_local_branches))
     branches_to_check = other_local_branches + remote_counterparts_of_other_local_branches
-    debug("fork_point(%s)" % b, "branches to check: %s" % ", ".join(branches_to_check))
+    debug("fork_point_and_base_branches(%s)" % b, "branches to check: %s" % ", ".join(branches_to_check))
 
     def generate_entries():
         for branch in branches_to_check:
@@ -565,15 +565,21 @@ def fork_point(b):
     sorted_entries = sorted(generate_entries(), key = lambda (sha, branch): sha)
     grouped_entries = itertools.groupby(sorted_entries, key = lambda (sha, branch): sha)
     branches_by_sha_in_reflog = { sha: map(lambda (sha, branch): branch, pairs) for sha, pairs in grouped_entries }
-    debug("fork_point(%s)" % b, "branches containing given SHA in their adjusted reflog: %s" % branches_by_sha_in_reflog)
+    debug("fork_point_and_base_branches(%s)" % b, "branches containing the given SHA in their adjusted reflog: %s" % branches_by_sha_in_reflog)
 
     for sha in spoonfeed_log_shas(b):
         if sha in branches_by_sha_in_reflog:
-            debug("fork_point(%s)" % b, "candidate commit %s found in adjusted reflog of %s; accepting" % (sha, " and ".join(branches_by_sha_in_reflog[sha])))
-            return sha
+            base_branches = branches_by_sha_in_reflog[sha]
+            debug("fork_point_and_base_branches(%s)" % b, "candidate commit %s found in adjusted reflog of %s; accepting" % (sha, " and ".join(base_branches)))
+            return sha, base_branches
         else:
-            debug("fork_point(%s)" % b, "candidate commit %s not found in any adjusted reflog, rejecting" % sha)
+            debug("fork_point_and_base_branches(%s)" % b, "candidate commit %s not found in any adjusted reflog, rejecting" % sha)
     raise MacheteException("Cannot find fork point for branch '%s'" % b)
+
+
+def fork_point(b):
+    fp, base_branches = fork_point_and_base_branches(b)
+    return fp
 
 
 def get_local_branches(extra_option = None):
