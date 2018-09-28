@@ -538,15 +538,15 @@ def match_log_to_adjusted_reflogs(b):
     if b not in local_branches():
         raise MacheteException("'%s' is not a local branch" % b)
 
-    other_local_branches = excluding(local_branches(), [b])
-    remote_counterparts_of_other_local_branches = filter(None, map(remote_tracking_branch, other_local_branches))
-    branches_to_check = other_local_branches + remote_counterparts_of_other_local_branches
-    debug("match_log_to_adjusted_reflogs(%s)" % b, "branches to check: %s" % ", ".join(branches_to_check))
-
     def generate_entries():
-        for branch in branches_to_check:
+        other_local_branches = excluding(local_branches(), [b])
+        for branch in other_local_branches:
             for sha in adjusted_reflog(branch):
                 yield sha, branch
+            rb = remote_tracking_branch(branch)
+            if rb:
+                for sha in adjusted_reflog(rb):
+                    yield sha, branch
 
     sorted_entries = sorted(generate_entries(), key = lambda (sha, branch): sha)
     grouped_entries = itertools.groupby(sorted_entries, key = lambda (sha, branch): sha)
