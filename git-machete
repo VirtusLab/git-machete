@@ -471,15 +471,19 @@ def local_branches():
     return local_branches_cached
 
 
-def infer_upstream(b, condition=lambda u: True):
-    for sha, containing_branches in match_log_to_adjusted_reflogs(b):
-        debug("infer_upstream(%s)" % b, "commit %s occurs on adjusted reflog of %s" % (sha, " and ".join(containing_branches)))
-        for candidate in containing_branches:
+def infer_upstream(b, condition=lambda u: True, reject_reason_message = ""):
+    for sha, containing_branch_defs in match_log_to_adjusted_reflogs(b):
+        debug("infer_upstream(%s)" % b, "commit %s occurs on adjusted reflog of %s" % (sha, " and ".join(map(lambda (x, y): y, containing_branch_defs))))
+
+        for candidate, original_matched_branch in containing_branch_defs:
+            if candidate != original_matched_branch:
+                debug("infer_upstream(%s)" % b, "upstream candidate is %s, which is the local counterpart of %s" % (candidate, original_matched_branch))
+
             if condition(candidate):
                 debug("infer_upstream(%s)" % b, "upstream candidate %s accepted" % candidate)
                 return candidate
             else:
-                debug("infer_upstream(%s)" % b, "upstream candidate %s rejected" % candidate)
+                debug("infer_upstream(%s)" % b, "upstream candidate %s rejected (%s)" % (candidate, reject_reason_message))
     return None
 
 
@@ -502,7 +506,7 @@ def discover_tree():
         return root_of[b]
 
     for b in managed_branches:
-        u = infer_upstream(b, condition=lambda u: get_root_of(u) != b)
+        u = infer_upstream(b, condition=lambda u: get_root_of(u) != b, reject_reason_message= "choosing this candidate would form a cycle in the resulting graph")
         if u:
             debug("discover_tree()" , "inferred upstream of %s "
                                       "is %s, attaching %s as a child of %s" % (b, u, b, u))
@@ -540,37 +544,37 @@ def match_log_to_adjusted_reflogs(b):
 
     def generate_entries():
         other_local_branches = excluding(local_branches(), [b])
-        for branch in other_local_branches:
-            for sha in adjusted_reflog(branch):
-                yield sha, branch
-            rb = remote_tracking_branch(branch)
-            if rb:
-                for sha in adjusted_reflog(rb):
-                    yield sha, branch
+        for ob in other_local_branches:
+            for sha in adjusted_reflog(ob):
+                yield sha, (ob, ob)
+            rob = remote_tracking_branch(ob)
+            if rob:
+                for sha in adjusted_reflog(rob):
+                    yield sha, (ob, rob)
 
-    sorted_entries = sorted(generate_entries(), key = lambda (sha, branch): sha)
-    grouped_entries = itertools.groupby(sorted_entries, key = lambda (sha, branch): sha)
-    branches_by_sha_in_reflog = { sha: map(lambda (sha, branch): branch, pairs) for sha, pairs in grouped_entries }
-    debug("match_log_to_adjusted_reflogs(%s)" % b, "branches containing the given SHA in their adjusted reflog: %s" % branches_by_sha_in_reflog)
+    sorted_entries = sorted(generate_entries(), key = lambda (sha, branch_def): sha)
+    grouped_entries = itertools.groupby(sorted_entries, key = lambda (sha, branch_def): sha)
+    branch_defs_by_sha_in_reflog = { sha: map(lambda (sha, branch_def): branch_def, pairs) for sha, pairs in grouped_entries }
+    debug("match_log_to_adjusted_reflogs(%s)" % b, "branches containing the given SHA in their adjusted reflog: %s" % branch_defs_by_sha_in_reflog)
 
     for sha in spoonfeed_log_shas(b):
-        if sha in branches_by_sha_in_reflog:
-            containing_branches = branches_by_sha_in_reflog[sha]
-            debug("match_log_to_adjusted_reflogs(%s)" % b, "commit %s found in adjusted reflog of %s" % (sha, " and ".join(containing_branches)))
-            yield sha, containing_branches
+        if sha in branch_defs_by_sha_in_reflog:
+            containing_branch_defs = branch_defs_by_sha_in_reflog[sha]
+            debug("match_log_to_adjusted_reflogs(%s)" % b, "commit %s found in adjusted reflog of %s" % (sha, " and ".join(map(lambda (x, y): y, containing_branch_defs))))
+            yield sha, containing_branch_defs
         else:
             debug("match_log_to_adjusted_reflogs(%s)" % b, "commit %s not found in any adjusted reflog" % sha)
 
 
 def fork_point(b):
     try:
-        sha, containing_branches = next(match_log_to_adjusted_reflogs(b))
+        sha, containing_branch_defs = next(match_log_to_adjusted_reflogs(b))
     except StopIteration:
         raise MacheteException("Cannot find fork point for branch '%s'" % b)
 
     debug("fork_point(%s)" % b,
           "commit %s is the latest in history of %s to occur on adjusted reflog of any other branch or its remote counterpart (specifically, %s)"
-          % (sha, b, " and ".join(containing_branches)))
+          % (sha, b, " and ".join(map(lambda (x, y): y, containing_branch_defs))))
     return sha
 
 
