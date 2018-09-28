@@ -472,28 +472,14 @@ def local_branches():
 
 
 def infer_upstream(b, condition=lambda u: True):
-    def candidates():
-        for c in spoonfeed_log_shas(b):
-            debug("infer_upstream(%s) -> candidates()" % b, "checking commit %s" % c)
-            for ob in local_branches():
-                if ob != b:
-                    if c in adjusted_reflog(ob):
-                        debug("infer_upstream(%s) -> candidates()" % b,
-                              "commit %s found on adjusted reflog of %s; %s becomes candidate for upstream of %s" % (c, ob, ob, b))
-                        yield ob
-                    else:
-                        rob = remote_tracking_branch(ob)
-                        if rob and c in adjusted_reflog(rob):
-                            debug("infer_upstream(%s) -> candidates()" % b,
-                                  "commit %s found on adjusted reflog of %s which is the remote counterpart of %s; %s becomes candidate for upstream of %s" % (
-                                  c, rob, ob, ob, b))
-                            yield ob
-    for u in candidates():
-        if condition(u):
-            debug("infer_upstream(%s)" % b, "upstream candidate %s accepted" % u)
-            return u
-        else:
-            debug("infer_upstream(%s)" % b, "upstream candidate %s rejected" % u)
+    for sha, containing_branches in match_log_to_adjusted_reflogs(b):
+        debug("infer_upstream(%s)" % b, "commit %s occurs on adjusted reflog of %s" % (sha, " and ".join(containing_branches)))
+        for candidate in containing_branches:
+            if condition(candidate):
+                debug("infer_upstream(%s)" % b, "upstream candidate %s accepted" % candidate)
+                return candidate
+            else:
+                debug("infer_upstream(%s)" % b, "upstream candidate %s rejected" % candidate)
     return None
 
 
@@ -548,14 +534,14 @@ def discover_tree():
         edit()
 
 
-def fork_point_and_base_branches(b):
+def match_log_to_adjusted_reflogs(b):
     if b not in local_branches():
         raise MacheteException("'%s' is not a local branch" % b)
 
     other_local_branches = excluding(local_branches(), [b])
     remote_counterparts_of_other_local_branches = filter(None, map(remote_tracking_branch, other_local_branches))
     branches_to_check = other_local_branches + remote_counterparts_of_other_local_branches
-    debug("fork_point_and_base_branches(%s)" % b, "branches to check: %s" % ", ".join(branches_to_check))
+    debug("match_log_to_adjusted_reflogs(%s)" % b, "branches to check: %s" % ", ".join(branches_to_check))
 
     def generate_entries():
         for branch in branches_to_check:
@@ -565,21 +551,27 @@ def fork_point_and_base_branches(b):
     sorted_entries = sorted(generate_entries(), key = lambda (sha, branch): sha)
     grouped_entries = itertools.groupby(sorted_entries, key = lambda (sha, branch): sha)
     branches_by_sha_in_reflog = { sha: map(lambda (sha, branch): branch, pairs) for sha, pairs in grouped_entries }
-    debug("fork_point_and_base_branches(%s)" % b, "branches containing the given SHA in their adjusted reflog: %s" % branches_by_sha_in_reflog)
+    debug("match_log_to_adjusted_reflogs(%s)" % b, "branches containing the given SHA in their adjusted reflog: %s" % branches_by_sha_in_reflog)
 
     for sha in spoonfeed_log_shas(b):
         if sha in branches_by_sha_in_reflog:
-            base_branches = branches_by_sha_in_reflog[sha]
-            debug("fork_point_and_base_branches(%s)" % b, "candidate commit %s found in adjusted reflog of %s; accepting" % (sha, " and ".join(base_branches)))
-            return sha, base_branches
+            containing_branches = branches_by_sha_in_reflog[sha]
+            debug("match_log_to_adjusted_reflogs(%s)" % b, "commit %s found in adjusted reflog of %s" % (sha, " and ".join(containing_branches)))
+            yield sha, containing_branches
         else:
-            debug("fork_point_and_base_branches(%s)" % b, "candidate commit %s not found in any adjusted reflog, rejecting" % sha)
-    raise MacheteException("Cannot find fork point for branch '%s'" % b)
+            debug("match_log_to_adjusted_reflogs(%s)" % b, "commit %s not found in any adjusted reflog" % sha)
 
 
 def fork_point(b):
-    fp, base_branches = fork_point_and_base_branches(b)
-    return fp
+    try:
+        sha, containing_branches = next(match_log_to_adjusted_reflogs(b))
+    except StopIteration:
+        raise MacheteException("Cannot find fork point for branch '%s'" % b)
+
+    debug("fork_point(%s)" % b,
+          "commit %s is the latest in history of %s to occur on adjusted reflog of any other branch or its remote counterpart (specifically, %s)"
+          % (sha, b, " and ".join(containing_branches)))
+    return sha
 
 
 def get_local_branches(extra_option = None):
