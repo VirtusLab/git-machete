@@ -475,18 +475,33 @@ def infer_upstream(b, condition=lambda u: True):
         for c in log_shas(b, max_count=MAX_COUNT_FOR_INITIAL_LOG):
             debug("infer_upstream(%s) -> candidates()" % b, "checking commit %s" % c)
             for ob in local_branches():
-                if ob != b and c in adjusted_reflog(ob):
-                    debug("infer_upstream(%s) -> candidates()" % b,
-                          "commit %s found on adjusted reflog of %s; %s becomes candidate for upstream of %s" % (c, ob, ob, b))
-                    yield ob
+                if ob != b:
+                    if c in adjusted_reflog(ob):
+                        debug("infer_upstream(%s) -> candidates()" % b,
+                              "commit %s found on adjusted reflog of %s; %s becomes candidate for upstream of %s" % (c, ob, ob, b))
+                        yield ob
+                    else:
+                        rob = remote_tracking_branch(ob)
+                        if rob and c in adjusted_reflog(rob):
+                            debug("infer_upstream(%s) -> candidates()" % b,
+                                  "commit %s found on adjusted reflog of %s which is the remote counterpart of %s; %s becomes candidate for upstream of %s" % (
+                                  c, rob, ob, ob, b))
+                            yield ob
         for c in log_shas(b, max_count=None)[MAX_COUNT_FOR_INITIAL_LOG:]:
             debug("infer_upstream(%s) -> candidates()" % b, "checking commit %s" % c)
             for ob in local_branches():
-                if ob != b and c in adjusted_reflog(ob):
-                    debug("infer_upstream(%s) -> candidates()" % b,
-                          "commit %s found on adjusted reflog of %s; %s becomes candidate for upstream of %s" % (c, ob, ob, b))
-                    yield ob
-
+                if ob != b:
+                    if c in adjusted_reflog(ob):
+                        debug("infer_upstream(%s) -> candidates()" % b,
+                              "commit %s found on adjusted reflog of %s; %s becomes candidate for upstream of %s" % (c, ob, ob, b))
+                        yield ob
+                    else:
+                        rob = remote_tracking_branch(ob)
+                        if rob and c in adjusted_reflog(rob):
+                            debug("infer_upstream(%s) -> candidates()" % b,
+                                  "commit %s found on adjusted reflog of %s which is the remote counterpart of %s; %s becomes candidate for upstream of %s" % (
+                                  c, rob, ob, ob, b))
+                            yield ob
     for u in candidates():
         if condition(u):
             debug("infer_upstream(%s)" % b, "upstream candidate %s accepted" % u)
