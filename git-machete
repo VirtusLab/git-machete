@@ -804,12 +804,14 @@ def status():
     for b, pfx in dfs_res:
         if b in up_branch:
             needs_sync_with_up_branch[b] = not is_ancestor(up_branch[b], b)
+            # Force computing all needed fork points to avoid later polluting the printed status in case of --verbose mode.
             try:
                 fork_points_cached[b] = fork_point(b)
             except MacheteException:
                 fork_points_cached[b] = None
             if opt_list_commits:
                 commits_cached[b] = reversed(commits_between(fork_points_cached[b], b)) if fork_points_cached[b] else []
+        # Force computing all needed SHAs to avoid later polluting the printed status in case of --verbose mode.
         shas_cached[b] = compute_sha_by_refspec(b)
         remote_sync_status[b] = get_remote_sync_status(b)
 
