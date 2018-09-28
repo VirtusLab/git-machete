@@ -60,7 +60,7 @@ def pick(choices, name):
 
 def debug(hdr, msg):
     if opt_debug:
-        print >> sys.stderr, "%s%s%s: %s%s%s" % (BOLD, hdr, ENDC, GREY, msg, ENDC)
+        print >> sys.stderr, "%s%s%s: %s%s%s\n" % (BOLD, hdr, ENDC, GREY, msg, ENDC)
 
 
 def run_cmd(cmd, *args):
@@ -77,21 +77,25 @@ def popen_cmd(cmd, *args):
 
 def run_git(git_cmd, *args, **kwargs):
     flat_cmd = " ".join(["git", git_cmd] + list(args))
-    if opt_verbose:
+    if opt_verbose or opt_debug:
         print >> sys.stderr, flat_cmd
     status = run_cmd("git", git_cmd, *args)
     if not kwargs.get("allow_non_zero") and status != 0:
         raise MacheteException("'%s' returned %i" % (flat_cmd, status))
+    if opt_debug:
+        print >> sys.stderr, "%s<status: %i>%s\n" % (GREY, status, ENDC)
     return status
 
 
 def popen_git(git_cmd, *args):
     flat_cmd = " ".join(["git", git_cmd] + list(args))
-    if opt_verbose:
+    if opt_verbose or opt_debug:
         print >> sys.stderr, flat_cmd
     status, stdout = popen_cmd("git", git_cmd, *args)
     if status != 0:
         raise MacheteException("'%s' returned %i" % (flat_cmd, status))
+    if opt_debug:
+        print >> sys.stderr, "%s%s%s" % (GREY, stdout, ENDC)
     return stdout
 
 
@@ -450,11 +454,9 @@ def relevant_reflog_subject(gs, b):
 def adjusted_reflog(b):
     global adjusted_reflogs_cached
     if b not in adjusted_reflogs_cached:
-        raw_reflog = reflog(b)
-        debug("adjusted_reflog(%s)" % b, "computing adjusted reflog, raw reflog: %s" % raw_reflog)
-
-        adjusted_reflogs_cached[b] = [sha for (sha, gs) in raw_reflog if relevant_reflog_subject(gs, b)]
-        debug("adjusted_reflog(%s)" % b, "computed adjusted reflog: %s" % ", ".join(adjusted_reflogs_cached[b]))
+        adjusted_reflogs_cached[b] = [sha for (sha, gs) in reflog(b) if relevant_reflog_subject(gs, b)]
+        debug("adjusted_reflog(%s)" % b, "computed adjusted reflog (= reflog without branch creation and branch reset events irrelevant for fork point/upstream inference): %s" %
+              (", ".join(adjusted_reflogs_cached[b]) or "<empty>"))
     return adjusted_reflogs_cached[b]
 
 
@@ -1209,7 +1211,7 @@ def usage(c=None):
             print >> sys.stderr
         print textwrap.dedent("""
             %sGeneral options%s\n
-                --debug          Logs some detailed diagnostic info, especially wrt. fork points and upstream inference.
+                --debug          Logs detailed diagnostic info, including outputs of the executed git commands.
                 -h, --help       Prints help and exits.
                 -v, --verbose    Logs the executed git commands.
                 --version        Prints version and exits.
