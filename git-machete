@@ -416,7 +416,6 @@ def log_shas(refspec, max_count):
 MAX_COUNT_FOR_INITIAL_LOG = 10
 
 reflogs_cached = {}
-adjusted_reflogs_cached = {}
 
 
 def reflog(b):
@@ -437,6 +436,9 @@ def is_relevant_reflog_subject(gs, b):
     )
     debug("is_relevant_reflog_subject(<<%s>>, %s)" % (gs, b), "result: %s" % result)
     return result
+
+
+adjusted_reflogs_cached = {}
 
 
 def adjusted_reflog(b):
@@ -557,25 +559,34 @@ def fork_point(b):
     other_local_branches = excluding(local_branches(), [b])
     remote_counterparts_of_other_local_branches = filter(None, map(remote_tracking_branch, other_local_branches))
     branches_to_check = other_local_branches + remote_counterparts_of_other_local_branches
-    adjusted_reflogs_to_check = sum(map(adjusted_reflog, branches_to_check), [])
-    debug("fork_point(%s)" % b, "adjusted reflogs of %s combined: %s" % (", ".join(branches_to_check), ", ".join(adjusted_reflogs_to_check)))
+    debug("fork_point(%s)" % b, "branches to check: %s" % ", ".join(branches_to_check))
+
+    def generate_entries():
+        for branch in branches_to_check:
+            for sha in adjusted_reflog(branch):
+                yield sha, branch
+
+    sorted_entries = sorted(generate_entries(), key = lambda (sha, branch): sha)
+    grouped_entries = itertools.groupby(sorted_entries, key = lambda (sha, branch): sha)
+    branches_by_sha_in_reflog = { sha: map(lambda (sha, branch): branch, pairs) for sha, pairs in grouped_entries }
+
+    debug("fork_point(%s)" % b, "branches containing given SHA in their adjusted reflog: %s" % branches_by_sha_in_reflog)
 
     # Since getting the full history of a branch can be an expensive operation for large repositories (compared to all other underlying git operations),
     # there's a simple optimization in place: we first fetch only a couple of first commits in the history,
     # and only fetch the rest if none of them occurs on reflog of any other branch.
-    for sha in log_shas(b, max_count=MAX_COUNT_FOR_INITIAL_LOG):
-        if sha in adjusted_reflogs_to_check:
-            debug("fork_point(%s)" % b, "candidate commit %s found in adjusted reflogs, accepting" % sha)
-            return sha
-        else:
-            debug("fork_point(%s)" % b, "candidate commit %s not found in adjusted reflogs, rejecting" % sha)
+    def spoonfeed_log_shas():
+        for sha in log_shas(b, max_count=MAX_COUNT_FOR_INITIAL_LOG):
+            yield sha
+        for sha in log_shas(b, max_count=None)[MAX_COUNT_FOR_INITIAL_LOG:]:
+            yield sha
 
-    for sha in log_shas(b, max_count=None)[MAX_COUNT_FOR_INITIAL_LOG:]:
-        if sha in adjusted_reflogs_to_check:
-            debug("fork_point(%s)" % b, "candidate commit %s found in adjusted reflogs, accepting" % sha)
+    for sha in spoonfeed_log_shas():
+        if sha in branches_by_sha_in_reflog:
+            debug("fork_point(%s)" % b, "candidate commit %s found in adjusted reflog of %s; accepting" % (sha, " and ".join(branches_by_sha_in_reflog[sha])))
             return sha
         else:
-            debug("fork_point(%s)" % b, "candidate commit %s not found in adjusted reflogs, rejecting" % sha)
+            debug("fork_point(%s)" % b, "candidate commit %s not found in any adjusted reflog, rejecting" % sha)
     raise MacheteException("Cannot find fork point for branch '%s'" % b)
 
 
