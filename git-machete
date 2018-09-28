@@ -415,6 +415,17 @@ def log_shas(refspec, max_count):
 
 MAX_COUNT_FOR_INITIAL_LOG = 10
 
+
+# Since getting the full history of a branch can be an expensive operation for large repositories (compared to all other underlying git operations),
+# there's a simple optimization in place: we first fetch only a couple of first commits in the history,
+# and only fetch the rest if none of them occurs on reflog of any other branch.
+def spoonfeed_log_shas(b):
+    for sha in log_shas(b, max_count=MAX_COUNT_FOR_INITIAL_LOG):
+        yield sha
+    for sha in log_shas(b, max_count=None)[MAX_COUNT_FOR_INITIAL_LOG:]:
+        yield sha
+
+
 reflogs_cached = {}
 
 
@@ -462,22 +473,7 @@ def local_branches():
 
 def infer_upstream(b, condition=lambda u: True):
     def candidates():
-        for c in log_shas(b, max_count=MAX_COUNT_FOR_INITIAL_LOG):
-            debug("infer_upstream(%s) -> candidates()" % b, "checking commit %s" % c)
-            for ob in local_branches():
-                if ob != b:
-                    if c in adjusted_reflog(ob):
-                        debug("infer_upstream(%s) -> candidates()" % b,
-                              "commit %s found on adjusted reflog of %s; %s becomes candidate for upstream of %s" % (c, ob, ob, b))
-                        yield ob
-                    else:
-                        rob = remote_tracking_branch(ob)
-                        if rob and c in adjusted_reflog(rob):
-                            debug("infer_upstream(%s) -> candidates()" % b,
-                                  "commit %s found on adjusted reflog of %s which is the remote counterpart of %s; %s becomes candidate for upstream of %s" % (
-                                  c, rob, ob, ob, b))
-                            yield ob
-        for c in log_shas(b, max_count=None)[MAX_COUNT_FOR_INITIAL_LOG:]:
+        for c in spoonfeed_log_shas(b):
             debug("infer_upstream(%s) -> candidates()" % b, "checking commit %s" % c)
             for ob in local_branches():
                 if ob != b:
@@ -569,19 +565,9 @@ def fork_point(b):
     sorted_entries = sorted(generate_entries(), key = lambda (sha, branch): sha)
     grouped_entries = itertools.groupby(sorted_entries, key = lambda (sha, branch): sha)
     branches_by_sha_in_reflog = { sha: map(lambda (sha, branch): branch, pairs) for sha, pairs in grouped_entries }
-
     debug("fork_point(%s)" % b, "branches containing given SHA in their adjusted reflog: %s" % branches_by_sha_in_reflog)
 
-    # Since getting the full history of a branch can be an expensive operation for large repositories (compared to all other underlying git operations),
-    # there's a simple optimization in place: we first fetch only a couple of first commits in the history,
-    # and only fetch the rest if none of them occurs on reflog of any other branch.
-    def spoonfeed_log_shas():
-        for sha in log_shas(b, max_count=MAX_COUNT_FOR_INITIAL_LOG):
-            yield sha
-        for sha in log_shas(b, max_count=None)[MAX_COUNT_FOR_INITIAL_LOG:]:
-            yield sha
-
-    for sha in spoonfeed_log_shas():
+    for sha in spoonfeed_log_shas(b):
         if sha in branches_by_sha_in_reflog:
             debug("fork_point(%s)" % b, "candidate commit %s found in adjusted reflog of %s; accepting" % (sha, " and ".join(branches_by_sha_in_reflog[sha])))
             return sha
