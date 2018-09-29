@@ -73,6 +73,7 @@ def popen_cmd(cmd, *args):
     return process.returncode, stdoutdata
 
 
+
 # Git core
 
 def run_git(git_cmd, *args, **kwargs):
@@ -99,7 +100,8 @@ def popen_git(git_cmd, *args):
     return stdout
 
 
-# Manipulation with definition file/tree of branches
+
+# Manipulation on definition file/tree of branches
 
 def expect_in_managed_branches(b):
     if b not in managed_branches:
@@ -193,7 +195,7 @@ def back_up_definition_file():
 
 def save_definition_file():
     with open(definition_file, "w") as f:
-        f.write("\n".join(render_tree()))
+        f.write("\n".join(render_tree()) + "\n")
 
 
 def down(b, pick_mode):
@@ -324,7 +326,27 @@ def add(b):
     save_definition_file()
 
 
-# Git/shell commands impl
+def annotate(words):
+    global annotations
+    cb = current_branch()
+    expect_in_managed_branches(cb)
+    if cb in annotations and words == ['']:
+        del annotations[cb]
+    else:
+        annotations[cb] = " ".join(words)
+    save_definition_file()
+
+
+def print_annotation():
+    global annotations
+    cb = current_branch()
+    expect_in_managed_branches(cb)
+    if cb in annotations:
+        print annotations[cb]
+
+
+
+# Implementation of basic git or git-related commands
 
 def edit():
     return run_cmd(os.environ.get("EDITOR") or "vim", definition_file)
@@ -426,6 +448,48 @@ def spoonfeed_log_shas(b):
         yield sha
 
 
+local_branches_cached = None
+
+
+def local_branches():
+    global local_branches_cached
+    if local_branches_cached is None:
+        local_branches_cached = get_local_branches()
+    return local_branches_cached
+
+
+def get_local_branches(extra_option = None):
+    return non_empty_lines(popen_git("for-each-ref", "--format=%(refname:short)", "refs/heads", *([extra_option] if extra_option else [])))
+
+
+def go(branch):
+    run_git("checkout", "--quiet", branch, "--")
+
+
+def update(branch, fork_commit):
+    run_git("rebase", "--interactive", "--onto", up(branch, prompt_if_inferred=True), fork_commit, branch)
+
+
+def reapply(branch, fork_commit):
+    run_git("rebase", "--interactive", "--onto", fork_commit, fork_commit, branch)
+
+
+def diff(branch):
+    params = (["--stat"] if opt_stat else []) + [fork_point(branch if branch else current_branch())] + ([branch] if branch else []) + ["--"]
+    run_git("diff", *params)
+
+
+def log(branch):
+    run_git("log", "^" + fork_point(branch), branch)
+
+
+def commits_between(earlier, later):
+    return non_empty_lines(popen_git("log", "--format=%s", "^" + earlier, later, "--"))
+
+
+
+# Reflog magic
+
 reflogs_cached = {}
 
 
@@ -461,15 +525,51 @@ def adjusted_reflog(b):
     return adjusted_reflogs_cached[b]
 
 
-local_branches_cached = None
 
 
-def local_branches():
-    global local_branches_cached
-    if local_branches_cached is None:
-        local_branches_cached = get_local_branches()
-    return local_branches_cached
+def match_log_to_adjusted_reflogs(b):
+    if b not in local_branches():
+        raise MacheteException("'%s' is not a local branch" % b)
 
+    def generate_entries():
+        other_local_branches = excluding(local_branches(), [b])
+        for ob in other_local_branches:
+            ob_shas = set()
+            for sha in adjusted_reflog(ob):
+                ob_shas.add(sha)
+                yield sha, (ob, ob)
+            rob = remote_tracking_branch(ob)
+            if rob:
+                for sha in adjusted_reflog(rob):
+                    if sha not in ob_shas:
+                        yield sha, (ob, rob)
+
+    branch_defs_by_sha_in_reflog = {}
+    for sha, branch_def in generate_entries():
+        if sha in branch_defs_by_sha_in_reflog:
+            # The practice shows that it's rather unlikely for a given commit to appear on adjusted reflogs of two unrelated branches
+            # ("unrelated" as in, not a local branch and its remote counterpart) but we need to handle this case anyway.
+            branch_defs_by_sha_in_reflog[sha] += [branch_def]
+        else:
+            branch_defs_by_sha_in_reflog[sha] = [branch_def]
+
+    def log_output():
+        for sha, branch_defs in branch_defs_by_sha_in_reflog.items():
+            yield "%s%s%s => %s%s%s" % \
+                  (GREY, sha, ENDC, GREY, ", ". join(map(lambda (ob, rob): ob if ob == rob else "%s (remote counterpart of %s)" % (rob, ob), branch_defs)), ENDC)
+    debug("match_log_to_adjusted_reflogs(%s)" % b, "branches containing the given SHA in their adjusted reflog: \n%s" % "\n".join(log_output()))
+
+    for sha in spoonfeed_log_shas(b):
+        if sha in branch_defs_by_sha_in_reflog:
+            containing_branch_defs = branch_defs_by_sha_in_reflog[sha]
+            debug("match_log_to_adjusted_reflogs(%s)" % b, "commit %s found in adjusted reflog of %s" % (sha, " and ".join(map(lambda (x, y): y, containing_branch_defs))))
+            yield sha, containing_branch_defs
+        else:
+            debug("match_log_to_adjusted_reflogs(%s)" % b, "commit %s not found in any adjusted reflog" % sha)
+
+
+
+# Complex subcommands
 
 def infer_upstream(b, condition=lambda u: True, reject_reason_message = ""):
     for sha, containing_branch_defs in match_log_to_adjusted_reflogs(b):
@@ -538,47 +638,6 @@ def discover_tree():
         edit()
 
 
-def match_log_to_adjusted_reflogs(b):
-    if b not in local_branches():
-        raise MacheteException("'%s' is not a local branch" % b)
-
-    def generate_entries():
-        other_local_branches = excluding(local_branches(), [b])
-        for ob in other_local_branches:
-            ob_shas = set()
-            for sha in adjusted_reflog(ob):
-                ob_shas.add(sha)
-                yield sha, (ob, ob)
-            rob = remote_tracking_branch(ob)
-            if rob:
-                for sha in adjusted_reflog(rob):
-                    if sha not in ob_shas:
-                        yield sha, (ob, rob)
-
-    branch_defs_by_sha_in_reflog = {}
-    for sha, branch_def in generate_entries():
-        if sha in branch_defs_by_sha_in_reflog:
-            # The practice shows that it's rather unlikely for a given commit to appear on adjusted reflogs of two unrelated branches
-            # ("unrelated" as in, not a local branch and its remote counterpart) but need to handle this case anyway.
-            branch_defs_by_sha_in_reflog[sha] += [branch_def]
-        else:
-            branch_defs_by_sha_in_reflog[sha] = [branch_def]
-
-    def log_output():
-        for sha, branch_defs in branch_defs_by_sha_in_reflog.items():
-            yield "%s%s%s => %s%s%s" % \
-                  (GREY, sha, ENDC, GREY, ", ". join(map(lambda (ob, rob): ob if ob == rob else "%s (remote counterpart of %s)" % (rob, ob), branch_defs)), ENDC)
-    debug("match_log_to_adjusted_reflogs(%s)" % b, "branches containing the given SHA in their adjusted reflog: \n%s" % "\n".join(log_output()))
-
-    for sha in spoonfeed_log_shas(b):
-        if sha in branch_defs_by_sha_in_reflog:
-            containing_branch_defs = branch_defs_by_sha_in_reflog[sha]
-            debug("match_log_to_adjusted_reflogs(%s)" % b, "commit %s found in adjusted reflog of %s" % (sha, " and ".join(map(lambda (x, y): y, containing_branch_defs))))
-            yield sha, containing_branch_defs
-        else:
-            debug("match_log_to_adjusted_reflogs(%s)" % b, "commit %s not found in any adjusted reflog" % sha)
-
-
 def fork_point(b):
     try:
         sha, containing_branch_defs = next(match_log_to_adjusted_reflogs(b))
@@ -589,31 +648,6 @@ def fork_point(b):
           "commit %s is the latest in history of %s to occur on adjusted reflog of any other branch or its remote counterpart (specifically, %s)"
           % (sha, b, " and ".join(map(lambda (x, y): y, containing_branch_defs))))
     return sha
-
-
-def get_local_branches(extra_option = None):
-    return non_empty_lines(popen_git("for-each-ref", "--format=%(refname:short)", "refs/heads", *([extra_option] if extra_option else [])))
-
-
-def go(branch):
-    run_git("checkout", "--quiet", branch, "--")
-
-
-def update(branch, fork_commit):
-    run_git("rebase", "--interactive", "--onto", up(branch, prompt_if_inferred=True), fork_commit, branch)
-
-
-def reapply(branch, fork_commit):
-    run_git("rebase", "--interactive", "--onto", fork_commit, fork_commit, branch)
-
-
-def diff(branch):
-    params = (["--stat"] if opt_stat else []) + [fork_point(branch if branch else current_branch())] + ([branch] if branch else []) + ["--"]
-    run_git("diff", *params)
-
-
-def log(branch):
-    run_git("log", "^" + fork_point(branch), branch)
 
 
 def delete_unmanaged():
@@ -793,10 +827,6 @@ def get_remote_sync_status(b):
         return (AHEAD_OF_REMOTE, remote) if is_ancestor(rb, b) else (DIVERGED_FROM_REMOTE, remote)
 
 
-def commits_between(earlier, later):
-    return non_empty_lines(popen_git("log", "--format=%s", "^" + earlier, later, "--"))
-
-
 def status():
     dfs_res = []
 
@@ -866,25 +896,6 @@ def status():
             DIVERGED_FROM_REMOTE: RED + " (diverged from %s)" % remote + ENDC
         }
         print current_ul + sync_status_string[s]
-
-
-def annotate(words):
-    global annotations
-    cb = current_branch()
-    expect_in_managed_branches(cb)
-    if cb in annotations and words == ['']:
-        del annotations[cb]
-    else:
-        annotations[cb] = " ".join(words)
-    save_definition_file()
-
-
-def print_annotation():
-    global annotations
-    cb = current_branch()
-    expect_in_managed_branches(cb)
-    if cb in annotations:
-        print annotations[cb]
 
 
 # Main
