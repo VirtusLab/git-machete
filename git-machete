@@ -736,10 +736,11 @@ def traverse():
     global up_branch, empty_line_status, managed_branches
 
     def flush():
-        global branch_defs_by_sha_in_reflog, initial_log_shas_cached, remaining_log_shas_cached, sha_by_refspec_cached
+        global branch_defs_by_sha_in_reflog, initial_log_shas_cached, remaining_log_shas_cached, remote_tracking_branches_cached, sha_by_refspec_cached
         branch_defs_by_sha_in_reflog = None
         initial_log_shas_cached = {}
         remaining_log_shas_cached = {}
+        remote_tracking_branches_cached = {}
         sha_by_refspec_cached = {}
 
     empty_line_status = True
