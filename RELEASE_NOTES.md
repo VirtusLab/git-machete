@@ -2,7 +2,8 @@
 
 ## New in git-machete 2.6.2
 
-- improved: fork-point algorithm taking into account reflogs of remote counterparts of local branches
+- improved: fork-point algorithm and upstream inference algorithm taking into account reflogs of remote counterparts of local branches
+- fixed: a newline character is automatically added at the end of .git/machete file
 
 ## New in git-machete 2.6.1
 
