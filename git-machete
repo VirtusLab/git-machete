@@ -501,7 +501,7 @@ def commits_between(earlier, later):
 def reflog(b):
     # %H - full hash
     # %gs - reflog subject
-    return [entry.split(":", 1) for entry in non_empty_lines(popen_git("reflog", "--format=%H:%gs", b, "--"))]
+    return [entry.split(":", 1) for entry in non_empty_lines(popen_git("reflog", "show", "--format=%H:%gs", b, "--"))]
 
 
 def is_relevant_reflog_subject(gs, b):
