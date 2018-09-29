@@ -380,14 +380,14 @@ def compute_sha_by_refspec(refspec):
         return None
 
 
-shas_cached = {}
+sha_by_refspec_cached = {}
 
 
 def sha_by_refspec(refspec):
-    global shas_cached
-    if refspec not in shas_cached:
-        shas_cached[refspec] = compute_sha_by_refspec(refspec)
-    return shas_cached[refspec]
+    global sha_by_refspec_cached
+    if refspec not in sha_by_refspec_cached:
+        sha_by_refspec_cached[refspec] = compute_sha_by_refspec(refspec)
+    return sha_by_refspec_cached[refspec]
 
 
 remote_tracking_branches_cached = {}
@@ -438,13 +438,21 @@ def log_shas(refspec, max_count):
 MAX_COUNT_FOR_INITIAL_LOG = 10
 
 
+initial_log_shas_cached = {}
+remaining_log_shas_cached = {}
+
 # Since getting the full history of a branch can be an expensive operation for large repositories (compared to all other underlying git operations),
 # there's a simple optimization in place: we first fetch only a couple of first commits in the history,
 # and only fetch the rest if none of them occurs on reflog of any other branch.
 def spoonfeed_log_shas(b):
-    for sha in log_shas(b, max_count=MAX_COUNT_FOR_INITIAL_LOG):
+    if b not in initial_log_shas_cached:
+        initial_log_shas_cached[b] = log_shas(b, max_count=MAX_COUNT_FOR_INITIAL_LOG)
+    for sha in initial_log_shas_cached[b]:
         yield sha
-    for sha in log_shas(b, max_count=None)[MAX_COUNT_FOR_INITIAL_LOG:]:
+
+    if b not in remaining_log_shas_cached:
+        remaining_log_shas_cached[b] = log_shas(b, max_count=None)[MAX_COUNT_FOR_INITIAL_LOG:]
+    for sha in remaining_log_shas_cached[b]:
         yield sha
 
 
@@ -728,9 +736,11 @@ def traverse():
     global up_branch, empty_line_status, managed_branches
 
     def flush():
-        global branch_defs_by_sha_in_reflog, shas_cached
+        global branch_defs_by_sha_in_reflog, initial_log_shas_cached, remaining_log_shas_cached, sha_by_refspec_cached
         branch_defs_by_sha_in_reflog = None
-        shas_cached = {}
+        initial_log_shas_cached = {}
+        remaining_log_shas_cached = {}
+        sha_by_refspec_cached = {}
 
     empty_line_status = True
 
@@ -822,6 +832,8 @@ def get_remote_sync_status(b):
 
 
 def status():
+    global sha_by_refspec_cached
+
     dfs_res = []
 
     def prefix_dfs(u, prefix):
@@ -849,11 +861,11 @@ def status():
             if opt_list_commits:
                 commits_cached[b] = reversed(commits_between(fork_points_cached[b], b)) if fork_points_cached[b] else []
         # Force computing all needed SHAs to avoid later polluting the printed status in case of --verbose mode.
-        shas_cached[b] = compute_sha_by_refspec(b)
+        sha_by_refspec_cached[b] = compute_sha_by_refspec(b)
         remote_sync_status[b] = get_remote_sync_status(b)
 
     def edge_color(b):
-        return RED if needs_sync_with_up_branch[b] else (GREEN if shas_cached[up_branch[b]] == fork_points_cached[b] else YELLOW)
+        return RED if needs_sync_with_up_branch[b] else (GREEN if sha_by_refspec_cached[up_branch[b]] == fork_points_cached[b] else YELLOW)
 
     def print_line_prefix(b, suffix):
         sys.stdout.write("  ")
