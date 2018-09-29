@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.8.0
+
+- improved: for branches that are behind their upstream (merged to upstream), `traverse` suggests to slide them out instead of rebase onto that upstream
+
 ## New in git-machete 2.7.2
 
 - fixed: location of bash completion script on Mac OS
