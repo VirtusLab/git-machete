@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.6.2'
+VERSION = '2.7.0'
 
 
 # Core utils
@@ -47,7 +47,7 @@ def ask_if(msg):
 
 
 def pick(choices, name):
-    xs = "".join("[%i] %s\n" % (idx + 1, x) for x, idx in zip(choices, range(len(choices))))
+    xs = "".join("[%i] %s\n" % (idx + 1, x) for idx, x in enumerate(choices))
     msg = xs + "Specify " + name + " or hit <return> to skip: "
     try:
         idx = int(raw_input(msg)) - 1
@@ -789,18 +789,44 @@ def traverse():
                 elif ans in ('q', 'quit'):
                     return
             else:
-                needs_force = s == DIVERGED_FROM_REMOTE
-                force_string = " with force" if needs_force else ""
-                target_string = " to %s%s%s" % (BOLD, remote, ENDC) if remote else ""
+                if remote:
+                    needs_force = s == DIVERGED_FROM_REMOTE
+                    force_string = " with force" if needs_force else ""
 
-                print_new_line(False)
-                ans = raw_input("Push %s%s%s%s%s? [y/n/q] " % (BOLD, b, ENDC, force_string, target_string)).lower()
-                if ans in ('y', 'yes'):
-                    params = (["--force"] if needs_force else []) + ([remote] if remote else ["--set-upstream"])
-                    run_git("push", *params)
-                    flush()
-                elif ans in ('q', 'quit'):
-                    return
+                    print_new_line(False)
+                    ans = raw_input("Push %s%s%s%s to %s%s%s? [y/n/q] " % (BOLD, b, ENDC, force_string, BOLD, remote, ENDC)).lower()
+                    if ans in ('y', 'yes'):
+                        params = ["--force"] if needs_force else []
+                        run_git("push", remote, *params)
+                        flush()
+                    elif ans in ('q', 'quit'):
+                        return
+                else:
+                    print_new_line(False)
+                    if len(remotes()) == 1:
+                        remote = remotes()[0]
+                        ans = raw_input("Push untracked branch %s%s%s to %s%s%s? [y/n/q] " % (BOLD, b, ENDC, BOLD, remote, ENDC)).lower()
+                        if ans in ('y', 'yes'):
+                            run_git("push", "--set-upstream", remote, b)
+                            flush()
+                        elif ans in ('q', 'quit'):
+                            return
+                    else:
+                        # We know that there is at least 1 remote, otherwise `s` would be `NO_REMOTES` and thus `needs_remote_sync` would be false.
+                        print "Branch %s%s%s is untracked." % (BOLD, b, ENDC)
+                        print "\n".join("[%i] %s" % (idx + 1, r) for idx, r in enumerate(remotes()))
+                        msg = "Select number 1..%i to specify the destination remote repository, or 'n' to skip the push, or 'q' to quit the traverse: " % len(remotes())
+                        ans = raw_input(msg).lower()
+                        try:
+                            idx = int(ans) - 1
+                            if idx not in range(len(remotes())):
+                                raise MacheteException("Invalid index: %i" % (idx + 1))
+                            run_git("push", "--set-upstream", remotes()[idx], b)
+                            flush()
+                        except ValueError:
+                            if ans in ('q', 'quit'):
+                                return
+
     print_new_line(False)
     status()
     print
