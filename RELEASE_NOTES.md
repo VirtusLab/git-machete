@@ -1,5 +1,10 @@
 # Release notes
 
+## New in git-machete 2.7.0
+
+- improved: during `traverse`, if there's a branch that's untracked, no longer rely on `git push` implicitly picking `origin` as the default remote;
+  instead, either choose the only existing remote if there's just one defined (even if it's not `origin`), or let the user pick the remote explicitly if there is more than one
+
 ## New in git-machete 2.6.2
 
 - improved: fork-point algorithm and upstream inference algorithm taking into account reflogs of remote counterparts of local branches
