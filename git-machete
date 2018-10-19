@@ -495,6 +495,29 @@ def commits_between(earlier, later):
     return non_empty_lines(popen_git("log", "--format=%s", "^" + earlier, later, "--"))
 
 
+NO_REMOTES = 0
+UNTRACKED = 1
+UNTRACKED_ON = 2
+IN_SYNC_WITH_REMOTE = 3
+BEHIND_REMOTE = 4
+AHEAD_OF_REMOTE = 5
+DIVERGED_FROM_REMOTE = 6
+
+
+def get_remote_sync_status(b):
+    if not remotes():
+        return NO_REMOTES, None
+    remote = remote_for_branch(b)
+    if not remote:
+        return UNTRACKED, None
+    rb = remote_tracking_branch(b)
+    if not rb:
+        return UNTRACKED_ON, remote
+    if is_ancestor(b, rb):
+        return (IN_SYNC_WITH_REMOTE, remote) if is_ancestor(rb, b) else (BEHIND_REMOTE, remote)
+    else:
+        return (AHEAD_OF_REMOTE, remote) if is_ancestor(rb, b) else (DIVERGED_FROM_REMOTE, remote)
+
 
 # Reflog magic
 
@@ -802,60 +825,49 @@ def traverse():
                     elif ans in ('q', 'quit'):
                         return
                 else:
+                    def pick_remote():
+                        print "\n".join("[%i] %s" % (idx + 1, r) for idx, r in enumerate(rems))
+                        msg = "Select number 1..%i to specify the destination remote repository, or 'n' to skip the push, or 'q' to quit the traverse: " % len(rems)
+                        ans = raw_input(msg).lower()
+                        try:
+                            idx = int(ans) - 1
+                            if idx not in range(len(rems)):
+                                raise MacheteException("Invalid index: %i" % (idx + 1))
+                            run_git("push", "--set-upstream", rems[idx], b)
+                            flush()
+                            return True
+                        except ValueError:
+                            if ans in ('q', 'quit'):
+                                return False # do not continue traversal
+                            else:
+                                return True # just skip the current push, but continue traversal afterwards
+
                     print_new_line(False)
-                    if len(remotes()) == 1:
-                        remote = remotes()[0]
-                        ans = raw_input("Push untracked branch %s%s%s to %s%s%s? [y/n/q] " % (BOLD, b, ENDC, BOLD, remote, ENDC)).lower()
+                    rems = remotes()
+                    if "origin" in rems or len(rems) == 1:
+                        remote = "origin" if "origin" in rems else rems[0]
+                        can_pick_other_remote = "origin" in rems and len(rems) > 1
+                        other_remote_suffix = "/o[ther remote]" if can_pick_other_remote else ""
+                        ans = raw_input("Push untracked branch %s%s%s to %s%s%s? (y/n/q%s) " % (BOLD, b, ENDC, BOLD, remote, ENDC, other_remote_suffix)).lower()
                         if ans in ('y', 'yes'):
                             run_git("push", "--set-upstream", remote, b)
                             flush()
+                        elif can_pick_other_remote and ans in ('o', 'other'):
+                            if not pick_remote():
+                                return
                         elif ans in ('q', 'quit'):
                             return
                     else:
                         # We know that there is at least 1 remote, otherwise `s` would be `NO_REMOTES` and thus `needs_remote_sync` would be false.
-                        print "Branch %s%s%s is untracked." % (BOLD, b, ENDC)
-                        print "\n".join("[%i] %s" % (idx + 1, r) for idx, r in enumerate(remotes()))
-                        msg = "Select number 1..%i to specify the destination remote repository, or 'n' to skip the push, or 'q' to quit the traverse: " % len(remotes())
-                        ans = raw_input(msg).lower()
-                        try:
-                            idx = int(ans) - 1
-                            if idx not in range(len(remotes())):
-                                raise MacheteException("Invalid index: %i" % (idx + 1))
-                            run_git("push", "--set-upstream", remotes()[idx], b)
-                            flush()
-                        except ValueError:
-                            if ans in ('q', 'quit'):
-                                return
+                        print "Branch %s%s%s is untracked and there's no %sorigin%s repository." % (BOLD, b, ENDC, BOLD, ENDC)
+                        if not pick_remote():
+                            return
 
     print_new_line(False)
     status()
     print
     msg = "Reached branch %s%s%s which has no successor" if cb == managed_branches[-1] else "No successor of %s%s%s needs sync with upstream branch or remote"
     print >> sys.stderr, msg % (BOLD, cb, ENDC) + "; nothing left to update"
-
-
-NO_REMOTES = 0
-UNTRACKED = 1
-UNTRACKED_ON = 2
-IN_SYNC_WITH_REMOTE = 3
-BEHIND_REMOTE = 4
-AHEAD_OF_REMOTE = 5
-DIVERGED_FROM_REMOTE = 6
-
-
-def get_remote_sync_status(b):
-    if not remotes():
-        return NO_REMOTES, None
-    remote = remote_for_branch(b)
-    if not remote:
-        return UNTRACKED, None
-    rb = remote_tracking_branch(b)
-    if not rb:
-        return UNTRACKED_ON, remote
-    if is_ancestor(b, rb):
-        return (IN_SYNC_WITH_REMOTE, remote) if is_ancestor(rb, b) else (BEHIND_REMOTE, remote)
-    else:
-        return (AHEAD_OF_REMOTE, remote) if is_ancestor(rb, b) else (DIVERGED_FROM_REMOTE, remote)
 
 
 def status():
