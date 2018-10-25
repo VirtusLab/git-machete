@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.7.0'
+VERSION = '2.7.1'
 
 
 # Core utils
@@ -23,10 +23,11 @@ class MacheteException(Exception):
 
 ENDC = '\033[0m'
 BOLD = '\033[1m'
+DIM = '\033[2m'
 UNDERLINE = '\033[4m'
 GREEN = '\033[32m'
-GREY = '\033[37m'
-YELLOW = '\033[93m'
+YELLOW = '\033[00;38;5;220m'
+ORANGE = '\033[00;38;5;208m'
 RED = '\033[91m'
 
 
@@ -60,7 +61,7 @@ def pick(choices, name):
 
 def debug(hdr, msg):
     if opt_debug:
-        print >> sys.stderr, "%s%s%s: %s%s%s" % (BOLD, hdr, ENDC, GREY, msg, ENDC)
+        print >> sys.stderr, "%s%s%s: %s%s%s" % (BOLD, hdr, ENDC, DIM, msg, ENDC)
 
 
 def run_cmd(cmd, *args):
@@ -78,25 +79,29 @@ def popen_cmd(cmd, *args):
 
 def run_git(git_cmd, *args, **kwargs):
     flat_cmd = " ".join(["git", git_cmd] + list(args))
-    if opt_verbose or opt_debug:
+    if opt_debug:
+        print >> sys.stderr, UNDERLINE + flat_cmd + ENDC
+    elif opt_verbose:
         print >> sys.stderr, flat_cmd
     status = run_cmd("git", git_cmd, *args)
     if not kwargs.get("allow_non_zero") and status != 0:
         raise MacheteException("'%s' returned %i" % (flat_cmd, status))
     if opt_debug:
-        print >> sys.stderr, "%s<status: %i>%s\n" % (GREY, status, ENDC)
+        print >> sys.stderr, "%s<status: %i>%s\n" % (DIM, status, ENDC)
     return status
 
 
 def popen_git(git_cmd, *args):
     flat_cmd = " ".join(["git", git_cmd] + list(args))
-    if opt_verbose or opt_debug:
+    if opt_debug:
+        print >> sys.stderr, UNDERLINE + flat_cmd + ENDC
+    elif opt_verbose:
         print >> sys.stderr, flat_cmd
     status, stdout = popen_cmd("git", git_cmd, *args)
     if status != 0:
         raise MacheteException("'%s' returned %i" % (flat_cmd, status))
     if opt_debug:
-        print >> sys.stderr, "%s%s%s" % (GREY, stdout, ENDC)
+        print >> sys.stderr, "%s%s%s" % (DIM, stdout, ENDC)
     return stdout
 
 
@@ -578,8 +583,8 @@ def match_log_to_adjusted_reflogs(b):
 
         def log_result():
             for sha, branch_defs in branch_defs_by_sha_in_reflog.items():
-                yield "%s%s%s => %s%s%s" % \
-                      (GREY, sha, ENDC, GREY, ", ". join(map(lambda (lb, lb_or_rb): lb if lb == lb_or_rb else "%s (remote counterpart of %s)" % (lb_or_rb, lb), branch_defs)), ENDC)
+                yield "%s%s => %s%s" % \
+                      (DIM, sha, ", ". join(map(lambda (lb, lb_or_rb): lb if lb == lb_or_rb else "%s (remote counterpart of %s)" % (lb_or_rb, lb), branch_defs)), ENDC)
         debug("match_log_to_adjusted_reflogs(%s)" % b, "branches containing the given SHA in their adjusted reflog: \n%s\n" % "\n".join(log_result()))
 
     for sha in spoonfeed_log_shas(b):
@@ -918,13 +923,13 @@ def status():
     cb = current_branch_or_none()
 
     for b, pfx in dfs_res:
-        current = BOLD + b + ENDC + "  " + GREY + annotations[b] + ENDC if b in annotations else BOLD + b + ENDC
+        current = BOLD + b + ENDC + ("  " + DIM + annotations[b] + ENDC if b in annotations else "")
         current_ul = UNDERLINE + current + ENDC if b == cb else current
         if b in up_branch:
             print_line_prefix(b, "│ \n")
             if opt_list_commits:
                 for msg in commits_cached[b]:
-                    print_line_prefix(b, "│ " + GREY + msg + "\n")
+                    print_line_prefix(b, "│ " + ENDC + DIM + msg + "\n")
             print_line_prefix(b, "└─")
         else:
             if b != dfs_res[0][0]:
@@ -933,8 +938,8 @@ def status():
         s, remote = remote_sync_status[b]
         sync_status_string = {
             NO_REMOTES: "",
-            UNTRACKED: YELLOW + " (untracked)" + ENDC,
-            UNTRACKED_ON: YELLOW + " (untracked on %s)" % remote + ENDC,
+            UNTRACKED: ORANGE + " (untracked)" + ENDC,
+            UNTRACKED_ON: ORANGE + " (untracked on %s)" % remote + ENDC,
             IN_SYNC_WITH_REMOTE: "",
             BEHIND_REMOTE: RED + " (behind %s)" % remote + ENDC,
             AHEAD_OF_REMOTE: RED + " (ahead of %s)" % remote + ENDC,

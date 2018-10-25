@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.7.1
+
+- improved: visibility (esp. of yellow and grey elements) on white terminal backgrounds
+
 ## New in git-machete 2.7.0
 
 - improved: during `traverse`, if there's a branch that's untracked, no longer rely on `git push` implicitly picking `origin` as the default remote;
