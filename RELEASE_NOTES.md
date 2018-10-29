@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.7.2
+
+- fixed: location of bash completion script on Mac OS
+
 ## New in git-machete 2.7.1
 
 - improved: visibility (esp. of yellow and grey elements) on white terminal backgrounds
