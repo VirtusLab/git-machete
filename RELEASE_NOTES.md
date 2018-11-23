@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.8.1
+
+- fixed: handle the case when tracking information isn't set for a branch but the newly-chosen remote counterpart already exists (and thus a push with force or a pull might be needed) 
+
 ## New in git-machete 2.8.0
 
 - improved: for branches that are behind their upstream (merged to upstream), `traverse` suggests to slide them out instead of rebase onto that upstream

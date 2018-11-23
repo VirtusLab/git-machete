@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.8.0'
+VERSION = '2.8.1'
 
 
 # Core utils
@@ -513,6 +513,13 @@ AHEAD_OF_REMOTE = 5
 DIVERGED_FROM_REMOTE = 6
 
 
+def get_relation_to_remote_counterpart(b, rb):
+    if is_ancestor(b, rb):
+        return IN_SYNC_WITH_REMOTE if is_ancestor(rb, b) else BEHIND_REMOTE
+    else:
+        return AHEAD_OF_REMOTE if is_ancestor(rb, b) else DIVERGED_FROM_REMOTE
+
+
 def get_remote_sync_status(b):
     if not remotes():
         return NO_REMOTES, None
@@ -522,10 +529,7 @@ def get_remote_sync_status(b):
     rb = remote_tracking_branch(b)
     if not rb:
         return UNTRACKED_ON, remote
-    if is_ancestor(b, rb):
-        return (IN_SYNC_WITH_REMOTE, remote) if is_ancestor(rb, b) else (BEHIND_REMOTE, remote)
-    else:
-        return (AHEAD_OF_REMOTE, remote) if is_ancestor(rb, b) else (DIVERGED_FROM_REMOTE, remote)
+    return get_relation_to_remote_counterpart(b, rb), remote
 
 
 # Reflog magic
@@ -764,6 +768,11 @@ def slidable_after(b):
     return []
 
 
+class StopTraversal:
+    def __init__(self):
+        pass
+
+
 def traverse():
     global down_branches, up_branch, empty_line_status, managed_branches
 
@@ -835,66 +844,124 @@ def traverse():
                 needs_remote_sync = s in statuses_to_sync
             elif ans in ('q', 'quit'):
                 return
+
         if needs_remote_sync:
             if s == BEHIND_REMOTE:
-                ans = raw_input("Pull %s%s%s from %s%s%s? [y/n/q] " % (BOLD, b, ENDC, BOLD, remote, ENDC)).lower()
+                rb = remote_tracking_branch(b)
+                ans = raw_input("Branch %s is behind its remote counterpart %s. Pull %s%s%s from %s%s%s? [y/n/q] " % (b, rb, BOLD, b, ENDC, BOLD, remote, ENDC)).lower()
                 if ans in ('y', 'yes'):
-                    run_git("pull", remote, b)
+                    run_git("pull", "--ff-only", remote)
                     flush()
                     print
                 elif ans in ('q', 'quit'):
-                    return
-            else:
-                if remote:
-                    needs_force = s == DIVERGED_FROM_REMOTE
-                    force_string = " with force" if needs_force else ""
+                    raise StopTraversal
 
-                    print_new_line(False)
-                    ans = raw_input("Push %s%s%s%s to %s%s%s? [y/n/q] " % (BOLD, b, ENDC, force_string, BOLD, remote, ENDC)).lower()
-                    if ans in ('y', 'yes'):
-                        params = ["--force"] if needs_force else []
-                        run_git("push", remote, *params)
-                        flush()
-                    elif ans in ('q', 'quit'):
-                        return
-                else:
-                    def pick_remote():
-                        print "\n".join("[%i] %s" % (idx + 1, r) for idx, r in enumerate(rems))
-                        msg = "Select number 1..%i to specify the destination remote repository, or 'n' to skip the push, or 'q' to quit the traverse: " % len(rems)
-                        ans = raw_input(msg).lower()
-                        try:
-                            idx = int(ans) - 1
-                            if idx not in range(len(rems)):
-                                raise MacheteException("Invalid index: %i" % (idx + 1))
-                            run_git("push", "--set-upstream", rems[idx], b)
-                            flush()
-                            return True
-                        except ValueError:
-                            if ans in ('q', 'quit'):
-                                return False # do not continue traversal
-                            else:
-                                return True # just skip the current push, but continue traversal afterwards
+            elif s == UNTRACKED_ON or s == AHEAD_OF_REMOTE:
+                print_new_line(False)
+                # `remote` is defined for both cases we handle here, including UNTRACKED_ON
+                ans = raw_input("Push %s%s%s to %s%s%s? [y/n/q] " % (BOLD, b, ENDC, BOLD, remote, ENDC)).lower()
+                if ans in ('y', 'yes'):
+                    run_git("push", remote)
+                    flush()
+                elif ans in ('q', 'quit'):
+                    raise StopTraversal
 
-                    print_new_line(False)
-                    rems = remotes()
-                    if "origin" in rems or len(rems) == 1:
-                        remote = "origin" if "origin" in rems else rems[0]
-                        can_pick_other_remote = "origin" in rems and len(rems) > 1
-                        other_remote_suffix = "/o[ther remote]" if can_pick_other_remote else ""
-                        ans = raw_input("Push untracked branch %s%s%s to %s%s%s? (y/n/q%s) " % (BOLD, b, ENDC, BOLD, remote, ENDC, other_remote_suffix)).lower()
+            elif s == DIVERGED_FROM_REMOTE:
+                print_new_line(False)
+                rb = remote_tracking_branch(b)
+                ans = raw_input("Branch %s diverged from its remote counterpart %s. Push %s%s%s with force to %s%s%s? [y/n/q] " % (b, rb, BOLD, b, ENDC, BOLD, remote, ENDC)).lower()
+                if ans in ('y', 'yes'):
+                    run_git("push", "--force", remote)
+                    flush()
+                elif ans in ('q', 'quit'):
+                    raise StopTraversal
+
+            elif s == UNTRACKED:
+                rems = remotes()
+
+                def handle_untracked_branch(new_remote):
+                    can_pick_other_remote = len(rems) > 1
+                    other_remote_suffix = "/o[ther remote]" if can_pick_other_remote else ""
+                    rb = new_remote + "/" + b
+                    if not sha_by_refspec(rb):
+                        ans = raw_input("Push untracked branch %s%s%s to %s%s%s? (y/n/q%s) " % (BOLD, b, ENDC, BOLD, new_remote, ENDC, other_remote_suffix)).lower()
                         if ans in ('y', 'yes'):
-                            run_git("push", "--set-upstream", remote, b)
+                            run_git("push", "--set-upstream", new_remote, b)
                             flush()
                         elif can_pick_other_remote and ans in ('o', 'other'):
-                            if not pick_remote():
-                                return
+                            pick_remote()
                         elif ans in ('q', 'quit'):
-                            return
-                    else:
-                        # We know that there is at least 1 remote, otherwise `s` would be `NO_REMOTES` and thus `needs_remote_sync` would be false.
-                        print "Branch %s%s%s is untracked and there's no %sorigin%s repository." % (BOLD, b, ENDC, BOLD, ENDC)
-                        if not pick_remote():
-                            return
+                            raise StopTraversal
+                        return
+
+                    new_s = get_relation_to_remote_counterpart(b, rb)
+                    if new_s == IN_SYNC_WITH_REMOTE:
+                        print "Branch %s%s%s is untracked, but its remote counterpart candidate %s%s%s already exists and the two branches point to the same commit." % (BOLD, b, ENDC, BOLD, rb, ENDC)
+                        ans = raw_input("Set the remote of %s%s%s to %s%s%s without pushing or pulling? (y/n/q%s) " % (BOLD, b, ENDC, BOLD, new_remote, ENDC, other_remote_suffix)).lower()
+                        if ans in ('y', 'yes'):
+                            run_git("branch", "--set-upstream-to", rb)
+                            flush()
+                        elif can_pick_other_remote and ans in ('o', 'other'):
+                            pick_remote()
+                        elif ans in ('q', 'quit'):
+                            raise StopTraversal
+                    elif new_s == BEHIND_REMOTE:
+                        print "Branch %s%s%s is untracked, but its remote counterpart candidate %s%s%s already exists and is ahead of %s%s%s." % (BOLD, b, ENDC, BOLD, rb, ENDC, BOLD, b, ENDC)
+                        ans = raw_input("Pull %s%s%s from %s%s%s? (y/n/q%s) " % (BOLD, b, ENDC, BOLD, new_remote, ENDC, other_remote_suffix)).lower()
+                        if ans in ('y', 'yes'):
+                            run_git("pull", "--ff-only", new_remote, b)
+                            # There's apparently no way to set remote automatically when doing `git pull` (as it is with `git push`), so a separate `git branch --set-upstream-to` is needed.
+                            run_git("branch", "--set-upstream-to", rb)
+                            flush()
+                        elif can_pick_other_remote and ans in ('o', 'other'):
+                            pick_remote()
+                        elif ans in ('q', 'quit'):
+                            raise StopTraversal
+                    elif new_s == AHEAD_OF_REMOTE:
+                        print "Branch %s%s%s is untracked, but its remote counterpart candidate %s%s%s already exists and is behind %s%s%s." % (BOLD, b, ENDC, BOLD, rb, ENDC, BOLD, b, ENDC)
+                        ans = raw_input("Push branch %s%s%s to %s%s%s? (y/n/q%s) " % (BOLD, b, ENDC, BOLD, new_remote, ENDC, other_remote_suffix)).lower()
+                        if ans in ('y', 'yes'):
+                            run_git("push", "--set-upstream", new_remote, b)
+                            flush()
+                        elif can_pick_other_remote and ans in ('o', 'other'):
+                            pick_remote()
+                        elif ans in ('q', 'quit'):
+                            raise StopTraversal
+                    elif new_s == DIVERGED_FROM_REMOTE:
+                        print "Branch %s%s%s is untracked, but its remote counterpart candidate %s%s%s already exists and the two branches are diverged." % (BOLD, b, ENDC, BOLD, rb, ENDC)
+                        ans = raw_input("Push branch %s%s%s with force to %s%s%s? (y/n/q%s) " % (BOLD, b, ENDC, BOLD, new_remote, ENDC, other_remote_suffix)).lower()
+                        if ans in ('y', 'yes'):
+                            run_git("push", "--set-upstream", "--force", new_remote, b)
+                            flush()
+                        elif can_pick_other_remote and ans in ('o', 'other'):
+                            pick_remote()
+                        elif ans in ('q', 'quit'):
+                            raise StopTraversal
+
+
+                def pick_remote():
+                    print "\n".join("[%i] %s" % (idx + 1, r) for idx, r in enumerate(rems))
+                    msg = "Select number 1..%i to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse: " % len(rems)
+                    ans = raw_input(msg).lower()
+                    if ans in ('q', 'quit'):
+                        raise StopTraversal
+                    try:
+                        idx = int(ans) - 1
+                        if idx not in range(len(rems)):
+                            raise MacheteException("Invalid index: %i" % (idx + 1))
+                        handle_untracked_branch(rems[idx])
+                    except ValueError:
+                        pass
+
+                print_new_line(False)
+                if len(rems) == 1:
+                    handle_untracked_branch(rems[0])
+                elif "origin" in rems:
+                    handle_untracked_branch("origin")
+                else:
+                    # We know that there is at least 1 remote, otherwise `s` would be `NO_REMOTES`
+                    print "Branch %s%s%s is untracked and there's no %sorigin%s repository." % (BOLD, b, ENDC, BOLD, ENDC)
+                    pick_remote()
 
     print_new_line(False)
     status()
@@ -1556,10 +1623,12 @@ try:
         short_usage()
         raise MacheteException("\nUnknown command: '%s'. Use 'git machete help' to list possible commands" % cmd)
 
-except MacheteException as e:
-    print >> sys.stderr, str(e)
-    sys.exit(1)
 except getopt.GetoptError as e:
     short_usage()
     print >> sys.stderr, str(e)
     sys.exit(2)
+except MacheteException as e:
+    print >> sys.stderr, str(e)
+    sys.exit(1)
+except StopTraversal:
+    pass
