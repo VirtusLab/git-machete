@@ -6,20 +6,22 @@ _git_machete() {
 	directions="down first last next prev root up"
 
 	common_opts="--debug -h --help -v --verbose --version"
-	add_opts="-o --onto"
+	add_opts="-o --onto="
 	diff_opts="-s --stat"
 	discover_opts="-l --list-commits"
 	infer_opts="-l --list-commits"
-	reapply_opts="-f --fork-point"
-	slide_out_opts="-d --down-fork-point"
+	reapply_opts="-f --fork-point="
+	slide_out_opts="-d --down-fork-point="
 	status_opts="-l --list-commits"
 	traverse_opts="-l --list-commits"
-	update_opts="-f --fork-point"
+	update_opts="-f --fork-point="
 
-	prev="${COMP_WORDS[COMP_CWORD-1]}"
-
-	if [[ "$cur" == -* ]] ; then
-		case "$prev" in
+	if [[ "$cur" == --down-fork-point=* ]] || [[ "$cur" == --fork-point=* ]]; then
+		__gitcomp "$(__git_refs)" "" "${cur##--*=}"
+	elif [[ "$cur" == --onto=* ]]; then
+		__gitcomp_nl "$(git machete list managed)" "" "${cur##--onto=}"
+	elif [[ "$cur" == -* ]] ; then
+		case "${COMP_WORDS[2]}" in
 			add) __gitcomp "$common_opts $add_opts" ;;
 			d|diff) __gitcomp "$common_opts $diff_opts" ;;
 			discover) __gitcomp "$common_opts $discover_opts" ;;
@@ -34,6 +36,7 @@ _git_machete() {
 	elif [[ "$COMP_CWORD" -eq 2 ]]; then
 		__gitcomp "$cmds"
 	else
+		prev="${COMP_WORDS[COMP_CWORD-1]}"
 		case "$prev" in
 			-d|--down-fork-point|-f|--fork-point) __gitcomp "$(__git_refs)" ;;
 			-h|--help) __gitcomp "$cmds" ;;
@@ -45,11 +48,11 @@ _git_machete() {
 					g|go|show) __gitcomp "$directions" ;;
 					help) __gitcomp "$cmds" ;;
 					list)
-					    if [[ "$COMP_CWORD" -eq 3 ]]; then
-					        __gitcomp "$categories"
-					    elif [[ "$COMP_CWORD" -eq 4 ]] && [[ "$prev" == "slidable-after" ]]; then
-					        __gitcomp_nl "$(git machete list slidable)"
-					    fi ;;
+						if [[ "$COMP_CWORD" -eq 3 ]]; then
+							__gitcomp "$categories"
+						elif [[ "$COMP_CWORD" -eq 4 ]] && [[ "$prev" == "slidable-after" ]]; then
+							__gitcomp_nl "$(git machete list slidable)"
+						fi ;;
 					slide-out)
 						if [[ "$COMP_CWORD" -eq 3 ]]; then
 							__gitcomp_nl "$(git machete list slidable)"
