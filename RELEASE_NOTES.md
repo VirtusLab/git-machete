@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.8.2
+
+- fixed: handle the cases when a tag named exactly as one of the managed branches exists in the repository  
+
 ## New in git-machete 2.8.1
 
 - fixed: handle the case when tracking information isn't set for a branch but the newly-chosen remote counterpart already exists (and thus a push with force or a pull might be needed) 

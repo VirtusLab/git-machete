@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.8.1'
+VERSION = '2.8.2'
 
 
 # Core utils
@@ -401,11 +401,12 @@ def compute_sha_by_refspec(refspec):
 sha_by_refspec_cached = {}
 
 
-def sha_by_refspec(refspec):
+def sha_by_refspec(refspec, prefix = "refs/heads"):
     global sha_by_refspec_cached
-    if refspec not in sha_by_refspec_cached:
-        sha_by_refspec_cached[refspec] = compute_sha_by_refspec(refspec)
-    return sha_by_refspec_cached[refspec]
+    full_refspec = prefix + "/" + refspec
+    if full_refspec not in sha_by_refspec_cached:
+        sha_by_refspec_cached[full_refspec] = compute_sha_by_refspec(full_refspec)
+    return sha_by_refspec_cached[full_refspec]
 
 
 remote_tracking_branches_cached = {}
@@ -413,6 +414,7 @@ remote_tracking_branches_cached = {}
 
 def compute_remote_tracking_branch(b):
     try:
+        # Note: no need to prefix `b` with `refs/heads/`, `@{upstream}` assumes local branch automatically.
         return popen_git("rev-parse", "--abbrev-ref", b + "@{upstream}").strip()
     except MacheteException:
         return None
@@ -427,7 +429,7 @@ def remote_tracking_branch(b):
 
 def current_branch_or_none():
     try:
-        return popen_git("symbolic-ref", "--short", "--quiet", "HEAD").strip()
+        return popen_git("symbolic-ref", "--quiet", "HEAD").strip().replace("refs/heads/", "")
     except MacheteException:
         return None
 
@@ -440,8 +442,8 @@ def current_branch():
         raise MacheteException("Not currently on any branch")
 
 
-def is_ancestor(earlier, later):
-    return run_git("merge-base", "--is-ancestor", earlier, later, allow_non_zero=True) == 0
+def is_ancestor(earlier, later, earlier_prefix = "refs/heads", later_prefix = "refs/heads"):
+    return run_git("merge-base", "--is-ancestor", earlier_prefix + "/" + earlier, later_prefix + "/" + later, allow_non_zero=True) == 0
 
 
 def create_branch(b, out_of):
@@ -449,7 +451,7 @@ def create_branch(b, out_of):
 
 
 def log_shas(refspec, max_count):
-    opts = (["--max-count=" + str(max_count)] if max_count else []) + ["--format=%H", refspec]
+    opts = (["--max-count=" + str(max_count)] if max_count else []) + ["--format=%H", "refs/heads/" + refspec]
     return non_empty_lines(popen_git("log", *opts))
 
 
@@ -485,7 +487,7 @@ def local_branches():
 
 
 def get_local_branches(extra_option = None):
-    return non_empty_lines(popen_git("for-each-ref", "--format=%(refname:short)", "refs/heads", *([extra_option] if extra_option else [])))
+    return non_empty_lines(popen_git("for-each-ref", "--format=%(refname:lstrip=2)", "refs/heads", *([extra_option] if extra_option else [])))
 
 
 def go(branch):
@@ -493,7 +495,7 @@ def go(branch):
 
 
 def update(branch, fork_commit):
-    run_git("rebase", "--interactive", "--onto", up(branch, prompt_if_inferred=True), fork_commit, branch)
+    run_git("rebase", "--interactive", "--onto", "refs/heads/" + up(branch, prompt_if_inferred=True), fork_commit, branch)
 
 
 def reapply(branch, fork_commit):
@@ -501,12 +503,12 @@ def reapply(branch, fork_commit):
 
 
 def diff(branch):
-    params = (["--stat"] if opt_stat else []) + [fork_point(branch if branch else current_branch())] + ([branch] if branch else []) + ["--"]
+    params = (["--stat"] if opt_stat else []) + [fork_point(branch if branch else current_branch())] + (["refs/heads/" + branch] if branch else []) + ["--"]
     run_git("diff", *params)
 
 
 def log(branch):
-    run_git("log", "^" + fork_point(branch), branch)
+    run_git("log", "^" + fork_point(branch), "refs/heads/" + branch)
 
 
 def commits_between(earlier, later):
@@ -523,10 +525,12 @@ DIVERGED_FROM_REMOTE = 6
 
 
 def get_relation_to_remote_counterpart(b, rb):
-    if is_ancestor(b, rb):
-        return IN_SYNC_WITH_REMOTE if is_ancestor(rb, b) else BEHIND_REMOTE
+    b_is_anc_of_rb = is_ancestor(b, rb, later_prefix="refs/remotes")
+    rb_is_anc_of_b = is_ancestor(rb, b, earlier_prefix="refs/remotes")
+    if b_is_anc_of_rb:
+        return IN_SYNC_WITH_REMOTE if rb_is_anc_of_b else BEHIND_REMOTE
     else:
-        return AHEAD_OF_REMOTE if is_ancestor(rb, b) else DIVERGED_FROM_REMOTE
+        return AHEAD_OF_REMOTE if rb_is_anc_of_b else DIVERGED_FROM_REMOTE
 
 
 def get_remote_sync_status(b):
@@ -560,9 +564,9 @@ def is_relevant_reflog_subject(gs, b):
     return result
 
 
-def adjusted_reflog(b):
-    result = [sha for (sha, gs) in reflog(b) if is_relevant_reflog_subject(gs, b)]
-    debug("adjusted_reflog(%s)" % b, "computed adjusted reflog (= reflog without branch creation and branch reset events irrelevant for fork point/upstream inference): %s\n" %
+def adjusted_reflog(b, prefix):
+    result = [sha for (sha, gs) in reflog(prefix + "/" + b) if is_relevant_reflog_subject(gs, b)]
+    debug("adjusted_reflog(%s, %s)" % (b, prefix), "computed adjusted reflog (= reflog without branch creation and branch reset events irrelevant for fork point/upstream inference): %s\n" %
           (", ".join(result) or "<empty>"))
     return result
 
@@ -580,12 +584,12 @@ def match_log_to_adjusted_reflogs(b):
         def generate_entries():
             for lb in local_branches():
                 lb_shas = set()
-                for sha in adjusted_reflog(lb):
+                for sha in adjusted_reflog(lb, "refs/heads"):
                     lb_shas.add(sha)
                     yield sha, (lb, lb)
                 rb = remote_tracking_branch(lb)
                 if rb:
-                    for sha in adjusted_reflog(rb):
+                    for sha in adjusted_reflog(rb, "refs/remotes"):
                         if sha not in lb_shas:
                             yield sha, (lb, rb)
 
@@ -710,7 +714,7 @@ def delete_unmanaged():
         branches_to_delete_merged_to_head = [b for b in branches_to_delete if b in branches_merged_to_head]
         for b in branches_to_delete_merged_to_head:
             rb = remote_tracking_branch(b)
-            is_merged_to_remote = is_ancestor(b, rb) if rb else True
+            is_merged_to_remote = is_ancestor(b, rb, later_prefix="refs/remotes") if rb else True
             msg = "Delete branch %s (merged to HEAD%s)? [y/n/q] " % (
                 bold(b), "" if is_merged_to_remote else (", but not merged to " + rb)
             )
@@ -893,7 +897,7 @@ def traverse():
                     can_pick_other_remote = len(rems) > 1
                     other_remote_suffix = "/o[ther remote]" if can_pick_other_remote else ""
                     rb = new_remote + "/" + b
-                    if not sha_by_refspec(rb):
+                    if not sha_by_refspec(rb, prefix="refs/remotes"):
                         ans = raw_input("Push untracked branch %s to %s? (y/n/q%s) " % (bold(b), bold(new_remote), other_remote_suffix)).lower()
                         if ans in ('y', 'yes'):
                             run_git("push", "--set-upstream", new_remote, b)
@@ -1008,13 +1012,13 @@ def status():
             except MacheteException:
                 fork_points_cached[b] = None
             if opt_list_commits:
-                commits_cached[b] = reversed(commits_between(fork_points_cached[b], b)) if fork_points_cached[b] else []
+                commits_cached[b] = reversed(commits_between(fork_points_cached[b], "refs/heads/" + b)) if fork_points_cached[b] else []
         # Force computing all needed SHAs to avoid later polluting the printed status in case of --verbose mode.
-        sha_by_refspec_cached[b] = compute_sha_by_refspec(b)
+        sha_by_refspec(b)
         remote_sync_status[b] = get_remote_sync_status(b)
 
     def edge_color(b):
-        return RED if needs_sync_with_up_branch[b] else (GREEN if sha_by_refspec_cached[up_branch[b]] == fork_points_cached[b] else YELLOW)
+        return RED if needs_sync_with_up_branch[b] else (GREEN if sha_by_refspec(up_branch[b]) == fork_points_cached[b] else YELLOW)
 
     def print_line_prefix(b, suffix):
         sys.stdout.write("  ")
