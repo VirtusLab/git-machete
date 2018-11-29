@@ -30,6 +30,15 @@ YELLOW = '\033[00;38;5;220m'
 ORANGE = '\033[00;38;5;208m'
 RED = '\033[91m'
 
+def bold(s):
+    return BOLD + s + ENDC
+
+def dim(s):
+    return DIM + s + ENDC
+
+def underline(s):
+    return UNDERLINE + s + ENDC
+
 
 def flat_map(func, l):
     return sum(map(func, l), [])
@@ -65,7 +74,7 @@ def pick(choices, name):
 
 def debug(hdr, msg):
     if opt_debug:
-        print >> sys.stderr, "%s%s%s: %s%s%s" % (BOLD, hdr, ENDC, DIM, msg, ENDC)
+        print >> sys.stderr, "%s: %s" % (bold(hdr), dim(msg))
 
 
 def run_cmd(cmd, *args):
@@ -84,28 +93,28 @@ def popen_cmd(cmd, *args):
 def run_git(git_cmd, *args, **kwargs):
     flat_cmd = " ".join(["git", git_cmd] + list(args))
     if opt_debug:
-        print >> sys.stderr, UNDERLINE + flat_cmd + ENDC
+        print >> sys.stderr, underline(flat_cmd)
     elif opt_verbose:
         print >> sys.stderr, flat_cmd
     status = run_cmd("git", git_cmd, *args)
     if not kwargs.get("allow_non_zero") and status != 0:
         raise MacheteException("'%s' returned %i" % (flat_cmd, status))
     if opt_debug:
-        print >> sys.stderr, "%s<status: %i>%s\n" % (DIM, status, ENDC)
+        print >> sys.stderr, dim("<status: %i>\n" % status)
     return status
 
 
 def popen_git(git_cmd, *args):
     flat_cmd = " ".join(["git", git_cmd] + list(args))
     if opt_debug:
-        print >> sys.stderr, UNDERLINE + flat_cmd + ENDC
+        print >> sys.stderr, underline(flat_cmd)
     elif opt_verbose:
         print >> sys.stderr, flat_cmd
     status, stdout = popen_cmd("git", git_cmd, *args)
     if status != 0:
         raise MacheteException("'%s' returned %i" % (flat_cmd, status))
     if opt_debug:
-        print >> sys.stderr, "%s%s%s" % (DIM, stdout, ENDC)
+        print >> sys.stderr, dim(stdout)
     return stdout
 
 
@@ -591,8 +600,8 @@ def match_log_to_adjusted_reflogs(b):
 
         def log_result():
             for sha, branch_defs in branch_defs_by_sha_in_reflog.items():
-                yield "%s%s => %s%s" % \
-                      (DIM, sha, ", ". join(map(lambda (lb, lb_or_rb): lb if lb == lb_or_rb else "%s (remote counterpart of %s)" % (lb_or_rb, lb), branch_defs)), ENDC)
+                yield dim("%s => %s" % \
+                      (sha, ", ". join(map(lambda (lb, lb_or_rb): lb if lb == lb_or_rb else "%s (remote counterpart of %s)" % (lb_or_rb, lb), branch_defs))))
         debug("match_log_to_adjusted_reflogs(%s)" % b, "branches containing the given SHA in their adjusted reflog: \n%s\n" % "\n".join(log_result()))
 
     for sha in spoonfeed_log_shas(b):
@@ -659,7 +668,7 @@ def discover_tree():
             debug("discover_tree()", "inferred no upstream for %s, attaching %s as a new root\n" % (b, b))
             roots += [b]
 
-    print BOLD + 'Discovered tree of branch dependencies:\n' + ENDC
+    print bold('Discovered tree of branch dependencies:\n')
     status()
     print
     do_backup = os.path.exists(definition_file)
@@ -702,8 +711,8 @@ def delete_unmanaged():
         for b in branches_to_delete_merged_to_head:
             rb = remote_tracking_branch(b)
             is_merged_to_remote = is_ancestor(b, rb) if rb else True
-            msg = "Delete branch %s%s%s (merged to HEAD%s)? [y/n/q] " % (
-                BOLD, b, ENDC, "" if is_merged_to_remote else (", but not merged to " + rb)
+            msg = "Delete branch %s (merged to HEAD%s)? [y/n/q] " % (
+                bold(b), "" if is_merged_to_remote else (", but not merged to " + rb)
             )
             ans = raw_input(msg).lower()
             if ans in ('y', 'yes'):
@@ -713,7 +722,7 @@ def delete_unmanaged():
 
         branches_to_delete_unmerged_to_head = [b for b in branches_to_delete if b not in branches_merged_to_head]
         for b in branches_to_delete_unmerged_to_head:
-            msg = "Delete branch %s%s%s (unmerged to HEAD)? [y/n/q] " % (BOLD, b, ENDC)
+            msg = "Delete branch %s (unmerged to HEAD)? [y/n/q] " % bold(b)
             ans = raw_input(msg).lower()
             if ans in ('y', 'yes'):
                 run_git("branch", "-D", b)
@@ -810,7 +819,7 @@ def traverse():
 
         if b != cb and (needs_slide_out or needs_rebase or needs_remote_sync):
             print_new_line(False)
-            print >> sys.stderr, "Checking out %s%s%s" % (BOLD, b, ENDC)
+            print >> sys.stderr, "Checking out %s" % bold(b)
             go(b)
             cb = b
             print_new_line(False)
@@ -818,9 +827,8 @@ def traverse():
             print_new_line(True)
         if needs_slide_out:
             print_new_line(False)
-            ans = raw_input(
-                "Branch %s%s%s is merged into %s%s%s. Slide %s%s%s out of the tree of branch dependencies? [y/n/q] " %
-                (BOLD, b, ENDC, BOLD, u, ENDC, BOLD, b, ENDC)).lower()
+            ans = raw_input("Branch %s is merged into %s. Slide %s out of the tree of branch dependencies? [y/n/q] " %
+                            (bold(b), bold(u), bold(b))).lower()
             if ans in ('y', 'yes'):
                 for d in down_branches.get(b) or []:
                     up_branch[d] = u
@@ -836,7 +844,7 @@ def traverse():
             # If user answered 'no', we don't try to rebase but still suggest to sync with remote (if needed).
         elif needs_rebase:
             print_new_line(False)
-            ans = raw_input("Rebase %s%s%s onto %s%s%s? [y/n/q] " % (BOLD, b, ENDC, BOLD, u, ENDC)).lower()
+            ans = raw_input("Rebase %s onto %s? [y/n/q] " % (bold(b), bold(u))).lower()
             if ans in ('y', 'yes'):
                 update(b, fork_point(b))
                 flush()
@@ -848,7 +856,8 @@ def traverse():
         if needs_remote_sync:
             if s == BEHIND_REMOTE:
                 rb = remote_tracking_branch(b)
-                ans = raw_input("Branch %s is behind its remote counterpart %s. Pull %s%s%s from %s%s%s? [y/n/q] " % (b, rb, BOLD, b, ENDC, BOLD, remote, ENDC)).lower()
+                ans = raw_input("Branch %s is behind its remote counterpart %s.\nPull %s from %s? [y/n/q] " %
+                                (bold(b), bold(rb), bold(b), bold(remote))).lower()
                 if ans in ('y', 'yes'):
                     run_git("pull", "--ff-only", remote)
                     flush()
@@ -859,7 +868,7 @@ def traverse():
             elif s == UNTRACKED_ON or s == AHEAD_OF_REMOTE:
                 print_new_line(False)
                 # `remote` is defined for both cases we handle here, including UNTRACKED_ON
-                ans = raw_input("Push %s%s%s to %s%s%s? [y/n/q] " % (BOLD, b, ENDC, BOLD, remote, ENDC)).lower()
+                ans = raw_input("Push %s to %s? [y/n/q] " % (bold(b), bold(remote))).lower()
                 if ans in ('y', 'yes'):
                     run_git("push", remote)
                     flush()
@@ -869,7 +878,8 @@ def traverse():
             elif s == DIVERGED_FROM_REMOTE:
                 print_new_line(False)
                 rb = remote_tracking_branch(b)
-                ans = raw_input("Branch %s diverged from its remote counterpart %s. Push %s%s%s with force to %s%s%s? [y/n/q] " % (b, rb, BOLD, b, ENDC, BOLD, remote, ENDC)).lower()
+                ans = raw_input("Branch %s diverged from its remote counterpart %s.\nPush %s with force to %s? [y/n/q] " %
+                                (bold(b), bold(rb), bold(b), bold(remote))).lower()
                 if ans in ('y', 'yes'):
                     run_git("push", "--force", remote)
                     flush()
@@ -884,7 +894,7 @@ def traverse():
                     other_remote_suffix = "/o[ther remote]" if can_pick_other_remote else ""
                     rb = new_remote + "/" + b
                     if not sha_by_refspec(rb):
-                        ans = raw_input("Push untracked branch %s%s%s to %s%s%s? (y/n/q%s) " % (BOLD, b, ENDC, BOLD, new_remote, ENDC, other_remote_suffix)).lower()
+                        ans = raw_input("Push untracked branch %s to %s? (y/n/q%s) " % (bold(b), bold(new_remote), other_remote_suffix)).lower()
                         if ans in ('y', 'yes'):
                             run_git("push", "--set-upstream", new_remote, b)
                             flush()
@@ -896,8 +906,8 @@ def traverse():
 
                     new_s = get_relation_to_remote_counterpart(b, rb)
                     if new_s == IN_SYNC_WITH_REMOTE:
-                        print "Branch %s%s%s is untracked, but its remote counterpart candidate %s%s%s already exists and the two branches point to the same commit." % (BOLD, b, ENDC, BOLD, rb, ENDC)
-                        ans = raw_input("Set the remote of %s%s%s to %s%s%s without pushing or pulling? (y/n/q%s) " % (BOLD, b, ENDC, BOLD, new_remote, ENDC, other_remote_suffix)).lower()
+                        print "Branch %s is untracked, but its remote counterpart candidate %s already exists and the two branches point to the same commit." % (bold(b), bold(rb))
+                        ans = raw_input("Set the remote of %s to %s without pushing or pulling? (y/n/q%s) " % (bold(b), bold(new_remote), other_remote_suffix)).lower()
                         if ans in ('y', 'yes'):
                             run_git("branch", "--set-upstream-to", rb)
                             flush()
@@ -906,8 +916,8 @@ def traverse():
                         elif ans in ('q', 'quit'):
                             raise StopTraversal
                     elif new_s == BEHIND_REMOTE:
-                        print "Branch %s%s%s is untracked, but its remote counterpart candidate %s%s%s already exists and is ahead of %s%s%s." % (BOLD, b, ENDC, BOLD, rb, ENDC, BOLD, b, ENDC)
-                        ans = raw_input("Pull %s%s%s from %s%s%s? (y/n/q%s) " % (BOLD, b, ENDC, BOLD, new_remote, ENDC, other_remote_suffix)).lower()
+                        print "Branch %s is untracked, but its remote counterpart candidate %s already exists and is ahead of %s." % (bold(b), bold(rb), bold(b))
+                        ans = raw_input("Pull %s from %s? (y/n/q%s) " % (bold(b), bold(new_remote), other_remote_suffix)).lower()
                         if ans in ('y', 'yes'):
                             run_git("pull", "--ff-only", new_remote, b)
                             # There's apparently no way to set remote automatically when doing `git pull` (as it is with `git push`), so a separate `git branch --set-upstream-to` is needed.
@@ -918,8 +928,8 @@ def traverse():
                         elif ans in ('q', 'quit'):
                             raise StopTraversal
                     elif new_s == AHEAD_OF_REMOTE:
-                        print "Branch %s%s%s is untracked, but its remote counterpart candidate %s%s%s already exists and is behind %s%s%s." % (BOLD, b, ENDC, BOLD, rb, ENDC, BOLD, b, ENDC)
-                        ans = raw_input("Push branch %s%s%s to %s%s%s? (y/n/q%s) " % (BOLD, b, ENDC, BOLD, new_remote, ENDC, other_remote_suffix)).lower()
+                        print "Branch %s is untracked, but its remote counterpart candidate %s already exists and is behind %s." % (bold(b), bold(rb), bold(b))
+                        ans = raw_input("Push branch %s to %s? (y/n/q%s) " % (bold(b), bold(new_remote), other_remote_suffix)).lower()
                         if ans in ('y', 'yes'):
                             run_git("push", "--set-upstream", new_remote, b)
                             flush()
@@ -928,8 +938,8 @@ def traverse():
                         elif ans in ('q', 'quit'):
                             raise StopTraversal
                     elif new_s == DIVERGED_FROM_REMOTE:
-                        print "Branch %s%s%s is untracked, but its remote counterpart candidate %s%s%s already exists and the two branches are diverged." % (BOLD, b, ENDC, BOLD, rb, ENDC)
-                        ans = raw_input("Push branch %s%s%s with force to %s%s%s? (y/n/q%s) " % (BOLD, b, ENDC, BOLD, new_remote, ENDC, other_remote_suffix)).lower()
+                        print "Branch %s is untracked, but its remote counterpart candidate %s already exists and the two branches are diverged." % (bold(b), bold(rb))
+                        ans = raw_input("Push branch %s with force to %s? (y/n/q%s) " % (bold(b), bold(new_remote), other_remote_suffix)).lower()
                         if ans in ('y', 'yes'):
                             run_git("push", "--set-upstream", "--force", new_remote, b)
                             flush()
@@ -960,14 +970,14 @@ def traverse():
                     handle_untracked_branch("origin")
                 else:
                     # We know that there is at least 1 remote, otherwise `s` would be `NO_REMOTES`
-                    print "Branch %s%s%s is untracked and there's no %sorigin%s repository." % (BOLD, b, ENDC, BOLD, ENDC)
+                    print "Branch %s is untracked and there's no %s repository." % (bold(b), bold("origin"))
                     pick_remote()
 
     print_new_line(False)
     status()
     print
-    msg = "Reached branch %s%s%s which has no successor" if cb == managed_branches[-1] else "No successor of %s%s%s needs sync with upstream branch or remote"
-    print >> sys.stderr, msg % (BOLD, cb, ENDC) + "; nothing left to update"
+    msg = "Reached branch %s which has no successor" if cb == managed_branches[-1] else "No successor of %s needs sync with upstream branch or remote"
+    print >> sys.stderr, msg % bold(cb) + "; nothing left to update"
 
 
 def status():
@@ -1018,8 +1028,8 @@ def status():
     cb = current_branch_or_none()
 
     for b, pfx in dfs_res:
-        current = BOLD + b + ENDC + ("  " + DIM + annotations[b] + ENDC if b in annotations else "")
-        current_ul = UNDERLINE + current + ENDC if b == cb else current
+        current = bold(b) + ("  " + dim(annotations[b]) if b in annotations else "")
+        current_ul = underline(current) if b == cb else current
         if b in up_branch:
             print_line_prefix(b, "│ \n")
             if opt_list_commits:
@@ -1369,22 +1379,23 @@ def usage(c=None):
         short_usage()
         if c and c not in long_docs:
             print "\nUnknown command: '%s'" % c
-        print "\n%sTL;DR tip%s\n\n    Get familiar with the help for %sformat%s, %sedit%s, %sstatus%s and %supdate%s, in this order.\n" % (
-            UNDERLINE, ENDC, BOLD, ENDC, BOLD, ENDC, BOLD, ENDC, BOLD, ENDC
+        print "\n%s\n\n    Get familiar with the help for %s, %s, %s and %s, in this order.\n" % (
+            underline("TL;DR tip"), bold("format"), bold("edit"), bold("status"), bold("update")
         )
         for hdr, cmds in groups:
-            print UNDERLINE + hdr + ENDC + "\n"
+            print underline(hdr)
+            print
             for cm in cmds:
                 alias = (", " + aliases[cm]) if cm in aliases else ""
                 print "    %s%-18s%s%s" % (BOLD, cm + alias, ENDC, short_docs[cm])
             print >> sys.stderr
         print textwrap.dedent("""
-            %sGeneral options%s\n
-                --debug          Logs detailed diagnostic info, including outputs of the executed git commands.
-                -h, --help       Prints help and exits.
-                -v, --verbose    Logs the executed git commands.
-                --version        Prints version and exits.
-        """[1:] % (UNDERLINE, ENDC))
+            %s\n
+                --debug           Logs detailed diagnostic info, including outputs of the executed git commands.
+                -h, --help        Prints help and exits.
+                -v, --verbose     Logs the executed git commands.
+                --version         Prints version and exits.
+        """[1:] % underline("General options"))
 
 
 def short_usage():
