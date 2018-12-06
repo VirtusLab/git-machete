@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.8.3'
+VERSION = '2.8.4'
 
 
 # Core utils
@@ -447,7 +447,7 @@ def is_ancestor(earlier, later, earlier_prefix = "refs/heads", later_prefix = "r
 
 
 def create_branch(b, out_of):
-    return run_git("checkout", "-b", b, *([out_of] if out_of else []))
+    return run_git("checkout", "-b", b, *(["refs/heads/" + out_of] if out_of else []))
 
 
 def log_shas(refspec, max_count):
@@ -1371,7 +1371,7 @@ def usage(c=None):
     groups = [
         ("General topics", ["file", "format", "help"]),
         ("Build, display and modify the tree of branch dependencies", ["add", "anno", "discover", "edit", "status"]), # 'infer' is skipped from the main docs
-        ("List, checkout and delete branches", ["delete-unmanaged", "go", "list", "show"]), # 'prune-branches' is skipped from the main docs
+        ("List, check out and delete branches", ["delete-unmanaged", "go", "list", "show"]), # 'prune-branches' is skipped from the main docs
         ("Determine changes specific to the given branch", ["diff", "fork-point", "log"]),
         ("Update git history in accordance with the tree of branch dependencies", ["reapply", "slide-out", "traverse", "update"])
     ]

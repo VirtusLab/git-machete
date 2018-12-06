@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.8.4
+
+- fixed: handle some extra cases happening when a tag named exactly as one of the managed branches exists in the repository
+
 ## New in git-machete 2.8.3
 
 - improved: Bash completion for long options
