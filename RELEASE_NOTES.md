@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.9.0
+
+- added: handling of `machete-pre-rebase` and `machete-status-branch` hooks + hook samples
+
 ## New in git-machete 2.8.8
 
 - added: zsh completion

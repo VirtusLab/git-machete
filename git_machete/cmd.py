@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.8.8'
+VERSION = '2.9.0'
 
 
 # Core utils
@@ -26,7 +26,7 @@ BOLD = '\033[1m'
 DIM = '\033[2m'
 UNDERLINE = '\033[4m'
 GREEN = '\033[32m'
-YELLOW = '\033[00;38;5;220m'
+YELLOW = '\033[33m'
 ORANGE = '\033[00;38;5;208m'
 RED = '\033[91m'
 
@@ -80,12 +80,12 @@ def debug(hdr, msg):
         print >> sys.stderr, "%s: %s" % (bold(hdr), dim(msg))
 
 
-def run_cmd(cmd, *args):
-    return subprocess.call([cmd] + list(args))
+def run_cmd(cmd, *args, **kwargs):
+    return subprocess.call([cmd] + list(args), **kwargs)
 
 
-def popen_cmd(cmd, *args):
-    process = subprocess.Popen([cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+def popen_cmd(cmd, *args, **kwargs):
+    process = subprocess.Popen([cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
     stdoutdata, stderrdata = process.communicate()
     return process.returncode, stdoutdata
 
@@ -106,14 +106,14 @@ def run_git(git_cmd, *args, **kwargs):
     return exit_code
 
 
-def popen_git(git_cmd, *args):
+def popen_git(git_cmd, *args, **kwargs):
     flat_cmd = " ".join(["git", git_cmd] + list(args))
     if opt_debug:
         print >> sys.stderr, underline(flat_cmd)
     elif opt_verbose:
         print >> sys.stderr, flat_cmd
     exit_code, stdout = popen_cmd("git", git_cmd, *args)
-    if exit_code != 0:
+    if not kwargs.get("allow_non_zero") and exit_code != 0:
         raise MacheteException("'%s' returned %i" % (flat_cmd, exit_code))
     if opt_debug:
         print >> sys.stderr, dim(stdout)
@@ -366,12 +366,45 @@ def print_annotation():
 
 # Implementation of basic git or git-related commands
 
+def is_executable(path):
+    return os.access(path, os.X_OK)
+
+
 def edit():
     return run_cmd(os.environ.get("EDITOR") or "vim", definition_file)
 
 
+root_dir = None
+
+
+def get_root_dir():
+    global root_dir
+    if not root_dir:
+        root_dir = popen_git("rev-parse", "--show-toplevel").strip()
+    return root_dir
+
+
+git_dir = None
+
+
 def get_git_dir():
-    return popen_git("rev-parse", "--git-dir").strip()
+    global git_dir
+    if not git_dir:
+        try:
+            git_dir = popen_git("rev-parse", "--git-dir").strip()
+        except MacheteException:
+            raise MacheteException("Not a git repository")
+    return git_dir
+
+
+config_cached = {}
+
+
+def get_config(key):
+    global config_cached
+    if key not in config_cached:
+        config_cached[key] = popen_git("config", "--", key, allow_non_zero=True).rstrip()
+    return config_cached[key]
 
 
 remotes_cached = None
@@ -391,22 +424,22 @@ def remote_for_branch(b):
         return None
 
 
-def compute_sha_by_refspec(refspec):
+def compute_sha_by_revision(revision):
     try:
-        return popen_git("rev-parse", "--verify", "--quiet", refspec).rstrip()
+        return popen_git("rev-parse", "--verify", "--quiet", revision).rstrip()
     except MacheteException:
         return None
 
 
-sha_by_refspec_cached = {}
+sha_by_revision_cached = {}
 
 
-def sha_by_refspec(refspec, prefix="refs/heads"):
-    global sha_by_refspec_cached
-    full_refspec = prefix + "/" + refspec
-    if full_refspec not in sha_by_refspec_cached:
-        sha_by_refspec_cached[full_refspec] = compute_sha_by_refspec(full_refspec)
-    return sha_by_refspec_cached[full_refspec]
+def sha_by_revision(revision, prefix="refs/heads"):
+    global sha_by_revision_cached
+    full_revision = prefix + "/" + revision
+    if full_revision not in sha_by_revision_cached:
+        sha_by_revision_cached[full_revision] = compute_sha_by_revision(full_revision)
+    return sha_by_revision_cached[full_revision]
 
 
 remote_tracking_branches_cached = {}
@@ -450,8 +483,8 @@ def create_branch(b, out_of):
     return run_git("checkout", "-b", b, *(["refs/heads/" + out_of] if out_of else []))
 
 
-def log_shas(refspec, max_count):
-    opts = (["--max-count=" + str(max_count)] if max_count else []) + ["--format=%H", "refs/heads/" + refspec]
+def log_shas(revision, max_count):
+    opts = (["--max-count=" + str(max_count)] if max_count else []) + ["--format=%H", "refs/heads/" + revision]
     return non_empty_lines(popen_git("log", *opts))
 
 
@@ -494,12 +527,48 @@ def go(branch):
     run_git("checkout", "--quiet", branch, "--")
 
 
+def get_hook_path(hook_name):
+    hook_dir = get_config("core.hooksPath") or os.path.join(get_git_dir(), "hooks")
+    return os.path.join(hook_dir, hook_name)
+
+
+def check_hook_executable(hook_path):
+    if not os.path.exists(hook_path):
+        return False
+    elif not is_executable(hook_path):
+        advice_ignored_hook = get_config("advice.ignoredHook")
+        if advice_ignored_hook != 'false':  # both empty and "true" is okay
+            # The [33m color must be used to keep consistent with how git colors this advice for its built-in hooks.
+            print >> sys.stderr, YELLOW + "hint: The '%s' hook was ignored because it's not set as executable." % hook_path + ENDC
+            print >> sys.stderr, YELLOW + "hint: You can disable this warning with `git config advice.ignoredHook false`." + ENDC
+        return False
+    else:
+        return True
+
+
+def rebase(onto, fork_commit, branch):
+    def do_rebase():
+        run_git("rebase", "--interactive", "--onto", onto, fork_commit, branch)
+
+    hook_path = get_hook_path("machete-pre-rebase")
+    if check_hook_executable(hook_path):
+        debug("rebase(%s, %s, %s)" % (onto, fork_commit, branch), "running machete-pre-rebase hook (%s)" % hook_path)
+        status = run_cmd(hook_path, onto, fork_commit, branch, cwd=get_root_dir())
+        if status == 0:
+            do_rebase()
+        else:
+            print >> sys.stderr, "The machete-pre-rebase hook refused to rebase."
+            sys.exit(status)
+    else:
+        do_rebase()
+
+
 def update(branch, fork_commit):
-    run_git("rebase", "--interactive", "--onto", "refs/heads/" + up(branch, prompt_if_inferred=True), fork_commit, branch)
+    rebase("refs/heads/" + up(branch, prompt_if_inferred=True), fork_commit, branch)
 
 
 def reapply(branch, fork_commit):
-    run_git("rebase", "--interactive", "--onto", fork_commit, fork_commit, branch)
+    rebase(fork_commit, fork_commit, branch)
 
 
 def diff(branch):
@@ -791,12 +860,12 @@ def traverse():
     global down_branches, up_branch, empty_line_status, managed_branches
 
     def flush():
-        global branch_defs_by_sha_in_reflog, initial_log_shas_cached, remaining_log_shas_cached, remote_tracking_branches_cached, sha_by_refspec_cached
+        global branch_defs_by_sha_in_reflog, initial_log_shas_cached, remaining_log_shas_cached, remote_tracking_branches_cached, sha_by_revision_cached
         branch_defs_by_sha_in_reflog = None
         initial_log_shas_cached = {}
         remaining_log_shas_cached = {}
         remote_tracking_branches_cached = {}
-        sha_by_refspec_cached = {}
+        sha_by_revision_cached = {}
 
     empty_line_status = True
 
@@ -812,12 +881,12 @@ def traverse():
     for b in itertools.dropwhile(lambda x: x != cb, managed_branches):
         u = up_branch.get(b)
 
-        needs_slide_out = u and is_ancestor(b, u) and sha_by_refspec(u) != sha_by_refspec(b)
+        needs_slide_out = u and is_ancestor(b, u) and sha_by_revision(u) != sha_by_revision(b)
         if needs_slide_out:
             # Avoid unnecessary fork point check if we already now that the branch qualifies for slide out.
             needs_rebase = False
         else:
-            needs_rebase = u and not (is_ancestor(u, b) and sha_by_refspec(u) == fork_point(b))
+            needs_rebase = u and not (is_ancestor(u, b) and sha_by_revision(u) == fork_point(b))
         s, remote = get_remote_sync_status(b)
         statuses_to_sync = (UNTRACKED, UNTRACKED_ON, AHEAD_OF_REMOTE, BEHIND_REMOTE, DIVERGED_FROM_REMOTE)
         needs_remote_sync = s in statuses_to_sync
@@ -898,7 +967,7 @@ def traverse():
                     can_pick_other_remote = len(rems) > 1
                     other_remote_suffix = "/o[ther remote]" if can_pick_other_remote else ""
                     rb_ = new_remote + "/" + b
-                    if not sha_by_refspec(rb_, prefix="refs/remotes"):
+                    if not sha_by_revision(rb_, prefix="refs/remotes"):
                         ans_ = raw_input("Push untracked branch %s to %s? (y/n/q%s) " % (bold(b), bold(new_remote), other_remote_suffix)).lower()
                         if ans_ in ('y', 'yes'):
                             run_git("push", "--set-upstream", new_remote, b)
@@ -985,7 +1054,7 @@ def traverse():
 
 
 def status():
-    global sha_by_refspec_cached
+    global sha_by_revision_cached
 
     dfs_res = []
 
@@ -1014,11 +1083,20 @@ def status():
             if opt_list_commits:
                 commits_cached[b] = reversed(commits_between(fork_points_cached[b], "refs/heads/" + b)) if fork_points_cached[b] else []
         # Force computing all needed SHAs to avoid later polluting the printed status in case of --verbose mode.
-        sha_by_refspec(b)
+        sha_by_revision(b)
         remote_sync_status[b] = get_remote_sync_status(b)
 
+    hook_output = {}
+    hook_path = get_hook_path("machete-status-branch")
+    if check_hook_executable(hook_path):
+        for b, pfx in dfs_res:
+            debug("status()", "running machete-status-branch hook (%s) for branch %s" % (hook_path, b))
+            status, stdout = popen_cmd(hook_path, b, cwd=get_root_dir())
+            if status == 0 and not stdout.isspace():
+                hook_output[b] = "  " + stdout.rstrip()
+
     def edge_color(b_):
-        return RED if needs_sync_with_up_branch[b_] else (GREEN if sha_by_refspec(up_branch[b_]) == fork_points_cached[b_] else YELLOW)
+        return RED if needs_sync_with_up_branch[b_] else (GREEN if sha_by_revision(up_branch[b_]) == fork_points_cached[b_] else YELLOW)
 
     def print_line_prefix(b_, suffix):
         sys.stdout.write("  ")
@@ -1032,8 +1110,9 @@ def status():
     cb = current_branch_or_none()
 
     for b, pfx in dfs_res:
-        current = bold(b) + ("  " + dim(annotations[b]) if b in annotations else "")
-        current_ul = underline(current) if b == cb else current
+        current = underline(bold(b)) if b == cb else bold(b)
+        anno = "  " + dim(annotations[b]) if b in annotations else ""
+
         if b in up_branch:
             print_line_prefix(b, "│ \n")
             if opt_list_commits:
@@ -1054,7 +1133,7 @@ def status():
             AHEAD_OF_REMOTE: RED + " (ahead of %s)" % remote + ENDC,
             DIVERGED_FROM_REMOTE: RED + " (diverged from %s)" % remote + ENDC
         }
-        print current_ul + sync_status_string[s]
+        print current + anno + sync_status_string[s] + (hook_output.get(b) or "")
 
 
 # Main
@@ -1067,18 +1146,19 @@ def usage(c=None):
         "diff": "Diff current working directory or a given branch against its computed fork point",
         "discover": "Automatically discover tree of branch dependencies",
         "edit": "Edit the definition file",
-        "file": "Print path of the definition file",
-        "fork-point": "Print SHA of the computed fork point commit of a branch",
-        "format": "Print information about the format of the definition file",
+        "file": "Display the location of the definition file",
+        "fork-point": "Display SHA of the computed fork point commit of a branch",
+        "format": "Display docs for the format of the definition file",
         "go": "Check out the branch relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument",
-        "help": "Print this overview, or print detailed help for a specified command",
+        "help": "Display this overview, or detailed help for a specified command",
+        "hooks": "Display docs for the extra hooks added by git machete",
         "list": "List all branches that fall into one of pre-defined categories (mostly for internal use)",
         "log": "Log the part of history specific to the given branch",
         "reapply": "Rebase the current branch onto its computed fork point",
-        "show": "Print name(s) of the branch(es) relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument",
-        "slide-out": "Slide the current branch out and rebase its downstream (child) branch onto its upstream (parent) branch",
-        "status": "Print formatted tree of branch dependencies, including info on their sync with upstream branch and with remote",
-        "traverse": "Walk through the tree of branch dependencies and ask to rebase and/or push branches, one by one",
+        "show": "Show name(s) of the branch(es) relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument",
+        "slide-out": "Slide out the given chain of branches and rebase its downstream (child) branch onto its upstream (parent) branch",
+        "status": "Display formatted tree of branch dependencies, including info on their sync with upstream branch and with remote",
+        "traverse": "Walk through the tree of branch dependencies and ask to rebase, slide out, push and/or pull branches, one by one",
         "update": "Rebase the current branch onto its upstream (parent) branch"
     }
     long_docs = {
@@ -1134,7 +1214,7 @@ def usage(c=None):
         "discover": """
             Usage: git machete discover [-l|--list-commits]
 
-            Discovers and prints tree of branch dependencies using a heuristic based on reflogs and asks whether to overwrite the existing definition file with the new discovered tree.
+            Discovers and displays tree of branch dependencies using a heuristic based on reflogs and asks whether to overwrite the existing definition file with the new discovered tree.
             If confirmed with a 'y[es]' or 'e[dit]' reply, backs up the current definition file as '.git/machete~' (if exists) and saves the new tree under the usual '.git/machete' path.
             If the reply was 'e[dit]', additionally an editor is opened (as in 'git machete edit') after saving the new definition file.
 
@@ -1150,7 +1230,8 @@ def usage(c=None):
         "file": """
             Usage: git machete file
 
-            Outputs the path of the machete definition file (currently fixed to <repo-root>/.git/machete).
+            Outputs the path of the machete definition file. Currently fixed to '<git-directory>/machete'.
+            Note: this won't always be just '.git/machete' since e.g. submodules have their git directory in different location by default.
         """,
         "fork-point": """
             Usage: git machete fork-point [<branch>]
@@ -1217,6 +1298,30 @@ def usage(c=None):
 
             Prints a summary of this tool, or a detailed info on a command if defined.
         """,
+        "hooks": """
+            As for standard git hooks, the hooks are expected in $GIT_DIR/hooks/* (or `git config core.hooksPath`/*, if set).
+
+            Note: 'hooks' is not a standalone command, just a help topic (there is no 'git machete hooks' command).
+
+            * machete-pre-rebase <new-base> <fork-point-hash> <branch-being-rebased>
+                The hook that is executed before rebase is run during 'reapply', 'slide-out', 'traverse' and 'update'.
+                The parameters are exactly the three revisions that are passed to 'git rebase --onto':
+                1. what is going to be the new base for the rebased commits,
+                2. what is the fork point - the place where the rebased history diverges from the upstream history,
+                3. what branch is rebased.
+                If the hook returns a non-zero status, the entire command is aborted.
+
+                Note: this hook is independent from git's standard 'pre-rebase' hook.
+                If machete-pre-rebase returns zero, the execution flow continues to 'git rebase', which will run 'pre-rebase' hook if present.
+                'machete-pre-rebase' is thus always run before 'pre-rebase'.
+
+            * machete-status-branch <branch-name>
+                The hook that is executed for each branch displayed during 'discover', 'status' and 'traverse'.
+                The standard output of this hook is displayed at the end of the line, after branch name, (optionally) custom annotation and (optionally) remote sync-ness status.
+                Standard error is ignored. If the hook returns a non-zero status, both stdout and stderr are ignored, and printing the status continues as usual.
+
+            Please see hook_samples/ directory for examples (also includes an example of using the standard git post-commit hook to 'git machete add' branches automatically).
+        """,
         "list": """
             Usage: git machete list <category>
             where <category> is one of: managed, slidable, slidable-after <branch>, unmanaged
@@ -1279,7 +1384,7 @@ def usage(c=None):
             Since this tool is designed to perform only one rebase at the end, provided branches must form a chain, i.e the following conditions must be met:
             * (n+1)-th branch must be the ONLY downstream branch of the n-th branch.
             * all provided branches must have exactly one downstream branch (even if only one branch is to be slid out)
-            * all provided branches must have an upstream branch (so, in other words, roots of branch dependency tree cannot be slid out - also applies if only one branch is specified).
+            * all provided branches must have an upstream branch (so, in other words, roots of branch dependency tree cannot be slid out).
 
             For example, let's assume the following dependency tree:
 
@@ -1316,8 +1421,9 @@ def usage(c=None):
               - red edge means that the downstream branch commit is NOT a direct descendant of the upstream branch commit (basically, the downstream branch is out of sync with its upstream branch),
               - yellow means that the opposite holds true, i.e. the downstream branch is in sync with its upstream branch, but the fork point of the downstream branch is a different commit than upstream branch tip,
               - green means that downstream branch is in sync with its upstream branch (so just like for yellow edge) and the fork point of downstream branch is EQUAL to the upstream branch tip.
-            * displays the custom annotations (see help on 'format') next to each branch, if present;
-            * optionally lists commits introduced on each branch if '--list-commits' is supplied.
+            * displays the custom annotations (see help on 'format' and 'anno') next to each branch, if present;
+            * displays the output of 'machete-status-branch' hook (see help on 'hooks'), if present;
+            * optionally lists commits introduced on each branch if '-l'/'--list-commits' is supplied.
 
             Note: in practice, both yellow and red edges suggest that the downstream branch should be updated against its upstream.
             Yellow typically indicates that there are/were commits from some other branches on the path between upstream and downstream and that a closer look at the log of the downstream branch might be necessary.
@@ -1369,7 +1475,7 @@ def usage(c=None):
     }
     inv_aliases = {v: k for k, v in aliases.iteritems()}
     groups = [
-        ("General topics", ["file", "format", "help"]),
+        ("General topics", ["file", "format", "help", "hooks"]),
         ("Build, display and modify the tree of branch dependencies", ["add", "anno", "discover", "edit", "status"]),  # 'infer' is skipped from the main docs
         ("List, check out and delete branches", ["delete-unmanaged", "go", "list", "show"]),  # 'prune-branches' is skipped from the main docs
         ("Determine changes specific to the given branch", ["diff", "fork-point", "log"]),
@@ -1403,7 +1509,7 @@ def usage(c=None):
 
 
 def short_usage():
-    print "Usage: git machete [--help] [--verbose] [--version] <command> [command-specific options] [command-specific argument]"
+    print "Usage: git machete [--debug] [-h] [-v|--verbose] [--version] <command> [command-specific options] [command-specific argument]"
 
 
 def version():
