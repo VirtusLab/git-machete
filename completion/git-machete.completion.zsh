@@ -87,7 +87,8 @@ _git_machete_help_topics() {
     local topics
     set -A topics ${_git_machete_cmds}
     topics+=(
-        'format:format of the .git/machete definition file'
+        'format:Format of the .git/machete definition file'
+        'hooks:Display docs for the extra hooks added by git machete'
     )
     _describe -t topics 'git machete help topic' topics "$@"
 }

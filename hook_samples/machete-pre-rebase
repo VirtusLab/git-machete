@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+
+# machete-pre-rebase hook is invoked before each rebase operation.
+# Unlike the standard 2-parameter pre-rebase it receives three parameters corresponding to the parameters of `git rebase --onto`.
+
+# This particular example shifts the files stored in a specific directory so that they remain correctly sequentially numbered after the rebase.
+
+if [ $# -eq 3 ]; then
+    # Path for Play framework evolution files.
+    evolution_dir=app/src/main/resources/evolutions/default
+    [ -d $evolution_dir ] || exit 0
+
+    new_base=$1
+    fork_point=$2
+    current_branch=$3
+
+    function max_evolution_number() {
+        git ls-tree -r --name-only $1 -- $evolution_dir | xargs basename -s .sql | sort -n | tail -1
+    }
+
+    current_branch_max=`max_evolution_number $current_branch`
+    new_base_max=`max_evolution_number $new_base`
+    fork_point_max=`max_evolution_number $fork_point`
+    offset=$[new_base_max - fork_point_max]
+
+    if [ $offset -gt 0 ]; then
+        self_path="$(cd "$(dirname "$0")" &>/dev/null; pwd -P)"/"$(basename "$0")"
+        git filter-branch -f --tree-filter "$self_path $evolution_dir $((fork_point_max + 1)) $current_branch_max $offset" $fork_point..$current_branch
+    else
+        echo "warn: no evolutions to shift" 1>&2
+    fi
+elif [ $# -eq 4 ]; then
+    evolution_dir=$1
+    first_to_shift=$2
+    last_to_shift=$3
+    offset=$4
+
+    cd $evolution_dir
+
+    # We have to iterate from highest to lowest evolution to prevent unwanted overwrites during move.
+    # If we iterated from lowest to highest, then when moving files in the interval [10,12] by offset=1 we would end up with the following sequence of moves:
+    # mv 10.sql 11.sql; mv 11.sql 12.sql; mv 12.sql 13.sql
+    # and thus effectively the original 10.sql will be moved to 13.sql, and the original 11.sql & 12.sql will be non-existent in the rebased commits.
+    any_moved=false
+    for src_number in `seq $last_to_shift -1 $first_to_shift`; do
+        src=$src_number.sql
+        if [ -f $src ]; then
+            dst_number=$[src_number + offset]
+            dst=$dst_number.sql
+            mv $src $dst
+            $any_moved || echo
+            any_moved=true
+            echo Moved $src to $dst
+        fi
+    done
+fi

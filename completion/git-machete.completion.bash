@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 _git_machete() {
-	cmds="add anno d delete-unmanaged diff discover e edit file fork-point format g go help infer l list log prune-branches reapply show slide-out s status traverse update"
+	cmds="add anno d delete-unmanaged diff discover e edit file fork-point g go help infer l list log prune-branches reapply show slide-out s status traverse update"
+	help_topics="$cmds format hooks"
 	categories="managed slidable slidable-after unmanaged"
 	directions="down first last next prev root up"
 
@@ -39,14 +40,16 @@ _git_machete() {
 		prev="${COMP_WORDS[COMP_CWORD-1]}"
 		case "$prev" in
 			-d|--down-fork-point|-f|--fork-point) __gitcomp "$(__git_refs)" ;;
-			-h|--help) __gitcomp "$cmds" ;;
+			# TODO #25: We don't complete --help since it's going to be captured by git anyway
+			# (and results in redirection to yet non-existent man for `git-machete`).
+			-h) __gitcomp "$help_topics" ;;
 			-o|--onto) __gitcomp_nl "$(git machete list managed)" ;;
 			*)
 				case "${COMP_WORDS[2]}" in
 					add) __gitcomp_nl "$(git machete list unmanaged)" ;;
 					d|diff|fork-point|l|log) __gitcomp "$(__git_heads)" ;;
 					g|go|show) __gitcomp "$directions" ;;
-					help) __gitcomp "$cmds" ;;
+					help) __gitcomp "$help_topics" ;;
 					list)
 						if [[ "$COMP_CWORD" -eq 3 ]]; then
 							__gitcomp "$categories"

@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+# That's a sample standard post-commit hook that checks if a current branch is already managed by git machete,
+# and if it isn't, suggests to add it onto its inferred upstream.
+
+# Don't do anything if we're in a detached HEAD state.
+git symbolic-ref --quiet HEAD >/dev/null || exit 0
+
+current_branch=$(git symbolic-ref HEAD)
+# Just passing --short to 'git symbolic-ref' is not enough since there maybe a tag with the same name as the current branch,
+# and 'git symbolic-ref --short HEAD' will then disambiguate by prepending 'heads/'.
+current_branch=${current_branch#refs/heads/}
+# If the branch is already managed, do nothing.
+git machete list managed | grep -qxF "$current_branch" && exit 0
+
+# Hooks are run by git with stdin set to /dev/null which would make it impossible for 'git machete add' to collect interactive input,
+# hence the redirect from /dev/tty.
+git machete add "$current_branch" < /dev/tty
