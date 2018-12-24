@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.8.5
+
+- fixed: fork point of a branch could be determined incorrectly when a no-op rebase has been performed on some other branch
+
 ## New in git-machete 2.8.4
 
 - fixed: handle some extra cases happening when a tag named exactly as one of the managed branches exists in the repository
@@ -10,11 +14,11 @@
 
 ## New in git-machete 2.8.2
 
-- fixed: handle the cases when a tag named exactly as one of the managed branches exists in the repository  
+- fixed: handle the cases when a tag named exactly as one of the managed branches exists in the repository
 
 ## New in git-machete 2.8.1
 
-- fixed: handle the case when tracking information isn't set for a branch but the newly-chosen remote counterpart already exists (and thus a push with force or a pull might be needed) 
+- fixed: handle the case when tracking information isn't set for a branch but the newly-chosen remote counterpart already exists (and thus a push with force or a pull might be needed)
 
 ## New in git-machete 2.8.0
 
@@ -151,7 +155,7 @@
 
 ## New in git-machete 1.3.1
 
-- added: extra checks for indent errors in the definition file 
+- added: extra checks for indent errors in the definition file
 
 ## New in git-machete 1.3.0
 

@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.8.4'
+VERSION = '2.8.5'
 
 
 # Core utils
@@ -553,19 +553,20 @@ def reflog(b):
     return [entry.split(":", 1) for entry in non_empty_lines(popen_git("reflog", "show", "--format=%H:%gs", b, "--"))]
 
 
-def is_relevant_reflog_subject(gs, b):
-    result = not (
-        gs.startswith("branch: Created from") or
-        gs.startswith("branch: Reset to " + b) or
-        gs.startswith("branch: Reset to HEAD") or
-        gs.startswith("reset: moving to ")
-    )
-    debug("is_relevant_reflog_subject(<<%s>>, %s)" % (gs, b), "result: %s" % result)
-    return result
-
-
 def adjusted_reflog(b, prefix):
-    result = [sha for (sha, gs) in reflog(prefix + "/" + b) if is_relevant_reflog_subject(gs, b)]
+    def is_relevant_reflog_subject(sha, gs):
+        result = not (
+                gs.startswith("branch: Created from") or
+                gs == "branch: Reset to " + b or
+                gs == "branch: Reset to HEAD" or
+                gs.startswith("reset: moving to ") or
+                gs == "rebase finished: %s/%s onto %s" % (prefix, b, sha)
+        )
+        if not result:
+            debug("adjusted_reflog(%s, %s) -> is_relevant_reflog_subject(%s, <<<%s>>>)" % (b, prefix, sha, gs), "skipping reflog entry")
+        return result
+
+    result = [sha for (sha, gs) in reflog(prefix + "/" + b) if is_relevant_reflog_subject(sha, gs)]
     debug("adjusted_reflog(%s, %s)" % (b, prefix), "computed adjusted reflog (= reflog without branch creation and branch reset events irrelevant for fork point/upstream inference): %s\n" %
           (", ".join(result) or "<empty>"))
     return result
