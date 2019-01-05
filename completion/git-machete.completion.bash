@@ -9,7 +9,7 @@ _git_machete() {
 	common_opts="--debug -h --help -v --verbose --version"
 	add_opts="-o --onto="
 	diff_opts="-s --stat"
-	discover_opts="-l --list-commits"
+	discover_opts="-l --list-commits -r --roots="
 	infer_opts="-l --list-commits"
 	reapply_opts="-f --fork-point="
 	slide_out_opts="-d --down-fork-point="
@@ -21,6 +21,9 @@ _git_machete() {
 		__gitcomp "$(__git_refs)" "" "${cur##--*=}"
 	elif [[ "$cur" == --onto=* ]]; then
 		__gitcomp_nl "$(git machete list managed)" "" "${cur##--onto=}"
+	elif [[ "$cur" == --roots=* ]]; then
+		# TODO complete the comma-separated list of roots
+		__gitcomp "$(__git_heads)" "" "${cur##--roots=}"
 	elif [[ "$cur" == -* ]] ; then
 		case "${COMP_WORDS[2]}" in
 			add) __gitcomp "$common_opts $add_opts" ;;
@@ -44,6 +47,7 @@ _git_machete() {
 			# (and results in redirection to yet non-existent man for `git-machete`).
 			-h) __gitcomp "$help_topics" ;;
 			-o|--onto) __gitcomp_nl "$(git machete list managed)" ;;
+			-r|--roots) __gitcomp "$(__git_heads)" ;;
 			*)
 				case "${COMP_WORDS[2]}" in
 					add) __gitcomp_nl "$(git machete list unmanaged)" ;;

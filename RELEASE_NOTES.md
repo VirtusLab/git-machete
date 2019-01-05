@@ -4,6 +4,7 @@
 
 - added: handling of `machete-pre-rebase` and `machete-status-branch` hooks + hook samples
 - added: `yq` (yes-and-quit) choice in `traverse`
+- addee: `-r`/`--roots` option to `discover`
 
 ## New in git-machete 2.8.8
 

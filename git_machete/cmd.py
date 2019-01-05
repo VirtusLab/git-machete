@@ -710,11 +710,14 @@ def infer_upstream(b, condition=lambda u: True, reject_reason_message=""):
 
 
 def discover_tree():
-    global managed_branches, roots, down_branches, up_branch, indent, annotations
+    global managed_branches, roots, down_branches, up_branch, indent, annotations, opt_roots
     managed_branches = local_branches()
     if not managed_branches:
         raise MacheteException("No local branches found")
-    roots = []
+    for r in opt_roots:
+        if r not in local_branches():
+            raise MacheteException("'%s' is not a local branch" % r)
+    roots = list(opt_roots)
     down_branches = {}
     up_branch = {}
     indent = "\t"
@@ -727,7 +730,7 @@ def discover_tree():
             root_of[b] = get_root_of(root_of[b])
         return root_of[b]
 
-    for b in managed_branches:
+    for b in excluding(managed_branches, opt_roots):
         u = infer_upstream(b, condition=lambda x: get_root_of(x) != b, reject_reason_message="choosing this candidate would form a cycle in the resulting graph")
         if u:
             debug("discover_tree()", "inferred upstream of %s "
@@ -1278,7 +1281,7 @@ def usage(c=None):
             -s, --stat    Makes 'git machete diff' pass '--stat' option to 'git diff', so that only summary (diffstat) is printed.
         """,
         "discover": """
-            Usage: git machete discover [-l|--list-commits]
+            Usage: git machete discover [-l|--list-commits] [-r|--roots=<branch1>,<branch2>,...]
 
             Discovers and displays tree of branch dependencies using a heuristic based on reflogs and asks whether to overwrite the existing definition file with the new discovered tree.
             If confirmed with a 'y[es]' or 'e[dit]' reply, backs up the current definition file as '.git/machete~' (if exists) and saves the new tree under the usual '.git/machete' path.
@@ -1286,6 +1289,7 @@ def usage(c=None):
 
             Options:
             -l, --list-commits            When printing the discovered tree, additionally lists the messages of commits introduced on each branch (as for 'git machete status').
+            -r, --roots=<branches...>     Comma-separated list of branches that should be considered roots of trees of branch dependencies, typically 'develop' and/or 'master'.
         """,
         "edit": """
             Usage: git machete e[dit]
@@ -1584,7 +1588,7 @@ def version():
 
 def main():
     def parse_options(in_args, short_opts="", long_opts=[], gnu=True):
-        global opt_debug, opt_down_fork_point, opt_fork_point, opt_list_commits, opt_onto, opt_stat, opt_verbose
+        global opt_debug, opt_down_fork_point, opt_fork_point, opt_list_commits, opt_onto, opt_roots, opt_stat, opt_verbose
 
         fun = getopt.gnu_getopt if gnu else getopt.getopt
         opts, rest = fun(in_args, short_opts + "hv", long_opts + ['debug', 'help', 'verbose', 'version'])
@@ -1603,6 +1607,8 @@ def main():
                 opt_list_commits = True
             elif opt in ("-o", "--onto"):
                 opt_onto = arg
+            elif opt in ("-r", "--roots"):
+                opt_roots = set(arg.split(","))
             elif opt in ("-s", "--stat"):
                 opt_stat = True
             elif opt in ("-v", "--verbose"):
@@ -1639,7 +1645,7 @@ def main():
             return in_args[0]
 
     global definition_file
-    global opt_debug, opt_down_fork_point, opt_down_fork_point, opt_fork_point, opt_list_commits, opt_onto, opt_stat, opt_verbose
+    global opt_debug, opt_down_fork_point, opt_down_fork_point, opt_fork_point, opt_list_commits, opt_onto, opt_roots, opt_stat, opt_verbose
     try:
         cmd = None
         opt_debug = False
@@ -1647,6 +1653,7 @@ def main():
         opt_fork_point = None
         opt_list_commits = False
         opt_onto = None
+        opt_roots = set()
         opt_stat = False
         opt_verbose = False
 
@@ -1702,7 +1709,7 @@ def main():
             # No need to read definition file.
             diff(param)  # passing None if not specified
         elif cmd == "discover":
-            expect_no_param(parse_options(args, "l", ["list-commits"]))
+            expect_no_param(parse_options(args, "lr:", ["list-commits", "roots="]))
             # No need to read definition file.
             discover_tree()
         elif cmd in ("e", "edit"):
@@ -1787,11 +1794,11 @@ def main():
             read_definition_file()
             slide_out(params or [current_branch()])
         elif cmd in ("s", "status"):
-            expect_no_param(parse_options(args, "lr:", ["list-commits", "remote="]))
+            expect_no_param(parse_options(args, "l", ["list-commits"]))
             read_definition_file()
             status()
         elif cmd == "traverse":
-            expect_no_param(parse_options(args, "lr:", ["list-commits", "remote="]))
+            expect_no_param(parse_options(args, "l", ["list-commits"]))
             read_definition_file()
             traverse()
         elif cmd == "update":

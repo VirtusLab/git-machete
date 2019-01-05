@@ -29,8 +29,12 @@ _git-machete() {
                         '(-s --stat)'{-s,--stat}'[Pass --stat option to git diff, so that only summary (diffstat) is printed.]' \
                     && ret=0
                     ;;
-                (discover|status|traverse)
-                    _arguments '(-l --list-commits)'{-l,--list-commits}'[List the messages of commits introduced on each branch.]' && ret=0
+                (discover)
+                    # TODO complete the comma-separated list of roots
+                    _arguments \
+                        '(-l --list-commits)'{-l,--list-commits}'[List the messages of commits introduced on each branch.]' \
+                        '(-r --roots)'{-r,--roots=}'[Comma-separated list of branches to be considered roots of trees of branch dependencies (typically develop and/or master)]: :__git_branch_names' \
+                    && ret=0
                     ;;
                 (fork-point|l|log)
                     _arguments '1:: :__git_branch_names' && ret=0
@@ -45,13 +49,20 @@ _git-machete() {
                     _arguments '1:: :_git_machete_categories' && ret=0
                     ;;
                 (reapply|update)
-                    _arguments '(-f --fork-point)'{-f,--fork-point=}'[Fork point commit after which the rebased part of history is meant to start]: :__git_references' && ret=0
+                    _arguments \
+                        '(-f --fork-point)'{-f,--fork-point=}'[Fork point commit after which the rebased part of history is meant to start]: :__git_references' \
+                    && ret=0
                     ;;
                 (slide-out)
                     _arguments \
                         # TODO suggest further branches based on the previous specified branch (like in Bash completion script)
                         '*:: :_git_machete_list_slidable' \
                         '(-d --down-fork-point)'{-d,--down-fork-point=}'[Fork point commit after which the rebased part of history of the downstream branch is meant to start]: :__git_references' \
+                    && ret=0
+                    ;;
+                (status|traverse)
+                    _arguments \
+                        '(-l --list-commits)'{-l,--list-commits}'[List the messages of commits introduced on each branch.]' \
                     && ret=0
                     ;;
             esac
