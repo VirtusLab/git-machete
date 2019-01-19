@@ -44,14 +44,24 @@ _git-machete() {
                         '(-y --yes)'{-y,--yes}'[Do not ask for confirmation]' \
                     && ret=0
                     ;;
-                (fork-point|l|log)
-                    _arguments '1:: :__git_branch_names' && ret=0
+                (fork-point)
+                    # TODO correctly suggest branches for `--unset-override`
+                    _arguments '1:: :__git_branch_names' \
+                        '(--inferred)'--inferred'[Display the fork point ignoring any potential override]' \
+                        '(--override-to)'--override-to='[Override fork point to the given revision]: :__git_references' \
+                        '(--override-to-inferred)'--override-to-inferred'[Override fork point to the inferred location]' \
+                        '(--override-to-parent)'--override-to-parent'[Override fork point to the upstream (parent) branch]' \
+                        '(--unset-override)'--unset-override'[Unset fork point override by removing machete.overrideForkPoint.<branch>.* configs]' \
+                    && ret=0
                     ;;
                 (g|go|show)
                     _arguments '1:: :_git_machete_directions' && ret=0
                     ;;
                 (help)
                     _arguments '1:: :_git_machete_help_topics' && ret=0
+                    ;;
+                (l|log)
+                    _arguments '1:: :__git_branch_names' && ret=0
                     ;;
                 (list)
                     _arguments '1:: :_git_machete_categories' && ret=0
@@ -149,6 +159,7 @@ _git_machete_categories() {
         'slidable:all managed branches that have exactly one upstream and one downstream (i.e. the ones that can be slid out with slide-out subcommand)'
         'slidable-after:the downstream branch of the given branch, if it exists and is its only downstream (i.e. the one that can be slid out immediately following <branch>)'
         'unmanaged:all local branches that do not appear in the definition file'
+        'with-overridden-fork-point:all local branches that have a fork point override config'
     )
     _describe -t categories 'category' categories "$@"
 }

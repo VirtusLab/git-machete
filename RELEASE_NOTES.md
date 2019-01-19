@@ -12,6 +12,11 @@
 - added: `--fetch`, `--no-interactive-rebase`, `--return-to`, `--start-from`, `--whole`, `--yes` flags to `traverse`
 - added: `--no-interactive-rebase` flag to `update`
 
+### Manual fork point resolution
+
+- added: fork point override feature via `--inferred`, `--override-to`, `--override-to-inferred`, `--override-to-parent` and `--unset-override` options of `fork-point`
+- added: `with-overridden-fork-point` category of `list`
+
 ### Other fixes & improvements
 
 - added: `version` command
@@ -19,6 +24,7 @@
 - fixed: zsh completion for `add` and `s`
 - improved: testing against multiple git versions in CI pipeline
 - improved: functional tests invoke `discover` and `traverse`
+- fixed: command-line argument validation for `list`
 
 ## New in git-machete 2.12.10
 

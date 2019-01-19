@@ -4,7 +4,7 @@ _git_machete() {
     cmds="add anno d delete-unmanaged diff discover e edit file fork-point g go help l list log reapply show slide-out s status traverse update version"
     help_topics="$cmds format hooks"
 
-    categories="managed slidable slidable-after unmanaged"
+    categories="managed slidable slidable-after unmanaged with-overridden-fork-point"
     directions="down first last next prev root up"
     opt_color_args="always auto never"
     opt_return_to_args="here nearest-remaining stay"
@@ -15,6 +15,7 @@ _git_machete() {
     delete_unmanaged_opts="--yes"
     diff_opts="-s --stat"
     discover_opts="-C --checked-out-since= -l --list-commits -r --roots= -y --yes"
+    fork_point_opts="--inferred --override-to= --override-to-inferred --override-to-parent --unset-override"
     reapply_opts="-f --fork-point="
     slide_out_opts="-d --down-fork-point= -n --no-interactive-rebase"
     status_opts="-l --list-commits --color="
@@ -24,7 +25,7 @@ _git_machete() {
     case $cur in
         --checked-out-since=*) __gitcomp "" ;;
         --color=*) __gitcomp "$opt_color_args" "" "${cur##--color=}" ;;
-        --down-fork-point=*|--fork-point=*) __gitcomp "$(__git_refs)" "" "${cur##--*=}" ;;
+        --down-fork-point=*|--fork-point=*|--override-to=*) __gitcomp "$(__git_refs)" "" "${cur##--*=}" ;;
         --onto=*) __gitcomp_nl "$(git machete list managed)" "" "${cur##--onto=}" ;;
         --return-to=*) __gitcomp "$opt_return_to_args" "" "${cur##--return-to=}" ;;
         --roots=*) __gitcomp "$(__git_heads)" "" "${cur##--roots=}" ;;
@@ -35,6 +36,7 @@ _git_machete() {
                 d|diff) __gitcomp "$common_opts $diff_opts" ;;
                 delete-unmanaged) __gitcomp "$common_opts $delete_unmanaged_opts" ;;
                 discover) __gitcomp "$common_opts $discover_opts" ;;
+                fork-point) __gitcomp "$common_opts $fork_point_opts" ;;
                 reapply) __gitcomp "$common_opts $reapply_opts" ;;
                 slide-out) __gitcomp "$common_opts $slide_out_opts" ;;
                 s|status) __gitcomp "$common_opts $status_opts" ;;
@@ -50,7 +52,7 @@ _git_machete() {
                 case $prev in
                     -C|--checked-out-since) __gitcomp "" ;;
                     --color) __gitcomp "$opt_color_args" ;;
-                    -d|--down-fork-point|-f|--fork-point) __gitcomp "$(__git_refs)" ;;
+                    -d|--down-fork-point|-f|--fork-point|--override-to) __gitcomp "$(__git_refs)" ;;
                     # TODO (GH issue #25): We don't complete --help since it's going to be captured by git anyway
                     # (and results in redirection to yet non-existent man for `git-machete`).
                     -h) __gitcomp "$help_topics" ;;
@@ -59,6 +61,7 @@ _git_machete() {
                     # TODO complete the comma-separated list of roots
                     -r|--roots) __gitcomp "$(__git_heads)" ;;
                     --start-from) __gitcomp "$opt_start_from_args" ;;
+                    --unset-override) __gitcomp_nl "$(git machete list with-overridden-fork-point)" ;;
                     *)
                         case ${COMP_WORDS[2]} in
                             add) __gitcomp_nl "$(git machete list unmanaged)" ;;

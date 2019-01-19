@@ -117,6 +117,17 @@ def debug(hdr, msg):
         sys.stderr.write("%s: %s\n" % (bold(hdr), dim(msg)))
 
 
+# To avoid displaying the same warning multiple times during a single run.
+displayed_warnings = set()
+
+
+def warn(msg):
+    global displayed_warnings
+    if msg not in displayed_warnings:
+        sys.stderr.write("%s: %s\n" % (colored("Warn", RED), msg))
+        displayed_warnings.add(msg)
+
+
 def run_cmd(cmd, *args, **kwargs):
     return subprocess.call([cmd] + list(args), **kwargs)
 
@@ -325,10 +336,10 @@ def root_branch(b, accept_self, if_unmanaged):
     if b not in managed_branches:
         if roots:
             if if_unmanaged == PICK_FIRST_ROOT:
-                sys.stderr.write("Warn: %s is not a managed branch, assuming %s (the first root) instead as root\n" % (b, roots[0]))
+                warn("%s is not a managed branch, assuming %s (the first root) instead as root" % (b, roots[0]))
                 return roots[0]
             else:  # if_unmanaged == PICK_LAST_ROOT
-                sys.stderr.write("Warn: %s is not a managed branch, assuming %s (the last root) instead as root\n" % (b, roots[-1]))
+                warn("%s is not a managed branch, assuming %s (the last root) instead as root" % (b, roots[-1]))
                 return roots[-1]
         else:
             raise_no_branches_error()
@@ -357,7 +368,7 @@ def up(b, prompt_if_inferred_msg, prompt_if_inferred_yes_opt_msg):
                 else:
                     sys.exit(1)
             else:
-                sys.stderr.write("Warn: branch '%s' not found in the tree of branch dependencies; the upstream has been inferred to '%s'\n" % (b, u))
+                warn("branch '%s' not found in the tree of branch dependencies; the upstream has been inferred to '%s'" % (b, u))
                 return u
         else:
             raise MacheteException("Branch '%s' not found in the tree of branch dependencies and its upstream could not be inferred" % b)
@@ -539,14 +550,19 @@ def get_config_or_none(key):
 
 
 def set_config(key, value):
+    global config_cached
     run_git("config", "--", key, value)
+    if config_cached is None:
+        config_cached = {}
     config_cached[key.lower()] = value
 
 
 def unset_config(key):
-    run_git("config", "--unset", key)
-    if key.lower() in config_cached:
-        del config_cached[key.lower()]
+    global config_cached
+    if get_config_or_none(key):
+        run_git("config", "--unset", key)
+        if key.lower() in config_cached:
+            del config_cached[key.lower()]
 
 
 remotes_cached = None
@@ -605,30 +621,30 @@ def remote_for_branch(b):
     return None
 
 
-def short_sha(revision):
-    return popen_git("rev-parse", "--short", revision).rstrip()
+def find_short_commit_sha_by_revision(revision):
+    return popen_git("rev-parse", "--short", revision + "^{commit}").rstrip()
 
 
-def find_sha_by_revision(revision):
+def find_commit_sha_by_revision(revision):
+    # Without ^{commit}, 'git rev-parse --verify' will not only accept references to other kinds of objects (like trees and blobs),
+    # but just echo the argument (and exit successfully) even if the argument doesn't match anything in the object store.
     try:
-        return popen_git("rev-parse", "--verify", "--quiet", revision).rstrip()
+        return popen_git("rev-parse", "--verify", "--quiet", revision + "^{commit}").rstrip()
     except MacheteException:
         return None
 
 
-sha_by_revision_cached = {}
+commit_sha_by_revision_cached = {}
 
 
-def sha_by_revision(revision, prefix="refs/heads/"):
-    if prefix == "" and re.match("^[0-9a-f]{40}$", revision):
-        return revision
-    global sha_by_revision_cached
-    if not sha_by_revision_cached:
+def commit_sha_by_revision(revision, prefix="refs/heads/"):
+    global commit_sha_by_revision_cached
+    if not commit_sha_by_revision_cached:
         load_branches()
     full_revision = prefix + revision
-    if full_revision not in sha_by_revision_cached:
-        sha_by_revision_cached[full_revision] = find_sha_by_revision(full_revision)
-    return sha_by_revision_cached[full_revision]
+    if full_revision not in commit_sha_by_revision_cached:
+        commit_sha_by_revision_cached[full_revision] = find_commit_sha_by_revision(full_revision)
+    return commit_sha_by_revision_cached[full_revision]
 
 
 def find_remote_tracking_branch(b):
@@ -681,12 +697,20 @@ def merge_base(sha1, sha2):
     return merge_base_cached[sha1, sha2]
 
 
-def is_ancestor(earlier, later, earlier_prefix="refs/heads/", later_prefix="refs/heads/"):
-    sha_earlier = sha_by_revision(earlier, earlier_prefix)
-    sha_later = sha_by_revision(later, later_prefix)
-    if sha_earlier == sha_later:
+# Note: the 'git rev-parse --verify' validation is not performed in case for either of earlier/later
+# if the corresponding prefix is empty AND the revision is a 40 hex digit hash.
+def is_ancestor(earlier_revision, later_revision, earlier_prefix="refs/heads/", later_prefix="refs/heads/"):
+    if earlier_prefix == "" and re.match("^[0-9a-f]{40}$", earlier_revision):
+        earlier_sha = earlier_revision
+    else:
+        earlier_sha = commit_sha_by_revision(earlier_revision, earlier_prefix)
+    if later_prefix == "" and re.match("^[0-9a-f]{40}$", later_revision):
+        later_sha = later_revision
+    else:
+        later_sha = commit_sha_by_revision(later_revision, later_prefix)
+    if earlier_sha == later_sha:
         return True
-    return merge_base(sha_earlier, sha_later) == sha_earlier
+    return merge_base(earlier_sha, later_sha) == earlier_sha
 
 
 def create_branch(b, out_of):
@@ -747,7 +771,7 @@ def load_branches():
         b, sha = values
         b_stripped = re.sub("^refs/remotes/", "", b)
         rbs += [b_stripped]
-        sha_by_revision_cached[b] = sha
+        commit_sha_by_revision_cached[b] = sha
 
     raw_local = non_empty_lines(popen_git("for-each-ref", "--format=%(refname)\t%(objectname)\t%(upstream)", "refs/heads"))
     lbs = []
@@ -759,7 +783,7 @@ def load_branches():
         b_stripped = re.sub("^refs/heads/", "", b)
         for_fetch_stripped = re.sub("^refs/remotes/", "", for_fetch)
         lbs += [b_stripped]
-        sha_by_revision_cached[b] = sha
+        commit_sha_by_revision_cached[b] = sha
         if for_fetch_stripped in rbs:
             remote_tracking_branches_cached[b_stripped] = for_fetch_stripped
     return lbs, rbs
@@ -827,12 +851,16 @@ def reapply(branch, fork_commit):
 
 
 def diff(branch):
-    params = (["--stat"] if opt_stat else []) + [fork_point(branch if branch else current_branch())] + (["refs/heads/" + branch] if branch else []) + ["--"]
+    params = \
+        (["--stat"] if opt_stat else []) + \
+        [fork_point(branch if branch else current_branch(), use_overrides=True)] + \
+        (["refs/heads/" + branch] if branch else []) + \
+        ["--"]
     run_git("diff", *params)
 
 
 def log(branch):
-    run_git("log", "^" + fork_point(branch), "refs/heads/" + branch)
+    run_git("log", "^" + fork_point(branch, use_overrides=True), "refs/heads/" + branch)
 
 
 def commits_between(earlier, later):
@@ -1017,7 +1045,7 @@ def is_merged_to_parent(b):
     if b not in up_branch:
         return False
     u = up_branch[b]
-    equal_to_parent = sha_by_revision(u) == sha_by_revision(b)
+    equal_to_parent = commit_sha_by_revision(u) == commit_sha_by_revision(b)
 
     # If a branch is NOT equal to parent, it's just enough to check if the
     # parent is reachable from the branch.
@@ -1079,7 +1107,7 @@ def discover_tree():
         stale_branches = []
     managed_branches = excluding(all_local_branches, stale_branches)
     if not managed_branches:
-        sys.stderr.write("No branches satisfying the criteria. Try moving the value of '--checked-out-since' further to the past.\n")
+        warn("no branches satisfying the criteria. Try moving the value of '--checked-out-since' further to the past.")
         return
 
     for b in excluding(non_root_fixed_branches, stale_branches):
@@ -1100,7 +1128,7 @@ def discover_tree():
             roots += [b]
 
     print(bold('Discovered tree of branch dependencies:\n'))
-    status()
+    status(warn_on_yellow_edges=False)
     print("")
     do_backup = os.path.exists(definition_file)
     backup_msg = ("The existing definition file will be backed up as '%s~' " % definition_file) if do_backup else ""
@@ -1118,46 +1146,145 @@ def discover_tree():
         edit()
 
 
-def fork_point_and_containing_branch_defs(b):
+def fork_point_and_containing_branch_defs(b, use_overrides):
     global up_branch
     u = up_branch.get(b)
+
+    if use_overrides:
+        overridden_fp_sha = get_overridden_fork_point(b)
+        if overridden_fp_sha:
+            if u and is_ancestor(u, b) and not is_ancestor(u, overridden_fp_sha, later_prefix=""):
+                # We need to handle the case when b is a descendant of u,
+                # but the fork point of is overridden to a commit that is NOT a descendant of u.
+                # In this case it's more reasonable to assume that u (and not overridden_fp_sha) is the fork point.
+                debug("fork_point_and_containing_branch_defs(%s)" % b,
+                      "%s is descendant of its upstream %s, but overridden fork point commit %s is NOT a descendant of %s; falling back to %s as fork point" % (u, b, overridden_fp_sha, u, u))
+                return commit_sha_by_revision(u), []
+            else:
+                debug("fork_point_and_containing_branch_defs(%s)" % b,
+                      "fork point of %s is overridden to %s; skipping inference" % (b, overridden_fp_sha))
+                return overridden_fp_sha, []
+
     try:
         fp_sha, containing_branch_defs = next(match_log_to_adjusted_reflogs(b))
     except StopIteration:
         if u and is_ancestor(u, b):
-            debug("fork_point(%s)" % b,
-                  "cannot find fork point, but %s is descendant of its "
-                  "upstream %s; falling back to %s as fork point\n" % (b, u, u))
-            return sha_by_revision(u), []
+            debug("fork_point_and_containing_branch_defs(%s)" % b,
+                  "cannot find fork point, but %s is descendant of its upstream %s; falling back to %s as fork point" % (b, u, u))
+            return commit_sha_by_revision(u), []
         else:
             raise MacheteException("Cannot find fork point for branch '%s'" % b)
     else:
-        debug("fork_point(%s)" % b,
+        debug("fork_point_and_containing_branch_defs(%s)" % b,
               "commit %s is the most recent point in history of %s to occur on "
               "adjusted reflog of any other branch or its remote counterpart "
-              "(specifically: %s)\n" %
-              (fp_sha, b, " and ".join(map(star(lambda lb, lb_or_rb: lb_or_rb),
-                                           containing_branch_defs))))
-        if u and is_ancestor(u, b) and \
-                not is_ancestor(u, fp_sha, later_prefix=""):
-            # That happens very rarely in practice (typically current head of
-            # any branch, including u, should occur on the reflog of this
-            # branch, thus is_ancestor(u, b) should implicate
-            # is_ancestor(u, FP(b)), but it's still possible in case reflog of
-            # b is incomplete for whatever reason.
-            debug("fork_point(%s)" % b,
-                  "commit %s is NOT descendant of %s's upstream %s; falling "
-                  "back to %s as fork point\n" % (fp_sha, b, u, u))
-            return sha_by_revision(u), []
+              "(specifically: %s)" % (fp_sha, b, " and ".join(map(star(lambda lb, lb_or_rb: lb_or_rb), containing_branch_defs))))
+
+        if u and is_ancestor(u, b) and not is_ancestor(u, fp_sha, later_prefix=""):
+            # That happens very rarely in practice (typically current head of any branch, including u, should occur on the reflog of this
+            # branch, thus is_ancestor(u, b) should implicate is_ancestor(u, FP(b)), but it's still possible in case reflog of
+            # u is incomplete for whatever reason.
+            debug("fork_point_and_containing_branch_defs(%s)" % b,
+                  "%s is descendant of its upstream %s, but inferred fork point commit %s is NOT a descendant of %s; falling back to %s as fork point" % (u, b, fp_sha, u, u))
+            return commit_sha_by_revision(u), []
         else:
-            debug("fork_point(%s)" % b,
+            debug("fork_point_and_containing_branch_defs(%s)" % b,
                   "choosing commit %s as fork point" % fp_sha)
             return fp_sha, containing_branch_defs
 
 
-def fork_point(b):
-    sha, containing_branch_defs = fork_point_and_containing_branch_defs(b)
+def fork_point(b, use_overrides):
+    sha, containing_branch_defs = fork_point_and_containing_branch_defs(b, use_overrides)
     return sha
+
+
+def config_key_for_override_fork_point_to(b):
+    return "machete.overrideForkPoint." + b + ".to"
+
+
+def config_key_for_override_fork_point_while_descendant_of(b):
+    return "machete.overrideForkPoint." + b + ".whileDescendantOf"
+
+
+# Also includes config that is incomplete (only one entry out of two) or otherwise invalid.
+def has_any_fork_point_override_config(b):
+    return (get_config_or_none(config_key_for_override_fork_point_to(b)) or
+            get_config_or_none(config_key_for_override_fork_point_while_descendant_of(b))) is not None
+
+
+def get_fork_point_override_data(b):
+    to_key = config_key_for_override_fork_point_to(b)
+    to = get_config_or_none(to_key)
+    while_descendant_of_key = config_key_for_override_fork_point_while_descendant_of(b)
+    while_descendant_of = get_config_or_none(while_descendant_of_key)
+    if not to and not while_descendant_of:
+        return None
+    if to and not while_descendant_of:
+        warn("%s config is set but %s config is missing" % (to_key, while_descendant_of_key))
+        return None
+    if not to and while_descendant_of:
+        warn("%s config is set but %s config is missing" % (while_descendant_of_key, to_key))
+        return None
+
+    to_sha = commit_sha_by_revision(to, prefix="")
+    while_descendant_of_sha = commit_sha_by_revision(while_descendant_of, prefix="")
+    if not to_sha or not while_descendant_of_sha:
+        if not to_sha:
+            warn("%s config's value '%s' does not point to a valid commit" % (to_key, to))
+        if not while_descendant_of_sha:
+            warn("%s config's value '%s' does not point to a valid commit" % (while_descendant_of_key, while_descendant_of))
+        return None
+    # This check needs to be performed every time the config is retrieved.
+    # We can't rely on the values being validated in set_fork_point_override(), since the config could have been modified outside of git-machete.
+    if not is_ancestor(to_sha, while_descendant_of_sha, earlier_prefix="", later_prefix=""):
+        warn("commit %s pointed by %s config is not an ancestor of commit %s pointed by %s config" % (to, to_key, while_descendant_of, while_descendant_of_key))
+        return None
+    return to_sha, while_descendant_of_sha
+
+
+def get_overridden_fork_point(b):
+    override_data = get_fork_point_override_data(b)
+    if not override_data:
+        return None
+
+    to, while_descendant_of = override_data
+    # Note that this check is distinct from the is_ancestor check performed in get_fork_point_override_data.
+    # While the latter checks the sanity of fork point override configuration,
+    # the former checks if the override still applies to wherever the given branch currently points.
+    if not is_ancestor(while_descendant_of, b, earlier_prefix=""):
+        warn("since branch %s is no longer a descendant of commit %s, the fork point override to commit %s no longer applies.\n"
+             "Consider running 'git machete fork-point --unset-override %s'." % (b, while_descendant_of, to, b))
+        return None
+    debug("get_overridden_fork_point(%s)" % b,
+          "since branch %s is descendant of while_descendant_of=%s, fork point of %s is overridden to %s" % (b, while_descendant_of, b, to))
+    return to
+
+
+def set_fork_point_override(b, to_revision):
+    if b not in local_branches():
+        raise MacheteException("'%s' is not a local branch" % b)
+    to_sha = commit_sha_by_revision(to_revision, prefix="")
+    if not to_sha:
+        raise MacheteException("Cannot find revision %s" % to_revision)
+    if not is_ancestor(to_sha, b, earlier_prefix=""):
+        raise MacheteException("Cannot override fork point: %s (commit %s) is not an ancestor of %s" % (to_revision, find_short_commit_sha_by_revision(to_sha), b))
+
+    to_key = config_key_for_override_fork_point_to(b)
+    set_config(to_key, to_sha)
+
+    while_descendant_of_key = config_key_for_override_fork_point_while_descendant_of(b)
+    b_sha = commit_sha_by_revision(b, prefix="refs/heads/")
+    set_config(while_descendant_of_key, b_sha)
+
+    sys.stdout.write("Fork point for %s is overridden to %s (commit %s).\nThis is going to apply as long as %s points to (or is descendant of) its current head (commit %s).\n\n"
+                     % (bold(b), bold(to_revision), find_short_commit_sha_by_revision(to_sha), b, find_short_commit_sha_by_revision(b_sha)))
+    sys.stdout.write("This information is stored under git config keys:\n  * %s\n  * %s\n\n" % (to_key, while_descendant_of_key))
+    sys.stdout.write("To unset this override, use:\n  git machete fork-point --unset-override %s\n" % b)
+
+
+def unset_fork_point_override(b):
+    unset_config(config_key_for_override_fork_point_to(b))
+    unset_config(config_key_for_override_fork_point_while_descendant_of(b))
 
 
 def delete_unmanaged():
@@ -1224,7 +1351,7 @@ def slide_out(bs):
     down_branches[u] = [(d if x == bs[0] else x) for x in down_branches[u]]
     save_definition_file()
     print("Rebasing %s onto %s..." % (bold(d), bold(u)))
-    update(d, opt_down_fork_point or fork_point(d))
+    update(d, opt_down_fork_point or fork_point(d, use_overrides=True))
 
 
 def slidable():
@@ -1250,14 +1377,14 @@ class StopTraversal(Exception):
 def flush():
     global branch_defs_by_sha_in_reflog, config_cached, initial_log_shas_cached
     global reflogs_cached, remaining_log_shas_cached
-    global remote_tracking_branches_cached, sha_by_revision_cached
+    global remote_tracking_branches_cached, commit_sha_by_revision_cached
     branch_defs_by_sha_in_reflog = None
     config_cached = None
     initial_log_shas_cached = {}
     reflogs_cached = None
     remaining_log_shas_cached = {}
     remote_tracking_branches_cached = {}
-    sha_by_revision_cached = {}
+    commit_sha_by_revision_cached = {}
 
 
 def pick_remote(b):
@@ -1283,7 +1410,7 @@ def handle_untracked_branch(new_remote, b):
     can_pick_other_remote = len(rems) > 1
     other_remote_suffix = "/[o]ther remote" if can_pick_other_remote else ""
     rb = new_remote + "/" + b
-    if not sha_by_revision(rb, prefix="refs/remotes"):
+    if not commit_sha_by_revision(rb, prefix="refs/remotes"):
         msg = "Push untracked branch %s to %s? (y/N/q/yq%s) " % (bold(b), bold(new_remote), other_remote_suffix)
         opt_yes_msg = "Pushing untracked branch %s to %s..." % (bold(b), bold(new_remote))
         if ask_if(msg, opt_yes_msg) in ('y', 'yes', 'yq'):
@@ -1404,7 +1531,7 @@ def traverse():
             needs_rebase = False
         else:
             needs_rebase = u and not \
-                (is_ancestor(u, b) and sha_by_revision(u) == fork_point(b))
+                (is_ancestor(u, b) and commit_sha_by_revision(u) == fork_point(b, use_overrides=True))
         s, remote = get_remote_sync_status(b)
         statuses_to_sync = (UNTRACKED,
                             UNTRACKED_ON,
@@ -1419,7 +1546,7 @@ def traverse():
             go(b)
             cb = b
             print_new_line(False)
-            status()
+            status(warn_on_yellow_edges=True)
             print_new_line(True)
         if needs_slide_out:
             print_new_line(False)
@@ -1456,7 +1583,7 @@ def traverse():
                 "Rebasing %s onto %s..." % (bold(b), bold(u))
             )
             if ans in ('y', 'yes', 'yq'):
-                update(b, fork_point(b))
+                update(b, fork_point(b, use_overrides=True))
                 if ans == 'yq':
                     return
                 flush()
@@ -1530,7 +1657,7 @@ def traverse():
     # otherwise opt_return_to == "stay", so no action is needed
 
     print_new_line(False)
-    status()
+    status(warn_on_yellow_edges=True)
     print("")
     msg = "Reached branch %s which has no successor" \
         if cb == managed_branches[-1] else \
@@ -1543,7 +1670,7 @@ def traverse():
         print("The initial branch %s has been slid out. Returned to nearest remaining managed branch %s" % (bold(initial_branch), bold(nearest_remaining_branch)))
 
 
-def status():
+def status(warn_on_yellow_edges):
     dfs_res = []
 
     def prefix_dfs(u_, prefix):
@@ -1564,7 +1691,8 @@ def status():
     def fp_sha(b):
         if b not in fp_sha_cached:
             try:
-                fp_sha_cached[b], fp_branches_cached[b] = fork_point_and_containing_branch_defs(b)
+                # We're always using fork point overrides, even when status is launched from discover().
+                fp_sha_cached[b], fp_branches_cached[b] = fork_point_and_containing_branch_defs(b, use_overrides=True)
             except MacheteException:
                 fp_sha_cached[b], fp_branches_cached[b] = None, []
         return fp_sha_cached[b]
@@ -1577,7 +1705,7 @@ def status():
             edge_color[b] = DIM
         elif not is_ancestor(u, b):
             edge_color[b] = RED
-        elif sha_by_revision(u) == fp_sha(b):
+        elif get_overridden_fork_point(b) or commit_sha_by_revision(u) == fp_sha(b):
             edge_color[b] = GREEN
         else:
             edge_color[b] = YELLOW
@@ -1617,7 +1745,7 @@ def status():
                     if sha == fp_sha(b):
                         # fp_branches_cached will already be there thanks to the above call to 'fp_sha'.
                         fp_branches_formatted = " and ".join(map(star(lambda lb, lb_or_rb: lb_or_rb), fp_branches_cached[b]))
-                        fp_suffix = (colored(" " + right_arrow() + " fork point ???", RED) + " commit " + short_sha(fp_sha(b)) + " found in reflog of " + fp_branches_formatted)
+                        fp_suffix = (colored(" " + right_arrow() + " fork point ???", RED) + " commit " + find_short_commit_sha_by_revision(fp_sha(b)) + " found in reflog of " + fp_branches_formatted)
                     else:
                         fp_suffix = ''
                     print_line_prefix(b, vertical_bar())
@@ -1659,12 +1787,24 @@ def status():
         write_unicode(current + anno + sync_status + hook_output + "\n")
 
     sys.stdout.write(out.getvalue())
-
-    if not opt_list_commits and YELLOW in edge_color.values():
-        sys.stderr.write("\n")
-        sys.stderr.write(colored("Warn:", RED) + " there was at least one yellow edge which indicates that some fork points are probably not determined correctly.\n")
-        sys.stderr.write("Run 'git machete status -l' to see more details.\n")
     out.close()
+
+    yellow_edge_branches = [k for k, v in edge_color.items() if v == YELLOW]
+    if yellow_edge_branches and warn_on_yellow_edges:
+        if len(yellow_edge_branches) == 1:
+            first_line = "yellow edge indicates that fork point for '%s' is probably incorrectly inferred" % yellow_edge_branches[0]
+        else:
+            affected_branches = ", ".join(map(lambda x: "'%s'" % x, yellow_edge_branches))
+            first_line = "yellow edges indicate that fork points for %s are probably incorrectly inferred" % affected_branches
+
+        if not opt_list_commits:
+            second_line = "Run 'git machete status --list-commits' to see more details"
+        elif len(yellow_edge_branches) == 1:
+            second_line = "Consider using 'git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent %s'" % yellow_edge_branches[0]
+        else:
+            second_line = "Consider using 'git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent <branch>' for each affected branch"
+
+        warn("%s.\n%s." % (first_line, second_line))
 
 
 # Main
@@ -1684,7 +1824,7 @@ def usage(c=None):
         "discover": "Automatically discover tree of branch dependencies",
         "edit": "Edit the definition file",
         "file": "Display the location of the definition file",
-        "fork-point": "Display SHA of the computed fork point commit of a branch",
+        "fork-point": "Display or override fork point for a branch",
         "format": "Display docs for the format of the definition file",
         "go": "Check out the branch relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument",
         "help": "Display this overview, or detailed help for a specified command",
@@ -1779,21 +1919,50 @@ def usage(c=None):
             Note: this won't always be just '.git/machete' since e.g. submodules have their git directory in different location by default.
         """,
         "fork-point": """
-            Usage: git machete fork-point [<branch>]
+            Usage:
+              git machete fork-point [--inferred] [<branch>]
+              git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent [<branch>]
+              git machete fork-point --unset-override [<branch>]
 
-            Outputs SHA of the fork point commit for the given branch (the commit at which the history of the branch actually diverges from history of any other branch).
-            If no branch is specified, the currently checked out branch is assumed. The branch in question does not need to occur in the definition file.
+            Note: in all three forms, if no <branch> is specified, the currently checked out branch is assumed. The branch in question does not need to occur in the definition file.
 
-            The returned fork point will be assumed as the default place where the history of the branch starts in the commands 'diff', 'reapply', 'slide-out', and most notably 'update'.
-            In other words, 'git machete' treats the fork point as the most recent commit in the log of the given branch that has NOT been introduced on that very branch, but on some other (usually earlier) branch.
 
-            Note: to determine this place in history, 'git machete' uses a heuristics based on reflogs of local branches.
+            Without any option, displays full SHA of the fork point commit for the <branch> (the commit at which the history of the <branch> diverges from history of any other branch).
+
+            The returned fork point is assumed by the commands 'diff', 'reapply', 'slide-out', 'traverse' and 'update' as the default place where the unique history of the <branch> starts.
+            In other words, 'git machete' treats the fork point as the most recent commit in the log of the given branch that has NOT been introduced on that very branch,
+            but on some other (usually chronologically earlier) branch.
+
+            To determine this place in history, 'git machete' uses a heuristics based on reflogs of local branches.
             This yields a correct result in typical cases, but there are some situations (esp. when some local branches have been deleted) where the fork point might not be determined correctly.
-            Thus, all rebase-involving operations ('reapply', 'slide-out', 'traverse' and 'update') run 'git rebase' in the interactive mode and allow to specify the fork point explictly by a command-line option.
+            Thus, all rebase-involving operations ('reapply', 'slide-out', 'traverse' and 'update') run 'git rebase' in the interactive mode,
+            unless told explicitly not to do so by '--no-interactive-rebase' flag.
+            Also, 'reapply', 'slide-out' and 'update' allow to specify the fork point explictly by a command-line option.
 
-            Also, 'git machete fork-point' is different (and more powerful) than 'git merge-base --fork-point', since the latter takes into account only the reflog of the one provided upstream branch,
-            while the former scans reflogs of all local branches and their remote counterparts.
-            This makes machete's 'fork-point' work correctly even when the tree definition has been modified and one or more of the branches changed their corresponding upstream branch.
+            'git machete fork-point' is different (and more powerful) than 'git merge-base --fork-point', since the latter takes into account only the reflog of the one provided upstream branch,
+            while the former scans reflogs of all local branches and their remote tracking branches.
+            This makes machete's 'fork-point' work correctly even when the tree definition has been modified and thus one or more of the branches changed their corresponding upstream branch.
+
+
+            With '--override-to=<revision>', sets up a fork point override for <branch>.
+            Fork point for <branch> will be overridden to the provided <revision> (commit) as long as the <branch> still points to (or is descendant of) the commit X
+            that <branch> pointed to at the moment the override is set up.
+            Note that even if revision is a symbolic name (e.g. other branch name or 'HEAD~3') and not explicit commit hash (like 'a1b2c3ff'), it's still resolved to a specific commit at the moment the override is set up.
+            The override data is stored under 'machete.overrideForkPoint.<branch>.to' and 'machete.overrideForkPoint.<branch>.whileDescendantOf' git config keys.
+            Note: the provided fork point <revision> must be an ancestor of the current <branch> commit X.
+
+            With '--override-to-parent', overrides fork point of the <branch> to the commit currently pointed by <branch>'s parent in the branch dependency tree.
+            Note: this will only work if <branch> has a parent at all (i.e. is not a root) and parent of <branch> is an ancestor of current <branch> commit X.
+
+            With '--inferred', displays the commit that 'git machete fork-point' infers to be the fork point of <branch>.
+            If there is NO fork point override for <branch>, this is identical to the output of 'git machete fork-point'.
+            If there is a fork point override for <branch>, this is identical to the what the output of 'git machete fork-point' would be if the override was NOT present.
+
+            With '--override-to-inferred' option, overrides fork point of the <branch> to the commit that 'git machete fork-point' infers to be the fork point of <branch>.
+            Note: this piece of information is also displayed by 'git machete status --list-commits' in case a yellow edge occurs.
+
+            With '--unset-override', the fork point override for <branch> is unset.
+            Note: this is simply done by removing the corresponding 'machete.overrideForkPoint.<branch>.*' config entries.
         """,
         "format": """
             The format of the definition file should be as follows:
@@ -1870,13 +2039,14 @@ def usage(c=None):
         """,
         "list": """
             Usage: git machete list <category>
-            where <category> is one of: managed, slidable, slidable-after <branch>, unmanaged
+            where <category> is one of: managed, slidable, slidable-after <branch>, unmanaged, with-overridden-fork-point
 
             Lists all branches that fall into one of the specified categories:
             - 'managed': all branches that appear in the definition file,
             - 'slidable': all managed branches that have exactly one upstream and one downstream (i.e. the ones that can be slid out with 'slide-out' subcommand),
             - 'slidable-after <branch>': the downstream branch of the <branch>, if it exists and is the only downstream of <branch> (i.e. the one that can be slid out immediately following <branch>),
-            - 'unmanaged': all local branches that don't appear in the definition file.
+            - 'unmanaged': all local branches that don't appear in the definition file,
+            - 'with-overridden-fork-point': all local branches that have a fork point override set up (even if this override does not affect the location of their fork point anymore).
 
             This command is generally not meant for a day-to-day use, it's mostly needed for the sake of branch name completion in shell.
         """,
@@ -2102,8 +2272,8 @@ def main():
 
 def launch(orig_args):
     def parse_options(in_args, short_opts="", long_opts=[], gnu=True):
-        global opt_checked_out_since, opt_color, opt_debug, opt_down_fork_point, opt_fetch, opt_fork_point, opt_start_from
-        global opt_list_commits, opt_no_interactive_rebase, opt_onto, opt_return_to, opt_roots, opt_stat, opt_verbose, opt_yes
+        global opt_checked_out_since, opt_color, opt_debug, opt_down_fork_point, opt_fetch, opt_fork_point, opt_inferred, opt_list_commits, opt_no_interactive_rebase, opt_onto
+        global opt_override_to, opt_override_to_inferred, opt_override_to_parent, opt_return_to, opt_roots, opt_start_from, opt_stat, opt_unset_override, opt_verbose, opt_yes
 
         fun = getopt.gnu_getopt if gnu else getopt.getopt
         opts, rest = fun(in_args, short_opts + "hv", long_opts + ['debug', 'help', 'verbose', 'version'])
@@ -2124,12 +2294,20 @@ def launch(orig_args):
             elif opt in ("-h", "--help"):
                 usage(cmd)
                 sys.exit()
+            elif opt == "--inferred":
+                opt_inferred = True
             elif opt in ("-l", "--list-commits"):
                 opt_list_commits = True
             elif opt in ("-n", "--no-interactive-rebase"):
                 opt_no_interactive_rebase = True
             elif opt in ("-o", "--onto"):
                 opt_onto = arg
+            elif opt == "--override-to":
+                opt_override_to = arg
+            elif opt == "--override-to-inferred":
+                opt_override_to_inferred = True
+            elif opt == "--override-to-parent":
+                opt_override_to_parent = True
             elif opt in ("-r", "--roots"):
                 opt_roots = arg.split(",")
             elif opt == "--return-to":
@@ -2138,6 +2316,8 @@ def launch(orig_args):
                 opt_start_from = arg
             elif opt in ("-s", "--stat"):
                 opt_stat = True
+            elif opt == "--unset-override":
+                opt_unset_override = True
             elif opt in ("-v", "--verbose"):
                 opt_verbose = True
             elif opt == "--version":
@@ -2182,9 +2362,9 @@ def launch(orig_args):
         else:
             return in_args[0]
 
-    global definition_file
-    global opt_checked_out_since, opt_color, opt_debug, opt_down_fork_point, opt_fetch, opt_fork_point, opt_list_commits
-    global opt_no_interactive_rebase, opt_onto, opt_return_to, opt_roots, opt_start_from, opt_stat, opt_verbose, opt_yes
+    global definition_file, up_branch
+    global opt_checked_out_since, opt_color, opt_debug, opt_down_fork_point, opt_fetch, opt_fork_point, opt_inferred, opt_list_commits, opt_no_interactive_rebase, opt_onto
+    global opt_override_to, opt_override_to_inferred, opt_override_to_parent, opt_return_to, opt_roots, opt_start_from, opt_stat, opt_unset_override, opt_verbose, opt_yes
     try:
         cmd = None
         opt_checked_out_since = None
@@ -2193,13 +2373,18 @@ def launch(orig_args):
         opt_down_fork_point = None
         opt_fetch = False
         opt_fork_point = None
+        opt_inferred = False
         opt_list_commits = False
         opt_no_interactive_rebase = False
         opt_onto = None
+        opt_override_to = None
+        opt_override_to_inferred = False
+        opt_override_to_parent = False
         opt_return_to = "stay"
         opt_roots = list()
         opt_start_from = "here"
         opt_stat = False
+        opt_unset_override = False
         opt_verbose = False
         opt_yes = False
 
@@ -2267,9 +2452,29 @@ def launch(orig_args):
             # No need to read definition file.
             print(definition_file)
         elif cmd == "fork-point":
-            param = check_optional_param(parse_options(args))
+            long_options = ["inferred", "override-to=", "override-to-inferred", "override-to-parent", "unset-override"]
+            param = check_optional_param(parse_options(args, "", long_options))
             read_definition_file()
-            print(fork_point(param or current_branch()))
+            b = param or current_branch()
+            if len(list(filter(None, [opt_inferred, opt_override_to, opt_override_to_inferred, opt_override_to_parent, opt_unset_override]))) > 1:
+                long_options_string = ", ".join(map(lambda x: x.replace("=", ""), long_options))
+                raise MacheteException("At most one of %s options may be present" % long_options_string)
+            if opt_inferred:
+                print(fork_point(b, use_overrides=False))
+            elif opt_override_to:
+                set_fork_point_override(b, opt_override_to)
+            elif opt_override_to_inferred:
+                set_fork_point_override(b, fork_point(b, use_overrides=False))
+            elif opt_override_to_parent:
+                u = up_branch.get(b)
+                if u:
+                    set_fork_point_override(b, u)
+                else:
+                    raise MacheteException("Branch %s does not have upstream (parent) branch" % b)
+            elif opt_unset_override:
+                unset_fork_point_override(b)
+            else:
+                print(fork_point(b, use_overrides=True))
         elif cmd == "format":
             # No need to read definition file.
             usage("format")
@@ -2289,21 +2494,26 @@ def launch(orig_args):
             # No need to read definition file.
             discover_tree()
         elif cmd == "list":
-            list_allowed_values = "managed|slidable|slidable-after <branch>|unmanaged"
+            list_allowed_values = "managed|slidable|slidable-after <branch>|unmanaged|with-overridden-fork-point"
             list_args = parse_options(args)
-            if not list_args or len(list_args) > 2:
-                raise MacheteException("'%s' expects argument(s): %s" % (cmd, list_allowed_values))
+            if not list_args:
+                raise MacheteException("'git machete list' expects argument(s): %s" % list_allowed_values)
             elif not list_args[0]:
-                raise MacheteException("Argument to '%s' cannot be empty; expected %s" % (cmd, list_allowed_values))
+                raise MacheteException("Argument to 'git machete list' cannot be empty; expected %s" % list_allowed_values)
             elif list_args[0][0] == "-":
                 raise MacheteException("option '%s' not recognized" % list_args[0])
-            elif list_args[0] in ("managed", "slidable", "unmanaged") and len(list_args) == 2:
-                raise MacheteException("'%s %s' doesn't expect an extra argument" % (cmd, list_args[0]))
-            elif list_args[0] == "slidable-after" and len(list_args) == 1:
-                raise MacheteException("'%s %s' requires an extra <branch> argument" % (cmd, list_args[0]))
+            elif list_args[0] not in ("managed", "slidable", "slidable-after", "unmanaged", "with-overridden-fork-point"):
+                raise MacheteException("Usage: git machete list %s" % list_allowed_values)
+            elif len(list_args) > 2:
+                raise MacheteException("Too many arguments to 'git machete list %s' " % list_args[0])
+            elif list_args[0] in ("managed", "slidable", "unmanaged", "with-overridden-fork-point") and len(list_args) > 1:
+                raise MacheteException("'git machete list %s' does not expect extra arguments" % list_args[0])
+            elif list_args[0] == "slidable-after" and len(list_args) != 2:
+                raise MacheteException("'git machete list %s' requires an extra <branch> argument" % list_args[0])
 
             param = list_args[0]
             read_definition_file()
+            res = []
             if param == "managed":
                 res = managed_branches
             elif param == "slidable":
@@ -2314,8 +2524,9 @@ def launch(orig_args):
                 res = slidable_after(b_arg)
             elif param == "unmanaged":
                 res = excluding(local_branches(), managed_branches)
-            else:
-                raise MacheteException("Usage: git machete list " + list_allowed_values)
+            elif param == "with-overridden-fork-point":
+                res = list(filter(has_any_fork_point_override_config, local_branches()))
+
             if res:
                 print("\n".join(res))
         elif cmd in ("l", "log"):
@@ -2331,7 +2542,7 @@ def launch(orig_args):
             expect_no_param(args1, ". Use '-f' or '--fork-point' to specify the fork point commit")
             read_definition_file()
             cb = current_branch()
-            reapply(cb, opt_fork_point or fork_point(cb))
+            reapply(cb, opt_fork_point or fork_point(cb, use_overrides=True))
         elif cmd == "show":
             param = check_required_param(parse_options(args), directions)
             read_definition_file()
@@ -2349,7 +2560,7 @@ def launch(orig_args):
                 ascii_only = opt_color == "never" or (opt_color == "auto" and not sys.stdout.isatty())
             read_definition_file()
             expect_at_least_one_managed_branch()
-            status()
+            status(warn_on_yellow_edges=True)
         elif cmd == "traverse":
             traverse_long_opts = ["fetch", "list-commits", "no-interactive-rebase", "return-to=", "start-from=", "whole", "yes"]
             expect_no_param(parse_options(args, "FlnWwy", traverse_long_opts))
@@ -2364,7 +2575,7 @@ def launch(orig_args):
             expect_no_param(args1, ". Use '-f' or '--fork-point' to specify the fork point commit")
             read_definition_file()
             cb = current_branch()
-            update(cb, opt_fork_point or fork_point(cb))
+            update(cb, opt_fork_point or fork_point(cb, use_overrides=True))
         elif cmd == "version":
             version()
             sys.exit()
