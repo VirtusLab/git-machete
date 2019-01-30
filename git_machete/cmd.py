@@ -6,6 +6,7 @@ import itertools
 import os
 import subprocess
 import sys
+import StringIO
 import textwrap
 
 VERSION = '2.9.0'
@@ -397,14 +398,30 @@ def get_git_dir():
     return git_dir
 
 
-config_cached = {}
+config_cached = None
 
 
-def get_config(key):
+def get_config_or_none(key):
     global config_cached
-    if key not in config_cached:
-        config_cached[key] = popen_git("config", "--", key, allow_non_zero=True).rstrip()
-    return config_cached[key]
+    if config_cached is None:
+        config_cached = {}
+        for config_line in non_empty_lines(popen_git("config", "--list")):
+            k_v = config_line.split("=", 1)
+            if len(k_v) == 2:
+                k, v = k_v
+                config_cached[k.lower()] = v
+    return config_cached.get(key.lower())
+
+
+def set_config(key, value):
+    run_git("config", "--", key, value)
+    config_cached[key.lower()] = value
+
+
+def unset_config(key):
+    run_git("config", "--unset", key)
+    if key.lower() in config_cached:
+        del config_cached[key.lower()]
 
 
 remotes_cached = None
@@ -418,10 +435,12 @@ def remotes():
 
 
 def remote_for_branch(b):
-    try:
-        return popen_git("config", "branch." + b + ".remote").rstrip()
-    except MacheteException:
-        return None
+    remote = get_config_or_none("branch." + b + ".remote")
+    return remote.rstrip() if remote else remote
+
+
+def short_sha(revision):
+    return popen_git("rev-parse", "--short", revision).rstrip()
 
 
 def compute_sha_by_revision(revision):
@@ -434,9 +453,9 @@ def compute_sha_by_revision(revision):
 sha_by_revision_cached = {}
 
 
-def sha_by_revision(revision, prefix="refs/heads"):
+def sha_by_revision(revision, prefix="refs/heads/"):
     global sha_by_revision_cached
-    full_revision = prefix + "/" + revision
+    full_revision = prefix + revision
     if full_revision not in sha_by_revision_cached:
         sha_by_revision_cached[full_revision] = compute_sha_by_revision(full_revision)
     return sha_by_revision_cached[full_revision]
@@ -475,8 +494,8 @@ def current_branch():
         raise MacheteException("Not currently on any branch")
 
 
-def is_ancestor(earlier, later, earlier_prefix="refs/heads", later_prefix="refs/heads"):
-    return run_git("merge-base", "--is-ancestor", earlier_prefix + "/" + earlier, later_prefix + "/" + later, allow_non_zero=True) == 0
+def is_ancestor(earlier, later, earlier_prefix="refs/heads/", later_prefix="refs/heads/"):
+    return run_git("merge-base", "--is-ancestor", earlier_prefix + earlier, later_prefix + later, allow_non_zero=True) == 0
 
 
 def create_branch(b, out_of):
@@ -528,7 +547,7 @@ def go(branch):
 
 
 def get_hook_path(hook_name):
-    hook_dir = get_config("core.hooksPath") or os.path.join(get_git_dir(), "hooks")
+    hook_dir = get_config_or_none("core.hooksPath") or os.path.join(get_git_dir(), "hooks")
     return os.path.join(hook_dir, hook_name)
 
 
@@ -536,7 +555,7 @@ def check_hook_executable(hook_path):
     if not os.path.exists(hook_path):
         return False
     elif not is_executable(hook_path):
-        advice_ignored_hook = get_config("advice.ignoredHook")
+        advice_ignored_hook = get_config_or_none("advice.ignoredHook")
         if advice_ignored_hook != 'false':  # both empty and "true" is okay
             # The [33m color must be used to keep consistent with how git colors this advice for its built-in hooks.
             print >> sys.stderr, YELLOW + "hint: The '%s' hook was ignored because it's not set as executable." % hook_path + ENDC
@@ -581,7 +600,7 @@ def log(branch):
 
 
 def commits_between(earlier, later):
-    return non_empty_lines(popen_git("log", "--format=%s", "^" + earlier, later, "--"))
+    return map(lambda x: x.split(":", 1), non_empty_lines(popen_git("log", "--format=%H:%s", "^" + earlier, later, "--")))
 
 
 NO_REMOTES = 0
@@ -594,8 +613,8 @@ DIVERGED_FROM_REMOTE = 6
 
 
 def get_relation_to_remote_counterpart(b, rb):
-    b_is_anc_of_rb = is_ancestor(b, rb, later_prefix="refs/remotes")
-    rb_is_anc_of_b = is_ancestor(rb, b, earlier_prefix="refs/remotes")
+    b_is_anc_of_rb = is_ancestor(b, rb, later_prefix="refs/remotes/")
+    rb_is_anc_of_b = is_ancestor(rb, b, earlier_prefix="refs/remotes/")
     if b_is_anc_of_rb:
         return IN_SYNC_WITH_REMOTE if rb_is_anc_of_b else BEHIND_REMOTE
     else:
@@ -635,7 +654,7 @@ def adjusted_reflog(b, prefix):
             debug("adjusted_reflog(%s, %s) -> is_relevant_reflog_subject(%s, <<<%s>>>)" % (b, prefix, sha_, gs_), "skipping reflog entry")
         return is_relevant
 
-    result = [sha for (sha, gs) in reflog(prefix + "/" + b) if is_relevant_reflog_subject(sha, gs)]
+    result = [sha for (sha, gs) in reflog(prefix + b) if is_relevant_reflog_subject(sha, gs)]
     debug("adjusted_reflog(%s, %s)" % (b, prefix), "computed adjusted reflog (= reflog without branch creation and branch reset events irrelevant for fork point/upstream inference): %s\n" %
           (", ".join(result) or "<empty>"))
     return result
@@ -654,12 +673,12 @@ def match_log_to_adjusted_reflogs(b):
         def generate_entries():
             for lb in local_branches():
                 lb_shas = set()
-                for sha_ in adjusted_reflog(lb, "refs/heads"):
+                for sha_ in adjusted_reflog(lb, "refs/heads/"):
                     lb_shas.add(sha_)
                     yield sha_, (lb, lb)
                 rb = remote_tracking_branch(lb)
                 if rb:
-                    for sha_ in adjusted_reflog(rb, "refs/remotes"):
+                    for sha_ in adjusted_reflog(rb, "refs/remotes/"):
                         if sha_ not in lb_shas:
                             yield sha_, (lb, rb)
 
@@ -763,7 +782,7 @@ def discover_tree():
         edit()
 
 
-def fork_point(b):
+def fork_point_and_containing_branch_defs(b):
     try:
         sha, containing_branch_defs = next(match_log_to_adjusted_reflogs(b))
     except StopIteration:
@@ -772,6 +791,11 @@ def fork_point(b):
     debug("fork_point(%s)" % b,
           "commit %s is the most recent point in history of %s to occur on adjusted reflog of any other branch or its remote counterpart (specifically: %s)\n" %
           (sha, b, " and ".join(map(lambda (lb, lb_or_rb): lb_or_rb, containing_branch_defs))))
+    return sha, containing_branch_defs
+
+
+def fork_point(b):
+    sha, containing_branch_defs = fork_point_and_containing_branch_defs(b)
     return sha
 
 
@@ -787,7 +811,7 @@ def delete_unmanaged():
         branches_to_delete_merged_to_head = [b for b in branches_to_delete if b in branches_merged_to_head]
         for b in branches_to_delete_merged_to_head:
             rb = remote_tracking_branch(b)
-            is_merged_to_remote = is_ancestor(b, rb, later_prefix="refs/remotes") if rb else True
+            is_merged_to_remote = is_ancestor(b, rb, later_prefix="refs/remotes/") if rb else True
             msg = "Delete branch %s (merged to HEAD%s)? [y/N/q] " % (
                 bold(b), "" if is_merged_to_remote else (", but not merged to " + rb)
             )
@@ -1123,8 +1147,6 @@ def traverse():
 
 
 def status():
-    global sha_by_revision_cached
-
     dfs_res = []
 
     def prefix_dfs(u_, prefix):
@@ -1137,63 +1159,74 @@ def status():
     for u in roots:
         prefix_dfs(u, prefix=[])
 
-    needs_sync_with_up_branch = {}
-    remote_sync_status = {}
-    commits_cached = {}
-    fork_points_cached = {}
-    for b, pfx in dfs_res:
-        if b in up_branch:
-            needs_sync_with_up_branch[b] = not is_ancestor(up_branch[b], b)
-            # Force computing all needed fork points to avoid later polluting the printed status in case of --verbose mode.
+    out = StringIO.StringIO()
+    edge_color = {}
+    fp_sha_cached = {}
+    fp_branches_cached = {}
+
+    def fp_sha(b):
+        if b not in fp_sha_cached:
             try:
-                fork_points_cached[b] = fork_point(b)
+                fp_sha_cached[b], fp_branches_cached[b] = fork_point_and_containing_branch_defs(b)
             except MacheteException:
-                fork_points_cached[b] = None
-            if opt_list_commits:
-                commits_cached[b] = reversed(commits_between(fork_points_cached[b], "refs/heads/" + b)) if fork_points_cached[b] else []
-        # Force computing all needed SHAs to avoid later polluting the printed status in case of --verbose mode.
-        sha_by_revision(b)
-        remote_sync_status[b] = get_remote_sync_status(b)
+                fp_sha_cached[b], fp_branches_cached[b] = None, []
+        return fp_sha_cached[b]
 
-    hook_output = {}
-    hook_path = get_hook_path("machete-status-branch")
-    if check_hook_executable(hook_path):
-        for b, pfx in dfs_res:
-            debug("status()", "running machete-status-branch hook (%s) for branch %s" % (hook_path, b))
-            exit_code, stdout = popen_cmd(hook_path, b, cwd=get_root_dir())
-            if exit_code == 0 and not stdout.isspace():
-                hook_output[b] = "  " + stdout.rstrip()
-
-    def edge_color(b_):
-        return RED if needs_sync_with_up_branch[b_] else (GREEN if sha_by_revision(up_branch[b_]) == fork_points_cached[b_] else YELLOW)
-
-    def print_line_prefix(b_, suffix):
-        sys.stdout.write("  ")
-        for p in pfx[:-1]:
-            if not p:
-                sys.stdout.write("  ")
-            else:
-                sys.stdout.write(edge_color(p) + "│ " + ENDC)
-        sys.stdout.write(edge_color(b_) + suffix + ENDC)
+    # Edge colors need to be precomputed in order to render the leading parts of lines properly.
+    for b in up_branch:
+        u = up_branch[b]
+        if not is_ancestor(u, b):
+            edge_color[b] = RED
+        elif sha_by_revision(u) == fp_sha(b):
+            edge_color[b] = GREEN
+        else:
+            edge_color[b] = YELLOW
 
     cb = current_branch_or_none()
 
-    for b, pfx in dfs_res:
-        current = underline(bold(b)) if b == cb else bold(b)
-        anno = "  " + dim(annotations[b]) if b in annotations else ""
+    hook_path = get_hook_path("machete-status-branch")
+    hook_executable = check_hook_executable(hook_path)
 
+    def print_line_prefix(b_, suffix):
+        out.write("  ")
+        for p in pfx[:-1]:
+            if not p:
+                out.write("  ")
+            else:
+                out.write(edge_color[p] + "│ " + ENDC)
+        out.write(edge_color[b_] + suffix + ENDC)
+
+    for b, pfx in dfs_res:
         if b in up_branch:
             print_line_prefix(b, "│ \n")
             if opt_list_commits:
-                for msg in commits_cached[b]:
-                    print_line_prefix(b, "│ " + ENDC + DIM + msg + "\n")
+                if edge_color[b] == RED:
+                    commits = commits_between(fp_sha(b), "refs/heads/" + b) if fp_sha(b) else []
+                elif edge_color[b] == YELLOW:
+                    commits = commits_between("refs/heads/" + up_branch[b], "refs/heads/" + b)
+                else:  # edge_color == GREEN
+                    commits = commits_between(fp_sha(b), "refs/heads/" + b)
+
+                for sha, msg in reversed(commits):
+                    if sha == fp_sha(b):
+                        # fp_branches_cached will already be there thanks to the above call to 'fp_sha'.
+                        fp_branches_formatted = " and ".join(map(lambda (lb, lb_or_rb): lb_or_rb, fp_branches_cached[b]))
+                        fp_suffix = (RED + ' ➔ fork point ???' + ENDC + ' commit ' + short_sha(fp_sha(b)) + ' found in reflog of ' + fp_branches_formatted)
+                    else:
+                        fp_suffix = ''
+                    print_line_prefix(b, "│ " + ENDC + dim(msg) + fp_suffix + "\n")
             print_line_prefix(b, "└─")
         else:
             if b != dfs_res[0][0]:
-                print
-            sys.stdout.write("  ")
-        s, remote = remote_sync_status[b]
-        sync_status_string = {
+                out.write("\n")
+            out.write("  ")
+
+        current = underline(bold(b)) if b == cb else bold(b)
+
+        anno = "  " + dim(annotations[b]) if b in annotations else ""
+
+        s, remote = get_remote_sync_status(b)
+        sync_status = {
             NO_REMOTES: "",
             UNTRACKED: ORANGE + " (untracked)" + ENDC,
             UNTRACKED_ON: ORANGE + " (untracked on %s)" % remote + ENDC,
@@ -1201,8 +1234,23 @@ def status():
             BEHIND_REMOTE: RED + " (behind %s)" % remote + ENDC,
             AHEAD_OF_REMOTE: RED + " (ahead of %s)" % remote + ENDC,
             DIVERGED_FROM_REMOTE: RED + " (diverged from %s)" % remote + ENDC
-        }
-        print current + anno + sync_status_string[s] + (hook_output.get(b) or "")
+        }[s]
+
+        hook_output = ""
+        if hook_executable:
+            debug("status()", "running machete-status-branch hook (%s) for branch %s" % (hook_path, b))
+            status_code, stdout = popen_cmd(hook_path, b, cwd=get_root_dir())
+            if status_code == 0 and not stdout.isspace():
+                hook_output = "  " + stdout.rstrip()
+
+        out.write(current + anno + sync_status + hook_output + "\n")
+
+    sys.stdout.write(out.getvalue())
+    if not opt_list_commits and YELLOW in edge_color.values():
+        print >>sys.stderr
+        print >>sys.stderr, RED + "Warn:" + ENDC + " there was at least one yellow edge which indicates that some fork points are probably not determined correctly."
+        print >>sys.stderr, "Run 'git machete status -l' to see more details."
+    out.close()
 
 
 # Main
@@ -1316,10 +1364,10 @@ def usage(c=None):
 
             Note: to determine this place in history, 'git machete' uses a heuristics based on reflogs of local branches.
             This yields a correct result in typical cases, but there are some situations (esp. when some local branches have been deleted) where the fork point might not be determined correctly.
-            Thus, all rebase-involving operations ('reapply', 'slide-out' and 'update') run 'git rebase' in the interactive mode and allow to specify the fork point explictly by a command-line option.
+            Thus, all rebase-involving operations ('reapply', 'slide-out', 'traverse' and 'update') run 'git rebase' in the interactive mode and allow to specify the fork point explictly by a command-line option.
 
             Also, 'git machete fork-point' is different (and more powerful) than 'git merge-base --fork-point', since the latter takes into account only the reflog of the one provided upstream branch,
-            while the former scans reflogs of all local branches.
+            while the former scans reflogs of all local branches and their remote counterparts.
             This makes machete's 'fork-point' work correctly even when the tree definition has been modified and one or more of the branches changed their corresponding upstream branch.
         """,
         "format": """
@@ -1770,7 +1818,7 @@ def main():
                 res = excluding(local_branches(), managed_branches)
             else:
                 raise MacheteException("Usage: git machete list " + list_allowed_values)
-            print "\n".join(res),
+            sys.stdout.write("\n".join(res))
         elif cmd in ("l", "log"):
             param = check_optional_param(parse_options(args))
             # No need to read definition file.

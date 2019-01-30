@@ -4,7 +4,9 @@
 
 - added: handling of `machete-pre-rebase` and `machete-status-branch` hooks + hook samples
 - added: `yq` (yes-and-quit) choice in `traverse`
-- addee: `-r`/`--roots` option to `discover`
+- added: `-r`/`--roots` option to `discover`
+- improved: fork point commit is highlighted in `status --list-commits` in case of a yellow edge
+- optimized: fetching state of the repository via git commands (`config`, `for-each-ref` etc.)
 
 ## New in git-machete 2.8.8
 
