@@ -93,8 +93,12 @@ def popen_cmd(cmd, *args, **kwargs):
 
 # Git core
 
+def cmd_shell_repr(git_cmd, args):
+    return " ".join(["git", git_cmd] + list(args)).replace("(", "\\(").replace(")", "\\)").replace("\t", "$'\\t'")
+
+
 def run_git(git_cmd, *args, **kwargs):
-    flat_cmd = " ".join(["git", git_cmd] + list(args))
+    flat_cmd = cmd_shell_repr(git_cmd, args)
     if opt_debug:
         print >> sys.stderr, underline(flat_cmd)
     elif opt_verbose:
@@ -108,7 +112,7 @@ def run_git(git_cmd, *args, **kwargs):
 
 
 def popen_git(git_cmd, *args, **kwargs):
-    flat_cmd = " ".join(["git", git_cmd] + list(args))
+    flat_cmd = cmd_shell_repr(git_cmd, args)
     if opt_debug:
         print >> sys.stderr, underline(flat_cmd)
     elif opt_verbose:
@@ -375,6 +379,17 @@ def edit():
     return run_cmd(os.environ.get("EDITOR") or "vim", definition_file)
 
 
+git_version = None
+
+
+def get_git_version():
+    global git_version
+    if not git_version:
+        git_version = tuple(map(int, popen_git("version").strip()
+                                .replace("git version ", "").split(".")))
+    return git_version
+
+
 root_dir = None
 
 
@@ -443,7 +458,7 @@ def short_sha(revision):
     return popen_git("rev-parse", "--short", revision).rstrip()
 
 
-def compute_sha_by_revision(revision):
+def find_sha_by_revision(revision):
     try:
         return popen_git("rev-parse", "--verify", "--quiet", revision).rstrip()
     except MacheteException:
@@ -457,14 +472,11 @@ def sha_by_revision(revision, prefix="refs/heads/"):
     global sha_by_revision_cached
     full_revision = prefix + revision
     if full_revision not in sha_by_revision_cached:
-        sha_by_revision_cached[full_revision] = compute_sha_by_revision(full_revision)
+        sha_by_revision_cached[full_revision] = find_sha_by_revision(full_revision)
     return sha_by_revision_cached[full_revision]
 
 
-remote_tracking_branches_cached = {}
-
-
-def compute_remote_tracking_branch(b):
+def find_remote_tracking_branch(b):
     try:
         # Note: no need to prefix 'b' with 'refs/heads/', '@{upstream}' assumes local branch automatically.
         return popen_git("rev-parse", "--abbrev-ref", b + "@{upstream}").strip()
@@ -472,10 +484,13 @@ def compute_remote_tracking_branch(b):
         return None
 
 
+remote_tracking_branches_cached = {}
+
+
 def remote_tracking_branch(b):
     global remote_tracking_branches_cached
     if b not in remote_tracking_branches_cached:
-        remote_tracking_branches_cached[b] = compute_remote_tracking_branch(b)
+        remote_tracking_branches_cached[b] = find_remote_tracking_branch(b)
     return remote_tracking_branches_cached[b]
 
 
@@ -494,8 +509,23 @@ def current_branch():
         raise MacheteException("Not currently on any branch")
 
 
+merge_base_cached = {}
+
+
+def merge_base(sha1, sha2):
+    if sha1 > sha2:
+        sha1, sha2 = sha2, sha1
+    if not (sha1, sha2) in merge_base_cached:
+        merge_base_cached[sha1, sha2] = popen_git("merge-base", sha1, sha2).rstrip()
+    return merge_base_cached[sha1, sha2]
+
+
 def is_ancestor(earlier, later, earlier_prefix="refs/heads/", later_prefix="refs/heads/"):
-    return run_git("merge-base", "--is-ancestor", earlier_prefix + earlier, later_prefix + later, allow_non_zero=True) == 0
+    sha_earlier = sha_by_revision(earlier, earlier_prefix)
+    sha_later = sha_by_revision(later, later_prefix)
+    if sha_earlier == sha_later:
+        return True
+    return merge_base(sha_earlier, sha_later) == sha_earlier
 
 
 def create_branch(b, out_of):
@@ -534,12 +564,36 @@ local_branches_cached = None
 def local_branches():
     global local_branches_cached
     if local_branches_cached is None:
-        local_branches_cached = get_local_branches()
+        local_branches_cached = load_local_branches()
     return local_branches_cached
 
 
-def get_local_branches(extra_option=None):
-    return non_empty_lines(popen_git("for-each-ref", "--format=%(refname:strip=2)", "refs/heads", *([extra_option] if extra_option else [])))
+def load_local_branches():
+    raw_remote = non_empty_lines(popen_git("for-each-ref", "--format=%(refname:strip=2)\t%(objectname)", "refs/remotes"))
+    remote_branches = []
+    for line in raw_remote:
+        values = line.split("\t")
+        if len(values) != 2:  # invalid, shouldn't happen
+            continue
+        b, sha = values
+        remote_branches += [b]
+        sha_by_revision_cached["refs/remotes/" + b] = sha
+
+    raw_local = non_empty_lines(popen_git("for-each-ref", "--format=%(refname:strip=2)\t%(objectname)\t%(upstream:strip=2)\t%(push:strip=2)", "refs/heads"))
+    result = []
+    for line in raw_local:
+        values = line.split("\t")
+        if len(values) != 4:  # invalid, shouldn't happen
+            continue
+        b, sha, for_fetch, for_push = values
+        result += [b]
+        sha_by_revision_cached["refs/heads/" + b] = sha
+        remote_tracking_branches_cached[b] = for_fetch if for_fetch in remote_branches else None
+    return result
+
+
+def merged_local_branches():
+    return non_empty_lines(popen_git("for-each-ref", "--format=%(refname:strip=2)", "--merged", "HEAD", "refs/heads"))
 
 
 def go(branch):
@@ -635,10 +689,52 @@ def get_remote_sync_status(b):
 
 # Reflog magic
 
-def reflog(b):
+
+reflogs_cached = None
+
+
+def load_all_reflogs():
+    global reflogs_cached
+    # %gd - reflog selector (refname@{num})
     # %H - full hash
     # %gs - reflog subject
-    return [entry.split(":", 1) for entry in non_empty_lines(popen_git("reflog", "show", "--format=%H:%gs", b, "--"))]
+    all_branches = ["refs/heads/" + b for b in local_branches()] + \
+                   ["refs/remotes/" + remote_tracking_branch(b) for b in local_branches() if remote_tracking_branch(b)]
+    entries = non_empty_lines(popen_git("reflog", "show", "--format=%gD\t%H\t%gs", *all_branches))
+    reflogs_cached = {}
+    for entry in entries:
+        values = entry.split("\t")
+        if len(values) != 3:  # invalid, shouldn't happen
+            continue
+        selector, sha, subject = values
+        branch_and_pos = selector.split("@")
+        if len(branch_and_pos) != 2:  # invalid, shouldn't happen
+            continue
+        b, pos = branch_and_pos
+        if b not in reflogs_cached:
+            reflogs_cached[b] = []
+        reflogs_cached[b] += [(sha, subject)]
+
+
+def reflog(b):
+    global reflogs_cached
+    # git version 2.14.2 fixed a bug that caused fetching reflog of more than
+    # one branch at the same time unreliable in certain cases
+    if get_git_version() >= (2, 14, 2):
+        if reflogs_cached is None:
+            load_all_reflogs()
+        return reflogs_cached.get(b) or []
+    else:
+        if reflogs_cached is None:
+            reflogs_cached = {}
+        if b not in reflogs_cached:
+            # %H - full hash
+            # %gs - reflog subject
+            reflogs_cached[b] = [
+                entry.split(":", 1) for entry in non_empty_lines(
+                    popen_git("reflog", "show", "--format=%H:%gs", b, "--"))
+            ]
+        return reflogs_cached[b]
 
 
 def adjusted_reflog(b, prefix):
@@ -806,7 +902,7 @@ def delete_unmanaged():
         branches_to_delete = excluding(branches_to_delete, [cb])
         print "Skipping current branch '%s'" % cb
     if branches_to_delete:
-        branches_merged_to_head = get_local_branches("--merged")
+        branches_merged_to_head = merged_local_branches()
 
         branches_to_delete_merged_to_head = [b for b in branches_to_delete if b in branches_merged_to_head]
         for b in branches_to_delete_merged_to_head:
@@ -884,9 +980,11 @@ class StopTraversal:
 
 
 def flush():
-    global branch_defs_by_sha_in_reflog, initial_log_shas_cached, remaining_log_shas_cached, remote_tracking_branches_cached, sha_by_revision_cached
+    global branch_defs_by_sha_in_reflog, config_cached, initial_log_shas_cached, reflogs_cached, remaining_log_shas_cached, remote_tracking_branches_cached, sha_by_revision_cached
     branch_defs_by_sha_in_reflog = None
+    config_cached = None
     initial_log_shas_cached = {}
+    reflogs_cached = None
     remaining_log_shas_cached = {}
     remote_tracking_branches_cached = {}
     sha_by_revision_cached = {}
