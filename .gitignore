@@ -1,3 +1,18 @@
-.idea/
+git-machete
+git-machete-prompt
+
+*.pyc
 *.swp
 
+.tox/
+*.egg-info/
+.eggs/
+.stestr/
+
+build/
+dist/
+AUTHORS
+ChangeLog
+
+.idea/
+.python-version
