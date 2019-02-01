@@ -5,13 +5,17 @@ COMPDIR = /etc/bash_completion.d
 COMPDIR2 = /usr/local/etc/bash_completion.d
 COMPFILE = git-machete-prompt
 
-.PHONY: all install uninstall
+.PHONY: all build install uninstall
 
 all:
 	@echo "usage: make install"
 	@echo "       make uninstall"
 
-install:
+build:
+	cp git_machete/cmd.py $(BINFILE)
+	cp extras/$(COMPFILE) $(COMPFILE)
+
+install: build
 	install -d $(BINDIR)
 	install -m 0755 $(BINFILE) $(BINDIR)
 	install -d $(COMPDIR)
