@@ -1,6 +1,9 @@
 # git-machete
 
+
 [![Join the chat at https://gitter.im/VirtusLab/git-machete](https://badges.gitter.im/VirtusLab/git-machete.svg)](https://gitter.im/VirtusLab/git-machete?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
+![](logo.png)
 
 If you work a with a git rebase flow, git machete will (vastly!) help you manage the jungle of branches stacking on top of each other when you're, for example, working on a couple of different PRs in parallel.
 
