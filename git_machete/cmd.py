@@ -98,12 +98,12 @@ def run_git(git_cmd, *args, **kwargs):
         print >> sys.stderr, underline(flat_cmd)
     elif opt_verbose:
         print >> sys.stderr, flat_cmd
-    status = run_cmd("git", git_cmd, *args)
-    if not kwargs.get("allow_non_zero") and status != 0:
-        raise MacheteException("'%s' returned %i" % (flat_cmd, status))
+    exit_code = run_cmd("git", git_cmd, *args)
+    if not kwargs.get("allow_non_zero") and exit_code != 0:
+        raise MacheteException("'%s' returned %i" % (flat_cmd, exit_code))
     if opt_debug:
-        print >> sys.stderr, dim("<status: %i>\n" % status)
-    return status
+        print >> sys.stderr, dim("<exit code: %i>\n" % exit_code)
+    return exit_code
 
 
 def popen_git(git_cmd, *args):
@@ -112,9 +112,9 @@ def popen_git(git_cmd, *args):
         print >> sys.stderr, underline(flat_cmd)
     elif opt_verbose:
         print >> sys.stderr, flat_cmd
-    status, stdout = popen_cmd("git", git_cmd, *args)
-    if status != 0:
-        raise MacheteException("'%s' returned %i" % (flat_cmd, status))
+    exit_code, stdout = popen_cmd("git", git_cmd, *args)
+    if exit_code != 0:
+        raise MacheteException("'%s' returned %i" % (flat_cmd, exit_code))
     if opt_debug:
         print >> sys.stderr, dim(stdout)
     return stdout
@@ -129,7 +129,7 @@ def expect_in_managed_branches(b):
 
 
 def read_definition_file():
-    global definition_file, indent, managed_branches, down_branches, up_branch, roots, annotations
+    global indent, managed_branches, down_branches, up_branch, roots, annotations
 
     with open(definition_file) as f:
         lines = [l.rstrip() for l in f.readlines() if not l.isspace()]
@@ -554,17 +554,17 @@ def reflog(b):
 
 
 def adjusted_reflog(b, prefix):
-    def is_relevant_reflog_subject(sha, gs):
-        result = not (
-            gs.startswith("branch: Created from") or
-            gs == "branch: Reset to " + b or
-            gs == "branch: Reset to HEAD" or
-            gs.startswith("reset: moving to ") or
-            gs == "rebase finished: %s/%s onto %s" % (prefix, b, sha)
+    def is_relevant_reflog_subject(sha_, gs_):
+        is_relevant = not (
+            gs_.startswith("branch: Created from") or
+            gs_ == "branch: Reset to " + b or
+            gs_ == "branch: Reset to HEAD" or
+            gs_.startswith("reset: moving to ") or
+            gs_ == "rebase finished: %s/%s onto %s" % (prefix, b, sha_)
         )
-        if not result:
-            debug("adjusted_reflog(%s, %s) -> is_relevant_reflog_subject(%s, <<<%s>>>)" % (b, prefix, sha, gs), "skipping reflog entry")
-        return result
+        if not is_relevant:
+            debug("adjusted_reflog(%s, %s) -> is_relevant_reflog_subject(%s, <<<%s>>>)" % (b, prefix, sha_, gs_), "skipping reflog entry")
+        return is_relevant
 
     result = [sha for (sha, gs) in reflog(prefix + "/" + b) if is_relevant_reflog_subject(sha, gs)]
     debug("adjusted_reflog(%s, %s)" % (b, prefix), "computed adjusted reflog (= reflog without branch creation and branch reset events irrelevant for fork point/upstream inference): %s\n" %
@@ -585,14 +585,14 @@ def match_log_to_adjusted_reflogs(b):
         def generate_entries():
             for lb in local_branches():
                 lb_shas = set()
-                for sha in adjusted_reflog(lb, "refs/heads"):
-                    lb_shas.add(sha)
-                    yield sha, (lb, lb)
+                for sha_ in adjusted_reflog(lb, "refs/heads"):
+                    lb_shas.add(sha_)
+                    yield sha_, (lb, lb)
                 rb = remote_tracking_branch(lb)
                 if rb:
-                    for sha in adjusted_reflog(rb, "refs/remotes"):
-                        if sha not in lb_shas:
-                            yield sha, (lb, rb)
+                    for sha_ in adjusted_reflog(rb, "refs/remotes"):
+                        if sha_ not in lb_shas:
+                            yield sha_, (lb, rb)
 
         branch_defs_by_sha_in_reflog = {}
         for sha, branch_def in generate_entries():
@@ -604,9 +604,9 @@ def match_log_to_adjusted_reflogs(b):
                 branch_defs_by_sha_in_reflog[sha] = [branch_def]
 
         def log_result():
-            for sha, branch_defs in branch_defs_by_sha_in_reflog.items():
+            for sha_, branch_defs in branch_defs_by_sha_in_reflog.items():
                 yield dim("%s => %s" %
-                          (sha, ", ".join(map(lambda (lb, lb_or_rb): lb if lb == lb_or_rb else "%s (remote counterpart of %s)" % (lb_or_rb, lb), branch_defs))))
+                          (sha_, ", ".join(map(lambda (lb, lb_or_rb): lb if lb == lb_or_rb else "%s (remote counterpart of %s)" % (lb_or_rb, lb), branch_defs))))
 
         debug("match_log_to_adjusted_reflogs(%s)" % b, "branches containing the given SHA in their adjusted reflog: \n%s\n" % "\n".join(log_result()))
 
@@ -659,7 +659,7 @@ def discover_tree():
         return root_of[b]
 
     for b in managed_branches:
-        u = infer_upstream(b, condition=lambda u: get_root_of(u) != b, reject_reason_message="choosing this candidate would form a cycle in the resulting graph")
+        u = infer_upstream(b, condition=lambda x: get_root_of(x) != b, reject_reason_message="choosing this candidate would form a cycle in the resulting graph")
         if u:
             debug("discover_tree()", "inferred upstream of %s "
                                      "is %s, attaching %s as a child of %s\n" % (b, u, b, u))
@@ -897,70 +897,70 @@ def traverse():
                 def handle_untracked_branch(new_remote):
                     can_pick_other_remote = len(rems) > 1
                     other_remote_suffix = "/o[ther remote]" if can_pick_other_remote else ""
-                    rb = new_remote + "/" + b
-                    if not sha_by_refspec(rb, prefix="refs/remotes"):
-                        ans = raw_input("Push untracked branch %s to %s? (y/n/q%s) " % (bold(b), bold(new_remote), other_remote_suffix)).lower()
-                        if ans in ('y', 'yes'):
+                    rb_ = new_remote + "/" + b
+                    if not sha_by_refspec(rb_, prefix="refs/remotes"):
+                        ans_ = raw_input("Push untracked branch %s to %s? (y/n/q%s) " % (bold(b), bold(new_remote), other_remote_suffix)).lower()
+                        if ans_ in ('y', 'yes'):
                             run_git("push", "--set-upstream", new_remote, b)
                             flush()
-                        elif can_pick_other_remote and ans in ('o', 'other'):
+                        elif can_pick_other_remote and ans_ in ('o', 'other'):
                             pick_remote()
-                        elif ans in ('q', 'quit'):
+                        elif ans_ in ('q', 'quit'):
                             raise StopTraversal
                         return
 
-                    new_s = get_relation_to_remote_counterpart(b, rb)
+                    new_s = get_relation_to_remote_counterpart(b, rb_)
                     if new_s == IN_SYNC_WITH_REMOTE:
-                        print "Branch %s is untracked, but its remote counterpart candidate %s already exists and the two branches point to the same commit." % (bold(b), bold(rb))
-                        ans = raw_input("Set the remote of %s to %s without pushing or pulling? (y/n/q%s) " % (bold(b), bold(new_remote), other_remote_suffix)).lower()
-                        if ans in ('y', 'yes'):
-                            run_git("branch", "--set-upstream-to", rb)
+                        print "Branch %s is untracked, but its remote counterpart candidate %s already exists and the two branches point to the same commit." % (bold(b), bold(rb_))
+                        ans_ = raw_input("Set the remote of %s to %s without pushing or pulling? (y/n/q%s) " % (bold(b), bold(new_remote), other_remote_suffix)).lower()
+                        if ans_ in ('y', 'yes'):
+                            run_git("branch", "--set-upstream-to", rb_)
                             flush()
-                        elif can_pick_other_remote and ans in ('o', 'other'):
+                        elif can_pick_other_remote and ans_ in ('o', 'other'):
                             pick_remote()
-                        elif ans in ('q', 'quit'):
+                        elif ans_ in ('q', 'quit'):
                             raise StopTraversal
                     elif new_s == BEHIND_REMOTE:
-                        print "Branch %s is untracked, but its remote counterpart candidate %s already exists and is ahead of %s." % (bold(b), bold(rb), bold(b))
-                        ans = raw_input("Pull %s from %s? (y/n/q%s) " % (bold(b), bold(new_remote), other_remote_suffix)).lower()
-                        if ans in ('y', 'yes'):
+                        print "Branch %s is untracked, but its remote counterpart candidate %s already exists and is ahead of %s." % (bold(b), bold(rb_), bold(b))
+                        ans_ = raw_input("Pull %s from %s? (y/n/q%s) " % (bold(b), bold(new_remote), other_remote_suffix)).lower()
+                        if ans_ in ('y', 'yes'):
                             run_git("pull", "--ff-only", new_remote, b)
                             # There's apparently no way to set remote automatically when doing `git pull` (as it is with `git push`), so a separate `git branch --set-upstream-to` is needed.
-                            run_git("branch", "--set-upstream-to", rb)
+                            run_git("branch", "--set-upstream-to", rb_)
                             flush()
-                        elif can_pick_other_remote and ans in ('o', 'other'):
+                        elif can_pick_other_remote and ans_ in ('o', 'other'):
                             pick_remote()
-                        elif ans in ('q', 'quit'):
+                        elif ans_ in ('q', 'quit'):
                             raise StopTraversal
                     elif new_s == AHEAD_OF_REMOTE:
-                        print "Branch %s is untracked, but its remote counterpart candidate %s already exists and is behind %s." % (bold(b), bold(rb), bold(b))
-                        ans = raw_input("Push branch %s to %s? (y/n/q%s) " % (bold(b), bold(new_remote), other_remote_suffix)).lower()
-                        if ans in ('y', 'yes'):
+                        print "Branch %s is untracked, but its remote counterpart candidate %s already exists and is behind %s." % (bold(b), bold(rb_), bold(b))
+                        ans_ = raw_input("Push branch %s to %s? (y/n/q%s) " % (bold(b), bold(new_remote), other_remote_suffix)).lower()
+                        if ans_ in ('y', 'yes'):
                             run_git("push", "--set-upstream", new_remote, b)
                             flush()
-                        elif can_pick_other_remote and ans in ('o', 'other'):
+                        elif can_pick_other_remote and ans_ in ('o', 'other'):
                             pick_remote()
-                        elif ans in ('q', 'quit'):
+                        elif ans_ in ('q', 'quit'):
                             raise StopTraversal
                     elif new_s == DIVERGED_FROM_REMOTE:
-                        print "Branch %s is untracked, but its remote counterpart candidate %s already exists and the two branches are diverged." % (bold(b), bold(rb))
-                        ans = raw_input("Push branch %s with force to %s? (y/n/q%s) " % (bold(b), bold(new_remote), other_remote_suffix)).lower()
-                        if ans in ('y', 'yes'):
+                        print "Branch %s is untracked, but its remote counterpart candidate %s already exists and the two branches are diverged." % (bold(b), bold(rb_))
+                        ans_ = raw_input("Push branch %s with force to %s? (y/n/q%s) " % (bold(b), bold(new_remote), other_remote_suffix)).lower()
+                        if ans_ in ('y', 'yes'):
                             run_git("push", "--set-upstream", "--force", new_remote, b)
                             flush()
-                        elif can_pick_other_remote and ans in ('o', 'other'):
+                        elif can_pick_other_remote and ans_ in ('o', 'other'):
                             pick_remote()
-                        elif ans in ('q', 'quit'):
+                        elif ans_ in ('q', 'quit'):
                             raise StopTraversal
 
                 def pick_remote():
                     print "\n".join("[%i] %s" % (idx + 1, r) for idx, r in enumerate(rems))
-                    msg = "Select number 1..%i to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse: " % len(rems)
-                    ans = raw_input(msg).lower()
-                    if ans in ('q', 'quit'):
+                    msg_ = "Select number 1..%i to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse: " % len(rems)
+                    ans_ = raw_input(msg_).lower()
+                    if ans_ in ('q', 'quit'):
                         raise StopTraversal
                     try:
-                        idx = int(ans) - 1
+                        idx = int(ans_) - 1
                         if idx not in range(len(rems)):
                             raise MacheteException("Invalid index: %i" % (idx + 1))
                         handle_untracked_branch(rems[idx])
@@ -989,12 +989,12 @@ def status():
 
     dfs_res = []
 
-    def prefix_dfs(u, prefix):
-        dfs_res.append((u, prefix))
-        if down_branches.get(u):
-            for (v, nv) in zip(down_branches[u][:-1], down_branches[u][1:]):
+    def prefix_dfs(u_, prefix):
+        dfs_res.append((u_, prefix))
+        if down_branches.get(u_):
+            for (v, nv) in zip(down_branches[u_][:-1], down_branches[u_][1:]):
                 prefix_dfs(v, prefix + [nv])
-            prefix_dfs(down_branches[u][-1], prefix + [None])
+            prefix_dfs(down_branches[u_][-1], prefix + [None])
 
     for u in roots:
         prefix_dfs(u, prefix=[])
@@ -1017,17 +1017,17 @@ def status():
         sha_by_refspec(b)
         remote_sync_status[b] = get_remote_sync_status(b)
 
-    def edge_color(b):
-        return RED if needs_sync_with_up_branch[b] else (GREEN if sha_by_refspec(up_branch[b]) == fork_points_cached[b] else YELLOW)
+    def edge_color(b_):
+        return RED if needs_sync_with_up_branch[b_] else (GREEN if sha_by_refspec(up_branch[b_]) == fork_points_cached[b_] else YELLOW)
 
-    def print_line_prefix(b, suffix):
+    def print_line_prefix(b_, suffix):
         sys.stdout.write("  ")
         for p in pfx[:-1]:
             if not p:
                 sys.stdout.write("  ")
             else:
                 sys.stdout.write(edge_color(p) + "│ " + ENDC)
-        sys.stdout.write(edge_color(b) + suffix + ENDC)
+        sys.stdout.write(edge_color(b_) + suffix + ENDC)
 
     cb = current_branch_or_none()
 
@@ -1410,75 +1410,73 @@ def version():
     print 'git-machete version ' + VERSION
 
 
-def parse_options(in_args, short_opts="", long_opts=[], gnu=True):
-    global cmd, opt_debug, opt_down_fork_point, opt_fork_point, opt_list_commits, opt_onto, opt_stat, opt_verbose
-
-    fun = getopt.gnu_getopt if gnu else getopt.getopt
-    opts, rest = fun(in_args, short_opts + "hv", long_opts + ['debug', 'help', 'verbose', 'version'])
-
-    for opt, arg in opts:
-        if opt in ("-d", "--down-fork-point"):
-            opt_down_fork_point = arg
-        elif opt == "--debug":
-            opt_debug = True
-        elif opt in ("-f", "--fork-point"):
-            opt_fork_point = arg
-        elif opt in ("-h", "--help"):
-            usage(cmd)
-            sys.exit()
-        elif opt in ("-l", "--list-commits"):
-            opt_list_commits = True
-        elif opt in ("-o", "--onto"):
-            opt_onto = arg
-        elif opt in ("-s", "--stat"):
-            opt_stat = True
-        elif opt in ("-v", "--verbose"):
-            opt_verbose = True
-        elif opt == "--version":
-            version()
-            sys.exit()
-    return rest
-
-
-def expect_no_param(in_args, extra_explanation=''):
-    if len(in_args) > 0:
-        raise MacheteException("No argument expected for '%s'%s" % (cmd, extra_explanation))
-
-
-def check_optional_param(in_args):
-    if not in_args:
-        return None
-    elif len(in_args) > 1:
-        raise MacheteException("'%s' accepts at most one argument" % cmd)
-    elif not in_args[0]:
-        raise MacheteException("Argument to '%s' cannot be empty" % cmd)
-    elif in_args[0][0] == "-":
-        raise MacheteException("option '%s' not recognized" % in_args[0])
-    else:
-        return in_args[0]
-
-
-def check_required_param(in_args, allowed_values):
-    if not in_args or len(in_args) > 1:
-        raise MacheteException("'%s' expects exactly one argument: one of %s" % (cmd, allowed_values))
-    elif not in_args[0]:
-        raise MacheteException("Argument to '%s' cannot be empty; expected one of %s" % (cmd, allowed_values))
-    elif in_args[0][0] == "-":
-        raise MacheteException("option '%s' not recognized" % in_args[0])
-    else:
-        return in_args[0]
-
-
 def main():
+    def parse_options(in_args, short_opts="", long_opts=[], gnu=True):
+        global opt_debug, opt_down_fork_point, opt_fork_point, opt_list_commits, opt_onto, opt_stat, opt_verbose
+
+        fun = getopt.gnu_getopt if gnu else getopt.getopt
+        opts, rest = fun(in_args, short_opts + "hv", long_opts + ['debug', 'help', 'verbose', 'version'])
+
+        for opt, arg in opts:
+            if opt in ("-d", "--down-fork-point"):
+                opt_down_fork_point = arg
+            elif opt == "--debug":
+                opt_debug = True
+            elif opt in ("-f", "--fork-point"):
+                opt_fork_point = arg
+            elif opt in ("-h", "--help"):
+                usage(cmd)
+                sys.exit()
+            elif opt in ("-l", "--list-commits"):
+                opt_list_commits = True
+            elif opt in ("-o", "--onto"):
+                opt_onto = arg
+            elif opt in ("-s", "--stat"):
+                opt_stat = True
+            elif opt in ("-v", "--verbose"):
+                opt_verbose = True
+            elif opt == "--version":
+                version()
+                sys.exit()
+        return rest
+
+    def expect_no_param(in_args, extra_explanation=''):
+        if len(in_args) > 0:
+            raise MacheteException("No argument expected for '%s'%s" % (cmd, extra_explanation))
+
+    def check_optional_param(in_args):
+        if not in_args:
+            return None
+        elif len(in_args) > 1:
+            raise MacheteException("'%s' accepts at most one argument" % cmd)
+        elif not in_args[0]:
+            raise MacheteException("Argument to '%s' cannot be empty" % cmd)
+        elif in_args[0][0] == "-":
+            raise MacheteException("option '%s' not recognized" % in_args[0])
+        else:
+            return in_args[0]
+
+    def check_required_param(in_args, allowed_values):
+        if not in_args or len(in_args) > 1:
+            raise MacheteException("'%s' expects exactly one argument: one of %s" % (cmd, allowed_values))
+        elif not in_args[0]:
+            raise MacheteException("Argument to '%s' cannot be empty; expected one of %s" % (cmd, allowed_values))
+        elif in_args[0][0] == "-":
+            raise MacheteException("option '%s' not recognized" % in_args[0])
+        else:
+            return in_args[0]
+
+    global definition_file
+    global opt_debug, opt_down_fork_point, opt_down_fork_point, opt_fork_point, opt_list_commits, opt_onto, opt_stat, opt_verbose
     try:
         cmd = None
-        opt_debug = False  # noqa
-        opt_down_fork_point = None  # noqa
+        opt_debug = False
+        opt_down_fork_point = None
         opt_fork_point = None
-        opt_list_commits = False  # noqa
-        opt_onto = None  # noqa
-        opt_stat = False  # noqa
-        opt_verbose = False  # noqa
+        opt_list_commits = False
+        opt_onto = None
+        opt_stat = False
+        opt_verbose = False
 
         all_args = parse_options(sys.argv[1:], gnu=False)
         if not all_args:
@@ -1499,21 +1497,21 @@ def main():
 
         directions = "d[own]|f[irst]|l[ast]|n[ext]|p[rev]|r[oot]|u[p]"
 
-        def parse_direction(cb, down_pick_mode):
+        def parse_direction(b, down_pick_mode):
             if param in ("d", "down"):
-                return down(cb, pick_mode=down_pick_mode)
+                return down(b, pick_mode=down_pick_mode)
             elif param in ("f", "first"):
-                return first_branch(cb)
+                return first_branch(b)
             elif param in ("l", "last"):
-                return last_branch(cb)
+                return last_branch(b)
             elif param in ("n", "next"):
-                return next_branch(cb)
+                return next_branch(b)
             elif param in ("p", "prev"):
-                return prev_branch(cb)
+                return prev_branch(b)
             elif param in ("r", "root"):
-                return root_branch(cb, accept_self=False)
+                return root_branch(b, accept_self=False)
             elif param in ("u", "up"):
-                return up(cb, prompt_if_inferred=False)
+                return up(b, prompt_if_inferred=False)
             else:
                 raise MacheteException("Usage: git machete %s %s" % (cmd, directions))
 
@@ -1571,33 +1569,33 @@ def main():
             # No need to read definition file.
             discover_tree()
         elif cmd == "list":
-            allowed_values = "managed|slidable|slidable-after <branch>|unmanaged"
-            in_args = parse_options(args)
-            if not in_args or len(in_args) > 2:
-                raise MacheteException("'%s' expects argument(s): %s" % (cmd, allowed_values))
-            elif not in_args[0]:
-                raise MacheteException("Argument to '%s' cannot be empty; expected %s" % (cmd, allowed_values))
-            elif in_args[0][0] == "-":
-                raise MacheteException("option '%s' not recognized" % in_args[0])
-            elif in_args[0] in ("managed", "slidable", "unmanaged") and len(in_args) == 2:
-                raise MacheteException("'%s %s' doesn't expect an extra argument" % (cmd, in_args[0]))
-            elif in_args[0] == "slidable-after" and len(in_args) == 1:
-                raise MacheteException("'%s %s' requires an extra <branch> argument" % (cmd, in_args[0]))
+            list_allowed_values = "managed|slidable|slidable-after <branch>|unmanaged"
+            list_args = parse_options(args)
+            if not list_args or len(list_args) > 2:
+                raise MacheteException("'%s' expects argument(s): %s" % (cmd, list_allowed_values))
+            elif not list_args[0]:
+                raise MacheteException("Argument to '%s' cannot be empty; expected %s" % (cmd, list_allowed_values))
+            elif list_args[0][0] == "-":
+                raise MacheteException("option '%s' not recognized" % list_args[0])
+            elif list_args[0] in ("managed", "slidable", "unmanaged") and len(list_args) == 2:
+                raise MacheteException("'%s %s' doesn't expect an extra argument" % (cmd, list_args[0]))
+            elif list_args[0] == "slidable-after" and len(list_args) == 1:
+                raise MacheteException("'%s %s' requires an extra <branch> argument" % (cmd, list_args[0]))
 
-            param = in_args[0]
+            param = list_args[0]
             read_definition_file()
             if param == "managed":
                 res = managed_branches
             elif param == "slidable":
                 res = slidable()
             elif param == "slidable-after":
-                b = in_args[1]
-                expect_in_managed_branches(b)
-                res = slidable_after(b)
+                b_arg = list_args[1]
+                expect_in_managed_branches(b_arg)
+                res = slidable_after(b_arg)
             elif param == "unmanaged":
                 res = excluding(local_branches(), managed_branches)
             else:
-                raise MacheteException("Usage: git machete list " + allowed_values)
+                raise MacheteException("Usage: git machete list " + list_allowed_values)
             print "\n".join(res),
         elif cmd in ("l", "log"):
             param = check_optional_param(parse_options(args))
