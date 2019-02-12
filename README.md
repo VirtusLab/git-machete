@@ -24,6 +24,10 @@ $ sudo make install
 
 ### Using setup
 
+To install you need to have Python with installed `pip` and `setuptools`. Recommended Python env is installed with [Pyenv](https://github.com/pyenv/pyenv).
+
+Support Python version is `python2.*`. `python3.*` is not yet support. Support for version 3 is addressed in issue #35.
+
 Run the following commands to install git machete:
 
 ```bash
@@ -32,17 +36,25 @@ $ cd git-machete
 $ python setup.py install
 ```
 
-To install you need to have Python with installed `pip` and `setuptools`. Recommended Python env is installed with [Pyenv](https://github.com/pyenv/pyenv).
+To enable bash completion, ensure that you have sourced files from `${HOME}/.local/etc/bash_completion.d/` in your bash completion config. You can do it explicitly by adding the following line to your .bashrc:
 
-Support Python version is `python2.*`. `python3.*` is not yet support. Support for version 3 is addressed in issue #35.
+```bash
+. ~/.local/etc/bash_completion.d/git-machete-prompt
+```
 
 If you use system Python env, you will need to execute last command with `sudo` or with option `--user`:
 
 ```bash
+$ python setup.py build  # recommened to perform before installing as root
 $ sudo python setup.py install
 
 $ python setup.py install --user
 ```
+
+If you use system Python env and installed it with `--user`, please verify if your `${PATH}` has your local bin included: `${HOME}/.local/bin/`.
+
+If you use system Python env and installed it with `sudo` it should work out of the box. You may need to ensure that global bash completion config sources files from `/usr/local/etc/bash_completion.d/`.
+
 
 ## Quick start
 
