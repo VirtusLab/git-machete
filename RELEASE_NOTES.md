@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.8.6
+
+- added: use project in python way
+
 ## New in git-machete 2.8.5
 
 - fixed: fork point of a branch could be determined incorrectly when a no-op rebase has been performed on some other branch
