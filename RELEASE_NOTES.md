@@ -2,7 +2,7 @@
 
 ## New in git-machete 2.8.6
 
-- added: use project in python way
+- added: use project in python way and improve README
 
 ## New in git-machete 2.8.5
 
