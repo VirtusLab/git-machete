@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.8.7
+
+- changed: %(refname:lstrip=2) to %(refname:strip=2) in `git for-each-ref` format to make sure old versions of git work properly
+
 ## New in git-machete 2.8.6
 
 - added: use project in python way and improve README

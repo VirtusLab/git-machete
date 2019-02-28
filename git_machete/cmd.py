@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.8.6'
+VERSION = '2.8.7'
 
 
 # Core utils
@@ -487,7 +487,7 @@ def local_branches():
 
 
 def get_local_branches(extra_option=None):
-    return non_empty_lines(popen_git("for-each-ref", "--format=%(refname:lstrip=2)", "refs/heads", *([extra_option] if extra_option else [])))
+    return non_empty_lines(popen_git("for-each-ref", "--format=%(refname:strip=2)", "refs/heads", *([extra_option] if extra_option else [])))
 
 
 def go(branch):
