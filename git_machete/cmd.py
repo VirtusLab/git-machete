@@ -856,16 +856,122 @@ class StopTraversal:
         pass
 
 
+def flush():
+    global branch_defs_by_sha_in_reflog, initial_log_shas_cached, remaining_log_shas_cached, remote_tracking_branches_cached, sha_by_revision_cached
+    branch_defs_by_sha_in_reflog = None
+    initial_log_shas_cached = {}
+    remaining_log_shas_cached = {}
+    remote_tracking_branches_cached = {}
+    sha_by_revision_cached = {}
+
+
+def pick_remote(b):
+    rems = remotes()
+    print "\n".join("[%i] %s" % (idx + 1, r) for idx, r in enumerate(rems))
+    msg_ = "Select number 1..%i to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse: " % len(
+        rems)
+    ans = raw_input(msg_).lower()
+    if ans in ('q', 'quit'):
+        raise StopTraversal
+    try:
+        idx = int(ans) - 1
+        if idx not in range(len(rems)):
+            raise MacheteException("Invalid index: %i" % (idx + 1))
+        handle_untracked_branch(rems[idx], b)
+    except ValueError:
+        pass
+
+
+def handle_untracked_branch(new_remote, b):
+    rems = remotes()
+    can_pick_other_remote = len(rems) > 1
+    other_remote_suffix = "/o[ther remote]" if can_pick_other_remote else ""
+    rb = new_remote + "/" + b
+    if not sha_by_revision(rb, prefix="refs/remotes"):
+        ans = raw_input("Push untracked branch %s to %s? (y/N/q/yq%s) " % (
+            bold(b), bold(new_remote), other_remote_suffix)).lower()
+        if ans in ('y', 'yes', 'yq'):
+            run_git("push", "--set-upstream", new_remote, b)
+            if ans == 'yq':
+                raise StopTraversal
+            flush()
+        elif can_pick_other_remote and ans in ('o', 'other'):
+            pick_remote(b)
+        elif ans in ('q', 'quit'):
+            raise StopTraversal
+        return
+
+    new_s = get_relation_to_remote_counterpart(b, rb)
+    if new_s == IN_SYNC_WITH_REMOTE:
+        print "Branch %s is untracked, but its remote counterpart " \
+              "candidate %s already exists and the two branches point " \
+              "to the same commit." % (bold(b), bold(rb))
+        ans = raw_input(
+            "Set the remote of %s to %s without pushing or "
+            "pulling? (y/N/q/yq%s) " %
+            (bold(b), bold(new_remote), other_remote_suffix)).lower()
+        if ans in ('y', 'yes', 'yq'):
+            run_git("branch", "--set-upstream-to", rb)
+            if ans == 'yq':
+                raise StopTraversal
+            flush()
+        elif can_pick_other_remote and ans in ('o', 'other'):
+            pick_remote(b)
+        elif ans in ('q', 'quit'):
+            raise StopTraversal
+    elif new_s == BEHIND_REMOTE:
+        print "Branch %s is untracked, but its remote counterpart candidate " \
+              "%s already exists and is ahead of %s." % \
+              (bold(b), bold(rb), bold(b))
+        ans = raw_input("Pull %s from %s? (y/N/q/yq%s) " % (
+            bold(b), bold(new_remote), other_remote_suffix)).lower()
+        if ans in ('y', 'yes', 'yq'):
+            run_git("pull", "--ff-only", new_remote, b)
+            # There's apparently no way to set remote automatically when doing
+            # 'git pull' (as opposed to 'git push'),
+            # so a separate 'git branch --set-upstream-to' is needed.
+            run_git("branch", "--set-upstream-to", rb)
+            if ans == 'yq':
+                raise StopTraversal
+            flush()
+        elif can_pick_other_remote and ans in ('o', 'other'):
+            pick_remote(b)
+        elif ans in ('q', 'quit'):
+            raise StopTraversal
+    elif new_s == AHEAD_OF_REMOTE:
+        print "Branch %s is untracked, but its remote counterpart candidate " \
+              "%s already exists and is behind %s." % \
+              (bold(b), bold(rb), bold(b))
+        ans = raw_input("Push branch %s to %s? (y/N/q/yq%s) " % (
+            bold(b), bold(new_remote), other_remote_suffix)).lower()
+        if ans in ('y', 'yes', 'yq'):
+            run_git("push", "--set-upstream", new_remote, b)
+            if ans == 'yq':
+                raise StopTraversal
+            flush()
+        elif can_pick_other_remote and ans in ('o', 'other'):
+            pick_remote(b)
+        elif ans in ('q', 'quit'):
+            raise StopTraversal
+    elif new_s == DIVERGED_FROM_REMOTE:
+        print "Branch %s is untracked, but its remote counterpart candidate %s " \
+              "already exists and the two branches are diverged." % \
+              (bold(b), bold(rb))
+        ans = raw_input("Push branch %s with force to %s? (y/N/q/yq%s) " % (
+            bold(b), bold(new_remote), other_remote_suffix)).lower()
+        if ans in ('y', 'yes', 'yq'):
+            run_git("push", "--set-upstream", "--force", new_remote, b)
+            if ans == 'yq':
+                raise StopTraversal
+            flush()
+        elif can_pick_other_remote and ans in ('o', 'other'):
+            pick_remote(b)
+        elif ans in ('q', 'quit'):
+            raise StopTraversal
+
+
 def traverse():
     global down_branches, up_branch, empty_line_status, managed_branches
-
-    def flush():
-        global branch_defs_by_sha_in_reflog, initial_log_shas_cached, remaining_log_shas_cached, remote_tracking_branches_cached, sha_by_revision_cached
-        branch_defs_by_sha_in_reflog = None
-        initial_log_shas_cached = {}
-        remaining_log_shas_cached = {}
-        remote_tracking_branches_cached = {}
-        sha_by_revision_cached = {}
 
     empty_line_status = True
 
@@ -881,14 +987,22 @@ def traverse():
     for b in itertools.dropwhile(lambda x: x != cb, managed_branches):
         u = up_branch.get(b)
 
-        needs_slide_out = u and is_ancestor(b, u) and sha_by_revision(u) != sha_by_revision(b)
+        needs_slide_out = u and \
+                          is_ancestor(b, u) and \
+                          sha_by_revision(u) != sha_by_revision(b)
         if needs_slide_out:
-            # Avoid unnecessary fork point check if we already now that the branch qualifies for slide out.
+            # Avoid unnecessary fork point check
+            # if we already now that the branch qualifies for slide out.
             needs_rebase = False
         else:
-            needs_rebase = u and not (is_ancestor(u, b) and sha_by_revision(u) == fork_point(b))
+            needs_rebase = u and not \
+                (is_ancestor(u, b) and sha_by_revision(u) == fork_point(b))
         s, remote = get_remote_sync_status(b)
-        statuses_to_sync = (UNTRACKED, UNTRACKED_ON, AHEAD_OF_REMOTE, BEHIND_REMOTE, DIVERGED_FROM_REMOTE)
+        statuses_to_sync = (UNTRACKED,
+                            UNTRACKED_ON,
+                            AHEAD_OF_REMOTE,
+                            BEHIND_REMOTE,
+                            DIVERGED_FROM_REMOTE)
         needs_remote_sync = s in statuses_to_sync
 
         if b != cb and (needs_slide_out or needs_rebase or needs_remote_sync):
@@ -901,175 +1015,107 @@ def traverse():
             print_new_line(True)
         if needs_slide_out:
             print_new_line(False)
-            ans = raw_input("Branch %s is merged into %s. Slide %s out of the tree of branch dependencies? [y/N/q/yq] " %
+            ans = raw_input("Branch %s is merged into %s. Slide %s out of "
+                            "the tree of branch dependencies? [y/N/q/yq] " %
                             (bold(b), bold(u), bold(b))).lower()
             if ans in ('y', 'yes', 'yq'):
                 for d in down_branches.get(b) or []:
                     up_branch[d] = u
-                down_branches[u] = flat_map(lambda ud: (down_branches.get(b) or []) if ud == b else [ud],
-                                            down_branches[u])
+                down_branches[u] = flat_map(
+                    lambda ud: (down_branches.get(b) or [])
+                    if ud == b else [ud],
+                    down_branches[u])
                 if b in annotations:
                     del annotations[b]
                 save_definition_file()
                 if ans == 'yq':
-                    raise StopTraversal
-                # No need to flush caches since nothing changed in commit/branch structure (only machete-specific changes happened).
-                continue  # No need to sync branch 'b' with remote since it just got removed from the tree of dependencies.
+                    return
+                # No need to flush caches since nothing changed in commit/branch
+                # structure (only machete-specific changes happened).
+                continue  # No need to sync branch 'b' with remote
+                # since it just got removed from the tree of dependencies.
             elif ans in ('q', 'quit'):
-                raise StopTraversal
-            # If user answered 'no', we don't try to rebase but still suggest to sync with remote (if needed).
+                return
+            # If user answered 'no', we don't try to rebase
+            # but still suggest to sync with remote (if needed).
         elif needs_rebase:
             print_new_line(False)
-            ans = raw_input("Rebase %s onto %s? [y/N/q/yq] " % (bold(b), bold(u))).lower()
+            ans = raw_input("Rebase %s onto %s? [y/N/q/yq] " %
+                            (bold(b), bold(u))).lower()
             if ans in ('y', 'yes', 'yq'):
                 update(b, fork_point(b))
                 if ans == 'yq':
-                    raise StopTraversal
+                    return
                 flush()
                 s, remote = get_remote_sync_status(b)
                 needs_remote_sync = s in statuses_to_sync
             elif ans in ('q', 'quit'):
-                raise StopTraversal
+                return
 
         if needs_remote_sync:
             if s == BEHIND_REMOTE:
                 rb = remote_tracking_branch(b)
-                ans = raw_input("Branch %s is behind its remote counterpart %s.\nPull %s from %s? [y/N/q/yq] " %
+                ans = raw_input("Branch %s is behind its remote counterpart %s."
+                                "\nPull %s from %s? [y/N/q/yq] " %
                                 (bold(b), bold(rb), bold(b), bold(remote))).lower()
                 if ans in ('y', 'yes', 'yq'):
                     run_git("pull", "--ff-only", remote)
                     if ans == 'yq':
-                        raise StopTraversal
+                        return
                     flush()
                     print
                 elif ans in ('q', 'quit'):
-                    raise StopTraversal
+                    return
 
             elif s == UNTRACKED_ON or s == AHEAD_OF_REMOTE:
                 print_new_line(False)
-                # 'remote' is defined for both cases we handle here, including UNTRACKED_ON
-                ans = raw_input("Push %s to %s? [y/N/q/yq] " % (bold(b), bold(remote))).lower()
+                # 'remote' is defined for both cases we handle here,
+                # including UNTRACKED_ON
+                ans = raw_input("Push %s to %s? [y/N/q/yq] " %
+                                (bold(b), bold(remote))).lower()
                 if ans in ('y', 'yes', 'yq'):
                     run_git("push", remote)
                     if ans == 'yq':
-                        raise StopTraversal
+                        return
                     flush()
                 elif ans in ('q', 'quit'):
-                    raise StopTraversal
+                    return
 
             elif s == DIVERGED_FROM_REMOTE:
                 print_new_line(False)
                 rb = remote_tracking_branch(b)
-                ans = raw_input("Branch %s diverged from its remote counterpart %s.\nPush %s with force to %s? [y/N/q/yq] " %
-                                (bold(b), bold(rb), bold(b), bold(remote))).lower()
+                ans = raw_input(
+                    "Branch %s diverged from its remote counterpart %s."
+                    "\nPush %s with force to %s? [y/N/q/yq] " %
+                    (bold(b), bold(rb), bold(b), bold(remote))).lower()
                 if ans in ('y', 'yes', 'yq'):
                     run_git("push", "--force", remote)
                     if ans == 'yq':
-                        raise StopTraversal
+                        return
                     flush()
                 elif ans in ('q', 'quit'):
-                    raise StopTraversal
+                    return
 
             elif s == UNTRACKED:
                 rems = remotes()
-
-                def handle_untracked_branch(new_remote):
-                    can_pick_other_remote = len(rems) > 1
-                    other_remote_suffix = "/o[ther remote]" if can_pick_other_remote else ""
-                    rb = new_remote + "/" + b
-                    if not sha_by_revision(rb, prefix="refs/remotes"):
-                        ans = raw_input("Push untracked branch %s to %s? (y/N/q/yq%s) " % (bold(b), bold(new_remote), other_remote_suffix)).lower()
-                        if ans in ('y', 'yes', 'yq'):
-                            run_git("push", "--set-upstream", new_remote, b)
-                            if ans == 'yq':
-                                raise StopTraversal
-                            flush()
-                        elif can_pick_other_remote and ans in ('o', 'other'):
-                            pick_remote()
-                        elif ans in ('q', 'quit'):
-                            raise StopTraversal
-                        return
-
-                    new_s = get_relation_to_remote_counterpart(b, rb)
-                    if new_s == IN_SYNC_WITH_REMOTE:
-                        print "Branch %s is untracked, but its remote counterpart candidate %s already exists and the two branches point to the same commit." % (bold(b), bold(rb))
-                        ans = raw_input("Set the remote of %s to %s without pushing or pulling? (y/N/q/yq%s) " % (bold(b), bold(new_remote), other_remote_suffix)).lower()
-                        if ans in ('y', 'yes', 'yq'):
-                            run_git("branch", "--set-upstream-to", rb)
-                            if ans == 'yq':
-                                raise StopTraversal
-                            flush()
-                        elif can_pick_other_remote and ans in ('o', 'other'):
-                            pick_remote()
-                        elif ans in ('q', 'quit'):
-                            raise StopTraversal
-                    elif new_s == BEHIND_REMOTE:
-                        print "Branch %s is untracked, but its remote counterpart candidate %s already exists and is ahead of %s." % (bold(b), bold(rb), bold(b))
-                        ans = raw_input("Pull %s from %s? (y/N/q/yq%s) " % (bold(b), bold(new_remote), other_remote_suffix)).lower()
-                        if ans in ('y', 'yes', 'yq'):
-                            run_git("pull", "--ff-only", new_remote, b)
-                            # There's apparently no way to set remote automatically when doing 'git pull' (as opposed to 'git push'), so a separate 'git branch --set-upstream-to' is needed.
-                            run_git("branch", "--set-upstream-to", rb)
-                            if ans == 'yq':
-                                raise StopTraversal
-                            flush()
-                        elif can_pick_other_remote and ans in ('o', 'other'):
-                            pick_remote()
-                        elif ans in ('q', 'quit'):
-                            raise StopTraversal
-                    elif new_s == AHEAD_OF_REMOTE:
-                        print "Branch %s is untracked, but its remote counterpart candidate %s already exists and is behind %s." % (bold(b), bold(rb), bold(b))
-                        ans = raw_input("Push branch %s to %s? (y/N/q/yq%s) " % (bold(b), bold(new_remote), other_remote_suffix)).lower()
-                        if ans in ('y', 'yes', 'yq'):
-                            run_git("push", "--set-upstream", new_remote, b)
-                            if ans == 'yq':
-                                raise StopTraversal
-                            flush()
-                        elif can_pick_other_remote and ans in ('o', 'other'):
-                            pick_remote()
-                        elif ans in ('q', 'quit'):
-                            raise StopTraversal
-                    elif new_s == DIVERGED_FROM_REMOTE:
-                        print "Branch %s is untracked, but its remote counterpart candidate %s already exists and the two branches are diverged." % (bold(b), bold(rb))
-                        ans = raw_input("Push branch %s with force to %s? (y/N/q/yq%s) " % (bold(b), bold(new_remote), other_remote_suffix)).lower()
-                        if ans in ('y', 'yes', 'yq'):
-                            run_git("push", "--set-upstream", "--force", new_remote, b)
-                            if ans == 'yq':
-                                raise StopTraversal
-                            flush()
-                        elif can_pick_other_remote and ans in ('o', 'other'):
-                            pick_remote()
-                        elif ans in ('q', 'quit'):
-                            raise StopTraversal
-
-                def pick_remote():
-                    print "\n".join("[%i] %s" % (idx + 1, r) for idx, r in enumerate(rems))
-                    msg_ = "Select number 1..%i to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse: " % len(rems)
-                    ans = raw_input(msg_).lower()
-                    if ans in ('q', 'quit'):
-                        raise StopTraversal
-                    try:
-                        idx = int(ans) - 1
-                        if idx not in range(len(rems)):
-                            raise MacheteException("Invalid index: %i" % (idx + 1))
-                        handle_untracked_branch(rems[idx])
-                    except ValueError:
-                        pass
-
                 print_new_line(False)
                 if len(rems) == 1:
-                    handle_untracked_branch(rems[0])
+                    handle_untracked_branch(rems[0], b)
                 elif "origin" in rems:
-                    handle_untracked_branch("origin")
+                    handle_untracked_branch("origin", b)
                 else:
-                    # We know that there is at least 1 remote, otherwise 's' would be 'NO_REMOTES'
-                    print "Branch %s is untracked and there's no %s repository." % (bold(b), bold("origin"))
-                    pick_remote()
+                    # We know that there is at least 1 remote,
+                    # otherwise 's' would be 'NO_REMOTES'
+                    print "Branch %s is untracked and there's no " \
+                          "%s repository." % (bold(b), bold("origin"))
+                    pick_remote(b)
 
     print_new_line(False)
     status()
     print
-    msg = "Reached branch %s which has no successor" if cb == managed_branches[-1] else "No successor of %s needs sync with upstream branch or remote"
+    msg = "Reached branch %s which has no successor" \
+        if cb == managed_branches[-1] else \
+        "No successor of %s needs sync with upstream branch or remote"
     print >> sys.stderr, msg % bold(cb) + "; nothing left to update"
 
 
