@@ -20,17 +20,18 @@
 
 ## Install
 
-We suggest 3 alternative ways of installation to make sure at least one works for you ;)
+We suggest 3 alternative ways of installation.
+
+**Bash and zsh completion scripts are provided** in completion/ directory, see [wiki for their installation instructions](https://github.com/VirtusLab/git-machete/wiki).
 
 Note: as for now git-machete runs on Python 2.7, we're planning to migrate to Python 3 soon (#35).
-Only bash completion is supported as for now (#21 for zsh).
 
 ### Using make with sudo
 
 Run the following commands to install git machete:
 
 ```bash
-$ git clone https://github.com/VirtusLab/git-machete.git
+$ git clone --depth=1 https://github.com/VirtusLab/git-machete.git
 $ cd git-machete
 $ sudo make install
 ```
@@ -40,30 +41,23 @@ $ sudo make install
 You need to have Python from system packages with `pip` and `setuptools` installed.
 
 ```bash
-$ git clone https://github.com/VirtusLab/git-machete.git
+$ git clone --depth=1 https://github.com/VirtusLab/git-machete.git
 $ cd git-machete
 $ python setup.py build
 $ sudo python setup.py install
 ```
-You may need to ensure that Bash actually sources the completion scripts from `/etc/bash_completion.d/` or `/usr/local/etc/bash_completion.d/`.
 
 ### Using setup.py without sudo
 
 You need to have Python from system packages with `pip` and `setuptools` installed.
 
 ```bash
-$ git clone https://github.com/VirtusLab/git-machete.git
+$ git clone --depth=1 https://github.com/VirtusLab/git-machete.git
 $ cd git-machete
 $ python setup.py install --user
 ```
 
 Please verify that your `PATH` variable has `${HOME}/.local/bin/` included.
-Also, ensure that you have sourced files from `${HOME}/.local/etc/bash_completion.d/` in your bash completion config.
-You can do it explicitly for git-machete by simply adding the following line to your .bashrc:
-
-```bash
-. ~/.local/etc/bash_completion.d/git-machete-prompt
-```
 
 
 ## Quick start

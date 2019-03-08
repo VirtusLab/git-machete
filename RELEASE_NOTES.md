@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.8.8
+
+- added: zsh completion
+
 ## New in git-machete 2.8.7
 
 - changed: %(refname:lstrip=2) to %(refname:strip=2) in `git for-each-ref` format to make sure old versions of git work properly

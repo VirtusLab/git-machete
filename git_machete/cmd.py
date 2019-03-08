@@ -8,7 +8,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.8.7'
+VERSION = '2.8.8'
 
 
 # Core utils
@@ -1095,7 +1095,7 @@ def usage(c=None):
             Note: the same effect (except branch creation) can be always achieved by manually editing the definition file.
 
             Options:
-            -o, --onto=<target-upstream-branch>    Specifies the target parent branch to add the new branch onto.
+            -o, --onto=<target-upstream-branch>    Specifies the target parent branch to add the given branch onto.
         """,
         "anno": """
             Usage: git machete anno [<annotation text>]
@@ -1129,7 +1129,7 @@ def usage(c=None):
             Since the result of the command does not depend on the tree of branch dependencies, the branch in question does not need to occur in the definition file.
 
             Options:
-            -s, --stat    Makes 'git machete diff' pass '--stat' option to 'git diff', so that only summary (diffstat) will be output.
+            -s, --stat    Makes 'git machete diff' pass '--stat' option to 'git diff', so that only summary (diffstat) is printed.
         """,
         "discover": """
             Usage: git machete discover [-l|--list-commits]
@@ -1301,7 +1301,7 @@ def usage(c=None):
             Note: This command doesn't delete any branches from git, just removes them from the tree of branch dependencies.
 
             Options:
-            -d, --down-fork-point=<down-fork-point-commit>    Specifies the alternative fork-point commit after which the rebased part of history of the downstream branch should start.
+            -d, --down-fork-point=<down-fork-point-commit>    Specifies the alternative fork point commit after which the rebased part of history of the downstream branch is meant to start.
                                                               See also doc for '--fork-point' option for 'git machete help reapply' and 'git machete help update'.
         """,
         "status": """
@@ -1395,10 +1395,10 @@ def usage(c=None):
             print >> sys.stderr
         print textwrap.dedent("""
             %s\n
-                --debug           Logs detailed diagnostic info, including outputs of the executed git commands.
-                -h, --help        Prints help and exits.
-                -v, --verbose     Logs the executed git commands.
-                --version         Prints version and exits.
+                --debug           Log detailed diagnostic info, including outputs of the executed git commands.
+                -h, --help        Print help and exit.
+                -v, --verbose     Log the executed git commands.
+                --version         Print version and exit.
         """[1:] % underline("General options"))
 
 
