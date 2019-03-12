@@ -8,7 +8,7 @@ all:
 	@echo "       make uninstall"
 
 build:
-	install -m 0755 git_machete/cmd.py .
+	install -m 0755 git_machete/cmd.py git-machete
 
 install: build
 	install -d $(BINDIR)
