@@ -1,15 +1,15 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import getopt
+import io
 import itertools
 import os
 import subprocess
 import sys
-import StringIO
 import textwrap
 
-VERSION = '2.9.0'
+VERSION = '2.9.1'
 
 
 # Core utils
@@ -44,16 +44,20 @@ def underline(s):
     return UNDERLINE + s + ENDC
 
 
+def star(f):  # tuple unpacking in lambdas
+    return lambda args: f(*args)
+
+
 def flat_map(func, l):
     return sum(map(func, l), [])
 
 
 def non_empty_lines(s):
-    return filter(None, s.split("\n"))
+    return list(filter(None, s.split("\n")))
 
 
 def excluding(l, s):
-    return filter(lambda x: x not in s, l)
+    return list(filter(lambda x: x not in s, l))
 
 
 def join_branch_names(bs, sep):
@@ -61,14 +65,14 @@ def join_branch_names(bs, sep):
 
 
 def ask_if(msg):
-    return raw_input(msg).lower() in ('y', 'yes')
+    return input(msg).lower() in ('y', 'yes')
 
 
 def pick(choices, name):
     xs = "".join("[%i] %s\n" % (idx + 1, x) for idx, x in enumerate(choices))
     msg = xs + "Specify " + name + " or hit <return> to skip: "
     try:
-        idx = int(raw_input(msg)) - 1
+        idx = int(input(msg)) - 1
     except ValueError:
         sys.exit(1)
     if idx not in range(len(choices)):
@@ -78,7 +82,7 @@ def pick(choices, name):
 
 def debug(hdr, msg):
     if opt_debug:
-        print >> sys.stderr, "%s: %s" % (bold(hdr), dim(msg))
+        sys.stderr.write("%s: %s\n" % (bold(hdr), dim(msg)))
 
 
 def run_cmd(cmd, *args, **kwargs):
@@ -88,7 +92,7 @@ def run_cmd(cmd, *args, **kwargs):
 def popen_cmd(cmd, *args, **kwargs):
     process = subprocess.Popen([cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
     stdoutdata, stderrdata = process.communicate()
-    return process.returncode, stdoutdata
+    return process.returncode, stdoutdata.decode('utf-8')
 
 
 # Git core
@@ -100,28 +104,28 @@ def cmd_shell_repr(git_cmd, args):
 def run_git(git_cmd, *args, **kwargs):
     flat_cmd = cmd_shell_repr(git_cmd, args)
     if opt_debug:
-        print >> sys.stderr, underline(flat_cmd)
+        sys.stderr.write(underline(flat_cmd) + "\n")
     elif opt_verbose:
-        print >> sys.stderr, flat_cmd
+        sys.stderr.write(flat_cmd + "\n")
     exit_code = run_cmd("git", git_cmd, *args)
     if not kwargs.get("allow_non_zero") and exit_code != 0:
         raise MacheteException("'%s' returned %i" % (flat_cmd, exit_code))
     if opt_debug:
-        print >> sys.stderr, dim("<exit code: %i>\n" % exit_code)
+        sys.stderr.write(dim("<exit code: %i>\n\n" % exit_code))
     return exit_code
 
 
 def popen_git(git_cmd, *args, **kwargs):
     flat_cmd = cmd_shell_repr(git_cmd, args)
     if opt_debug:
-        print >> sys.stderr, underline(flat_cmd)
+        sys.stderr.write(underline(flat_cmd) + "\n")
     elif opt_verbose:
-        print >> sys.stderr, flat_cmd
+        sys.stderr.write(flat_cmd + "\n")
     exit_code, stdout = popen_cmd("git", git_cmd, *args)
     if not kwargs.get("allow_non_zero") and exit_code != 0:
         raise MacheteException("'%s' returned %i" % (flat_cmd, exit_code))
     if opt_debug:
-        print >> sys.stderr, dim(stdout)
+        sys.stderr.write(dim(stdout) + "\n")
     return stdout
 
 
@@ -167,7 +171,7 @@ def read_definition_file():
         managed_branches += [b]
 
         if pfx:
-            depth = len(pfx) / len(indent)
+            depth = len(pfx) // len(indent)
             if pfx != indent * depth:
                 mapping = {" ": "<SPACE>", "\t": "<TAB>"}
                 pfx_expanded = "".join(mapping[c] for c in pfx)
@@ -293,7 +297,7 @@ def up(b, prompt_if_inferred):
                 else:
                     sys.exit(1)
             else:
-                print >> sys.stderr, "Warn: branch '%s' not found in the tree of branch dependencies; the upstream has been inferred to '%s'" % (b, u)
+                sys.stderr.write("Warn: branch '%s' not found in the tree of branch dependencies; the upstream has been inferred to '%s'\n" % (b, u))
                 return u
         else:
             raise MacheteException("Branch '%s' not found in the tree of branch dependencies and its upstream could not be inferred" % b)
@@ -323,7 +327,7 @@ def add(b):
 
     if not roots:
         roots = [b]
-        print "Added branch '%s' as a new root" % b
+        print("Added branch '%s' as a new root" % b)
     else:
         if not onto:
             u = infer_upstream(b)
@@ -345,7 +349,7 @@ def add(b):
             down_branches[onto].append(b)
         else:
             down_branches[onto] = [b]
-        print "Added branch '%s' onto '%s'" % (b, onto)
+        print("Added branch '%s' onto '%s'" % (b, onto))
 
     save_definition_file()
 
@@ -366,7 +370,7 @@ def print_annotation():
     cb = current_branch()
     expect_in_managed_branches(cb)
     if cb in annotations:
-        print annotations[cb]
+        print(annotations[cb])
 
 
 # Implementation of basic git or git-related commands
@@ -612,8 +616,8 @@ def check_hook_executable(hook_path):
         advice_ignored_hook = get_config_or_none("advice.ignoredHook")
         if advice_ignored_hook != 'false':  # both empty and "true" is okay
             # The [33m color must be used to keep consistent with how git colors this advice for its built-in hooks.
-            print >> sys.stderr, YELLOW + "hint: The '%s' hook was ignored because it's not set as executable." % hook_path + ENDC
-            print >> sys.stderr, YELLOW + "hint: You can disable this warning with `git config advice.ignoredHook false`." + ENDC
+            sys.stderr.write(YELLOW + "hint: The '%s' hook was ignored because it's not set as executable." % hook_path + ENDC + "\n")
+            sys.stderr.write(YELLOW + "hint: You can disable this warning with `git config advice.ignoredHook false`." + ENDC + "\n")
         return False
     else:
         return True
@@ -630,7 +634,7 @@ def rebase(onto, fork_commit, branch):
         if exit_code == 0:
             do_rebase()
         else:
-            print >> sys.stderr, "The machete-pre-rebase hook refused to rebase."
+            sys.stderr.write("The machete-pre-rebase hook refused to rebase.\n")
             sys.exit(exit_code)
     else:
         do_rebase()
@@ -654,7 +658,7 @@ def log(branch):
 
 
 def commits_between(earlier, later):
-    return map(lambda x: x.split(":", 1), non_empty_lines(popen_git("log", "--format=%H:%s", "^" + earlier, later, "--")))
+    return list(map(lambda x: x.split(":", 1), non_empty_lines(popen_git("log", "--format=%H:%s", "^" + earlier, later, "--"))))
 
 
 NO_REMOTES = 0
@@ -790,18 +794,18 @@ def match_log_to_adjusted_reflogs(b):
         def log_result():
             for sha_, branch_defs in branch_defs_by_sha_in_reflog.items():
                 yield dim("%s => %s" %
-                          (sha_, ", ".join(map(lambda (lb, lb_or_rb): lb if lb == lb_or_rb else "%s (remote counterpart of %s)" % (lb_or_rb, lb), branch_defs))))
+                          (sha_, ", ".join(map(star(lambda lb, lb_or_rb: lb if lb == lb_or_rb else "%s (remote counterpart of %s)" % (lb_or_rb, lb)), branch_defs))))
 
         debug("match_log_to_adjusted_reflogs(%s)" % b, "branches containing the given SHA in their adjusted reflog: \n%s\n" % "\n".join(log_result()))
 
     for sha in spoonfeed_log_shas(b):
         if sha in branch_defs_by_sha_in_reflog:
-            containing_branch_defs = filter(lambda (lb, lb_or_rb): lb != b, branch_defs_by_sha_in_reflog[sha])
+            containing_branch_defs = list(filter(star(lambda lb, lb_or_rb: lb != b), branch_defs_by_sha_in_reflog[sha]))
             if containing_branch_defs:
-                debug("match_log_to_adjusted_reflogs(%s)" % b, "commit %s found in adjusted reflog of %s" % (sha, " and ".join(map(lambda (lb, lb_or_rb): lb_or_rb, branch_defs_by_sha_in_reflog[sha]))))
+                debug("match_log_to_adjusted_reflogs(%s)" % b, "commit %s found in adjusted reflog of %s" % (sha, " and ".join(map(star(lambda lb, lb_or_rb: lb_or_rb), branch_defs_by_sha_in_reflog[sha]))))
                 yield sha, containing_branch_defs
             else:
-                debug("match_log_to_adjusted_reflogs(%s)" % b, "commit %s found only in adjusted reflog of %s; ignoring" % (sha, " and ".join(map(lambda (lb, lb_or_rb): lb_or_rb, branch_defs_by_sha_in_reflog[sha]))))
+                debug("match_log_to_adjusted_reflogs(%s)" % b, "commit %s found only in adjusted reflog of %s; ignoring" % (sha, " and ".join(map(star(lambda lb, lb_or_rb: lb_or_rb), branch_defs_by_sha_in_reflog[sha]))))
         else:
             debug("match_log_to_adjusted_reflogs(%s)" % b, "commit %s not found in any adjusted reflog" % sha)
 
@@ -828,7 +832,7 @@ def is_merged_to_parent(b):
 
 def infer_upstream(b, condition=lambda u: True, reject_reason_message=""):
     for sha, containing_branch_defs in match_log_to_adjusted_reflogs(b):
-        debug("infer_upstream(%s)" % b, "commit %s found in adjusted reflog of %s" % (sha, " and ".join(map(lambda (x, y): y, containing_branch_defs))))
+        debug("infer_upstream(%s)" % b, "commit %s found in adjusted reflog of %s" % (sha, " and ".join(map(star(lambda x, y: y), containing_branch_defs))))
 
         for candidate, original_matched_branch in containing_branch_defs:
             if candidate != original_matched_branch:
@@ -878,13 +882,13 @@ def discover_tree():
             debug("discover_tree()", "inferred no upstream for %s, attaching %s as a new root\n" % (b, b))
             roots += [b]
 
-    print bold('Discovered tree of branch dependencies:\n')
+    print(bold('Discovered tree of branch dependencies:\n'))
     status()
-    print
+    sys.stdout.write("\n")
     do_backup = os.path.exists(definition_file)
     backup_msg = ("The existing definition file will be backed up as '%s~' " % definition_file) if do_backup else ""
     msg = "Save the above tree to '%s'? %s(y[es]/e[dit]/N[o]) " % (definition_file, backup_msg)
-    reply = raw_input(msg).lower()
+    reply = input(msg).lower()
     if reply in ('y', 'yes'):
         if do_backup:
             back_up_definition_file()
@@ -904,7 +908,7 @@ def fork_point_and_containing_branch_defs(b):
 
     debug("fork_point(%s)" % b,
           "commit %s is the most recent point in history of %s to occur on adjusted reflog of any other branch or its remote counterpart (specifically: %s)\n" %
-          (sha, b, " and ".join(map(lambda (lb, lb_or_rb): lb_or_rb, containing_branch_defs))))
+          (sha, b, " and ".join(map(star(lambda lb, lb_or_rb: lb_or_rb), containing_branch_defs))))
     return sha, containing_branch_defs
 
 
@@ -918,7 +922,7 @@ def delete_unmanaged():
     cb = current_branch_or_none()
     if cb and cb in branches_to_delete:
         branches_to_delete = excluding(branches_to_delete, [cb])
-        print "Skipping current branch '%s'" % cb
+        print("Skipping current branch '%s'" % cb)
     if branches_to_delete:
         branches_merged_to_head = merged_local_branches()
 
@@ -929,7 +933,7 @@ def delete_unmanaged():
             msg = "Delete branch %s (merged to HEAD%s)? [y/N/q] " % (
                 bold(b), "" if is_merged_to_remote else (", but not merged to " + rb)
             )
-            ans = raw_input(msg).lower()
+            ans = input(msg).lower()
             if ans in ('y', 'yes'):
                 run_git("branch", "-d" if is_merged_to_remote else "-D", b)
             elif ans in ('q', 'quit'):
@@ -938,13 +942,13 @@ def delete_unmanaged():
         branches_to_delete_unmerged_to_head = [b for b in branches_to_delete if b not in branches_merged_to_head]
         for b in branches_to_delete_unmerged_to_head:
             msg = "Delete branch %s (unmerged to HEAD)? [y/N/q] " % bold(b)
-            ans = raw_input(msg).lower()
+            ans = input(msg).lower()
             if ans in ('y', 'yes'):
                 run_git("branch", "-D", b)
             elif ans in ('q', 'quit'):
                 return
     else:
-        print >> sys.stderr, "No branches to delete"
+        sys.stderr.write("No branches to delete\n")
 
 
 def slide_out(bs):
@@ -992,7 +996,7 @@ def slidable_after(b):
     return []
 
 
-class StopTraversal:
+class StopTraversal(Exception):
     def __init__(self):
         pass
 
@@ -1010,10 +1014,10 @@ def flush():
 
 def pick_remote(b):
     rems = remotes()
-    print "\n".join("[%i] %s" % (idx + 1, r) for idx, r in enumerate(rems))
+    print("\n".join("[%i] %s" % (idx + 1, r) for idx, r in enumerate(rems)))
     msg_ = "Select number 1..%i to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse: " % len(
         rems)
-    ans = raw_input(msg_).lower()
+    ans = input(msg_).lower()
     if ans in ('q', 'quit'):
         raise StopTraversal
     try:
@@ -1031,7 +1035,7 @@ def handle_untracked_branch(new_remote, b):
     other_remote_suffix = "/o[ther remote]" if can_pick_other_remote else ""
     rb = new_remote + "/" + b
     if not sha_by_revision(rb, prefix="refs/remotes"):
-        ans = raw_input("Push untracked branch %s to %s? (y/N/q/yq%s) " % (
+        ans = input("Push untracked branch %s to %s? (y/N/q/yq%s) " % (
             bold(b), bold(new_remote), other_remote_suffix)).lower()
         if ans in ('y', 'yes', 'yq'):
             run_git("push", "--set-upstream", new_remote, b)
@@ -1099,8 +1103,8 @@ def handle_untracked_branch(new_remote, b):
     }
 
     relation = get_relation_to_remote_counterpart(b, rb)
-    print message[relation]
-    ans = raw_input(prompt[relation]).lower()
+    print(message[relation])
+    ans = input(prompt[relation]).lower()
     if ans in ('y', 'yes', 'yq'):
         for command in yes_git_commands[relation]:
             run_git(*command)
@@ -1121,7 +1125,7 @@ def traverse():
     def print_new_line(new_status):
         global empty_line_status
         if not empty_line_status:
-            print
+            sys.stdout.write("\n")
         empty_line_status = new_status
 
     cb = current_branch()
@@ -1148,7 +1152,7 @@ def traverse():
 
         if b != cb and (needs_slide_out or needs_rebase or needs_remote_sync):
             print_new_line(False)
-            print >> sys.stderr, "Checking out %s" % bold(b)
+            sys.stderr.write("Checking out %s\n" % bold(b))
             go(b)
             cb = b
             print_new_line(False)
@@ -1156,9 +1160,9 @@ def traverse():
             print_new_line(True)
         if needs_slide_out:
             print_new_line(False)
-            ans = raw_input("Branch %s is merged into %s. Slide %s out of "
-                            "the tree of branch dependencies? [y/N/q/yq] " %
-                            (bold(b), bold(u), bold(b))).lower()
+            ans = input("Branch %s is merged into %s. Slide %s out of "
+                        "the tree of branch dependencies? [y/N/q/yq] " %
+                        (bold(b), bold(u), bold(b))).lower()
             if ans in ('y', 'yes', 'yq'):
                 for d in down_branches.get(b) or []:
                     up_branch[d] = u
@@ -1181,8 +1185,8 @@ def traverse():
             # but still suggest to sync with remote (if needed).
         elif needs_rebase:
             print_new_line(False)
-            ans = raw_input("Rebase %s onto %s? [y/N/q/yq] " %
-                            (bold(b), bold(u))).lower()
+            ans = input("Rebase %s onto %s? [y/N/q/yq] " %
+                        (bold(b), bold(u))).lower()
             if ans in ('y', 'yes', 'yq'):
                 update(b, fork_point(b))
                 if ans == 'yq':
@@ -1196,15 +1200,15 @@ def traverse():
         if needs_remote_sync:
             if s == BEHIND_REMOTE:
                 rb = remote_tracking_branch(b)
-                ans = raw_input("Branch %s is behind its remote counterpart %s."
-                                "\nPull %s from %s? [y/N/q/yq] " %
-                                (bold(b), bold(rb), bold(b), bold(remote))).lower()
+                ans = input("Branch %s is behind its remote counterpart %s."
+                            "\nPull %s from %s? [y/N/q/yq] " %
+                            (bold(b), bold(rb), bold(b), bold(remote))).lower()
                 if ans in ('y', 'yes', 'yq'):
                     run_git("pull", "--ff-only", remote)
                     if ans == 'yq':
                         return
                     flush()
-                    print
+                    sys.stdout.write("\n")
                 elif ans in ('q', 'quit'):
                     return
 
@@ -1212,8 +1216,8 @@ def traverse():
                 print_new_line(False)
                 # 'remote' is defined for both cases we handle here,
                 # including UNTRACKED_ON
-                ans = raw_input("Push %s to %s? [y/N/q/yq] " %
-                                (bold(b), bold(remote))).lower()
+                ans = input("Push %s to %s? [y/N/q/yq] " %
+                            (bold(b), bold(remote))).lower()
                 if ans in ('y', 'yes', 'yq'):
                     run_git("push", remote)
                     if ans == 'yq':
@@ -1225,7 +1229,7 @@ def traverse():
             elif s == DIVERGED_FROM_REMOTE:
                 print_new_line(False)
                 rb = remote_tracking_branch(b)
-                ans = raw_input(
+                ans = input(
                     "Branch %s diverged from its remote counterpart %s."
                     "\nPush %s with force to %s? [y/N/q/yq] " %
                     (bold(b), bold(rb), bold(b), bold(remote))).lower()
@@ -1247,17 +1251,17 @@ def traverse():
                 else:
                     # We know that there is at least 1 remote,
                     # otherwise 's' would be 'NO_REMOTES'
-                    print "Branch %s is untracked and there's no " \
-                          "%s repository." % (bold(b), bold("origin"))
+                    print("Branch %s is untracked and there's no "
+                          "%s repository." % (bold(b), bold("origin")))
                     pick_remote(b)
 
     print_new_line(False)
     status()
-    print
+    sys.stdout.write("\n")
     msg = "Reached branch %s which has no successor" \
         if cb == managed_branches[-1] else \
         "No successor of %s needs sync with upstream branch or remote"
-    print >> sys.stderr, msg % bold(cb) + "; nothing left to update"
+    sys.stderr.write(msg % bold(cb) + "; nothing left to update\n")
 
 
 def status():
@@ -1273,7 +1277,7 @@ def status():
     for u in roots:
         prefix_dfs(u, prefix=[])
 
-    out = StringIO.StringIO()
+    out = io.StringIO()
     edge_color = {}
     fp_sha_cached = {}
     fp_branches_cached = {}
@@ -1326,7 +1330,7 @@ def status():
                 for sha, msg in reversed(commits):
                     if sha == fp_sha(b):
                         # fp_branches_cached will already be there thanks to the above call to 'fp_sha'.
-                        fp_branches_formatted = " and ".join(map(lambda (lb, lb_or_rb): lb_or_rb, fp_branches_cached[b]))
+                        fp_branches_formatted = " and ".join(map(star(lambda lb, lb_or_rb: lb_or_rb), fp_branches_cached[b]))
                         fp_suffix = (RED + ' ➔ fork point ???' + ENDC + ' commit ' + short_sha(fp_sha(b)) + ' found in reflog of ' + fp_branches_formatted)
                     else:
                         fp_suffix = ''
@@ -1363,9 +1367,9 @@ def status():
 
     sys.stdout.write(out.getvalue())
     if not opt_list_commits and YELLOW in edge_color.values():
-        print >>sys.stderr
-        print >>sys.stderr, RED + "Warn:" + ENDC + " there was at least one yellow edge which indicates that some fork points are probably not determined correctly."
-        print >>sys.stderr, "Run 'git machete status -l' to see more details."
+        sys.stderr.write("\n")
+        sys.stderr.write(RED + "Warn:" + ENDC + " there was at least one yellow edge which indicates that some fork points are probably not determined correctly.\n")
+        sys.stderr.write("Run 'git machete status -l' to see more details.\n")
     out.close()
 
 
@@ -1709,7 +1713,7 @@ def usage(c=None):
         "log": "l",
         "status": "s"
     }
-    inv_aliases = {v: k for k, v in aliases.iteritems()}
+    inv_aliases = {v: k for k, v in aliases.items()}
     groups = [
         ("General topics", ["file", "format", "help", "hooks"]),
         ("Build, display and modify the tree of branch dependencies", ["add", "anno", "discover", "edit", "status"]),  # 'infer' is skipped from the main docs
@@ -1720,36 +1724,36 @@ def usage(c=None):
     if c and c in inv_aliases:
         c = inv_aliases[c]
     if c and c in long_docs:
-        print textwrap.dedent(long_docs[c])
+        print(textwrap.dedent(long_docs[c]))
     else:
         short_usage()
         if c and c not in long_docs:
-            print "\nUnknown command: '%s'" % c
-        print "\n%s\n\n    Get familiar with the help for %s, %s, %s and %s, in this order.\n" % (
-            underline("TL;DR tip"), bold("format"), bold("edit"), bold("status"), bold("update")
+            print("\nUnknown command: '%s'" % c)
+        print("\n%s\n\n    Get familiar with the help for %s, %s, %s and %s, in this order.\n" % (
+            underline("TL;DR tip"), bold("format"), bold("edit"), bold("status"), bold("update"))
         )
         for hdr, cmds in groups:
-            print underline(hdr)
-            print
+            print(underline(hdr))
+            sys.stdout.write("\n")
             for cm in cmds:
                 alias = (", " + aliases[cm]) if cm in aliases else ""
-                print "    %s%-18s%s%s" % (BOLD, cm + alias, ENDC, short_docs[cm])
-            print >> sys.stderr
-        print textwrap.dedent("""
+                print("    %s%-18s%s%s" % (BOLD, cm + alias, ENDC, short_docs[cm]))
+            sys.stderr.write("\n")
+        print(textwrap.dedent("""
             %s\n
                 --debug           Log detailed diagnostic info, including outputs of the executed git commands.
                 -h, --help        Print help and exit.
                 -v, --verbose     Log the executed git commands.
                 --version         Print version and exit.
-        """[1:] % underline("General options"))
+        """[1:] % underline("General options")))
 
 
 def short_usage():
-    print "Usage: git machete [--debug] [-h] [-v|--verbose] [--version] <command> [command-specific options] [command-specific argument]"
+    print("Usage: git machete [--debug] [-h] [-v|--verbose] [--version] <command> [command-specific options] [command-specific argument]")
 
 
 def version():
-    print 'git-machete version ' + VERSION
+    print('git-machete version ' + VERSION)
 
 
 def main():
@@ -1885,11 +1889,11 @@ def main():
         elif cmd == "file":
             expect_no_param(parse_options(args))
             # No need to read definition file.
-            print definition_file
+            print(definition_file)
         elif cmd == "fork-point":
             param = check_optional_param(parse_options(args))
             # No need to read definition file.
-            print fork_point(param or current_branch())
+            print(fork_point(param or current_branch()))
         elif cmd == "format":
             # No need to read definition file.
             usage("format")
@@ -1936,7 +1940,8 @@ def main():
                 res = excluding(local_branches(), managed_branches)
             else:
                 raise MacheteException("Usage: git machete list " + list_allowed_values)
-            sys.stdout.write("\n".join(res))
+            if res:
+                sys.stdout.write("\n".join(res) + "\n")
         elif cmd in ("l", "log"):
             param = check_optional_param(parse_options(args))
             # No need to read definition file.
@@ -1954,7 +1959,7 @@ def main():
         elif cmd == "show":
             param = check_required_param(parse_options(args), directions)
             read_definition_file()
-            print parse_direction(current_branch(), down_pick_mode=False)
+            print(parse_direction(current_branch(), down_pick_mode=False))
         elif cmd == "slide-out":
             params = parse_options(args, "d:", ["down-fork-point="])
             read_definition_file()
@@ -1979,10 +1984,10 @@ def main():
 
     except getopt.GetoptError as e:
         short_usage()
-        print >> sys.stderr, str(e)
+        sys.stderr.write(str(e) + "\n")
         sys.exit(2)
     except MacheteException as e:
-        print >> sys.stderr, str(e)
+        sys.stderr.write(str(e) + "\n")
         sys.exit(1)
     except StopTraversal:
         pass
