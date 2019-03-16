@@ -20,11 +20,11 @@
 
 ## Install
 
+git-machete requires Python 3.
+
 We suggest 3 alternative ways of installation.
 
 **Bash and zsh completion scripts are provided** in completion/ directory, see [wiki for their installation instructions](https://github.com/VirtusLab/git-machete/wiki).
-
-Note: as for now git-machete runs on Python 2.7, we're planning to migrate to Python 3 soon (#35).
 
 ### Using make with sudo
 
