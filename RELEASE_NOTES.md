@@ -7,6 +7,7 @@
 - added: `-r`/`--roots` option to `discover`
 - improved: fork point commit is highlighted in `status --list-commits` in case of a yellow edge
 - optimized: fetching state of the repository via git commands (esp. `config`, `for-each-ref`, `merge-base`, `reflog` and `rev-parse`)
+- improved: suggest sliding out branches commit-wise equal to their upstreams during `traverse`
 
 ## New in git-machete 2.8.8
 

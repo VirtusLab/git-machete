@@ -744,7 +744,7 @@ def adjusted_reflog(b, prefix):
             gs_ == "branch: Reset to " + b or
             gs_ == "branch: Reset to HEAD" or
             gs_.startswith("reset: moving to ") or
-            gs_ == "rebase finished: %s/%s onto %s" % (prefix, b, sha_)
+            gs_ == "rebase finished: %s/%s onto %s" % (prefix, b, sha_)  # the rare case of a no-op rebase
         )
         if not is_relevant:
             debug("adjusted_reflog(%s, %s) -> is_relevant_reflog_subject(%s, <<<%s>>>)" % (b, prefix, sha_, gs_), "skipping reflog entry")
@@ -1112,9 +1112,21 @@ def traverse():
     for b in itertools.dropwhile(lambda x: x != cb, managed_branches):
         u = up_branch.get(b)
 
-        needs_slide_out = u and \
-                          is_ancestor(b, u) and \
-                          sha_by_revision(u) != sha_by_revision(b)
+        equal_to_parent = u and sha_by_revision(u) == sha_by_revision(b)
+        ancestor_of_parent = u and is_ancestor(b, u)
+
+        # If a branch is not equal to parent, it's just enough to check if it's
+        # already merged in commit-wise sense (if parent is reachable from the branch).
+        # If branch is equal to parent, then we need to distinguish between the
+        # case of branch being "recently" created from the parent and the case of
+        # branch being fast-forward merged to the parent.
+        # The applied heuristics is checking if the adjusted reflog of the branch
+        # (reflog stripped of trivial events like branch creation, reset etc.)
+        # is non-empty.
+        needs_slide_out = \
+            (not equal_to_parent and ancestor_of_parent) or \
+            (equal_to_parent and adjusted_reflog(b, prefix="refs/heads/"))
+
         if needs_slide_out:
             # Avoid unnecessary fork point check
             # if we already now that the branch qualifies for slide out.
