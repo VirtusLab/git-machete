@@ -806,7 +806,25 @@ def match_log_to_adjusted_reflogs(b):
             debug("match_log_to_adjusted_reflogs(%s)" % b, "commit %s not found in any adjusted reflog" % sha)
 
 
-# Complex subcommands
+# Complex routines/subcommands
+
+def is_merged_to_parent(b):
+    if b not in up_branch:
+        return False
+    u = up_branch[b]
+    equal_to_parent = sha_by_revision(u) == sha_by_revision(b)
+
+    # If a branch is NOT equal to parent, it's just enough to check if the
+    # parent is reachable from the branch.
+    # If branch is equal to parent, then we need to distinguish between the
+    # case of branch being "recently" created from the parent and the case of
+    # branch being fast-forward merged to the parent.
+    # The applied heuristics is to check if the adjusted reflog of the branch
+    # (reflog stripped of trivial events like branch creation, reset etc.)
+    # is non-empty.
+    return (not equal_to_parent and is_ancestor(b, u)) or \
+        (equal_to_parent and adjusted_reflog(b, prefix="refs/heads/"))
+
 
 def infer_upstream(b, condition=lambda u: True, reject_reason_message=""):
     for sha, containing_branch_defs in match_log_to_adjusted_reflogs(b):
@@ -1112,21 +1130,7 @@ def traverse():
     for b in itertools.dropwhile(lambda x: x != cb, managed_branches):
         u = up_branch.get(b)
 
-        equal_to_parent = u and sha_by_revision(u) == sha_by_revision(b)
-        ancestor_of_parent = u and is_ancestor(b, u)
-
-        # If a branch is not equal to parent, it's just enough to check if it's
-        # already merged in commit-wise sense (if parent is reachable from the branch).
-        # If branch is equal to parent, then we need to distinguish between the
-        # case of branch being "recently" created from the parent and the case of
-        # branch being fast-forward merged to the parent.
-        # The applied heuristics is checking if the adjusted reflog of the branch
-        # (reflog stripped of trivial events like branch creation, reset etc.)
-        # is non-empty.
-        needs_slide_out = \
-            (not equal_to_parent and ancestor_of_parent) or \
-            (equal_to_parent and adjusted_reflog(b, prefix="refs/heads/"))
-
+        needs_slide_out = is_merged_to_parent(b)
         if needs_slide_out:
             # Avoid unnecessary fork point check
             # if we already now that the branch qualifies for slide out.
@@ -1285,7 +1289,9 @@ def status():
     # Edge colors need to be precomputed in order to render the leading parts of lines properly.
     for b in up_branch:
         u = up_branch[b]
-        if not is_ancestor(u, b):
+        if is_merged_to_parent(b):
+            edge_color[b] = DIM
+        elif not is_ancestor(u, b):
             edge_color[b] = RED
         elif sha_by_revision(u) == fp_sha(b):
             edge_color[b] = GREEN
@@ -1310,7 +1316,7 @@ def status():
         if b in up_branch:
             print_line_prefix(b, "│ \n")
             if opt_list_commits:
-                if edge_color[b] == RED:
+                if edge_color[b] in (RED, DIM):
                     commits = commits_between(fp_sha(b), "refs/heads/" + b) if fp_sha(b) else []
                 elif edge_color[b] == YELLOW:
                     commits = commits_between("refs/heads/" + up_branch[b], "refs/heads/" + b)
