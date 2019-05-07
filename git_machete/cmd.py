@@ -1652,6 +1652,7 @@ def usage(c=None):
             * if any remotes are defined for the repository:
               - prints '(untracked [on <remote>]/ahead of <remote>/behind <remote>/diverged from <remote>)' message for each branch that is not in sync with its remote counterpart;
             * colors the edges between upstream (parent) and downstream (children) branches depending on whether downstream branch commit is a direct descendant of the upstream branch commit:
+              - grey edge indicates the downstream branch has been merged to the upstream branch
               - red edge means that the downstream branch commit is NOT a direct descendant of the upstream branch commit (basically, the downstream branch is out of sync with its upstream branch),
               - yellow means that the opposite holds true, i.e. the downstream branch is in sync with its upstream branch, but the fork point of the downstream branch is a different commit than upstream branch tip,
               - green means that downstream branch is in sync with its upstream branch (so just like for yellow edge) and the fork point of downstream branch is EQUAL to the upstream branch tip.
@@ -1661,6 +1662,7 @@ def usage(c=None):
 
             Note: in practice, both yellow and red edges suggest that the downstream branch should be updated against its upstream.
             Yellow typically indicates that there are/were commits from some other branches on the path between upstream and downstream and that a closer look at the log of the downstream branch might be necessary.
+            Grey edge suggests that the downstream branch can be slid out.
 
             Options:
             -l, --list-commits            Additionally lists the messages of commits introduced on each branch.
