@@ -1,8 +1,8 @@
 # Release notes
 
-## New in git-machete 2.9.1
+## New in git-machete 2.10.0
 
-- changed: migrate to Python 3
+- changed: enable execution under both Python 2.7 and Python 3
 
 ## New in git-machete 2.9.0
 

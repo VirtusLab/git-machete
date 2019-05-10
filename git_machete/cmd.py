@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 import getopt
@@ -9,7 +9,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.9.1'
+VERSION = '2.10.0'
 
 
 # Core utils
@@ -64,15 +64,22 @@ def join_branch_names(bs, sep):
     return sep.join("'%s'" % x for x in bs)
 
 
+def safe_input(msg):
+    try:
+        return raw_input(msg)  # Python 2
+    except NameError:
+        return input(msg)  # Python 3
+
+
 def ask_if(msg):
-    return input(msg).lower() in ('y', 'yes')
+    return safe_input(msg).lower() in ('y', 'yes')
 
 
 def pick(choices, name):
     xs = "".join("[%i] %s\n" % (idx + 1, x) for idx, x in enumerate(choices))
     msg = xs + "Specify " + name + " or hit <return> to skip: "
     try:
-        idx = int(input(msg)) - 1
+        idx = int(safe_input(msg)) - 1
     except ValueError:
         sys.exit(1)
     if idx not in range(len(choices)):
@@ -888,7 +895,7 @@ def discover_tree():
     do_backup = os.path.exists(definition_file)
     backup_msg = ("The existing definition file will be backed up as '%s~' " % definition_file) if do_backup else ""
     msg = "Save the above tree to '%s'? %s(y[es]/e[dit]/N[o]) " % (definition_file, backup_msg)
-    reply = input(msg).lower()
+    reply = safe_input(msg).lower()
     if reply in ('y', 'yes'):
         if do_backup:
             back_up_definition_file()
@@ -933,7 +940,7 @@ def delete_unmanaged():
             msg = "Delete branch %s (merged to HEAD%s)? [y/N/q] " % (
                 bold(b), "" if is_merged_to_remote else (", but not merged to " + rb)
             )
-            ans = input(msg).lower()
+            ans = safe_input(msg).lower()
             if ans in ('y', 'yes'):
                 run_git("branch", "-d" if is_merged_to_remote else "-D", b)
             elif ans in ('q', 'quit'):
@@ -942,7 +949,7 @@ def delete_unmanaged():
         branches_to_delete_unmerged_to_head = [b for b in branches_to_delete if b not in branches_merged_to_head]
         for b in branches_to_delete_unmerged_to_head:
             msg = "Delete branch %s (unmerged to HEAD)? [y/N/q] " % bold(b)
-            ans = input(msg).lower()
+            ans = safe_input(msg).lower()
             if ans in ('y', 'yes'):
                 run_git("branch", "-D", b)
             elif ans in ('q', 'quit'):
@@ -1017,7 +1024,7 @@ def pick_remote(b):
     print("\n".join("[%i] %s" % (idx + 1, r) for idx, r in enumerate(rems)))
     msg_ = "Select number 1..%i to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse: " % len(
         rems)
-    ans = input(msg_).lower()
+    ans = safe_input(msg_).lower()
     if ans in ('q', 'quit'):
         raise StopTraversal
     try:
@@ -1035,7 +1042,7 @@ def handle_untracked_branch(new_remote, b):
     other_remote_suffix = "/o[ther remote]" if can_pick_other_remote else ""
     rb = new_remote + "/" + b
     if not sha_by_revision(rb, prefix="refs/remotes"):
-        ans = input("Push untracked branch %s to %s? (y/N/q/yq%s) " % (
+        ans = safe_input("Push untracked branch %s to %s? (y/N/q/yq%s) " % (
             bold(b), bold(new_remote), other_remote_suffix)).lower()
         if ans in ('y', 'yes', 'yq'):
             run_git("push", "--set-upstream", new_remote, b)
@@ -1104,7 +1111,7 @@ def handle_untracked_branch(new_remote, b):
 
     relation = get_relation_to_remote_counterpart(b, rb)
     print(message[relation])
-    ans = input(prompt[relation]).lower()
+    ans = safe_input(prompt[relation]).lower()
     if ans in ('y', 'yes', 'yq'):
         for command in yes_git_commands[relation]:
             run_git(*command)
@@ -1160,9 +1167,9 @@ def traverse():
             print_new_line(True)
         if needs_slide_out:
             print_new_line(False)
-            ans = input("Branch %s is merged into %s. Slide %s out of "
-                        "the tree of branch dependencies? [y/N/q/yq] " %
-                        (bold(b), bold(u), bold(b))).lower()
+            ans = safe_input("Branch %s is merged into %s. Slide %s out of "
+                             "the tree of branch dependencies? [y/N/q/yq] " %
+                             (bold(b), bold(u), bold(b))).lower()
             if ans in ('y', 'yes', 'yq'):
                 for d in down_branches.get(b) or []:
                     up_branch[d] = u
@@ -1185,8 +1192,8 @@ def traverse():
             # but still suggest to sync with remote (if needed).
         elif needs_rebase:
             print_new_line(False)
-            ans = input("Rebase %s onto %s? [y/N/q/yq] " %
-                        (bold(b), bold(u))).lower()
+            ans = safe_input("Rebase %s onto %s? [y/N/q/yq] " %
+                             (bold(b), bold(u))).lower()
             if ans in ('y', 'yes', 'yq'):
                 update(b, fork_point(b))
                 if ans == 'yq':
@@ -1200,9 +1207,9 @@ def traverse():
         if needs_remote_sync:
             if s == BEHIND_REMOTE:
                 rb = remote_tracking_branch(b)
-                ans = input("Branch %s is behind its remote counterpart %s."
-                            "\nPull %s from %s? [y/N/q/yq] " %
-                            (bold(b), bold(rb), bold(b), bold(remote))).lower()
+                ans = safe_input("Branch %s is behind its remote counterpart %s."
+                                 "\nPull %s from %s? [y/N/q/yq] " %
+                                 (bold(b), bold(rb), bold(b), bold(remote))).lower()
                 if ans in ('y', 'yes', 'yq'):
                     run_git("pull", "--ff-only", remote)
                     if ans == 'yq':
@@ -1216,8 +1223,8 @@ def traverse():
                 print_new_line(False)
                 # 'remote' is defined for both cases we handle here,
                 # including UNTRACKED_ON
-                ans = input("Push %s to %s? [y/N/q/yq] " %
-                            (bold(b), bold(remote))).lower()
+                ans = safe_input("Push %s to %s? [y/N/q/yq] " %
+                                 (bold(b), bold(remote))).lower()
                 if ans in ('y', 'yes', 'yq'):
                     run_git("push", remote)
                     if ans == 'yq':
@@ -1229,7 +1236,7 @@ def traverse():
             elif s == DIVERGED_FROM_REMOTE:
                 print_new_line(False)
                 rb = remote_tracking_branch(b)
-                ans = input(
+                ans = safe_input(
                     "Branch %s diverged from its remote counterpart %s."
                     "\nPush %s with force to %s? [y/N/q/yq] " %
                     (bold(b), bold(rb), bold(b), bold(remote))).lower()
@@ -1307,18 +1314,24 @@ def status():
     hook_path = get_hook_path("machete-status-branch")
     hook_executable = check_hook_executable(hook_path)
 
+    def write_unicode(x):
+        try:
+            out.write(unicode(x))  # Python 2
+        except NameError:
+            out.write(x)  # Python 3
+
     def print_line_prefix(b_, suffix):
-        out.write("  ")
+        write_unicode("  ")
         for p in pfx[:-1]:
             if not p:
-                out.write("  ")
+                write_unicode("  ")
             else:
-                out.write(edge_color[p] + "│ " + ENDC)
-        out.write(edge_color[b_] + suffix + ENDC)
+                write_unicode(edge_color[p] + u"│ " + ENDC)
+        write_unicode(edge_color[b_] + suffix + ENDC)
 
     for b, pfx in dfs_res:
         if b in up_branch:
-            print_line_prefix(b, "│ \n")
+            print_line_prefix(b, u"│ \n")
             if opt_list_commits:
                 if edge_color[b] in (RED, DIM):
                     commits = commits_between(fp_sha(b), "refs/heads/" + b) if fp_sha(b) else []
@@ -1334,12 +1347,12 @@ def status():
                         fp_suffix = (RED + ' ➔ fork point ???' + ENDC + ' commit ' + short_sha(fp_sha(b)) + ' found in reflog of ' + fp_branches_formatted)
                     else:
                         fp_suffix = ''
-                    print_line_prefix(b, "│ " + ENDC + dim(msg) + fp_suffix + "\n")
-            print_line_prefix(b, "└─")
+                    print_line_prefix(b, u"│ " + ENDC + dim(msg) + fp_suffix + "\n")
+            print_line_prefix(b, u"└─")
         else:
             if b != dfs_res[0][0]:
-                out.write("\n")
-            out.write("  ")
+                write_unicode("\n")
+            write_unicode("  ")
 
         current = underline(bold(b)) if b == cb else bold(b)
 
@@ -1363,7 +1376,7 @@ def status():
             if status_code == 0 and not stdout.isspace():
                 hook_output = "  " + stdout.rstrip()
 
-        out.write(current + anno + sync_status + hook_output + "\n")
+        write_unicode(current + anno + sync_status + hook_output + "\n")
 
     sys.stdout.write(out.getvalue())
     if not opt_list_commits and YELLOW in edge_color.values():
