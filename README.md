@@ -20,7 +20,7 @@
 
 ## Install
 
-git-machete requires Python 3.
+git-machete works under both Python 2.7 and Python 3.
 
 We suggest 3 alternative ways of installation.
 
