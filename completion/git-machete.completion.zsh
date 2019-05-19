@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#compdef git-machete
 
 _git-machete() {
     local ret=1
