@@ -1,9 +1,15 @@
 # Release notes
 
+## New in git-machete 2.11.2
+
+- fixed: choose fork point of B to its upstream U if B is descendant of U, but computed fork point is not a descendant of U
+
 ## New in git-machete 2.11.1
+
 - fixed: wrong spacing in `status`
 
 ## New in git-machete 2.11.0
+
 - added: `--color` flag to `status`
 
 ## New in git-machete 2.10.1

@@ -9,7 +9,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.11.1'
+VERSION = '2.11.2'
 
 
 # Core utils
@@ -927,15 +927,40 @@ def discover_tree():
 
 
 def fork_point_and_containing_branch_defs(b):
+    global up_branch
+    u = up_branch.get(b)
     try:
-        sha, containing_branch_defs = next(match_log_to_adjusted_reflogs(b))
+        fp_sha, containing_branch_defs = next(match_log_to_adjusted_reflogs(b))
     except StopIteration:
-        raise MacheteException("Cannot find fork point for branch '%s'" % b)
-
-    debug("fork_point(%s)" % b,
-          "commit %s is the most recent point in history of %s to occur on adjusted reflog of any other branch or its remote counterpart (specifically: %s)\n" %
-          (sha, b, " and ".join(map(star(lambda lb, lb_or_rb: lb_or_rb), containing_branch_defs))))
-    return sha, containing_branch_defs
+        if u and is_ancestor(u, b):
+            debug("fork_point(%s)" % b,
+                  "cannot find fork point, but %s is descendant of its "
+                  "upstream %s; falling back to %s as fork point\n" % (b, u, u))
+            return sha_by_revision(u), []
+        else:
+            raise MacheteException("Cannot find fork point for branch '%s'" % b)
+    else:
+        debug("fork_point(%s)" % b,
+              "commit %s is the most recent point in history of %s to occur on "
+              "adjusted reflog of any other branch or its remote counterpart "
+              "(specifically: %s)\n" %
+              (fp_sha, b, " and ".join(map(star(lambda lb, lb_or_rb: lb_or_rb),
+                                           containing_branch_defs))))
+        if u and is_ancestor(u, b) and \
+                not is_ancestor(u, fp_sha, later_prefix=""):
+            # That happens very rarely in practice (typically current head of
+            # any branch, including u, should occur on the reflog of this
+            # branch, thus is_ancestor(u, b) should implicate
+            # is_ancestor(u, FP(b)), but it's still possible in case reflog of
+            # b is incomplete for whatever reason.
+            debug("fork_point(%s)" % b,
+                  "commit %s is NOT descendant of %s's upstream %s; falling "
+                  "back to %s as fork point\n" % (fp_sha, b, u, u))
+            return sha_by_revision(u), []
+        else:
+            debug("fork_point(%s)" % b,
+                  "choosing commit %s as fork point" % fp_sha)
+            return fp_sha, containing_branch_defs
 
 
 def fork_point(b):
@@ -1028,7 +1053,9 @@ class StopTraversal(Exception):
 
 
 def flush():
-    global branch_defs_by_sha_in_reflog, config_cached, initial_log_shas_cached, reflogs_cached, remaining_log_shas_cached, remote_tracking_branches_cached, sha_by_revision_cached
+    global branch_defs_by_sha_in_reflog, config_cached, initial_log_shas_cached
+    global reflogs_cached, remaining_log_shas_cached
+    global remote_tracking_branches_cached, sha_by_revision_cached
     branch_defs_by_sha_in_reflog = None
     config_cached = None
     initial_log_shas_cached = {}
@@ -1041,8 +1068,9 @@ def flush():
 def pick_remote(b):
     rems = remotes()
     print("\n".join("[%i] %s" % (idx + 1, r) for idx, r in enumerate(rems)))
-    msg_ = "Select number 1..%i to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse: " % len(
-        rems)
+    msg_ = "Select number 1..%i to specify the destination remote " \
+           "repository, or 'n' to skip this branch, or " \
+           "'q' to quit the traverse: " % len(rems)
     ans = safe_input(msg_).lower()
     if ans in ('q', 'quit'):
         raise StopTraversal
@@ -1931,7 +1959,7 @@ def main():
             delete_unmanaged()
         elif cmd in ("d", "diff"):
             param = check_optional_param(parse_options(args, "s", ["stat"]))
-            # No need to read definition file.
+            read_definition_file()
             diff(param)  # passing None if not specified
         elif cmd == "discover":
             expect_no_param(parse_options(args, "lr:", ["list-commits", "roots="]))
@@ -1947,7 +1975,7 @@ def main():
             print(definition_file)
         elif cmd == "fork-point":
             param = check_optional_param(parse_options(args))
-            # No need to read definition file.
+            read_definition_file()
             print(fork_point(param or current_branch()))
         elif cmd == "format":
             # No need to read definition file.
@@ -1999,7 +2027,7 @@ def main():
                 sys.stdout.write("\n".join(res) + "\n")
         elif cmd in ("l", "log"):
             param = check_optional_param(parse_options(args))
-            # No need to read definition file.
+            read_definition_file()
             log(param or current_branch())
         elif cmd == "prune-branches":
             expect_no_param(parse_options(args))
@@ -2008,7 +2036,7 @@ def main():
         elif cmd == "reapply":
             args1 = parse_options(args, "f:", ["fork-point="])
             expect_no_param(args1, ". Use '-f' or '--fork-point' to specify the fork point commit")
-            # No need to read definition file.
+            read_definition_file()
             cb = current_branch()
             reapply(cb, opt_fork_point or fork_point(cb))
         elif cmd == "show":
