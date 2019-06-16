@@ -78,10 +78,12 @@ $ git machete traverse
 
 ## Reference
 
-Take a look at [https://github.com/PawelLipski/git-machete-blog/blob/master/blog.md](https://github.com/PawelLipski/git-machete-blog/blob/master/blog.md) for a guide on how to use the tool.
+Take a look at
+[https://medium.com/virtuslab/make-your-way-through-the-git-rebase-jungle-with-git-machete-e2ed4dbacd02](https://medium.com/virtuslab/make-your-way-through-the-git-rebase-jungle-with-git-machete-e2ed4dbacd02)
+for a guide on how to use the tool.
 
 The more advanced features like automated traversal, upstream inference and tree discovery are described in the second part of the series:
-[https://github.com/PawelLipski/git-machete-blog-2/blob/master/blog-2.md](https://github.com/PawelLipski/git-machete-blog-2/blob/master/blog-2.md)
+[https://medium.com/virtuslab/git-machete-strikes-again-traverse-the-git-rebase-jungle-even-faster-with-v2-0-f43ebaf8abb0](https://medium.com/virtuslab/git-machete-strikes-again-traverse-the-git-rebase-jungle-even-faster-with-v2-0-f43ebaf8abb0).
 
 
 ## Contribute
