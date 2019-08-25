@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.10.1
+
+- changed: `file` displays absolute path
+
 ## New in git-machete 2.10.0
 
 - changed: enable execution under both Python 2.7 and Python 3

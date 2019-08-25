@@ -9,7 +9,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.10.0'
+VERSION = '2.10.1'
 
 
 # Core utils
@@ -411,17 +411,18 @@ def get_root_dir():
     return root_dir
 
 
-git_dir = None
+abs_git_dir = None
 
 
-def get_git_dir():
-    global git_dir
-    if not git_dir:
+def get_abs_git_dir():
+    global abs_git_dir
+    if not abs_git_dir:
         try:
             git_dir = popen_git("rev-parse", "--git-dir").strip()
+            abs_git_dir = os.path.abspath(git_dir)
         except MacheteException:
             raise MacheteException("Not a git repository")
-    return git_dir
+    return abs_git_dir
 
 
 config_cached = None
@@ -612,7 +613,7 @@ def go(branch):
 
 
 def get_hook_path(hook_name):
-    hook_dir = get_config_or_none("core.hooksPath") or os.path.join(get_git_dir(), "hooks")
+    hook_dir = get_config_or_none("core.hooksPath") or os.path.join(get_abs_git_dir(), "hooks")
     return os.path.join(hook_dir, hook_name)
 
 
@@ -1848,7 +1849,7 @@ def main():
         args = all_args[1:]
 
         if cmd not in ("format", "help"):
-            definition_file = os.path.join(get_git_dir(), "machete")
+            definition_file = os.path.join(get_abs_git_dir(), "machete")
             if cmd not in ("discover", "infer") and not os.path.exists(definition_file):
                 open(definition_file, 'w').close()
 
