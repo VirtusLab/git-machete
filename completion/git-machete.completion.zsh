@@ -60,7 +60,13 @@ _git-machete() {
                         '(-d --down-fork-point)'{-d,--down-fork-point=}'[Fork point commit after which the rebased part of history of the downstream branch is meant to start]: :__git_references' \
                     && ret=0
                     ;;
-                (status|traverse)
+                (status)
+                    _arguments \
+                        '(--color)'--color='[Colorize the output; argument can be "always", "auto", or "never".]: :_git_machete_color_modes' \
+                        '(-l --list-commits)'{-l,--list-commits}'[List the messages of commits introduced on each branch.]' \
+                    && ret=0
+                    ;;
+                (traverse)
                     _arguments \
                         '(-l --list-commits)'{-l,--list-commits}'[List the messages of commits introduced on each branch.]' \
                     && ret=0
@@ -128,6 +134,16 @@ _git_machete_categories() {
         'unmanaged:all local branches that do not appear in the definition file'
     )
     _describe -t categories 'category' categories "$@"
+}
+
+_git_machete_color_modes() {
+    local color_modes
+    color_modes=(
+        'always:always emits colors'
+        'auto:emits colors only when standard output is connected to a terminal'
+        'never:colors are disabled'
+    )
+    _describe -t color_modes 'color' color_modes "$@"
 }
 
 _git_machete_list_slidable() {

@@ -9,7 +9,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.10.1'
+VERSION = '2.11.0'
 
 
 # Core utils
@@ -32,16 +32,31 @@ ORANGE = '\033[00;38;5;208m'
 RED = '\033[91m'
 
 
+ascii_only = False
+
+
 def bold(s):
-    return BOLD + s + ENDC
+    return BOLD + s + ENDC if not ascii_only else s
 
 
 def dim(s):
-    return DIM + s + ENDC
+    return DIM + s + ENDC if not ascii_only else s
 
 
 def underline(s):
-    return UNDERLINE + s + ENDC
+    return UNDERLINE + s + ENDC if not ascii_only else s + " *"
+
+
+def colored(s, color):
+    return color + s + ENDC if not ascii_only else s
+
+
+def vertical_bar():
+    return u"│" if not ascii_only else "|"
+
+
+def right_arrow():
+    return u"➔" if not ascii_only else "->"
 
 
 def star(f):  # tuple unpacking in lambdas
@@ -624,8 +639,8 @@ def check_hook_executable(hook_path):
         advice_ignored_hook = get_config_or_none("advice.ignoredHook")
         if advice_ignored_hook != 'false':  # both empty and "true" is okay
             # The [33m color must be used to keep consistent with how git colors this advice for its built-in hooks.
-            sys.stderr.write(YELLOW + "hint: The '%s' hook was ignored because it's not set as executable." % hook_path + ENDC + "\n")
-            sys.stderr.write(YELLOW + "hint: You can disable this warning with `git config advice.ignoredHook false`." + ENDC + "\n")
+            sys.stderr.write(colored("hint: The '%s' hook was ignored because it's not set as executable." % hook_path, YELLOW) + "\n")
+            sys.stderr.write(colored("hint: You can disable this warning with `git config advice.ignoredHook false`.", YELLOW) + "\n")
         return False
     else:
         return True
@@ -1327,12 +1342,12 @@ def status():
             if not p:
                 write_unicode("  ")
             else:
-                write_unicode(edge_color[p] + u"│ " + ENDC)
-        write_unicode(edge_color[b_] + suffix + ENDC)
+                write_unicode(colored(vertical_bar(), edge_color[p]))
+        write_unicode(colored(suffix, edge_color[b_]))
 
     for b, pfx in dfs_res:
         if b in up_branch:
-            print_line_prefix(b, u"│ \n")
+            print_line_prefix(b, vertical_bar() + " \n")
             if opt_list_commits:
                 if edge_color[b] in (RED, DIM):
                     commits = commits_between(fp_sha(b), "refs/heads/" + b) if fp_sha(b) else []
@@ -1345,11 +1360,13 @@ def status():
                     if sha == fp_sha(b):
                         # fp_branches_cached will already be there thanks to the above call to 'fp_sha'.
                         fp_branches_formatted = " and ".join(map(star(lambda lb, lb_or_rb: lb_or_rb), fp_branches_cached[b]))
-                        fp_suffix = (RED + ' ➔ fork point ???' + ENDC + ' commit ' + short_sha(fp_sha(b)) + ' found in reflog of ' + fp_branches_formatted)
+                        fp_suffix = (colored(" " + right_arrow() + " fork point ???", RED) + " commit " + short_sha(fp_sha(b)) + " found in reflog of " + fp_branches_formatted)
                     else:
                         fp_suffix = ''
-                    print_line_prefix(b, u"│ " + ENDC + dim(msg) + fp_suffix + "\n")
-            print_line_prefix(b, u"└─")
+                    print_line_prefix(b, vertical_bar() + " " + ENDC + dim(msg) + fp_suffix + "\n")
+            elbow_ascii_only = {DIM: "m-", RED: "x-", GREEN: "o-", YELLOW: "?-"}
+            elbow = u"└─" if not ascii_only else elbow_ascii_only[edge_color[b]]
+            print_line_prefix(b, elbow)
         else:
             if b != dfs_res[0][0]:
                 write_unicode("\n")
@@ -1362,12 +1379,12 @@ def status():
         s, remote = get_remote_sync_status(b)
         sync_status = {
             NO_REMOTES: "",
-            UNTRACKED: ORANGE + " (untracked)" + ENDC,
-            UNTRACKED_ON: ORANGE + " (untracked on %s)" % remote + ENDC,
+            UNTRACKED: colored(" (untracked)", ORANGE),
+            UNTRACKED_ON: colored(" (untracked on %s)" % remote, ORANGE),
             IN_SYNC_WITH_REMOTE: "",
-            BEHIND_REMOTE: RED + " (behind %s)" % remote + ENDC,
-            AHEAD_OF_REMOTE: RED + " (ahead of %s)" % remote + ENDC,
-            DIVERGED_FROM_REMOTE: RED + " (diverged from %s)" % remote + ENDC
+            BEHIND_REMOTE: colored(" (behind %s)" % remote, RED),
+            AHEAD_OF_REMOTE: colored(" (ahead of %s)" % remote, RED),
+            DIVERGED_FROM_REMOTE: colored(" (diverged from %s)" % remote, RED)
         }[s]
 
         hook_output = ""
@@ -1382,7 +1399,7 @@ def status():
     sys.stdout.write(out.getvalue())
     if not opt_list_commits and YELLOW in edge_color.values():
         sys.stderr.write("\n")
-        sys.stderr.write(RED + "Warn:" + ENDC + " there was at least one yellow edge which indicates that some fork points are probably not determined correctly.\n")
+        sys.stderr.write(colored("Warn:", RED) + " there was at least one yellow edge which indicates that some fork points are probably not determined correctly.\n")
         sys.stderr.write("Run 'git machete status -l' to see more details.\n")
     out.close()
 
@@ -1682,8 +1699,20 @@ def usage(c=None):
             Yellow typically indicates that there are/were commits from some other branches on the path between upstream and downstream and that a closer look at the log of the downstream branch might be necessary.
             Grey edge suggests that the downstream branch can be slid out.
 
+            Using colors can be disabled with a '--color' flag set to 'never'. With '--color=always' git machete always emits colors and with '--color=auto' it emits colors only when standard output
+            is connected to a terminal. '--color=auto' is the default. When colors are disabled, relation between branches is representend in the following way:
+            |
+            o-<branch1> # green
+            | |
+            | x-<branch2> # red
+            |   |
+            |   ?-<branch3> # yellow
+            |
+            m-<branch4> # dim
+
             Options:
             -l, --list-commits            Additionally lists the messages of commits introduced on each branch.
+            --color=WHEN                  Colorize the output; WHEN can be 'always', 'auto', or 'never'.
         """,
         "traverse": """
             Usage: git machete traverse [-l|--list-commits]
@@ -1772,13 +1801,15 @@ def version():
 
 def main():
     def parse_options(in_args, short_opts="", long_opts=[], gnu=True):
-        global opt_debug, opt_down_fork_point, opt_fork_point, opt_list_commits, opt_onto, opt_roots, opt_stat, opt_verbose
+        global opt_color, opt_debug, opt_down_fork_point, opt_fork_point, opt_list_commits, opt_onto, opt_roots, opt_stat, opt_verbose
 
         fun = getopt.gnu_getopt if gnu else getopt.getopt
         opts, rest = fun(in_args, short_opts + "hv", long_opts + ['debug', 'help', 'verbose', 'version'])
 
         for opt, arg in opts:
-            if opt in ("-d", "--down-fork-point"):
+            if opt == "--color":
+                opt_color = arg
+            elif opt in ("-d", "--down-fork-point"):
                 opt_down_fork_point = arg
             elif opt == "--debug":
                 opt_debug = True
@@ -1829,9 +1860,10 @@ def main():
             return in_args[0]
 
     global definition_file
-    global opt_debug, opt_down_fork_point, opt_down_fork_point, opt_fork_point, opt_list_commits, opt_onto, opt_roots, opt_stat, opt_verbose
+    global opt_color, opt_debug, opt_down_fork_point, opt_down_fork_point, opt_fork_point, opt_list_commits, opt_onto, opt_roots, opt_stat, opt_verbose
     try:
         cmd = None
+        opt_color = "auto"
         opt_debug = False
         opt_down_fork_point = None
         opt_fork_point = None
@@ -1979,7 +2011,12 @@ def main():
             read_definition_file()
             slide_out(params or [current_branch()])
         elif cmd in ("s", "status"):
-            expect_no_param(parse_options(args, "l", ["list-commits"]))
+            expect_no_param(parse_options(args, "l", ["list-commits", "color="]))
+            if opt_color not in ("always", "auto", "never"):
+                raise MacheteException("Invalid argument for: --color. Valid arguments: always|auto|never.")
+            else:
+                global ascii_only
+                ascii_only = opt_color == "never" or (opt_color == "auto" and not sys.stdout.isatty())
             read_definition_file()
             status()
         elif cmd == "traverse":

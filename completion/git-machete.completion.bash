@@ -4,6 +4,7 @@ _git_machete() {
     cmds="add anno d delete-unmanaged diff discover e edit file fork-point g go help l list log reapply show slide-out s status traverse update"
     help_topics="$cmds format hooks"
     categories="managed slidable slidable-after unmanaged"
+    color_modes="always auto never"
     directions="down first last next prev root up"
 
     common_opts="--debug -h --help -v --verbose --version"
@@ -12,7 +13,8 @@ _git_machete() {
     discover_opts="-l --list-commits -r --roots="
     reapply_opts="-f --fork-point="
     slide_out_opts="-d --down-fork-point="
-    status_opts="-l --list-commits"
+    status_opts="-l --list-commits --color="
+    traverse_opts="-l --list-commits"
     traverse_opts="-l --list-commits"
     update_opts="-f --fork-point="
 
@@ -20,6 +22,7 @@ _git_machete() {
         --down-fork-point=*|--fork-point=*) __gitcomp "$(__git_refs)" "" "${cur##--*=}" ;;
         --onto=*) __gitcomp_nl "$(git machete list managed)" "" "${cur##--onto=}" ;;
         --roots=*) __gitcomp "$(__git_heads)" "" "${cur##--roots=}" ;;
+        --color=*) __gitcomp "$color_modes" "" "${cur##--color=}" ;;
         -*)
             case "${COMP_WORDS[2]}" in
                 add) __gitcomp "$common_opts $add_opts" ;;
