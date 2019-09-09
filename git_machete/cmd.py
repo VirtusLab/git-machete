@@ -83,7 +83,10 @@ def safe_input(msg):
     try:
         return raw_input(msg)  # Python 2
     except NameError:
-        return input(msg)  # Python 3
+        pass
+    # Return from outside `except` clause to ensure cleaner stack trace
+    # in case of e.g. Ctrl-C pressed while in `input`.
+    return input(msg)  # Python 3
 
 
 def ask_if(msg):
@@ -1396,7 +1399,12 @@ def status():
 
         write_unicode(current + anno + sync_status + hook_output + "\n")
 
-    sys.stdout.write(out.getvalue())
+    output = out.getvalue()
+    if type(output) is str:
+        sys.stdout.write(output)  # Python 3
+    else:
+        sys.stdout.write(output.encode('utf-8'))  # Python 2
+
     if not opt_list_commits and YELLOW in edge_color.values():
         sys.stderr.write("\n")
         sys.stderr.write(colored("Warn:", RED) + " there was at least one yellow edge which indicates that some fork points are probably not determined correctly.\n")
