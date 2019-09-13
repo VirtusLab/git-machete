@@ -9,7 +9,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.11.0'
+VERSION = '2.11.1'
 
 
 # Core utils
@@ -1316,7 +1316,8 @@ def status():
                 fp_sha_cached[b], fp_branches_cached[b] = None, []
         return fp_sha_cached[b]
 
-    # Edge colors need to be precomputed in order to render the leading parts of lines properly.
+    # Edge colors need to be precomputed
+    # in order to render the leading parts of lines properly.
     for b in up_branch:
         u = up_branch[b]
         if is_merged_to_parent(b):
@@ -1345,7 +1346,7 @@ def status():
             if not p:
                 write_unicode("  ")
             else:
-                write_unicode(colored(vertical_bar(), edge_color[p]))
+                write_unicode(colored(vertical_bar() + " ", edge_color[p]))
         write_unicode(colored(suffix, edge_color[b_]))
 
     for b, pfx in dfs_res:
