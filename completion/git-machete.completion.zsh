@@ -14,27 +14,34 @@ _git-machete() {
 
     case $state in
         (args)
-            case $line[1] in
+            case ${line[1]} in
                 (add)
                     _arguments \
-                        '1:: :__git_branch_names' \
-                        '(-o --onto)'{-o,--onto=}'[Specify the target parent branch to add the given branch onto]: :__git_branch_names' \
+                        '1:: :_git_machete_list_unmanaged' \
+                        '(-o --onto)'{-o,--onto=}'[Specify the target parent branch to add the given branch onto]: :_git_machete_list_managed' \
+                        '(-y --yes)'{-y,--yes}'[Do not ask for confirmation whether to create the branch or whether to add onto the inferred upstream]' \
                     && ret=0
                     ;;
-                (anno|delete-unmanaged|e|edit|file)
+                (anno|e|edit|file)
                     ;;
                 (d|diff)
                     _arguments \
                         '1:: :__git_branch_names' \
-                        '(-s --stat)'{-s,--stat}'[Pass --stat option to git diff, so that only summary (diffstat) is printed.]' \
+                        '(-s --stat)'{-s,--stat}'[Pass --stat option to git diff, so that only summary (diffstat) is printed]' \
+                    && ret=0
+                    ;;
+                (delete-unmanaged)
+                    _arguments \
+                        '(-y --yes)'{-y,--yes}'[Do not ask for confirmation]' \
                     && ret=0
                     ;;
                 (discover)
                     # TODO complete the comma-separated list of roots
                     _arguments \
-                        '(-C --checked-out-since)'{-C,--checked-out-since=}'[Only consider branches checked out at least once since the given date.]' \
-                        '(-l --list-commits)'{-l,--list-commits}'[List the messages of commits introduced on each branch.]' \
+                        '(-C --checked-out-since)'{-C,--checked-out-since=}'[Only consider branches checked out at least once since the given date]' \
+                        '(-l --list-commits)'{-l,--list-commits}'[List the messages of commits introduced on each branch]' \
                         '(-r --roots)'{-r,--roots=}'[Comma-separated list of branches to be considered roots of trees of branch dependencies (typically develop and/or master)]: :__git_branch_names' \
+                        '(-y --yes)'{-y,--yes}'[Do not ask for confirmation]' \
                     && ret=0
                     ;;
                 (fork-point|l|log)
@@ -59,17 +66,25 @@ _git-machete() {
                         # TODO suggest further branches based on the previous specified branch (like in Bash completion script)
                         '*:: :_git_machete_list_slidable' \
                         '(-d --down-fork-point)'{-d,--down-fork-point=}'[Fork point commit after which the rebased part of history of the downstream branch is meant to start]: :__git_references' \
+                        '(-n --no-interactive-rebase)'{-n,--no-interactive-rebase}'[Run git rebase in non-interactive mode (without -i/--interactive flag)]' \
                     && ret=0
                     ;;
-                (status)
+                (s|status)
                     _arguments \
-                        '(--color)'--color='[Colorize the output; argument can be "always", "auto", or "never".]: :_git_machete_color_modes' \
-                        '(-l --list-commits)'{-l,--list-commits}'[List the messages of commits introduced on each branch.]' \
+                        '(--color)'--color='[Colorize the output; argument can be "always", "auto", or "never"]: :_git_machete_opt_color_args' \
+                        '(-l --list-commits)'{-l,--list-commits}'[List the messages of commits introduced on each branch]' \
                     && ret=0
                     ;;
                 (traverse)
                     _arguments \
-                        '(-l --list-commits)'{-l,--list-commits}'[List the messages of commits introduced on each branch.]' \
+                        '(-F --fetch)'{-F,--fetch}'[Fetch the remotes of all managed branches at the beginning of traversal]' \
+                        '(-l --list-commits)'{-l,--list-commits}'[List the messages of commits introduced on each branch]' \
+                        '(-n --no-interactive-rebase)'{-n,--no-interactive-rebase}'[Run git rebase in non-interactive mode (without -i/--interactive flag)]' \
+                        '(--return-to)'--return-to='[The branch to return after traversal is successfully completed; argument can be "here", "nearest-remaining", or "stay"]: :_git_machete_opt_return_to_args' \
+                        '(--start-from)'--start-from='[The branch to  to start the traversal from; argument can be "here", "root", or "first-root"]: :_git_machete_opt_start_from_args' \
+                        '(-w --whole)'{-w,--whole}'[Equivalent to --start-from=first-root --no-interactive-rebase --return-to=nearest-remaining]' \
+                        '(-W)'-W'[Equivalent to --fetch --whole]' \
+                        '(-y --yes)'{-y,--yes}'[Do not ask for any interactive input; implicates -n]' \
                     && ret=0
                     ;;
             esac
@@ -95,6 +110,7 @@ _git_machete_cmds=(
     {status,s}':Display formatted tree of branch dependencies, including info on their sync with upstream branch and with remote'
     'traverse:Walk through the tree of branch dependencies and ask to rebase, slide out, push and/or pull branches, one by one'
     'update:Rebase the current branch onto its upstream (parent) branch'
+    'version:Display version and exit'
 )
 
 _git_machete_commands() {
@@ -137,20 +153,52 @@ _git_machete_categories() {
     _describe -t categories 'category' categories "$@"
 }
 
-_git_machete_color_modes() {
-    local color_modes
-    color_modes=(
+_git_machete_opt_color_args() {
+    local opt_color_args
+    opt_color_args=(
         'always:always emits colors'
         'auto:emits colors only when standard output is connected to a terminal'
         'never:colors are disabled'
     )
-    _describe -t color_modes 'color' color_modes "$@"
+    _describe -t opt_color_args 'color argument' opt_color_args "$@"
+}
+
+_git_machete_opt_return_to_args() {
+    local opt_return_to
+    opt_return_to=(
+        'here:the current branch at the moment when traversal starts'
+        'nearest-remaining:nearest remaining branch in case the "here" branch has been slid out by the traversal'
+        'stay:the default - just stay wherever the traversal stops'
+    )
+    _describe -t opt_return_to 'return-to argument' opt_return_to "$@"
+}
+
+_git_machete_opt_start_from_args() {
+    local opt_start_from
+    opt_start_from=(
+        'here:the default - current branch, must be managed by git-machete'
+        'root:root branch of the current branch, as in git machete show root'
+        'first-root:first listed managed branch'
+    )
+    _describe -t opt_start_from 'start-from argument' opt_start_from "$@"
+}
+
+_git_machete_list_managed() {
+    local list_managed
+    IFS=$'\n' list_managed=($(git machete list managed))
+    _describe -t list_managed 'managed branch' list_managed "$@"
 }
 
 _git_machete_list_slidable() {
-    local slidables
-    IFS=$'\n' slidables=($(git machete list slidable))
-    _describe -t slidables 'slidable branch' slidables "$@"
+    local list_slidable
+    IFS=$'\n' list_slidable=($(git machete list slidable))
+    _describe -t list_slidable 'slidable branch' list_slidable "$@"
+}
+
+_git_machete_list_unmanaged() {
+    local list_unmanaged
+    IFS=$'\n' list_unmanaged=($(git machete list unmanaged))
+    _describe -t list_unmanaged 'unmanaged branch' list_unmanaged "$@"
 }
 
 zstyle ':completion:*:*:git:*' user-commands machete:'organize your repo, instantly rebase/push/pull and more'

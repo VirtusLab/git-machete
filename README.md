@@ -88,8 +88,7 @@ Please verify that your `PATH` variable has `${HOME}/.local/bin/` included.
 cd your-repo/
 git machete discover --checked-out-since='2 weeks ago'  # increase/decrease the timespan if you want more/less old branches included
   # (see and possibly edit the suggested layout of branches - branch layout is always kept as text file .git/machete)
-git machete go root
-git machete traverse
+git machete traverse --fetch --start-from=first-root
   # (put each branch one by one in sync with its parent and remote counterpart)
 ```
 
