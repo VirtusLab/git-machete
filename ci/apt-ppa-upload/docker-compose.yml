@@ -1,7 +1,7 @@
 version: '3'
 services:
-  rpm:
-    image: virtuslab/git-machete-ci-rpm:${DIRECTORY_HASH:-unspecified}
+  apt-ppa-upload:
+    image: virtuslab/git-machete-ci-apt-ppa-upload:${DIRECTORY_HASH:-unspecified}
     build:
       context: build-context
       dockerfile: ../Dockerfile # relative to build-context
@@ -11,3 +11,5 @@ services:
     volumes:
       # Host path is relative to current directory, not build-context
       - ./../..:/home/ci-user/git-machete
+    env_file:
+      - gpg-ssh.env

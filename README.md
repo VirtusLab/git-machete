@@ -30,7 +30,7 @@ git-machete works under both Python 2.7 and Python 3.x.
 
 ### Using Homebrew (macOS)
 
-```shell script
+```bash
 brew tap VirtusLab/git-machete
 brew install git-machete
 ```
@@ -39,7 +39,7 @@ brew install git-machete
 
 Tip: run `sudo apt-get install -y software-properties-common` first if `add-apt-repository` is not available on your system.
 
-```shell script
+```bash
 sudo add-apt-repository ppa:virtuslab/git-machete
 sudo apt-get update
 sudo apt-get install -y python3-git-machete
@@ -58,7 +58,7 @@ Install the AUR package [git-machete](https://aur.archlinux.org/packages/git-mac
 
 On macOS and most Linux distributions, you can install via [Nix](https://nixos.org/nix/):
 
-```shell script
+```bash
 nix-channel --add https://nixos.org/channels/nixos-unstable unstable  # if you haven't set up any channels yet
 nix-env -i git-machete
 ```
@@ -67,7 +67,7 @@ nix-env -i git-machete
 
 You need to have Python and `pip` installed from system packages.
 
-```shell script
+```bash
 sudo -H pip install git-machete
 ```
 
@@ -75,7 +75,7 @@ sudo -H pip install git-machete
 
 You need to have Python and `pip` installed from system packages.
 
-```shell script
+```bash
 pip install --user git-machete
 ```
 
@@ -84,13 +84,18 @@ Please verify that your `PATH` variable has `${HOME}/.local/bin/` included.
 
 ## Quick start
 
-```shell script
+```bash
 cd your-repo/
 git machete discover --checked-out-since='2 weeks ago'  # increase/decrease the timespan if you want more/less old branches included
   # (see and possibly edit the suggested layout of branches - branch layout is always kept as text file .git/machete)
 git machete traverse --fetch --start-from=first-root
   # (put each branch one by one in sync with its parent and remote counterpart)
 ```
+
+
+## Git compatibility
+
+git-machete (since version 2.13.0) is compatible with git >= 1.7.10.
 
 
 ## Reference

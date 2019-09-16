@@ -17,6 +17,8 @@
 - added: `version` command
 - fixed: in case the current branch is unmanaged, `go last` goes to the last branch under the *last* root and not to the last branch under the *first* root
 - fixed: zsh completion for `add` and `s`
+- improved: testing against multiple git versions in CI pipeline
+- improved: functional tests invoke `discover` and `traverse`
 
 ## New in git-machete 2.12.10
 

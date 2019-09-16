@@ -1,4 +1,4 @@
-FROM ubuntu
+FROM ubuntu:18.04
 
 RUN apt-get update && apt-get install -y debhelper devscripts fakeroot gawk python3-all python3-paramiko python3-setuptools
 
@@ -15,14 +15,14 @@ USER ci-user
 
 RUN install -d -m 0700 ~/.gnupg/ ~/.gnupg/private-keys-v1.d/ ~/.ssh/
 
-COPY upload-dput.cf /etc/dput.cf
+COPY dput.cf /etc/
 
-COPY --chown=ci-user:ci-user upload-gpg-sign.sh /home/ci-user/gpg-sign.sh
+COPY --chown=ci-user:ci-user gpg-sign.sh /home/ci-user/
 RUN chmod +x ~/gpg-sign.sh
 
-COPY --chown=ci-user:ci-user upload-release-notes-to-changelog.awk /home/ci-user/release-notes-to-changelog.awk
+COPY --chown=ci-user:ci-user release-notes-to-changelog.awk /home/ci-user/
 
-COPY --chown=ci-user:ci-user upload-entrypoint.sh /home/ci-user/entrypoint.sh
+COPY --chown=ci-user:ci-user entrypoint.sh /home/ci-user/
 RUN chmod +x ~/entrypoint.sh
 CMD ["/home/ci-user/entrypoint.sh"]
 

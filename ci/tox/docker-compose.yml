@@ -1,13 +1,15 @@
 version: '3'
 services:
-  rpm:
-    image: virtuslab/git-machete-ci-rpm:${DIRECTORY_HASH:-unspecified}
+  tox:
+    image: virtuslab/git-machete-ci-tox:git${GIT_VERSION}-python${PYTHON_VERSION}-${DIRECTORY_HASH}
     build:
       context: build-context
       dockerfile: ../Dockerfile # relative to build-context
       args:
         - user_id=${USER_ID:-0}
         - group_id=${GROUP_ID:-0}
+        - git_version=${GIT_VERSION:-0.0.0}
+        - python_version=${PYTHON_VERSION:-0.0.0}
     volumes:
       # Host path is relative to current directory, not build-context
-      - ./../..:/home/ci-user/git-machete
+      - ../..:/home/ci-user/git-machete

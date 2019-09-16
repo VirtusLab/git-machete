@@ -574,9 +574,14 @@ def set_upstream_to(rb):
 
 
 def push(remote, b, force_with_lease=False):
-    opt_force_with_lease = ["--force-with-lease"] if force_with_lease else []
+    if not force_with_lease:
+        opt_force = []
+    elif get_git_version() >= (1, 8, 5):
+        opt_force = ["--force-with-lease"]
+    else:
+        opt_force = ["--force"]
     args = [remote, b]
-    run_git("push", "--set-upstream", *(opt_force_with_lease + args))
+    run_git("push", "--set-upstream", *(opt_force + args))
 
 
 def pull_ff_only(remote, b):
@@ -2092,10 +2097,10 @@ def version():
 
 
 def main():
-    launch(sys.argv)
+    launch(sys.argv[1:])
 
 
-def launch(args):
+def launch(orig_args):
     def parse_options(in_args, short_opts="", long_opts=[], gnu=True):
         global opt_checked_out_since, opt_color, opt_debug, opt_down_fork_point, opt_fetch, opt_fork_point, opt_start_from
         global opt_list_commits, opt_no_interactive_rebase, opt_onto, opt_return_to, opt_roots, opt_stat, opt_verbose, opt_yes
@@ -2126,7 +2131,7 @@ def launch(args):
             elif opt in ("-o", "--onto"):
                 opt_onto = arg
             elif opt in ("-r", "--roots"):
-                opt_roots = set(arg.split(","))
+                opt_roots = arg.split(",")
             elif opt == "--return-to":
                 opt_return_to = arg
             elif opt == "--start-from":
@@ -2192,18 +2197,18 @@ def launch(args):
         opt_no_interactive_rebase = False
         opt_onto = None
         opt_return_to = "stay"
-        opt_roots = set()
+        opt_roots = list()
         opt_start_from = "here"
         opt_stat = False
         opt_verbose = False
         opt_yes = False
 
-        all_args = parse_options(args[1:], gnu=False)
-        if not all_args:
+        cmd_and_args = parse_options(orig_args, gnu=False)
+        if not cmd_and_args:
             usage()
             sys.exit(2)
-        cmd = all_args[0]
-        args = all_args[1:]
+        cmd = cmd_and_args[0]
+        args = cmd_and_args[1:]
 
         if cmd not in ("format", "help"):
             definition_file = os.path.join(get_abs_git_dir(), "machete")

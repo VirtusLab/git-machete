@@ -1,30 +1,24 @@
 os: linux
-language: python
-jobs:
-  include:
-    - python: 2.7
-      env: TOXENV=py27,pep8
-    - python: 3.6
-      env: TOXENV=py36,pep8
-    - python: 3.8
-      env: TOXENV=py38,pep8
-cache: pip
+language: minimal  # Build is fully dockerized, we don't need to run Python directly on the VM (only for PyPI deployment, but `minimal` is still sufficient for that)
+env:
+  - PYTHON_VERSION=2.7 GIT_VERSION=1.7.10  # Earliest version of git supported by git-machete
+  - PYTHON_VERSION=2.7 GIT_VERSION=2.7.6
+  - PYTHON_VERSION=3.6 GIT_VERSION=2.20.2
+  - PYTHON_VERSION=3.8 GIT_VERSION=2.25.0 DEPLOY_ON_TAGS=true
 
-install: pip install tox
+install: bash ci/tox/travis-install.sh
 
-script:
-  - tox
-  - python setup.py sdist bdist_wheel
+script: bash ci/tox/travis-script.sh
 
 deploy:
 
   - provider: pypi
-    skip_cleanup: true
-    username: "__token__"
+    username: __token__
     password:
       secure: U6JJcByjLv2PutUpnpqDT7cNIUYu9Ap9t4G90KULEn6Syxa49aX14BT6k2jBakWbQgrPCxLLNSWeCoC4xPl/Z2/9HLEFxZLVovtVbiaJ8HrTcoWmEZijnGob9Ofh94TFP8VtifjqHXeIrPi78XyZEks/ed0Sj3jSH4BL74PDHvqbD1RnsezFm4QGI2ESOWY+laJ2ralcpHRJh0hJb0QHxOpbKPVM+QefiFs+VFkFP25hQcn/G3qdduzW5NQ8OHBYCbevy6/1yt/M67ZzAeA0n4UrkZ/3vBsMJJ3wynWWZ3xO+lGs6eqZ31E8vicogYbw5hXs119JRkKUrcU5uqVL1mogf8N6y76w2xNV6Aul/XtpBiuPQsHm0tChwTI6yyGzAZBRPMB1KzRclDKGQThIBhpX+wfqHSpvdj1CZV5AMm3+6nHA0LSGWiuJ1BW7pTrAp9YFPbrQfH59JWMhy8ng5lexcQQj7spSO/DPw0VMIfUiw644BfSfyZwls5du4yYfWOkd8RoELEa2IGqCp1sTqjWvSuX3nzKCbJhxAwrVU5mK9fiMPcL1jURIwlFvooI+qKAp3CdGZ1IM+HFmpzXym2kvZvmrNXduVSZcqG3DrCFxt77FYsN5SNB/uly1vLq/6Y0BaCw9ao6YWfW3fvU2cCcyejjzPyfGzZ2jA5uOpZ8=
+    distributions: "sdist bdist_wheel"
     on:
-      python: 3.6
+      condition: $DEPLOY_ON_TAGS
       tags: true
 
   - provider: script  # RPM (actually build only, no deployment - will be deployed to the Github release)
@@ -41,19 +35,17 @@ deploy:
     file_glob: true
     file: dist/git-machete-*.noarch.rpm
     on:
-      python: 3.6
+      condition: $DEPLOY_ON_TAGS
       tags: true
 
   - provider: script  # brew tap (artifacts must be released to PyPI first)
-    skip_cleanup: true
     script: bash ci/homebrew-tap/travis-deploy.sh
     on:
-      python: 3.6
+      condition: $DEPLOY_ON_TAGS
       tags: true
 
   - provider: script  # PPA
-    skip_cleanup: true
-    script: bash ci/apt-ppa/upload-travis-deploy.sh
+    script: bash ci/apt-ppa-upload/travis-deploy.sh
     on:
-      python: 3.6
+      condition: $DEPLOY_ON_TAGS
       tags: true
