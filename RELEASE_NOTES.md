@@ -6,6 +6,7 @@
 - fixed: `edit` crashing when both `EDITOR` variable and `vim` are missing
 - fixed: remote tracking branch is inferred for a local branch if it's not explicitly set
 - fixed: only consider managed branches when inferring an upstream to add a branch onto
+- added: `--checked-out-since` flag to `discover`
 
 ## New in git-machete 2.11.3
 

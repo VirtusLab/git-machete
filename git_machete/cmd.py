@@ -6,11 +6,12 @@ import getopt
 import io
 import itertools
 import os
+import re
 import subprocess
 import sys
 import textwrap
 
-VERSION = '2.12.0-M3'
+VERSION = '2.12.0-M4'
 
 
 # Core utils
@@ -123,8 +124,15 @@ def popen_cmd(cmd, *args, **kwargs):
 
 # Git core
 
+
 def cmd_shell_repr(git_cmd, args):
-    return " ".join(["git", git_cmd] + list(args)).replace("(", "\\(").replace(")", "\\)").replace("\t", "$'\\t'")
+    def shell_escape(arg):
+        return arg.replace("(", "\\(") \
+            .replace(")", "\\)") \
+            .replace(" ", "\\ ") \
+            .replace("\t", "$'\\t'")
+
+    return " ".join(["git", git_cmd] + list(map(shell_escape, args)))
 
 
 def run_git(git_cmd, *args, **kwargs):
@@ -452,6 +460,14 @@ def get_abs_git_dir():
     return abs_git_dir
 
 
+def parse_git_timespec_to_unix_timestamp(date):
+    try:
+        return int(popen_git("rev-parse", "--since=" + date)
+                   .replace("--max-age=", "").strip())
+    except MacheteException:
+        raise MacheteException("Cannot parse timespec: '%s'" % date)
+
+
 config_cached = None
 
 
@@ -515,6 +531,8 @@ sha_by_revision_cached = {}
 
 
 def sha_by_revision(revision, prefix="refs/heads/"):
+    if prefix == "" and re.match("^[0-9a-f]{40}$", revision):
+        return revision
     global sha_by_revision_cached
     full_revision = prefix + revision
     if full_revision not in sha_by_revision_cached:
@@ -812,6 +830,24 @@ def adjusted_reflog(b, prefix):
     return result
 
 
+def get_latest_checkout_timestamps():
+    # Entries are in the format '<branch_name>@{unix_timestamp}'
+    result = {}
+    # %gd - reflog selector (HEAD@{unix timestamp})
+    # %gs - reflog subject
+    output = popen_git("reflog", "show", "--format=%gd:%gs", "--date=unix")
+    for entry in non_empty_lines(output):
+        pattern = "^HEAD@\\{([0-9]+)\\}:checkout: moving from .+ to (.+)$"
+        match = re.search(pattern, entry)
+        if match:
+            branch = match.group(2)
+            # Only the latest occurrence for any given branch is interesting
+            # (i.e. the first one to occur in reflog)
+            if branch not in result:
+                result[branch] = int(match.group(1))
+    return result
+
+
 branch_defs_by_sha_in_reflog = None
 
 
@@ -899,9 +935,9 @@ def infer_upstream(b, condition=lambda u: True, reject_reason_message=""):
 
 
 def discover_tree():
-    global managed_branches, roots, down_branches, up_branch, indent, annotations, opt_roots
-    managed_branches = local_branches()
-    if not managed_branches:
+    global managed_branches, roots, down_branches, up_branch, indent, annotations, opt_checked_out_since, opt_roots
+    all_local_branches = local_branches()
+    if not all_local_branches:
         raise MacheteException("No local branches found")
     for r in opt_roots:
         if r not in local_branches():
@@ -912,15 +948,32 @@ def discover_tree():
     indent = "\t"
     annotations = {}
 
-    root_of = dict((b, b) for b in managed_branches)
+    root_of = dict((b, b) for b in all_local_branches)
 
     def get_root_of(b):
         if b != root_of[b]:
             root_of[b] = get_root_of(root_of[b])
         return root_of[b]
 
-    for b in excluding(managed_branches, opt_roots):
-        u = infer_upstream(b, condition=lambda x: get_root_of(x) != b, reject_reason_message="choosing this candidate would form a cycle in the resulting graph")
+    non_root_fixed_branches = excluding(all_local_branches, opt_roots)
+    if opt_checked_out_since:
+        threshold = parse_git_timespec_to_unix_timestamp(opt_checked_out_since)
+        last_checkout_timestamps = get_latest_checkout_timestamps()
+        stale_branches = [b for b in non_root_fixed_branches if
+                          last_checkout_timestamps[b] < threshold]
+    else:
+        stale_branches = []
+    managed_branches = excluding(all_local_branches, stale_branches)
+    if not managed_branches:
+        sys.stderr.write("No branches satisfying the criteria. Try moving the value of '--checked-out-since' further to the past.\n")
+        return
+
+    for b in excluding(non_root_fixed_branches, stale_branches):
+        u = infer_upstream(b,
+                           # The candidate can be a pre-defined root but can't be a stale branch.
+                           condition=lambda x: get_root_of(x) != b and x not in stale_branches,
+                           reject_reason_message="choosing this candidate would form a cycle in the resulting graph or the candidate is a stale branch"
+                           )
         if u:
             debug("discover_tree()", "inferred upstream of %s "
                                      "is %s, attaching %s as a child of %s\n" % (b, u, b, u))
@@ -1543,15 +1596,16 @@ def usage(c=None):
             -s, --stat    Makes 'git machete diff' pass '--stat' option to 'git diff', so that only summary (diffstat) is printed.
         """,
         "discover": """
-            Usage: git machete discover [-l|--list-commits] [-r|--roots=<branch1>,<branch2>,...]
+            Usage: git machete discover [-C|--checked-out-since=<date>] [-l|--list-commits] [-r|--roots=<branch1>,<branch2>,...]
 
             Discovers and displays tree of branch dependencies using a heuristic based on reflogs and asks whether to overwrite the existing definition file with the new discovered tree.
             If confirmed with a 'y[es]' or 'e[dit]' reply, backs up the current definition file as '.git/machete~' (if exists) and saves the new tree under the usual '.git/machete' path.
             If the reply was 'e[dit]', additionally an editor is opened (as in 'git machete edit') after saving the new definition file.
 
             Options:
-            -l, --list-commits            When printing the discovered tree, additionally lists the messages of commits introduced on each branch (as for 'git machete status').
-            -r, --roots=<branches...>     Comma-separated list of branches that should be considered roots of trees of branch dependencies, typically 'develop' and/or 'master'.
+            -C, --checked-out-since=<date>  Only consider branches checked out at least once since the given date. <date> can be e.g. '2 weeks ago', as in 'git log --since=<date>'.
+            -l, --list-commits              When printing the discovered tree, additionally lists the messages of commits introduced on each branch (as for 'git machete status').
+            -r, --roots=<branches...>       Comma-separated list of branches that should be considered roots of trees of branch dependencies, typically 'develop' and/or 'master'.
         """,
         "edit": """
             Usage: git machete e[dit]
@@ -1864,7 +1918,7 @@ def version():
 
 def main():
     def parse_options(in_args, short_opts="", long_opts=[], gnu=True):
-        global opt_color, opt_debug, opt_down_fork_point, opt_fork_point, opt_list_commits, opt_onto, opt_roots, opt_stat, opt_verbose
+        global opt_checked_out_since, opt_color, opt_debug, opt_down_fork_point, opt_fork_point, opt_list_commits, opt_onto, opt_roots, opt_stat, opt_verbose
 
         fun = getopt.gnu_getopt if gnu else getopt.getopt
         opts, rest = fun(in_args, short_opts + "hv", long_opts + ['debug', 'help', 'verbose', 'version'])
@@ -1872,6 +1926,8 @@ def main():
         for opt, arg in opts:
             if opt == "--color":
                 opt_color = arg
+            elif opt in ("-C", "--checked-out-since"):
+                opt_checked_out_since = arg
             elif opt in ("-d", "--down-fork-point"):
                 opt_down_fork_point = arg
             elif opt == "--debug":
@@ -1923,9 +1979,10 @@ def main():
             return in_args[0]
 
     global definition_file
-    global opt_color, opt_debug, opt_down_fork_point, opt_down_fork_point, opt_fork_point, opt_list_commits, opt_onto, opt_roots, opt_stat, opt_verbose
+    global opt_checked_out_since, opt_color, opt_debug, opt_down_fork_point, opt_down_fork_point, opt_fork_point, opt_list_commits, opt_onto, opt_roots, opt_stat, opt_verbose
     try:
         cmd = None
+        opt_checked_out_since = None
         opt_color = "auto"
         opt_debug = False
         opt_down_fork_point = None
@@ -1988,7 +2045,7 @@ def main():
             read_definition_file()
             diff(param)  # passing None if not specified
         elif cmd == "discover":
-            expect_no_param(parse_options(args, "lr:", ["list-commits", "roots="]))
+            expect_no_param(parse_options(args, "C:lr:", ["checked-out-since=", "list-commits", "roots="]))
             # No need to read definition file.
             discover_tree()
         elif cmd in ("e", "edit"):

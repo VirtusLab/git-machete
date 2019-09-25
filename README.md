@@ -63,8 +63,8 @@ $ sudo make install
 
 ```bash
 $ cd your-repo/
-$ git machete discover
-  # (see and possibly edit the suggested layout of branches)
+$ git machete discover --checked-out-since='2 weeks ago'  # increase/decrease the timespan if you want more/less old branches included
+  # (see and possibly edit the suggested layout of branches - branch layout is always kept as text file .git/machete)
 $ git machete go root
 $ git machete traverse
   # (put each branch one by one in sync with its parent and remote counterpart)

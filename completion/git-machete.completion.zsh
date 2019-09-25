@@ -32,6 +32,7 @@ _git-machete() {
                 (discover)
                     # TODO complete the comma-separated list of roots
                     _arguments \
+                        '(-C --checked-out-since)'{-C,--checked-out-since=}'[Only consider branches checked out at least once since the given date.]' \
                         '(-l --list-commits)'{-l,--list-commits}'[List the messages of commits introduced on each branch.]' \
                         '(-r --roots)'{-r,--roots=}'[Comma-separated list of branches to be considered roots of trees of branch dependencies (typically develop and/or master)]: :__git_branch_names' \
                     && ret=0
