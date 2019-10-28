@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.11.3
+
+- improved: enabled installation via `pip install`
+
 ## New in git-machete 2.11.2
 
 - fixed: choose fork point of B to its upstream U if B is descendant of U, but computed fork point is not a descendant of U

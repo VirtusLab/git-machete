@@ -30,7 +30,25 @@ git-machete works under both Python 2.7 and Python 3.
 
 Install the AUR package [git-machete](https://aur.archlinux.org/packages/git-machete) using an AUR helper of your preference.
 
-### Using make with sudo
+### Using pip with sudo (system-wide install)
+
+You need to have Python and `pip` installed from system packages.
+
+```bash
+$ sudo -H pip install --system git-machete
+```
+
+### Using pip without sudo (user-wide install)
+
+You need to have Python and `pip` installed from system packages.
+
+```bash
+$ pip install git-machete
+```
+
+Please verify that your `PATH` variable has `${HOME}/.local/bin/` included.
+
+### Using make with sudo (deprecated)
 
 Run the following commands to install git machete:
 
@@ -39,29 +57,6 @@ $ git clone --depth=1 https://github.com/VirtusLab/git-machete.git
 $ cd git-machete
 $ sudo make install
 ```
-
-### Using setup.py with sudo
-
-You need to have Python from system packages with `pip` and `setuptools` installed.
-
-```bash
-$ git clone --depth=1 https://github.com/VirtusLab/git-machete.git
-$ cd git-machete
-$ python setup.py build
-$ sudo python setup.py install
-```
-
-### Using setup.py without sudo
-
-You need to have Python from system packages with `pip` and `setuptools` installed.
-
-```bash
-$ git clone --depth=1 https://github.com/VirtusLab/git-machete.git
-$ cd git-machete
-$ python setup.py install --user
-```
-
-Please verify that your `PATH` variable has `${HOME}/.local/bin/` included.
 
 
 ## Quick start
