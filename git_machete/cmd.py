@@ -11,7 +11,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.12.0-M4'
+VERSION = '2.12.0'
 
 
 # Core utils
@@ -274,14 +274,12 @@ def down(b, pick_mode):
 
 
 def first_branch(b):
-    expect_in_managed_branches(b)
     root = root_branch(b, accept_self=True)
     root_dbs = down_branches.get(root)
     return root_dbs[0] if root_dbs else root
 
 
 def last_branch(b):
-    expect_in_managed_branches(b)
     d = root_branch(b, accept_self=True)
     while down_branches.get(d):
         d = down_branches[d][-1]
@@ -305,7 +303,12 @@ def prev_branch(b):
 
 
 def root_branch(b, accept_self):
-    expect_in_managed_branches(b)
+    if b not in managed_branches:
+        if roots:
+            sys.stderr.write("warn: %s is not a managed branch, assuming %s (the first root) instead as root\n" % (b, roots[0]))
+            return roots[0]
+        else:
+            raise_no_branches_error()
     u = up_branch.get(b)
     if not u and not accept_self:
         raise MacheteException("Branch '%s' is already a root" % b)
@@ -1522,6 +1525,12 @@ def status():
 
 # Main
 
+def raise_no_branches_error():
+    raise MacheteException(
+        "No branches listed in %s; use 'git machete discover' or 'git machete edit', or edit %s manually.\n" % (
+            definition_file, definition_file))
+
+
 def usage(c=None):
     short_docs = {
         "add": "Add a branch to the tree of branch dependencies",
@@ -2141,7 +2150,7 @@ def main():
             if roots:
                 status()
             else:
-                sys.stderr.write("No branches listed in %s; use 'git machete discover' or 'git machete edit', or edit %s manually.\n" % (definition_file, definition_file))
+                raise_no_branches_error()
         elif cmd == "traverse":
             expect_no_param(parse_options(args, "l", ["list-commits"]))
             read_definition_file()

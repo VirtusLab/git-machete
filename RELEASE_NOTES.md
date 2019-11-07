@@ -7,6 +7,7 @@
 - fixed: remote tracking branch is inferred for a local branch if it's not explicitly set
 - fixed: only consider managed branches when inferring an upstream to add a branch onto
 - added: `--checked-out-since` flag to `discover`
+- improved: `go root`, `go first` and `go last` assume the first defined tree if the current branch is unmanaged
 
 ## New in git-machete 2.11.3
 
