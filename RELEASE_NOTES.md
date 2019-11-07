@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.12.1
+
+- fixed: remote tracking branches not always properly updated during `traverse`
+
 ## New in git-machete 2.12.0
 
 - added: `status` displays a message if there are no managed branches

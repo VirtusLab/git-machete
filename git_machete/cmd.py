@@ -11,7 +11,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.12.0'
+VERSION = '2.12.1'
 
 
 # Core utils
@@ -544,12 +544,17 @@ def sha_by_revision(revision, prefix="refs/heads/"):
 
 
 def find_remote_tracking_branch(b):
-    # Since many people don't use '--set-upstream' flag of 'push', we try to infer the remote tracking branch instead.
-    if remotes():
-        rb = remotes()[0] + "/" + b
-        if rb in remote_branches():
-            return rb
-    return None
+    try:
+        # Note: no need to prefix 'b' with 'refs/heads/', '@{upstream}' assumes local branch automatically.
+        return popen_git("rev-parse", "--abbrev-ref",
+                         b + "@{upstream}").strip()
+    except MacheteException:
+        # Since many people don't use '--set-upstream' flag of 'push', we try to infer the remote tracking branch instead.
+        if remotes():
+            rb = remotes()[0] + "/" + b
+            if rb in remote_branches():
+                return rb
+        return None
 
 
 remote_tracking_branches_cached = {}
