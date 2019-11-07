@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import distutils.spawn
 import getopt
 import io
 import itertools
@@ -9,7 +10,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.11.3'
+VERSION = '2.12.0-M1'
 
 
 # Core utils
@@ -405,7 +406,15 @@ def is_executable(path):
 
 
 def edit():
-    return run_cmd(os.environ.get("EDITOR") or "vim", definition_file)
+    editor = os.environ.get("EDITOR")
+    if editor and distutils.spawn.find_executable(editor):
+        return run_cmd(editor, definition_file)
+    elif distutils.spawn.find_executable("vim"):
+        return run_cmd("vim", definition_file)
+    elif distutils.spawn.find_executable("nano"):
+        return run_cmd("nano", definition_file)
+    else:
+        raise MacheteException("Cannot determine editor. Set EDITOR environment variable or edit %s directly." % definition_file)
 
 
 git_version = None
@@ -2055,7 +2064,10 @@ def main():
                 global ascii_only
                 ascii_only = opt_color == "never" or (opt_color == "auto" and not sys.stdout.isatty())
             read_definition_file()
-            status()
+            if roots:
+                status()
+            else:
+                sys.stderr.write("No branches listed in %s; use 'git machete discover' or 'git machete edit', or edit %s manually.\n" % (definition_file, definition_file))
         elif cmd == "traverse":
             expect_no_param(parse_options(args, "l", ["list-commits"]))
             read_definition_file()
