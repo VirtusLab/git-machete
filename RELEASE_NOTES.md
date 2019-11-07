@@ -1,10 +1,11 @@
 # Release notes
 
-## New in git-machete 2.11.4
+## New in git-machete 2.12.0
 
 - added: `status` displays a message if there are no managed branches
 - fixed: `edit` crashing when both `EDITOR` variable and `vim` are missing
 - fixed: remote tracking branch is inferred for a local branch if it's not explicitly set
+- fixed: only consider managed branches when inferring an upstream to add a branch onto
 
 ## New in git-machete 2.11.3
 

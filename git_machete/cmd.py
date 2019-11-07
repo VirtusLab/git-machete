@@ -10,7 +10,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.12.0-M2'
+VERSION = '2.12.0-M3'
 
 
 # Core utils
@@ -318,7 +318,7 @@ def up(b, prompt_if_inferred):
         u = infer_upstream(b)
         if u:
             if prompt_if_inferred:
-                if ask_if("Branch '%s' not found in the tree of branch dependencies; rebase onto the inferred upstream '%s'? [y/N] " % (b, u)):
+                if ask_if(prompt_if_inferred % (b, u)):
                     return u
                 else:
                     sys.exit(1)
@@ -356,7 +356,7 @@ def add(b):
         print("Added branch '%s' as a new root" % b)
     else:
         if not onto:
-            u = infer_upstream(b)
+            u = infer_upstream(b, condition=lambda x: x in managed_branches, reject_reason_message="this candidate is not a managed branch")
             if not u:
                 raise MacheteException("Could not automatically infer upstream (parent) branch for '%s'.\n"
                                        "Specify the desired upstream branch with '--onto' or edit the definition file manually with 'git machete edit'" % b)
@@ -693,7 +693,7 @@ def rebase(onto, fork_commit, branch):
 
 
 def update(branch, fork_commit):
-    rebase("refs/heads/" + up(branch, prompt_if_inferred=True), fork_commit, branch)
+    rebase("refs/heads/" + up(branch, prompt_if_inferred="Branch '%s' not found in the tree of branch dependencies; rebase onto the inferred upstream '%s'? [y/N] "), fork_commit, branch)
 
 
 def reapply(branch, fork_commit):
@@ -1964,7 +1964,7 @@ def main():
             elif param in ("r", "root"):
                 return root_branch(b, accept_self=False)
             elif param in ("u", "up"):
-                return up(b, prompt_if_inferred=False)
+                return up(b, prompt_if_inferred=None)
             else:
                 raise MacheteException("Usage: git machete %s %s" % (cmd, directions))
 
