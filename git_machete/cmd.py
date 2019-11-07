@@ -10,7 +10,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.12.0-M1'
+VERSION = '2.12.0-M2'
 
 
 # Core utils
@@ -490,7 +490,14 @@ def remotes():
 
 def remote_for_branch(b):
     remote = get_config_or_none("branch." + b + ".remote")
-    return remote.rstrip() if remote else remote
+    if remote:
+        return remote.rstrip()
+    # Since many people don't use '--set-upstream' flag of 'push', we try to infer the remote instead.
+    if remotes():
+        rb = remotes()[0] + "/" + b
+        if rb in remote_branches():
+            return remotes()[0]
+    return None
 
 
 def short_sha(revision):
@@ -516,11 +523,12 @@ def sha_by_revision(revision, prefix="refs/heads/"):
 
 
 def find_remote_tracking_branch(b):
-    try:
-        # Note: no need to prefix 'b' with 'refs/heads/', '@{upstream}' assumes local branch automatically.
-        return popen_git("rev-parse", "--abbrev-ref", b + "@{upstream}").strip()
-    except MacheteException:
-        return None
+    # Since many people don't use '--set-upstream' flag of 'push', we try to infer the remote tracking branch instead.
+    if remotes():
+        rb = remotes()[0] + "/" + b
+        if rb in remote_branches():
+            return rb
+    return None
 
 
 remote_tracking_branches_cached = {}
@@ -598,37 +606,46 @@ def spoonfeed_log_shas(b):
 
 
 local_branches_cached = None
+remote_branches_cached = None
 
 
 def local_branches():
-    global local_branches_cached
+    global local_branches_cached, remote_branches_cached
     if local_branches_cached is None:
-        local_branches_cached = load_local_branches()
+        local_branches_cached, remote_branches_cached = load_branches()
     return local_branches_cached
 
 
-def load_local_branches():
+def remote_branches():
+    global local_branches_cached, remote_branches_cached
+    if remote_branches_cached is None:
+        local_branches_cached, remote_branches_cached = load_branches()
+    return remote_branches_cached
+
+
+def load_branches():
     raw_remote = non_empty_lines(popen_git("for-each-ref", "--format=%(refname:strip=2)\t%(objectname)", "refs/remotes"))
-    remote_branches = []
+    rbs = []
     for line in raw_remote:
         values = line.split("\t")
         if len(values) != 2:  # invalid, shouldn't happen
             continue
         b, sha = values
-        remote_branches += [b]
+        rbs += [b]
         sha_by_revision_cached["refs/remotes/" + b] = sha
 
     raw_local = non_empty_lines(popen_git("for-each-ref", "--format=%(refname:strip=2)\t%(objectname)\t%(upstream:strip=2)\t%(push:strip=2)", "refs/heads"))
-    result = []
+    lbs = []
     for line in raw_local:
         values = line.split("\t")
         if len(values) != 4:  # invalid, shouldn't happen
             continue
         b, sha, for_fetch, for_push = values
-        result += [b]
+        lbs += [b]
         sha_by_revision_cached["refs/heads/" + b] = sha
-        remote_tracking_branches_cached[b] = for_fetch if for_fetch in remote_branches else None
-    return result
+        if for_fetch in rbs:
+            remote_tracking_branches_cached[b] = for_fetch
+    return lbs, rbs
 
 
 def merged_local_branches():
