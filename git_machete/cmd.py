@@ -11,7 +11,7 @@ import subprocess
 import sys
 import textwrap
 
-VERSION = '2.12.1'
+VERSION = '2.12.2'
 
 
 # Core utils
@@ -118,8 +118,8 @@ def run_cmd(cmd, *args, **kwargs):
 
 def popen_cmd(cmd, *args, **kwargs):
     process = subprocess.Popen([cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
-    stdoutdata, stderrdata = process.communicate()
-    return process.returncode, stdoutdata.decode('utf-8')
+    stdout, stderr = process.communicate()
+    return process.returncode, stdout.decode('utf-8'), stderr.decode('utf-8')
 
 
 # Git core
@@ -155,7 +155,7 @@ def popen_git(git_cmd, *args, **kwargs):
         sys.stderr.write(underline(flat_cmd) + "\n")
     elif opt_verbose:
         sys.stderr.write(flat_cmd + "\n")
-    exit_code, stdout = popen_cmd("git", git_cmd, *args)
+    exit_code, stdout, stderr = popen_cmd("git", git_cmd, *args)
     if not kwargs.get("allow_non_zero") and exit_code != 0:
         raise MacheteException("'%s' returned %i" % (flat_cmd, exit_code))
     if opt_debug:
@@ -782,7 +782,8 @@ def load_all_reflogs():
     # %gs - reflog subject
     all_branches = ["refs/heads/" + b for b in local_branches()] + \
                    ["refs/remotes/" + remote_tracking_branch(b) for b in local_branches() if remote_tracking_branch(b)]
-    entries = non_empty_lines(popen_git("reflog", "show", "--format=%gD\t%H\t%gs", *all_branches))
+    # The trailing '--' is necessary to avoid ambiguity in case there is a file called just exactly like one of the branches.
+    entries = non_empty_lines(popen_git("reflog", "show", "--format=%gD\t%H\t%gs", *(all_branches + ["--"])))
     reflogs_cached = {}
     for entry in entries:
         values = entry.split("\t")
@@ -814,6 +815,7 @@ def reflog(b):
             # %gs - reflog subject
             reflogs_cached[b] = [
                 entry.split(":", 1) for entry in non_empty_lines(
+                    # The trailing '--' is necessary to avoid ambiguity in case there is a file called just exactly like the branch 'b'.
                     popen_git("reflog", "show", "--format=%H:%gs", b, "--"))
             ]
         return reflogs_cached[b]
@@ -845,14 +847,17 @@ def get_latest_checkout_timestamps():
     # %gs - reflog subject
     output = popen_git("reflog", "show", "--format=%gd:%gs", "--date=unix")
     for entry in non_empty_lines(output):
-        pattern = "^HEAD@\\{([0-9]+)\\}:checkout: moving from .+ to (.+)$"
+        pattern = "^HEAD@\\{([0-9]+)\\}:checkout: moving from (.+) to (.+)$"
         match = re.search(pattern, entry)
         if match:
-            branch = match.group(2)
+            from_branch = match.group(2)
+            to_branch = match.group(3)
             # Only the latest occurrence for any given branch is interesting
             # (i.e. the first one to occur in reflog)
-            if branch not in result:
-                result[branch] = int(match.group(1))
+            if from_branch not in result:
+                result[from_branch] = int(match.group(1))
+            if to_branch not in result:
+                result[to_branch] = int(match.group(1))
     return result
 
 
@@ -968,6 +973,7 @@ def discover_tree():
         threshold = parse_git_timespec_to_unix_timestamp(opt_checked_out_since)
         last_checkout_timestamps = get_latest_checkout_timestamps()
         stale_branches = [b for b in non_root_fixed_branches if
+                          b not in last_checkout_timestamps or
                           last_checkout_timestamps[b] < threshold]
     else:
         stale_branches = []
@@ -978,13 +984,11 @@ def discover_tree():
 
     for b in excluding(non_root_fixed_branches, stale_branches):
         u = infer_upstream(b,
-                           # The candidate can be a pre-defined root but can't be a stale branch.
                            condition=lambda x: get_root_of(x) != b and x not in stale_branches,
                            reject_reason_message="choosing this candidate would form a cycle in the resulting graph or the candidate is a stale branch"
                            )
         if u:
-            debug("discover_tree()", "inferred upstream of %s "
-                                     "is %s, attaching %s as a child of %s\n" % (b, u, b, u))
+            debug("discover_tree()", "inferred upstream of %s is %s, attaching %s as a child of %s\n" % (b, u, b, u))
             up_branch[b] = u
             root_of[b] = u
             if u in down_branches:
@@ -1000,7 +1004,7 @@ def discover_tree():
     sys.stdout.write("\n")
     do_backup = os.path.exists(definition_file)
     backup_msg = ("The existing definition file will be backed up as '%s~' " % definition_file) if do_backup else ""
-    msg = "Save the above tree to '%s'? %s(y[es]/e[dit]/N[o]) " % (definition_file, backup_msg)
+    msg = "Save the above tree to '%s'? %s([y]es/[e]dit/[N]o) " % (definition_file, backup_msg)
     reply = safe_input(msg).lower()
     if reply in ('y', 'yes'):
         if do_backup:
@@ -1173,7 +1177,7 @@ def pick_remote(b):
 def handle_untracked_branch(new_remote, b):
     rems = remotes()
     can_pick_other_remote = len(rems) > 1
-    other_remote_suffix = "/o[ther remote]" if can_pick_other_remote else ""
+    other_remote_suffix = "/[o]ther remote" if can_pick_other_remote else ""
     rb = new_remote + "/" + b
     if not sha_by_revision(rb, prefix="refs/remotes"):
         ans = safe_input("Push untracked branch %s to %s? (y/N/q/yq%s) " % (
@@ -1220,7 +1224,7 @@ def handle_untracked_branch(new_remote, b):
             "Push branch %s to %s? (y/N/q/yq%s) " %
             (bold(b), bold(new_remote), other_remote_suffix),
         DIVERGED_FROM_REMOTE:
-            "Push branch %s with force to %s? (y/N/q/yq%s) " %
+            "Push branch %s with force-with-lease to %s? (y/N/q/yq%s) " %
             (bold(b), bold(new_remote), other_remote_suffix)
     }
 
@@ -1239,7 +1243,7 @@ def handle_untracked_branch(new_remote, b):
             ["push", "--set-upstream", new_remote, b]
         ],
         DIVERGED_FROM_REMOTE: [
-            ["push", "--set-upstream", "--force", new_remote, b]
+            ["push", "--set-upstream", "--force-with-lease", new_remote, b]
         ]
     }
 
@@ -1372,10 +1376,10 @@ def traverse():
                 rb = remote_tracking_branch(b)
                 ans = safe_input(
                     "Branch %s diverged from its remote counterpart %s."
-                    "\nPush %s with force to %s? [y/N/q/yq] " %
+                    "\nPush %s with force-with-lease to %s? [y/N/q/yq] " %
                     (bold(b), bold(rb), bold(b), bold(remote))).lower()
                 if ans in ('y', 'yes', 'yq'):
-                    run_git("push", "--force", remote)
+                    run_git("push", "--force-with-lease", remote)
                     if ans == 'yq':
                         return
                     flush()
@@ -1509,9 +1513,12 @@ def status():
         hook_output = ""
         if hook_executable:
             debug("status()", "running machete-status-branch hook (%s) for branch %s" % (hook_path, b))
-            status_code, stdout = popen_cmd(hook_path, b, cwd=get_root_dir())
-            if status_code == 0 and not stdout.isspace():
-                hook_output = "  " + stdout.rstrip()
+            status_code, stdout, stderr = popen_cmd(hook_path, b, cwd=get_root_dir())
+            if status_code == 0:
+                if not stdout.isspace():
+                    hook_output = "  " + stdout.rstrip()
+            else:
+                debug("status()", "machete-status-branch hook (%s) for branch %s returned %i; stdout: '%s'; stderr: '%s'" % (hook_path, b, status_code, stdout, stderr))
 
         write_unicode(current + anno + sync_status + hook_output + "\n")
 
@@ -1613,8 +1620,8 @@ def usage(c=None):
             Usage: git machete discover [-C|--checked-out-since=<date>] [-l|--list-commits] [-r|--roots=<branch1>,<branch2>,...]
 
             Discovers and displays tree of branch dependencies using a heuristic based on reflogs and asks whether to overwrite the existing definition file with the new discovered tree.
-            If confirmed with a 'y[es]' or 'e[dit]' reply, backs up the current definition file as '.git/machete~' (if exists) and saves the new tree under the usual '.git/machete' path.
-            If the reply was 'e[dit]', additionally an editor is opened (as in 'git machete edit') after saving the new definition file.
+            If confirmed with a '[y]es' or '[e]dit' reply, backs up the current definition file as '.git/machete~' (if exists) and saves the new tree under the usual '.git/machete' path.
+            If the reply was '[e]dit', additionally an editor is opened (as in 'git machete edit') after saving the new definition file.
 
             Options:
             -C, --checked-out-since=<date>  Only consider branches checked out at least once since the given date. <date> can be e.g. '2 weeks ago', as in 'git log --since=<date>'.
@@ -1855,7 +1862,7 @@ def usage(c=None):
               - asks the user whether to rebase the branch onto into its upstream branch - equivalent to 'git machete update' with no '--fork-point' option passed;
 
             * if the branch is not tracked on a remote, is ahead of its remote counterpart or diverged from the counterpart:
-              - asks the user whether to push the branch (possibly with '--force' if the branches diverged);
+              - asks the user whether to push the branch (possibly with '--force-with-lease' if the branches diverged);
             * otherwise, if the branch is behind its remote counterpart:
               - asks the user whether to pull the branch;
 

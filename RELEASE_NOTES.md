@@ -1,15 +1,25 @@
 # Release notes
 
+## New in git-machete 2.12.2
+
+- fixed: `discover --checked-out-since` was crashing for branches that weren't referenced anywhere in `git reflog HEAD`
+- fixed: `discover --checked-out-since` was not taking some recently checked out branches into account
+- fixed: branches could have been confused with identically named files by underlying `git reflog` invocations
+- fixed: shellcheck has been applied on sample hook scripts
+- improved: use `[y]es/[e]dit/[N]o` rather than `y[es]/e[dit]/N[o]` format in CLI prompts
+- improved: underlying `git push` invocations are now using safer `--force-with-lease` rather than `--force`
+- improved: log exit code, stdout and stderr of `machete-status-branch` hook in case exit code is non-zero
+
 ## New in git-machete 2.12.1
 
-- fixed: remote tracking branches not always properly updated during `traverse`
+- fixed: remote tracking branches were not always properly updated during `traverse`
 
 ## New in git-machete 2.12.0
 
 - added: `status` displays a message if there are no managed branches
-- fixed: `edit` crashing when both `EDITOR` variable and `vim` are missing
-- fixed: remote tracking branch is inferred for a local branch if it's not explicitly set
-- fixed: only consider managed branches when inferring an upstream to add a branch onto
+- fixed: `edit` was crashing when both `EDITOR` variable and `vim` are missing
+- fixed: remote tracking branch is now inferred for a local branch if it's not explicitly set
+- fixed: only managed branches are now considered when inferring an upstream to add a branch onto
 - added: `--checked-out-since` flag to `discover`
 - improved: `go root`, `go first` and `go last` assume the first defined tree if the current branch is unmanaged
 
