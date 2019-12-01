@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.12.3
+
+- improved: build process
+
 ## New in git-machete 2.12.2
 
 - fixed: `discover --checked-out-since` was crashing for branches that weren't referenced anywhere in `git reflog HEAD`

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from git_machete import __version__
 import distutils.spawn
 import getopt
 import io
@@ -10,8 +11,6 @@ import re
 import subprocess
 import sys
 import textwrap
-
-VERSION = '2.12.2'
 
 
 # Core utils
@@ -305,7 +304,7 @@ def prev_branch(b):
 def root_branch(b, accept_self):
     if b not in managed_branches:
         if roots:
-            sys.stderr.write("warn: %s is not a managed branch, assuming %s (the first root) instead as root\n" % (b, roots[0]))
+            sys.stderr.write("Warn: %s is not a managed branch, assuming %s (the first root) instead as root\n" % (b, roots[0]))
             return roots[0]
         else:
             raise_no_branches_error()
@@ -1297,7 +1296,7 @@ def traverse():
 
         if b != cb and (needs_slide_out or needs_rebase or needs_remote_sync):
             print_new_line(False)
-            sys.stderr.write("Checking out %s\n" % bold(b))
+            sys.stdout.write("Checking out %s\n" % bold(b))
             go(b)
             cb = b
             print_new_line(False)
@@ -1406,7 +1405,7 @@ def traverse():
     msg = "Reached branch %s which has no successor" \
         if cb == managed_branches[-1] else \
         "No successor of %s needs sync with upstream branch or remote"
-    sys.stderr.write(msg % bold(cb) + "; nothing left to update\n")
+    sys.stdout.write(msg % bold(cb) + "; nothing left to update\n")
 
 
 def status():
@@ -1919,7 +1918,7 @@ def usage(c=None):
             for cm in cmds:
                 alias = (", " + aliases[cm]) if cm in aliases else ""
                 print("    %s%-18s%s%s" % (BOLD, cm + alias, ENDC, short_docs[cm]))
-            sys.stderr.write("\n")
+            sys.stdout.write("\n")
         print(textwrap.dedent("""
             %s\n
                 --debug           Log detailed diagnostic info, including outputs of the executed git commands.
@@ -1934,7 +1933,7 @@ def short_usage():
 
 
 def version():
-    print('git-machete version ' + VERSION)
+    print('git-machete version ' + __version__)
 
 
 def main():
@@ -2183,6 +2182,9 @@ def main():
         sys.exit(2)
     except MacheteException as e:
         sys.stderr.write(str(e) + "\n")
+        sys.exit(1)
+    except KeyboardInterrupt:
+        sys.stderr.write("Interrupted by the user\n")
         sys.exit(1)
     except StopTraversal:
         pass

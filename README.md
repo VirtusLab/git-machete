@@ -2,12 +2,12 @@
 
 [![Join the chat at https://gitter.im/VirtusLab/git-machete](https://badges.gitter.im/VirtusLab/git-machete.svg)](https://gitter.im/VirtusLab/git-machete)
 [![TravisCI build status](https://api.travis-ci.org/VirtusLab/git-machete.svg?branch=master)](https://travis-ci.org/VirtusLab/git-machete)
+[![PyPI package](https://badge.fury.io/py/git-machete.svg)](https://badge.fury.io/py/git-machete.svg)
+
 
 ![](logo.png)
 
 **git machete is a versatile tool for organizing your git repo, including features like:**
-
-* Automatic discovery of branch relations (`git machete discover`)
 
 * Neat, customizable `git machete status` that shows what branches are in sync with their parent branch/remote tracking branch and which of them need to be rebased/pulled/pushed
 
@@ -16,6 +16,8 @@
 * Semi-automatic traversal of the branches that helps you effortlessly rebase and push/pull the branches you care for (`git machete traverse`)
 
 ![git machete traverse](https://raw.githubusercontent.com/PawelLipski/git-machete-blog-2/master/traverse.png)
+
+* Automatic discovery of branch relations (`git machete discover`)
 
 
 ## Install
