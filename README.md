@@ -30,6 +30,16 @@ git-machete works under both Python 2.7 and Python 3.
 
 Install the AUR package [git-machete](https://aur.archlinux.org/packages/git-machete) using an AUR helper of your preference.
 
+### Using Nix
+
+On MacOS and most Linux distributions, you can install via [Nix](https://nixos.org/nix/):
+
+```bash
+# If you haven't set up any channels:
+$ nix-channel --add https://nixos.org/channels/nixos-unstable unstable
+$ nix-env -i git-machete
+```
+
 ### Using pip with sudo (system-wide install)
 
 You need to have Python and `pip` installed from system packages.
