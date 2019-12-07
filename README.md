@@ -26,7 +26,11 @@ We suggest a couple of alternative ways of installation.
 
 **Bash and zsh completion scripts are provided** in completion/ directory, see [wiki for their installation instructions](https://github.com/VirtusLab/git-machete/wiki).
 
-git-machete works under both Python 2.7 and Python 3.
+git-machete works under both Python 2.7 and Python 3.x.
+
+### Using Debian packages (Ubuntu, Debian etc.)
+
+See [the latest release](https://github.com/VirtusLab/git-machete/releases/latest) for downloadable .deb packages.
 
 ### Using AUR (Arch Linux only)
 

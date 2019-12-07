@@ -1,5 +1,10 @@
 # Release notes
 
+## New in git-machete 2.12.4
+
+- fixed: artifact upload to Github Releases
+- added: creation and upload of Debian packages to Github Releases
+
 ## New in git-machete 2.12.3
 
 - improved: build process
