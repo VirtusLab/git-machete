@@ -21,8 +21,12 @@ submod_commit=$(git ls-tree -d "$branch" -- "$submod_rel_path" | grep -Po '(?<=1
 # Check which submodule's local branches (and/or submodule's HEAD) point at submod_commit.
 refs=$(git --git-dir=.git/modules/"$submod_rel_path" log --no-walk --format=%D --decorate --decorate-refs-exclude=refs/remotes/ "$submod_commit")
 
-dim='\033[2m'
-endc='\033[0m'
+function ansi_esc {
+  [[ $ASCII_ONLY = true ]] || echo -n "$1"
+}
+dim=$(ansi_esc '\033[2m')
+endc=$(ansi_esc '\033[0m')
+
 echo -ne "${dim}[$(basename "$submod_rel_path") at $endc"
 if [ -n "$refs" ] && [ "$refs" != HEAD ]; then
     echo -n "$refs"

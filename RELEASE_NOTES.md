@@ -2,6 +2,8 @@
 
 ## New in git-machete 2.12.4
 
+- fixed: remove stray ANSI escape characters in ASCII-only mode
+- improved: `machete-status-branch` hook now receives `ASCII_ONLY` env var depending on whether `status` runs in ASCII-only mode
 - fixed: artifact upload to Github Releases
 - added: creation and upload of Debian packages to Github Releases
 

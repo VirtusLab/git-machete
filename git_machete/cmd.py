@@ -1485,7 +1485,8 @@ def status():
                         fp_suffix = (colored(" " + right_arrow() + " fork point ???", RED) + " commit " + short_sha(fp_sha(b)) + " found in reflog of " + fp_branches_formatted)
                     else:
                         fp_suffix = ''
-                    print_line_prefix(b, vertical_bar() + " " + ENDC + dim(msg) + fp_suffix + "\n")
+                    print_line_prefix(b, vertical_bar())
+                    write_unicode(" " + dim(msg) + fp_suffix + "\n")
             elbow_ascii_only = {DIM: "m-", RED: "x-", GREEN: "o-", YELLOW: "?-"}
             elbow = u"└─" if not ascii_only else elbow_ascii_only[edge_color[b]]
             print_line_prefix(b, elbow)
@@ -1512,7 +1513,8 @@ def status():
         hook_output = ""
         if hook_executable:
             debug("status()", "running machete-status-branch hook (%s) for branch %s" % (hook_path, b))
-            status_code, stdout, stderr = popen_cmd(hook_path, b, cwd=get_root_dir())
+            hook_env = dict(os.environ, ASCII_ONLY=str(ascii_only).lower())
+            status_code, stdout, stderr = popen_cmd(hook_path, b, cwd=get_root_dir(), env=hook_env)
             if status_code == 0:
                 if not stdout.isspace():
                     hook_output = "  " + stdout.rstrip()
@@ -1726,6 +1728,9 @@ def usage(c=None):
                 The standard output of this hook is displayed at the end of the line, after branch name, (optionally) custom annotation and (optionally) remote sync-ness status.
                 Standard error is ignored. If the hook returns a non-zero status, both stdout and stderr are ignored, and printing the status continues as usual.
 
+                Note: the hook is always invoked with 'ASCII_ONLY' variable passed into the environment.
+                If 'status' runs in ASCII-only mode (i.e. if '--color=auto' and stdout is not a terminal, or if '--color=never'), then 'ASCII_ONLY=true', otherwise 'ASCII_ONLY=false'.
+
             Please see hook_samples/ directory for examples (also includes an example of using the standard git post-commit hook to 'git machete add' branches automatically).
         """,
         "list": """
@@ -1849,7 +1854,7 @@ def usage(c=None):
 
             Options:
             -l, --list-commits            Additionally lists the messages of commits introduced on each branch.
-            --color=WHEN                  Colorize the output; WHEN can be 'always', 'auto', or 'never'.
+            --color=WHEN                  Colorize the output; WHEN can be 'always', 'auto' (default; i.e. only if stdout is a terminal), or 'never'.
         """,
         "traverse": """
             Usage: git machete traverse [-l|--list-commits]
