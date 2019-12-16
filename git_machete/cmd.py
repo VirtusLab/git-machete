@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from git_machete import __version__
-import distutils.spawn
 import getopt
 import io
 import itertools
@@ -415,13 +414,40 @@ def is_executable(path):
     return os.access(path, os.X_OK)
 
 
+# Copied from distutils.spawn to avoid dependency on distutils
+def find_executable(executable, path=None):
+    """Tries to find 'executable' in the directories listed in 'path'.
+
+    A string listing directories separated by 'os.pathsep'; defaults to
+    os.environ['PATH'].  Returns the complete filename or None if not found.
+    """
+    if path is None:
+        path = os.environ.get('PATH', os.defpath)
+
+    paths = path.split(os.pathsep)
+    base, ext = os.path.splitext(executable)
+
+    if (sys.platform == 'win32' or os.name == 'os2') and (ext != '.exe'):
+        executable = executable + '.exe'
+
+    if not os.path.isfile(executable):
+        for p in paths:
+            f = os.path.join(p, executable)
+            if os.path.isfile(f):
+                # the file exists, we have a shot at spawn working
+                return f
+        return None
+    else:
+        return executable
+
+
 def edit():
     editor = os.environ.get("EDITOR")
-    if editor and distutils.spawn.find_executable(editor):
+    if editor and find_executable(editor):
         return run_cmd(editor, definition_file)
-    elif distutils.spawn.find_executable("vim"):
+    elif find_executable("vim"):
         return run_cmd("vim", definition_file)
-    elif distutils.spawn.find_executable("nano"):
+    elif find_executable("nano"):
         return run_cmd("nano", definition_file)
     else:
         raise MacheteException("Cannot determine editor. Set EDITOR environment variable or edit %s directly." % definition_file)

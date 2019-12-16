@@ -1,0 +1,9 @@
+FROM ubuntu:18.04
+
+COPY . .
+RUN apt-get -qq update && apt-get install -y -qq git python-all
+RUN dpkg --install python-git-machete_*.deb
+RUN which git-machete
+RUN git machete --version
+RUN dpkg --remove python-git-machete
+RUN ! command -v git-machete

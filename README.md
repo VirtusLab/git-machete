@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/VirtusLab/git-machete](https://badges.gitter.im/VirtusLab/git-machete.svg)](https://gitter.im/VirtusLab/git-machete)
 [![TravisCI build status](https://api.travis-ci.org/VirtusLab/git-machete.svg?branch=master)](https://travis-ci.org/VirtusLab/git-machete)
-[![PyPI package](https://badge.fury.io/py/git-machete.svg)](https://badge.fury.io/py/git-machete.svg)
+[![PyPI package](https://badge.fury.io/py/git-machete.svg)](https://pypi.org/project/git-machete)
 
 
 ![](logo.png)

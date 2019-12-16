@@ -1,5 +1,11 @@
 # Release notes
 
+## New in git-machete 2.12.5
+
+- improved: validation of generated Debian packages
+- fixed: deployment to PyPI
+- fixed: removed dependency on `distutils.spawn`
+
 ## New in git-machete 2.12.4
 
 - fixed: remove stray ANSI escape characters in ASCII-only mode
