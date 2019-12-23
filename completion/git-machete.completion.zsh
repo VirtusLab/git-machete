@@ -82,6 +82,7 @@ _git-machete() {
                 (s|status)
                     _arguments \
                         '(--color)'--color='[Colorize the output; argument can be "always", "auto", or "never"]: :_git_machete_opt_color_args' \
+                        '(-L --list-commits-with-hashes)'{-L,--list-commits-with-hashes}'[List the short hashes and messages of commits introduced on each branch]' \
                         '(-l --list-commits)'{-l,--list-commits}'[List the messages of commits introduced on each branch]' \
                     && ret=0
                     ;;
@@ -156,7 +157,7 @@ _git_machete_categories() {
     # TODO complete slidable-after's argument
     categories=(
         'managed:all branches that appear in the definition file'
-        'slidable:all managed branches that have exactly one upstream and one downstream (i.e. the ones that can be slid out with slide-out subcommand)'
+        'slidable:all managed branches that have exactly one upstream and one downstream (i.e. the ones that can be slid out with slide-out command)'
         'slidable-after:the downstream branch of the given branch, if it exists and is its only downstream (i.e. the one that can be slid out immediately following <branch>)'
         'unmanaged:all local branches that do not appear in the definition file'
         'with-overridden-fork-point:all local branches that have a fork point override config'

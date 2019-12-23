@@ -18,7 +18,7 @@ _git_machete() {
     fork_point_opts="--inferred --override-to= --override-to-inferred --override-to-parent --unset-override"
     reapply_opts="-f --fork-point="
     slide_out_opts="-d --down-fork-point= -n --no-interactive-rebase"
-    status_opts="-l --list-commits --color="
+    status_opts="--color= -L --list-commits-with-hashes -l --list-commits"
     traverse_opts="-F --fetch -l --list-commits -n --no-interactive-rebase --return-to= --start-from= -w --whole -W --yes"
     update_opts="-f --fork-point= -n --no-interactive-rebase"
 

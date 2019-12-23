@@ -30,6 +30,7 @@
 - improved: testing against multiple git versions in CI pipeline
 - improved: functional tests invoke `discover` and `traverse`
 - fixed: command-line argument validation for `list`
+- added: `--list-commits-with-hashes` flag to `status`
 
 ## New in git-machete 2.12.10
 

@@ -931,7 +931,7 @@ def log(branch):
 
 
 def commits_between(earlier, later):
-    return list(map(lambda x: x.split(":", 1), non_empty_lines(popen_git("log", "--format=%H:%s", "^" + earlier, later, "--"))))
+    return list(map(lambda x: x.split(":", 2), non_empty_lines(popen_git("log", "--format=%H:%h:%s", "^" + earlier, later, "--"))))
 
 
 NO_REMOTES = 0
@@ -1106,7 +1106,7 @@ def match_log_to_adjusted_reflogs(b):
             debug("match_log_to_adjusted_reflogs(%s)" % b, "commit %s not found in any adjusted reflog" % sha)
 
 
-# Complex routines/subcommands
+# Complex routines/commands
 
 def is_merged_to_parent(b):
     if b not in up_branch:
@@ -1818,15 +1818,16 @@ def status(warn_on_yellow_edges):
                 else:  # edge_color == GREEN
                     commits = commits_between(fp_sha(b), "refs/heads/" + b)
 
-                for sha, msg in reversed(commits):
+                for sha, short_sha, msg in reversed(commits):
                     if sha == fp_sha(b):
                         # fp_branches_cached will already be there thanks to the above call to 'fp_sha'.
                         fp_branches_formatted = " and ".join(map(star(lambda lb, lb_or_rb: lb_or_rb), fp_branches_cached[b]))
-                        fp_suffix = (colored(" " + right_arrow() + " fork point ???", RED) + " commit " + find_short_commit_sha_by_revision(fp_sha(b)) + " found in reflog of " + fp_branches_formatted)
+                        fp_suffix = " %s %s %s has been found in reflog of %s" %\
+                            (colored(right_arrow(), RED), colored("fork point ???", RED), "this commit" if opt_list_commits_with_hashes else "commit " + short_sha, fp_branches_formatted)
                     else:
                         fp_suffix = ''
                     print_line_prefix(b, vertical_bar())
-                    write_unicode(" " + dim(msg) + fp_suffix + "\n")
+                    write_unicode(" %s%s%s\n" % (dim(short_sha) + "  " if opt_list_commits_with_hashes else "", dim(msg), fp_suffix))
             elbow_ascii_only = {DIM: "m-", RED: "x-", GREEN: "o-", YELLOW: "?-"}
             elbow = u"└─" if not ascii_only else elbow_ascii_only[edge_color[b]]
             print_line_prefix(b, elbow)
@@ -1890,12 +1891,13 @@ def status(warn_on_yellow_edges):
             first_line = "yellow edges indicate that fork points for %s are probably incorrectly inferred" % affected_branches
 
         if not opt_list_commits:
-            second_line = "Run 'git machete status --list-commits' to see more details"
+            second_line = "Run 'git machete status --list-commits' or 'git machete status --list-commits-with-hashes' to see more details"
         elif len(yellow_edge_branches) == 1:
             second_line = "Consider using 'git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent %s'" % yellow_edge_branches[0]
         else:
             second_line = "Consider using 'git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent <branch>' for each affected branch"
 
+        sys.stderr.write("\n")
         warn("%s.\n%s." % (first_line, second_line))
 
 
@@ -2070,8 +2072,8 @@ def usage(c=None):
             'block-cancel-order' is a downstream branch of 'adjust-reads-prec', 'change-table' is a downstream branch of 'block-cancel-order' and so on.
 
             Every branch name can be followed (after a single space as a delimiter) by a custom annotation - a PR number in the above example.
-            The annotation doesn't influence the way 'git machete' operates other than that those annotation are displayed in the output of the 'status' subcommand.
-            Also see help for the 'anno' subcommand.
+            The annotations don't influence the way 'git machete' operates other than that they are displayed in the output of the 'status' command.
+            Also see help for the 'anno' command.
 
             Tabs or any number of spaces can be used as indentation.
             It's only important to be consistent wrt. the sequence of characters used for indentation between all lines.
@@ -2130,7 +2132,7 @@ def usage(c=None):
 
             Lists all branches that fall into one of the specified categories:
             - 'managed': all branches that appear in the definition file,
-            - 'slidable': all managed branches that have exactly one upstream and one downstream (i.e. the ones that can be slid out with 'slide-out' subcommand),
+            - 'slidable': all managed branches that have exactly one upstream and one downstream (i.e. the ones that can be slid out with 'slide-out' command),
             - 'slidable-after <branch>': the downstream branch of the <branch>, if it exists and is the only downstream of <branch> (i.e. the one that can be slid out immediately following <branch>),
             - 'unmanaged': all local branches that don't appear in the definition file,
             - 'with-overridden-fork-point': all local branches that have a fork point override set up (even if this override does not affect the location of their fork point anymore).
@@ -2214,7 +2216,7 @@ def usage(c=None):
               -n, --no-interactive-rebase                       Run 'git rebase' in non-interactive mode (without '-i/--interactive' flag).
         """,
         "status": """
-            Usage: git machete s[tatus] [-l|--list-commits] [--color=WHEN]
+            Usage: git machete s[tatus] [--color=WHEN] [-l|--list-commits] [-L|--list-commits-with-hashes]
 
             Outputs a tree-shaped status of the branches listed in the definition file.
 
@@ -2247,8 +2249,9 @@ def usage(c=None):
               m-<branch4> # grey (merged to parent)
 
             Options:
-              --color=WHEN                  Colorize the output; WHEN can be 'always', 'auto' (default; i.e. only if stdout is a terminal), or 'never'.
-              -l, --list-commits            Additionally list the commits introduced on each branch.
+              --color=WHEN                      Colorize the output; WHEN can be 'always', 'auto' (default; i.e. only if stdout is a terminal), or 'never'.
+              -l, --list-commits                Additionally list the commits introduced on each branch.
+              -L, --list-commits-with-hashes    Additionally list the short hashes and messages of commits introduced on each branch.
         """,
         "traverse": """
             Usage: git machete traverse [-F|--fetch] [-l|--list-commits] [-n|--no-interactive-rebase] [--return-to=WHERE] [--start-from=WHERE] [-w|--whole] [-W] [-y|--yes]
@@ -2359,8 +2362,8 @@ def main():
 
 def launch(orig_args):
     def parse_options(in_args, short_opts="", long_opts=[], gnu=True):
-        global opt_checked_out_since, opt_color, opt_debug, opt_down_fork_point, opt_fetch, opt_fork_point, opt_inferred, opt_list_commits, opt_no_interactive_rebase, opt_onto
-        global opt_override_to, opt_override_to_inferred, opt_override_to_parent, opt_return_to, opt_roots, opt_start_from, opt_stat, opt_unset_override, opt_verbose, opt_yes
+        global opt_checked_out_since, opt_color, opt_debug, opt_down_fork_point, opt_fetch, opt_fork_point, opt_inferred, opt_list_commits, opt_list_commits_with_hashes, opt_no_interactive_rebase
+        global opt_onto, opt_override_to, opt_override_to_inferred, opt_override_to_parent, opt_return_to, opt_roots, opt_start_from, opt_stat, opt_unset_override, opt_verbose, opt_yes
 
         fun = getopt.gnu_getopt if gnu else getopt.getopt
         opts, rest = fun(in_args, short_opts + "hv", long_opts + ['debug', 'help', 'verbose', 'version'])
@@ -2383,6 +2386,8 @@ def launch(orig_args):
                 sys.exit()
             elif opt == "--inferred":
                 opt_inferred = True
+            elif opt in ("-L", "--list-commits-with-hashes"):
+                opt_list_commits = opt_list_commits_with_hashes = True
             elif opt in ("-l", "--list-commits"):
                 opt_list_commits = True
             elif opt in ("-n", "--no-interactive-rebase"):
@@ -2450,8 +2455,8 @@ def launch(orig_args):
             return in_args[0]
 
     global definition_file, up_branch
-    global opt_checked_out_since, opt_color, opt_debug, opt_down_fork_point, opt_fetch, opt_fork_point, opt_inferred, opt_list_commits, opt_no_interactive_rebase, opt_onto
-    global opt_override_to, opt_override_to_inferred, opt_override_to_parent, opt_return_to, opt_roots, opt_start_from, opt_stat, opt_unset_override, opt_verbose, opt_yes
+    global opt_checked_out_since, opt_color, opt_debug, opt_down_fork_point, opt_fetch, opt_fork_point, opt_inferred, opt_list_commits, opt_list_commits_with_hashes, opt_no_interactive_rebase
+    global opt_onto, opt_override_to, opt_override_to_inferred, opt_override_to_parent, opt_return_to, opt_roots, opt_start_from, opt_stat, opt_unset_override, opt_verbose, opt_yes
     try:
         cmd = None
         opt_checked_out_since = None
@@ -2462,6 +2467,7 @@ def launch(orig_args):
         opt_fork_point = None
         opt_inferred = False
         opt_list_commits = False
+        opt_list_commits_with_hashes = False
         opt_no_interactive_rebase = False
         opt_onto = None
         opt_override_to = None
@@ -2644,7 +2650,7 @@ def launch(orig_args):
             expect_no_operation_in_progress()
             slide_out(params or [current_branch()])
         elif cmd in ("s", "status"):
-            expect_no_param(parse_options(args, "l", ["list-commits", "color="]))
+            expect_no_param(parse_options(args, "Ll", ["color=", "list-commits-with-hashes", "list-commits"]))
             if opt_color not in ("always", "auto", "never"):
                 raise MacheteException("Invalid argument for '--color'. Valid arguments: always|auto|never.")
             else:
