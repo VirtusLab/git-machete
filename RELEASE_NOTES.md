@@ -17,6 +17,11 @@
 - added: fork point override feature via `--inferred`, `--override-to`, `--override-to-inferred`, `--override-to-parent` and `--unset-override` options of `fork-point`
 - added: `with-overridden-fork-point` category of `list`
 
+### Detection of an ongoing am session, cherry pick, merge, rebase or revert
+
+- added: detection of an ongoing am session, cherry pick, merge, rebase or revert
+- fixed: `traverse` used to continue the walk when interactive rebase stopped for `edit` (rather than stop the traversal and allow for the actual edits)
+
 ### Other fixes & improvements
 
 - added: `version` command
