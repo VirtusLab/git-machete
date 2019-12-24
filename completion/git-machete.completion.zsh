@@ -66,7 +66,7 @@ _git-machete() {
                 (list)
                     _arguments '1:: :_git_machete_categories' && ret=0
                     ;;
-                (reapply|update)
+                (reapply)
                     _arguments \
                         '(-f --fork-point)'{-f,--fork-point=}'[Fork point commit after which the rebased part of history is meant to start]: :__git_references' \
                     && ret=0
@@ -75,8 +75,11 @@ _git-machete() {
                     _arguments \
                         # TODO suggest further branches based on the previous specified branch (like in Bash completion script)
                         '*:: :_git_machete_list_slidable' \
-                        '(-d --down-fork-point)'{-d,--down-fork-point=}'[Fork point commit after which the rebased part of history of the downstream branch is meant to start]: :__git_references' \
-                        '(-n --no-interactive-rebase)'{-n,--no-interactive-rebase}'[Run git rebase in non-interactive mode (without -i/--interactive flag)]' \
+                        '(-d --down-fork-point)'{-d,--down-fork-point=}'[If updating by rebase, specify fork point commit after which the rebased part of history of the downstream branch is meant to start]: :__git_references' \
+                        '(-M --merge)'{-M,--merge}'[Update by merge rather than by rebase]' \
+                        '(-n)'-n'[If updating by rebase, equivalent to --no-interactive-rebase. If updating by merge, equivalent to --no-edit-merge]' \
+                        '(--no-edit-merge)'--no-edit-merge'[If updating by merge, pass --no-edit flag to underlying git merge]' \
+                        '(--no-interactive-rebase)'--no-interactive-rebase'[If updating by rebase, do NOT pass --interactive flag to underlying git rebase]' \
                     && ret=0
                     ;;
                 (s|status)
@@ -90,12 +93,24 @@ _git-machete() {
                     _arguments \
                         '(-F --fetch)'{-F,--fetch}'[Fetch the remotes of all managed branches at the beginning of traversal]' \
                         '(-l --list-commits)'{-l,--list-commits}'[List the messages of commits introduced on each branch]' \
-                        '(-n --no-interactive-rebase)'{-n,--no-interactive-rebase}'[Run git rebase in non-interactive mode (without -i/--interactive flag)]' \
+                        '(-M --merge)'{-M,--merge}'[Update by merge rather than by rebase]' \
+                        '(-n)'-n'[If updating by rebase, equivalent to --no-interactive-rebase. If updating by merge, equivalent to --no-edit-merge]' \
+                        '(--no-edit-merge)'--no-edit-merge'[If updating by merge, pass --no-edit flag to underlying git merge]' \
+                        '(--no-interactive-rebase)'--no-interactive-rebase'[If updating by rebase, do NOT pass --interactive flag to underlying git rebase]' \
                         '(--return-to)'--return-to='[The branch to return after traversal is successfully completed; argument can be "here", "nearest-remaining", or "stay"]: :_git_machete_opt_return_to_args' \
                         '(--start-from)'--start-from='[The branch to  to start the traversal from; argument can be "here", "root", or "first-root"]: :_git_machete_opt_start_from_args' \
-                        '(-w --whole)'{-w,--whole}'[Equivalent to --start-from=first-root --no-interactive-rebase --return-to=nearest-remaining]' \
+                        '(-w --whole)'{-w,--whole}'[Equivalent to -n --start-from=first-root --return-to=nearest-remaining]' \
                         '(-W)'-W'[Equivalent to --fetch --whole]' \
                         '(-y --yes)'{-y,--yes}'[Do not ask for any interactive input; implicates -n]' \
+                    && ret=0
+                    ;;
+                 (update)
+                    _arguments \
+                        '(-f --fork-point)'{-f,--fork-point=}'[If updating by rebase, specify fork point commit after which the rebased part of history is meant to start]: :__git_references' \
+                        '(-M --merge)'{-M,--merge}'[Update by merge rather than by rebase]' \
+                        '(-n)'-n'[If updating by rebase, equivalent to --no-interactive-rebase. If updating by merge, equivalent to --no-edit-merge]' \
+                        '(--no-edit-merge)'--no-edit-merge'[If updating by merge, pass --no-edit flag to underlying git merge]' \
+                        '(--no-interactive-rebase)'--no-interactive-rebase'[If updating by rebase, do NOT pass --interactive flag to underlying git rebase]' \
                     && ret=0
                     ;;
             esac
@@ -106,21 +121,21 @@ _git_machete_cmds=(
     'add:Add a branch to the tree of branch dependencies'
     'anno:Manage custom annotations'
     'delete-unmanaged:Delete local branches that are not present in the definition file'
-    {diff,d}':Diff current working directory or a given branch against its computed fork point'
+    {diff,d}':Diff current working directory or a given branch against its fork point'
     'discover:Automatically discover tree of branch dependencies'
     {edit,e}':Edit the definition file'
     'file:Display the location of the definition file'
-    'fork-point:Display SHA of the computed fork point commit of a branch'
+    'fork-point:Display SHA of the fork point commit of a branch'
     {go,g}':Check out the branch relative to the position of the current branch'
     'help:Display this overview, or detailed help for a specified command'
     'list:List all branches that fall into one of pre-defined categories (mostly for internal use)'
     {log,l}':Log the part of history specific to the given branch'
-    'reapply:Rebase the current branch onto its computed fork point'
+    'reapply:Rebase the current branch onto its own fork point'
     'show:Show name(s) of the branch(es) relative to the position of the current branch'
-    'slide-out:Slide the current branch out and rebase its downstream (child) branch onto its upstream (parent) branch'
+    'slide-out:Slide the current branch out and sync its downstream (child) branch with its upstream (parent) branch via rebase or merge'
     {status,s}':Display formatted tree of branch dependencies, including info on their sync with upstream branch and with remote'
-    'traverse:Walk through the tree of branch dependencies and ask to rebase, slide out, push and/or pull branches, one by one'
-    'update:Rebase the current branch onto its upstream (parent) branch'
+    'traverse:Walk through the tree of branch dependencies and rebase, merge, slide out, push and/or pull each branch one by one'
+    'update:Sync the current branch with its upstream (parent) branch via rebase or merge'
     'version:Display version and exit'
 )
 
@@ -213,4 +228,4 @@ _git_machete_list_unmanaged() {
     _describe -t list_unmanaged 'unmanaged branch' list_unmanaged "$@"
 }
 
-zstyle ':completion:*:*:git:*' user-commands machete:'organize your repo, instantly rebase/push/pull and more'
+zstyle ':completion:*:*:git:*' user-commands machete:'organize your repo, instantly rebase/merge/push/pull and more'

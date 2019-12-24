@@ -9,11 +9,11 @@
 
 **git machete is a versatile tool for organizing your git repo, including features like:**
 
-* Neat, customizable `git machete status` that shows what branches are in sync with their parent branch/remote tracking branch and which of them need to be rebased/pulled/pushed
+* Neat, customizable `git machete status` that shows what branches are in sync with their parent branch/remote tracking branch and which of them need to be rebased/merged/pulled/pushed
 
 ![git machete status](https://raw.githubusercontent.com/PawelLipski/git-machete-blog-2/master/status.png)
 
-* Semi-automatic traversal of the branches that helps you effortlessly rebase and push/pull the branches you care for (`git machete traverse`)
+* Semi-automatic traversal of the branches that helps you effortlessly rebase, merge, push and pull the branches you care for (`git machete traverse`)
 
 ![git machete traverse](https://raw.githubusercontent.com/PawelLipski/git-machete-blog-2/master/traverse.png)
 

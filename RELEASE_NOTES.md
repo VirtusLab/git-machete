@@ -22,6 +22,10 @@
 - added: detection of an ongoing am session, cherry pick, merge, rebase or revert
 - fixed: `traverse` used to continue the walk when interactive rebase stopped for `edit` (rather than stop the traversal and allow for the actual edits)
 
+### Support for merge-based flows
+
+- added: support for automated merging via `--merge` and `--no-edit-merge` flags of `slide-out`, `traverse` and `update`
+
 ### Other fixes & improvements
 
 - added: `version` command
