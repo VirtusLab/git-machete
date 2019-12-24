@@ -459,8 +459,8 @@ git_version = None
 def get_git_version():
     global git_version
     if not git_version:
-        git_version = tuple(map(int, popen_git("version").strip()
-                                .replace("git version ", "").split(".")))
+        raw = re.search(r"\d+.\d+.\d+", popen_git("version")).group(0)
+        git_version = tuple(map(int, raw.split(".")))
     return git_version
 
 

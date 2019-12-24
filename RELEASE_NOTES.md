@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.12.6
+
+- fixed: trailing parts of the output of `git --version` are now removed
+
 ## New in git-machete 2.12.5
 
 - improved: validation of generated Debian packages
