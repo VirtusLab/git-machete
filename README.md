@@ -28,6 +28,13 @@ We suggest a couple of alternative ways of installation.
 
 git-machete works under both Python 2.7 and Python 3.x.
 
+### Using Homebrew (Mac)
+
+```shell script
+brew tap VirtusLab/git-machete
+brew install git-machete
+```
+
 ### Using Debian packages (Ubuntu, Debian etc.)
 
 See [the latest release](https://github.com/VirtusLab/git-machete/releases/latest) for downloadable .deb packages.
@@ -40,26 +47,26 @@ Install the AUR package [git-machete](https://aur.archlinux.org/packages/git-mac
 
 On MacOS and most Linux distributions, you can install via [Nix](https://nixos.org/nix/):
 
-```bash
+```shell script
 # If you haven't set up any channels:
-$ nix-channel --add https://nixos.org/channels/nixos-unstable unstable
-$ nix-env -i git-machete
+nix-channel --add https://nixos.org/channels/nixos-unstable unstable
+nix-env -i git-machete
 ```
 
 ### Using pip with sudo (system-wide install)
 
 You need to have Python and `pip` installed from system packages.
 
-```bash
-$ sudo -H pip install --system git-machete
+```shell script
+sudo -H pip install --system git-machete
 ```
 
 ### Using pip without sudo (user-wide install)
 
 You need to have Python and `pip` installed from system packages.
 
-```bash
-$ pip install git-machete
+```shell script
+pip install git-machete
 ```
 
 Please verify that your `PATH` variable has `${HOME}/.local/bin/` included.
@@ -68,21 +75,21 @@ Please verify that your `PATH` variable has `${HOME}/.local/bin/` included.
 
 Run the following commands to install git machete:
 
-```bash
-$ git clone --depth=1 https://github.com/VirtusLab/git-machete.git
-$ cd git-machete
-$ sudo make install
+```shell script
+git clone --depth=1 https://github.com/VirtusLab/git-machete.git
+cd git-machete
+sudo make install
 ```
 
 
 ## Quick start
 
-```bash
-$ cd your-repo/
-$ git machete discover --checked-out-since='2 weeks ago'  # increase/decrease the timespan if you want more/less old branches included
+```shell script
+cd your-repo/
+git machete discover --checked-out-since='2 weeks ago'  # increase/decrease the timespan if you want more/less old branches included
   # (see and possibly edit the suggested layout of branches - branch layout is always kept as text file .git/machete)
-$ git machete go root
-$ git machete traverse
+git machete go root
+git machete traverse
   # (put each branch one by one in sync with its parent and remote counterpart)
 ```
 

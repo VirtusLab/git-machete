@@ -3,23 +3,10 @@
 # machete-status-branch hook is invoked by 'git machete status' for each managed branch (and branch name is passed as a parameter).
 # Stdout of the hook is displayed at the end of line after custom annotation and remote sync-ness status.
 
-# This particular example prints the revision at which the project's submodule is checked out.
-# TODO: Only the first submodule (as defined in .gitmodules) is taken into account, that's not good for projects with more than one submodule.
+# This particular example can be used for the git-machete repository itself (.git/hooks/machete-status-branch should link to ../../hook_samples/machete-status-branch),
+# and prints the version string committed in git_machete/__init__.py on the given branch.
 
 [ -n "$1" ] || { echo "usage: $(basename "$0") <branch-name>"; exit 1; }
-
-# Extract submodule path from git config.
-[ -f .gitmodules ] || exit 0
-submod_rel_path=$(git config --file .gitmodules --get-regexp '\.path$' | head -1 | awk '{ print $2 }')
-[ -n "$submod_rel_path" ] || exit 0
-
-# See what submodule commit is recorded in the branch passed as parameter.
-branch=$1
-submod_commit=$(git ls-tree -d "$branch" -- "$submod_rel_path" | grep -Po '(?<=160000 commit ).*(?=\t)')
-[ -n "$submod_commit" ] || exit 0
-
-# Check which submodule's local branches (and/or submodule's HEAD) point at submod_commit.
-refs=$(git --git-dir=.git/modules/"$submod_rel_path" log --no-walk --format=%D --decorate --decorate-refs-exclude=refs/remotes/ "$submod_commit")
 
 function ansi_esc {
   [[ $ASCII_ONLY = true ]] || echo -n "$1"
@@ -27,11 +14,4 @@ function ansi_esc {
 dim=$(ansi_esc '\033[2m')
 endc=$(ansi_esc '\033[0m')
 
-echo -ne "${dim}[$(basename "$submod_rel_path") at $endc"
-if [ -n "$refs" ] && [ "$refs" != HEAD ]; then
-    echo -n "$refs"
-else
-    # In case no refs (or just HEAD) point to submod_commit, let's just print its short SHA.
-    echo -n "$(git rev-parse --short "$submod_commit")"
-fi
-echo -e "$dim]$endc"
+echo -ne "${dim}v$(git grep "__version__ = " "$1" -- git_machete/__init__.py | cut -d\' -f2)${endc}"

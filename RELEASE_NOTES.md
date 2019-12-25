@@ -1,5 +1,13 @@
 # Release notes
 
+## New in git-machete 2.12.7
+
+- improved: logging output of external commands in `--debug` mode
+- improved: simplified the sample `machete-status-branch` hook (no git submodules involved)
+- improved: git-machete is compatible with git >= 2.0.0
+- added: functional tests
+- added: automatic push to brew tap repository
+
 ## New in git-machete 2.12.6
 
 - fixed: trailing parts of the output of `git --version` are now removed

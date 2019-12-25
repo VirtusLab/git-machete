@@ -154,10 +154,15 @@ def popen_git(git_cmd, *args, **kwargs):
     elif opt_verbose:
         sys.stderr.write(flat_cmd + "\n")
     exit_code, stdout, stderr = popen_cmd("git", git_cmd, *args)
+    if opt_debug:
+        if exit_code != 0:
+            sys.stderr.write(colored("<exit code: %i>\n\n" % exit_code, RED))
+        sys.stderr.write(dim(stdout) + "\n")
+        if stderr:
+            sys.stderr.write(dim("\n<stderr>:\n"))
+            sys.stderr.write(colored(stderr, RED) + "\n")
     if not kwargs.get("allow_non_zero") and exit_code != 0:
         raise MacheteException("'%s' returned %i" % (flat_cmd, exit_code))
-    if opt_debug:
-        sys.stderr.write(dim(stdout) + "\n")
     return stdout
 
 
@@ -675,32 +680,38 @@ def remote_branches():
 
 
 def load_branches():
-    raw_remote = non_empty_lines(popen_git("for-each-ref", "--format=%(refname:strip=2)\t%(objectname)", "refs/remotes"))
+    raw_remote = non_empty_lines(popen_git("for-each-ref", "--format=%(refname)\t%(objectname)", "refs/remotes"))
     rbs = []
     for line in raw_remote:
         values = line.split("\t")
         if len(values) != 2:  # invalid, shouldn't happen
             continue
         b, sha = values
-        rbs += [b]
-        sha_by_revision_cached["refs/remotes/" + b] = sha
+        b_stripped = re.sub("^refs/remotes/", "", b)
+        rbs += [b_stripped]
+        sha_by_revision_cached[b] = sha
 
-    raw_local = non_empty_lines(popen_git("for-each-ref", "--format=%(refname:strip=2)\t%(objectname)\t%(upstream:strip=2)\t%(push:strip=2)", "refs/heads"))
+    raw_local = non_empty_lines(popen_git("for-each-ref", "--format=%(refname)\t%(objectname)\t%(upstream)", "refs/heads"))
     lbs = []
     for line in raw_local:
         values = line.split("\t")
-        if len(values) != 4:  # invalid, shouldn't happen
+        if len(values) != 3:  # invalid, shouldn't happen
             continue
-        b, sha, for_fetch, for_push = values
-        lbs += [b]
-        sha_by_revision_cached["refs/heads/" + b] = sha
-        if for_fetch in rbs:
-            remote_tracking_branches_cached[b] = for_fetch
+        b, sha, for_fetch = values
+        b_stripped = re.sub("^refs/heads/", "", b)
+        for_fetch_stripped = re.sub("^refs/remotes/", "", for_fetch)
+        lbs += [b_stripped]
+        sha_by_revision_cached[b] = sha
+        if for_fetch_stripped in rbs:
+            remote_tracking_branches_cached[b_stripped] = for_fetch_stripped
     return lbs, rbs
 
 
 def merged_local_branches():
-    return non_empty_lines(popen_git("for-each-ref", "--format=%(refname:strip=2)", "--merged", "HEAD", "refs/heads"))
+    return map(
+        lambda b: re.sub("^refs/heads/", "", b),
+        non_empty_lines(popen_git("for-each-ref", "--format=%(refname)", "--merged", "HEAD", "refs/heads"))
+    )
 
 
 def go(branch):
@@ -1549,9 +1560,7 @@ def status():
 
         write_unicode(current + anno + sync_status + hook_output + "\n")
 
-    output = out.getvalue()
-
-    sys.stdout.write(output)
+    sys.stdout.write(out.getvalue())
 
     if not opt_list_commits and YELLOW in edge_color.values():
         sys.stderr.write("\n")
