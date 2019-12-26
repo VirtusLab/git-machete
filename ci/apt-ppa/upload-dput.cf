@@ -1,0 +1,7 @@
+
+; We need to use SFTP since FTP is insecure & completely blocked on Travis
+[ppa]
+fqdn = ppa.launchpad.net
+method = sftp
+incoming = ~virtuslab/ubuntu/git-machete/
+login = virtuslab

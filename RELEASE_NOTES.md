@@ -7,6 +7,7 @@
 - improved: git-machete is compatible with git >= 2.0.0
 - added: functional tests
 - added: automatic push to brew tap repository
+- added: automatic push to Ubuntu PPA
 
 ## New in git-machete 2.12.6
 
@@ -132,8 +133,7 @@
 
 ## New in git-machete 2.7.0
 
-- improved: during `traverse`, if there's a branch that's untracked, no longer rely on `git push` implicitly picking `origin` as the default remote;
-  instead, either choose the only existing remote if there's just one defined (even if it's not `origin`), or let the user pick the remote explicitly if there is more than one
+- improved: during `traverse`, if there's a branch that's untracked, no longer rely on `git push` implicitly picking `origin` as the default remote
 
 ## New in git-machete 2.6.2
 

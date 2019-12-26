@@ -28,28 +28,33 @@ We suggest a couple of alternative ways of installation.
 
 git-machete works under both Python 2.7 and Python 3.x.
 
-### Using Homebrew (Mac)
+### Using Homebrew (macOS)
 
 ```shell script
 brew tap VirtusLab/git-machete
 brew install git-machete
 ```
 
-### Using Debian packages (Ubuntu, Debian etc.)
+### Using PPA (Ubuntu)
 
-See [the latest release](https://github.com/VirtusLab/git-machete/releases/latest) for downloadable .deb packages.
+Tip: run `sudo apt-get install -y software-properties-common` first if `add-apt-repository` is not available on your system.
 
-### Using AUR (Arch Linux only)
+```shell script
+sudo add-apt-repository ppa:virtuslab/git-machete
+sudo apt-get update
+sudo apt-get install -y python3-git-machete
+```
+
+### Using AUR (Arch Linux)
 
 Install the AUR package [git-machete](https://aur.archlinux.org/packages/git-machete) using an AUR helper of your preference.
 
-### Using Nix
+### Using Nix (macOS & most Linux distributions)
 
-On MacOS and most Linux distributions, you can install via [Nix](https://nixos.org/nix/):
+On macOS and most Linux distributions, you can install via [Nix](https://nixos.org/nix/):
 
 ```shell script
-# If you haven't set up any channels:
-nix-channel --add https://nixos.org/channels/nixos-unstable unstable
+nix-channel --add https://nixos.org/channels/nixos-unstable unstable  # if you haven't set up any channels yet
 nix-env -i git-machete
 ```
 

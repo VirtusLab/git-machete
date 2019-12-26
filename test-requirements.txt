@@ -3,4 +3,3 @@ mock
 pycodestyle
 pylint
 stestr
-

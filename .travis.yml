@@ -16,17 +16,6 @@ script:
   - tox
   - python setup.py sdist bdist_wheel
 
-before_deploy: # Wrapped in an `if` to make sure it's run only once before the first deploy and not before every single deploy
-  if [[ -z "$DEB_BUILT" ]]; then
-    export DEB_BUILT=true &&
-    docker build -f ci/Dockerfile-deb-build -t git-machete:deb-build . &&
-    id=$(docker create git-machete:deb-build) &&
-    docker cp $id:/git-machete/deb_dist/ . &&
-    docker rm -v $id &&
-    docker build -f ci/Dockerfile-deb-test-python deb_dist/ &&
-    docker build -f ci/Dockerfile-deb-test-python3 deb_dist/ ;
-  fi
-
 deploy:
 
   - provider: pypi
@@ -38,21 +27,24 @@ deploy:
       python: 3.6
       tags: true
 
-  - provider: script
-    skip_cleanup: true
-    script: ./ci/homebrew-git-push.sh
-    on:
-      python: 3.6
-      tags: true
-
   - provider: releases # Github
     skip_cleanup: true
     token:
       secure: arhgNhJMfVq8xaa5xMswvjkgfgE8dDJ6BM0X+HI28m7BrwjxaVyr5Ct1qIohEQSZOpihwHzFLLwzSICc5sR6H8Ai4yYcm/sLGOAHyp4p1HeAXPqbtyUtn3rbcjsKXSfwjntkGommC6sYoY5GZhJy2qcRQIADjRMPQWRURY5/6KBBY05scL2vVpQw2NHp2pNCiMSDhokFsN3mv1PX15QDJdKFuIrD61cD15ljkwol7OJ+wKzGozyJB6GHkWi7WsGXsgdzjruHY7tcqPEksa+sWxxGGMmLQ7gVruVUlguunACjh0xlZvMBDKWEeffvRy9JSkAKVccTtaiZw9beoCaihZOVys/Bw4Znv3e+UpkOOrBwMFOdjc1R/Kz1/aewuYFckKhP/opdkpOj3T0VIckmK4s/vWYWhHLRiAHE4gb47UxYIKHGqPfs9XMyZryRF6iaTm3LKtTb+ufM0OQEKtWR0MBBRmpqapx74Jd6tuf7n4KbsS4ZuVeb27+OBhfogpYdfGW2KxzwCOwYl+iGCsNkPyMUOmqo8MfFvwEsHU7SnZ1G2tcSoptT8+Bj8n2lKB7sf/llywUJxKKG9kpK9Y9Tc6yvtgjj4ewjsjgaGCksS5jVPk223WEHu/iX4FK4Ftms9cXWLbQpMKW4dACyAEu8ONIRw+TXvUFA2J3wWsOiQNk=
-    file_glob: true
-    file:
-      - dist/*
-      - deb_dist/*.deb
+    on:
+      python: 3.6
+      tags: true
+
+  - provider: script  # brew tap (artifacts must be released to PyPI first)
+    skip_cleanup: true
+    script: bash ci/homebrew-tap/travis-deploy.sh
+    on:
+      python: 3.6
+      tags: true
+
+  - provider: script  # PPA
+    skip_cleanup: true
+    script: bash ci/apt-ppa/upload-travis-deploy.sh
     on:
       python: 3.6
       tags: true

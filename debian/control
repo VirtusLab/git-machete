@@ -1,0 +1,12 @@
+Source: python3-git-machete
+Maintainer: Pawel Lipski <plipski@virtuslab.com>
+Build-Depends: debhelper,dh-python,python3-all,python3-setuptools
+Section: devel
+Priority: optional
+Standards-Version: 4.1.4
+X-Python3-Version: >= 3.6
+
+Package: python3-git-machete
+Architecture: any
+Description: Probably the sharpest git repository organizer & rebase workflow automation tool you've ever seen
+Depends: ${python3:Depends}, python3-pkg-resources

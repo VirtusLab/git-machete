@@ -1,9 +1,0 @@
-AUTHORS
-ChangeLog
-*.egg-info/
-.eggs/
-.stestr/
-.tox/
-build/
-ci/Dockerfile-*
-dist/
