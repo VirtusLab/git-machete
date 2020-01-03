@@ -1550,10 +1550,8 @@ def status():
         write_unicode(current + anno + sync_status + hook_output + "\n")
 
     output = out.getvalue()
-    if type(output) is str:
-        sys.stdout.write(output)  # Python 3
-    else:
-        sys.stdout.write(output.encode('utf-8'))  # Python 2
+
+    sys.stdout.write(output)
 
     if not opt_list_commits and YELLOW in edge_color.values():
         sys.stderr.write("\n")
@@ -1968,6 +1966,10 @@ def version():
 
 
 def main():
+    launch(sys.argv)
+
+
+def launch(args):
     def parse_options(in_args, short_opts="", long_opts=[], gnu=True):
         global opt_checked_out_since, opt_color, opt_debug, opt_down_fork_point, opt_fork_point, opt_list_commits, opt_onto, opt_roots, opt_stat, opt_verbose
 
@@ -2044,7 +2046,7 @@ def main():
         opt_stat = False
         opt_verbose = False
 
-        all_args = parse_options(sys.argv[1:], gnu=False)
+        all_args = parse_options(args[1:], gnu=False)
         if not all_args:
             usage()
             sys.exit(2)
