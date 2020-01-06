@@ -1,10 +1,11 @@
-import sys
-import string
-import random
+import io
 import os
+import random
+import re
+import string
+import sys
 import textwrap
 import unittest
-from io import StringIO
 
 from git_machete import cmd
 
@@ -93,7 +94,7 @@ class SandboxSetup:
             definition_file.writelines(textwrap.dedent(machete_string))
         os.system('git branch -d root')
 
-        out = StringIO()
+        out = io.StringIO()
         sys.stdout = out
         cmd.launch(['git-machete', 'status'])
         return out.getvalue()
@@ -102,12 +103,26 @@ class SandboxSetup:
 Setup = SandboxSetup()
 
 
+def adapt(s):
+    return re.sub(r"\|\n", "| \n", s[1:])
+
+
+expected_output = adapt("""
+  develop
+  |
+  x-allow-ownership-link  PR #123 (ahead of origin)
+  | |
+  | x-build-chain  PR #124 (untracked)
+  |
+  o-call-ws (ahead of origin)
+
+  master
+  |
+  o-hotfix/add-trigger * (diverged from origin)
+""")
+
+
 class MacheteTester(unittest.TestCase):
 
     def test_machete(self):
-        self.file_directory = os.path.dirname(os.path.abspath(__file__))
-        self.correct_output = os.path.join(
-            self.file_directory, 'correct_output.txt')
-        with open(self.correct_output) as f:
-            self.content = f.read()
-        self.assertEqual(Setup.setup_sandbox(), self.content)
+        self.assertEqual(Setup.setup_sandbox(), expected_output)

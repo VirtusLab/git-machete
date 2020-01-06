@@ -708,10 +708,10 @@ def load_branches():
 
 
 def merged_local_branches():
-    return map(
+    return list(map(
         lambda b: re.sub("^refs/heads/", "", b),
         non_empty_lines(popen_git("for-each-ref", "--format=%(refname)", "--merged", "HEAD", "refs/heads"))
-    )
+    ))
 
 
 def go(branch):

@@ -1,5 +1,10 @@
 # Release notes
 
+## New in git-machete 2.12.8
+
+- fixed: unpredictable behavior of `delete-unmanaged`
+- fixed: build of Debian packages on PPA
+
 ## New in git-machete 2.12.7
 
 - improved: logging output of external commands in `--debug` mode

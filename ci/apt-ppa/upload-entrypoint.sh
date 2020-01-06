@@ -18,8 +18,8 @@ VERSION=$(cut -d\' -f2 git_machete/__init__.py)
 export VERSION
 envsubst '$VERSION' < debian/files.envsubst > debian/files
 cp LICENSE debian/copyright
-# The first version ever released to PPA is 2.12.7, so we skip everything older than that from the changelog.
-sed '/## New in git-machete 2\.12\.6/,$d' RELEASE_NOTES.md | awk -f ~/release-notes-to-changelog.awk > debian/changelog
+# The first version ever released to PPA is 2.12.8, so we skip everything older than that from the changelog.
+sed '/## New in git-machete 2\.12\.7/,$d' RELEASE_NOTES.md | awk -f ~/release-notes-to-changelog.awk > debian/changelog
 
 # Since we upload over SFTP, we need to whitelist the host first to avoid the prompt.
 ssh-keyscan ppa.launchpad.net > ~/.ssh/known_hosts
