@@ -34,5 +34,6 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent'
     ],
-    options={'bdist_wheel': {'universal': '1'}}
+    options={'bdist_wheel': {'universal': '1'}},
+    include_package_data=True
 )

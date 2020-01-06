@@ -1,6 +1,6 @@
 Source: python3-git-machete
 Maintainer: Pawel Lipski <plipski@virtuslab.com>
-Build-Depends: debhelper,dh-python,python3-all,python3-setuptools
+Build-Depends: debhelper,dh-python,git,python3-all,python3-setuptools
 Section: devel
 Priority: optional
 Standards-Version: 4.1.4

@@ -1,5 +1,10 @@
 # Release notes
 
+## New in git-machete 2.12.9
+
+- fixed: missing Debian build dependency on `git`
+- fixed: issue with `brew install` (completion/ directory not being packaged into sdist)
+
 ## New in git-machete 2.12.8
 
 - fixed: unpredictable behavior of `delete-unmanaged`
