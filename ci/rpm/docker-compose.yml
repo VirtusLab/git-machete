@@ -1,0 +1,12 @@
+version: '3'
+services:
+  rpm:
+    image: virtuslab/git-machete-ci-rpm:${DOCKER_TAG:-latest}
+    build:
+      context: build-context
+      dockerfile: ${PWD}/Dockerfile
+      args:
+        - user_id=${USER_ID:-0}
+        - group_id=${GROUP_ID:-0}
+    volumes:
+      - ${PWD}/../..:/home/ci-user/git-machete

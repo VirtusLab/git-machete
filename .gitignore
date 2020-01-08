@@ -1,17 +1,13 @@
-git-machete
-
-*.pyc
 *.swp
+.idea/
 
-.tox/
-*.egg-info/
-.eggs/
-.stestr/
-
-build/
-dist/
 AUTHORS
 ChangeLog
-
-.idea/
+build/
+dist/
+*.egg-info/
+.eggs/
 .python-version
+*.pyc
+.tox/
+.stestr/

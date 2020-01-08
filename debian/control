@@ -9,4 +9,4 @@ X-Python3-Version: >= 3.6
 Package: python3-git-machete
 Architecture: any
 Description: Probably the sharpest git repository organizer & rebase workflow automation tool you've ever seen
-Depends: ${python3:Depends}, python3-pkg-resources
+Depends: ${python3:Depends}

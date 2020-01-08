@@ -45,6 +45,11 @@ sudo apt-get update
 sudo apt-get install -y python3-git-machete
 ```
 
+### Using rpm (Fedora/RHEL/CentOS/openSUSE...)
+
+Download the rpm package from the [latest release](https://github.com/VirtusLab/git-machete/releases/latest)
+and install either by opening it in your desktop environment or with `rpm -i git-machete-*.noarch.rpm`.
+
 ### Using AUR (Arch Linux)
 
 Install the AUR package [git-machete](https://aur.archlinux.org/packages/git-machete) using an AUR helper of your preference.
@@ -63,7 +68,7 @@ nix-env -i git-machete
 You need to have Python and `pip` installed from system packages.
 
 ```shell script
-sudo -H pip install --system git-machete
+sudo -H pip install git-machete
 ```
 
 ### Using pip without sudo (user-wide install)
@@ -71,20 +76,10 @@ sudo -H pip install --system git-machete
 You need to have Python and `pip` installed from system packages.
 
 ```shell script
-pip install git-machete
+pip install --user git-machete
 ```
 
 Please verify that your `PATH` variable has `${HOME}/.local/bin/` included.
-
-### Using make with sudo (deprecated)
-
-Run the following commands to install git machete:
-
-```shell script
-git clone --depth=1 https://github.com/VirtusLab/git-machete.git
-cd git-machete
-sudo make install
-```
 
 
 ## Quick start

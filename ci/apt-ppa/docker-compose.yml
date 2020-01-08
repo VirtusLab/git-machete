@@ -1,7 +1,7 @@
 version: '3'
 services:
   ppa-upload:
-    image: virtuslab/git-machete-ci-ppa-upload:${DOCKER_TAG:-latest}
+    image: virtuslab/git-machete-ci-apt-ppa-upload:${DOCKER_TAG:-latest}
     build:
       context: .
       dockerfile: upload.Dockerfile

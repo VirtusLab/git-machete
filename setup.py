@@ -2,7 +2,7 @@
 
 from git_machete import __version__
 from os import path
-from setuptools import find_packages, setup
+from setuptools import setup
 
 this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, 'README.md')) as f:
@@ -19,10 +19,8 @@ setup(
     url='https://github.com/VirtusLab/git-machete/',
     license='MIT',
     keywords='git',
-    packages=find_packages(),
-    entry_points=dict(
-        console_scripts=['git-machete=git_machete.cmd:main']
-    ),
+    packages=['git_machete'],
+    scripts=['git-machete'],
     classifiers=[
         'Programming Language :: Python',
         'Programming Language :: Python :: 2',

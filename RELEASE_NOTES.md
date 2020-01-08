@@ -1,5 +1,12 @@
 # Release notes
 
+## New in git-machete 2.12.10
+
+- added: RPM package build
+- fixed: Debian package no longer depends on `python3-pkg-resources`
+- fixed: tests are no longer included in sdist tarball
+- removed: support for building with make
+
 ## New in git-machete 2.12.9
 
 - fixed: missing Debian build dependency on `git`
