@@ -1,0 +1,46 @@
+name: git-machete
+version: git
+summary: git-machete is a versatile tool for organizing your git repo
+description: |
+  git machete is a versatile tool for organizing your git repo, including features like:
+  - Neat, customizable git machete status that shows what branches are in sync with their parent branch/remote tracking branch and which of them need to be rebased/pulled/pushed
+  - Semi-automatic traversal of the branches that helps you effortlessly rebase and push/pull the branches you care for
+  - Automatic discovery of branch relations (git machete discover)
+base: core18
+confinement: strict
+grade: stable
+icon: logo.png
+license: MIT
+
+plugs:
+  gitconfig:
+    interface: personal-files
+    read:
+    - $HOME/.gitconfig
+    - $HOME/.config/git/config
+
+parts:
+  ppa:
+    plugin: nil
+    override-pull: |
+      # this adds the git-core ppa, so we always get the latest stable git
+      # See more here: https://launchpad.net/~git-core/+archive/ubuntu/ppa
+      apt --quiet -o Dpkg::Progress-Fancy=false install -y software-properties-common
+      add-apt-repository -y ppa:git-core
+      apt --quiet -o Dpkg::Progress-Fancy=false update
+  git-machete:
+    plugin: python
+    python-version: python3
+    source: .
+    stage-packages:
+    - python-six
+    - git
+
+apps:
+  git-machete:
+    command: bin/git-machete
+    plugs:
+    - home
+    - removable-media
+    - gitconfig
+    adapter: full
