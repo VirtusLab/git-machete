@@ -35,6 +35,15 @@ brew tap VirtusLab/git-machete
 brew install git-machete
 ```
 
+### Using Snappy (most Linux distributions)
+
+Run single command to install git machete:
+
+```shell script
+snap install git-machete
+```
+It can also be installed via Ubuntu Software. Search for `git-machete`.
+
 ### Using PPA (Ubuntu)
 
 Tip: run `sudo apt-get install -y software-properties-common` first if `add-apt-repository` is not available on your system.
@@ -81,6 +90,14 @@ pip install --user git-machete
 
 Please verify that your `PATH` variable has `${HOME}/.local/bin/` included.
 
+### Using Snap (Ubuntu)
+
+Run single commands to install git machete:
+
+```shell script
+snap install git-machete
+```
+It can also be installed via Ubuntu Software. Search for `git-machete`
 
 ## Quick start
 
