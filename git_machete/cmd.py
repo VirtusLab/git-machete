@@ -84,13 +84,10 @@ def join_branch_names(bs, sep):
 
 
 def safe_input(msg):
-    try:
-        return raw_input(msg)  # Python 2
-    except NameError:
-        pass
-    # Return from outside `except` clause to ensure cleaner stack trace
-    # in case of e.g. Ctrl-C pressed while in `input`.
-    return input(msg)  # Python 3
+    if sys.version_info[0] == 2:  # Python 2
+        return raw_input(msg)  # noqa: F821
+    else:  # Python 3
+        return input(msg)
 
 
 def ask_if(msg, opt_yes_msg):
@@ -543,7 +540,7 @@ def parse_git_timespec_to_unix_timestamp(date):
 config_cached = None
 
 
-def get_config_or_none(key):
+def ensure_config_loaded():
     global config_cached
     if config_cached is None:
         config_cached = {}
@@ -552,23 +549,24 @@ def get_config_or_none(key):
             if len(k_v) == 2:
                 k, v = k_v
                 config_cached[k.lower()] = v
+
+
+def get_config_or_none(key):
+    ensure_config_loaded()
     return config_cached.get(key.lower())
 
 
 def set_config(key, value):
-    global config_cached
     run_git("config", "--", key, value)
-    if config_cached is None:
-        config_cached = {}
+    ensure_config_loaded()
     config_cached[key.lower()] = value
 
 
 def unset_config(key):
-    global config_cached
+    ensure_config_loaded()
     if get_config_or_none(key):
         run_git("config", "--unset", key)
-        if key.lower() in config_cached:
-            del config_cached[key.lower()]
+        del config_cached[key.lower()]
 
 
 remotes_cached = None
@@ -606,25 +604,12 @@ def push(remote, b, force_with_lease=False):
     run_git("push", "--set-upstream", *(opt_force + args))
 
 
-def pull_ff_only(remote, b):
+def pull_ff_only(remote, rb):
     fetch_remote(remote)
-    rb = remote_tracking_branch(b)
     run_git("merge", "--ff-only", rb)
     # There's apparently no way to set remote automatically when doing 'git pull' (as opposed to 'git push'),
     # so a separate 'git branch --set-upstream-to' is needed.
     set_upstream_to(rb)
-
-
-def remote_for_branch(b):
-    remote = get_config_or_none("branch." + b + ".remote")
-    if remote:
-        return remote.rstrip()
-    # Since many people don't use '--set-upstream' flag of 'push', we try to infer the remote instead.
-    if remotes():
-        rb = remotes()[0] + "/" + b
-        if rb in remote_branches():
-            return remotes()[0]
-    return None
 
 
 def find_short_commit_sha_by_revision(revision):
@@ -640,12 +625,12 @@ def find_commit_sha_by_revision(revision):
         return None
 
 
-commit_sha_by_revision_cached = {}
+commit_sha_by_revision_cached = None
 
 
 def commit_sha_by_revision(revision, prefix="refs/heads/"):
     global commit_sha_by_revision_cached
-    if not commit_sha_by_revision_cached:
+    if commit_sha_by_revision_cached is None:
         load_branches()
     full_revision = prefix + revision
     if full_revision not in commit_sha_by_revision_cached:
@@ -653,27 +638,43 @@ def commit_sha_by_revision(revision, prefix="refs/heads/"):
     return commit_sha_by_revision_cached[full_revision]
 
 
-def find_remote_tracking_branch(b):
-    try:
-        # Note: no need to prefix 'b' with 'refs/heads/', '@{upstream}' assumes local branch automatically.
-        return popen_git("rev-parse", "--abbrev-ref", b + "@{upstream}").strip()
-    except MacheteException:
-        # Since many people don't use '--set-upstream' flag of 'push', we try to infer the remote tracking branch instead.
-        if remotes():
-            rb = remotes()[0] + "/" + b
-            if rb in remote_branches():
-                return rb
-        return None
+def inferred_remote_for_fetching_of_branch(b):
+    # Since many people don't use '--set-upstream' flag of 'push', we try to infer the remote instead.
+    for r in remotes():
+        if r + "/" + b in remote_branches():
+            return r
+    return None
 
 
-remote_tracking_branches_cached = {}
+def strict_remote_for_fetching_of_branch(b):
+    remote = get_config_or_none("branch." + b + ".remote")
+    return remote.rstrip() if remote else None
 
 
-def remote_tracking_branch(b):
-    global remote_tracking_branches_cached
-    if b not in remote_tracking_branches_cached:
-        remote_tracking_branches_cached[b] = find_remote_tracking_branch(b)
-    return remote_tracking_branches_cached[b]
+def combined_remote_for_fetching_of_branch(b):
+    return strict_remote_for_fetching_of_branch(b) or inferred_remote_for_fetching_of_branch(b)
+
+
+def inferred_counterpart_for_fetching_of_branch(b):
+    for r in remotes():
+        if r + "/" + b in remote_branches():
+            return r + "/" + b
+    return None
+
+
+counterparts_for_fetching_cached = None
+
+
+def strict_counterpart_for_fetching_of_branch(b):
+    global counterparts_for_fetching_cached
+    if counterparts_for_fetching_cached is None:
+        load_branches()
+    return counterparts_for_fetching_cached.get(b)
+
+
+def combined_counterpart_for_fetching_of_branch(b):
+    # Since many people don't use '--set-upstream' flag of 'push' or 'branch', we try to infer the remote if the tracking data is missing.
+    return strict_counterpart_for_fetching_of_branch(b) or inferred_counterpart_for_fetching_of_branch(b)
 
 
 def is_am_in_progress():
@@ -817,43 +818,47 @@ remote_branches_cached = None
 def local_branches():
     global local_branches_cached, remote_branches_cached
     if local_branches_cached is None:
-        local_branches_cached, remote_branches_cached = load_branches()
+        load_branches()
     return local_branches_cached
 
 
 def remote_branches():
     global local_branches_cached, remote_branches_cached
     if remote_branches_cached is None:
-        local_branches_cached, remote_branches_cached = load_branches()
+        load_branches()
     return remote_branches_cached
 
 
 def load_branches():
+    global commit_sha_by_revision_cached, counterparts_for_fetching_cached, local_branches_cached, remote_branches_cached
+    commit_sha_by_revision_cached = {}
+    counterparts_for_fetching_cached = {}
+    local_branches_cached = []
+    remote_branches_cached = []
+
     raw_remote = non_empty_lines(popen_git("for-each-ref", "--format=%(refname)\t%(objectname)", "refs/remotes"))
-    rbs = []
     for line in raw_remote:
         values = line.split("\t")
         if len(values) != 2:  # invalid, shouldn't happen
             continue
         b, sha = values
         b_stripped = re.sub("^refs/remotes/", "", b)
-        rbs += [b_stripped]
+        remote_branches_cached += [b_stripped]
         commit_sha_by_revision_cached[b] = sha
 
     raw_local = non_empty_lines(popen_git("for-each-ref", "--format=%(refname)\t%(objectname)\t%(upstream)", "refs/heads"))
-    lbs = []
+
     for line in raw_local:
         values = line.split("\t")
         if len(values) != 3:  # invalid, shouldn't happen
             continue
-        b, sha, for_fetch = values
+        b, sha, fetch_counterpart = values
         b_stripped = re.sub("^refs/heads/", "", b)
-        for_fetch_stripped = re.sub("^refs/remotes/", "", for_fetch)
-        lbs += [b_stripped]
+        fetch_counterpart_stripped = re.sub("^refs/remotes/", "", fetch_counterpart)
+        local_branches_cached += [b_stripped]
         commit_sha_by_revision_cached[b] = sha
-        if for_fetch_stripped in rbs:
-            remote_tracking_branches_cached[b_stripped] = for_fetch_stripped
-    return lbs, rbs
+        if fetch_counterpart_stripped in remote_branches_cached:
+            counterparts_for_fetching_cached[b_stripped] = fetch_counterpart_stripped
 
 
 def merged_local_branches():
@@ -936,11 +941,10 @@ def commits_between(earlier, later):
 
 NO_REMOTES = 0
 UNTRACKED = 1
-UNTRACKED_ON = 2
-IN_SYNC_WITH_REMOTE = 3
-BEHIND_REMOTE = 4
-AHEAD_OF_REMOTE = 5
-DIVERGED_FROM_REMOTE = 6
+IN_SYNC_WITH_REMOTE = 2
+BEHIND_REMOTE = 3
+AHEAD_OF_REMOTE = 4
+DIVERGED_FROM_REMOTE = 5
 
 
 def get_relation_to_remote_counterpart(b, rb):
@@ -952,16 +956,22 @@ def get_relation_to_remote_counterpart(b, rb):
         return AHEAD_OF_REMOTE if rb_is_anc_of_b else DIVERGED_FROM_REMOTE
 
 
-def get_remote_sync_status(b):
+def get_strict_remote_sync_status(b):
     if not remotes():
         return NO_REMOTES, None
-    remote = remote_for_branch(b)
-    if not remote:
-        return UNTRACKED, None
-    rb = remote_tracking_branch(b)
+    rb = strict_counterpart_for_fetching_of_branch(b)
     if not rb:
-        return UNTRACKED_ON, remote
-    return get_relation_to_remote_counterpart(b, rb), remote
+        return UNTRACKED, None
+    return get_relation_to_remote_counterpart(b, rb), strict_remote_for_fetching_of_branch(b)
+
+
+def get_combined_remote_sync_status(b):
+    if not remotes():
+        return NO_REMOTES, None
+    rb = combined_counterpart_for_fetching_of_branch(b)
+    if not rb:
+        return UNTRACKED, None
+    return get_relation_to_remote_counterpart(b, rb), combined_remote_for_fetching_of_branch(b)
 
 
 # Reflog magic
@@ -976,7 +986,7 @@ def load_all_reflogs():
     # %H - full hash
     # %gs - reflog subject
     all_branches = ["refs/heads/" + b for b in local_branches()] + \
-                   ["refs/remotes/" + remote_tracking_branch(b) for b in local_branches() if remote_tracking_branch(b)]
+                   ["refs/remotes/" + combined_counterpart_for_fetching_of_branch(b) for b in local_branches() if combined_counterpart_for_fetching_of_branch(b)]
     # The trailing '--' is necessary to avoid ambiguity in case there is a file called just exactly like one of the branches.
     entries = non_empty_lines(popen_git("reflog", "show", "--format=%gD\t%H\t%gs", *(all_branches + ["--"])))
     reflogs_cached = {}
@@ -1072,7 +1082,7 @@ def match_log_to_adjusted_reflogs(b):
                 for sha_ in adjusted_reflog(lb, "refs/heads/"):
                     lb_shas.add(sha_)
                     yield sha_, (lb, lb)
-                rb = remote_tracking_branch(lb)
+                rb = combined_counterpart_for_fetching_of_branch(lb)
                 if rb:
                     for sha_ in adjusted_reflog(rb, "refs/remotes/"):
                         if sha_ not in lb_shas:
@@ -1365,7 +1375,7 @@ def delete_unmanaged():
 
         branches_to_delete_merged_to_head = [b for b in branches_to_delete if b in branches_merged_to_head]
         for b in branches_to_delete_merged_to_head:
-            rb = remote_tracking_branch(b)
+            rb = strict_counterpart_for_fetching_of_branch(b)
             is_merged_to_remote = is_ancestor(b, rb, later_prefix="refs/remotes/") if rb else True
             msg_core = "%s (merged to HEAD%s)" % (bold(b), "" if is_merged_to_remote else (", but not merged to " + rb))
             msg = "Delete branch %s? [y/N/q] " % msg_core
@@ -1442,16 +1452,17 @@ class StopTraversal(Exception):
 
 
 def flush():
-    global branch_defs_by_sha_in_reflog, config_cached, initial_log_shas_cached
-    global reflogs_cached, remaining_log_shas_cached
-    global remote_tracking_branches_cached, commit_sha_by_revision_cached
+    global branch_defs_by_sha_in_reflog, commit_sha_by_revision_cached, config_cached, counterparts_for_fetching_cached, initial_log_shas_cached
+    global local_branches_cached, reflogs_cached, remaining_log_shas_cached, remote_branches_cached
     branch_defs_by_sha_in_reflog = None
+    commit_sha_by_revision_cached = None
     config_cached = None
+    counterparts_for_fetching_cached = None
     initial_log_shas_cached = {}
+    local_branches_cached = None
     reflogs_cached = None
     remaining_log_shas_cached = {}
-    remote_tracking_branches_cached = {}
-    commit_sha_by_revision_cached = {}
+    remote_branches_cached = None
 
 
 def pick_remote(b):
@@ -1477,7 +1488,7 @@ def handle_untracked_branch(new_remote, b):
     can_pick_other_remote = len(rems) > 1
     other_remote_suffix = "/[o]ther remote" if can_pick_other_remote else ""
     rb = new_remote + "/" + b
-    if not commit_sha_by_revision(rb, prefix="refs/remotes"):
+    if not commit_sha_by_revision(rb, prefix="refs/remotes/"):
         msg = "Push untracked branch %s to %s? (y/N/q/yq%s) " % (bold(b), bold(new_remote), other_remote_suffix)
         opt_yes_msg = "Pushing untracked branch %s to %s..." % (bold(b), bold(new_remote))
         if ask_if(msg, opt_yes_msg) in ('y', 'yes', 'yq'):
@@ -1531,7 +1542,7 @@ def handle_untracked_branch(new_remote, b):
 
     yes_actions = {
         IN_SYNC_WITH_REMOTE: lambda: set_upstream_to(rb),
-        BEHIND_REMOTE: lambda: pull_ff_only(new_remote, b),
+        BEHIND_REMOTE: lambda: pull_ff_only(new_remote, rb),
         AHEAD_OF_REMOTE: lambda: push(new_remote, b),
         DIVERGED_FROM_REMOTE: lambda: push(new_remote, b, force_with_lease=True)
     }
@@ -1565,11 +1576,10 @@ def traverse():
         empty_line_status = new_status
 
     if opt_fetch:
-        relevant_remotes = set(map_non_null(remote_for_branch, managed_branches))
-        for r in relevant_remotes:
+        for r in remotes():
             print("Fetching %s..." % r)
             fetch_remote(r)
-        if relevant_remotes:
+        if remotes():
             flush()
             print("")
 
@@ -1599,9 +1609,8 @@ def traverse():
         else:
             needs_rebase = u and not \
                 (is_ancestor(u, b) and commit_sha_by_revision(u) == fork_point(b, use_overrides=True))
-        s, remote = get_remote_sync_status(b)
+        s, remote = get_strict_remote_sync_status(b)
         statuses_to_sync = (UNTRACKED,
-                            UNTRACKED_ON,
                             AHEAD_OF_REMOTE,
                             BEHIND_REMOTE,
                             DIVERGED_FROM_REMOTE)
@@ -1663,20 +1672,20 @@ def traverse():
                     sys.stdout.write("\nRebase of '%s' in progress; stopping the traversal\n" % rb)
                     return
                 flush()
-                s, remote = get_remote_sync_status(b)
+                s, remote = get_strict_remote_sync_status(b)
                 needs_remote_sync = s in statuses_to_sync
             elif ans in ('q', 'quit'):
                 return
 
         if needs_remote_sync:
             if s == BEHIND_REMOTE:
-                rb = remote_tracking_branch(b)
+                rb = strict_counterpart_for_fetching_of_branch(b)
                 ans = ask_if(
                     "Branch %s is behind its remote counterpart %s.\nPull %s from %s? [y/N/q/yq] " % (bold(b), bold(rb), bold(b), bold(remote)),
                     "Branch %s is behind its remote counterpart %s.\nPulling %s from %s..." % (bold(b), bold(rb), bold(b), bold(remote))
                 )
                 if ans in ('y', 'yes', 'yq'):
-                    pull_ff_only(remote, b)
+                    pull_ff_only(remote, rb)
                     if ans == 'yq':
                         return
                     flush()
@@ -1684,9 +1693,8 @@ def traverse():
                 elif ans in ('q', 'quit'):
                     return
 
-            elif s == UNTRACKED_ON or s == AHEAD_OF_REMOTE:
+            elif s == AHEAD_OF_REMOTE:
                 print_new_line(False)
-                # 'remote' is defined for both cases we handle here, including UNTRACKED_ON
                 ans = ask_if(
                     "Push %s to %s? [y/N/q/yq] " % (bold(b), bold(remote)),
                     "Pushing %s to %s..." % (bold(b), bold(remote))
@@ -1701,7 +1709,7 @@ def traverse():
 
             elif s == DIVERGED_FROM_REMOTE:
                 print_new_line(False)
-                rb = remote_tracking_branch(b)
+                rb = strict_counterpart_for_fetching_of_branch(b)
                 ans = ask_if(
                     "Branch %s diverged from its remote counterpart %s.\nPush %s with force-with-lease to %s? [y/N/q/yq] " % (bold(b), bold(rb), bold(b), bold(remote)),
                     "Branch %s diverged from its remote counterpart %s.\nPushing %s with force-with-lease to %s..." % (bold(b), bold(rb), bold(b), bold(remote))
@@ -1716,8 +1724,11 @@ def traverse():
 
             elif s == UNTRACKED:
                 rems = remotes()
+                r = inferred_remote_for_fetching_of_branch(b)
                 print_new_line(False)
-                if len(rems) == 1:
+                if r:
+                    handle_untracked_branch(r, b)
+                elif len(rems) == 1:
                     handle_untracked_branch(rems[0], b)
                 elif "origin" in rems:
                     handle_untracked_branch("origin", b)
@@ -1793,10 +1804,10 @@ def status(warn_on_yellow_edges):
     hook_executable = check_hook_executable(hook_path)
 
     def write_unicode(x):
-        try:
-            out.write(unicode(x))  # Python 2
-        except NameError:
-            out.write(x)  # Python 3
+        if sys.version_info[0] == 2:  # Python 2
+            out.write(unicode(x))  # noqa: F821
+        else:  # Python 3
+            out.write(x)
 
     def print_line_prefix(b_, suffix):
         write_unicode("  ")
@@ -1855,11 +1866,10 @@ def status(warn_on_yellow_edges):
 
         anno = "  " + dim(annotations[b]) if b in annotations else ""
 
-        s, remote = get_remote_sync_status(b)
+        s, remote = get_combined_remote_sync_status(b)
         sync_status = {
             NO_REMOTES: "",
             UNTRACKED: colored(" (untracked)", ORANGE),
-            UNTRACKED_ON: colored(" (untracked on %s)" % remote, ORANGE),
             IN_SYNC_WITH_REMOTE: "",
             BEHIND_REMOTE: colored(" (behind %s)" % remote, RED),
             AHEAD_OF_REMOTE: colored(" (ahead of %s)" % remote, RED),
