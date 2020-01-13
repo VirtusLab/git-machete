@@ -33,6 +33,7 @@
 - added: `--list-commits-with-hashes` flag to `status`
 - improved: stability of loading branch data from git
 - fixed: predictability of handling branch remote tracking data
+- fixed: fork point algorithm is now more resilient to corner cases in reflogs
 
 ## New in git-machete 2.12.10
 

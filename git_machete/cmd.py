@@ -1027,19 +1027,20 @@ def reflog(b):
 
 
 def adjusted_reflog(b, prefix):
-    def is_relevant_reflog_subject(sha_, gs_):
-        is_relevant = not (
+    def is_excluded_reflog_subject(sha_, gs_):
+        is_excluded = (
             gs_.startswith("branch: Created from") or
             gs_ == "branch: Reset to " + b or
             gs_ == "branch: Reset to HEAD" or
             gs_.startswith("reset: moving to ") or
             gs_ == "rebase finished: %s/%s onto %s" % (prefix, b, sha_)  # the rare case of a no-op rebase
         )
-        if not is_relevant:
-            debug("adjusted_reflog(%s, %s) -> is_relevant_reflog_subject(%s, <<<%s>>>)" % (b, prefix, sha_, gs_), "skipping reflog entry")
-        return is_relevant
+        if is_excluded:
+            debug("adjusted_reflog(%s, %s) -> is_excluded_reflog_subject(%s, <<<%s>>>)" % (b, prefix, sha_, gs_), "skipping all reflog entries with hash %s" % sha_)
+        return is_excluded
 
-    result = [sha for (sha, gs) in reflog(prefix + b) if is_relevant_reflog_subject(sha, gs)]
+    excluded_shas = set(sha for (sha, gs) in reflog(prefix + b) if is_excluded_reflog_subject(sha, gs))
+    result = [sha for (sha, gs) in reflog(prefix + b) if sha not in excluded_shas]
     debug("adjusted_reflog(%s, %s)" % (b, prefix), "computed adjusted reflog (= reflog without branch creation and branch reset events irrelevant for fork point/upstream inference): %s\n" %
           (", ".join(result) or "<empty>"))
     return result
