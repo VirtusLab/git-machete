@@ -9,10 +9,12 @@ build/
 dist/
 *.egg-info/
 .eggs/
+.mypy_cache/
 *.pyc
 .python-version
 .stestr/
 .tox/
+type_info.json
 
 # Snapcraft
 parts/
