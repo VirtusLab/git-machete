@@ -10,15 +10,28 @@ import re
 import subprocess
 import sys
 import textwrap
+from typing import Iterator
+from typing import Tuple
+from typing import Union
+from typing import List
+from typing import Any
+from typing import Optional
+# from typing import Text
+from typing import Dict
+from typing import Set
+# from mypy_extensions import NoReturn
+from typing import Callable
 
 
 # Core utils
 
 class MacheteException(Exception):
     def __init__(self, value):
+        # type: (str) -> None
         self.parameter = value
 
     def __str__(self):
+        # type: () -> str
         return str(self.parameter)
 
 
@@ -32,26 +45,103 @@ ORANGE = '\033[00;38;5;208m'
 RED = '\033[91m'
 
 
+# Necessary variables declaration
+cmd = None
+opt_checked_out_since = None
+opt_color = "auto"
+opt_debug = False
+opt_down_fork_point = None
+opt_fetch = False
+opt_fork_point = None
+opt_inferred = False
+opt_list_commits = False
+opt_list_commits_with_hashes = False
+opt_merge = False
+opt_no_edit_merge = False
+opt_no_interactive_rebase = False
+opt_onto = None
+opt_override_to = None
+opt_override_to_inferred = False
+opt_override_to_parent = False
+opt_return_to = "stay"
+opt_roots = list()  # type: List[Any]
+opt_start_from = "here"
+opt_stat = False
+opt_unset_override = False
+opt_verbose = False
+opt_yes = False
+managed_branches = []  # type: List[Any]
+down_branches = {}  # type: Dict[Any,Any]
+up_branch = {}  # type: Dict[str,str]
+indent = None
+roots = []  # type: List[Any]
+annotations = {}  # type: Dict[Any,Any]
+definition_file = None
 ascii_only = False
+empty_line_status = True
+
+
+def clear_opts():  # Straight-forward function to clear options after each run of main()
+    # type: () -> None
+    global opt_checked_out_since, opt_color, opt_debug, opt_down_fork_point, opt_fetch, opt_fork_point, opt_inferred, opt_list_commits, opt_list_commits_with_hashes, opt_merge, opt_no_edit_merge
+    global opt_no_interactive_rebase, opt_onto, opt_override_to, opt_override_to_inferred, opt_override_to_parent, opt_return_to, opt_roots, opt_start_from, opt_stat, opt_unset_override, opt_verbose, opt_yes
+    global managed_branches, down_branches, up_branch, indent, roots, annotations, definition_file, ascii_only, empty_line_status
+    opt_checked_out_since = None
+    opt_color = "auto"
+    opt_debug = False
+    opt_down_fork_point = None
+    opt_fetch = False
+    opt_fork_point = None
+    opt_inferred = False
+    opt_list_commits = False
+    opt_list_commits_with_hashes = False
+    opt_merge = False
+    opt_no_edit_merge = False
+    opt_no_interactive_rebase = False
+    opt_onto = None
+    opt_override_to = None
+    opt_override_to_inferred = False
+    opt_override_to_parent = False
+    opt_return_to = "stay"
+    opt_roots = list()
+    opt_start_from = "here"
+    opt_stat = False
+    opt_unset_override = False
+    opt_verbose = False
+    opt_yes = False
+    managed_branches = []
+    down_branches = {}
+    up_branch = {}
+    indent = None
+    roots = []
+    annotations = {}
+    definition_file = None
+    ascii_only = False
+    empty_line_status = True
 
 
 def bold(s):
+    # type: (Any) -> str
     return BOLD + s + ENDC if not ascii_only else s
 
 
 def dim(s):
+    # type: (str) -> str
     return DIM + s + ENDC if not ascii_only else s
 
 
 def underline(s):
+    # type: (str) -> str
     return UNDERLINE + s + ENDC if not ascii_only else s + " *"
 
 
 def colored(s, color):
+    # type: (str, str) -> str
     return color + s + ENDC if not ascii_only else s
 
 
 def vertical_bar():
+    # type: () -> Union[str,unicode]
     return u"│" if not ascii_only else "|"
 
 
@@ -60,6 +150,7 @@ def right_arrow():
 
 
 def star(f):  # tuple unpacking in lambdas
+    # type: (Callable) -> Callable
     return lambda args: f(*args)
 
 
@@ -72,10 +163,12 @@ def map_non_null(func, l):
 
 
 def non_empty_lines(s):
+    # type: (str) -> List[str]
     return list(filter(None, s.split("\n")))
 
 
 def excluding(l, s):
+    # type: (List[str], List[str]) -> List[str]
     return list(filter(lambda x: x not in s, l))
 
 
@@ -91,6 +184,7 @@ def safe_input(msg):
 
 
 def ask_if(msg, opt_yes_msg):
+    # type: (str, str) -> str
     if opt_yes:
         print(opt_yes_msg)
         return 'y'
@@ -110,12 +204,13 @@ def pick(choices, name):
 
 
 def debug(hdr, msg):
+    # type: (str, str) -> None
     if opt_debug:
         sys.stderr.write("%s: %s\n" % (bold(hdr), dim(msg)))
 
 
 # To avoid displaying the same warning multiple times during a single run.
-displayed_warnings = set()
+displayed_warnings = set()  # type: Set[Any]
 
 
 def warn(msg):
@@ -126,10 +221,12 @@ def warn(msg):
 
 
 def run_cmd(cmd, *args, **kwargs):
+    # type: (str, *str, **Any) -> int
     return subprocess.call([cmd] + list(args), **kwargs)
 
 
 def popen_cmd(cmd, *args, **kwargs):
+    # type: (str, *str, **Any) -> Tuple[int, str, str]
     process = subprocess.Popen([cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
     stdout, stderr = process.communicate()
     return process.returncode, stdout.decode('utf-8'), stderr.decode('utf-8')
@@ -139,7 +236,9 @@ def popen_cmd(cmd, *args, **kwargs):
 
 
 def cmd_shell_repr(git_cmd, args):
+    # type: (str, Tuple[str, ...]) -> str
     def shell_escape(arg):
+        # type: (str) -> str
         return arg.replace("(", "\\(") \
             .replace(")", "\\)") \
             .replace(" ", "\\ ") \
@@ -149,6 +248,7 @@ def cmd_shell_repr(git_cmd, args):
 
 
 def run_git(git_cmd, *args, **kwargs):
+    # type: (str, *str, **Any) -> int
     flat_cmd = cmd_shell_repr(git_cmd, args)
     if opt_debug:
         sys.stderr.write(underline(flat_cmd) + "\n")
@@ -163,6 +263,7 @@ def run_git(git_cmd, *args, **kwargs):
 
 
 def popen_git(git_cmd, *args, **kwargs):
+    # type: (str, *str, **Any) -> str
     flat_cmd = cmd_shell_repr(git_cmd, args)
     if opt_debug:
         sys.stderr.write(underline(flat_cmd) + "\n")
@@ -184,12 +285,14 @@ def popen_git(git_cmd, *args, **kwargs):
 # Manipulation on definition file/tree of branches
 
 def expect_in_managed_branches(b):
+    # type: (str) -> None
     if b not in managed_branches:
         raise MacheteException("Branch '%s' not found in the tree of branch dependencies. "
                                "Use 'git machete add %s' or 'git machete edit'" % (b, b))
 
 
 def expect_at_least_one_managed_branch():
+    # type: () -> None
     if not roots:
         raise_no_branches_error()
 
@@ -201,17 +304,13 @@ def raise_no_branches_error():
 
 
 def read_definition_file():
+    # type: () -> None
     global indent, managed_branches, down_branches, up_branch, roots, annotations
 
     with open(definition_file) as f:
         lines = [l.rstrip() for l in f.readlines() if not l.isspace()]
 
     managed_branches = []
-    down_branches = {}
-    up_branch = {}
-    indent = None
-    roots = []
-    annotations = {}
     at_depth = {}
     last_depth = -1
     hint = "Edit the definition file manually with 'git machete edit'"
@@ -262,29 +361,33 @@ def read_definition_file():
 
 
 def render_tree():
+    # type: () -> List[str]
     global roots, down_branches, indent, annotations
     if not indent:
         indent = "\t"
 
     def render_dfs(b, depth):
+        # type: (str, int) -> List[str]
         annotation = (" " + annotations[b]) if b in annotations else ""
         res = [depth * indent + b + annotation]
         for d in down_branches.get(b) or []:
             res += render_dfs(d, depth + 1)
         return res
 
-    total = []
+    total = []  # type: List[Any]
     for r in roots:
         total += render_dfs(r, depth=0)
     return total
 
 
 def back_up_definition_file():
+    # type: () -> None
     with open(definition_file + "~", "w") as backup:
         backup.write(open(definition_file).read())
 
 
 def save_definition_file():
+    # type: () -> None
     with open(definition_file, "w") as f:
         f.write("\n".join(render_tree()) + "\n")
 
@@ -356,6 +459,7 @@ def root_branch(b, accept_self, if_unmanaged):
 
 
 def up(b, prompt_if_inferred_msg, prompt_if_inferred_yes_opt_msg):
+    # type: (str, str, str) -> str
     if b in managed_branches:
         u = up_branch.get(b)
         if u:
@@ -378,6 +482,7 @@ def up(b, prompt_if_inferred_msg, prompt_if_inferred_yes_opt_msg):
 
 
 def add(b):
+    # type: (str) -> None
     global roots
 
     if b in managed_branches:
@@ -440,6 +545,7 @@ def annotate(b, words):
 
 
 def print_annotation(b):
+    # type: (str) -> None
     global annotations
     if b in annotations:
         print(annotations[b])
@@ -494,6 +600,7 @@ git_version = None
 
 
 def get_git_version():
+    # type: () -> Tuple[int, int, int]
     global git_version
     if not git_version:
         raw = re.search(r"\d+.\d+.\d+", popen_git("version")).group(0)
@@ -515,6 +622,7 @@ abs_git_dir = None
 
 
 def get_abs_git_dir():
+    # type: () -> str
     global abs_git_dir
     if not abs_git_dir:
         try:
@@ -526,6 +634,7 @@ def get_abs_git_dir():
 
 
 def get_abs_git_subpath(*fragments):
+    # type: (*str) -> str
     return os.path.join(get_abs_git_dir(), *fragments)
 
 
@@ -537,7 +646,7 @@ def parse_git_timespec_to_unix_timestamp(date):
         raise MacheteException("Cannot parse timespec: '%s'" % date)
 
 
-config_cached = None
+config_cached = None  # type: Optional[Dict]
 
 
 def ensure_config_loaded():
@@ -573,6 +682,7 @@ remotes_cached = None
 
 
 def remotes():
+    # type: () -> List
     global remotes_cached
     if remotes_cached is None:
         remotes_cached = non_empty_lines(popen_git("remote"))
@@ -629,6 +739,7 @@ commit_sha_by_revision_cached = None
 
 
 def commit_sha_by_revision(revision, prefix="refs/heads/"):
+    # type: (str, str) -> str
     global commit_sha_by_revision_cached
     if commit_sha_by_revision_cached is None:
         load_branches()
@@ -683,14 +794,17 @@ def is_am_in_progress():
 
 
 def is_cherry_pick_in_progress():
+    # type: () -> bool
     return os.path.isfile(get_abs_git_subpath("CHERRY_PICK_HEAD"))
 
 
 def is_merge_in_progress():
+    # type: () -> bool
     return os.path.isfile(get_abs_git_subpath("MERGE_HEAD"))
 
 
 def is_revert_in_progress():
+    # type: () -> bool
     return os.path.isfile(get_abs_git_subpath("REVERT_HEAD"))
 
 
@@ -698,6 +812,7 @@ def is_revert_in_progress():
 # so we need to extract the name of the currently rebased branch from the rebase-specific internals
 # rather than rely on 'git symbolic-ref HEAD` (i.e. .git/HEAD).
 def currently_rebased_branch_or_none():
+    # type: () -> Optional[Any]
     # https://stackoverflow.com/questions/3921409
 
     head_name_file = None
@@ -722,6 +837,7 @@ def currently_rebased_branch_or_none():
 
 
 def currently_checked_out_branch_or_none():
+    # type: () -> Union[str,None]
     try:
         raw = popen_git("symbolic-ref", "--quiet", "HEAD").strip()
         return re.sub("^refs/heads/", "", raw)
@@ -730,6 +846,7 @@ def currently_checked_out_branch_or_none():
 
 
 def expect_no_operation_in_progress():
+    # type: () -> None
     rb = currently_rebased_branch_or_none()
     if rb:
         raise MacheteException("Rebase of '%s' in progress. Conclude the rebase first with 'git rebase --continue' or 'git rebase --abort'." % rb)
@@ -744,17 +861,19 @@ def expect_no_operation_in_progress():
 
 
 def current_branch_or_none():
+    # type: () -> str
     return currently_checked_out_branch_or_none() or currently_rebased_branch_or_none()
 
 
 def current_branch():
+    # type: () -> str
     result = current_branch_or_none()
     if not result:
         raise MacheteException("Not currently on any branch")
     return result
 
 
-merge_base_cached = {}
+merge_base_cached = {}  # type: Dict[Any,Any]
 
 
 def merge_base(sha1, sha2):
@@ -768,6 +887,7 @@ def merge_base(sha1, sha2):
 # Note: the 'git rev-parse --verify' validation is not performed in case for either of earlier/later
 # if the corresponding prefix is empty AND the revision is a 40 hex digit hash.
 def is_ancestor(earlier_revision, later_revision, earlier_prefix="refs/heads/", later_prefix="refs/heads/"):
+    # type: (str, str, str, str) -> bool
     if earlier_prefix == "" and re.match("^[0-9a-f]{40}$", earlier_revision):
         earlier_sha = earlier_revision
     else:
@@ -786,20 +906,22 @@ def create_branch(b, out_of):
 
 
 def log_shas(revision, max_count):
+    # type: (str, Optional[int]) -> List[str]
     opts = (["--max-count=" + str(max_count)] if max_count else []) + ["--format=%H", "refs/heads/" + revision]
     return non_empty_lines(popen_git("log", *opts))
 
 
 MAX_COUNT_FOR_INITIAL_LOG = 10
 
-initial_log_shas_cached = {}
-remaining_log_shas_cached = {}
+initial_log_shas_cached = {}  # type: Dict[Any,Any]
+remaining_log_shas_cached = {}  # type: Dict[Any,Any]
 
 
 # Since getting the full history of a branch can be an expensive operation for large repositories (compared to all other underlying git operations),
 # there's a simple optimization in place: we first fetch only a couple of first commits in the history,
 # and only fetch the rest if none of them occurs on reflog of any other branch.
 def spoonfeed_log_shas(b):
+    # type: (str) -> Iterator[Union[Iterator, Iterator[str]]]
     if b not in initial_log_shas_cached:
         initial_log_shas_cached[b] = log_shas(b, max_count=MAX_COUNT_FOR_INITIAL_LOG)
     for sha in initial_log_shas_cached[b]:
@@ -816,6 +938,7 @@ remote_branches_cached = None
 
 
 def local_branches():
+    # type: () -> List[str]
     global local_branches_cached, remote_branches_cached
     if local_branches_cached is None:
         load_branches()
@@ -873,11 +996,13 @@ def go(branch):
 
 
 def get_hook_path(hook_name):
+    # type: (str) -> str
     hook_dir = get_config_or_none("core.hooksPath") or get_abs_git_subpath("hooks")
     return os.path.join(hook_dir, hook_name)
 
 
 def check_hook_executable(hook_path):
+    # type: (str) -> bool
     if not os.path.isfile(hook_path):
         return False
     elif not is_executable(hook_path):
@@ -924,6 +1049,7 @@ def rebase_onto_ancestor_commit(branch, ancestor_commit):
 
 
 def update():
+    # type: () -> None
     cb = current_branch()
     if opt_merge:
         with_branch = up(cb,
@@ -938,6 +1064,7 @@ def update():
 
 
 def diff(branch):
+    # type: (Optional[Any]) -> None
     params = \
         (["--stat"] if opt_stat else []) + \
         [fork_point(branch if branch else current_branch(), use_overrides=True)] + \
@@ -947,6 +1074,7 @@ def diff(branch):
 
 
 def log(branch):
+    # type: (str) -> None
     run_git("log", "^" + fork_point(branch, use_overrides=True), "refs/heads/" + branch)
 
 
@@ -992,10 +1120,11 @@ def get_combined_remote_sync_status(b):
 # Reflog magic
 
 
-reflogs_cached = None
+reflogs_cached = None  # type: Union[None,Dict]
 
 
 def load_all_reflogs():
+    # type: () -> None
     global reflogs_cached
     # %gd - reflog selector (refname@{num})
     # %H - full hash
@@ -1020,6 +1149,7 @@ def load_all_reflogs():
 
 
 def reflog(b):
+    # type: (str) -> List[Tuple[str, str]]
     global reflogs_cached
     # git version 2.14.2 fixed a bug that caused fetching reflog of more than
     # one branch at the same time unreliable in certain cases
@@ -1042,7 +1172,9 @@ def reflog(b):
 
 
 def adjusted_reflog(b, prefix):
+    # type: (str, str) -> List[str]
     def is_excluded_reflog_subject(sha_, gs_):
+        # type: (str, str) -> bool
         is_excluded = (
             gs_.startswith("branch: Created from") or
             gs_ == "branch: Reset to " + b or
@@ -1082,10 +1214,11 @@ def get_latest_checkout_timestamps():
     return result
 
 
-branch_defs_by_sha_in_reflog = None
+branch_defs_by_sha_in_reflog = None  # type: Optional[Dict]
 
 
 def match_log_to_adjusted_reflogs(b):
+    # type: (str) -> Iterator[Union[Iterator, Iterator[Tuple[str, List[Tuple[str, str]]]]]]
     global branch_defs_by_sha_in_reflog
 
     if b not in local_branches():
@@ -1093,6 +1226,7 @@ def match_log_to_adjusted_reflogs(b):
 
     if branch_defs_by_sha_in_reflog is None:
         def generate_entries():
+            # type: () -> Iterator[Union[Iterator, Iterator[Tuple[str, Tuple[str, str]]]]]
             for lb in local_branches():
                 lb_shas = set()
                 for sha_ in adjusted_reflog(lb, "refs/heads/"):
@@ -1114,6 +1248,7 @@ def match_log_to_adjusted_reflogs(b):
                 branch_defs_by_sha_in_reflog[sha] = [branch_def]
 
         def log_result():
+            # type: () -> Iterator[Union[Iterator, Iterator[str]]]
             for sha_, branch_defs in branch_defs_by_sha_in_reflog.items():
                 yield dim("%s => %s" %
                           (sha_, ", ".join(map(star(lambda lb, lb_or_rb: lb if lb == lb_or_rb else "%s (remote counterpart of %s)" % (lb_or_rb, lb)), branch_defs))))
@@ -1135,6 +1270,7 @@ def match_log_to_adjusted_reflogs(b):
 # Complex routines/commands
 
 def is_merged_to_parent(b):
+    # type: (str) -> Union[List, bool]
     if b not in up_branch:
         return False
     u = up_branch[b]
@@ -1153,6 +1289,7 @@ def is_merged_to_parent(b):
 
 
 def infer_upstream(b, condition=lambda u: True, reject_reason_message=""):
+    # type: (str, Callable, str) -> Optional[str]
     for sha, containing_branch_defs in match_log_to_adjusted_reflogs(b):
         debug("infer_upstream(%s)" % b, "commit %s found in adjusted reflog of %s" % (sha, " and ".join(map(star(lambda x, y: y), containing_branch_defs))))
 
@@ -1169,6 +1306,7 @@ def infer_upstream(b, condition=lambda u: True, reject_reason_message=""):
 
 
 def discover_tree():
+    # type: () -> None
     global managed_branches, roots, down_branches, up_branch, indent, annotations, opt_checked_out_since, opt_roots
     all_local_branches = local_branches()
     if not all_local_branches:
@@ -1185,6 +1323,7 @@ def discover_tree():
     root_of = dict((b, b) for b in all_local_branches)
 
     def get_root_of(b):
+        # type: (str) -> str
         if b != root_of[b]:
             root_of[b] = get_root_of(root_of[b])
         return root_of[b]
@@ -1195,7 +1334,7 @@ def discover_tree():
         last_checkout_timestamps = get_latest_checkout_timestamps()
         stale_branches = [b for b in non_root_fixed_branches if
                           b not in last_checkout_timestamps or
-                          last_checkout_timestamps[b] < threshold]
+                          last_checkout_timestamps[b] < threshold]  # type: List[Any]
     else:
         stale_branches = []
     managed_branches = excluding(all_local_branches, stale_branches)
@@ -1240,6 +1379,7 @@ def discover_tree():
 
 
 def fork_point_and_containing_branch_defs(b, use_overrides):
+    # type: (str, bool) -> Tuple[str, List[Tuple[str, str]]]
     global up_branch
     u = up_branch.get(b)
 
@@ -1287,15 +1427,18 @@ def fork_point_and_containing_branch_defs(b, use_overrides):
 
 
 def fork_point(b, use_overrides):
+    # type: (str, bool) -> str
     sha, containing_branch_defs = fork_point_and_containing_branch_defs(b, use_overrides)
     return sha
 
 
 def config_key_for_override_fork_point_to(b):
+    # type: (str) -> str
     return "machete.overrideForkPoint." + b + ".to"
 
 
 def config_key_for_override_fork_point_while_descendant_of(b):
+    # type: (str) -> str
     return "machete.overrideForkPoint." + b + ".whileDescendantOf"
 
 
@@ -1306,6 +1449,7 @@ def has_any_fork_point_override_config(b):
 
 
 def get_fork_point_override_data(b):
+    # type: (str) -> Optional[Any]
     to_key = config_key_for_override_fork_point_to(b)
     to = get_config_or_none(to_key)
     while_descendant_of_key = config_key_for_override_fork_point_while_descendant_of(b)
@@ -1336,6 +1480,7 @@ def get_fork_point_override_data(b):
 
 
 def get_overridden_fork_point(b):
+    # type: (str) -> Optional[Any]
     override_data = get_fork_point_override_data(b)
     if not override_data:
         return None
@@ -1381,6 +1526,7 @@ def unset_fork_point_override(b):
 
 
 def delete_unmanaged():
+    # type: () -> None
     branches_to_delete = excluding(local_branches(), managed_branches)
     cb = current_branch_or_none()
     if cb and cb in branches_to_delete:
@@ -1417,6 +1563,7 @@ def delete_unmanaged():
 
 
 def slide_out(bs):
+    # type: (List[str]) -> None
     for b in bs:
         expect_in_managed_branches(b)
         u = up_branch.get(b)
@@ -1583,13 +1730,13 @@ def handle_untracked_branch(new_remote, b):
 
 
 def traverse():
+    # type: () -> None
     global down_branches, up_branch, empty_line_status, managed_branches
 
     expect_at_least_one_managed_branch()
 
-    empty_line_status = True
-
     def print_new_line(new_status):
+        # type: (bool) -> None
         global empty_line_status
         if not empty_line_status:
             print("")
@@ -1795,9 +1942,11 @@ def traverse():
 
 
 def status(warn_on_yellow_edges):
+    # type: (bool) -> None
     dfs_res = []
 
     def prefix_dfs(u_, prefix):
+        # type: (str, List) -> None
         dfs_res.append((u_, prefix))
         if down_branches.get(u_):
             for (v, nv) in zip(down_branches[u_][:-1], down_branches[u_][1:]):
@@ -1809,10 +1958,11 @@ def status(warn_on_yellow_edges):
 
     out = io.StringIO()
     edge_color = {}
-    fp_sha_cached = {}
+    fp_sha_cached = {}  # type: Dict[Any,Any]
     fp_branches_cached = {}
 
     def fp_sha(b):
+        # type: (str) -> str
         if b not in fp_sha_cached:
             try:
                 # We're always using fork point overrides, even when status is launched from discover().
@@ -1841,12 +1991,14 @@ def status(warn_on_yellow_edges):
     hook_executable = check_hook_executable(hook_path)
 
     def write_unicode(x):
+        # type: (str) -> None
         if sys.version_info[0] == 2:  # Python 2
             out.write(unicode(x))  # noqa: F821
         else:  # Python 3
             out.write(x)
 
     def print_line_prefix(b_, suffix):
+        # type: (str, str) -> None
         write_unicode("  ")
         for p in pfx[:-1]:
             if not p:
@@ -2445,6 +2597,7 @@ def short_usage():
 
 
 def version():
+    # type: () -> None
     print('git-machete version ' + __version__)
 
 
@@ -2453,7 +2606,11 @@ def main():
 
 
 def launch(orig_args):
+    # type: (List[str]) -> None
+    clear_opts()
+
     def parse_options(in_args, short_opts="", long_opts=[], gnu=True):
+        # type: (List[str], str, List[str], bool) -> List[str]
         global ascii_only
         global opt_checked_out_since, opt_color, opt_debug, opt_down_fork_point, opt_fetch, opt_fork_point, opt_inferred, opt_list_commits, opt_list_commits_with_hashes, opt_merge, opt_n, opt_no_edit_merge
         global opt_no_interactive_rebase, opt_onto, opt_override_to, opt_override_to_inferred, opt_override_to_parent, opt_return_to, opt_roots, opt_start_from, opt_stat, opt_unset_override, opt_verbose, opt_yes
@@ -2548,10 +2705,12 @@ def launch(orig_args):
         return rest
 
     def expect_no_param(in_args, extra_explanation=''):
+        # type: (List, str) -> None
         if len(in_args) > 0:
             raise MacheteException("No argument expected for '%s'%s" % (cmd, extra_explanation))
 
     def check_optional_param(in_args):
+        # type: (List) -> Optional[Any]
         if not in_args:
             return None
         elif len(in_args) > 1:
@@ -2564,6 +2723,7 @@ def launch(orig_args):
             return in_args[0]
 
     def check_required_param(in_args, allowed_values):
+        # type: (List, str) -> Any
         if not in_args or len(in_args) > 1:
             raise MacheteException("'%s' expects exactly one argument: one of %s" % (cmd, allowed_values))
         elif not in_args[0]:
@@ -2792,6 +2952,7 @@ def launch(orig_args):
             read_definition_file()
             expect_no_operation_in_progress()
             update()
+
         elif cmd == "version":
             version()
             sys.exit()

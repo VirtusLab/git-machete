@@ -11,3 +11,5 @@ dist/
 *.pyc
 .tox/
 .stestr/
+.mypy_cache/
+type_info.json
