@@ -11,10 +11,9 @@ set -x
 hash=$(git rev-parse HEAD:ci/nixpkgs-pr)
 if git diff-index --quiet HEAD .; then
   export DIRECTORY_HASH="$hash"
-  docker-compose pull nixpkgs-pr || docker-compose build nixpkgs-pr
 else
   export DIRECTORY_HASH="$hash"-dirty
-  docker-compose build nixpkgs-pr
 fi
 
+docker-compose build nixpkgs-pr
 docker-compose up --exit-code-from=nixpkgs-pr nixpkgs-pr

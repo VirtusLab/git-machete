@@ -46,6 +46,11 @@ This tool is [semantically versioned](https://semver.org) with respect to all of
 Output format of any non-plumbing command can change in non-backward-compatible manner even between patch-level updates.
 
 
+## CI Docker setup reference
+
+* https://medium.com/virtuslab/nifty-docker-tricks-for-your-ci-vol-1-c4a36d2192ea
+* https://medium.com/virtuslab/nifty-docker-tricks-for-your-ci-vol-2-c5191a67f1a4
+
 ## Release TODO list
 
 1. Merge the changes from `develop` to `master` and push `master`.

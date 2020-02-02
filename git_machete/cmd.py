@@ -531,9 +531,8 @@ def get_abs_git_subpath(*fragments):
 
 def parse_git_timespec_to_unix_timestamp(date):
     try:
-        return int(popen_git("rev-parse", "--since=" + date)
-                   .replace("--max-age=", "").strip())
-    except MacheteException:
+        return int(popen_git("rev-parse", "--since=" + date).replace("--max-age=", "").strip())
+    except (MacheteException, ValueError):
         raise MacheteException("Cannot parse timespec: '%s'" % date)
 
 
@@ -593,10 +592,17 @@ def set_upstream_to(rb):
     run_git("branch", "--set-upstream-to", rb)
 
 
+def reset_keep(to_revision):
+    try:
+        run_git("reset", "--keep", to_revision)
+    except MacheteException:
+        raise MacheteException("Cannot perform 'git reset --keep %s'. This is most likely caused by local uncommitted changes." % to_revision)
+
+
 def push(remote, b, force_with_lease=False):
     if not force_with_lease:
         opt_force = []
-    elif get_git_version() >= (1, 8, 5):
+    elif get_git_version() >= (1, 8, 5):  # earliest version of git to support 'push --force-with-lease'
         opt_force = ["--force-with-lease"]
     else:
         opt_force = ["--force"]
@@ -636,6 +642,16 @@ def commit_sha_by_revision(revision, prefix="refs/heads/"):
     if full_revision not in commit_sha_by_revision_cached:
         commit_sha_by_revision_cached[full_revision] = find_commit_sha_by_revision(full_revision)
     return commit_sha_by_revision_cached[full_revision]
+
+
+committer_unix_timestamp_by_revision_cached = None
+
+
+def committer_unix_timestamp_by_revision(revision, prefix="refs/heads/"):
+    global committer_unix_timestamp_by_revision_cached
+    if committer_unix_timestamp_by_revision_cached is None:
+        load_branches()
+    return committer_unix_timestamp_by_revision_cached.get(prefix + revision) or 0
 
 
 def inferred_remote_for_fetching_of_branch(b):
@@ -830,33 +846,37 @@ def remote_branches():
 
 
 def load_branches():
-    global commit_sha_by_revision_cached, counterparts_for_fetching_cached, local_branches_cached, remote_branches_cached
+    global commit_sha_by_revision_cached, committer_unix_timestamp_by_revision_cached, counterparts_for_fetching_cached, local_branches_cached, remote_branches_cached
     commit_sha_by_revision_cached = {}
+    committer_unix_timestamp_by_revision_cached = {}
     counterparts_for_fetching_cached = {}
     local_branches_cached = []
     remote_branches_cached = []
 
-    raw_remote = non_empty_lines(popen_git("for-each-ref", "--format=%(refname)\t%(objectname)", "refs/remotes"))
+    # Using 'committerdate:raw' instead of 'committerdate:unix' since the latter isn't supported by some older versions of git.
+    raw_remote = non_empty_lines(popen_git("for-each-ref", "--format=%(refname)\t%(objectname)\t%(committerdate:raw)", "refs/remotes"))
     for line in raw_remote:
-        values = line.split("\t")
-        if len(values) != 2:  # invalid, shouldn't happen
-            continue
-        b, sha = values
-        b_stripped = re.sub("^refs/remotes/", "", b)
-        remote_branches_cached += [b_stripped]
-        commit_sha_by_revision_cached[b] = sha
-
-    raw_local = non_empty_lines(popen_git("for-each-ref", "--format=%(refname)\t%(objectname)\t%(upstream)", "refs/heads"))
-
-    for line in raw_local:
         values = line.split("\t")
         if len(values) != 3:  # invalid, shouldn't happen
             continue
-        b, sha, fetch_counterpart = values
+        b, sha, committer_unix_timestamp = values
+        b_stripped = re.sub("^refs/remotes/", "", b)
+        remote_branches_cached += [b_stripped]
+        commit_sha_by_revision_cached[b] = sha
+        committer_unix_timestamp_by_revision_cached[b] = int(committer_unix_timestamp.split(' ')[0])
+
+    raw_local = non_empty_lines(popen_git("for-each-ref", "--format=%(refname)\t%(objectname)\t%(committerdate:raw)\t%(upstream)", "refs/heads"))
+
+    for line in raw_local:
+        values = line.split("\t")
+        if len(values) != 4:  # invalid, shouldn't happen
+            continue
+        b, sha, committer_unix_timestamp, fetch_counterpart = values
         b_stripped = re.sub("^refs/heads/", "", b)
         fetch_counterpart_stripped = re.sub("^refs/remotes/", "", fetch_counterpart)
         local_branches_cached += [b_stripped]
         commit_sha_by_revision_cached[b] = sha
+        committer_unix_timestamp_by_revision_cached[b] = int(committer_unix_timestamp.split(' ')[0])
         if fetch_counterpart_stripped in remote_branches_cached:
             counterparts_for_fetching_cached[b_stripped] = fetch_counterpart_stripped
 
@@ -982,7 +1002,8 @@ UNTRACKED = 1
 IN_SYNC_WITH_REMOTE = 2
 BEHIND_REMOTE = 3
 AHEAD_OF_REMOTE = 4
-DIVERGED_FROM_REMOTE = 5
+DIVERGED_FROM_AND_OLDER_THAN_REMOTE = 5
+DIVERGED_FROM_AND_NEWER_THAN_REMOTE = 6
 
 
 def get_relation_to_remote_counterpart(b, rb):
@@ -990,8 +1011,12 @@ def get_relation_to_remote_counterpart(b, rb):
     rb_is_anc_of_b = is_ancestor(rb, b, earlier_prefix="refs/remotes/")
     if b_is_anc_of_rb:
         return IN_SYNC_WITH_REMOTE if rb_is_anc_of_b else BEHIND_REMOTE
+    elif rb_is_anc_of_b:
+        return AHEAD_OF_REMOTE
     else:
-        return AHEAD_OF_REMOTE if rb_is_anc_of_b else DIVERGED_FROM_REMOTE
+        b_t = committer_unix_timestamp_by_revision(b, "refs/heads/")
+        rb_t = committer_unix_timestamp_by_revision(rb, "refs/remotes/")
+        return DIVERGED_FROM_AND_OLDER_THAN_REMOTE if b_t < rb_t else DIVERGED_FROM_AND_NEWER_THAN_REMOTE
 
 
 def get_strict_remote_sync_status(b):
@@ -1074,11 +1099,20 @@ def adjusted_reflog(b, prefix):
             gs_ == "rebase finished: %s/%s onto %s" % (prefix, b, sha_)  # the rare case of a no-op rebase
         )
         if is_excluded:
-            debug("adjusted_reflog(%s, %s) -> is_excluded_reflog_subject(%s, <<<%s>>>)" % (b, prefix, sha_, gs_), "skipping all reflog entries with hash %s" % sha_)
+            debug("adjusted_reflog(%s, %s) -> is_excluded_reflog_subject(%s, <<<%s>>>)" % (b, prefix, sha_, gs_), "skipping reflog entry")
         return is_excluded
 
-    excluded_shas = set(sha for (sha, gs) in reflog(prefix + b) if is_excluded_reflog_subject(sha, gs))
-    result = [sha for (sha, gs) in reflog(prefix + b) if sha not in excluded_shas]
+    b_reflog = reflog(prefix + b)
+    if not b_reflog:
+        return []
+
+    earliest_sha, earliest_gs = b_reflog[-1]  # Note that the reflog is returned from latest to earliest entries.
+    shas_to_exclude = set()
+    if earliest_gs.startswith("branch: Created from"):
+        shas_to_exclude.add(earliest_sha)
+    debug("adjusted_reflog(%s, %s)" % (b, prefix), "also, skipping any reflog entry with the hash in %s" % shas_to_exclude)
+
+    result = [sha for (sha, gs) in reflog(prefix + b) if sha not in shas_to_exclude and not is_excluded_reflog_subject(sha, gs)]
     debug("adjusted_reflog(%s, %s)" % (b, prefix), "computed adjusted reflog (= reflog without branch creation and branch reset events irrelevant for fork point/upstream inference): %s\n" %
           (", ".join(result) or "<empty>"))
     return result
@@ -1548,21 +1582,15 @@ def handle_untracked_branch(new_remote, b):
 
     message = {
         IN_SYNC_WITH_REMOTE:
-            "Branch %s is untracked, but its remote counterpart candidate "
-            "%s already exists and both branches point to the same commit." %
-            (bold(b), bold(rb)),
+            "Branch %s is untracked, but its remote counterpart candidate %s already exists and both branches point to the same commit." % (bold(b), bold(rb)),
         BEHIND_REMOTE:
-            "Branch %s is untracked, but its remote counterpart candidate "
-            "%s already exists and is ahead of %s." %
-            (bold(b), bold(rb), bold(b)),
+            "Branch %s is untracked, but its remote counterpart candidate %s already exists and is ahead of %s." % (bold(b), bold(rb), bold(b)),
         AHEAD_OF_REMOTE:
-            "Branch %s is untracked, but its remote counterpart candidate "
-            "%s already exists and is behind %s." %
-            (bold(b), bold(rb), bold(b)),
-        DIVERGED_FROM_REMOTE:
-            "Branch %s is untracked, but its remote counterpart candidate "
-            "%s already exists and the two branches are diverged." %
-            (bold(b), bold(rb))
+            "Branch %s is untracked, but its remote counterpart candidate %s already exists and is behind %s." % (bold(b), bold(rb), bold(b)),
+        DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
+            "Branch %s is untracked, it diverged from its remote counterpart candidate %s, and has %s commits than %s." % (bold(b), bold(rb), bold("older"), bold(rb)),
+        DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
+            "Branch %s is untracked, it diverged from its remote counterpart candidate %s, and has %s commits than %s." % (bold(b), bold(rb), bold("newer"), bold(rb))
     }
 
     prompt = {
@@ -1578,7 +1606,11 @@ def handle_untracked_branch(new_remote, b):
             "Push branch %s to %s? (y/N/q/yq%s) " % (bold(b), bold(new_remote), other_remote_suffix),
             "Pushing branch %s to %s..." % (bold(b), bold(new_remote))
         ),
-        DIVERGED_FROM_REMOTE: (
+        DIVERGED_FROM_AND_OLDER_THAN_REMOTE: (
+            "Reset branch %s to the commit pointed by %s? (y/N/q/yq%s) " % (bold(b), bold(rb), other_remote_suffix),
+            "Resetting branch %s to the commit pointed by %s..." % (bold(b), bold(rb))
+        ),
+        DIVERGED_FROM_AND_NEWER_THAN_REMOTE: (
             "Push branch %s with force-with-lease to %s? (y/N/q/yq%s) " % (bold(b), bold(new_remote), other_remote_suffix),
             "Pushing branch %s with force-with-lease to %s..." % (bold(b), bold(new_remote))
         )
@@ -1588,7 +1620,8 @@ def handle_untracked_branch(new_remote, b):
         IN_SYNC_WITH_REMOTE: lambda: set_upstream_to(rb),
         BEHIND_REMOTE: lambda: pull_ff_only(new_remote, rb),
         AHEAD_OF_REMOTE: lambda: push(new_remote, b),
-        DIVERGED_FROM_REMOTE: lambda: push(new_remote, b, force_with_lease=True)
+        DIVERGED_FROM_AND_OLDER_THAN_REMOTE: lambda: reset_keep(rb),
+        DIVERGED_FROM_AND_NEWER_THAN_REMOTE: lambda: push(new_remote, b, force_with_lease=True)
     }
 
     relation = get_relation_to_remote_counterpart(b, rb)
@@ -1650,20 +1683,26 @@ def traverse():
         u = up_branch.get(b)
 
         needs_slide_out = is_merged_to_parent(b)
+        s, remote = get_strict_remote_sync_status(b)
+        statuses_to_sync = (UNTRACKED,
+                            AHEAD_OF_REMOTE,
+                            BEHIND_REMOTE,
+                            DIVERGED_FROM_AND_OLDER_THAN_REMOTE,
+                            DIVERGED_FROM_AND_NEWER_THAN_REMOTE)
+        needs_remote_sync = s in statuses_to_sync
+
         if needs_slide_out:
             # Avoid unnecessary fork point check if we already know that the branch qualifies for slide out;
+            # neither rebase nor merge will be suggested in such case anyway.
+            needs_parent_sync = False
+        elif s == DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
+            # Avoid unnecessary fork point check if we already know that the branch qualifies for resetting to remote counterpart;
             # neither rebase nor merge will be suggested in such case anyway.
             needs_parent_sync = False
         elif opt_merge:
             needs_parent_sync = u and not is_ancestor(u, b)
         else:  # using rebase
             needs_parent_sync = u and not (is_ancestor(u, b) and commit_sha_by_revision(u) == fork_point(b, use_overrides=True))
-        s, remote = get_strict_remote_sync_status(b)
-        statuses_to_sync = (UNTRACKED,
-                            AHEAD_OF_REMOTE,
-                            BEHIND_REMOTE,
-                            DIVERGED_FROM_REMOTE)
-        needs_remote_sync = s in statuses_to_sync
 
         if b != cb and (needs_slide_out or needs_parent_sync or needs_remote_sync):
             print_new_line(False)
@@ -1768,12 +1807,27 @@ def traverse():
                 elif ans in ('q', 'quit'):
                     return
 
-            elif s == DIVERGED_FROM_REMOTE:
+            elif s == DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
                 print_new_line(False)
                 rb = strict_counterpart_for_fetching_of_branch(b)
                 ans = ask_if(
-                    "Branch %s diverged from its remote counterpart %s.\nPush %s with force-with-lease to %s? [y/N/q/yq] " % (bold(b), bold(rb), bold(b), bold(remote)),
-                    "Branch %s diverged from its remote counterpart %s.\nPushing %s with force-with-lease to %s..." % (bold(b), bold(rb), bold(b), bold(remote))
+                    "Branch %s diverged from (and has older commits than) its remote counterpart %s.\nReset branch %s to the commit pointed by %s? [y/N/q/yq] " % (bold(b), bold(rb), bold(b), bold(rb)),
+                    "Branch %s diverged from (and has older commits than) its remote counterpart %s.\nResetting branch %s to the commit pointed by %s..." % (bold(b), bold(rb), bold(b), bold(rb))
+                )
+                if ans in ('y', 'yes', 'yq'):
+                    reset_keep(rb)
+                    if ans == 'yq':
+                        return
+                    flush()
+                elif ans in ('q', 'quit'):
+                    return
+
+            elif s == DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
+                print_new_line(False)
+                rb = strict_counterpart_for_fetching_of_branch(b)
+                ans = ask_if(
+                    "Branch %s diverged from (and has newer commits than) its remote counterpart %s.\nPush %s with force-with-lease to %s? [y/N/q/yq] " % (bold(b), bold(rb), bold(b), bold(remote)),
+                    "Branch %s diverged from (and has newer commits than) its remote counterpart %s.\nPushing %s with force-with-lease to %s..." % (bold(b), bold(rb), bold(b), bold(remote))
                 )
                 if ans in ('y', 'yes', 'yq'):
                     push(remote, b, force_with_lease=True)
@@ -1934,7 +1988,8 @@ def status(warn_on_yellow_edges):
             IN_SYNC_WITH_REMOTE: "",
             BEHIND_REMOTE: colored(" (behind %s)" % remote, RED),
             AHEAD_OF_REMOTE: colored(" (ahead of %s)" % remote, RED),
-            DIVERGED_FROM_REMOTE: colored(" (diverged from %s)" % remote, RED)
+            DIVERGED_FROM_AND_OLDER_THAN_REMOTE: colored(" (diverged from & older than %s)" % remote, RED),
+            DIVERGED_FROM_AND_NEWER_THAN_REMOTE: colored(" (diverged from %s)" % remote, RED)
         }[s]
 
         hook_output = ""
@@ -2350,8 +2405,10 @@ def usage(c=None):
             * otherwise, if the branch is not in "green" sync with its parent/upstream (see help for 'status'):
               - asks the user whether to rebase (default) or merge (if '--merge' passed) the branch onto into its upstream branch - equivalent to 'git machete update' with no '--fork-point' option passed;
 
-            * if the branch is not tracked on a remote, is ahead of its remote counterpart or diverged from the counterpart:
+            * if the branch is not tracked on a remote, is ahead of its remote counterpart, or diverged from the counterpart & has newer head commit than the counterpart:
               - asks the user whether to push the branch (possibly with '--force-with-lease' if the branches diverged);
+            * otherwise, if the branch diverged from the remote counterpart & has older head commit than the counterpart:
+              - asks the user whether to 'git reset --keep' the branch to its remote counterpart
             * otherwise, if the branch is behind its remote counterpart:
               - asks the user whether to pull the branch;
 

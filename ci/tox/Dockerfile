@@ -1,5 +1,6 @@
 ARG python_version
 FROM python:${python_version}-alpine
+# Required since the earlier versions of git assume the location of python to be /usr/bin/python during the build.
 RUN ln -s /usr/local/bin/python /usr/bin/python
 
 ARG git_version

@@ -3,6 +3,8 @@
 ## New in git-machete 2.13.4
 
 - added: automatic opening of a PR to NixOS/nixpkgs on each release
+- improved: `traverse` suggests to reset (`git reset --keep`) a local branch to its remote counterpart if the latter has newer commits
+- fixed: handling corner cases when figuring out fork point
 
 ## New in git-machete 2.13.3
 

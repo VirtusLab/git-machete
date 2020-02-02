@@ -5,6 +5,7 @@ import re
 from six import u as unicode
 import string
 import sys
+import time
 import unittest
 
 from git_machete import cmd
@@ -17,43 +18,64 @@ class SandboxSetup:
         self.remote_path = os.popen('mktemp -d').read().strip()
         self.sandbox_path = os.popen('mktemp -d').read().strip()
 
+    @staticmethod
+    def execute(command):
+        result = os.system(command)
+        assert result == 0, "%s returned %i" % (command, result)
+
     def new_repo(self, *args):
         os.chdir(args[0])
         if len(args) > 1:
             opt = args[1]
-            os.system('git init -q %s' % opt)
+            self.execute('git init %s' % opt)
         else:
-            os.system('git init -q')
+            self.execute('git init')
         return self
 
     def new_branch(self, branch_name):
-        os.system('git checkout -q -b %s' % branch_name)
+        self.execute('git checkout -q -b %s' % branch_name)
         return self
 
-    def commit(self, *args):
+    def check_out(self, branch):
+        self.execute('git checkout -q %s' % branch)
+        return self
+
+    def commit(self, message):
         f = '%s.txt' % "".join(random.choice(string.ascii_letters) for i in range(20))
-        os.system('touch %s' % f)
-        os.system('git add %s' % f)
-        os.system('git commit -q -m "%s"' % ("".join(args)))
+        self.execute('touch %s' % f)
+        self.execute('git add %s' % f)
+        self.execute('git commit -q -m "%s"' % message)
+        return self
+
+    def commit_amend(self, message):
+        self.execute('git commit -q --amend -m "%s"' % message)
         return self
 
     def push(self):
         branch = os.popen('git symbolic-ref --short HEAD').read()
-        os.system('git push -q -u origin %s' % branch)
+        self.execute('git push -q -u origin %s' % branch)
         return self
 
-    def checkout(self, branch):
-        os.system('git checkout -q %s' % branch)
+    def sleep(self, seconds):
+        time.sleep(seconds)
+        return self
+
+    def reset_to(self, revision):
+        self.execute('git reset --keep "%s"' % revision)
+        return self
+
+    def delete_branch(self, branch):
+        self.execute('git branch -d "%s"' % branch)
         return self
 
     def setup_sandbox(self):
         self.new_repo(self.remote_path, '--bare')
         self.new_repo(self.sandbox_path)
-        os.system('git remote add origin %s' % self.remote_path)
-        self.new_branch('root')
-        os.system('git config user.email "tester@test.com"')
-        os.system('git config user.name "Tester Test"')
-        self.commit('root') \
+        self.execute('git remote add origin %s' % self.remote_path)
+        self.execute('git config user.email "tester@test.com"')
+        self.execute('git config user.name "Tester Test"')
+        self.new_branch('root') \
+            .commit('root') \
             .new_branch('develop') \
             .commit('develop commit') \
             .new_branch('allow-ownership-link') \
@@ -61,9 +83,9 @@ class SandboxSetup:
             .push() \
             .new_branch('build-chain') \
             .commit('Build arbitrarily long chains') \
-            .checkout('allow-ownership-link') \
+            .check_out('allow-ownership-link') \
             .commit('1st round of fixes') \
-            .checkout('develop') \
+            .check_out('develop') \
             .commit('Other develop commit') \
             .push() \
             .new_branch('call-ws') \
@@ -72,17 +94,23 @@ class SandboxSetup:
             .push() \
             .new_branch('drop-constraint') \
             .commit('Drop unneeded SQL constraints') \
-            .checkout('call-ws') \
+            .check_out('call-ws') \
             .commit('2nd round of fixes') \
-            .checkout('root') \
+            .check_out('root') \
             .new_branch('master') \
             .commit('Master commit') \
             .push() \
             .new_branch('hotfix/add-trigger') \
             .commit('HOTFIX Add the trigger') \
-            .push()
-        os.system('git commit -q --amend -m "HOTFIX Add the trigger (amended)"')
-        os.system('git branch -d root')
+            .push() \
+            .commit_amend('HOTFIX Add the trigger (amended)') \
+            .new_branch('ignore-trailing') \
+            .commit('Ignore trailing data') \
+            .sleep(1) \
+            .commit_amend('Ignore trailing data (amended)') \
+            .push() \
+            .reset_to('ignore-trailing@{1}') \
+            .delete_branch('root')
 
 
 Setup = SandboxSetup()
@@ -105,7 +133,9 @@ expected_status_1 = adapt("""
 
   master
   |
-  o-hotfix/add-trigger * (diverged from origin)
+  o-hotfix/add-trigger (diverged from origin)
+    |
+    o-ignore-trailing * (diverged from & older than origin)
 """)
 
 expected_status_l_2 = adapt("""
@@ -129,7 +159,10 @@ expected_status_l_2 = adapt("""
   master
   |
   | HOTFIX Add the trigger (amended)
-  o-hotfix/add-trigger *
+  o-hotfix/add-trigger
+    |
+    | Ignore trailing data (amended)
+    o-ignore-trailing *
 """)
 
 
