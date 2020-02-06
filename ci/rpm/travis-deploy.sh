@@ -12,7 +12,8 @@ docker-compose pull rpm || {
   # Hence, DOCKER_USERNAME and DOCKER_PASSWORD will always be defined.
   docker-compose build --build-arg user_id="$(id -u)" --build-arg group_id="$(id -g)" rpm
   echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-  docker-compose push rpm
+  # In case the push fails due to e.g. timeouts (which unfortunately happen on CI), we don't want to fail the entire deployment.
+  docker-compose push rpm || true
 }
 
 docker-compose up --exit-code-from=rpm rpm

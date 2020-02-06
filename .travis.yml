@@ -25,7 +25,7 @@ deploy:
     skip_cleanup: true
     script: bash ci/rpm/travis-deploy.sh
     on:
-      python: 3.6
+      condition: $DEPLOY_ON_TAGS
       tags: true
 
   - provider: releases  # Github (rpm files must be in dist/ first)

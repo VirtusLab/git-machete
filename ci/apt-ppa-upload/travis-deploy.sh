@@ -12,7 +12,8 @@ docker-compose pull apt-ppa-upload || {
   # Unlike in ci/tox/travis-install.sh, we have a guarantee here that this script won't be launched for builds coming from forks (it's only being run on tags).
   # Hence, DOCKER_USERNAME and DOCKER_PASSWORD will always be defined.
   echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-  docker-compose push apt-ppa-upload
+  # In case the push fails due to e.g. timeouts (which unfortunately happen on CI), we don't want to fail the entire deployment.
+  docker-compose push apt-ppa-upload || true
 }
 
 docker-compose up --exit-code-from=apt-ppa-upload apt-ppa-upload

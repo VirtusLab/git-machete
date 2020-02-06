@@ -1,5 +1,10 @@
 # Release notes
 
+## New in git-machete 2.13.1
+
+- fixed: deployment doesn't fail when `docker-compose push` fails for `rpm` or `apt-ppa-upload` services
+- fixed: deployment condition for `rpm`
+
 ## New in git-machete 2.13.0
 
 ### Increased automation for `traverse` and other side-effecting commands

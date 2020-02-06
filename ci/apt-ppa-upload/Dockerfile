@@ -5,7 +5,8 @@ RUN apt-get update && apt-get install -y debhelper devscripts fakeroot gawk pyth
 ARG user_id
 ARG group_id
 
-RUN "[" ${user_id:-0} -ne 0 ] \
+RUN set -x \
+    && [ ${user_id:-0} -ne 0 ] \
     && [ ${group_id:-0} -ne 0 ] \
     && groupadd -g ${group_id} ci-user \
     && useradd -l -u ${user_id} -g ci-user ci-user \
