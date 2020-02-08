@@ -2,7 +2,6 @@ import io
 import os
 import random
 import re
-from six import u as unicode
 import string
 import sys
 import time
@@ -166,29 +165,12 @@ expected_status_l_2 = adapt("""
 """)
 
 
-class StringIOWrapper:
-    def __init__(self):
-        self.io = io.StringIO()
-
-    def isatty(self):
-        return False
-
-    def write(self, s):
-        if type(s).__name__ == 'unicode':
-            self.io.write(s)  # Python 2
-        else:
-            self.io.write(unicode(s))  # Python 2/3
-
-    def getvalue(self):
-        return self.io.getvalue()
-
-
 class MacheteTester(unittest.TestCase):
 
     @staticmethod
     def launch_command(*args):
         orig_out = sys.stdout
-        out = StringIOWrapper()
+        out = io.StringIO()
         sys.stdout = out
         try:
             cmd.launch(args)

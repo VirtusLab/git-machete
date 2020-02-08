@@ -108,18 +108,11 @@ def right_arrow():
     return "->" if ascii_only else u"➔"
 
 
-def safe_input(msg):
-    if sys.version_info[0] == 2:  # Python 2
-        return raw_input(msg)  # noqa: F821
-    else:  # Python 3
-        return input(msg)
-
-
 def ask_if(msg, opt_yes_msg, apply_fmt=True):
     if opt_yes:
         print(fmt(opt_yes_msg) if apply_fmt else opt_yes_msg)
         return 'y'
-    return safe_input(fmt(msg) if apply_fmt else msg).lower()
+    return input(fmt(msg) if apply_fmt else msg).lower()
 
 
 def pretty_choices(*choices):
@@ -141,7 +134,7 @@ def pick(choices, name, apply_fmt=True):
     xs = "".join("[%i] %s\n" % (idx + 1, x) for idx, x in enumerate(choices))
     msg = xs + "Specify " + name + " or hit <return> to skip: "
     try:
-        ans = safe_input(fmt(msg) if apply_fmt else msg)
+        ans = input(fmt(msg) if apply_fmt else msg)
         if not ans:
             sys.exit(0)
         idx = int(ans) - 1
@@ -1848,7 +1841,7 @@ def pick_remote(b):
     msg = "Select number 1..%i to specify the destination remote " \
           "repository, or 'n' to skip this branch, or " \
           "'q' to quit the traverse: " % len(rems)
-    ans = safe_input(msg).lower()
+    ans = input(msg).lower()
     if ans in ('q', 'quit'):
         raise StopTraversal
     try:
@@ -2230,20 +2223,14 @@ def status(warn_on_yellow_edges):
     hook_path = get_hook_path("machete-status-branch")
     hook_executable = check_hook_executable(hook_path)
 
-    def write_unicode(x):
-        if sys.version_info[0] == 2:  # Python 2
-            out.write(unicode(x))  # noqa: F821
-        else:  # Python 3
-            out.write(x)
-
     def print_line_prefix(b_, suffix):
-        write_unicode("  ")
+        out.write("  ")
         for p in pfx[:-1]:
             if not p:
-                write_unicode("  ")
+                out.write("  ")
             else:
-                write_unicode(colored(vertical_bar() + " ", edge_color[p]))
-        write_unicode(colored(suffix, edge_color[b_]))
+                out.write(colored(vertical_bar() + " ", edge_color[p]))
+        out.write(colored(suffix, edge_color[b_]))
 
     for b, pfx in dfs_res:
         if b in up_branch:
@@ -2265,14 +2252,14 @@ def status(warn_on_yellow_edges):
                     else:
                         fp_suffix = ''
                     print_line_prefix(b, vertical_bar())
-                    write_unicode(" %s%s%s\n" % (dim(short_sha) + "  " if opt_list_commits_with_hashes else "", dim(msg), fp_suffix))
+                    out.write(" %s%s%s\n" % (dim(short_sha) + "  " if opt_list_commits_with_hashes else "", dim(msg), fp_suffix))
             elbow_ascii_only = {DIM: "m-", RED: "x-", GREEN: "o-", YELLOW: "?-"}
             elbow = u"└─" if not ascii_only else elbow_ascii_only[edge_color[b]]
             print_line_prefix(b, elbow)
         else:
             if b != dfs_res[0][0]:
-                write_unicode("\n")
-            write_unicode("  ")
+                out.write("\n")
+            out.write("  ")
 
         if b in (ccob, crb):  # i.e. if b is the current branch (checked out or being rebased)
             if b == crb:
@@ -2315,7 +2302,7 @@ def status(warn_on_yellow_edges):
             else:
                 debug("status()", "machete-status-branch hook (%s) for branch %s returned %i; stdout: '%s'; stderr: '%s'" % (hook_path, b, status_code, stdout, stderr))
 
-        write_unicode(current + anno + sync_status + hook_output + "\n")
+        out.write(current + anno + sync_status + hook_output + "\n")
 
     sys.stdout.write(out.getvalue())
     out.close()
@@ -2597,6 +2584,8 @@ def usage(c=None):
             even if the overridden fork point of `B` is NOT equal to the commit pointed by `U`.
         """,
         "format": """
+            Note: there is no 'git machete format' command as such; 'format' is just a topic of 'git machete help'.
+
             The format of the definition file should be as follows:
             <dim>
               develop
@@ -2635,9 +2624,9 @@ def usage(c=None):
             Prints a summary of this tool, or a detailed info on a command if defined.
         """,
         "hooks": """
-            As with the standard git hooks, git-machete looks for its own specific hooks in `$GIT_DIR/hooks/*` (or `$(git config core.hooksPath)/*`, if set).
+            As for standard git hooks, git-machete looks for its own specific hooks in `$GIT_DIR/hooks/*` (or in `$(git config core.hooksPath)/*`, if config set).
 
-            Note: `hooks` is not a command as such, just a help topic (there is no `git machete hooks` command).
+            Note: there is no `git machete hooks` command as such; `hooks` is just a topic of `git machete help`.
 
             * <b>machete-post-slide-out <new-upstream> <lowest-slid-out-branch> [<new-downstreams>...]</b>
                 The hook that is executed after a branch (or possibly multiple branches, in case of `slide-out`)
@@ -2689,15 +2678,6 @@ def usage(c=None):
             Please see hook_samples/ directory of git-machete project for examples.
             An example of using the standard git `post-commit` hook to `git machete add` branches automatically is also included.
         """,
-        "infer": """
-            <b>Usage: git machete infer [-l|--list-commits]</b>
-
-            A deprecated alias for `discover`, without the support of newer options.
-            Retained for compatibility, to be removed in the next major release.
-
-            Options:
-              <b>-l, --list-commits</b>            When printing the discovered tree, additionally lists the messages of commits introduced on each branch (as for `git machete status`).
-        """,
         "is-managed": """
             <b>Usage: git machete is-managed [<branch>]</b>
 
@@ -2729,12 +2709,6 @@ def usage(c=None):
             See `git machete help fork-point` for more details on meaning of the "fork point".
 
             Note: the branch in question does not need to occur in the definition file.
-        """,
-        "prune-branches": """
-            <b>Usage: git machete prune-branches</b>
-
-            A deprecated alias for `delete-unmanaged`, without the support of `--yes` option.
-            Retained for compatibility, to be removed in the next major release.
         """,
         "reapply": """
             <b>Usage: git machete reapply [-f|--fork-point=<fork-point-commit>]</b>
@@ -2978,7 +2952,7 @@ def usage(c=None):
         if c and c not in long_docs:
             print("\nUnknown command: '%s'" % c)
         print(fmt("\n<u>TL;DR tip</u>\n\n"
-              "    Get familiar with the help for <b>format</b>, <b>edit</b>, <b>status</b> and <b>update</b>, in this order.\n"))
+              "    Get familiar with `git machete help` for <b>format</b>, <b>edit</b>, <b>status</b> and <b>update</b>, in this order.\n"))
         for hdr, cmds in groups:
             print(underline(hdr))
             print("")
@@ -3003,11 +2977,11 @@ def version():
     print('git-machete version ' + __version__)
 
 
-def main():
-    launch(sys.argv[1:])
-
-
 def launch(orig_args):
+    if sys.version_info[0] == 2:
+        sys.stderr.write("Python 2.x is no longer supported. Please switch to Python 3.\n")
+        sys.exit(1)
+
     def parse_options(in_args, short_opts="", long_opts=[], gnu=True):
         global ascii_only
         global opt_as_root, opt_branch, opt_checked_out_since, opt_color, opt_debug, opt_down_fork_point, opt_fetch, opt_fork_point, opt_inferred, opt_list_commits, opt_list_commits_with_hashes, opt_merge, opt_n, opt_no_edit_merge
@@ -3174,9 +3148,9 @@ def launch(orig_args):
         cmd = cmd_and_args[0]
         args = cmd_and_args[1:]
 
-        if cmd not in ("format", "help"):
+        if cmd != "help":
             definition_file_path = get_git_subpath("machete")
-            if cmd not in ("discover", "infer"):
+            if cmd != "discover":
                 if not os.path.exists(definition_file_path):
                     # We're opening in "append" and not "write" mode to avoid a race condition:
                     # if other process writes to the file between we check the result of `os.path.exists` and call `open`,
@@ -3276,9 +3250,6 @@ def launch(orig_args):
                 unset_fork_point_override(b)
             else:
                 print(fork_point(b, use_overrides=True))
-        elif cmd == "format":
-            # No need to read definition file.
-            usage("format")
         elif cmd in ("g", "go"):
             param = check_required_param(parse_options(args), allowed_directions(allow_current=False))
             read_definition_file()
@@ -3291,10 +3262,6 @@ def launch(orig_args):
             param = check_optional_param(parse_options(args))
             # No need to read definition file.
             usage(param)
-        elif cmd == "infer":  # TODO: deprecated in favor of `discover`
-            expect_no_param(parse_options(args, "l", ["list-commits"]))
-            # No need to read definition file.
-            discover_tree()
         elif cmd == "is-managed":
             param = check_optional_param(parse_options(args))
             read_definition_file()
@@ -3348,10 +3315,6 @@ def launch(orig_args):
             param = check_optional_param(parse_options(args))
             read_definition_file()
             log(param or current_branch())
-        elif cmd == "prune-branches":  # TODO: deprecated in favor of `delete-unmanaged`
-            expect_no_param(parse_options(args, "y", ["yes"]))
-            read_definition_file()
-            delete_unmanaged()
         elif cmd == "reapply":
             args1 = parse_options(args, "f:", ["fork-point="])
             expect_no_param(args1, ". Use `-f` or `--fork-point` to specify the fork point commit")
@@ -3415,6 +3378,10 @@ def launch(orig_args):
                 nearest_existing_parent_directory = os.path.join(nearest_existing_parent_directory, os.path.pardir)
             warn("current directory %s no longer exists, "
                  "the nearest existing parent directory is %s" % (initial_current_directory, os.path.abspath(nearest_existing_parent_directory)))
+
+
+def main():
+    launch(sys.argv[1:])
 
 
 if __name__ == "__main__":
