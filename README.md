@@ -107,11 +107,4 @@ for a guide on how to use the tool.
 The more advanced features like automated traversal, upstream inference and tree discovery are described in the second part of the series:
 [https://medium.com/virtuslab/git-machete-strikes-again-traverse-the-git-rebase-jungle-even-faster-with-v2-0-f43ebaf8abb0](https://medium.com/virtuslab/git-machete-strikes-again-traverse-the-git-rebase-jungle-even-faster-with-v2-0-f43ebaf8abb0).
 
-
-## Contribute
-
-To develop that project and run tests locally it is needed to have Python installed with `tox`.
-
-Use `tox -e venv` to setup virtual environment to work on that project in your favorite IDE. Use `.tox/venv/bin/python` as a reference `python` interpreter in your IDE.
-
-To run tests execute command `tox`.
+Refer to `git machete help` and `git machete help <command>` for a specific help.

@@ -1,5 +1,12 @@
 # Release notes
 
+## New in git-machete 2.13.2
+
+- added: script for creating an annotated tag for release
+- added: script for checking correctness of links in all Markdown files
+- added: release guidelines
+- fixed: implementation of backup of .git/machete file in `discover`
+
 ## New in git-machete 2.13.1
 
 - fixed: deployment doesn't fail when `docker-compose push` fails for `rpm` or `apt-ppa-upload` services

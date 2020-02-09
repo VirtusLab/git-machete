@@ -7,6 +7,7 @@ import io
 import itertools
 import os
 import re
+import shutil
 import subprocess
 import sys
 import textwrap
@@ -280,8 +281,7 @@ def render_tree():
 
 
 def back_up_definition_file():
-    with open(definition_file + "~", "w") as backup:
-        backup.write(open(definition_file).read())
+    shutil.copyfile(definition_file, definition_file + "~")
 
 
 def save_definition_file():
