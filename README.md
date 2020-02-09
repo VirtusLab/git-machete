@@ -28,7 +28,7 @@ We suggest a couple of alternative ways of installation.
 
 **Bash and zsh completion scripts are provided** in completion/ directory, see [wiki for their installation instructions](https://github.com/VirtusLab/git-machete/wiki).
 
-git-machete requires Python 3.x. Python 2.x is no longer supported.
+git-machete requires Python >= 3.5. Python 2.x is no longer supported.
 
 ### Using Homebrew (macOS)
 

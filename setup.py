@@ -21,6 +21,7 @@ setup(
     keywords='git',
     packages=['git_machete'],
     scripts=['git-machete'],
+    python_requires='>=3.5, <4',
     classifiers=[
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',

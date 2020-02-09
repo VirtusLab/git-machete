@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 from git_machete import __version__
 import datetime
@@ -213,7 +212,7 @@ def run_cmd(cmd, *args, **kwargs):
     elif opt_verbose:
         sys.stderr.write(flat_cmd + "\n")
 
-    exit_code = subprocess.call([cmd] + list(args), **kwargs)
+    exit_code = subprocess.run([cmd] + list(args), **kwargs).returncode
 
     # Let's defensively assume that every command executed via run_cmd
     # (but not via popen_cmd) can make the current directory disappear.
@@ -234,10 +233,8 @@ def popen_cmd(cmd, *args, **kwargs):
     elif opt_verbose:
         sys.stderr.write(flat_cmd + "\n")
 
-    process = subprocess.Popen([cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
-    stdout_bytes, stderr_bytes = process.communicate()
-    stdout, stderr = stdout_bytes.decode('utf-8'), stderr_bytes.decode('utf-8')
-    exit_code = process.returncode
+    process = subprocess.run([cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, **kwargs)
+    exit_code, stdout, stderr = process.returncode, process.stdout, process.stderr
 
     if opt_debug:
         if exit_code != 0:
