@@ -1,14 +1,23 @@
 os: linux
-language: minimal  # Build is fully dockerized, we don't need to run Python directly on the VM (only for PyPI deployment, but `minimal` is still sufficient for that)
-env:
-  - PYTHON_VERSION=2.7 GIT_VERSION=1.7.10  # Earliest version of git supported by git-machete
-  - PYTHON_VERSION=2.7 GIT_VERSION=2.7.6
-  - PYTHON_VERSION=3.6 GIT_VERSION=2.20.2
-  - PYTHON_VERSION=3.8 GIT_VERSION=2.25.0 DEPLOY_ON_TAGS=true
+# Build is fully Dockerized, we don't need to run Python directly on the VM.
+# Python is needed for PyPI deployment, but `minimal` is still sufficient for this purpose.
+language: minimal
 
 install: bash ci/tox/travis-install.sh
 
 script: bash ci/tox/travis-script.sh
+
+jobs:
+  include:
+    - env: PYTHON_VERSION=2.7 GIT_VERSION=1.7.10  # Earliest version of git supported by git-machete
+    - env: PYTHON_VERSION=2.7 GIT_VERSION=2.7.6
+    - env: PYTHON_VERSION=3.6 GIT_VERSION=2.20.2
+    - env: PYTHON_VERSION=3.8 GIT_VERSION=2.25.0 DEPLOY_ON_TAGS=true
+    - stage: Extra checks
+      install: []
+      script:
+        - ./ci/checks/links.sh
+        - ./ci/checks/trailing-whitespace.sh
 
 deploy:
 
@@ -49,3 +58,6 @@ deploy:
     on:
       condition: $DEPLOY_ON_TAGS
       tags: true
+
+  # A build is also triggered automatically via GitHub webhook on https://build.snapcraft.io/user/VirtusLab/git-machete
+  # This happens completely outside of the CI.

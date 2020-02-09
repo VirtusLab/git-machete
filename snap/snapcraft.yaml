@@ -1,5 +1,5 @@
 name: git-machete
-version: git
+adopt-info: git-machete
 summary: git-machete is a versatile tool for organizing your git repo
 description: |
   git machete is a versatile tool for organizing your git repo, including features like:
@@ -34,6 +34,11 @@ parts:
     plugin: python
     python-version: python3
     source: .
+    # TODO: consider switching back to `version: git` if pushing tags (and not only pushing commits to master) triggers Snapcraft builds
+    override-pull: |
+      set -x
+      snapcraftctl pull
+      snapcraftctl set-version "$(grep "__version__ = " git_machete/__init__.py | cut -d\' -f2)"
     # Note that's not trivial to force the 'stage' step to use a non-standard source of packages like a PPA
     # (which e.g. would allow to install latest version of git: https://launchpad.net/~git-core/+archive/ubuntu/ppa),
     # see https://forum.snapcraft.io/t/what-sources-are-used-for-stage-packages/2875/10 for details

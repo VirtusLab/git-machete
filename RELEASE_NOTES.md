@@ -3,6 +3,10 @@
 ## New in git-machete 2.13.2
 
 - added: support for Snappy
+- added: script for creating an annotated tag for release
+- added: extra checks in CI
+- added: release guidelines
+- fixed: implementation of backup of .git/machete file in `discover`
 
 ## New in git-machete 2.13.1
 

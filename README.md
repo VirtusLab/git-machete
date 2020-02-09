@@ -3,8 +3,8 @@
 [![Join the chat at https://gitter.im/VirtusLab/git-machete](https://badges.gitter.im/VirtusLab/git-machete.svg)](https://gitter.im/VirtusLab/git-machete)
 [![TravisCI build status](https://api.travis-ci.org/VirtusLab/git-machete.svg?branch=master)](https://travis-ci.org/VirtusLab/git-machete)
 [![PyPI package](https://badge.fury.io/py/git-machete.svg)](https://pypi.org/project/git-machete)
-[![Snap](https://snapcraft.io//git-machete/badge.svg)](https://snapcraft.io/git-machete)
-
+[![Snap](https://snapcraft.io/git-machete/badge.svg)](https://snapcraft.io/git-machete)
+[![Snap build status](https://build.snapcraft.io/badge/VirtusLab/git-machete.svg)](https://build.snapcraft.io/user/VirtusLab/git-machete)
 
 ![](logo.png)
 
@@ -37,6 +37,8 @@ brew install git-machete
 ```
 
 ### Using Snappy (most Linux distributions)
+
+Tip: check the [guide on installing snapd](https://snapcraft.io/docs/installing-snapd) if you don't have Snap support set up yet in your system.
 
 ```shell script
 snap install git-machete
@@ -113,18 +115,11 @@ git-machete (since version 2.13.0) is compatible with git >= 1.7.10.
 
 ## Reference
 
+See `git machete help` and `git machete help <command>` for reference.
+
 Take a look at
 [https://medium.com/virtuslab/make-your-way-through-the-git-rebase-jungle-with-git-machete-e2ed4dbacd02](https://medium.com/virtuslab/make-your-way-through-the-git-rebase-jungle-with-git-machete-e2ed4dbacd02)
 for a guide on how to use the tool.
 
 The more advanced features like automated traversal, upstream inference and tree discovery are described in the second part of the series:
 [https://medium.com/virtuslab/git-machete-strikes-again-traverse-the-git-rebase-jungle-even-faster-with-v2-0-f43ebaf8abb0](https://medium.com/virtuslab/git-machete-strikes-again-traverse-the-git-rebase-jungle-even-faster-with-v2-0-f43ebaf8abb0).
-
-
-## Contribute
-
-To develop that project and run tests locally it is needed to have Python installed with `tox`.
-
-Use `tox -e venv` to setup virtual environment to work on that project in your favorite IDE. Use `.tox/venv/bin/python` as a reference `python` interpreter in your IDE.
-
-To run tests execute command `tox`.

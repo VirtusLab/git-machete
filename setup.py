@@ -16,7 +16,7 @@ setup(
     long_description_content_type='text/markdown',
     author='Pawel Lipski',
     author_email='pawel.p.lipski@gmail.com',
-    url='https://github.com/VirtusLab/git-machete/',
+    url='https://github.com/VirtusLab/git-machete',
     license='MIT',
     keywords='git',
     packages=['git_machete'],

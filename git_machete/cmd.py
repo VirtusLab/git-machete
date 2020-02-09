@@ -7,6 +7,7 @@ import io
 import itertools
 import os
 import re
+import shutil
 import subprocess
 import sys
 import textwrap
@@ -280,8 +281,7 @@ def render_tree():
 
 
 def back_up_definition_file():
-    with open(definition_file + "~", "w") as backup:
-        backup.write(open(definition_file).read())
+    shutil.copyfile(definition_file, definition_file + "~")
 
 
 def save_definition_file():
@@ -907,7 +907,7 @@ def rebase(onto, fork_commit, branch):
             else:
                 run_git("rebase", "--interactive", "--onto", onto, fork_commit, branch)
         finally:
-            # https://public-inbox.org/git/317468c6-40cc-9f26-8ee3-3392c3908efb@talktalk.net/T/
+            # https://public-inbox.org/git/317468c6-40cc-9f26-8ee3-3392c3908efb@talktalk.net/T
             # In our case, this can happen when git version invoked by git-machete to start the rebase
             # is different than git version used (outside of git-machete) to continue the rebase.
             # This is likely esp. when git-machete is installed via Snappy (with its own version of git baked into the snap as a dependency).
