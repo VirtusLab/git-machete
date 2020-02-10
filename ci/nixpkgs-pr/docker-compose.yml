@@ -1,0 +1,11 @@
+version: '3'
+services:
+  nixpkgs-pr:
+    image: virtuslab/git-machete-ci-nixpkgs-pr:${DIRECTORY_HASH:-unspecified}
+    build:
+      context: build-context
+      dockerfile: ../Dockerfile # relative to build-context
+    tty: true
+    environment:
+      - GITHUB_TOKEN
+      - VERSION

@@ -11,7 +11,7 @@ echo "$GPG_PRIVATE_KEY_CONTENTS_BASE64" | base64 -d > ~/.gnupg/private-keys-v1.d
 echo "$GPG_PUBRING_KEYBOX_CONTENTS_BASE64" | base64 -d > ~/.gnupg/pubring.kbx
 echo "$GPG_TRUSTDB_GPG_CONTENTS_BASE64" | base64 -d > ~/.gnupg/trustdb.gpg
 echo "$SSH_PRIVATE_KEY_CONTENTS_BASE64" | base64 -d > ~/.ssh/id_rsa
-chmod 700 ~/.ssh/id_rsa
+chmod 400 ~/.ssh/id_rsa
 
 set -x
 VERSION=$(cut -d\' -f2 git_machete/__init__.py)

@@ -2,14 +2,14 @@
 
 set -e -o pipefail -u -x
 
-git clone https://${GH_TOKEN}@github.com/VirtusLab/homebrew-git-machete.git ../homebrew-git-machete
+git clone https://${GITHUB_TOKEN}@github.com/VirtusLab/homebrew-git-machete.git ../homebrew-git-machete
 cd ../homebrew-git-machete/
 
 git config user.email "travis@travis-ci.org"
 git config user.name "Travis CI"
 [[ -n $TRAVIS_TAG ]]
 VERSION=${TRAVIS_TAG#v}
-sha256=$(curl -s https://pypi.org/pypi/git-machete/$VERSION/json  | jq --raw-output '.urls | map(select(.packagetype == "sdist")) | .[0].digests.sha256')
+sha256=$(curl -s https://pypi.org/pypi/git-machete/$VERSION/json | jq --raw-output '.urls | map(select(.packagetype == "sdist")) | .[0].digests.sha256')
 sed -i "s/git-machete-.*\.tar\.gz/git-machete-$VERSION.tar.gz/" git-machete.rb
 sed -i "s/^  sha256 .*/  sha256 \"$sha256\"/" git-machete.rb
 git add git-machete.rb

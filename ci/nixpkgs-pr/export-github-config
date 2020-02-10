@@ -1,0 +1,2 @@
+
+export GITHUB_TOKEN=$(cat ~/.github-token)

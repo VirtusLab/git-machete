@@ -12,6 +12,7 @@
 - added: extra checks in CI
 - added: release guidelines
 - fixed: implementation of backup of .git/machete file in `discover`
+- added: automatic opening of a PR to NixOS/nixpkgs on each release
 
 ## New in git-machete 2.13.1
 

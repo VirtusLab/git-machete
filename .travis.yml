@@ -49,6 +49,13 @@ jobs:
           file: dist/git-machete-*.noarch.rpm
           on: { tags: true }
 
+        - provider: script  # PR to NixOS/nixpkgs (artifacts must be released to PyPI first)
+          script: bash ci/nixpkgs-pr/travis-deploy.sh
+          on:
+            condition: $DEPLOY_ON_TAGS
+            branch: chore/nixpkgs # TODO: remove
+      #     TODO uncomment tags: true
+
         - provider: script  # brew tap (artifacts must be released to PyPI first)
           script: bash ci/homebrew-tap/travis-deploy.sh
           on: { tags: true }
