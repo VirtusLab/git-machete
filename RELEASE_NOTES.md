@@ -2,6 +2,7 @@
 
 ## New in git-machete 2.13.2
 
+- added: automatic opening of a PR to NixOS/nixpkgs on each release
 - added: script for creating an annotated tag for release
 - added: script for checking correctness of links in all Markdown files
 - added: release guidelines

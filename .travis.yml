@@ -51,6 +51,13 @@ deploy:
       condition: $DEPLOY_ON_TAGS
       tags: true
 
+  - provider: script  # PR to NixOS/nixpkgs (artifacts must be released to PyPI first)
+    script: bash ci/nixpkgs-pr/travis-deploy.sh
+    on:
+      condition: $DEPLOY_ON_TAGS
+      branch: chore/nixpkgs # TODO: remove
+#     TODO uncomment tags: true
+
   - provider: script  # PPA
     script: bash ci/apt-ppa-upload/travis-deploy.sh
     on:
