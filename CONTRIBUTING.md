@@ -80,6 +80,8 @@ Output format of any non-plumbing command can change in non-backward-compatible 
    Re-run the latest build for `orphan/brew-package-check` branch on [Travis CI](https://travis-ci.org/VirtusLab/git-machete/branches).
    Inspect the job output and verify that the latest version gets correctly installed on Mac OS X (esp. see the output of `git machete --version`).
 
+1. Verify that a [version-bump PRs to NixOS/nixpkgs](https://github.com/NixOS/nixpkgs/pulls?q=is%3Apr+git-machete) has been opened.
+
 1. Verify that a build started on [git-machete PPA](https://launchpad.net/~virtuslab/+archive/ubuntu/git-machete/+packages).
 
    Once the new version package is published and the old one is removed (typically takes around 20-30 min),
@@ -91,8 +93,3 @@ Output format of any non-plumbing command can change in non-backward-compatible 
 1. Thanks to the courtesy of [Ila&iuml; Deutel](https://github.com/ilai-deutel),
    a [git-machete package](https://aur.archlinux.org/packages/git-machete) is hosted in Arch User Repository (AUR).
    If the release introduces significant changes/critical bugfixes, please [flag the package as out of date](https://aur.archlinux.org/pkgbase/git-machete/flag).
-
-1. A [git-machete package](https://nixos.org/nixos/packages.html?channel=nixos-unstable&query=git-machete) is available for NixOS.
-
-   [Version-bump PRs to NixOS/nixpkgs](https://github.com/NixOS/nixpkgs/pulls?q=is%3Apr+git-machete) are opened by a semi-automatic update on an irregular basis.
-   There is an issue ([#79](https://github.com/VirtusLab/git-machete/issues/79)) for opening version-bump PRs automatically on each release.

@@ -1,10 +1,10 @@
 ###### Motivation for this change
 Update to latest upstream version
- 
+
 ###### Things done
  * [ ]  Tested using sandboxing ([nix.useSandbox](http://nixos.org/nixos/manual/options.html#opt-nix.useSandbox) on NixOS, or option `sandbox` in [`nix.conf`](http://nixos.org/nix/manual/#sec-conf-file) on non-NixOS linux)
  * Built on platform(s)
-   
+
    * [x]  NixOS
    * [ ]  macOS
    * [ ]  other Linux distributions
@@ -14,6 +14,6 @@ Update to latest upstream version
  * [ ]  Determined the impact on package closure size (by running `nix path-info -S` before and after)
  * [ ]  Ensured that relevant documentation is up to date
  * [x]  Fits [CONTRIBUTING.md](https://github.com/NixOS/nixpkgs/blob/master/.github/CONTRIBUTING.md).
- 
+
 ###### Notify maintainers
 `cc @worldofpeace @tfc @jtraue` **TODO un-``-ize**

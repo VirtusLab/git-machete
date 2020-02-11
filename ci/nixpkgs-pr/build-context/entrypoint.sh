@@ -3,11 +3,10 @@
 set -e -o pipefail -u
 
 git init
-git remote add VirtusLab https://${GITHUB_TOKEN}@github.com/VirtusLab/nixpkgs.git
 git remote add NixOS https://github.com/NixOS/nixpkgs.git
+git remote add VirtusLab https://${GITHUB_TOKEN}@github.com/VirtusLab/nixpkgs.git
 
 set -x
-git fetch --progress VirtusLab master
 git fetch --progress NixOS master
 git checkout -B master NixOS/master
 

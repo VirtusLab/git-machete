@@ -6,7 +6,8 @@ DIRECTORY_HASH=$(git rev-parse HEAD:ci/tox)
 export DIRECTORY_HASH
 cd ci/tox/
 
-# If the image corresponding to the expected git&python versions and the current state of ci/tox is missing, build it and push to Docker Hub.
+# If there is no cached image for the expected Git&Python versions and the current state of ci/tox,
+# build the image and push it to the Docker Hub.
 docker-compose pull tox || {
   docker-compose build --build-arg user_id="$(id -u)" --build-arg group_id="$(id -g)" tox
   # In builds coming from forks, secret vars are unavailable for security reasons; hence, we have to skip pushing the newly built image.
