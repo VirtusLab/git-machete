@@ -18,7 +18,7 @@ plugs:
     read:
       - $HOME/.gitconfig
       - $HOME/.config/git/config
-      # TODO: consider adding Vim configuration files
+      # TODO: consider including Vim configuration files
 
 layout:
   # Configuration for ssh should come from the snap's part(s), not from the target system.
@@ -42,7 +42,7 @@ parts:
       - libgpm2  # needed by vim for mouse handling
       - openssh-client
       - vim  # for `git machete edit`, interactive rebases and merge message edit
-      # TODO: consider adding nano as well
+      # TODO: consider installing `nano` as well
 
 apps:
   git-machete:

@@ -901,10 +901,33 @@ def merge(branch, into):  # refs/heads/ prefix is assumed for 'branch'
 
 def rebase(onto, fork_commit, branch):
     def do_rebase():
-        if opt_no_interactive_rebase:
-            run_git("rebase", "--onto", onto, fork_commit, branch)
-        else:
-            run_git("rebase", "--interactive", "--onto", onto, fork_commit, branch)
+        try:
+            if opt_no_interactive_rebase:
+                run_git("rebase", "--onto", onto, fork_commit, branch)
+            else:
+                run_git("rebase", "--interactive", "--onto", onto, fork_commit, branch)
+        finally:
+            # https://public-inbox.org/git/317468c6-40cc-9f26-8ee3-3392c3908efb@talktalk.net/T/
+            # In our case, this can happen when git version invoked by git-machete to start the rebase
+            # is different than git version used (outside of git-machete) to continue the rebase.
+            # This is likely esp. when git-machete is installed via Snappy (with its own version of git baked into the snap as a dependency).
+
+            # No need to fix <git-dir>/rebase-apply/author-script,
+            # only <git-dir>/rebase-merge/author-script (i.e. interactive rebases, for the most part) are affected.
+            author_script = get_abs_git_subpath("rebase-merge", "author-script")
+            if os.path.isfile(author_script):
+                faulty_line_regex = re.compile("[A-Z0-9_]+='[^']*")
+
+                def fix_if_needed(line):
+                    return (line.rstrip() + "'\n") if faulty_line_regex.fullmatch(line) else line
+
+                def get_all_lines_fixed():
+                    with open(author_script) as f_read:
+                        return map(fix_if_needed, f_read.readlines())
+
+                fixed_lines = get_all_lines_fixed()  # must happen before the `with` clause where we open for writing
+                with open(author_script, "w") as f_write:
+                    f_write.write("".join(fixed_lines))
 
     hook_path = get_hook_path("machete-pre-rebase")
     if check_hook_executable(hook_path):
