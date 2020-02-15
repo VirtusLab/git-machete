@@ -1,6 +1,6 @@
 ## Building the RPM locally
 
-```bash
+```shell script
 cd ci/rpm/
 ./local-run.sh
 ```

@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.13.2
+
+- added: support for Snappy
+
 ## New in git-machete 2.13.1
 
 - fixed: deployment doesn't fail when `docker-compose push` fails for `rpm` or `apt-ppa-upload` services

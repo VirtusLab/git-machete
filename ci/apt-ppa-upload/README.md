@@ -1,6 +1,6 @@
 ## Build & uploading the package to PPA from the local machine
 
-```bash
+```shell script
 cd ci/apt-ppa-upload/
 . export-gpg-ssh-config
 ./local-run.sh

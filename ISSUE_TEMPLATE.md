@@ -52,7 +52,7 @@ Depending on your NDAs/level of confidentiality of the project stored in your re
 
     In case the tgz-ed repository is too large to share via GitHub web upload, you can try either pushing the tgz-ed repository as a file onto a branch, or actually sharing the entire non-tgz-ed `.git` folder as a repository on GitHub, so basically doing:
 
-    ```bash
+    ```shell script
     cd .git/
     git init
     git add -a

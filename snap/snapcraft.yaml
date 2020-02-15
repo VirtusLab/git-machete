@@ -3,9 +3,9 @@ version: git
 summary: git-machete is a versatile tool for organizing your git repo
 description: |
   git machete is a versatile tool for organizing your git repo, including features like:
-  - Neat, customizable git machete status that shows what branches are in sync with their parent branch/remote tracking branch and which of them need to be rebased/pulled/pushed
-  - Semi-automatic traversal of the branches that helps you effortlessly rebase and push/pull the branches you care for
-  - Automatic discovery of branch relations (git machete discover)
+  - Neat, customizable `git machete status` that shows what branches are in sync with their parent branch/remote tracking branch and which of them need to be rebased/merged/pulled/pushed
+  - Semi-automatic `git machete traverse` through the branches that helps you effortlessly rebase/merge and push/pull the branches you care for
+  - Automatic discovery of branch relations (`git machete discover`)
 base: core18
 confinement: strict
 grade: stable
@@ -16,31 +16,44 @@ plugs:
   gitconfig:
     interface: personal-files
     read:
-    - $HOME/.gitconfig
-    - $HOME/.config/git/config
+      - $HOME/.gitconfig
+      - $HOME/.config/git/config
+      # TODO: consider adding Vim configuration files
+
+layout:
+  # Configuration for ssh should come from the snap's part(s), not from the target system.
+  # core18 has OpenSSH 7.x which doesn't understand certain aspects (like `Match final`) of OpenSSH 8.x config.
+  # If the target system has OpenSSH 8.x, then all ssh-backed actions in git are bound to fail.
+  /etc/ssh:
+    bind: $SNAP/etc/ssh
+  /usr/bin/vim:
+    symlink: $SNAP/usr/bin/vim.basic
 
 parts:
-  ppa:
-    plugin: nil
-    override-pull: |
-      # this adds the git-core ppa, so we always get the latest stable git
-      # See more here: https://launchpad.net/~git-core/+archive/ubuntu/ppa
-      apt --quiet -o Dpkg::Progress-Fancy=false install -y software-properties-common
-      add-apt-repository -y ppa:git-core
-      apt --quiet -o Dpkg::Progress-Fancy=false update
   git-machete:
     plugin: python
     python-version: python3
     source: .
+    # Note that's not trivial to force the 'stage' step to use a non-standard source of packages like a PPA
+    # (which e.g. would allow to install latest version of git: https://launchpad.net/~git-core/+archive/ubuntu/ppa),
+    # see https://forum.snapcraft.io/t/what-sources-are-used-for-stage-packages/2875/10 for details
     stage-packages:
-    - python-six
-    - git
+      - git
+      - libgpm2  # needed by vim for mouse handling
+      - openssh-client
+      - vim  # for `git machete edit`, interactive rebases and merge message edit
+      # TODO: consider adding nano as well
 
 apps:
   git-machete:
     command: bin/git-machete
+    environment:
+      # Use this exec path rather than the (apparently default) /usr/libexec/git-core
+      GIT_EXEC_PATH: $SNAP/usr/lib/git-core
+      # Required for Python's `sys.stdout.write` to correctly print non-ASCII characters in status
+      LC_ALL: C.UTF-8
     plugs:
-    - home
-    - removable-media
-    - gitconfig
+      - home
+      - removable-media
+      - gitconfig
     adapter: full

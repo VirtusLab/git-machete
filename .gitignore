@@ -1,13 +1,21 @@
-*.swp
+# Editors
 .idea/
+*.swp
 
+# Python
 AUTHORS
 ChangeLog
 build/
 dist/
 *.egg-info/
 .eggs/
-.python-version
 *.pyc
-.tox/
+.python-version
 .stestr/
+.tox/
+
+# Snapcraft
+parts/
+prime/
+*.snap
+stage/

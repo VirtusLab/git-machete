@@ -3,6 +3,7 @@
 [![Join the chat at https://gitter.im/VirtusLab/git-machete](https://badges.gitter.im/VirtusLab/git-machete.svg)](https://gitter.im/VirtusLab/git-machete)
 [![TravisCI build status](https://api.travis-ci.org/VirtusLab/git-machete.svg?branch=master)](https://travis-ci.org/VirtusLab/git-machete)
 [![PyPI package](https://badge.fury.io/py/git-machete.svg)](https://pypi.org/project/git-machete)
+[![Snap](https://snapcraft.io//git-machete/badge.svg)](https://snapcraft.io/git-machete)
 
 
 ![](logo.png)
@@ -30,25 +31,24 @@ git-machete works under both Python 2.7 and Python 3.x.
 
 ### Using Homebrew (macOS)
 
-```bash
+```shell script
 brew tap VirtusLab/git-machete
 brew install git-machete
 ```
 
 ### Using Snappy (most Linux distributions)
 
-Run single command to install git machete:
-
 ```shell script
 snap install git-machete
 ```
-It can also be installed via Ubuntu Software. Search for `git-machete`.
+
+It can also be installed via Ubuntu Software (simply search for `git-machete`).
 
 ### Using PPA (Ubuntu)
 
 Tip: run `sudo apt-get install -y software-properties-common` first if `add-apt-repository` is not available on your system.
 
-```bash
+```shell script
 sudo add-apt-repository ppa:virtuslab/git-machete
 sudo apt-get update
 sudo apt-get install -y python3-git-machete
@@ -67,7 +67,7 @@ Install the AUR package [git-machete](https://aur.archlinux.org/packages/git-mac
 
 On macOS and most Linux distributions, you can install via [Nix](https://nixos.org/nix/):
 
-```bash
+```shell script
 nix-channel --add https://nixos.org/channels/nixos-unstable unstable  # if you haven't set up any channels yet
 nix-env -i git-machete
 ```
@@ -76,32 +76,28 @@ nix-env -i git-machete
 
 You need to have Python and `pip` installed from system packages.
 
-```bash
+```shell script
 sudo -H pip install git-machete
 ```
+
+Tip: pass an extra `-U` flag to `pip install` to upgrade an already installed version.
 
 ### Using pip without sudo (user-wide install)
 
 You need to have Python and `pip` installed from system packages.
 
-```bash
+```shell script
 pip install --user git-machete
 ```
 
 Please verify that your `PATH` variable has `${HOME}/.local/bin/` included.
 
-### Using Snap (Ubuntu)
+Tip: pass an extra `-U` flag to `pip install` to upgrade an already installed version.
 
-Run single commands to install git machete:
-
-```shell script
-snap install git-machete
-```
-It can also be installed via Ubuntu Software. Search for `git-machete`
 
 ## Quick start
 
-```bash
+```shell script
 cd your-repo/
 git machete discover --checked-out-since='2 weeks ago'  # increase/decrease the timespan if you want more/less old branches included
   # (see and possibly edit the suggested layout of branches - branch layout is always kept as text file .git/machete)

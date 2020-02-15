@@ -10,12 +10,12 @@ cd "$(git rev-parse --show-toplevel)"/ci/rpm/
 
 set -x
 
+hash=$(git rev-parse HEAD:ci/rpm)
 if git diff-index --quiet HEAD .; then
-  DIRECTORY_HASH=$(git rev-parse HEAD:ci/rpm)
-  export DIRECTORY_HASH
+  export DIRECTORY_HASH="$hash"
   docker-compose pull rpm || build_image
 else
-  export DIRECTORY_HASH=unspecified
+  export DIRECTORY_HASH="$hash"-dirty
   build_image
 fi
 
