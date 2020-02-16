@@ -67,7 +67,7 @@ Install the AUR package [git-machete](https://aur.archlinux.org/packages/git-mac
 
 ### Using Nix (macOS & most Linux distributions)
 
-On macOS and most Linux distributions, you can install via [Nix](https://nixos.org/nix/):
+On macOS and most Linux distributions, you can install via [Nix](https://nixos.org/nix):
 
 ```shell script
 nix-channel --add https://nixos.org/channels/nixos-unstable unstable  # if you haven't set up any channels yet
