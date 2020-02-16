@@ -53,8 +53,7 @@ Output format of any non-plumbing command can change in non-backward-compatible 
 1. Make sure that build for `master` passes on [Travis CI](https://travis-ci.org/VirtusLab/git-machete/branches).
 
 1. Verify that a build started for [Snap](https://build.snapcraft.io/user/VirtusLab/git-machete).
-   Once ready, install the `latest/edge` revision locally
-   (`sudo snap install --edge git-machete --revision=<number>`; you must be logged in to `snap` as `admin@virtuslab.com`)
+   Once ready, install the `latest/edge` revision locally (`sudo snap install --edge git-machete`)
    and verify that it works correctly, esp. wrt. push/pull via ssh/https and editor (`git machete edit` and interactive rebases).
 
 1. Run `./tag-release.sh` script to create an annotated tag for the release.
@@ -65,8 +64,11 @@ Output format of any non-plumbing command can change in non-backward-compatible 
 
 1. Wait for the pipeline for the tag to complete successfully on [Travis CI](https://travis-ci.org/VirtusLab/git-machete/builds).
 
-1. Verify that the release has been created on [Github](https://github.com/VirtusLab/git-machete/releases) with correct name and release notes,
+1. Verify that the release has been created on [Github](https://github.com/VirtusLab/git-machete/releases)
    and that a `git-machete-VERSION-1.noarch.rpm` file is present under the Assets.
+   Fix the formatting in the description manually by copy-pasting the tag description
+   (see [this answer](https://github.community/t5/How-to-use-Git-and-GitHub/add-release-notes-to-git-remote-tag-from-command-line/m-p/22343/highlight/true#M6488)
+   for more details on why it's not automated as well).
 
 1. Verify that the latest version is uploaded to [PyPI](https://pypi.org/project/git-machete).
 

@@ -1,5 +1,10 @@
 # Release notes
 
+## New in git-machete 2.13.3
+
+- fixed: minor release-related issues
+- fixed: interactive input for `traverse` in case of an untracked branch
+
 ## New in git-machete 2.13.2
 
 - added: support for Snappy

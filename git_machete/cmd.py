@@ -1534,14 +1534,15 @@ def handle_untracked_branch(new_remote, b):
     if not commit_sha_by_revision(rb, prefix="refs/remotes/"):
         msg = "Push untracked branch %s to %s? (y/N/q/yq%s) " % (bold(b), bold(new_remote), other_remote_suffix)
         opt_yes_msg = "Pushing untracked branch %s to %s..." % (bold(b), bold(new_remote))
-        if ask_if(msg, opt_yes_msg) in ('y', 'yes', 'yq'):
+        ans = ask_if(msg, opt_yes_msg)
+        if ans in ('y', 'yes', 'yq'):
             push(new_remote, b)
             if msg == 'yq':
                 raise StopTraversal
             flush()
-        elif can_pick_other_remote and msg in ('o', 'other'):
+        elif can_pick_other_remote and ans in ('o', 'other'):
             pick_remote(b)
-        elif msg in ('q', 'quit'):
+        elif ans in ('q', 'quit'):
             raise StopTraversal
         return
 
@@ -1593,15 +1594,15 @@ def handle_untracked_branch(new_remote, b):
     relation = get_relation_to_remote_counterpart(b, rb)
     print(message[relation])
     msg, opt_yes_msg = prompt[relation]
-    msg = ask_if(msg, opt_yes_msg)
-    if msg in ('y', 'yes', 'yq'):
+    ans = ask_if(msg, opt_yes_msg)
+    if ans in ('y', 'yes', 'yq'):
         yes_actions[relation]()
         if msg == 'yq':
             raise StopTraversal
         flush()
-    elif can_pick_other_remote and msg in ('o', 'other'):
+    elif can_pick_other_remote and ans in ('o', 'other'):
         pick_remote(b)
-    elif msg in ('q', 'quit'):
+    elif ans in ('q', 'quit'):
         raise StopTraversal
 
 

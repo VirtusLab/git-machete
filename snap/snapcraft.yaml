@@ -6,6 +6,9 @@ description: |
   - Neat, customizable `git machete status` that shows what branches are in sync with their parent branch/remote tracking branch and which of them need to be rebased/merged/pulled/pushed
   - Semi-automatic `git machete traverse` through the branches that helps you effortlessly rebase/merge and push/pull the branches you care for
   - Automatic discovery of branch relations (`git machete discover`)
+# This software is unlikely to be used outside of desktop machines.
+# Let's limit the number of target architectures to reduce the build times.
+architectures: [ amd64, i386 ]
 base: core18
 confinement: strict
 grade: stable
@@ -34,7 +37,8 @@ parts:
     plugin: python
     python-version: python3
     source: .
-    # TODO: consider switching back to `version: git` if pushing tags (and not only pushing commits to master) triggers Snapcraft builds
+    # We're setting the version via scriptlet rather than using `version: git`
+    # since only pushing commits to master (and not pushing tags) triggers Snapcraft builds.
     override-pull: |
       set -x
       snapcraftctl pull
