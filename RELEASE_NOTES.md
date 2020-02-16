@@ -3,6 +3,7 @@
 ## New in git-machete 2.13.6
 
 - fixed: remove reviewer setting when opening a PR to NixOS/nixpkgs
+- changed: confinement of snaps from `strict` to `classic`
 
 ## New in git-machete 2.13.5
 

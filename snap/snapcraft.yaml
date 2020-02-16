@@ -1,5 +1,5 @@
 name: git-machete
-adopt-info: git-machete
+adopt-info: git-machete  # just for adopting `version`
 summary: git-machete is a versatile tool for organizing your git repo
 description: |
   git machete is a versatile tool for organizing your git repo, including features like:
@@ -14,27 +14,11 @@ architectures:
   - build-on: amd64
   - build-on: i386
 base: core18
-confinement: strict
+# See https://forum.snapcraft.io/t/-/15566 for discussion on why classic confinement was necessary.
+confinement: classic
 grade: stable
 icon: logo.png
 license: MIT
-
-plugs:
-  gitconfig:
-    interface: personal-files
-    read:
-      - $HOME/.gitconfig
-      - $HOME/.config/git/config
-      # TODO: consider including Vim configuration files
-
-layout:
-  # Configuration for ssh should come from the snap's part(s), not from the target system.
-  # core18 has OpenSSH 7.x which doesn't understand certain aspects (like `Match final`) of OpenSSH 8.x config.
-  # If the target system has OpenSSH 8.x, then all ssh-backed actions in git are bound to fail.
-  /etc/ssh:
-    bind: $SNAP/etc/ssh
-  /usr/bin/vim:
-    symlink: $SNAP/usr/bin/vim.basic
 
 parts:
   git-machete:
@@ -46,27 +30,10 @@ parts:
     override-pull: |
       set -x
       snapcraftctl pull
-      snapcraftctl set-version "$(grep "__version__ = " git_machete/__init__.py | cut -d\' -f2)"
-    # Note that's not trivial to force the 'stage' step to use a non-standard source of packages like a PPA
-    # (which e.g. would allow to install latest version of git: https://launchpad.net/~git-core/+archive/ubuntu/ppa),
-    # see https://forum.snapcraft.io/t/what-sources-are-used-for-stage-packages/2875/10 for details
-    stage-packages:
-      - git
-      - libgpm2  # needed by vim for mouse handling
-      - openssh-client
-      - vim  # for `git machete edit`, interactive rebases and merge message edit
-      # TODO: consider installing `nano` as well
+      version=$(grep "__version__ = " git_machete/__init__.py | cut -d\' -f2)
+      snapcraftctl set-version "$version"
 
 apps:
   git-machete:
     command: bin/git-machete
-    environment:
-      # Use this exec path rather than the (apparently default) /usr/libexec/git-core
-      GIT_EXEC_PATH: $SNAP/usr/lib/git-core
-      # Required for Python's `sys.stdout.write` to correctly print non-ASCII characters in status
-      LC_ALL: C.UTF-8
-    plugs:
-      - home
-      - removable-media
-      - gitconfig
     adapter: full

@@ -930,7 +930,11 @@ def rebase(onto, fork_commit, branch):
             # https://public-inbox.org/git/317468c6-40cc-9f26-8ee3-3392c3908efb@talktalk.net/T
             # In our case, this can happen when git version invoked by git-machete to start the rebase
             # is different than git version used (outside of git-machete) to continue the rebase.
-            # This is likely esp. when git-machete is installed via Snappy (with its own version of git baked into the snap as a dependency).
+            # This used to be the case when git-machete was installed via a strict-confinement snap
+            # with its own version of git baked in as a dependency.
+            # Currently we're using classic-confinement snaps which no longer have this problem
+            # (snapped git-machete uses whatever git is available in the host system),
+            # but it still doesn't harm to patch the author script.
 
             # No need to fix <git-dir>/rebase-apply/author-script,
             # only <git-dir>/rebase-merge/author-script (i.e. interactive rebases, for the most part) are affected.

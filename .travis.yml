@@ -1,4 +1,7 @@
 os: linux
+# We need Bionic aka Ubuntu 18.04 LTS since we're using destructive mode of building snaps
+# and hence apparently we have to use same distro as used for core18 (https://github.com/snapcore/core18) Snap base.
+dist: bionic
 # Build is fully Dockerized, we don't need to run Python directly on the VM.
 # Python is needed for PyPI deployment, but `minimal` is still sufficient for this purpose.
 language: minimal
@@ -22,8 +25,31 @@ jobs:
         - ./ci/checks/trailing-whitespace.sh
 
     # Note: each time a commit is pushed to master (and not when a tag is pushed),
-    # a Snap build is also triggered automatically via GitHub webhook on https://build.snapcraft.io/user/VirtusLab/git-machete
+    # a Snap build for `edge` channel is also triggered automatically via GitHub webhook on https://build.snapcraft.io/user/VirtusLab/git-machete
     # This happens completely outside of the CI, however.
+    - stage: 'Test building a snap'
+      # Building a snapping is rather a heavy operation, we don't want to test it on every single build.
+      if: branch = develop
+      install:
+        - sudo apt-get update
+        - sudo apt-get install snapd
+        - sudo snap install snapcraft --classic
+      script:
+        # `destructive-mode` means that build dependencies are installed directly in the system where snapcraft is launched
+        # (rather than on a VM that snapcraft would spin up just for that purpose).
+        # On Travis, we're on a VM anyway - so we can safely use this mode.
+        # Also, see a comment to `dist: bionic`.
+        - sudo -H snapcraft snap --destructive-mode
+        - sudo snap install --classic --dangerous *.snap
+        - git machete --version
+        - git branch base HEAD~
+        - git checkout -b current
+        - echo base > .git/machete
+        - echo ' current' >> .git/machete
+        - git machete status
+        - git remote -v
+        - echo q | git machete traverse --fetch
+        - sudo snap remove git-machete
 
     # Deploy stages are separated for easier inspection of output.
     - stage: 'Build rpm & deploy to GitHub Releases'
