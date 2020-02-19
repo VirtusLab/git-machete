@@ -51,6 +51,7 @@ jobs:
 
         - provider: script  # PR to NixOS/nixpkgs (artifacts must be released to PyPI first)
           script: bash ci/nixpkgs-pr/travis-deploy.sh
+          on: { tags: true }
 
         - provider: script  # brew tap (artifacts must be released to PyPI first)
           script: bash ci/homebrew-tap/travis-deploy.sh

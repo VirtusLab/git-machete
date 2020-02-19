@@ -16,4 +16,4 @@ Update to latest upstream version
  * [x]  Fits [CONTRIBUTING.md](https://github.com/NixOS/nixpkgs/blob/master/.github/CONTRIBUTING.md).
 
 ###### Notify maintainers
-`cc @worldofpeace @tfc @jtraue` **TODO un-``-ize**
+cc @worldofpeace @tfc @jtraue

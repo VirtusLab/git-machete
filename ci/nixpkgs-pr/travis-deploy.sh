@@ -6,9 +6,8 @@ DIRECTORY_HASH=$(git rev-parse HEAD:ci/nixpkgs-pr)
 export DIRECTORY_HASH
 cd ci/nixpkgs-pr/
 
-# TODO uncomment [[ -n $TRAVIS_TAG ]]
-# TODO uncomment VERSION=${TRAVIS_TAG#v}
-VERSION=2.12.10 # TODO remove
+[[ -n $TRAVIS_TAG ]]
+VERSION=${TRAVIS_TAG#v}
 export VERSION
 
 # If the image corresponding to the current state of ci/nixpkgs-pr/ is missing, build it and push to Docker Hub.

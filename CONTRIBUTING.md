@@ -66,6 +66,8 @@ Output format of any non-plumbing command can change in non-backward-compatible 
 
 1. Wait for the pipeline for the tag to complete successfully on [Travis CI](https://travis-ci.org/VirtusLab/git-machete/builds).
 
+1. Verify that the latest version is uploaded to [PyPI](https://pypi.org/project/git-machete).
+
 1. Verify that the release has been created on [Github](https://github.com/VirtusLab/git-machete/releases)
    and that a `git-machete-VERSION-1.noarch.rpm` file is present under the Assets.
 
@@ -73,14 +75,12 @@ Output format of any non-plumbing command can change in non-backward-compatible 
    (see [this answer](https://github.community/t5/How-to-use-Git-and-GitHub/add-release-notes-to-git-remote-tag-from-command-line/m-p/22343/highlight/true#M6488)
    for more details on why it's not automated as well).
 
-1. Verify that the latest version is uploaded to [PyPI](https://pypi.org/project/git-machete).
+1. Verify that a [version-bump PRs to NixOS/nixpkgs](https://github.com/NixOS/nixpkgs/pulls?q=is%3Apr+git-machete) has been opened.
 
 1. Verify that the latest commit in [VirtusLab/homebrew-git-machete](https://github.com/VirtusLab/homebrew-git-machete) tap repo refers to the latest version.
 
    Re-run the latest build for `orphan/brew-package-check` branch on [Travis CI](https://travis-ci.org/VirtusLab/git-machete/branches).
    Inspect the job output and verify that the latest version gets correctly installed on Mac OS X (esp. see the output of `git machete --version`).
-
-1. Verify that a [version-bump PRs to NixOS/nixpkgs](https://github.com/NixOS/nixpkgs/pulls?q=is%3Apr+git-machete) has been opened.
 
 1. Verify that a build started on [git-machete PPA](https://launchpad.net/~virtuslab/+archive/ubuntu/git-machete/+packages).
 

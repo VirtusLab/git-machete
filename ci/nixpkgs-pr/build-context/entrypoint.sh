@@ -36,8 +36,8 @@ git commit -m "$message"
 git push VirtusLab $branch
 # 'hub pull-request' relies on GITHUB_TOKEN env var (not on the git remote's URL as 'git push' does) for authentication.
 hub pull-request \
-  --base VirtusLab:master \
+  --base NixOS:master \
   --head VirtusLab:$branch \
   --message "$message" \
-  --labels='10.rebuild-darwin: 1-10,10.rebuild-linux: 1-10,11.by: upstream-developer'
-# TODO! hub pull-request --base NixOS:master --head VirtusLab:$branch --message "$message" --labels='10.rebuild-darwin: 1-10,10.rebuild-linux: 1-10,11.by: upstream-developer' --reviewer tfc
+  --labels='10.rebuild-darwin: 1-10,10.rebuild-linux: 1-10,11.by: upstream-developer' \
+  --reviewer tfc

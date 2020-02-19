@@ -36,16 +36,6 @@ brew tap VirtusLab/git-machete
 brew install git-machete
 ```
 
-### Using Snappy (most Linux distributions)
-
-Tip: check the [guide on installing snapd](https://snapcraft.io/docs/installing-snapd) if you don't have Snap support set up yet in your system.
-
-```shell script
-snap install git-machete
-```
-
-It can also be installed via Ubuntu Software (simply search for `git-machete`).
-
 ### Using PPA (Ubuntu)
 
 Tip: run `sudo apt-get install -y software-properties-common` first if `add-apt-repository` is not available on your system.
