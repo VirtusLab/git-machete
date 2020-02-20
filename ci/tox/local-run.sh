@@ -20,7 +20,6 @@ set -x
 
 hash=$(git rev-parse HEAD:ci/tox)
 if git diff-index --quiet HEAD .; then
-  DIRECTORY_HASH=$(git rev-parse HEAD:ci/tox)
   export DIRECTORY_HASH="$hash"
   docker-compose pull tox || build_image
 else

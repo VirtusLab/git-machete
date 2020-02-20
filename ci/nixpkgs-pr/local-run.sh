@@ -8,12 +8,12 @@ cd "$(git rev-parse --show-toplevel)"/ci/nixpkgs-pr/
 
 set -x
 
+hash=$(git rev-parse HEAD:ci/nixpkgs-pr)
 if git diff-index --quiet HEAD .; then
-  DIRECTORY_HASH=$(git rev-parse HEAD:ci/nixpkgs-pr)
-  export DIRECTORY_HASH
+  export DIRECTORY_HASH="$hash"
   docker-compose pull nixpkgs-pr || docker-compose build nixpkgs-pr
 else
-  export DIRECTORY_HASH=unspecified
+  export DIRECTORY_HASH="$hash"-dirty
   docker-compose build nixpkgs-pr
 fi
 

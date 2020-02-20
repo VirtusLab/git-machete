@@ -3,5 +3,5 @@
 ```bash
 cd ci/nixpkgs-pr/
 . export-github-config
-VERSION=2.13.2 ./local-run.sh  # put the version to release, without the leading 'v'
+VERSION=2.13.2 ./local-run.sh  # pass the version to release, without the leading 'v'
 ```

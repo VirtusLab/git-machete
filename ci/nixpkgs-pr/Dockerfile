@@ -8,10 +8,10 @@ RUN set -x \
     && cd /root/hub/ \
     && nix-env -i go gnumake \
     && make bin/hub \
-    && cp bin/hub /usr/local/bin \
-    && mkdir -p /usr/local/bin \
     && nix-env -e go gnumake \
     && nix-collect-garbage -d \
+    && mkdir -p /usr/local/bin/ \
+    && cp bin/hub /usr/local/bin/ \
     && cd /root \
     && rm -r hub/
 ENV PATH=$PATH:/usr/local/bin
