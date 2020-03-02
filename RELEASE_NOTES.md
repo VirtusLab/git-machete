@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.13.6
+
+- fixed: remove reviewer setting when opening a PR to NixOS/nixpkgs
+
 ## New in git-machete 2.13.5
 
 - fixed: build of rpm package
