@@ -1,6 +1,7 @@
 FROM fedora:31
 
-RUN dnf install -y python rpm-build
+RUN dnf install -y python3-pip rpm-build
+RUN ln -s /usr/bin/python3 /usr/local/bin/python
 
 ARG user_id
 ARG group_id
