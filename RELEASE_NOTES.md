@@ -1,5 +1,10 @@
 # Release notes
 
+## New in git-machete 2.13.5
+
+- fixed: build of rpm package
+- improved: organization of deployment stages on CI
+
 ## New in git-machete 2.13.4
 
 - added: automatic opening of a PR to NixOS/nixpkgs on each release

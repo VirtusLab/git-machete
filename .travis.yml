@@ -26,18 +26,6 @@ jobs:
     # This happens completely outside of the CI, however.
 
     # Deploy stages are separated for easier inspection of output.
-    - stage: 'Deploy to PyPI'
-      if: tag IS present
-      install: skip
-      script: skip
-      deploy:
-        - provider: pypi
-          username: __token__
-          password:
-            secure: U6JJcByjLv2PutUpnpqDT7cNIUYu9Ap9t4G90KULEn6Syxa49aX14BT6k2jBakWbQgrPCxLLNSWeCoC4xPl/Z2/9HLEFxZLVovtVbiaJ8HrTcoWmEZijnGob9Ofh94TFP8VtifjqHXeIrPi78XyZEks/ed0Sj3jSH4BL74PDHvqbD1RnsezFm4QGI2ESOWY+laJ2ralcpHRJh0hJb0QHxOpbKPVM+QefiFs+VFkFP25hQcn/G3qdduzW5NQ8OHBYCbevy6/1yt/M67ZzAeA0n4UrkZ/3vBsMJJ3wynWWZ3xO+lGs6eqZ31E8vicogYbw5hXs119JRkKUrcU5uqVL1mogf8N6y76w2xNV6Aul/XtpBiuPQsHm0tChwTI6yyGzAZBRPMB1KzRclDKGQThIBhpX+wfqHSpvdj1CZV5AMm3+6nHA0LSGWiuJ1BW7pTrAp9YFPbrQfH59JWMhy8ng5lexcQQj7spSO/DPw0VMIfUiw644BfSfyZwls5du4yYfWOkd8RoELEa2IGqCp1sTqjWvSuX3nzKCbJhxAwrVU5mK9fiMPcL1jURIwlFvooI+qKAp3CdGZ1IM+HFmpzXym2kvZvmrNXduVSZcqG3DrCFxt77FYsN5SNB/uly1vLq/6Y0BaCw9ao6YWfW3fvU2cCcyejjzPyfGzZ2jA5uOpZ8=
-          distributions: "sdist bdist_wheel"
-          on: { tags: true }
-
     - stage: 'Build rpm & deploy to GitHub Releases'
       if: tag IS present
       install: skip
@@ -49,6 +37,18 @@ jobs:
           skip_cleanup: true
           file_glob: true
           file: dist/git-machete-*.noarch.rpm
+          on: { tags: true }
+
+    - stage: 'Deploy to PyPI'
+      if: tag IS present
+      install: skip
+      script: skip
+      deploy:
+        - provider: pypi
+          username: __token__
+          password:
+            secure: U6JJcByjLv2PutUpnpqDT7cNIUYu9Ap9t4G90KULEn6Syxa49aX14BT6k2jBakWbQgrPCxLLNSWeCoC4xPl/Z2/9HLEFxZLVovtVbiaJ8HrTcoWmEZijnGob9Ofh94TFP8VtifjqHXeIrPi78XyZEks/ed0Sj3jSH4BL74PDHvqbD1RnsezFm4QGI2ESOWY+laJ2ralcpHRJh0hJb0QHxOpbKPVM+QefiFs+VFkFP25hQcn/G3qdduzW5NQ8OHBYCbevy6/1yt/M67ZzAeA0n4UrkZ/3vBsMJJ3wynWWZ3xO+lGs6eqZ31E8vicogYbw5hXs119JRkKUrcU5uqVL1mogf8N6y76w2xNV6Aul/XtpBiuPQsHm0tChwTI6yyGzAZBRPMB1KzRclDKGQThIBhpX+wfqHSpvdj1CZV5AMm3+6nHA0LSGWiuJ1BW7pTrAp9YFPbrQfH59JWMhy8ng5lexcQQj7spSO/DPw0VMIfUiw644BfSfyZwls5du4yYfWOkd8RoELEa2IGqCp1sTqjWvSuX3nzKCbJhxAwrVU5mK9fiMPcL1jURIwlFvooI+qKAp3CdGZ1IM+HFmpzXym2kvZvmrNXduVSZcqG3DrCFxt77FYsN5SNB/uly1vLq/6Y0BaCw9ao6YWfW3fvU2cCcyejjzPyfGzZ2jA5uOpZ8=
+          distributions: 'sdist bdist_wheel'
           on: { tags: true }
 
     - stage: 'Open PR to NixOS/nixpkgs'  # Artifacts must be released to PyPI first
