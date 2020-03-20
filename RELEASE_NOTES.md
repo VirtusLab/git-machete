@@ -4,6 +4,8 @@
 
 - fixed: remove reviewer setting when opening a PR to NixOS/nixpkgs
 - changed: confinement of snaps from `strict` to `classic`
+- changed: Docker images moved from under `virtuslab` organization to `gitmachete`
+- changed: `apt-ppa` in all contexts to `deb-ppa`
 
 ## New in git-machete 2.13.5
 

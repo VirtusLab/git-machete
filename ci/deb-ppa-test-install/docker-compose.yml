@@ -1,6 +1,6 @@
 version: '3'
 services:
-  apt-ppa-test-install:
+  deb-ppa-test-install:
     build:
       context: build-context
       dockerfile: ../Dockerfile # relative to build-context

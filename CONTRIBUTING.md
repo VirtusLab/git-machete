@@ -90,7 +90,7 @@ Output format of any non-plumbing command can change in non-backward-compatible 
 1. Verify that a build started on [git-machete PPA](https://launchpad.net/~virtuslab/+archive/ubuntu/git-machete/+packages).
 
    Once the new version package is published and the old one is removed (typically takes around 20-30 min),
-   follow the instructions from [ci/apt-ppa-test-install/README.md](https://github.com/VirtusLab/git-machete/tree/master/ci/apt-ppa-test-install).
+   follow the instructions from ci/deb-ppa-test-install/README.md.
    Inspect the output of `docker-compose` and verify that the latest version gets correctly installed on Ubuntu (esp. see the output of `git machete --version`).
 
 1. Perform a release from `latest/edge` to `latest/stable` for each architecture from [Snapcraft web dashboard](https://snapcraft.io/git-machete/releases) or via CLI.

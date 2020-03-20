@@ -101,5 +101,5 @@ jobs:
       script: skip
       deploy:
         - provider: script
-          script: bash ci/apt-ppa-upload/travis-deploy.sh
+          script: bash ci/deb-ppa-upload/travis-deploy.sh
           on: { tags: true }

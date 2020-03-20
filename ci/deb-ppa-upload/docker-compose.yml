@@ -1,7 +1,7 @@
 version: '3'
 services:
-  apt-ppa-upload:
-    image: virtuslab/git-machete-ci-apt-ppa-upload:${DIRECTORY_HASH:-unspecified}
+  deb-ppa-upload:
+    image: gitmachete/ci-deb-ppa-upload:${DIRECTORY_HASH:-unspecified}
     build:
       context: build-context
       dockerfile: ../Dockerfile # relative to build-context
