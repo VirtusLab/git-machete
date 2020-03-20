@@ -6,6 +6,7 @@
 - changed: confinement of snaps from `strict` to `classic`
 - changed: Docker images moved from under `virtuslab` organization to `gitmachete`
 - changed: `apt-ppa` in all contexts to `deb-ppa`
+- improved: determining the default editor (also including `git config core.editor`, `$GIT_EDITOR`, `editor` and `$VISUAL`)
 
 ## New in git-machete 2.13.5
 

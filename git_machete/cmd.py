@@ -451,43 +451,52 @@ def is_executable(path):
     return os.access(path, os.X_OK)
 
 
-# Copied from distutils.spawn to avoid dependency on distutils
-def find_executable(executable, path=None):
-    """Tries to find 'executable' in the directories listed in 'path'.
-
-    A string listing directories separated by 'os.pathsep'; defaults to
-    os.environ['PATH'].  Returns the complete filename or None if not found.
-    """
-    if path is None:
-        path = os.environ.get('PATH', os.defpath)
-
-    paths = path.split(os.pathsep)
+def find_executable(executable):
     base, ext = os.path.splitext(executable)
 
     if (sys.platform == 'win32' or os.name == 'os2') and (ext != '.exe'):
         executable = executable + '.exe'
 
-    if not os.path.isfile(executable):
-        for p in paths:
-            f = os.path.join(p, executable)
-            if os.path.isfile(f):
-                # the file exists, we have a shot at spawn working
-                return f
-        return None
-    else:
+    if os.path.isfile(executable):
         return executable
+
+    path = os.environ.get('PATH', os.defpath)
+    paths = path.split(os.pathsep)
+    for p in paths:
+        f = os.path.join(p, executable)
+        if os.path.isfile(f) and is_executable(f):
+            debug("find_executable(%s)" % executable, "found %s at %s" % (executable, f))
+            return f
+    return None
+
+
+def get_default_editor():
+    # Based on the git's own algorithm for identifying the editor.
+    # 'editor' (to please Debian-based systems) and 'nano' have been added.
+    proposed_editor_funs = [
+        ("$GIT_EDITOR", lambda: os.environ.get("GIT_EDITOR")),
+        ("git config core.editor", lambda: get_config_or_none("core.editor")),
+        ("editor", lambda: "editor"),
+        ("$VISUAL", lambda: os.environ.get("VISUAL")),
+        ("$EDITOR", lambda: os.environ.get("EDITOR")),
+        ("nano", lambda: "nano"),
+        ("vi", lambda: "vi")
+    ]
+
+    for name, fun in proposed_editor_funs:
+        editor = fun()
+        if not editor:
+            debug("get_default_editor()", "'%s' is undefined" % name)
+        elif not find_executable(editor):
+            debug("get_default_editor()", "'%s'%s is not available" % (name, (" (" + editor + ")") if editor != name else ""))
+        else:
+            debug("get_default_editor()", "'%s'%s is available" % (name, (" (" + editor + ")") if editor != name else ""))
+            return editor
+    raise MacheteException("Cannot determine editor. Set EDITOR environment variable or edit %s directly." % definition_file)
 
 
 def edit():
-    editor = os.environ.get("EDITOR")
-    if editor and find_executable(editor):
-        return run_cmd(editor, definition_file)
-    elif find_executable("vim"):
-        return run_cmd("vim", definition_file)
-    elif find_executable("nano"):
-        return run_cmd("nano", definition_file)
-    else:
-        raise MacheteException("Cannot determine editor. Set EDITOR environment variable or edit %s directly." % definition_file)
+    return run_cmd(get_default_editor(), definition_file)
 
 
 git_version = None

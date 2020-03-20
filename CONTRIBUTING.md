@@ -60,7 +60,7 @@ Output format of any non-plumbing command can change in non-backward-compatible 
 1. Verify that a build started for [Snap](https://build.snapcraft.io/user/VirtusLab/git-machete).
    If not, check build.snapcraft.io webhook on Github (under Settings > Webhooks) -
    sometimes the build system responds with 500 status for no clear reason, in such case `Redeliver` the call.
-   Once ready, install the `latest/edge` revision locally (`sudo snap install --edge git-machete`)
+   Once ready, install the `latest/edge` revision locally (`sudo snap install --edge --classic git-machete`)
    and verify that it works correctly, esp. wrt. push/pull via ssh/https and editor (`git machete edit` and interactive rebases).
 
 1. Run `./tag-release.sh` script to create an annotated tag for the release.
@@ -90,7 +90,7 @@ Output format of any non-plumbing command can change in non-backward-compatible 
 1. Verify that a build started on [git-machete PPA](https://launchpad.net/~virtuslab/+archive/ubuntu/git-machete/+packages).
 
    Once the new version package is published and the old one is removed (typically takes around 20-30 min),
-   follow the instructions from ci/deb-ppa-test-install/README.md.
+   follow the instructions from [ci/deb-ppa-test-install/README.md](https://github.com/VirtusLab/git-machete/tree/master/ci/deb-ppa-test-install).
    Inspect the output of `docker-compose` and verify that the latest version gets correctly installed on Ubuntu (esp. see the output of `git machete --version`).
 
 1. Perform a release from `latest/edge` to `latest/stable` for each architecture from [Snapcraft web dashboard](https://snapcraft.io/git-machete/releases) or via CLI.
