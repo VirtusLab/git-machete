@@ -8,10 +8,12 @@
 
 [ -n "$1" ] || { echo "usage: $(basename "$0") <branch-name>"; exit 1; }
 
+set -e -o pipefail
+
 function ansi_esc {
   [[ $ASCII_ONLY = true ]] || echo -n "$1"
 }
 dim=$(ansi_esc '\033[2m')
 endc=$(ansi_esc '\033[0m')
 
-echo -ne "${dim}v$(git grep "__version__ = " "$1" -- git_machete/__init__.py | cut -d\' -f2)${endc}"
+echo -ne "${dim}v$(git grep "__version__ = " "$1" -- git_machete/__init__.py | cut -d\' -f2 || echo '???')${endc}"

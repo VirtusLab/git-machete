@@ -127,58 +127,64 @@ def warn(msg):
 
 
 def run_cmd(cmd, *args, **kwargs):
-    return subprocess.call([cmd] + list(args), **kwargs)
+    flat_cmd = cmd_shell_repr(cmd, *args)
+    if opt_debug:
+        sys.stderr.write(">>> " + underline(flat_cmd) + "\n")
+    elif opt_verbose:
+        sys.stderr.write(flat_cmd + "\n")
+
+    exit_code = subprocess.call([cmd] + list(args), **kwargs)
+
+    if opt_debug and exit_code != 0:
+        sys.stderr.write(dim("<exit code: %i>\n\n" % exit_code))
+    return exit_code
 
 
 def popen_cmd(cmd, *args, **kwargs):
-    process = subprocess.Popen([cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
-    stdout, stderr = process.communicate()
-    return process.returncode, stdout.decode('utf-8'), stderr.decode('utf-8')
+    flat_cmd = cmd_shell_repr(cmd, *args)
+    if opt_debug:
+        sys.stderr.write(">>> " + underline(flat_cmd) + "\n")
+    elif opt_verbose:
+        sys.stderr.write(flat_cmd + "\n")
 
+    process = subprocess.Popen([cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
+    stdout_bytes, stderr_bytes = process.communicate()
+    stdout, stderr = stdout_bytes.decode('utf-8'), stderr_bytes.decode('utf-8')
+    exit_code = process.returncode
+
+    if opt_debug:
+        if exit_code != 0:
+            sys.stderr.write(colored("<exit code: %i>\n\n" % exit_code, RED))
+        sys.stderr.write(dim(stdout) + "\n")
+        if stderr:
+            sys.stderr.write("\n%s\n%s\n" % (dim("<stderr>:"), colored(stderr, RED)))
+
+    return exit_code, stdout, stderr
 
 # Git core
 
 
-def cmd_shell_repr(git_cmd, args):
+def cmd_shell_repr(cmd, *args):
     def shell_escape(arg):
         return arg.replace("(", "\\(") \
             .replace(")", "\\)") \
             .replace(" ", "\\ ") \
             .replace("\t", "$'\\t'")
 
-    return " ".join(["git", git_cmd] + list(map(shell_escape, args)))
+    return " ".join([cmd] + list(map(shell_escape, args)))
 
 
 def run_git(git_cmd, *args, **kwargs):
-    flat_cmd = cmd_shell_repr(git_cmd, args)
-    if opt_debug:
-        sys.stderr.write(underline(flat_cmd) + "\n")
-    elif opt_verbose:
-        sys.stderr.write(flat_cmd + "\n")
     exit_code = run_cmd("git", git_cmd, *args)
     if not kwargs.get("allow_non_zero") and exit_code != 0:
-        raise MacheteException("'%s' returned %i" % (flat_cmd, exit_code))
-    if opt_debug:
-        sys.stderr.write(dim("<exit code: %i>\n\n" % exit_code))
+        raise MacheteException("'%s' returned %i" % (cmd_shell_repr("git", git_cmd, *args), exit_code))
     return exit_code
 
 
 def popen_git(git_cmd, *args, **kwargs):
-    flat_cmd = cmd_shell_repr(git_cmd, args)
-    if opt_debug:
-        sys.stderr.write(underline(flat_cmd) + "\n")
-    elif opt_verbose:
-        sys.stderr.write(flat_cmd + "\n")
     exit_code, stdout, stderr = popen_cmd("git", git_cmd, *args)
-    if opt_debug:
-        if exit_code != 0:
-            sys.stderr.write(colored("<exit code: %i>\n\n" % exit_code, RED))
-        sys.stderr.write(dim(stdout) + "\n")
-        if stderr:
-            sys.stderr.write(dim("\n<stderr>:\n"))
-            sys.stderr.write(colored(stderr, RED) + "\n")
     if not kwargs.get("allow_non_zero") and exit_code != 0:
-        raise MacheteException("'%s' returned %i" % (flat_cmd, exit_code))
+        raise MacheteException("'%s' returned %i" % (cmd_shell_repr("git", git_cmd, *args), exit_code))
     return stdout
 
 
@@ -631,6 +637,15 @@ def find_short_commit_sha_by_revision(revision):
     return popen_git("rev-parse", "--short", revision + "^{commit}").rstrip()
 
 
+short_commit_sha_by_revision_cached = {}
+
+
+def short_commit_sha_by_revision(revision):
+    if revision not in short_commit_sha_by_revision_cached:
+        short_commit_sha_by_revision_cached[revision] = find_short_commit_sha_by_revision(revision)
+    return short_commit_sha_by_revision_cached[revision]
+
+
 def find_commit_sha_by_revision(revision):
     # Without ^{commit}, 'git rev-parse --verify' will not only accept references to other kinds of objects (like trees and blobs),
     # but just echo the argument (and exit successfully) even if the argument doesn't match anything in the object store.
@@ -651,6 +666,10 @@ def commit_sha_by_revision(revision, prefix="refs/heads/"):
     if full_revision not in commit_sha_by_revision_cached:
         commit_sha_by_revision_cached[full_revision] = find_commit_sha_by_revision(full_revision)
     return commit_sha_by_revision_cached[full_revision]
+
+
+def is_full_sha(revision):
+    return re.match("^[0-9a-f]{40}$", revision)
 
 
 committer_unix_timestamp_by_revision_cached = None
@@ -793,11 +812,11 @@ def merge_base(sha1, sha2):
 # Note: the 'git rev-parse --verify' validation is not performed in case for either of earlier/later
 # if the corresponding prefix is empty AND the revision is a 40 hex digit hash.
 def is_ancestor(earlier_revision, later_revision, earlier_prefix="refs/heads/", later_prefix="refs/heads/"):
-    if earlier_prefix == "" and re.match("^[0-9a-f]{40}$", earlier_revision):
+    if earlier_prefix == "" and is_full_sha(earlier_revision):
         earlier_sha = earlier_revision
     else:
         earlier_sha = commit_sha_by_revision(earlier_revision, earlier_prefix)
-    if later_prefix == "" and re.match("^[0-9a-f]{40}$", later_revision):
+    if later_prefix == "" and is_full_sha(later_revision):
         later_sha = later_revision
     else:
         later_sha = commit_sha_by_revision(later_revision, later_prefix)
@@ -1400,7 +1419,8 @@ def get_fork_point_override_data(b):
     # This check needs to be performed every time the config is retrieved.
     # We can't rely on the values being validated in set_fork_point_override(), since the config could have been modified outside of git-machete.
     if not is_ancestor(to_sha, while_descendant_of_sha, earlier_prefix="", later_prefix=""):
-        warn("commit %s pointed by %s config is not an ancestor of commit %s pointed by %s config" % (to, to_key, while_descendant_of, while_descendant_of_key))
+        warn("commit %s pointed by %s config is not an ancestor of commit %s pointed by %s config" %
+             (short_commit_sha_by_revision(to), to_key, short_commit_sha_by_revision(while_descendant_of), while_descendant_of_key))
         return None
     return to_sha, while_descendant_of_sha
 
@@ -1416,11 +1436,20 @@ def get_overridden_fork_point(b):
     # the former checks if the override still applies to wherever the given branch currently points.
     if not is_ancestor(while_descendant_of, b, earlier_prefix=""):
         warn("since branch %s is no longer a descendant of commit %s, the fork point override to commit %s no longer applies.\n"
-             "Consider running 'git machete fork-point --unset-override %s'." % (b, while_descendant_of, to, b))
+             "Consider running 'git machete fork-point --unset-override %s'." % (b, short_commit_sha_by_revision(while_descendant_of), to, b))
         return None
     debug("get_overridden_fork_point(%s)" % b,
-          "since branch %s is descendant of while_descendant_of=%s, fork point of %s is overridden to %s" % (b, while_descendant_of, b, to))
+          "since branch %s is descendant of while_descendant_of=%s, fork point of %s is overridden to %s" %
+          (b, short_commit_sha_by_revision(while_descendant_of), b, to))
     return to
+
+
+def get_revision_repr(revision):
+    short_sha = short_commit_sha_by_revision(revision)
+    if is_full_sha(revision) or revision == short_sha:
+        return "commit %s" % revision
+    else:
+        return "%s (commit %s)" % (revision, short_commit_sha_by_revision(revision))
 
 
 def set_fork_point_override(b, to_revision):
@@ -1430,7 +1459,7 @@ def set_fork_point_override(b, to_revision):
     if not to_sha:
         raise MacheteException("Cannot find revision %s" % to_revision)
     if not is_ancestor(to_sha, b, earlier_prefix=""):
-        raise MacheteException("Cannot override fork point: %s (commit %s) is not an ancestor of %s" % (to_revision, find_short_commit_sha_by_revision(to_sha), b))
+        raise MacheteException("Cannot override fork point: %s is not an ancestor of %s" % (get_revision_repr(to_revision), b))
 
     to_key = config_key_for_override_fork_point_to(b)
     set_config(to_key, to_sha)
@@ -1439,8 +1468,9 @@ def set_fork_point_override(b, to_revision):
     b_sha = commit_sha_by_revision(b, prefix="refs/heads/")
     set_config(while_descendant_of_key, b_sha)
 
-    sys.stdout.write("Fork point for %s is overridden to %s (commit %s).\nThis is going to apply as long as %s points to (or is descendant of) its current head (commit %s).\n\n"
-                     % (bold(b), bold(to_revision), find_short_commit_sha_by_revision(to_sha), b, find_short_commit_sha_by_revision(b_sha)))
+    sys.stdout.write("Fork point for %s is overridden to %s.\n"
+                     "This is going to apply as long as %s points to (or is descendant of) its current head (commit %s).\n\n"
+                     % (bold(b), bold(get_revision_repr(to_revision)), b, short_commit_sha_by_revision(b_sha)))
     sys.stdout.write("This information is stored under git config keys:\n  * %s\n  * %s\n\n" % (to_key, while_descendant_of_key))
     sys.stdout.write("To unset this override, use:\n  git machete fork-point --unset-override %s\n" % b)
 
