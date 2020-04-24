@@ -2,7 +2,12 @@
 
 ## New in git-machete 2.14.0
 
-- fixed: format of logs and other messages
+- added: `--as-root` option to `add`
+- added: `--branch` option to `anno`
+- added: `is-managed` plumbing command
+- added: `current` subcommand to `show`
+- fixed: format of logs, warnings and other messages
+- fixed: help for a few existing commands
 
 ## New in git-machete 2.13.6
 

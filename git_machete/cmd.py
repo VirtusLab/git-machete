@@ -406,8 +406,8 @@ def add(b):
         else:
             return
 
-    if not roots:
-        roots = [b]
+    if opt_as_root or not roots:
+        roots += [b]
         print("Added branch '%s' as a new root" % b)
     else:
         if not onto:
@@ -415,9 +415,6 @@ def add(b):
             if not u:
                 raise MacheteException("Could not automatically infer upstream (parent) branch for '%s'.\n"
                                        "Specify the desired upstream branch with '--onto' or edit the definition file manually with 'git machete edit'" % b)
-            elif u not in managed_branches:
-                raise MacheteException("Inferred upstream (parent) branch for '%s' is '%s', but '%s' does not exist in the tree of branch dependencies.\n"
-                                       "Specify other upstream branch with '--onto' or edit the definition file manually with 'git machete edit'" % (b, u, u))
             else:
                 msg = "Add '%s' onto the inferred upstream (parent) branch '%s'? [y/N] " % (b, u)
                 opt_yes_msg = "Adding '%s' onto the inferred upstream (parent) branch '%s'" % (b, u)
@@ -740,7 +737,7 @@ def is_revert_in_progress():
 
 # Note: while rebase is ongoing, the repository is always in a detached HEAD state,
 # so we need to extract the name of the currently rebased branch from the rebase-specific internals
-# rather than rely on 'git symbolic-ref HEAD` (i.e. .git/HEAD).
+# rather than rely on 'git symbolic-ref HEAD' (i.e. the contents of .git/HEAD).
 def currently_rebased_branch_or_none():
     # https://stackoverflow.com/questions/3921409
 
@@ -805,6 +802,13 @@ def merge_base(sha1, sha2):
     if sha1 > sha2:
         sha1, sha2 = sha2, sha1
     if not (sha1, sha2) in merge_base_cached:
+        # Note that we don't pass '--all' flag to 'merge-base', so we'll get only one merge-base
+        # even if there is more than one (in the rare case of criss-cross histories).
+        # This is still okay from the perspective of is-ancestor checks that are our sole use of merge-base:
+        # * if any of sha1, sha2 is an ancestor of another,
+        #   then there is exactly one merge-base - the ancestor,
+        # * if neither of sha1, sha2 is an ancestor of another,
+        #   then none of the (possibly more than one) merge-bases is equal to either of sha1/sha2 anyway.
         merge_base_cached[sha1, sha2] = popen_git("merge-base", sha1, sha2).rstrip()
     return merge_base_cached[sha1, sha2]
 
@@ -977,7 +981,7 @@ def rebase(onto, fork_commit, branch):
                     with open(author_script) as f_read:
                         return map(fix_if_needed, f_read.readlines())
 
-                fixed_lines = get_all_lines_fixed()  # must happen before the `with` clause where we open for writing
+                fixed_lines = get_all_lines_fixed()  # must happen before the 'with' clause where we open for writing
                 with open(author_script, "w") as f_write:
                     f_write.write("".join(fixed_lines))
 
@@ -2087,6 +2091,7 @@ def usage(c=None):
         "go": "Check out the branch relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument",
         "help": "Display this overview, or detailed help for a specified command",
         "hooks": "Display docs for the extra hooks added by git machete",
+        "is-managed": "Check if the current branch is managed by git-machete (mostly for scripts)",
         "list": "List all branches that fall into one of pre-defined categories (mostly for internal use)",
         "log": "Log the part of history specific to the given branch",
         "reapply": "Rebase the current branch onto its computed fork point",
@@ -2099,35 +2104,42 @@ def usage(c=None):
     }
     long_docs = {
         "add": """
-            Usage: git machete add [-o|--onto=<target-upstream-branch>] [-y|--yes] [<branch>]
+            Usage: git machete add [-o|--onto=<target-upstream-branch>] [-R|--as-root] [-y|--yes] [<branch>]
 
             Adds the given branch (or the current branch, if none specified) to the definition file.
-            If the definition file is empty, the branch will be added as the first root of the tree of branch dependencies.
+            If the definition file is empty or '-R/--as-root' is provided, the branch will be added as a root of the tree of branch dependencies.
             Otherwise, the desired upstream (parent) branch can be specified with '--onto'.
             This option is not mandatory, however; if skipped, git machete will try to automatically infer the target upstream.
             If the upstream branch can be inferred, the user will be presented with inferred branch and asked to confirm.
-            Also, if the given branch does not exist, user will be asked whether it should be created.
+            Also, if the branch is provided but does not exist, user will be asked whether it should be created.
 
             Note: the same effect (except branch creation) can be always achieved by manually editing the definition file.
 
             Options:
               -o, --onto=<target-upstream-branch>    Specifies the target parent branch to add the given branch onto.
+                                                     Cannot be specified together with '-R/--as-root'.
+
+              -R, --as-root                          Add the given branch as a new root (and not onto any other branch).
+                                                     Cannot be specified together with '-o/--onto'.
 
               -y, --yes                              Don't ask for confirmation whether to create the branch or whether to add onto the inferred upstream.
         """,
         "anno": """
-            Usage: git machete anno [<annotation text>]
+            Usage: git machete anno [-b|--branch=<branch>] [<annotation text>]
 
-            If invoked without any argument, prints out the custom annotation for the current branch.
+            If invoked without any argument, prints out the custom annotation for the given branch (or current branch, if none specified with '-b/--branch').
 
             If invoked with a single empty string argument, like:
             $ git machete anno ''
-            clears the annotation set the current branch.
+            then clears the annotation for the current branch (or a branch specified with '-b/--branch').
 
-            In any other case, sets the annotation for the current branch to the given argument.
-            If multiple arguments are passed to the command, they are concatenated with single spaces.
+            In any other case, sets the annotation for the given/current branch to the given argument.
+            If multiple arguments are passed to the command, they are concatenated with a single space.
 
             Note: the same effect can be always achieved by manually editing the definition file.
+
+            Options:
+              -b, --branch=<branch>      Branch to set the annotation for.
         """,
         "delete-unmanaged": """
             Usage: git machete delete-unmanaged [-y|--yes]
@@ -2177,8 +2189,8 @@ def usage(c=None):
         "file": """
             Usage: git machete file
 
-            Outputs the path of the machete definition file. Currently fixed to '<git-directory>/machete'.
-            Note: this won't always be just '.git/machete' since e.g. submodules have their git directory in different location by default.
+            Outputs the absolute path of the machete definition file. Currently fixed to '<git-directory>/machete'.
+            Note: this won't always be just '<repo-root>/.git/machete' since e.g. submodules and worktrees have their git directories in different location.
         """,
         "fork-point": """
             Usage:
@@ -2259,14 +2271,6 @@ def usage(c=None):
             Roughly equivalent to 'git checkout $(git machete show <direction>)'.
             See 'git machete help show' on more details on meaning of each direction.
         """,
-        "infer": """
-            Usage: git machete infer [-l|--list-commits]
-
-            A deprecated alias for 'discover'. Retained for compatibility, to be removed in the next major release.
-
-            Options:
-              -l, --list-commits            When printing the discovered tree, additionally lists the messages of commits introduced on each branch (as for 'git machete status').
-        """,
         "help": """
             Usage: git machete help [<command>]
 
@@ -2299,6 +2303,25 @@ def usage(c=None):
 
             Please see hook_samples/ directory for examples (also includes an example of using the standard git post-commit hook to 'git machete add' branches automatically).
         """,
+        "infer": """
+            Usage: git machete infer [-l|--list-commits]
+
+            A deprecated alias for 'discover', without the support of newer options.
+            Retained for compatibility, to be removed in the next major release.
+
+            Options:
+              -l, --list-commits            When printing the discovered tree, additionally lists the messages of commits introduced on each branch (as for 'git machete status').
+        """,
+        "is-managed": """
+            Usage: git machete is-managed [<branch>]
+
+            Returns with zero exit code if the given branch (or current branch, if none specified) is managed by git-machete (i.e. listed in .git/machete).
+
+            Returns with a non-zero exit code in case:
+            * the <branch> is provided but isn't managed, or
+            * the <branch> isn't provided and the current branch isn't managed, or
+            * the <branch> isn't provided and there's no current branch (detached HEAD).
+        """,
         "list": """
             Usage: git machete list <category>
             where <category> is one of: managed, slidable, slidable-after <branch>, unmanaged, with-overridden-fork-point
@@ -2323,7 +2346,8 @@ def usage(c=None):
         "prune-branches": """
             Usage: git machete prune-branches
 
-            A deprecated alias for 'delete-unmanaged'. Retained for compatibility, to be removed in the next major release.
+            A deprecated alias for 'delete-unmanaged', without the support of '--yes' option.
+            Retained for compatibility, to be removed in the next major release.
         """,
         "reapply": """
             Usage: git machete reapply [-f|--fork-point=<fork-point-commit>]
@@ -2339,18 +2363,19 @@ def usage(c=None):
               -f, --fork-point=<fork-point-commit>    Specifies the alternative fork point commit after which the rebased part of history is meant to start.
         """,
         "show": """
-            Usage: git machete show [<direction>]
-            where <direction> is one of: d[own], f[irst], l[ast], n[ext], p[rev], r[oot], u[p]
+            Usage: git machete show <direction>
+            where <direction> is one of: c[urrent], d[own], f[irst], l[ast], n[ext], p[rev], r[oot], u[p]
 
             Outputs name of the branch (or possibly multiple branches, in case of 'down') that is:
 
-            * 'down':  the direct children/downstream branch of the current branch.
-            * 'first': the first downstream of the root branch of the current branch (like 'root' followed by 'next'), or the root branch itself if the root has no downstream branches.
-            * 'last':  the last branch in the definition file that has the same root as the current branch; can be the root branch itself if the root has no downstream branches.
-            * 'next':  the direct successor of the current branch in the definition file.
-            * 'prev':  the direct predecessor of the current branch in the definition file.
-            * 'root':  the root of the tree where the current branch is located. Note: this will typically be something like 'develop' or 'master', since all branches are usually meant to be ultimately merged to one of those.
-            * 'up':    the direct parent/upstream branch of the current branch.
+            * 'current': the current branch; exits with a non-zero status if none (detached HEAD)
+            * 'down':    the direct children/downstream branch of the current branch.
+            * 'first':   the first downstream of the root branch of the current branch (like 'root' followed by 'next'), or the root branch itself if the root has no downstream branches.
+            * 'last':    the last branch in the definition file that has the same root as the current branch; can be the root branch itself if the root has no downstream branches.
+            * 'next':    the direct successor of the current branch in the definition file.
+            * 'prev':    the direct predecessor of the current branch in the definition file.
+            * 'root':    the root of the tree where the current branch is located. Note: this will typically be something like 'develop' or 'master', since all branches are usually meant to be ultimately merged to one of those.
+            * 'up':      the direct parent/upstream branch of the current branch.
         """,
         "slide-out": """
             Usage: git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] <branch> [<branch> [<branch> ...]]
@@ -2530,10 +2555,13 @@ def usage(c=None):
         "status": "s"
     }
     inv_aliases = {v: k for k, v in aliases.items()}
+
     groups = [
+        # 'infer' and 'prune-branches' are deprecated and therefore skipped
+        # 'is-managed' is mostly for scripting use and therefore skipped
         ("General topics", ["file", "format", "help", "hooks", "version"]),
-        ("Build, display and modify the tree of branch dependencies", ["add", "anno", "discover", "edit", "status"]),  # 'infer' is deprecated and therefore skipped
-        ("List, check out and delete branches", ["delete-unmanaged", "go", "list", "show"]),  # 'prune-branches' is deprecated and therefore skipped
+        ("Build, display and modify the tree of branch dependencies", ["add", "anno", "discover", "edit", "status"]),
+        ("List, check out and delete branches", ["delete-unmanaged", "go", "list", "show"]),
         ("Determine changes specific to the given branch", ["diff", "fork-point", "log"]),
         ("Update git history in accordance with the tree of branch dependencies", ["reapply", "slide-out", "traverse", "update"])
     ]
@@ -2579,25 +2607,27 @@ def main():
 def launch(orig_args):
     def parse_options(in_args, short_opts="", long_opts=[], gnu=True):
         global ascii_only
-        global opt_checked_out_since, opt_color, opt_debug, opt_down_fork_point, opt_fetch, opt_fork_point, opt_inferred, opt_list_commits, opt_list_commits_with_hashes, opt_merge, opt_n, opt_no_edit_merge
+        global opt_as_root, opt_branch, opt_checked_out_since, opt_color, opt_debug, opt_down_fork_point, opt_fetch, opt_fork_point, opt_inferred, opt_list_commits, opt_list_commits_with_hashes, opt_merge, opt_n, opt_no_edit_merge
         global opt_no_interactive_rebase, opt_onto, opt_override_to, opt_override_to_inferred, opt_override_to_parent, opt_return_to, opt_roots, opt_start_from, opt_stat, opt_unset_override, opt_verbose, opt_yes
 
         fun = getopt.gnu_getopt if gnu else getopt.getopt
         opts, rest = fun(in_args, short_opts + "hv", long_opts + ['debug', 'help', 'verbose', 'version'])
 
         for opt, arg in opts:
-            if opt == "--color":
-                opt_color = arg
+            if opt in ("-b", "--branch"):
+                opt_branch = arg
             elif opt in ("-C", "--checked-out-since"):
                 opt_checked_out_since = arg
+            elif opt == "--color":
+                opt_color = arg
             elif opt in ("-d", "--down-fork-point"):
                 opt_down_fork_point = arg
             elif opt == "--debug":
                 opt_debug = True
-            elif opt in ("-f", "--fork-point"):
-                opt_fork_point = arg
             elif opt in ("-F", "--fetch"):
                 opt_fetch = True
+            elif opt in ("-f", "--fork-point"):
+                opt_fork_point = arg
             elif opt in ("-h", "--help"):
                 usage(cmd)
                 sys.exit()
@@ -2623,14 +2653,16 @@ def launch(orig_args):
                 opt_override_to_inferred = True
             elif opt == "--override-to-parent":
                 opt_override_to_parent = True
+            elif opt in ("-R", "--as-root"):
+                opt_as_root = True
             elif opt in ("-r", "--roots"):
                 opt_roots = arg.split(",")
             elif opt == "--return-to":
                 opt_return_to = arg
-            elif opt == "--start-from":
-                opt_start_from = arg
             elif opt in ("-s", "--stat"):
                 opt_stat = True
+            elif opt == "--start-from":
+                opt_start_from = arg
             elif opt == "--unset-override":
                 opt_unset_override = True
             elif opt in ("-v", "--verbose"):
@@ -2638,12 +2670,12 @@ def launch(orig_args):
             elif opt == "--version":
                 version()
                 sys.exit()
-            elif opt in ("-w", "--whole"):
+            elif opt == "-W":
+                opt_fetch = True
                 opt_start_from = "first-root"
                 opt_n = True
                 opt_return_to = "nearest-remaining"
-            elif opt == "-W":
-                opt_fetch = True
+            elif opt in ("-w", "--whole"):
                 opt_start_from = "first-root"
                 opt_n = True
                 opt_return_to = "nearest-remaining"
@@ -2655,14 +2687,17 @@ def launch(orig_args):
         else:
             ascii_only = opt_color == "never" or (opt_color == "auto" and not sys.stdout.isatty())
 
+        if opt_as_root and opt_onto:
+            raise MacheteException("Option '-R/--as-root' cannot be specified together with '-o/--onto'.")
+
         if opt_no_edit_merge and not opt_merge:
-            raise MacheteException("Option --no-edit-merge passed only makes sense when using merge and must be used together with -M/--merge")
-        if opt_down_fork_point and opt_merge:
-            raise MacheteException("Option -d/--down-fork-point passed only makes sense when using rebase and cannot be used together with -M/--merge.")
-        if opt_fork_point and opt_merge:
-            raise MacheteException("Option -f/--fork-point passed only makes sense when using rebase and cannot be used together with -M/--merge.")
+            raise MacheteException("Option '--no-edit-merge' only makes sense when using merge and must be specified together with '-M/--merge'.")
         if opt_no_interactive_rebase and opt_merge:
-            raise MacheteException("Option --no-interactive-rebase only makes sense when using rebase and cannot be used together with -M/--merge.")
+            raise MacheteException("Option '--no-interactive-rebase' only makes sense when using rebase and cannot be specified together with '-M/--merge'.")
+        if opt_down_fork_point and opt_merge:
+            raise MacheteException("Option '-d/--down-fork-point' only makes sense when using rebase and cannot be specified together with '-M/--merge'.")
+        if opt_fork_point and opt_merge:
+            raise MacheteException("Option '-f/--fork-point' only makes sense when using rebase and cannot be specified together with '-M/--merge'.")
 
         if opt_n and opt_merge:
             opt_no_edit_merge = True
@@ -2698,10 +2733,12 @@ def launch(orig_args):
             return in_args[0]
 
     global definition_file, up_branch
-    global opt_checked_out_since, opt_color, opt_debug, opt_down_fork_point, opt_fetch, opt_fork_point, opt_inferred, opt_list_commits, opt_list_commits_with_hashes, opt_merge, opt_n, opt_no_edit_merge
+    global opt_as_root, opt_branch, opt_checked_out_since, opt_color, opt_debug, opt_down_fork_point, opt_fetch, opt_fork_point, opt_inferred, opt_list_commits, opt_list_commits_with_hashes, opt_merge, opt_n, opt_no_edit_merge
     global opt_no_interactive_rebase, opt_onto, opt_override_to, opt_override_to_inferred, opt_override_to_parent, opt_return_to, opt_roots, opt_start_from, opt_stat, opt_unset_override, opt_verbose, opt_yes
     try:
         cmd = None
+        opt_as_root = False
+        opt_branch = None
         opt_checked_out_since = None
         opt_color = "auto"
         opt_debug = False
@@ -2739,10 +2776,14 @@ def launch(orig_args):
             if cmd not in ("discover", "infer") and not os.path.isfile(definition_file):
                 open(definition_file, 'w').close()
 
-        directions = "d[own]|f[irst]|l[ast]|n[ext]|p[rev]|r[oot]|u[p]"
+        def allowed_directions(allow_current):
+            current = "c[urrent]|" if allow_current else ""
+            return current + "d[own]|f[irst]|l[ast]|n[ext]|p[rev]|r[oot]|u[p]"
 
-        def parse_direction(b, down_pick_mode):
-            if param in ("d", "down"):
+        def parse_direction(b, allow_current, down_pick_mode):
+            if param in ("c", "current") and allow_current:
+                return current_branch()  # throws in case of detached HEAD, as in the spec
+            elif param in ("d", "down"):
                 return down(b, pick_mode=down_pick_mode)
             elif param in ("f", "first"):
                 return first_branch(b)
@@ -2757,16 +2798,16 @@ def launch(orig_args):
             elif param in ("u", "up"):
                 return up(b, prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)
             else:
-                raise MacheteException("Usage: git machete %s %s" % (cmd, directions))
+                raise MacheteException("Usage: git machete %s %s" % (cmd, allowed_directions(allow_current)))
 
         if cmd == "add":
-            param = check_optional_param(parse_options(args, "o:y", ["onto=", "yes"]))
+            param = check_optional_param(parse_options(args, "o:Ry", ["onto=", "as-root", "yes"]))
             read_definition_file()
             add(param or current_branch())
         elif cmd == "anno":
-            params = parse_options(args)
+            params = parse_options(args, "b:", ["branch="])
             read_definition_file()
-            b = current_branch()
+            b = opt_branch or current_branch()
             expect_in_managed_branches(b)
             if params:
                 annotate(b, params)
@@ -2820,11 +2861,11 @@ def launch(orig_args):
             # No need to read definition file.
             usage("format")
         elif cmd in ("g", "go"):
-            param = check_required_param(parse_options(args), directions)
+            param = check_required_param(parse_options(args), allowed_directions(allow_current=False))
             read_definition_file()
             expect_no_operation_in_progress()
             cb = current_branch()
-            dest = parse_direction(cb, down_pick_mode=True)
+            dest = parse_direction(cb, allow_current=False, down_pick_mode=True)
             if dest != cb:
                 go(dest)
         elif cmd == "help":
@@ -2835,6 +2876,12 @@ def launch(orig_args):
             expect_no_param(parse_options(args, "l", ["list-commits"]))
             # No need to read definition file.
             discover_tree()
+        elif cmd == "is-managed":
+            param = check_optional_param(parse_options(args))
+            read_definition_file()
+            b = param or current_branch_or_none()
+            if b is None or b not in managed_branches:
+                sys.exit(1)
         elif cmd == "list":
             list_allowed_values = "managed|slidable|slidable-after <branch>|unmanaged|with-overridden-fork-point"
             list_args = parse_options(args)
@@ -2887,9 +2934,9 @@ def launch(orig_args):
             cb = current_branch()
             rebase_onto_ancestor_commit(cb, opt_fork_point or fork_point(cb, use_overrides=True))
         elif cmd == "show":
-            param = check_required_param(parse_options(args), directions)
+            param = check_required_param(parse_options(args), allowed_directions(allow_current=True))
             read_definition_file()
-            print(parse_direction(current_branch(), down_pick_mode=False))
+            print(parse_direction(current_branch(), allow_current=True, down_pick_mode=False))
         elif cmd == "slide-out":
             params = parse_options(args, "d:Mn", ["down-fork-point=", "merge", "no-edit-merge", "no-interactive-rebase"])
             read_definition_file()

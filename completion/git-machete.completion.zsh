@@ -19,10 +19,14 @@ _git-machete() {
                     _arguments \
                         '1:: :_git_machete_list_unmanaged' \
                         '(-o --onto)'{-o,--onto=}'[Specify the target parent branch to add the given branch onto]: :_git_machete_list_managed' \
+                        '(-R --as-root)'{-R,--as-root}'[Add the given branch as a new root]' \
                         '(-y --yes)'{-y,--yes}'[Do not ask for confirmation whether to create the branch or whether to add onto the inferred upstream]' \
                     && ret=0
                     ;;
-                (anno|e|edit|file)
+                (anno)
+                    _arguments \
+                        '(-b --branch)'{-b,--branch=}'[Branch to set the annotation for]: :_git_machete_list_managed' \
+                    && ret=0
                     ;;
                 (d|diff)
                     _arguments \
@@ -44,6 +48,8 @@ _git-machete() {
                         '(-y --yes)'{-y,--yes}'[Do not ask for confirmation]' \
                     && ret=0
                     ;;
+                (e|edit|file)
+                    ;;
                 (fork-point)
                     # TODO correctly suggest branches for `--unset-override`
                     _arguments '1:: :__git_branch_names' \
@@ -54,13 +60,13 @@ _git-machete() {
                         '(--unset-override)'--unset-override'[Unset fork point override by removing machete.overrideForkPoint.<branch>.* configs]' \
                     && ret=0
                     ;;
-                (g|go|show)
-                    _arguments '1:: :_git_machete_directions' && ret=0
+                (g|go)
+                    _arguments '1:: :_git_machete_directions_go' && ret=0
                     ;;
                 (help)
                     _arguments '1:: :_git_machete_help_topics' && ret=0
                     ;;
-                (l|log)
+                (is-managed|l|log)
                     _arguments '1:: :__git_branch_names' && ret=0
                     ;;
                 (list)
@@ -70,6 +76,9 @@ _git-machete() {
                     _arguments \
                         '(-f --fork-point)'{-f,--fork-point=}'[Fork point commit after which the rebased part of history is meant to start]: :__git_references' \
                     && ret=0
+                    ;;
+                (show)
+                    _arguments '1:: :_git_machete_directions_show' && ret=0
                     ;;
                 (slide-out)
                     _arguments \
@@ -128,6 +137,7 @@ _git_machete_cmds=(
     'fork-point:Display SHA of the fork point commit of a branch'
     {go,g}':Check out the branch relative to the position of the current branch'
     'help:Display this overview, or detailed help for a specified command'
+    'is-managed:Check if the current branch is managed by git-machete (mostly for scripts)'
     'list:List all branches that fall into one of pre-defined categories (mostly for internal use)'
     {log,l}':Log the part of history specific to the given branch'
     'reapply:Rebase the current branch onto its own fork point'
@@ -153,14 +163,30 @@ _git_machete_help_topics() {
     _describe -t topics 'git machete help topic' topics "$@"
 }
 
-_git_machete_directions() {
+_git_machete_directions_go() {
     local directions
     directions=(
         {d,down}':child(ren) in tree of branch dependencies'
         {f,first}':first child of the current root branch'
         {l,last}':last branch located under current root branch'
-        {n,next}':the one defined in following line in .git/machete file'
-        {p,prev}':the one defined in preceding line in .git/machete file'
+        {n,next}':the one defined in the following line in .git/machete file'
+        {p,prev}':the one defined in the preceding line in .git/machete file'
+        {r,root}':root of the tree of branch dependencies where current branch belongs'
+        {u,up}':parent in tree of branch dependencies'
+    )
+    _describe -t directions 'direction' directions "$@"
+}
+
+# TODO extract the part shared with _git_machete_go_directions
+_git_machete_directions_show() {
+    local directions
+    directions=(
+        {c,current}':the currently checked out branch'
+        {d,down}':child(ren) in tree of branch dependencies'
+        {f,first}':first child of the current root branch'
+        {l,last}':last branch located under current root branch'
+        {n,next}':the one defined in the following line in .git/machete file'
+        {p,prev}':the one defined in the preceding line in .git/machete file'
         {r,root}':root of the tree of branch dependencies where current branch belongs'
         {u,up}':parent in tree of branch dependencies'
     )

@@ -21,6 +21,9 @@
 * Automatic discovery of branch relations (`git machete discover`)
 
 
+A port to an IntelliJ plugin is under development, see [VirtusLab/git-machete-intellij-plugin](http://github.com/VirtusLab/git-machete-intellij-plugin/).
+
+
 ## Install
 
 We suggest a couple of alternative ways of installation.

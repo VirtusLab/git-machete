@@ -12,6 +12,12 @@ To run tests, execute `tox`.
 
 ## Command properties/classification
 
+Deprecated commands are excluded.
+
+Any command that can display status can also run `machete-status-branch` hook.
+
+Any command that can run rebase can also run `machete-pre-rebase` hook.
+
 | Property                                                          | Commands                                                                      |
 | ----------------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | can accept interactive input on stdin                             | `add`, `delete-unmanaged`, `discover`, `go`, `traverse`, `update`             |
@@ -19,18 +25,13 @@ To run tests, execute `tox`.
 | can modify the .git/machete file                                  | `add`, `anno`, `discover`, `edit`, `slide-out`, `traverse`                    |
 | can modify the git repository (excluding .git/machete)            | `add`, `delete-unmanaged`, `go`, `reapply`, `slide-out`, `traverse`, `update` |
 | can run merge                                                     | `slide-out`, `traverse`, `update`                                             |
-| can run rebase                                                    | `reapply`, `slide-out`, `traverse`, `update`                                  |
-| has stable output format across minor versions (plumbing command) | `file`, `fork-point`, `list`, `show`, `version`                               |
+| can run rebase                                                    | `reapply` (\*), `slide-out`, `traverse`, `update`                             |
+| expects no ongoing rebase/merge/cherry-pick/revert/am             | `go`, `reapply`, `slide-out`, `traverse`, `update`                            |
+| has stable output format across minor versions (plumbing command) | `file`, `fork-point` (\*\*), `is-managed`, `list`, `show`, `version`          |
 
-Deprecated commands are excluded.
+(\*) `reapply` can run rebase but can't run merge since merging a branch with its own fork point is a no-op and generally doesn't make much sense.
 
-Any command that can display status can also run `machete-status-branch` hook.
-
-Any command that can run rebase can also run `machete-pre-rebase` hook.
-
-`reapply` can run rebase but can't run merge since merging a branch with its own fork point can always be performed in fast-forward manner and generally doesn't make much sense.
-
-Stable output is only guaranteed for `fork-point` when invoked without options or with `--inferred` option.
+(\*\*) Stable output is only guaranteed for `fork-point` when invoked without options or with `--inferred` option.
 
 
 ## Versioning
