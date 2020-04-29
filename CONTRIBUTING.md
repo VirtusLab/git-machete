@@ -14,7 +14,7 @@ To run tests, execute `tox`.
 
 Deprecated commands are excluded.
 
-Any command that can display status can also run `machete-status-branch` hook.
+Any command that can display the status can also run `machete-status-branch` hook.
 
 Any command that can run rebase can also run `machete-pre-rebase` hook.
 
@@ -31,7 +31,7 @@ Any command that can run rebase can also run `machete-pre-rebase` hook.
 
 (\*) `reapply` can run rebase but can't run merge since merging a branch with its own fork point is a no-op and generally doesn't make much sense.
 
-(\*\*) Stable output is only guaranteed for `fork-point` when invoked without options or with `--inferred` option.
+(\*\*) A stable output is only guaranteed for `fork-point` when invoked without options or with `--inferred` option.
 
 
 ## Versioning
