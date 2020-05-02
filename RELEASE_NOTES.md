@@ -6,7 +6,7 @@
 - added: `--branch` option to `anno`
 - added: `is-managed` plumbing command
 - added: `current` subcommand to `show`
-- fixed: format of prompts, logs, warnings and other messages
+- improved: formatting of help, prompts, logs, warnings and other messages
 - fixed: help for a few existing commands
 
 ## New in git-machete 2.13.6
