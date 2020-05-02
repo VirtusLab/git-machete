@@ -37,19 +37,24 @@ ascii_only = False
 
 
 def bold(s):
-    return BOLD + s + ENDC if not ascii_only else s
+    return BOLD + s + ENDC if s and not ascii_only else s
 
 
 def dim(s):
-    return DIM + s + ENDC if not ascii_only else s
+    return DIM + s + ENDC if s and not ascii_only else s
 
 
-def underline(s):
-    return UNDERLINE + s + ENDC if not ascii_only else s + " *"
+def underline(s, star_if_ascii_only=False):
+    if s and not ascii_only:
+        return UNDERLINE + s + ENDC
+    elif s and star_if_ascii_only:
+        return s + " *"
+    else:
+        return s
 
 
 def colored(s, color):
-    return color + s + ENDC if not ascii_only else s
+    return color + s + ENDC if s and not ascii_only else s
 
 
 def vertical_bar():
@@ -98,6 +103,22 @@ def ask_if(msg, opt_yes_msg):
     return safe_input(msg).lower()
 
 
+def pretty_choices(*choices):
+    def format_choice(c):
+        if not c:
+            base = ''
+        elif c.lower() == 'y':
+            base = colored(c, GREEN)
+        elif c.lower() == 'yq':
+            base = colored(c[0], GREEN) + colored(c[1], RED)
+        elif c.lower() in ('n', 'q'):
+            base = colored(c, RED)
+        else:
+            base = colored(c, ORANGE)
+        return underline(base) if c.isupper() else base
+    return " (" + ", ".join(filter(None, map(format_choice, choices))) + ") "
+
+
 def pick(choices, name):
     xs = "".join("[%i] %s\n" % (idx + 1, x) for idx, x in enumerate(choices))
     msg = xs + "Specify " + name + " or hit <return> to skip: "
@@ -129,7 +150,7 @@ def warn(msg):
 def run_cmd(cmd, *args, **kwargs):
     flat_cmd = cmd_shell_repr(cmd, *args)
     if opt_debug:
-        sys.stderr.write(">>> " + underline(flat_cmd) + "\n")
+        sys.stderr.write(bold(">>> " + flat_cmd) + "\n")
     elif opt_verbose:
         sys.stderr.write(flat_cmd + "\n")
 
@@ -143,7 +164,7 @@ def run_cmd(cmd, *args, **kwargs):
 def popen_cmd(cmd, *args, **kwargs):
     flat_cmd = cmd_shell_repr(cmd, *args)
     if opt_debug:
-        sys.stderr.write(">>> " + underline(flat_cmd) + "\n")
+        sys.stderr.write(bold(">>> " + flat_cmd) + "\n")
     elif opt_verbose:
         sys.stderr.write(flat_cmd + "\n")
 
@@ -395,7 +416,7 @@ def add(b):
 
     if b not in local_branches():
         out_of = ("'" + onto + "'") if onto else "the current HEAD"
-        msg = "A local branch '%s' does not exist. Create (out of %s)? [y/N] " % (b, out_of)
+        msg = "A local branch '%s' does not exist. Create (out of %s)?" % (b, out_of) + pretty_choices('y', 'N')
         opt_yes_msg = "A local branch '%s' does not exist. Creating out of %s" % (b, out_of)
         if ask_if(msg, opt_yes_msg) in ('y', 'yes'):
             if roots and not onto:
@@ -416,7 +437,7 @@ def add(b):
                 raise MacheteException("Could not automatically infer upstream (parent) branch for '%s'.\n"
                                        "Specify the desired upstream branch with '--onto' or edit the definition file manually with 'git machete edit'" % b)
             else:
-                msg = "Add '%s' onto the inferred upstream (parent) branch '%s'? [y/N] " % (b, u)
+                msg = "Add '%s' onto the inferred upstream (parent) branch '%s'?" % (b, u) + pretty_choices('y', 'N')
                 opt_yes_msg = "Adding '%s' onto the inferred upstream (parent) branch '%s'" % (b, u)
                 if ask_if(msg, opt_yes_msg) in ('y', 'yes'):
                     onto = u
@@ -969,7 +990,7 @@ def rebase(onto, fork_commit, branch):
             # but it still doesn't harm to patch the author script.
 
             # No need to fix <git-dir>/rebase-apply/author-script,
-            # only <git-dir>/rebase-merge/author-script (i.e. interactive rebases, for the most part) are affected.
+            # only <git-dir>/rebase-merge/author-script (i.e. interactive rebases, for the most part) is affected.
             author_script = get_abs_git_subpath("rebase-merge", "author-script")
             if os.path.isfile(author_script):
                 faulty_line_regex = re.compile("[A-Z0-9_]+='[^']*")
@@ -1006,12 +1027,12 @@ def update():
     cb = current_branch()
     if opt_merge:
         with_branch = up(cb,
-                         prompt_if_inferred_msg="Branch '%s' not found in the tree of branch dependencies. Merge with the inferred upstream '%s'? [y/N] ",
+                         prompt_if_inferred_msg="Branch '%s' not found in the tree of branch dependencies. Merge with the inferred upstream '%s'?" + pretty_choices('y', 'N'),
                          prompt_if_inferred_yes_opt_msg="Branch '%s' not found in the tree of branch dependencies. Merging with the inferred upstream '%s'...")
         merge(with_branch, cb)
     else:
         onto_branch = up(cb,
-                         prompt_if_inferred_msg="Branch '%s' not found in the tree of branch dependencies. Rebase onto the inferred upstream '%s'? [y/N] ",
+                         prompt_if_inferred_msg="Branch '%s' not found in the tree of branch dependencies. Rebase onto the inferred upstream '%s'?" + pretty_choices('y', 'N'),
                          prompt_if_inferred_yes_opt_msg="Branch '%s' not found in the tree of branch dependencies. Rebasing onto the inferred upstream '%s'...")
         rebase("refs/heads/" + onto_branch, opt_fork_point or fork_point(cb, use_overrides=True), cb)
 
@@ -1125,7 +1146,7 @@ def reflog(b):
         return reflogs_cached[b]
 
 
-def adjusted_reflog(b, prefix):
+def filtered_reflog(b, prefix):
     def is_excluded_reflog_subject(sha_, gs_):
         is_excluded = (
             gs_.startswith("branch: Created from") or
@@ -1135,7 +1156,7 @@ def adjusted_reflog(b, prefix):
             gs_ == "rebase finished: %s/%s onto %s" % (prefix, b, sha_)  # the rare case of a no-op rebase
         )
         if is_excluded:
-            debug("adjusted_reflog(%s, %s) -> is_excluded_reflog_subject(%s, <<<%s>>>)" % (b, prefix, sha_, gs_), "skipping reflog entry")
+            debug("filtered_reflog(%s, %s) -> is_excluded_reflog_subject(%s, <<<%s>>>)" % (b, prefix, sha_, gs_), "skipping reflog entry")
         return is_excluded
 
     b_reflog = reflog(prefix + b)
@@ -1146,10 +1167,10 @@ def adjusted_reflog(b, prefix):
     shas_to_exclude = set()
     if earliest_gs.startswith("branch: Created from"):
         shas_to_exclude.add(earliest_sha)
-    debug("adjusted_reflog(%s, %s)" % (b, prefix), "also, skipping any reflog entry with the hash in %s" % shas_to_exclude)
+    debug("filtered_reflog(%s, %s)" % (b, prefix), "also, skipping any reflog entry with the hash in %s" % shas_to_exclude)
 
     result = [sha for (sha, gs) in reflog(prefix + b) if sha not in shas_to_exclude and not is_excluded_reflog_subject(sha, gs)]
-    debug("adjusted_reflog(%s, %s)" % (b, prefix), "computed adjusted reflog (= reflog without branch creation and branch reset events irrelevant for fork point/upstream inference): %s\n" %
+    debug("filtered_reflog(%s, %s)" % (b, prefix), "computed filtered reflog (= reflog without branch creation and branch reset events irrelevant for fork point/upstream inference): %s\n" %
           (", ".join(result) or "<empty>"))
     return result
 
@@ -1188,12 +1209,12 @@ def match_log_to_adjusted_reflogs(b):
         def generate_entries():
             for lb in local_branches():
                 lb_shas = set()
-                for sha_ in adjusted_reflog(lb, "refs/heads/"):
+                for sha_ in filtered_reflog(lb, "refs/heads/"):
                     lb_shas.add(sha_)
                     yield sha_, (lb, lb)
                 rb = combined_counterpart_for_fetching_of_branch(lb)
                 if rb:
-                    for sha_ in adjusted_reflog(rb, "refs/remotes/"):
+                    for sha_ in filtered_reflog(rb, "refs/remotes/"):
                         if sha_ not in lb_shas:
                             yield sha_, (lb, rb)
 
@@ -1242,7 +1263,7 @@ def is_merged_to_parent(b):
     # (reflog stripped of trivial events like branch creation, reset etc.)
     # is non-empty.
     return (not equal_to_parent and is_ancestor(b, u)) or \
-        (equal_to_parent and adjusted_reflog(b, prefix="refs/heads/"))
+        (equal_to_parent and filtered_reflog(b, prefix="refs/heads/"))
 
 
 def infer_upstream(b, condition=lambda u: True, reject_reason_message=""):
@@ -1317,8 +1338,8 @@ def discover_tree():
     status(warn_on_yellow_edges=False)
     print("")
     do_backup = os.path.isfile(definition_file)
-    backup_msg = ("The existing definition file will be backed up as '%s~' " % definition_file) if do_backup else ""
-    msg = "Save the above tree to '%s'? %s([y]es/[e]dit/[N]o) " % (definition_file, backup_msg)
+    backup_msg = ("\nThe existing definition file will be backed up as '%s~'" % definition_file) if do_backup else ""
+    msg = "Save the above tree to '%s'?%s" % (definition_file, backup_msg) + pretty_choices('y', 'e[dit]', 'N')
     opt_yes_msg = "Saving the above tree to '%s'... %s" % (definition_file, backup_msg)
     ans = ask_if(msg, opt_yes_msg)
     if ans in ('y', 'yes'):
@@ -1498,7 +1519,7 @@ def delete_unmanaged():
             rb = strict_counterpart_for_fetching_of_branch(b)
             is_merged_to_remote = is_ancestor(b, rb, later_prefix="refs/remotes/") if rb else True
             msg_core = "%s (merged to HEAD%s)" % (bold(b), "" if is_merged_to_remote else (", but not merged to " + rb))
-            msg = "Delete branch %s? [y/N/q] " % msg_core
+            msg = "Delete branch %s?" % msg_core + pretty_choices('y', 'N', 'q')
             opt_yes_msg = "Deleting branch %s" % msg_core
             ans = ask_if(msg, opt_yes_msg)
             if ans in ('y', 'yes'):
@@ -1509,7 +1530,7 @@ def delete_unmanaged():
         branches_to_delete_unmerged_to_head = [b for b in branches_to_delete if b not in branches_merged_to_head]
         for b in branches_to_delete_unmerged_to_head:
             msg_core = "%s (unmerged to HEAD)" % bold(b)
-            msg = "Delete branch %s? [y/N/q] " % msg_core
+            msg = "Delete branch %s?" % msg_core + pretty_choices('y', 'N', 'q')
             opt_yes_msg = "Deleting branch %s" % msg_core
             ans = ask_if(msg, opt_yes_msg)
             if ans in ('y', 'yes'):
@@ -1610,10 +1631,10 @@ def pick_remote(b):
 def handle_untracked_branch(new_remote, b):
     rems = remotes()
     can_pick_other_remote = len(rems) > 1
-    other_remote_suffix = "/[o]ther remote" if can_pick_other_remote else ""
+    other_remote_choice = "o[ther-remote]" if can_pick_other_remote else ""
     rb = new_remote + "/" + b
     if not commit_sha_by_revision(rb, prefix="refs/remotes/"):
-        msg = "Push untracked branch %s to %s? (y/N/q/yq%s) " % (bold(b), bold(new_remote), other_remote_suffix)
+        msg = "Push untracked branch %s to %s?" % (bold(b), bold(new_remote)) + pretty_choices('y', 'N', 'q', 'yq', other_remote_choice)
         opt_yes_msg = "Pushing untracked branch %s to %s..." % (bold(b), bold(new_remote))
         ans = ask_if(msg, opt_yes_msg)
         if ans in ('y', 'yes', 'yq'):
@@ -1642,23 +1663,23 @@ def handle_untracked_branch(new_remote, b):
 
     prompt = {
         IN_SYNC_WITH_REMOTE: (
-            "Set the remote of %s to %s without pushing or pulling? (y/N/q/yq%s) " % (bold(b), bold(new_remote), other_remote_suffix),
+            "Set the remote of %s to %s without pushing or pulling?" % (bold(b), bold(new_remote)) + pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
             "Setting the remote of %s to %s..." % (bold(b), bold(new_remote))
         ),
         BEHIND_REMOTE: (
-            "Pull %s (fast-forward only) from %s? (y/N/q/yq%s) " % (bold(b), bold(new_remote), other_remote_suffix),
+            "Pull %s (fast-forward only) from %s?" % (bold(b), bold(new_remote)) + pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
             "Pulling %s (fast-forward only) from %s..." % (bold(b), bold(new_remote))
         ),
         AHEAD_OF_REMOTE: (
-            "Push branch %s to %s? (y/N/q/yq%s) " % (bold(b), bold(new_remote), other_remote_suffix),
+            "Push branch %s to %s?" % (bold(b), bold(new_remote)) + pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
             "Pushing branch %s to %s..." % (bold(b), bold(new_remote))
         ),
         DIVERGED_FROM_AND_OLDER_THAN_REMOTE: (
-            "Reset branch %s to the commit pointed by %s? (y/N/q/yq%s) " % (bold(b), bold(rb), other_remote_suffix),
+            "Reset branch %s to the commit pointed by %s?" % (bold(b), bold(rb)) + pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
             "Resetting branch %s to the commit pointed by %s..." % (bold(b), bold(rb))
         ),
         DIVERGED_FROM_AND_NEWER_THAN_REMOTE: (
-            "Push branch %s with force-with-lease to %s? (y/N/q/yq%s) " % (bold(b), bold(new_remote), other_remote_suffix),
+            "Push branch %s with force-with-lease to %s?" % (bold(b), bold(new_remote)) + pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
             "Pushing branch %s with force-with-lease to %s..." % (bold(b), bold(new_remote))
         )
     }
@@ -1762,7 +1783,7 @@ def traverse():
         if needs_slide_out:
             print_new_line(False)
             ans = ask_if(
-                "Branch %s is merged into %s. Slide %s out of the tree of branch dependencies? [y/N/q/yq] " % (bold(b), bold(u), bold(b)),
+                "Branch %s is merged into %s. Slide %s out of the tree of branch dependencies?" % (bold(b), bold(u), bold(b)) + pretty_choices('y', 'N', 'q', 'yq'),
                 "Branch %s is merged into %s. Sliding %s out of the tree of branch dependencies..." % (bold(b), bold(u), bold(b))
             )
             if ans in ('y', 'yes', 'yq'):
@@ -1790,9 +1811,15 @@ def traverse():
         elif needs_parent_sync:
             print_new_line(False)
             if opt_merge:
-                ans = ask_if("Merge %s into %s? [y/N/q/yq] " % (bold(u), bold(b)), "Merging %s into %s..." % (bold(u), bold(b)))
+                ans = ask_if(
+                    "Merge %s into %s?" % (bold(u), bold(b)) + pretty_choices('y', 'N', 'q', 'yq'),
+                    "Merging %s into %s..." % (bold(u), bold(b))
+                )
             else:
-                ans = ask_if("Rebase %s onto %s? [y/N/q/yq] " % (bold(b), bold(u)), "Rebasing %s onto %s..." % (bold(b), bold(u)))
+                ans = ask_if(
+                    "Rebase %s onto %s?" % (bold(b), bold(u)) + pretty_choices('y', 'N', 'q', 'yq'),
+                    "Rebasing %s onto %s..." % (bold(b), bold(u))
+                )
             if ans in ('y', 'yes', 'yq'):
                 if opt_merge:
                     merge(u, b)
@@ -1828,8 +1855,10 @@ def traverse():
             if s == BEHIND_REMOTE:
                 rb = strict_counterpart_for_fetching_of_branch(b)
                 ans = ask_if(
-                    "Branch %s is behind its remote counterpart %s.\nPull %s (fast-forward only) from %s? [y/N/q/yq] " % (bold(b), bold(rb), bold(b), bold(remote)),
-                    "Branch %s is behind its remote counterpart %s.\nPulling %s (fast-forward only) from %s..." % (bold(b), bold(rb), bold(b), bold(remote))
+                    "Branch %s is behind its remote counterpart %s.\n"
+                    "Pull %s (fast-forward only) from %s?" % (bold(b), bold(rb), bold(b), bold(remote)) + pretty_choices('y', 'N', 'q', 'yq'),
+                    "Branch %s is behind its remote counterpart %s.\n"
+                    "Pulling %s (fast-forward only) from %s..." % (bold(b), bold(rb), bold(b), bold(remote))
                 )
                 if ans in ('y', 'yes', 'yq'):
                     pull_ff_only(remote, rb)
@@ -1843,7 +1872,7 @@ def traverse():
             elif s == AHEAD_OF_REMOTE:
                 print_new_line(False)
                 ans = ask_if(
-                    "Push %s to %s? [y/N/q/yq] " % (bold(b), bold(remote)),
+                    "Push %s to %s?" % (bold(b), bold(remote)) + pretty_choices('y', 'N', 'q', 'yq'),
                     "Pushing %s to %s..." % (bold(b), bold(remote))
                 )
                 if ans in ('y', 'yes', 'yq'):
@@ -1858,8 +1887,10 @@ def traverse():
                 print_new_line(False)
                 rb = strict_counterpart_for_fetching_of_branch(b)
                 ans = ask_if(
-                    "Branch %s diverged from (and has older commits than) its remote counterpart %s.\nReset branch %s to the commit pointed by %s? [y/N/q/yq] " % (bold(b), bold(rb), bold(b), bold(rb)),
-                    "Branch %s diverged from (and has older commits than) its remote counterpart %s.\nResetting branch %s to the commit pointed by %s..." % (bold(b), bold(rb), bold(b), bold(rb))
+                    "Branch %s diverged from (and has older commits than) its remote counterpart %s.\n"
+                    "Reset branch %s to the commit pointed by %s?" % (bold(b), bold(rb), bold(b), bold(rb)) + pretty_choices('y', 'N', 'q', 'yq'),
+                    "Branch %s diverged from (and has older commits than) its remote counterpart %s.\n"
+                    "Resetting branch %s to the commit pointed by %s..." % (bold(b), bold(rb), bold(b), bold(rb))
                 )
                 if ans in ('y', 'yes', 'yq'):
                     reset_keep(rb)
@@ -1873,8 +1904,10 @@ def traverse():
                 print_new_line(False)
                 rb = strict_counterpart_for_fetching_of_branch(b)
                 ans = ask_if(
-                    "Branch %s diverged from (and has newer commits than) its remote counterpart %s.\nPush %s with force-with-lease to %s? [y/N/q/yq] " % (bold(b), bold(rb), bold(b), bold(remote)),
-                    "Branch %s diverged from (and has newer commits than) its remote counterpart %s.\nPushing %s with force-with-lease to %s..." % (bold(b), bold(rb), bold(b), bold(remote))
+                    "Branch %s diverged from (and has newer commits than) its remote counterpart %s.\n"
+                    "Push %s with force-with-lease to %s?" % (bold(b), bold(rb), bold(b), bold(remote)) + pretty_choices('y', 'N', 'q', 'yq'),
+                    "Branch %s diverged from (and has newer commits than) its remote counterpart %s.\n"
+                    "Pushing %s with force-with-lease to %s..." % (bold(b), bold(rb), bold(b), bold(remote))
                 )
                 if ans in ('y', 'yes', 'yq'):
                     push(remote, b, force_with_lease=True)
@@ -2022,7 +2055,7 @@ def status(warn_on_yellow_edges):
                 prefix = "REVERTING "
             else:
                 prefix = ""
-            current = "%s%s" % (bold(colored(prefix, RED)) if prefix else "", bold(underline(b)))
+            current = "%s%s" % (bold(colored(prefix, RED)), bold(underline(b, star_if_ascii_only=True)))
         else:
             current = bold(b)
 
