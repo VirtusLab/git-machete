@@ -8,17 +8,15 @@
 
 ![](logo.png)
 
-**git machete is a versatile tool for organizing your git repo, including features like:**
+**git machete is a versatile tool for organizing your git repo**
 
-* Neat, customizable `git machete status` that shows what branches are in sync with their parent branch/remote tracking branch and which of them need to be rebased/merged/pulled/pushed
+`git machete discover` suggests a layout of branches (which branch is derived/forked off which).
 
-![git machete status](https://raw.githubusercontent.com/PawelLipski/git-machete-blog-2/master/status.png)
+`git machete status` shows whether branches are in sync with their parent branch (via green/red edges) and their remote tracking branch.
 
-* Semi-automatic traversal of the branches that helps you effortlessly rebase, merge, push and pull the branches you care for (`git machete traverse`)
+`git machete traverse` semi-automatically traverses the branches, helping you effortlessly rebase, merge, push and pull.
 
-![git machete traverse](https://raw.githubusercontent.com/PawelLipski/git-machete-blog-2/master/traverse.png)
-
-* Automatic discovery of branch relations (`git machete discover`)
+[![git machete discover, status & traverse](docs/discover-status-traverse.gif)](docs/discover-status-traverse.gif)
 
 
 A port to an IntelliJ plugin is under development, see [VirtusLab/git-machete-intellij-plugin](http://github.com/VirtusLab/git-machete-intellij-plugin/).
@@ -49,7 +47,7 @@ sudo snap install --classic git-machete
 
 It can also be installed via Ubuntu Software (simply search for `git-machete`).
 
-Note: classic confinement is necessary to ensure access e.g. to the editor installed in the system (for rebase TODO list).
+Note: classic confinement is necessary to ensure access to the editor installed in the system (to edit e.g. .git/machete file or rebase TODO list).
 
 ### Using PPA (Ubuntu)
 
@@ -128,3 +126,9 @@ for a guide on how to use the tool.
 
 The more advanced features like automated traversal, upstream inference and tree discovery are described in the second part of the series:
 [https://medium.com/virtuslab/git-machete-strikes-again-traverse-the-git-rebase-jungle-even-faster-with-v2-0-f43ebaf8abb0](https://medium.com/virtuslab/git-machete-strikes-again-traverse-the-git-rebase-jungle-even-faster-with-v2-0-f43ebaf8abb0).
+
+
+## Contributions
+
+Contributions are welcome! See [contributing guidelines](CONTRIBUTING.md) for details.
+Help would be especially appreciated with Python code style and refactoring - so far more focus has been put on features, documentation and automating the distribution.

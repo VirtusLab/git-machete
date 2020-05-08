@@ -10,6 +10,11 @@ Use `.tox/venv/bin/python` as a reference `python` interpreter in your IDE.
 To run tests, execute `tox`.
 
 
+## Generate sandbox repositories
+
+Run `docs/setup-sandbox` script to set up a test repo under `~/machete-sandbox` with a remote in `~/machete-sandbox-remote`.
+
+
 ## Command properties/classification
 
 Deprecated commands are excluded.
@@ -51,6 +56,7 @@ Output format of any non-plumbing command can change in non-backward-compatible 
 
 * https://medium.com/virtuslab/nifty-docker-tricks-for-your-ci-vol-1-c4a36d2192ea
 * https://medium.com/virtuslab/nifty-docker-tricks-for-your-ci-vol-2-c5191a67f1a4
+
 
 ## Release TODO list
 

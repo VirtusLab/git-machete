@@ -41,7 +41,9 @@ def excluding(l, s):
 
 ENDC = '\033[0m'
 BOLD = '\033[1m'
-DIM = '\033[2m'
+# `GIT_MACHETE_DIM_AS_GRAY` remains undocumented as for now,
+# was just needed for animated gifs to render correctly (`[2m`-style dimmed text was invisible)
+DIM = '\033[38;2;128;128;128m' if os.environ.get('GIT_MACHETE_DIM_AS_GRAY') == 'true' else '\033[2m'
 UNDERLINE = '\033[4m'
 GREEN = '\033[32m'
 YELLOW = '\033[33m'
@@ -1650,7 +1652,7 @@ def handle_untracked_branch(new_remote, b):
         ans = ask_if(msg, opt_yes_msg)
         if ans in ('y', 'yes', 'yq'):
             push(new_remote, b)
-            if msg == 'yq':
+            if ans == 'yq':
                 raise StopTraversal
             flush()
         elif can_pick_other_remote and ans in ('o', 'other'):
@@ -1709,7 +1711,7 @@ def handle_untracked_branch(new_remote, b):
     ans = ask_if(msg, opt_yes_msg)
     if ans in ('y', 'yes', 'yq'):
         yes_actions[relation]()
-        if msg == 'yq':
+        if ans == 'yq':
             raise StopTraversal
         flush()
     elif can_pick_other_remote and ans in ('o', 'other'):

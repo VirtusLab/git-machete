@@ -6,6 +6,7 @@
 - added: `--branch` option to `anno`
 - added: `is-managed` plumbing command
 - added: `current` subcommand to `show`
+- added: animated gif to README + script for generating gifs automatically
 - improved: formatting of help, prompts, logs, warnings and other messages
 - fixed: help for a few existing commands
 
