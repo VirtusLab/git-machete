@@ -8,11 +8,11 @@
 
 ![](logo.png)
 
-**git machete is a versatile tool for organizing your git repo**
+**git machete is a versatile tool for organizing your git repo:**
 
-`git machete discover` suggests a layout of branches (which branch is derived/forked off which).
+`git machete discover` suggests a layout of branches (which branch is derived/forked off which),
 
-`git machete status` shows whether branches are in sync with their parent branch (via green/red edges) and their remote tracking branch.
+`git machete status` shows whether branches are in sync with their parent branch (via green/red edges) and their remote tracking branch,
 
 `git machete traverse` semi-automatically traverses the branches, helping you effortlessly rebase, merge, push and pull.
 
