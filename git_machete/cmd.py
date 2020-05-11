@@ -2244,30 +2244,38 @@ def usage(c=None):
               git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent [<branch>]
               git machete fork-point --unset-override [<branch>]</b>
 
-            Note: in all three forms, if no <branch> is specified, the currently checked out branch is assumed. The branch in question does not need to occur in the definition file.
+            Note: in all three forms, if no <branch> is specified, the currently checked out branch is assumed.
+            The branch in question does not need to occur in the definition file.
 
 
-            Without any option, displays full SHA of the fork point commit for the <branch> (the commit at which the history of the <branch> diverges from history of any other branch).
+            Without any option, displays full SHA of the fork point commit for the <branch>.
+            Fork point of the given <branch> is the commit at which the history of the <branch> diverges from history of any other branch.
 
-            The returned fork point is assumed by the commands `diff`, `reapply`, `slide-out`, `traverse` and `update` as the default place where the unique history of the <branch> starts.
-            In other words, `git machete` treats the fork point as the most recent commit in the log of the given branch that has NOT been introduced on that very branch,
-            but on some other (usually chronologically earlier) branch.
+            Fork point is assumed by many `git machete` commands as the place where the unique history of the <branch> starts.
+            The range of commits between the fork point and the tip of the given branch is, for instance:
+            * listed for each branch by `git machete status --list-commits`
+            * passed to `git rebase` by `git machete reapply`/`slide-out`/`traverse`/`update`
+            * provided to `git diff`/`log` by `git machete diff`/`log`.
 
-            To determine this place in history, `git machete` uses a heuristics based on reflogs of local branches.
-            This yields a correct result in typical cases, but there are some situations (esp. when some local branches have been deleted) where the fork point might not be determined correctly.
+            `git machete` assumes fork point of <branch> is the most recent commit in the log of <branch> that has NOT been introduced on that very branch,
+            but instead occurs on a reflog (see help for `git reflog`) of some other, usually chronologically earlier, branch.
+            This yields a correct result in typical cases, but there are some situations
+            (esp. when some local branches have been deleted) where the fork point might not be determined correctly.
             Thus, all rebase-involving operations (`reapply`, `slide-out`, `traverse` and `update`) run `git rebase` in the interactive mode,
-            unless told explicitly not to do so by `--no-interactive-rebase` flag.
+            unless told explicitly not to do so by `--no-interactive-rebase` flag, so that the suggested commit range can be inspected before the rebase commences.
             Also, `reapply`, `slide-out` and `update` allow to specify the fork point explictly by a command-line option.
 
-            `git machete fork-point` is different (and more powerful) than `git merge-base --fork-point`, since the latter takes into account only the reflog of the one provided upstream branch,
+            `git machete fork-point` is different (and more powerful) than `git merge-base --fork-point`,
+            since the latter takes into account only the reflog of the one provided upstream branch,
             while the former scans reflogs of all local branches and their remote tracking branches.
-            This makes machete's `fork-point` work correctly even when the tree definition has been modified and thus one or more of the branches changed their corresponding upstream branch.
+            This makes machete's `fork-point` work correctly even when the tree definition has been modified and thus one or more of the branches changed their upstream branch.
 
 
             With `--override-to=<revision>`, sets up a fork point override for <branch>.
             Fork point for <branch> will be overridden to the provided <revision> (commit) as long as the <branch> still points to (or is descendant of) the commit X
             that <branch> pointed to at the moment the override is set up.
-            Note that even if revision is a symbolic name (e.g. other branch name or `HEAD~3`) and not explicit commit hash (like `a1b2c3ff`), it's still resolved to a specific commit at the moment the override is set up.
+            Even if revision is a symbolic name (e.g. other branch name or `HEAD~3`) and not explicit commit hash (like `a1b2c3ff`),
+            it's still resolved to a specific commit hash at the moment the override is set up (and not later when the override is actually used).
             The override data is stored under `machete.overrideForkPoint.<branch>.to` and `machete.overrideForkPoint.<branch>.whileDescendantOf` git config keys.
             Note: the provided fork point <revision> must be an ancestor of the current <branch> commit X.
 
