@@ -2,11 +2,12 @@
 
 ## New in git-machete 2.15.0
 
-- improved: `add` accepts remote branches as well (just like `git checkout`)
 - added: `addable` category of `list`
 - added: `advance` command
+- added: `machete-post-slide-out` hook
 - fixed: Bash completion for `-y` option in several commands
 - fixed: handling the case of current directory becoming non-existent (e.g. as a result of checkout)
+- improved: `add` accepts remote branches as well (just like `git checkout`)
 
 ## New in git-machete 2.14.0
 

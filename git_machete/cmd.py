@@ -1650,6 +1650,17 @@ def delete_unmanaged():
         print("No branches to delete")
 
 
+def run_post_slide_out_hook(new_upstream, slid_out_branch, new_downstreams):
+    hook_path = get_hook_path("machete-post-slide-out")
+    if check_hook_executable(hook_path):
+        debug("run_post_slide_out_hook(%s, %s, %s)" % (new_upstream, slid_out_branch, new_downstreams),
+              "running machete-post-slide-out hook (%s)" % hook_path)
+        exit_code = run_cmd(hook_path, new_upstream, slid_out_branch, *new_downstreams, cwd=get_root_dir())
+        if exit_code != 0:
+            sys.stderr.write("The machete-post-slide-out hook exited with %d, aborting.\n" % exit_code)
+            sys.exit(exit_code)
+
+
 def slide_out(branches_to_slide_out):
     for b in branches_to_slide_out:
         expect_in_managed_branches(b)
@@ -1677,6 +1688,7 @@ def slide_out(branches_to_slide_out):
     up_branch[new_downstream] = new_upstream
     down_branches[new_upstream] = [(new_downstream if x == branches_to_slide_out[0] else x) for x in down_branches[new_upstream]]
     save_definition_file()
+    run_post_slide_out_hook(new_upstream, branches_to_slide_out[-1], [new_downstream])
     if opt_merge:
         print("Merging %s into %s..." % (bold(new_upstream), bold(new_downstream)))
         merge(new_upstream, new_downstream)
@@ -1952,6 +1964,7 @@ def traverse():
                 if b in annotations:
                     del annotations[b]
                 save_definition_file()
+                run_post_slide_out_hook(u, b, down_branches.get(b) or [])
                 if ans == 'yq':
                     return
                 # No need to flush caches since nothing changed in commit/branch structure (only machete-specific changes happened).
@@ -2538,6 +2551,27 @@ def usage(c=None):
             As with the standard git hooks, git-machete looks for its own specific hooks in `$GIT_DIR/hooks/*` (or `$(git config core.hooksPath)/*`, if set).
 
             Note: `hooks` is not a command as such, just a help topic (there is no `git machete hooks` command).
+
+            * <b>machete-post-slide-out <new-upstream> <lowest-slid-out-branch> [<new-downstreams>...]</b>
+                The hook that is executed after a branch (or possibly multiple branches, in case of `slide-out`)
+                is slid out by `slide-out` or `traverse`.
+
+                At least two parameters (branch names) are passed to the hook:
+                * <b><new-upstream></b> is the upstream of the branch that has been slid out,
+                  or in case of multiple branches being slid out - the upstream of the highest slid out branch;
+                * <b><lowest-slid-out-branch></b> is the branch that has been slid out,
+                  or in case of multiple branches being slid out - the lowest slid out branch;
+                * <b><new-downstreams></b> are all the following (possibly zero) parameters,
+                  which correspond to all original downstreams of <lowest-slid-out-branch>, now reattached as the downstreams of <new-upstream>.
+                  Note that this is guaranteed to be exactly one branch in case of `slide-out` (but no guarantees exist in case of `traverse`).
+
+                Note: the hook, if present, is executed exactly once during each `slide-out` execution (even if multiple branches are slid out),
+                but possibly multiple times during `traverse` (every time a slide-out operation is confirmed).
+
+                If the hook returns a non-zero exit code, then the execution of the command is aborted,
+                i.e. `slide-out` won't attempt rebase of the new downstream branch and `traverse` won't continue the traversal.
+                Note that non-zero exit of the hook doesn't cancel the slide-out itself, only the subsequent operations.
+                The hook is executed only once the slide-out is complete and can in fact rely on .git/machete file being updated to the new branch layout.
 
             * <b>machete-pre-rebase <new-base> <fork-point-hash> <branch-being-rebased></b>
                 The hook that is executed before rebase is run during `reapply`, `slide-out`, `traverse` and `update`.

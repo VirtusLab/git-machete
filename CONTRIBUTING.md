@@ -27,7 +27,7 @@ Deprecated commands are excluded.
 | can modify the git repository (excluding .git/machete)            | `add`, `advance`, `delete-unmanaged`, `go`, `reapply`, `slide-out`, `traverse`, `update` |
 | can run merge                                                     | `advance` (\*), `slide-out`, `traverse`, `update`                                        |
 | can run rebase (and run `machete-pre-rebase` hook)                | `reapply` (\*\*), `slide-out`, `traverse`, `update`                                      |
-| can slide out a branch                                            | `advance`, `slide-out`, `traverse`                                                       |
+| can slide out a branch (and run `machete-post-slide-out` hook)    | `advance`, `slide-out`, `traverse`                                                       |
 | expects no ongoing rebase/merge/cherry-pick/revert/am             | `advance`, `go`, `reapply`, `slide-out`, `traverse`, `update`                            |
 | has stable output format across minor versions (plumbing command) | `file`, `fork-point` (\*\*\*), `is-managed`, `list`, `show`, `version`                   |
 
