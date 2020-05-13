@@ -1,5 +1,10 @@
 # Release notes
 
+## New in git-machete 2.15.0
+
+- added: `add` accepts remote branches as well (just like `git checkout`)
+- added: `addable` category of `list`
+
 ## New in git-machete 2.14.0
 
 - added: `--as-root` option to `add`

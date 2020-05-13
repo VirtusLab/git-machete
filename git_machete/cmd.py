@@ -27,16 +27,20 @@ def star(f):  # tuple unpacking in lambdas
     return lambda args: f(*args)
 
 
-def flat_map(func, l):
-    return sum(map(func, l), [])
+def excluding(iterable, s):
+    return list(filter(lambda x: x not in s, iterable))
+
+
+def flat_map(func, iterable):
+    return sum(map(func, iterable), [])
+
+
+def map_truthy_only(func, iterable):
+    return list(filter(None, map(func, iterable)))
 
 
 def non_empty_lines(s):
     return list(filter(None, s.split("\n")))
-
-
-def excluding(l, s):
-    return list(filter(lambda x: x not in s, l))
 
 
 ENDC = '\033[0m'
@@ -127,7 +131,7 @@ def pretty_choices(*choices):
             return colored(c, RED)
         else:
             return colored(c, ORANGE)
-    return " (" + ", ".join(filter(None, map(format_choice, choices))) + ") "
+    return " (" + ", ".join(map_truthy_only(format_choice, choices)) + ") "
 
 
 def pick(choices, name):
@@ -243,7 +247,7 @@ def read_definition_file():
     global indent, managed_branches, down_branches, up_branch, roots, annotations
 
     with open(definition_file_path) as f:
-        lines = [l.rstrip() for l in f.readlines() if not l.isspace()]
+        lines = [line.rstrip() for line in f.readlines() if not line.isspace()]
 
     managed_branches = []
     down_branches = {}
@@ -426,17 +430,28 @@ def add(b):
         expect_in_managed_branches(onto)
 
     if b not in local_branches():
-        out_of = ("'" + onto + "'") if onto else "the current HEAD"
-        msg = "A local branch '%s' does not exist. Create (out of %s)?" % (b, out_of) + pretty_choices('y', 'N')
-        opt_yes_msg = "A local branch '%s' does not exist. Creating out of %s" % (b, out_of)
-        if ask_if(msg, opt_yes_msg) in ('y', 'yes'):
-            if roots and not onto:
-                cb = current_branch_or_none()
-                if cb and cb in managed_branches:
-                    onto = cb
-            create_branch(b, onto)
+        rb = get_sole_remote_branch(b)
+        if rb:
+            common_line = "A local branch '%s' does not exist, but a remote branch '%s' exists.\n" % (b, rb)
+            msg = common_line + "Check out '%s' locally?" % b + pretty_choices('y', 'N')
+            opt_yes_msg = common_line + "Checking out '%s' locally..." % b
+            if ask_if(msg, opt_yes_msg) in ('y', 'yes'):
+                create_branch(b, "refs/remotes/" + rb)
+            else:
+                return
+            # Not dealing with `onto` here. If it hasn't been explicitly specified via `--onto`, we'll try to infer it now.
         else:
-            return
+            out_of = ("'" + onto + "'") if onto else "the current HEAD"
+            msg = "A local branch '%s' does not exist. Create (out of %s)?" % (b, out_of) + pretty_choices('y', 'N')
+            opt_yes_msg = "A local branch '%s' does not exist. Creating out of %s" % (b, out_of)
+            if ask_if(msg, opt_yes_msg) in ('y', 'yes'):
+                if roots and not onto:
+                    cb = current_branch_or_none()
+                    if cb and cb in managed_branches:
+                        onto = cb
+                create_branch(b, "refs/heads/" + onto)
+            else:
+                return
 
     if opt_as_root or not roots:
         roots += [b]
@@ -863,8 +878,9 @@ def is_ancestor(earlier_revision, later_revision, earlier_prefix="refs/heads/", 
     return merge_base(earlier_sha, later_sha) == earlier_sha
 
 
-def create_branch(b, out_of):
-    return run_git("checkout", "-b", b, *(["refs/heads/" + out_of] if out_of else []))
+def create_branch(b, out_of_revision):
+    run_git("checkout", "-b", b, *([out_of_revision] if out_of_revision else []))
+    flush_caches()  # the repository state has changed b/c of a successful branch creation, let's defensively flush all the caches
 
 
 def log_shas(revision, max_count):
@@ -945,6 +961,18 @@ def load_branches():
         committer_unix_timestamp_by_revision_cached[b] = int(committer_unix_timestamp.split(' ')[0])
         if fetch_counterpart_stripped in remote_branches_cached:
             counterparts_for_fetching_cached[b_stripped] = fetch_counterpart_stripped
+
+
+def get_sole_remote_branch(b):
+    def matches(rb):
+        # Note that this matcher is defensively too inclusive:
+        # if there is both origin/foo and origin/feature/foo,
+        # then both are matched for 'foo';
+        # this is to reduce risk wrt. which '/'-separated fragments belong to remote and which to branch name.
+        # FIXME: this is still likely to deliver incorrect results in rare corner cases with compound remote names.
+        return rb.endswith('/' + b)
+    matching_remote_branches = list(filter(matches, remote_branches()))
+    return matching_remote_branches[0] if len(matching_remote_branches) == 1 else None
 
 
 def merged_local_branches():
@@ -1609,7 +1637,7 @@ class StopTraversal(Exception):
         pass
 
 
-def flush():
+def flush_caches():
     global branch_defs_by_sha_in_reflog, commit_sha_by_revision_cached, config_cached, counterparts_for_fetching_cached, initial_log_shas_cached
     global local_branches_cached, reflogs_cached, remaining_log_shas_cached, remote_branches_cached
     branch_defs_by_sha_in_reflog = None
@@ -1654,7 +1682,7 @@ def handle_untracked_branch(new_remote, b):
             push(new_remote, b)
             if ans == 'yq':
                 raise StopTraversal
-            flush()
+            flush_caches()
         elif can_pick_other_remote and ans in ('o', 'other'):
             pick_remote(b)
         elif ans in ('q', 'quit'):
@@ -1713,7 +1741,7 @@ def handle_untracked_branch(new_remote, b):
         yes_actions[relation]()
         if ans == 'yq':
             raise StopTraversal
-        flush()
+        flush_caches()
     elif can_pick_other_remote and ans in ('o', 'other'):
         pick_remote(b)
     elif ans in ('q', 'quit'):
@@ -1738,7 +1766,7 @@ def traverse():
             print("Fetching %s..." % r)
             fetch_remote(r)
         if remotes():
-            flush()
+            flush_caches()
             print("")
 
     initial_branch = nearest_remaining_branch = current_branch()
@@ -1858,7 +1886,7 @@ def traverse():
                 if ans == 'yq':
                     return
 
-                flush()
+                flush_caches()
                 s, remote = get_strict_remote_sync_status(b)
                 needs_remote_sync = s in statuses_to_sync
             elif ans in ('q', 'quit'):
@@ -1877,7 +1905,7 @@ def traverse():
                     pull_ff_only(remote, rb)
                     if ans == 'yq':
                         return
-                    flush()
+                    flush_caches()
                     print("")
                 elif ans in ('q', 'quit'):
                     return
@@ -1892,7 +1920,7 @@ def traverse():
                     push(remote, b)
                     if ans == 'yq':
                         return
-                    flush()
+                    flush_caches()
                 elif ans in ('q', 'quit'):
                     return
 
@@ -1909,7 +1937,7 @@ def traverse():
                     reset_keep(rb)
                     if ans == 'yq':
                         return
-                    flush()
+                    flush_caches()
                 elif ans in ('q', 'quit'):
                     return
 
@@ -1926,7 +1954,7 @@ def traverse():
                     push(remote, b, force_with_lease=True)
                     if ans == 'yq':
                         return
-                    flush()
+                    flush_caches()
                 elif ans in ('q', 'quit'):
                     return
 
@@ -2152,8 +2180,10 @@ def usage(c=None):
         "add": """
             <b>Usage: git machete add [-o|--onto=<target-upstream-branch>] [-R|--as-root] [-y|--yes] [<branch>]</b>
 
-            Adds the provided branch (or the current branch, if none specified) to the definition file.
-            If the branch is provided but does not exist, user will be asked whether it should be created.
+            Adds the provided <branch> (or the current branch, if none specified) to the definition file.
+            If <branch> is provided but no local branch with the given name exists:
+            * if a remote branch of the same name exists in exactly one remote, then user is asked whether to check out this branch locally (as in `git checkout`),
+            * otherwise, user is asked whether it should be created as a new local branch.
 
             If the definition file is empty or `-R`/`--as-root` is provided, the branch will be added as a root of the tree of branch dependencies.
             Otherwise, the desired upstream (parent) branch can be specified with `-o`/`--onto`.
@@ -2380,9 +2410,10 @@ def usage(c=None):
         """,
         "list": """
             <b>Usage: git machete list <category></b>
-            where <category> is one of: `managed`, `slidable`, `slidable-after <branch>`, `unmanaged`, `with-overridden-fork-point`
+            where <category> is one of: `addable`, `managed`, `slidable`, `slidable-after <branch>`, `unmanaged`, `with-overridden-fork-point`
 
             Lists all branches that fall into one of the specified categories:
+            * `addable`: all branches (local or remote) than can be added to the definition file,
             * `managed`: all branches that appear in the definition file,
             * `slidable`: all managed branches that have exactly one upstream and one downstream (i.e. the ones that can be slid out with `slide-out` command),
             * `slidable-after <branch>`: the downstream branch of the <branch>, if it exists and is the only downstream of <branch> (i.e. the one that can be slid out immediately following <branch>),
@@ -2955,7 +2986,7 @@ def launch(orig_args):
             if b is None or b not in managed_branches:
                 sys.exit(1)
         elif cmd == "list":
-            list_allowed_values = "managed|slidable|slidable-after <branch>|unmanaged|with-overridden-fork-point"
+            list_allowed_values = "addable|managed|slidable|slidable-after <branch>|unmanaged|with-overridden-fork-point"
             list_args = parse_options(args)
             if not list_args:
                 raise MacheteException("'git machete list' expects argument(s): %s" % list_allowed_values)
@@ -2963,11 +2994,11 @@ def launch(orig_args):
                 raise MacheteException("Argument to 'git machete list' cannot be empty; expected %s" % list_allowed_values)
             elif list_args[0][0] == "-":
                 raise MacheteException("option '%s' not recognized" % list_args[0])
-            elif list_args[0] not in ("managed", "slidable", "slidable-after", "unmanaged", "with-overridden-fork-point"):
+            elif list_args[0] not in ("addable", "managed", "slidable", "slidable-after", "unmanaged", "with-overridden-fork-point"):
                 raise MacheteException("Usage: git machete list %s" % list_allowed_values)
             elif len(list_args) > 2:
                 raise MacheteException("Too many arguments to 'git machete list %s' " % list_args[0])
-            elif list_args[0] in ("managed", "slidable", "unmanaged", "with-overridden-fork-point") and len(list_args) > 1:
+            elif list_args[0] in ("addable", "managed", "slidable", "unmanaged", "with-overridden-fork-point") and len(list_args) > 1:
                 raise MacheteException("'git machete list %s' does not expect extra arguments" % list_args[0])
             elif list_args[0] == "slidable-after" and len(list_args) != 2:
                 raise MacheteException("'git machete list %s' requires an extra <branch> argument" % list_args[0])
@@ -2975,7 +3006,14 @@ def launch(orig_args):
             param = list_args[0]
             read_definition_file()
             res = []
-            if param == "managed":
+            if param == "addable":
+                def strip_first_fragment(rb):
+                    return re.sub('^[^/]+/', '', rb)
+
+                remote_counterparts_of_local_branches = map_truthy_only(combined_counterpart_for_fetching_of_branch, local_branches())
+                qualifying_remote_branches = excluding(remote_branches(), remote_counterparts_of_local_branches)
+                res = excluding(local_branches(), managed_branches) + list(map(strip_first_fragment, qualifying_remote_branches))
+            elif param == "managed":
                 res = managed_branches
             elif param == "slidable":
                 res = slidable()

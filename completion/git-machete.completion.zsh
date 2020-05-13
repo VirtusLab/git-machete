@@ -17,7 +17,7 @@ _git-machete() {
             case ${line[1]} in
                 (add)
                     _arguments \
-                        '1:: :_git_machete_list_unmanaged' \
+                        '1:: :_git_machete_list_addable' \
                         '(-o --onto)'{-o,--onto=}'[Specify the target parent branch to add the given branch onto]: :_git_machete_list_managed' \
                         '(-R --as-root)'{-R,--as-root}'[Add the given branch as a new root]' \
                         '(-y --yes)'{-y,--yes}'[Do not ask for confirmation whether to create the branch or whether to add onto the inferred upstream]' \
@@ -197,6 +197,7 @@ _git_machete_categories() {
     local categories
     # TODO complete slidable-after's argument
     categories=(
+        'addable:all branches (local or remote) than can be added to the definition file'
         'managed:all branches that appear in the definition file'
         'slidable:all managed branches that have exactly one upstream and one downstream (i.e. the ones that can be slid out with slide-out command)'
         'slidable-after:the downstream branch of the given branch, if it exists and is its only downstream (i.e. the one that can be slid out immediately following <branch>)'
@@ -236,22 +237,22 @@ _git_machete_opt_start_from_args() {
     _describe -t opt_start_from 'start-from argument' opt_start_from "$@"
 }
 
+_git_machete_list_addable() {
+    local list_addable
+    IFS=$'\n' list_addable=($(git machete list addable 2>/dev/null))
+    _describe -t list_addable 'addable branch' list_addable "$@"
+}
+
 _git_machete_list_managed() {
     local list_managed
-    IFS=$'\n' list_managed=($(git machete list managed))
+    IFS=$'\n' list_managed=($(git machete list managed 2>/dev/null))
     _describe -t list_managed 'managed branch' list_managed "$@"
 }
 
 _git_machete_list_slidable() {
     local list_slidable
-    IFS=$'\n' list_slidable=($(git machete list slidable))
+    IFS=$'\n' list_slidable=($(git machete list slidable 2>/dev/null))
     _describe -t list_slidable 'slidable branch' list_slidable "$@"
-}
-
-_git_machete_list_unmanaged() {
-    local list_unmanaged
-    IFS=$'\n' list_unmanaged=($(git machete list unmanaged))
-    _describe -t list_unmanaged 'unmanaged branch' list_unmanaged "$@"
 }
 
 zstyle ':completion:*:*:git:*' user-commands machete:'organize your repo, instantly rebase/merge/push/pull and more'

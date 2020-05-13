@@ -6,14 +6,14 @@ dist: bionic
 # Python is needed for PyPI deployment, but `minimal` is still sufficient for this purpose.
 language: minimal
 
-# The defaults used in absence of an explicit `install:` or `script:` field  (i.e. currently only for the jobs in `tests` stage)
+# The defaults used in absence of an explicit `install:` or `script:` field  (i.e. currently only for the jobs in `Tests` stage)
 install: bash ci/tox/travis-install.sh
 script: bash ci/tox/travis-script.sh
 
 jobs:
   include:
-    # Jobs within the default `Tests` stage:
-    - env: PYTHON_VERSION=2.7 GIT_VERSION=1.7.10  # Earliest version of git supported by git-machete
+    - stage: Tests
+      env: PYTHON_VERSION=2.7 GIT_VERSION=1.7.10  # Earliest version of git supported by git-machete
     - env: PYTHON_VERSION=2.7 GIT_VERSION=2.7.6
     - env: PYTHON_VERSION=3.6 GIT_VERSION=2.20.2
     - env: PYTHON_VERSION=3.8 GIT_VERSION=2.25.0

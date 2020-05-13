@@ -6,7 +6,7 @@
 [![Snap](https://snapcraft.io/git-machete/badge.svg)](https://snapcraft.io/git-machete)
 [![Snap build status](https://build.snapcraft.io/badge/VirtusLab/git-machete.svg)](https://build.snapcraft.io/user/VirtusLab/git-machete)
 
-![](logo.png)
+![](https://raw.githubusercontent.com/VirtusLab/git-machete/master/logo.png)
 
 **git machete is a versatile tool for organizing your git repo:**
 
@@ -16,7 +16,7 @@
 
 `git machete traverse` semi-automatically traverses the branches, helping you effortlessly rebase, merge, push and pull.
 
-[![git machete discover, status & traverse](docs/discover-status-traverse.gif)](docs/discover-status-traverse.gif)
+![git machete discover, status & traverse](https://raw.githubusercontent.com/VirtusLab/git-machete/master/docs/discover-status-traverse.gif)
 
 
 A port to an IntelliJ plugin is under development, see [VirtusLab/git-machete-intellij-plugin](http://github.com/VirtusLab/git-machete-intellij-plugin/).

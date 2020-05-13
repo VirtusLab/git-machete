@@ -4,7 +4,7 @@ _git_machete() {
     cmds="add anno d delete-unmanaged diff discover e edit file fork-point g go help is-managed l list log reapply show slide-out s status traverse update version"
     help_topics="$cmds format hooks"
 
-    categories="managed slidable slidable-after unmanaged with-overridden-fork-point"
+    categories="addable managed slidable slidable-after unmanaged with-overridden-fork-point"
     directions="down first last next prev root up"
     opt_color_args="always auto never"
     opt_return_to_args="here nearest-remaining stay"
@@ -24,7 +24,7 @@ _git_machete() {
     update_opts="-f --fork-point= -M --merge -n --no-edit-merge --no-interactive-rebase"
 
     case $cur in
-        --branch=*|--onto=*) __gitcomp_nl "$(git machete list managed)" "" "${cur##--*=}" ;;
+        --branch=*|--onto=*) __gitcomp_nl "$(git machete list managed 2>/dev/null)" "" "${cur##--*=}" ;;
         --checked-out-since=*) __gitcomp "" ;;
         --color=*) __gitcomp "$opt_color_args" "" "${cur##--color=}" ;;
         --down-fork-point=*|--fork-point=*|--override-to=*) __gitcomp "$(__git_refs)" "" "${cur##--*=}" ;;
@@ -52,7 +52,7 @@ _git_machete() {
              else
                 prev=${COMP_WORDS[COMP_CWORD-1]}
                 case $prev in
-                    -b|--branch|-o|--onto) __gitcomp_nl "$(git machete list managed)" ;;
+                    -b|--branch|-o|--onto) __gitcomp_nl "$(git machete list managed 2>/dev/null)" ;;
                     -C|--checked-out-since) __gitcomp "" ;;
                     --color) __gitcomp "$opt_color_args" ;;
                     -d|--down-fork-point|-f|--fork-point|--override-to) __gitcomp "$(__git_refs)" ;;
@@ -63,10 +63,10 @@ _git_machete() {
                     # TODO complete the comma-separated list of roots
                     -r|--roots) __gitcomp "$(__git_heads)" ;;
                     --start-from) __gitcomp "$opt_start_from_args" ;;
-                    --unset-override) __gitcomp_nl "$(git machete list with-overridden-fork-point)" ;;
+                    --unset-override) __gitcomp_nl "$(git machete list with-overridden-fork-point 2>/dev/null)" ;;
                     *)
                         case ${COMP_WORDS[2]} in
-                            add) __gitcomp_nl "$(git machete list unmanaged)" ;;
+                            add) __gitcomp_nl "$(git machete list addable 2>/dev/null)" ;;
                             d|diff|fork-point|is-managed|l|log) __gitcomp "$(__git_heads)" ;;
                             g|go) __gitcomp "$directions" ;;
                             help) __gitcomp "$help_topics" ;;
@@ -74,12 +74,12 @@ _git_machete() {
                                 if [[ $COMP_CWORD -eq 3 ]]; then
                                     __gitcomp "$categories"
                                 elif [[ $COMP_CWORD -eq 4 && $prev == slidable-after ]]; then
-                                    __gitcomp_nl "$(git machete list slidable)"
+                                    __gitcomp_nl "$(git machete list slidable 2>/dev/null)"
                                 fi ;;
                             show) __gitcomp "current $directions" ;;
                             slide-out)
                                 if [[ $COMP_CWORD -eq 3 ]]; then
-                                    __gitcomp_nl "$(git machete list slidable)"
+                                    __gitcomp_nl "$(git machete list slidable 2>/dev/null)"
                                 else
                                     __gitcomp_nl "$(git machete list slidable-after "$prev" 2>/dev/null)"
                                 fi ;;
