@@ -23,6 +23,11 @@ _git-machete() {
                         '(-y --yes)'{-y,--yes}'[Do not ask for confirmation whether to create the branch or whether to add onto the inferred upstream]' \
                     && ret=0
                     ;;
+                (advance|delete-unmanaged)
+                    _arguments \
+                        '(-y --yes)'{-y,--yes}'[Do not ask for confirmation]' \
+                    && ret=0
+                    ;;
                 (anno)
                     _arguments \
                         '(-b --branch)'{-b,--branch=}'[Branch to set the annotation for]: :_git_machete_list_managed' \
@@ -32,11 +37,6 @@ _git-machete() {
                     _arguments \
                         '1:: :__git_branch_names' \
                         '(-s --stat)'{-s,--stat}'[Pass --stat option to git diff, so that only summary (diffstat) is printed]' \
-                    && ret=0
-                    ;;
-                (delete-unmanaged)
-                    _arguments \
-                        '(-y --yes)'{-y,--yes}'[Do not ask for confirmation]' \
                     && ret=0
                     ;;
                 (discover)
@@ -128,6 +128,7 @@ _git-machete() {
 
 _git_machete_cmds=(
     'add:Add a branch to the tree of branch dependencies'
+    'advance:Fast-forward the current branch to match one of its downstreams and subsequently slide out this downstream'
     'anno:Manage custom annotations'
     'delete-unmanaged:Delete local branches that are not present in the definition file'
     {diff,d}':Diff current working directory or a given branch against its fork point'

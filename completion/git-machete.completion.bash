@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 _git_machete() {
-    cmds="add anno d delete-unmanaged diff discover e edit file fork-point g go help is-managed l list log reapply show slide-out s status traverse update version"
+    cmds="add advance anno d delete-unmanaged diff discover e edit file fork-point g go help is-managed l list log reapply show slide-out s status traverse update version"
     help_topics="$cmds format hooks"
 
     categories="addable managed slidable slidable-after unmanaged with-overridden-fork-point"
@@ -11,16 +11,17 @@ _git_machete() {
     opt_start_from_args="here root first-root"
 
     common_opts="--debug -h --help -v --verbose --version"
-    add_opts="-o --onto= -R --as-root --yes"
+    add_opts="-o --onto= -R --as-root -y --yes"
+    advance_opts="-y --yes"
     anno_opts="-b --branch="
-    delete_unmanaged_opts="--yes"
+    delete_unmanaged_opts="-y --yes"
     diff_opts="-s --stat"
     discover_opts="-C --checked-out-since= -l --list-commits -r --roots= -y --yes"
     fork_point_opts="--inferred --override-to= --override-to-inferred --override-to-parent --unset-override"
     reapply_opts="-f --fork-point="
     slide_out_opts="-d --down-fork-point= -M --merge -n --no-edit-merge --no-interactive-rebase"
     status_opts="--color= -L --list-commits-with-hashes -l --list-commits"
-    traverse_opts="-F --fetch -l --list-commits -M --merge -n --no-edit-merge --no-interactive-rebase --return-to= --start-from= -w --whole -W --yes"
+    traverse_opts="-F --fetch -l --list-commits -M --merge -n --no-edit-merge --no-interactive-rebase --return-to= --start-from= -w --whole -W -y --yes"
     update_opts="-f --fork-point= -M --merge -n --no-edit-merge --no-interactive-rebase"
 
     case $cur in
@@ -34,6 +35,7 @@ _git_machete() {
         -*)
             case ${COMP_WORDS[2]} in
                 add) __gitcomp "$common_opts $add_opts" ;;
+                advance) __gitcomp "$common_opts $advance_opts" ;;
                 anno) __gitcomp "$common_opts $anno_opts" ;;
                 d|diff) __gitcomp "$common_opts $diff_opts" ;;
                 delete-unmanaged) __gitcomp "$common_opts $delete_unmanaged_opts" ;;

@@ -138,7 +138,10 @@ def pick(choices, name):
     xs = "".join("[%i] %s\n" % (idx + 1, x) for idx, x in enumerate(choices))
     msg = xs + "Specify " + name + " or hit <return> to skip: "
     try:
-        idx = int(safe_input(msg)) - 1
+        ans = safe_input(msg)
+        if not ans:
+            sys.exit(0)
+        idx = int(ans) - 1
     except ValueError:
         sys.exit(1)
     if idx not in range(len(choices)):
@@ -1013,6 +1016,10 @@ def merge(branch, into):  # refs/heads/ prefix is assumed for 'branch'
     run_git("merge", "-m", commit_message, "refs/heads/" + branch, *extra_params)
 
 
+def merge_fast_forward_only(branch):  # refs/heads/ prefix is assumed for 'branch'
+    run_git("merge", "--ff-only", "refs/heads/" + branch)
+
+
 def rebase(onto, fork_commit, branch):
     def do_rebase():
         try:
@@ -1632,6 +1639,49 @@ def slidable_after(b):
     return []
 
 
+def advance(b):
+    if not down_branches.get(b):
+        raise MacheteException("'%s' does not have any downstream (child) branches to advance towards" % b)
+
+    def connected_with_green_edge(bd):
+        return \
+            not is_merged_to_parent(bd) and \
+            is_ancestor(b, bd) and \
+            (get_overridden_fork_point(bd) or commit_sha_by_revision(b) == fork_point(bd, use_overrides=False))
+
+    candidate_downstreams = list(filter(connected_with_green_edge, down_branches[b]))
+    if not candidate_downstreams:
+        raise MacheteException("No downstream (child) branch of '%s' is connected to '%s' with green edge" % (b, b))
+    if len(candidate_downstreams) > 1:
+        if opt_yes:
+            raise MacheteException("More than one downstream (child) branch of '%s' is connected to '%s' with green edge and '-y/--yes' option is specified" % (b, b))
+        else:
+            d = pick(candidate_downstreams, "downstream branch towards which '%s' is to be fast-forwarded" % b)
+    else:
+        d = candidate_downstreams[0]
+
+    ans = ask_if(
+        "Fast-forward %s to match %s?" % (bold(b), bold(d)) + pretty_choices('y', 'N'),
+        "Fast-forwarding %s to match %s..." % (bold(b), bold(d))
+    )
+    if ans in ('y', 'yes'):
+        merge_fast_forward_only(d)
+    else:
+        return
+
+    ans = ask_if(
+        "Branch %s is now merged into %s. Slide %s out of the tree of branch dependencies?" % (bold(d), bold(b), bold(d)) + pretty_choices('y', 'N'),
+        "Branch %s is now merged into %s. Sliding %s out of the tree of branch dependencies..." % (bold(d), bold(b), bold(d))
+    )
+    if ans in ('y', 'yes'):
+        for dd in down_branches.get(d) or []:
+            up_branch[dd] = b
+        down_branches[b] = flat_map(
+            lambda bd: (down_branches.get(d) or []) if bd == d else [bd],
+            down_branches[b])
+        save_definition_file()
+
+
 class StopTraversal(Exception):
     def __init__(self):
         pass
@@ -1836,8 +1886,7 @@ def traverse():
                 for d in down_branches.get(b) or []:
                     up_branch[d] = u
                 down_branches[u] = flat_map(
-                    lambda ud: (down_branches.get(b) or [])
-                    if ud == b else [ud],
+                    lambda ud: (down_branches.get(b) or []) if ud == b else [ud],
                     down_branches[u])
                 if b in annotations:
                     del annotations[b]
@@ -2154,6 +2203,7 @@ def status(warn_on_yellow_edges):
 def usage(c=None):
     short_docs = {
         "add": "Add a branch to the tree of branch dependencies",
+        "advance": "Fast-forward the current branch to match one of its downstreams and subsequently slide out this downstream",
         "anno": "Manage custom annotations",
         "delete-unmanaged": "Delete local branches that are not present in the definition file",
         "diff": "Diff current working directory or a given branch against its computed fork point",
@@ -2200,6 +2250,61 @@ def usage(c=None):
                                                      Cannot be specified together with `-o`/`--onto`.
 
               <b>-y, --yes</b>                              Don't ask for confirmation whether to create the branch or whether to add onto the inferred upstream.
+        """,
+        "advance": """
+            <b>Usage: git machete advance [-y|--yes]</b>
+
+            Fast forwards (as in `git merge --ff-only`) the current branch `X` to its downstream `Y`,
+            and subsequently slides out `Y`. Both steps require manual confirmation unless `-y`/`--yes` is provided.
+
+            The downstream `Y` is selected according to the following criteria:
+            * if `X` has exactly one downstream branch `y` whose tip is a descendant of `X`, and whose fork point is equal to `X`
+              (basically: there's a green edge between `X` and `y`), then `y` is selected as `Y`,
+            * if `X` has no downstream branches connected with a green edge to `X`, then `advance` fails,
+            * if `X` has more than one downstream branch connected with a green edge to `X`, then user is asked to pick the branch to fast-forward merge into
+              (similarly to what happens in `git machete go down`). If `--yes` is specified, then `advance` fails.
+
+            As an example, if `git machete status --color=never --list-commits` is as follows:
+            <dim>
+              master
+              |
+              m-develop *
+                |
+                | Enable adding remote branch in the manner similar to git checkout
+                o-feature/add-from-remote
+                | |
+                | | Add support and sample for machete-post-slide-out hook
+                | o-feature/post-slide-out-hook
+                |
+                | Remove support for Python 2
+                | Remove support for Python 2 - 1st round of fixes
+                ?-chore/v3
+                |
+                | Apply Python2-compatible static typing
+                x-feature/types
+            </dim>
+            then running `git machete advance --yes` will lead to the following status:
+            <dim>
+              master
+              |
+              | Enable adding remote branch in the manner similar to git checkout
+              o-develop *
+                |
+                | Add support and sample for machete-post-slide-out hook
+                o-feature/post-slide-out-hook
+                |
+                | Remove support for Python 2
+                | Remove support for Python 2 - 1st round of fixes
+                ?-chore/v3
+                |
+                | Apply Python2-compatible static typing
+                x-feature/types
+            </dim>
+            Note that the current branch after the operation is still `develop`, just pointing to `feature/add-from-remote`'s tip now.
+
+            <b>Options:</b>
+              <b>-y, --yes</b>         Don't ask for confirmation whether to fast-forward the current branch or whether to slide-out the downstream.
+                                Fails if the current branch has more than one green-edge downstream branch.
         """,
         "anno": """
             <b>Usage: git machete anno [-b|--branch=<branch>] [<annotation text>]</b>
@@ -2910,6 +3015,14 @@ def launch(orig_args):
             param = check_optional_param(parse_options(args, "o:Ry", ["onto=", "as-root", "yes"]))
             read_definition_file()
             add(param or current_branch())
+        elif cmd == "advance":
+            args1 = parse_options(args, "y", ["yes"])
+            expect_no_param(args1)
+            read_definition_file()
+            expect_no_operation_in_progress()
+            cb = current_branch()
+            expect_in_managed_branches(cb)
+            advance(cb)
         elif cmd == "anno":
             params = parse_options(args, "b:", ["branch="])
             read_definition_file()

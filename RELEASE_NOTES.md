@@ -2,8 +2,10 @@
 
 ## New in git-machete 2.15.0
 
-- added: `add` accepts remote branches as well (just like `git checkout`)
+- improved: `add` accepts remote branches as well (just like `git checkout`)
 - added: `addable` category of `list`
+- added: `advance` command
+- fixed: Bash completion for `-y` option in several commands
 
 ## New in git-machete 2.14.0
 

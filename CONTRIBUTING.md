@@ -19,21 +19,23 @@ Run `docs/setup-sandbox` script to set up a test repo under `~/machete-sandbox` 
 
 Deprecated commands are excluded.
 
-| Property                                                          | Commands                                                                      |
-| ----------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| can accept interactive input on stdin                             | `add`, `delete-unmanaged`, `discover`, `go`, `traverse`, `update`             |
-| can display status (and run `machete-status-branch` hook)         | `discover`, `status`, `traverse`                                              |
-| can modify the .git/machete file                                  | `add`, `anno`, `discover`, `edit`, `slide-out`, `traverse`                    |
-| can modify the git repository (excluding .git/machete)            | `add`, `delete-unmanaged`, `go`, `reapply`, `slide-out`, `traverse`, `update` |
-| can run merge                                                     | `slide-out`, `traverse`, `update`                                             |
-| can run rebase (and run `machete-pre-rebase` hook)                | `reapply` (\*), `slide-out`, `traverse`, `update`                             |
-| can slide-out a branch                                            | `slide-out`, `traverse`                                                       |
-| expects no ongoing rebase/merge/cherry-pick/revert/am             | `go`, `reapply`, `slide-out`, `traverse`, `update`                            |
-| has stable output format across minor versions (plumbing command) | `file`, `fork-point` (\*\*), `is-managed`, `list`, `show`, `version`          |
+| Property                                                          | Commands                                                                                 |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| can accept interactive input on stdin                             | `add`, `advance`, `delete-unmanaged`, `discover`, `go`, `traverse`, `update`             |
+| can display status (and run `machete-status-branch` hook)         | `discover`, `status`, `traverse`                                                         |
+| can modify the .git/machete file                                  | `add`, `advance`, `anno`, `discover`, `edit`, `slide-out`, `traverse`                    |
+| can modify the git repository (excluding .git/machete)            | `add`, `advance`, `delete-unmanaged`, `go`, `reapply`, `slide-out`, `traverse`, `update` |
+| can run merge                                                     | `advance` (\*), `slide-out`, `traverse`, `update`                                        |
+| can run rebase (and run `machete-pre-rebase` hook)                | `reapply` (\*\*), `slide-out`, `traverse`, `update`                                      |
+| can slide out a branch                                            | `advance`, `slide-out`, `traverse`                                                       |
+| expects no ongoing rebase/merge/cherry-pick/revert/am             | `advance`, `go`, `reapply`, `slide-out`, `traverse`, `update`                            |
+| has stable output format across minor versions (plumbing command) | `file`, `fork-point` (\*\*\*), `is-managed`, `list`, `show`, `version`                   |
 
-(\*) `reapply` can run rebase but can't run merge since merging a branch with its own fork point is a no-op and generally doesn't make much sense.
+(\*) `advance` can only run fast-forward merge (`git merge --ff-only`).
 
-(\*\*) A stable output is only guaranteed for `fork-point` when invoked without options or with `--inferred` option.
+(\*\*) `reapply` can run rebase but can't run merge since merging a branch with its own fork point is a no-op and generally doesn't make much sense.
+
+(\*\*\*) A stable output is only guaranteed for `fork-point` when invoked without any option or only with `--inferred` option.
 
 
 ## Versioning
