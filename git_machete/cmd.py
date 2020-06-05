@@ -167,6 +167,38 @@ def warn(msg):
         displayed_warnings.add(msg)
 
 
+# Let's keep the flag to avoid checking for current directory's existence
+# every time any command is being popened or run.
+current_directory_confirmed_to_exist = False
+
+
+def mark_current_directory_as_possibly_non_existent():
+    global current_directory_confirmed_to_exist
+    current_directory_confirmed_to_exist = False
+
+
+def ensure_current_directory_exists():
+    global current_directory_confirmed_to_exist
+
+    def cwd_or_none():
+        try:
+            return os.getcwd()
+        except FileNotFoundError:
+            return None
+
+    if not current_directory_confirmed_to_exist:
+        cwd = cwd_or_none()
+        if not cwd:
+            while not cwd:
+                # 'os.chdir' only affects the current process and its subprocesses;
+                # it doesn't propagate to the parent process (which is typically a shell)...
+                os.chdir(os.path.pardir)
+                cwd = cwd_or_none()
+            # ...so it would be misleading if we informed the user that "the current directory has been changed"
+            warn("current directory no longer exists, the lowest existing parent directory is %s" % cwd)
+        current_directory_confirmed_to_exist = True
+
+
 def run_cmd(cmd, *args, **kwargs):
     flat_cmd = cmd_shell_repr(cmd, *args)
     if opt_debug:
@@ -174,7 +206,13 @@ def run_cmd(cmd, *args, **kwargs):
     elif opt_verbose:
         sys.stderr.write(flat_cmd + "\n")
 
+    ensure_current_directory_exists()
     exit_code = subprocess.call([cmd] + list(args), **kwargs)
+
+    # Let's defensively assume that every command executed via run_cmd
+    # (but not via popen_cmd) can make the current directory disappear.
+    # In practice, it's mostly 'git checkout' that carries such risk.
+    mark_current_directory_as_possibly_non_existent()
 
     if opt_debug and exit_code != 0:
         sys.stderr.write(dim("<exit code: %i>\n\n" % exit_code))
@@ -188,6 +226,7 @@ def popen_cmd(cmd, *args, **kwargs):
     elif opt_verbose:
         sys.stderr.write(flat_cmd + "\n")
 
+    ensure_current_directory_exists()
     process = subprocess.Popen([cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
     stdout_bytes, stderr_bytes = process.communicate()
     stdout, stderr = stdout_bytes.decode('utf-8'), stderr_bytes.decode('utf-8')
@@ -196,9 +235,10 @@ def popen_cmd(cmd, *args, **kwargs):
     if opt_debug:
         if exit_code != 0:
             sys.stderr.write(colored("<exit code: %i>\n\n" % exit_code, RED))
-        sys.stderr.write(dim(stdout) + "\n")
+        if stdout:
+            sys.stderr.write("%s\n%s\n" % (dim("<stdout>:"), dim(stdout)))
         if stderr:
-            sys.stderr.write("\n%s\n%s\n" % (dim("<stderr>:"), colored(stderr, RED)))
+            sys.stderr.write("%s\n%s\n" % (dim("<stderr>:"), colored(stderr, RED)))
 
     return exit_code, stdout, stderr
 
@@ -225,7 +265,10 @@ def run_git(git_cmd, *args, **kwargs):
 def popen_git(git_cmd, *args, **kwargs):
     exit_code, stdout, stderr = popen_cmd("git", git_cmd, *args)
     if not kwargs.get("allow_non_zero") and exit_code != 0:
-        raise MacheteException("'%s' returned %i" % (cmd_shell_repr("git", git_cmd, *args), exit_code))
+        exit_code_msg = "'%s' returned %i\n" % (cmd_shell_repr("git", git_cmd, *args), exit_code)
+        stdout_msg = "\n%s:\n%s" % (bold("stdout"), dim(stdout)) if stdout else ""
+        stderr_msg = "\n%s:\n%s" % (bold("stderr"), dim(stderr)) if stderr else ""
+        raise MacheteException(exit_code_msg + stdout_msg + stderr_msg)
     return stdout
 
 

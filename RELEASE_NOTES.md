@@ -6,6 +6,7 @@
 - added: `addable` category of `list`
 - added: `advance` command
 - fixed: Bash completion for `-y` option in several commands
+- fixed: handling the case of current directory becoming non-existent (e.g. as a result of checkout)
 
 ## New in git-machete 2.14.0
 
