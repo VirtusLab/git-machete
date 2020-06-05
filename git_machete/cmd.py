@@ -167,9 +167,27 @@ def warn(msg):
         displayed_warnings.add(msg)
 
 
+def directory_exists(path):
+    try:
+        # Note that os.path.isdir itself (without os.path.abspath) isn't reliable
+        # since it returns a false positive (True) for the current directory when if it doesn't exist
+        return os.path.isdir(os.path.abspath(path))
+    except OSError:
+        return False
+
+
+def current_directory_or_none():
+    try:
+        return os.getcwd()
+    except OSError:
+        # This happens when current directory does not exist (typically: has been deleted)
+        return None
+
+
 # Let's keep the flag to avoid checking for current directory's existence
 # every time any command is being popened or run.
 current_directory_confirmed_to_exist = False
+initial_current_directory = current_directory_or_none() or os.getenv('PWD')
 
 
 def mark_current_directory_as_possibly_non_existent():
@@ -177,36 +195,30 @@ def mark_current_directory_as_possibly_non_existent():
     current_directory_confirmed_to_exist = False
 
 
-def ensure_current_directory_exists():
+def chdir_upwards_until_current_directory_exists():
     global current_directory_confirmed_to_exist
-
-    def cwd_or_none():
-        try:
-            return os.getcwd()
-        except FileNotFoundError:
-            return None
-
     if not current_directory_confirmed_to_exist:
-        cwd = cwd_or_none()
-        if not cwd:
-            while not cwd:
-                # 'os.chdir' only affects the current process and its subprocesses;
-                # it doesn't propagate to the parent process (which is typically a shell)...
+        current_directory = current_directory_or_none()
+        if not current_directory:
+            while not current_directory:
+                # Note: 'os.chdir' only affects the current process and its subprocesses;
+                # it doesn't propagate to the parent process (which is typically a shell).
                 os.chdir(os.path.pardir)
-                cwd = cwd_or_none()
-            # ...so it would be misleading if we informed the user that "the current directory has been changed"
-            warn("current directory no longer exists, the lowest existing parent directory is %s" % cwd)
+                current_directory = current_directory_or_none()
+            debug("chdir_upwards_until_current_directory_exists()",
+                  "current directory did not exist, chdired up into %s" % current_directory)
         current_directory_confirmed_to_exist = True
 
 
 def run_cmd(cmd, *args, **kwargs):
+    chdir_upwards_until_current_directory_exists()
+
     flat_cmd = cmd_shell_repr(cmd, *args)
     if opt_debug:
         sys.stderr.write(bold(">>> " + flat_cmd) + "\n")
     elif opt_verbose:
         sys.stderr.write(flat_cmd + "\n")
 
-    ensure_current_directory_exists()
     exit_code = subprocess.call([cmd] + list(args), **kwargs)
 
     # Let's defensively assume that every command executed via run_cmd
@@ -220,13 +232,14 @@ def run_cmd(cmd, *args, **kwargs):
 
 
 def popen_cmd(cmd, *args, **kwargs):
+    chdir_upwards_until_current_directory_exists()
+
     flat_cmd = cmd_shell_repr(cmd, *args)
     if opt_debug:
         sys.stderr.write(bold(">>> " + flat_cmd) + "\n")
     elif opt_verbose:
         sys.stderr.write(flat_cmd + "\n")
 
-    ensure_current_directory_exists()
     process = subprocess.Popen([cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
     stdout_bytes, stderr_bytes = process.communicate()
     stdout, stderr = stdout_bytes.decode('utf-8'), stderr_bytes.decode('utf-8')
@@ -3038,8 +3051,12 @@ def launch(orig_args):
 
         if cmd not in ("format", "help"):
             definition_file_path = get_git_subpath("machete")
-            if cmd not in ("discover", "infer") and not os.path.isfile(definition_file_path):
-                open(definition_file_path, 'w').close()
+            if cmd not in ("discover", "infer"):
+                if not os.path.exists(definition_file_path):
+                    open(definition_file_path, 'w').close()
+                elif os.path.isdir(definition_file_path):
+                    # Extremely unlikely case, basically checking if anybody tampered with the repository.
+                    raise MacheteException('%s is a directory rather than a regular file, aborting' % definition_file_path)
 
         def allowed_directions(allow_current):
             current = "c[urrent]|" if allow_current else ""
@@ -3262,6 +3279,13 @@ def launch(orig_args):
         sys.exit(1)
     except StopTraversal:
         pass
+    finally:
+        if initial_current_directory and not directory_exists(initial_current_directory):
+            nearest_existing_parent_directory = initial_current_directory
+            while not directory_exists(nearest_existing_parent_directory):
+                nearest_existing_parent_directory = os.path.join(nearest_existing_parent_directory, os.path.pardir)
+            warn("current directory %s no longer exists, "
+                 "the nearest existing parent directory is %s" % (initial_current_directory, os.path.abspath(nearest_existing_parent_directory)))
 
 
 if __name__ == "__main__":
