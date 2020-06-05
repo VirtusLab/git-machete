@@ -23,10 +23,6 @@ class MacheteException(Exception):
         return str(self.parameter)
 
 
-def star(f):  # tuple unpacking in lambdas
-    return lambda args: f(*args)
-
-
 def excluding(iterable, s):
     return list(filter(lambda x: x not in s, iterable))
 
@@ -41,6 +37,12 @@ def map_truthy_only(func, iterable):
 
 def non_empty_lines(s):
     return list(filter(None, s.split("\n")))
+
+
+# Converts a lambda accepting N arguments to a lambda accepting one argument, an N-element tuple.
+# Name matching Scala's `tupled` on `FunctionX`.
+def tupled(f):
+    return lambda tple: f(*tple)
 
 
 ENDC = '\033[0m'
@@ -464,7 +466,10 @@ def add(b):
             u = infer_upstream(b, condition=lambda x: x in managed_branches, reject_reason_message="this candidate is not a managed branch")
             if not u:
                 raise MacheteException("Could not automatically infer upstream (parent) branch for '%s'.\n"
-                                       "Specify the desired upstream branch with '--onto' or edit the definition file manually with 'git machete edit'" % b)
+                                       "You can either:\n"
+                                       "1) specify the desired upstream branch with '--onto' or\n"
+                                       "2) pass '--as-root' to attach '%s' as a new root or\n"
+                                       "3) edit the definition file manually with 'git machete edit'" % (b, b))
             else:
                 msg = "Add '%s' onto the inferred upstream (parent) branch '%s'?" % (b, u) + pretty_choices('y', 'N')
                 opt_yes_msg = "Adding '%s' onto the inferred upstream (parent) branch '%s'" % (b, u)
@@ -1278,18 +1283,18 @@ def match_log_to_adjusted_reflogs(b):
         def log_result():
             for sha_, branch_defs in branch_defs_by_sha_in_reflog.items():
                 yield dim("%s => %s" %
-                          (sha_, ", ".join(map(star(lambda lb, lb_or_rb: lb if lb == lb_or_rb else "%s (remote counterpart of %s)" % (lb_or_rb, lb)), branch_defs))))
+                          (sha_, ", ".join(map(tupled(lambda lb, lb_or_rb: lb if lb == lb_or_rb else "%s (remote counterpart of %s)" % (lb_or_rb, lb)), branch_defs))))
 
         debug("match_log_to_adjusted_reflogs(%s)" % b, "branches containing the given SHA in their adjusted reflog: \n%s\n" % "\n".join(log_result()))
 
     for sha in spoonfeed_log_shas(b):
         if sha in branch_defs_by_sha_in_reflog:
-            containing_branch_defs = list(filter(star(lambda lb, lb_or_rb: lb != b), branch_defs_by_sha_in_reflog[sha]))
+            containing_branch_defs = list(filter(tupled(lambda lb, lb_or_rb: lb != b), branch_defs_by_sha_in_reflog[sha]))
             if containing_branch_defs:
-                debug("match_log_to_adjusted_reflogs(%s)" % b, "commit %s found in adjusted reflog of %s" % (sha, " and ".join(map(star(lambda lb, lb_or_rb: lb_or_rb), branch_defs_by_sha_in_reflog[sha]))))
+                debug("match_log_to_adjusted_reflogs(%s)" % b, "commit %s found in adjusted reflog of %s" % (sha, " and ".join(map(tupled(lambda lb, lb_or_rb: lb_or_rb), branch_defs_by_sha_in_reflog[sha]))))
                 yield sha, containing_branch_defs
             else:
-                debug("match_log_to_adjusted_reflogs(%s)" % b, "commit %s found only in adjusted reflog of %s; ignoring" % (sha, " and ".join(map(star(lambda lb, lb_or_rb: lb_or_rb), branch_defs_by_sha_in_reflog[sha]))))
+                debug("match_log_to_adjusted_reflogs(%s)" % b, "commit %s found only in adjusted reflog of %s; ignoring" % (sha, " and ".join(map(tupled(lambda lb, lb_or_rb: lb_or_rb), branch_defs_by_sha_in_reflog[sha]))))
         else:
             debug("match_log_to_adjusted_reflogs(%s)" % b, "commit %s not found in any adjusted reflog" % sha)
 
@@ -1316,7 +1321,7 @@ def is_merged_to_parent(b):
 
 def infer_upstream(b, condition=lambda u: True, reject_reason_message=""):
     for sha, containing_branch_defs in match_log_to_adjusted_reflogs(b):
-        debug("infer_upstream(%s)" % b, "commit %s found in adjusted reflog of %s" % (sha, " and ".join(map(star(lambda x, y: y), containing_branch_defs))))
+        debug("infer_upstream(%s)" % b, "commit %s found in adjusted reflog of %s" % (sha, " and ".join(map(tupled(lambda x, y: y), containing_branch_defs))))
 
         for candidate, original_matched_branch in containing_branch_defs:
             if candidate != original_matched_branch:
@@ -1410,7 +1415,7 @@ def fork_point_and_containing_branch_defs(b, use_overrides):
         if overridden_fp_sha:
             if u and is_ancestor(u, b) and not is_ancestor(u, overridden_fp_sha, later_prefix=""):
                 # We need to handle the case when b is a descendant of u,
-                # but the fork point of is overridden to a commit that is NOT a descendant of u.
+                # but the fork point of b is overridden to a commit that is NOT a descendant of u.
                 # In this case it's more reasonable to assume that u (and not overridden_fp_sha) is the fork point.
                 debug("fork_point_and_containing_branch_defs(%s)" % b,
                       "%s is descendant of its upstream %s, but overridden fork point commit %s is NOT a descendant of %s; falling back to %s as fork point" % (u, b, overridden_fp_sha, u, u))
@@ -1433,11 +1438,11 @@ def fork_point_and_containing_branch_defs(b, use_overrides):
         debug("fork_point_and_containing_branch_defs(%s)" % b,
               "commit %s is the most recent point in history of %s to occur on "
               "adjusted reflog of any other branch or its remote counterpart "
-              "(specifically: %s)" % (fp_sha, b, " and ".join(map(star(lambda lb, lb_or_rb: lb_or_rb), containing_branch_defs))))
+              "(specifically: %s)" % (fp_sha, b, " and ".join(map(tupled(lambda lb, lb_or_rb: lb_or_rb), containing_branch_defs))))
 
         if u and is_ancestor(u, b) and not is_ancestor(u, fp_sha, later_prefix=""):
             # That happens very rarely in practice (typically current head of any branch, including u, should occur on the reflog of this
-            # branch, thus is_ancestor(u, b) should implicate is_ancestor(u, FP(b)), but it's still possible in case reflog of
+            # branch, thus is_ancestor(u, b) should imply is_ancestor(u, FP(b)), but it's still possible in case reflog of
             # u is incomplete for whatever reason.
             debug("fork_point_and_containing_branch_defs(%s)" % b,
                   "%s is descendant of its upstream %s, but inferred fork point commit %s is NOT a descendant of %s; falling back to %s as fork point" % (u, b, fp_sha, u, u))
@@ -1670,8 +1675,8 @@ def advance(b):
         return
 
     ans = ask_if(
-        "Branch %s is now merged into %s. Slide %s out of the tree of branch dependencies?" % (bold(d), bold(b), bold(d)) + pretty_choices('y', 'N'),
-        "Branch %s is now merged into %s. Sliding %s out of the tree of branch dependencies..." % (bold(d), bold(b), bold(d))
+        "\nBranch %s is now merged into %s. Slide %s out of the tree of branch dependencies?" % (bold(d), bold(b), bold(d)) + pretty_choices('y', 'N'),
+        "\nBranch %s is now merged into %s. Sliding %s out of the tree of branch dependencies..." % (bold(d), bold(b), bold(d))
     )
     if ans in ('y', 'yes'):
         for dd in down_branches.get(d) or []:
@@ -2117,7 +2122,7 @@ def status(warn_on_yellow_edges):
                 for sha, short_sha, msg in reversed(commits):
                     if sha == fp_sha(b):
                         # fp_branches_cached will already be there thanks to the above call to 'fp_sha'.
-                        fp_branches_formatted = " and ".join(map(star(lambda lb, lb_or_rb: lb_or_rb), fp_branches_cached[b]))
+                        fp_branches_formatted = " and ".join(sorted(map(tupled(lambda lb, lb_or_rb: lb_or_rb), fp_branches_cached[b])))
                         fp_suffix = " %s %s %s has been found in reflog of %s" %\
                             (colored(right_arrow(), RED), colored("fork point ???", RED), "this commit" if opt_list_commits_with_hashes else "commit " + short_sha, fp_branches_formatted)
                     else:
@@ -2725,7 +2730,7 @@ def usage(c=None):
 
               <b>-W</b>                           Equivalent to `--fetch --whole`; useful for even more automated traversal of all branches.
 
-              <b>-y, --yes</b>                    Don't ask for any interactive input, including confirmation of rebase/push/pull. Implicates `-n`.
+              <b>-y, --yes</b>                    Don't ask for any interactive input, including confirmation of rebase/push/pull. Implies `-n`.
         """,
         "update": """
             <b>Usage: git machete update [-f|--fork-point=<fork-point-commit>] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase]</b>
