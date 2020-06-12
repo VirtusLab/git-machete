@@ -6,6 +6,9 @@ dist: bionic
 # Python is needed for PyPI deployment, but `minimal` is still sufficient for this purpose.
 language: minimal
 
+# CI is responsible for the tagging, so we shouldn't let it build tags.
+if: tag IS blank
+
 # The defaults used in absence of an explicit `install:` or `script:` field  (i.e. currently only for the jobs in `Tests` stage)
 install: bash ci/tox/travis-install.sh
 script: bash ci/tox/travis-script.sh
@@ -22,9 +25,10 @@ jobs:
       install: skip
       script:
         - ./ci/checks/links.sh
+        - ./ci/checks/tab-character.sh
         - ./ci/checks/trailing-whitespace.sh
 
-    # Note: each time a commit is pushed to master (and not when a tag is pushed),
+    # Note: each time a commit is pushed to master,
     # a Snap build for `edge` channel is also triggered automatically via GitHub webhook on https://build.snapcraft.io/user/VirtusLab/git-machete
     # This happens completely outside of the CI, however.
     - stage: 'Test building a snap'
@@ -32,7 +36,7 @@ jobs:
       if: branch = develop
       install:
         - sudo apt-get update
-        - sudo apt-get install snapd
+        - sudo apt-get install -y snapd
         - sudo snap install snapcraft --classic
       script:
         # `destructive-mode` means that build dependencies are installed directly in the system where snapcraft is launched
@@ -51,55 +55,51 @@ jobs:
         - echo q | git machete traverse --fetch
         - sudo snap remove git-machete
 
-    # Deploy stages are separated for easier inspection of output.
     - stage: 'Build rpm & deploy to GitHub Releases'
-      if: tag IS present
-      install: skip
+      if: branch = master
+      install: sudo snap install --classic hub
       script: bash ci/rpm/travis-script.sh
       deploy:
-        - provider: releases
-          token:
-            secure: arhgNhJMfVq8xaa5xMswvjkgfgE8dDJ6BM0X+HI28m7BrwjxaVyr5Ct1qIohEQSZOpihwHzFLLwzSICc5sR6H8Ai4yYcm/sLGOAHyp4p1HeAXPqbtyUtn3rbcjsKXSfwjntkGommC6sYoY5GZhJy2qcRQIADjRMPQWRURY5/6KBBY05scL2vVpQw2NHp2pNCiMSDhokFsN3mv1PX15QDJdKFuIrD61cD15ljkwol7OJ+wKzGozyJB6GHkWi7WsGXsgdzjruHY7tcqPEksa+sWxxGGMmLQ7gVruVUlguunACjh0xlZvMBDKWEeffvRy9JSkAKVccTtaiZw9beoCaihZOVys/Bw4Znv3e+UpkOOrBwMFOdjc1R/Kz1/aewuYFckKhP/opdkpOj3T0VIckmK4s/vWYWhHLRiAHE4gb47UxYIKHGqPfs9XMyZryRF6iaTm3LKtTb+ufM0OQEKtWR0MBBRmpqapx74Jd6tuf7n4KbsS4ZuVeb27+OBhfogpYdfGW2KxzwCOwYl+iGCsNkPyMUOmqo8MfFvwEsHU7SnZ1G2tcSoptT8+Bj8n2lKB7sf/llywUJxKKG9kpK9Y9Tc6yvtgjj4ewjsjgaGCksS5jVPk223WEHu/iX4FK4Ftms9cXWLbQpMKW4dACyAEu8ONIRw+TXvUFA2J3wWsOiQNk=
-          skip_cleanup: true
-          file_glob: true
-          file: dist/git-machete-*.noarch.rpm
-          on: { tags: true }
+        provider: script
+        skip_cleanup: true  # to retain the rpm built by travis-script.sh
+        script: bash ci/github-releases/travis-deploy.sh
+        on: { branch: master }
 
     - stage: 'Deploy to PyPI'
-      if: tag IS present
+      if: branch = master
       install: skip
       script: skip
       deploy:
-        - provider: pypi
-          username: __token__
-          password:
-            secure: U6JJcByjLv2PutUpnpqDT7cNIUYu9Ap9t4G90KULEn6Syxa49aX14BT6k2jBakWbQgrPCxLLNSWeCoC4xPl/Z2/9HLEFxZLVovtVbiaJ8HrTcoWmEZijnGob9Ofh94TFP8VtifjqHXeIrPi78XyZEks/ed0Sj3jSH4BL74PDHvqbD1RnsezFm4QGI2ESOWY+laJ2ralcpHRJh0hJb0QHxOpbKPVM+QefiFs+VFkFP25hQcn/G3qdduzW5NQ8OHBYCbevy6/1yt/M67ZzAeA0n4UrkZ/3vBsMJJ3wynWWZ3xO+lGs6eqZ31E8vicogYbw5hXs119JRkKUrcU5uqVL1mogf8N6y76w2xNV6Aul/XtpBiuPQsHm0tChwTI6yyGzAZBRPMB1KzRclDKGQThIBhpX+wfqHSpvdj1CZV5AMm3+6nHA0LSGWiuJ1BW7pTrAp9YFPbrQfH59JWMhy8ng5lexcQQj7spSO/DPw0VMIfUiw644BfSfyZwls5du4yYfWOkd8RoELEa2IGqCp1sTqjWvSuX3nzKCbJhxAwrVU5mK9fiMPcL1jURIwlFvooI+qKAp3CdGZ1IM+HFmpzXym2kvZvmrNXduVSZcqG3DrCFxt77FYsN5SNB/uly1vLq/6Y0BaCw9ao6YWfW3fvU2cCcyejjzPyfGzZ2jA5uOpZ8=
-          distributions: 'sdist bdist_wheel'
-          on: { tags: true }
+        provider: pypi
+        username: __token__
+        password:
+          secure: U6JJcByjLv2PutUpnpqDT7cNIUYu9Ap9t4G90KULEn6Syxa49aX14BT6k2jBakWbQgrPCxLLNSWeCoC4xPl/Z2/9HLEFxZLVovtVbiaJ8HrTcoWmEZijnGob9Ofh94TFP8VtifjqHXeIrPi78XyZEks/ed0Sj3jSH4BL74PDHvqbD1RnsezFm4QGI2ESOWY+laJ2ralcpHRJh0hJb0QHxOpbKPVM+QefiFs+VFkFP25hQcn/G3qdduzW5NQ8OHBYCbevy6/1yt/M67ZzAeA0n4UrkZ/3vBsMJJ3wynWWZ3xO+lGs6eqZ31E8vicogYbw5hXs119JRkKUrcU5uqVL1mogf8N6y76w2xNV6Aul/XtpBiuPQsHm0tChwTI6yyGzAZBRPMB1KzRclDKGQThIBhpX+wfqHSpvdj1CZV5AMm3+6nHA0LSGWiuJ1BW7pTrAp9YFPbrQfH59JWMhy8ng5lexcQQj7spSO/DPw0VMIfUiw644BfSfyZwls5du4yYfWOkd8RoELEa2IGqCp1sTqjWvSuX3nzKCbJhxAwrVU5mK9fiMPcL1jURIwlFvooI+qKAp3CdGZ1IM+HFmpzXym2kvZvmrNXduVSZcqG3DrCFxt77FYsN5SNB/uly1vLq/6Y0BaCw9ao6YWfW3fvU2cCcyejjzPyfGzZ2jA5uOpZ8=
+        distributions: 'sdist bdist_wheel'
+        on: { branch: master }
 
     - stage: 'Open PR to NixOS/nixpkgs'  # Artifacts must be released to PyPI first
-      if: tag IS present
+      if: branch = master
       install: skip
       script: skip
       deploy:
-        - provider: script
-          script: bash ci/nixpkgs-pr/travis-deploy.sh
-          on: { tags: true }
+        provider: script
+        script: bash ci/nixpkgs-pr/travis-deploy.sh
+        on: { branch: master }
 
     - stage: 'Update Homebrew tap'  # Artifacts must be released to PyPI first
-      if: tag IS present
+      if: branch = master
       install: skip
       script: skip
       deploy:
-        - provider: script
-          script: bash ci/homebrew-tap/travis-deploy.sh
-          on: { tags: true }
+        provider: script
+        script: bash ci/homebrew-tap/travis-deploy.sh
+        on: { branch: master }
 
     - stage: 'Build & upload deb to PPA'
-      if: tag IS present
+      if: branch = master
       install: skip
       script: skip
       deploy:
-        - provider: script
-          script: bash ci/deb-ppa-upload/travis-deploy.sh
-          on: { tags: true }
+        provider: script
+        script: bash ci/deb-ppa-upload/travis-deploy.sh
+        on: { branch: master }

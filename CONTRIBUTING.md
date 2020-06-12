@@ -61,45 +61,30 @@ Output format of any non-plumbing command can change in non-backward-compatible 
 
 1. Merge the changes from `develop` to `master` and push `master`.
 
-1. Make sure that build for `master` passes on [Travis CI](https://travis-ci.org/VirtusLab/git-machete/branches).
-
-1. Verify that a build started for [Snap](https://build.snapcraft.io/user/VirtusLab/git-machete).
-   If not, check build.snapcraft.io webhook on Github (under Settings > Webhooks) -
-   sometimes the build system responds with 500 status for no clear reason, in such case `Redeliver` the call.
-   Once ready, install the `latest/edge` revision locally (`sudo snap install --edge --classic git-machete`)
-   and verify that it works correctly, esp. wrt. push/pull via ssh/https and editor (`git machete edit` and interactive rebases).
-
-1. Run `./tag-release.sh` script to create an annotated tag for the release.
-   Inspect the output of the script, i.e. the output of `git cat-file` for the newly-created tag.
-
-1. Push tag with `git push origin <new-tag-name>` (or `git push --tags`, but the former is safer
-   since it won't attempt to push any other tags that might exist locally but not in the remote).
-
-1. Wait for the pipeline for the tag to complete successfully on [Travis CI](https://travis-ci.org/VirtusLab/git-machete/builds).
+1. Verify that the release has been created on [Github](https://github.com/VirtusLab/git-machete/releases)
+   and that a `git-machete-<VERSION>-1.noarch.rpm` file is present under the Assets.
 
 1. Verify that the latest version is uploaded to [PyPI](https://pypi.org/project/git-machete).
-
-1. Verify that the release has been created on [Github](https://github.com/VirtusLab/git-machete/releases)
-   and that a `git-machete-VERSION-1.noarch.rpm` file is present under the Assets.
-
-   Fix the formatting in the description manually by copy-pasting the tag description
-   (see [this answer](https://github.community/t5/How-to-use-Git-and-GitHub/add-release-notes-to-git-remote-tag-from-command-line/m-p/22343/highlight/true#M6488)
-   for more details on why it's not automated as well).
 
 1. Verify that a [version-bump PRs to NixOS/nixpkgs](https://github.com/NixOS/nixpkgs/pulls?q=is%3Apr+git-machete) has been opened.
 
 1. Verify that the latest commit in [VirtusLab/homebrew-git-machete](https://github.com/VirtusLab/homebrew-git-machete) tap repo refers to the latest version.
 
-   Re-run the latest build for `orphan/brew-package-check` branch on [Travis CI](https://travis-ci.org/VirtusLab/git-machete/branches).
-   Inspect the job output and verify that the latest version gets correctly installed on Mac OS X (esp. see the output of `git machete --version`).
+1. Verify that a build started for [Snap](https://build.snapcraft.io/user/VirtusLab/git-machete).
+   If not, check `build.snapcraft.io` webhook on Github (under Settings > Webhooks) -
+   sometimes the Snap Store's build system responds with 500 status for no clear reason, in such case `Redeliver` the call.
+
+   Once ready, install the `latest/edge` revision locally (`sudo snap install --edge --classic git-machete`)
+   and verify that it works correctly, esp. wrt. push/pull via ssh/https and editor (`git machete edit` and interactive rebases).
+
+   Then, perform a release from `latest/edge` to `latest/stable` for both `i386` and `amd64`
+   from [Snapcraft web dashboard](https://snapcraft.io/git-machete/releases) or via CLI.
 
 1. Verify that a build started on [git-machete PPA](https://launchpad.net/~virtuslab/+archive/ubuntu/git-machete/+packages).
 
-   Once the new version package is published and the old one is removed (typically takes around 20-30 min),
+   Once the new version of package is published and the old one is removed (typically takes around 20-30 min),
    follow the instructions from [ci/deb-ppa-test-install/README.md](https://github.com/VirtusLab/git-machete/tree/master/ci/deb-ppa-test-install).
    Inspect the output of `docker-compose` and verify that the latest version gets correctly installed on Ubuntu (esp. see the output of `git machete --version`).
-
-1. Perform a release from `latest/edge` to `latest/stable` for each architecture from [Snapcraft web dashboard](https://snapcraft.io/git-machete/releases) or via CLI.
 
 1. Thanks to the courtesy of [Ila&iuml; Deutel](https://github.com/ilai-deutel),
    a [git-machete package](https://aur.archlinux.org/packages/git-machete) is hosted in Arch User Repository (AUR).

@@ -8,6 +8,7 @@
 - fixed: Bash completion for `-y` option in several commands
 - fixed: handling the case of current directory becoming non-existent (e.g. as a result of checkout)
 - improved: `add` accepts remote branches as well (just like `git checkout`)
+- improved: simplify the release process
 
 ## New in git-machete 2.14.0
 
