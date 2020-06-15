@@ -92,8 +92,8 @@ fmt_transformations = [
 ]
 
 
-def fmt(s):
-    result = s
+def fmt(*parts):
+    result = ''.join(parts)
     for f in fmt_transformations:
         result = f(result)
     return result
@@ -586,27 +586,45 @@ def find_executable(executable):
 
 def get_default_editor():
     # Based on the git's own algorithm for identifying the editor.
-    # 'editor' (to please Debian-based systems) and 'nano' have been added.
+    # '$GIT_MACHETE_EDITOR', 'editor' (to please Debian-based systems) and 'nano' have been added.
+    git_machete_editor_var = "GIT_MACHETE_EDITOR"
     proposed_editor_funs = [
+        ("$" + git_machete_editor_var, lambda: os.environ.get(git_machete_editor_var)),
         ("$GIT_EDITOR", lambda: os.environ.get("GIT_EDITOR")),
         ("git config core.editor", lambda: get_config_or_none("core.editor")),
-        ("editor", lambda: "editor"),
         ("$VISUAL", lambda: os.environ.get("VISUAL")),
         ("$EDITOR", lambda: os.environ.get("EDITOR")),
+        ("editor", lambda: "editor"),
         ("nano", lambda: "nano"),
-        ("vi", lambda: "vi")
+        ("vi", lambda: "vi"),
     ]
 
     for name, fun in proposed_editor_funs:
         editor = fun()
         if not editor:
             debug("get_default_editor()", "'%s' is undefined" % name)
-        elif not find_executable(editor):
-            debug("get_default_editor()", "'%s'%s is not available" % (name, (" (" + editor + ")") if editor != name else ""))
         else:
-            debug("get_default_editor()", "'%s'%s is available" % (name, (" (" + editor + ")") if editor != name else ""))
-            return editor
-    raise MacheteException("Cannot determine editor. Set EDITOR environment variable or edit %s directly." % definition_file_path)
+            editor_repr = "'%s'%s" % (name, (" (" + editor + ")") if editor != name else "")
+            if not find_executable(editor):
+                debug("get_default_editor()", "%s is not available" % editor_repr)
+                if name == "$" + git_machete_editor_var:
+                    # In this specific case, when GIT_MACHETE_EDITOR is defined but doesn't point to a valid executable,
+                    # it's more reasonable/less confusing to raise an error and exit without opening anything.
+                    raise MacheteException(fmt("<b>%s</b> is not available" % editor_repr))
+            else:
+                debug("get_default_editor()", "%s is available" % editor_repr)
+                if name != "$" + git_machete_editor_var and get_config_or_none('advice.macheteEditorSelection') != 'false':
+                    sample_alternative = 'nano' if editor.startswith('vi') else 'vi'
+                    sys.stderr.write(
+                        fmt("Opening <b>%s</b>.\n" % editor_repr,
+                            "To override this choice, use <b>%s</b> env var, e.g. `export %s=%s`.\n\n" % (git_machete_editor_var, git_machete_editor_var, sample_alternative),
+                            "See `git machete help edit` and `git machete edit --debug` for more details.\n\n"
+                            "Use `git config advice.macheteEditorSelection false` to suppress this message.\n"))
+                return editor
+
+    # This case is extremely unlikely on a modern Unix-like system.
+    raise MacheteException(fmt("Cannot determine editor. "
+                               "Set `%s` environment variable or edit %s directly." % (git_machete_editor_var, definition_file_path)))
 
 
 def edit():
@@ -619,6 +637,9 @@ git_version = None
 def get_git_version():
     global git_version
     if not git_version:
+        # We need to cut out the x.y.z part and not just take the result of 'git version' as is,
+        # because the version string in certain distributions of git (esp. on OS X) has an extra suffix,
+        # which is irrelevant for our purpose (checking whether certain git CLI features are available/bugs are fixed).
         raw = re.search(r"\d+.\d+.\d+", popen_git("version")).group(0)
         git_version = tuple(map(int, raw.split(".")))
     return git_version
@@ -2442,8 +2463,23 @@ def usage(c=None):
         "edit": """
             <b>Usage: git machete e[dit]</b>
 
-            Opens the editor (as defined by the `EDITOR` environment variable, or `vim` if undefined) and lets you edit the definition file manually.
-            The definition file can be always accessed under path returned by `git machete file` (currently fixed to <repo-root>/.git/machete).
+            Opens an editor and lets you edit the definition file manually.
+
+            The editor is determined by checking up the following locations:
+            * `$GIT_MACHETE_EDITOR`
+            * `$GIT_EDITOR`
+            * `$(git config core.editor)`
+            * `$VISUAL`
+            * `$EDITOR`
+            * `editor`
+            * `nano`
+            * `vi`
+            and selecting the first one that is defined and points to an executable file accessible on `PATH`.
+
+            Note that the above editor selection only applies for editing the definition file,
+            but not for any other actions that may be indirectly triggered by git-machete, including editing of rebase TODO list, commit messages etc.
+
+            The definition file can be always accessed and edited directly under path returned by `git machete file` (currently fixed to <git-directory>/machete).
         """,
         "file": """
             <b>Usage: git machete file</b>

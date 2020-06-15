@@ -9,6 +9,7 @@
 - fixed: handling the case of current directory becoming non-existent (e.g. as a result of checkout)
 - improved: `add` accepts remote branches as well (just like `git checkout`)
 - improved: simplify the release process
+- added: support for `GIT_MACHETE_EDITOR` env var
 
 ## New in git-machete 2.14.0
 
