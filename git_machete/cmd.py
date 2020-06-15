@@ -1296,12 +1296,14 @@ def filtered_reflog(b, prefix):
     earliest_sha, earliest_gs = b_reflog[-1]  # Note that the reflog is returned from latest to earliest entries.
     shas_to_exclude = set()
     if earliest_gs.startswith("branch: Created from"):
+        debug("filtered_reflog(%s, %s)" % (b, prefix),
+              "skipping any reflog entry with the hash equal to the hash of the earliest (branch creation) entry: %s" % earliest_sha)
         shas_to_exclude.add(earliest_sha)
-    debug("filtered_reflog(%s, %s)" % (b, prefix), "also, skipping any reflog entry with the hash in %s" % shas_to_exclude)
 
     result = [sha for (sha, gs) in reflog(prefix + b) if sha not in shas_to_exclude and not is_excluded_reflog_subject(sha, gs)]
-    debug("filtered_reflog(%s, %s)" % (b, prefix), "computed filtered reflog (= reflog without branch creation and branch reset events irrelevant for fork point/upstream inference): %s\n" %
-          (", ".join(result) or "<empty>"))
+    debug("filtered_reflog(%s, %s)" % (b, prefix),
+          "computed filtered reflog (= reflog without branch creation "
+          "and branch reset events irrelevant for fork point/upstream inference): %s\n" % (", ".join(result) or "<empty>"))
     return result
 
 
@@ -1329,7 +1331,7 @@ def get_latest_checkout_timestamps():
 branch_defs_by_sha_in_reflog = None
 
 
-def match_log_to_adjusted_reflogs(b):
+def match_log_to_filtered_reflogs(b):
     global branch_defs_by_sha_in_reflog
 
     if b not in local_branches():
@@ -1351,7 +1353,7 @@ def match_log_to_adjusted_reflogs(b):
         branch_defs_by_sha_in_reflog = {}
         for sha, branch_def in generate_entries():
             if sha in branch_defs_by_sha_in_reflog:
-                # The practice shows that it's rather unlikely for a given commit to appear on adjusted reflogs of two unrelated branches
+                # The practice shows that it's rather unlikely for a given commit to appear on filtered reflogs of two unrelated branches
                 # ("unrelated" as in, not a local branch and its remote counterpart) but we need to handle this case anyway.
                 branch_defs_by_sha_in_reflog[sha] += [branch_def]
             else:
@@ -1362,18 +1364,21 @@ def match_log_to_adjusted_reflogs(b):
                 yield dim("%s => %s" %
                           (sha_, ", ".join(map(tupled(lambda lb, lb_or_rb: lb if lb == lb_or_rb else "%s (remote counterpart of %s)" % (lb_or_rb, lb)), branch_defs))))
 
-        debug("match_log_to_adjusted_reflogs(%s)" % b, "branches containing the given SHA in their adjusted reflog: \n%s\n" % "\n".join(log_result()))
+        debug("match_log_to_filtered_reflogs(%s)" % b, "branches containing the given SHA in their filtered reflog: \n%s\n" % "\n".join(log_result()))
 
+    get_second = tupled(lambda lb, lb_or_rb: lb_or_rb)
     for sha in spoonfeed_log_shas(b):
         if sha in branch_defs_by_sha_in_reflog:
-            containing_branch_defs = list(filter(tupled(lambda lb, lb_or_rb: lb != b), branch_defs_by_sha_in_reflog[sha]))
+            # The entries must be sorted by lb_or_rb to make sure the upstream inference is deterministic
+            # (and does not depend on the order in which `generate_entries` iterated through the local branches).
+            containing_branch_defs = sorted(filter(tupled(lambda lb, lb_or_rb: lb != b), branch_defs_by_sha_in_reflog[sha]), key=get_second)
             if containing_branch_defs:
-                debug("match_log_to_adjusted_reflogs(%s)" % b, "commit %s found in adjusted reflog of %s" % (sha, " and ".join(map(tupled(lambda lb, lb_or_rb: lb_or_rb), branch_defs_by_sha_in_reflog[sha]))))
+                debug("match_log_to_filtered_reflogs(%s)" % b, "commit %s found in filtered reflog of %s" % (sha, " and ".join(map(get_second, branch_defs_by_sha_in_reflog[sha]))))
                 yield sha, containing_branch_defs
             else:
-                debug("match_log_to_adjusted_reflogs(%s)" % b, "commit %s found only in adjusted reflog of %s; ignoring" % (sha, " and ".join(map(tupled(lambda lb, lb_or_rb: lb_or_rb), branch_defs_by_sha_in_reflog[sha]))))
+                debug("match_log_to_filtered_reflogs(%s)" % b, "commit %s found only in filtered reflog of %s; ignoring" % (sha, " and ".join(map(get_second, branch_defs_by_sha_in_reflog[sha]))))
         else:
-            debug("match_log_to_adjusted_reflogs(%s)" % b, "commit %s not found in any adjusted reflog" % sha)
+            debug("match_log_to_filtered_reflogs(%s)" % b, "commit %s not found in any filtered reflog" % sha)
 
 
 # Complex routines/commands
@@ -1389,7 +1394,7 @@ def is_merged_to_parent(b):
     # If branch is equal to parent, then we need to distinguish between the
     # case of branch being "recently" created from the parent and the case of
     # branch being fast-forward merged to the parent.
-    # The applied heuristics is to check if the adjusted reflog of the branch
+    # The applied heuristics is to check if the filtered reflog of the branch
     # (reflog stripped of trivial events like branch creation, reset etc.)
     # is non-empty.
     return (not equal_to_parent and is_ancestor(b, u)) or \
@@ -1397,8 +1402,8 @@ def is_merged_to_parent(b):
 
 
 def infer_upstream(b, condition=lambda u: True, reject_reason_message=""):
-    for sha, containing_branch_defs in match_log_to_adjusted_reflogs(b):
-        debug("infer_upstream(%s)" % b, "commit %s found in adjusted reflog of %s" % (sha, " and ".join(map(tupled(lambda x, y: y), containing_branch_defs))))
+    for sha, containing_branch_defs in match_log_to_filtered_reflogs(b):
+        debug("infer_upstream(%s)" % b, "commit %s found in filtered reflog of %s" % (sha, " and ".join(map(tupled(lambda x, y: y), containing_branch_defs))))
 
         for candidate, original_matched_branch in containing_branch_defs:
             if candidate != original_matched_branch:
@@ -1503,7 +1508,7 @@ def fork_point_and_containing_branch_defs(b, use_overrides):
                 return overridden_fp_sha, []
 
     try:
-        fp_sha, containing_branch_defs = next(match_log_to_adjusted_reflogs(b))
+        fp_sha, containing_branch_defs = next(match_log_to_filtered_reflogs(b))
     except StopIteration:
         if u and is_ancestor(u, b):
             debug("fork_point_and_containing_branch_defs(%s)" % b,
@@ -1514,7 +1519,7 @@ def fork_point_and_containing_branch_defs(b, use_overrides):
     else:
         debug("fork_point_and_containing_branch_defs(%s)" % b,
               "commit %s is the most recent point in history of %s to occur on "
-              "adjusted reflog of any other branch or its remote counterpart "
+              "filtered reflog of any other branch or its remote counterpart "
               "(specifically: %s)" % (fp_sha, b, " and ".join(map(tupled(lambda lb, lb_or_rb: lb_or_rb), containing_branch_defs))))
 
         if u and is_ancestor(u, b) and not is_ancestor(u, fp_sha, later_prefix=""):
@@ -1590,8 +1595,10 @@ def get_overridden_fork_point(b):
     # While the latter checks the sanity of fork point override configuration,
     # the former checks if the override still applies to wherever the given branch currently points.
     if not is_ancestor(while_descendant_of, b, earlier_prefix=""):
-        warn("since branch %s is no longer a descendant of commit %s, the fork point override to commit %s no longer applies.\n"
-             "Consider running 'git machete fork-point --unset-override %s'." % (b, short_commit_sha_by_revision(while_descendant_of), to, b))
+        warn(fmt("since branch <b>%s</b> is no longer a descendant of commit %s, " % (b, short_commit_sha_by_revision(while_descendant_of)),
+                 "the fork point override to commit %s no longer applies.\n" % short_commit_sha_by_revision(to),
+                 "Consider running:\n",
+                 "  `git machete fork-point --unset-override %s`\n" % b))
         return None
     debug("get_overridden_fork_point(%s)" % b,
           "since branch %s is descendant of while_descendant_of=%s, fork point of %s is overridden to %s" %
@@ -1623,11 +1630,11 @@ def set_fork_point_override(b, to_revision):
     b_sha = commit_sha_by_revision(b, prefix="refs/heads/")
     set_config(while_descendant_of_key, b_sha)
 
-    sys.stdout.write("Fork point for %s is overridden to %s.\n"
-                     "This is going to apply as long as %s points to (or is descendant of) its current head (commit %s).\n\n"
-                     % (bold(b), bold(get_revision_repr(to_revision)), b, short_commit_sha_by_revision(b_sha)))
-    sys.stdout.write("This information is stored under git config keys:\n  * %s\n  * %s\n\n" % (to_key, while_descendant_of_key))
-    sys.stdout.write("To unset this override, use:\n  git machete fork-point --unset-override %s\n" % b)
+    sys.stdout.write(
+        fmt("Fork point for <b>%s</b> is overridden to <b>%s</b>.\n" % (b, get_revision_repr(to_revision)),
+            "This applies as long as %s points to (or is descendant of) its current head (commit %s).\n\n" % (b, short_commit_sha_by_revision(b_sha)),
+            "This information is stored under git config keys:\n  * `%s`\n  * `%s`\n\n" % (to_key, while_descendant_of_key),
+            "To unset this override, use:\n  `git machete fork-point --unset-override %s`\n" % b))
 
 
 def unset_fork_point_override(b):
