@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+# git completion provides `__git_refs` (includes local&remote branches, but also tags, *HEADs etc.)
+# and `__git_heads` (only local branches), but nothing that would list only local&remote (or just remote) branches.
+__git_branches() {
+  git branch --all --format='%(refname:short)'
+}
+
 _git_machete() {
     local cmds="add advance anno d delete-unmanaged diff discover e edit file fork-point g go help is-managed l list log reapply show slide-out s status traverse update version"
     local help_topics="$cmds format hooks"
@@ -18,6 +24,8 @@ _git_machete() {
     local diff_opts="-s --stat"
     local discover_opts="-C --checked-out-since= -l --list-commits -r --roots= -y --yes"
     local fork_point_opts="--inferred --override-to= --override-to-inferred --override-to-parent --unset-override"
+    local go_opts="-b --branch= -y --yes"
+    local is_managed_opts="--local --remote"
     local reapply_opts="-f --fork-point="
     local slide_out_opts="-d --down-fork-point= -M --merge -n --no-edit-merge --no-interactive-rebase"
     local status_opts="--color= -L --list-commits-with-hashes -l --list-commits"
@@ -30,7 +38,7 @@ _git_machete() {
         --color=*) __gitcomp "$opt_color_args" "" "${cur##--color=}" ;;
         --down-fork-point=*|--fork-point=*|--override-to=*) __gitcomp "$(__git_refs)" "" "${cur##--*=}" ;;
         --return-to=*) __gitcomp "$opt_return_to_args" "" "${cur##--return-to=}" ;;
-        --roots=*) __gitcomp "$(__git_heads)" "" "${cur##--roots=}" ;;
+        --roots=*) __gitcomp "$(__git_branches)" "" "${cur##--roots=}" ;;
         --start-from=*) __gitcomp "$opt_start_from_args" "" "${cur##--start-from=}" ;;
         -*)
             case ${COMP_WORDS[2]} in
@@ -41,6 +49,8 @@ _git_machete() {
                 delete-unmanaged) __gitcomp "$common_opts $delete_unmanaged_opts" ;;
                 discover) __gitcomp "$common_opts $discover_opts" ;;
                 fork-point) __gitcomp "$common_opts $fork_point_opts" ;;
+                g|go) __gitcomp "$common_opts $go_opts" ;;
+                is-managed) __gitcomp "$common_opts $is_managed_opts" ;;
                 reapply) __gitcomp "$common_opts $reapply_opts" ;;
                 slide-out) __gitcomp "$common_opts $slide_out_opts" ;;
                 s|status) __gitcomp "$common_opts $status_opts" ;;
@@ -54,23 +64,30 @@ _git_machete() {
              else
                 local prev=${COMP_WORDS[COMP_CWORD-1]}
                 case $prev in
-                    -b|--branch|-o|--onto) __gitcomp_nl "$(git machete list managed 2>/dev/null)" ;;
+                    -b|--branch)
+                        case ${COMP_WORDS[2]} in
+                            anno) __gitcomp_nl "$(git machete list managed 2>/dev/null)" ;;
+                            g|go) __gitcomp_nl "$(__git_branches)" ;;
+                        esac ;;
                     -C|--checked-out-since) __gitcomp "" ;;
                     --color) __gitcomp "$opt_color_args" ;;
                     -d|--down-fork-point|-f|--fork-point|--override-to) __gitcomp "$(__git_refs)" ;;
                     # TODO (GH issue #25): We don't complete --help since it's going to be captured by git anyway
                     # (and results in redirection to yet non-existent man for `git-machete`).
                     -h) __gitcomp "$help_topics" ;;
+                    -o|--onto) __gitcomp_nl "$(git machete list managed 2>/dev/null)" ;;
                     --return-to) __gitcomp "$opt_return_to_args" ;;
                     # TODO complete the comma-separated list of roots
-                    -r|--roots) __gitcomp "$(__git_heads)" ;;
+                    -r|--roots) __gitcomp "$(__git_branches)" ;;
                     --start-from) __gitcomp "$opt_start_from_args" ;;
                     --unset-override) __gitcomp_nl "$(git machete list with-overridden-fork-point 2>/dev/null)" ;;
                     *)
                         case ${COMP_WORDS[2]} in
                             add) __gitcomp_nl "$(git machete list addable 2>/dev/null)" ;;
-                            d|diff|fork-point|is-managed|l|log) __gitcomp "$(__git_heads)" ;;
-                            g|go) __gitcomp "$directions" ;;
+                            d|diff|fork-point|is-managed|l|log) __gitcomp "$(__git_branches)" ;;
+                            # Note: `git machete go` allows checking out any local/remote branch, whether managed or not;
+                            # still, to reduce the amount of entries in completion, let's limit ourselves just to managed branches.
+                            g|go) __gitcomp "$directions $(git machete list managed 2>/dev/null)" ;;
                             help) __gitcomp "$help_topics" ;;
                             list)
                                 if [[ $COMP_CWORD -eq 3 ]]; then

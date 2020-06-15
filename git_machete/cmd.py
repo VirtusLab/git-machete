@@ -47,15 +47,16 @@ def tupled(f):
 
 
 ENDC = '\033[0m'
-BOLD = '\033[1m'
-# `GIT_MACHETE_DIM_AS_GRAY` remains undocumented as for now,
-# was just needed for animated gifs to render correctly (`[2m`-style dimmed text was invisible)
-DIM = '\033[38;2;128;128;128m' if os.environ.get('GIT_MACHETE_DIM_AS_GRAY') == 'true' else '\033[2m'
-UNDERLINE = '\033[4m'
+GRAY = '\033[38;2;128;128;128m'
 GREEN = '\033[32m'
 YELLOW = '\033[33m'
 ORANGE = '\033[00;38;5;208m'
 RED = '\033[91m'
+BOLD = '\033[1m'
+# `GIT_MACHETE_DIM_AS_GRAY` remains undocumented as for now,
+# was just needed for animated gifs to render correctly (`[2m`-style dimmed text was invisible)
+DIM = GRAY if os.environ.get('GIT_MACHETE_DIM_AS_GRAY') == 'true' else '\033[2m'
+UNDERLINE = '\033[4m'
 
 
 ascii_only = False
@@ -334,7 +335,7 @@ def read_definition_file(verify_branches=True):
         if b in managed_branches:
             raise MacheteException("%s, line %i: branch `%s` re-appears in the tree definition. %s" %
                                    (definition_file_path, idx + 1, b, hint))
-        if verify_branches and b not in local_branches():
+        if verify_branches and b not in all_branches():
             raise MacheteException("%s, line %i: `%s` is not a local branch. %s" %
                                    (definition_file_path, idx + 1, b, hint))
         managed_branches += [b]
@@ -394,14 +395,14 @@ def save_definition_file():
         f.write("\n".join(render_tree()) + "\n")
 
 
-def down(b, pick_mode):
+def down(b, pick_if_multiple):
     expect_in_managed_branches(b)
     dbs = down_branches.get(b)
     if not dbs:
         raise MacheteException("Branch `%s` has no downstream branch" % b)
     elif len(dbs) == 1:
         return dbs[0]
-    elif pick_mode:
+    elif pick_if_multiple:
         return pick(dbs, "downstream branch")
     else:
         return "\n".join(dbs)
@@ -490,7 +491,7 @@ def add(b):
     if onto:
         expect_in_managed_branches(onto)
 
-    if b not in local_branches():
+    if b not in all_branches():
         rb = get_sole_remote_branch(b)
         if rb:
             common_line = "A local branch `%s` does not exist, but a remote branch `%s` exists.\n" % (b, rb)
@@ -510,7 +511,7 @@ def add(b):
                     cb = current_branch_or_none()
                     if cb and cb in managed_branches:
                         onto = cb
-                create_branch(b, "refs/heads/" + onto)
+                create_branch(b, onto)
             else:
                 return
 
@@ -526,13 +527,13 @@ def add(b):
                                        "1) specify the desired upstream branch with `--onto` or\n"
                                        "2) pass `--as-root` to attach `%s` as a new root or\n"
                                        "3) edit the definition file manually with `git machete edit`" % (b, b))
+
+            msg = "Add `%s` onto the inferred upstream (parent) branch `%s`?" % (b, u) + pretty_choices('y', 'N')
+            opt_yes_msg = "Adding `%s` onto the inferred upstream (parent) branch `%s`" % (b, u)
+            if ask_if(msg, opt_yes_msg) in ('y', 'yes'):
+                onto = u
             else:
-                msg = "Add `%s` onto the inferred upstream (parent) branch `%s`?" % (b, u) + pretty_choices('y', 'N')
-                opt_yes_msg = "Adding `%s` onto the inferred upstream (parent) branch `%s`" % (b, u)
-                if ask_if(msg, opt_yes_msg) in ('y', 'yes'):
-                    onto = u
-                else:
-                    return
+                return
 
         up_branch[b] = onto
         if onto in down_branches:
@@ -789,7 +790,7 @@ def find_commit_sha_by_revision(revision):
 commit_sha_by_revision_cached = None
 
 
-def commit_sha_by_revision(revision, prefix="refs/heads/"):
+def commit_sha_by_revision(revision, prefix=""):
     global commit_sha_by_revision_cached
     if commit_sha_by_revision_cached is None:
         load_branches()
@@ -806,7 +807,7 @@ def is_full_sha(revision):
 committer_unix_timestamp_by_revision_cached = None
 
 
-def committer_unix_timestamp_by_revision(revision, prefix="refs/heads/"):
+def committer_unix_timestamp_by_revision(revision, prefix=""):
     global committer_unix_timestamp_by_revision_cached
     if committer_unix_timestamp_by_revision_cached is None:
         load_branches()
@@ -899,7 +900,8 @@ def currently_rebased_branch_or_none():
 def currently_checked_out_branch_or_none():
     try:
         raw = popen_git("symbolic-ref", "--quiet", "HEAD").strip()
-        return re.sub("^refs/heads/", "", raw)
+        # We unorthodoxly allow for a remote branch (refs/remotes/...) to be the current branch as well.
+        return re.sub("^refs/[^/]+/", "", raw)
     except MacheteException:
         return None
 
@@ -949,7 +951,7 @@ def merge_base(sha1, sha2):
 
 # Note: the 'git rev-parse --verify' validation is not performed in case for either of earlier/later
 # if the corresponding prefix is empty AND the revision is a 40 hex digit hash.
-def is_ancestor(earlier_revision, later_revision, earlier_prefix="refs/heads/", later_prefix="refs/heads/"):
+def is_ancestor(earlier_revision, later_revision, earlier_prefix="", later_prefix=""):
     if earlier_prefix == "" and is_full_sha(earlier_revision):
         earlier_sha = earlier_revision
     else:
@@ -963,13 +965,13 @@ def is_ancestor(earlier_revision, later_revision, earlier_prefix="refs/heads/", 
     return merge_base(earlier_sha, later_sha) == earlier_sha
 
 
-def create_branch(b, out_of_revision):
-    run_git("checkout", "-b", b, *([out_of_revision] if out_of_revision else []))
+def create_branch(lb, out_of_revision):
+    run_git("checkout", "-b", lb, *([out_of_revision] if out_of_revision else []))
     flush_caches()  # the repository state has changed b/c of a successful branch creation, let's defensively flush all the caches
 
 
 def log_shas(revision, max_count):
-    opts = (["--max-count=" + str(max_count)] if max_count else []) + ["--format=%H", "refs/heads/" + revision]
+    opts = (["--max-count=" + str(max_count)] if max_count else []) + ["--format=%H", revision]
     return non_empty_lines(popen_git("log", *opts))
 
 
@@ -1012,6 +1014,10 @@ def remote_branches():
     return remote_branches_cached
 
 
+def all_branches():
+    return local_branches() + remote_branches()
+
+
 def load_branches():
     global commit_sha_by_revision_cached, committer_unix_timestamp_by_revision_cached, counterparts_for_fetching_cached, local_branches_cached, remote_branches_cached
     commit_sha_by_revision_cached = {}
@@ -1026,49 +1032,71 @@ def load_branches():
         values = line.split("\t")
         if len(values) != 3:  # invalid, shouldn't happen
             continue
-        b, sha, committer_unix_timestamp_and_time_zone = values
-        b_stripped = re.sub("^refs/remotes/", "", b)
-        remote_branches_cached += [b_stripped]
-        commit_sha_by_revision_cached[b] = sha
-        committer_unix_timestamp_by_revision_cached[b] = int(committer_unix_timestamp_and_time_zone.split(' ')[0])
+        rb, sha, committer_unix_timestamp_and_time_zone = values
+        rb_stripped = re.sub("^refs/remotes/", "", rb)
+        remote_branches_cached += [rb_stripped]
+        commit_sha_by_revision_cached[rb] = commit_sha_by_revision_cached[rb_stripped] = sha
+        committer_unix_timestamp_by_revision_cached[rb] = int(committer_unix_timestamp_and_time_zone.split(' ')[0])
 
     raw_local = non_empty_lines(popen_git("for-each-ref", "--format=%(refname)\t%(objectname)\t%(committerdate:raw)\t%(upstream)", "refs/heads"))
-
     for line in raw_local:
         values = line.split("\t")
         if len(values) != 4:  # invalid, shouldn't happen
             continue
-        b, sha, committer_unix_timestamp_and_time_zone, fetch_counterpart = values
-        b_stripped = re.sub("^refs/heads/", "", b)
+        lb, sha, committer_unix_timestamp_and_time_zone, fetch_counterpart = values
+        lb_stripped = re.sub("^refs/heads/", "", lb)
         fetch_counterpart_stripped = re.sub("^refs/remotes/", "", fetch_counterpart)
-        local_branches_cached += [b_stripped]
-        commit_sha_by_revision_cached[b] = sha
-        committer_unix_timestamp_by_revision_cached[b] = int(committer_unix_timestamp_and_time_zone.split(' ')[0])
+        local_branches_cached += [lb_stripped]
+        commit_sha_by_revision_cached[lb] = commit_sha_by_revision_cached[lb_stripped] = sha
+        committer_unix_timestamp_by_revision_cached[lb] = int(committer_unix_timestamp_and_time_zone.split(' ')[0])
         if fetch_counterpart_stripped in remote_branches_cached:
-            counterparts_for_fetching_cached[b_stripped] = fetch_counterpart_stripped
+            counterparts_for_fetching_cached[lb_stripped] = fetch_counterpart_stripped
 
 
-def get_sole_remote_branch(b):
+def split_into_remote_and_branch_name(rb):
+    for r in remotes():
+        if rb.startswith(r + "/"):
+            return r, rb[len(r + "/"):]
+    return "", rb
+
+
+def get_sole_remote_branch(lb):
     def matches(rb):
-        # Note that this matcher is defensively too inclusive:
-        # if there is both origin/foo and origin/feature/foo,
-        # then both are matched for 'foo';
-        # this is to reduce risk wrt. which '/'-separated fragments belong to remote and which to branch name.
-        # FIXME: this is still likely to deliver incorrect results in rare corner cases with compound remote names.
-        return rb.endswith('/' + b)
+        return rb.endswith("/" + lb) and rb[:-len("/" + lb)] in remotes()
     matching_remote_branches = list(filter(matches, remote_branches()))
     return matching_remote_branches[0] if len(matching_remote_branches) == 1 else None
 
 
 def merged_local_branches():
     return list(map(
-        lambda b: re.sub("^refs/heads/", "", b),
+        lambda lb: re.sub("^refs/heads/", "", lb),
         non_empty_lines(popen_git("for-each-ref", "--format=%(refname)", "--merged", "HEAD", "refs/heads"))
     ))
 
 
-def go(branch):
-    run_git("checkout", "--quiet", branch, "--")
+def check_out_existing_branch(b):
+    if b in local_branches():
+        run_git("checkout", "--quiet", b, "--")
+    elif b in remote_branches():
+        run_git("checkout", "--quiet", b, "--")
+
+        # It'd be very nice if we were already done at this point... but unfortunately there's one nasty detail left:
+        # after performing a checkout above, .git/HEAD does not contain `ref: refs/remotes/...`,
+        # but instead just the hash of the commit pointed by `b`.
+        # AFAIK as of git 2.27.0 there's no way to force git to put anything other than a commit hash or `ref: refs/heads/...` into .git/HEAD,
+        # hence a low-level hack is necessary:
+        with open(get_git_subpath("HEAD"), 'w') as git_head_write:
+            git_head_write.write('ref: refs/remotes/' + b)
+        # And that's basically why the entire "check out remote branch" feature is marked as unsafe.
+        # This is the sole place in the entire git-machete where the underlying repository state is tampered with directly (and not via git CLI).
+
+        warn(fmt("checked out remote branch `%s`.\n" % b,
+                 "The current state of repository is not supported directly by git, "
+                 "which only allows HEAD to be a local branch or a commit hash (detached HEAD).\n",
+                 "Avoid side-effecting actions like `git commit` or `git reset`.\n",
+                 "git-machete will not attempt to fast-forward, merge, rebase or reset this branch."))
+    else:
+        raise MacheteException("'%s' is not a local or remote branch" % b)
 
 
 def get_hook_path(hook_name):
@@ -1090,25 +1118,25 @@ def check_hook_executable(hook_path):
         return True
 
 
-def merge(branch, into):  # refs/heads/ prefix is assumed for 'branch'
+def merge(lb, into):
     extra_params = ["--no-edit"] if opt_no_edit_merge else ["--edit"]
     # We need to specify the message explicitly to avoid 'refs/heads/' prefix getting into the message...
-    commit_message = "Merge branch '%s' into %s" % (branch, into)
+    commit_message = "Merge branch '%s' into %s" % (lb, into)
     # ...since we prepend 'refs/heads/' to the merged branch name for unambiguity.
-    run_git("merge", "-m", commit_message, "refs/heads/" + branch, *extra_params)
+    run_git("merge", "-m", commit_message, "refs/heads/" + lb, *extra_params)
 
 
-def merge_fast_forward_only(branch):  # refs/heads/ prefix is assumed for 'branch'
-    run_git("merge", "--ff-only", "refs/heads/" + branch)
+def merge_fast_forward_only(b):
+    run_git("merge", "--ff-only", b)
 
 
-def rebase(onto, fork_commit, branch):
+def rebase(onto, fork_commit, lb):
     def do_rebase():
         try:
             if opt_no_interactive_rebase:
-                run_git("rebase", "--onto", onto, fork_commit, branch)
+                run_git("rebase", "--onto", onto, fork_commit, lb)
             else:
-                run_git("rebase", "--interactive", "--onto", onto, fork_commit, branch)
+                run_git("rebase", "--interactive", "--onto", onto, fork_commit, lb)
         finally:
             # https://public-inbox.org/git/317468c6-40cc-9f26-8ee3-3392c3908efb@talktalk.net/T
             # In our case, this can happen when git version invoked by git-machete to start the rebase
@@ -1138,8 +1166,8 @@ def rebase(onto, fork_commit, branch):
 
     hook_path = get_hook_path("machete-pre-rebase")
     if check_hook_executable(hook_path):
-        debug("rebase(%s, %s, %s)" % (onto, fork_commit, branch), "running machete-pre-rebase hook (%s)" % hook_path)
-        exit_code = run_cmd(hook_path, onto, fork_commit, branch, cwd=get_root_dir())
+        debug("rebase(%s, %s, %s)" % (onto, fork_commit, lb), "running machete-pre-rebase hook (%s)" % hook_path)
+        exit_code = run_cmd(hook_path, onto, fork_commit, lb, cwd=get_root_dir())
         if exit_code == 0:
             do_rebase()
         else:
@@ -1149,12 +1177,20 @@ def rebase(onto, fork_commit, branch):
         do_rebase()
 
 
-def rebase_onto_ancestor_commit(branch, ancestor_commit):
-    rebase(ancestor_commit, ancestor_commit, branch)
+def reapply():
+    cb = current_branch()
+    if cb not in local_branches():
+        raise MacheteException("Current branch `%s` is a remote branch; only local branches can be rebased" % cb)
+
+    fp = opt_fork_point or fork_point(cb, use_overrides=True)
+    rebase(fp, fp, cb)
 
 
 def update():
     cb = current_branch()
+    if cb not in local_branches():
+        raise MacheteException("Current branch `%s` is a remote branch; only local branches can be rebased or merged" % cb)
+
     if opt_merge:
         with_branch = up(cb,
                          prompt_if_inferred_msg="Branch `%s` not found in the tree of branch dependencies. Merge with the inferred upstream `%s`?" + pretty_choices('y', 'N'),
@@ -1164,20 +1200,20 @@ def update():
         onto_branch = up(cb,
                          prompt_if_inferred_msg="Branch `%s` not found in the tree of branch dependencies. Rebase onto the inferred upstream `%s`?" + pretty_choices('y', 'N'),
                          prompt_if_inferred_yes_opt_msg="Branch `%s` not found in the tree of branch dependencies. Rebasing onto the inferred upstream `%s`...")
-        rebase("refs/heads/" + onto_branch, opt_fork_point or fork_point(cb, use_overrides=True), cb)
+        rebase(onto_branch, opt_fork_point or fork_point(cb, use_overrides=True), cb)
 
 
-def diff(branch):
+def diff(b):
     params = \
         (["--stat"] if opt_stat else []) + \
-        [fork_point(branch if branch else current_branch(), use_overrides=True)] + \
-        (["refs/heads/" + branch] if branch else []) + \
+        [fork_point(b if b else current_branch(), use_overrides=True)] + \
+        ([b] if b else []) + \
         ["--"]
     run_git("diff", *params)
 
 
 def log(branch):
-    run_git("log", "^" + fork_point(branch, use_overrides=True), "refs/heads/" + branch)
+    run_git("log", "^" + fork_point(branch, use_overrides=True), branch)
 
 
 def commits_between(earlier, later):
@@ -1193,35 +1229,35 @@ DIVERGED_FROM_AND_OLDER_THAN_REMOTE = 5
 DIVERGED_FROM_AND_NEWER_THAN_REMOTE = 6
 
 
-def get_relation_to_remote_counterpart(b, rb):
-    b_is_anc_of_rb = is_ancestor(b, rb, later_prefix="refs/remotes/")
-    rb_is_anc_of_b = is_ancestor(rb, b, earlier_prefix="refs/remotes/")
-    if b_is_anc_of_rb:
-        return IN_SYNC_WITH_REMOTE if rb_is_anc_of_b else BEHIND_REMOTE
-    elif rb_is_anc_of_b:
+def get_relation_to_remote_counterpart(lb, rb):
+    lb_is_anc_of_rb = is_ancestor(lb, rb, earlier_prefix="refs/heads/", later_prefix="refs/remotes/")
+    rb_is_anc_of_lb = is_ancestor(rb, lb, earlier_prefix="refs/remotes/", later_prefix="refs/heads/")
+    if lb_is_anc_of_rb:
+        return IN_SYNC_WITH_REMOTE if rb_is_anc_of_lb else BEHIND_REMOTE
+    elif rb_is_anc_of_lb:
         return AHEAD_OF_REMOTE
     else:
-        b_t = committer_unix_timestamp_by_revision(b, "refs/heads/")
-        rb_t = committer_unix_timestamp_by_revision(rb, "refs/remotes/")
-        return DIVERGED_FROM_AND_OLDER_THAN_REMOTE if b_t < rb_t else DIVERGED_FROM_AND_NEWER_THAN_REMOTE
+        lb_t = committer_unix_timestamp_by_revision(lb, prefix="refs/heads/")
+        rb_t = committer_unix_timestamp_by_revision(rb, prefix="refs/remotes/")
+        return DIVERGED_FROM_AND_OLDER_THAN_REMOTE if lb_t < rb_t else DIVERGED_FROM_AND_NEWER_THAN_REMOTE
 
 
-def get_strict_remote_sync_status(b):
+def get_strict_remote_sync_status(lb):
     if not remotes():
         return NO_REMOTES, None
-    rb = strict_counterpart_for_fetching_of_branch(b)
+    rb = strict_counterpart_for_fetching_of_branch(lb)
     if not rb:
         return UNTRACKED, None
-    return get_relation_to_remote_counterpart(b, rb), strict_remote_for_fetching_of_branch(b)
+    return get_relation_to_remote_counterpart(lb, rb), strict_remote_for_fetching_of_branch(lb)
 
 
-def get_combined_remote_sync_status(b):
+def get_combined_remote_sync_status(lb):
     if not remotes():
         return NO_REMOTES, None
-    rb = combined_counterpart_for_fetching_of_branch(b)
+    rb = combined_counterpart_for_fetching_of_branch(lb)
     if not rb:
         return UNTRACKED, None
-    return get_relation_to_remote_counterpart(b, rb), combined_remote_for_fetching_of_branch(b)
+    return get_relation_to_remote_counterpart(lb, rb), combined_remote_for_fetching_of_branch(lb)
 
 
 # Reflog magic
@@ -1235,10 +1271,11 @@ def load_all_reflogs():
     # %gd - reflog selector (refname@{num})
     # %H - full hash
     # %gs - reflog subject
-    all_branches = ["refs/heads/" + b for b in local_branches()] + \
-                   ["refs/remotes/" + combined_counterpart_for_fetching_of_branch(b) for b in local_branches() if combined_counterpart_for_fetching_of_branch(b)]
+    local_branches_and_their_counterparts = \
+        ["refs/heads/" + lb for lb in local_branches()] + \
+        ["refs/remotes/" + combined_counterpart_for_fetching_of_branch(lb) for lb in local_branches() if combined_counterpart_for_fetching_of_branch(lb)]
     # The trailing '--' is necessary to avoid ambiguity in case there is a file called just exactly like one of the branches.
-    entries = non_empty_lines(popen_git("reflog", "show", "--format=%gD\t%H\t%gs", *(all_branches + ["--"])))
+    entries = non_empty_lines(popen_git("reflog", "show", "--format=%gD\t%H\t%gs", *(local_branches_and_their_counterparts + ["--"])))
     reflogs_cached = {}
     for entry in entries:
         values = entry.split("\t")
@@ -1276,7 +1313,7 @@ def reflog(b):
         return reflogs_cached[b]
 
 
-def filtered_reflog(b, prefix):
+def filtered_reflog(b, prefix=""):
     def is_excluded_reflog_subject(sha_, gs_):
         is_excluded = (
             gs_.startswith("branch: Created from") or
@@ -1335,8 +1372,17 @@ branch_defs_by_sha_in_reflog = None
 def match_log_to_filtered_reflogs(b):
     global branch_defs_by_sha_in_reflog
 
-    if b not in local_branches():
-        raise MacheteException("`%s` is not a local branch" % b)
+    if b not in all_branches():
+        raise MacheteException("`%s` is not a local or remote branch" % b)
+
+    local_branches_tracking_this = []
+    if b in remote_branches():
+        for lb in local_branches():
+            if combined_counterpart_for_fetching_of_branch(lb) == b:
+                local_branches_tracking_this += [lb]
+        debug("match_log_to_filtered_reflogs(%s)" % b,
+              "%s is a remote branch; commits occurring on reflogs of its local tracking branches (%s) will be ignored"
+              % (b, ", ".join(local_branches_tracking_this) or "<none>"))
 
     if branch_defs_by_sha_in_reflog is None:
         def generate_entries():
@@ -1370,9 +1416,17 @@ def match_log_to_filtered_reflogs(b):
     get_second = tupled(lambda lb, lb_or_rb: lb_or_rb)
     for sha in spoonfeed_log_shas(b):
         if sha in branch_defs_by_sha_in_reflog:
+
+            # We don't care if `sha` happens to occur on branch's own reflog
+            # (if b is local: b == lb == lb_or_rb; if b is remote: b == lb_or_rb),
+            # or on reflog of its remote tracking branch (b is local and b == lb),
+            # or on reflog of a local branch tracking this branch (b is remote and lb in local_branches_tracking_this).
+            def is_relevant_branch_def(lb, lb_or_rb):
+                return b not in (lb, lb_or_rb) and lb not in local_branches_tracking_this
+
             # The entries must be sorted by lb_or_rb to make sure the upstream inference is deterministic
             # (and does not depend on the order in which `generate_entries` iterated through the local branches).
-            containing_branch_defs = sorted(filter(tupled(lambda lb, lb_or_rb: lb != b), branch_defs_by_sha_in_reflog[sha]), key=get_second)
+            containing_branch_defs = sorted(filter(tupled(is_relevant_branch_def), branch_defs_by_sha_in_reflog[sha]), key=get_second)
             if containing_branch_defs:
                 debug("match_log_to_filtered_reflogs(%s)" % b, "commit %s found in filtered reflog of %s" % (sha, " and ".join(map(get_second, branch_defs_by_sha_in_reflog[sha]))))
                 yield sha, containing_branch_defs
@@ -1392,7 +1446,7 @@ def is_merged_to(b, target):
         # The applied heuristics is to check if the filtered reflog of the branch
         # (reflog stripped of trivial events like branch creation, reset etc.)
         # is non-empty.
-        return bool(filtered_reflog(b, prefix="refs/heads/"))
+        return bool(filtered_reflog(b))
     else:
         # If a branch is NOT equal to the target (typically its parent),
         # it's just enough to check if the target is reachable from the branch.
@@ -1532,7 +1586,7 @@ def fork_point_and_containing_branch_defs(b, use_overrides):
     if use_overrides:
         overridden_fp_sha = get_overridden_fork_point(b)
         if overridden_fp_sha:
-            if u and is_ancestor(u, b) and not is_ancestor(u, overridden_fp_sha, later_prefix=""):
+            if u and is_ancestor(u, b) and not is_ancestor(u, overridden_fp_sha):
                 # We need to handle the case when b is a descendant of u,
                 # but the fork point of b is overridden to a commit that is NOT a descendant of u.
                 # In this case it's more reasonable to assume that u (and not overridden_fp_sha) is the fork point.
@@ -1559,7 +1613,7 @@ def fork_point_and_containing_branch_defs(b, use_overrides):
               "filtered reflog of any other branch or its remote counterpart "
               "(specifically: %s)" % (fp_sha, b, " and ".join(map(tupled(lambda lb, lb_or_rb: lb_or_rb), containing_branch_defs))))
 
-        if u and is_ancestor(u, b) and not is_ancestor(u, fp_sha, later_prefix=""):
+        if u and is_ancestor(u, b) and not is_ancestor(u, fp_sha):
             # That happens very rarely in practice (typically current head of any branch, including u, should occur on the reflog of this
             # branch, thus is_ancestor(u, b) should imply is_ancestor(u, FP(b)), but it's still possible in case reflog of
             # u is incomplete for whatever reason.
@@ -1605,8 +1659,8 @@ def get_fork_point_override_data(b):
         warn("%s config is set but %s config is missing" % (while_descendant_of_key, to_key))
         return None
 
-    to_sha = commit_sha_by_revision(to, prefix="")
-    while_descendant_of_sha = commit_sha_by_revision(while_descendant_of, prefix="")
+    to_sha = commit_sha_by_revision(to)
+    while_descendant_of_sha = commit_sha_by_revision(while_descendant_of)
     if not to_sha or not while_descendant_of_sha:
         if not to_sha:
             warn("%s config value `%s` does not point to a valid commit" % (to_key, to))
@@ -1615,7 +1669,7 @@ def get_fork_point_override_data(b):
         return None
     # This check needs to be performed every time the config is retrieved.
     # We can't rely on the values being validated in set_fork_point_override(), since the config could have been modified outside of git-machete.
-    if not is_ancestor(to_sha, while_descendant_of_sha, earlier_prefix="", later_prefix=""):
+    if not is_ancestor(to_sha, while_descendant_of_sha):
         warn("commit %s pointed by %s config is not an ancestor of commit %s pointed by %s config" %
              (short_commit_sha_by_revision(to), to_key, short_commit_sha_by_revision(while_descendant_of), while_descendant_of_key))
         return None
@@ -1631,7 +1685,7 @@ def get_overridden_fork_point(b):
     # Note that this check is distinct from the is_ancestor check performed in get_fork_point_override_data.
     # While the latter checks the sanity of fork point override configuration,
     # the former checks if the override still applies to wherever the given branch currently points.
-    if not is_ancestor(while_descendant_of, b, earlier_prefix=""):
+    if not is_ancestor(while_descendant_of, b):
         warn(fmt("since branch <b>%s</b> is no longer a descendant of commit %s, " % (b, short_commit_sha_by_revision(while_descendant_of)),
                  "the fork point override to commit %s no longer applies.\n" % short_commit_sha_by_revision(to),
                  "Consider running:\n",
@@ -1654,17 +1708,17 @@ def get_revision_repr(revision):
 def set_fork_point_override(b, to_revision):
     if b not in local_branches():
         raise MacheteException("`%s` is not a local branch" % b)
-    to_sha = commit_sha_by_revision(to_revision, prefix="")
+    to_sha = commit_sha_by_revision(to_revision)
     if not to_sha:
         raise MacheteException("Cannot find revision %s" % to_revision)
-    if not is_ancestor(to_sha, b, earlier_prefix=""):
+    if not is_ancestor(to_sha, b):
         raise MacheteException("Cannot override fork point: %s is not an ancestor of %s" % (get_revision_repr(to_revision), b))
 
     to_key = config_key_for_override_fork_point_to(b)
     set_config(to_key, to_sha)
 
     while_descendant_of_key = config_key_for_override_fork_point_while_descendant_of(b)
-    b_sha = commit_sha_by_revision(b, prefix="refs/heads/")
+    b_sha = commit_sha_by_revision(b)
     set_config(while_descendant_of_key, b_sha)
 
     sys.stdout.write(
@@ -1679,7 +1733,7 @@ def unset_fork_point_override(b):
     unset_config(config_key_for_override_fork_point_while_descendant_of(b))
 
 
-def delete_unmanaged():
+def delete_local_unmanaged():
     branches_to_delete = excluding(local_branches(), managed_branches)
     cb = current_branch_or_none()
     if cb and cb in branches_to_delete:
@@ -1689,26 +1743,26 @@ def delete_unmanaged():
         branches_merged_to_head = merged_local_branches()
 
         branches_to_delete_merged_to_head = [b for b in branches_to_delete if b in branches_merged_to_head]
-        for b in branches_to_delete_merged_to_head:
-            rb = strict_counterpart_for_fetching_of_branch(b)
-            is_merged_to_remote = is_ancestor(b, rb, later_prefix="refs/remotes/") if rb else True
-            msg_core = "%s (merged to HEAD%s)" % (bold(b), "" if is_merged_to_remote else (", but not merged to " + rb))
+        for lb in branches_to_delete_merged_to_head:
+            rb = strict_counterpart_for_fetching_of_branch(lb)
+            is_merged_to_remote = is_ancestor(lb, rb, earlier_prefix="refs/heads/", later_prefix="refs/remotes/") if rb else True
+            msg_core = "%s (merged to HEAD%s)" % (bold(lb), "" if is_merged_to_remote else (", but not merged to " + rb))
             msg = "Delete branch %s?" % msg_core + pretty_choices('y', 'N', 'q')
             opt_yes_msg = "Deleting branch %s" % msg_core
             ans = ask_if(msg, opt_yes_msg)
             if ans in ('y', 'yes'):
-                run_git("branch", "-d" if is_merged_to_remote else "-D", b)
+                run_git("branch", "-d" if is_merged_to_remote else "-D", lb)
             elif ans in ('q', 'quit'):
                 return
 
-        branches_to_delete_unmerged_to_head = [b for b in branches_to_delete if b not in branches_merged_to_head]
-        for b in branches_to_delete_unmerged_to_head:
-            msg_core = "%s (unmerged to HEAD)" % bold(b)
+        branches_to_delete_unmerged_to_head = [lb for lb in branches_to_delete if lb not in branches_merged_to_head]
+        for lb in branches_to_delete_unmerged_to_head:
+            msg_core = "%s (unmerged to HEAD)" % bold(lb)
             msg = "Delete branch %s?" % msg_core + pretty_choices('y', 'N', 'q')
             opt_yes_msg = "Deleting branch %s" % msg_core
             ans = ask_if(msg, opt_yes_msg)
             if ans in ('y', 'yes'):
-                run_git("branch", "-D", b)
+                run_git("branch", "-D", lb)
             elif ans in ('q', 'quit'):
                 return
     else:
@@ -1745,11 +1799,14 @@ def slide_out(branches_to_slide_out):
 
     new_upstream = up_branch[branches_to_slide_out[0]]
     new_downstream = down_branches[branches_to_slide_out[-1]][0]
+    if new_downstream not in local_branches():
+        raise MacheteException("New downstream branch `%s` is a remote branch; only local branches can be rebased or merged" % new_downstream)
+
     for b in branches_to_slide_out:
         up_branch[b] = None
         down_branches[b] = None
 
-    go(new_downstream)
+    check_out_existing_branch(new_downstream)
     up_branch[new_downstream] = new_upstream
     down_branches[new_upstream] = [(new_downstream if x == branches_to_slide_out[0] else x) for x in down_branches[new_upstream]]
     save_definition_file()
@@ -1759,7 +1816,7 @@ def slide_out(branches_to_slide_out):
         merge(new_upstream, new_downstream)
     else:
         print("Rebasing %s onto %s..." % (bold(new_downstream), bold(new_upstream)))
-        rebase("refs/heads/" + new_upstream, opt_down_fork_point or fork_point(new_downstream, use_overrides=True), new_downstream)
+        rebase(new_upstream, opt_down_fork_point or fork_point(new_downstream, use_overrides=True), new_downstream)
 
 
 def slidable():
@@ -1777,31 +1834,36 @@ def slidable_after(b):
     return []
 
 
-def advance(b):
-    if not down_branches.get(b):
-        raise MacheteException("`%s` does not have any downstream (child) branches to advance towards" % b)
+def advance():
+    cb = current_branch()
+    expect_in_managed_branches(cb)
+
+    if cb not in local_branches():
+        raise MacheteException("Current branch `%s` is a remote branch; only local branches can be advanced/fast-forwarded" % cb)
+
+    if not down_branches.get(cb):
+        raise MacheteException("`%s` does not have any downstream (child) branches to advance towards" % cb)
 
     def connected_with_green_edge(bd):
         return \
             not is_merged_to_upstream(bd) and \
-            is_ancestor(b, bd) and \
-            (get_overridden_fork_point(bd) or commit_sha_by_revision(b) == fork_point(bd, use_overrides=False))
+            is_ancestor(cb, bd, earlier_prefix="refs/heads/") and \
+            (get_overridden_fork_point(bd) or commit_sha_by_revision(cb, prefix="refs/heads/") == fork_point(bd, use_overrides=False))
 
-    candidate_downstreams = list(filter(connected_with_green_edge, down_branches[b]))
+    candidate_downstreams = list(filter(connected_with_green_edge, down_branches[cb]))
     if not candidate_downstreams:
-        raise MacheteException("No downstream (child) branch of `%s` is connected to `%s` with a green edge" % (b, b))
+        raise MacheteException("No downstream (child) branch of `%s` is connected to `%s` with green edge" % (cb, cb))
     if len(candidate_downstreams) > 1:
         if opt_yes:
-            raise MacheteException("More than one downstream (child) branch of `%s` is connected to `%s` with a green edge "
-                                   "and `-y/--yes` option is specified" % (b, b))
+            raise MacheteException("More than one downstream (child) branch of `%s` is connected to `%s` with green edge and `-y/--yes` option is specified" % (cb, cb))
         else:
-            d = pick(candidate_downstreams, "downstream branch towards which `%s` is to be fast-forwarded" % b)
+            d = pick(candidate_downstreams, "downstream branch towards which `%s` is to be fast-forwarded" % cb)
             merge_fast_forward_only(d)
     else:
         d = candidate_downstreams[0]
         ans = ask_if(
-            "Fast-forward %s to match %s?" % (bold(b), bold(d)) + pretty_choices('y', 'N'),
-            "Fast-forwarding %s to match %s..." % (bold(b), bold(d))
+            "Fast-forward `%s` to match `%s`?" % (cb, d) + pretty_choices('y', 'N'),
+            "Fast-forwarding `%s` to match `%s`..." % (cb, d)
         )
         if ans in ('y', 'yes'):
             merge_fast_forward_only(d)
@@ -1809,18 +1871,18 @@ def advance(b):
             return
 
     ans = ask_if(
-        "\nBranch %s is now merged into %s. Slide %s out of the tree of branch dependencies?" % (bold(d), bold(b), bold(d)) + pretty_choices('y', 'N'),
-        "\nBranch %s is now merged into %s. Sliding %s out of the tree of branch dependencies..." % (bold(d), bold(b), bold(d))
+        "\nBranch `%s` is now merged into `%s`. Slide `%s` out of the tree of branch dependencies?" % (d, cb, d) + pretty_choices('y', 'N'),
+        "\nBranch `%s` is now merged into `%s`. Sliding `%s` out of the tree of branch dependencies..." % (d, cb, d)
     )
     if ans in ('y', 'yes'):
         dds = down_branches.get(d) or []
         for dd in dds:
-            up_branch[dd] = b
-        down_branches[b] = flat_map(
+            up_branch[dd] = cb
+        down_branches[cb] = flat_map(
             lambda bd: dds if bd == d else [bd],
-            down_branches[b])
+            down_branches[cb])
         save_definition_file()
-        run_post_slide_out_hook(b, d, dds)
+        run_post_slide_out_hook(cb, d, dds)
 
 
 class StopTraversal(Exception):
@@ -1842,7 +1904,7 @@ def flush_caches():
     remote_branches_cached = None
 
 
-def pick_remote(b):
+def pick_remote(lb):
     rems = remotes()
     print("\n".join("[%i] %s" % (idx + 1, r) for idx, r in enumerate(rems)))
     msg = "Select number 1..%i to specify the destination remote " \
@@ -1855,76 +1917,76 @@ def pick_remote(b):
         idx = int(ans) - 1
         if idx not in range(len(rems)):
             raise MacheteException("Invalid index: %i" % (idx + 1))
-        handle_untracked_branch(rems[idx], b)
+        handle_untracked_branch(rems[idx], lb)
     except ValueError:
         pass
 
 
-def handle_untracked_branch(new_remote, b):
+def handle_untracked_branch(new_remote, lb):
     rems = remotes()
     can_pick_other_remote = len(rems) > 1
     other_remote_choice = "o[ther-remote]" if can_pick_other_remote else ""
-    rb = new_remote + "/" + b
+    rb = new_remote + "/" + lb
     if not commit_sha_by_revision(rb, prefix="refs/remotes/"):
-        msg = "Push untracked branch %s to %s?" % (bold(b), bold(new_remote)) + pretty_choices('y', 'N', 'q', 'yq', other_remote_choice)
-        opt_yes_msg = "Pushing untracked branch %s to %s..." % (bold(b), bold(new_remote))
+        msg = "Push untracked branch %s to %s?" % (bold(lb), bold(new_remote)) + pretty_choices('y', 'N', 'q', 'yq', other_remote_choice)
+        opt_yes_msg = "Pushing untracked branch %s to %s..." % (bold(lb), bold(new_remote))
         ans = ask_if(msg, opt_yes_msg)
         if ans in ('y', 'yes', 'yq'):
-            push(new_remote, b)
+            push(new_remote, lb)
             if ans == 'yq':
                 raise StopTraversal
             flush_caches()
         elif can_pick_other_remote and ans in ('o', 'other'):
-            pick_remote(b)
+            pick_remote(lb)
         elif ans in ('q', 'quit'):
             raise StopTraversal
         return
 
     message = {
         IN_SYNC_WITH_REMOTE:
-            "Branch %s is untracked, but its remote counterpart candidate %s already exists and both branches point to the same commit." % (bold(b), bold(rb)),
+            "Branch %s is untracked, but its remote counterpart candidate %s already exists and both branches point to the same commit." % (bold(lb), bold(rb)),
         BEHIND_REMOTE:
-            "Branch %s is untracked, but its remote counterpart candidate %s already exists and is ahead of %s." % (bold(b), bold(rb), bold(b)),
+            "Branch %s is untracked, but its remote counterpart candidate %s already exists and is ahead of %s." % (bold(lb), bold(rb), bold(lb)),
         AHEAD_OF_REMOTE:
-            "Branch %s is untracked, but its remote counterpart candidate %s already exists and is behind %s." % (bold(b), bold(rb), bold(b)),
+            "Branch %s is untracked, but its remote counterpart candidate %s already exists and is behind %s." % (bold(lb), bold(rb), bold(lb)),
         DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
-            "Branch %s is untracked, it diverged from its remote counterpart candidate %s, and has %s commits than %s." % (bold(b), bold(rb), bold("older"), bold(rb)),
+            "Branch %s is untracked, it diverged from its remote counterpart candidate %s, and has %s commits than %s." % (bold(lb), bold(rb), bold("older"), bold(rb)),
         DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
-            "Branch %s is untracked, it diverged from its remote counterpart candidate %s, and has %s commits than %s." % (bold(b), bold(rb), bold("newer"), bold(rb))
+            "Branch %s is untracked, it diverged from its remote counterpart candidate %s, and has %s commits than %s." % (bold(lb), bold(rb), bold("newer"), bold(rb))
     }
 
     prompt = {
         IN_SYNC_WITH_REMOTE: (
-            "Set the remote of %s to %s without pushing or pulling?" % (bold(b), bold(new_remote)) + pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
-            "Setting the remote of %s to %s..." % (bold(b), bold(new_remote))
+            "Set the remote of %s to %s without pushing or pulling?" % (bold(lb), bold(new_remote)) + pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
+            "Setting the remote of %s to %s..." % (bold(lb), bold(new_remote))
         ),
         BEHIND_REMOTE: (
-            "Pull %s (fast-forward only) from %s?" % (bold(b), bold(new_remote)) + pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
-            "Pulling %s (fast-forward only) from %s..." % (bold(b), bold(new_remote))
+            "Pull %s (fast-forward only) from %s?" % (bold(lb), bold(new_remote)) + pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
+            "Pulling %s (fast-forward only) from %s..." % (bold(lb), bold(new_remote))
         ),
         AHEAD_OF_REMOTE: (
-            "Push branch %s to %s?" % (bold(b), bold(new_remote)) + pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
-            "Pushing branch %s to %s..." % (bold(b), bold(new_remote))
+            "Push branch %s to %s?" % (bold(lb), bold(new_remote)) + pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
+            "Pushing branch %s to %s..." % (bold(lb), bold(new_remote))
         ),
         DIVERGED_FROM_AND_OLDER_THAN_REMOTE: (
-            "Reset branch %s to the commit pointed by %s?" % (bold(b), bold(rb)) + pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
-            "Resetting branch %s to the commit pointed by %s..." % (bold(b), bold(rb))
+            "Reset branch %s to the commit pointed by %s?" % (bold(lb), bold(rb)) + pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
+            "Resetting branch %s to the commit pointed by %s..." % (bold(lb), bold(rb))
         ),
         DIVERGED_FROM_AND_NEWER_THAN_REMOTE: (
-            "Push branch %s with force-with-lease to %s?" % (bold(b), bold(new_remote)) + pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
-            "Pushing branch %s with force-with-lease to %s..." % (bold(b), bold(new_remote))
+            "Push branch %s with force-with-lease to %s?" % (bold(lb), bold(new_remote)) + pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
+            "Pushing branch %s with force-with-lease to %s..." % (bold(lb), bold(new_remote))
         )
     }
 
     yes_actions = {
         IN_SYNC_WITH_REMOTE: lambda: set_upstream_to(rb),
         BEHIND_REMOTE: lambda: pull_ff_only(new_remote, rb),
-        AHEAD_OF_REMOTE: lambda: push(new_remote, b),
+        AHEAD_OF_REMOTE: lambda: push(new_remote, lb),
         DIVERGED_FROM_AND_OLDER_THAN_REMOTE: lambda: reset_keep(rb),
-        DIVERGED_FROM_AND_NEWER_THAN_REMOTE: lambda: push(new_remote, b, force_with_lease=True)
+        DIVERGED_FROM_AND_NEWER_THAN_REMOTE: lambda: push(new_remote, lb, force_with_lease=True)
     }
 
-    relation = get_relation_to_remote_counterpart(b, rb)
+    relation = get_relation_to_remote_counterpart(lb, rb)
     print(message[relation])
     msg, opt_yes_msg = prompt[relation]
     ans = ask_if(msg, opt_yes_msg)
@@ -1934,7 +1996,7 @@ def handle_untracked_branch(new_remote, b):
             raise StopTraversal
         flush_caches()
     elif can_pick_other_remote and ans in ('o', 'other'):
-        pick_remote(b)
+        pick_remote(lb)
     elif ans in ('q', 'quit'):
         raise StopTraversal
 
@@ -1966,14 +2028,14 @@ def traverse():
         dest = root_branch(current_branch(), if_unmanaged=PICK_FIRST_ROOT)
         print_new_line(False)
         print("Checking out the root branch (%s)" % bold(dest))
-        go(dest)
+        check_out_existing_branch(dest)
         cb = dest
     elif opt_start_from == "first-root":
         # Note that we already ensured that there is at least one managed branch.
         dest = managed_branches[0]
         print_new_line(False)
         print("Checking out the first root branch (%s)" % bold(dest))
-        go(dest)
+        check_out_existing_branch(dest)
         cb = dest
     else:  # opt_start_from == "here"
         cb = current_branch()
@@ -1982,32 +2044,38 @@ def traverse():
     for b in itertools.dropwhile(lambda x: x != cb, managed_branches):
         u = up_branch.get(b)
 
+        # The only action that may be suggested for both a local and a remote branch is slide out...
         needs_slide_out = is_merged_to_upstream(b)
-        s, remote = get_strict_remote_sync_status(b)
-        statuses_to_sync = (UNTRACKED,
-                            AHEAD_OF_REMOTE,
-                            BEHIND_REMOTE,
-                            DIVERGED_FROM_AND_OLDER_THAN_REMOTE,
-                            DIVERGED_FROM_AND_NEWER_THAN_REMOTE)
-        needs_remote_sync = s in statuses_to_sync
 
-        if needs_slide_out:
-            # Avoid unnecessary fork point check if we already know that the branch qualifies for slide out;
-            # neither rebase nor merge will be suggested in such case anyway.
-            needs_parent_sync = False
-        elif s == DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
-            # Avoid unnecessary fork point check if we already know that the branch qualifies for resetting to remote counterpart;
-            # neither rebase nor merge will be suggested in such case anyway.
-            needs_parent_sync = False
-        elif opt_merge:
-            needs_parent_sync = u and not is_ancestor(u, b)
-        else:  # using rebase
-            needs_parent_sync = u and not (is_ancestor(u, b) and commit_sha_by_revision(u) == fork_point(b, use_overrides=True))
+        # ... all other actions are restricted to local branches.
+        if b in local_branches():
+            s, remote = get_strict_remote_sync_status(b)
+            statuses_to_sync = (UNTRACKED,
+                                AHEAD_OF_REMOTE,
+                                BEHIND_REMOTE,
+                                DIVERGED_FROM_AND_OLDER_THAN_REMOTE,
+                                DIVERGED_FROM_AND_NEWER_THAN_REMOTE)
+            needs_remote_sync = s in statuses_to_sync
+
+            if needs_slide_out:
+                # Avoid unnecessary fork point check if we already know that the branch qualifies for slide out;
+                # neither rebase nor merge will be suggested in such case anyway.
+                needs_parent_sync = False
+            elif s == DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
+                # Avoid unnecessary fork point check if we already know that the branch qualifies for resetting to remote counterpart;
+                # neither rebase nor merge will be suggested in such case anyway.
+                needs_parent_sync = False
+            elif opt_merge:
+                needs_parent_sync = u and not is_ancestor(u, b)
+            else:  # using rebase
+                needs_parent_sync = u and not (is_ancestor(u, b) and commit_sha_by_revision(u) == fork_point(b, use_overrides=True))
+        else:  # `b` is a remote branch
+            needs_parent_sync = needs_remote_sync = False
 
         if b != cb and (needs_slide_out or needs_parent_sync or needs_remote_sync):
             print_new_line(False)
             sys.stdout.write("Checking out %s\n" % bold(b))
-            go(b)
+            check_out_existing_branch(b)
             cb = b
             print_new_line(False)
             status(warn_on_yellow_edges=True)
@@ -2064,7 +2132,7 @@ def traverse():
                         sys.stdout.write("\nMerge in progress; stopping the traversal\n")
                         return
                 else:
-                    rebase("refs/heads/" + u, fork_point(b, use_overrides=True), b)
+                    rebase(u, fork_point(b, use_overrides=True), b)
                     # It's clearly possible that rebase can be in progress after 'git rebase' returned non-zero exit code;
                     # this happens most commonly in case of conflicts, regardless of whether the rebase is interactive or not.
                     # But for interactive rebases, it's still possible that even if 'git rebase' returned zero,
@@ -2165,9 +2233,9 @@ def traverse():
                     pick_remote(b)
 
     if opt_return_to == "here":
-        go(initial_branch)
+        check_out_existing_branch(initial_branch)
     elif opt_return_to == "nearest-remaining":
-        go(nearest_remaining_branch)
+        check_out_existing_branch(nearest_remaining_branch)
     # otherwise opt_return_to == "stay", so no action is needed
 
     print_new_line(False)
@@ -2250,11 +2318,11 @@ def status(warn_on_yellow_edges):
             print_line_prefix(b, vertical_bar() + " \n")
             if opt_list_commits:
                 if edge_color[b] in (RED, DIM):
-                    commits = commits_between(fp_sha(b), "refs/heads/" + b) if fp_sha(b) else []
+                    commits = commits_between(fp_sha(b), b) if fp_sha(b) else []
                 elif edge_color[b] == YELLOW:
-                    commits = commits_between("refs/heads/" + up_branch[b], "refs/heads/" + b)
+                    commits = commits_between(up_branch[b], b)
                 else:  # edge_color == GREEN
-                    commits = commits_between(fp_sha(b), "refs/heads/" + b)
+                    commits = commits_between(fp_sha(b), b)
 
                 for sha, short_sha, msg in reversed(commits):
                     if sha == fp_sha(b):
@@ -2274,6 +2342,7 @@ def status(warn_on_yellow_edges):
                 write_unicode("\n")
             write_unicode("  ")
 
+        remote, branch_name = split_into_remote_and_branch_name(b) if b in remote_branches() else (None, b)
         if b in (ccob, crb):  # i.e. if b is the current branch (checked out or being rebased)
             if b == crb:
                 prefix = "REBASING "
@@ -2287,35 +2356,42 @@ def status(warn_on_yellow_edges):
                 prefix = "REVERTING "
             else:
                 prefix = ""
-            current = "%s%s" % (bold(colored(prefix, RED)), bold(underline(b, star_if_ascii_only=True)))
+            write_unicode(bold(colored(prefix, RED)))
+            if remote:
+                write_unicode(underline(bold(colored(remote, GRAY)), star_if_ascii_only=False))
+                write_unicode(bold(colored("/", GRAY)))
+            write_unicode(underline(bold(branch_name), star_if_ascii_only=True))
         else:
-            current = bold(b)
+            if remote:
+                write_unicode(bold(colored(remote + "/", GRAY)))
+            write_unicode(bold(branch_name))
 
-        anno = "  " + dim(annotations[b]) if b in annotations else ""
+        write_unicode("  " + dim(annotations[b]) if b in annotations else "")
 
-        s, remote = get_combined_remote_sync_status(b)
-        sync_status = {
-            NO_REMOTES: "",
-            UNTRACKED: colored(" (untracked)", ORANGE),
-            IN_SYNC_WITH_REMOTE: "",
-            BEHIND_REMOTE: colored(" (behind %s)" % remote, RED),
-            AHEAD_OF_REMOTE: colored(" (ahead of %s)" % remote, RED),
-            DIVERGED_FROM_AND_OLDER_THAN_REMOTE: colored(" (diverged from & older than %s)" % remote, RED),
-            DIVERGED_FROM_AND_NEWER_THAN_REMOTE: colored(" (diverged from %s)" % remote, RED)
-        }[s]
+        if b in local_branches():
+            s, remote = get_combined_remote_sync_status(b)
+            write_unicode({
+                NO_REMOTES: "",
+                UNTRACKED: colored(" (untracked)", ORANGE),
+                IN_SYNC_WITH_REMOTE: "",
+                BEHIND_REMOTE: colored(" (behind %s)" % remote, RED),
+                AHEAD_OF_REMOTE: colored(" (ahead of %s)" % remote, RED),
+                DIVERGED_FROM_AND_OLDER_THAN_REMOTE: colored(" (diverged from & older than %s)" % remote, RED),
+                DIVERGED_FROM_AND_NEWER_THAN_REMOTE: colored(" (diverged from %s)" % remote, RED)
+            }[s])
 
-        hook_output = ""
         if hook_executable:
             debug("status()", "running machete-status-branch hook (%s) for branch %s" % (hook_path, b))
             hook_env = dict(os.environ, ASCII_ONLY=str(ascii_only).lower())
             status_code, stdout, stderr = popen_cmd(hook_path, b, cwd=get_root_dir(), env=hook_env)
             if status_code == 0:
                 if not stdout.isspace():
-                    hook_output = "  " + stdout.rstrip()
+                    write_unicode("  " + stdout.rstrip())
             else:
-                debug("status()", "machete-status-branch hook (%s) for branch %s returned %i; stdout: '%s'; stderr: '%s'" % (hook_path, b, status_code, stdout, stderr))
+                debug("status()", "machete-status-branch hook (%s) for branch %s returned %i;"
+                                  " stdout: '%s'; stderr: '%s'" % (hook_path, b, status_code, stdout, stderr))
 
-        write_unicode(current + anno + sync_status + hook_output + "\n")
+        write_unicode("\n")
 
     sys.stdout.write(out.getvalue())
     out.close()
@@ -2370,10 +2446,10 @@ def usage(c=None):
     }
     long_docs = {
         "add": """
-            <b>Usage: git machete add [-o|--onto=<target-upstream-branch>] [-R|--as-root] [-y|--yes] [<branch>]</b>
+            <b>Usage: git machete add [-o|--onto=<target-upstream-branch>] [-R|--as-root] [-y|--yes] [<local or remote branch>]</b>
 
-            Adds the provided <branch> (or the current branch, if none specified) to the definition file.
-            If <branch> is provided but no local branch with the given name exists:
+            Adds the provided <local or remote branch> (or the current branch, if none specified) to the definition file.
+            If branch is provided but no local or remote branch with the given name exists:
             * if a remote branch of the same name exists in exactly one remote, then user is asked whether to check out this branch locally (as in `git checkout`),
             * otherwise, user is asked whether it should be created as a new local branch.
 
@@ -2396,7 +2472,7 @@ def usage(c=None):
         "advance": """
             <b>Usage: git machete advance [-y|--yes]</b>
 
-            Fast forwards (as in `git merge --ff-only`) the current branch `C` to match its downstream `D`,
+            Fast forwards (as in `git merge --ff-only`) the current <b>local</b> branch `C` to match its downstream `D`,
             and subsequently slides out `D`. Both steps require manual confirmation unless `-y`/`--yes` is provided.
 
             The downstream `C` is selected according to the following criteria:
@@ -2446,12 +2522,15 @@ def usage(c=None):
             </dim>
             Note that the current branch after the operation is still `develop`, just pointing to `feature/add-from-remote`'s tip now.
 
+            If the currently checked out branch is a remote branch (see `git machete help format` and `git machete help go` for details),
+            then this is interpreted as an attempt to "fast-forward a remote branch", which is not allowed under git-machete's rules and an error is raised.
+
             <b>Options:</b>
               <b>-y, --yes</b>         Don't ask for confirmation whether to fast-forward the current branch or whether to slide-out the downstream.
                                 Fails if the current branch has more than one green-edge downstream branch.
         """,
         "anno": """
-            <b>Usage: git machete anno [-b|--branch=<branch>] [<annotation text>]</b>
+            <b>Usage: git machete anno [-b|--branch=<local or remote branch>] [<annotation text>]</b>
 
             If invoked without any argument, prints out the custom annotation for the given branch (or current branch, if none specified with `-b/--branch`).
 
@@ -2474,14 +2553,17 @@ def usage(c=None):
             and ask to delete each of them (with `git branch -d` or `git branch -D`) if confirmed by user.
             No branch will be deleted unless explicitly confirmed by the user (or unless `-y/--yes` option is passed).
 
-            Note: this should be used with care since deleting local branches can sometimes make it impossible for `git machete` to properly figure out fork points.
+            Remote branches (even if absent in the definition file) are not affected.
+            It is recommended to use `git fetch --prune` instead to mass-remove remote branches.
+
+            Note: this subcommand should be used with care since deleting local branches can sometimes make it impossible for `git machete` to properly figure out fork points.
             See `git machete help fork-point` for more details.
 
             <b>Options:</b>
               <b>-y, --yes</b>          Don't ask for confirmation.
         """,
         "diff": """
-            <b>Usage: git machete d[iff] [-s|--stat] [<branch>]</b>
+            <b>Usage: git machete d[iff] [-s|--stat] [<local or remote branch>]</b>
 
             Runs `git diff` of the given branch tip against its fork point or, if none specified, of the current working tree against the fork point of the currently checked out branch.
             See `git machete help fork-point` for more details on meaning of the "fork point".
@@ -2492,7 +2574,7 @@ def usage(c=None):
               <b>-s, --stat</b>    Makes `git machete diff` pass `--stat` option to `git diff`, so that only summary (diffstat) is printed.
         """,
         "discover": """
-            <b>Usage: git machete discover [-C|--checked-out-since=<date>] [-l|--list-commits] [-r|--roots=<branch1>,<branch2>,...] [-y|--yes]</b>
+            <b>Usage: git machete discover [-C|--checked-out-since=<date>] [-l|--list-commits] [-r|--roots=<local branch1>,<local branch2>,...] [-y|--yes]</b>
 
             Discovers and displays tree of branch dependencies using a heuristic based on reflogs and asks whether to overwrite the existing definition file with the new discovered tree.
             If confirmed with a `y[es]` or `e[dit]` reply, backs up the current definition file (if it exists) as `$GIT_DIR/machete~` and saves the new tree under the usual `$GIT_DIR/machete` path.
@@ -2540,9 +2622,9 @@ def usage(c=None):
         """,
         "fork-point": """
             <b>Usage:
-              git machete fork-point [--inferred] [<branch>]
-              git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent [<branch>]
-              git machete fork-point --unset-override [<branch>]</b>
+              git machete fork-point [--inferred] [<local or remote branch>]
+              git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent [<local or remote branch>]
+              git machete fork-point --unset-override [<local or remote branch>]</b>
 
             Note: in all three forms, if no <branch> is specified, the currently checked out branch is assumed.
             The branch in question does not need to occur in the definition file.
@@ -2606,13 +2688,20 @@ def usage(c=None):
                               drop-location-type
                   edit-margin-not-allowed
                       full-load-gatling
-                  grep-errors-script
+                  origin/grep-errors-script
               master
-                  hotfix/receipt-trigger PR #236
+                  origin/hotfix/receipt-trigger PR #236
             </dim>
             In the above example `develop` and `master` are roots of the tree of branch dependencies.
             Branches `adjust-reads-prec`, `edit-margin-not-allowed` and `grep-errors-script` are direct downstream branches for `develop`.
             `block-cancel-order` is a downstream branch of `adjust-reads-prec`, `change-table` is a downstream branch of `block-cancel-order` and so on.
+
+            Note that both local branches and remote branches can be listed.
+            It is discouraged (although not forbidden) to keep both local branch and its remote tracking branch in the definition file simultaneously.
+            Remote branches are interpreted as "blindly following a remote", so git-machete makes sure that they can be <b>locally checked out</b>
+            (see `git machete help go` for the caveats involved) but never <b>locally modified</b>.
+            It is in particular impossible to merge anything directly into a remote branch, rebase a remote branch or reset a remote branch to anything.
+            This feature is intended mostly to reduce the overhead related to viewing branches of other users, e.g. for the purpose of review.
 
             Every branch name can be followed (after a single space as a delimiter) by a custom annotation - a PR number in the above example.
             The annotations don't influence the way `git machete` operates other than that they are displayed in the output of the `status` command.
@@ -2622,12 +2711,25 @@ def usage(c=None):
             It's only important to be consistent wrt. the sequence of characters used for indentation between all lines.
         """,
         "go": """
-            <b>Usage: git machete g[o] <direction></b>
+            <b>Usage: git machete g[o] [-y/--yes] [-b/--branch] [<direction>|<local or remote branch>]</b>
             where <direction> is one of: `d[own]`, `f[irst]`, `l[ast]`, `n[ext]`, `p[rev]`, `r[oot]`, `u[p]`
 
-            Checks out the branch specified by the given direction relative to the currently checked out branch.
+            When `-b`/`--branch` is absent and the parameter has a valid value for a direction,
+            checks out the branch specified by the given direction relative to the currently checked out branch.
             Roughly equivalent to `git checkout $(git machete show <direction>)`.
             See `git machete help show` on more details on meaning of each direction.
+
+            When `-b`/`--branch` is present, or the parameter does NOT have a valid value for a direction,
+            then the parameter is interpreted as a branch name and `go` behaves like a simplified version of `git checkout` or `git switch`.
+            The notable difference is that `git machete go` also allows for <b>checking out a remote branch directly</b>,
+            i.e. without creating a local branch to track the remote.
+            For example, `git checkout origin/master` will transition the repository to the detached HEAD state (with HEAD pointing to the same commit as `origin/master`),
+            while `git machete go origin/master` will make the repository behave as if `origin/master` is the current branch.
+
+            <red>Disclaimer</red>: since git does NOT support checking out remote branches natively, this feature should be used with extra care.
+            As for now, this is the only feature of git-machete that circumvents the documented git's command-line interface
+            and instead modifies the repository state (specifically, .git/HEAD) directly.
+            As a consequence, it's possible that a future release of git might break this feature for git-machete.
         """,
         "help": """
             <b>Usage: git machete help [<command>]</b>
@@ -2699,18 +2801,21 @@ def usage(c=None):
               <b>-l, --list-commits</b>            When printing the discovered tree, additionally lists the messages of commits introduced on each branch (as for `git machete status`).
         """,
         "is-managed": """
-            <b>Usage: git machete is-managed [<branch>]</b>
+            <b>Usage: git machete is-managed [--local|--remote] [<local or remote branch>]</b>
 
-            Returns with zero exit code if the given branch (or current branch, if none specified) is managed by git-machete (i.e. listed in .git/machete).
+            Returns with zero exit code if the given branch (or current branch, if none specified) is:
+            * if none of `--local`/`--remote` is present: managed by git-machete (i.e. listed in <git-directory>/machete file),
+            * if `--local` is present: managed by git-machete and a local branch,
+            * if `--remote` is present: managed by git-machete and a remote branch.
 
             Returns with a non-zero exit code in case:
-            * the <branch> is provided but isn't managed, or
-            * the <branch> isn't provided and the current branch isn't managed, or
+            * the <branch> is provided but isn't managed (subject to `--local`/`--remote`), or
+            * the <branch> isn't provided and the current branch isn't managed (subject to `--local`/`--remote`), or
             * the <branch> isn't provided and there's no current branch (detached HEAD).
         """,
         "list": """
             <b>Usage: git machete list <category></b>
-            where <category> is one of: `addable`, `managed`, `slidable`, `slidable-after <branch>`, `unmanaged`, `with-overridden-fork-point`
+            where <category> is one of: `addable`, `managed`, `slidable`, `slidable-after <local or remote branch>`, `unmanaged`, `with-overridden-fork-point`
 
             Lists all branches that fall into one of the specified categories:
             * `addable`: all branches (local or remote) than can be added to the definition file,
@@ -2723,7 +2828,7 @@ def usage(c=None):
             This command is generally not meant for a day-to-day use, it's mostly needed for the sake of branch name completion in shell.
         """,
         "log": """
-            <b>Usage: git machete l[og] [<branch>]</b>
+            <b>Usage: git machete l[og] [<local or remote branch>]</b>
 
             Runs `git log` for the range of commits from tip of the given branch (or current branch, if none specified) back to its fork point.
             See `git machete help fork-point` for more details on meaning of the "fork point".
@@ -2739,12 +2844,15 @@ def usage(c=None):
         "reapply": """
             <b>Usage: git machete reapply [-f|--fork-point=<fork-point-commit>]</b>
 
-            Interactively rebase the current branch on the top of its computed fork point.
+            Interactively rebase the current <b>local</b> branch on the top of its computed fork point.
             This is useful e.g. for squashing the commits on the current branch to make history more condensed before push to the remote.
             The chunk of the history to be rebased starts at the automatically computed fork point of the current branch by default, but can also be set explicitly by `--fork-point`.
             See `git machete help fork-point` for more details on meaning of the "fork point".
 
-            Note: the current reapplied branch does not need to occur in the definition file.
+            Note: the current branch to be reapplied does not need to occur in the definition file, as long as it is a local branch.
+
+            If the currently checked out branch is a remote branch (see `git machete help format` and `git machete help go` for details),
+            then this is interpreted as an attempt to "rebase a remote branch", which is not allowed under git-machete's rules and an error is raised.
 
             <b>Options:</b>
               <b>-f, --fork-point=<fork-point-commit></b>    Specifies the alternative fork point commit after which the rebased part of history is meant to start.
@@ -2765,7 +2873,7 @@ def usage(c=None):
             * `up`:      the direct parent/upstream branch of the current branch.
         """,
         "slide-out": """
-            <b>Usage: git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] <branch> [<branch> [<branch> ...]]</b>
+            <b>Usage: git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] <local or remote branch> [<l/r branch> [<l/r branch> ...]]</b>
 
             Removes the given branch (or multiple branches) from the branch tree definition.
             Then synchronizes the downstream (child) branch of the last specified branch on the top of the upstream (parent) branch of the first specified branch.
@@ -2794,6 +2902,8 @@ def usage(c=None):
                       drop-location-type
             </dim>
             and `change-table` will be rebased onto develop (fork point for this rebase is configurable, see `-d` option below).
+
+            If the N-th branch to be rebased/merged at the end is a remote branch, an error is raised and no action takes place.
 
             Note: This command doesn't delete any branches from git, just removes them from the tree of branch dependencies.
 
@@ -2871,16 +2981,17 @@ def usage(c=None):
             <b>Usage: git machete traverse [-F|--fetch] [-l|--list-commits] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] [--return-to=WHERE] [--start-from=WHERE] [-w|--whole] [-W] [-y|--yes]</b>
 
             Traverses the branch dependency in pre-order (i.e. simply in the order as they occur in the definition file) and for each branch:
-            * if the branch is merged to its parent/upstream:
+
+            * if a <b>local or remote</b> branch is merged to its parent/upstream:
               - asks the user whether to slide out the branch from the dependency tree (typically branches are longer needed after they're merged);
-            * otherwise, if the branch is not in "green" sync with its parent/upstream (see help for `status`):
+            * otherwise, if a <b>local</b> branch is not in "green" sync with its parent/upstream (see help for `status`):
               - asks the user whether to rebase (default) or merge (if `--merge` passed) the branch onto into its upstream branch - equivalent to `git machete update` with no `--fork-point` option passed;
 
-            * if the branch is not tracked on a remote, is ahead of its remote counterpart, or diverged from the counterpart & has newer head commit than the counterpart:
+            * if a <b>local</b> branch is not tracked on a remote, is ahead of its remote counterpart, or diverged from the counterpart & has newer head commit than the counterpart:
               - asks the user whether to push the branch (possibly with `--force-with-lease` if the branches diverged);
-            * otherwise, if the branch diverged from the remote counterpart & has older head commit than the counterpart:
+            * otherwise, if a <b>local</b> branch diverged from the remote counterpart & has older head commit than the counterpart:
               - asks the user whether to `git reset --keep` the branch to its remote counterpart
-            * otherwise, if the branch is behind its remote counterpart:
+            * otherwise, if a <b>local</b> branch is behind its remote counterpart:
               - asks the user whether to pull the branch;
 
             * and finally, if any of the above operations has been successfully completed:
@@ -2922,13 +3033,16 @@ def usage(c=None):
         "update": """
             <b>Usage: git machete update [-f|--fork-point=<fork-point-commit>] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase]</b>
 
-            Synchronizes the current branch with its upstream (parent) branch either by rebase (default) or by merge (if `--merge` option passed).
+            Synchronizes the current <b>local</b> branch with its upstream (parent) branch either by rebase (default) or by merge (if `--merge` option passed).
 
             If updating by rebase, interactively rebases the current branch on the top of its upstream (parent) branch.
             The chunk of the history to be rebased starts at the fork point of the current branch, which by default is inferred automatically, but can also be set explicitly by `--fork-point`.
             See `git machete help fork-point` for more details on meaning of the "fork point".
 
             If updating by merge, merges the upstream (parent) branch into the current branch.
+
+            If the currently checked out branch is a remote branch (see `git machete help format` and `git machete help go` for details),
+            then this is interpreted as an attempt to "rebase/merge a remote branch", which is not allowed under git-machete's rules and an error is raised.
 
             <b>Options:</b>
               <b>-f, --fork-point=<fork-point-commit></b>    If updating by rebase, specifies the alternative fork point commit after which the rebased part of history is meant to start.
@@ -3010,8 +3124,8 @@ def main():
 def launch(orig_args):
     def parse_options(in_args, short_opts="", long_opts=[], gnu=True):
         global ascii_only
-        global opt_as_root, opt_branch, opt_checked_out_since, opt_color, opt_debug, opt_down_fork_point, opt_fetch, opt_fork_point, opt_inferred, opt_list_commits, opt_list_commits_with_hashes, opt_merge, opt_n, opt_no_edit_merge
-        global opt_no_interactive_rebase, opt_onto, opt_override_to, opt_override_to_inferred, opt_override_to_parent, opt_return_to, opt_roots, opt_start_from, opt_stat, opt_unset_override, opt_verbose, opt_yes
+        global opt_as_root, opt_branch, opt_checked_out_since, opt_color, opt_debug, opt_down_fork_point, opt_fetch, opt_fork_point, opt_inferred, opt_list_commits, opt_list_commits_with_hashes, opt_local, opt_merge, opt_n, opt_no_edit_merge
+        global opt_no_interactive_rebase, opt_onto, opt_override_to, opt_override_to_inferred, opt_override_to_parent, opt_remote, opt_return_to, opt_roots, opt_start_from, opt_stat, opt_unset_override, opt_verbose, opt_yes
 
         fun = getopt.gnu_getopt if gnu else getopt.getopt
         opts, rest = fun(in_args, short_opts + "hv", long_opts + ['debug', 'help', 'verbose', 'version'])
@@ -3040,6 +3154,8 @@ def launch(orig_args):
                 opt_list_commits = opt_list_commits_with_hashes = True
             elif opt in ("-l", "--list-commits"):
                 opt_list_commits = True
+            elif opt == "--local":
+                opt_local = True
             elif opt in ("-M", "--merge"):
                 opt_merge = True
             elif opt == "-n":
@@ -3060,6 +3176,8 @@ def launch(orig_args):
                 opt_as_root = True
             elif opt in ("-r", "--roots"):
                 opt_roots = arg.split(",")
+            elif opt == "--remote":
+                opt_remote = True
             elif opt == "--return-to":
                 opt_return_to = arg
             elif opt in ("-s", "--stat"):
@@ -3085,14 +3203,15 @@ def launch(orig_args):
             elif opt in ("-y", "--yes"):
                 opt_yes = opt_no_interactive_rebase = True
 
-        if opt_color not in ("always", "auto", "never"):
-            raise MacheteException("Invalid argument for `--color`. Valid arguments: `always|auto|never`.")
-        else:
-            ascii_only = opt_color == "never" or (opt_color == "auto" and not sys.stdout.isatty())
-
+        # add
         if opt_as_root and opt_onto:
             raise MacheteException("Option `-R/--as-root` cannot be specified together with `-o/--onto`.")
 
+        # is-managed
+        if opt_local and opt_remote:
+            raise MacheteException("Option `--local` cannot be specified together with `--remote`.")
+
+        # slide-out, traverse, update
         if opt_no_edit_merge and not opt_merge:
             raise MacheteException("Option `--no-edit-merge` only makes sense when using merge and must be specified together with `-M/--merge`.")
         if opt_no_interactive_rebase and opt_merge:
@@ -3106,6 +3225,12 @@ def launch(orig_args):
             opt_no_edit_merge = True
         if opt_n and not opt_merge:
             opt_no_interactive_rebase = True
+
+        # status
+        if opt_color not in ("always", "auto", "never"):
+            raise MacheteException("Invalid argument for `--color`. Valid arguments: `always|auto|never`.")
+        else:
+            ascii_only = opt_color == "never" or (opt_color == "auto" and not sys.stdout.isatty())
 
         return rest
 
@@ -3127,17 +3252,17 @@ def launch(orig_args):
 
     def check_required_param(in_args, allowed_values):
         if not in_args or len(in_args) > 1:
-            raise MacheteException("`%s` expects exactly one argument: one of %s" % (cmd, allowed_values))
+            raise MacheteException("`%s` expects exactly one argument: one of `%s`" % (cmd, allowed_values))
         elif not in_args[0]:
-            raise MacheteException("Argument to `%s` cannot be empty; expected one of %s" % (cmd, allowed_values))
+            raise MacheteException("Argument to `%s` cannot be empty; expected one of `%s`" % (cmd, allowed_values))
         elif in_args[0][0] == "-":
             raise MacheteException("Option `%s` not recognized" % in_args[0])
         else:
             return in_args[0]
 
     global definition_file_path, up_branch
-    global opt_as_root, opt_branch, opt_checked_out_since, opt_color, opt_debug, opt_down_fork_point, opt_fetch, opt_fork_point, opt_inferred, opt_list_commits, opt_list_commits_with_hashes, opt_merge, opt_n, opt_no_edit_merge
-    global opt_no_interactive_rebase, opt_onto, opt_override_to, opt_override_to_inferred, opt_override_to_parent, opt_return_to, opt_roots, opt_start_from, opt_stat, opt_unset_override, opt_verbose, opt_yes
+    global opt_as_root, opt_branch, opt_checked_out_since, opt_color, opt_debug, opt_down_fork_point, opt_fetch, opt_fork_point, opt_inferred, opt_list_commits, opt_list_commits_with_hashes, opt_local, opt_merge, opt_n, opt_no_edit_merge
+    global opt_no_interactive_rebase, opt_onto, opt_override_to, opt_override_to_inferred, opt_override_to_parent, opt_remote, opt_return_to, opt_roots, opt_start_from, opt_stat, opt_unset_override, opt_verbose, opt_yes
     try:
         cmd = None
         opt_as_root = False
@@ -3151,6 +3276,7 @@ def launch(orig_args):
         opt_inferred = False
         opt_list_commits = False
         opt_list_commits_with_hashes = False
+        opt_local = False
         opt_merge = False
         opt_n = False
         opt_no_edit_merge = False
@@ -3159,6 +3285,7 @@ def launch(orig_args):
         opt_override_to = None
         opt_override_to_inferred = False
         opt_override_to_parent = False
+        opt_remote = False
         opt_return_to = "stay"
         opt_roots = list()
         opt_start_from = "here"
@@ -3191,25 +3318,25 @@ def launch(orig_args):
             current = "c[urrent]|" if allow_current else ""
             return current + "d[own]|f[irst]|l[ast]|n[ext]|p[rev]|r[oot]|u[p]"
 
-        def parse_direction(b, allow_current, down_pick_mode):
-            if param in ("c", "current") and allow_current:
+        def parse_direction_or_none(b, direction, include_current, down_pick_if_multiple):
+            if direction in ("c", "current") and include_current:
                 return current_branch()  # throws in case of detached HEAD, as in the spec
-            elif param in ("d", "down"):
-                return down(b, pick_mode=down_pick_mode)
-            elif param in ("f", "first"):
+            elif direction in ("d", "down"):
+                return down(b, pick_if_multiple=down_pick_if_multiple)
+            elif direction in ("f", "first"):
                 return first_branch(b)
-            elif param in ("l", "last"):
+            elif direction in ("l", "last"):
                 return last_branch(b)
-            elif param in ("n", "next"):
+            elif direction in ("n", "next"):
                 return next_branch(b)
-            elif param in ("p", "prev"):
+            elif direction in ("p", "prev"):
                 return prev_branch(b)
-            elif param in ("r", "root"):
+            elif direction in ("r", "root"):
                 return root_branch(b, if_unmanaged=PICK_FIRST_ROOT)
-            elif param in ("u", "up"):
+            elif direction in ("u", "up"):
                 return up(b, prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)
             else:
-                raise MacheteException("Usage: git machete %s %s" % (cmd, allowed_directions(allow_current)))
+                return None
 
         if cmd == "add":
             param = check_optional_param(parse_options(args, "o:Ry", ["onto=", "as-root", "yes"]))
@@ -3220,9 +3347,7 @@ def launch(orig_args):
             expect_no_param(args1)
             read_definition_file()
             expect_no_operation_in_progress()
-            cb = current_branch()
-            expect_in_managed_branches(cb)
-            advance(cb)
+            advance()
         elif cmd == "anno":
             params = parse_options(args, "b:", ["branch="])
             read_definition_file(verify_branches=False)
@@ -3235,7 +3360,7 @@ def launch(orig_args):
         elif cmd == "delete-unmanaged":
             expect_no_param(parse_options(args, "y", ["yes"]))
             read_definition_file()
-            delete_unmanaged()
+            delete_local_unmanaged()
         elif cmd in ("d", "diff"):
             param = check_optional_param(parse_options(args, "s", ["stat"]))
             read_definition_file()
@@ -3280,13 +3405,22 @@ def launch(orig_args):
             # No need to read definition file.
             usage("format")
         elif cmd in ("g", "go"):
-            param = check_required_param(parse_options(args), allowed_directions(allow_current=False))
-            read_definition_file()
-            expect_no_operation_in_progress()
+            param = check_optional_param(parse_options(args, "b:y", ["branch=", "yes"]))
             cb = current_branch()
-            dest = parse_direction(cb, allow_current=False, down_pick_mode=True)
+            expect_no_operation_in_progress()
+            if opt_branch:
+                dest = opt_branch
+                # No need to read definition file.
+            else:
+                if not param:
+                    raise MacheteException("`%s` expects exactly one argument: one of `%s` or a branch name" % (cmd, allowed_directions(allow_current=False)))
+                read_definition_file()
+                dest = parse_direction_or_none(cb, direction=param, include_current=False, down_pick_if_multiple=True) or param
+
+            if dest not in all_branches():
+                raise MacheteException("`%s` is not a local or remote branch, or any of `%s`" % (dest, allowed_directions(allow_current=False)))
             if dest != cb:
-                go(dest)
+                check_out_existing_branch(dest)
         elif cmd == "help":
             param = check_optional_param(parse_options(args))
             # No need to read definition file.
@@ -3300,6 +3434,10 @@ def launch(orig_args):
             read_definition_file()
             b = param or current_branch_or_none()
             if b is None or b not in managed_branches:
+                sys.exit(1)
+            if opt_local and b not in local_branches():
+                sys.exit(1)
+            if opt_remote and b not in remote_branches():
                 sys.exit(1)
         elif cmd == "list":
             list_allowed_values = "addable|managed|slidable|slidable-after <branch>|unmanaged|with-overridden-fork-point"
@@ -3351,18 +3489,20 @@ def launch(orig_args):
         elif cmd == "prune-branches":  # TODO: deprecated in favor of `delete-unmanaged`
             expect_no_param(parse_options(args, "y", ["yes"]))
             read_definition_file()
-            delete_unmanaged()
+            delete_local_unmanaged()
         elif cmd == "reapply":
             args1 = parse_options(args, "f:", ["fork-point="])
             expect_no_param(args1, ". Use `-f` or `--fork-point` to specify the fork point commit")
             read_definition_file()
             expect_no_operation_in_progress()
-            cb = current_branch()
-            rebase_onto_ancestor_commit(cb, opt_fork_point or fork_point(cb, use_overrides=True))
+            reapply()
         elif cmd == "show":
             param = check_required_param(parse_options(args), allowed_directions(allow_current=True))
             read_definition_file(verify_branches=False)
-            print(parse_direction(current_branch(), allow_current=True, down_pick_mode=False))
+            b = parse_direction_or_none(current_branch(), direction=param, include_current=True, down_pick_if_multiple=False)
+            if not b:
+                raise MacheteException("Usage: git machete show `%s`" % allowed_directions(allow_current=True))
+            print(b)
         elif cmd == "slide-out":
             params = parse_options(args, "d:Mn", ["down-fork-point=", "merge", "no-edit-merge", "no-interactive-rebase"])
             read_definition_file()

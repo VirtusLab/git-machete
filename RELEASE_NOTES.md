@@ -1,5 +1,12 @@
 # Release notes
 
+## New in git-machete 2.16.0
+
+- added: remote branches (with `origin/...` etc. prefix) can be listed in .git/machete
+- added: support for managed remote branches in `add`, `anno`, `diff`, `fork-point`, `go`, `is-managed`, `list slidable-after`, `log`, `show`, `slide-out`, `status` and `traverse`
+- added: `--branch` and `--yes` options to `go`
+- added: `--local` and `--remote` options to `is-managed`
+
 ## New in git-machete 2.15.3
 
 - changed: skip verification of managed branches for `anno` and `show`

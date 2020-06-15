@@ -61,12 +61,21 @@ _git-machete() {
                     && ret=0
                     ;;
                 (g|go)
-                    _arguments '1:: :__git_machete_directions_go' && ret=0
+                    _arguments '1:: :__git_machete_directions_go' \
+                        '(-b --branch)'{-b,--branch=}'[Interpret the argument as a branch name rather than a direction]' \
+                        '(-y --yes)'{-y,--yes}'[Do not ask for confirmation]' \
+                    && ret=0
                     ;;
                 (help)
                     _arguments '1:: :__git_machete_help_topics' && ret=0
                     ;;
-                (is-managed|l|log)
+                (is-managed)
+                    _arguments '1:: :__git_branch_names' && \
+                        '(--local)'--local'[Additionally, require that the branch is local]' \
+                        '(--remote)'--remote'[Additionally, require that the branch is remote]' \
+                    && ret=0
+                    ;;
+                (l|log)
                     _arguments '1:: :__git_branch_names' && ret=0
                     ;;
                 (list)
