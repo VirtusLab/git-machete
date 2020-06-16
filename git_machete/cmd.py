@@ -16,8 +16,8 @@ import textwrap
 # Core utils
 
 class MacheteException(Exception):
-    def __init__(self, value):
-        self.parameter = value
+    def __init__(self, msg, apply_fmt=True):
+        self.parameter = fmt(msg) if apply_fmt else msg
 
     def __str__(self):
         return str(self.parameter)
@@ -82,13 +82,13 @@ def colored(s, color):
 
 
 fmt_transformations = [
-    lambda x: re.sub('<b>(.*?)</b>', bold(r'\1'), x, flags=re.DOTALL),
-    lambda x: re.sub('<u>(.*?)</u>', underline(r'\1'), x, flags=re.DOTALL),
-    lambda x: re.sub('<dim>(.*?)</dim>', dim(r'\1'), x, flags=re.DOTALL),
-    lambda x: re.sub('<red>(.*?)</red>', colored(r'\1', RED), x, flags=re.DOTALL),
-    lambda x: re.sub('<yellow>(.*?)</yellow>', colored(r'\1', YELLOW), x, flags=re.DOTALL),
-    lambda x: re.sub('<green>(.*?)</green>', colored(r'\1', GREEN), x, flags=re.DOTALL),
-    lambda x: re.sub('`(.*?)`', r'`\1`' if ascii_only else UNDERLINE + r'\1' + ENDC, x),
+    lambda x: re.sub('<b>(.*?)</b>', bold(r"\1"), x, flags=re.DOTALL),
+    lambda x: re.sub('<u>(.*?)</u>', underline(r"\1"), x, flags=re.DOTALL),
+    lambda x: re.sub('<dim>(.*?)</dim>', dim(r"\1"), x, flags=re.DOTALL),
+    lambda x: re.sub('<red>(.*?)</red>', colored(r"\1", RED), x, flags=re.DOTALL),
+    lambda x: re.sub('<yellow>(.*?)</yellow>', colored(r"\1", YELLOW), x, flags=re.DOTALL),
+    lambda x: re.sub('<green>(.*?)</green>', colored(r"\1", GREEN), x, flags=re.DOTALL),
+    lambda x: re.sub('`(.*?)`', r"`\1`" if ascii_only else UNDERLINE + r"\1" + ENDC, x),
 ]
 
 
@@ -114,11 +114,11 @@ def safe_input(msg):
         return input(msg)
 
 
-def ask_if(msg, opt_yes_msg):
+def ask_if(msg, opt_yes_msg, apply_fmt=True):
     if opt_yes:
-        print(opt_yes_msg)
+        print(fmt(opt_yes_msg) if apply_fmt else opt_yes_msg)
         return 'y'
-    return safe_input(msg).lower()
+    return safe_input(fmt(msg) if apply_fmt else msg).lower()
 
 
 def pretty_choices(*choices):
@@ -136,11 +136,11 @@ def pretty_choices(*choices):
     return " (" + ", ".join(map_truthy_only(format_choice, choices)) + ") "
 
 
-def pick(choices, name):
+def pick(choices, name, apply_fmt=True):
     xs = "".join("[%i] %s\n" % (idx + 1, x) for idx, x in enumerate(choices))
     msg = xs + "Specify " + name + " or hit <return> to skip: "
     try:
-        ans = safe_input(msg)
+        ans = safe_input(fmt(msg) if apply_fmt else msg)
         if not ans:
             sys.exit(0)
         idx = int(ans) - 1
@@ -160,10 +160,10 @@ def debug(hdr, msg):
 displayed_warnings = set()
 
 
-def warn(msg):
+def warn(msg, apply_fmt=True):
     global displayed_warnings
     if msg not in displayed_warnings:
-        sys.stderr.write("%s: %s\n" % (colored("Warn", RED), msg))
+        sys.stderr.write(colored("Warn: ", RED) + (fmt(msg) if apply_fmt else msg))
         displayed_warnings.add(msg)
 
 
@@ -271,17 +271,18 @@ def cmd_shell_repr(cmd, *args):
 def run_git(git_cmd, *args, **kwargs):
     exit_code = run_cmd("git", git_cmd, *args)
     if not kwargs.get("allow_non_zero") and exit_code != 0:
-        raise MacheteException("'%s' returned %i" % (cmd_shell_repr("git", git_cmd, *args), exit_code))
+        raise MacheteException("`%s` returned %i" % (cmd_shell_repr("git", git_cmd, *args), exit_code))
     return exit_code
 
 
 def popen_git(git_cmd, *args, **kwargs):
     exit_code, stdout, stderr = popen_cmd("git", git_cmd, *args)
     if not kwargs.get("allow_non_zero") and exit_code != 0:
-        exit_code_msg = "'%s' returned %i\n" % (cmd_shell_repr("git", git_cmd, *args), exit_code)
+        exit_code_msg = fmt("`%s` returned %i\n" % (cmd_shell_repr("git", git_cmd, *args), exit_code))
         stdout_msg = "\n%s:\n%s" % (bold("stdout"), dim(stdout)) if stdout else ""
         stderr_msg = "\n%s:\n%s" % (bold("stderr"), dim(stderr)) if stderr else ""
-        raise MacheteException(exit_code_msg + stdout_msg + stderr_msg)
+        # Not applying the formatter to avoid transforming whatever characters might be in the output of the command.
+        raise MacheteException(exit_code_msg + stdout_msg + stderr_msg, apply_fmt=False)
     return stdout
 
 
@@ -289,8 +290,8 @@ def popen_git(git_cmd, *args, **kwargs):
 
 def expect_in_managed_branches(b):
     if b not in managed_branches:
-        raise MacheteException("Branch '%s' not found in the tree of branch dependencies. "
-                               "Use 'git machete add %s' or 'git machete edit'" % (b, b))
+        raise MacheteException("Branch `%s` not found in the tree of branch dependencies. "
+                               "Use `git machete add %s` or `git machete edit`" % (b, b))
 
 
 def expect_at_least_one_managed_branch():
@@ -300,7 +301,7 @@ def expect_at_least_one_managed_branch():
 
 def raise_no_branches_error():
     raise MacheteException(
-        "No branches listed in %s; use 'git machete discover' or 'git machete edit', or edit %s manually." % (
+        "No branches listed in %s; use `git machete discover` or `git machete edit`, or edit %s manually." % (
             definition_file_path, definition_file_path))
 
 
@@ -318,7 +319,7 @@ def read_definition_file():
     annotations = {}
     at_depth = {}
     last_depth = -1
-    hint = "Edit the definition file manually with 'git machete edit'"
+    hint = "Edit the definition file manually with `git machete edit`"
 
     for idx, l in enumerate(lines):
         pfx = "".join(itertools.takewhile(str.isspace, l))
@@ -330,10 +331,10 @@ def read_definition_file():
         if len(b_a) > 1:
             annotations[b] = b_a[1]
         if b in managed_branches:
-            raise MacheteException("%s, line %i: branch '%s' re-appears in the tree definition. %s" %
+            raise MacheteException("%s, line %i: branch `%s` re-appears in the tree definition. %s" %
                                    (definition_file_path, idx + 1, b, hint))
         if b not in local_branches():
-            raise MacheteException("%s, line %i: '%s' is not a local branch. %s" %
+            raise MacheteException("%s, line %i: `%s` is not a local branch. %s" %
                                    (definition_file_path, idx + 1, b, hint))
         managed_branches += [b]
 
@@ -343,13 +344,13 @@ def read_definition_file():
                 mapping = {" ": "<SPACE>", "\t": "<TAB>"}
                 pfx_expanded = "".join(mapping[c] for c in pfx)
                 indent_expanded = "".join(mapping[c] for c in indent)
-                raise MacheteException("%s, line %i: invalid indent '%s', expected a multiply of '%s'. %s" %
+                raise MacheteException("%s, line %i: invalid indent `%s`, expected a multiply of `%s`. %s" %
                                        (definition_file_path, idx + 1, pfx_expanded, indent_expanded, hint))
         else:
             depth = 0
 
         if depth > last_depth + 1:
-            raise MacheteException("%s, line %i: too much indent (level %s, expected at most %s) for the branch '%s'. %s" %
+            raise MacheteException("%s, line %i: too much indent (level %s, expected at most %s) for the branch `%s`. %s" %
                                    (definition_file_path, idx + 1, depth, last_depth + 1, b, hint))
         last_depth = depth
 
@@ -396,7 +397,7 @@ def down(b, pick_mode):
     expect_in_managed_branches(b)
     dbs = down_branches.get(b)
     if not dbs:
-        raise MacheteException("Branch '%s' has no downstream branch" % b)
+        raise MacheteException("Branch `%s` has no downstream branch" % b)
     elif len(dbs) == 1:
         return dbs[0]
     elif pick_mode:
@@ -422,7 +423,7 @@ def next_branch(b):
     expect_in_managed_branches(b)
     idx = managed_branches.index(b) + 1
     if idx == len(managed_branches):
-        raise MacheteException("Branch '%s' has no successor" % b)
+        raise MacheteException("Branch `%s` has no successor" % b)
     return managed_branches[idx]
 
 
@@ -430,7 +431,7 @@ def prev_branch(b):
     expect_in_managed_branches(b)
     idx = managed_branches.index(b) - 1
     if idx == -1:
-        raise MacheteException("Branch '%s' has no predecessor" % b)
+        raise MacheteException("Branch `%s` has no predecessor" % b)
     return managed_branches[idx]
 
 
@@ -462,7 +463,7 @@ def up(b, prompt_if_inferred_msg, prompt_if_inferred_yes_opt_msg):
         if u:
             return u
         else:
-            raise MacheteException("Branch '%s' has no upstream branch" % b)
+            raise MacheteException("Branch `%s` has no upstream branch" % b)
     else:
         u = infer_upstream(b)
         if u:
@@ -472,17 +473,17 @@ def up(b, prompt_if_inferred_msg, prompt_if_inferred_yes_opt_msg):
                 else:
                     sys.exit(1)
             else:
-                warn("branch '%s' not found in the tree of branch dependencies; the upstream has been inferred to '%s'" % (b, u))
+                warn("branch `%s` not found in the tree of branch dependencies; the upstream has been inferred to `%s`" % (b, u))
                 return u
         else:
-            raise MacheteException("Branch '%s' not found in the tree of branch dependencies and its upstream could not be inferred" % b)
+            raise MacheteException("Branch `%s` not found in the tree of branch dependencies and its upstream could not be inferred" % b)
 
 
 def add(b):
     global roots
 
     if b in managed_branches:
-        raise MacheteException("Branch '%s' already exists in the tree of branch dependencies" % b)
+        raise MacheteException("Branch `%s` already exists in the tree of branch dependencies" % b)
 
     onto = opt_onto
     if onto:
@@ -491,18 +492,18 @@ def add(b):
     if b not in local_branches():
         rb = get_sole_remote_branch(b)
         if rb:
-            common_line = "A local branch '%s' does not exist, but a remote branch '%s' exists.\n" % (b, rb)
-            msg = common_line + "Check out '%s' locally?" % b + pretty_choices('y', 'N')
-            opt_yes_msg = common_line + "Checking out '%s' locally..." % b
+            common_line = "A local branch `%s` does not exist, but a remote branch `%s` exists.\n" % (b, rb)
+            msg = common_line + "Check out `%s` locally?" % b + pretty_choices('y', 'N')
+            opt_yes_msg = common_line + "Checking out `%s` locally..." % b
             if ask_if(msg, opt_yes_msg) in ('y', 'yes'):
                 create_branch(b, "refs/remotes/" + rb)
             else:
                 return
             # Not dealing with `onto` here. If it hasn't been explicitly specified via `--onto`, we'll try to infer it now.
         else:
-            out_of = ("'" + onto + "'") if onto else "the current HEAD"
-            msg = "A local branch '%s' does not exist. Create (out of %s)?" % (b, out_of) + pretty_choices('y', 'N')
-            opt_yes_msg = "A local branch '%s' does not exist. Creating out of %s" % (b, out_of)
+            out_of = ("`" + onto + "`") if onto else "the current HEAD"
+            msg = "A local branch `%s` does not exist. Create (out of %s)?" % (b, out_of) + pretty_choices('y', 'N')
+            opt_yes_msg = "A local branch `%s` does not exist. Creating out of %s" % (b, out_of)
             if ask_if(msg, opt_yes_msg) in ('y', 'yes'):
                 if roots and not onto:
                     cb = current_branch_or_none()
@@ -514,19 +515,19 @@ def add(b):
 
     if opt_as_root or not roots:
         roots += [b]
-        print("Added branch '%s' as a new root" % b)
+        print(fmt("Added branch `%s` as a new root" % b))
     else:
         if not onto:
             u = infer_upstream(b, condition=lambda x: x in managed_branches, reject_reason_message="this candidate is not a managed branch")
             if not u:
-                raise MacheteException("Could not automatically infer upstream (parent) branch for '%s'.\n"
+                raise MacheteException("Could not automatically infer upstream (parent) branch for `%s`.\n"
                                        "You can either:\n"
-                                       "1) specify the desired upstream branch with '--onto' or\n"
-                                       "2) pass '--as-root' to attach '%s' as a new root or\n"
-                                       "3) edit the definition file manually with 'git machete edit'" % (b, b))
+                                       "1) specify the desired upstream branch with `--onto` or\n"
+                                       "2) pass `--as-root` to attach `%s` as a new root or\n"
+                                       "3) edit the definition file manually with `git machete edit`" % (b, b))
             else:
-                msg = "Add '%s' onto the inferred upstream (parent) branch '%s'?" % (b, u) + pretty_choices('y', 'N')
-                opt_yes_msg = "Adding '%s' onto the inferred upstream (parent) branch '%s'" % (b, u)
+                msg = "Add `%s` onto the inferred upstream (parent) branch `%s`?" % (b, u) + pretty_choices('y', 'N')
+                opt_yes_msg = "Adding `%s` onto the inferred upstream (parent) branch `%s`" % (b, u)
                 if ask_if(msg, opt_yes_msg) in ('y', 'yes'):
                     onto = u
                 else:
@@ -537,7 +538,7 @@ def add(b):
             down_branches[onto].append(b)
         else:
             down_branches[onto] = [b]
-        print("Added branch '%s' onto '%s'" % (b, onto))
+        print(fmt("Added branch `%s` onto `%s`" % (b, onto)))
 
     save_definition_file()
 
@@ -677,7 +678,7 @@ def parse_git_timespec_to_unix_timestamp(date):
     try:
         return int(popen_git("rev-parse", "--since=" + date).replace("--max-age=", "").strip())
     except (MacheteException, ValueError):
-        raise MacheteException("Cannot parse timespec: '%s'" % date)
+        raise MacheteException("Cannot parse timespec: `%s`" % date)
 
 
 config_cached = None
@@ -740,7 +741,7 @@ def reset_keep(to_revision):
     try:
         run_git("reset", "--keep", to_revision)
     except MacheteException:
-        raise MacheteException("Cannot perform 'git reset --keep %s'. This is most likely caused by local uncommitted changes." % to_revision)
+        raise MacheteException("Cannot perform `git reset --keep %s`. This is most likely caused by local uncommitted changes." % to_revision)
 
 
 def push(remote, b, force_with_lease=False):
@@ -905,15 +906,15 @@ def currently_checked_out_branch_or_none():
 def expect_no_operation_in_progress():
     rb = currently_rebased_branch_or_none()
     if rb:
-        raise MacheteException("Rebase of '%s' in progress. Conclude the rebase first with 'git rebase --continue' or 'git rebase --abort'." % rb)
+        raise MacheteException("Rebase of `%s` in progress. Conclude the rebase first with `git rebase --continue` or `git rebase --abort`." % rb)
     if is_am_in_progress():
-        raise MacheteException("'git am' session in progress. Conclude 'git am' first with 'git am --continue' or 'git am --abort'.")
+        raise MacheteException("`git am` session in progress. Conclude `git am` first with `git am --continue` or `git am --abort`.")
     if is_cherry_pick_in_progress():
-        raise MacheteException("Cherry pick in progress. Conclude the cherry pick first with 'git cherry-pick --continue' or 'git cherry-pick --abort'.")
+        raise MacheteException("Cherry pick in progress. Conclude the cherry pick first with `git cherry-pick --continue` or `git cherry-pick --abort`.")
     if is_merge_in_progress():
-        raise MacheteException("Merge in progress. Conclude the merge first with 'git merge --continue' or 'git merge --abort'.")
+        raise MacheteException("Merge in progress. Conclude the merge first with `git merge --continue` or `git merge --abort`.")
     if is_revert_in_progress():
-        raise MacheteException("Revert in progress. Conclude the revert first with 'git revert --continue' or 'git revert --abort'.")
+        raise MacheteException("Revert in progress. Conclude the revert first with `git revert --continue` or `git revert --abort`.")
 
 
 def current_branch_or_none():
@@ -1155,13 +1156,13 @@ def update():
     cb = current_branch()
     if opt_merge:
         with_branch = up(cb,
-                         prompt_if_inferred_msg="Branch '%s' not found in the tree of branch dependencies. Merge with the inferred upstream '%s'?" + pretty_choices('y', 'N'),
-                         prompt_if_inferred_yes_opt_msg="Branch '%s' not found in the tree of branch dependencies. Merging with the inferred upstream '%s'...")
+                         prompt_if_inferred_msg="Branch `%s` not found in the tree of branch dependencies. Merge with the inferred upstream `%s`?" + pretty_choices('y', 'N'),
+                         prompt_if_inferred_yes_opt_msg="Branch `%s` not found in the tree of branch dependencies. Merging with the inferred upstream `%s`...")
         merge(with_branch, cb)
     else:
         onto_branch = up(cb,
-                         prompt_if_inferred_msg="Branch '%s' not found in the tree of branch dependencies. Rebase onto the inferred upstream '%s'?" + pretty_choices('y', 'N'),
-                         prompt_if_inferred_yes_opt_msg="Branch '%s' not found in the tree of branch dependencies. Rebasing onto the inferred upstream '%s'...")
+                         prompt_if_inferred_msg="Branch `%s` not found in the tree of branch dependencies. Rebase onto the inferred upstream `%s`?" + pretty_choices('y', 'N'),
+                         prompt_if_inferred_yes_opt_msg="Branch `%s` not found in the tree of branch dependencies. Rebasing onto the inferred upstream `%s`...")
         rebase("refs/heads/" + onto_branch, opt_fork_point or fork_point(cb, use_overrides=True), cb)
 
 
@@ -1333,7 +1334,7 @@ def match_log_to_filtered_reflogs(b):
     global branch_defs_by_sha_in_reflog
 
     if b not in local_branches():
-        raise MacheteException("'%s' is not a local branch" % b)
+        raise MacheteException("`%s` is not a local branch" % b)
 
     if branch_defs_by_sha_in_reflog is None:
         def generate_entries():
@@ -1422,7 +1423,7 @@ def discover_tree():
         raise MacheteException("No local branches found")
     for r in opt_roots:
         if r not in local_branches():
-            raise MacheteException("'%s' is not a local branch" % r)
+            raise MacheteException("`%s` is not a local branch" % r)
     roots = list(opt_roots)
     down_branches = {}
     up_branch = {}
@@ -1447,7 +1448,7 @@ def discover_tree():
         stale_branches = []
     managed_branches = excluding(all_local_branches, stale_branches)
     if not managed_branches:
-        warn("no branches satisfying the criteria. Try moving the value of '--checked-out-since' further to the past.")
+        warn("no branches satisfying the criteria. Try moving the value of `--checked-out-since` further to the past.")
         return
 
     for b in excluding(non_root_fixed_branches, stale_branches):
@@ -1471,9 +1472,9 @@ def discover_tree():
     status(warn_on_yellow_edges=False)
     print("")
     do_backup = os.path.isfile(definition_file_path)
-    backup_msg = ("\nThe existing definition file will be backed up as '%s~'" % definition_file_path) if do_backup else ""
-    msg = "Save the above tree to '%s'?%s" % (definition_file_path, backup_msg) + pretty_choices('y', 'e[dit]', 'N')
-    opt_yes_msg = "Saving the above tree to '%s'... %s" % (definition_file_path, backup_msg)
+    backup_msg = ("\nThe existing definition file will be backed up as %s~" % definition_file_path) if do_backup else ""
+    msg = "Save the above tree to %s?%s" % (definition_file_path, backup_msg) + pretty_choices('y', 'e[dit]', 'N')
+    opt_yes_msg = "Saving the above tree to %s... %s" % (definition_file_path, backup_msg)
     ans = ask_if(msg, opt_yes_msg)
     if ans in ('y', 'yes'):
         if do_backup:
@@ -1513,7 +1514,7 @@ def fork_point_and_containing_branch_defs(b, use_overrides):
                   "cannot find fork point, but %s is descendant of its upstream %s; falling back to %s as fork point" % (b, u, u))
             return commit_sha_by_revision(u), []
         else:
-            raise MacheteException("Cannot find fork point for branch '%s'" % b)
+            raise MacheteException("Cannot find fork point for branch `%s`" % b)
     else:
         debug("fork_point_and_containing_branch_defs(%s)" % b,
               "commit %s is the most recent point in history of %s to occur on "
@@ -1570,9 +1571,9 @@ def get_fork_point_override_data(b):
     while_descendant_of_sha = commit_sha_by_revision(while_descendant_of, prefix="")
     if not to_sha or not while_descendant_of_sha:
         if not to_sha:
-            warn("%s config's value '%s' does not point to a valid commit" % (to_key, to))
+            warn("%s config value `%s` does not point to a valid commit" % (to_key, to))
         if not while_descendant_of_sha:
-            warn("%s config's value '%s' does not point to a valid commit" % (while_descendant_of_key, while_descendant_of))
+            warn("%s config value `%s` does not point to a valid commit" % (while_descendant_of_key, while_descendant_of))
         return None
     # This check needs to be performed every time the config is retrieved.
     # We can't rely on the values being validated in set_fork_point_override(), since the config could have been modified outside of git-machete.
@@ -1614,7 +1615,7 @@ def get_revision_repr(revision):
 
 def set_fork_point_override(b, to_revision):
     if b not in local_branches():
-        raise MacheteException("'%s' is not a local branch" % b)
+        raise MacheteException("`%s` is not a local branch" % b)
     to_sha = commit_sha_by_revision(to_revision, prefix="")
     if not to_sha:
         raise MacheteException("Cannot find revision %s" % to_revision)
@@ -1645,7 +1646,7 @@ def delete_unmanaged():
     cb = current_branch_or_none()
     if cb and cb in branches_to_delete:
         branches_to_delete = excluding(branches_to_delete, [cb])
-        print("Skipping current branch '%s'" % cb)
+        print(fmt("Skipping current branch `%s`" % cb))
     if branches_to_delete:
         branches_merged_to_head = merged_local_branches()
 
@@ -1692,17 +1693,17 @@ def slide_out(branches_to_slide_out):
         expect_in_managed_branches(b)
         new_upstream = up_branch.get(b)
         if not new_upstream:
-            raise MacheteException("No upstream branch defined for '%s', cannot slide out" % b)
+            raise MacheteException("No upstream branch defined for `%s`, cannot slide out" % b)
         dbs = down_branches.get(b)
         if not dbs or len(dbs) == 0:
-            raise MacheteException("No downstream branch defined for '%s', cannot slide out" % b)
+            raise MacheteException("No downstream branch defined for `%s`, cannot slide out" % b)
         elif len(dbs) > 1:
-            flat_dbs = ", ".join("'%s'" % x for x in dbs)
-            raise MacheteException("Multiple downstream branches defined for '%s': %s; cannot slide out" % (b, flat_dbs))
+            flat_dbs = ", ".join("`%s`" % x for x in dbs)
+            raise MacheteException("Multiple downstream branches defined for `%s`: %s; cannot slide out" % (b, flat_dbs))
 
     for bu, bd in zip(branches_to_slide_out[:-1], branches_to_slide_out[1:]):
         if up_branch[bd] != bu:
-            raise MacheteException("'%s' is not upstream of '%s', cannot slide out" % (bu, bd))
+            raise MacheteException("`%s` is not upstream of `%s`, cannot slide out" % (bu, bd))
 
     new_upstream = up_branch[branches_to_slide_out[0]]
     new_downstream = down_branches[branches_to_slide_out[-1]][0]
@@ -1740,7 +1741,7 @@ def slidable_after(b):
 
 def advance(b):
     if not down_branches.get(b):
-        raise MacheteException("'%s' does not have any downstream (child) branches to advance towards" % b)
+        raise MacheteException("`%s` does not have any downstream (child) branches to advance towards" % b)
 
     def connected_with_green_edge(bd):
         return \
@@ -1750,12 +1751,13 @@ def advance(b):
 
     candidate_downstreams = list(filter(connected_with_green_edge, down_branches[b]))
     if not candidate_downstreams:
-        raise MacheteException("No downstream (child) branch of '%s' is connected to '%s' with green edge" % (b, b))
+        raise MacheteException("No downstream (child) branch of `%s` is connected to `%s` with a green edge" % (b, b))
     if len(candidate_downstreams) > 1:
         if opt_yes:
-            raise MacheteException("More than one downstream (child) branch of '%s' is connected to '%s' with green edge and '-y/--yes' option is specified" % (b, b))
+            raise MacheteException("More than one downstream (child) branch of `%s` is connected to `%s` with a green edge "
+                                   "and `-y/--yes` option is specified" % (b, b))
         else:
-            d = pick(candidate_downstreams, "downstream branch towards which '%s' is to be fast-forwarded" % b)
+            d = pick(candidate_downstreams, "downstream branch towards which `%s` is to be fast-forwarded" % b)
             merge_fast_forward_only(d)
     else:
         d = candidate_downstreams[0]
@@ -2030,7 +2032,7 @@ def traverse():
                     # but the rebase will be still in progress, waiting for user edits and a subsequent 'git rebase --continue'.
                     rb = currently_rebased_branch_or_none()
                     if rb:  # 'rb' should be equal to 'b' at this point anyway
-                        sys.stdout.write("\nRebase of '%s' in progress; stopping the traversal\n" % rb)
+                        sys.stdout.write(fmt("\nRebase of `%s` in progress; stopping the traversal\n" % rb))
                         return
                 if ans == 'yq':
                     return
@@ -2119,7 +2121,7 @@ def traverse():
                     handle_untracked_branch("origin", b)
                 else:
                     # We know that there is at least 1 remote, otherwise 's' would be 'NO_REMOTES'
-                    print("Branch %s is untracked and there's no %s repository." % (bold(b), bold("origin")))
+                    print(fmt("Branch `%s` is untracked and there's no `%s` repository." % (bold(b), bold("origin"))))
                     pick_remote(b)
 
     if opt_return_to == "here":
@@ -2281,17 +2283,17 @@ def status(warn_on_yellow_edges):
     yellow_edge_branches = [k for k, v in edge_color.items() if v == YELLOW]
     if yellow_edge_branches and warn_on_yellow_edges:
         if len(yellow_edge_branches) == 1:
-            first_line = "yellow edge indicates that fork point for '%s' is probably incorrectly inferred" % yellow_edge_branches[0]
+            first_line = "yellow edge indicates that fork point for `%s` is probably incorrectly inferred" % yellow_edge_branches[0]
         else:
-            affected_branches = ", ".join(map(lambda x: "'%s'" % x, yellow_edge_branches))
+            affected_branches = ", ".join(map(lambda x: "`%s`" % x, yellow_edge_branches))
             first_line = "yellow edges indicate that fork points for %s are probably incorrectly inferred" % affected_branches
 
         if not opt_list_commits:
-            second_line = "Run 'git machete status --list-commits' or 'git machete status --list-commits-with-hashes' to see more details"
+            second_line = "Run `git machete status --list-commits` or `git machete status --list-commits-with-hashes` to see more details"
         elif len(yellow_edge_branches) == 1:
-            second_line = "Consider using 'git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent %s'" % yellow_edge_branches[0]
+            second_line = "Consider using `git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent %s`" % yellow_edge_branches[0]
         else:
-            second_line = "Consider using 'git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent <branch>' for each affected branch"
+            second_line = "Consider using `git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent <branch>` for each affected branch"
 
         sys.stderr.write("\n")
         warn("%s.\n%s." % (first_line, second_line))
@@ -3036,21 +3038,21 @@ def launch(orig_args):
                 opt_yes = opt_no_interactive_rebase = True
 
         if opt_color not in ("always", "auto", "never"):
-            raise MacheteException("Invalid argument for '--color'. Valid arguments: always|auto|never.")
+            raise MacheteException("Invalid argument for `--color`. Valid arguments: `always|auto|never`.")
         else:
             ascii_only = opt_color == "never" or (opt_color == "auto" and not sys.stdout.isatty())
 
         if opt_as_root and opt_onto:
-            raise MacheteException("Option '-R/--as-root' cannot be specified together with '-o/--onto'.")
+            raise MacheteException("Option `-R/--as-root` cannot be specified together with `-o/--onto`.")
 
         if opt_no_edit_merge and not opt_merge:
-            raise MacheteException("Option '--no-edit-merge' only makes sense when using merge and must be specified together with '-M/--merge'.")
+            raise MacheteException("Option `--no-edit-merge` only makes sense when using merge and must be specified together with `-M/--merge`.")
         if opt_no_interactive_rebase and opt_merge:
-            raise MacheteException("Option '--no-interactive-rebase' only makes sense when using rebase and cannot be specified together with '-M/--merge'.")
+            raise MacheteException("Option `--no-interactive-rebase` only makes sense when using rebase and cannot be specified together with `-M/--merge`.")
         if opt_down_fork_point and opt_merge:
-            raise MacheteException("Option '-d/--down-fork-point' only makes sense when using rebase and cannot be specified together with '-M/--merge'.")
+            raise MacheteException("Option `-d/--down-fork-point` only makes sense when using rebase and cannot be specified together with `-M/--merge`.")
         if opt_fork_point and opt_merge:
-            raise MacheteException("Option '-f/--fork-point' only makes sense when using rebase and cannot be specified together with '-M/--merge'.")
+            raise MacheteException("Option `-f/--fork-point` only makes sense when using rebase and cannot be specified together with `-M/--merge`.")
 
         if opt_n and opt_merge:
             opt_no_edit_merge = True
@@ -3061,27 +3063,27 @@ def launch(orig_args):
 
     def expect_no_param(in_args, extra_explanation=''):
         if len(in_args) > 0:
-            raise MacheteException("No argument expected for '%s'%s" % (cmd, extra_explanation))
+            raise MacheteException("No argument expected for `%s`%s" % (cmd, extra_explanation))
 
     def check_optional_param(in_args):
         if not in_args:
             return None
         elif len(in_args) > 1:
-            raise MacheteException("'%s' accepts at most one argument" % cmd)
+            raise MacheteException("`%s` accepts at most one argument" % cmd)
         elif not in_args[0]:
-            raise MacheteException("Argument to '%s' cannot be empty" % cmd)
+            raise MacheteException("Argument to `%s` cannot be empty" % cmd)
         elif in_args[0][0] == "-":
-            raise MacheteException("option '%s' not recognized" % in_args[0])
+            raise MacheteException("Option `%s` not recognized" % in_args[0])
         else:
             return in_args[0]
 
     def check_required_param(in_args, allowed_values):
         if not in_args or len(in_args) > 1:
-            raise MacheteException("'%s' expects exactly one argument: one of %s" % (cmd, allowed_values))
+            raise MacheteException("`%s` expects exactly one argument: one of %s" % (cmd, allowed_values))
         elif not in_args[0]:
-            raise MacheteException("Argument to '%s' cannot be empty; expected one of %s" % (cmd, allowed_values))
+            raise MacheteException("Argument to `%s` cannot be empty; expected one of %s" % (cmd, allowed_values))
         elif in_args[0][0] == "-":
-            raise MacheteException("option '%s' not recognized" % in_args[0])
+            raise MacheteException("Option `%s` not recognized" % in_args[0])
         else:
             return in_args[0]
 
@@ -3130,12 +3132,12 @@ def launch(orig_args):
                 if not os.path.exists(definition_file_path):
                     # We're opening in "append" and not "write" mode to avoid a race condition:
                     # if other process writes to the file between we check the result of `os.path.exists` and call `open`,
-                    # then open(..., 'w') would result in us clearing up the file contents, while open(..., 'a') has no effect.
-                    with open(definition_file_path, 'a'):
+                    # then open(..., "w") would result in us clearing up the file contents, while open(..., "a") has no effect.
+                    with open(definition_file_path, "a"):
                         pass
                 elif os.path.isdir(definition_file_path):
                     # Extremely unlikely case, basically checking if anybody tampered with the repository.
-                    raise MacheteException('%s is a directory rather than a regular file, aborting' % definition_file_path)
+                    raise MacheteException("%s is a directory rather than a regular file, aborting" % definition_file_path)
 
         def allowed_directions(allow_current):
             current = "c[urrent]|" if allow_current else ""
@@ -3241,7 +3243,7 @@ def launch(orig_args):
             param = check_optional_param(parse_options(args))
             # No need to read definition file.
             usage(param)
-        elif cmd == "infer":  # TODO: deprecated in favor of 'discover'
+        elif cmd == "infer":  # TODO: deprecated in favor of `discover`
             expect_no_param(parse_options(args, "l", ["list-commits"]))
             # No need to read definition file.
             discover_tree()
@@ -3255,26 +3257,26 @@ def launch(orig_args):
             list_allowed_values = "addable|managed|slidable|slidable-after <branch>|unmanaged|with-overridden-fork-point"
             list_args = parse_options(args)
             if not list_args:
-                raise MacheteException("'git machete list' expects argument(s): %s" % list_allowed_values)
+                raise MacheteException("`git machete list` expects argument(s): %s" % list_allowed_values)
             elif not list_args[0]:
-                raise MacheteException("Argument to 'git machete list' cannot be empty; expected %s" % list_allowed_values)
+                raise MacheteException("Argument to `git machete list` cannot be empty; expected %s" % list_allowed_values)
             elif list_args[0][0] == "-":
-                raise MacheteException("option '%s' not recognized" % list_args[0])
+                raise MacheteException("Option `%s` not recognized" % list_args[0])
             elif list_args[0] not in ("addable", "managed", "slidable", "slidable-after", "unmanaged", "with-overridden-fork-point"):
                 raise MacheteException("Usage: git machete list %s" % list_allowed_values)
             elif len(list_args) > 2:
-                raise MacheteException("Too many arguments to 'git machete list %s' " % list_args[0])
+                raise MacheteException("Too many arguments to `git machete list %s` " % list_args[0])
             elif list_args[0] in ("addable", "managed", "slidable", "unmanaged", "with-overridden-fork-point") and len(list_args) > 1:
-                raise MacheteException("'git machete list %s' does not expect extra arguments" % list_args[0])
+                raise MacheteException("`git machete list %s` does not expect extra arguments" % list_args[0])
             elif list_args[0] == "slidable-after" and len(list_args) != 2:
-                raise MacheteException("'git machete list %s' requires an extra <branch> argument" % list_args[0])
+                raise MacheteException("`git machete list %s` requires an extra <branch> argument" % list_args[0])
 
             param = list_args[0]
             read_definition_file()
             res = []
             if param == "addable":
                 def strip_first_fragment(rb):
-                    return re.sub('^[^/]+/', '', rb)
+                    return re.sub("^[^/]+/", "", rb)
 
                 remote_counterparts_of_local_branches = map_truthy_only(combined_counterpart_for_fetching_of_branch, local_branches())
                 qualifying_remote_branches = excluding(remote_branches(), remote_counterparts_of_local_branches)
@@ -3298,13 +3300,13 @@ def launch(orig_args):
             param = check_optional_param(parse_options(args))
             read_definition_file()
             log(param or current_branch())
-        elif cmd == "prune-branches":  # TODO: deprecated in favor of 'delete-unmanaged'
+        elif cmd == "prune-branches":  # TODO: deprecated in favor of `delete-unmanaged`
             expect_no_param(parse_options(args, "y", ["yes"]))
             read_definition_file()
             delete_unmanaged()
         elif cmd == "reapply":
             args1 = parse_options(args, "f:", ["fork-point="])
-            expect_no_param(args1, ". Use '-f' or '--fork-point' to specify the fork point commit")
+            expect_no_param(args1, ". Use `-f` or `--fork-point` to specify the fork point commit")
             read_definition_file()
             expect_no_operation_in_progress()
             cb = current_branch()
@@ -3327,15 +3329,15 @@ def launch(orig_args):
             traverse_long_opts = ["fetch", "list-commits", "merge", "no-edit-merge", "no-interactive-rebase", "return-to=", "start-from=", "whole", "yes"]
             expect_no_param(parse_options(args, "FlMnWwy", traverse_long_opts))
             if opt_start_from not in ("here", "root", "first-root"):
-                raise MacheteException("Invalid argument for '--start-from'. Valid arguments: here|root|first-root.")
+                raise MacheteException("Invalid argument for `--start-from`. Valid arguments: `here|root|first-root`.")
             if opt_return_to not in ("here", "nearest-remaining", "stay"):
-                raise MacheteException("Invalid argument for '--return-to'. Valid arguments: here|nearest-remaining|stay.")
+                raise MacheteException("Invalid argument for `--return-to`. Valid arguments: here|nearest-remaining|stay.")
             read_definition_file()
             expect_no_operation_in_progress()
             traverse()
         elif cmd == "update":
             args1 = parse_options(args, "f:Mn", ["fork-point=", "merge", "no-edit-merge", "no-interactive-rebase"])
-            expect_no_param(args1, ". Use '-f' or '--fork-point' to specify the fork point commit")
+            expect_no_param(args1, ". Use `-f` or `--fork-point` to specify the fork point commit")
             read_definition_file()
             expect_no_operation_in_progress()
             update()
@@ -3344,7 +3346,7 @@ def launch(orig_args):
             sys.exit()
         else:
             short_usage()
-            raise MacheteException("\nUnknown command: '%s'. Use 'git machete help' to list possible commands" % cmd)
+            raise MacheteException("\nUnknown command: `%s`. Use `git machete help` to list possible commands" % cmd)
 
     except getopt.GetoptError as e:
         short_usage()

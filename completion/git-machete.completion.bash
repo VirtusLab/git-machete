@@ -1,28 +1,28 @@
 #!/usr/bin/env bash
 
 _git_machete() {
-    cmds="add advance anno d delete-unmanaged diff discover e edit file fork-point g go help is-managed l list log reapply show slide-out s status traverse update version"
-    help_topics="$cmds format hooks"
+    local cmds="add advance anno d delete-unmanaged diff discover e edit file fork-point g go help is-managed l list log reapply show slide-out s status traverse update version"
+    local help_topics="$cmds format hooks"
 
-    categories="addable managed slidable slidable-after unmanaged with-overridden-fork-point"
-    directions="down first last next prev root up"
-    opt_color_args="always auto never"
-    opt_return_to_args="here nearest-remaining stay"
-    opt_start_from_args="here root first-root"
+    local categories="addable managed slidable slidable-after unmanaged with-overridden-fork-point"
+    local directions="down first last next prev root up"
+    local opt_color_args="always auto never"
+    local opt_return_to_args="here nearest-remaining stay"
+    local opt_start_from_args="here root first-root"
 
-    common_opts="--debug -h --help -v --verbose --version"
-    add_opts="-o --onto= -R --as-root -y --yes"
-    advance_opts="-y --yes"
-    anno_opts="-b --branch="
-    delete_unmanaged_opts="-y --yes"
-    diff_opts="-s --stat"
-    discover_opts="-C --checked-out-since= -l --list-commits -r --roots= -y --yes"
-    fork_point_opts="--inferred --override-to= --override-to-inferred --override-to-parent --unset-override"
-    reapply_opts="-f --fork-point="
-    slide_out_opts="-d --down-fork-point= -M --merge -n --no-edit-merge --no-interactive-rebase"
-    status_opts="--color= -L --list-commits-with-hashes -l --list-commits"
-    traverse_opts="-F --fetch -l --list-commits -M --merge -n --no-edit-merge --no-interactive-rebase --return-to= --start-from= -w --whole -W -y --yes"
-    update_opts="-f --fork-point= -M --merge -n --no-edit-merge --no-interactive-rebase"
+    local common_opts="--debug -h --help -v --verbose --version"
+    local add_opts="-o --onto= -R --as-root -y --yes"
+    local advance_opts="-y --yes"
+    local anno_opts="-b --branch="
+    local delete_unmanaged_opts="-y --yes"
+    local diff_opts="-s --stat"
+    local discover_opts="-C --checked-out-since= -l --list-commits -r --roots= -y --yes"
+    local fork_point_opts="--inferred --override-to= --override-to-inferred --override-to-parent --unset-override"
+    local reapply_opts="-f --fork-point="
+    local slide_out_opts="-d --down-fork-point= -M --merge -n --no-edit-merge --no-interactive-rebase"
+    local status_opts="--color= -L --list-commits-with-hashes -l --list-commits"
+    local traverse_opts="-F --fetch -l --list-commits -M --merge -n --no-edit-merge --no-interactive-rebase --return-to= --start-from= -w --whole -W -y --yes"
+    local update_opts="-f --fork-point= -M --merge -n --no-edit-merge --no-interactive-rebase"
 
     case $cur in
         --branch=*|--onto=*) __gitcomp_nl "$(git machete list managed 2>/dev/null)" "" "${cur##--*=}" ;;
@@ -52,7 +52,7 @@ _git_machete() {
              if [[ $COMP_CWORD -eq 2 ]]; then
                 __gitcomp "$cmds"
              else
-                prev=${COMP_WORDS[COMP_CWORD-1]}
+                local prev=${COMP_WORDS[COMP_CWORD-1]}
                 case $prev in
                     -b|--branch|-o|--onto) __gitcomp_nl "$(git machete list managed 2>/dev/null)" ;;
                     -C|--checked-out-since) __gitcomp "" ;;
