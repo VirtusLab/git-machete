@@ -163,7 +163,7 @@ displayed_warnings = set()
 def warn(msg, apply_fmt=True):
     global displayed_warnings
     if msg not in displayed_warnings:
-        sys.stderr.write(colored("Warn: ", RED) + (fmt(msg) if apply_fmt else msg))
+        sys.stderr.write(colored("Warn: ", RED) + (fmt(msg) if apply_fmt else msg) + "\n")
         displayed_warnings.add(msg)
 
 
@@ -609,7 +609,7 @@ def get_default_editor():
                 if name == "$" + git_machete_editor_var:
                     # In this specific case, when GIT_MACHETE_EDITOR is defined but doesn't point to a valid executable,
                     # it's more reasonable/less confusing to raise an error and exit without opening anything.
-                    raise MacheteException(fmt("<b>%s</b> is not available" % editor_repr))
+                    raise MacheteException("<b>%s</b> is not available" % editor_repr)
             else:
                 debug("get_default_editor()", "%s is available" % editor_repr)
                 if name != "$" + git_machete_editor_var and get_config_or_none('advice.macheteEditorSelection') != 'false':
@@ -622,8 +622,8 @@ def get_default_editor():
                 return editor
 
     # This case is extremely unlikely on a modern Unix-like system.
-    raise MacheteException(fmt("Cannot determine editor. "
-                               "Set `%s` environment variable or edit %s directly." % (git_machete_editor_var, definition_file_path)))
+    raise MacheteException("Cannot determine editor. Set `%s` environment variable"
+                           " or edit %s directly." % (git_machete_editor_var, definition_file_path))
 
 
 def edit():

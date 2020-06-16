@@ -4,7 +4,7 @@ _git-machete() {
     local ret=1
 
     _arguments -C \
-        '1: :_git_machete_commands' \
+        '1: :__git_machete_commands' \
         '*::arg:->args' \
         '(--debug)'--debug'[Log detailed diagnostic info, including outputs of the executed git commands]' \
         '(-h --help)'{-h,--help}'[Print help and exit]' \
@@ -17,8 +17,8 @@ _git-machete() {
             case ${line[1]} in
                 (add)
                     _arguments \
-                        '1:: :_git_machete_list_addable' \
-                        '(-o --onto)'{-o,--onto=}'[Specify the target parent branch to add the given branch onto]: :_git_machete_list_managed' \
+                        '1:: :__git_machete_list_addable' \
+                        '(-o --onto)'{-o,--onto=}'[Specify the target parent branch to add the given branch onto]: :__git_machete_list_managed' \
                         '(-R --as-root)'{-R,--as-root}'[Add the given branch as a new root]' \
                         '(-y --yes)'{-y,--yes}'[Do not ask for confirmation whether to create the branch or whether to add onto the inferred upstream]' \
                     && ret=0
@@ -30,7 +30,7 @@ _git-machete() {
                     ;;
                 (anno)
                     _arguments \
-                        '(-b --branch)'{-b,--branch=}'[Branch to set the annotation for]: :_git_machete_list_managed' \
+                        '(-b --branch)'{-b,--branch=}'[Branch to set the annotation for]: :__git_machete_list_managed' \
                     && ret=0
                     ;;
                 (d|diff)
@@ -61,16 +61,16 @@ _git-machete() {
                     && ret=0
                     ;;
                 (g|go)
-                    _arguments '1:: :_git_machete_directions_go' && ret=0
+                    _arguments '1:: :__git_machete_directions_go' && ret=0
                     ;;
                 (help)
-                    _arguments '1:: :_git_machete_help_topics' && ret=0
+                    _arguments '1:: :__git_machete_help_topics' && ret=0
                     ;;
                 (is-managed|l|log)
                     _arguments '1:: :__git_branch_names' && ret=0
                     ;;
                 (list)
-                    _arguments '1:: :_git_machete_categories' && ret=0
+                    _arguments '1:: :__git_machete_categories' && ret=0
                     ;;
                 (reapply)
                     _arguments \
@@ -78,12 +78,12 @@ _git-machete() {
                     && ret=0
                     ;;
                 (show)
-                    _arguments '1:: :_git_machete_directions_show' && ret=0
+                    _arguments '1:: :__git_machete_directions_show' && ret=0
                     ;;
                 (slide-out)
                     _arguments \
                         # TODO suggest further branches based on the previous specified branch (like in Bash completion script)
-                        '*:: :_git_machete_list_slidable' \
+                        '*:: :__git_machete_list_slidable' \
                         '(-d --down-fork-point)'{-d,--down-fork-point=}'[If updating by rebase, specify fork point commit after which the rebased part of history of the downstream branch is meant to start]: :__git_references' \
                         '(-M --merge)'{-M,--merge}'[Update by merge rather than by rebase]' \
                         '(-n)'-n'[If updating by rebase, equivalent to --no-interactive-rebase. If updating by merge, equivalent to --no-edit-merge]' \
@@ -93,7 +93,7 @@ _git-machete() {
                     ;;
                 (s|status)
                     _arguments \
-                        '(--color)'--color='[Colorize the output; argument can be "always", "auto", or "never"]: :_git_machete_opt_color_args' \
+                        '(--color)'--color='[Colorize the output; argument can be "always", "auto", or "never"]: :__git_machete_opt_color_args' \
                         '(-L --list-commits-with-hashes)'{-L,--list-commits-with-hashes}'[List the short hashes and messages of commits introduced on each branch]' \
                         '(-l --list-commits)'{-l,--list-commits}'[List the messages of commits introduced on each branch]' \
                     && ret=0
@@ -106,8 +106,8 @@ _git-machete() {
                         '(-n)'-n'[If updating by rebase, equivalent to --no-interactive-rebase. If updating by merge, equivalent to --no-edit-merge]' \
                         '(--no-edit-merge)'--no-edit-merge'[If updating by merge, pass --no-edit flag to underlying git merge]' \
                         '(--no-interactive-rebase)'--no-interactive-rebase'[If updating by rebase, do NOT pass --interactive flag to underlying git rebase]' \
-                        '(--return-to)'--return-to='[The branch to return after traversal is successfully completed; argument can be "here", "nearest-remaining", or "stay"]: :_git_machete_opt_return_to_args' \
-                        '(--start-from)'--start-from='[The branch to  to start the traversal from; argument can be "here", "root", or "first-root"]: :_git_machete_opt_start_from_args' \
+                        '(--return-to)'--return-to='[The branch to return after traversal is successfully completed; argument can be "here", "nearest-remaining", or "stay"]: :__git_machete_opt_return_to_args' \
+                        '(--start-from)'--start-from='[The branch to  to start the traversal from; argument can be "here", "root", or "first-root"]: :__git_machete_opt_start_from_args' \
                         '(-w --whole)'{-w,--whole}'[Equivalent to -n --start-from=first-root --return-to=nearest-remaining]' \
                         '(-W)'-W'[Equivalent to --fetch --whole]' \
                         '(-y --yes)'{-y,--yes}'[Do not ask for any interactive input; implicates -n]' \
@@ -126,7 +126,7 @@ _git-machete() {
     esac
 }
 
-_git_machete_cmds=(
+__git_machete_cmds=(
     'add:Add a branch to the tree of branch dependencies'
     'advance:Fast-forward the current branch to match one of its downstreams and subsequently slide out this downstream'
     'anno:Manage custom annotations'
@@ -150,13 +150,13 @@ _git_machete_cmds=(
     'version:Display version and exit'
 )
 
-_git_machete_commands() {
-    _describe -t _git_machete_cmds 'git machete command' _git_machete_cmds "$@"
+__git_machete_commands() {
+    _describe -t __git_machete_cmds 'git machete command' __git_machete_cmds "$@"
 }
 
-_git_machete_help_topics() {
+__git_machete_help_topics() {
     local topics
-    set -A topics ${_git_machete_cmds}
+    set -A topics ${__git_machete_cmds}
     topics+=(
         'format:Format of the .git/machete definition file'
         'hooks:Display docs for the extra hooks added by git machete'
@@ -164,7 +164,7 @@ _git_machete_help_topics() {
     _describe -t topics 'git machete help topic' topics "$@"
 }
 
-_git_machete_directions_go() {
+__git_machete_directions_go() {
     local directions
     directions=(
         {d,down}':child(ren) in tree of branch dependencies'
@@ -178,8 +178,8 @@ _git_machete_directions_go() {
     _describe -t directions 'direction' directions "$@"
 }
 
-# TODO extract the part shared with _git_machete_go_directions
-_git_machete_directions_show() {
+# TODO extract the part shared with __git_machete_go_directions
+__git_machete_directions_show() {
     local directions
     directions=(
         {c,current}':the currently checked out branch'
@@ -194,7 +194,7 @@ _git_machete_directions_show() {
     _describe -t directions 'direction' directions "$@"
 }
 
-_git_machete_categories() {
+__git_machete_categories() {
     local categories
     # TODO complete slidable-after's argument
     categories=(
@@ -208,7 +208,7 @@ _git_machete_categories() {
     _describe -t categories 'category' categories "$@"
 }
 
-_git_machete_opt_color_args() {
+__git_machete_opt_color_args() {
     local opt_color_args
     opt_color_args=(
         'always:always emits colors'
@@ -218,7 +218,7 @@ _git_machete_opt_color_args() {
     _describe -t opt_color_args 'color argument' opt_color_args "$@"
 }
 
-_git_machete_opt_return_to_args() {
+__git_machete_opt_return_to_args() {
     local opt_return_to
     opt_return_to=(
         'here:the current branch at the moment when traversal starts'
@@ -228,7 +228,7 @@ _git_machete_opt_return_to_args() {
     _describe -t opt_return_to 'return-to argument' opt_return_to "$@"
 }
 
-_git_machete_opt_start_from_args() {
+__git_machete_opt_start_from_args() {
     local opt_start_from
     opt_start_from=(
         'here:the default - current branch, must be managed by git-machete'
@@ -238,19 +238,19 @@ _git_machete_opt_start_from_args() {
     _describe -t opt_start_from 'start-from argument' opt_start_from "$@"
 }
 
-_git_machete_list_addable() {
+__git_machete_list_addable() {
     local list_addable
     IFS=$'\n' list_addable=($(git machete list addable 2>/dev/null))
     _describe -t list_addable 'addable branch' list_addable "$@"
 }
 
-_git_machete_list_managed() {
+__git_machete_list_managed() {
     local list_managed
     IFS=$'\n' list_managed=($(git machete list managed 2>/dev/null))
     _describe -t list_managed 'managed branch' list_managed "$@"
 }
 
-_git_machete_list_slidable() {
+__git_machete_list_slidable() {
     local list_slidable
     IFS=$'\n' list_slidable=($(git machete list slidable 2>/dev/null))
     _describe -t list_slidable 'slidable branch' list_slidable "$@"
