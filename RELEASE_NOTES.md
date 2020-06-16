@@ -5,11 +5,14 @@
 - added: `addable` category of `list`
 - added: `advance` command
 - added: `machete-post-slide-out` hook
+- added: support for `GIT_MACHETE_EDITOR` env var
+- changed: `go root` no longer raises an error when the current branch is root
+- fixed: `show root` no longer raises an error when the current branch is root
 - fixed: Bash completion for `-y` option in several commands
 - fixed: handling the case of current directory becoming non-existent (e.g. as a result of checkout)
 - improved: `add` accepts remote branches as well (just like `git checkout`)
+- improved: release process has been simplified
 - improved: simplify the release process
-- added: support for `GIT_MACHETE_EDITOR` env var
 
 ## New in git-machete 2.14.0
 

@@ -406,13 +406,13 @@ def down(b, pick_mode):
 
 
 def first_branch(b):
-    root = root_branch(b, accept_self=True, if_unmanaged=PICK_FIRST_ROOT)
+    root = root_branch(b, if_unmanaged=PICK_FIRST_ROOT)
     root_dbs = down_branches.get(root)
     return root_dbs[0] if root_dbs else root
 
 
 def last_branch(b):
-    d = root_branch(b, accept_self=True, if_unmanaged=PICK_LAST_ROOT)
+    d = root_branch(b, if_unmanaged=PICK_LAST_ROOT)
     while down_branches.get(d):
         d = down_branches[d][-1]
     return d
@@ -438,7 +438,7 @@ PICK_FIRST_ROOT = 0
 PICK_LAST_ROOT = -1
 
 
-def root_branch(b, accept_self, if_unmanaged):
+def root_branch(b, if_unmanaged):
     if b not in managed_branches:
         if roots:
             if if_unmanaged == PICK_FIRST_ROOT:
@@ -450,8 +450,6 @@ def root_branch(b, accept_self, if_unmanaged):
         else:
             raise_no_branches_error()
     u = up_branch.get(b)
-    if not u and not accept_self:
-        raise MacheteException("Branch '%s' is already a root" % b)
     while u:
         b = u
         u = up_branch.get(b)
@@ -1923,7 +1921,7 @@ def traverse():
     initial_branch = nearest_remaining_branch = current_branch()
 
     if opt_start_from == "root":
-        dest = root_branch(current_branch(), accept_self=True, if_unmanaged=PICK_FIRST_ROOT)
+        dest = root_branch(current_branch(), if_unmanaged=PICK_FIRST_ROOT)
         print_new_line(False)
         print("Checking out the root branch (%s)" % bold(dest))
         go(dest)
@@ -3130,7 +3128,11 @@ def launch(orig_args):
             definition_file_path = get_git_subpath("machete")
             if cmd not in ("discover", "infer"):
                 if not os.path.exists(definition_file_path):
-                    open(definition_file_path, 'w').close()
+                    # We're opening in "append" and not "write" mode to avoid a race condition:
+                    # if other process writes to the file between we check the result of `os.path.exists` and call `open`,
+                    # then open(..., 'w') would result in us clearing up the file contents, while open(..., 'a') has no effect.
+                    with open(definition_file_path, 'a'):
+                        pass
                 elif os.path.isdir(definition_file_path):
                     # Extremely unlikely case, basically checking if anybody tampered with the repository.
                     raise MacheteException('%s is a directory rather than a regular file, aborting' % definition_file_path)
@@ -3153,7 +3155,7 @@ def launch(orig_args):
             elif param in ("p", "prev"):
                 return prev_branch(b)
             elif param in ("r", "root"):
-                return root_branch(b, accept_self=False, if_unmanaged=PICK_FIRST_ROOT)
+                return root_branch(b, if_unmanaged=PICK_FIRST_ROOT)
             elif param in ("u", "up"):
                 return up(b, prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)
             else:
