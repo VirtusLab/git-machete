@@ -545,6 +545,21 @@ def add(b):
     save_definition_file()
 
 
+def addable():
+    managed_local_branches = excluding(managed_branches, remote_branches())
+    remote_counterparts_of_local_branches = map_truthy_only(combined_counterpart_for_fetching_of_branch, local_branches())
+    remote_branches_without_local_tracking_branch = excluding(remote_branches(), remote_counterparts_of_local_branches)
+
+    remote_counterparts_of_managed_local_branches = map_truthy_only(combined_counterpart_for_fetching_of_branch, managed_local_branches)
+    remote_branches_without_managed_local_tracking_branch = excluding(remote_branches(), remote_counterparts_of_managed_local_branches)
+
+    return excluding(
+        local_branches()
+        + [split_into_remote_and_branch_name(rb)[1] for rb in remote_branches_without_local_tracking_branch]
+        + remote_branches_without_managed_local_tracking_branch,
+        managed_branches)
+
+
 def annotate(b, words):
     global annotations
     if b in annotations and words == ['']:
@@ -814,21 +829,21 @@ def committer_unix_timestamp_by_revision(revision, prefix=""):
     return committer_unix_timestamp_by_revision_cached.get(prefix + revision) or 0
 
 
-def inferred_remote_for_fetching_of_branch(b):
+def inferred_remote_for_fetching_of_branch(lb):
     # Since many people don't use '--set-upstream' flag of 'push', we try to infer the remote instead.
     for r in remotes():
-        if r + "/" + b in remote_branches():
+        if r + "/" + lb in remote_branches():
             return r
     return None
 
 
-def strict_remote_for_fetching_of_branch(b):
-    remote = get_config_or_none("branch." + b + ".remote")
+def strict_remote_for_fetching_of_branch(lb):
+    remote = get_config_or_none("branch." + lb + ".remote")
     return remote.rstrip() if remote else None
 
 
-def combined_remote_for_fetching_of_branch(b):
-    return strict_remote_for_fetching_of_branch(b) or inferred_remote_for_fetching_of_branch(b)
+def combined_remote_for_fetching_of_branch(lb):
+    return strict_remote_for_fetching_of_branch(lb) or inferred_remote_for_fetching_of_branch(lb)
 
 
 def inferred_counterpart_for_fetching_of_branch(b):
@@ -848,9 +863,9 @@ def strict_counterpart_for_fetching_of_branch(b):
     return counterparts_for_fetching_cached.get(b)
 
 
-def combined_counterpart_for_fetching_of_branch(b):
+def combined_counterpart_for_fetching_of_branch(lb):
     # Since many people don't use '--set-upstream' flag of 'push' or 'branch', we try to infer the remote if the tracking data is missing.
-    return strict_counterpart_for_fetching_of_branch(b) or inferred_counterpart_for_fetching_of_branch(b)
+    return strict_counterpart_for_fetching_of_branch(lb) or inferred_counterpart_for_fetching_of_branch(lb)
 
 
 def is_am_in_progress():
@@ -1697,12 +1712,12 @@ def get_overridden_fork_point(b):
     return to
 
 
-def get_revision_repr(revision):
+def get_revision_repr_with_fmt(revision):
     short_sha = short_commit_sha_by_revision(revision)
     if is_full_sha(revision) or revision == short_sha:
-        return "commit %s" % revision
+        return "commit <b>%s</b>" % revision
     else:
-        return "%s (commit %s)" % (revision, short_commit_sha_by_revision(revision))
+        return "<b>%s</b> (commit <b>%s</b>)" % (revision, short_commit_sha_by_revision(revision))
 
 
 def set_fork_point_override(b, to_revision):
@@ -1712,7 +1727,7 @@ def set_fork_point_override(b, to_revision):
     if not to_sha:
         raise MacheteException("Cannot find revision %s" % to_revision)
     if not is_ancestor(to_sha, b):
-        raise MacheteException("Cannot override fork point: %s is not an ancestor of %s" % (get_revision_repr(to_revision), b))
+        raise MacheteException("Cannot override fork point: %s is not an ancestor of <b>%s</b>" % (get_revision_repr_with_fmt(to_revision), b))
 
     to_key = config_key_for_override_fork_point_to(b)
     set_config(to_key, to_sha)
@@ -1722,8 +1737,8 @@ def set_fork_point_override(b, to_revision):
     set_config(while_descendant_of_key, b_sha)
 
     sys.stdout.write(
-        fmt("Fork point for <b>%s</b> is overridden to <b>%s</b>.\n" % (b, get_revision_repr(to_revision)),
-            "This applies as long as %s points to (or is descendant of) its current head (commit %s).\n\n" % (b, short_commit_sha_by_revision(b_sha)),
+        fmt("Fork point for <b>%s</b> is overridden to %s.\n" % (b, get_revision_repr_with_fmt(to_revision)),
+            "This applies as long as <b>%s</b> points to (or is descendant of) its current head (commit <b>%s</b>).\n\n" % (b, short_commit_sha_by_revision(b_sha)),
             "This information is stored under git config keys:\n  * `%s`\n  * `%s`\n\n" % (to_key, while_descendant_of_key),
             "To unset this override, use:\n  `git machete fork-point --unset-override %s`\n" % b))
 
@@ -1799,8 +1814,6 @@ def slide_out(branches_to_slide_out):
 
     new_upstream = up_branch[branches_to_slide_out[0]]
     new_downstream = down_branches[branches_to_slide_out[-1]][0]
-    if new_downstream not in local_branches():
-        raise MacheteException("New downstream branch `%s` is a remote branch; only local branches can be rebased or merged" % new_downstream)
 
     for b in branches_to_slide_out:
         up_branch[b] = None
@@ -1811,16 +1824,26 @@ def slide_out(branches_to_slide_out):
     down_branches[new_upstream] = [(new_downstream if x == branches_to_slide_out[0] else x) for x in down_branches[new_upstream]]
     save_definition_file()
     run_post_slide_out_hook(new_upstream, branches_to_slide_out[-1], [new_downstream])
-    if opt_merge:
-        print("Merging %s into %s..." % (bold(new_upstream), bold(new_downstream)))
-        merge(new_upstream, new_downstream)
+
+    if new_downstream not in local_branches():
+        warn("after sliding out %s, a remote branch `%s` has become a new downstream branch of `%s`.\n"
+             "Not updating `%s` since only local branches can be rebased or merged."
+             % (', '.join('`%s`' % b for b in branches_to_slide_out), new_downstream, new_upstream, new_downstream))
     else:
-        print("Rebasing %s onto %s..." % (bold(new_downstream), bold(new_upstream)))
-        rebase(new_upstream, opt_down_fork_point or fork_point(new_downstream, use_overrides=True), new_downstream)
+        if opt_merge:
+            print("Merging %s into %s..." % (bold(new_upstream), bold(new_downstream)))
+            merge(new_upstream, new_downstream)
+        else:
+            print("Rebasing %s onto %s..." % (bold(new_downstream), bold(new_upstream)))
+            rebase(new_upstream, opt_down_fork_point or fork_point(new_downstream, use_overrides=True), new_downstream)
 
 
 def slidable():
-    return [b for b in managed_branches if b in up_branch and b in down_branches and len(down_branches[b]) == 1]
+    return [b for b in managed_branches if
+            b in up_branch and
+            b in down_branches and
+            len(down_branches[b]) == 1 and
+            down_branches[b][0] in local_branches()]
 
 
 def slidable_after(b):
@@ -1829,7 +1852,7 @@ def slidable_after(b):
         if dbs and len(dbs) == 1:
             d = dbs[0]
             ddbs = down_branches.get(d)
-            if ddbs and len(ddbs) == 1:
+            if ddbs and len(ddbs) == 1 and ddbs[0] in local_branches():
                 return [d]
     return []
 
@@ -2152,6 +2175,7 @@ def traverse():
                 return
 
         if needs_remote_sync:
+            # We know at this point that `b` is a local branch, otherwise `needs_remote_sync` would be False.
             if s == BEHIND_REMOTE:
                 rb = strict_counterpart_for_fetching_of_branch(b)
                 ans = ask_if(
@@ -2327,9 +2351,10 @@ def status(warn_on_yellow_edges):
                 for sha, short_sha, msg in reversed(commits):
                     if sha == fp_sha(b):
                         # fp_branches_cached will already be there thanks to the above call to 'fp_sha'.
-                        fp_branches_formatted = " and ".join(sorted(map(tupled(lambda lb, lb_or_rb: lb_or_rb), fp_branches_cached[b])))
+                        fp_branches_str = " and ".join(sorted(map(tupled(lambda lb, lb_or_rb: lb_or_rb), fp_branches_cached[b])))
                         fp_suffix = " %s %s %s has been found in reflog of %s" %\
-                            (colored(right_arrow(), RED), colored("fork point ???", RED), "this commit" if opt_list_commits_with_hashes else "commit " + short_sha, fp_branches_formatted)
+                            (colored(right_arrow(), RED), colored("fork point ???", RED),
+                             "this commit" if opt_list_commits_with_hashes else "commit " + bold(short_sha), bold(fp_branches_str))
                     else:
                         fp_suffix = ''
                     print_line_prefix(b, vertical_bar())
@@ -2711,7 +2736,7 @@ def usage(c=None):
             It's only important to be consistent wrt. the sequence of characters used for indentation between all lines.
         """,
         "go": """
-            <b>Usage: git machete g[o] [-y/--yes] [-b/--branch] [<direction>|<local or remote branch>]</b>
+            <b>Usage: git machete g[o] [-b/--branch] [<direction>|<local or remote branch>]</b>
             where <direction> is one of: `d[own]`, `f[irst]`, `l[ast]`, `n[ext]`, `p[rev]`, `r[oot]`, `u[p]`
 
             When `-b`/`--branch` is absent and the parameter has a valid value for a direction,
@@ -2730,6 +2755,11 @@ def usage(c=None):
             As for now, this is the only feature of git-machete that circumvents the documented git's command-line interface
             and instead modifies the repository state (specifically, .git/HEAD) directly.
             As a consequence, it's possible that a future release of git might break this feature for git-machete.
+            <b>External tools (notably JetBrains IDEs) may crash/misbehave to various degrees when a remote branch is checked out</b>.
+
+            <b>Options:</b>
+              <b>-b, --branch=<branch></b>      Interpret the argument as a branch name rather than a direction.
+                                         Only strictly needed when a branch name also happens to be a name of a supported direction, or a one-letter shortcut thereof.
         """,
         "help": """
             <b>Usage: git machete help [<command>]</b>
@@ -2797,33 +2827,47 @@ def usage(c=None):
             A deprecated alias for `discover`, without the support of newer options.
             Retained for compatibility, to be removed in the next major release.
 
-            Options:
+            <b>Options:</b>
               <b>-l, --list-commits</b>            When printing the discovered tree, additionally lists the messages of commits introduced on each branch (as for `git machete status`).
         """,
         "is-managed": """
-            <b>Usage: git machete is-managed [--local|--remote] [<local or remote branch>]</b>
+            <b>Usage: git machete is-managed [--and-local|--and-remote] [<local or remote branch>]</b>
 
             Returns with zero exit code if the given branch (or current branch, if none specified) is:
-            * if none of `--local`/`--remote` is present: managed by git-machete (i.e. listed in <git-directory>/machete file),
-            * if `--local` is present: managed by git-machete and a local branch,
-            * if `--remote` is present: managed by git-machete and a remote branch.
+            * if none of `--and-local`/`--and-remote` is present: managed by git-machete (i.e. listed in <git-directory>/machete file),
+            * if `--and-local` is present: managed by git-machete and a local branch,
+            * if `--and-remote` is present: managed by git-machete and a remote branch.
 
             Returns with a non-zero exit code in case:
-            * the <branch> is provided but isn't managed (subject to `--local`/`--remote`), or
-            * the <branch> isn't provided and the current branch isn't managed (subject to `--local`/`--remote`), or
+            * the <branch> is provided but isn't managed (or is managed, but doesn't match a provided `--and-local`/`--and-remote` option), or
+            * the <branch> isn't provided and the current branch isn't managed (or is managed, but doesn't match a provided `--and-local`/`--and-remote` option), or
             * the <branch> isn't provided and there's no current branch (detached HEAD).
+
+            <b>Options:</b>
+              <b>--and-local</b>              Additionally, require that the branch is local.
+
+              <b>--and-remote</b>             Additionally, require that the branch is remote.
         """,
         "list": """
             <b>Usage: git machete list <category></b>
             where <category> is one of: `addable`, `managed`, `slidable`, `slidable-after <local or remote branch>`, `unmanaged`, `with-overridden-fork-point`
 
             Lists all branches that fall into one of the specified categories:
+
             * `addable`: all branches (local or remote) than can be added to the definition file,
-            * `managed`: all branches that appear in the definition file,
-            * `slidable`: all managed branches that have exactly one upstream and one downstream (i.e. the ones that can be slid out with `slide-out` command),
-            * `slidable-after <branch>`: the downstream branch of the <branch>, if it exists and is the only downstream of <branch> (i.e. the one that can be slid out immediately following <branch>),
-            * `unmanaged`: all local branches that don't appear in the definition file,
-            * `with-overridden-fork-point`: all local branches that have a fork point override set up (even if this override does not affect the location of their fork point anymore).
+
+            * `managed`: all branches (local or remote) that appear in the definition file,
+
+            * `slidable`: all managed branches (local or remote) that have exactly one upstream and one downstream
+                        (i.e. the ones that can be slid out with `slide-out` command),
+
+            * `slidable-after <branch>`: the downstream branch (local or remote) of the <branch>, if it exists and is the only downstream of <branch>
+                                       (i.e. the one that can be slid out immediately following <branch>),
+
+            * `unmanaged`: all <b>local</b> branches that don't appear in the definition file,
+
+            * `with-overridden-fork-point`: all branches (local or remote) that have a fork point override set up
+                                          (even if this override does not affect the location of their fork point anymore).
 
             This command is generally not meant for a day-to-day use, it's mostly needed for the sake of branch name completion in shell.
         """,
@@ -2878,6 +2922,7 @@ def usage(c=None):
             Removes the given branch (or multiple branches) from the branch tree definition.
             Then synchronizes the downstream (child) branch of the last specified branch on the top of the upstream (parent) branch of the first specified branch.
             Sync is performed either by rebase (default) or by merge (if `--merge` option passed).
+            If downstream branch of the last specified branch is a remote branch, then this sync is skipped.
 
             The most common use is to slide out a single branch whose upstream was a `develop`/`master` branch and that has been recently merged.
 
@@ -2894,7 +2939,6 @@ def usage(c=None):
                           change-table
                               drop-location-type
             </dim>
-            And now let's assume that `adjust-reads-prec` and later `block-cancel-order` were merged to develop.
             After running `git machete slide-out adjust-reads-prec block-cancel-order` the tree will be reduced to:
             <dim>
               develop
@@ -2903,9 +2947,7 @@ def usage(c=None):
             </dim>
             and `change-table` will be rebased onto develop (fork point for this rebase is configurable, see `-d` option below).
 
-            If the N-th branch to be rebased/merged at the end is a remote branch, an error is raised and no action takes place.
-
-            Note: This command doesn't delete any branches from git, just removes them from the tree of branch dependencies.
+            Note: this command doesn't delete any branches from git, just removes them from the tree of branch dependencies.
 
             <b>Options:</b>
               <b>-d, --down-fork-point=<down-fork-point-commit></b>    If updating by rebase, specifies the alternative fork point commit after which the rebased part of history of the downstream branch is meant to start.
@@ -3124,14 +3166,18 @@ def main():
 def launch(orig_args):
     def parse_options(in_args, short_opts="", long_opts=[], gnu=True):
         global ascii_only
-        global opt_as_root, opt_branch, opt_checked_out_since, opt_color, opt_debug, opt_down_fork_point, opt_fetch, opt_fork_point, opt_inferred, opt_list_commits, opt_list_commits_with_hashes, opt_local, opt_merge, opt_n, opt_no_edit_merge
-        global opt_no_interactive_rebase, opt_onto, opt_override_to, opt_override_to_inferred, opt_override_to_parent, opt_remote, opt_return_to, opt_roots, opt_start_from, opt_stat, opt_unset_override, opt_verbose, opt_yes
+        global opt_and_local, opt_and_remote, opt_as_root, opt_branch, opt_checked_out_since, opt_color, opt_debug, opt_down_fork_point, opt_fetch, opt_fork_point, opt_inferred, opt_list_commits, opt_list_commits_with_hashes, opt_merge
+        global opt_n, opt_no_edit_merge, opt_no_interactive_rebase, opt_onto, opt_override_to, opt_override_to_inferred, opt_override_to_parent, opt_return_to, opt_roots, opt_start_from, opt_stat, opt_unset_override, opt_verbose, opt_yes
 
         fun = getopt.gnu_getopt if gnu else getopt.getopt
         opts, rest = fun(in_args, short_opts + "hv", long_opts + ['debug', 'help', 'verbose', 'version'])
 
         for opt, arg in opts:
-            if opt in ("-b", "--branch"):
+            if opt == "--and-local":
+                opt_and_local = True
+            elif opt == "--and-remote":
+                opt_and_remote = True
+            elif opt in ("-b", "--branch"):
                 opt_branch = arg
             elif opt in ("-C", "--checked-out-since"):
                 opt_checked_out_since = arg
@@ -3154,8 +3200,6 @@ def launch(orig_args):
                 opt_list_commits = opt_list_commits_with_hashes = True
             elif opt in ("-l", "--list-commits"):
                 opt_list_commits = True
-            elif opt == "--local":
-                opt_local = True
             elif opt in ("-M", "--merge"):
                 opt_merge = True
             elif opt == "-n":
@@ -3176,8 +3220,6 @@ def launch(orig_args):
                 opt_as_root = True
             elif opt in ("-r", "--roots"):
                 opt_roots = arg.split(",")
-            elif opt == "--remote":
-                opt_remote = True
             elif opt == "--return-to":
                 opt_return_to = arg
             elif opt in ("-s", "--stat"):
@@ -3208,8 +3250,8 @@ def launch(orig_args):
             raise MacheteException("Option `-R/--as-root` cannot be specified together with `-o/--onto`.")
 
         # is-managed
-        if opt_local and opt_remote:
-            raise MacheteException("Option `--local` cannot be specified together with `--remote`.")
+        if opt_and_local and opt_and_remote:
+            raise MacheteException("Option `--and-local` cannot be specified together with `--and-remote`.")
 
         # slide-out, traverse, update
         if opt_no_edit_merge and not opt_merge:
@@ -3261,10 +3303,12 @@ def launch(orig_args):
             return in_args[0]
 
     global definition_file_path, up_branch
-    global opt_as_root, opt_branch, opt_checked_out_since, opt_color, opt_debug, opt_down_fork_point, opt_fetch, opt_fork_point, opt_inferred, opt_list_commits, opt_list_commits_with_hashes, opt_local, opt_merge, opt_n, opt_no_edit_merge
-    global opt_no_interactive_rebase, opt_onto, opt_override_to, opt_override_to_inferred, opt_override_to_parent, opt_remote, opt_return_to, opt_roots, opt_start_from, opt_stat, opt_unset_override, opt_verbose, opt_yes
+    global opt_and_local, opt_and_remote, opt_as_root, opt_branch, opt_checked_out_since, opt_color, opt_debug, opt_down_fork_point, opt_fetch, opt_fork_point, opt_inferred, opt_list_commits, opt_list_commits_with_hashes, opt_merge
+    global opt_n, opt_no_edit_merge, opt_no_interactive_rebase, opt_onto, opt_override_to, opt_override_to_inferred, opt_override_to_parent, opt_return_to, opt_roots, opt_start_from, opt_stat, opt_unset_override, opt_verbose, opt_yes
     try:
         cmd = None
+        opt_and_local = False
+        opt_and_remote = False
         opt_as_root = False
         opt_branch = None
         opt_checked_out_since = None
@@ -3276,7 +3320,6 @@ def launch(orig_args):
         opt_inferred = False
         opt_list_commits = False
         opt_list_commits_with_hashes = False
-        opt_local = False
         opt_merge = False
         opt_n = False
         opt_no_edit_merge = False
@@ -3285,7 +3328,6 @@ def launch(orig_args):
         opt_override_to = None
         opt_override_to_inferred = False
         opt_override_to_parent = False
-        opt_remote = False
         opt_return_to = "stay"
         opt_roots = list()
         opt_start_from = "here"
@@ -3318,23 +3360,23 @@ def launch(orig_args):
             current = "c[urrent]|" if allow_current else ""
             return current + "d[own]|f[irst]|l[ast]|n[ext]|p[rev]|r[oot]|u[p]"
 
-        def parse_direction_or_none(b, direction, include_current, down_pick_if_multiple):
+        def parse_direction_or_none(direction, include_current, down_pick_if_multiple):
             if direction in ("c", "current") and include_current:
                 return current_branch()  # throws in case of detached HEAD, as in the spec
             elif direction in ("d", "down"):
-                return down(b, pick_if_multiple=down_pick_if_multiple)
+                return down(current_branch(), pick_if_multiple=down_pick_if_multiple)
             elif direction in ("f", "first"):
-                return first_branch(b)
+                return first_branch(current_branch())
             elif direction in ("l", "last"):
-                return last_branch(b)
+                return last_branch(current_branch())
             elif direction in ("n", "next"):
-                return next_branch(b)
+                return next_branch(current_branch())
             elif direction in ("p", "prev"):
-                return prev_branch(b)
+                return prev_branch(current_branch())
             elif direction in ("r", "root"):
-                return root_branch(b, if_unmanaged=PICK_FIRST_ROOT)
+                return root_branch(current_branch(), if_unmanaged=PICK_FIRST_ROOT)
             elif direction in ("u", "up"):
-                return up(b, prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)
+                return up(current_branch(), prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)
             else:
                 return None
 
@@ -3405,21 +3447,21 @@ def launch(orig_args):
             # No need to read definition file.
             usage("format")
         elif cmd in ("g", "go"):
-            param = check_optional_param(parse_options(args, "b:y", ["branch=", "yes"]))
-            cb = current_branch()
+            param = check_optional_param(parse_options(args, "b:", ["branch="]))
             expect_no_operation_in_progress()
             if opt_branch:
                 dest = opt_branch
                 # No need to read definition file.
+                if dest not in all_branches():
+                    raise MacheteException("`%s` is not a local or remote branch" % dest)
             else:
                 if not param:
                     raise MacheteException("`%s` expects exactly one argument: one of `%s` or a branch name" % (cmd, allowed_directions(allow_current=False)))
                 read_definition_file()
-                dest = parse_direction_or_none(cb, direction=param, include_current=False, down_pick_if_multiple=True) or param
-
-            if dest not in all_branches():
-                raise MacheteException("`%s` is not a local or remote branch, or any of `%s`" % (dest, allowed_directions(allow_current=False)))
-            if dest != cb:
+                dest = parse_direction_or_none(direction=param, include_current=False, down_pick_if_multiple=True) or param
+                if dest not in all_branches():
+                    raise MacheteException("`%s` is not a local or remote branch, or any of `%s`" % (dest, allowed_directions(allow_current=False)))
+            if dest != current_branch_or_none():
                 check_out_existing_branch(dest)
         elif cmd == "help":
             param = check_optional_param(parse_options(args))
@@ -3430,14 +3472,14 @@ def launch(orig_args):
             # No need to read definition file.
             discover_tree()
         elif cmd == "is-managed":
-            param = check_optional_param(parse_options(args))
+            param = check_optional_param(parse_options(args, "", ["and-local", "and-remote"]))
             read_definition_file()
             b = param or current_branch_or_none()
             if b is None or b not in managed_branches:
                 sys.exit(1)
-            if opt_local and b not in local_branches():
+            if opt_and_local and b not in local_branches():
                 sys.exit(1)
-            if opt_remote and b not in remote_branches():
+            if opt_and_remote and b not in remote_branches():
                 sys.exit(1)
         elif cmd == "list":
             list_allowed_values = "addable|managed|slidable|slidable-after <branch>|unmanaged|with-overridden-fork-point"
@@ -3461,12 +3503,7 @@ def launch(orig_args):
             read_definition_file()
             res = []
             if param == "addable":
-                def strip_first_fragment(rb):
-                    return re.sub("^[^/]+/", "", rb)
-
-                remote_counterparts_of_local_branches = map_truthy_only(combined_counterpart_for_fetching_of_branch, local_branches())
-                qualifying_remote_branches = excluding(remote_branches(), remote_counterparts_of_local_branches)
-                res = excluding(local_branches(), managed_branches) + list(map(strip_first_fragment, qualifying_remote_branches))
+                res = addable()
             elif param == "managed":
                 res = managed_branches
             elif param == "slidable":
@@ -3499,7 +3536,7 @@ def launch(orig_args):
         elif cmd == "show":
             param = check_required_param(parse_options(args), allowed_directions(allow_current=True))
             read_definition_file(verify_branches=False)
-            b = parse_direction_or_none(current_branch(), direction=param, include_current=True, down_pick_if_multiple=False)
+            b = parse_direction_or_none(direction=param, include_current=True, down_pick_if_multiple=False)
             if not b:
                 raise MacheteException("Usage: git machete show `%s`" % allowed_directions(allow_current=True))
             print(b)

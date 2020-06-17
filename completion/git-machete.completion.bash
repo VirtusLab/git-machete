@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-# git completion provides `__git_refs` (includes local&remote branches, but also tags, *HEADs etc.)
+# git bash completion provides `__git_refs` (includes local&remote branches, but also tags, *HEADs etc.)
 # and `__git_heads` (only local branches), but nothing that would list only local&remote (or just remote) branches.
 __git_branches() {
-  git branch --all --format='%(refname:short)'
+    git for-each-ref --format='%(refname:short)' refs/heads/ refs/remotes/ 2>/dev/null
 }
 
 _git_machete() {
@@ -24,8 +24,8 @@ _git_machete() {
     local diff_opts="-s --stat"
     local discover_opts="-C --checked-out-since= -l --list-commits -r --roots= -y --yes"
     local fork_point_opts="--inferred --override-to= --override-to-inferred --override-to-parent --unset-override"
-    local go_opts="-b --branch= -y --yes"
-    local is_managed_opts="--local --remote"
+    local go_opts="-b --branch="
+    local is_managed_opts="--and-local --and-remote"
     local reapply_opts="-f --fork-point="
     local slide_out_opts="-d --down-fork-point= -M --merge -n --no-edit-merge --no-interactive-rebase"
     local status_opts="--color= -L --list-commits-with-hashes -l --list-commits"
@@ -38,7 +38,7 @@ _git_machete() {
         --color=*) __gitcomp "$opt_color_args" "" "${cur##--color=}" ;;
         --down-fork-point=*|--fork-point=*|--override-to=*) __gitcomp "$(__git_refs)" "" "${cur##--*=}" ;;
         --return-to=*) __gitcomp "$opt_return_to_args" "" "${cur##--return-to=}" ;;
-        --roots=*) __gitcomp "$(__git_branches)" "" "${cur##--roots=}" ;;
+        --roots=*) __gitcomp "$(__git_heads)" "" "${cur##--roots=}" ;; # as for now, only local branches can be passed to --roots
         --start-from=*) __gitcomp "$opt_start_from_args" "" "${cur##--start-from=}" ;;
         -*)
             case ${COMP_WORDS[2]} in

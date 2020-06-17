@@ -1,5 +1,13 @@
 #compdef git-machete
 
+# git zsh completion provides `__git_references` (includes local&remote branches, but also tags, *HEADs etc.),
+# `__git_branch_names` (only local branches) and `__git_remote_branch_names` (only remote branches).
+__git_remote_and_local_branch_names() {
+    local branch_names
+    IFS=$'\n' branch_names=($(git for-each-ref --format='%(refname:short)' refs/heads/ refs/remotes/ 2>/dev/null))
+    _describe -t branch_names 'branch' branch_names "$@"
+}
+
 _git-machete() {
     local ret=1
 
@@ -35,7 +43,7 @@ _git-machete() {
                     ;;
                 (d|diff)
                     _arguments \
-                        '1:: :__git_branch_names' \
+                        '1:: :__git_remote_and_local_branch_names' \
                         '(-s --stat)'{-s,--stat}'[Pass --stat option to git diff, so that only summary (diffstat) is printed]' \
                     && ret=0
                     ;;
@@ -52,7 +60,7 @@ _git-machete() {
                     ;;
                 (fork-point)
                     # TODO correctly suggest branches for `--unset-override`
-                    _arguments '1:: :__git_branch_names' \
+                    _arguments '1:: :__git_remote_and_local_branch_names' \
                         '(--inferred)'--inferred'[Display the fork point ignoring any potential override]' \
                         '(--override-to)'--override-to='[Override fork point to the given revision]: :__git_references' \
                         '(--override-to-inferred)'--override-to-inferred'[Override fork point to the inferred location]' \
@@ -61,22 +69,21 @@ _git-machete() {
                     && ret=0
                     ;;
                 (g|go)
-                    _arguments '1:: :__git_machete_directions_go' \
-                        '(-b --branch)'{-b,--branch=}'[Interpret the argument as a branch name rather than a direction]' \
-                        '(-y --yes)'{-y,--yes}'[Do not ask for confirmation]' \
+                    _arguments '1:: :__git_machete_go_params' \
+                        '(-b --branch)'{-b,--branch=}'[Interpret the argument as a branch name rather than a direction]: :__git_remote_and_local_branch_names' \
                     && ret=0
                     ;;
                 (help)
                     _arguments '1:: :__git_machete_help_topics' && ret=0
                     ;;
                 (is-managed)
-                    _arguments '1:: :__git_branch_names' && \
-                        '(--local)'--local'[Additionally, require that the branch is local]' \
-                        '(--remote)'--remote'[Additionally, require that the branch is remote]' \
+                    _arguments '1:: :__git_remote_and_local_branch_names' && \
+                        '(--and-local)'--and-local'[Additionally, require that the branch is local]' \
+                        '(--and-remote)'--and-remote'[Additionally, require that the branch is remote]' \
                     && ret=0
                     ;;
                 (l|log)
-                    _arguments '1:: :__git_branch_names' && ret=0
+                    _arguments '1:: :__git_remote_and_local_branch_names' && ret=0
                     ;;
                 (list)
                     _arguments '1:: :__git_machete_categories' && ret=0
@@ -87,7 +94,7 @@ _git-machete() {
                     && ret=0
                     ;;
                 (show)
-                    _arguments '1:: :__git_machete_directions_show' && ret=0
+                    _arguments '1:: :__git_machete_show_params' && ret=0
                     ;;
                 (slide-out)
                     _arguments \
@@ -173,32 +180,29 @@ __git_machete_help_topics() {
     _describe -t topics 'git machete help topic' topics "$@"
 }
 
-__git_machete_directions_go() {
-    local directions
-    directions=(
-        {d,down}':child(ren) in tree of branch dependencies'
-        {f,first}':first child of the current root branch'
-        {l,last}':last branch located under current root branch'
-        {n,next}':the one defined in the following line in .git/machete file'
-        {p,prev}':the one defined in the preceding line in .git/machete file'
-        {r,root}':root of the tree of branch dependencies where current branch belongs'
-        {u,up}':parent in tree of branch dependencies'
-    )
-    _describe -t directions 'direction' directions "$@"
+__git_machete_print_directions_no_current() {
+    echo 'down:child(ren) in tree of branch dependencies'
+    echo 'first:first child of the current root branch'
+    echo 'last:last branch located under current root branch'
+    echo 'next:the one defined in the following line in .git/machete file'
+    echo 'prev:the one defined in the preceding line in .git/machete file'
+    echo 'root:root of the tree of branch dependencies where current branch belongs'
 }
 
-# TODO extract the part shared with __git_machete_go_directions
-__git_machete_directions_show() {
+__git_machete_go_params() {
+    local destinations
+    IFS=$'\n' destinations=(
+        $(__git_machete_print_directions_no_current)
+        $(git machete list managed 2>/dev/null)
+    )
+    _describe -t destinations 'destination' destinations "$@"
+}
+
+__git_machete_show_params() {
     local directions
-    directions=(
-        {c,current}':the currently checked out branch'
-        {d,down}':child(ren) in tree of branch dependencies'
-        {f,first}':first child of the current root branch'
-        {l,last}':last branch located under current root branch'
-        {n,next}':the one defined in the following line in .git/machete file'
-        {p,prev}':the one defined in the preceding line in .git/machete file'
-        {r,root}':root of the tree of branch dependencies where current branch belongs'
-        {u,up}':parent in tree of branch dependencies'
+    IFS=$'\n' directions=(
+        'current:the currently checked out branch'
+        $(__git_machete_print_directions_no_current)
     )
     _describe -t directions 'direction' directions "$@"
 }
