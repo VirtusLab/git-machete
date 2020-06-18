@@ -1662,17 +1662,17 @@ def advance(b):
             raise MacheteException("More than one downstream (child) branch of '%s' is connected to '%s' with green edge and '-y/--yes' option is specified" % (b, b))
         else:
             d = pick(candidate_downstreams, "downstream branch towards which '%s' is to be fast-forwarded" % b)
+            merge_fast_forward_only(d)
     else:
         d = candidate_downstreams[0]
-
-    ans = ask_if(
-        "Fast-forward %s to match %s?" % (bold(b), bold(d)) + pretty_choices('y', 'N'),
-        "Fast-forwarding %s to match %s..." % (bold(b), bold(d))
-    )
-    if ans in ('y', 'yes'):
-        merge_fast_forward_only(d)
-    else:
-        return
+        ans = ask_if(
+            "Fast-forward %s to match %s?" % (bold(b), bold(d)) + pretty_choices('y', 'N'),
+            "Fast-forwarding %s to match %s..." % (bold(b), bold(d))
+        )
+        if ans in ('y', 'yes'):
+            merge_fast_forward_only(d)
+        else:
+            return
 
     ans = ask_if(
         "\nBranch %s is now merged into %s. Slide %s out of the tree of branch dependencies?" % (bold(d), bold(b), bold(d)) + pretty_choices('y', 'N'),
