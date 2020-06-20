@@ -104,7 +104,7 @@ Tip: pass an extra `-U` flag to `pip install` to upgrade an already installed ve
 
 ```shell script
 cd your-repo/
-git machete discover --checked-out-since='2 weeks ago'  # increase/decrease the timespan if you want more/less old branches included
+git machete discover
   # (see and possibly edit the suggested layout of branches - branch layout is always kept as text file .git/machete)
 git machete traverse --fetch --start-from=first-root
   # (put each branch one by one in sync with its parent and remote counterpart)

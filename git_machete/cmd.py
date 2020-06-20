@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from git_machete import __version__
+import datetime
 import getopt
 import io
 import itertools
@@ -618,7 +619,7 @@ def get_default_editor():
                         fmt("Opening <b>%s</b>.\n" % editor_repr,
                             "To override this choice, use <b>%s</b> env var, e.g. `export %s=%s`.\n\n" % (git_machete_editor_var, git_machete_editor_var, sample_alternative),
                             "See `git machete help edit` and `git machete edit --debug` for more details.\n\n"
-                            "Use `git config advice.macheteEditorSelection false` to suppress this message.\n"))
+                            "Use `git config --global advice.macheteEditorSelection false` to suppress this message.\n"))
                 return editor
 
     # This case is extremely unlikely on a modern Unix-like system.
@@ -1340,12 +1341,12 @@ def match_log_to_filtered_reflogs(b):
         def generate_entries():
             for lb in local_branches():
                 lb_shas = set()
-                for sha_ in filtered_reflog(lb, "refs/heads/"):
+                for sha_ in filtered_reflog(lb, prefix="refs/heads/"):
                     lb_shas.add(sha_)
                     yield sha_, (lb, lb)
                 rb = combined_counterpart_for_fetching_of_branch(lb)
                 if rb:
-                    for sha_ in filtered_reflog(rb, "refs/remotes/"):
+                    for sha_ in filtered_reflog(rb, prefix="refs/remotes/"):
                         if sha_ not in lb_shas:
                             yield sha_, (lb, rb)
 
@@ -1382,22 +1383,25 @@ def match_log_to_filtered_reflogs(b):
 
 # Complex routines/commands
 
-def is_merged_to_parent(b):
+def is_merged_to(b, target):
+    if commit_sha_by_revision(target) == commit_sha_by_revision(b):
+        # If branch is equal to the target, we need to distinguish between the
+        # case of branch being "recently" created from the target and the case of
+        # branch being fast-forward-merged to the target.
+        # The applied heuristics is to check if the filtered reflog of the branch
+        # (reflog stripped of trivial events like branch creation, reset etc.)
+        # is non-empty.
+        return bool(filtered_reflog(b, prefix="refs/heads/"))
+    else:
+        # If a branch is NOT equal to the target (typically its parent),
+        # it's just enough to check if the target is reachable from the branch.
+        return is_ancestor(b, target)
+
+
+def is_merged_to_upstream(b):
     if b not in up_branch:
         return False
-    u = up_branch[b]
-    equal_to_parent = commit_sha_by_revision(u) == commit_sha_by_revision(b)
-
-    # If a branch is NOT equal to parent, it's just enough to check if the
-    # parent is reachable from the branch.
-    # If branch is equal to parent, then we need to distinguish between the
-    # case of branch being "recently" created from the parent and the case of
-    # branch being fast-forward merged to the parent.
-    # The applied heuristics is to check if the filtered reflog of the branch
-    # (reflog stripped of trivial events like branch creation, reset etc.)
-    # is non-empty.
-    return (not equal_to_parent and is_ancestor(b, u)) or \
-        (equal_to_parent and filtered_reflog(b, prefix="refs/heads/"))
+    return is_merged_to(b, up_branch[b])
 
 
 def infer_upstream(b, condition=lambda u: True, reject_reason_message=""):
@@ -1416,6 +1420,9 @@ def infer_upstream(b, condition=lambda u: True, reject_reason_message=""):
     return None
 
 
+DISCOVER_DEFAULT_FRESH_BRANCH_COUNT = 10
+
+
 def discover_tree():
     global managed_branches, roots, down_branches, up_branch, indent, annotations, opt_checked_out_since, opt_roots
     all_local_branches = local_branches()
@@ -1424,7 +1431,7 @@ def discover_tree():
     for r in opt_roots:
         if r not in local_branches():
             raise MacheteException("`%s` is not a local branch" % r)
-    roots = list(opt_roots)
+    roots = list(opt_roots) or (["master"] if "master" in local_branches() else [])
     down_branches = {}
     up_branch = {}
     indent = "\t"
@@ -1437,25 +1444,34 @@ def discover_tree():
             root_of[b] = get_root_of(root_of[b])
         return root_of[b]
 
-    non_root_fixed_branches = excluding(all_local_branches, opt_roots)
+    non_root_fixed_branches = excluding(all_local_branches, roots)
+    last_checkout_timestamps = get_latest_checkout_timestamps()
+    non_root_fixed_branches_by_last_checkout_timestamps = sorted((last_checkout_timestamps.get(b) or 0, b) for b in non_root_fixed_branches)
     if opt_checked_out_since:
         threshold = parse_git_timespec_to_unix_timestamp(opt_checked_out_since)
-        last_checkout_timestamps = get_latest_checkout_timestamps()
-        stale_branches = [b for b in non_root_fixed_branches if
-                          b not in last_checkout_timestamps or
-                          last_checkout_timestamps[b] < threshold]
+        stale_non_root_fixed_branches = [b for (timestamp, b) in itertools.takewhile(
+            tupled(lambda timestamp, b: timestamp < threshold),
+            non_root_fixed_branches_by_last_checkout_timestamps
+        )]
     else:
-        stale_branches = []
-    managed_branches = excluding(all_local_branches, stale_branches)
-    if not managed_branches:
+        c = DISCOVER_DEFAULT_FRESH_BRANCH_COUNT
+        stale, fresh = non_root_fixed_branches_by_last_checkout_timestamps[:-c], non_root_fixed_branches_by_last_checkout_timestamps[-c:]
+        stale_non_root_fixed_branches = [b for (timestamp, b) in stale]
+        if stale:
+            threshold_date = datetime.datetime.utcfromtimestamp(fresh[0][0]).strftime("%Y-%m-%d")
+            warn("to keep the size of the discovered tree reasonable (ca. %d branches), "
+                 "only branches checked out at or after ca. <b>%s</b> are included.\n"
+                 "Use `git machete discover --checked-out-since=<date>` (where <date> can be e.g. `'2 weeks ago'` or `2020-06-01`) "
+                 "to change this threshold so that less or more branches are included.\n" % (c, threshold_date))
+    managed_branches = excluding(all_local_branches, stale_non_root_fixed_branches)
+    if opt_checked_out_since and not managed_branches:
         warn("no branches satisfying the criteria. Try moving the value of `--checked-out-since` further to the past.")
         return
 
-    for b in excluding(non_root_fixed_branches, stale_branches):
+    for b in excluding(non_root_fixed_branches, stale_non_root_fixed_branches):
         u = infer_upstream(b,
-                           condition=lambda x: get_root_of(x) != b and x not in stale_branches,
-                           reject_reason_message="choosing this candidate would form a cycle in the resulting graph or the candidate is a stale branch"
-                           )
+                           condition=lambda candidate: get_root_of(candidate) != b and candidate not in stale_non_root_fixed_branches,
+                           reject_reason_message="choosing this candidate would form a cycle in the resulting graph or the candidate is a stale branch")
         if u:
             debug("discover_tree()", "inferred upstream of %s is %s, attaching %s as a child of %s\n" % (b, u, b, u))
             up_branch[b] = u
@@ -1468,7 +1484,26 @@ def discover_tree():
             debug("discover_tree()", "inferred no upstream for %s, attaching %s as a new root\n" % (b, b))
             roots += [b]
 
-    print(bold('Discovered tree of branch dependencies:\n'))
+    # Let's remove merged branches for which no downstream branch have been found.
+    merged_branches_to_skip = []
+    for b in managed_branches:
+        if b in up_branch and not down_branches.get(b):
+            u = up_branch[b]
+            if is_merged_to(b, u):
+                debug("discover_tree()", "inferred upstream of %s is %s, but %s is merged to %s; skipping %s from discovered tree\n" % (b, u, b, u, b))
+                warn("skipping branch `%s` since it's merged to `%s`" % (b, u))
+                merged_branches_to_skip += [b]
+    managed_branches = excluding(managed_branches, merged_branches_to_skip)
+    for b in merged_branches_to_skip:
+        u = up_branch[b]
+        down_branches[u] = excluding(down_branches[u], [b])
+        del up_branch[b]
+    # We're NOT applying the removal process recursively,
+    # so it's theoretically possible that some merged branches became childless
+    # after removing the outer layer of childless merged branches.
+    # This is rare enough, however, that we can pretty much ignore this corner case.
+
+    print(bold("Discovered tree of branch dependencies:\n"))
     status(warn_on_yellow_edges=False)
     print("")
     do_backup = os.path.isfile(definition_file_path)
@@ -1745,7 +1780,7 @@ def advance(b):
 
     def connected_with_green_edge(bd):
         return \
-            not is_merged_to_parent(bd) and \
+            not is_merged_to_upstream(bd) and \
             is_ancestor(b, bd) and \
             (get_overridden_fork_point(bd) or commit_sha_by_revision(b) == fork_point(bd, use_overrides=False))
 
@@ -1942,7 +1977,7 @@ def traverse():
     for b in itertools.dropwhile(lambda x: x != cb, managed_branches):
         u = up_branch.get(b)
 
-        needs_slide_out = is_merged_to_parent(b)
+        needs_slide_out = is_merged_to_upstream(b)
         s, remote = get_strict_remote_sync_status(b)
         statuses_to_sync = (UNTRACKED,
                             AHEAD_OF_REMOTE,
@@ -2175,7 +2210,7 @@ def status(warn_on_yellow_edges):
     # in order to render the leading parts of lines properly.
     for b in up_branch:
         u = up_branch[b]
-        if is_merged_to_parent(b):
+        if is_merged_to_upstream(b):
             edge_color[b] = DIM
         elif not is_ancestor(u, b):
             edge_color[b] = RED
@@ -2455,17 +2490,21 @@ def usage(c=None):
             <b>Usage: git machete discover [-C|--checked-out-since=<date>] [-l|--list-commits] [-r|--roots=<branch1>,<branch2>,...] [-y|--yes]</b>
 
             Discovers and displays tree of branch dependencies using a heuristic based on reflogs and asks whether to overwrite the existing definition file with the new discovered tree.
-            If confirmed with a `[y]es` or `[e]dit` reply, backs up the current definition file as `$GIT_DIR/machete~` (if exists) and saves the new tree under the usual `$GIT_DIR/machete` path.
-            If the reply was `[e]dit`, additionally an editor is opened (as in `git machete edit`) after saving the new definition file.
+            If confirmed with a `y[es]` or `e[dit]` reply, backs up the current definition file (if it exists) as `$GIT_DIR/machete~` and saves the new tree under the usual `$GIT_DIR/machete` path.
+            If the reply was `e[dit]`, additionally an editor is opened (as in `git machete edit`) after saving the new definition file.
 
             Options:
-              <b>-C, --checked-out-since=<date></b>  Only consider branches checked out at least once since the given date. <date> can be e.g. `2 weeks ago`, as in `git log --since=<date>`.
+              <b>-C, --checked-out-since=<date></b>   Only consider branches checked out at least once since the given date. <date> can be e.g. `2 weeks ago` or `2020-06-01`, as in `git log --since=<date>`.
+                                               If not present, the date is selected automatically so that around """ + str(DISCOVER_DEFAULT_FRESH_BRANCH_COUNT) + """ branches are included.
 
-              <b>-l, --list-commits</b>              When printing the discovered tree, additionally lists the messages of commits introduced on each branch (as for `git machete status`).
+              <b>-l, --list-commits</b>               When printing the discovered tree, additionally lists the messages of commits introduced on each branch (as for `git machete status`).
 
-              <b>-r, --roots=<branch1,...></b>       Comma-separated list of branches that should be considered roots of trees of branch dependencies, typically `develop` and/or `master`.
+              <b>-r, --roots=<branch1,...></b>        Comma-separated list of branches that should be considered roots of trees of branch dependencies.
+                                               If not present, `master` is assumed to be a root.
+                                               Note that in the process of discovery, certain other branches can also be additionally deemed to be roots as well.
 
-              <b>-y, --yes</b>                       Don't ask for confirmation.
+              <b>-y, --yes</b>                        Don't ask for confirmation before saving the newly-discovered tree.
+                                               Mostly useful in scripts; not recommended for manual use.
         """,
         "edit": """
             <b>Usage: git machete e[dit]</b>

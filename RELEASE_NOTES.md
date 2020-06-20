@@ -11,6 +11,8 @@
 - fixed: Bash completion for `-y` option in several commands
 - fixed: handling the case of current directory becoming non-existent (e.g. as a result of checkout)
 - improved: `add` accepts remote branches as well (just like `git checkout`)
+- improved: `discover` limited to ca. 10 most recently checked out branches by default
+- improved: `discover` skips merged branches for which no child branches have been inferred
 - improved: release process has been simplified
 - improved: simplify the release process
 
