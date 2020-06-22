@@ -2259,15 +2259,16 @@ def usage(c=None):
         "advance": """
             <b>Usage: git machete advance [-y|--yes]</b>
 
-            Fast forwards (as in `git merge --ff-only`) the current branch `X` to its downstream `Y`,
-            and subsequently slides out `Y`. Both steps require manual confirmation unless `-y`/`--yes` is provided.
+            Fast forwards (as in `git merge --ff-only`) the current branch `C` to match its downstream `D`,
+            and subsequently slides out `D`. Both steps require manual confirmation unless `-y`/`--yes` is provided.
 
-            The downstream `Y` is selected according to the following criteria:
-            * if `X` has exactly one downstream branch `y` whose tip is a descendant of `X`, and whose fork point is equal to `X`
-              (basically: there's a green edge between `X` and `y`), then `y` is selected as `Y`,
-            * if `X` has no downstream branches connected with a green edge to `X`, then `advance` fails,
-            * if `X` has more than one downstream branch connected with a green edge to `X`, then user is asked to pick the branch to fast-forward merge into
-              (similarly to what happens in `git machete go down`). If `--yes` is specified, then `advance` fails.
+            The downstream `C` is selected according to the following criteria:
+            * if `C` has exactly one downstream branch `d` whose tip is a descendant of `C`, and whose fork point is equal to `C` or is overridden
+              (basically: there's a green edge between `C` and `d`), then `d` is selected as `D`,
+            * if `C` has no downstream branches connected with a green edge to `C`, then `advance` fails,
+            * if `C` has more than one downstream branch connected with a green edge to `C`,
+              then user is asked to pick the branch to fast-forward merge into (similarly to what happens in `git machete go down`).
+              If `--yes` is specified, then `advance` fails.
 
             As an example, if `git machete status --color=never --list-commits` is as follows:
             <dim>
@@ -2288,7 +2289,8 @@ def usage(c=None):
                 | Apply Python2-compatible static typing
                 x-feature/types
             </dim>
-            then running `git machete advance --yes` will lead to the following status:
+            then running `git machete advance` will fast-forward the current branch `develop` to match `feature/add-from-remote`, and subsequently slide out the latter.
+            After `advance` completes, `status` will show:
             <dim>
               master
               |
@@ -2410,7 +2412,7 @@ def usage(c=None):
             `git machete fork-point` is different (and more powerful) than `git merge-base --fork-point`,
             since the latter takes into account only the reflog of the one provided upstream branch,
             while the former scans reflogs of all local branches and their remote tracking branches.
-            This makes machete's `fork-point` work correctly even when the tree definition has been modified and thus one or more of the branches changed their upstream branch.
+            This makes git-machete's `fork-point` more resilient to modifications of the tree definition which change the upstreams of branches.
 
 
             With `--override-to=<revision>`, sets up a fork point override for <branch>.
@@ -2432,7 +2434,11 @@ def usage(c=None):
             Note: this piece of information is also displayed by `git machete status --list-commits` in case a yellow edge occurs.
 
             With `--unset-override`, the fork point override for <branch> is unset.
-            Note: this is simply done by removing the corresponding `machete.overrideForkPoint.<branch>.*` config entries.
+            This is simply done by removing the corresponding `machete.overrideForkPoint.<branch>.*` config entries.
+
+
+            <b>Note:</b> if an overridden fork point applies to a branch `B`, then it's considered to be <green>connected with a green edge</green> to its upstream (parent) `U`,
+            even if the overridden fork point of `B` is NOT equal to the commit pointed by `U`.
         """,
         "format": """
             The format of the definition file should be as follows:
