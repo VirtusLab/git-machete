@@ -6,7 +6,7 @@
 
 set -e -o pipefail -u
 
-git ls-files | grep -v '^ci/' | xargs grep -ho "https://[^]') ]*" | sort -u | xargs -t -l curl -LfsI --max-time 30 -o/dev/null -w "> %{http_code}\n" || {
+git ls-files ':!ci/' | xargs grep -ho "https://[^]') ]*" | sort -u | xargs -t -l curl -LfsI --max-time 30 -o/dev/null -w "> %{http_code}\n" || {
   echo "Some of the links found in the codebase did not return 2xx HTTP status, please fix"
   exit 1
 }

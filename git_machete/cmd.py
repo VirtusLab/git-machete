@@ -1582,11 +1582,11 @@ def delete_unmanaged():
         print("No branches to delete")
 
 
-def slide_out(bs):
-    for b in bs:
+def slide_out(branches_to_slide_out):
+    for b in branches_to_slide_out:
         expect_in_managed_branches(b)
-        u = up_branch.get(b)
-        if not u:
+        new_upstream = up_branch.get(b)
+        if not new_upstream:
             raise MacheteException("No upstream branch defined for '%s', cannot slide out" % b)
         dbs = down_branches.get(b)
         if not dbs or len(dbs) == 0:
@@ -1595,26 +1595,26 @@ def slide_out(bs):
             flat_dbs = ", ".join("'%s'" % x for x in dbs)
             raise MacheteException("Multiple downstream branches defined for '%s': %s; cannot slide out" % (b, flat_dbs))
 
-    for bu, bd in zip(bs[:-1], bs[1:]):
+    for bu, bd in zip(branches_to_slide_out[:-1], branches_to_slide_out[1:]):
         if up_branch[bd] != bu:
             raise MacheteException("'%s' is not upstream of '%s', cannot slide out" % (bu, bd))
 
-    u = up_branch[bs[0]]
-    d = down_branches[bs[-1]][0]
-    for b in bs:
+    new_upstream = up_branch[branches_to_slide_out[0]]
+    new_downstream = down_branches[branches_to_slide_out[-1]][0]
+    for b in branches_to_slide_out:
         up_branch[b] = None
         down_branches[b] = None
 
-    go(d)
-    up_branch[d] = u
-    down_branches[u] = [(d if x == bs[0] else x) for x in down_branches[u]]
+    go(new_downstream)
+    up_branch[new_downstream] = new_upstream
+    down_branches[new_upstream] = [(new_downstream if x == branches_to_slide_out[0] else x) for x in down_branches[new_upstream]]
     save_definition_file()
     if opt_merge:
-        print("Merging %s into %s..." % (bold(u), bold(d)))
-        merge(u, d)
+        print("Merging %s into %s..." % (bold(new_upstream), bold(new_downstream)))
+        merge(new_upstream, new_downstream)
     else:
-        print("Rebasing %s onto %s..." % (bold(d), bold(u)))
-        rebase("refs/heads/" + u, opt_down_fork_point or fork_point(d, use_overrides=True), d)
+        print("Rebasing %s onto %s..." % (bold(new_downstream), bold(new_upstream)))
+        rebase("refs/heads/" + new_upstream, opt_down_fork_point or fork_point(new_downstream, use_overrides=True), new_downstream)
 
 
 def slidable():
@@ -2363,17 +2363,18 @@ def usage(c=None):
             Prints a summary of this tool, or a detailed info on a command if defined.
         """,
         "hooks": """
-            As for standard git hooks, git-machete looks for its own specific hooks in `$GIT_DIR/hooks/*` (or `$(git config core.hooksPath)/*`, if set).
+            As with the standard git hooks, git-machete looks for its own specific hooks in `$GIT_DIR/hooks/*` (or `$(git config core.hooksPath)/*`, if set).
 
             Note: `hooks` is not a command as such, just a help topic (there is no `git machete hooks` command).
 
             * <b>machete-pre-rebase <new-base> <fork-point-hash> <branch-being-rebased></b>
                 The hook that is executed before rebase is run during `reapply`, `slide-out`, `traverse` and `update`.
+
                 The parameters are exactly the three revisions that are passed to `git rebase --onto`:
                 1. what is going to be the new base for the rebased commits,
                 2. what is the fork point - the place where the rebased history diverges from the upstream history,
                 3. what branch is rebased.
-                If the hook returns a non-zero status, the entire rebase is aborted.
+                If the hook returns a non-zero exit code, the entire rebase is aborted.
 
                 Note: this hook is independent from git's standard `pre-rebase` hook.
                 If machete-pre-rebase returns zero, the execution flow continues to `git rebase`, which may also run `pre-rebase` hook if present.
@@ -2381,13 +2382,15 @@ def usage(c=None):
 
             * <b>machete-status-branch <branch-name></b>
                 The hook that is executed for each branch displayed during `discover`, `status` and `traverse`.
+
                 The standard output of this hook is displayed at the end of the line, after branch name, (optionally) custom annotation and (optionally) remote sync-ness status.
-                Standard error is ignored. If the hook returns a non-zero status, both stdout and stderr are ignored, and printing the status continues as usual.
+                Standard error is ignored. If the hook returns a non-zero exit code, both stdout and stderr are ignored, and printing the status continues as usual.
 
                 Note: the hook is always invoked with `ASCII_ONLY` variable passed into the environment.
                 If `status` runs in ASCII-only mode (i.e. if `--color=auto` and stdout is not a terminal, or if `--color=never`), then `ASCII_ONLY=true`, otherwise `ASCII_ONLY=false`.
 
-            Please see hook_samples/ directory for examples (also includes an example of using the standard git post-commit hook to `git machete add` branches automatically).
+            Please see hook_samples/ directory of git-machete project for examples.
+            An example of using the standard git `post-commit` hook to `git machete add` branches automatically is also included.
         """,
         "infer": """
             <b>Usage: git machete infer [-l|--list-commits]</b>

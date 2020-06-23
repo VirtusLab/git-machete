@@ -8,10 +8,10 @@
 
 [ -n "$1" ] || { echo "usage: $(basename "$0") <branch-name>"; exit 1; }
 
-set -e -o pipefail
+set -e -o pipefail -u
 
 function ansi_esc {
-  [[ $ASCII_ONLY = true ]] || echo -n "$1"
+  [[ ${ASCII_ONLY-} = true ]] || echo -n "$1"
 }
 dim=$(ansi_esc '\033[2m')
 endc=$(ansi_esc '\033[0m')
