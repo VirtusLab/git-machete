@@ -822,7 +822,7 @@ def is_full_sha(revision):
 committer_unix_timestamp_by_revision_cached = None
 
 
-def committer_unix_timestamp_by_revision(revision, prefix=""):
+def committer_unix_timestamp_by_revision(revision, prefix):
     global committer_unix_timestamp_by_revision_cached
     if committer_unix_timestamp_by_revision_cached is None:
         load_branches()
@@ -1328,7 +1328,7 @@ def reflog(b):
         return reflogs_cached[b]
 
 
-def filtered_reflog(b, prefix=""):
+def filtered_reflog(b, prefix):
     def is_excluded_reflog_subject(sha_, gs_):
         is_excluded = (
             gs_.startswith("branch: Created from") or
@@ -1461,7 +1461,8 @@ def is_merged_to(b, target):
         # The applied heuristics is to check if the filtered reflog of the branch
         # (reflog stripped of trivial events like branch creation, reset etc.)
         # is non-empty.
-        return bool(filtered_reflog(b))
+        prefix = "refs/heads/" if b in local_branches() else "refs/remotes/"
+        return bool(filtered_reflog(b, prefix))
     else:
         # If a branch is NOT equal to the target (typically its parent),
         # it's just enough to check if the target is reachable from the branch.
