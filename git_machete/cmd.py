@@ -1492,17 +1492,19 @@ def discover_tree():
             u = up_branch[b]
             if is_merged_to(b, u):
                 debug("discover_tree()", "inferred upstream of %s is %s, but %s is merged to %s; skipping %s from discovered tree\n" % (b, u, b, u, b))
-                warn("skipping branch `%s` since it's merged to `%s`" % (b, u))
                 merged_branches_to_skip += [b]
-    managed_branches = excluding(managed_branches, merged_branches_to_skip)
-    for b in merged_branches_to_skip:
-        u = up_branch[b]
-        down_branches[u] = excluding(down_branches[u], [b])
-        del up_branch[b]
-    # We're NOT applying the removal process recursively,
-    # so it's theoretically possible that some merged branches became childless
-    # after removing the outer layer of childless merged branches.
-    # This is rare enough, however, that we can pretty much ignore this corner case.
+    if merged_branches_to_skip:
+        warn("skipping %s since %s merged to another branch and would not have any downstream branches.\n"
+             % (", ".join("`" + b + "`" for b in merged_branches_to_skip), "it's" if len(merged_branches_to_skip) == 1 else "they're"))
+        managed_branches = excluding(managed_branches, merged_branches_to_skip)
+        for b in merged_branches_to_skip:
+            u = up_branch[b]
+            down_branches[u] = excluding(down_branches[u], [b])
+            del up_branch[b]
+        # We're NOT applying the removal process recursively,
+        # so it's theoretically possible that some merged branches became childless
+        # after removing the outer layer of childless merged branches.
+        # This is rare enough, however, that we can pretty much ignore this corner case.
 
     print(bold("Discovered tree of branch dependencies:\n"))
     status(warn_on_yellow_edges=False)
@@ -1637,7 +1639,7 @@ def get_overridden_fork_point(b):
         return None
     debug("get_overridden_fork_point(%s)" % b,
           "since branch %s is descendant of while_descendant_of=%s, fork point of %s is overridden to %s" %
-          (b, short_commit_sha_by_revision(while_descendant_of), b, to))
+          (b, while_descendant_of, b, to))
     return to
 
 
