@@ -1026,11 +1026,11 @@ def load_branches():
         values = line.split("\t")
         if len(values) != 3:  # invalid, shouldn't happen
             continue
-        b, sha, committer_unix_timestamp = values
+        b, sha, committer_unix_timestamp_and_time_zone = values
         b_stripped = re.sub("^refs/remotes/", "", b)
         remote_branches_cached += [b_stripped]
         commit_sha_by_revision_cached[b] = sha
-        committer_unix_timestamp_by_revision_cached[b] = int(committer_unix_timestamp.split(' ')[0])
+        committer_unix_timestamp_by_revision_cached[b] = int(committer_unix_timestamp_and_time_zone.split(' ')[0])
 
     raw_local = non_empty_lines(popen_git("for-each-ref", "--format=%(refname)\t%(objectname)\t%(committerdate:raw)\t%(upstream)", "refs/heads"))
 
@@ -1038,12 +1038,12 @@ def load_branches():
         values = line.split("\t")
         if len(values) != 4:  # invalid, shouldn't happen
             continue
-        b, sha, committer_unix_timestamp, fetch_counterpart = values
+        b, sha, committer_unix_timestamp_and_time_zone, fetch_counterpart = values
         b_stripped = re.sub("^refs/heads/", "", b)
         fetch_counterpart_stripped = re.sub("^refs/remotes/", "", fetch_counterpart)
         local_branches_cached += [b_stripped]
         commit_sha_by_revision_cached[b] = sha
-        committer_unix_timestamp_by_revision_cached[b] = int(committer_unix_timestamp.split(' ')[0])
+        committer_unix_timestamp_by_revision_cached[b] = int(committer_unix_timestamp_and_time_zone.split(' ')[0])
         if fetch_counterpart_stripped in remote_branches_cached:
             counterparts_for_fetching_cached[b_stripped] = fetch_counterpart_stripped
 
@@ -1308,13 +1308,14 @@ def filtered_reflog(b, prefix):
 
 
 def get_latest_checkout_timestamps():
-    # Entries are in the format '<branch_name>@{unix_timestamp}'
+    # Entries are in the format '<branch_name>@{<unix_timestamp> <time-zone>}'
     result = {}
-    # %gd - reflog selector (HEAD@{unix timestamp})
+    # %gd - reflog selector (HEAD@{<unix-timestamp> <time-zone>} for `--date=raw`;
+    #   `--date=unix` is not available on some older versions of git)
     # %gs - reflog subject
-    output = popen_git("reflog", "show", "--format=%gd:%gs", "--date=unix")
+    output = popen_git("reflog", "show", "--format=%gd:%gs", "--date=raw")
     for entry in non_empty_lines(output):
-        pattern = "^HEAD@\\{([0-9]+)\\}:checkout: moving from (.+) to (.+)$"
+        pattern = "^HEAD@\\{([0-9]+) .+\\}:checkout: moving from (.+) to (.+)$"
         match = re.search(pattern, entry)
         if match:
             from_branch = match.group(2)

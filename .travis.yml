@@ -103,3 +103,9 @@ jobs:
         provider: script
         script: bash ci/deb-ppa-upload/travis-deploy.sh
         on: { branch: master }
+
+
+notifications:
+  email:
+    on_success: change
+    on_failure: always
