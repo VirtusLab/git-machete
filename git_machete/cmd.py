@@ -306,7 +306,7 @@ def raise_no_branches_error():
             definition_file_path, definition_file_path))
 
 
-def read_definition_file():
+def read_definition_file(verify_branches=True):
     global indent, managed_branches, down_branches, up_branch, roots, annotations
 
     with open(definition_file_path) as f:
@@ -334,7 +334,7 @@ def read_definition_file():
         if b in managed_branches:
             raise MacheteException("%s, line %i: branch `%s` re-appears in the tree definition. %s" %
                                    (definition_file_path, idx + 1, b, hint))
-        if b not in local_branches():
+        if verify_branches and b not in local_branches():
             raise MacheteException("%s, line %i: `%s` is not a local branch. %s" %
                                    (definition_file_path, idx + 1, b, hint))
         managed_branches += [b]
@@ -3219,7 +3219,7 @@ def launch(orig_args):
             advance(cb)
         elif cmd == "anno":
             params = parse_options(args, "b:", ["branch="])
-            read_definition_file()
+            read_definition_file(verify_branches=False)
             b = opt_branch or current_branch()
             expect_in_managed_branches(b)
             if params:
@@ -3355,7 +3355,7 @@ def launch(orig_args):
             rebase_onto_ancestor_commit(cb, opt_fork_point or fork_point(cb, use_overrides=True))
         elif cmd == "show":
             param = check_required_param(parse_options(args), allowed_directions(allow_current=True))
-            read_definition_file()
+            read_definition_file(verify_branches=False)
             print(parse_direction(current_branch(), allow_current=True, down_pick_mode=False))
         elif cmd == "slide-out":
             params = parse_options(args, "d:Mn", ["down-fork-point=", "merge", "no-edit-merge", "no-interactive-rebase"])

@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.15.3
+
+- changed: skip verification of managed branches for `anno` and `show`
+
 ## New in git-machete 2.15.2
 
 - fixed: working directory in release scripts
