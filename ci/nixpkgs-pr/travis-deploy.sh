@@ -6,8 +6,7 @@ DIRECTORY_HASH=$(git rev-parse HEAD:ci/nixpkgs-pr)
 export DIRECTORY_HASH
 cd ci/nixpkgs-pr/
 
-[[ -n $TRAVIS_TAG ]]
-VERSION=${TRAVIS_TAG#v}
+VERSION=$(grep '__version__ = ' git_machete/__init__.py | cut -d\' -f2)
 export VERSION
 
 # If the image corresponding to the current state of ci/nixpkgs-pr/ is missing, build it and push to Docker Hub.

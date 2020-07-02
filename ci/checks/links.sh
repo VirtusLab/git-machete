@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-# Downtime of the linked the websites shouldn't block a release or a master build.
-[[ $TRAVIS_TAG ]] && exit 0
+# Downtime of the linked websites shouldn't block a release.
 [[ $TRAVIS_BRANCH = master ]] && exit 0
 
 set -e -o pipefail -u

@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.15.1
+
+- fixed: release process for Homebrew and NixOS/nixpkgs
+
 ## New in git-machete 2.15.0
 
 - added: `addable` category of `list`
@@ -14,7 +18,6 @@
 - improved: `discover` limited to ca. 10 most recently checked out branches by default
 - improved: `discover` skips merged branches for which no child branches have been inferred
 - improved: release process has been simplified
-- improved: simplify the release process
 
 ## New in git-machete 2.14.0
 
