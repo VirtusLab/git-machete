@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.15.2
+
+- fixed: working directory in release scripts
+
 ## New in git-machete 2.15.1
 
 - fixed: release process for Homebrew and NixOS/nixpkgs
