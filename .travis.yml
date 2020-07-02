@@ -77,15 +77,6 @@ jobs:
         distributions: 'sdist bdist_wheel'
         on: { branch: master }
 
-    - stage: 'Open PR to NixOS/nixpkgs'  # Artifacts must be released to PyPI first
-      if: branch = master
-      install: skip
-      script: skip
-      deploy:
-        provider: script
-        script: bash ci/nixpkgs-pr/travis-deploy.sh
-        on: { branch: master }
-
     - stage: 'Update Homebrew tap'  # Artifacts must be released to PyPI first
       if: branch = master
       install: skip
@@ -102,6 +93,15 @@ jobs:
       deploy:
         provider: script
         script: bash ci/deb-ppa-upload/travis-deploy.sh
+        on: { branch: master }
+
+    - stage: 'Open PR to NixOS/nixpkgs'  # Artifacts must be released to PyPI first
+      if: branch = master
+      install: skip
+      script: skip
+      deploy:
+        provider: script
+        script: bash ci/nixpkgs-pr/travis-deploy.sh
         on: { branch: master }
 
 
