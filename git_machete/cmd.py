@@ -1283,14 +1283,14 @@ reflogs_cached = None
 
 def load_all_reflogs():
     global reflogs_cached
+    all_branch_full_names = \
+        ["refs/heads/" + lb for lb in local_branches()] + \
+        ["refs/remotes/" + rb for rb in remote_branches()]
     # %gd - reflog selector (refname@{num})
     # %H - full hash
     # %gs - reflog subject
-    local_branches_and_their_counterparts = \
-        ["refs/heads/" + lb for lb in local_branches()] + \
-        ["refs/remotes/" + combined_counterpart_for_fetching_of_branch(lb) for lb in local_branches() if combined_counterpart_for_fetching_of_branch(lb)]
     # The trailing '--' is necessary to avoid ambiguity in case there is a file called just exactly like one of the branches.
-    entries = non_empty_lines(popen_git("reflog", "show", "--format=%gD\t%H\t%gs", *(local_branches_and_their_counterparts + ["--"])))
+    entries = non_empty_lines(popen_git("reflog", "show", "--format=%gD\t%H\t%gs", *(all_branch_full_names + ["--"])))
     reflogs_cached = {}
     for entry in entries:
         values = entry.split("\t")
@@ -1401,16 +1401,24 @@ def match_log_to_filtered_reflogs(b):
 
     if branch_defs_by_sha_in_reflog is None:
         def generate_entries():
+            processed_branches = set()
             for lb in local_branches():
+                processed_branches.add(lb)
                 lb_shas = set()
                 for sha_ in filtered_reflog(lb, prefix="refs/heads/"):
                     lb_shas.add(sha_)
-                    yield sha_, (lb, lb)
+                    yield sha_, (lb, None)
                 rb = combined_counterpart_for_fetching_of_branch(lb)
                 if rb:
+                    processed_branches.add(rb)
                     for sha_ in filtered_reflog(rb, prefix="refs/remotes/"):
                         if sha_ not in lb_shas:
                             yield sha_, (lb, rb)
+            # Let's also generated process reflogs for managed remote branches
+            # that are NOT a counterpart of any local branch.
+            for rb in excluding(managed_branches, processed_branches):
+                for sha_ in filtered_reflog(rb, prefix="refs/remotes/"):
+                    yield sha_, (None, rb)
 
         branch_defs_by_sha_in_reflog = {}
         for sha, branch_def in generate_entries():
@@ -1424,29 +1432,29 @@ def match_log_to_filtered_reflogs(b):
         def log_result():
             for sha_, branch_defs in branch_defs_by_sha_in_reflog.items():
                 yield dim("%s => %s" %
-                          (sha_, ", ".join(map(tupled(lambda lb, lb_or_rb: lb if lb == lb_or_rb else "%s (remote counterpart of %s)" % (lb_or_rb, lb)), branch_defs))))
+                          (sha_, ", ".join(map(tupled(lambda lb, rb: "%s (remote counterpart of %s)" % (rb, lb) if lb and rb else lb or rb), branch_defs))))
 
         debug("match_log_to_filtered_reflogs(%s)" % b, "branches containing the given SHA in their filtered reflog: \n%s\n" % "\n".join(log_result()))
 
-    get_second = tupled(lambda lb, lb_or_rb: lb_or_rb)
+    get_second_of_first = tupled(lambda lb, rb: rb or lb)
     for sha in spoonfeed_log_shas(b):
         if sha in branch_defs_by_sha_in_reflog:
 
-            # We don't care if `sha` happens to occur on branch's own reflog
-            # (if b is local: b == lb == lb_or_rb; if b is remote: b == lb_or_rb),
-            # or on reflog of its remote tracking branch (b is local and b == lb),
-            # or on reflog of a local branch tracking this branch (b is remote and lb in local_branches_tracking_this).
-            def is_relevant_branch_def(lb, lb_or_rb):
-                return b not in (lb, lb_or_rb) and lb not in local_branches_tracking_this
+            # We don't care if `sha` happens to occur on `b`'s own reflog
+            # (if b is local: b == lb; if b is remote: b == rb),
+            # or on reflog of `b`'s remote tracking branch (b is local and b == lb),
+            # or on reflog of a local branch tracking `b` (b is remote and lb in local_branches_tracking_this).
+            def is_relevant_branch_def(lb, rb):
+                return b not in (lb, rb) and lb not in local_branches_tracking_this
 
-            # The entries must be sorted by lb_or_rb to make sure the upstream inference is deterministic
+            # The entries must be sorted to make sure the upstream inference is deterministic
             # (and does not depend on the order in which `generate_entries` iterated through the local branches).
-            containing_branch_defs = sorted(filter(tupled(is_relevant_branch_def), branch_defs_by_sha_in_reflog[sha]), key=get_second)
+            containing_branch_defs = sorted(filter(tupled(is_relevant_branch_def), branch_defs_by_sha_in_reflog[sha]), key=get_second_of_first)
             if containing_branch_defs:
-                debug("match_log_to_filtered_reflogs(%s)" % b, "commit %s found in filtered reflog of %s" % (sha, " and ".join(map(get_second, branch_defs_by_sha_in_reflog[sha]))))
+                debug("match_log_to_filtered_reflogs(%s)" % b, "commit %s found in filtered reflog of %s" % (sha, " and ".join(map(get_second_of_first, branch_defs_by_sha_in_reflog[sha]))))
                 yield sha, containing_branch_defs
             else:
-                debug("match_log_to_filtered_reflogs(%s)" % b, "commit %s found only in filtered reflog of %s; ignoring" % (sha, " and ".join(map(get_second, branch_defs_by_sha_in_reflog[sha]))))
+                debug("match_log_to_filtered_reflogs(%s)" % b, "commit %s found only in filtered reflog of %s; ignoring" % (sha, " and ".join(map(get_second_of_first, branch_defs_by_sha_in_reflog[sha]))))
         else:
             debug("match_log_to_filtered_reflogs(%s)" % b, "commit %s not found in any filtered reflog" % sha)
 
@@ -1477,17 +1485,19 @@ def is_merged_to_upstream(b):
 
 def infer_upstream(b, condition=lambda u: True, reject_reason_message=""):
     for sha, containing_branch_defs in match_log_to_filtered_reflogs(b):
-        debug("infer_upstream(%s)" % b, "commit %s found in filtered reflog of %s" % (sha, " and ".join(map(tupled(lambda x, y: y), containing_branch_defs))))
+        debug("infer_upstream(%s)" % b, "commit %s found in filtered reflog of %s" % (sha, " and ".join(map(tupled(lambda lb, rb: rb or lb), containing_branch_defs))))
 
-        for candidate, original_matched_branch in containing_branch_defs:
-            if candidate != original_matched_branch:
-                debug("infer_upstream(%s)" % b, "upstream candidate is %s, which is the local counterpart of %s" % (candidate, original_matched_branch))
+        for lb, rb in containing_branch_defs:
+            if lb and rb:
+                debug("infer_upstream(%s)" % b, "upstream candidate is %s, which is the local counterpart of %s" % (lb, rb))
 
-            if condition(candidate):
-                debug("infer_upstream(%s)" % b, "upstream candidate %s accepted" % candidate)
-                return candidate
+            if not lb:
+                debug("infer_upstream(%s)" % b, "remote branch %s cannot be an upstream candidate" % rb)
+            elif condition(lb):
+                debug("infer_upstream(%s)" % b, "upstream candidate %s accepted" % lb)
+                return lb
             else:
-                debug("infer_upstream(%s)" % b, "upstream candidate %s rejected (%s)" % (candidate, reject_reason_message))
+                debug("infer_upstream(%s)" % b, "upstream candidate %s rejected (%s)" % (lb, reject_reason_message))
     return None
 
 
@@ -1626,8 +1636,8 @@ def fork_point_and_containing_branch_defs(b, use_overrides):
     else:
         debug("fork_point_and_containing_branch_defs(%s)" % b,
               "commit %s is the most recent point in history of %s to occur on "
-              "filtered reflog of any other branch or its remote counterpart "
-              "(specifically: %s)" % (fp_sha, b, " and ".join(map(tupled(lambda lb, lb_or_rb: lb_or_rb), containing_branch_defs))))
+              "filtered reflog of any other local branch, or other local branch's remote counterpart, or managed remote branch "
+              "(specifically: %s)" % (fp_sha, b, " and ".join(map(tupled(lambda lb, rb: rb or lb), containing_branch_defs))))
 
         if u and is_ancestor(u, b) and not is_ancestor(u, fp_sha):
             # That happens very rarely in practice (typically current head of any branch, including u, should occur on the reflog of this
@@ -2352,7 +2362,7 @@ def status(warn_on_yellow_edges):
                 for sha, short_sha, msg in reversed(commits):
                     if sha == fp_sha(b):
                         # fp_branches_cached will already be there thanks to the above call to 'fp_sha'.
-                        fp_branches_str = " and ".join(sorted(map(tupled(lambda lb, lb_or_rb: lb_or_rb), fp_branches_cached[b])))
+                        fp_branches_str = " and ".join(sorted(map(tupled(lambda lb, rb: rb or lb), fp_branches_cached[b])))
                         fp_suffix = " %s %s %s has been found in reflog of %s" %\
                             (colored(right_arrow(), RED), colored("fork point ???", RED),
                              "this commit" if opt_list_commits_with_hashes else "commit " + bold(short_sha), bold(fp_branches_str))
