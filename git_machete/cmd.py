@@ -336,7 +336,7 @@ def read_definition_file(verify_branches=True):
             raise MacheteException("%s, line %i: branch `%s` re-appears in the tree definition. %s" %
                                    (definition_file_path, idx + 1, b, hint))
         if verify_branches and b not in all_branches():
-            raise MacheteException("%s, line %i: `%s` is not a local branch. %s" %
+            raise MacheteException("%s, line %i: `%s` is not a local or remote branch. %s" %
                                    (definition_file_path, idx + 1, b, hint))
         managed_branches += [b]
 
