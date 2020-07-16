@@ -12,7 +12,7 @@ function trailer(v) {
   match($0, /[0-9.]+/)
   newVersion = substr($0, RSTART, RLENGTH)
   version = newVersion
-  print "python3-git-machete (" version ") bionic; urgency=medium\n"
+  print "python3-git-machete (" version "~" distro_number ") " distro_name "; urgency=medium\n"
 }
 
 /^- / {

@@ -14,4 +14,4 @@ else
 fi
 
 docker-compose build --build-arg user_id="$(id -u)" --build-arg group_id="$(id -g)" rpm
-docker-compose up --exit-code-from=rpm rpm
+docker-compose run rpm

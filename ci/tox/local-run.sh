@@ -22,4 +22,4 @@ else
 fi
 
 docker-compose build --build-arg user_id="$(id -u)" --build-arg group_id="$(id -g)" tox
-docker-compose up --exit-code-from=tox tox
+docker-compose run tox

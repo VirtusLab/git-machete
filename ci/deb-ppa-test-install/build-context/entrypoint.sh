@@ -3,7 +3,7 @@
 set -e -x
 
 apt-get update
-apt-get install -y python3-git-machete
+apt-get install --no-install-recommends -y python3-git-machete
 git machete --version
-apt-get purge -y python3-git-machete
+apt-get autoremove --purge -y python3-git-machete
 ! command -v git-machete

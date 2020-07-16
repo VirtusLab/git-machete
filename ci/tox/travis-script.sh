@@ -6,4 +6,4 @@ DIRECTORY_HASH=$(git rev-parse HEAD:ci/tox)
 export DIRECTORY_HASH
 cd ci/tox/
 
-docker-compose up --exit-code-from=tox tox
+docker-compose run tox

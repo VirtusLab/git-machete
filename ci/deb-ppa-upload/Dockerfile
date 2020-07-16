@@ -1,6 +1,9 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
-RUN apt-get update && apt-get install -y debhelper devscripts fakeroot gawk python3-all python3-paramiko python3-setuptools
+# See https://github.com/phusion/baseimage-docker/issues/58 for why DEBIAN_FRONTEND=noninteractive is needed.
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y debhelper devscripts fakeroot dh-python gawk python3-all python3-paramiko python3-setuptools \
+    && rm -rfv /var/lib/apt/lists/*
 
 ARG user_id
 ARG group_id

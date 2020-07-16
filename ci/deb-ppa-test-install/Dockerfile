@@ -1,7 +1,13 @@
-FROM ubuntu:18.04
+ARG ubuntu_version
+FROM ubuntu:${ubuntu_version}
 
-RUN apt-get update && apt-get install -y git software-properties-common
-RUN add-apt-repository ppa:virtuslab/git-machete
+# See https://github.com/phusion/baseimage-docker/issues/58 for why DEBIAN_FRONTEND=noninteractive is needed (20.04-only issue)
+RUN set -x \
+    && apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y git software-properties-common \
+    && add-apt-repository ppa:virtuslab/git-machete \
+    && apt-get autoremove --purge -y software-properties-common \
+    && rm -rfv /var/lib/apt/lists/*
 
 COPY entrypoint.sh /
 RUN chmod +x /entrypoint.sh

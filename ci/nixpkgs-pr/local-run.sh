@@ -16,4 +16,4 @@ else
 fi
 
 docker-compose build nixpkgs-pr
-docker-compose up --exit-code-from=nixpkgs-pr nixpkgs-pr
+docker-compose run nixpkgs-pr
