@@ -4,6 +4,7 @@
 
 - changed: skip verification of managed branches for `anno` and `show`
 - added: package for Ubuntu 20.04
+- fixed: missing post-slide-out hook invocation after `advance`
 
 ## New in git-machete 2.15.2
 

@@ -1813,12 +1813,14 @@ def advance(b):
         "\nBranch %s is now merged into %s. Sliding %s out of the tree of branch dependencies..." % (bold(d), bold(b), bold(d))
     )
     if ans in ('y', 'yes'):
-        for dd in down_branches.get(d) or []:
+        dds = down_branches.get(d) or []
+        for dd in dds:
             up_branch[dd] = b
         down_branches[b] = flat_map(
-            lambda bd: (down_branches.get(d) or []) if bd == d else [bd],
+            lambda bd: dds if bd == d else [bd],
             down_branches[b])
         save_definition_file()
+        run_post_slide_out_hook(b, d, dds)
 
 
 class StopTraversal(Exception):
@@ -2639,7 +2641,7 @@ def usage(c=None):
 
             * <b>machete-post-slide-out <new-upstream> <lowest-slid-out-branch> [<new-downstreams>...]</b>
                 The hook that is executed after a branch (or possibly multiple branches, in case of `slide-out`)
-                is slid out by `slide-out` or `traverse`.
+                is slid out by `advance`, `slide-out` or `traverse`.
 
                 At least two parameters (branch names) are passed to the hook:
                 * <b><new-upstream></b> is the upstream of the branch that has been slid out,
@@ -2648,14 +2650,18 @@ def usage(c=None):
                   or in case of multiple branches being slid out - the lowest slid out branch;
                 * <b><new-downstreams></b> are all the following (possibly zero) parameters,
                   which correspond to all original downstreams of <lowest-slid-out-branch>, now reattached as the downstreams of <new-upstream>.
-                  Note that this is guaranteed to be exactly one branch in case of `slide-out` (but no guarantees exist in case of `traverse`).
+                  Note that this is guaranteed to be exactly one branch in case of `slide-out` (but no guarantees exist in case of `advance` or `traverse`).
 
-                Note: the hook, if present, is executed exactly once during each `slide-out` execution (even if multiple branches are slid out),
-                but possibly multiple times during `traverse` (every time a slide-out operation is confirmed).
+                Note: the hook, if present, is executed:
+                * zero or once during a `advance` execution (depending on whether the slide-out has been confirmed or not),
+                * exactly once during a `slide-out` execution (even if multiple branches are slid out),
+                * zero or more times during `traverse` (every time a slide-out operation is confirmed).
 
                 If the hook returns a non-zero exit code, then the execution of the command is aborted,
                 i.e. `slide-out` won't attempt rebase of the new downstream branch and `traverse` won't continue the traversal.
-                Note that non-zero exit of the hook doesn't cancel the slide-out itself, only the subsequent operations.
+                In case of `advance` there is no difference (other than exit code of the entire `advance` command being non-zero),
+                since slide-out is the last operation that happens within `advance`.
+                Note that non-zero exit code of the hook doesn't cancel the effects of slide-out itself, only the subsequent operations.
                 The hook is executed only once the slide-out is complete and can in fact rely on .git/machete file being updated to the new branch layout.
 
             * <b>machete-pre-rebase <new-base> <fork-point-hash> <branch-being-rebased></b>
