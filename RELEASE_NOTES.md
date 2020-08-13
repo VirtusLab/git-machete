@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.15.4
+
+- improved: slide-out is suggested in certain contexts (like `status`) in case a non-existent branch is found in .git/machete
+
 ## New in git-machete 2.15.3
 
 - changed: skip verification of managed branches for `anno` and `show`

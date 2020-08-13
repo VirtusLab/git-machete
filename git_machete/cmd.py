@@ -116,7 +116,7 @@ def safe_input(msg):
 
 
 def ask_if(msg, opt_yes_msg, apply_fmt=True):
-    if opt_yes:
+    if opt_yes and opt_yes_msg:
         print(fmt(opt_yes_msg) if apply_fmt else opt_yes_msg)
         return 'y'
     return safe_input(fmt(msg) if apply_fmt else msg).lower()
@@ -322,6 +322,7 @@ def read_definition_file(verify_branches=True):
     last_depth = -1
     hint = "Edit the definition file manually with `git machete edit`"
 
+    invalid_branches = []
     for idx, l in enumerate(lines):
         pfx = "".join(itertools.takewhile(str.isspace, l))
         if pfx and not indent:
@@ -335,8 +336,7 @@ def read_definition_file(verify_branches=True):
             raise MacheteException("%s, line %i: branch `%s` re-appears in the tree definition. %s" %
                                    (definition_file_path, idx + 1, b, hint))
         if verify_branches and b not in local_branches():
-            raise MacheteException("%s, line %i: `%s` is not a local branch. %s" %
-                                   (definition_file_path, idx + 1, b, hint))
+            invalid_branches += [b]
         managed_branches += [b]
 
         if pfx:
@@ -365,6 +365,47 @@ def read_definition_file(verify_branches=True):
                 down_branches[p] = [b]
         else:
             roots += [b]
+
+    if not invalid_branches:
+        return
+
+    if len(invalid_branches) == 1:
+        ans = ask_if("Skipping `" + invalid_branches[0] +
+                     "` which is not a local branch (perhaps it has been deleted?).\n" +
+                     "Slide it out from the definition file?" +
+                     pretty_choices("y", "e[dit]", "N"), opt_yes_msg=None)
+    else:
+        ans = ask_if("Skipping " + ", ".join("`" + b + "`" for b in invalid_branches) +
+                     " which are not local branches (perhaps they have been deleted?).\n" +
+                     "Slide them out from the definition file?" +
+                     pretty_choices("y", "e[dit]", "N"), opt_yes_msg=None)
+
+    def recursive_slide_out_invalid_branches(b):
+        new_down_branches = flat_map(recursive_slide_out_invalid_branches, down_branches.get(b) or [])
+        if b in invalid_branches:
+            if b in down_branches:
+                del down_branches[b]
+            if b in annotations:
+                del annotations[b]
+            if b in up_branch:
+                for d in new_down_branches:
+                    up_branch[d] = up_branch[b]
+                del up_branch[b]
+            else:
+                for d in new_down_branches:
+                    del up_branch[d]
+            return new_down_branches
+        else:
+            down_branches[b] = new_down_branches
+            return [b]
+
+    roots = flat_map(recursive_slide_out_invalid_branches, roots)
+    managed_branches = excluding(managed_branches, invalid_branches)
+    if ans in ('y', 'yes'):
+        save_definition_file()
+    elif ans in ('e', 'edit'):
+        edit()
+        read_definition_file(verify_branches)
 
 
 def render_tree():
