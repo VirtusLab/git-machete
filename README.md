@@ -6,7 +6,7 @@
 [![Snap](https://snapcraft.io/git-machete/badge.svg)](https://snapcraft.io/git-machete)
 [![Snap build status](https://build.snapcraft.io/badge/VirtusLab/git-machete.svg)](https://build.snapcraft.io/user/VirtusLab/git-machete)
 
-<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/logo.png" width="128" height="128" />
+<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/logo.png" width="180" height="180" align="left" />
 
 **git machete is a versatile tool for organizing your git repo:**
 
