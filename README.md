@@ -6,40 +6,49 @@
 [![Snap](https://snapcraft.io/git-machete/badge.svg)](https://snapcraft.io/git-machete)
 [![Snap build status](https://build.snapcraft.io/badge/VirtusLab/git-machete.svg)](https://build.snapcraft.io/user/VirtusLab/git-machete)
 
-<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/logo.png" width="180" height="180" align="left" />
+<img src="docs/logo.svg"
+     style="width: 100%; display: block; margin-bottom: 10pt;" />
 
-**git machete is a versatile tool for organizing your git repo:**
+git-machete is a robust tool that **simplifies your git workflows**.<br/>
 
-`git machete discover` suggests a layout of branches (which branch is derived/forked off which),
+The _bird's eye view_ provided by git-machete makes **merges/rebases/push/pulls hassle-free**
+even when **multiple branches** are present in the repository
+(master/develop, your topic branches, teammate's branches checked out for review, etc.).<br/>
 
-`git machete status` shows whether branches are in sync with their parent branch (via green/red edges) and their remote tracking branch,
+Using this tool, you can maintain **small, focused, easy-to-review pull requests** with little effort.
+
+A look at a `git machete status` gives an instant answer to the questions:
+* What branches are in this repository?
+* What is going to be merged (rebased/pushed/pulled) and to what?
 
 `git machete traverse` semi-automatically traverses the branches, helping you effortlessly rebase, merge, push and pull.
 
-![git machete discover, status & traverse](https://raw.githubusercontent.com/VirtusLab/git-machete/master/docs/discover-status-traverse.gif)
+<p align="center">
+    <img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/docs/discover-status-traverse.gif"
+         alt="git machete discover, status and traverse" />
+</p>
 
-
-A port to an IntelliJ plugin is under development, see [VirtusLab/git-machete-intellij-plugin](http://github.com/VirtusLab/git-machete-intellij-plugin/).
+See also [VirtusLab/git-machete-intellij-plugin](https://github.com/VirtusLab/git-machete-intellij-plugin#git-machete-intellij-plugin) &mdash;
+a port into a plugin for the IntelliJ Platform products.
 
 
 ## Install
 
 We suggest a couple of alternative ways of installation.
 
-**Bash and zsh completion scripts are provided** in completion/ directory, see [wiki for their installation instructions](https://github.com/VirtusLab/git-machete/wiki).
+**Bash and zsh completion scripts are provided** in completion/ directory,
+see [wiki for their installation instructions](https://github.com/VirtusLab/git-machete/wiki).
 
 git-machete works under both Python 2.7 and Python 3.x.
 
-<details><summary><b>Using Homebrew (macOS)</b></summary><br/>
+### Using Homebrew (macOS)
 
 ```shell script
 brew tap VirtusLab/git-machete
 brew install git-machete
 ```
-</details>
 
-
-<details><summary><b>Using Snappy (most Linux distributions)</b></summary><br/>
+### Using Snappy (most Linux distributions)
 
 **Tip:** check the [guide on installing snapd](https://snapcraft.io/docs/installing-snapd) if you don't have Snap support set up yet in your system.
 
@@ -50,10 +59,8 @@ sudo snap install --classic git-machete
 It can also be installed via Ubuntu Software (simply search for `git-machete`).
 
 **Note:** classic confinement is necessary to ensure access to the editor installed in the system (to edit e.g. .git/machete file or rebase TODO list).
-</details>
 
-
-<details><summary><b>Using PPA (Ubuntu)</b></summary><br/>
+### Using PPA (Ubuntu)
 
 **Tip:** run `sudo apt-get install -y software-properties-common` first if `add-apt-repository` is not available on your system.
 
@@ -62,23 +69,17 @@ sudo add-apt-repository ppa:virtuslab/git-machete
 sudo apt-get update
 sudo apt-get install -y python3-git-machete
 ```
-</details>
 
-
-<details><summary><b>Using rpm (Fedora/RHEL/CentOS/openSUSE...)</b></summary><br/>
+### Using rpm (Fedora/RHEL/CentOS/openSUSE...)
 
 Download the rpm package from the [latest release](https://github.com/VirtusLab/git-machete/releases/latest)
 and install either by opening it in your desktop environment or with `rpm -i git-machete-*.noarch.rpm`.
-</details>
 
-
-<details><summary><b>Using AUR (Arch Linux)</b></summary><br/>
+### Using AUR (Arch Linux)
 
 Install the AUR package [git-machete](https://aur.archlinux.org/packages/git-machete) using an AUR helper of your preference.
-</details>
 
-
-<details><summary><b>Using Nix (macOS & most Linux distributions)</b></summary><br/>
+### Using Nix (macOS & most Linux distributions)
 
 On macOS and most Linux distributions, you can install via [Nix](https://nixos.org/nix):
 
@@ -86,10 +87,8 @@ On macOS and most Linux distributions, you can install via [Nix](https://nixos.o
 nix-channel --add https://nixos.org/channels/nixos-unstable unstable  # if you haven't set up any channels yet
 nix-env -i git-machete
 ```
-</details>
 
-
-<details><summary><b>Using pip with sudo (system-wide install)</b></summary><br/>
+### Using pip with sudo (system-wide install)
 
 You need to have Python and `pip` installed from system packages.
 
@@ -98,10 +97,8 @@ sudo -H pip install git-machete
 ```
 
 **Tip:** pass an extra `-U` flag to `pip install` to upgrade an already installed version.
-</details>
 
-
-<details><summary><b>Using pip without sudo (user-wide install)</b></summary><br/>
+### Using pip without sudo (user-wide install)
 
 You need to have Python and `pip` installed from system packages.
 
@@ -112,8 +109,8 @@ pip install --user git-machete
 Please verify that your `PATH` variable has `${HOME}/.local/bin/` included.
 
 **Tip:** pass an extra `-U` flag to `pip install` to upgrade an already installed version.
-</details>
 
+<br/>
 
 ## Quick start
 
@@ -150,17 +147,18 @@ git machete advance
 
 Useful for merging the child branch to the current branch in a linear fashion (without creating a merge commit).
 
+<br/>
 
 ## Reference
 
 See `git machete help` and `git machete help <command>` for reference.
 
 Take a look at
-[https://medium.com/virtuslab/make-your-way-through-the-git-rebase-jungle-with-git-machete-e2ed4dbacd02](https://medium.com/virtuslab/make-your-way-through-the-git-rebase-jungle-with-git-machete-e2ed4dbacd02)
+[reference blog post](https://medium.com/virtuslab/make-your-way-through-the-git-rebase-jungle-with-git-machete-e2ed4dbacd02)
 for a guide on how to use the tool.
 
-The more advanced features like automated traversal, upstream inference and tree discovery are described in the second part of the series:
-[https://medium.com/virtuslab/git-machete-strikes-again-traverse-the-git-rebase-jungle-even-faster-with-v2-0-f43ebaf8abb0](https://medium.com/virtuslab/git-machete-strikes-again-traverse-the-git-rebase-jungle-even-faster-with-v2-0-f43ebaf8abb0).
+The more advanced features like automated traversal, upstream inference and tree discovery are described in the
+[second part of the series](https://medium.com/virtuslab/git-machete-strikes-again-traverse-the-git-rebase-jungle-even-faster-with-v2-0-f43ebaf8abb0).
 
 
 ## Git compatibility
@@ -171,4 +169,5 @@ git-machete (since version 2.13.0) is compatible with git >= 1.7.10.
 ## Contributions
 
 Contributions are welcome! See [contributing guidelines](CONTRIBUTING.md) for details.
-Help would be especially appreciated with Python code style and refactoring - so far more focus has been put on features, documentation and automating the distribution.
+Help would be especially appreciated with Python code style and refactoring &mdash;
+so far more focus has been put on features, documentation and automating the distribution.
