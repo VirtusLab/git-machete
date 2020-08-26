@@ -4,7 +4,6 @@
 [![TravisCI build status](https://api.travis-ci.org/VirtusLab/git-machete.svg?branch=master)](https://travis-ci.org/VirtusLab/git-machete)
 [![PyPI package](https://badge.fury.io/py/git-machete.svg)](https://pypi.org/project/git-machete)
 [![Snap](https://snapcraft.io/git-machete/badge.svg)](https://snapcraft.io/git-machete)
-[![Snap build status](https://build.snapcraft.io/badge/VirtusLab/git-machete.svg)](https://build.snapcraft.io/user/VirtusLab/git-machete)
 
 <img src="docs/logo.svg"
      style="width: 100%; display: block; margin-bottom: 10pt;" />
