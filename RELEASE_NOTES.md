@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.15.5
+
+- changed: `develop` branch is taken as a fixed root in `discover` if `master` branch is missing
+
 ## New in git-machete 2.15.4
 
 - improved: slide-out is suggested in certain contexts (like `status`) in case a non-existent branch is found in .git/machete

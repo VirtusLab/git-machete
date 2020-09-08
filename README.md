@@ -5,7 +5,7 @@
 [![PyPI package](https://badge.fury.io/py/git-machete.svg)](https://pypi.org/project/git-machete)
 [![Snap](https://snapcraft.io/git-machete/badge.svg)](https://snapcraft.io/git-machete)
 
-<img src="docs/logo.svg"
+<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/docs/logo.svg"
      style="width: 100%; display: block; margin-bottom: 10pt;" />
 
 git-machete is a robust tool that **simplifies your git workflows**.<br/>

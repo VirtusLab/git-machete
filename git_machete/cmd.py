@@ -1473,7 +1473,12 @@ def discover_tree():
     for r in opt_roots:
         if r not in local_branches():
             raise MacheteException("`%s` is not a local branch" % r)
-    roots = list(opt_roots) or (["master"] if "master" in local_branches() else [])
+    if opt_roots:
+        roots = list(opt_roots)
+    elif "master" in local_branches():
+        roots = ["master"]
+    elif "develop" in local_branches():
+        roots = ["develop"]
     down_branches = {}
     up_branch = {}
     indent = "\t"
