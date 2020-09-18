@@ -1480,7 +1480,7 @@ def discover_tree():
     elif "develop" in local_branches():
         roots = ["develop"]
     else:
-        raise MacheteException("Could not determine repository roots automatically. Please use `--roots=branch,names` to manually specify the roots.")
+        roots = []
     down_branches = {}
     up_branch = {}
     indent = "\t"
