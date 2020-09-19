@@ -1,5 +1,10 @@
 # Release notes
 
+## New in git-machete 2.15.6
+
+- fixed: `discover` crashing if neither of `develop` and `master` branches present and `--roots` not provided
+- improved: consider `main` branch as a fixed root in discovery alongside `master` and `develop`
+
 ## New in git-machete 2.15.5
 
 - changed: `develop` branch is taken as a fixed root in `discover` if `master` branch is missing

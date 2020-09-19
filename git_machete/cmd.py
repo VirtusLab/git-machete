@@ -1477,6 +1477,9 @@ def discover_tree():
         roots = list(opt_roots)
     elif "master" in local_branches():
         roots = ["master"]
+    elif "main" in local_branches():
+        # See https://github.com/github/renaming
+        roots = ["main"]
     elif "develop" in local_branches():
         roots = ["develop"]
     else:
