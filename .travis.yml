@@ -20,6 +20,7 @@ jobs:
     - env: PYTHON_VERSION=2.7 GIT_VERSION=2.7.6
     - env: PYTHON_VERSION=3.6 GIT_VERSION=2.20.2
     - env: PYTHON_VERSION=3.8 GIT_VERSION=2.25.0
+    - env: PYTHON_VERSION=3.9 GIT_VERSION=2.29.1
 
     - stage: 'Perform extra checks'
       install: skip

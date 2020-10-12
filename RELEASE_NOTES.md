@@ -1,5 +1,10 @@
 # Release notes
 
+## New in git-machete 2.15.7
+
+- fixed: Reset to Remote and Fast Forward actions in our IntelliJ Plugin caused fork point to be inferred incorrectly
+- added: CI also runs tests against Python 3.9 and latest version of Git
+
 ## New in git-machete 2.15.6
 
 - fixed: `discover` crashing if neither of `develop` and `master` branches present and `--roots` not provided

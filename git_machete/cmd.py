@@ -1324,6 +1324,7 @@ def filtered_reflog(b, prefix):
             gs_ == "branch: Reset to " + b or
             gs_ == "branch: Reset to HEAD" or
             gs_.startswith("reset: moving to ") or
+            gs_.startswith("fetch . ") or
             gs_ == "rebase finished: %s/%s onto %s" % (prefix, b, sha_)  # the rare case of a no-op rebase
         )
         if is_excluded:
@@ -1588,7 +1589,7 @@ def fork_point_and_containing_branch_defs(b, use_overrides):
                 # but the fork point of b is overridden to a commit that is NOT a descendant of u.
                 # In this case it's more reasonable to assume that u (and not overridden_fp_sha) is the fork point.
                 debug("fork_point_and_containing_branch_defs(%s)" % b,
-                      "%s is descendant of its upstream %s, but overridden fork point commit %s is NOT a descendant of %s; falling back to %s as fork point" % (u, b, overridden_fp_sha, u, u))
+                      "%s is descendant of its upstream %s, but overridden fork point commit %s is NOT a descendant of %s; falling back to %s as fork point" % (b, u, overridden_fp_sha, u, u))
                 return commit_sha_by_revision(u), []
             else:
                 debug("fork_point_and_containing_branch_defs(%s)" % b,
