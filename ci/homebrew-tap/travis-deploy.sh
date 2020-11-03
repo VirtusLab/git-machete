@@ -7,7 +7,7 @@ VERSION=$(grep '__version__ = ' git_machete/__init__.py | cut -d\' -f2)
 git clone https://${GITHUB_TOKEN}@github.com/VirtusLab/homebrew-git-machete.git ../homebrew-git-machete
 cd ../homebrew-git-machete/
 
-git config user.email "travis@travis-ci.org"
+git config user.email "travis@travis-ci.com"
 git config user.name "Travis CI"
 sha256=$(curl -s https://pypi.org/pypi/git-machete/$VERSION/json | jq --raw-output '.urls | map(select(.packagetype == "sdist")) | .[0].digests.sha256')
 sed -i "s/git-machete-.*\.tar\.gz/git-machete-$VERSION.tar.gz/" git-machete.rb

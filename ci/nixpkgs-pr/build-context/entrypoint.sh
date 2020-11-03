@@ -30,7 +30,7 @@ git checkout -b $branch
 git add $expression_path
 title="gitAndTools.git-machete: $existing_version -> $VERSION"
 message=$(echo "$title"; echo; cat /root/pr-description.md)
-git config user.email "travis@travis-ci.org"
+git config user.email "travis@travis-ci.com"
 git config user.name "Travis CI"
 git commit -m "$message"
 git push VirtusLab $branch
@@ -41,4 +41,4 @@ hub pull-request \
   --message "$message" \
   --labels='10.rebuild-darwin: 1-10,10.rebuild-linux: 1-10,11.by: upstream-developer'
 # Deliberately not setting --reviewer (not needed + caused non-trivial issues with access of personal OAuth token to organization-owned repo:
-# it could create a PR but could not set a reviewer, see https://travis-ci.org/VirtusLab/git-machete/jobs/657256851).
+# it could create a PR but could not set a reviewer, see https://travis-ci.com/VirtusLab/git-machete/jobs/657256851).

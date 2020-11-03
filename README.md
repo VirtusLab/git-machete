@@ -1,7 +1,7 @@
 # git-machete
 
 [![Join the chat at https://gitter.im/VirtusLab/git-machete](https://badges.gitter.im/VirtusLab/git-machete.svg)](https://gitter.im/VirtusLab/git-machete)
-[![TravisCI build status](https://api.travis-ci.org/VirtusLab/git-machete.svg?branch=master)](https://travis-ci.org/VirtusLab/git-machete)
+[![TravisCI build status](https://api.travis-ci.com/VirtusLab/git-machete.svg?branch=master)](https://travis-ci.com/github/VirtusLab/git-machete/builds)
 [![PyPI package](https://badge.fury.io/py/git-machete.svg)](https://pypi.org/project/git-machete)
 [![Snap](https://snapcraft.io/git-machete/badge.svg)](https://snapcraft.io/git-machete)
 
