@@ -3,8 +3,10 @@ os: linux
 # and hence apparently we have to use same distro as used for core18 (https://github.com/snapcore/core18) Snap base.
 dist: bionic
 # Build is fully Dockerized, we don't need to run Python directly on the VM.
-# Python is needed for PyPI deployment, but `minimal` is still sufficient for this purpose.
-language: minimal
+# Python is needed for PyPI deployment, but `node_js` is still sufficient for this purpose.
+# We need node_js for link checking.
+language: node_js
+node_js: [14]
 
 # CI is responsible for the tagging, so we shouldn't let it build tags.
 if: tag IS blank
@@ -23,11 +25,12 @@ jobs:
     - env: PYTHON_VERSION=3.9 GIT_VERSION=2.29.1
 
     - stage: 'Perform extra checks'
-      install: skip
+      install:
+        - npm install --global remark-cli remark-lint-no-dead-urls remark-validate-links
       script:
-        - ./ci/checks/links.sh
-        - ./ci/checks/tab-character.sh
-        - ./ci/checks/trailing-whitespace.sh
+        - ./ci/checks/ensure-links-correct.sh
+        - ./ci/checks/prohibit-tab-character.sh
+        - ./ci/checks/prohibit-trailing-whitespace.sh
 
     # Note: each time a commit is pushed to master,
     # a Snap build for `edge` channel is also triggered automatically via GitHub webhook on https://build.snapcraft.io/user/VirtusLab/git-machete
