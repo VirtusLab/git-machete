@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.15.8
+
+- improved: both `master` (or `main`) and `develop` are automatically treated as roots in `discover`
+
 ## New in git-machete 2.15.7
 
 - fixed: Reset to Remote and Fast Forward actions in our IntelliJ Plugin caused fork point to be inferred incorrectly
