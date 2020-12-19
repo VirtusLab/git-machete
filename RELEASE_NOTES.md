@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.15.9
+
+- fixed: Docker image used to open a PR to nixpkgs
+
 ## New in git-machete 2.15.8
 
 - improved: both `master` (or `main`) and `develop` are automatically treated as roots in `discover`

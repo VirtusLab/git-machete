@@ -40,5 +40,5 @@ hub pull-request \
   --head VirtusLab:$branch \
   --message "$message" \
   --labels='10.rebuild-darwin: 1-10,10.rebuild-linux: 1-10,11.by: upstream-developer'
-# Deliberately not setting --reviewer (not needed + caused non-trivial issues with access of personal OAuth token to organization-owned repo:
-# it could create a PR but could not set a reviewer, see https://travis-ci.com/VirtusLab/git-machete/jobs/657256851).
+# Deliberately not setting `--reviewer`, since it's not strictly needed
+# and caused non-trivial issues with access of personal OAuth token to organization-owned repo.
