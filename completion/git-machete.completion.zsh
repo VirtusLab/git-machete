@@ -91,6 +91,11 @@ _git-machete() {
                         '(--no-interactive-rebase)'--no-interactive-rebase'[If updating by rebase, do NOT pass --interactive flag to underlying git rebase]' \
                     && ret=0
                     ;;
+                (squash)
+                    _arguments \
+                        '(-f --fork-point)'{-f,--fork-point=}'[Fork point commit after which the squashed part of history is meant to start]: :__git_references' \
+                    && ret=0
+                    ;;
                 (s|status)
                     _arguments \
                         '(--color)'--color='[Colorize the output; argument can be "always", "auto", or "never"]: :__git_machete_opt_color_args' \
@@ -144,6 +149,7 @@ __git_machete_cmds=(
     'reapply:Rebase the current branch onto its own fork point'
     'show:Show name(s) of the branch(es) relative to the position of the current branch'
     'slide-out:Slide the current branch out and sync its downstream (child) branch with its upstream (parent) branch via rebase or merge'
+    'squash:Squash the unique history of the current branch into a single commit'
     {status,s}':Display formatted tree of branch dependencies, including info on their sync with upstream branch and with remote'
     'traverse:Walk through the tree of branch dependencies and rebase, merge, slide out, push and/or pull each branch one by one'
     'update:Sync the current branch with its upstream (parent) branch via rebase or merge'

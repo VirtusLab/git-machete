@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.16.0
+
+- added: `squash` command
+
 ## New in git-machete 2.15.9
 
 - fixed: Docker image used to open a PR to nixpkgs

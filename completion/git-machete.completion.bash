@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 _git_machete() {
-    local cmds="add advance anno d delete-unmanaged diff discover e edit file fork-point g go help is-managed l list log reapply show slide-out s status traverse update version"
+    local cmds="add advance anno d delete-unmanaged diff discover e edit file fork-point g go help is-managed l list log reapply s show slide-out squash status traverse update version"
     local help_topics="$cmds format hooks"
 
     local categories="addable managed slidable slidable-after unmanaged with-overridden-fork-point"
@@ -20,6 +20,7 @@ _git_machete() {
     local fork_point_opts="--inferred --override-to= --override-to-inferred --override-to-parent --unset-override"
     local reapply_opts="-f --fork-point="
     local slide_out_opts="-d --down-fork-point= -M --merge -n --no-edit-merge --no-interactive-rebase"
+    local squash_opts="-f --fork-point="
     local status_opts="--color= -L --list-commits-with-hashes -l --list-commits"
     local traverse_opts="-F --fetch -l --list-commits -M --merge -n --no-edit-merge --no-interactive-rebase --return-to= --start-from= -w --whole -W -y --yes"
     local update_opts="-f --fork-point= -M --merge -n --no-edit-merge --no-interactive-rebase"
@@ -43,6 +44,7 @@ _git_machete() {
                 fork-point) __gitcomp "$common_opts $fork_point_opts" ;;
                 reapply) __gitcomp "$common_opts $reapply_opts" ;;
                 slide-out) __gitcomp "$common_opts $slide_out_opts" ;;
+                squash) __gitcomp "$common_opts $squash_opts" ;;
                 s|status) __gitcomp "$common_opts $status_opts" ;;
                 traverse) __gitcomp "$common_opts $traverse_opts" ;;
                 update) __gitcomp "$common_opts $update_opts" ;;

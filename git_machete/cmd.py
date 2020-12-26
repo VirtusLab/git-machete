@@ -1208,6 +1208,40 @@ def update():
         rebase("refs/heads/" + onto_branch, opt_fork_point or fork_point(cb, use_overrides=True), cb)
 
 
+def squash(cb, fork_commit):
+    commits = commits_between(fork_commit, cb)
+    if not commits:
+        raise MacheteException("No commits to squash. Use `-f` or `--fork-point` to specify the start of range of commits to squash.")
+    if len(commits) == 1:
+        sha, short_sha, subject = commits[0]
+        print("Exactly one commit (%s) to squash, ignoring.\n" % short_sha,
+              "Tip: use `-f` or `--fork-point` to specify where the range of commits to squash starts.")
+        return
+
+    earliest_sha, earliest_short_sha, earliest_subject = commits[0]
+    earliest_full_body = popen_git("log", "-1", "--format=%B", earliest_sha)
+    # Using `git commit-tree` since it's cleaner than any high-level command
+    # like `git merge --squash` or `git rebase --interactive`.
+    squashed_sha = popen_git("commit-tree", "-p", fork_commit, "-m", earliest_full_body, "HEAD^{tree}").strip()
+
+    # This can't be done with `git reset` since it doesn't allow for a custom reflog message.
+    # Even worse, reset's reflog message would be filtered out in our fork point algorithm,
+    # so the squashed commit would not even be considered to "belong"
+    # (in the FP sense) to the current branch's history.
+    run_git("update-ref", "HEAD", squashed_sha, "-m", "squash: " + earliest_subject)
+
+    print("Squashed %d commits:" % len(commits))
+    print()
+    for sha, short_sha, subject in commits:
+        print("\t%s %s" % (short_sha, subject))
+
+    latest_sha, latest_short_sha, latest_subject = commits[-1]
+    print()
+    print("To restore the original pre-squash commit, run:")
+    print()
+    print(fmt("\t`git reset %s`" % latest_sha))
+
+
 def diff(branch):
     params = \
         (["--stat"] if opt_stat else []) + \
@@ -1221,8 +1255,12 @@ def log(branch):
     run_git("log", "^" + fork_point(branch, use_overrides=True), "refs/heads/" + branch)
 
 
-def commits_between(earlier, later):
-    return list(map(lambda x: x.split(":", 2), non_empty_lines(popen_git("log", "--format=%H:%h:%s", "^" + earlier, later, "--"))))
+def commits_between(earliest_exclusive, latest_inclusive):
+    # Reverse the list, since `git log` by default returns the commits from the latest to earliest.
+    return list(reversed(list(map(
+        lambda x: x.split(":", 2),
+        non_empty_lines(popen_git("log", "--format=%H:%h:%s", "^" + earliest_exclusive, latest_inclusive, "--"))
+    ))))
 
 
 NO_REMOTES = 0
@@ -2308,7 +2346,7 @@ def status(warn_on_yellow_edges):
                 else:  # edge_color == GREEN
                     commits = commits_between(fp_sha(b), "refs/heads/" + b)
 
-                for sha, short_sha, msg in reversed(commits):
+                for sha, short_sha, subject in commits:
                     if sha == fp_sha(b):
                         # fp_branches_cached will already be there thanks to the above call to 'fp_sha'.
                         fp_branches_formatted = " and ".join(sorted(map(tupled(lambda lb, lb_or_rb: lb_or_rb), fp_branches_cached[b])))
@@ -2317,7 +2355,7 @@ def status(warn_on_yellow_edges):
                     else:
                         fp_suffix = ''
                     print_line_prefix(b, vertical_bar())
-                    write_unicode(" %s%s%s\n" % (dim(short_sha) + "  " if opt_list_commits_with_hashes else "", dim(msg), fp_suffix))
+                    write_unicode(" %s%s%s\n" % (dim(short_sha) + "  " if opt_list_commits_with_hashes else "", dim(subject), fp_suffix))
             elbow_ascii_only = {DIM: "m-", RED: "x-", GREEN: "o-", YELLOW: "?-"}
             elbow = u"└─" if not ascii_only else elbow_ascii_only[edge_color[b]]
             print_line_prefix(b, elbow)
@@ -2415,6 +2453,7 @@ def usage(c=None):
         "reapply": "Rebase the current branch onto its computed fork point",
         "show": "Show name(s) of the branch(es) relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument",
         "slide-out": "Slide out the current branch and sync its downstream (child) branch with its upstream (parent) branch via rebase or merge",
+        "squash": "Squash the unique history of the current branch into a single commit",
         "status": "Display formatted tree of branch dependencies, including info on their sync with upstream branch and with remote",
         "traverse": "Walk through the tree of branch dependencies and rebase, merge, slide out, push and/or pull each branch one by one",
         "update": "Sync the current branch with its upstream (parent) branch via rebase or merge",
@@ -2615,7 +2654,7 @@ def usage(c=None):
             (esp. when some local branches have been deleted) where the fork point might not be determined correctly.
             Thus, all rebase-involving operations (`reapply`, `slide-out`, `traverse` and `update`) run `git rebase` in the interactive mode,
             unless told explicitly not to do so by `--no-interactive-rebase` flag, so that the suggested commit range can be inspected before the rebase commences.
-            Also, `reapply`, `slide-out` and `update` allow to specify the fork point explictly by a command-line option.
+            Also, `reapply`, `slide-out`, `squash`, and `update` allow to specify the fork point explictly by a command-line option.
 
             `git machete fork-point` is different (and more powerful) than `git merge-base --fork-point`,
             since the latter takes into account only the reflog of the one provided upstream branch,
@@ -2718,6 +2757,7 @@ def usage(c=None):
 
             * <b>machete-pre-rebase <new-base> <fork-point-hash> <branch-being-rebased></b>
                 The hook that is executed before rebase is run during `reapply`, `slide-out`, `traverse` and `update`.
+                Note that it is NOT executed by `squash` (despite its similarity to `reapply`), since no rebase is involved in `squash`.
 
                 The parameters are exactly the three revisions that are passed to `git rebase --onto`:
                 1. what is going to be the new base for the rebased commits,
@@ -2792,11 +2832,13 @@ def usage(c=None):
             <b>Usage: git machete reapply [-f|--fork-point=<fork-point-commit>]</b>
 
             Interactively rebase the current branch on the top of its computed fork point.
-            This is useful e.g. for squashing the commits on the current branch to make history more condensed before push to the remote.
             The chunk of the history to be rebased starts at the automatically computed fork point of the current branch by default, but can also be set explicitly by `--fork-point`.
             See `git machete help fork-point` for more details on meaning of the "fork point".
 
             Note: the current reapplied branch does not need to occur in the definition file.
+
+            Tip: `reapply` can be used for squashing the commits on the current branch to make history more condensed before push to the remote,
+            but there is also dedicated `squash` command that achieves the same goal without running `git rebase`.
 
             <b>Options:</b>
               <b>-f, --fork-point=<fork-point-commit></b>    Specifies the alternative fork point commit after which the rebased part of history is meant to start.
@@ -2862,6 +2904,21 @@ def usage(c=None):
 
               <b>--no-interactive-rebase</b>                           If updating by rebase, run `git rebase` in non-interactive mode (without `-i/--interactive` flag).
                                                                 Not allowed if updating by merge.
+        """,
+        "squash": """
+            <b>Usage: git machete squash [-f|--fork-point=<fork-point-commit>]</b>
+
+            Squashes the commits belonging uniquely to the current branch into a single commit.
+            The chunk of the history to be squashed starts at the automatically computed fork point of the current branch by default, but can also be set explicitly by `--fork-point`.
+            See `git machete help fork-point` for more details on meaning of the "fork point".
+            The message for the squashed is taken from the earliest squashed commit, i.e. the commit directly following the fork point.
+
+            Note: the current reapplied branch does not need to occur in the definition file.
+
+            Tip: for more complex scenarios that require rewriting the history of current branch, see `reapply` and `update`.
+
+            <b>Options:</b>
+              <b>-f, --fork-point=<fork-point-commit></b>    Specifies the alternative fork point commit after which the squashed part of history is meant to start.
         """,
         "status": """
             <b>Usage: git machete s[tatus] [--color=WHEN] [-l|--list-commits] [-L|--list-commits-with-hashes]</b>
@@ -3018,7 +3075,7 @@ def usage(c=None):
         ("Build, display and modify the tree of branch dependencies", ["add", "anno", "discover", "edit", "status"]),
         ("List, check out and delete branches", ["delete-unmanaged", "go", "list", "show"]),
         ("Determine changes specific to the given branch", ["diff", "fork-point", "log"]),
-        ("Update git history in accordance with the tree of branch dependencies", ["reapply", "slide-out", "traverse", "update"])
+        ("Update git history in accordance with the tree of branch dependencies", ["reapply", "slide-out", "squash", "traverse", "update"])
     ]
     if c and c in inv_aliases:
         c = inv_aliases[c]
@@ -3420,6 +3477,13 @@ def launch(orig_args):
             read_definition_file()
             expect_no_operation_in_progress()
             slide_out(params or [current_branch()])
+        elif cmd == "squash":
+            args1 = parse_options(args, "f:", ["fork-point="])
+            expect_no_param(args1, ". Use `-f` or `--fork-point` to specify the fork point commit")
+            read_definition_file()
+            expect_no_operation_in_progress()
+            cb = current_branch()
+            squash(cb, opt_fork_point or fork_point(cb, use_overrides=True))
         elif cmd in ("s", "status"):
             expect_no_param(parse_options(args, "Ll", ["color=", "list-commits-with-hashes", "list-commits"]))
             read_definition_file()

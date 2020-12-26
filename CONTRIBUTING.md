@@ -19,17 +19,17 @@ Run `docs/setup-sandbox` script to set up a test repo under `~/machete-sandbox` 
 
 Deprecated commands are excluded.
 
-| Property                                                          | Commands                                                                                 |
-| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| can accept interactive input on stdin                             | `add`, `advance`, `delete-unmanaged`, `discover`, `go`, `traverse`, `update`             |
-| can display status (and run `machete-status-branch` hook)         | `discover`, `status`, `traverse`                                                         |
-| can modify the .git/machete file                                  | `add`, `advance`, `anno`, `discover`, `edit`, `slide-out`, `traverse`                    |
-| can modify the git repository (excluding .git/machete)            | `add`, `advance`, `delete-unmanaged`, `go`, `reapply`, `slide-out`, `traverse`, `update` |
-| can run merge                                                     | `advance` (\*), `slide-out`, `traverse`, `update`                                        |
-| can run rebase (and run `machete-pre-rebase` hook)                | `reapply` (\*\*), `slide-out`, `traverse`, `update`                                      |
-| can slide out a branch (and run `machete-post-slide-out` hook)    | `advance`, `slide-out`, `traverse`                                                       |
-| expects no ongoing rebase/merge/cherry-pick/revert/am             | `advance`, `go`, `reapply`, `slide-out`, `traverse`, `update`                            |
-| has stable output format across minor versions (plumbing command) | `file`, `fork-point` (\*\*\*), `is-managed`, `list`, `show`, `version`                   |
+| Property                                                          | Commands                                                                                           |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| can accept interactive input on stdin                             | `add`, `advance`, `delete-unmanaged`, `discover`, `go`, `traverse`, `update`                       |
+| can display status (and run `machete-status-branch` hook)         | `discover`, `status`, `traverse`                                                                   |
+| can modify the .git/machete file                                  | `add`, `advance`, `anno`, `discover`, `edit`, `slide-out`, `traverse`                              |
+| can modify the git repository (excluding .git/machete)            | `add`, `advance`, `delete-unmanaged`, `go`, `reapply`, `slide-out`, `squash`, `traverse`, `update` |
+| can run merge                                                     | `advance` (\*), `slide-out`, `traverse`, `update`                                                  |
+| can run rebase (and run `machete-pre-rebase` hook)                | `reapply` (\*\*), `slide-out`, `traverse`, `update`                                                |
+| can slide out a branch (and run `machete-post-slide-out` hook)    | `advance`, `slide-out`, `traverse`                                                                 |
+| expects no ongoing rebase/merge/cherry-pick/revert/am             | `advance`, `go`, `reapply`, `slide-out`, `squash`, `traverse`, `update`                            |
+| has stable output format across minor versions (plumbing command) | `file`, `fork-point` (\*\*\*), `is-managed`, `list`, `show`, `version`                             |
 
 (\*) `advance` can only run fast-forward merge (`git merge --ff-only`).
 
