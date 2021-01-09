@@ -8,26 +8,26 @@
 <img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/docs/logo.svg"
      style="width: 100%; display: block; margin-bottom: 10pt;" />
 
-git-machete is a robust tool that **simplifies your git workflows**.<br/>
+💪 git-machete is a robust tool that **simplifies your git workflows**.<br/>
 
-The _bird's eye view_ provided by git-machete makes **merges/rebases/push/pulls hassle-free**
+🦅 The _bird's eye view_ provided by git-machete makes **merges/rebases/push/pulls hassle-free**
 even when **multiple branches** are present in the repository
 (master/develop, your topic branches, teammate's branches checked out for review, etc.).<br/>
 
-Using this tool, you can maintain **small, focused, easy-to-review pull requests** with little effort.
+🎯 Using this tool, you can maintain **small, focused, easy-to-review pull requests** with little effort.
 
-A look at a `git machete status` gives an instant answer to the questions:
+👁 A look at a `git machete status` gives an instant answer to the questions:
 * What branches are in this repository?
 * What is going to be merged (rebased/pushed/pulled) and to what?
 
-`git machete traverse` semi-automatically traverses the branches, helping you effortlessly rebase, merge, push and pull.
+🚜 `git machete traverse` semi-automatically traverses the branches, helping you effortlessly rebase, merge, push and pull.
 
 <p align="center">
     <img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/docs/discover-status-traverse.gif"
          alt="git machete discover, status and traverse" />
 </p>
 
-See also [VirtusLab/git-machete-intellij-plugin](https://github.com/VirtusLab/git-machete-intellij-plugin#git-machete-intellij-plugin) &mdash;
+🔌 See also [VirtusLab/git-machete-intellij-plugin](https://github.com/VirtusLab/git-machete-intellij-plugin#git-machete-intellij-plugin) &mdash;
 a port into a plugin for the IntelliJ Platform products.
 
 

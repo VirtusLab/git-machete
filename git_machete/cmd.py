@@ -1380,7 +1380,7 @@ def filtered_reflog(b, prefix):
               "skipping any reflog entry with the hash equal to the hash of the earliest (branch creation) entry: %s" % earliest_sha)
         shas_to_exclude.add(earliest_sha)
 
-    result = [sha for (sha, gs) in reflog(prefix + b) if sha not in shas_to_exclude and not is_excluded_reflog_subject(sha, gs)]
+    result = [sha for (sha, gs) in b_reflog if sha not in shas_to_exclude and not is_excluded_reflog_subject(sha, gs)]
     debug("filtered_reflog(%s, %s)" % (b, prefix),
           "computed filtered reflog (= reflog without branch creation "
           "and branch reset events irrelevant for fork point/upstream inference): %s\n" % (", ".join(result) or "<empty>"))
