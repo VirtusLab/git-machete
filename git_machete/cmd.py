@@ -264,20 +264,21 @@ def cmd_shell_repr(cmd, *args):
         return arg.replace("(", "\\(") \
             .replace(")", "\\)") \
             .replace(" ", "\\ ") \
-            .replace("\t", "$'\\t'")
+            .replace("\t", "$'\\t'") \
+            .replace("\n", "$'\\n'")
 
     return " ".join([cmd] + list(map(shell_escape, args)))
 
 
 def run_git(git_cmd, *args, **kwargs):
-    exit_code = run_cmd("git", git_cmd, *args)
+    exit_code = run_cmd("git", git_cmd, *args, **kwargs)
     if not kwargs.get("allow_non_zero") and exit_code != 0:
         raise MacheteException("`%s` returned %i" % (cmd_shell_repr("git", git_cmd, *args), exit_code))
     return exit_code
 
 
 def popen_git(git_cmd, *args, **kwargs):
-    exit_code, stdout, stderr = popen_cmd("git", git_cmd, *args)
+    exit_code, stdout, stderr = popen_cmd("git", git_cmd, *args, **kwargs)
     if not kwargs.get("allow_non_zero") and exit_code != 0:
         exit_code_msg = fmt("`%s` returned %i\n" % (cmd_shell_repr("git", git_cmd, *args), exit_code))
         stdout_msg = "\n%s:\n%s" % (bold("stdout"), dim(stdout)) if stdout else ""
@@ -1214,15 +1215,28 @@ def squash(cb, fork_commit):
         raise MacheteException("No commits to squash. Use `-f` or `--fork-point` to specify the start of range of commits to squash.")
     if len(commits) == 1:
         sha, short_sha, subject = commits[0]
-        print("Exactly one commit (%s) to squash, ignoring.\n" % short_sha,
-              "Tip: use `-f` or `--fork-point` to specify where the range of commits to squash starts.")
+        print("Exactly one commit (%s) to squash, ignoring.\n" % short_sha)
+        print("Tip: use `-f` or `--fork-point` to specify where the range of commits to squash starts.")
         return
 
     earliest_sha, earliest_short_sha, earliest_subject = commits[0]
-    earliest_full_body = popen_git("log", "-1", "--format=%B", earliest_sha)
+    earliest_full_body = popen_git("log", "-1", "--format=%B", earliest_sha).strip()
+    # %ai for ISO-8601 format; %aE/%aN for respecting .mailmap; see `git rev-list --help`
+    earliest_author_date = popen_git("log", "-1", "--format=%ai", earliest_sha).strip()
+    earliest_author_email = popen_git("log", "-1", "--format=%aE", earliest_sha).strip()
+    earliest_author_name = popen_git("log", "-1", "--format=%aN", earliest_sha).strip()
+
+    # Following the convention of `git cherry-pick`, `git commit --amend`, `git rebase` etc.,
+    # let's retain the original author (only committer will be overwritten).
+    author_env = dict(os.environ,
+                      GIT_AUTHOR_DATE=earliest_author_date,
+                      GIT_AUTHOR_EMAIL=earliest_author_email,
+                      GIT_AUTHOR_NAME=earliest_author_name)
     # Using `git commit-tree` since it's cleaner than any high-level command
     # like `git merge --squash` or `git rebase --interactive`.
-    squashed_sha = popen_git("commit-tree", "-p", fork_commit, "-m", earliest_full_body, "HEAD^{tree}").strip()
+    # The tree (HEAD^{tree}) argument must be passed as first,
+    # otherwise the entire `commit-tree` will fail on some ancient supported versions of git (at least on v1.7.10).
+    squashed_sha = popen_git("commit-tree", "HEAD^{tree}", "-p", fork_commit, "-m", earliest_full_body, env=author_env).strip()
 
     # This can't be done with `git reset` since it doesn't allow for a custom reflog message.
     # Even worse, reset's reflog message would be filtered out in our fork point algorithm,

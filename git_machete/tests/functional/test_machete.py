@@ -165,6 +165,31 @@ expected_status_l_2 = adapt("""
     o-ignore-trailing *
 """)
 
+expected_status_l_3 = adapt("""
+  develop
+  |
+  | Allow ownership links
+  | 1st round of fixes
+  o-allow-ownership-link
+  | |
+  | | Build arbitrarily long chains
+  | o-build-chain
+  |
+  | Call web service
+  o-call-ws * (diverged from origin)
+    |
+    | Drop unneeded SQL constraints
+    x-drop-constraint
+
+  master
+  |
+  | HOTFIX Add the trigger (amended)
+  o-hotfix/add-trigger
+    |
+    | Ignore trailing data (amended)
+    o-ignore-trailing
+""")
+
 
 class StringIOWrapper:
     def __init__(self):
@@ -192,13 +217,19 @@ class MacheteTester(unittest.TestCase):
         sys.stdout = out
         try:
             cmd.launch(args)
+            cmd.flush_caches()
         finally:
             sys.stdout = orig_out
         return out.getvalue()
 
-    def test_status_traverse_status(self):
+    def test_discover_traverse_squash(self):
         Setup.setup_sandbox()
         self.launch_command('discover', '-y', '--roots=develop,master')
         self.assertEqual(self.launch_command('status'), expected_status_1)
         self.launch_command('traverse', '-Wy')
         self.assertEqual(self.launch_command('status', '-l'), expected_status_l_2)
+        # Go from ignore-trailing to call-ws which has >1 commit to be squashed
+        for i in range(4):
+            self.launch_command('go', 'prev')
+        self.launch_command('squash')
+        self.assertEqual(self.launch_command('status', '-l'), expected_status_l_3)
