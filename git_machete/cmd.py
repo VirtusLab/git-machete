@@ -214,7 +214,7 @@ def chdir_upwards_until_current_directory_exists():
 def run_cmd(cmd, *args, **kwargs):
     chdir_upwards_until_current_directory_exists()
 
-    flat_cmd = cmd_shell_repr(cmd, *args)
+    flat_cmd = cmd_shell_repr(cmd, *args, **kwargs)
     if opt_debug:
         sys.stderr.write(bold(">>> " + flat_cmd) + "\n")
     elif opt_verbose:
@@ -235,7 +235,7 @@ def run_cmd(cmd, *args, **kwargs):
 def popen_cmd(cmd, *args, **kwargs):
     chdir_upwards_until_current_directory_exists()
 
-    flat_cmd = cmd_shell_repr(cmd, *args)
+    flat_cmd = cmd_shell_repr(cmd, *args, **kwargs)
     if opt_debug:
         sys.stderr.write(bold(">>> " + flat_cmd) + "\n")
     elif opt_verbose:
@@ -259,7 +259,7 @@ def popen_cmd(cmd, *args, **kwargs):
 # Git core
 
 
-def cmd_shell_repr(cmd, *args):
+def cmd_shell_repr(cmd, *args, **kwargs):
     def shell_escape(arg):
         return arg.replace("(", "\\(") \
             .replace(")", "\\)") \
@@ -267,20 +267,23 @@ def cmd_shell_repr(cmd, *args):
             .replace("\t", "$'\\t'") \
             .replace("\n", "$'\\n'")
 
-    return " ".join([cmd] + list(map(shell_escape, args)))
+    env = kwargs.get("env") or {}
+    # We don't want to include the env vars that are inherited from the environment of git-machete process
+    env_repr = [k + "=" + shell_escape(v) for k, v in env.items() if k not in os.environ]
+    return " ".join(env_repr + [cmd] + list(map(shell_escape, args)))
 
 
 def run_git(git_cmd, *args, **kwargs):
     exit_code = run_cmd("git", git_cmd, *args, **kwargs)
     if not kwargs.get("allow_non_zero") and exit_code != 0:
-        raise MacheteException("`%s` returned %i" % (cmd_shell_repr("git", git_cmd, *args), exit_code))
+        raise MacheteException("`%s` returned %i" % (cmd_shell_repr("git", git_cmd, *args, **kwargs), exit_code))
     return exit_code
 
 
 def popen_git(git_cmd, *args, **kwargs):
     exit_code, stdout, stderr = popen_cmd("git", git_cmd, *args, **kwargs)
     if not kwargs.get("allow_non_zero") and exit_code != 0:
-        exit_code_msg = fmt("`%s` returned %i\n" % (cmd_shell_repr("git", git_cmd, *args), exit_code))
+        exit_code_msg = fmt("`%s` returned %i\n" % (cmd_shell_repr("git", git_cmd, *args, **kwargs), exit_code))
         stdout_msg = "\n%s:\n%s" % (bold("stdout"), dim(stdout)) if stdout else ""
         stderr_msg = "\n%s:\n%s" % (bold("stderr"), dim(stderr)) if stderr else ""
         # Not applying the formatter to avoid transforming whatever characters might be in the output of the command.

@@ -231,5 +231,5 @@ class MacheteTester(unittest.TestCase):
         # Go from ignore-trailing to call-ws which has >1 commit to be squashed
         for i in range(4):
             self.launch_command('go', 'prev')
-        self.launch_command('squash')
+        self.launch_command('squash', '-v')
         self.assertEqual(self.launch_command('status', '-l'), expected_status_l_3)
