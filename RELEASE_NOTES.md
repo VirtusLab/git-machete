@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 2.16.1
+
+- fixed: PyPI deployment (ensure Travis uses Python 3.x)
+
 ## New in git-machete 2.16.0
 
 - added: `squash` command

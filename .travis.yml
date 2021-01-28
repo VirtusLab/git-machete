@@ -2,9 +2,10 @@ os: linux
 # We need Bionic aka Ubuntu 18.04 LTS since we're using destructive mode of building snaps
 # and hence apparently we have to use same distro as used for core18 (https://github.com/snapcore/core18) Snap base.
 dist: bionic
-# Build is fully Dockerized, we don't need to run Python directly on the VM.
-# Python is needed for PyPI deployment, but `node_js` is still sufficient for this purpose.
-# We need node_js for link checking.
+# Build is almost fully Dockerized.
+# We don't need to run Python directly on the VM,
+# other than for PyPI deployment - but `node_js` Travis language is still sufficient for this purpose.
+# We need npm for link-checking tools.
 language: node_js
 node_js: [14]
 
@@ -59,20 +60,14 @@ jobs:
         - echo q | git machete traverse --fetch
         - sudo snap remove git-machete
 
-    - stage: 'Build rpm & deploy to GitHub Releases'
-      if: branch = master
-      install: sudo snap install --classic hub
-      script: bash ci/rpm/travis-script.sh
-      deploy:
-        provider: script
-        skip_cleanup: true  # to retain the rpm built by travis-script.sh
-        script: bash ci/github-releases/travis-deploy.sh
-        on: { branch: master }
-
     - stage: 'Deploy to PyPI'
       if: branch = master
       install: skip
       script: skip
+      # Bionic VM with language != `python` has Python 2.7 by default :/
+      # This wasn't a problem until our release 2.16.0 (early 2021), when it caused a failure in `pip`
+      # (Python 2.7 could not handle f"..."-style string interpolation).
+      before_deploy: sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 1  # 1 means "top priority"
       deploy:
         provider: pypi
         username: __token__
@@ -106,6 +101,18 @@ jobs:
       deploy:
         provider: script
         script: bash ci/nixpkgs-pr/travis-deploy.sh
+        on: { branch: master }
+
+    # Let's do this at the very end to avoid opening a GH release (and notifying the watchers)
+    # in case anything goes wrong in the previous steps.
+    - stage: 'Build rpm & deploy to GitHub Releases'
+      if: branch = master
+      install: sudo snap install --classic hub
+      script: bash ci/rpm/travis-script.sh
+      deploy:
+        provider: script
+        skip_cleanup: true  # to retain the rpm built by travis-script.sh
+        script: bash ci/github-releases/travis-deploy.sh
         on: { branch: master }
 
 
