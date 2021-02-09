@@ -1,5 +1,11 @@
 # Release notes
 
+## New in git-machete 3.0.0
+
+- removed: support for Python 2
+- removed: deprecated commands `infer` and `prune-branches`
+- removed: standalone `format` command (`help format` can be used instead)
+
 ## New in git-machete 2.16.1
 
 - fixed: PyPI deployment (ensure Travis uses Python 3.x)

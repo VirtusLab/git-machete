@@ -39,7 +39,7 @@ We suggest a couple of alternative ways of installation.
 **Bash and zsh completion scripts are provided** in completion/ directory,
 see [wiki for their installation instructions](https://github.com/VirtusLab/git-machete/wiki).
 
-git-machete works under both Python 2.7 and Python 3.x.
+git-machete requires Python >= 3.6. Python 2.x is no longer supported.
 
 ### Using Homebrew (macOS)
 

@@ -25,8 +25,6 @@ RUN set -x \
 ARG python_version
 ENV PYTHON_VERSION=${python_version}
 ENV PYTHON=python${python_version}
-RUN set -x \
-    && if [ ${PYTHON_VERSION%.*} -eq 2 ]; then apk add --no-cache gcc musl-dev; fi
 
 ARG user_id
 ARG group_id

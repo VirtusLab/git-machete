@@ -19,8 +19,8 @@ script: bash ci/tox/travis-script.sh
 jobs:
   include:
     - stage: Tests
-      env: PYTHON_VERSION=2.7 GIT_VERSION=1.7.10  # Earliest version of git supported by git-machete
-    - env: PYTHON_VERSION=2.7 GIT_VERSION=2.7.6
+      env: PYTHON_VERSION=3.6 GIT_VERSION=1.7.10  # Earliest version of git supported by git-machete
+    - env: PYTHON_VERSION=3.6 GIT_VERSION=2.7.6
     - env: PYTHON_VERSION=3.6 GIT_VERSION=2.20.2
     - env: PYTHON_VERSION=3.8 GIT_VERSION=2.25.0
     - env: PYTHON_VERSION=3.9 GIT_VERSION=2.29.1
