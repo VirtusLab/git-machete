@@ -561,10 +561,10 @@ def add(b):
             u = infer_upstream(b, condition=lambda x: x in managed_branches, reject_reason_message="this candidate is not a managed branch")
             if not u:
                 raise MacheteException(f"Could not automatically infer upstream (parent) branch for `{b}`.\n"
-                                       f"You can either:\n"
-                                       f"1) specify the desired upstream branch with `--onto` or\n"
+                                       "You can either:\n"
+                                       "1) specify the desired upstream branch with `--onto` or\n"
                                        f"2) pass `--as-root` to attach `{b}` as a new root or\n"
-                                       f"3) edit the definition file manually with `git machete edit`" )
+                                       "3) edit the definition file manually with `git machete edit`")
             else:
                 msg = f"Add `{b}` onto the inferred upstream (parent) branch `{u}`?" + pretty_choices('y', 'N')
                 opt_yes_msg = f"Adding `{b}` onto the inferred upstream (parent) branch `{u}`"
@@ -1327,7 +1327,7 @@ def load_all_reflogs():
     # %gd - reflog selector (refname@{num})
     # %H - full hash
     # %gs - reflog subject
-    all_branches = [f"refs/heads/{b}"  for b in local_branches()] + \
+    all_branches = [f"refs/heads/{b}" for b in local_branches()] + \
                    [f"refs/remotes/{combined_counterpart_for_fetching_of_branch(b)}" for b in local_branches() if combined_counterpart_for_fetching_of_branch(b)]
     # The trailing '--' is necessary to avoid ambiguity in case there is a file called just exactly like one of the branches.
     entries = non_empty_lines(popen_git("reflog", "show", "--format=%gD\t%H\t%gs", *(all_branches + ["--"])))
@@ -1371,12 +1371,12 @@ def reflog(b):
 def filtered_reflog(b, prefix):
     def is_excluded_reflog_subject(sha_, gs_):
         is_excluded = (
-                gs_.startswith("branch: Created from") or
-                gs_ == f"branch: Reset to {b}" or
-                gs_ == "branch: Reset to HEAD" or
-                gs_.startswith("reset: moving to ") or
-                gs_.startswith("fetch . ") or
-                gs_ == f"rebase finished: {prefix}/{b} onto {sha_}"  # the rare case of a no-op rebase
+            gs_.startswith("branch: Created from") or
+            gs_ == f"branch: Reset to {b}" or
+            gs_ == "branch: Reset to HEAD" or
+            gs_.startswith("reset: moving to ") or
+            gs_.startswith("fetch . ") or
+            gs_ == f"rebase finished: {prefix}/{b} onto {sha_}"  # the rare case of a no-op rebase
         )
         if is_excluded:
             debug(f"filtered_reflog({b}, {prefix}) -> is_excluded_reflog_subject({sha_}, <<<{gs_}>>>)", "skipping reflog entry")
@@ -1569,8 +1569,8 @@ def discover_tree():
             threshold_date = datetime.datetime.utcfromtimestamp(fresh[0][0]).strftime("%Y-%m-%d")
             warn(f"to keep the size of the discovered tree reasonable (ca. {c} branches), "
                  f"only branches checked out at or after ca. <b>{threshold_date}</b> are included.\n"
-                 f"Use `git machete discover --checked-out-since=<date>` (where <date> can be e.g. `'2 weeks ago'` or `2020-06-01`) "
-                 f"to change this threshold so that less or more branches are included.\n")
+                 "Use `git machete discover --checked-out-since=<date>` (where <date> can be e.g. `'2 weeks ago'` or `2020-06-01`) "
+                 "to change this threshold so that less or more branches are included.\n")
     managed_branches = excluding(all_local_branches, stale_non_root_fixed_branches)
     if opt_checked_out_since and not managed_branches:
         warn("no branches satisfying the criteria. Try moving the value of `--checked-out-since` further to the past.")
@@ -1664,7 +1664,7 @@ def fork_point_and_containing_branch_defs(b, use_overrides):
     else:
         debug(f"fork_point_and_containing_branch_defs({b})",
               f"commit {fp_sha} is the most recent point in history of {b} to occur on "
-              f"filtered reflog of any other branch or its remote counterpart "
+              "filtered reflog of any other branch or its remote counterpart "
               f"(specifically: {' and '.join(map(tupled(lambda lb, lb_or_rb: lb_or_rb), containing_branch_defs))})")
 
         if u and is_ancestor(u, b) and not is_ancestor(u, fp_sha, later_prefix=""):
@@ -1745,7 +1745,7 @@ def get_overridden_fork_point(b):
         warn(fmt(
             f"since branch <b>{b}</b> is no longer a descendant of commit {short_commit_sha_by_revision(while_descendant_of)}, ",
             f"the fork point override to commit {short_commit_sha_by_revision(to)} no longer applies.\n",
-            f"Consider running:\n",
+            "Consider running:\n",
             f"  `git machete fork-point --unset-override {b}`\n"))
         return None
     debug(f"get_overridden_fork_point({b})",
@@ -2671,7 +2671,7 @@ def usage(c=None):
             (esp. when some local branches have been deleted) where the fork point might not be determined correctly.
             Thus, all rebase-involving operations (`reapply`, `slide-out`, `traverse` and `update`) run `git rebase` in the interactive mode,
             unless told explicitly not to do so by `--no-interactive-rebase` flag, so that the suggested commit range can be inspected before the rebase commences.
-            Also, `reapply`, `slide-out`, `squash`, and `update` allow to specify the fork point explictly by a command-line option.
+            Also, `reapply`, `slide-out`, `squash`, and `update` allow to specify the fork point explicitly by a command-line option.
 
             `git machete fork-point` is different (and more powerful) than `git merge-base --fork-point`,
             since the latter takes into account only the reflog of the one provided upstream branch,
@@ -3121,8 +3121,11 @@ def main():
 
 
 def launch(orig_args):
-    if sys.version_info[0] == 2:
-        sys.stderr.write("Python 2.x is no longer supported. Please switch to Python 3.\n")
+    if sys.version_info.major == 2:
+        sys.stderr.write("Python 2.x is no longer supported. Please switch to Python 3.6 or higher.\n")
+        sys.exit(1)
+    elif sys.version_info.major == 3 and sys.version_info.minor < 6:
+        sys.stderr.write("Python 3.x below 3.6 is no longer supported. Please switch to Python 3.6 or higher.\n")
         sys.exit(1)
 
     def parse_options(in_args, short_opts="", long_opts=[], gnu=True):
