@@ -131,7 +131,7 @@ def pretty_choices(*choices):
 
 
 def pick(choices, name, apply_fmt=True):
-    xs = "".join(f"[{idx + 1:d}] {x}\n" for idx, x in enumerate(choices))
+    xs = "".join(f"[{idx + 1}] {x}\n" for idx, x in enumerate(choices))
     msg = xs + f"Specify {name} or hit <return> to skip: "
     try:
         ans = input(fmt(msg) if apply_fmt else msg)
@@ -141,7 +141,7 @@ def pick(choices, name, apply_fmt=True):
     except ValueError:
         sys.exit(1)
     if idx not in range(len(choices)):
-        raise MacheteException(f"Invalid index: {idx + 1:d}")
+        raise MacheteException(f"Invalid index: {idx + 1}")
     return choices[idx]
 
 
@@ -221,7 +221,7 @@ def run_cmd(cmd, *args, **kwargs):
     mark_current_directory_as_possibly_non_existent()
 
     if opt_debug and exit_code != 0:
-        sys.stderr.write(dim(f"<exit code: {exit_code:d}>\n\n"))
+        sys.stderr.write(dim(f"<exit code: {exit_code}>\n\n"))
     return exit_code
 
 
@@ -241,7 +241,7 @@ def popen_cmd(cmd, *args, **kwargs):
 
     if opt_debug:
         if exit_code != 0:
-            sys.stderr.write(colored(f"<exit code: {exit_code:d}>\n\n", RED))
+            sys.stderr.write(colored(f"<exit code: {exit_code}>\n\n", RED))
         if stdout:
             sys.stderr.write(f"{dim('<stdout>:')}\n{dim(stdout)}\n")
         if stderr:
@@ -269,14 +269,14 @@ def cmd_shell_repr(cmd, *args, **kwargs):
 def run_git(git_cmd, *args, **kwargs):
     exit_code = run_cmd("git", git_cmd, *args, **kwargs)
     if not kwargs.get("allow_non_zero") and exit_code != 0:
-        raise MacheteException(f"`{cmd_shell_repr('git', git_cmd, *args, **kwargs)}` returned {exit_code:d}")
+        raise MacheteException(f"`{cmd_shell_repr('git', git_cmd, *args, **kwargs)}` returned {exit_code}")
     return exit_code
 
 
 def popen_git(git_cmd, *args, **kwargs):
     exit_code, stdout, stderr = popen_cmd("git", git_cmd, *args, **kwargs)
     if not kwargs.get("allow_non_zero") and exit_code != 0:
-        exit_code_msg = fmt(f"`{cmd_shell_repr('git', git_cmd, *args, **kwargs)}` returned {exit_code:d}\n")
+        exit_code_msg = fmt(f"`{cmd_shell_repr('git', git_cmd, *args, **kwargs)}` returned {exit_code}\n")
         stdout_msg = f"\n{bold('stdout')}:\n{dim(stdout)}" if stdout else ""
         stderr_msg = f"\n{bold('stderr')}:\n{dim(stderr)}" if stderr else ""
         # Not applying the formatter to avoid transforming whatever characters might be in the output of the command.
@@ -330,7 +330,7 @@ def read_definition_file(verify_branches=True):
             annotations[b] = b_a[1]
         if b in managed_branches:
             raise MacheteException(
-                f"{definition_file_path}, line {idx + 1:d}: branch `{b}` re-appears in the tree definition. {hint}")
+                f"{definition_file_path}, line {idx + 1}: branch `{b}` re-appears in the tree definition. {hint}")
         if verify_branches and b not in local_branches():
             invalid_branches += [b]
         managed_branches += [b]
@@ -342,13 +342,13 @@ def read_definition_file(verify_branches=True):
                 pfx_expanded = "".join(mapping[c] for c in pfx)
                 indent_expanded = "".join(mapping[c] for c in indent)
                 raise MacheteException(
-                    f"{definition_file_path}, line {idx + 1:d}: invalid indent `{pfx_expanded}`, expected a multiply of `{indent_expanded}`. {hint}")
+                    f"{definition_file_path}, line {idx + 1}: invalid indent `{pfx_expanded}`, expected a multiply of `{indent_expanded}`. {hint}")
         else:
             depth = 0
 
         if depth > last_depth + 1:
             raise MacheteException(
-                f"{definition_file_path}, line {idx + 1:d}: too much indent (level {depth}, expected at most {last_depth + 1}) for the branch `{b}`. {hint}")
+                f"{definition_file_path}, line {idx + 1}: too much indent (level {depth}, expected at most {last_depth + 1}) for the branch `{b}`. {hint}")
         last_depth = depth
 
         at_depth[depth] = b
@@ -1243,7 +1243,7 @@ def squash(cb, fork_commit):
     # (in the FP sense) to the current branch's history.
     run_git("update-ref", "HEAD", squashed_sha, "-m", f"squash: {earliest_subject}")
 
-    print(f"Squashed {len(commits):d} commits:")
+    print(f"Squashed {len(commits)} commits:")
     print()
     for sha, short_sha, subject in commits:
         print(f"\t{short_sha} {subject}")
@@ -1833,7 +1833,7 @@ def run_post_slide_out_hook(new_upstream, slid_out_branch, new_downstreams):
               f"running machete-post-slide-out hook ({hook_path})")
         exit_code = run_cmd(hook_path, new_upstream, slid_out_branch, *new_downstreams, cwd=get_root_dir())
         if exit_code != 0:
-            sys.stderr.write(f"The machete-post-slide-out hook exited with {exit_code:d}, aborting.\n")
+            sys.stderr.write(f"The machete-post-slide-out hook exited with {exit_code}, aborting.\n")
             sys.exit(exit_code)
 
 
@@ -1955,8 +1955,8 @@ def flush_caches():
 
 def pick_remote(b):
     rems = remotes()
-    print("\n".join(f"[{idx + 1:d}] {r}" for idx, r in enumerate(rems)))
-    msg = f"Select number 1..{len(rems):d} to specify the destination remote " \
+    print("\n".join(f"[{idx + 1}] {r}" for idx, r in enumerate(rems)))
+    msg = f"Select number 1..{len(rems)} to specify the destination remote " \
           "repository, or 'n' to skip this branch, or " \
           "'q' to quit the traverse: "
     ans = input(msg).lower()
@@ -1965,7 +1965,7 @@ def pick_remote(b):
     try:
         idx = int(ans) - 1
         if idx not in range(len(rems)):
-            raise MacheteException(f"Invalid index: {idx + 1:d}")
+            raise MacheteException(f"Invalid index: {idx + 1}")
         handle_untracked_branch(rems[idx], b)
     except ValueError:
         pass
@@ -2420,7 +2420,7 @@ def status(warn_on_yellow_edges):
                     hook_output = f"  {stdout.rstrip()}"
             else:
                 debug("status()",
-                      f"machete-status-branch hook ({hook_path}) for branch {b} returned {status_code:d}; stdout: '{stdout}'; stderr: '{stderr}'")
+                      f"machete-status-branch hook ({hook_path}) for branch {b} returned {status_code}; stdout: '{stdout}'; stderr: '{stderr}'")
 
         out.write(current + anno + sync_status + hook_output + "\n")
 
