@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from typing import Iterable, Tuple, List, Optional, Any, TypeVar, Callable, Dict, Generator, Iterator
 
 from git_machete import __version__
 import datetime
@@ -16,6 +17,9 @@ import textwrap
 
 # Core utils
 
+T = TypeVar('T')
+
+
 class MacheteException(Exception):
     def __init__(self, msg, apply_fmt=True):
         self.parameter = fmt(msg) if apply_fmt else msg
@@ -24,25 +28,25 @@ class MacheteException(Exception):
         return str(self.parameter)
 
 
-def excluding(iterable, s):
+def excluding(iterable: Iterable[T], s: Iterable[T]) -> List[T]:
     return list(filter(lambda x: x not in s, iterable))
 
 
-def flat_map(func, iterable):
+def flat_map(func: Callable[[T], List[T]], iterable: Iterable[T]) -> List[T]:
     return sum(map(func, iterable), [])
 
 
-def map_truthy_only(func, iterable):
+def map_truthy_only(func: Callable[[T], T], iterable: Iterable[T]) -> List[T]:
     return list(filter(None, map(func, iterable)))
 
 
-def non_empty_lines(s):
+def non_empty_lines(s: str) -> List[str]:
     return list(filter(None, s.split("\n")))
 
 
 # Converts a lambda accepting N arguments to a lambda accepting one argument, an N-element tuple.
 # Name matching Scala's `tupled` on `FunctionX`.
-def tupled(f):
+def tupled(f: Callable) -> Callable:
     return lambda tple: f(*tple)
 
 
@@ -58,18 +62,18 @@ ORANGE = '\033[00;38;5;208m'
 RED = '\033[91m'
 
 
-ascii_only = False
+ascii_only: bool = False
 
 
-def bold(s):
+def bold(s: str) -> str:
     return s if ascii_only or not s else BOLD + s + ENDC
 
 
-def dim(s):
+def dim(s: str) -> str:
     return s if ascii_only or not s else DIM + s + ENDC
 
 
-def underline(s, star_if_ascii_only=False):
+def underline(s: str, star_if_ascii_only: bool = False) -> str:
     if s and not ascii_only:
         return UNDERLINE + s + ENDC
     elif s and star_if_ascii_only:
@@ -78,7 +82,7 @@ def underline(s, star_if_ascii_only=False):
         return s
 
 
-def colored(s, color):
+def colored(s: str, color: str) -> str: #todo (#): type colors
     return s if ascii_only or not s else color + s + ENDC
 
 
@@ -93,30 +97,30 @@ fmt_transformations = [
 ]
 
 
-def fmt(*parts):
+def fmt(*parts: str) -> str:
     result = ''.join(parts)
     for f in fmt_transformations:
         result = f(result)
     return result
 
 
-def vertical_bar():
+def vertical_bar() -> str:
     return "|" if ascii_only else u"│"
 
 
-def right_arrow():
+def right_arrow() -> str:
     return "->" if ascii_only else u"➔"
 
 
-def ask_if(msg, opt_yes_msg, apply_fmt=True):
-    if opt_yes and opt_yes_msg:
+def ask_if(msg: str, opt_yes_msg: Optional[str], apply_fmt: bool = True) -> str:
+    if opt_yes and opt_yes_msg:  # type: ignore
         print(fmt(opt_yes_msg) if apply_fmt else opt_yes_msg)
         return 'y'
     return input(fmt(msg) if apply_fmt else msg).lower()
 
 
-def pretty_choices(*choices):
-    def format_choice(c):
+def pretty_choices(*choices: str) -> str:
+    def format_choice(c: str) -> str:
         if not c:
             return ''
         elif c.lower() == 'y':
@@ -130,14 +134,14 @@ def pretty_choices(*choices):
     return f" ({', '.join(map_truthy_only(format_choice, choices))}) "
 
 
-def pick(choices, name, apply_fmt=True):
-    xs = "".join(f"[{idx + 1}] {x}\n" for idx, x in enumerate(choices))
-    msg = xs + f"Specify {name} or hit <return> to skip: "
+def pick(choices, name: str, apply_fmt: bool = True):
+    xs: str = "".join(f"[{idx + 1}] {x}\n" for idx, x in enumerate(choices))
+    msg: str = xs + f"Specify {name} or hit <return> to skip: "
     try:
-        ans = input(fmt(msg) if apply_fmt else msg)
+        ans: str = input(fmt(msg) if apply_fmt else msg)
         if not ans:
             sys.exit(0)
-        idx = int(ans) - 1
+        idx: int = int(ans) - 1
     except ValueError:
         sys.exit(1)
     if idx not in range(len(choices)):
@@ -145,8 +149,8 @@ def pick(choices, name, apply_fmt=True):
     return choices[idx]
 
 
-def debug(hdr, msg):
-    if opt_debug:
+def debug(hdr: str, msg: str) -> None:
+    if opt_debug:  # type: ignore
         sys.stderr.write(f"{bold(hdr)}: {dim(msg)}\n")
 
 
@@ -154,14 +158,14 @@ def debug(hdr, msg):
 displayed_warnings = set()
 
 
-def warn(msg, apply_fmt=True):
+def warn(msg: str, apply_fmt: bool = True) -> None:
     global displayed_warnings
     if msg not in displayed_warnings:
         sys.stderr.write(colored("Warn: ", RED) + (fmt(msg) if apply_fmt else msg) + "\n")
         displayed_warnings.add(msg)
 
 
-def directory_exists(path):
+def directory_exists(path: str) -> bool:
     try:
         # Note that os.path.isdir itself (without os.path.abspath) isn't reliable
         # since it returns a false positive (True) for the current directory when if it doesn't exist
@@ -170,7 +174,7 @@ def directory_exists(path):
         return False
 
 
-def current_directory_or_none():
+def current_directory_or_none() -> Optional[str]:
     try:
         return os.getcwd()
     except OSError:
@@ -180,19 +184,19 @@ def current_directory_or_none():
 
 # Let's keep the flag to avoid checking for current directory's existence
 # every time any command is being popened or run.
-current_directory_confirmed_to_exist = False
-initial_current_directory = current_directory_or_none() or os.getenv('PWD')
+current_directory_confirmed_to_exist: bool = False
+initial_current_directory: Optional[str] = current_directory_or_none() or os.getenv('PWD')
 
 
-def mark_current_directory_as_possibly_non_existent():
+def mark_current_directory_as_possibly_non_existent() -> None:
     global current_directory_confirmed_to_exist
     current_directory_confirmed_to_exist = False
 
 
-def chdir_upwards_until_current_directory_exists():
+def chdir_upwards_until_current_directory_exists() -> None:
     global current_directory_confirmed_to_exist
     if not current_directory_confirmed_to_exist:
-        current_directory = current_directory_or_none()
+        current_directory: Optional[str] = current_directory_or_none()
         if not current_directory:
             while not current_directory:
                 # Note: 'os.chdir' only affects the current process and its subprocesses;
@@ -204,42 +208,43 @@ def chdir_upwards_until_current_directory_exists():
         current_directory_confirmed_to_exist = True
 
 
-def run_cmd(cmd, *args, **kwargs):
+def run_cmd(cmd: str, *args: str, **kwargs: Any) -> int: # todo (#): be more precise
     chdir_upwards_until_current_directory_exists()
 
     flat_cmd = cmd_shell_repr(cmd, *args, **kwargs)
-    if opt_debug:
+    if opt_debug:  # type: ignore
         sys.stderr.write(bold(f">>> {flat_cmd}") + "\n")
-    elif opt_verbose:
+    elif opt_verbose:  # type: ignore
         sys.stderr.write(flat_cmd + "\n")
 
-    exit_code = subprocess.call([cmd] + list(args), **kwargs)
+    exit_code: int = subprocess.call([cmd] + list(args), **kwargs)
 
     # Let's defensively assume that every command executed via run_cmd
     # (but not via popen_cmd) can make the current directory disappear.
     # In practice, it's mostly 'git checkout' that carries such risk.
     mark_current_directory_as_possibly_non_existent()
 
-    if opt_debug and exit_code != 0:
+    if opt_debug and exit_code != 0:  # type: ignore
         sys.stderr.write(dim(f"<exit code: {exit_code}>\n\n"))
     return exit_code
 
 
-def popen_cmd(cmd, *args, **kwargs):
+def popen_cmd(cmd: str, *args: str, **kwargs: Any) -> Tuple[int, str, str]: # todo (#): be more precise
     chdir_upwards_until_current_directory_exists()
 
     flat_cmd = cmd_shell_repr(cmd, *args, **kwargs)
-    if opt_debug:
+    if opt_debug:  # type: ignore
         sys.stderr.write(bold(f">>> {flat_cmd}") + "\n")
-    elif opt_verbose:
+    elif opt_verbose:   # type: ignore
         sys.stderr.write(flat_cmd + "\n")
 
     process = subprocess.Popen([cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
     stdout_bytes, stderr_bytes = process.communicate()
-    stdout, stderr = stdout_bytes.decode('utf-8'), stderr_bytes.decode('utf-8')
-    exit_code = process.returncode
+    stdout: str = stdout_bytes.decode('utf-8')
+    stderr: str = stderr_bytes.decode('utf-8')
+    exit_code: int = process.returncode
 
-    if opt_debug:
+    if opt_debug:   # type: ignore
         if exit_code != 0:
             sys.stderr.write(colored(f"<exit code: {exit_code}>\n\n", RED))
         if stdout:
@@ -252,7 +257,7 @@ def popen_cmd(cmd, *args, **kwargs):
 # Git core
 
 
-def cmd_shell_repr(cmd, *args, **kwargs):
+def cmd_shell_repr(cmd: str, *args: str, **kwargs: Any) -> str: # todo(#): be more precise
     def shell_escape(arg):
         return arg.replace("(", "\\(") \
             .replace(")", "\\)") \
@@ -266,19 +271,19 @@ def cmd_shell_repr(cmd, *args, **kwargs):
     return " ".join(env_repr + [cmd] + list(map(shell_escape, args)))
 
 
-def run_git(git_cmd, *args, **kwargs):
+def run_git(git_cmd: str, *args: str, **kwargs: Any) -> int: # todo (#): be more precise
     exit_code = run_cmd("git", git_cmd, *args, **kwargs)
     if not kwargs.get("allow_non_zero") and exit_code != 0:
         raise MacheteException(f"`{cmd_shell_repr('git', git_cmd, *args, **kwargs)}` returned {exit_code}")
     return exit_code
 
 
-def popen_git(git_cmd, *args, **kwargs):
+def popen_git(git_cmd: str, *args: str, **kwargs: Any) -> str: # todo (#): be more precise
     exit_code, stdout, stderr = popen_cmd("git", git_cmd, *args, **kwargs)
     if not kwargs.get("allow_non_zero") and exit_code != 0:
-        exit_code_msg = fmt(f"`{cmd_shell_repr('git', git_cmd, *args, **kwargs)}` returned {exit_code}\n")
-        stdout_msg = f"\n{bold('stdout')}:\n{dim(stdout)}" if stdout else ""
-        stderr_msg = f"\n{bold('stderr')}:\n{dim(stderr)}" if stderr else ""
+        exit_code_msg: str = fmt(f"`{cmd_shell_repr('git', git_cmd, *args, **kwargs)}` returned {exit_code}\n")
+        stdout_msg: str = f"\n{bold('stdout')}:\n{dim(stdout)}" if stdout else ""
+        stderr_msg: str = f"\n{bold('stderr')}:\n{dim(stderr)}" if stderr else ""
         # Not applying the formatter to avoid transforming whatever characters might be in the output of the command.
         raise MacheteException(exit_code_msg + stdout_msg + stderr_msg, apply_fmt=False)
     return stdout
@@ -286,87 +291,87 @@ def popen_git(git_cmd, *args, **kwargs):
 
 # Manipulation on definition file/tree of branches
 
-def expect_in_managed_branches(b):
-    if b not in managed_branches:
+def expect_in_managed_branches(b: str) -> None:
+    if b not in managed_branches:  # type: ignore
         raise MacheteException(
             f"Branch `{b}` not found in the tree of branch dependencies.\nUse `git machete add {b}` or `git machete edit`")
 
 
-def expect_at_least_one_managed_branch():
-    if not roots:
+def expect_at_least_one_managed_branch() -> None:
+    if not roots:  # type: ignore
         raise_no_branches_error()
 
 
-def raise_no_branches_error():
+def raise_no_branches_error() -> None:
     raise MacheteException(
-        f"No branches listed in {definition_file_path}; use `git machete discover` or `git machete edit`, or edit {definition_file_path} manually.")
+        f"No branches listed in {definition_file_path}; use `git machete discover` or `git machete edit`, or edit {definition_file_path} manually.")  # type: ignore
 
 
-def read_definition_file(verify_branches=True):
+def read_definition_file(verify_branches: bool = True) -> None:
     global indent, managed_branches, down_branches, up_branch, roots, annotations
 
-    with open(definition_file_path) as f:
-        lines = [line.rstrip() for line in f.readlines() if not line.isspace()]
+    with open(definition_file_path) as f:  # type: ignore
+        lines: List[str] = [line.rstrip() for line in f.readlines() if not line.isspace()]
 
-    managed_branches = []
-    down_branches = {}
-    up_branch = {}
-    indent = None
-    roots = []
-    annotations = {}
+    managed_branches = []  # type: ignore
+    down_branches = {}  # type: ignore
+    up_branch = {}  # type: ignore
+    indent = None  # type: ignore
+    roots = []  # type: ignore
+    annotations = {}  # type: ignore
     at_depth = {}
     last_depth = -1
     hint = "Edit the definition file manually with `git machete edit`"
 
-    invalid_branches = []
+    invalid_branches: List[str] = []
     for idx, l in enumerate(lines):
         pfx = "".join(itertools.takewhile(str.isspace, l))
-        if pfx and not indent:
-            indent = pfx
+        if pfx and not indent:  # type: ignore
+            indent = pfx  # type: ignore
 
-        b_a = l.strip().split(" ", 1)
+        b_a: List[str] = l.strip().split(" ", 1)
         b = b_a[0]
         if len(b_a) > 1:
-            annotations[b] = b_a[1]
-        if b in managed_branches:
+            annotations[b] = b_a[1]  # type: ignore
+        if b in managed_branches:  # type: ignore
             raise MacheteException(
-                f"{definition_file_path}, line {idx + 1}: branch `{b}` re-appears in the tree definition. {hint}")
+                f"{definition_file_path}, line {idx + 1}: branch `{b}` re-appears in the tree definition. {hint}")  # type: ignore
         if verify_branches and b not in local_branches():
             invalid_branches += [b]
-        managed_branches += [b]
+        managed_branches += [b]  # type: ignore
 
         if pfx:
-            depth = len(pfx) // len(indent)
-            if pfx != indent * depth:
-                mapping = {" ": "<SPACE>", "\t": "<TAB>"}
-                pfx_expanded = "".join(mapping[c] for c in pfx)
-                indent_expanded = "".join(mapping[c] for c in indent)
+            depth: int = len(pfx) // len(indent)  # type: ignore
+            if pfx != indent * depth:  # type: ignore
+                mapping: Dict[str, str] = {" ": "<SPACE>", "\t": "<TAB>"}
+                pfx_expanded: str = "".join(mapping[c] for c in pfx)
+                indent_expanded: str = "".join(mapping[c] for c in indent)  # type: ignore
                 raise MacheteException(
-                    f"{definition_file_path}, line {idx + 1}: invalid indent `{pfx_expanded}`, expected a multiply of `{indent_expanded}`. {hint}")
+                    f"{definition_file_path}, line {idx + 1}: invalid indent `{pfx_expanded}`, expected a multiply of `{indent_expanded}`. {hint}")  # type: ignore
         else:
             depth = 0
 
         if depth > last_depth + 1:
             raise MacheteException(
-                f"{definition_file_path}, line {idx + 1}: too much indent (level {depth}, expected at most {last_depth + 1}) for the branch `{b}`. {hint}")
+                f"{definition_file_path}, line {idx + 1}: too much indent (level {depth}, expected at most {last_depth + 1}) for the branch `{b}`. {hint}")  # type: ignore
         last_depth = depth
 
         at_depth[depth] = b
         if depth:
             p = at_depth[depth - 1]
-            up_branch[b] = p
-            if p in down_branches:
-                down_branches[p] += [b]
+            up_branch[b] = p  # type: ignore
+            if p in down_branches:  # type: ignore
+                down_branches[p] += [b]  # type: ignore
             else:
-                down_branches[p] = [b]
+                down_branches[p] = [b]  # type: ignore
         else:
-            roots += [b]
+            roots += [b]  # type: ignore
 
     if not invalid_branches:
         return
 
     if len(invalid_branches) == 1:
-        ans = ask_if(f"Skipping `{invalid_branches[0]}` " +
+        ans: str = ask_if(f"Skipping `{invalid_branches[0]}` " +
                      "which is not a local branch (perhaps it has been deleted?).\n" +
                      "Slide it out from the definition file?" +
                      pretty_choices("y", "e[dit]", "N"), opt_yes_msg=None)
@@ -376,27 +381,27 @@ def read_definition_file(verify_branches=True):
                      "Slide them out from the definition file?" +
                      pretty_choices("y", "e[dit]", "N"), opt_yes_msg=None)
 
-    def recursive_slide_out_invalid_branches(b):
-        new_down_branches = flat_map(recursive_slide_out_invalid_branches, down_branches.get(b) or [])
+    def recursive_slide_out_invalid_branches(b) -> List[Any]: # todo(#): branch type
+        new_down_branches = flat_map(recursive_slide_out_invalid_branches, down_branches.get(b) or [])  # type: ignore
         if b in invalid_branches:
-            if b in down_branches:
-                del down_branches[b]
-            if b in annotations:
-                del annotations[b]
-            if b in up_branch:
+            if b in down_branches:  # type: ignore
+                del down_branches[b]  # type: ignore
+            if b in annotations:  # type: ignore
+                del annotations[b]  # type: ignore
+            if b in up_branch:  # type: ignore
                 for d in new_down_branches:
-                    up_branch[d] = up_branch[b]
-                del up_branch[b]
+                    up_branch[d] = up_branch[b]  # type: ignore
+                del up_branch[b]  # type: ignore
             else:
                 for d in new_down_branches:
-                    del up_branch[d]
+                    del up_branch[d]  # type: ignore
             return new_down_branches
         else:
-            down_branches[b] = new_down_branches
+            down_branches[b] = new_down_branches  # type: ignore
             return [b]
 
-    roots = flat_map(recursive_slide_out_invalid_branches, roots)
-    managed_branches = excluding(managed_branches, invalid_branches)
+    roots = flat_map(recursive_slide_out_invalid_branches, roots)  # type: ignore
+    managed_branches = excluding(managed_branches, invalid_branches)  # type: ignore
     if ans in ('y', 'yes'):
         save_definition_file()
     elif ans in ('e', 'edit'):
@@ -404,10 +409,10 @@ def read_definition_file(verify_branches=True):
         read_definition_file(verify_branches)
 
 
-def render_tree():
+def render_tree() -> List[Any]: # todo(#): branch type
     global roots, down_branches, indent, annotations
-    if not indent:
-        indent = "\t"
+    if not indent:  # type: ignore
+        indent = "\t"  # type: ignore
 
     def render_dfs(b, depth):
         annotation = f" {annotations[b]}" if b in annotations else ""
@@ -417,23 +422,23 @@ def render_tree():
         return res
 
     total = []
-    for r in roots:
+    for r in roots:  # type: ignore
         total += render_dfs(r, depth=0)
     return total
 
 
-def back_up_definition_file():
-    shutil.copyfile(definition_file_path, definition_file_path + "~")
+def back_up_definition_file() -> None:
+    shutil.copyfile(definition_file_path, definition_file_path + "~")  # type: ignore
 
 
-def save_definition_file():
-    with open(definition_file_path, "w") as f:
+def save_definition_file() -> None:
+    with open(definition_file_path, "w") as f:  # type: ignore
         f.write("\n".join(render_tree()) + "\n")
 
 
-def down(b, pick_mode):
+def down(b, pick_mode) -> str:
     expect_in_managed_branches(b)
-    dbs = down_branches.get(b)
+    dbs = down_branches.get(b)  # type: ignore
     if not dbs:
         raise MacheteException(f"Branch `{b}` has no downstream branch")
     elif len(dbs) == 1:
@@ -459,7 +464,7 @@ def last_branch(b):
 
 def next_branch(b):
     expect_in_managed_branches(b)
-    idx = managed_branches.index(b) + 1
+    idx: int = managed_branches.index(b) + 1
     if idx == len(managed_branches):
         raise MacheteException(f"Branch `{b}` has no successor")
     return managed_branches[idx]
@@ -467,31 +472,31 @@ def next_branch(b):
 
 def prev_branch(b):
     expect_in_managed_branches(b)
-    idx = managed_branches.index(b) - 1
+    idx: int = managed_branches.index(b) - 1
     if idx == -1:
         raise MacheteException(f"Branch `{b}` has no predecessor")
     return managed_branches[idx]
 
 
-PICK_FIRST_ROOT = 0
-PICK_LAST_ROOT = -1
+PICK_FIRST_ROOT: int = 0
+PICK_LAST_ROOT: int = -1
 
 
-def root_branch(b, if_unmanaged):
-    if b not in managed_branches:
-        if roots:
+def root_branch(b, if_unmanaged: int):
+    if b not in managed_branches:  # type: ignore
+        if roots:  # type: ignore
             if if_unmanaged == PICK_FIRST_ROOT:
-                warn(f"{b} is not a managed branch, assuming {roots[0]} (the first root) instead as root")
-                return roots[0]
+                warn(f"{b} is not a managed branch, assuming {roots[0]} (the first root) instead as root")  # type: ignore
+                return roots[0]  # type: ignore
             else:  # if_unmanaged == PICK_LAST_ROOT
-                warn(f"{b} is not a managed branch, assuming {roots[-1]} (the last root) instead as root")
-                return roots[-1]
+                warn(f"{b} is not a managed branch, assuming {roots[-1]} (the last root) instead as root")  # type: ignore
+                return roots[-1]  # type: ignore
         else:
             raise_no_branches_error()
-    u = up_branch.get(b)
+    u = up_branch.get(b)  # type: ignore
     while u:
         b = u
-        u = up_branch.get(b)
+        u = up_branch.get(b)  # type: ignore
     return b
 
 
@@ -530,7 +535,7 @@ def add(b):
         expect_in_managed_branches(onto)
 
     if b not in local_branches():
-        rb = get_sole_remote_branch(b)
+        rb: str = get_sole_remote_branch(b)
         if rb:
             common_line = f"A local branch `{b}` does not exist, but a remote branch `{rb}` exists.\n"
             msg = common_line + f"Check out `{b}` locally?" + pretty_choices('y', 'N')
@@ -558,7 +563,7 @@ def add(b):
         print(fmt(f"Added branch `{b}` as a new root"))
     else:
         if not onto:
-            u = infer_upstream(b, condition=lambda x: x in managed_branches, reject_reason_message="this candidate is not a managed branch")
+            u = infer_upstream(b, condition=lambda x: x in managed_branches, reject_reason_message="this candidate is not a managed branch")  # type: ignore
             if not u:
                 raise MacheteException(f"Could not automatically infer upstream (parent) branch for `{b}`.\n"
                                        "You can either:\n"
@@ -666,28 +671,28 @@ def get_default_editor():
         f"Cannot determine editor. Set `{git_machete_editor_var}` environment variable or edit {definition_file_path} directly.")
 
 
-def edit():
-    return run_cmd(get_default_editor(), definition_file_path)
+def edit() -> int:
+    return run_cmd(get_default_editor(), definition_file_path)  # type: ignore
 
 
 git_version = None
 
 
-def get_git_version():
+def get_git_version() -> Tuple[int, int, int]:
     global git_version
     if not git_version:
         # We need to cut out the x.y.z part and not just take the result of 'git version' as is,
         # because the version string in certain distributions of git (esp. on OS X) has an extra suffix,
         # which is irrelevant for our purpose (checking whether certain git CLI features are available/bugs are fixed).
-        raw = re.search(r"\d+.\d+.\d+", popen_git("version")).group(0)
+        raw = re.search(r"\d+.\d+.\d+", popen_git("version")).group(0)  # type: ignore
         git_version = tuple(map(int, raw.split(".")))
-    return git_version
+    return git_version  # type: ignore
 
 
 root_dir = None
 
 
-def get_root_dir():
+def get_root_dir() -> str:
     global root_dir
     if not root_dir:
         try:
@@ -700,7 +705,7 @@ def get_root_dir():
 git_dir = None
 
 
-def get_git_dir():
+def get_git_dir() -> str:
     global git_dir
     if not git_dir:
         try:
@@ -710,21 +715,21 @@ def get_git_dir():
     return git_dir
 
 
-def get_git_subpath(*fragments):
+def get_git_subpath(*fragments: str) -> str:
     return os.path.join(get_git_dir(), *fragments)
 
 
-def parse_git_timespec_to_unix_timestamp(date):
+def parse_git_timespec_to_unix_timestamp(date: str) -> int:
     try:
         return int(popen_git("rev-parse", "--since=" + date).replace("--max-age=", "").strip())
     except (MacheteException, ValueError):
         raise MacheteException(f"Cannot parse timespec: `{date}`")
 
 
-config_cached = None
+config_cached = None  # type: ignore
 
 
-def ensure_config_loaded():
+def ensure_config_loaded() -> None:
     global config_cached
     if config_cached is None:
         config_cached = {}
@@ -735,18 +740,18 @@ def ensure_config_loaded():
                 config_cached[k.lower()] = v
 
 
-def get_config_or_none(key):
+def get_config_or_none(key: str) -> Optional[str]:
     ensure_config_loaded()
-    return config_cached.get(key.lower())
+    return config_cached.get(key.lower())  # type: ignore
 
 
-def set_config(key, value):
+def set_config(key: str, value: str) -> None:
     run_git("config", "--", key, value)
     ensure_config_loaded()
-    config_cached[key.lower()] = value
+    config_cached[key.lower()] = value  # type: ignore
 
 
-def unset_config(key):
+def unset_config(key) -> None:
     ensure_config_loaded()
     if get_config_or_none(key):
         run_git("config", "--unset", key)
@@ -756,7 +761,7 @@ def unset_config(key):
 remotes_cached = None
 
 
-def remotes():
+def remotes() -> List[str]:
     global remotes_cached
     if remotes_cached is None:
         remotes_cached = non_empty_lines(popen_git("remote"))
@@ -766,18 +771,18 @@ def remotes():
 fetch_done_for = set()
 
 
-def fetch_remote(remote):
+def fetch_remote(remote: str) -> None:
     global fetch_done_for
     if remote not in fetch_done_for:
         run_git("fetch", remote)
         fetch_done_for.add(remote)
 
 
-def set_upstream_to(rb):
+def set_upstream_to(rb: str) -> None:
     run_git("branch", "--set-upstream-to", rb)
 
 
-def reset_keep(to_revision):
+def reset_keep(to_revision: str) -> None:
     try:
         run_git("reset", "--keep", to_revision)
     except MacheteException:
@@ -785,7 +790,7 @@ def reset_keep(to_revision):
             f"Cannot perform `git reset --keep {to_revision}`. This is most likely caused by local uncommitted changes.")
 
 
-def push(remote, b, force_with_lease=False):
+def push(remote: str, b: str, force_with_lease: bool = False) -> None:
     if not force_with_lease:
         opt_force = []
     elif get_git_version() >= (1, 8, 5):  # earliest version of git to support 'push --force-with-lease'
@@ -796,7 +801,7 @@ def push(remote, b, force_with_lease=False):
     run_git("push", "--set-upstream", *(opt_force + args))
 
 
-def pull_ff_only(remote, rb):
+def pull_ff_only(remote: str, rb: str) -> None:
     fetch_remote(remote)
     run_git("merge", "--ff-only", rb)
     # There's apparently no way to set remote automatically when doing 'git pull' (as opposed to 'git push'),
@@ -804,20 +809,20 @@ def pull_ff_only(remote, rb):
     set_upstream_to(rb)
 
 
-def find_short_commit_sha_by_revision(revision):
+def find_short_commit_sha_by_revision(revision: str) -> str:
     return popen_git("rev-parse", "--short", revision + "^{commit}").rstrip()
 
 
 short_commit_sha_by_revision_cached = {}
 
 
-def short_commit_sha_by_revision(revision):
+def short_commit_sha_by_revision(revision: str) -> str:
     if revision not in short_commit_sha_by_revision_cached:
         short_commit_sha_by_revision_cached[revision] = find_short_commit_sha_by_revision(revision)
     return short_commit_sha_by_revision_cached[revision]
 
 
-def find_commit_sha_by_revision(revision):
+def find_commit_sha_by_revision(revision: str) -> Optional[str]:
     # Without ^{commit}, 'git rev-parse --verify' will not only accept references to other kinds of objects (like trees and blobs),
     # but just echo the argument (and exit successfully) even if the argument doesn't match anything in the object store.
     try:
@@ -826,34 +831,34 @@ def find_commit_sha_by_revision(revision):
         return None
 
 
-commit_sha_by_revision_cached = None
+commit_sha_by_revision_cached = None  # type: ignore
 
 
-def commit_sha_by_revision(revision, prefix="refs/heads/"):
+def commit_sha_by_revision(revision: str, prefix: str = "refs/heads/") -> str:
     global commit_sha_by_revision_cached
     if commit_sha_by_revision_cached is None:
         load_branches()
-    full_revision = prefix + revision
-    if full_revision not in commit_sha_by_revision_cached:
-        commit_sha_by_revision_cached[full_revision] = find_commit_sha_by_revision(full_revision)
-    return commit_sha_by_revision_cached[full_revision]
+    full_revision: str = prefix + revision
+    if full_revision not in commit_sha_by_revision_cached:  # type: ignore
+        commit_sha_by_revision_cached[full_revision] = find_commit_sha_by_revision(full_revision)  # type: ignore
+    return commit_sha_by_revision_cached[full_revision]  # type: ignore
 
 
 def is_full_sha(revision):
     return re.match("^[0-9a-f]{40}$", revision)
 
 
-committer_unix_timestamp_by_revision_cached = None
+committer_unix_timestamp_by_revision_cached = None  # type: ignore
 
 
-def committer_unix_timestamp_by_revision(revision, prefix="refs/heads/"):
+def committer_unix_timestamp_by_revision(revision: str, prefix: str = "refs/heads/") -> int:
     global committer_unix_timestamp_by_revision_cached
     if committer_unix_timestamp_by_revision_cached is None:
         load_branches()
-    return committer_unix_timestamp_by_revision_cached.get(prefix + revision) or 0
+    return committer_unix_timestamp_by_revision_cached.get(prefix + revision) or 0  # type: ignore
 
 
-def inferred_remote_for_fetching_of_branch(b):
+def inferred_remote_for_fetching_of_branch(b: str) -> Optional[str]:
     # Since many people don't use '--set-upstream' flag of 'push', we try to infer the remote instead.
     for r in remotes():
         if f"{r}/{b}" in remote_branches():
@@ -861,58 +866,58 @@ def inferred_remote_for_fetching_of_branch(b):
     return None
 
 
-def strict_remote_for_fetching_of_branch(b):
+def strict_remote_for_fetching_of_branch(b: str) -> Optional[str]:
     remote = get_config_or_none(f"branch.{b}.remote")
     return remote.rstrip() if remote else None
 
 
-def combined_remote_for_fetching_of_branch(b):
+def combined_remote_for_fetching_of_branch(b: str) -> Optional[str]:
     return strict_remote_for_fetching_of_branch(b) or inferred_remote_for_fetching_of_branch(b)
 
 
-def inferred_counterpart_for_fetching_of_branch(b):
+def inferred_counterpart_for_fetching_of_branch(b: str) -> Optional[str]:
     for r in remotes():
         if f"{r}/{b}" in remote_branches():
             return f"{r}/{b}"
     return None
 
 
-counterparts_for_fetching_cached = None
+counterparts_for_fetching_cached = None  # type: ignore
 
 
-def strict_counterpart_for_fetching_of_branch(b):
+def strict_counterpart_for_fetching_of_branch(b) -> str:
     global counterparts_for_fetching_cached
     if counterparts_for_fetching_cached is None:
         load_branches()
-    return counterparts_for_fetching_cached.get(b)
+    return counterparts_for_fetching_cached.get(b)  # type: ignore
 
 
-def combined_counterpart_for_fetching_of_branch(b):
+def combined_counterpart_for_fetching_of_branch(b) -> str:
     # Since many people don't use '--set-upstream' flag of 'push' or 'branch', we try to infer the remote if the tracking data is missing.
-    return strict_counterpart_for_fetching_of_branch(b) or inferred_counterpart_for_fetching_of_branch(b)
+    return strict_counterpart_for_fetching_of_branch(b) or inferred_counterpart_for_fetching_of_branch(b)  # type: ignore
 
 
-def is_am_in_progress():
+def is_am_in_progress() -> bool:
     # As of git 2.24.1, this is how 'cmd_rebase()' in builtin/rebase.c checks whether am is in progress.
     return os.path.isfile(get_git_subpath("rebase-apply", "applying"))
 
 
-def is_cherry_pick_in_progress():
+def is_cherry_pick_in_progress() -> bool:
     return os.path.isfile(get_git_subpath("CHERRY_PICK_HEAD"))
 
 
-def is_merge_in_progress():
+def is_merge_in_progress() -> bool:
     return os.path.isfile(get_git_subpath("MERGE_HEAD"))
 
 
-def is_revert_in_progress():
+def is_revert_in_progress() -> bool:
     return os.path.isfile(get_git_subpath("REVERT_HEAD"))
 
 
 # Note: while rebase is ongoing, the repository is always in a detached HEAD state,
 # so we need to extract the name of the currently rebased branch from the rebase-specific internals
 # rather than rely on 'git symbolic-ref HEAD' (i.e. the contents of .git/HEAD).
-def currently_rebased_branch_or_none():
+def currently_rebased_branch_or_none() -> Optional[str]:
     # https://stackoverflow.com/questions/3921409
 
     head_name_file = None
@@ -936,7 +941,7 @@ def currently_rebased_branch_or_none():
         return re.sub("^refs/heads/", "", raw)
 
 
-def currently_checked_out_branch_or_none():
+def currently_checked_out_branch_or_none() -> Optional[str]:
     try:
         raw = popen_git("symbolic-ref", "--quiet", "HEAD").strip()
         return re.sub("^refs/heads/", "", raw)
@@ -944,7 +949,7 @@ def currently_checked_out_branch_or_none():
         return None
 
 
-def expect_no_operation_in_progress():
+def expect_no_operation_in_progress() -> Any:
     rb = currently_rebased_branch_or_none()
     if rb:
         raise MacheteException(
@@ -959,11 +964,11 @@ def expect_no_operation_in_progress():
         raise MacheteException("Revert in progress. Conclude the revert first with `git revert --continue` or `git revert --abort`.")
 
 
-def current_branch_or_none():
+def current_branch_or_none() -> Optional[str]:
     return currently_checked_out_branch_or_none() or currently_rebased_branch_or_none()
 
 
-def current_branch():
+def current_branch() -> str:
     result = current_branch_or_none()
     if not result:
         raise MacheteException("Not currently on any branch")
@@ -973,7 +978,7 @@ def current_branch():
 merge_base_cached = {}
 
 
-def merge_base(sha1, sha2):
+def merge_base(sha1: str, sha2: str) -> str:
     if sha1 > sha2:
         sha1, sha2 = sha2, sha1
     if not (sha1, sha2) in merge_base_cached:
@@ -990,7 +995,7 @@ def merge_base(sha1, sha2):
 
 # Note: the 'git rev-parse --verify' validation is not performed in case for either of earlier/later
 # if the corresponding prefix is empty AND the revision is a 40 hex digit hash.
-def is_ancestor(earlier_revision, later_revision, earlier_prefix="refs/heads/", later_prefix="refs/heads/"):
+def is_ancestor(earlier_revision: str, later_revision: str, earlier_prefix: str = "refs/heads/", later_prefix: str = "refs/heads/") -> bool:
     if earlier_prefix == "" and is_full_sha(earlier_revision):
         earlier_sha = earlier_revision
     else:
@@ -1004,12 +1009,12 @@ def is_ancestor(earlier_revision, later_revision, earlier_prefix="refs/heads/", 
     return merge_base(earlier_sha, later_sha) == earlier_sha
 
 
-def create_branch(b, out_of_revision):
+def create_branch(b, out_of_revision) -> None:
     run_git("checkout", "-b", b, *([out_of_revision] if out_of_revision else []))
     flush_caches()  # the repository state has changed b/c of a successful branch creation, let's defensively flush all the caches
 
 
-def log_shas(revision, max_count):
+def log_shas(revision: str, max_count: int) -> List[str]:
     opts = ([f"--max-count={str(max_count)}"] if max_count else []) + ["--format=%H", f"refs/heads/{revision}"]
     return non_empty_lines(popen_git("log", *opts))
 
@@ -1035,8 +1040,8 @@ def spoonfeed_log_shas(b):
         yield sha
 
 
-local_branches_cached = None
-remote_branches_cached = None
+local_branches_cached = None  # type: ignore
+remote_branches_cached = None  # type: ignore
 
 
 def local_branches():
@@ -1053,7 +1058,7 @@ def remote_branches():
     return remote_branches_cached
 
 
-def load_branches():
+def load_branches() -> None:
     global commit_sha_by_revision_cached, committer_unix_timestamp_by_revision_cached, counterparts_for_fetching_cached, local_branches_cached, remote_branches_cached
     commit_sha_by_revision_cached = {}
     committer_unix_timestamp_by_revision_cached = {}
@@ -1089,7 +1094,7 @@ def load_branches():
             counterparts_for_fetching_cached[b_stripped] = fetch_counterpart_stripped
 
 
-def get_sole_remote_branch(b):
+def get_sole_remote_branch(b) -> Optional[str]:
     def matches(rb):
         # Note that this matcher is defensively too inclusive:
         # if there is both origin/foo and origin/feature/foo,
@@ -1101,23 +1106,23 @@ def get_sole_remote_branch(b):
     return matching_remote_branches[0] if len(matching_remote_branches) == 1 else None
 
 
-def merged_local_branches():
+def merged_local_branches() -> List[str]:
     return list(map(
         lambda b: re.sub("^refs/heads/", "", b),
         non_empty_lines(popen_git("for-each-ref", "--format=%(refname)", "--merged", "HEAD", "refs/heads"))
     ))
 
 
-def go(branch):
+def go(branch: str) -> None:
     run_git("checkout", "--quiet", branch, "--")
 
 
-def get_hook_path(hook_name):
-    hook_dir = get_config_or_none("core.hooksPath") or get_git_subpath("hooks")
+def get_hook_path(hook_name: str) -> str:
+    hook_dir: str = get_config_or_none("core.hooksPath") or get_git_subpath("hooks")
     return os.path.join(hook_dir, hook_name)
 
 
-def check_hook_executable(hook_path):
+def check_hook_executable(hook_path: str) -> bool:
     if not os.path.isfile(hook_path):
         return False
     elif not is_executable(hook_path):
@@ -1139,14 +1144,14 @@ def merge(branch, into):  # refs/heads/ prefix is assumed for 'branch'
     run_git("merge", "-m", commit_message, f"refs/heads/{branch}", *extra_params)
 
 
-def merge_fast_forward_only(branch):  # refs/heads/ prefix is assumed for 'branch'
+def merge_fast_forward_only(branch) -> None:  # refs/heads/ prefix is assumed for 'branch'
     run_git("merge", "--ff-only", f"refs/heads/{branch}")
 
 
-def rebase(onto, fork_commit, branch):
-    def do_rebase():
+def rebase(onto: str, fork_commit: str, branch: str) -> None:
+    def do_rebase() -> None:
         try:
-            if opt_no_interactive_rebase:
+            if opt_no_interactive_rebase:  # type: ignore
                 run_git("rebase", "--onto", onto, fork_commit, branch)
             else:
                 run_git("rebase", "--interactive", "--onto", onto, fork_commit, branch)
@@ -1166,10 +1171,10 @@ def rebase(onto, fork_commit, branch):
             if os.path.isfile(author_script):
                 faulty_line_regex = re.compile("[A-Z0-9_]+='[^']*")
 
-                def fix_if_needed(line):
+                def fix_if_needed(line: str) -> str:
                     return f"{line.rstrip()}'\n" if faulty_line_regex.fullmatch(line) else line
 
-                def get_all_lines_fixed():
+                def get_all_lines_fixed() -> Iterator[str]:
                     with open(author_script) as f_read:
                         return map(fix_if_needed, f_read.readlines())
 
@@ -1190,13 +1195,13 @@ def rebase(onto, fork_commit, branch):
         do_rebase()
 
 
-def rebase_onto_ancestor_commit(branch, ancestor_commit):
+def rebase_onto_ancestor_commit(branch: str, ancestor_commit: str) -> None:
     rebase(ancestor_commit, ancestor_commit, branch)
 
 
-def update():
+def update() -> None:
     cb = current_branch()
-    if opt_merge:
+    if opt_merge:  # type: ignore
         with_branch = up(cb,
                          prompt_if_inferred_msg="Branch `%s` not found in the tree of branch dependencies. Merge with the inferred upstream `%s`?" + pretty_choices('y', 'N'),
                          prompt_if_inferred_yes_opt_msg="Branch `%s` not found in the tree of branch dependencies. Merging with the inferred upstream `%s`...")
@@ -1205,11 +1210,11 @@ def update():
         onto_branch = up(cb,
                          prompt_if_inferred_msg="Branch `%s` not found in the tree of branch dependencies. Rebase onto the inferred upstream `%s`?" + pretty_choices('y', 'N'),
                          prompt_if_inferred_yes_opt_msg="Branch `%s` not found in the tree of branch dependencies. Rebasing onto the inferred upstream `%s`...")
-        rebase(f"refs/heads/{onto_branch}", opt_fork_point or fork_point(cb, use_overrides=True), cb)
+        rebase(f"refs/heads/{onto_branch}", opt_fork_point or fork_point(cb, use_overrides=True), cb)  # type: ignore
 
 
-def squash(cb, fork_commit):
-    commits = commits_between(fork_commit, cb)
+def squash(cb: str, fork_commit: str) -> None:
+    commits: List[Commit] = commits_between(fork_commit, cb)
     if not commits:
         raise MacheteException("No commits to squash. Use `-f` or `--fork-point` to specify the start of range of commits to squash.")
     if len(commits) == 1:
@@ -1268,10 +1273,13 @@ def log(branch):
     run_git("log", "^" + fork_point(branch, use_overrides=True), f"refs/heads/{branch}")
 
 
-def commits_between(earliest_exclusive, latest_inclusive):
+Commit = Tuple[str, str, str]
+
+
+def commits_between(earliest_exclusive: str, latest_inclusive: str) -> List[Commit]:
     # Reverse the list, since `git log` by default returns the commits from the latest to earliest.
     return list(reversed(list(map(
-        lambda x: x.split(":", 2),
+        lambda x: x.split(":", 2),  # type: ignore
         non_empty_lines(popen_git("log", "--format=%H:%h:%s", f"^{earliest_exclusive}", latest_inclusive, "--"))
     ))))
 
@@ -1319,10 +1327,10 @@ def get_combined_remote_sync_status(b):
 # Reflog magic
 
 
-reflogs_cached = None
+reflogs_cached = None  # type: ignore
 
 
-def load_all_reflogs():
+def load_all_reflogs() -> None:
     global reflogs_cached
     # %gd - reflog selector (refname@{num})
     # %H - full hash
@@ -1331,7 +1339,7 @@ def load_all_reflogs():
                    [f"refs/remotes/{combined_counterpart_for_fetching_of_branch(b)}" for b in local_branches() if combined_counterpart_for_fetching_of_branch(b)]
     # The trailing '--' is necessary to avoid ambiguity in case there is a file called just exactly like one of the branches.
     entries = non_empty_lines(popen_git("reflog", "show", "--format=%gD\t%H\t%gs", *(all_branches + ["--"])))
-    reflogs_cached = {}
+    reflogs_cached = {}  # type: ignore
     for entry in entries:
         values = entry.split("\t")
         if len(values) != 3:  # invalid, shouldn't happen
@@ -1400,7 +1408,7 @@ def filtered_reflog(b, prefix):
     return result
 
 
-def get_latest_checkout_timestamps():
+def get_latest_checkout_timestamps() -> Dict[str, int]:
     # Entries are in the format '<branch_name>@{<unix_timestamp> <time-zone>}'
     result = {}
     # %gd - reflog selector (HEAD@{<unix-timestamp> <time-zone>} for `--date=raw`;
@@ -1453,8 +1461,8 @@ def match_log_to_filtered_reflogs(b):
             else:
                 branch_defs_by_sha_in_reflog[sha] = [branch_def]
 
-        def log_result():
-            for sha_, branch_defs in branch_defs_by_sha_in_reflog.items():
+        def log_result() -> Generator[str, str, Any]:
+            for sha_, branch_defs in branch_defs_by_sha_in_reflog.items():  # type: ignore
                 yield dim("%s => %s" %
                           (sha_, ", ".join(map(tupled(lambda lb, lb_or_rb: lb if lb == lb_or_rb else f"{lb_or_rb} (remote counterpart of {lb})"), branch_defs))))
 
@@ -1521,29 +1529,29 @@ def infer_upstream(b, condition=lambda u: True, reject_reason_message=""):
 DISCOVER_DEFAULT_FRESH_BRANCH_COUNT = 10
 
 
-def discover_tree():
+def discover_tree() -> None:
     global managed_branches, roots, down_branches, up_branch, indent, annotations, opt_checked_out_since, opt_roots
     all_local_branches = local_branches()
     if not all_local_branches:
         raise MacheteException("No local branches found")
-    for r in opt_roots:
+    for r in opt_roots:  # type: ignore
         if r not in local_branches():
             raise MacheteException(f"`{r}` is not a local branch")
-    if opt_roots:
-        roots = list(opt_roots)
+    if opt_roots:  # type: ignore
+        roots = list(opt_roots)  # type: ignore
     else:
-        roots = []
+        roots = []  # type: ignore
         if "master" in local_branches():
-            roots += ["master"]
+            roots += ["master"]  # type: ignore
         elif "main" in local_branches():
             # See https://github.com/github/renaming
-            roots += ["main"]
+            roots += ["main"]  # type: ignore
         if "develop" in local_branches():
-            roots += ["develop"]
-    down_branches = {}
-    up_branch = {}
-    indent = "\t"
-    annotations = {}
+            roots += ["develop"]  # type: ignore
+    down_branches = {}  # type: ignore
+    up_branch = {}  # type: ignore
+    indent = "\t"  # type: ignore
+    annotations = {}  # type: ignore
 
     root_of = dict((b, b) for b in all_local_branches)
 
@@ -1552,11 +1560,11 @@ def discover_tree():
             root_of[b] = get_root_of(root_of[b])
         return root_of[b]
 
-    non_root_fixed_branches = excluding(all_local_branches, roots)
+    non_root_fixed_branches = excluding(all_local_branches, roots)  # type: ignore
     last_checkout_timestamps = get_latest_checkout_timestamps()
     non_root_fixed_branches_by_last_checkout_timestamps = sorted((last_checkout_timestamps.get(b) or 0, b) for b in non_root_fixed_branches)
-    if opt_checked_out_since:
-        threshold = parse_git_timespec_to_unix_timestamp(opt_checked_out_since)
+    if opt_checked_out_since:  # type: ignore
+        threshold = parse_git_timespec_to_unix_timestamp(opt_checked_out_since)  # type: ignore
         stale_non_root_fixed_branches = [b for (timestamp, b) in itertools.takewhile(
             tupled(lambda timestamp, b: timestamp < threshold),
             non_root_fixed_branches_by_last_checkout_timestamps
@@ -1571,8 +1579,8 @@ def discover_tree():
                  f"only branches checked out at or after ca. <b>{threshold_date}</b> are included.\n"
                  "Use `git machete discover --checked-out-since=<date>` (where <date> can be e.g. `'2 weeks ago'` or `2020-06-01`) "
                  "to change this threshold so that less or more branches are included.\n")
-    managed_branches = excluding(all_local_branches, stale_non_root_fixed_branches)
-    if opt_checked_out_since and not managed_branches:
+    managed_branches = excluding(all_local_branches, stale_non_root_fixed_branches)  # type: ignore
+    if opt_checked_out_since and not managed_branches:  # type: ignore
         warn("no branches satisfying the criteria. Try moving the value of `--checked-out-since` further to the past.")
         return
 
@@ -1582,21 +1590,21 @@ def discover_tree():
                            reject_reason_message="choosing this candidate would form a cycle in the resulting graph or the candidate is a stale branch")
         if u:
             debug("discover_tree()", f"inferred upstream of {b} is {u}, attaching {b} as a child of {u}\n")
-            up_branch[b] = u
+            up_branch[b] = u  # type: ignore
             root_of[b] = u
-            if u in down_branches:
-                down_branches[u].append(b)
+            if u in down_branches:  # type: ignore
+                down_branches[u].append(b)  # type: ignore
             else:
-                down_branches[u] = [b]
+                down_branches[u] = [b]  # type: ignore
         else:
             debug("discover_tree()", f"inferred no upstream for {b}, attaching {b} as a new root\n")
-            roots += [b]
+            roots += [b]  # type: ignore
 
     # Let's remove merged branches for which no downstream branch have been found.
     merged_branches_to_skip = []
-    for b in managed_branches:
-        if b in up_branch and not down_branches.get(b):
-            u = up_branch[b]
+    for b in managed_branches:  # type: ignore
+        if b in up_branch and not down_branches.get(b):  # type: ignore
+            u = up_branch[b]  # type: ignore
             if is_merged_to(b, u):
                 debug("discover_tree()",
                       f"inferred upstream of {b} is {u}, but {b} is merged to {u}; skipping {b} from discovered tree\n")
@@ -1604,11 +1612,11 @@ def discover_tree():
     if merged_branches_to_skip:
         warn("skipping %s since %s merged to another branch and would not have any downstream branches.\n"
              % (", ".join(f"`{b}`" for b in merged_branches_to_skip), "it's" if len(merged_branches_to_skip) == 1 else "they're"))
-        managed_branches = excluding(managed_branches, merged_branches_to_skip)
+        managed_branches = excluding(managed_branches, merged_branches_to_skip)  # type: ignore
         for b in merged_branches_to_skip:
-            u = up_branch[b]
-            down_branches[u] = excluding(down_branches[u], [b])
-            del up_branch[b]
+            u = up_branch[b]  # type: ignore
+            down_branches[u] = excluding(down_branches[u], [b])  # type: ignore
+            del up_branch[b]  # type: ignore
         # We're NOT applying the removal process recursively,
         # so it's theoretically possible that some merged branches became childless
         # after removing the outer layer of childless merged branches.
@@ -1617,10 +1625,10 @@ def discover_tree():
     print(bold("Discovered tree of branch dependencies:\n"))
     status(warn_on_yellow_edges=False)
     print("")
-    do_backup = os.path.isfile(definition_file_path)
-    backup_msg = f"\nThe existing definition file will be backed up as {definition_file_path}~" if do_backup else ""
-    msg = f"Save the above tree to {definition_file_path}?{backup_msg}" + pretty_choices('y', 'e[dit]', 'N')
-    opt_yes_msg = f"Saving the above tree to {definition_file_path}... {backup_msg}"
+    do_backup = os.path.isfile(definition_file_path)  # type: ignore
+    backup_msg = f"\nThe existing definition file will be backed up as {definition_file_path}~" if do_backup else ""  # type: ignore
+    msg = f"Save the above tree to {definition_file_path}?{backup_msg}" + pretty_choices('y', 'e[dit]', 'N')  # type: ignore
+    opt_yes_msg = f"Saving the above tree to {definition_file_path}... {backup_msg}"  # type: ignore
     ans = ask_if(msg, opt_yes_msg)
     if ans in ('y', 'yes'):
         if do_backup:
@@ -1633,9 +1641,9 @@ def discover_tree():
         edit()
 
 
-def fork_point_and_containing_branch_defs(b, use_overrides):
+def fork_point_and_containing_branch_defs(b, use_overrides: bool) -> Tuple[str, List[str]]:
     global up_branch
-    u = up_branch.get(b)
+    u = up_branch.get(b)  # type: ignore
 
     if use_overrides:
         overridden_fp_sha = get_overridden_fork_point(b)
@@ -1680,26 +1688,26 @@ def fork_point_and_containing_branch_defs(b, use_overrides):
             return fp_sha, containing_branch_defs
 
 
-def fork_point(b, use_overrides):
+def fork_point(b, use_overrides: bool) -> str:
     sha, containing_branch_defs = fork_point_and_containing_branch_defs(b, use_overrides)
     return sha
 
 
-def config_key_for_override_fork_point_to(b):
+def config_key_for_override_fork_point_to(b: str) -> str:
     return f"machete.overrideForkPoint.{b}.to"
 
 
-def config_key_for_override_fork_point_while_descendant_of(b):
+def config_key_for_override_fork_point_while_descendant_of(b: str) -> str:
     return f"machete.overrideForkPoint.{b}.whileDescendantOf"
 
 
 # Also includes config that is incomplete (only one entry out of two) or otherwise invalid.
-def has_any_fork_point_override_config(b):
+def has_any_fork_point_override_config(b: str) -> bool:
     return (get_config_or_none(config_key_for_override_fork_point_to(b)) or
             get_config_or_none(config_key_for_override_fork_point_while_descendant_of(b))) is not None
 
 
-def get_fork_point_override_data(b):
+def get_fork_point_override_data(b) -> Optional[Tuple[str, str]]:
     to_key = config_key_for_override_fork_point_to(b)
     to = get_config_or_none(to_key)
     while_descendant_of_key = config_key_for_override_fork_point_while_descendant_of(b)
@@ -1713,8 +1721,8 @@ def get_fork_point_override_data(b):
         warn(f"{while_descendant_of_key} config is set but {to_key} config is missing")
         return None
 
-    to_sha = commit_sha_by_revision(to, prefix="")
-    while_descendant_of_sha = commit_sha_by_revision(while_descendant_of, prefix="")
+    to_sha = commit_sha_by_revision(to, prefix="")  # type: ignore
+    while_descendant_of_sha = commit_sha_by_revision(while_descendant_of, prefix="")  # type: ignore
     if not to_sha or not while_descendant_of_sha:
         if not to_sha:
             warn(f"{to_key} config value `{to}` does not point to a valid commit")
@@ -1725,8 +1733,8 @@ def get_fork_point_override_data(b):
     # We can't rely on the values being validated in set_fork_point_override(), since the config could have been modified outside of git-machete.
     if not is_ancestor(to_sha, while_descendant_of_sha, earlier_prefix="", later_prefix=""):
         warn(
-            f"commit {short_commit_sha_by_revision(to)} pointed by {to_key} config "
-            f"is not an ancestor of commit {short_commit_sha_by_revision(while_descendant_of)} "
+            f"commit {short_commit_sha_by_revision(to)} pointed by {to_key} config "  # type: ignore
+            f"is not an ancestor of commit {short_commit_sha_by_revision(while_descendant_of)} "  # type: ignore
             f"pointed by {while_descendant_of_key} config")
         return None
     return to_sha, while_descendant_of_sha
@@ -1790,8 +1798,8 @@ def unset_fork_point_override(b):
     unset_config(config_key_for_override_fork_point_while_descendant_of(b))
 
 
-def delete_unmanaged():
-    branches_to_delete = excluding(local_branches(), managed_branches)
+def delete_unmanaged() -> None:
+    branches_to_delete = excluding(local_branches(), managed_branches)  # type: ignore
     cb = current_branch_or_none()
     if cb and cb in branches_to_delete:
         branches_to_delete = excluding(branches_to_delete, [cb])
@@ -1873,8 +1881,8 @@ def slide_out(branches_to_slide_out):
         rebase(f"refs/heads/{new_upstream}", opt_down_fork_point or fork_point(new_downstream, use_overrides=True), new_downstream)
 
 
-def slidable():
-    return [b for b in managed_branches if b in up_branch and b in down_branches and len(down_branches[b]) == 1]
+def slidable() -> List[str]:
+    return [b for b in managed_branches if b in up_branch and b in down_branches and len(down_branches[b]) == 1]  # type: ignore
 
 
 def slidable_after(b):
@@ -1888,21 +1896,21 @@ def slidable_after(b):
     return []
 
 
-def advance(b):
-    if not down_branches.get(b):
+def advance(b) -> None:
+    if not down_branches.get(b):  # type: ignore
         raise MacheteException(f"`{b}` does not have any downstream (child) branches to advance towards")
 
-    def connected_with_green_edge(bd):
+    def connected_with_green_edge(bd) -> bool:
         return \
             not is_merged_to_upstream(bd) and \
             is_ancestor(b, bd) and \
             (get_overridden_fork_point(bd) or commit_sha_by_revision(b) == fork_point(bd, use_overrides=False))
 
-    candidate_downstreams = list(filter(connected_with_green_edge, down_branches[b]))
+    candidate_downstreams = list(filter(connected_with_green_edge, down_branches[b]))  # type: ignore
     if not candidate_downstreams:
         raise MacheteException(f"No downstream (child) branch of `{b}` is connected to `{b}` with a green edge")
     if len(candidate_downstreams) > 1:
-        if opt_yes:
+        if opt_yes:  # type: ignore
             raise MacheteException(f"More than one downstream (child) branch of `{b}` is connected to `{b}` with a green edge "
                                    "and `-y/--yes` option is specified")
         else:
@@ -1924,12 +1932,12 @@ def advance(b):
         f"\nBranch {bold(d)} is now merged into {bold(b)}. Sliding {bold(d)} out of the tree of branch dependencies..."
     )
     if ans in ('y', 'yes'):
-        dds = down_branches.get(d) or []
+        dds = down_branches.get(d) or []  # type: ignore
         for dd in dds:
-            up_branch[dd] = b
-        down_branches[b] = flat_map(
+            up_branch[dd] = b  # type: ignore
+        down_branches[b] = flat_map(  # type: ignore
             lambda bd: dds if bd == d else [bd],
-            down_branches[b])
+            down_branches[b])  # type: ignore
         save_definition_file()
         run_post_slide_out_hook(b, d, dds)
 
@@ -1939,21 +1947,21 @@ class StopTraversal(Exception):
         pass
 
 
-def flush_caches():
+def flush_caches() -> None:
     global branch_defs_by_sha_in_reflog, commit_sha_by_revision_cached, config_cached, counterparts_for_fetching_cached, initial_log_shas_cached
     global local_branches_cached, reflogs_cached, remaining_log_shas_cached, remote_branches_cached
     branch_defs_by_sha_in_reflog = None
-    commit_sha_by_revision_cached = None
-    config_cached = None
-    counterparts_for_fetching_cached = None
+    commit_sha_by_revision_cached = None  # type: ignore
+    config_cached = None  # type: ignore
+    counterparts_for_fetching_cached = None  # type: ignore
     initial_log_shas_cached = {}
-    local_branches_cached = None
-    reflogs_cached = None
+    local_branches_cached = None  # type: ignore
+    reflogs_cached = None  # type: ignore
     remaining_log_shas_cached = {}
-    remote_branches_cached = None
+    remote_branches_cached = None  # type: ignore
 
 
-def pick_remote(b):
+def pick_remote(b) -> None:
     rems = remotes()
     print("\n".join(f"[{idx + 1}] {r}" for idx, r in enumerate(rems)))
     msg = f"Select number 1..{len(rems)} to specify the destination remote " \
@@ -1971,7 +1979,7 @@ def pick_remote(b):
         pass
 
 
-def handle_untracked_branch(new_remote, b):
+def handle_untracked_branch(new_remote, b) -> None:
     rems = remotes()
     can_pick_other_remote = len(rems) > 1
     other_remote_choice = "o[ther-remote]" if can_pick_other_remote else ""
@@ -2050,20 +2058,20 @@ def handle_untracked_branch(new_remote, b):
         raise StopTraversal
 
 
-def traverse():
+def traverse() -> None:
     global down_branches, up_branch, empty_line_status, managed_branches
 
     expect_at_least_one_managed_branch()
 
-    empty_line_status = True
+    empty_line_status = True  # type: ignore
 
-    def print_new_line(new_status):
+    def print_new_line(new_status) -> None:
         global empty_line_status
-        if not empty_line_status:
+        if not empty_line_status:  # type: ignore
             print("")
-        empty_line_status = new_status
+        empty_line_status = new_status  # type: ignore
 
-    if opt_fetch:
+    if opt_fetch:  # type: ignore
         for r in remotes():
             print(f"Fetching {r}...")
             fetch_remote(r)
@@ -2073,15 +2081,15 @@ def traverse():
 
     initial_branch = nearest_remaining_branch = current_branch()
 
-    if opt_start_from == "root":
+    if opt_start_from == "root":  # type: ignore
         dest = root_branch(current_branch(), if_unmanaged=PICK_FIRST_ROOT)
         print_new_line(False)
         print(f"Checking out the root branch ({bold(dest)})")
         go(dest)
         cb = dest
-    elif opt_start_from == "first-root":
+    elif opt_start_from == "first-root":  # type: ignore
         # Note that we already ensured that there is at least one managed branch.
-        dest = managed_branches[0]
+        dest = managed_branches[0]  # type: ignore
         print_new_line(False)
         print(f"Checking out the first root branch ({bold(dest)})")
         go(dest)
@@ -2090,8 +2098,8 @@ def traverse():
         cb = current_branch()
         expect_in_managed_branches(cb)
 
-    for b in itertools.dropwhile(lambda x: x != cb, managed_branches):
-        u = up_branch.get(b)
+    for b in itertools.dropwhile(lambda x: x != cb, managed_branches):  # type: ignore
+        u = up_branch.get(b)  # type: ignore
 
         needs_slide_out = is_merged_to_upstream(b)
         s, remote = get_strict_remote_sync_status(b)
@@ -2110,7 +2118,7 @@ def traverse():
             # Avoid unnecessary fork point check if we already know that the branch qualifies for resetting to remote counterpart;
             # neither rebase nor merge will be suggested in such case anyway.
             needs_parent_sync = False
-        elif opt_merge:
+        elif opt_merge:  # type: ignore
             needs_parent_sync = u and not is_ancestor(u, b)
         else:  # using rebase
             needs_parent_sync = u and not (is_ancestor(u, b) and commit_sha_by_revision(u) == fork_point(b, use_overrides=True))
@@ -2125,25 +2133,25 @@ def traverse():
             print_new_line(True)
         if needs_slide_out:
             print_new_line(False)
-            ans = ask_if(
+            ans: str = ask_if(
                 f"Branch {bold(b)} is merged into {bold(u)}. Slide {bold(b)} out of the tree of branch dependencies?" + pretty_choices('y', 'N', 'q', 'yq'),
                 f"Branch {bold(b)} is merged into {bold(u)}. Sliding {bold(b)} out of the tree of branch dependencies..."
             )
             if ans in ('y', 'yes', 'yq'):
                 if nearest_remaining_branch == b:
-                    if down_branches.get(b):
-                        nearest_remaining_branch = down_branches[b][0]
+                    if down_branches.get(b):  # type: ignore
+                        nearest_remaining_branch = down_branches[b][0]  # type: ignore
                     else:
                         nearest_remaining_branch = u
-                for d in down_branches.get(b) or []:
-                    up_branch[d] = u
-                down_branches[u] = flat_map(
-                    lambda ud: (down_branches.get(b) or []) if ud == b else [ud],
-                    down_branches[u])
-                if b in annotations:
-                    del annotations[b]
+                for d in down_branches.get(b) or []:  # type: ignore
+                    up_branch[d] = u  # type: ignore
+                down_branches[u] = flat_map(  # type: ignore
+                    lambda ud: (down_branches.get(b) or []) if ud == b else [ud],  # type: ignore
+                    down_branches[u])  # type: ignore
+                if b in annotations:  # type: ignore
+                    del annotations[b]  # type: ignore
                 save_definition_file()
-                run_post_slide_out_hook(u, b, down_branches.get(b) or [])
+                run_post_slide_out_hook(u, b, down_branches.get(b) or [])  # type: ignore
                 if ans == 'yq':
                     return
                 # No need to flush caches since nothing changed in commit/branch structure (only machete-specific changes happened).
@@ -2153,7 +2161,7 @@ def traverse():
             # If user answered 'no', we don't try to rebase/merge but still suggest to sync with remote (if needed; very rare in practice).
         elif needs_parent_sync:
             print_new_line(False)
-            if opt_merge:
+            if opt_merge:  # type: ignore
                 ans = ask_if(
                     f"Merge {bold(u)} into {bold(b)}?" + pretty_choices('y', 'N', 'q', 'yq'),
                     f"Merging {bold(u)} into {bold(b)}..."
@@ -2164,7 +2172,7 @@ def traverse():
                     f"Rebasing {bold(b)} onto {bold(u)}..."
                 )
             if ans in ('y', 'yes', 'yq'):
-                if opt_merge:
+                if opt_merge:  # type: ignore
                     merge(u, b)
                     # It's clearly possible that merge can be in progress after 'git merge' returned non-zero exit code;
                     # this happens most commonly in case of conflicts.
@@ -2261,8 +2269,8 @@ def traverse():
                     return
 
             elif s == UNTRACKED:
-                rems = remotes()
-                r = inferred_remote_for_fetching_of_branch(b)
+                rems: List[str] = remotes()
+                r = inferred_remote_for_fetching_of_branch(b)  # type: ignore
                 print_new_line(False)
                 if r:
                     handle_untracked_branch(r, b)
@@ -2275,28 +2283,29 @@ def traverse():
                     print(fmt(f"Branch `{bold(b)}` is untracked and there's no `{bold('origin')}` repository."))
                     pick_remote(b)
 
-    if opt_return_to == "here":
+    if opt_return_to == "here":  # type: ignore
         go(initial_branch)
-    elif opt_return_to == "nearest-remaining":
+    elif opt_return_to == "nearest-remaining":  # type: ignore
         go(nearest_remaining_branch)
     # otherwise opt_return_to == "stay", so no action is needed
 
     print_new_line(False)
     status(warn_on_yellow_edges=True)
     print("")
-    msg = f"Reached branch {bold(cb)} which has no successor" \
-        if cb == managed_branches[-1] else \
-        f"No successor of {bold(cb)} needs to be slid out or synced with upstream branch or remote"
+    if cb == managed_branches[-1]:  # type: ignore
+        msg: str = f"Reached branch {bold(cb)} which has no successor"
+    else:
+        msg = f"No successor of {bold(cb)} needs to be slid out or synced with upstream branch or remote"
     sys.stdout.write(f"{msg}; nothing left to update\n")
 
-    if opt_return_to == "here" or (opt_return_to == "nearest-remaining" and nearest_remaining_branch == initial_branch):
+    if opt_return_to == "here" or (opt_return_to == "nearest-remaining" and nearest_remaining_branch == initial_branch):  # type: ignore
         print(f"Returned to the initial branch {bold(initial_branch)}")
-    elif opt_return_to == "nearest-remaining" and nearest_remaining_branch != initial_branch:
+    elif opt_return_to == "nearest-remaining" and nearest_remaining_branch != initial_branch:  # type: ignore
         print(
             f"The initial branch {bold(initial_branch)} has been slid out. Returned to nearest remaining managed branch {bold(nearest_remaining_branch)}")
 
 
-def status(warn_on_yellow_edges):
+def status(warn_on_yellow_edges: bool) -> None:
     dfs_res = []
 
     def prefix_dfs(u_, prefix):
@@ -2306,7 +2315,7 @@ def status(warn_on_yellow_edges):
                 prefix_dfs(v, prefix + [nv])
             prefix_dfs(down_branches[u_][-1], prefix + [None])
 
-    for u in roots:
+    for u in roots:  # type: ignore
         prefix_dfs(u, prefix=[])
 
     out = io.StringIO()
@@ -2314,19 +2323,19 @@ def status(warn_on_yellow_edges):
     fp_sha_cached = {}
     fp_branches_cached = {}
 
-    def fp_sha(b):
+    def fp_sha(b) -> str:
         if b not in fp_sha_cached:
             try:
                 # We're always using fork point overrides, even when status is launched from discover().
                 fp_sha_cached[b], fp_branches_cached[b] = fork_point_and_containing_branch_defs(b, use_overrides=True)
             except MacheteException:
-                fp_sha_cached[b], fp_branches_cached[b] = None, []
+                fp_sha_cached[b], fp_branches_cached[b] = None, []  # type: ignore
         return fp_sha_cached[b]
 
     # Edge colors need to be precomputed
     # in order to render the leading parts of lines properly.
-    for b in up_branch:
-        u = up_branch[b]
+    for b in up_branch:  # type: ignore
+        u = up_branch[b]  # type: ignore
         if is_merged_to_upstream(b):
             edge_color[b] = DIM
         elif not is_ancestor(u, b):
@@ -2342,7 +2351,7 @@ def status(warn_on_yellow_edges):
     hook_path = get_hook_path("machete-status-branch")
     hook_executable = check_hook_executable(hook_path)
 
-    def print_line_prefix(b_, suffix):
+    def print_line_prefix(b_, suffix: str) -> None:
         out.write("  ")
         for p in pfx[:-1]:
             if not p:
@@ -2352,28 +2361,28 @@ def status(warn_on_yellow_edges):
         out.write(colored(suffix, edge_color[b_]))
 
     for b, pfx in dfs_res:
-        if b in up_branch:
+        if b in up_branch:  # type: ignore
             print_line_prefix(b, f"{vertical_bar()} \n")
-            if opt_list_commits:
+            if opt_list_commits:  # type: ignore
                 if edge_color[b] in (RED, DIM):
-                    commits = commits_between(fp_sha(b), f"refs/heads/{b}") if fp_sha(b) else []
+                    commits: List[Commit] = commits_between(fp_sha(b), f"refs/heads/{b}") if fp_sha(b) else []
                 elif edge_color[b] == YELLOW:
-                    commits = commits_between(f"refs/heads/{up_branch[b]}", f"refs/heads/{b}")
+                    commits: List[Commit] = commits_between(f"refs/heads/{up_branch[b]}", f"refs/heads/{b}")  # type: ignore
                 else:  # edge_color == GREEN
                     commits = commits_between(fp_sha(b), f"refs/heads/{b}")
 
                 for sha, short_sha, subject in commits:
                     if sha == fp_sha(b):
                         # fp_branches_cached will already be there thanks to the above call to 'fp_sha'.
-                        fp_branches_formatted = " and ".join(sorted(map(tupled(lambda lb, lb_or_rb: lb_or_rb), fp_branches_cached[b])))
-                        fp_suffix = " %s %s %s has been found in reflog of %s" %\
-                            (colored(right_arrow(), RED), colored("fork point ???", RED), "this commit" if opt_list_commits_with_hashes else f"commit {short_sha}", fp_branches_formatted)
+                        fp_branches_formatted: str = " and ".join(sorted(map(tupled(lambda lb, lb_or_rb: lb_or_rb), fp_branches_cached[b])))
+                        fp_suffix: str = " %s %s %s has been found in reflog of %s" %\
+                            (colored(right_arrow(), RED), colored("fork point ???", RED), "this commit" if opt_list_commits_with_hashes else f"commit {short_sha}", fp_branches_formatted)  # type: ignore
                     else:
                         fp_suffix = ''
                     print_line_prefix(b, vertical_bar())
-                    out.write(" %s%s%s\n" % (f"{dim(short_sha)}  " if opt_list_commits_with_hashes else "", dim(subject), fp_suffix))
-            elbow_ascii_only = {DIM: "m-", RED: "x-", GREEN: "o-", YELLOW: "?-"}
-            elbow = u"└─" if not ascii_only else elbow_ascii_only[edge_color[b]]
+                    out.write(" %s%s%s\n" % (f"{dim(short_sha)}  " if opt_list_commits_with_hashes else "", dim(subject), fp_suffix))  # type: ignore
+            elbow_ascii_only: Dict[str, str] = {DIM: "m-", RED: "x-", GREEN: "o-", YELLOW: "?-"}
+            elbow: str = u"└─" if not ascii_only else elbow_ascii_only[edge_color[b]]
             print_line_prefix(b, elbow)
         else:
             if b != dfs_res[0][0]:
@@ -2397,7 +2406,7 @@ def status(warn_on_yellow_edges):
         else:
             current = bold(b)
 
-        anno = f"  {dim(annotations[b])}" if b in annotations else ""
+        anno: str = f"  {dim(annotations[b])}" if b in annotations else ""  # type: ignore
 
         s, remote = get_combined_remote_sync_status(b)
         sync_status = {
@@ -2435,7 +2444,7 @@ def status(warn_on_yellow_edges):
             affected_branches = ", ".join(map(lambda x: f"`{x}`", yellow_edge_branches))
             first_line = f"yellow edges indicate that fork points for {affected_branches} are probably incorrectly inferred"
 
-        if not opt_list_commits:
+        if not opt_list_commits:  # type: ignore
             second_line = "Run `git machete status --list-commits` or `git machete status --list-commits-with-hashes` to see more details"
         elif len(yellow_edge_branches) == 1:
             second_line = f"Consider using `git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent {yellow_edge_branches[0]}`"
@@ -2449,7 +2458,7 @@ def status(warn_on_yellow_edges):
 # Main
 
 
-def usage(c=None):
+def usage(c: str = None) -> None:
     short_docs = {
         "add": "Add a branch to the tree of branch dependencies",
         "advance": "Fast-forward the current branch to match one of its downstreams and subsequently slide out this downstream",
@@ -3108,19 +3117,19 @@ def usage(c=None):
         """[1:])))
 
 
-def short_usage():
+def short_usage() -> None:
     print(fmt("<b>Usage: git machete [--debug] [-h] [-v|--verbose] [--version] <command> [command-specific options] [command-specific argument]</b>"))
 
 
-def version():
+def version() -> None:
     print(f"git-machete version {__version__}")
 
 
-def main():
+def main() -> None:
     launch(sys.argv[1:])
 
 
-def launch(orig_args):
+def launch(orig_args: List[str]) -> None:
     if sys.version_info.major == 2:
         sys.stderr.write("Python 2.x is no longer supported. Please switch to Python 3.6 or higher.\n")
         sys.exit(1)
@@ -3128,7 +3137,7 @@ def launch(orig_args):
         sys.stderr.write("Python 3.x below 3.6 is no longer supported. Please switch to Python 3.6 or higher.\n")
         sys.exit(1)
 
-    def parse_options(in_args, short_opts="", long_opts=[], gnu=True):
+    def parse_options(in_args: List[str], short_opts: str = "", long_opts: List[str] = [], gnu: bool = True):
         global ascii_only
         global opt_as_root, opt_branch, opt_checked_out_since, opt_color, opt_debug, opt_down_fork_point, opt_fetch, opt_fork_point, opt_inferred, opt_list_commits, opt_list_commits_with_hashes, opt_merge, opt_n, opt_no_edit_merge
         global opt_no_interactive_rebase, opt_onto, opt_override_to, opt_override_to_inferred, opt_override_to_parent, opt_return_to, opt_roots, opt_start_from, opt_stat, opt_unset_override, opt_verbose, opt_yes
@@ -3138,94 +3147,94 @@ def launch(orig_args):
 
         for opt, arg in opts:
             if opt in ("-b", "--branch"):
-                opt_branch = arg
+                opt_branch = arg  # type: ignore
             elif opt in ("-C", "--checked-out-since"):
-                opt_checked_out_since = arg
+                opt_checked_out_since = arg  # type: ignore
             elif opt == "--color":
-                opt_color = arg
+                opt_color = arg  # type: ignore
             elif opt in ("-d", "--down-fork-point"):
-                opt_down_fork_point = arg
+                opt_down_fork_point = arg  # type: ignore
             elif opt == "--debug":
-                opt_debug = True
+                opt_debug = True  # type: ignore
             elif opt in ("-F", "--fetch"):
-                opt_fetch = True
+                opt_fetch = True  # type: ignore
             elif opt in ("-f", "--fork-point"):
-                opt_fork_point = arg
+                opt_fork_point = arg  # type: ignore
             elif opt in ("-h", "--help"):
                 usage(cmd)
                 sys.exit()
             elif opt == "--inferred":
-                opt_inferred = True
+                opt_inferred = True  # type: ignore
             elif opt in ("-L", "--list-commits-with-hashes"):
-                opt_list_commits = opt_list_commits_with_hashes = True
+                opt_list_commits = opt_list_commits_with_hashes = True  # type: ignore
             elif opt in ("-l", "--list-commits"):
-                opt_list_commits = True
+                opt_list_commits = True  # type: ignore
             elif opt in ("-M", "--merge"):
-                opt_merge = True
+                opt_merge = True  # type: ignore
             elif opt == "-n":
-                opt_n = True
+                opt_n = True  # type: ignore
             elif opt == "--no-edit-merge":
-                opt_no_edit_merge = True
+                opt_no_edit_merge = True  # type: ignore
             elif opt == "--no-interactive-rebase":
-                opt_no_interactive_rebase = True
+                opt_no_interactive_rebase = True  # type: ignore
             elif opt in ("-o", "--onto"):
-                opt_onto = arg
+                opt_onto = arg  # type: ignore
             elif opt == "--override-to":
-                opt_override_to = arg
+                opt_override_to = arg  # type: ignore
             elif opt == "--override-to-inferred":
-                opt_override_to_inferred = True
+                opt_override_to_inferred = True  # type: ignore
             elif opt == "--override-to-parent":
-                opt_override_to_parent = True
+                opt_override_to_parent = True  # type: ignore
             elif opt in ("-R", "--as-root"):
-                opt_as_root = True
+                opt_as_root = True  # type: ignore
             elif opt in ("-r", "--roots"):
-                opt_roots = arg.split(",")
+                opt_roots = arg.split(",")  # type: ignore
             elif opt == "--return-to":
-                opt_return_to = arg
+                opt_return_to = arg  # type: ignore
             elif opt in ("-s", "--stat"):
-                opt_stat = True
+                opt_stat = True  # type: ignore
             elif opt == "--start-from":
-                opt_start_from = arg
+                opt_start_from = arg  # type: ignore
             elif opt == "--unset-override":
-                opt_unset_override = True
+                opt_unset_override = True  # type: ignore
             elif opt in ("-v", "--verbose"):
-                opt_verbose = True
+                opt_verbose = True  # type: ignore
             elif opt == "--version":
                 version()
                 sys.exit()
             elif opt == "-W":
-                opt_fetch = True
-                opt_start_from = "first-root"
-                opt_n = True
-                opt_return_to = "nearest-remaining"
+                opt_fetch = True  # type: ignore
+                opt_start_from = "first-root"  # type: ignore
+                opt_n = True  # type: ignore
+                opt_return_to = "nearest-remaining"  # type: ignore
             elif opt in ("-w", "--whole"):
-                opt_start_from = "first-root"
-                opt_n = True
-                opt_return_to = "nearest-remaining"
+                opt_start_from = "first-root"  # type: ignore
+                opt_n = True  # type: ignore
+                opt_return_to = "nearest-remaining"  # type: ignore
             elif opt in ("-y", "--yes"):
-                opt_yes = opt_no_interactive_rebase = True
+                opt_yes = opt_no_interactive_rebase = True  # type: ignore
 
-        if opt_color not in ("always", "auto", "never"):
+        if opt_color not in ("always", "auto", "never"):  # type: ignore
             raise MacheteException("Invalid argument for `--color`. Valid arguments: `always|auto|never`.")
         else:
-            ascii_only = opt_color == "never" or (opt_color == "auto" and not sys.stdout.isatty())
+            ascii_only = opt_color == "never" or (opt_color == "auto" and not sys.stdout.isatty())  # type: ignore
 
-        if opt_as_root and opt_onto:
+        if opt_as_root and opt_onto:  # type: ignore
             raise MacheteException("Option `-R/--as-root` cannot be specified together with `-o/--onto`.")
 
-        if opt_no_edit_merge and not opt_merge:
+        if opt_no_edit_merge and not opt_merge:  # type: ignore
             raise MacheteException("Option `--no-edit-merge` only makes sense when using merge and must be specified together with `-M/--merge`.")
-        if opt_no_interactive_rebase and opt_merge:
+        if opt_no_interactive_rebase and opt_merge:  # type: ignore
             raise MacheteException("Option `--no-interactive-rebase` only makes sense when using rebase and cannot be specified together with `-M/--merge`.")
-        if opt_down_fork_point and opt_merge:
+        if opt_down_fork_point and opt_merge:  # type: ignore
             raise MacheteException("Option `-d/--down-fork-point` only makes sense when using rebase and cannot be specified together with `-M/--merge`.")
-        if opt_fork_point and opt_merge:
+        if opt_fork_point and opt_merge:  # type: ignore
             raise MacheteException("Option `-f/--fork-point` only makes sense when using rebase and cannot be specified together with `-M/--merge`.")
 
-        if opt_n and opt_merge:
-            opt_no_edit_merge = True
-        if opt_n and not opt_merge:
-            opt_no_interactive_rebase = True
+        if opt_n and opt_merge:  # type: ignore
+            opt_no_edit_merge = True  # type: ignore
+        if opt_n and not opt_merge:  # type: ignore
+            opt_no_interactive_rebase = True  # type: ignore
 
         return rest
 
@@ -3260,32 +3269,32 @@ def launch(orig_args):
     global opt_no_interactive_rebase, opt_onto, opt_override_to, opt_override_to_inferred, opt_override_to_parent, opt_return_to, opt_roots, opt_start_from, opt_stat, opt_unset_override, opt_verbose, opt_yes
     try:
         cmd = None
-        opt_as_root = False
-        opt_branch = None
-        opt_checked_out_since = None
-        opt_color = "auto"
-        opt_debug = False
-        opt_down_fork_point = None
-        opt_fetch = False
-        opt_fork_point = None
-        opt_inferred = False
-        opt_list_commits = False
-        opt_list_commits_with_hashes = False
-        opt_merge = False
-        opt_n = False
-        opt_no_edit_merge = False
-        opt_no_interactive_rebase = False
-        opt_onto = None
-        opt_override_to = None
-        opt_override_to_inferred = False
-        opt_override_to_parent = False
-        opt_return_to = "stay"
-        opt_roots = list()
-        opt_start_from = "here"
-        opt_stat = False
-        opt_unset_override = False
-        opt_verbose = False
-        opt_yes = False
+        opt_as_root = False  # type: ignore
+        opt_branch = None  # type: ignore
+        opt_checked_out_since = None  # type: ignore
+        opt_color = "auto"  # type: ignore
+        opt_debug = False  # type: ignore
+        opt_down_fork_point = None  # type: ignore
+        opt_fetch = False  # type: ignore
+        opt_fork_point = None  # type: ignore
+        opt_inferred = False  # type: ignore
+        opt_list_commits = False  # type: ignore
+        opt_list_commits_with_hashes = False  # type: ignore
+        opt_merge = False  # type: ignore
+        opt_n = False  # type: ignore
+        opt_no_edit_merge = False  # type: ignore
+        opt_no_interactive_rebase = False  # type: ignore
+        opt_onto = None  # type: ignore
+        opt_override_to = None  # type: ignore
+        opt_override_to_inferred = False  # type: ignore
+        opt_override_to_parent = False  # type: ignore
+        opt_return_to = "stay"  # type: ignore
+        opt_roots = list()  # type: ignore
+        opt_start_from = "here"  # type: ignore
+        opt_stat = False  # type: ignore
+        opt_unset_override = False  # type: ignore
+        opt_verbose = False  # type: ignore
+        opt_yes = False  # type: ignore
 
         cmd_and_args = parse_options(orig_args, gnu=False)
         if not cmd_and_args:
@@ -3295,18 +3304,18 @@ def launch(orig_args):
         args = cmd_and_args[1:]
 
         if cmd != "help":
-            definition_file_path = get_git_subpath("machete")
+            definition_file_path = get_git_subpath("machete")  # type: ignore
             if cmd != "discover":
-                if not os.path.exists(definition_file_path):
+                if not os.path.exists(definition_file_path):  # type: ignore
                     # We're opening in "append" and not "write" mode to avoid a race condition:
                     # if other process writes to the file between we check the result of `os.path.exists` and call `open`,
                     # then open(..., "w") would result in us clearing up the file contents, while open(..., "a") has no effect.
-                    with open(definition_file_path, "a"):
+                    with open(definition_file_path, "a"):  # type: ignore
                         pass
-                elif os.path.isdir(definition_file_path):
+                elif os.path.isdir(definition_file_path):  # type: ignore
                     # Extremely unlikely case, basically checking if anybody tampered with the repository.
                     raise MacheteException(
-                        f"{definition_file_path} is a directory rather than a regular file, aborting")
+                        f"{definition_file_path} is a directory rather than a regular file, aborting")  # type: ignore
 
         def allowed_directions(allow_current):
             current = "c[urrent]|" if allow_current else ""
@@ -3347,8 +3356,8 @@ def launch(orig_args):
         elif cmd == "anno":
             params = parse_options(args, "b:", ["branch="])
             read_definition_file(verify_branches=False)
-            b = opt_branch or current_branch()
-            expect_in_managed_branches(b)
+            b = opt_branch or current_branch()  # type: ignore
+            expect_in_managed_branches(b)  # type: ignore
             if params:
                 annotate(b, params)
             else:
@@ -3372,28 +3381,28 @@ def launch(orig_args):
         elif cmd == "file":
             expect_no_param(parse_options(args))
             # No need to read definition file.
-            print(os.path.abspath(definition_file_path))
+            print(os.path.abspath(definition_file_path))  # type: ignore
         elif cmd == "fork-point":
             long_options = ["inferred", "override-to=", "override-to-inferred", "override-to-parent", "unset-override"]
             param = check_optional_param(parse_options(args, "", long_options))
             read_definition_file()
             b = param or current_branch()
-            if len(list(filter(None, [opt_inferred, opt_override_to, opt_override_to_inferred, opt_override_to_parent, opt_unset_override]))) > 1:
+            if len(list(filter(None, [opt_inferred, opt_override_to, opt_override_to_inferred, opt_override_to_parent, opt_unset_override]))) > 1:  # type: ignore
                 long_options_string = ", ".join(map(lambda x: x.replace("=", ""), long_options))
                 raise MacheteException(f"At most one of {long_options_string} options may be present")
-            if opt_inferred:
+            if opt_inferred:  # type: ignore
                 print(fork_point(b, use_overrides=False))
-            elif opt_override_to:
-                set_fork_point_override(b, opt_override_to)
-            elif opt_override_to_inferred:
+            elif opt_override_to:  # type: ignore
+                set_fork_point_override(b, opt_override_to)  # type: ignore
+            elif opt_override_to_inferred:  # type: ignore
                 set_fork_point_override(b, fork_point(b, use_overrides=False))
-            elif opt_override_to_parent:
-                u = up_branch.get(b)
+            elif opt_override_to_parent:  # type: ignore
+                u = up_branch.get(b)  # type: ignore
                 if u:
                     set_fork_point_override(b, u)
                 else:
                     raise MacheteException(f"Branch {b} does not have upstream (parent) branch")
-            elif opt_unset_override:
+            elif opt_unset_override:  # type: ignore
                 unset_fork_point_override(b)
             else:
                 print(fork_point(b, use_overrides=True))
@@ -3413,7 +3422,7 @@ def launch(orig_args):
             param = check_optional_param(parse_options(args))
             read_definition_file()
             b = param or current_branch_or_none()
-            if b is None or b not in managed_branches:
+            if b is None or b not in managed_branches:  # type: ignore
                 sys.exit(1)
         elif cmd == "list":
             list_allowed_values = "addable|managed|slidable|slidable-after <branch>|unmanaged|with-overridden-fork-point"
@@ -3443,9 +3452,9 @@ def launch(orig_args):
 
                 remote_counterparts_of_local_branches = map_truthy_only(combined_counterpart_for_fetching_of_branch, local_branches())
                 qualifying_remote_branches = excluding(remote_branches(), remote_counterparts_of_local_branches)
-                res = excluding(local_branches(), managed_branches) + list(map(strip_first_fragment, qualifying_remote_branches))
+                res = excluding(local_branches(), managed_branches) + list(map(strip_first_fragment, qualifying_remote_branches))  # type: ignore
             elif param == "managed":
-                res = managed_branches
+                res = managed_branches  # type: ignore
             elif param == "slidable":
                 res = slidable()
             elif param == "slidable-after":
@@ -3453,7 +3462,7 @@ def launch(orig_args):
                 expect_in_managed_branches(b_arg)
                 res = slidable_after(b_arg)
             elif param == "unmanaged":
-                res = excluding(local_branches(), managed_branches)
+                res = excluding(local_branches(), managed_branches)  # type: ignore
             elif param == "with-overridden-fork-point":
                 res = list(filter(has_any_fork_point_override_config, local_branches()))
 
@@ -3469,7 +3478,7 @@ def launch(orig_args):
             read_definition_file()
             expect_no_operation_in_progress()
             cb = current_branch()
-            rebase_onto_ancestor_commit(cb, opt_fork_point or fork_point(cb, use_overrides=True))
+            rebase_onto_ancestor_commit(cb, opt_fork_point or fork_point(cb, use_overrides=True))  # type: ignore
         elif cmd == "show":
             param = check_required_param(parse_options(args), allowed_directions(allow_current=True))
             read_definition_file(verify_branches=False)
@@ -3485,7 +3494,7 @@ def launch(orig_args):
             read_definition_file()
             expect_no_operation_in_progress()
             cb = current_branch()
-            squash(cb, opt_fork_point or fork_point(cb, use_overrides=True))
+            squash(cb, opt_fork_point or fork_point(cb, use_overrides=True))  # type: ignore
         elif cmd in ("s", "status"):
             expect_no_param(parse_options(args, "Ll", ["color=", "list-commits-with-hashes", "list-commits"]))
             read_definition_file()
@@ -3494,9 +3503,9 @@ def launch(orig_args):
         elif cmd == "traverse":
             traverse_long_opts = ["fetch", "list-commits", "merge", "no-edit-merge", "no-interactive-rebase", "return-to=", "start-from=", "whole", "yes"]
             expect_no_param(parse_options(args, "FlMnWwy", traverse_long_opts))
-            if opt_start_from not in ("here", "root", "first-root"):
+            if opt_start_from not in ("here", "root", "first-root"):  # type: ignore
                 raise MacheteException("Invalid argument for `--start-from`. Valid arguments: `here|root|first-root`.")
-            if opt_return_to not in ("here", "nearest-remaining", "stay"):
+            if opt_return_to not in ("here", "nearest-remaining", "stay"):  # type: ignore
                 raise MacheteException("Invalid argument for `--return-to`. Valid arguments: here|nearest-remaining|stay.")
             read_definition_file()
             expect_no_operation_in_progress()
