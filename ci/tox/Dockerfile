@@ -5,7 +5,7 @@ RUN ln -s /usr/local/bin/python /usr/bin/python
 
 ARG git_version
 RUN set -x \
-    && apk add --no-cache --virtual git-build-deps  alpine-sdk autoconf gettext wget zlib-dev \
+    && apk add --no-cache --virtual git-build-deps alpine-sdk autoconf gettext wget zlib-dev \
     && wget -q https://github.com/git/git/archive/v$git_version.tar.gz \
     && tar xzf v$git_version.tar.gz \
     && rm v$git_version.tar.gz \
@@ -25,6 +25,7 @@ RUN set -x \
 ARG python_version
 ENV PYTHON_VERSION=${python_version}
 ENV PYTHON=python${python_version}
+RUN apk add --no-cache gcc musl-dev
 
 ARG user_id
 ARG group_id

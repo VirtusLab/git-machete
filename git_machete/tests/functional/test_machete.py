@@ -12,65 +12,65 @@ from git_machete import cmd
 
 class SandboxSetup:
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.file_dir = os.path.dirname(os.path.abspath(__file__))
         self.remote_path = os.popen('mktemp -d').read().strip()
         self.sandbox_path = os.popen('mktemp -d').read().strip()
 
     @staticmethod
-    def execute(command):
+    def execute(command: str) -> None:
         result = os.system(command)
-        assert result == 0, "%s returned %i" % (command, result)
+        assert result == 0, f"{command} returned {result:d}"
 
-    def new_repo(self, *args):
+    def new_repo(self, *args: str) -> 'SandboxSetup':
         os.chdir(args[0])
         if len(args) > 1:
             opt = args[1]
-            self.execute('git init %s' % opt)
+            self.execute(f'git init {opt}')
         else:
             self.execute('git init')
         return self
 
-    def new_branch(self, branch_name):
-        self.execute('git checkout -q -b %s' % branch_name)
+    def new_branch(self, branch_name: str) -> 'SandboxSetup':
+        self.execute(f'git checkout -q -b {branch_name}')
         return self
 
-    def check_out(self, branch):
-        self.execute('git checkout -q %s' % branch)
+    def check_out(self, branch: str) -> 'SandboxSetup':
+        self.execute(f'git checkout -q {branch}')
         return self
 
-    def commit(self, message):
-        f = '%s.txt' % "".join(random.choice(string.ascii_letters) for i in range(20))
-        self.execute('touch %s' % f)
-        self.execute('git add %s' % f)
-        self.execute('git commit -q -m "%s"' % message)
+    def commit(self, message: str) -> 'SandboxSetup':
+        f = '%s.txt' % "".join(random.choice(string.ascii_letters) for _ in range(20))
+        self.execute(f'touch {f}')
+        self.execute(f'git add {f}')
+        self.execute(f'git commit -q -m "{message}"')
         return self
 
-    def commit_amend(self, message):
-        self.execute('git commit -q --amend -m "%s"' % message)
+    def commit_amend(self, message: str) -> 'SandboxSetup':
+        self.execute(f'git commit -q --amend -m "{message}"')
         return self
 
-    def push(self):
+    def push(self) -> 'SandboxSetup':
         branch = os.popen('git symbolic-ref --short HEAD').read()
-        self.execute('git push -q -u origin %s' % branch)
+        self.execute(f'git push -q -u origin {branch}')
         return self
 
-    def sleep(self, seconds):
+    def sleep(self, seconds: int) -> 'SandboxSetup':
         time.sleep(seconds)
         return self
 
-    def reset_to(self, revision):
-        self.execute('git reset --keep "%s"' % revision)
+    def reset_to(self, revision: str) -> 'SandboxSetup':
+        self.execute(f'git reset --keep "{revision}"')
         return self
 
-    def delete_branch(self, branch):
-        self.execute('git branch -d "%s"' % branch)
+    def delete_branch(self, branch: str) -> 'SandboxSetup':
+        self.execute(f'git branch -d "{branch}"')
         return self
 
-    def setup_sandbox(self):
+    def setup_sandbox(self) -> None:
         self.new_repo(self.remote_path, '--bare')
         self.new_repo(self.sandbox_path)
-        self.execute('git remote add origin %s' % self.remote_path)
+        self.execute(f'git remote add origin {self.remote_path}')
         self.execute('git config user.email "tester@test.com"')
         self.execute('git config user.name "Tester Test"')
         self.new_branch('root') \
@@ -115,7 +115,7 @@ class SandboxSetup:
 Setup = SandboxSetup()
 
 
-def adapt(s):
+def adapt(s: str) -> str:
     return re.sub(r"\|\n", "| \n", s[1:])
 
 
@@ -193,25 +193,25 @@ expected_status_l_3 = adapt("""
 class MacheteTester(unittest.TestCase):
 
     @staticmethod
-    def launch_command(*args):
+    def launch_command(*args: str) -> str:
         orig_out = sys.stdout
         out = io.StringIO()
         sys.stdout = out
         try:
-            cmd.launch(args)
+            cmd.launch(args)  # type: ignore
             cmd.flush_caches()
         finally:
             sys.stdout = orig_out
         return out.getvalue()
 
-    def test_discover_traverse_squash(self):
+    def test_discover_traverse_squash(self) -> None:
         Setup.setup_sandbox()
         self.launch_command('discover', '-y', '--roots=develop,master')
         self.assertEqual(self.launch_command('status'), expected_status_1)
         self.launch_command('traverse', '-Wy')
         self.assertEqual(self.launch_command('status', '-l'), expected_status_l_2)
         # Go from ignore-trailing to call-ws which has >1 commit to be squashed
-        for i in range(4):
+        for _ in range(4):
             self.launch_command('go', 'prev')
         self.launch_command('squash', '-v')
         self.assertEqual(self.launch_command('status', '-l'), expected_status_l_3)
