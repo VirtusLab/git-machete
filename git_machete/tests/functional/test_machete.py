@@ -3,7 +3,6 @@ import os
 import random
 import re
 import string
-import subprocess
 import sys
 import time
 import unittest
@@ -204,12 +203,6 @@ class MacheteTester(unittest.TestCase):
         finally:
             sys.stdout = orig_out
         return out.getvalue()
-
-    def test_run_mypy_module(self):
-        mypy_call = ["mypy"] + ["-p"] + ["git_machete.cmd"]
-        pypath = os.environ.copy().get("PYTHONPATH", os.getcwd())
-        browse_result: int = subprocess.call(mypy_call, env=os.environ, cwd=pypath)
-        self.assertEqual(browse_result, 0, "my_py on git_machete.cmd")
 
     def test_discover_traverse_squash(self):
         Setup.setup_sandbox()
