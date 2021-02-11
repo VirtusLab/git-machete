@@ -50,6 +50,9 @@ def tupled(f: Callable[..., T]) -> Callable[..., T]:
     return lambda tple: f(*tple)
 
 
+get_second: Callable[[Any], T] = tupled(lambda a, b: b)  # type: ignore
+
+
 ENDC = '\033[0m'
 BOLD = '\033[1m'
 # `GIT_MACHETE_DIM_AS_GRAY` remains undocumented as for now,
@@ -853,7 +856,7 @@ def commit_sha_by_revision(revision: str, prefix: str = "refs/heads/") -> Option
     return commit_sha_by_revision_cached[full_revision]  # type: ignore
 
 
-def is_full_sha(revision: str) -> Optional[Match]:
+def is_full_sha(revision: str) -> Optional[Match[str]]:
     return re.match("^[0-9a-f]{40}$", revision)
 
 
@@ -1478,18 +1481,24 @@ def match_log_to_filtered_reflogs(b: str) -> Generator[Tuple[str, List[BRANCH_DE
         def log_result() -> Generator[str, None, None]:
             branch_defs: List[BRANCH_DEF]
             for sha_, branch_defs in branch_defs_by_sha_in_reflog.items():  # type: ignore
-                yield dim("%s => %s" %
-                          (sha_, ", ".join(map(tupled(lambda lb, lb_or_rb: lb if lb == lb_or_rb else f"{lb_or_rb} (remote counterpart of {lb})"), branch_defs))))
+
+                def lb_(lb: str, lb_or_rb: str) -> str:
+                    return lb if lb == lb_or_rb else f"{lb_or_rb} (remote counterpart of {lb})"
+
+                yield dim("%s => %s" % (sha_, ", ".join(map(tupled(lb_), branch_defs))))
 
         debug(f"match_log_to_filtered_reflogs({b})", "branches containing the given SHA in their filtered reflog: \n%s\n" % "\n".join(log_result()))
 
-    get_second = tupled(lambda lb, lb_or_rb: lb_or_rb)
     for sha in spoonfeed_log_shas(b):
         if sha in branch_defs_by_sha_in_reflog:
             # The entries must be sorted by lb_or_rb to make sure the upstream inference is deterministic
             # (and does not depend on the order in which `generate_entries` iterated through the local branches).
             branch_defs: List[BRANCH_DEF] = branch_defs_by_sha_in_reflog[sha]  # type: ignore
-            containing_branch_defs = sorted(filter(tupled(lambda lb, lb_or_rb: lb != b), branch_defs), key=get_second)
+
+            def lb_b(lb: str, lb_or_rb: str) -> bool:
+                return lb != b
+
+            containing_branch_defs = sorted(filter(tupled(lb_b), branch_defs), key=get_second)
             if containing_branch_defs:
                 debug(f"match_log_to_filtered_reflogs({b})",
                       f"commit {sha} found in filtered reflog of {' and '.join(map(get_second, branch_defs))}")
@@ -1527,7 +1536,7 @@ def is_merged_to_upstream(b: str) -> bool:
 def infer_upstream(b: str, condition: Callable[..., bool] = lambda u: True, reject_reason_message: str = "") -> Optional[str]:
     for sha, containing_branch_defs in match_log_to_filtered_reflogs(b):
         debug(f"infer_upstream({b})",
-              f"commit {sha} found in filtered reflog of {' and '.join(map(tupled(lambda x, y: y), containing_branch_defs))}")
+              f"commit {sha} found in filtered reflog of {' and '.join(map(get_second, containing_branch_defs))}")
 
         for candidate, original_matched_branch in containing_branch_defs:
             if candidate != original_matched_branch:
@@ -1716,7 +1725,7 @@ def fork_point_and_containing_branch_defs(b: str, use_overrides: bool) -> Tuple[
         debug(f"fork_point_and_containing_branch_defs({b})",
               f"commit {fp_sha} is the most recent point in history of {b} to occur on "
               "filtered reflog of any other branch or its remote counterpart "
-              f"(specifically: {' and '.join(map(tupled(lambda lb, lb_or_rb: lb_or_rb), containing_branch_defs))})")
+              f"(specifically: {' and '.join(map(get_second, containing_branch_defs))})")
 
         if u and is_ancestor(u, b) and not is_ancestor(u, fp_sha, later_prefix=""):
             # That happens very rarely in practice (typically current head of any branch, including u, should occur on the reflog of this
@@ -1731,7 +1740,7 @@ def fork_point_and_containing_branch_defs(b: str, use_overrides: bool) -> Tuple[
             return fp_sha, containing_branch_defs
 
 
-def fork_point(b, use_overrides: bool) -> Optional[str]:
+def fork_point(b: str, use_overrides: bool) -> Optional[str]:
     sha, containing_branch_defs = fork_point_and_containing_branch_defs(b, use_overrides)
     return sha
 
@@ -1944,10 +1953,9 @@ def advance(b: str) -> None:
         raise MacheteException(f"`{b}` does not have any downstream (child) branches to advance towards")
 
     def connected_with_green_edge(bd: str) -> bool:
-        return \
-            not is_merged_to_upstream(bd) and \
-            is_ancestor(b, bd) and \
-            (get_overridden_fork_point(bd) or commit_sha_by_revision(b) == fork_point(bd, use_overrides=False))  # type: ignore
+        not_merged_and_is_ancestor = not is_merged_to_upstream(bd) and is_ancestor(b, bd)
+        overriden_fp_or_revision_is_fp = get_overridden_fork_point(bd) or commit_sha_by_revision(b) == fork_point(bd, use_overrides=False)
+        return not_merged_and_is_ancestor and overriden_fp_or_revision_is_fp  # type: ignore
 
     candidate_downstreams = list(filter(connected_with_green_edge, down_branches[b]))
     if not candidate_downstreams:
@@ -2078,7 +2086,7 @@ def handle_untracked_branch(new_remote: str, b: str) -> None:
         )
     }
 
-    yes_actions = {
+    yes_actions: Dict[int, Callable[[], None]] = {
         IN_SYNC_WITH_REMOTE: lambda: set_upstream_to(rb),
         BEHIND_REMOTE: lambda: pull_ff_only(new_remote, rb),
         AHEAD_OF_REMOTE: lambda: push(new_remote, b),
@@ -2408,7 +2416,7 @@ def status(warn_on_yellow_edges: bool) -> None:
     hook_path = get_hook_path("machete-status-branch")
     hook_executable = check_hook_executable(hook_path)
 
-    def print_line_prefix(b_, suffix: str) -> None:
+    def print_line_prefix(b_: str, suffix: str) -> None:
         out.write("  ")
         for p in pfx[:-1]:
             if not p:
@@ -2431,7 +2439,7 @@ def status(warn_on_yellow_edges: bool) -> None:
                 for sha, short_sha, subject in commits:
                     if sha == fp_sha(b):
                         # fp_branches_cached will already be there thanks to the above call to 'fp_sha'.
-                        fp_branches_formatted: str = " and ".join(sorted(map(tupled(lambda lb, lb_or_rb: lb_or_rb), fp_branches_cached[b])))
+                        fp_branches_formatted: str = " and ".join(sorted(map(get_second, fp_branches_cached[b])))
                         fp_suffix: str = " %s %s %s has been found in reflog of %s" %\
                             (colored(right_arrow(), RED), colored("fork point ???", RED), "this commit" if opt_list_commits_with_hashes else f"commit {short_sha}", fp_branches_formatted)
                     else:
