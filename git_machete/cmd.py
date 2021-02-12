@@ -295,8 +295,8 @@ def popen_git(git_cmd: str, *args: str, **kwargs: Dict[str, str]) -> str:
 # Manipulation on definition file/tree of branches
 
 managed_branches: List[str] = []
-down_branches: Dict[str, List[str]] = {}  # todo (#): default dict with []
-up_branch: Dict[str, str] = {}  # todo (#): default dict with None
+down_branches: Dict[str, List[str]] = {}  # TODO (#110): default dict with []
+up_branch: Dict[str, str] = {}  # TODO (#110): default dict with None
 indent: Optional[str] = None
 roots: List[str] = []
 annotations: Dict[str, str] = {}
@@ -842,7 +842,7 @@ def find_commit_sha_by_revision(revision: str) -> Optional[str]:
         return None
 
 
-commit_sha_by_revision_cached: Optional[Dict[str, Optional[str]]] = None  # todo (#): default dict with None
+commit_sha_by_revision_cached: Optional[Dict[str, Optional[str]]] = None  # TODO (#110): default dict with None
 
 
 def commit_sha_by_revision(revision: str, prefix: str = "refs/heads/") -> Optional[str]:
@@ -859,7 +859,7 @@ def is_full_sha(revision: str) -> Optional[Match[str]]:
     return re.match("^[0-9a-f]{40}$", revision)
 
 
-committer_unix_timestamp_by_revision_cached: Optional[Dict[str, int]] = None  # todo (#): default dict with 0
+committer_unix_timestamp_by_revision_cached: Optional[Dict[str, int]] = None  # TODO (#110): default dict with 0
 
 
 def committer_unix_timestamp_by_revision(revision: str, prefix: str = "refs/heads/") -> int:
@@ -893,7 +893,7 @@ def inferred_counterpart_for_fetching_of_branch(b: str) -> Optional[str]:
     return None
 
 
-counterparts_for_fetching_cached: Optional[Dict[str, Optional[str]]] = None  # todo (#): default dict with None
+counterparts_for_fetching_cached: Optional[Dict[str, Optional[str]]] = None  # TODO (#110): default dict with None
 
 
 def strict_counterpart_for_fetching_of_branch(b: str) -> Optional[str]:
@@ -1111,7 +1111,7 @@ def get_sole_remote_branch(b: str) -> Optional[str]:
         # if there is both origin/foo and origin/feature/foo,
         # then both are matched for 'foo';
         # this is to reduce risk wrt. which '/'-separated fragments belong to remote and which to branch name.
-        # FIXME: this is still likely to deliver incorrect results in rare corner cases with compound remote names.
+        # FIXME (#116): this is still likely to deliver incorrect results in rare corner cases with compound remote names.
         return rb.endswith(f"/{b}")
     matching_remote_branches = list(filter(matches, remote_branches()))
     return matching_remote_branches[0] if len(matching_remote_branches) == 1 else None
@@ -1296,6 +1296,7 @@ def commits_between(earliest_exclusive: str, latest_inclusive: str) -> List[Hash
     ))))
 
 
+# TODO (#117): extract to namespace, use mypy
 NO_REMOTES = 0
 UNTRACKED = 1
 IN_SYNC_WITH_REMOTE = 2
@@ -2376,7 +2377,7 @@ def status(warn_on_yellow_edges: bool) -> None:
 
     out = io.StringIO()
     edge_color: Dict[str, str] = {}
-    fp_sha_cached: Dict[str, Optional[str]] = {}  # todo (#): default dict with None
+    fp_sha_cached: Dict[str, Optional[str]] = {}  # TODO (#110): default dict with None
     fp_branches_cached = {}
 
     def fp_sha(b: str) -> Optional[str]:
@@ -3190,7 +3191,7 @@ definition_file_path: str = ""
 
 def launch(orig_args: List[str]) -> None:
     if sys.version_info.major == 2 or (sys.version_info.major == 3 and sys.version_info.minor < 6):
-        version_str = f"3.{sys.version_info.minor}.{sys.version_info.micro}"
+        version_str = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
         sys.stderr.write(f"Python {version_str} is no longer supported. Please switch to Python 3.6 or higher.\n")
         sys.exit(1)
 

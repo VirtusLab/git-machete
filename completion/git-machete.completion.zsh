@@ -40,7 +40,7 @@ _git-machete() {
                     && ret=0
                     ;;
                 (discover)
-                    # TODO complete the comma-separated list of roots
+                    # TODO (#111): complete the comma-separated list of roots
                     _arguments \
                         '(-C --checked-out-since)'{-C,--checked-out-since=}'[Only consider branches checked out at least once since the given date]' \
                         '(-l --list-commits)'{-l,--list-commits}'[List the messages of commits introduced on each branch]' \
@@ -51,7 +51,7 @@ _git-machete() {
                 (e|edit|file)
                     ;;
                 (fork-point)
-                    # TODO correctly suggest branches for `--unset-override`
+                    # TODO (#112): correctly suggest branches for `--unset-override`
                     _arguments '1:: :__git_branch_names' \
                         '(--inferred)'--inferred'[Display the fork point ignoring any potential override]' \
                         '(--override-to)'--override-to='[Override fork point to the given revision]: :__git_references' \
@@ -82,7 +82,7 @@ _git-machete() {
                     ;;
                 (slide-out)
                     _arguments \
-                        # TODO suggest further branches based on the previous specified branch (like in Bash completion script)
+                        # TODO (#113): suggest further branches based on the previous specified branch (like in Bash completion script)
                         '*:: :__git_machete_list_slidable' \
                         '(-d --down-fork-point)'{-d,--down-fork-point=}'[If updating by rebase, specify fork point commit after which the rebased part of history of the downstream branch is meant to start]: :__git_references' \
                         '(-M --merge)'{-M,--merge}'[Update by merge rather than by rebase]' \
@@ -184,7 +184,7 @@ __git_machete_directions_go() {
     _describe -t directions 'direction' directions "$@"
 }
 
-# TODO extract the part shared with __git_machete_go_directions
+# TODO (#114): extract the part shared with __git_machete_go_directions
 __git_machete_directions_show() {
     local directions
     directions=(
@@ -202,7 +202,7 @@ __git_machete_directions_show() {
 
 __git_machete_categories() {
     local categories
-    # TODO complete slidable-after's argument
+    # TODO (#115): complete slidable-after's argument
     categories=(
         'addable:all branches (local or remote) than can be added to the definition file'
         'managed:all branches that appear in the definition file'

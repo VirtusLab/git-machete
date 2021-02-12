@@ -13,6 +13,7 @@ jobs:
           name: Perform initial checks
           command: |
             npm install --global remark-cli remark-lint-no-dead-urls remark-validate-links
+            ./ci/checks/enforce-issue-number-for-todos.sh
             ./ci/checks/ensure-links-correct.sh
             ./ci/checks/prohibit-tab-character.sh
             ./ci/checks/prohibit-trailing-whitespace.sh

@@ -60,11 +60,11 @@ _git_machete() {
                     -C|--checked-out-since) __gitcomp "" ;;
                     --color) __gitcomp "$opt_color_args" ;;
                     -d|--down-fork-point|-f|--fork-point|--override-to) __gitcomp "$(__git_refs)" ;;
-                    # TODO (GH issue #25): We don't complete --help since it's going to be captured by git anyway
+                    # TODO (#25): We don't complete --help since it's going to be captured by git anyway
                     # (and results in redirection to yet non-existent man for `git-machete`).
                     -h) __gitcomp "$help_topics" ;;
                     --return-to) __gitcomp "$opt_return_to_args" ;;
-                    # TODO complete the comma-separated list of roots
+                    # TODO (#111): complete the comma-separated list of roots
                     -r|--roots) __gitcomp "$(__git_heads)" ;;
                     --start-from) __gitcomp "$opt_start_from_args" ;;
                     --unset-override) __gitcomp_nl "$(git machete list with-overridden-fork-point 2>/dev/null)" ;;
