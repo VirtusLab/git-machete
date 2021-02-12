@@ -198,7 +198,7 @@ class MacheteTester(unittest.TestCase):
         out = io.StringIO()
         sys.stdout = out
         try:
-            cmd.launch(args)  # type: ignore
+            cmd.launch(list(args))
             cmd.flush_caches()
         finally:
             sys.stdout = orig_out
