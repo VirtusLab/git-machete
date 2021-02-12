@@ -25,7 +25,7 @@ RUN set -x \
 ARG python_version
 ENV PYTHON_VERSION=${python_version}
 ENV PYTHON=python${python_version}
-RUN apk add --no-cache gcc musl-dev # both packages are required by tox
+RUN apk add --no-cache gcc musl-dev # both packages are required to install mypy
 
 ARG user_id
 ARG group_id

@@ -20,7 +20,7 @@ class SandboxSetup:
     @staticmethod
     def execute(command: str) -> None:
         result = os.system(command)
-        assert result == 0, f"{command} returned {result:d}"
+        assert result == 0, f"{command} returned {result}"
 
     def new_repo(self, *args: str) -> 'SandboxSetup':
         os.chdir(args[0])

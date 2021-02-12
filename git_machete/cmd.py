@@ -260,7 +260,7 @@ def popen_cmd(cmd: str, *args: str, **kwargs: Any) -> Tuple[int, str, str]:
 # Git core
 
 
-def cmd_shell_repr(cmd: str, *args: str, **kwargs: Any) -> str:
+def cmd_shell_repr(cmd: str, *args: str, **kwargs: Dict[str, str]) -> str:
     def shell_escape(arg: str) -> str:
         return arg.replace("(", "\\(") \
             .replace(")", "\\)") \
@@ -274,14 +274,14 @@ def cmd_shell_repr(cmd: str, *args: str, **kwargs: Any) -> str:
     return " ".join(env_repr + [cmd] + list(map(shell_escape, args)))
 
 
-def run_git(git_cmd: str, *args: str, **kwargs: Any) -> int:
+def run_git(git_cmd: str, *args: str, **kwargs: Dict[str, str]) -> int:
     exit_code = run_cmd("git", git_cmd, *args, **kwargs)
     if not kwargs.get("allow_non_zero") and exit_code != 0:
         raise MacheteException(f"`{cmd_shell_repr('git', git_cmd, *args, **kwargs)}` returned {exit_code}")
     return exit_code
 
 
-def popen_git(git_cmd: str, *args: str, **kwargs: Any) -> str:
+def popen_git(git_cmd: str, *args: str, **kwargs: Dict[str, str]) -> str:
     exit_code, stdout, stderr = popen_cmd("git", git_cmd, *args, **kwargs)
     if not kwargs.get("allow_non_zero") and exit_code != 0:
         exit_code_msg: str = fmt(f"`{cmd_shell_repr('git', git_cmd, *args, **kwargs)}` returned {exit_code}\n")
@@ -460,13 +460,13 @@ def down(b: str, pick_mode: bool) -> str:
         return "\n".join(dbs)
 
 
-def first_branch(b: str) -> Optional[str]:
+def first_branch(b: str) -> str:
     root = root_branch(b, if_unmanaged=PICK_FIRST_ROOT)
     root_dbs = down_branches.get(root)
     return root_dbs[0] if root_dbs else root
 
 
-def last_branch(b: str) -> Optional[str]:
+def last_branch(b: str) -> str:
     d = root_branch(b, if_unmanaged=PICK_LAST_ROOT)
     while down_branches.get(d):
         d = down_branches[d][-1]
@@ -960,7 +960,7 @@ def currently_checked_out_branch_or_none() -> Optional[str]:
         return None
 
 
-def expect_no_operation_in_progress() -> Any:
+def expect_no_operation_in_progress() -> None:
     rb = currently_rebased_branch_or_none()
     if rb:
         raise MacheteException(
@@ -1225,7 +1225,7 @@ def update() -> None:
 
 
 def squash(cb: str, fork_commit: str) -> None:
-    commits: List[Commit] = commits_between(fork_commit, cb)
+    commits: List[Hash_ShortHash_Message] = commits_between(fork_commit, cb)
     if not commits:
         raise MacheteException("No commits to squash. Use `-f` or `--fork-point` to specify the start of range of commits to squash.")
     if len(commits) == 1:
@@ -1285,10 +1285,10 @@ def log(branch: str) -> None:
     run_git("log", "^" + fork_point(branch, use_overrides=True), f"refs/heads/{branch}")
 
 
-Commit = Tuple[str, str, str]
+Hash_ShortHash_Message = Tuple[str, str, str]
 
 
-def commits_between(earliest_exclusive: str, latest_inclusive: str) -> List[Commit]:
+def commits_between(earliest_exclusive: str, latest_inclusive: str) -> List[Hash_ShortHash_Message]:
     # Reverse the list, since `git log` by default returns the commits from the latest to earliest.
     return list(reversed(list(map(
         lambda x: x.split(":", 2),  # type: ignore
@@ -1339,9 +1339,9 @@ def get_combined_remote_sync_status(b: str) -> Tuple[int, Optional[str]]:
 # Reflog magic
 
 
-REFLOG = Tuple[str, str]
+REFLOG_ENTRY = Tuple[str, str]
 
-reflogs_cached: Optional[Dict[str, Optional[REFLOG]]] = None
+reflogs_cached: Optional[Dict[str, Optional[REFLOG_ENTRY]]] = None
 
 
 def load_all_reflogs() -> None:
@@ -1368,7 +1368,7 @@ def load_all_reflogs() -> None:
         reflogs_cached[b] += [(sha, subject)]  # type: ignore
 
 
-def reflog(b: str) -> List[REFLOG]:
+def reflog(b: str) -> List[REFLOG_ENTRY]:
     global reflogs_cached
     # git version 2.14.2 fixed a bug that caused fetching reflog of more than
     # one branch at the same time unreliable in certain cases
@@ -1444,7 +1444,7 @@ def get_latest_checkout_timestamps() -> Dict[str, int]:
     return result
 
 
-branch_defs_by_sha_in_reflog: Optional[Dict[str, Optional[List[str]]]] = None
+branch_defs_by_sha_in_reflog: Optional[Dict[str, Optional[Tuple[str, str]]]] = None
 
 BRANCH_DEF = Tuple[str, str]
 
@@ -1484,7 +1484,8 @@ def match_log_to_filtered_reflogs(b: str) -> Generator[Tuple[str, List[BRANCH_DE
                 def lb_(lb: str, lb_or_rb: str) -> str:
                     return lb if lb == lb_or_rb else f"{lb_or_rb} (remote counterpart of {lb})"
 
-                yield dim("%s => %s" % (sha_, ", ".join(map(tupled(lb_), branch_defs))))
+                joined_branch_defs = ", ".join(map(tupled(lb_), branch_defs))
+                yield dim(f"{sha_} => {joined_branch_defs}")
 
         debug(f"match_log_to_filtered_reflogs({b})", "branches containing the given SHA in their filtered reflog: \n%s\n" % "\n".join(log_result()))
 
@@ -1952,9 +1953,10 @@ def advance(b: str) -> None:
         raise MacheteException(f"`{b}` does not have any downstream (child) branches to advance towards")
 
     def connected_with_green_edge(bd: str) -> bool:
-        not_merged_and_is_ancestor = not is_merged_to_upstream(bd) and is_ancestor(b, bd)
-        overriden_fp_or_revision_is_fp = get_overridden_fork_point(bd) or commit_sha_by_revision(b) == fork_point(bd, use_overrides=False)
-        return not_merged_and_is_ancestor and overriden_fp_or_revision_is_fp  # type: ignore
+        return bool(
+            not is_merged_to_upstream(bd) and
+            is_ancestor(b, bd) and
+            (get_overridden_fork_point(bd) or commit_sha_by_revision(b) == fork_point(bd, use_overrides=False)))
 
     candidate_downstreams = list(filter(connected_with_green_edge, down_branches[b]))
     if not candidate_downstreams:
@@ -2173,9 +2175,9 @@ def traverse() -> None:
             # neither rebase nor merge will be suggested in such case anyway.
             needs_parent_sync = False
         elif opt_merge:
-            needs_parent_sync = u and not is_ancestor(u, b)  # type: ignore
+            needs_parent_sync = bool(u and not is_ancestor(u, b))
         else:  # using rebase
-            needs_parent_sync = u and not (is_ancestor(u, b) and commit_sha_by_revision(u) == fork_point(b, use_overrides=True))  # type: ignore
+            needs_parent_sync = bool(u and not (is_ancestor(u, b) and commit_sha_by_revision(u) == fork_point(b, use_overrides=True)))
 
         if b != cb and (needs_slide_out or needs_parent_sync or needs_remote_sync):
             print_new_line(False)
@@ -2419,7 +2421,7 @@ def status(warn_on_yellow_edges: bool) -> None:
             print_line_prefix(b, f"{vertical_bar()} \n")
             if opt_list_commits:
                 if edge_color[b] in (RED, DIM):
-                    commits: List[Commit] = commits_between(fp_sha(b), f"refs/heads/{b}") if fp_sha(b) else []
+                    commits: List[Hash_ShortHash_Message] = commits_between(fp_sha(b), f"refs/heads/{b}") if fp_sha(b) else []
                 elif edge_color[b] == YELLOW:
                     commits = commits_between(f"refs/heads/{up_branch[b]}", f"refs/heads/{b}")
                 else:  # edge_color == GREEN
@@ -3187,14 +3189,12 @@ definition_file_path: str = ""
 
 
 def launch(orig_args: List[str]) -> None:
-    if sys.version_info.major == 2:
-        sys.stderr.write("Python 2.x is no longer supported. Please switch to Python 3.6 or higher.\n")
-        sys.exit(1)
-    elif sys.version_info.major == 3 and sys.version_info.minor < 6:
-        sys.stderr.write("Python 3.x below 3.6 is no longer supported. Please switch to Python 3.6 or higher.\n")
+    if sys.version_info.major == 2 or (sys.version_info.major == 3 and sys.version_info.minor < 6):
+        version_str = f"3.{sys.version_info.minor}.{sys.version_info.micro}"
+        sys.stderr.write(f"Python {version_str} is no longer supported. Please switch to Python 3.6 or higher.\n")
         sys.exit(1)
 
-    def parse_options(in_args: List[str], short_opts: str = "", long_opts: List[str] = [], gnu: bool = True) -> Any:
+    def parse_options(in_args: List[str], short_opts: str = "", long_opts: List[str] = [], gnu: bool = True) -> List[str]:
         global ascii_only
         global opt_as_root, opt_branch, opt_checked_out_since, opt_color, opt_debug, opt_down_fork_point, opt_fetch, opt_fork_point, opt_inferred, opt_list_commits, opt_list_commits_with_hashes, opt_merge, opt_n, opt_no_edit_merge
         global opt_no_interactive_rebase, opt_onto, opt_override_to, opt_override_to_inferred, opt_override_to_parent, opt_return_to, opt_roots, opt_start_from, opt_stat, opt_unset_override, opt_verbose, opt_yes
@@ -3378,7 +3378,7 @@ def launch(orig_args: List[str]) -> None:
             current = "c[urrent]|" if allow_current else ""
             return current + "d[own]|f[irst]|l[ast]|n[ext]|p[rev]|r[oot]|u[p]"
 
-        def parse_direction(b: str, allow_current: bool, down_pick_mode: bool) -> Optional[str]:
+        def parse_direction(b: str, allow_current: bool, down_pick_mode: bool) -> str:
             if param in ("c", "current") and allow_current:
                 return current_branch()  # throws in case of detached HEAD, as in the spec
             elif param in ("d", "down"):
@@ -3415,8 +3415,8 @@ def launch(orig_args: List[str]) -> None:
             read_definition_file(verify_branches=False)
             b = opt_branch or current_branch()
             expect_in_managed_branches(b)
-            if params:
-                annotate(b, params)
+            if len(params) == 1:
+                annotate(b, params[0])
             else:
                 print_annotation(b)
         elif cmd == "delete-unmanaged":
@@ -3544,7 +3544,7 @@ def launch(orig_args: List[str]) -> None:
             params = parse_options(args, "d:Mn", ["down-fork-point=", "merge", "no-edit-merge", "no-interactive-rebase"])
             read_definition_file()
             expect_no_operation_in_progress()
-            slide_out(params or [current_branch()])  # type: ignore
+            slide_out(params[0] if len(params) == 1 else current_branch())
         elif cmd == "squash":
             args1 = parse_options(args, "f:", ["fork-point="])
             expect_no_param(args1, ". Use `-f` or `--fork-point` to specify the fork point commit")
