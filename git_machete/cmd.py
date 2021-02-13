@@ -46,7 +46,7 @@ def non_empty_lines(s: str) -> List[str]:
 
 # Converts a lambda accepting N arguments to a lambda accepting one argument, an N-element tuple.
 # Name matching Scala's `tupled` on `FunctionX`.
-def tupled(f: Callable[..., T]) -> Callable[..., T]:
+def tupled(f: Callable[..., T]) -> Callable[[Any], T]:
     return lambda tple: f(*tple)
 
 
@@ -599,7 +599,7 @@ def add(b: str) -> None:
     save_definition_file()
 
 
-def annotate(b: str, words: str) -> None:
+def annotate(b: str, words: List[str]) -> None:
     global annotations
     if b in annotations and words == ['']:
         del annotations[b]
@@ -1224,6 +1224,9 @@ def update() -> None:
         rebase(f"refs/heads/{onto_branch}", opt_fork_point or fork_point(cb, use_overrides=True), cb)
 
 
+Hash_ShortHash_Message = Tuple[str, str, str]
+
+
 def squash(cb: str, fork_commit: str) -> None:
     commits: List[Hash_ShortHash_Message] = commits_between(fork_commit, cb)
     if not commits:
@@ -1285,9 +1288,6 @@ def log(branch: str) -> None:
     run_git("log", "^" + fork_point(branch, use_overrides=True), f"refs/heads/{branch}")
 
 
-Hash_ShortHash_Message = Tuple[str, str, str]
-
-
 def commits_between(earliest_exclusive: str, latest_inclusive: str) -> List[Hash_ShortHash_Message]:
     # Reverse the list, since `git log` by default returns the commits from the latest to earliest.
     return list(reversed(list(map(
@@ -1342,7 +1342,7 @@ def get_combined_remote_sync_status(b: str) -> Tuple[int, Optional[str]]:
 
 REFLOG_ENTRY = Tuple[str, str]
 
-reflogs_cached: Optional[Dict[str, Optional[REFLOG_ENTRY]]] = None
+reflogs_cached: Optional[Dict[str, Optional[List[REFLOG_ENTRY]]]] = None
 
 
 def load_all_reflogs() -> None:
@@ -1365,8 +1365,8 @@ def load_all_reflogs() -> None:
             continue
         b, pos = branch_and_pos
         if b not in reflogs_cached:
-            reflogs_cached[b] = []  # type: ignore
-        reflogs_cached[b] += [(sha, subject)]  # type: ignore
+            reflogs_cached[b] = []
+        reflogs_cached[b] += [(sha, subject)]
 
 
 def reflog(b: str) -> List[REFLOG_ENTRY]:
@@ -1376,7 +1376,7 @@ def reflog(b: str) -> List[REFLOG_ENTRY]:
     if get_git_version() >= (2, 14, 2):
         if reflogs_cached is None:
             load_all_reflogs()
-        return reflogs_cached.get(b, [])  # type: ignore
+        return reflogs_cached.get(b, [])
     else:
         if reflogs_cached is None:
             reflogs_cached = {}
@@ -1384,11 +1384,11 @@ def reflog(b: str) -> List[REFLOG_ENTRY]:
             # %H - full hash
             # %gs - reflog subject
             reflogs_cached[b] = [
-                entry.split(":", 1) for entry in non_empty_lines(  # type: ignore
+                tuple(entry.split(":", 1)) for entry in non_empty_lines(  # type: ignore
                     # The trailing '--' is necessary to avoid ambiguity in case there is a file called just exactly like the branch 'b'.
                     popen_git("reflog", "show", "--format=%H:%gs", b, "--"))
             ]
-        return reflogs_cached[b]  # type: ignore
+        return reflogs_cached[b]
 
 
 def filtered_reflog(b: str, prefix: str) -> List[str]:
@@ -1445,7 +1445,7 @@ def get_latest_checkout_timestamps() -> Dict[str, int]:
     return result
 
 
-branch_defs_by_sha_in_reflog: Optional[Dict[str, Optional[Tuple[str, str]]]] = None
+branch_defs_by_sha_in_reflog: Optional[Dict[str, Optional[List[Tuple[str, str]]]]] = None
 
 BRANCH_DEF = Tuple[str, str]
 
@@ -1474,18 +1474,18 @@ def match_log_to_filtered_reflogs(b: str) -> Generator[Tuple[str, List[BRANCH_DE
             if sha in branch_defs_by_sha_in_reflog:
                 # The practice shows that it's rather unlikely for a given commit to appear on filtered reflogs of two unrelated branches
                 # ("unrelated" as in, not a local branch and its remote counterpart) but we need to handle this case anyway.
-                branch_defs_by_sha_in_reflog[sha] += [branch_def]  # type: ignore
+                branch_defs_by_sha_in_reflog[sha] += [branch_def]
             else:
-                branch_defs_by_sha_in_reflog[sha] = [branch_def]  # type: ignore
+                branch_defs_by_sha_in_reflog[sha] = [branch_def]
 
         def log_result() -> Generator[str, None, None]:
             branch_defs: List[BRANCH_DEF]
-            for sha_, branch_defs in branch_defs_by_sha_in_reflog.items():  # type: ignore
-
-                def lb_(lb: str, lb_or_rb: str) -> str:
+            sha_: str
+            for sha_, branch_defs in branch_defs_by_sha_in_reflog.items():
+                def branch_def_to_str(lb: str, lb_or_rb: str) -> str:
                     return lb if lb == lb_or_rb else f"{lb_or_rb} (remote counterpart of {lb})"
 
-                joined_branch_defs = ", ".join(map(tupled(lb_), branch_defs))
+                joined_branch_defs = ", ".join(map(tupled(branch_def_to_str), branch_defs))
                 yield dim(f"{sha_} => {joined_branch_defs}")
 
         debug(f"match_log_to_filtered_reflogs({b})", "branches containing the given SHA in their filtered reflog: \n%s\n" % "\n".join(log_result()))
@@ -1494,12 +1494,12 @@ def match_log_to_filtered_reflogs(b: str) -> Generator[Tuple[str, List[BRANCH_DE
         if sha in branch_defs_by_sha_in_reflog:
             # The entries must be sorted by lb_or_rb to make sure the upstream inference is deterministic
             # (and does not depend on the order in which `generate_entries` iterated through the local branches).
-            branch_defs: List[BRANCH_DEF] = branch_defs_by_sha_in_reflog[sha]  # type: ignore
+            branch_defs: List[BRANCH_DEF] = branch_defs_by_sha_in_reflog[sha]
 
-            def lb_b(lb: str, lb_or_rb: str) -> bool:
+            def lb_is_not_b(lb: str, lb_or_rb: str) -> bool:
                 return lb != b
 
-            containing_branch_defs = sorted(filter(tupled(lb_b), branch_defs), key=get_second)
+            containing_branch_defs = sorted(filter(tupled(lb_is_not_b), branch_defs), key=get_second)
             if containing_branch_defs:
                 debug(f"match_log_to_filtered_reflogs({b})",
                       f"commit {sha} found in filtered reflog of {' and '.join(map(get_second, branch_defs))}")
@@ -1534,7 +1534,7 @@ def is_merged_to_upstream(b: str) -> bool:
     return is_merged_to(b, up_branch[b])
 
 
-def infer_upstream(b: str, condition: Callable[..., bool] = lambda u: True, reject_reason_message: str = "") -> Optional[str]:
+def infer_upstream(b: str, condition: Callable[[str], bool] = lambda u: True, reject_reason_message: str = "") -> Optional[str]:
     for sha, containing_branch_defs in match_log_to_filtered_reflogs(b):
         debug(f"infer_upstream({b})",
               f"commit {sha} found in filtered reflog of {' and '.join(map(get_second, containing_branch_defs))}")
@@ -1760,7 +1760,7 @@ def has_any_fork_point_override_config(b: str) -> bool:
             get_config_or_none(config_key_for_override_fork_point_while_descendant_of(b))) is not None
 
 
-def get_fork_point_override_data(b: str) -> Optional[BRANCH_DEF]:
+def get_fork_point_override_data(b: str) -> Optional[Tuple[str, str]]:
     to_key = config_key_for_override_fork_point_to(b)
     to = get_config_or_none(to_key)
     while_descendant_of_key = config_key_for_override_fork_point_while_descendant_of(b)
@@ -1898,7 +1898,7 @@ def run_post_slide_out_hook(new_upstream: str, slid_out_branch: str, new_downstr
             sys.exit(exit_code)
 
 
-def slide_out(branches_to_slide_out: str) -> None:
+def slide_out(branches_to_slide_out: List[str]) -> None:
     for b in branches_to_slide_out:
         expect_in_managed_branches(b)
         new_upstream = up_branch.get(b)
@@ -3416,8 +3416,8 @@ def launch(orig_args: List[str]) -> None:
             read_definition_file(verify_branches=False)
             b = opt_branch or current_branch()
             expect_in_managed_branches(b)
-            if len(params) == 1:
-                annotate(b, params[0])
+            if params:
+                annotate(b, params)
             else:
                 print_annotation(b)
         elif cmd == "delete-unmanaged":
@@ -3545,7 +3545,7 @@ def launch(orig_args: List[str]) -> None:
             params = parse_options(args, "d:Mn", ["down-fork-point=", "merge", "no-edit-merge", "no-interactive-rebase"])
             read_definition_file()
             expect_no_operation_in_progress()
-            slide_out(params[0] if len(params) == 1 else current_branch())
+            slide_out(params or [current_branch()])
         elif cmd == "squash":
             args1 = parse_options(args, "f:", ["fork-point="])
             expect_no_param(args1, ". Use `-f` or `--fork-point` to specify the fork point commit")
