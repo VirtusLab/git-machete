@@ -50,7 +50,9 @@ def tupled(f: Callable[..., T]) -> Callable[[Any], T]:
     return lambda tple: f(*tple)
 
 
-get_second: Callable[[Any], T] = tupled(lambda a, b: b)  # type: ignore
+def get_second(pair: Tuple[str, str]) -> str:
+    a, b = pair
+    return b
 
 
 ENDC = '\033[0m'
@@ -268,7 +270,7 @@ def cmd_shell_repr(cmd: str, *args: str, **kwargs: Dict[str, str]) -> str:
             .replace("\t", "$'\\t'") \
             .replace("\n", "$'\\n'")
 
-    env = kwargs.get("env") or {}
+    env: Dict[str, str] = kwargs.get("env", {})
     # We don't want to include the env vars that are inherited from the environment of git-machete process
     env_repr = [k + "=" + shell_escape(v) for k, v in env.items() if k not in os.environ]
     return " ".join(env_repr + [cmd] + list(map(shell_escape, args)))
@@ -1291,7 +1293,7 @@ def log(branch: str) -> None:
 def commits_between(earliest_exclusive: str, latest_inclusive: str) -> List[Hash_ShortHash_Message]:
     # Reverse the list, since `git log` by default returns the commits from the latest to earliest.
     return list(reversed(list(map(
-        lambda x: x.split(":", 2),  # type: ignore
+        lambda x: tuple(x.split(":", 2)),  # type: ignore
         non_empty_lines(popen_git("log", "--format=%H:%h:%s", f"^{earliest_exclusive}", latest_inclusive, "--"))
     ))))
 
@@ -1423,7 +1425,7 @@ def filtered_reflog(b: str, prefix: str) -> List[str]:
     return result
 
 
-def get_latest_checkout_timestamps() -> Dict[str, int]:
+def get_latest_checkout_timestamps() -> Dict[str, int]:  # TODO (#110): default dict with 0
     # Entries are in the format '<branch_name>@{<unix_timestamp> <time-zone>}'
     result = {}
     # %gd - reflog selector (HEAD@{<unix-timestamp> <time-zone>} for `--date=raw`;
@@ -1615,7 +1617,7 @@ def discover_tree() -> None:
 
     non_root_fixed_branches = excluding(all_local_branches, roots)
     last_checkout_timestamps = get_latest_checkout_timestamps()
-    non_root_fixed_branches_by_last_checkout_timestamps = sorted((last_checkout_timestamps.get(b) or 0, b) for b in non_root_fixed_branches)
+    non_root_fixed_branches_by_last_checkout_timestamps = sorted((last_checkout_timestamps.get(b, 0), b) for b in non_root_fixed_branches)
     if opt_checked_out_since:
         threshold = parse_git_timespec_to_unix_timestamp(opt_checked_out_since)
         stale_non_root_fixed_branches = [b for (timestamp, b) in itertools.takewhile(
@@ -2378,7 +2380,7 @@ def status(warn_on_yellow_edges: bool) -> None:
     out = io.StringIO()
     edge_color: Dict[str, str] = {}
     fp_sha_cached: Dict[str, Optional[str]] = {}  # TODO (#110): default dict with None
-    fp_branches_cached = {}
+    fp_branches_cached: Dict[str, List[BRANCH_DEF]] = {}
 
     def fp_sha(b: str) -> Optional[str]:
         if b not in fp_sha_cached:
