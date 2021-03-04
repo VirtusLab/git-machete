@@ -16,4 +16,4 @@ else
 fi
 
 docker-compose build nixpkgs-pr
-docker-compose run nixpkgs-pr
+docker-compose run -e DO_PUSH=false -e PYPI_HOST=test.pypi.org nixpkgs-pr

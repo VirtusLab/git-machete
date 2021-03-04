@@ -12,6 +12,7 @@ services:
       # Host path is relative to current directory, not build-context
       - ./../..:/home/ci-user/git-machete
     environment:
+      - DO_DPUT
       - TARGET_DISTRO_NAME
       - TARGET_DISTRO_NUMBER
     env_file:

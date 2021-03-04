@@ -1,0 +1,102 @@
+version: 2.1
+
+jobs:
+  build:
+    machine:
+      image: ubuntu-2004:202101-01
+    environment:
+      # Needed to avoid warning: https://superuser.com/questions/575844/warning-terminal-is-not-fully-functional
+      TERM: ansi
+    steps:
+      - checkout
+      - run:
+          name: Perform initial checks
+          command: |
+            npm install --global remark-cli remark-lint-no-dead-urls remark-validate-links
+            ./ci/checks/ensure-links-correct.sh
+            ./ci/checks/prohibit-tab-character.sh
+            ./ci/checks/prohibit-trailing-whitespace.sh
+
+      - run:
+          name: Install yq
+          # Required by the scripts doing `docker-compose pull` to work around https://github.com/docker/compose/issues/7258
+          command: |
+            wget -q https://github.com/mikefarah/yq/releases/download/v4.6.1/yq_linux_amd64
+            sudo mv yq_linux_amd64 /usr/local/bin/yq
+            sudo chmod +x /usr/local/bin/yq
+
+      - run: PYTHON_VERSION=3.6 GIT_VERSION=1.7.10 bash ci/tox/ci-run.sh  # Earliest versions of python/git supported by git-machete
+      - run: PYTHON_VERSION=3.7 GIT_VERSION=2.7.6  bash ci/tox/ci-run.sh
+      - run: PYTHON_VERSION=3.8 GIT_VERSION=2.25.0 bash ci/tox/ci-run.sh
+      - run: PYTHON_VERSION=3.9 GIT_VERSION=2.30.1 bash ci/tox/ci-run.sh
+
+      - when:
+          condition:
+            equal: [ "develop", << pipeline.git.branch >> ]
+          steps:
+            - deploy:
+                name: '[Dry run] Deploy to PyPI'
+                # Side effects: does an actual release, but to the test PyPI
+                command: bash ci/pypi/ci-deploy.sh --dry-run
+
+            - deploy:
+                name: '[Dry run] Update Homebrew tap'
+                # Prerequisites: artifacts must be released to test PyPI first
+                command: bash ci/homebrew-tap/ci-deploy.sh --dry-run
+
+            - deploy:
+                name: '[Dry run] Build & upload deb package to PPA'
+                # Side effects: potentially pushes a regenerated Docker image
+                command: bash ci/deb-ppa-upload/ci-deploy.sh --dry-run
+
+            - deploy:
+                name: '[Dry run] Open PR to NixOS/nixpkgs'
+                # Prerequisites: artifacts must be released to test PyPI first
+                # Side effects: potentially pushes a regenerated Docker image
+                command: bash ci/nixpkgs-pr/ci-deploy.sh --dry-run
+
+            - deploy:
+                name: '[Dry run] Build rpm package'
+                # Side effects: potentially pushes a regenerated Docker image
+                # Other than that, it just builds the package without publishing anything; there's no special dry-run mode
+                command: bash ci/rpm/ci-run.sh
+
+      - when:
+          condition:
+            equal: [ "master", << pipeline.git.branch >> ]
+          steps:
+            - deploy:
+                name: 'Deploy to PyPI'
+                command: bash ci/pypi/ci-deploy.sh
+
+            - deploy:
+                name: 'Update Homebrew tap'
+                # Prerequisites: artifacts must be released to PyPI first
+                command: bash ci/homebrew-tap/ci-deploy.sh
+
+            - deploy:
+                name: 'Build & upload deb package to PPA'
+                command: bash ci/deb-ppa-upload/ci-deploy.sh
+
+            - deploy:
+                name: 'Open PR to NixOS/nixpkgs'
+                # Prerequisites: artifacts must be released to PyPI first
+                command: bash ci/nixpkgs-pr/ci-deploy.sh
+
+            - deploy:
+                name: 'Build rpm package'
+                command: bash ci/rpm/ci-run.sh
+
+            # Let's do this at the very end to avoid opening a GH release (and notifying the watchers)
+            # in case anything goes wrong in the previous steps.
+            - deploy:
+                name: 'Create GitHub release'
+                # Prerequisites: RPM package must be in dist/
+                command: |
+                  sudo apt-get update
+                  sudo apt-get install hub
+                  bash ci/github-releases/ci-deploy.sh
+
+            # Note: also, each time a commit is pushed to master,
+            # a Snap build for `edge` channel is also triggered automatically via GitHub webhook on https://build.snapcraft.io/user/VirtusLab/git-machete
+            # This happens completely outside of the CI, however.

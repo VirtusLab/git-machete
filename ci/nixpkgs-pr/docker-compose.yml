@@ -7,5 +7,7 @@ services:
       dockerfile: ../Dockerfile # relative to build-context
     tty: true
     environment:
+      - DO_PUSH
       - GITHUB_TOKEN
+      - PYPI_HOST
       - VERSION

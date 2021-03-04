@@ -33,4 +33,9 @@ cat ../python3-git-machete_*.dsc
 cat ../python3-git-machete_*_source.buildinfo
 cat ../python3-git-machete_*_source.changes
 tar tvf ../python3-git-machete_*.tar.gz
-dput ppa:virtuslab/git-machete ../python3-git-machete_*_source.changes
+
+if [[ $DO_DPUT == true ]]; then
+  dput ppa:virtuslab/git-machete ../python3-git-machete_*_source.changes
+else
+  echo "Refraining from running 'dput' since it's a dry run"
+fi
