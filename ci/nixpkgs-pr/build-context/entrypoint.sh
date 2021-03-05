@@ -7,7 +7,12 @@ git remote add NixOS https://github.com/NixOS/nixpkgs.git
 git remote add VirtusLab https://${GITHUB_TOKEN}@github.com/VirtusLab/nixpkgs.git
 
 set -x
-git fetch --progress NixOS master
+if [[ $DO_PUSH == true ]]; then
+  git fetch --progress NixOS master
+else
+  # We don't need to fetch any past history of NixOS/master if we're not opening a PR
+  git fetch --depth=1 NixOS master
+fi
 git checkout -B master NixOS/master
 
 expression_path=pkgs/applications/version-management/git-and-tools/git-machete/default.nix
