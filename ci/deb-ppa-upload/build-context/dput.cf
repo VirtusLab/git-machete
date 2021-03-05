@@ -1,5 +1,5 @@
 
-; We need to use SFTP since FTP is insecure & completely blocked on Travis
+; We need to use SFTP since FTP is insecure & completely blocked on Travis (not sure about Circle CI, but still)
 [ppa]
 fqdn = ppa.launchpad.net
 method = sftp

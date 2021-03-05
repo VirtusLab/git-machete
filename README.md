@@ -1,10 +1,11 @@
 # git-machete
 
 [![Join the chat at https://gitter.im/VirtusLab/git-machete](https://badges.gitter.im/VirtusLab/git-machete.svg)](https://gitter.im/VirtusLab/git-machete)
-[![TravisCI build status](https://api.travis-ci.com/VirtusLab/git-machete.svg?branch=master)](https://travis-ci.com/github/VirtusLab/git-machete/builds)
+[![CircleCI](https://circleci.com/gh/VirtusLab/git-machete/tree/develop.svg?style=shield)](https://app.circleci.com/pipelines/github/VirtusLab/git-machete?branch=develop)
 [![PyPI package](https://img.shields.io/pypi/v/git-machete.svg)](https://pypi.org/project/git-machete)
 [![PyPI package monthly downloads](https://img.shields.io/pypi/dm/git-machete.svg)](https://pypi.org/project/git-machete)
 [![Snap](https://snapcraft.io/git-machete/badge.svg)](https://snapcraft.io/git-machete)
+![License: MIT](https://img.shields.io/github/license/VirtusLab/git-machete)
 
 <img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/docs/logo.svg"
      style="width: 100%; display: block; margin-bottom: 10pt;" />
