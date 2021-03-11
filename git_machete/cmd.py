@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
+
 from typing import Any, Callable, Dict, Generator, Iterable, Iterator, List, Match, Optional, Set, Tuple, TypeVar
 
 from git_machete import __version__
@@ -142,6 +142,7 @@ class CommandLineContext:
         self.opt_roots: List[str] = list()
         self.opt_start_from: str = "here"
         self.opt_stat: bool = False
+        self.opt_sync_github_prs: bool = False
         self.opt_unset_override: bool = False
         self.opt_verbose: bool = False
         self.opt_yes: bool = False
@@ -644,6 +645,48 @@ def annotate(b: str, words: List[str]) -> None:
     save_definition_file()
 
 
+def sync_annotations_to_github_prs(cli_ctxt: CommandLineContext) -> None:
+    global annotations, managed_branches
+    from git_machete.github import derive_current_user_login, derive_pull_requests, GitHubPullRequest, parse_github_remote_url
+
+    url_for_remote: Dict[str, str] = {r: get_url_of_remote(cli_ctxt, r) for r in remotes(cli_ctxt)}
+    if not url_for_remote:
+        raise MacheteException(fmt('No remotes defined for this repository (see `git remote`)'))
+
+    optional_org_name_for_github_remote: Dict[str, Optional[Tuple[str, str]]] = {remote: parse_github_remote_url(url) for remote, url in url_for_remote.items()}
+    org_name_for_github_remote: Dict[str, Tuple[str, str]] = {remote: org_name for remote, org_name in optional_org_name_for_github_remote.items() if org_name}
+    if not org_name_for_github_remote:
+        raise MacheteException(fmt('Remotes are defined for this repository, but none of them corresponds to GitHub (see `git remote -v` for details)'))
+
+    org: str
+    repo: str
+    if len(org_name_for_github_remote) == 1:
+        org, repo = list(org_name_for_github_remote.values())[0]
+    elif len(org_name_for_github_remote) > 1:
+        if 'origin' in org_name_for_github_remote:
+            org, repo = org_name_for_github_remote['origin']
+        else:
+            raise MacheteException(f'Multiple non-origin remotes correspond to GitHub in this repository: '
+                                   f'{", ".join(org_name_for_github_remote.keys())}, aborting')
+    current_user: Optional[str] = derive_current_user_login()
+    debug(cli_ctxt, 'sync_annotations_to_github_prs()', 'Current GitHub user is ' + (current_user or '<none>'))
+    pr: GitHubPullRequest
+    for pr in derive_pull_requests(org, repo):
+        if pr.head in managed_branches:
+            debug(cli_ctxt, 'sync_annotations_to_github_prs()', f'{pr} corresponds to a managed branch')
+            anno: str = f'PR #{pr.number}'
+            if pr.user != current_user:
+                anno += f' ({pr.user})'
+            if pr.base != up_branch.get(pr.head):
+                anno += f" WRONG BASE? PR has '{pr.base}'"
+            if annotations.get(pr.head) != anno:
+                print(f'Annotating {pr.head} as {anno}')
+                annotations[pr.head] = anno
+        else:
+            debug(cli_ctxt, 'sync_annotations_to_github_prs()', f'{pr} does NOT correspond to a managed branch')
+    save_definition_file()
+
+
 def print_annotation(b: str) -> None:
     global annotations
     if b in annotations:
@@ -813,6 +856,10 @@ def remotes(cli_ctxt: CommandLineContext) -> List[str]:
     if remotes_cached is None:
         remotes_cached = non_empty_lines(popen_git(cli_ctxt, "remote"))
     return remotes_cached
+
+
+def get_url_of_remote(cli_ctxt: CommandLineContext, remote: str) -> str:
+    return popen_git(cli_ctxt, "remote", "get-url", "--", remote).strip()
 
 
 fetch_done_for = set()
@@ -2662,7 +2709,9 @@ def usage(c: str = None) -> None:
                                 Fails if the current branch has more than one green-edge downstream branch.
         """,
         "anno": """
-            <b>Usage: git machete anno [-b|--branch=<branch>] [<annotation text>]</b>
+            <b>Usage:
+              git machete anno [-b|--branch=<branch>] [<annotation text>]
+              git machete anno -H|--sync-github-prs</b>
 
             If invoked without any argument, prints out the custom annotation for the given branch (or current branch, if none specified with `-b/--branch`).
 
@@ -2670,13 +2719,18 @@ def usage(c: str = None) -> None:
             <dim>$ git machete anno ''</dim>
             then clears the annotation for the current branch (or a branch specified with `-b/--branch`).
 
+            If invoked with `-H` or `--sync-github-prs`, annotates the branches based on their corresponding GitHub PR numbers and authors.
+            To allow GitHub API access for private repositories (and also to correctly identify the current user, even in case of public repositories),
+            `GITHUB_TOKEN` env var must contain a GitHub API token with `repo` scope, see `https://github.com/settings/tokens`.
+
             In any other case, sets the annotation for the given/current branch to the given argument.
             If multiple arguments are passed to the command, they are concatenated with a single space.
 
-            Note: the same effect can be always achieved by manually editing the definition file.
+            Note: all the effects of `anno` can be always achieved by manually editing the definition file.
 
             <b>Options:</b>
               <b>-b, --branch=<branch></b>      Branch to set the annotation for.
+              <b>-H, --sync-github-prs</b>      Annotate with GitHub PR numbers and authors where applicable.
         """,
         "delete-unmanaged": """
             <b>Usage: git machete delete-unmanaged [-y|--yes]</b>
@@ -3176,9 +3230,8 @@ def usage(c: str = None) -> None:
     inv_aliases = {v: k for k, v in aliases.items()}
 
     groups = [
-        # 'infer' and 'prune-branches' are deprecated and therefore skipped
         # 'is-managed' is mostly for scripting use and therefore skipped
-        ("General topics", ["file", "format", "help", "hooks", "version"]),
+        ("General topics", ["file", "help", "hooks", "version"]),
         ("Build, display and modify the tree of branch dependencies", ["add", "anno", "discover", "edit", "status"]),
         ("List, check out and delete branches", ["delete-unmanaged", "go", "list", "show"]),
         ("Determine changes specific to the given branch", ["diff", "fork-point", "log"]),
@@ -3256,6 +3309,8 @@ def launch(orig_args: List[str]) -> None:
                 cli_ctxt.opt_fetch = True
             elif opt in ("-f", "--fork-point"):
                 cli_ctxt.opt_fork_point = arg
+            elif opt in ("-H", "--sync-github-prs"):
+                cli_ctxt.opt_sync_github_prs = True
             elif opt in ("-h", "--help"):
                 usage(cmd)
                 sys.exit()
@@ -3421,14 +3476,17 @@ def launch(orig_args: List[str]) -> None:
             expect_in_managed_branches(cb)
             advance(cli_ctxt, cb)
         elif cmd == "anno":
-            params = parse_options(args, "b:", ["branch="])
+            params = parse_options(args, "b:H", ["branch=", "--sync-github-prs"])
             read_definition_file(cli_ctxt, verify_branches=False)
-            b = cli_ctxt.opt_branch or current_branch(cli_ctxt)
-            expect_in_managed_branches(b)
-            if params:
-                annotate(b, params)
+            if cli_ctxt.opt_sync_github_prs:
+                sync_annotations_to_github_prs(cli_ctxt)
             else:
-                print_annotation(b)
+                b = cli_ctxt.opt_branch or current_branch(cli_ctxt)
+                expect_in_managed_branches(b)
+                if params:
+                    annotate(b, params)
+                else:
+                    print_annotation(b)
         elif cmd == "delete-unmanaged":
             expect_no_param(parse_options(args, "y", ["yes"]))
             read_definition_file(cli_ctxt)

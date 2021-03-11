@@ -31,6 +31,7 @@ _git-machete() {
                 (anno)
                     _arguments \
                         '(-b --branch)'{-b,--branch=}'[Branch to set the annotation for]: :__git_machete_list_managed' \
+                        '(-H --sync-github-prs)'{-H,--sync-github-prs}'[Annotate with GitHub PR numbers and authors where applicable]' \
                     && ret=0
                     ;;
                 (d|diff)

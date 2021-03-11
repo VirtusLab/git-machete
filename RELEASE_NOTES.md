@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.1.0
+
+- added: `--sync-github-prs`/`-H` and `--token` options to `anno`
+
 ## New in git-machete 3.0.0
 
 - removed: support for Python 2

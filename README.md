@@ -148,6 +148,14 @@ git machete advance
 
 Useful for merging the child branch to the current branch in a linear fashion (without creating a merge commit).
 
+### GitHub integration
+```shell script
+git machete anno --sync-github-prs
+```
+
+This will automatically annotate the branches with GitHub PR numbers. <br/>
+**Note**: for private repositories, a GitHub API token stored in `GITHUB_TOKEN` env var is required.
+
 <br/>
 
 ## Reference
