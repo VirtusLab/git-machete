@@ -3362,33 +3362,6 @@ def launch(orig_args: List[str]) -> None:
     global definition_file_path, up_branch
     try:
         cmd = None
-        cli_ctxt.opt_as_root = False
-        cli_ctxt.opt_branch = None
-        cli_ctxt.opt_checked_out_since = None
-        cli_ctxt.opt_color = "auto"
-        cli_ctxt.opt_debug = False
-        cli_ctxt.opt_down_fork_point = None
-        cli_ctxt.opt_fetch = False
-        cli_ctxt.opt_fork_point = None
-        cli_ctxt.opt_inferred = False
-        cli_ctxt.opt_list_commits = False
-        cli_ctxt.opt_list_commits_with_hashes = False
-        cli_ctxt.opt_merge = False
-        cli_ctxt.opt_n = False
-        cli_ctxt.opt_no_edit_merge = False
-        cli_ctxt.opt_no_interactive_rebase = False
-        cli_ctxt.opt_onto = None
-        cli_ctxt.opt_override_to = None
-        cli_ctxt.opt_override_to_inferred = False
-        cli_ctxt.opt_override_to_parent = False
-        cli_ctxt.opt_return_to = "stay"
-        cli_ctxt.opt_roots = list()
-        cli_ctxt.opt_start_from = "here"
-        cli_ctxt.opt_stat = False
-        cli_ctxt.opt_unset_override = False
-        cli_ctxt.opt_verbose = False
-        cli_ctxt.opt_yes = False
-
         cmd_and_args = parse_options(orig_args, gnu=False)
         if not cmd_and_args:
             usage()
