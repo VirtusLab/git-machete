@@ -330,12 +330,13 @@ def popen_git(cli_ctxt: CommandLineContext, git_cmd: str, *args: str, **kwargs: 
 
 
 class MacheteContext:
-    managed_branches: List[str] = []
-    down_branches: Dict[str, List[str]] = {}  # TODO (#110): default dict with []
-    up_branch: Dict[str, str] = {}  # TODO (#110): default dict with None
-    indent: Optional[str] = None
-    roots: List[str] = []
-    annotations: Dict[str, str] = {}
+    def __init__(self) -> None:
+        self.managed_branches: List[str] = []
+        self.down_branches: Dict[str, List[str]] = {}  # TODO (#110): default dict with []
+        self.up_branch: Dict[str, str] = {}  # TODO (#110): default dict with None
+        self.indent: Optional[str] = None
+        self.roots: List[str] = []
+        self.annotations: Dict[str, str] = {}
 
 
 def expect_in_managed_branches(machete_ctxt: MacheteContext, b: str) -> None:
@@ -680,7 +681,7 @@ def sync_annotations_to_github_prs(cli_ctxt: CommandLineContext, machete_ctxt: M
                 machete_ctxt.annotations[pr.head] = anno
         else:
             debug(cli_ctxt, 'sync_annotations_to_github_prs()', f'{pr} does NOT correspond to a managed branch')
-    save_definition_file()
+    save_definition_file(machete_ctxt)
 
 
 def print_annotation(machete_ctxt: MacheteContext, b: str) -> None:
@@ -2576,7 +2577,7 @@ def status(cli_ctxt: CommandLineContext, machete_ctxt: MacheteContext, warn_on_y
     if yellow_edge_branches and warn_on_yellow_edges:
         if len(yellow_edge_branches) == 1:
             first_part = f"yellow edge indicates that fork point for `{yellow_edge_branches[0]}` is probably incorrectly inferred,\n" \
-                         f"or that some extra branch should be between `{up_branch[yellow_edge_branches[0]]}` and `{yellow_edge_branches[0]}`"
+                         f"or that some extra branch should be between `{machete_ctxt.up_branch[yellow_edge_branches[0]]}` and `{yellow_edge_branches[0]}`"
         else:
             affected_branches = ", ".join(map(lambda x: f"`{x}`", yellow_edge_branches))
             first_part = f"yellow edges indicate that fork points for {affected_branches} are probably incorrectly inferred" \
