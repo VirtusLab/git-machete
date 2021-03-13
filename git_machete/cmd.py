@@ -118,32 +118,33 @@ def right_arrow() -> str:
 
 
 class CommandLineContext:
-    opt_as_root: bool = False
-    opt_branch: Optional[str] = None
-    opt_checked_out_since: Optional[str] = None
-    opt_color: str = "auto"
-    opt_debug: bool = False
-    opt_down_fork_point: Optional[str] = None
-    opt_fetch: bool = False
-    opt_fork_point: Optional[str] = None
-    opt_inferred: bool = False
-    opt_list_commits: bool = False
-    opt_list_commits_with_hashes: bool = False
-    opt_merge: bool = False
-    opt_n: bool = False
-    opt_no_edit_merge: bool = False
-    opt_no_interactive_rebase: bool = False
-    opt_onto: Optional[str] = None
-    opt_override_to: Optional[str] = None
-    opt_override_to_inferred: bool = False
-    opt_override_to_parent: bool = False
-    opt_return_to: str = "stay"
-    opt_roots: List[str] = list()
-    opt_start_from: str = "here"
-    opt_stat: bool = False
-    opt_unset_override: bool = False
-    opt_verbose: bool = False
-    opt_yes: bool = False
+    def __init__(self) -> None:
+        self.opt_as_root: bool = False
+        self.opt_branch: Optional[str] = None
+        self.opt_checked_out_since: Optional[str] = None
+        self.opt_color: str = "auto"
+        self.opt_debug: bool = False
+        self.opt_down_fork_point: Optional[str] = None
+        self.opt_fetch: bool = False
+        self.opt_fork_point: Optional[str] = None
+        self.opt_inferred: bool = False
+        self.opt_list_commits: bool = False
+        self.opt_list_commits_with_hashes: bool = False
+        self.opt_merge: bool = False
+        self.opt_n: bool = False
+        self.opt_no_edit_merge: bool = False
+        self.opt_no_interactive_rebase: bool = False
+        self.opt_onto: Optional[str] = None
+        self.opt_override_to: Optional[str] = None
+        self.opt_override_to_inferred: bool = False
+        self.opt_override_to_parent: bool = False
+        self.opt_return_to: str = "stay"
+        self.opt_roots: List[str] = list()
+        self.opt_start_from: str = "here"
+        self.opt_stat: bool = False
+        self.opt_unset_override: bool = False
+        self.opt_verbose: bool = False
+        self.opt_yes: bool = False
 
 
 def ask_if(cli_ctxt: CommandLineContext, msg: str, opt_yes_msg: Optional[str], apply_fmt: bool = True) -> str:
