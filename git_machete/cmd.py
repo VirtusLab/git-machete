@@ -680,7 +680,7 @@ def sync_annotations_to_github_prs(cli_ctxt: CommandLineContext) -> None:
             if pr.base != up_branch.get(pr.head):
                 anno += f" WRONG BASE? PR has '{pr.base}'"
             if annotations.get(pr.head) != anno:
-                print(f'Annotating {pr.head} as {anno}')
+                print(fmt(f'Annotating <b>{pr.head}</b> as `{anno}`'))
                 annotations[pr.head] = anno
         else:
             debug(cli_ctxt, 'sync_annotations_to_github_prs()', f'{pr} does NOT correspond to a managed branch')
@@ -2720,6 +2720,7 @@ def usage(c: str = None) -> None:
             then clears the annotation for the current branch (or a branch specified with `-b/--branch`).
 
             If invoked with `-H` or `--sync-github-prs`, annotates the branches based on their corresponding GitHub PR numbers and authors.
+            Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
             To allow GitHub API access for private repositories (and also to correctly identify the current user, even in case of public repositories),
             `GITHUB_TOKEN` env var must contain a GitHub API token with `repo` scope, see `https://github.com/settings/tokens`.
 

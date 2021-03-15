@@ -4,6 +4,7 @@ import http.client
 import json
 import os
 import re
+# Deliberately NOT using much more convenient `requests` to avoid external dependencies
 from http.client import HTTPResponse, HTTPSConnection
 from typing import Dict, List, Optional, Any, Tuple
 
@@ -57,6 +58,8 @@ def fire_github_api_get_request(url: str, token: Optional[str]) -> Any:
                 raise MacheteException(
                     first_line + fmt(f'This repository might be private. Provide a GitHub API token with `repo` access in <b>{GITHUB_TOKEN_ENV_VAR}</b> env var.\n'
                                      'Visit `https://github.com/settings/tokens` to generate a new one.'))
+    except OSError as e:
+        raise MacheteException(f'Could not connect to {host}: {e}')
     finally:
         conn.close()
 
