@@ -3477,7 +3477,7 @@ def launch(orig_args: List[str]) -> None:
             expect_in_managed_branches(cb)
             advance(cli_ctxt, cb)
         elif cmd == "anno":
-            params = parse_options(args, "b:H", ["branch=", "--sync-github-prs"])
+            params = parse_options(args, "b:H", ["branch=", "sync-github-prs"])
             read_definition_file(cli_ctxt, verify_branches=False)
             if cli_ctxt.opt_sync_github_prs:
                 sync_annotations_to_github_prs(cli_ctxt)
