@@ -677,7 +677,10 @@ def sync_annotations_to_github_prs(cli_ctxt: CommandLineContext) -> None:
             anno: str = f'PR #{pr.number}'
             if pr.user != current_user:
                 anno += f' ({pr.user})'
-            if pr.base != up_branch.get(pr.head):
+            u: Optional[str] = up_branch.get(pr.head)
+            if pr.base != u:
+                warn(f'branch `{pr.head}` has a different base in PR #{pr.number} (`{pr.base}`) '
+                     f'than in machete file (`{u or "<none, is a root>"}`)')
                 anno += f" WRONG BASE? PR has '{pr.base}'"
             if annotations.get(pr.head) != anno:
                 print(fmt(f'Annotating <b>{pr.head}</b> as `{anno}`'))
@@ -2514,8 +2517,8 @@ def status(cli_ctxt: CommandLineContext, warn_on_yellow_edges: bool) -> None:
                 for sha, short_sha, subject in commits:
                     if sha == fp_sha(b):
                         # fp_branches_cached will already be there thanks to the above call to 'fp_sha'.
-                        fp_branches_formatted: str = " and ".join(sorted(map(get_second, fp_branches_cached[b])))
-                        fp_suffix: str = " %s %s %s has been found in reflog of %s" %\
+                        fp_branches_formatted: str = " and ".join(sorted(underline(lb_or_rb) for lb, lb_or_rb in fp_branches_cached[b]))
+                        fp_suffix: str = " %s %s %s seems to be a part of the unique history of %s" %\
                             (colored(right_arrow(), RED), colored("fork point ???", RED), "this commit" if cli_ctxt.opt_list_commits_with_hashes else f"commit {short_sha}", fp_branches_formatted)
                     else:
                         fp_suffix = ''
@@ -2580,20 +2583,24 @@ def status(cli_ctxt: CommandLineContext, warn_on_yellow_edges: bool) -> None:
     yellow_edge_branches = [k for k, v in edge_color.items() if v == YELLOW]
     if yellow_edge_branches and warn_on_yellow_edges:
         if len(yellow_edge_branches) == 1:
-            first_line = f"yellow edge indicates that fork point for `{yellow_edge_branches[0]}` is probably incorrectly inferred"
+            first_part = f"yellow edge indicates that fork point for `{yellow_edge_branches[0]}` is probably incorrectly inferred,\n" \
+                         f"or that some extra branch should be between `{up_branch[yellow_edge_branches[0]]}` and `{yellow_edge_branches[0]}`"
         else:
             affected_branches = ", ".join(map(lambda x: f"`{x}`", yellow_edge_branches))
-            first_line = f"yellow edges indicate that fork points for {affected_branches} are probably incorrectly inferred"
+            first_part = f"yellow edges indicate that fork points for {affected_branches} are probably incorrectly inferred" \
+                         f"or that some extra branch should be added between each of these branches and its parent"
 
         if not cli_ctxt.opt_list_commits:
-            second_line = "Run `git machete status --list-commits` or `git machete status --list-commits-with-hashes` to see more details"
+            second_part = "Run `git machete status --list-commits` or `git machete status --list-commits-with-hashes` to see more details"
         elif len(yellow_edge_branches) == 1:
-            second_line = f"Consider using `git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent {yellow_edge_branches[0]}`"
+            second_part = f"Consider using `git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent {yellow_edge_branches[0]}`\n" \
+                          f"or reattaching `{yellow_edge_branches[0]}` under a different parent branch"
         else:
-            second_line = "Consider using `git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent <branch>` for each affected branch"
+            second_part = "Consider using `git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent <branch>` for each affected branch" \
+                          "or reattaching the affected branches under different parent branches"
 
         sys.stderr.write("\n")
-        warn(f"{first_line}.\n{second_line}.")
+        warn(f"{first_part}.\n\n{second_part}.")
 
 
 # Main
@@ -2602,7 +2609,7 @@ def status(cli_ctxt: CommandLineContext, warn_on_yellow_edges: bool) -> None:
 def usage(c: str = None) -> None:
     short_docs = {
         "add": "Add a branch to the tree of branch dependencies",
-        "advance": "Fast-forward the current branch to match one of its downstreams and subsequently slide out this downstream",
+        "advance": "Fast-forward merge one of children to the current branch and then slide out this child",
         "anno": "Manage custom annotations",
         "delete-unmanaged": "Delete local branches that are not present in the definition file",
         "diff": "Diff current working directory or a given branch against its computed fork point",
@@ -3236,7 +3243,7 @@ def usage(c: str = None) -> None:
         ("Build, display and modify the tree of branch dependencies", ["add", "anno", "discover", "edit", "status"]),
         ("List, check out and delete branches", ["delete-unmanaged", "go", "list", "show"]),
         ("Determine changes specific to the given branch", ["diff", "fork-point", "log"]),
-        ("Update git history in accordance with the tree of branch dependencies", ["reapply", "slide-out", "squash", "traverse", "update"])
+        ("Update git history in accordance with the tree of branch dependencies", ["advance", "reapply", "slide-out", "squash", "traverse", "update"])
     ]
     if c and c in inv_aliases:
         c = inv_aliases[c]

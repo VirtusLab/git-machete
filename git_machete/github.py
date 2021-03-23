@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import http.client
 import json
 import os
 import re
@@ -38,7 +37,7 @@ def fire_github_api_get_request(url: str, token: Optional[str]) -> Any:
         headers['Authorization'] = 'Bearer ' + token
 
     host = 'api.github.com'
-    conn: HTTPSConnection = http.client.HTTPSConnection(host)
+    conn: HTTPSConnection = HTTPSConnection(host)
 
     try:
         conn.request('GET', url, body=None, headers=headers)
