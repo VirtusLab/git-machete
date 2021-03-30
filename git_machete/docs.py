@@ -15,6 +15,7 @@ short_docs: Dict[str, str] = {
     "go": "Check out the branch relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument",
     "help": "Display this overview, or detailed help for a specified command",
     "hooks": "Display docs for the extra hooks added by git machete",
+    "gh": "Create, checkout and manage GitHub PRs while keeping them reflected in git machete",
     "is-managed": "Check if the current branch is managed by git machete (mostly for scripts)",
     "list": "List all branches that fall into one of pre-defined categories (mostly for internal use)",
     "log": "Log the part of history specific to the given branch",
@@ -299,17 +300,9 @@ long_docs: Dict[str, str] = {
         <b>Usage: git machete g[o] <direction></b>
         where <direction> is one of: `d[own]`, `f[irst]`, `l[ast]`, `n[ext]`, `p[rev]`, `r[oot]`, `u[p]`
 
-        Checks out the branch specified by the given direction relative to the current branch:
-
-        * `down`:    the direct children/downstream branch of the current branch.
-        * `first`:   the first downstream of the root branch of the current branch (like `root` followed by `next`), or the root branch itself if the root has no downstream branches.
-        * `last`:    the last branch in the definition file that has the same root as the current branch; can be the root branch itself if the root has no downstream branches.
-        * `next`:    the direct successor of the current branch in the definition file.
-        * `prev`:    the direct predecessor of the current branch in the definition file.
-        * `root`:    the root of the tree where the current branch is located. Note: this will typically be something like `develop` or `master`, since all branches are usually meant to be ultimately merged to one of those.
-        * `up`:      the direct parent/upstream branch of the current branch.
-
+        Checks out the branch specified by the given direction relative to the currently checked out branch.
         Roughly equivalent to `git checkout $(git machete show <direction>)`.
+        See `git machete help show` on more details on meaning of each direction.
     """,
     "help": """
         <b>Usage: git machete help [<command>]</b>
@@ -372,6 +365,38 @@ long_docs: Dict[str, str] = {
         Please see hook_samples/ directory of git-machete project for examples.
         An example of using the standard git `post-commit` hook to `git machete add` branches automatically is also included.
     """,
+    "gh": """
+        <b>Usage: git machete hub <subcommand></b>
+        where <subcommand> is one of: `anno-prs`, `create-pr`, `retarget-pr`.
+
+        Creates, checks out and manages GitHub PRs while keeping them reflected in branch definition file.
+
+        For all subcommands, to allow GitHub API access for private repositories
+        (and also to correctly identify the current user, even in case of public repositories),
+        `GITHUB_TOKEN` env var must contain a GitHub API token with `repo` scope, see `https://github.com/settings/tokens`.
+
+        <b>`anno-prs`:</b>
+
+          Annotates the branches based on their corresponding GitHub PR numbers and authors.
+          Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
+          Equivalent to `git machete anno --sync-github-prs`.
+
+        <b>`create-pr [--draft]`:</b>
+
+          Creates a PR for the current branch, using the upstream (parent) branch as the PR base.
+          Once the PR is successfully created, annotates the current branch with the new PR's number.
+
+          If `.git/info/description` file is present, its contents is used as PR description.
+          If `.git/info/milestone` file is present, its contents (a single number - milestone id) is used as milestone.
+          If `.git/info/reviewers` file is present, its contents (one GitHub login per line) are used to set reviewers.
+
+          <b>Options:</b>
+            <b>--draft</b>    Creates the new PR as a draft.
+
+        <b>`retarget-pr`:</b>
+
+          Sets the base of the current branch's PR to upstream (parent) branch, as seen by git machete (see `git machete show up`).
+    """,
     "is-managed": """
         <b>Usage: git machete is-managed [<branch>]</b>
 
@@ -422,18 +447,18 @@ long_docs: Dict[str, str] = {
     "show": """
         <b>Usage: git machete show <direction> [<branch>]</b>
         where <direction> is one of: `c[urrent]`, `d[own]`, `f[irst]`, `l[ast]`, `n[ext]`, `p[rev]`, `r[oot]`, `u[p]`
-        displayed relative to given <branch>, or the current checked out branch if <branch> is unspecified.
+        displayed relative to target <branch>, or the current checked out branch if <branch> is unspecified.
 
         Outputs name of the branch (or possibly multiple branches, in case of `down`) that is:
 
         * `current`: the current branch; exits with a non-zero status if none (detached HEAD)
-        * `down`:    the direct children/downstream branch of the given branch.
-        * `first`:   the first downstream of the root branch of the given branch (like `root` followed by `next`), or the root branch itself if the root has no downstream branches.
-        * `last`:    the last branch in the definition file that has the same root as the given branch; can be the root branch itself if the root has no downstream branches.
-        * `next`:    the direct successor of the given branch in the definition file.
-        * `prev`:    the direct predecessor of the given branch in the definition file.
-        * `root`:    the root of the tree where the given branch is located. Note: this will typically be something like `develop` or `master`, since all branches are usually meant to be ultimately merged to one of those.
-        * `up`:      the direct parent/upstream branch of the given branch.
+        * `down`:    the direct children/downstream branch of the target branch.
+        * `first`:   the first downstream of the root branch of the target branch (like `root` followed by `next`), or the root branch itself if the root has no downstream branches.
+        * `last`:    the last branch in the definition file that has the same root as the target branch; can be the root branch itself if the root has no downstream branches.
+        * `next`:    the direct successor of the target branch in the definition file.
+        * `prev`:    the direct predecessor of the target branch in the definition file.
+        * `root`:    the root of the tree where the target branch is located. Note: this will typically be something like `develop` or `master`, since all branches are usually meant to be ultimately merged to one of those.
+        * `up`:      the direct parent/upstream branch of the target branch.
     """,
     "slide-out": """
         <b>Usage: git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] <branch> [<branch> [<branch> ...]]</b>

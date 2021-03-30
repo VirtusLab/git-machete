@@ -1576,8 +1576,8 @@ def allowed_directions(allow_current: bool) -> str:
     current = "c[urrent]|" if allow_current else ""
     return current + "d[own]|f[irst]|l[ast]|n[ext]|p[rev]|r[oot]|u[p]"
 
-
 # Main
+
 
 alias_by_command: Dict[str, str] = {
     "diff": "d",
@@ -1627,6 +1627,114 @@ def usage(c: str = None) -> None:
         """[1:])))
 
 
+# GitHub support
+
+def derive_remote_and_github_org_and_repo(cli_ctxt: CommandLineOptions) -> Tuple[str, Tuple[str, str]]:
+    from git_machete.github import is_github_remote_url, parse_github_remote_url
+
+    url_for_remote: Dict[str, str] = {
+        remote: get_url_of_remote(cli_ctxt, remote) for remote in remotes(cli_ctxt)
+    }
+    if not url_for_remote:
+        raise MacheteException(fmt('No remotes defined for this repository (see `git remote`)'))
+
+    org_and_repo_for_github_remote: Dict[str, Tuple[str, str]] = {
+        remote: parse_github_remote_url(url) for remote, url in url_for_remote.items() if is_github_remote_url(url)
+    }
+    if not org_and_repo_for_github_remote:
+        raise MacheteException(fmt('Remotes are defined for this repository, but none of them corresponds to GitHub (see `git remote -v` for details)'))
+
+    if len(org_and_repo_for_github_remote) == 1:
+        return list(org_and_repo_for_github_remote.items())[0]
+
+    if 'origin' in org_and_repo_for_github_remote:
+        return 'origin', org_and_repo_for_github_remote['origin']
+
+    raise MacheteException(f'Multiple non-origin remotes correspond to GitHub in this repository: '
+                           f'{", ".join(org_and_repo_for_github_remote.keys())}, aborting')
+
+
+def create_github_pr(cli_ctxt: CommandLineOptions, head: str, draft: bool) -> None:
+    global annotations, up_branch
+    from git_machete.github import GitHubPullRequest, add_assignees_to_pull_request, add_reviewers_to_pull_request, \
+        create_pull_request, derive_current_user_login, set_milestone_of_pull_request
+
+    base: Optional[str] = up_branch.get(head)
+    if not base:
+        raise MacheteException(f'Branch {head} does not have a parent branch (it is a root), base branch for the PR cannot be established')
+
+    org: str
+    repo: str
+    _, (org, repo) = derive_remote_and_github_org_and_repo(cli_ctxt)
+    current_user: Optional[str] = derive_current_user_login()
+    debug(cli_ctxt, f'create_github_pr({head})', f'organization is {org}, repository is {repo}')
+    debug(cli_ctxt, f'create_github_pr({head})', 'current GitHub user is ' + (current_user or '<none>'))
+
+    def slurp_file_or_empty(path: str) -> str:
+        try:
+            return open(path).read()
+        except IOError:
+            return ''
+
+    title: str = popen_git(cli_ctxt, "log", "-1", "--format=%s").strip()
+    description_path = get_git_subpath(cli_ctxt, 'info', 'description')
+    description: str = slurp_file_or_empty(description_path)
+
+    ok_str = ' <green><b>OK</b></green>'
+    print(fmt(f'Creating a {"draft " if draft else ""}PR from `{head}` to `{base}`...'), end='', flush=True)
+    pr: GitHubPullRequest = create_pull_request(org, repo, head=head, base=base, title=title, description=description, draft=draft)
+    print(fmt(f'{ok_str}, see <b>{pr.html_url}</b>'))
+
+    milestone_path: str = get_git_subpath(cli_ctxt, 'info', 'milestone')
+    milestone: str = slurp_file_or_empty(milestone_path).strip()
+    if milestone:
+        print(fmt(f'Setting milestone of PR #{pr.number} to {milestone}...'), end='', flush=True)
+        set_milestone_of_pull_request(org, repo, pr.number, milestone=milestone)
+        print(fmt(ok_str))
+
+    if current_user:
+        print(fmt(f'Adding `{current_user}` as assignee to PR #{pr.number}...'), end='', flush=True)
+        add_assignees_to_pull_request(org, repo, pr.number, [current_user])
+        print(fmt(ok_str))
+
+    reviewers_path = get_git_subpath(cli_ctxt, 'info', 'reviewers')
+    reviewers: List[str] = non_empty_lines(slurp_file_or_empty(reviewers_path))
+    if reviewers:
+        print(fmt(f'Adding {", ".join(f"`{r}`" for r in reviewers)} as reviewer{"s" if len(reviewers) > 1 else ""} to PR #{pr.number}...'), end='', flush=True)
+        add_reviewers_to_pull_request(org, repo, pr.number, reviewers)
+        print(fmt(ok_str))
+
+    annotations[head] = f'PR #{pr.number}'
+    save_definition_file()
+
+
+def retarget_github_pr(cli_ctxt: CommandLineOptions, head: str) -> None:
+    global up_branch
+    from git_machete.github import GitHubPullRequest, derive_pull_request_by_head, set_base_of_pull_request
+
+    org: str
+    repo: str
+    _, (org, repo) = derive_remote_and_github_org_and_repo(cli_ctxt)
+
+    debug(cli_ctxt, f'retarget_github_pr({head})', f'organization is {org}, repository is {repo}')
+
+    pr: Optional[GitHubPullRequest] = derive_pull_request_by_head(org, repo, head)
+    if not pr:
+        raise MacheteException(f'No PR is opened in `{org}/{repo}` for branch `{head}`')
+    debug(cli_ctxt, f'retarget_github_pr({head})', f'found {pr}')
+
+    new_base: Optional[str] = up_branch.get(head)
+    if not new_base:
+        raise MacheteException(f'Branch `{head}` does not have a parent branch (it is a root) '
+                               f'even though there is an open PR #{pr.number} to `{pr.base}`.\n'
+                               f'Consider modifying the branch definition file (`git machete edit`) so that `{head}` is a child of `{pr.base}`.')
+
+    if pr.base != new_base:
+        set_base_of_pull_request(org, repo, pr.number, base=new_base)
+    else:
+        print(fmt(f'The base branch of PR #{pr.number} is already `{new_base}`'))
+
+
 def short_usage() -> None:
     print(fmt("<b>Usage: git machete [--debug] [-h] [-v|--verbose] [--version] <command> [command-specific options] [command-specific argument]</b>"))
 
@@ -1666,6 +1774,8 @@ def launch(orig_args: List[str]) -> None:
                 cli_opts.opt_down_fork_point = arg
             elif opt == "--debug":
                 CommandLineOptions.opt_debug = True
+            elif opt == "--draft":
+                cli_opts.opt_draft = True
             elif opt in ("-F", "--fetch"):
                 cli_opts.opt_fetch = True
             elif opt in ("-f", "--fork-point"):
@@ -1893,6 +2003,22 @@ def launch(orig_args: List[str]) -> None:
             param = check_optional_param(parse_options(args))
             # No need to read definition file.
             usage(param)
+        elif cmd == "hub":
+            hub_allowed_values = "anno-prs|create-pr|retarget-pr"
+            param = check_required_param(parse_options(args, "", ["draft"]), hub_allowed_values)
+            machete_client.read_definition_file(cli_opts)
+            if param == "anno-prs":
+                machete_client.sync_annotations_to_github_prs(cli_opts)
+            elif param == "create-pr":
+                cb = git.current_branch(cli_opts)
+                machete_client.expect_in_managed_branches(cb)
+                create_github_pr(cli_opts, cb, draft=cli_opts.opt_draft)
+            elif param == "retarget-pr":
+                cb = git.current_branch(cli_opts)
+                machete_client.expect_in_managed_branches(cb)
+                retarget_github_pr(cli_opts, cb)
+            else:
+                raise MacheteException(f"`hub` requires a subcommand: one of `{hub_allowed_values}`")
         elif cmd == "is-managed":
             param = check_optional_param(parse_options(args))
             machete_client.read_definition_file()
@@ -2007,10 +2133,10 @@ def launch(orig_args: List[str]) -> None:
 
     except getopt.GetoptError as e:
         short_usage()
-        sys.stderr.write(str(e) + "\n")
+        sys.stderr.write(f"\n{e}\n")
         sys.exit(2)
     except MacheteException as e:
-        sys.stderr.write(str(e) + "\n")
+        sys.stderr.write(f"\n{e}\n")
         sys.exit(1)
     except KeyboardInterrupt:
         sys.stderr.write("\nInterrupted by the user")

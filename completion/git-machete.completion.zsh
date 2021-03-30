@@ -67,6 +67,9 @@ _git-machete() {
         (help)
           _arguments '1:: :__git_machete_help_topics' && ret=0
           ;;
+        (hub)
+          _arguments '1:: :__git_machete_hub_subcommands' && ret=0
+          ;;
         (is-managed|l|log)
           _arguments '1:: :__git_branch_names' && ret=0
           ;;
@@ -207,6 +210,16 @@ __git_machete_directions_show() {
     {u,up}':parent in tree of branch dependencies'
   )
   _describe -t directions 'direction' directions "$@"
+}
+
+__git_machete_hub_subcommands() {
+  local hub_subcommands
+  hub_subcommands=(
+    'anno-prs:annotate the branche based on their corresponding GitHub PR numbers and authors'
+    'create-pr:create a PR for the current branch, using the upstream (parent) branch as the PR base'
+    'retarget-pr:set the base of the current branch PR to upstream (parent) branch'
+  )
+  _describe -t hub_subcommands 'subcommand' hub_subcommands "$@"
 }
 
 __git_machete_categories() {

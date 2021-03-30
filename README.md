@@ -149,11 +149,21 @@ git machete advance
 Useful for merging the child branch to the current branch in a linear fashion (without creating a merge commit).
 
 ### GitHub integration
+
+Annotate the branches with GitHub PR numbers: <br/>
 ```shell script
-git machete anno --sync-github-prs
+git machete hub anno-prs
 ```
 
-This will automatically annotate the branches with GitHub PR numbers. <br/>
+Check out PR and reflect its parent (grandparent, etc.) in `.git/machete`: <br/>
+```shell script
+git machete hub checkout-pr <pr-number>
+```
+
+Create the PR, using the parent branch from `.git/machete` as the base: <br/>
+```shell script
+git machete hub create-pr [--draft]
+```
 
 **Note**: for private repositories, a GitHub API token with `repo` access is required.
 This will be resolved from the first of:
