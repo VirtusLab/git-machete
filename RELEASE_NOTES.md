@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.2.0
+
+- added: `hub` command with `anno-prs`, `create-pr` and `retarget-pr` subcommands
+
 ## New in git-machete 3.1.0
 
 - added: `--sync-github-prs`/`-H` and `--token` options to `anno`
