@@ -34,18 +34,21 @@ branch=git-machete-$VERSION
 git checkout -b $branch
 git add $expression_path
 title="gitAndTools.git-machete: $existing_version -> $VERSION"
-message=$(echo "$title"; echo; cat /root/pr-description.md)
+commit_message=$(echo "$title"; echo; cat /root/commit-message.md)
 git config user.email "gitmachete@virtuslab.com"
 git config user.name "Git Machete Release Bot"
-git commit -m "$message"
+git commit -m "$commit_message"
 
+# We don't want to @-mention the NixOS maintainers in commit messages (only in PR description),
+# see https://github.com/VirtusLab/git-machete/issues/127
+pr_description=$(echo "$title"; echo; cat /root/pr-description.md)
 if [[ $DO_PUSH == true ]]; then
   git push VirtusLab $branch
   # 'hub pull-request' relies on GITHUB_TOKEN env var (not on the git remote's URL as 'git push' does) for authentication.
   hub pull-request \
     --base NixOS:master \
     --head VirtusLab:$branch \
-    --message "$message" \
+    --message "$pr_description" \
     --labels='10.rebuild-darwin: 1-10,10.rebuild-linux: 1-10,11.by: upstream-developer'
   # Deliberately not setting `--reviewer`, since it's not strictly needed
   # and caused non-trivial issues with access of personal OAuth token to organization-owned repo.

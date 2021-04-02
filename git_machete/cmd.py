@@ -578,7 +578,7 @@ def add(cli_ctxt: CommandLineContext, b: str) -> None:
     if b in managed_branches:
         raise MacheteException(f"Branch `{b}` already exists in the tree of branch dependencies")
 
-    onto = cli_ctxt.opt_onto
+    onto: Optional[str] = cli_ctxt.opt_onto
     if onto:
         expect_in_managed_branches(onto)
 
@@ -592,17 +592,13 @@ def add(cli_ctxt: CommandLineContext, b: str) -> None:
                 create_branch(cli_ctxt, b, f"refs/remotes/{rb}")
             else:
                 return
-            # Not dealing with `onto` here. If it hasn't been explicitly specified via `--onto`, we'll try to infer it now.
         else:
-            out_of = f"`{onto}`" if onto else "the current HEAD"
-            msg = f"A local branch `{b}` does not exist. Create (out of {out_of})?" + pretty_choices('y', 'N')
-            opt_yes_msg = f"A local branch `{b}` does not exist. Creating out of {out_of}"
+            out_of = f"refs/heads/{onto}" if onto else "HEAD"
+            out_of_str = f"`{onto}`" if onto else "the current HEAD"
+            msg = f"A local branch `{b}` does not exist. Create (out of {out_of_str})?" + pretty_choices('y', 'N')
+            opt_yes_msg = f"A local branch `{b}` does not exist. Creating out of {out_of_str}"
             if ask_if(cli_ctxt, msg, opt_yes_msg) in ('y', 'yes'):
-                if roots and not onto:
-                    cb = current_branch_or_none(cli_ctxt)
-                    if cb and cb in managed_branches:
-                        onto = cb
-                create_branch(cli_ctxt, b, f"refs/heads/{onto}")
+                create_branch(cli_ctxt, b, out_of)
             else:
                 return
 

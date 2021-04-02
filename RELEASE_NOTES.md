@@ -1,5 +1,10 @@
 # Release notes
 
+## New in git-machete 3.1.1
+
+- fixed: `add` without `--onto` crashing when the current branch is not managed
+- fixed: commit message and PR description for `NixOS/nixpkgs`
+
 ## New in git-machete 3.1.0
 
 - added: `--sync-github-prs`/`-H` and `--token` options to `anno`
