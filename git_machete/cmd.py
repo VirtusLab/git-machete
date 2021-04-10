@@ -592,12 +592,18 @@ def add(cli_ctxt: CommandLineContext, b: str) -> None:
                 create_branch(cli_ctxt, b, f"refs/remotes/{rb}")
             else:
                 return
+            # Not dealing with `onto` here. If it hasn't been explicitly specified via `--onto`, we'll try to infer it now.
         else:
             out_of = f"refs/heads/{onto}" if onto else "HEAD"
             out_of_str = f"`{onto}`" if onto else "the current HEAD"
             msg = f"A local branch `{b}` does not exist. Create (out of {out_of_str})?" + pretty_choices('y', 'N')
             opt_yes_msg = f"A local branch `{b}` does not exist. Creating out of {out_of_str}"
             if ask_if(cli_ctxt, msg, opt_yes_msg) in ('y', 'yes'):
+                # If `--onto` hasn't been explicitly specified, let's try to assess if the current branch would be a good `onto`.
+                if roots and not onto:
+                    cb = current_branch_or_none(cli_ctxt)
+                    if cb and cb in managed_branches:
+                        onto = cb
                 create_branch(cli_ctxt, b, out_of)
             else:
                 return
@@ -1103,7 +1109,7 @@ def is_ancestor(cli_ctxt: CommandLineContext, earlier_revision: str, later_revis
 
 
 def create_branch(cli_ctxt: CommandLineContext, b: str, out_of_revision: str) -> None:
-    run_git(cli_ctxt, "checkout", "-b", b, *([out_of_revision] if out_of_revision else []))
+    run_git(cli_ctxt, "checkout", "-b", b, out_of_revision)
     flush_caches()  # the repository state has changed b/c of a successful branch creation, let's defensively flush all the caches
 
 
