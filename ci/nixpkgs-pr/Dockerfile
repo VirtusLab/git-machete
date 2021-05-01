@@ -1,4 +1,4 @@
-FROM nixos/nix
+FROM nixos/nix:2.3.6
 
 RUN nix-env -i autoconf bash curl git hub jq
 

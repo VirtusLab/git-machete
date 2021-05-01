@@ -19,7 +19,7 @@ export VERSION
 cd ci/nixpkgs-pr/
 
 # If the image corresponding to the current state of ci/nixpkgs-pr/ is missing, build it and push to Docker Hub.
-docker-compose pull nixpkgs-pr
+docker-compose --no-ansi pull nixpkgs-pr
 # A very unpleasant workaround for https://github.com/docker/compose/issues/7258
 # (since v1.25.1, `docker-compose pull` is NOT failing when it can't fetch the image).
 image_tag=$(docker-compose config | yq eval '.services.nixpkgs-pr.image' -)
