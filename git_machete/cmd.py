@@ -2001,11 +2001,7 @@ def slide_out(cli_ctxt: CommandLineContext, branches_to_slide_out: List[str]) ->
 
     # Get new branches
     new_upstream = up_branch[branches_to_slide_out[0]]
-    new_downstreams = down_branches.get(branches_to_slide_out[-1])
-
-    # Verify that the last slide-out branch has 1+ downstreams
-    if not new_downstreams or len(new_downstreams) == 0:
-        raise MacheteException(f"No downstream branch defined for `{branches_to_slide_out[-1]}`, cannot slide out")
+    new_downstreams = down_branches.get(branches_to_slide_out[-1], [])
 
     # Remove the slide-out branches from the tree
     for b in branches_to_slide_out:
@@ -2022,6 +2018,7 @@ def slide_out(cli_ctxt: CommandLineContext, branches_to_slide_out: List[str]) ->
     save_definition_file()
     run_post_slide_out_hook(cli_ctxt, new_upstream, branches_to_slide_out[-1], new_downstreams)
 
+    go(cli_ctxt, new_upstream)
     for new_downstream in new_downstreams:
         go(cli_ctxt, new_downstream)
         if cli_ctxt.opt_merge:
