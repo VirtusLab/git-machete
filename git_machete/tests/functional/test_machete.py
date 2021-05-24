@@ -229,3 +229,69 @@ class MacheteTester(unittest.TestCase):
                 """
             ),
         )
+
+    def test_slide_out(self) -> None:
+        (
+            self.setup.new_branch("develop")
+            .commit("develop commit")
+            .push()
+            .new_branch("slide_root")
+            .commit("slide_root_1")
+            .push()
+            .check_out("slide_root")
+            .new_branch("child_a")
+            .commit("child_a_1")
+            .push()
+            .check_out("slide_root")
+            .new_branch("child_b")
+            .commit("child_b_1")
+            .push()
+            .check_out("child_b")
+            .new_branch("child_c")
+            .commit("child_c_1")
+            .push()
+        )
+
+        self.launch_command("discover", "-y", "--roots=develop")
+
+        self.assertEqual(
+            self.launch_command("status", "-l"),
+            self.adapt(
+                """
+                develop
+                |
+                | slide_root_1
+                o-slide_root
+                  |
+                  | child_a_1
+                  o-child_a
+                  |
+                  | child_b_1
+                  o-child_b
+                    |
+                    | child_c_1
+                    o-child_c *
+                """
+            ),
+        )
+
+        self.launch_command("go", "up")
+        self.launch_command("slide-out", "-n")
+
+        self.assertEqual(
+            self.launch_command("status", "-l"),
+            self.adapt(
+                """
+                develop
+                |
+                | slide_root_1
+                o-slide_root
+                  |
+                  | child_a_1
+                  o-child_a
+                  |
+                  | child_c_1
+                  o-child_c * (diverged from origin)
+                """
+            ),
+        )
