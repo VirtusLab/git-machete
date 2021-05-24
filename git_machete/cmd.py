@@ -2030,17 +2030,14 @@ def slide_out(cli_ctxt: CommandLineContext, branches_to_slide_out: List[str]) ->
 
 
 def slidable() -> List[str]:
-    return [b for b in managed_branches if b in up_branch and b in down_branches and len(down_branches[b]) == 1]
+    return [b for b in managed_branches if b in up_branch]
 
 
 def slidable_after(b: str) -> List[str]:
     if b in up_branch:
         dbs = down_branches.get(b)
         if dbs and len(dbs) == 1:
-            d = dbs[0]
-            ddbs = down_branches.get(d)
-            if ddbs and len(ddbs) == 1:
-                return [d]
+            return dbs
     return []
 
 
@@ -2644,7 +2641,7 @@ def usage(c: str = None) -> None:
         "log": "Log the part of history specific to the given branch",
         "reapply": "Rebase the current branch onto its computed fork point",
         "show": "Show name(s) of the branch(es) relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument",
-        "slide-out": "Slide out the current branch and sync its downstream (child) branch with its upstream (parent) branch via rebase or merge",
+        "slide-out": "Slide out the current branch and sync its downstream (child) branches with its upstream (parent) branch via rebase or merge",
         "squash": "Squash the unique history of the current branch into a single commit",
         "status": "Display formatted tree of branch dependencies, including info on their sync with upstream branch and with remote",
         "traverse": "Walk through the tree of branch dependencies and rebase, merge, slide out, push and/or pull each branch one by one",
@@ -2943,7 +2940,7 @@ def usage(c: str = None) -> None:
                   or in case of multiple branches being slid out - the lowest slid out branch;
                 * <b><new-downstreams></b> are all the following (possibly zero) parameters,
                   which correspond to all original downstreams of <lowest-slid-out-branch>, now reattached as the downstreams of <new-upstream>.
-                  Note that this is guaranteed to be exactly one branch in case of `slide-out` (but no guarantees exist in case of `advance` or `traverse`).
+                  Note that this may be zero, one, or multiple branches.
 
                 Note: the hook, if present, is executed:
                 * zero or once during a `advance` execution (depending on whether the slide-out has been confirmed or not),
@@ -2951,7 +2948,7 @@ def usage(c: str = None) -> None:
                 * zero or more times during `traverse` (every time a slide-out operation is confirmed).
 
                 If the hook returns a non-zero exit code, then the execution of the command is aborted,
-                i.e. `slide-out` won't attempt rebase of the new downstream branch and `traverse` won't continue the traversal.
+                i.e. `slide-out` won't attempt rebase of the new downstream branches and `traverse` won't continue the traversal.
                 In case of `advance` there is no difference (other than exit code of the entire `advance` command being non-zero),
                 since slide-out is the last operation that happens within `advance`.
                 Note that non-zero exit code of the hook doesn't cancel the effects of slide-out itself, only the subsequent operations.
@@ -3000,7 +2997,7 @@ def usage(c: str = None) -> None:
             Lists all branches that fall into one of the specified categories:
             * `addable`: all branches (local or remote) than can be added to the definition file,
             * `managed`: all branches that appear in the definition file,
-            * `slidable`: all managed branches that have exactly one upstream and one downstream (i.e. the ones that can be slid out with `slide-out` command),
+            * `slidable`: all managed branches that have an upstream and can be slid out with `slide-out` command
             * `slidable-after <branch>`: the downstream branch of the <branch>, if it exists and is the only downstream of <branch> (i.e. the one that can be slid out immediately following <branch>),
             * `unmanaged`: all local branches that don't appear in the definition file,
             * `with-overridden-fork-point`: all local branches that have a fork point override set up (even if this override does not affect the location of their fork point anymore).
@@ -3049,14 +3046,13 @@ def usage(c: str = None) -> None:
             <b>Usage: git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] <branch> [<branch> [<branch> ...]]</b>
 
             Removes the given branch (or multiple branches) from the branch tree definition.
-            Then synchronizes the downstream (child) branch of the last specified branch on the top of the upstream (parent) branch of the first specified branch.
+            Then synchronizes the downstream (child) branches of the last specified branch on the top of the upstream (parent) branch of the first specified branch.
             Sync is performed either by rebase (default) or by merge (if `--merge` option passed).
 
             The most common use is to slide out a single branch whose upstream was a `develop`/`master` branch and that has been recently merged.
 
             Since this tool is designed to perform only one single rebase/merge at the end, provided branches must form a chain, i.e. all of the following conditions must be met:
-            * for i=1..N-1, (i+1)-th branch must be a downstream (child) branch of the i-th branch,
-            * all provided branches (including N-th branch) must have exactly one downstream branch,
+            * for i=1..N-1, (i+1)-th branch must be the only downstream (child) branch of the i-th branch,
             * all provided branches must have an upstream branch (so, in other words, roots of branch dependency tree cannot be slid out).
 
             For example, let's assume the following dependency tree:
@@ -3066,6 +3062,7 @@ def usage(c: str = None) -> None:
                       block-cancel-order
                           change-table
                               drop-location-type
+                          add-notification
             </dim>
             And now let's assume that `adjust-reads-prec` and later `block-cancel-order` were merged to develop.
             After running `git machete slide-out adjust-reads-prec block-cancel-order` the tree will be reduced to:
@@ -3073,8 +3070,9 @@ def usage(c: str = None) -> None:
               develop
                   change-table
                       drop-location-type
+                  add-notification
             </dim>
-            and `change-table` will be rebased onto develop (fork point for this rebase is configurable, see `-d` option below).
+            and `change-table` and `add-notification` will be rebased onto develop (fork point for this rebase is configurable, see `-d` option below).
 
             Note: This command doesn't delete any branches from git, just removes them from the tree of branch dependencies.
 

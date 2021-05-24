@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.1.2
+
+- improved: slide-out can target branches with any number of downstream (child) branches
+
 ## New in git-machete 3.1.1
 
 - fixed: `add` without `--onto` crashing when the current branch is not managed
