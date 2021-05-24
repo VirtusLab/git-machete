@@ -7,6 +7,7 @@ import sys
 import textwrap
 import time
 import unittest
+from typing import Iterable
 
 from git_machete import cmd
 
@@ -85,6 +86,9 @@ class MacheteTester(unittest.TestCase):
             sys.stdout = orig_out
         return out.getvalue()
 
+    def assert_command(self, cmd: Iterable[str], expected_result: str) -> None:
+        self.assertEqual(self.launch_command(*cmd), self.adapt(expected_result))
+
     def setUp(self) -> None:
         self.setup = SandboxSetup()
 
@@ -140,94 +144,88 @@ class MacheteTester(unittest.TestCase):
         )
 
         self.launch_command("discover", "-y", "--roots=develop,master")
-        self.assertEqual(
-            self.launch_command("status"),
-            self.adapt(
-                """
-                develop
-                |
-                x-allow-ownership-link (ahead of origin)
-                | |
-                | x-build-chain (untracked)
-                |
-                o-call-ws (ahead of origin)
-                  |
-                  x-drop-constraint (untracked)
+        self.assert_command(
+            ["status"],
+            """
+            develop
+            |
+            x-allow-ownership-link (ahead of origin)
+            | |
+            | x-build-chain (untracked)
+            |
+            o-call-ws (ahead of origin)
+              |
+              x-drop-constraint (untracked)
 
-                master
-                |
-                o-hotfix/add-trigger (diverged from origin)
-                  |
-                  o-ignore-trailing * (diverged from & older than origin)
-                """
-            ),
+            master
+            |
+            o-hotfix/add-trigger (diverged from origin)
+              |
+              o-ignore-trailing * (diverged from & older than origin)
+            """,
         )
 
         self.launch_command("traverse", "-Wy")
-        self.assertEqual(
-            self.launch_command("status", "-l"),
-            self.adapt(
-                """
-                develop
-                |
-                | Allow ownership links
-                | 1st round of fixes
-                o-allow-ownership-link
-                | |
-                | | Build arbitrarily long chains
-                | o-build-chain
-                |
-                | Call web service
-                | 1st round of fixes
-                | 2nd round of fixes
-                o-call-ws
-                  |
-                  | Drop unneeded SQL constraints
-                  o-drop-constraint
+        self.assert_command(
+            ["status", "-l"],
+            """
+            develop
+            |
+            | Allow ownership links
+            | 1st round of fixes
+            o-allow-ownership-link
+            | |
+            | | Build arbitrarily long chains
+            | o-build-chain
+            |
+            | Call web service
+            | 1st round of fixes
+            | 2nd round of fixes
+            o-call-ws
+              |
+              | Drop unneeded SQL constraints
+              o-drop-constraint
 
-                master
-                |
-                | HOTFIX Add the trigger (amended)
-                o-hotfix/add-trigger
-                  |
-                  | Ignore trailing data (amended)
-                  o-ignore-trailing *
-                """
-            ),
+            master
+            |
+            | HOTFIX Add the trigger (amended)
+            o-hotfix/add-trigger
+              |
+              | Ignore trailing data (amended)
+              o-ignore-trailing *
+            """,
         )
 
         # Go from ignore-trailing to call-ws which has >1 commit to be squashed
         for _ in range(4):
             self.launch_command("go", "prev")
         self.launch_command("squash", "-v")
-        self.assertEqual(
-            self.launch_command("status", "-l"),
-            self.adapt(
-                """
-                develop
-                |
-                | Allow ownership links
-                | 1st round of fixes
-                o-allow-ownership-link
-                | |
-                | | Build arbitrarily long chains
-                | o-build-chain
-                |
-                | Call web service
-                o-call-ws * (diverged from origin)
-                  |
-                  | Drop unneeded SQL constraints
-                  x-drop-constraint
+        self.assert_command(
+            ["status", "-l"],
+            """
+            develop
+            |
+            | Allow ownership links
+            | 1st round of fixes
+            o-allow-ownership-link
+            | |
+            | | Build arbitrarily long chains
+            | o-build-chain
+            |
+            | Call web service
+            o-call-ws * (diverged from origin)
+              |
+              | Drop unneeded SQL constraints
+              x-drop-constraint
 
-                master
-                |
-                | HOTFIX Add the trigger (amended)
-                o-hotfix/add-trigger
-                  |
-                  | Ignore trailing data (amended)
-                  o-ignore-trailing
-                """
-            ),
+            master
+            |
+            | HOTFIX Add the trigger (amended)
+            o-hotfix/add-trigger
+              |
+              | Ignore trailing data (amended)
+              o-ignore-trailing
+            """,
         )
 
     def test_slide_out(self) -> None:
@@ -257,28 +255,26 @@ class MacheteTester(unittest.TestCase):
 
         self.launch_command("discover", "-y", "--roots=develop")
 
-        self.assertEqual(
-            self.launch_command("status", "-l"),
-            self.adapt(
-                """
-                develop
+        self.assert_command(
+            ["status", "-l"],
+            """
+            develop
+            |
+            | slide_root_1
+            o-slide_root
+              |
+              | child_a_1
+              o-child_a
+              |
+              | child_b_1
+              o-child_b
                 |
-                | slide_root_1
-                o-slide_root
+                | child_c_1
+                o-child_c
                   |
-                  | child_a_1
-                  o-child_a
-                  |
-                  | child_b_1
-                  o-child_b
-                    |
-                    | child_c_1
-                    o-child_c
-                      |
-                      | child_d_1
-                      o-child_d *
-                """
-            ),
+                  | child_d_1
+                  o-child_d *
+            """,
         )
 
         # Slide-out a single interior branch with one downstream. (child_c)
@@ -287,25 +283,23 @@ class MacheteTester(unittest.TestCase):
         self.launch_command("go", "up")
         self.launch_command("slide-out", "-n")
 
-        self.assertEqual(
-            self.launch_command("status", "-l"),
-            self.adapt(
-                """
-                develop
+        self.assert_command(
+            ["status", "-l"],
+            """
+            develop
+            |
+            | slide_root_1
+            o-slide_root
+              |
+              | child_a_1
+              o-child_a
+              |
+              | child_b_1
+              o-child_b
                 |
-                | slide_root_1
-                o-slide_root
-                  |
-                  | child_a_1
-                  o-child_a
-                  |
-                  | child_b_1
-                  o-child_b
-                    |
-                    | child_d_1
-                    o-child_d * (diverged from origin)
-                """
-            ),
+                | child_d_1
+                o-child_d * (diverged from origin)
+            """,
         )
 
         # Slide-out an interior branch with multiple downstreams. (slide_root)
@@ -314,10 +308,9 @@ class MacheteTester(unittest.TestCase):
         self.launch_command("go", "up")
         self.launch_command("go", "up")
 
-        self.assertEqual(
-            self.launch_command("status", "-l"),
-            self.adapt(
-                """
+        self.assert_command(
+            ["status", "-l"],
+            """
                 develop
                 |
                 | slide_root_1
@@ -331,47 +324,42 @@ class MacheteTester(unittest.TestCase):
                     |
                     | child_d_1
                     o-child_d
-                """
-            ),
+                """,
         )
 
         self.launch_command("slide-out", "-n")
 
-        self.assertEqual(
-            self.launch_command("status", "-l"),
-            self.adapt(
-                """
-                develop
-                |
-                | child_a_1
-                o-child_a (diverged from origin)
-                |
-                | child_b_1
-                o-child_b * (diverged from origin)
-                  |
-                  | child_d_1
-                  x-child_d
-                """
-            ),
+        self.assert_command(
+            ["status", "-l"],
+            """
+            develop
+            |
+            | child_a_1
+            o-child_a (diverged from origin)
+            |
+            | child_b_1
+            o-child_b * (diverged from origin)
+              |
+              | child_d_1
+              x-child_d
+            """,
         )
 
         self.launch_command("traverse", "-Wy")
-        self.assertEqual(
-            self.launch_command("status", "-l"),
-            self.adapt(
-                """
-                develop
-                |
-                | child_a_1
-                o-child_a
-                |
-                | child_b_1
-                o-child_b *
-                  |
-                  | child_d_1
-                  o-child_d
-                """
-            ),
+        self.assert_command(
+            ["status", "-l"],
+            """
+            develop
+            |
+            | child_a_1
+            o-child_a
+            |
+            | child_b_1
+            o-child_b *
+              |
+              | child_d_1
+              o-child_d
+            """,
         )
 
         # Slide-out a terminal branch. (child_d)
@@ -379,17 +367,15 @@ class MacheteTester(unittest.TestCase):
         self.launch_command("go", "down")
         self.launch_command("slide-out", "-n")
 
-        self.assertEqual(
-            self.launch_command("status", "-l"),
-            self.adapt(
-                """
-                develop
-                |
-                | child_a_1
-                o-child_a
-                |
-                | child_b_1
-                o-child_b *
-                """
-            ),
+        self.assert_command(
+            ["status", "-l"],
+            """
+            develop
+            |
+            | child_a_1
+            o-child_a
+            |
+            | child_b_1
+            o-child_b *
+            """,
         )
