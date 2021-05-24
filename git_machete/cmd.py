@@ -1978,39 +1978,58 @@ def run_post_slide_out_hook(cli_ctxt: CommandLineContext, new_upstream: str, sli
 
 
 def slide_out(cli_ctxt: CommandLineContext, branches_to_slide_out: List[str]) -> None:
+    # Verify that all branches exist, are managed, and have an upstream.
     for b in branches_to_slide_out:
         expect_in_managed_branches(b)
         new_upstream = up_branch.get(b)
         if not new_upstream:
             raise MacheteException(f"No upstream branch defined for `{b}`, cannot slide out")
-        dbs = down_branches.get(b)
+
+    # Verify that all "interior" slide-out branches have a single downstream pointing to the next slide-out
+    for bu, bd in zip(branches_to_slide_out[:-1], branches_to_slide_out[1:]):
+        dbs = down_branches.get(bu)
         if not dbs or len(dbs) == 0:
-            raise MacheteException(f"No downstream branch defined for `{b}`, cannot slide out")
+            raise MacheteException(f"No downstream branch defined for `{bu}`, cannot slide out")
         elif len(dbs) > 1:
             flat_dbs = ", ".join(f"`{x}`" for x in dbs)
-            raise MacheteException(f"Multiple downstream branches defined for `{b}`: {flat_dbs}; cannot slide out")
+            raise MacheteException(f"Multiple downstream branches defined for `{bu}`: {flat_dbs}; cannot slide out")
+        elif dbs != [bd]:
+            raise MacheteException(f"'{bd}' is not downstream of '{bu}', cannot slide out")
 
-    for bu, bd in zip(branches_to_slide_out[:-1], branches_to_slide_out[1:]):
         if up_branch[bd] != bu:
             raise MacheteException(f"`{bu}` is not upstream of `{bd}`, cannot slide out")
 
+    # Get new branches
     new_upstream = up_branch[branches_to_slide_out[0]]
-    new_downstream = down_branches[branches_to_slide_out[-1]][0]
+    new_downstreams = down_branches.get(branches_to_slide_out[-1])
+
+    # Verify that the last slide-out branch has 1+ downstreams
+    if not new_downstreams or len(new_downstreams) == 0:
+        raise MacheteException(f"No downstream branch defined for `{branches_to_slide_out[-1]}`, cannot slide out")
+
+    # Remove the slide-out branches from the tree
     for b in branches_to_slide_out:
         up_branch[b] = None
         down_branches[b] = None
+    down_branches[new_upstream] = [b for b in down_branches[new_upstream] if b != branches_to_slide_out[0]]
 
-    go(cli_ctxt, new_downstream)
-    up_branch[new_downstream] = new_upstream
-    down_branches[new_upstream] = [(new_downstream if x == branches_to_slide_out[0] else x) for x in down_branches[new_upstream]]
+    # Reconnect the downstreams to the new upstream in the tree
+    for new_downstream in new_downstreams:
+        up_branch[new_downstream] = new_upstream
+        down_branches[new_upstream].append(new_downstream)
+
+    # Update definition, fire post-hook, and perform the branch update
     save_definition_file()
-    run_post_slide_out_hook(cli_ctxt, new_upstream, branches_to_slide_out[-1], [new_downstream])
-    if cli_ctxt.opt_merge:
-        print(f"Merging {bold(new_upstream)} into {bold(new_downstream)}...")
-        merge(cli_ctxt, new_upstream, new_downstream)
-    else:
-        print(f"Rebasing {bold(new_downstream)} onto {bold(new_upstream)}...")
-        rebase(cli_ctxt, f"refs/heads/{new_upstream}", cli_ctxt.opt_down_fork_point or fork_point(cli_ctxt, new_downstream, use_overrides=True), new_downstream)
+    run_post_slide_out_hook(cli_ctxt, new_upstream, branches_to_slide_out[-1], new_downstreams)
+
+    for new_downstream in new_downstreams:
+        go(cli_ctxt, new_downstream)
+        if cli_ctxt.opt_merge:
+            print(f"Merging {bold(new_upstream)} into {bold(new_downstream)}...")
+            merge(cli_ctxt, new_upstream, new_downstream)
+        else:
+            print(f"Rebasing {bold(new_downstream)} onto {bold(new_upstream)}...")
+            rebase(cli_ctxt, f"refs/heads/{new_upstream}", cli_ctxt.opt_down_fork_point or fork_point(cli_ctxt, new_downstream, use_overrides=True), new_downstream)
 
 
 def slidable() -> List[str]:
