@@ -250,6 +250,9 @@ class MacheteTester(unittest.TestCase):
             .new_branch("child_c")
             .commit("child_c_1")
             .push()
+            .new_branch("child_d")
+            .commit("child_d_1")
+            .push()
         )
 
         self.launch_command("discover", "-y", "--roots=develop")
@@ -270,10 +273,16 @@ class MacheteTester(unittest.TestCase):
                   o-child_b
                     |
                     | child_c_1
-                    o-child_c *
+                    o-child_c
+                      |
+                      | child_d_1
+                      o-child_d *
                 """
             ),
         )
+
+        # Slide-out a single interior branch with one downstream. (child_c)
+        # This rebases the single downstream onto the new upstream. (child_b -> child_d)
 
         self.launch_command("go", "up")
         self.launch_command("slide-out", "-n")
@@ -290,57 +299,18 @@ class MacheteTester(unittest.TestCase):
                   | child_a_1
                   o-child_a
                   |
-                  | child_c_1
-                  o-child_c * (diverged from origin)
-                """
-            ),
-        )
-
-    def test_slide_out_multiple(self) -> None:
-        (
-            self.setup.new_branch("develop")
-            .commit("develop commit")
-            .push()
-            .new_branch("slide_root")
-            .commit("slide_root_1")
-            .push()
-            .check_out("slide_root")
-            .new_branch("child_a")
-            .commit("child_a_1")
-            .push()
-            .check_out("slide_root")
-            .new_branch("child_b")
-            .commit("child_b_1")
-            .push()
-            .check_out("child_b")
-            .new_branch("child_c")
-            .commit("child_c_1")
-            .push()
-        )
-
-        self.launch_command("discover", "-y", "--roots=develop")
-
-        self.assertEqual(
-            self.launch_command("status", "-l"),
-            self.adapt(
-                """
-                develop
-                |
-                | slide_root_1
-                o-slide_root
-                  |
-                  | child_a_1
-                  o-child_a
-                  |
                   | child_b_1
                   o-child_b
                     |
-                    | child_c_1
-                    o-child_c *
+                    | child_d_1
+                    o-child_d * (diverged from origin)
                 """
             ),
         )
 
+        # Slide-out an interior branch with multiple downstreams. (slide_root)
+        # This rebases all the downstreams onto the new upstream. (develop -> [child_a, child_b])
+        self.launch_command("traverse", "-Wy")
         self.launch_command("go", "up")
         self.launch_command("go", "up")
 
@@ -359,8 +329,8 @@ class MacheteTester(unittest.TestCase):
                   | child_b_1
                   o-child_b
                     |
-                    | child_c_1
-                    o-child_c
+                    | child_d_1
+                    o-child_d
                 """
             ),
         )
@@ -379,8 +349,8 @@ class MacheteTester(unittest.TestCase):
                 | child_b_1
                 o-child_b * (diverged from origin)
                   |
-                  | child_c_1
-                  x-child_c
+                  | child_d_1
+                  x-child_d
                 """
             ),
         )
@@ -398,8 +368,28 @@ class MacheteTester(unittest.TestCase):
                 | child_b_1
                 o-child_b *
                   |
-                  | child_c_1
-                  o-child_c
+                  | child_d_1
+                  o-child_d
+                """
+            ),
+        )
+
+        # Slide-out a terminal branch. (child_d)
+        # This just slices the branch off the tree.
+        self.launch_command("go", "down")
+        self.launch_command("slide-out", "-n")
+
+        self.assertEqual(
+            self.launch_command("status", "-l"),
+            self.adapt(
+                """
+                develop
+                |
+                | child_a_1
+                o-child_a
+                |
+                | child_b_1
+                o-child_b *
                 """
             ),
         )
