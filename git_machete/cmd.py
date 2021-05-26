@@ -3077,8 +3077,10 @@ def usage(c: str = None) -> None:
             Note: This command doesn't delete any branches from git, just removes them from the tree of branch dependencies.
 
             <b>Options:</b>
-              <b>-d, --down-fork-point=<down-fork-point-commit></b>    If updating by rebase, specifies the alternative fork point commit after which the rebased part of history of the downstream branch is meant to start.
-                                                                Not allowed if updating by merge. See also doc for `--fork-point` option in `git machete help reapply` and `git machete help update`.
+              <b>-d, --down-fork-point=<down-fork-point-commit></b>    If updating by rebase, specifies the alternative fork point for downstream branches for the operation.
+                                                                `git machete fork-point` overrides for downstream branches are recommended over use of this option.
+                                                                See also doc for `--fork-point` option in `git machete help reapply` and `git machete help update`.
+                                                                Not allowed if updating by merge.
 
               <b>-M, --merge</b>                                       Update the downstream branch by merge rather than by rebase.
 
