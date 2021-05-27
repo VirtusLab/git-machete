@@ -948,6 +948,7 @@ def commit_sha_by_revision(cli_ctxt: CommandLineContext, revision: str, prefix: 
 def is_full_sha(revision: str) -> Optional[Match[str]]:
     return re.match("^[0-9a-f]{40}$", revision)
 
+
 # Resolve a revision identifier to a full sha
 def full_sha(cli_ctxt: CommandLineContext, revision: str, prefix: str = "refs/heads/") -> Optional[str]:
     if prefix == "" and is_full_sha(revision):
@@ -1099,6 +1100,7 @@ def merge_base(cli_ctxt: CommandLineContext, sha1: str, sha2: str) -> str:
         #   then none of the (possibly more than one) merge-bases is equal to either of sha1/sha2 anyway.
         merge_base_cached[sha1, sha2] = popen_git(cli_ctxt, "merge-base", sha1, sha2).rstrip()
     return merge_base_cached[sha1, sha2]
+
 
 # Note: the 'git rev-parse --verify' validation is not performed in case for either of earlier/later
 # if the corresponding prefix is empty AND the revision is a 40 hex digit hash.
