@@ -948,6 +948,13 @@ def commit_sha_by_revision(cli_ctxt: CommandLineContext, revision: str, prefix: 
 def is_full_sha(revision: str) -> Optional[Match[str]]:
     return re.match("^[0-9a-f]{40}$", revision)
 
+# Resolve a revision identifier to a full sha
+def full_sha(cli_ctxt: CommandLineContext, revision: str, prefix: str = "refs/heads/") -> Optional[str]:
+    if prefix == "" and is_full_sha(revision):
+        return revision
+    else:
+        return commit_sha_by_revision(cli_ctxt, revision, prefix)
+
 
 committer_unix_timestamp_by_revision_cached: Optional[Dict[str, int]] = None  # TODO (#110): default dict with 0
 
@@ -1093,18 +1100,18 @@ def merge_base(cli_ctxt: CommandLineContext, sha1: str, sha2: str) -> str:
         merge_base_cached[sha1, sha2] = popen_git(cli_ctxt, "merge-base", sha1, sha2).rstrip()
     return merge_base_cached[sha1, sha2]
 
-
 # Note: the 'git rev-parse --verify' validation is not performed in case for either of earlier/later
 # if the corresponding prefix is empty AND the revision is a 40 hex digit hash.
-def is_ancestor(cli_ctxt: CommandLineContext, earlier_revision: str, later_revision: str, earlier_prefix: str = "refs/heads/", later_prefix: str = "refs/heads/") -> bool:
-    if earlier_prefix == "" and is_full_sha(earlier_revision):
-        earlier_sha: Optional[str] = earlier_revision
-    else:
-        earlier_sha = commit_sha_by_revision(cli_ctxt, earlier_revision, earlier_prefix)
-    if later_prefix == "" and is_full_sha(later_revision):
-        later_sha: Optional[str] = later_revision
-    else:
-        later_sha = commit_sha_by_revision(cli_ctxt, later_revision, later_prefix)
+def is_ancestor(
+    cli_ctxt: CommandLineContext,
+    earlier_revision: str,
+    later_revision: str,
+    earlier_prefix: str = "refs/heads/",
+    later_prefix: str = "refs/heads/",
+) -> bool:
+    earlier_sha = full_sha(cli_ctxt, earlier_revision, earlier_prefix)
+    later_sha = full_sha(cli_ctxt, later_revision, later_prefix)
+
     if earlier_sha == later_sha:
         return True
     return merge_base(cli_ctxt, earlier_sha, later_sha) == earlier_sha
@@ -1120,21 +1127,22 @@ def contains_equivalent_tree(
     earlier_prefix: str = "refs/heads/",
     later_prefix: str = "refs/heads/",
 ) -> bool:
-    if earlier_prefix == "" and is_full_sha(earlier_revision):
-        earlier_sha: Optional[str] = earlier_revision
-    else:
-        earlier_sha = commit_sha_by_revision(cli_ctxt, earlier_revision, earlier_prefix)
-    if later_prefix == "" and is_full_sha(later_revision):
-        later_sha: Optional[str] = later_revision
-    else:
-        later_sha = commit_sha_by_revision(cli_ctxt, later_revision, later_prefix)
+    earlier_sha = full_sha(cli_ctxt, earlier_revision, earlier_prefix)
+    later_sha = full_sha(cli_ctxt, later_revision, later_prefix)
+
     if earlier_sha == later_sha:
         return True
 
-    debug(cli_ctxt, ">>> contains_tree", f"earlier_revision={earlier_revision} later_revision={later_revision}")
+    debug(
+        cli_ctxt,
+        ">>> contains_equivalent_tree",
+        f"earlier_revision={earlier_revision} later_revision={later_revision}",
+    )
 
     # git rev-list later_sha ^earlier_sha
-    # shows all commits reachable via later_sha but not by ealier_sha
+    # shows all commits reachable via later_sha but not by earlier_sha
+    #
+    # https://git-scm.com/docs/git-rev-list#_description
     intermediate_shas = [
         sha.strip()
         for sha in popen_git(
@@ -1147,19 +1155,25 @@ def contains_equivalent_tree(
     ]
 
     for intermediate_sha in intermediate_shas:
-        # git diff-tree --name-status
-        # line-wise list of paths different between trees,
-        # or no output if the trees are identical
-        diff_tree = popen_git(
+        # git diff-tree --quiet
+        # Exits with 1 if there were differences and 0 means no differences.
+        #
+        # https://git-scm.com/docs/git-diff-tree#Documentation/git-diff-tree.txt---quiet
+        diff_result = run_cmd(
             cli_ctxt,
+            "git",
             "diff-tree",
-            "--name-status",
+            "--quiet",
             earlier_sha,
             intermediate_sha
         )
 
-        if not diff_tree.strip():
-            debug(cli_ctxt, ">>> contains_tree found", f"earlier_sha={earlier_sha} intermediate_sha={intermediate_sha}")
+        if diff_result == 0:
+            debug(
+                cli_ctxt,
+                ">>> contains_equivalent_tree found",
+                f"earlier_sha={earlier_sha} intermediate_sha={intermediate_sha}"
+            )
             return True
 
     return False
