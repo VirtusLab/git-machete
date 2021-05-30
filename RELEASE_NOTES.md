@@ -1,11 +1,11 @@
 # Release notes
 
-## New in git-machete 3.1.2
+## New in git-machete 3.2.0
 
 - improved: slide-out can target branches with any number of downstream (child) branches
 - fixed: detection of no-op rebase cases in fork-point algorithm
 - fixed: if a branch is merged to its parent, `git machete status -l` now always displays an empty list of commits
-- added: `--detect-squash` adds diff-tree based squash and rebase merge detection to `traverse` and `status`
+- imprpved: `traverse` and `status` can detect rebase and squash merges via diff-tree, use `--merge` to fallback to strict merge detection
 
 ## New in git-machete 3.1.1
 
