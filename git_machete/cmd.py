@@ -1143,16 +1143,14 @@ def contains_equivalent_tree(
     # shows all commits reachable via later_sha but not by earlier_sha
     #
     # https://git-scm.com/docs/git-rev-list#_description
-    intermediate_shas = [
-        sha.strip()
-        for sha in popen_git(
+    intermediate_shas = non_empty_lines(
+        popen_git(
             cli_ctxt,
             "rev-list",
             later_sha,
             "^" + earlier_sha,
-        ).splitlines()
-        if sha.strip()
-    ]
+        )
+    )
 
     for intermediate_sha in intermediate_shas:
         # git diff-tree --quiet
