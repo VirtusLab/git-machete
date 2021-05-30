@@ -13,7 +13,6 @@ import shutil
 import subprocess
 import sys
 import textwrap
-from distutils.util import strtobool
 
 
 # Core utils
@@ -60,7 +59,7 @@ ENDC = '\033[0m'
 BOLD = '\033[1m'
 # `GIT_MACHETE_DIM_AS_GRAY` remains undocumented as for now,
 # was just needed for animated gifs to render correctly (`[2m`-style dimmed text was invisible)
-DIM = '\033[38;2;128;128;128m' if strtobool(os.environ.get('GIT_MACHETE_DIM_AS_GRAY', "false")) else '\033[2m'
+DIM = '\033[38;2;128;128;128m' if os.environ.get('GIT_MACHETE_DIM_AS_GRAY') == 'true' else '\033[2m'
 UNDERLINE = '\033[4m'
 GREEN = '\033[32m'
 YELLOW = '\033[33m'
@@ -125,7 +124,6 @@ class CommandLineContext:
         self.opt_checked_out_since: Optional[str] = None
         self.opt_color: str = "auto"
         self.opt_debug: bool = False
-        self.opt_detect_squash: bool = strtobool(os.environ.get("GIT_MACHETE_DETECT_SQUASH", "0"))
         self.opt_down_fork_point: Optional[str] = None
         self.opt_fetch: bool = False
         self.opt_fork_point: Optional[str] = None
@@ -1137,7 +1135,7 @@ def contains_equivalent_tree(
 
     debug(
         cli_ctxt,
-        ">>> contains_equivalent_tree",
+        "contains_equivalent_tree",
         f"earlier_revision={earlier_revision} later_revision={later_revision}",
     )
 
@@ -1173,7 +1171,7 @@ def contains_equivalent_tree(
         if diff_result == 0:
             debug(
                 cli_ctxt,
-                ">>> contains_equivalent_tree found",
+                "contains_equivalent_tree found",
                 f"earlier_sha={earlier_sha} intermediate_sha={intermediate_sha}"
             )
             return True
@@ -1691,14 +1689,16 @@ def is_merged_to(cli_ctxt: CommandLineContext, b: str, target: str) -> bool:
         # (reflog stripped of trivial events like branch creation, reset etc.)
         # is non-empty.
         return bool(filtered_reflog(cli_ctxt, b, prefix="refs/heads/"))
-    elif cli_ctxt.opt_detect_squash and contains_equivalent_tree(cli_ctxt, b, target):
-        # If there is a commit in target with an identical tree state to b,
-        # then b may be squash or rebase merged into target.
-        return True
-    else:
+    elif cli_ctxt.opt_merge:
+        # In "merge" mode.
         # If a branch is NOT equal to the target (typically its parent),
         # it's just enough to check if the target is reachable from the branch.
         return is_ancestor(cli_ctxt, b, target)
+    else:
+        # In the default, rebase/squash mode.
+        # If there is a commit in target with an identical tree state to b,
+        # then b may be squash or rebase merged into target.
+        return contains_equivalent_tree(cli_ctxt, b, target)
 
 
 def is_merged_to_upstream(cli_ctxt: CommandLineContext, b: str) -> bool:
@@ -3194,7 +3194,7 @@ def usage(c: str = None) -> None:
               <b>-f, --fork-point=<fork-point-commit></b>    Specifies the alternative fork point commit after which the squashed part of history is meant to start.
         """,
         "status": """
-            <b>Usage: git machete s[tatus] [--color=WHEN] [-l|--list-commits] [-L|--list-commits-with-hashes] [--detect-squash]</b>
+            <b>Usage: git machete s[tatus] [--color=WHEN] [-l|--list-commits] [-L|--list-commits-with-hashes] [--merge]</b>
 
             Displays a tree-shaped status of the branches listed in the definition file.
 
@@ -3249,15 +3249,16 @@ def usage(c: str = None) -> None:
 
               <b>-L, --list-commits-with-hashes</b>    Additionally list the short hashes and messages of commits introduced on each branch.
 
-              <b>--detect-squash</b>                   Detect upstream merges made via rebase/squash when considering in a branch is merged into its upstream parent.
-                                                Override via GIT_MACHETE_DETECT_SQUASH environment variable.
+              <b>--merge</b>                           Only consider "strict" merges, rather than rebase/squash merges,
+                                                when detecting if a branch is merged into its upstream parent.
         """,
         "traverse": """
-            <b>Usage: git machete traverse [-F|--fetch] [-l|--list-commits] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] [--detect-squash] [--return-to=WHERE] [--start-from=WHERE] [-w|--whole] [-W] [-y|--yes]</b>
+            <b>Usage: git machete traverse [-F|--fetch] [-l|--list-commits] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] [--return-to=WHERE] [--start-from=WHERE] [-w|--whole] [-W] [-y|--yes]</b>
 
             Traverses the branch dependency in pre-order (i.e. simply in the order as they occur in the definition file) and for each branch:
-            * if the branch is merged to its parent/upstream:
-              - asks the user whether to slide out the branch from the dependency tree (typically branches are longer needed after they're merged);
+            * detects if the branch is merged to its parent/upstream
+              - by commit equivalency via `diff-tree` (default), or by strict detection of merge commits (if `--merge` passed)
+              - if so, asks the user whether to slide out the branch from the dependency tree (typically branches are longer needed after they're merged);
             * otherwise, if the branch is not in "green" sync with its parent/upstream (see help for `status`):
               - asks the user whether to rebase (default) or merge (if `--merge` passed) the branch onto into its upstream branch - equivalent to `git machete update` with no `--fork-point` option passed;
 
@@ -3279,7 +3280,7 @@ def usage(c: str = None) -> None:
 
               <b>-l, --list-commits</b>           When printing the status, additionally list the messages of commits introduced on each branch.
 
-              <b>-M, --merge</b>                  Update by merge rather than by rebase.
+              <b>-M, --merge</b>                  Update, and detect updates, by merge rather than by rebase.
 
               <b>-n</b>                           If updating by rebase, equivalent to `--no-interactive-rebase`. If updating by merge, equivalent to `--no-edit-merge`.
 
@@ -3288,9 +3289,6 @@ def usage(c: str = None) -> None:
 
               <b>--no-interactive-rebase</b>      If updating by rebase, run `git rebase` in non-interactive mode (without `-i/--interactive` flag).
                                            Not allowed if updating by merge.
-
-              <b>--detect-squash</b>              Detect upstream merges made via rebase/squash when considering in a branch is merged into its upstream parent.
-                                           Override via GIT_MACHETE_DETECT_SQUASH environment variable.
 
               <b>--return-to=WHERE</b>            Specifies the branch to return after traversal is successfully completed; WHERE can be `here` (the current branch at the moment when traversal starts),
                                            `nearest-remaining` (nearest remaining branch in case the `here` branch has been slid out by the traversal)
@@ -3468,8 +3466,6 @@ def launch(orig_args: List[str]) -> None:
                 cli_ctxt.opt_unset_override = True
             elif opt in ("-v", "--verbose"):
                 cli_ctxt.opt_verbose = True
-            elif opt in ("--detect-squash"):
-                cli_ctxt.opt_detect_squash = True
             elif opt == "--version":
                 version()
                 sys.exit()
@@ -3741,12 +3737,12 @@ def launch(orig_args: List[str]) -> None:
             cb = current_branch(cli_ctxt)
             squash(cli_ctxt, cb, cli_ctxt.opt_fork_point or fork_point(cli_ctxt, cb, use_overrides=True))
         elif cmd in ("s", "status"):
-            expect_no_param(parse_options(args, "Ll", ["color=", "detect-squash", "list-commits-with-hashes", "list-commits"]))
+            expect_no_param(parse_options(args, "Ll", ["color=", "merge", "list-commits-with-hashes", "list-commits"]))
             read_definition_file(cli_ctxt)
             expect_at_least_one_managed_branch()
             status(cli_ctxt, warn_on_yellow_edges=True)
         elif cmd == "traverse":
-            traverse_long_opts = ["fetch", "list-commits", "merge", "no-edit-merge", "no-interactive-rebase", "return-to=", "start-from=", "detect-squash", "whole", "yes"]
+            traverse_long_opts = ["fetch", "list-commits", "merge", "no-edit-merge", "no-interactive-rebase", "return-to=", "start-from=", "whole", "yes"]
             expect_no_param(parse_options(args, "FlMnWwy", traverse_long_opts))
             if cli_ctxt.opt_start_from not in ("here", "root", "first-root"):
                 raise MacheteException("Invalid argument for `--start-from`. Valid arguments: `here|root|first-root`.")
