@@ -379,3 +379,149 @@ class MacheteTester(unittest.TestCase):
             o-child_b *
             """,
         )
+
+    def test_squash_merge(self) -> None:
+        self.maxDiff = None
+        repo = (
+            self.setup.new_branch("root")
+            .commit("root")
+            .push()
+            .new_branch("develop")
+            .commit("develop")
+            .push()
+            .new_branch("feature")
+            .commit("feature_1")
+            .commit("feature_2")
+            .push()
+            .new_branch("child")
+            .commit("child_1")
+            .commit("child_2")
+            .push()
+        )
+
+        self.launch_command("discover", "-y", "--roots=root")
+
+        self.assert_command(
+            ["status", "-l"],
+            """
+            root
+            |
+            | develop
+            o-develop
+              |
+              | feature_1
+              | feature_2
+              o-feature
+                |
+                | child_1
+                | child_2
+                o-child *
+            """,
+        )
+
+        # squash-merge feature onto develop
+        repo = (
+            repo.check_out("develop")
+            .execute("git merge --squash feature")
+            .execute("git commit -m squash_feature")
+            .check_out("child")
+        )
+
+        # in default mode, feature is detected as "m" (merged) into develop
+        self.assert_command(
+            ["status", "-l"],
+            """
+            root
+            |
+            | develop
+            | squash_feature
+            o-develop (ahead of origin)
+              |
+              | feature_1
+              | feature_2
+              m-feature
+                |
+                | child_1
+                | child_2
+                o-child *
+            """,
+        )
+
+        # but under --merge, feature is detected as "x" (behind) develop
+        self.assert_command(
+            ["status", "-l", "--merge"],
+            """
+            root
+            |
+            | develop
+            | squash_feature
+            o-develop (ahead of origin)
+              |
+              | feature_1
+              | feature_2
+              x-feature
+                |
+                | child_1
+                | child_2
+                o-child *
+            """,
+        )
+
+        # traverse then slides out the branch
+        self.launch_command("traverse", "-w", "-y")
+        self.assert_command(
+            ["status", "-l"],
+            """
+            root
+            |
+            | develop
+            | squash_feature
+            o-develop
+              |
+              | child_1
+              | child_2
+              o-child *
+            """,
+        )
+
+        # simulate an upstream squash-merge of the feature branch
+        repo = (
+            repo.check_out("develop")
+            .new_branch("upstream_squash")
+            .execute("git merge --squash child")
+            .execute("git commit -m squash_child")
+            .execute("git push origin upstream_squash:develop")
+            .check_out("child")
+            .execute("git branch -D upstream_squash")
+        )
+
+        # status before fetch will show develop as out of date
+        self.assert_command(
+            ["status", "-l"],
+            """
+            root
+            |
+            | develop
+            | squash_feature
+            o-develop (behind origin)
+              |
+              | child_1
+              | child_2
+              o-child *
+            """,
+        )
+
+        # fetch-traverse will fetch upstream squash, detect, and slide out the child branch
+        self.launch_command("traverse", "-W", "-y")
+
+        self.assert_command(
+            ["status", "-l"],
+            """
+            root
+            |
+            | develop
+            | squash_feature
+            | squash_child
+            o-develop *
+            """,
+        )
