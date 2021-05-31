@@ -3,6 +3,7 @@
 ## New in git-machete 3.1.2
 
 - improved: slide-out can target branches with any number of downstream (child) branches
+- fixed: detection of no-op rebase cases in fork-point algorithm
 
 ## New in git-machete 3.1.1
 

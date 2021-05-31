@@ -1489,7 +1489,9 @@ def filtered_reflog(cli_ctxt: CommandLineContext, b: str, prefix: str) -> List[s
             gs_ == "branch: Reset to HEAD" or
             gs_.startswith("reset: moving to ") or
             gs_.startswith("fetch . ") or
-            gs_ == f"rebase finished: {prefix}/{b} onto {sha_}"  # the rare case of a no-op rebase
+            # The rare case of a no-op rebase, the exact wording likely depends on git version
+            gs_ == f"rebase finished: {prefix}{b} onto {sha_}" or
+            gs_ == f"rebase -i (finish): {prefix}{b} onto {sha_}"
         )
         if is_excluded:
             debug(cli_ctxt, f"filtered_reflog({b}, {prefix}) -> is_excluded_reflog_subject({sha_}, <<<{gs_}>>>)", "skipping reflog entry")

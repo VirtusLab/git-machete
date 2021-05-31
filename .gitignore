@@ -13,6 +13,7 @@ dist/
 .python-version
 .stestr/
 .tox/
+venv/
 
 # Snapcraft
 parts/
