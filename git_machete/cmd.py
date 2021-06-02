@@ -1771,6 +1771,13 @@ def fork_point_and_containing_branch_defs(cli_ctxt: CommandLineContext, b: str, 
     global up_branch
     u = up_branch.get(b)
 
+    if is_merged_to_upstream(cli_ctxt, b):
+        fp_sha = commit_sha_by_revision(cli_ctxt, b)
+        debug(cli_ctxt,
+              f"fork_point_and_containing_branch_defs({b})",
+              f"{b} is merged to {u}; skipping inference, using tip of {b} ({fp_sha}) as fork point")
+        return fp_sha, []
+
     if use_overrides:
         overridden_fp_sha = get_overridden_fork_point(cli_ctxt, b)
         if overridden_fp_sha:
