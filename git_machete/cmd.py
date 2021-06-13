@@ -943,6 +943,25 @@ def commit_sha_by_revision(cli_ctxt: CommandLineContext, revision: str, prefix: 
     return commit_sha_by_revision_cached[full_revision]
 
 
+def find_tree_sha_by_revision(cli_ctxt: CommandLineContext, revision: str) -> Optional[str]:
+    try:
+        return popen_git(cli_ctxt, "rev-parse", "--verify", "--quiet", revision + "^{tree}").rstrip()
+    except MacheteException:
+        return None
+
+
+tree_sha_by_commit_sha_cached: Optional[Dict[str, Optional[str]]] = None  # TODO (#110): default dict with None
+
+
+def tree_sha_by_commit_sha(cli_ctxt: CommandLineContext, commit_sha: str) -> Optional[str]:
+    global tree_sha_by_commit_sha_cached
+    if tree_sha_by_commit_sha_cached is None:
+        load_branches(cli_ctxt)
+    if commit_sha not in tree_sha_by_commit_sha_cached:
+        tree_sha_by_commit_sha_cached[commit_sha] = find_tree_sha_by_revision(cli_ctxt, commit_sha)
+    return tree_sha_by_commit_sha_cached[commit_sha]
+
+
 def is_full_sha(revision: str) -> Optional[Match[str]]:
     return re.match("^[0-9a-f]{40}$", revision)
 
@@ -1082,7 +1101,7 @@ def current_branch(cli_ctxt: CommandLineContext) -> str:
     return result
 
 
-merge_base_cached = {}
+merge_base_cached: Dict[Tuple[str, str], str] = {}
 
 
 def merge_base(cli_ctxt: CommandLineContext, sha1: str, sha2: str) -> str:
@@ -1117,8 +1136,11 @@ def is_ancestor(
     return merge_base(cli_ctxt, earlier_sha, later_sha) == earlier_sha
 
 
-# Determine if later_revision, or any ancestors of later_revision that are NOT ancestors of earlier_revision, contain a
-# tree with identical contents to earlier_revision, indicating that
+contains_equivalent_tree_cached: Dict[Tuple[str, str], bool] = {}
+
+
+# Determine if later_revision, or any ancestors of later_revision that are NOT ancestors of earlier_revision,
+# contain a tree with identical contents to earlier_revision, indicating that
 # later_revision contains a rebase or squash merge of earlier_revision.
 def contains_equivalent_tree(
     cli_ctxt: CommandLineContext,
@@ -1127,11 +1149,14 @@ def contains_equivalent_tree(
     earlier_prefix: str = "refs/heads/",
     later_prefix: str = "refs/heads/",
 ) -> bool:
-    earlier_sha = full_sha(cli_ctxt, earlier_revision, earlier_prefix)
-    later_sha = full_sha(cli_ctxt, later_revision, later_prefix)
+    earlier_commit_sha = full_sha(cli_ctxt, earlier_revision, earlier_prefix)
+    later_commit_sha = full_sha(cli_ctxt, later_revision, later_prefix)
 
-    if earlier_sha == later_sha:
+    if earlier_commit_sha == later_commit_sha:
         return True
+
+    if (earlier_commit_sha, later_commit_sha) in contains_equivalent_tree_cached:
+        return contains_equivalent_tree_cached[earlier_commit_sha, later_commit_sha]
 
     debug(
         cli_ctxt,
@@ -1139,29 +1164,23 @@ def contains_equivalent_tree(
         f"earlier_revision={earlier_revision} later_revision={later_revision}",
     )
 
-    # `git log later_sha ^earlier_sha`
-    # shows all commits reachable from later_sha but not from earlier_sha
-    #
-    # https://git-scm.com/docs/git-rev-list#_description
+    earlier_tree_sha = tree_sha_by_commit_sha(cli_ctxt, earlier_commit_sha)
+
+    # `git log later_commit_sha ^earlier_commit_sha`
+    # shows all commits reachable from later_commit_sha but NOT from earlier_commit_sha
     intermediate_tree_shas = non_empty_lines(
         popen_git(
             cli_ctxt,
             "log",
             "--format=%T",  # full commit's tree hash
-            later_sha,
-            "^" + earlier_sha,
+            "^" + earlier_commit_sha,
+            later_commit_sha
         )
     )
 
-    earlier_tree_sha = popen_git(
-        cli_ctxt,
-        "log",
-        "--format=%T",
-        "-1",
-        earlier_sha
-    ).strip()
-
-    return earlier_tree_sha in intermediate_tree_shas
+    result = earlier_tree_sha in intermediate_tree_shas
+    contains_equivalent_tree_cached[earlier_commit_sha, later_commit_sha] = result
+    return result
 
 
 def create_branch(cli_ctxt: CommandLineContext, b: str, out_of_revision: str) -> None:
@@ -1176,8 +1195,8 @@ def log_shas(cli_ctxt: CommandLineContext, revision: str, max_count: Optional[in
 
 MAX_COUNT_FOR_INITIAL_LOG = 10
 
-initial_log_shas_cached = {}
-remaining_log_shas_cached = {}
+initial_log_shas_cached: Dict[str, List[str]] = {}
+remaining_log_shas_cached: Dict[str, List[str]] = {}
 
 
 # Since getting the full history of a branch can be an expensive operation for large repositories (compared to all other underlying git operations),
@@ -1214,36 +1233,40 @@ def remote_branches(cli_ctxt: CommandLineContext) -> List[str]:
 
 
 def load_branches(cli_ctxt: CommandLineContext) -> None:
-    global commit_sha_by_revision_cached, committer_unix_timestamp_by_revision_cached, counterparts_for_fetching_cached, local_branches_cached, remote_branches_cached
+    global commit_sha_by_revision_cached, committer_unix_timestamp_by_revision_cached, counterparts_for_fetching_cached
+    global local_branches_cached, remote_branches_cached, tree_sha_by_commit_sha_cached
     commit_sha_by_revision_cached = {}
     committer_unix_timestamp_by_revision_cached = {}
     counterparts_for_fetching_cached = {}
     local_branches_cached = []
     remote_branches_cached = []
+    tree_sha_by_commit_sha_cached = {}
 
     # Using 'committerdate:raw' instead of 'committerdate:unix' since the latter isn't supported by some older versions of git.
-    raw_remote = non_empty_lines(popen_git(cli_ctxt, "for-each-ref", "--format=%(refname)\t%(objectname)\t%(committerdate:raw)", "refs/remotes"))
+    raw_remote = non_empty_lines(popen_git(cli_ctxt, "for-each-ref", "--format=%(refname)\t%(objectname)\t%(tree)\t%(committerdate:raw)", "refs/remotes"))
     for line in raw_remote:
         values = line.split("\t")
-        if len(values) != 3:  # invalid, shouldn't happen
-            continue
-        b, sha, committer_unix_timestamp_and_time_zone = values
+        if len(values) != 4:
+            continue  # invalid, shouldn't happen
+        b, commit_sha, tree_sha, committer_unix_timestamp_and_time_zone = values
         b_stripped = re.sub("^refs/remotes/", "", b)
         remote_branches_cached += [b_stripped]
-        commit_sha_by_revision_cached[b] = sha
+        commit_sha_by_revision_cached[b] = commit_sha
+        tree_sha_by_commit_sha_cached[commit_sha] = tree_sha
         committer_unix_timestamp_by_revision_cached[b] = int(committer_unix_timestamp_and_time_zone.split(' ')[0])
 
-    raw_local = non_empty_lines(popen_git(cli_ctxt, "for-each-ref", "--format=%(refname)\t%(objectname)\t%(committerdate:raw)\t%(upstream)", "refs/heads"))
+    raw_local = non_empty_lines(popen_git(cli_ctxt, "for-each-ref", "--format=%(refname)\t%(objectname)\t%(tree)\t%(committerdate:raw)\t%(upstream)", "refs/heads"))
 
     for line in raw_local:
         values = line.split("\t")
-        if len(values) != 4:  # invalid, shouldn't happen
-            continue
-        b, sha, committer_unix_timestamp_and_time_zone, fetch_counterpart = values
+        if len(values) != 5:
+            continue  # invalid, shouldn't happen
+        b, commit_sha, tree_sha, committer_unix_timestamp_and_time_zone, fetch_counterpart = values
         b_stripped = re.sub("^refs/heads/", "", b)
         fetch_counterpart_stripped = re.sub("^refs/remotes/", "", fetch_counterpart)
         local_branches_cached += [b_stripped]
-        commit_sha_by_revision_cached[b] = sha
+        commit_sha_by_revision_cached[b] = commit_sha
+        tree_sha_by_commit_sha_cached[commit_sha] = tree_sha
         committer_unix_timestamp_by_revision_cached[b] = int(committer_unix_timestamp_and_time_zone.split(' ')[0])
         if fetch_counterpart_stripped in remote_branches_cached:
             counterparts_for_fetching_cached[b_stripped] = fetch_counterpart_stripped
@@ -2568,7 +2591,7 @@ def status(cli_ctxt: CommandLineContext, warn_on_yellow_edges: bool) -> None:
     # in order to render the leading parts of lines properly.
     for b in up_branch:
         u = up_branch[b]
-        if is_merged_to_upstream(cli_ctxt, b):
+        if is_merged_to(cli_ctxt, b, u):
             edge_color[b] = DIM
         elif not is_ancestor(cli_ctxt, u, b):
             edge_color[b] = RED
