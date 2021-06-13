@@ -1117,9 +1117,9 @@ def is_ancestor(
     return merge_base(cli_ctxt, earlier_sha, later_sha) == earlier_sha
 
 
-# Determine if any revisions in later_revision contain a tree with identical
-# contents to earlier_revision, indicating that later_revision contains a
-# rebase or squash merge of earlier_revision.
+# Determine if later_revision, or any ancestors of later_revision, contain a
+# tree with identical contents to earlier_revision, indicating that
+# later_revision contains a rebase or squash merge of earlier_revision.
 def contains_equivalent_tree(
     cli_ctxt: CommandLineContext,
     earlier_revision: str,
@@ -1152,6 +1152,8 @@ def contains_equivalent_tree(
         )
     )
 
+    # Check later_sha and all the itermediate ancestors of later_sha to
+    # determine if they've an equivalent tree to earlier_sha
     for intermediate_sha in intermediate_shas:
         # git diff-tree --quiet
         # Exits with 1 if there were differences and 0 means no differences.
@@ -1687,17 +1689,19 @@ def is_merged_to(cli_ctxt: CommandLineContext, b: str, target: str) -> bool:
         # (reflog stripped of trivial events like branch creation, reset etc.)
         # is non-empty.
         return bool(filtered_reflog(cli_ctxt, b, prefix="refs/heads/"))
-    elif cli_ctxt.opt_merge:
-        # In "merge" mode.
+    elif is_ancestor(cli_ctxt, b, target):
         # If a branch is NOT equal to the target (typically its parent),
-        # it's just enough to check if the target is reachable from the branch.
-        return is_ancestor(cli_ctxt, b, target)
-    else:
+        # and target is reachable from the branch then it's merged
+        return True
+    elif not cli_ctxt.opt_merge:
         # In the default, rebase/squash mode.
         # If there is a commit in target with an identical tree state to b,
         # then b may be squash or rebase merged into target.
         return contains_equivalent_tree(cli_ctxt, b, target)
-
+    else:
+        # In strict merge mode.
+        # If merge isn't detected above
+        return False
 
 def is_merged_to_upstream(cli_ctxt: CommandLineContext, b: str) -> bool:
     if b not in up_branch:
@@ -3209,6 +3213,8 @@ def usage(c: str = None) -> None:
                 and the fork point of the downstream branch is <b>equal</b> to the upstream branch tip.
 
               - <b><dim>grey/dimmed edge</dim></b> means that the downstream branch has been <b>merged</b> to the upstream branch,
+                detected by commit equivalency via `diff-tree` (default), or by strict detection of merge commits (if `--merge` passed)
+
 
             * prints `(untracked/ahead of <remote>/behind <remote>/diverged from [& older than] <remote>)` message if the branch is not in sync with its remote counterpart;
 
@@ -3247,7 +3253,7 @@ def usage(c: str = None) -> None:
 
               <b>-L, --list-commits-with-hashes</b>    Additionally list the short hashes and messages of commits introduced on each branch.
 
-              <b>--merge</b>                           Only consider "strict" merges, rather than rebase/squash merges,
+              <b>-M, --merge</b>                       Only consider "strict" merges, rather than rebase/squash merges,
                                                 when detecting if a branch is merged into its upstream parent.
         """,
         "traverse": """

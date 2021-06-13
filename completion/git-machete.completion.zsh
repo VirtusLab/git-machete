@@ -102,6 +102,7 @@ _git-machete() {
                         '(--color)'--color='[Colorize the output; argument can be "always", "auto", or "never"]: :__git_machete_opt_color_args' \
                         '(-L --list-commits-with-hashes)'{-L,--list-commits-with-hashes}'[List the short hashes and messages of commits introduced on each branch]' \
                         '(-l --list-commits)'{-l,--list-commits}'[List the messages of commits introduced on each branch]' \
+                        '(-M --merge)'{-M,--merge}'[Strictly detect merge, rather than rebase]' \
                     && ret=0
                     ;;
                 (traverse)
