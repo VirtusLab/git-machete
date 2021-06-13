@@ -1117,7 +1117,7 @@ def is_ancestor(
     return merge_base(cli_ctxt, earlier_sha, later_sha) == earlier_sha
 
 
-# Determine if later_revision, or any ancestors of later_revision, contain a
+# Determine if later_revision, or any ancestors of later_revision that are NOT ancestors of earlier_revision, contain a
 # tree with identical contents to earlier_revision, indicating that
 # later_revision contains a rebase or squash merge of earlier_revision.
 def contains_equivalent_tree(
