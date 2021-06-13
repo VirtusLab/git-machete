@@ -1139,44 +1139,29 @@ def contains_equivalent_tree(
         f"earlier_revision={earlier_revision} later_revision={later_revision}",
     )
 
-    # git rev-list later_sha ^earlier_sha
-    # shows all commits reachable via later_sha but not by earlier_sha
+    # `git log later_sha ^earlier_sha`
+    # shows all commits reachable from later_sha but not from earlier_sha
     #
     # https://git-scm.com/docs/git-rev-list#_description
-    intermediate_shas = non_empty_lines(
+    intermediate_tree_shas = non_empty_lines(
         popen_git(
             cli_ctxt,
-            "rev-list",
+            "log",
+            "--format=%T",  # full commit's tree hash
             later_sha,
             "^" + earlier_sha,
         )
     )
 
-    # Check later_sha and all the itermediate ancestors of later_sha to
-    # determine if they've an equivalent tree to earlier_sha
-    for intermediate_sha in intermediate_shas:
-        # git diff-tree --quiet
-        # Exits with 1 if there were differences and 0 means no differences.
-        #
-        # https://git-scm.com/docs/git-diff-tree#Documentation/git-diff-tree.txt---quiet
-        diff_result = run_cmd(
-            cli_ctxt,
-            "git",
-            "diff-tree",
-            "--quiet",
-            earlier_sha,
-            intermediate_sha
-        )
+    earlier_tree_sha = popen_git(
+        cli_ctxt,
+        "log",
+        "--format=%T",
+        "-1",
+        earlier_sha
+    ).strip()
 
-        if diff_result == 0:
-            debug(
-                cli_ctxt,
-                "contains_equivalent_tree found",
-                f"earlier_sha={earlier_sha} intermediate_sha={intermediate_sha}"
-            )
-            return True
-
-    return False
+    return earlier_tree_sha in intermediate_tree_shas
 
 
 def create_branch(cli_ctxt: CommandLineContext, b: str, out_of_revision: str) -> None:
