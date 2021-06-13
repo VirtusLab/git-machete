@@ -445,9 +445,9 @@ class MacheteTester(unittest.TestCase):
             """,
         )
 
-        # but under --merge, feature is detected as "x" (behind) develop
+        # but under --no-detect-squash-merges, feature is detected as "x" (behind) develop
         self.assert_command(
-            ["status", "-l", "--merge"],
+            ["status", "-l", "--no-detect-squash-merges"],
             """
             root
             |

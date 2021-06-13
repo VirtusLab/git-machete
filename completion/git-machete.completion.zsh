@@ -102,7 +102,7 @@ _git-machete() {
                         '(--color)'--color='[Colorize the output; argument can be "always", "auto", or "never"]: :__git_machete_opt_color_args' \
                         '(-L --list-commits-with-hashes)'{-L,--list-commits-with-hashes}'[List the short hashes and messages of commits introduced on each branch]' \
                         '(-l --list-commits)'{-l,--list-commits}'[List the messages of commits introduced on each branch]' \
-                        '(-M --merge)'{-M,--merge}'[Strictly detect merge, rather than rebase]' \
+                        '(--no-detect-squash-merges)'--no-detect-squash-merges'[Only consider "strict" (fast-forward or 2-parent) merges, rather than rebase/squash merges, when detecting if a branch is merged into its upstream]' \
                     && ret=0
                     ;;
                 (traverse)
@@ -111,6 +111,7 @@ _git-machete() {
                         '(-l --list-commits)'{-l,--list-commits}'[List the messages of commits introduced on each branch]' \
                         '(-M --merge)'{-M,--merge}'[Update by merge rather than by rebase]' \
                         '(-n)'-n'[If updating by rebase, equivalent to --no-interactive-rebase. If updating by merge, equivalent to --no-edit-merge]' \
+                        '(--no-detect-squash-merges)'--no-detect-squash-merges'[Only consider "strict" (fast-forward or 2-parent) merges, rather than rebase/squash merges, when detecting if a branch is merged into its upstream]' \
                         '(--no-edit-merge)'--no-edit-merge'[If updating by merge, pass --no-edit flag to underlying git merge]' \
                         '(--no-interactive-rebase)'--no-interactive-rebase'[If updating by rebase, do NOT pass --interactive flag to underlying git rebase]' \
                         '(--return-to)'--return-to='[The branch to return after traversal is successfully completed; argument can be "here", "nearest-remaining", or "stay"]: :__git_machete_opt_return_to_args' \

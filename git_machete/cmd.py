@@ -132,6 +132,7 @@ class CommandLineContext:
         self.opt_list_commits_with_hashes: bool = False
         self.opt_merge: bool = False
         self.opt_n: bool = False
+        self.opt_no_detect_squash_merges: bool = False
         self.opt_no_edit_merge: bool = False
         self.opt_no_interactive_rebase: bool = False
         self.opt_onto: Optional[str] = None
@@ -1701,15 +1702,13 @@ def is_merged_to(cli_ctxt: CommandLineContext, b: str, target: str) -> bool:
         # If a branch is NOT equal to the target (typically its parent),
         # and target is reachable from the branch then it's merged
         return True
-    elif not cli_ctxt.opt_merge:
-        # In the default, rebase/squash mode.
+    elif cli_ctxt.opt_no_detect_squash_merges:
+        return False
+    else:
+        # In the default mode.
         # If there is a commit in target with an identical tree state to b,
         # then b may be squash or rebase merged into target.
         return contains_equivalent_tree(cli_ctxt, b, target)
-    else:
-        # In strict merge mode.
-        # If merge isn't detected above
-        return False
 
 
 def is_merged_to_upstream(cli_ctxt: CommandLineContext, b: str) -> bool:
@@ -3205,7 +3204,7 @@ def usage(c: str = None) -> None:
               <b>-f, --fork-point=<fork-point-commit></b>    Specifies the alternative fork point commit after which the squashed part of history is meant to start.
         """,
         "status": """
-            <b>Usage: git machete s[tatus] [--color=WHEN] [-l|--list-commits] [-L|--list-commits-with-hashes] [--merge]</b>
+            <b>Usage: git machete s[tatus] [--color=WHEN] [-l|--list-commits] [-L|--list-commits-with-hashes] [--no-detect-squash-merges]</b>
 
             Displays a tree-shaped status of the branches listed in the definition file.
 
@@ -3219,10 +3218,10 @@ def usage(c: str = None) -> None:
                 but the fork point (see help on `fork-point`) of the downstream branch is <b>not equal</b> to the upstream branch tip,
 
               - <b><green>green edge</green></b> means that the downstream branch tip is a <b>direct descendant</b> of the upstream branch tip
-                and the fork point of the downstream branch is <b>equal</b> to the upstream branch tip.
+                and the fork point of the downstream branch is <b>equal</b> to the upstream branch tip,
 
               - <b><dim>grey/dimmed edge</dim></b> means that the downstream branch has been <b>merged</b> to the upstream branch,
-                detected by commit equivalency via `diff-tree` (default), or by strict detection of merge commits (if `--merge` passed)
+                detected by commit equivalency (default), or by strict detection of merge commits (if `--no-detect-squash-merges` passed).
 
 
             * prints `(untracked/ahead of <remote>/behind <remote>/diverged from [& older than] <remote>)` message if the branch is not in sync with its remote counterpart;
@@ -3262,15 +3261,17 @@ def usage(c: str = None) -> None:
 
               <b>-L, --list-commits-with-hashes</b>    Additionally list the short hashes and messages of commits introduced on each branch.
 
-              <b>-M, --merge</b>                       Only consider "strict" merges, rather than rebase/squash merges,
-                                                when detecting if a branch is merged into its upstream parent.
+              <b>--no-detect-squash-merges</b>         Only consider "strict" (fast-forward or 2-parent) merges, rather than rebase/squash merges,
+                                                when detecting if a branch is merged into its upstream (parent).
         """,
         "traverse": """
-            <b>Usage: git machete traverse [-F|--fetch] [-l|--list-commits] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] [--return-to=WHERE] [--start-from=WHERE] [-w|--whole] [-W] [-y|--yes]</b>
+            <b>Usage: git machete traverse [-F|--fetch] [-l|--list-commits] [-M|--merge]
+                                           [-n|--no-edit-merge|--no-interactive-rebase] [--no-detect-squash-merges]
+                                           [--return-to=WHERE] [--start-from=WHERE] [-w|--whole] [-W] [-y|--yes]</b>
 
             Traverses the branch dependency in pre-order (i.e. simply in the order as they occur in the definition file) and for each branch:
             * detects if the branch is merged to its parent/upstream
-              - by commit equivalency via `diff-tree` (default), or by strict detection of merge commits (if `--merge` passed)
+              - by commit equivalency (default), or by strict detection of merge commits (if `--no-detect-squash-merges` passed),
               - if so, asks the user whether to slide out the branch from the dependency tree (typically branches are longer needed after they're merged);
             * otherwise, if the branch is not in "green" sync with its parent/upstream (see help for `status`):
               - asks the user whether to rebase (default) or merge (if `--merge` passed) the branch onto into its upstream branch - equivalent to `git machete update` with no `--fork-point` option passed;
@@ -3293,9 +3294,12 @@ def usage(c: str = None) -> None:
 
               <b>-l, --list-commits</b>           When printing the status, additionally list the messages of commits introduced on each branch.
 
-              <b>-M, --merge</b>                  Update, and detect updates, by merge rather than by rebase.
+              <b>-M, --merge</b>                  Update by merge rather than by rebase.
 
               <b>-n</b>                           If updating by rebase, equivalent to `--no-interactive-rebase`. If updating by merge, equivalent to `--no-edit-merge`.
+
+              <b>--no-detect-squash-merges</b>    Only consider "strict" (fast-forward or 2-parent) merges, rather than rebase/squash merges,
+                                           when detecting if a branch is merged into its upstream (parent).
 
               <b>--no-edit-merge</b>              If updating by merge, skip opening the editor for merge commit message while doing `git merge` (i.e. pass `--no-edit` flag to underlying `git merge`).
                                            Not allowed if updating by rebase.
@@ -3453,6 +3457,8 @@ def launch(orig_args: List[str]) -> None:
                 cli_ctxt.opt_merge = True
             elif opt == "-n":
                 cli_ctxt.opt_n = True
+            elif opt == "--no-detect-squash-merges":
+                cli_ctxt.opt_no_detect_squash_merges = True
             elif opt == "--no-edit-merge":
                 cli_ctxt.opt_no_edit_merge = True
             elif opt == "--no-interactive-rebase":
@@ -3750,12 +3756,14 @@ def launch(orig_args: List[str]) -> None:
             cb = current_branch(cli_ctxt)
             squash(cli_ctxt, cb, cli_ctxt.opt_fork_point or fork_point(cli_ctxt, cb, use_overrides=True))
         elif cmd in ("s", "status"):
-            expect_no_param(parse_options(args, "Ll", ["color=", "merge", "list-commits-with-hashes", "list-commits"]))
+            expect_no_param(parse_options(args, "Ll", ["color=", "merge", "list-commits-with-hashes", "list-commits", "no-detect-squash-merges"]))
             read_definition_file(cli_ctxt)
             expect_at_least_one_managed_branch()
             status(cli_ctxt, warn_on_yellow_edges=True)
         elif cmd == "traverse":
-            traverse_long_opts = ["fetch", "list-commits", "merge", "no-edit-merge", "no-interactive-rebase", "return-to=", "start-from=", "whole", "yes"]
+            traverse_long_opts = ["fetch", "list-commits", "merge",
+                                  "no-detect-squash-merges", "no-edit-merge", "no-interactive-rebase",
+                                  "return-to=", "start-from=", "whole", "yes"]
             expect_no_param(parse_options(args, "FlMnWwy", traverse_long_opts))
             if cli_ctxt.opt_start_from not in ("here", "root", "first-root"):
                 raise MacheteException("Invalid argument for `--start-from`. Valid arguments: `here|root|first-root`.")

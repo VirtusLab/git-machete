@@ -30,7 +30,7 @@ even when **multiple branches** are present in the repository
 </p>
 
 🔌 See also [VirtusLab/git-machete-intellij-plugin](https://github.com/VirtusLab/git-machete-intellij-plugin#git-machete-intellij-plugin) &mdash;
-a port into a plugin for the IntelliJ Platform products.
+a port into a plugin for the IntelliJ Platform products, including PyCharm, WebStorm etc.
 
 
 ## Install
