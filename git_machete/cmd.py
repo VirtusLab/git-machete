@@ -1703,6 +1703,7 @@ def is_merged_to(cli_ctxt: CommandLineContext, b: str, target: str) -> bool:
         # If merge isn't detected above
         return False
 
+
 def is_merged_to_upstream(cli_ctxt: CommandLineContext, b: str) -> bool:
     if b not in up_branch:
         return False
