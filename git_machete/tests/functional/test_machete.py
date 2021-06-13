@@ -437,8 +437,6 @@ class MacheteTester(unittest.TestCase):
             | squash_feature
             o-develop (ahead of origin)
               |
-              | feature_1
-              | feature_2
               m-feature
                 |
                 | child_1
