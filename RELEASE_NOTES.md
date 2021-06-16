@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.2.1
+
+- fixed: newly created branches were sometimes incorrectly recognized as merged to parent
+
 ## New in git-machete 3.2.0
 
 - improved: `slide-out` can target branches with any number of downstream (child) branches (contributed by @asford)

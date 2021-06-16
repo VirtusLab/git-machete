@@ -1122,7 +1122,7 @@ def merge_base(cli_ctxt: CommandLineContext, sha1: str, sha2: str) -> str:
 
 # Note: the 'git rev-parse --verify' validation is not performed in case for either of earlier/later
 # if the corresponding prefix is empty AND the revision is a 40 hex digit hash.
-def is_ancestor(
+def is_ancestor_or_equal(
     cli_ctxt: CommandLineContext,
     earlier_revision: str,
     later_revision: str,
@@ -1477,8 +1477,8 @@ DIVERGED_FROM_AND_NEWER_THAN_REMOTE = 6
 
 
 def get_relation_to_remote_counterpart(cli_ctxt: CommandLineContext, b: str, rb: str) -> int:
-    b_is_anc_of_rb = is_ancestor(cli_ctxt, b, rb, later_prefix="refs/remotes/")
-    rb_is_anc_of_b = is_ancestor(cli_ctxt, rb, b, earlier_prefix="refs/remotes/")
+    b_is_anc_of_rb = is_ancestor_or_equal(cli_ctxt, b, rb, later_prefix="refs/remotes/")
+    rb_is_anc_of_b = is_ancestor_or_equal(cli_ctxt, rb, b, earlier_prefix="refs/remotes/")
     if b_is_anc_of_rb:
         return IN_SYNC_WITH_REMOTE if rb_is_anc_of_b else BEHIND_REMOTE
     elif rb_is_anc_of_b:
@@ -1690,18 +1690,14 @@ def match_log_to_filtered_reflogs(cli_ctxt: CommandLineContext, b: str) -> Gener
 # Complex routines/commands
 
 def is_merged_to(cli_ctxt: CommandLineContext, b: str, target: str) -> bool:
-    if commit_sha_by_revision(cli_ctxt, target) == commit_sha_by_revision(cli_ctxt, b):
-        # If branch is equal to the target, we need to distinguish between the
+    if is_ancestor_or_equal(cli_ctxt, b, target):
+        # If branch is ancestor of or equal to the target, we need to distinguish between the
         # case of branch being "recently" created from the target and the case of
         # branch being fast-forward-merged to the target.
         # The applied heuristics is to check if the filtered reflog of the branch
         # (reflog stripped of trivial events like branch creation, reset etc.)
         # is non-empty.
         return bool(filtered_reflog(cli_ctxt, b, prefix="refs/heads/"))
-    elif is_ancestor(cli_ctxt, b, target):
-        # If a branch is NOT equal to the target (typically its parent),
-        # and target is reachable from the branch then it's merged
-        return True
     elif cli_ctxt.opt_no_detect_squash_merges:
         return False
     else:
@@ -1868,7 +1864,7 @@ def fork_point_and_containing_branch_defs(cli_ctxt: CommandLineContext, b: str, 
     if use_overrides:
         overridden_fp_sha = get_overridden_fork_point(cli_ctxt, b)
         if overridden_fp_sha:
-            if u and is_ancestor(cli_ctxt, u, b) and not is_ancestor(cli_ctxt, u, overridden_fp_sha, later_prefix=""):
+            if u and is_ancestor_or_equal(cli_ctxt, u, b) and not is_ancestor_or_equal(cli_ctxt, u, overridden_fp_sha, later_prefix=""):
                 # We need to handle the case when b is a descendant of u,
                 # but the fork point of b is overridden to a commit that is NOT a descendant of u.
                 # In this case it's more reasonable to assume that u (and not overridden_fp_sha) is the fork point.
@@ -1885,7 +1881,7 @@ def fork_point_and_containing_branch_defs(cli_ctxt: CommandLineContext, b: str, 
     try:
         fp_sha, containing_branch_defs = next(match_log_to_filtered_reflogs(cli_ctxt, b))
     except StopIteration:
-        if u and is_ancestor(cli_ctxt, u, b):
+        if u and is_ancestor_or_equal(cli_ctxt, u, b):
             debug(cli_ctxt,
                   f"fork_point_and_containing_branch_defs({b})",
                   f"cannot find fork point, but {b} is descendant of its upstream {u}; falling back to {u} as fork point")
@@ -1899,7 +1895,7 @@ def fork_point_and_containing_branch_defs(cli_ctxt: CommandLineContext, b: str, 
               "filtered reflog of any other branch or its remote counterpart "
               f"(specifically: {' and '.join(map(get_second, containing_branch_defs))})")
 
-        if u and is_ancestor(cli_ctxt, u, b) and not is_ancestor(cli_ctxt, u, fp_sha, later_prefix=""):
+        if u and is_ancestor_or_equal(cli_ctxt, u, b) and not is_ancestor_or_equal(cli_ctxt, u, fp_sha, later_prefix=""):
             # That happens very rarely in practice (typically current head of any branch, including u, should occur on the reflog of this
             # branch, thus is_ancestor(u, b) should imply is_ancestor(u, FP(b)), but it's still possible in case reflog of
             # u is incomplete for whatever reason.
@@ -1957,7 +1953,7 @@ def get_fork_point_override_data(cli_ctxt: CommandLineContext, b: str) -> Option
         return None
     # This check needs to be performed every time the config is retrieved.
     # We can't rely on the values being validated in set_fork_point_override(), since the config could have been modified outside of git-machete.
-    if not is_ancestor(cli_ctxt, to_sha, while_descendant_of_sha, earlier_prefix="", later_prefix=""):
+    if not is_ancestor_or_equal(cli_ctxt, to_sha, while_descendant_of_sha, earlier_prefix="", later_prefix=""):
         warn(
             f"commit {short_commit_sha_by_revision(cli_ctxt, to)} pointed by {to_key} config "
             f"is not an ancestor of commit {short_commit_sha_by_revision(cli_ctxt, while_descendant_of)} "
@@ -1975,7 +1971,7 @@ def get_overridden_fork_point(cli_ctxt: CommandLineContext, b: str) -> Optional[
     # Note that this check is distinct from the is_ancestor check performed in get_fork_point_override_data.
     # While the latter checks the sanity of fork point override configuration,
     # the former checks if the override still applies to wherever the given branch currently points.
-    if not is_ancestor(cli_ctxt, while_descendant_of, b, earlier_prefix=""):
+    if not is_ancestor_or_equal(cli_ctxt, while_descendant_of, b, earlier_prefix=""):
         warn(fmt(
             f"since branch <b>{b}</b> is no longer a descendant of commit {short_commit_sha_by_revision(cli_ctxt, while_descendant_of)}, ",
             f"the fork point override to commit {short_commit_sha_by_revision(cli_ctxt, to)} no longer applies.\n",
@@ -2002,7 +1998,7 @@ def set_fork_point_override(cli_ctxt: CommandLineContext, b: str, to_revision: s
     to_sha = commit_sha_by_revision(cli_ctxt, to_revision, prefix="")
     if not to_sha:
         raise MacheteException(f"Cannot find revision {to_revision}")
-    if not is_ancestor(cli_ctxt, to_sha, b, earlier_prefix=""):
+    if not is_ancestor_or_equal(cli_ctxt, to_sha, b, earlier_prefix=""):
         raise MacheteException(
             f"Cannot override fork point: {get_revision_repr(cli_ctxt, to_revision)} is not an ancestor of {b}")
 
@@ -2037,7 +2033,7 @@ def delete_unmanaged(cli_ctxt: CommandLineContext) -> None:
         branches_to_delete_merged_to_head = [b for b in branches_to_delete if b in branches_merged_to_head]
         for b in branches_to_delete_merged_to_head:
             rb = strict_counterpart_for_fetching_of_branch(cli_ctxt, b)
-            is_merged_to_remote = is_ancestor(cli_ctxt, b, rb, later_prefix="refs/remotes/") if rb else True
+            is_merged_to_remote = is_ancestor_or_equal(cli_ctxt, b, rb, later_prefix="refs/remotes/") if rb else True
             msg_core = f"{bold(b)} (merged to HEAD{'' if is_merged_to_remote else f', but not merged to {rb}'})"
             msg = f"Delete branch {msg_core}?" + pretty_choices('y', 'N', 'q')
             opt_yes_msg = f"Deleting branch {msg_core}"
@@ -2144,7 +2140,7 @@ def advance(cli_ctxt: CommandLineContext, b: str) -> None:
     def connected_with_green_edge(bd: str) -> bool:
         return bool(
             not is_merged_to_upstream(cli_ctxt, bd) and
-            is_ancestor(cli_ctxt, b, bd) and
+            is_ancestor_or_equal(cli_ctxt, b, bd) and
             (get_overridden_fork_point(cli_ctxt, bd) or commit_sha_by_revision(cli_ctxt, b) == fork_point(cli_ctxt, bd, use_overrides=False)))
 
     candidate_downstreams = list(filter(connected_with_green_edge, down_branches[b]))
@@ -2366,9 +2362,9 @@ def traverse(cli_ctxt: CommandLineContext) -> None:
             # neither rebase nor merge will be suggested in such case anyway.
             needs_parent_sync = False
         elif cli_ctxt.opt_merge:
-            needs_parent_sync = bool(u and not is_ancestor(cli_ctxt, u, b))
+            needs_parent_sync = bool(u and not is_ancestor_or_equal(cli_ctxt, u, b))
         else:  # using rebase
-            needs_parent_sync = bool(u and not (is_ancestor(cli_ctxt, u, b) and commit_sha_by_revision(cli_ctxt, u) == fork_point(cli_ctxt, b, use_overrides=True)))
+            needs_parent_sync = bool(u and not (is_ancestor_or_equal(cli_ctxt, u, b) and commit_sha_by_revision(cli_ctxt, u) == fork_point(cli_ctxt, b, use_overrides=True)))
 
         if b != cb and (needs_slide_out or needs_parent_sync or needs_remote_sync):
             print_new_line(False)
@@ -2592,7 +2588,7 @@ def status(cli_ctxt: CommandLineContext, warn_on_yellow_edges: bool) -> None:
         u = up_branch[b]
         if is_merged_to(cli_ctxt, b, u):
             edge_color[b] = DIM
-        elif not is_ancestor(cli_ctxt, u, b):
+        elif not is_ancestor_or_equal(cli_ctxt, u, b):
             edge_color[b] = RED
         elif get_overridden_fork_point(cli_ctxt, b) or commit_sha_by_revision(cli_ctxt, u) == fp_sha(b):
             edge_color[b] = GREEN
