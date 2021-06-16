@@ -3756,7 +3756,7 @@ def launch(orig_args: List[str]) -> None:
             cb = current_branch(cli_ctxt)
             squash(cli_ctxt, cb, cli_ctxt.opt_fork_point or fork_point(cli_ctxt, cb, use_overrides=True))
         elif cmd in ("s", "status"):
-            expect_no_param(parse_options(args, "Ll", ["color=", "merge", "list-commits-with-hashes", "list-commits", "no-detect-squash-merges"]))
+            expect_no_param(parse_options(args, "Ll", ["color=", "list-commits-with-hashes", "list-commits", "no-detect-squash-merges"]))
             read_definition_file(cli_ctxt)
             expect_at_least_one_managed_branch()
             status(cli_ctxt, warn_on_yellow_edges=True)

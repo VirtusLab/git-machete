@@ -172,7 +172,7 @@ The more advanced features like automated traversal, upstream inference and tree
 
 ## Git compatibility
 
-git-machete (since version 2.13.0) is compatible with git >= 1.8.0
+git-machete (since version 2.13.0) is compatible with git >= 1.8.0.
 
 
 ## Contributions
