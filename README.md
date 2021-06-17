@@ -154,7 +154,7 @@ git machete anno --sync-github-prs
 ```
 
 This will automatically annotate the branches with GitHub PR numbers. <br/>
-**Note**: for private repositories, a GitHub API token stored in `GITHUB_TOKEN` env var is required.
+**Note**: for private repositories, a GitHub API token (`repo` access is required) will be taken from `GITHUB_TOKEN` env var.
 
 <br/>
 

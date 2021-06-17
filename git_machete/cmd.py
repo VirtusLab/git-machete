@@ -684,7 +684,7 @@ def sync_annotations_to_github_prs(cli_ctxt: CommandLineContext) -> None:
             if pr.base != u:
                 warn(f'branch `{pr.head}` has a different base in PR #{pr.number} (`{pr.base}`) '
                      f'than in machete file (`{u or "<none, is a root>"}`)')
-                anno += f" WRONG BASE? PR has '{pr.base}'"
+                anno += f" WRONG PR BASE or MACHETE PARENT? PR has '{pr.base}'"
             if annotations.get(pr.head) != anno:
                 print(fmt(f'Annotating <b>{pr.head}</b> as `{anno}`'))
                 annotations[pr.head] = anno
@@ -2714,6 +2714,24 @@ def status(cli_ctxt: CommandLineContext, warn_on_yellow_edges: bool) -> None:
 
 
 def usage(c: str = None) -> None:
+    aliases = {
+        "diff": "d",
+        "edit": "e",
+        "go": "g",
+        "log": "l",
+        "status": "s"
+    }
+    inv_aliases = {v: k for k, v in aliases.items()}
+
+    groups = [
+        # 'is-managed' is mostly for scripting use and therefore skipped
+        ("General topics", ["file", "help", "hooks", "version"]),
+        ("Build, display and modify the tree of branch dependencies", ["add", "anno", "discover", "edit", "hub", "status"]),
+        ("List, check out and delete branches", ["delete-unmanaged", "go", "list", "show"]),
+        ("Determine changes specific to the given branch", ["diff", "fork-point", "log"]),
+        ("Update git history in accordance with the tree of branch dependencies", ["advance", "reapply", "slide-out", "squash", "traverse", "update"])
+    ]
+
     short_docs = {
         "add": "Add a branch to the tree of branch dependencies",
         "advance": "Fast-forward merge one of children to the current branch and then slide out this child",
@@ -2728,7 +2746,7 @@ def usage(c: str = None) -> None:
         "go": "Check out the branch relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument",
         "help": "Display this overview, or detailed help for a specified command",
         "hooks": "Display docs for the extra hooks added by git machete",
-        "is-managed": "Check if the current branch is managed by git-machete (mostly for scripts)",
+        "is-managed": "Check if the current branch is managed by git machete (mostly for scripts)",
         "list": "List all branches that fall into one of pre-defined categories (mostly for internal use)",
         "log": "Log the part of history specific to the given branch",
         "reapply": "Rebase the current branch onto its computed fork point",
@@ -3084,7 +3102,7 @@ def usage(c: str = None) -> None:
         """,
         "list": """
             <b>Usage: git machete list <category></b>
-            where <category> is one of: `addable`, `managed`, `slidable`, `slidable-after <branch>`, `unmanaged`, `with-overridden-fork-point`
+            where <category> is one of: `addable`, `managed`, `slidable`, `slidable-after <branch>`, `unmanaged`, `with-overridden-fork-point`.
 
             Lists all branches that fall into one of the specified categories:
             * `addable`: all branches (local or remote) than can be added to the definition file,
@@ -3349,23 +3367,7 @@ def usage(c: str = None) -> None:
             Prints the version and exits.
         """
     }
-    aliases = {
-        "diff": "d",
-        "edit": "e",
-        "go": "g",
-        "log": "l",
-        "status": "s"
-    }
-    inv_aliases = {v: k for k, v in aliases.items()}
 
-    groups = [
-        # 'is-managed' is mostly for scripting use and therefore skipped
-        ("General topics", ["file", "help", "hooks", "version"]),
-        ("Build, display and modify the tree of branch dependencies", ["add", "anno", "discover", "edit", "status"]),
-        ("List, check out and delete branches", ["delete-unmanaged", "go", "list", "show"]),
-        ("Determine changes specific to the given branch", ["diff", "fork-point", "log"]),
-        ("Update git history in accordance with the tree of branch dependencies", ["advance", "reapply", "slide-out", "squash", "traverse", "update"])
-    ]
     if c and c in inv_aliases:
         c = inv_aliases[c]
     if c and c in long_docs:
@@ -3536,11 +3538,11 @@ def launch(orig_args: List[str]) -> None:
         else:
             return in_args[0]
 
-    def check_required_param(in_args: List[str], allowed_values: str) -> str:
+    def check_required_param(in_args: List[str], allowed_values_string: str) -> str:
         if not in_args or len(in_args) > 1:
-            raise MacheteException(f"`{cmd}` expects exactly one argument: one of {allowed_values}")
+            raise MacheteException(f"`{cmd}` expects exactly one argument: one of {allowed_values_string}")
         elif not in_args[0]:
-            raise MacheteException(f"Argument to `{cmd}` cannot be empty; expected one of {allowed_values}")
+            raise MacheteException(f"Argument to `{cmd}` cannot be empty; expected one of {allowed_values_string}")
         elif in_args[0][0] == "-":
             raise MacheteException(f"Option `{in_args[0]}` not recognized")
         else:

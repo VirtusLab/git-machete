@@ -2,11 +2,11 @@
 
 ...
 
-## Expected behavior/subcommand output
+## Expected behavior/command output
 
 ...
 
-## Actual behavior/subcommand output
+## Actual behavior/command output
 
 ...
 
@@ -30,19 +30,19 @@ Depending on your NDAs/level of confidentiality of the project stored in your re
 
 1. `--verbose` - executed git commands
 
-    `git machete --verbose <problematic-subcommand>` (stdout+stderr)
+    `git machete --verbose <problematic-command>` (stdout+stderr)
 
     If it comes to repository-specific data, this will only include names of local branches and their remote counterparts. No commit messages, file paths or file contents will be included.
 
 2. `--debug` - above + git command outputs and other detailed logging information
 
-    `git machete --debug <problematic-subcommand>` (stdout+stderr)
+    `git machete --debug <problematic-command>` (stdout+stderr)
 
     If it comes to repository-specific data, this will include names of local branches and their remote counterparts, their full logs (but only wrt. commit hashes) and their full reflogs (which typically include commit messages). No file paths or file contents will be included.
 
 3. Ultimate knowledge - above + the `.git` folder
 
-    `git machete --debug <problematic-subcommand>` (stdout+stderr)
+    `git machete --debug <problematic-command>` (stdout+stderr)
 
     AND
 
