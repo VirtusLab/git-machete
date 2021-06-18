@@ -104,11 +104,11 @@ def fire_github_api_get_request(url: str, token: Optional[str]) -> Any:
             first_line = fmt(f'GitHub API returned {response.status} HTTP status with error message: `{body.get("message")}`.\n')
             if token:
                 raise MacheteException(
-                    first_line + fmt(f'Make sure that the token provided in <b>{GITHUB_TOKEN_ENV_VAR}</b> env var is valid '
+                    first_line + fmt(f'Make sure that the token provided in `gh auth status` or <b>{GITHUB_TOKEN_ENV_VAR}</b> valid '
                                      f'and allows for access to `GET https://{host}{url}`.'))
             else:
                 raise MacheteException(
-                    first_line + fmt(f'This repository might be private. Provide a GitHub API token with `repo` access in <b>{GITHUB_TOKEN_ENV_VAR}</b> env var.\n'
+                    first_line + fmt(f'This repository might be private. Provide a GitHub API token with `repo` access via `gh` or <b>{GITHUB_TOKEN_ENV_VAR}</b> env var.\n'
                                      'Visit `https://github.com/settings/tokens` to generate a new one.'))
     except OSError as e:
         raise MacheteException(f'Could not connect to {host}: {e}')
