@@ -2850,10 +2850,13 @@ long_docs: Dict[str, str] = {
         <dim>$ git machete anno ''</dim>
         then clears the annotation for the current branch (or a branch specified with `-b/--branch`).
 
-        If invoked with `-H` or `--sync-github-prs`, annotates the branches based on their corresponding GitHub PR numbers and authors.
-        Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
-        To allow GitHub API access for private repositories (and also to correctly identify the current user, even in case of public repositories),
-        `GITHUB_TOKEN` env var must contain a GitHub API token with `repo` scope, see `https://github.com/settings/tokens`.
+            If invoked with `-H` or `--sync-github-prs`, annotates the branches based on their corresponding GitHub PR numbers and authors.
+            Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
+
+            To allow GitHub API access for private repositories (and also to correctly identify the current user, even in case of public repositories),
+            a GitHub API token with `repo` scope is required, see `https://github.com/settings/tokens`. This will be resolved from the first of:
+            1. The `GITHUB_TOKEN` env var.
+            2. The current auth token from the `gh` GitHub CLI.
 
         In any other case, sets the annotation for the given/current branch to the given argument.
         If multiple arguments are passed to the command, they are concatenated with a single space.
