@@ -47,6 +47,7 @@ def _token_from_gh() -> Optional[str]:
     # `gh` can store auth token for public and enterprise domains, specify
     # single domain for lookup.
     # This is *only* github.com until enterprise support is added.
+    # https://github.com/VirtusLab/git-machete/issues/137
     proc = subprocess.run(
         [gh, "auth", "status", "--hostname", GITHUB_DOMAIN, "--show-token"],
         stdout=subprocess.PIPE,
@@ -89,7 +90,7 @@ def fire_github_api_get_request(url: str, token: Optional[str]) -> Any:
     if token:
         headers['Authorization'] = 'Bearer ' + token
 
-    host = 'api' + GITHUB_DOMAIN
+    host = 'api.' + GITHUB_DOMAIN
     conn: HTTPSConnection = HTTPSConnection(host)
 
     try:
