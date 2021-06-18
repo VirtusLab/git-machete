@@ -23,7 +23,7 @@ class GitHubPullRequest(object):
         return f"PR #{self.number} by {self.user}: {self.head} -> {self.base}"
 
 
-GITHUB_TOKEN_ENV_VAR = "GITHUB_TOKEN"
+GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
 
 # GitHub Enterprise deployments use alternate domains.
 # The logic in this module will need to be expanded to detect
@@ -64,7 +64,7 @@ def _token_from_gh() -> Optional[str]:
     # with non-zero exit code on failure
     result = proc.stderr.decode()
 
-    match = re.search("Token: (\w+)", result)
+    match = re.search(r"Token: (\w+)", result)
     if match:
         return match.groups()[0]
 
@@ -74,6 +74,7 @@ def _token_from_gh() -> Optional[str]:
 def _token_from_env() -> Optional[str]:
     return os.environ.get(GITHUB_TOKEN_ENV_VAR)
 
+
 def github_token() -> Optional[str]:
     token = _token_from_env()
 
@@ -81,6 +82,7 @@ def github_token() -> Optional[str]:
         token = _token_from_gh()
 
     return token
+
 
 def fire_github_api_get_request(url: str, token: Optional[str]) -> Any:
     headers: Dict[str, str] = {
