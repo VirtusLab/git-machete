@@ -3,6 +3,7 @@
 import json
 import os
 import re
+import shutil
 import subprocess
 # Deliberately NOT using much more convenient `requests` to avoid external dependencies
 from http.client import HTTPResponse, HTTPSConnection
@@ -22,16 +23,44 @@ class GitHubPullRequest(object):
         return f"PR #{self.number} by {self.user}: {self.head} -> {self.base}"
 
 
-GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
+GITHUB_TOKEN_ENV_VAR = "GITHUB_TOKEN"
+
+# GitHub Enterprise deployments use alternate domains.
+# The logic in this module will need to be expanded to detect
+# and use alternate remote domains to provide enterprise support.
+GITHUB_DOMAIN = "github.com"
+GITHUB_REMOTE_PATTERNS = [
+    "^https://github\\.com/(.*)/(.*)\\.git$",
+    "^git@github\\.com:(.*)/(.*)\\.git$",
+]
 
 
 def _token_from_gh() -> Optional[str]:
+
+    # Abort without error if `gh` isn't available
+    gh = shutil.which('gh')
+    if not gh:
+        return None
+
+    # Run via subprocess.run as we're insensitive to return code.
+    #
+    # `gh` can store auth token for public and enterprise domains, specify
+    # single domain for lookup.
+    # This is *only* github.com until enterprise support is added.
     proc = subprocess.run(
-        ["gh", "auth", "status", "--show-token"],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        [gh, "auth", "status", "--hostname", GITHUB_DOMAIN, "--show-token"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
     )
 
-    # gh auth status emits outputs to stdout
+    # gh auth status outputs to stderr in the form:
+    #
+    # {domain}:
+    #   ✓ Logged in to {domain} as {username} ({config_path})
+    #   ✓ Git operations for {domain} configured to use {protocol} protocol.
+    #   ✓ Token: *******************
+    #
+    # with non-zero exit code on failure
     result = proc.stderr.decode()
 
     match = re.search("Token: (\w+)", result)
@@ -45,13 +74,10 @@ def _token_from_env() -> Optional[str]:
     return os.environ.get(GITHUB_TOKEN_ENV_VAR)
 
 def github_token() -> Optional[str]:
-    sources = [_token_from_env, _token_from_gh]
+    token = _token_from_env()
 
-    token = None
-    for source_fn in sources:
-        token = source_fn()
-        if token:
-            break
+    if not token:
+        token = _token_from_gh()
 
     return token
 
@@ -63,7 +89,7 @@ def fire_github_api_get_request(url: str, token: Optional[str]) -> Any:
     if token:
         headers['Authorization'] = 'Bearer ' + token
 
-    host = 'api.github.com'
+    host = 'api' + GITHUB_DOMAIN
     conn: HTTPSConnection = HTTPSConnection(host)
 
     try:
@@ -103,12 +129,6 @@ def derive_current_user_login() -> Optional[str]:
         return None
     user = fire_github_api_get_request('/user', token)
     return str(user['login'])  # str() to satisfy mypy
-
-
-GITHUB_REMOTE_PATTERNS = [
-    '^https://github\\.com/(.*)/(.*)\\.git$',
-    '^git@github\\.com:(.*)/(.*)\\.git$'
-]
 
 
 def is_github_remote_url(url: str) -> bool:
