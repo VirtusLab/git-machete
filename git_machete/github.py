@@ -3,6 +3,7 @@
 import json
 import os
 import re
+import subprocess
 # Deliberately NOT using much more convenient `requests` to avoid external dependencies
 from http.client import HTTPResponse, HTTPSConnection
 from typing import Dict, List, Optional, Any, Tuple
@@ -24,9 +25,35 @@ class GitHubPullRequest(object):
 GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
 
 
-def github_token() -> Optional[str]:
+def _token_from_gh() -> Optional[str]:
+    proc = subprocess.run(
+        ["gh", "auth", "status", "--show-token"],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+
+    # gh auth status emits outputs to stdout
+    result = proc.stderr.decode()
+
+    match = re.search("Token: (\w+)", result)
+    if match:
+        return match.groups()[0]
+
+    return None
+
+
+def _token_from_env() -> Optional[str]:
     return os.environ.get(GITHUB_TOKEN_ENV_VAR)
 
+def github_token() -> Optional[str]:
+    sources = [_token_from_env, _token_from_gh]
+
+    token = None
+    for source_fn in sources:
+        token = source_fn()
+        if token:
+            break
+
+    return token
 
 def fire_github_api_get_request(url: str, token: Optional[str]) -> Any:
     headers: Dict[str, str] = {
