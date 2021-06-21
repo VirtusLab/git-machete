@@ -3,10 +3,10 @@ import os
 import random
 import re
 import string
-import sys
 import textwrap
 import time
 import unittest
+from contextlib import redirect_stdout
 from typing import Iterable
 
 from git_machete import cmd
@@ -76,15 +76,11 @@ class MacheteTester(unittest.TestCase):
 
     @staticmethod
     def launch_command(*args: str) -> str:
-        orig_out = sys.stdout
-        out = io.StringIO()
-        sys.stdout = out
-        try:
-            cmd.launch(list(args))
-            cmd.flush_caches()
-        finally:
-            sys.stdout = orig_out
-        return out.getvalue()
+        with io.StringIO() as out:
+            with redirect_stdout(out):
+                cmd.launch(list(args))
+                cmd.flush_caches()
+            return out.getvalue()
 
     def assert_command(self, cmd: Iterable[str], expected_result: str) -> None:
         self.assertEqual(self.launch_command(*cmd), self.adapt(expected_result))
@@ -523,3 +519,9 @@ class MacheteTester(unittest.TestCase):
             o-develop *
             """,
         )
+
+    def test_help(self) -> None:
+        self.launch_command("help")
+        for (description, commands) in cmd.command_groups:
+            for command in commands:
+                self.launch_command("help", command)
