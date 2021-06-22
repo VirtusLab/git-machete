@@ -159,6 +159,7 @@ This will automatically annotate the branches with GitHub PR numbers. <br/>
 This will be resolved from the first of:
 1. The `GITHUB_TOKEN` env var.
 2. The auth token from the current [`gh`](https://cli.github.com/) configuration.
+3. The auth token from the current [`hub`](https://github.com/github/hub) configuration.
 
 <br/>
 

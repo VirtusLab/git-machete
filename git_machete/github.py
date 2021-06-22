@@ -7,6 +7,7 @@ import shutil
 import subprocess
 # Deliberately NOT using much more convenient `requests` to avoid external dependencies
 from http.client import HTTPResponse, HTTPSConnection
+from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
 
 from git_machete.cmd import MacheteException, fmt
@@ -44,14 +45,13 @@ def _token_from_gh() -> Optional[str]:
 
     # Run via subprocess.run as we're insensitive to return code.
     #
-    # `gh` can store auth token for public and enterprise domains, specify
-    # single domain for lookup.
+    # TODO (#137): `gh` can store auth token for public and enterprise domains,
+    #  specify single domain for lookup.
     # This is *only* github.com until enterprise support is added.
-    # https://github.com/VirtusLab/git-machete/issues/137
     proc = subprocess.run(
         [gh, "auth", "status", "--hostname", GITHUB_DOMAIN, "--show-token"],
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stderr=subprocess.PIPE
     )
 
     # gh auth status outputs to stderr in the form:
@@ -71,17 +71,31 @@ def _token_from_gh() -> Optional[str]:
     return None
 
 
+def _token_from_hub() -> Optional[str]:
+    home_path: str = str(Path.home())
+    config_hub_path: str = os.path.join(home_path, ".config", "hub")
+    if os.path.isfile(config_hub_path):
+        with open(config_hub_path) as config_hub:
+            config_hub_content: str = config_hub.read()
+            # ~/.config/hub is a yaml file, with a structure similar to:
+            #
+            # {domain}:
+            # - user: {username}
+            #   oauth_token: *******************
+            #   protocol: {protocol}
+            match = re.search(r"oauth_token: (\w+)", config_hub_content)
+            if match:
+                return match.groups()[0]
+
+    return None
+
+
 def _token_from_env() -> Optional[str]:
     return os.environ.get(GITHUB_TOKEN_ENV_VAR)
 
 
 def github_token() -> Optional[str]:
-    token = _token_from_env()
-
-    if not token:
-        token = _token_from_gh()
-
-    return token
+    return _token_from_env() or _token_from_gh() or _token_from_hub()
 
 
 def fire_github_api_get_request(url: str, token: Optional[str]) -> Any:
@@ -107,11 +121,11 @@ def fire_github_api_get_request(url: str, token: Optional[str]) -> Any:
             first_line = fmt(f'GitHub API returned {response.status} HTTP status with error message: `{body.get("message")}`.\n')
             if token:
                 raise MacheteException(
-                    first_line + fmt(f'Make sure that the token provided in `gh auth status` or <b>{GITHUB_TOKEN_ENV_VAR}</b> valid '
+                    first_line + fmt(f'Make sure that the token provided in `gh auth status` or `~/.config/hub` or <b>{GITHUB_TOKEN_ENV_VAR}</b> is valid '
                                      f'and allows for access to `GET https://{host}{url}`.'))
             else:
                 raise MacheteException(
-                    first_line + fmt(f'This repository might be private. Provide a GitHub API token with `repo` access via `gh` or <b>{GITHUB_TOKEN_ENV_VAR}</b> env var.\n'
+                    first_line + fmt(f'This repository might be private. Provide a GitHub API token with `repo` access via `gh` or `hub` or <b>{GITHUB_TOKEN_ENV_VAR}</b> env var.\n'
                                      'Visit `https://github.com/settings/tokens` to generate a new one.'))
     except OSError as e:
         raise MacheteException(f'Could not connect to {host}: {e}')

@@ -3,7 +3,7 @@
 ## New in git-machete 3.2.1
 
 - fixed: newly created branches were sometimes incorrectly recognized as merged to parent
-- improved: GitHub API token is resolved from `gh` if available
+- improved: GitHub API token is resolved from `gh` or `hub` if available
 
 ## New in git-machete 3.2.0
 
