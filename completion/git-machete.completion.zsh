@@ -116,6 +116,10 @@ _git-machete() {
                         '(--no-detect-squash-merges)'--no-detect-squash-merges'[Only consider "strict" (fast-forward or 2-parent) merges, rather than rebase/squash merges, when detecting if a branch is merged into its upstream]' \
                         '(--no-edit-merge)'--no-edit-merge'[If updating by merge, pass --no-edit flag to underlying git merge]' \
                         '(--no-interactive-rebase)'--no-interactive-rebase'[If updating by rebase, do NOT pass --interactive flag to underlying git rebase]' \
+                        '(--no-push)'--no-push'[Do not push updated branches to remote.]' \
+                        '(--no-push-untracked)'--no-push-untracked'[Do not push branches without existing remote tracking branch to remote.]' \
+                        '(--push)'--push'[Push updated branches to remote. (default)]' \
+                        '(--push-untracked)'--push-untracked'[Push branches without existing remote tracking branch to remote. (default)]' \
                         '(--return-to)'--return-to='[The branch to return after traversal is successfully completed; argument can be "here", "nearest-remaining", or "stay"]: :__git_machete_opt_return_to_args' \
                         '(--start-from)'--start-from='[The branch to  to start the traversal from; argument can be "here", "root", or "first-root"]: :__git_machete_opt_start_from_args' \
                         '(-w --whole)'{-w,--whole}'[Equivalent to -n --start-from=first-root --return-to=nearest-remaining]' \
