@@ -22,7 +22,7 @@ _git_machete() {
     local slide_out_opts="-d --down-fork-point= -M --merge -n --no-edit-merge --no-interactive-rebase"
     local squash_opts="-f --fork-point="
     local status_opts="--color= -L --list-commits-with-hashes -l --list-commits --no-detect-squash-merges"
-    local traverse_opts="-F --fetch -l --list-commits -M --merge -n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase --return-to= --start-from= -w --whole -W -y --yes"
+    local traverse_opts="-F --fetch -l --list-commits -M --merge -n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase --no-push --push --no-push-untracked --push-untracked --return-to= --start-from= -w --whole -W -y --yes"
     local update_opts="-f --fork-point= -M --merge -n --no-edit-merge --no-interactive-rebase"
 
     case $cur in

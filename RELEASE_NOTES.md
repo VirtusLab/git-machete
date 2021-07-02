@@ -2,6 +2,7 @@
 
 ## New in git-machete 3.3.0
 - improved: `show` can accept a target branch other than the current branch (contributed by @asford)
+- added: `--no-push` and `--no-push-remote` flags in `traverse` optionally skip pushing to remote (contributed by @asford)
 
 ## New in git-machete 3.2.1
 
