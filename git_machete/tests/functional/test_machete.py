@@ -86,6 +86,10 @@ class MacheteTester(unittest.TestCase):
         self.assertEqual(self.launch_command(*cmd), self.adapt(expected_result))
 
     def setUp(self) -> None:
+        # Status diffs can be quite large, default to ~256 lines of diff context
+        # https://docs.python.org/3/library/unittest.html#unittest.TestCase.maxDiff
+        self.maxDiff = 80 * 256
+
         self.setup = SandboxSetup()
 
         (
@@ -186,7 +190,6 @@ class MacheteTester(unittest.TestCase):
         )
 
     def test_traverse_no_push(self) -> None:
-        self.maxDiff = None
         self.setup_discover_standard_tree()
 
         self.launch_command("traverse", "-Wy", "--no-push")
@@ -221,7 +224,6 @@ class MacheteTester(unittest.TestCase):
         )
 
     def test_traverse_no_push_override(self) -> None:
-        self.maxDiff = None
         self.setup_discover_standard_tree()
 
         self.launch_command("traverse", "-Wy", "--no-push", "--push")
@@ -256,7 +258,6 @@ class MacheteTester(unittest.TestCase):
         )
 
     def test_traverse_no_push_untracked(self) -> None:
-        self.maxDiff = None
         self.setup_discover_standard_tree()
 
         self.launch_command("traverse", "-Wy", "--no-push-untracked")
@@ -509,7 +510,6 @@ class MacheteTester(unittest.TestCase):
         )
 
     def test_squash_merge(self) -> None:
-        self.maxDiff = None
         repo = (
             self.setup.new_branch("root")
             .commit("root")
