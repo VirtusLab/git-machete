@@ -2748,7 +2748,7 @@ short_docs: Dict[str, str] = {
     "list": "List all branches that fall into one of pre-defined categories (mostly for internal use)",
     "log": "Log the part of history specific to the given branch",
     "reapply": "Rebase the current branch onto its computed fork point",
-    "show": "Show name(s) of the branch(es) relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument",
+    "show": "Show name(s) of the branch(es) relative to the position of a branch, accepts down/first/last/next/root/prev/up argument",
     "slide-out": "Slide out the current branch and sync its downstream (child) branches with its upstream (parent) branch via rebase or merge",
     "squash": "Squash the unique history of the current branch into a single commit",
     "status": "Display formatted tree of branch dependencies, including info on their sync with upstream branch and with remote",
@@ -3141,19 +3141,22 @@ long_docs: Dict[str, str] = {
           <b>-f, --fork-point=<fork-point-commit></b>    Specifies the alternative fork point commit after which the rebased part of history is meant to start.
     """,
     "show": """
-        <b>Usage: git machete show <direction></b>
+        <b>Usage: git machete show [--branch=<branch>] <direction></b>
         where <direction> is one of: `c[urrent]`, `d[own]`, `f[irst]`, `l[ast]`, `n[ext]`, `p[rev]`, `r[oot]`, `u[p]`
 
         Outputs name of the branch (or possibly multiple branches, in case of `down`) that is:
 
         * `current`: the current branch; exits with a non-zero status if none (detached HEAD)
-        * `down`:    the direct children/downstream branch of the current branch.
-        * `first`:   the first downstream of the root branch of the current branch (like `root` followed by `next`), or the root branch itself if the root has no downstream branches.
-        * `last`:    the last branch in the definition file that has the same root as the current branch; can be the root branch itself if the root has no downstream branches.
-        * `next`:    the direct successor of the current branch in the definition file.
-        * `prev`:    the direct predecessor of the current branch in the definition file.
-        * `root`:    the root of the tree where the current branch is located. Note: this will typically be something like `develop` or `master`, since all branches are usually meant to be ultimately merged to one of those.
-        * `up`:      the direct parent/upstream branch of the current branch.
+        * `down`:    the direct children/downstream branch of the target branch.
+        * `first`:   the first downstream of the root branch of the target branch (like `root` followed by `next`), or the root branch itself if the root has no downstream branches.
+        * `last`:    the last branch in the definition file that has the same root as the target branch; can be the root branch itself if the root has no downstream branches.
+        * `next`:    the direct successor of the target branch in the definition file.
+        * `prev`:    the direct predecessor of the target branch in the definition file.
+        * `root`:    the root of the tree where the target branch is located. Note: this will typically be something like `develop` or `master`, since all branches are usually meant to be ultimately merged to one of those.
+        * `up`:      the direct parent/upstream branch of the target branch.
+
+        <b>Options:</b>
+          <b>-b, --branch=<branch></b>      Target branch, defaults to current branch if not specified.
     """,
     "slide-out": """
         <b>Usage: git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] <branch> [<branch> [<branch> ...]]</b>
@@ -3546,7 +3549,7 @@ def launch(orig_args: List[str]) -> None:
 
     def check_required_param(in_args: List[str], allowed_values_string: str) -> str:
         if not in_args or len(in_args) > 1:
-            raise MacheteException(f"`{cmd}` expects exactly one argument: one of {allowed_values_string}")
+            raise MacheteException(f"`{cmd}` expects exactly one argument: one of {allowed_values_string} got: {in_args}")
         elif not in_args[0]:
             raise MacheteException(f"Argument to `{cmd}` cannot be empty; expected one of {allowed_values_string}")
         elif in_args[0][0] == "-":
@@ -3744,9 +3747,12 @@ def launch(orig_args: List[str]) -> None:
             cb = current_branch(cli_ctxt)
             rebase_onto_ancestor_commit(cli_ctxt, cb, cli_ctxt.opt_fork_point or fork_point(cli_ctxt, cb, use_overrides=True))
         elif cmd == "show":
-            param = check_required_param(parse_options(args), allowed_directions(allow_current=True))
+            param = check_required_param(
+                parse_options(args, "b", ["branch="]),
+                allowed_directions(allow_current=True),
+            )
             read_definition_file(cli_ctxt, verify_branches=False)
-            print(parse_direction(current_branch(cli_ctxt), allow_current=True, down_pick_mode=False))
+            print(parse_direction(cli_ctxt.opt_branch or current_branch(cli_ctxt), allow_current=True, down_pick_mode=False))
         elif cmd == "slide-out":
             params = parse_options(args, "d:Mn", ["down-fork-point=", "merge", "no-edit-merge", "no-interactive-rebase"])
             read_definition_file(cli_ctxt)

@@ -1,5 +1,8 @@
 # Release notes
 
+## New in git-machete 3.2.2
+- improved: `show` can accept a target `--branch` other than the current branch (contributed by @asford)
+
 ## New in git-machete 3.2.1
 
 - fixed: newly created branches were sometimes incorrectly recognized as merged to parent

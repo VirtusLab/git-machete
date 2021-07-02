@@ -525,3 +525,80 @@ class MacheteTester(unittest.TestCase):
         for (description, commands) in cmd.command_groups:
             for command in commands:
                 self.launch_command("help", command)
+
+    def test_show(self) -> None:
+        (
+            self.setup.new_branch("root")
+            .commit("root")
+            .new_branch("develop")
+            .commit("develop commit")
+            .new_branch("allow-ownership-link")
+            .commit("Allow ownership links")
+            .push()
+            .new_branch("build-chain")
+            .commit("Build arbitrarily long chains")
+            .check_out("allow-ownership-link")
+            .commit("1st round of fixes")
+            .check_out("develop")
+            .commit("Other develop commit")
+            .push()
+            .new_branch("call-ws")
+            .commit("Call web service")
+            .commit("1st round of fixes")
+            .push()
+            .new_branch("drop-constraint")
+            .commit("Drop unneeded SQL constraints")
+            .check_out("call-ws")
+            .commit("2nd round of fixes")
+            .check_out("root")
+            .new_branch("master")
+            .commit("Master commit")
+            .push()
+            .new_branch("hotfix/add-trigger")
+            .commit("HOTFIX Add the trigger")
+            .push()
+            .commit_amend("HOTFIX Add the trigger (amended)")
+            .new_branch("ignore-trailing")
+            .commit("Ignore trailing data")
+            .sleep(1)
+            .commit_amend("Ignore trailing data (amended)")
+            .push()
+            .reset_to("ignore-trailing@{1}")
+            .delete_branch("root")
+        )
+
+        self.launch_command("discover", "-y", "--roots=develop,master")
+        self.assert_command(
+            ["status"],
+            """
+            develop
+            |
+            x-allow-ownership-link (ahead of origin)
+            | |
+            | x-build-chain (untracked)
+            |
+            o-call-ws (ahead of origin)
+              |
+              x-drop-constraint (untracked)
+
+            master
+            |
+            o-hotfix/add-trigger (diverged from origin)
+              |
+              o-ignore-trailing * (diverged from & older than origin)
+            """,
+        )
+
+        self.assertEqual(
+            self.launch_command(
+                "show", "up",
+            ).strip(),
+            "hotfix/add-trigger"
+        )
+
+        self.assertEqual(
+            self.launch_command(
+                "show", "--branch=call-ws", "up",
+            ).strip(),
+            "develop"
+        )
