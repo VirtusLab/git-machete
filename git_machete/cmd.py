@@ -3376,9 +3376,13 @@ long_docs: Dict[str, str] = {
           <b>--no-interactive-rebase</b>      If updating by rebase, run `git rebase` in non-interactive mode (without `-i/--interactive` flag).
                                        Not allowed if updating by merge.
 
-          <b>--no-push</b>                  Do not push branches to remote, reenable via --push.
+          <b>--no-push</b>                    Do not push branches to remote, reenable via --push.
 
-          <b>--no-push-untracked</b>        Do not push branches without existing remote tracking branch to remote, reenable via --push-untracked.
+          <b>--push</b>                       Push branches to remote, default behavior.
+
+          <b>--no-push-untracked</b>          Do not push branches without existing remote tracking branch to remote, reenable via --push-untracked.
+
+          <b>--push-untracked</b>             Push branches without existing remote tracking branch to remote, default behavior.
 
           <b>--return-to=WHERE</b>            Specifies the branch to return after traversal is successfully completed; WHERE can be `here` (the current branch at the moment when traversal starts),
                                        `nearest-remaining` (nearest remaining branch in case the `here` branch has been slid out by the traversal)
