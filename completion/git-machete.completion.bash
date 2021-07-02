@@ -19,7 +19,6 @@ _git_machete() {
     local discover_opts="-C --checked-out-since= -l --list-commits -r --roots= -y --yes"
     local fork_point_opts="--inferred --override-to= --override-to-inferred --override-to-parent --unset-override"
     local reapply_opts="-f --fork-point="
-    local show_opts="-b --branch="
     local slide_out_opts="-d --down-fork-point= -M --merge -n --no-edit-merge --no-interactive-rebase"
     local squash_opts="-f --fork-point="
     local status_opts="--color= -L --list-commits-with-hashes -l --list-commits --no-detect-squash-merges"
@@ -44,7 +43,6 @@ _git_machete() {
                 discover) __gitcomp "$common_opts $discover_opts" ;;
                 fork-point) __gitcomp "$common_opts $fork_point_opts" ;;
                 reapply) __gitcomp "$common_opts $reapply_opts" ;;
-                show) __gitcomp "$common_opts $show_opts" ;;
                 slide-out) __gitcomp "$common_opts $slide_out_opts" ;;
                 squash) __gitcomp "$common_opts $squash_opts" ;;
                 s|status) __gitcomp "$common_opts $status_opts" ;;

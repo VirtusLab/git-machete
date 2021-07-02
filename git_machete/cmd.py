@@ -484,6 +484,34 @@ def save_definition_file() -> None:
         f.write("\n".join(render_tree()) + "\n")
 
 
+# Allowed parameter values for show/go command
+def allowed_directions(allow_current: bool) -> str:
+    current = "c[urrent]|" if allow_current else ""
+    return current + "d[own]|f[irst]|l[ast]|n[ext]|p[rev]|r[oot]|u[p]"
+
+
+# Parse and evaluate direction against current branch for show/go commands
+def parse_direction(cli_ctxt: CommandLineContext, param: str, b: str, allow_current: bool, down_pick_mode: bool) -> str:
+    if param in ("c", "current") and allow_current:
+        return current_branch(cli_ctxt)  # throws in case of detached HEAD, as in the spec
+    elif param in ("d", "down"):
+        return down(b, pick_mode=down_pick_mode)
+    elif param in ("f", "first"):
+        return first_branch(b)
+    elif param in ("l", "last"):
+        return last_branch(b)
+    elif param in ("n", "next"):
+        return next_branch(b)
+    elif param in ("p", "prev"):
+        return prev_branch(b)
+    elif param in ("r", "root"):
+        return root_branch(b, if_unmanaged=PICK_FIRST_ROOT)
+    elif param in ("u", "up"):
+        return up(cli_ctxt, b, prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)
+    else:
+        raise MacheteException(f"Invalid direction: `{param}` expected: {allowed_directions(allow_current)}")
+
+
 def down(b: str, pick_mode: bool) -> str:
     expect_in_managed_branches(b)
     dbs = down_branches.get(b)
@@ -3141,8 +3169,9 @@ long_docs: Dict[str, str] = {
           <b>-f, --fork-point=<fork-point-commit></b>    Specifies the alternative fork point commit after which the rebased part of history is meant to start.
     """,
     "show": """
-        <b>Usage: git machete show [--branch=<branch>] <direction></b>
+        <b>Usage: git machete show <direction> [<branch>]</b>
         where <direction> is one of: `c[urrent]`, `d[own]`, `f[irst]`, `l[ast]`, `n[ext]`, `p[rev]`, `r[oot]`, `u[p]`
+        displayed relative to target <branch>, or the current checked out branch if <branch> is unspecified.
 
         Outputs name of the branch (or possibly multiple branches, in case of `down`) that is:
 
@@ -3154,9 +3183,6 @@ long_docs: Dict[str, str] = {
         * `prev`:    the direct predecessor of the target branch in the definition file.
         * `root`:    the root of the tree where the target branch is located. Note: this will typically be something like `develop` or `master`, since all branches are usually meant to be ultimately merged to one of those.
         * `up`:      the direct parent/upstream branch of the target branch.
-
-        <b>Options:</b>
-          <b>-b, --branch=<branch></b>      Target branch, defaults to current branch if not specified.
     """,
     "slide-out": """
         <b>Usage: git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] <branch> [<branch> [<branch> ...]]</b>
@@ -3549,7 +3575,7 @@ def launch(orig_args: List[str]) -> None:
 
     def check_required_param(in_args: List[str], allowed_values_string: str) -> str:
         if not in_args or len(in_args) > 1:
-            raise MacheteException(f"`{cmd}` expects exactly one argument: one of {allowed_values_string} got: {in_args}")
+            raise MacheteException(f"`{cmd}` expects exactly one argument: one of {allowed_values_string}")
         elif not in_args[0]:
             raise MacheteException(f"Argument to `{cmd}` cannot be empty; expected one of {allowed_values_string}")
         elif in_args[0][0] == "-":
@@ -3580,30 +3606,6 @@ def launch(orig_args: List[str]) -> None:
                     # Extremely unlikely case, basically checking if anybody tampered with the repository.
                     raise MacheteException(
                         f"{definition_file_path} is a directory rather than a regular file, aborting")
-
-        def allowed_directions(allow_current: bool) -> str:
-            current = "c[urrent]|" if allow_current else ""
-            return current + "d[own]|f[irst]|l[ast]|n[ext]|p[rev]|r[oot]|u[p]"
-
-        def parse_direction(b: str, allow_current: bool, down_pick_mode: bool) -> str:
-            if param in ("c", "current") and allow_current:
-                return current_branch(cli_ctxt)  # throws in case of detached HEAD, as in the spec
-            elif param in ("d", "down"):
-                return down(b, pick_mode=down_pick_mode)
-            elif param in ("f", "first"):
-                return first_branch(b)
-            elif param in ("l", "last"):
-                return last_branch(b)
-            elif param in ("n", "next"):
-                return next_branch(b)
-            elif param in ("p", "prev"):
-                return prev_branch(b)
-            elif param in ("r", "root"):
-                return root_branch(b, if_unmanaged=PICK_FIRST_ROOT)
-            elif param in ("u", "up"):
-                return up(cli_ctxt, b, prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)
-            else:
-                raise MacheteException(f"Usage: git machete {cmd} {allowed_directions(allow_current)}")
 
         if cmd == "add":
             param = check_optional_param(parse_options(args, "o:Ry", ["onto=", "as-root", "yes"]))
@@ -3678,7 +3680,7 @@ def launch(orig_args: List[str]) -> None:
             read_definition_file(cli_ctxt)
             expect_no_operation_in_progress(cli_ctxt)
             cb = current_branch(cli_ctxt)
-            dest = parse_direction(cb, allow_current=False, down_pick_mode=True)
+            dest = parse_direction(cli_ctxt, param, cb, allow_current=False, down_pick_mode=True)
             if dest != cb:
                 go(cli_ctxt, dest)
         elif cmd == "help":
@@ -3747,12 +3749,10 @@ def launch(orig_args: List[str]) -> None:
             cb = current_branch(cli_ctxt)
             rebase_onto_ancestor_commit(cli_ctxt, cb, cli_ctxt.opt_fork_point or fork_point(cli_ctxt, cb, use_overrides=True))
         elif cmd == "show":
-            param = check_required_param(
-                parse_options(args, "b", ["branch="]),
-                allowed_directions(allow_current=True),
-            )
+            param = check_required_param(args[:1], allowed_directions(allow_current=True))
+            branch = check_optional_param(args[1:])
             read_definition_file(cli_ctxt, verify_branches=False)
-            print(parse_direction(cli_ctxt.opt_branch or current_branch(cli_ctxt), allow_current=True, down_pick_mode=False))
+            print(parse_direction(cli_ctxt, param, branch or current_branch(cli_ctxt), allow_current=True, down_pick_mode=False))
         elif cmd == "slide-out":
             params = parse_options(args, "d:Mn", ["down-fork-point=", "merge", "no-edit-merge", "no-interactive-rebase"])
             read_definition_file(cli_ctxt)

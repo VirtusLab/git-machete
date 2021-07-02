@@ -80,8 +80,8 @@ _git-machete() {
                     ;;
                 (show)
                     _arguments '1:: :__git_machete_directions_show' \
-                        '(-b --branch)'{-b,--branch=}'[Target branch for show]: :__git_machete_list_managed' \
-                    && ret=0
+                      '2:: :__git_machete_list_managed' \
+                      && ret=0
                     ;;
                 (slide-out)
                     _arguments \

@@ -598,7 +598,7 @@ class MacheteTester(unittest.TestCase):
 
         self.assertEqual(
             self.launch_command(
-                "show", "--branch=call-ws", "up",
+                "show", "up", "call-ws",
             ).strip(),
             "develop"
         )
