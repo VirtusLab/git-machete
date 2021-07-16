@@ -154,7 +154,7 @@ Also, the inference doesn't happen for any other `show`/`go` direction (like `do
 
 Let's check out `drop-constraint` back again and, without changing anything in `.git/machete`, fire `git machete update`:
 
-![git machete update](update.png)
+![git machete update](update-3.png)
 
 `update` couldn't find an entry for `drop-constraint` in the definition file, so it fell back to automatic inference.
 
