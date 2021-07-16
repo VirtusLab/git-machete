@@ -28,6 +28,7 @@ jobs:
           command: |
             PATH=./ci/checks:$PATH
             set -x
+            enforce-indent-two-spaces-outside-python.sh
             enforce-issue-number-for-todos.sh
             ensure-completion-scripts-correct.sh
             ensure-links-correct.sh

@@ -17,7 +17,7 @@ git checkout -B master NixOS/master
 
 expression_path=pkgs/applications/version-management/git-and-tools/git-machete/default.nix
 pypi_url=$(
-    curl -s https://$PYPI_HOST/pypi/git-machete/v$VERSION/json \
+  curl -s https://$PYPI_HOST/pypi/git-machete/v$VERSION/json \
     | jq --raw-output '.urls | map(select(.packagetype == "sdist")) | .[0].url'
 )
 tarball_sha256=$(nix-prefetch-url --type sha256 "$pypi_url")
