@@ -602,3 +602,10 @@ class MacheteTester(unittest.TestCase):
             ).strip(),
             "develop"
         )
+
+        self.assertEqual(
+            self.launch_command(
+                "show", "current"
+            ).strip(),
+            "ignore-trailing"
+        )

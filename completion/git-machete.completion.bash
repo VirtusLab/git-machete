@@ -50,7 +50,7 @@ _git_machete() {
                 update) __gitcomp "$common_opts $update_opts" ;;
                 *) __gitcomp "$common_opts" ;;
             esac ;;
-         *)
+        *)
              if [[ $COMP_CWORD -eq 2 ]]; then
                 __gitcomp "$cmds"
              else
@@ -77,17 +77,27 @@ _git_machete() {
                             list)
                                 if [[ $COMP_CWORD -eq 3 ]]; then
                                     __gitcomp "$categories"
-                                elif [[ $COMP_CWORD -eq 4 && $prev == slidable-after ]]; then
+                                elif [[ $COMP_CWORD -eq 4 && $prev == "slidable-after" ]]; then
                                     __gitcomp_nl "$(git machete list slidable 2>/dev/null)"
+                                else
+                                    COMPREPLY=('')
                                 fi ;;
-                            show) __gitcomp "current $directions" ;;
+                            show)
+                                if [[ $COMP_CWORD -eq 3 ]]; then
+                                    __gitcomp "current $directions"
+                                elif [[ $COMP_CWORD -eq 4 && $prev != "current" ]]; then
+                                    __gitcomp_nl "$(git machete list managed 2>/dev/null)"
+                                else
+                                    COMPREPLY=('')
+                                fi ;;
                             slide-out)
                                 if [[ $COMP_CWORD -eq 3 ]]; then
                                     __gitcomp_nl "$(git machete list slidable 2>/dev/null)"
                                 else
                                     __gitcomp_nl "$(git machete list slidable-after "$prev" 2>/dev/null)"
                                 fi ;;
-                            *) COMPREPLY=('') ;; # not perfect (kinda-completes an empty string), but at least local paths aren't completed by default
+                            # Not perfect (kinda-completes an empty string), but at least local file paths aren't completed by default
+                            *) COMPREPLY=('') ;;
                         esac ;;
                 esac
             fi

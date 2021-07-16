@@ -3751,6 +3751,8 @@ def launch(orig_args: List[str]) -> None:
         elif cmd == "show":
             param = check_required_param(args[:1], allowed_directions(allow_current=True))
             branch = check_optional_param(args[1:])
+            if param == "current" and branch is not None:
+                raise MacheteException(f'`show current` with a branch (`{branch}`) does not make sense')
             read_definition_file(cli_ctxt, verify_branches=False)
             print(parse_direction(cli_ctxt, param, branch or current_branch(cli_ctxt), allow_current=True, down_pick_mode=False))
         elif cmd == "slide-out":
