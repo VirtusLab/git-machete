@@ -135,12 +135,12 @@ class CommandLineContext:
         self.opt_no_detect_squash_merges: bool = False
         self.opt_no_edit_merge: bool = False
         self.opt_no_interactive_rebase: bool = False
-        self.opt_no_push: Optional[bool] = None
-        self.opt_no_push_untracked: Optional[bool] = None
         self.opt_onto: Optional[str] = None
         self.opt_override_to: Optional[str] = None
         self.opt_override_to_inferred: bool = False
         self.opt_override_to_parent: bool = False
+        self.opt_push_tracked: Optional[bool] = True
+        self.opt_push_untracked: Optional[bool] = True
         self.opt_return_to: str = "stay"
         self.opt_roots: List[str] = list()
         self.opt_start_from: str = "here"
@@ -155,12 +155,11 @@ def ask_if(
     cli_ctxt: CommandLineContext,
     msg: str,
     opt_yes_msg: Optional[str],
-    apply_fmt: bool = True,
-    override: Optional[str] = None,
+    override_answer: Optional[str] = None,
+    apply_fmt: bool = True
 ) -> str:
-    if override:
-        print((fmt(msg) if apply_fmt else msg) + f" {override} [override]")
-        return override
+    if override_answer:
+        return override_answer
     if cli_ctxt.opt_yes and opt_yes_msg:
         print(fmt(opt_yes_msg) if apply_fmt else opt_yes_msg)
         return 'y'
@@ -598,7 +597,11 @@ def up(cli_ctxt: CommandLineContext, b: str, prompt_if_inferred_msg: Optional[st
         u = infer_upstream(cli_ctxt, b)
         if u:
             if prompt_if_inferred_msg:
-                if ask_if(cli_ctxt, prompt_if_inferred_msg % (b, u), prompt_if_inferred_yes_opt_msg % (b, u)) in ('y', 'yes'):
+                if ask_if(
+                        cli_ctxt,
+                        prompt_if_inferred_msg % (b, u),
+                        prompt_if_inferred_yes_opt_msg % (b, u)
+                ) in ('y', 'yes'):
                     return u
                 else:
                     sys.exit(1)
@@ -2258,15 +2261,15 @@ def pick_remote(cli_ctxt: CommandLineContext, b: str) -> None:
 
 
 def handle_untracked_branch(cli_ctxt: CommandLineContext, new_remote: str, b: str) -> None:
-    rems = remotes(cli_ctxt)
+    rems: List[str] = remotes(cli_ctxt)
     can_pick_other_remote = len(rems) > 1
     other_remote_choice = "o[ther-remote]" if can_pick_other_remote else ""
     rb = f"{new_remote}/{b}"
     if not commit_sha_by_revision(cli_ctxt, rb, prefix="refs/remotes/"):
         msg = f"Push untracked branch {bold(b)} to {bold(new_remote)}?" + pretty_choices('y', 'N', 'q', 'yq', other_remote_choice)
         opt_yes_msg = f"Pushing untracked branch {bold(b)} to {bold(new_remote)}..."
-        override = "N" if cli_ctxt.opt_no_push or cli_ctxt.opt_no_push_untracked else None
-        ans = ask_if(cli_ctxt, msg, opt_yes_msg, override=override)
+        ans = ask_if(cli_ctxt, msg, opt_yes_msg,
+                     override_answer=None if cli_ctxt.opt_push_untracked else "N")
         if ans in ('y', 'yes', 'yq'):
             push(cli_ctxt, new_remote, b)
             if ans == 'yq':
@@ -2278,9 +2281,9 @@ def handle_untracked_branch(cli_ctxt: CommandLineContext, new_remote: str, b: st
             raise StopTraversal
         return
 
-    relation = get_relation_to_remote_counterpart(cli_ctxt, b, rb)
+    relation: int = get_relation_to_remote_counterpart(cli_ctxt, b, rb)
 
-    message = {
+    message: str = {
         IN_SYNC_WITH_REMOTE:
             f"Branch {bold(b)} is untracked, but its remote counterpart candidate {bold(rb)} already exists and both branches point to the same commit.",
         BEHIND_REMOTE:
@@ -2316,12 +2319,12 @@ def handle_untracked_branch(cli_ctxt: CommandLineContext, new_remote: str, b: st
         )
     }[relation]
 
-    override = {
+    override: Optional[str] = {
         IN_SYNC_WITH_REMOTE: None,
         BEHIND_REMOTE: None,
-        AHEAD_OF_REMOTE: "N" if cli_ctxt.opt_no_push or cli_ctxt.opt_no_push_untracked else None,
+        AHEAD_OF_REMOTE: None if cli_ctxt.opt_push_tracked else "N",
         DIVERGED_FROM_AND_OLDER_THAN_REMOTE: None,
-        DIVERGED_FROM_AND_NEWER_THAN_REMOTE: "N" if cli_ctxt.opt_no_push or cli_ctxt.opt_no_push_untracked else None,
+        DIVERGED_FROM_AND_NEWER_THAN_REMOTE: None if cli_ctxt.opt_push_tracked else "N",
     }[relation]
 
     yes_action: Callable[[], None] = {
@@ -2333,7 +2336,7 @@ def handle_untracked_branch(cli_ctxt: CommandLineContext, new_remote: str, b: st
     }[relation]
 
     print(message)
-    ans = ask_if(cli_ctxt, msg, opt_yes_msg, override=override)
+    ans = ask_if(cli_ctxt, msg, opt_yes_msg, override_answer=override)
     if ans in ('y', 'yes', 'yq'):
         yes_action()
         if ans == 'yq':
@@ -2521,7 +2524,7 @@ def traverse(cli_ctxt: CommandLineContext) -> None:
                     cli_ctxt,
                     f"Push {bold(b)} to {bold(remote)}?" + pretty_choices('y', 'N', 'q', 'yq'),
                     f"Pushing {bold(b)} to {bold(remote)}...",
-                    override="N" if cli_ctxt.opt_no_push else None,
+                    override_answer=None if cli_ctxt.opt_push_tracked else "N"
                 )
                 if ans in ('y', 'yes', 'yq'):
                     push(cli_ctxt, remote, b)
@@ -2558,7 +2561,7 @@ def traverse(cli_ctxt: CommandLineContext) -> None:
                     f"Push {bold(b)} with force-with-lease to {bold(remote)}?" + pretty_choices('y', 'N', 'q', 'yq'),
                     f"Branch {bold(b)} diverged from (and has newer commits than) its remote counterpart {bold(rb)}.\n"
                     f"Pushing {bold(b)} with force-with-lease to {bold(remote)}...",
-                    override="N" if cli_ctxt.opt_no_push else None,
+                    override_answer=None if cli_ctxt.opt_push_tracked else "N"
                 )
                 if ans in ('y', 'yes', 'yq'):
                     push(cli_ctxt, remote, b, force_with_lease=True)
@@ -3338,7 +3341,7 @@ long_docs: Dict[str, str] = {
                                        [--[no-]push] [--[no-]push-untracked]
                                        [--return-to=WHERE] [--start-from=WHERE] [-w|--whole] [-W] [-y|--yes]</b>
 
-        Traverses the branch dependency in pre-order (i.e. simply in the order as they occur in the definition file) and for each branch:
+        Traverses the branch dependency tree in pre-order (i.e. simply in the order as they occur in the definition file) and for each branch:
         * detects if the branch is merged to its parent/upstream
           - by commit equivalency (default), or by strict detection of merge commits (if `--no-detect-squash-merges` passed),
           - if so, asks the user whether to slide out the branch from the dependency tree (typically branches are longer needed after they're merged);
@@ -3376,13 +3379,13 @@ long_docs: Dict[str, str] = {
           <b>--no-interactive-rebase</b>      If updating by rebase, run `git rebase` in non-interactive mode (without `-i/--interactive` flag).
                                        Not allowed if updating by merge.
 
-          <b>--no-push</b>                    Do not push branches to remote, reenable via --push.
+          <b>--no-push</b>                    Do not push any (neither tracked nor untracked) branches to remote, re-enable via `--push`.
 
-          <b>--push</b>                       Push branches to remote, default behavior.
+          <b>--no-push-untracked</b>          Do not push untracked branches to remote, re-enable via `--push-untracked`.
 
-          <b>--no-push-untracked</b>          Do not push branches without existing remote tracking branch to remote, reenable via --push-untracked.
+          <b>--push</b>                       Push all (both tracked and untracked) branches to remote, default behavior.
 
-          <b>--push-untracked</b>             Push branches without existing remote tracking branch to remote, default behavior.
+          <b>--push-untracked</b>             Push untracked branches to remote, default behavior.
 
           <b>--return-to=WHERE</b>            Specifies the branch to return after traversal is successfully completed; WHERE can be `here` (the current branch at the moment when traversal starts),
                                        `nearest-remaining` (nearest remaining branch in case the `here` branch has been slid out by the traversal)
@@ -3528,13 +3531,10 @@ def launch(orig_args: List[str]) -> None:
             elif opt == "--no-interactive-rebase":
                 cli_ctxt.opt_no_interactive_rebase = True
             elif opt == "--no-push":
-                cli_ctxt.opt_no_push = True
-            elif opt == "--push":
-                cli_ctxt.opt_no_push = False
+                cli_ctxt.opt_push_tracked = False
+                cli_ctxt.opt_push_untracked = False
             elif opt == "--no-push-untracked":
-                cli_ctxt.opt_no_push_untracked = True
-            elif opt == "--push-untracked":
-                cli_ctxt.opt_no_push_untracked = False
+                cli_ctxt.opt_push_untracked = False
             elif opt in ("-o", "--onto"):
                 cli_ctxt.opt_onto = arg
             elif opt == "--override-to":
@@ -3543,6 +3543,11 @@ def launch(orig_args: List[str]) -> None:
                 cli_ctxt.opt_override_to_inferred = True
             elif opt == "--override-to-parent":
                 cli_ctxt.opt_override_to_parent = True
+            elif opt == "--push":
+                cli_ctxt.opt_push_tracked = True
+                cli_ctxt.opt_push_untracked = True
+            elif opt == "--push-untracked":
+                cli_ctxt.opt_push_untracked = True
             elif opt in ("-R", "--as-root"):
                 cli_ctxt.opt_as_root = True
             elif opt in ("-r", "--roots"):
