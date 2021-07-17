@@ -2266,9 +2266,9 @@ def handle_untracked_branch(cli_ctxt: CommandLineContext, new_remote: str, b: st
     other_remote_choice = "o[ther-remote]" if can_pick_other_remote else ""
     rb = f"{new_remote}/{b}"
     if not commit_sha_by_revision(cli_ctxt, rb, prefix="refs/remotes/"):
-        msg = f"Push untracked branch {bold(b)} to {bold(new_remote)}?" + pretty_choices('y', 'N', 'q', 'yq', other_remote_choice)
-        opt_yes_msg = f"Pushing untracked branch {bold(b)} to {bold(new_remote)}..."
-        ans = ask_if(cli_ctxt, msg, opt_yes_msg,
+        ask_message = f"Push untracked branch {bold(b)} to {bold(new_remote)}?" + pretty_choices('y', 'N', 'q', 'yq', other_remote_choice)
+        ask_opt_yes_message = f"Pushing untracked branch {bold(b)} to {bold(new_remote)}..."
+        ans = ask_if(cli_ctxt, ask_message, ask_opt_yes_message,
                      override_answer=None if cli_ctxt.opt_push_untracked else "N")
         if ans in ('y', 'yes', 'yq'):
             push(cli_ctxt, new_remote, b)
@@ -2296,7 +2296,7 @@ def handle_untracked_branch(cli_ctxt: CommandLineContext, new_remote: str, b: st
             f"Branch {bold(b)} is untracked, it diverged from its remote counterpart candidate {bold(rb)}, and has {bold('newer')} commits than {bold(rb)}."
     }[relation]
 
-    msg, opt_yes_msg = {
+    ask_message, ask_opt_yes_message = {
         IN_SYNC_WITH_REMOTE: (
             f"Set the remote of {bold(b)} to {bold(new_remote)} without pushing or pulling?" + pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
             f"Setting the remote of {bold(b)} to {bold(new_remote)}..."
@@ -2319,7 +2319,7 @@ def handle_untracked_branch(cli_ctxt: CommandLineContext, new_remote: str, b: st
         )
     }[relation]
 
-    override: Optional[str] = {
+    override_answer: Optional[str] = {
         IN_SYNC_WITH_REMOTE: None,
         BEHIND_REMOTE: None,
         AHEAD_OF_REMOTE: None if cli_ctxt.opt_push_tracked else "N",
@@ -2336,7 +2336,7 @@ def handle_untracked_branch(cli_ctxt: CommandLineContext, new_remote: str, b: st
     }[relation]
 
     print(message)
-    ans = ask_if(cli_ctxt, msg, opt_yes_msg, override_answer=override)
+    ans = ask_if(cli_ctxt, ask_message, ask_opt_yes_message, override_answer=override_answer)
     if ans in ('y', 'yes', 'yq'):
         yes_action()
         if ans == 'yq':
@@ -3383,9 +3383,9 @@ long_docs: Dict[str, str] = {
 
           <b>--no-push-untracked</b>          Do not push untracked branches to remote, re-enable via `--push-untracked`.
 
-          <b>--push</b>                       Push all (both tracked and untracked) branches to remote, default behavior.
+          <b>--push</b>                       Push all (both tracked and untracked) branches to remote - default behavior.
 
-          <b>--push-untracked</b>             Push untracked branches to remote, default behavior.
+          <b>--push-untracked</b>             Push untracked branches to remote - default behavior.
 
           <b>--return-to=WHERE</b>            Specifies the branch to return after traversal is successfully completed; WHERE can be `here` (the current branch at the moment when traversal starts),
                                        `nearest-remaining` (nearest remaining branch in case the `here` branch has been slid out by the traversal)
@@ -3819,7 +3819,7 @@ def launch(orig_args: List[str]) -> None:
         elif cmd == "traverse":
             traverse_long_opts = ["fetch", "list-commits", "merge",
                                   "no-detect-squash-merges", "no-edit-merge", "no-interactive-rebase",
-                                  "no-push", "push", "no-push-untracked", "push-untracked",
+                                  "no-push", "no-push-untracked", "push", "push-untracked",
                                   "return-to=", "start-from=", "whole", "yes"]
             expect_no_param(parse_options(args, "FlMnWwy", traverse_long_opts))
             if cli_ctxt.opt_start_from not in ("here", "root", "first-root"):
