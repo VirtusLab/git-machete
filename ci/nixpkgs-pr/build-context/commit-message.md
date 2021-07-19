@@ -13,4 +13,4 @@ Update to latest upstream version
  * [x]  Tested execution of all binary files (usually in `./result/bin/`)
  * [ ]  Determined the impact on package closure size (by running `nix path-info -S` before and after)
  * [ ]  Ensured that relevant documentation is up to date
- * [x]  Fits [CONTRIBUTING.md](https://github.com/NixOS/nixpkgs/blob/master/.github/CONTRIBUTING.md).
+ * [x]  Fits [CONTRIBUTING.md](https://github.com/NixOS/nixpkgs/blob/master/CONTRIBUTING.md).

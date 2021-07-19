@@ -6,7 +6,7 @@
 
 Good news - git machete 2.0 has been released!
 
-For those of you not familiar with this nifty tool, I recommend having a quick look at the [previous part of this series (link)](https://virtuslab.com/blog/make-way-git-rebase-jungle-git-machete)
+For those of you not familiar with this nifty tool, I recommend having a quick look at the [previous part of this series (link)](https://medium.com/virtuslab/make-your-way-through-the-git-rebase-jungle-with-git-machete-e2ed4dbacd02)
 or at least scrolling through the screenshots in that blog post to get a TL;DR kind of understanding of what git machete actually does.
 
 In general, git machete is a tool that helps manage multiple branches within a git repository and thus promotes the creation of smaller pull requests that are (usually) easier to review.
