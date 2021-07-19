@@ -54,9 +54,9 @@ newb hotfix/remove-trigger
 cat >.git/machete <<EOF
 develop
   adjust-reads-prec
-     block-cancel-order
-       change-table
-         drop-location-type
+    block-cancel-order
+      change-table
+        drop-location-type
   edit-margin-not-allowed
     full-load-gatling
   grep-errors-script
