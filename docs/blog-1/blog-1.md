@@ -34,7 +34,7 @@ Let's assume you also independently developed a feature `edit-margin-not-allowed
 Also, you created a branch `grep-errors-script` that (fortunately!) nothing depended on, and a `hotfix/remove-trigger` branch, but on top of `master`, not `develop`.
 
 If you'd like to quickly recreate this repository state on your local machine, you can use [this handy script (link)](https://raw.githubusercontent.com/VirtusLab/git-machete/copy-docs/docs/blog-1/sandbox-setup.sh),
-which will set it up in `machete-sandbox` directory in your home folder.                                              
+which will set it up in `machete-sandbox` directory in your home folder.
 
 Now the problem: how to quickly check which of the branches are in sync with their parent (aka upstream) branches?
 Note that for some of them (like `adjust-reads-prec` or `hotfix/remove-trigger`) this parent would simply be `develop` or `master`, but for others (like `change-table`) this would be another topic branch.
