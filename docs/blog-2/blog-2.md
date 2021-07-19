@@ -11,11 +11,7 @@ or at least scrolling through the screenshots in that blog post to get a TL;DR k
 In general, git machete is a tool that helps manage multiple branches within a git repository and thus promotes the creation of smaller pull requests that are (usually) easier to review.
 Just recall the last time you had to review a giant like this (diff stats shown of course only for a few first files):
 
-![Too many files in a single PR...](files-changed.png)
-
-You can get the latest git machete release directly from [the git machete repo (github.com/VirtusLab/git-machete)](https://github.com/VirtusLab/git-machete):
-
-To get through installation process, please visit [Installation page](https://github.com/VirtusLab/git-machete/blob/master/README.md)
+To get through installation process, please visit [Installation page](https://github.com/VirtusLab/git-machete/tree/master#install)
 
 
 ## Demo repository setup
