@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
 newb() {
-	git checkout -b $1
+    git checkout -b $1
 }
 
 cmt() {
-	b=$(git symbolic-ref --short HEAD)
-	f=${b/\//-}-${1}-${2}.txt
-	touch $f
-	git add $f
-	git commit -m "$*"
+    b=$(git symbolic-ref --short HEAD)
+    f=${b/\//-}-${1}-${2}.txt
+    touch $f
+    git add $f
+    git commit -m "$*"
 }
 
 dir=~/machete-sandbox
@@ -21,33 +21,33 @@ rm -f ./*
 git init
 
 newb root
-	cmt Root
+    cmt Root
 newb develop
-	cmt Develop commit
+    cmt Develop commit
 newb adjust-reads-prec
-	cmt Adjust JSON Reads precision
+    cmt Adjust JSON Reads precision
 newb block-cancel-order
-	cmt Implement blocking order cancellation
+    cmt Implement blocking order cancellation
 newb change-table
-	cmt Alter the existing tables
+    cmt Alter the existing tables
 newb drop-location-type
-	cmt Drop location type from models
+    cmt Drop location type from models
 
 git checkout develop
 newb edit-margin-not-allowed
-	cmt Disallow editing margin
+    cmt Disallow editing margin
 newb full-load-gatling
-	cmt Implement Gatling full load scenario
+    cmt Implement Gatling full load scenario
 
 git checkout develop
 newb grep-errors-script
-	cmt Add script for grepping the errors
+    cmt Add script for grepping the errors
 
 git checkout root
 newb master
-	cmt Master commit
+    cmt Master commit
 newb hotfix/remove-trigger
-	cmt HOTFIX Remove the trigger
+    cmt HOTFIX Remove the trigger
 
 cat >.git/machete <<EOF
 develop
