@@ -17,6 +17,8 @@ jobs:
             ./ci/checks/ensure-links-correct.sh
             ./ci/checks/prohibit-tab-character.sh
             ./ci/checks/prohibit-trailing-whitespace.sh
+            # We don't want `less` to open for `git grep` results.
+            export GIT_PAGER=cat
 
       - run:
           name: Install yq
