@@ -65,11 +65,11 @@ newb hotfix/add-trigger
 
 cat >.git/machete <<EOF
 develop
-    allow-ownership-link PR #123
-        build-chain PR #124
-    call-ws
+  allow-ownership-link PR #123
+    build-chain PR #124
+  call-ws
 master
-    hotfix/add-trigger
+  hotfix/add-trigger
 EOF
 
 git branch -d root
