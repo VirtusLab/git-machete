@@ -20,3 +20,6 @@ parts/
 prime/
 *.snap
 stage/
+
+# MacOS
+.DS_Store
