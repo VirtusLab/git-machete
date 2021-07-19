@@ -21,7 +21,11 @@ To get through installation process, please visit [Installation page](https://gi
 ## Demo repository setup
 
 As in the first part of the series, there is a dedicated script that sets up a demo repository with a couple of branches -
+<<<<<<< HEAD
 you can download it [directly from GitHub (link)](https://raw.githubusercontent.com/VirtusLab/git-machete/copy-docs/docs/blog-2/sandbox-setup-2.sh).
+=======
+you can download it [directly from GitHub (link)](https://raw.githubusercontent.com/PawelLipski/git-machete-blog-2/master/sandbox-setup-2.sh).
+>>>>>>> e140fe0... files moved to corrensponding directory.
 
 A tricky thing about the script is that it actually sets up two repos: one at `~/machete-sandbox` and another one at `~/machete-sandbox-remote`.
 The latter is a _bare_ repository that is created with `git init --bare` and hence doesn't have working tree, just a `.git` folder.
