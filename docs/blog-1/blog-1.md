@@ -46,7 +46,7 @@ Also, how to easily rebase each branch on the top of its parent, especially when
 
 
 Okey, let's get our hands dirty... first install `git-machete` with the sequence of commands which fits your Operating System that you can also find in the README of
-[the git machete repo (github.com/VirtusLab/git-machete)](https://github.com/VirtusLab/git-machete).
+[the git machete repo (github.com/VirtusLab/git-machete)](https://github.com/VirtusLab/git-machete/tree/master#install).
 
 
 Once you have `git-machete` in your executable `PATH` (and thus git already recognizes the `machete` subcommand), let's specify how you would like to organize your branches - basically, what depends on what.
