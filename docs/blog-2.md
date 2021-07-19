@@ -4,7 +4,6 @@
 
 ## Intro
 
-Good news - git machete 2.0 has been released!
 
 For those of you not familiar with this nifty tool, I recommend having a quick look at the [previous part of this series (link)](https://medium.com/virtuslab/make-your-way-through-the-git-rebase-jungle-with-git-machete-e2ed4dbacd02)
 or at least scrolling through the screenshots in that blog post to get a TL;DR kind of understanding of what git machete actually does.
@@ -18,12 +17,6 @@ You can get the latest git machete release directly from [the git machete repo (
 
 To get through installation process, please visit [Installation page](https://github.com/VirtusLab/git-machete/blob/master/README.md)
 
-
-
-Some of the latest improvements (especially automatic discovery of branch dependency tree) have been suggested in the [Reddit discussion (link)](https://redd.it/8625a6) for the previous part of the series -
-many thanks for the feedback.
-Also, special thanks to the GitHub user [sprudent](https://github.com/sprudent), who raised the issue of git machete crashing when run from a git submodule.
-Other recent tweaks to git machete were introduced simply to make day-to-day use of the tool even more convenient.
 
 ## Demo repository setup
 
