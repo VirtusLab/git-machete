@@ -33,7 +33,7 @@ Now for the sake of providing a full-fledged example, let's also add a couple of
 Let's assume you also independently developed a feature `edit-margin-not-allowed` and later derived a branch `full-load-gatling` from that point.
 Also, you created a branch `grep-errors-script` that (fortunately!) nothing depended on, and a `hotfix/remove-trigger` branch, but on top of `master`, not `develop`.
 
-If you'd like to quickly recreate this repository state on your local machine, you can use [this handy script (link)](https://raw.githubusercontent.com/VirtusLab/git-machete/copy-docs/docs/blog-1/sandbox-setup.sh),
+If you'd like to quickly recreate this repository state on your local machine, you can use [this handy script (link)](https://raw.githubusercontent.com/VirtusLab/git-machete/develop/docs/blog-1/sandbox-setup.sh),
 which will set it up in `machete-sandbox` directory in your home folder.
 
 
