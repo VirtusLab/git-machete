@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 newb() {
-<<<<<<< HEAD
     git checkout -b $1
 }
 
@@ -11,18 +10,9 @@ cmt() {
     touch $f
     git add $f
     git commit -m "$*"
-=======
-	git checkout -b $1
+
 }
 
-cmt() {
-	b=$(git symbolic-ref --short HEAD)
-	f=${b/\//-}-${1}-${2}.txt
-	touch $f
-	git add $f
-	git commit -m "$*"
->>>>>>> e140fe0... files moved to corrensponding directory.
-}
 
 dir=~/machete-sandbox
 mkdir -p $dir
@@ -33,7 +23,6 @@ rm -f ./*
 git init
 
 newb root
-<<<<<<< HEAD
     cmt Root
 newb develop
     cmt Develop commit
@@ -61,35 +50,6 @@ newb master
     cmt Master commit
 newb hotfix/remove-trigger
     cmt HOTFIX Remove the trigger
-=======
-	cmt Root
-newb develop
-	cmt Develop commit
-newb adjust-reads-prec
-	cmt Adjust JSON Reads precision
-newb block-cancel-order
-	cmt Implement blocking order cancellation
-newb change-table
-	cmt Alter the existing tables
-newb drop-location-type
-	cmt Drop location type from models
-
-git checkout develop
-newb edit-margin-not-allowed
-	cmt Disallow editing margin
-newb full-load-gatling
-	cmt Implement Gatling full load scenario
-
-git checkout develop
-newb grep-errors-script
-	cmt Add script for grepping the errors
-
-git checkout root
-newb master
-	cmt Master commit
-newb hotfix/remove-trigger
-	cmt HOTFIX Remove the trigger
->>>>>>> e140fe0... files moved to corrensponding directory.
 
 cat >.git/machete <<EOF
 develop

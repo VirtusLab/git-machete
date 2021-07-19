@@ -14,20 +14,11 @@ jobs:
           command: |
             # We don't want `less` to open for `git grep` results.
             export GIT_PAGER=cat
-
             # For ensure-completion-scripts-correct.sh
             sudo apt-get update
             sudo apt-get install zsh
-
             # For ensure-links-correct.sh
-
             npm install --global remark-cli remark-lint-no-dead-urls remark-validate-links
-
-            ./ci/checks/enforce-issue-number-for-todos.sh
-            ./ci/checks/ensure-links-correct.sh
-            ./ci/checks/prohibit-tab-character.sh
-            ./ci/checks/prohibit-trailing-whitespace.sh
-
             # For the scripts doing `docker-compose pull` to work around https://github.com/docker/compose/issues/7258
             wget -q https://github.com/mikefarah/yq/releases/download/v4.6.1/yq_linux_amd64
             sudo mv yq_linux_amd64 /usr/local/bin/yq
@@ -43,7 +34,6 @@ jobs:
             ensure-links-correct.sh
             prohibit-tab-character.sh
             prohibit-trailing-whitespace.sh
-
       - run: PYTHON_VERSION=3.6 GIT_VERSION=1.8.0  bash ci/tox/ci-run.sh  # Earliest versions of python/git supported by git-machete
       - run: PYTHON_VERSION=3.7 GIT_VERSION=2.7.6  bash ci/tox/ci-run.sh
       - run: PYTHON_VERSION=3.8 GIT_VERSION=2.25.0 bash ci/tox/ci-run.sh
@@ -115,7 +105,6 @@ jobs:
                   sudo apt-get update
                   sudo apt-get install hub
                   bash ci/github-releases/ci-deploy.sh
-
             # Note: also, each time a commit is pushed to master,
             # a Snap build for `edge` channel is also triggered automatically via GitHub webhook on https://build.snapcraft.io/user/VirtusLab/git-machete
             # This happens completely outside of the CI, however.
