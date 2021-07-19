@@ -80,11 +80,11 @@ The sequence of steps suggested in the first blog post:
 * check out a branch X
 * rebase it on the top of its upstream if needed
 * push to remote (possibly with `--force`) if needed
-* check out another branch - e.g. a child of X
+* check out another branch &mdash; e.g. a child of X
 
 actually repeats pretty often in a daily work with `git machete`, especially when you receive a lot of remarks from reviewers and push fixes in rounds that follow one another.
 
-To free yourself from thinking about what to check out/rebase/push next, you can turn to `git machete traverse` -
+To free yourself from thinking about what to check out/rebase/push next, you can turn to `git machete traverse` &mdash;
 a wizard that walks (or rather, traverses) the branch dependency tree and suggests what needs to be done to restore sync of branches with their parent branches and remotes.
 
 Let's check out the `develop` branch (which is listed first in the definition file) and then iterate through the branches.
@@ -173,7 +173,7 @@ The inference is based on git reflogs and doesn't know anything about the curren
 At this point one can ask a question: why then is the definition file even needed since the upstreams could be always inferred on the fly?
 The argument against such an approach is that it wouldn't be desirable if everything in the tool happened automagically/behind the scenes.
 The developer should keep a sensible amount of control while still being provided with some hints when they're in doubt.
-It seems much more reasonable than the inverse - inferring everything that's possible and only asking the human when the tool is in doubt.
+It seems much more reasonable than the inverse &mdash; inferring everything that's possible and only asking the human when the tool is in doubt.
 
 
 ## `discover` + `traverse` combo

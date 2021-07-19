@@ -8,7 +8,7 @@ TL;DR: If you work a with a git rebase flow, `git machete` will (vastly!) help y
 In day-to-day development it is common that for various reasons coders have to work with multiple git branches at the same time.
 I'll show a repository with a bunch of topic branches so as to demonstrate the typical problems that can occur under such conditions
 and how a few nifty cuts of `git machete` will prevent us from getting into a complete _git jungle_.
-The example I'm about to provide is deliberately exaggerated - in fact, most likely you'll have at most 3 or 4 branches developed simultaneously.
+The example I'm about to provide is deliberately exaggerated &mdash; in fact, most likely you'll have at most 3 or 4 branches developed simultaneously.
 Still, `git machete` is significantly helpful, even in less complex scenarios.
 
 Let's assume you have implemented a fix on a branch `adjust-reads-prec` (the actual content of the fix is completely irrelevant) and made a pull request to `develop`.
@@ -25,7 +25,7 @@ Let's see how the state of the repo looks in a graphical tool like `gitk`:
 ![gitk](gitk-0.png)
 
 In most cases it's rather unusual to have more than 2 branches stacked on top of each other, but for the sake of completeness let's now make this chain longer.
-You developed a couple of new refactors and bug fixes - say, on branches `change-table` and `drop-location-type`.
+You developed a couple of new refactors and bug fixes &mdash; say, on branches `change-table` and `drop-location-type`.
 As each of them was dependent on changes already waiting in the review queue, you began stacking another branches on top of each other.
 You ended up having 4 branches in the chain, each dependent on the previous one: `adjust-reads-prec`, `block-cancel-order`, `change-table` and `drop-location-type`.
 
@@ -49,7 +49,7 @@ Okey, let's get our hands dirty... first install `git-machete` with the sequence
 [the git machete repo (github.com/VirtusLab/git-machete)](https://github.com/VirtusLab/git-machete/tree/master#install).
 
 
-Once you have `git-machete` in your executable `PATH` (and thus git already recognizes the `machete` subcommand), let's specify how you would like to organize your branches - basically, what depends on what.
+Once you have `git-machete` in your executable `PATH` (and thus git already recognizes the `machete` subcommand), let's specify how you would like to organize your branches &mdash; basically, what depends on what.
 Run `git machete edit` or simply open the `.git/machete` file with your favorite editor.
 Paste the following "branch tree" definition:
 ```
@@ -66,7 +66,7 @@ master
 ```
 
 The above content defines a tree-like structure where `develop`/`master` are the roots.
-`adjust-reads-prec` depends directly on the `develop` branch, `block-cancel-order` depends directly on `adjust-reads-prec` and thus also (indirectly) on `develop`, and so on -
+`adjust-reads-prec` depends directly on the `develop` branch, `block-cancel-order` depends directly on `adjust-reads-prec` and thus also (indirectly) on `develop`, and so on &mdash;
 just as defined verbally earlier in the post.
 
 (Tip: it's okay to use tabs or any number of spaces for indenting as long as you are consistent).
