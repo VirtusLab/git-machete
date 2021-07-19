@@ -14,11 +14,14 @@ jobs:
           command: |
             # We don't want `less` to open for `git grep` results.
             export GIT_PAGER=cat
+
             # For ensure-completion-scripts-correct.sh
             sudo apt-get update
             sudo apt-get install zsh
+
             # For ensure-links-correct.sh
             npm install --global remark-cli remark-lint-no-dead-urls remark-validate-links
+
             # For the scripts doing `docker-compose pull` to work around https://github.com/docker/compose/issues/7258
             wget -q https://github.com/mikefarah/yq/releases/download/v4.6.1/yq_linux_amd64
             sudo mv yq_linux_amd64 /usr/local/bin/yq
