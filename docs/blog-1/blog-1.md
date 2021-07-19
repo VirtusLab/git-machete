@@ -33,8 +33,8 @@ Now for the sake of providing a full-fledged example, let's also add a couple of
 Let's assume you also independently developed a feature `edit-margin-not-allowed` and later derived a branch `full-load-gatling` from that point.
 Also, you created a branch `grep-errors-script` that (fortunately!) nothing depended on, and a `hotfix/remove-trigger` branch, but on top of `master`, not `develop`.
 
-If you'd like to quickly recreate this repository state on your local machine, you can use [this handy script (link)](https://raw.githubusercontent.com/PawelLipski/git-machete-blog/master/sandbox-setup.sh),
-which will set it up in `machete-sandbox` directory in your home folder.
+If you'd like to quickly recreate this repository state on your local machine, you can use [this handy script (link)](https://raw.githubusercontent.com/VirtusLab/git-machete/copy-docs/docs/blog-1/sandbox-setup.sh),
+which will set it up in `machete-sandbox` directory in your home folder.                                              
 
 Now the problem: how to quickly check which of the branches are in sync with their parent (aka upstream) branches?
 Note that for some of them (like `adjust-reads-prec` or `hotfix/remove-trigger`) this parent would simply be `develop` or `master`, but for others (like `change-table`) this would be another topic branch.
@@ -46,7 +46,7 @@ Also, how to easily rebase each branch on the top of its parent, especially when
 
 Okey, let's get our hands dirty... first install `git-machete` with the sequence of commands which fits your Operating System that you can also find in the README of
 [the git machete repo (github.com/VirtusLab/git-machete)](https://github.com/VirtusLab/git-machete).
-
+                                                          https://github.com/VirtusLab/git-machete/blob/copy-docs/docs/blog-1/sandbox-setup.shz
 
 Once you have `git-machete` in your executable `PATH` (and thus git already recognizes the `machete` subcommand), let's specify how you would like to organize your branches - basically, what depends on what.
 Run `git machete edit` or simply open the `.git/machete` file with your favorite editor.
