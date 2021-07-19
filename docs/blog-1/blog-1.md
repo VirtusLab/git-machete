@@ -35,7 +35,7 @@ Also, you created a branch `grep-errors-script` that (fortunately!) nothing depe
 
 
 If you'd like to quickly recreate this repository state on your local machine, you can use [this handy script (link)](https://raw.githubusercontent.com/VirtusLab/git-machete/copy-docs/docs/blog-1/sandbox-setup.sh),
-which will set it up in `machete-sandbox` directory in your home folder.                                              
+which will set it up in `machete-sandbox` directory in your home folder.
 
 
 Now the problem: how to quickly check which of the branches are in sync with their parent (aka upstream) branches?
