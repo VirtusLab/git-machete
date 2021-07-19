@@ -16,13 +16,9 @@ Just recall the last time you had to review a giant like this (diff stats shown 
 
 You can get the latest git machete release directly from [the git machete repo (github.com/VirtusLab/git-machete)](https://github.com/VirtusLab/git-machete):
 
-```
-$ git clone https://github.com/VirtusLab/git-machete.git
-$ cd git-machete
-$ sudo make install
-```
+To get through installation process, please visit [Installation page](https://github.com/VirtusLab/git-machete/blob/master/README.md)
 
-`make install` copies the `git-machete` Python 2.7 executable to `/usr/local/bin` and sets up the corresponding Bash completion script in `/etc/bash_completion.d`.
+
 
 Some of the latest improvements (especially automatic discovery of branch dependency tree) have been suggested in the [Reddit discussion (link)](https://redd.it/8625a6) for the previous part of the series -
 many thanks for the feedback.
