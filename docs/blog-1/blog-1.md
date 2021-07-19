@@ -35,6 +35,7 @@ Also, you created a branch `grep-errors-script` that (fortunately!) nothing depe
 
 
 If you'd like to quickly recreate this repository state on your local machine, you can use [this handy script (link)](https://raw.githubusercontent.com/VirtusLab/git-machete/copy-docs/docs/blog-1/sandbox-setup.sh),
+which will set it up in `machete-sandbox` directory in your home folder.                                              
 
 
 Now the problem: how to quickly check which of the branches are in sync with their parent (aka upstream) branches?
@@ -65,8 +66,12 @@ This will copy the `git-machete` Python 2.7 executable to `/usr/local/bin` and s
 =======
 Okey, let's get our hands dirty... first install `git-machete` with the sequence of commands which fits your Operating System that you can also find in the README of
 [the git machete repo (github.com/VirtusLab/git-machete)](https://github.com/VirtusLab/git-machete).
+<<<<<<< HEAD
 
 >>>>>>> 1496e77... replaced installation command with link to installation page.
+=======
+                                                          https://github.com/VirtusLab/git-machete/blob/copy-docs/docs/blog-1/sandbox-setup.shz
+>>>>>>> ca460c3... changed links to this repository.
 
 Once you have `git-machete` in your executable `PATH` (and thus git already recognizes the `machete` subcommand), let's specify how you would like to organize your branches - basically, what depends on what.
 Run `git machete edit` or simply open the `.git/machete` file with your favorite editor.
