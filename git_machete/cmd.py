@@ -339,150 +339,150 @@ def popen_git(cli_ctxt: CommandLineContext, git_cmd: str, *args: str, **kwargs: 
 
 # Manipulation on definition file/tree of branches
 
-managed_branches: List[str] = []
-down_branches: Dict[str, List[str]] = {}  # TODO (#110): default dict with []
-up_branch: Dict[str, str] = {}  # TODO (#110): default dict with None
-indent: Optional[str] = None
-roots: List[str] = []
-annotations: Dict[str, str] = {}
 
+class MacheteContext:
+    cli_ctxt: CommandLineContext = CommandLineContext()
 
-def expect_in_managed_branches(b: str) -> None:
-    if b not in managed_branches:
+    def __init__(self) -> None:
+        self.managed_branches: List[str] = []
+        self.down_branches: Dict[str, List[str]] = {}  # TODO (#110): default dict with []
+        self.up_branch: Dict[str, str] = {}  # TODO (#110): default dict with None
+        self.indent: Optional[str] = None
+        self.roots: List[str] = []
+        self.annotations: Dict[str, str] = {}
+
+    def expect_in_managed_branches(self, b: str) -> None:
+        if b not in self.managed_branches:
+            raise MacheteException(
+                f"Branch `{b}` not found in the tree of branch dependencies.\nUse `git machete add {b}` or `git machete edit`")
+
+    def expect_at_least_one_managed_branch(self) -> None:
+        if not self.roots:
+            self.raise_no_branches_error()
+
+    def raise_no_branches_error(self) -> None:
         raise MacheteException(
-            f"Branch `{b}` not found in the tree of branch dependencies.\nUse `git machete add {b}` or `git machete edit`")
+            f"No branches listed in {definition_file_path}; use `git machete discover` or `git machete edit`, or edit {definition_file_path} manually.")
 
+    @staticmethod
+    def read_definition_file(cli_ctxt: CommandLineContext, verify_branches: bool = True) -> None:
 
-def expect_at_least_one_managed_branch() -> None:
-    if not roots:
-        raise_no_branches_error()
+        with open(definition_file_path) as f:
+            lines: List[str] = [line.rstrip() for line in f.readlines() if not line.isspace()]
 
+        managed_branches = []
+        down_branches = {}
+        up_branch = {}
+        indent = None
+        roots = []
+        annotations = {}
+        at_depth = {}
+        last_depth = -1
+        hint = "Edit the definition file manually with `git machete edit`"
 
-def raise_no_branches_error() -> None:
-    raise MacheteException(
-        f"No branches listed in {definition_file_path}; use `git machete discover` or `git machete edit`, or edit {definition_file_path} manually.")
+        invalid_branches: List[str] = []
+        for idx, l in enumerate(lines):
+            pfx = "".join(itertools.takewhile(str.isspace, l))
+            if pfx and not indent:
+                indent = pfx
 
-
-def read_definition_file(cli_ctxt: CommandLineContext, verify_branches: bool = True) -> None:
-    global indent, managed_branches, down_branches, up_branch, roots, annotations
-
-    with open(definition_file_path) as f:
-        lines: List[str] = [line.rstrip() for line in f.readlines() if not line.isspace()]
-
-    managed_branches = []
-    down_branches = {}
-    up_branch = {}
-    indent = None
-    roots = []
-    annotations = {}
-    at_depth = {}
-    last_depth = -1
-    hint = "Edit the definition file manually with `git machete edit`"
-
-    invalid_branches: List[str] = []
-    for idx, l in enumerate(lines):
-        pfx = "".join(itertools.takewhile(str.isspace, l))
-        if pfx and not indent:
-            indent = pfx
-
-        b_a: List[str] = l.strip().split(" ", 1)
-        b = b_a[0]
-        if len(b_a) > 1:
-            annotations[b] = b_a[1]
-        if b in managed_branches:
-            raise MacheteException(
-                f"{definition_file_path}, line {idx + 1}: branch `{b}` re-appears in the tree definition. {hint}")
-        if verify_branches and b not in local_branches(cli_ctxt):
-            invalid_branches += [b]
-        managed_branches += [b]
-
-        if pfx:
-            depth: int = len(pfx) // len(indent)
-            if pfx != indent * depth:
-                mapping: Dict[str, str] = {" ": "<SPACE>", "\t": "<TAB>"}
-                pfx_expanded: str = "".join(mapping[c] for c in pfx)
-                indent_expanded: str = "".join(mapping[c] for c in indent)
+            b_a: List[str] = l.strip().split(" ", 1)
+            b = b_a[0]
+            if len(b_a) > 1:
+                annotations[b] = b_a[1]
+            if b in managed_branches:
                 raise MacheteException(
-                    f"{definition_file_path}, line {idx + 1}: invalid indent `{pfx_expanded}`, expected a multiply of `{indent_expanded}`. {hint}")
-        else:
-            depth = 0
+                    f"{definition_file_path}, line {idx + 1}: branch `{b}` re-appears in the tree definition. {hint}")
+            if verify_branches and b not in local_branches(cli_ctxt):
+                invalid_branches += [b]
+            managed_branches += [b]
 
-        if depth > last_depth + 1:
-            raise MacheteException(
-                f"{definition_file_path}, line {idx + 1}: too much indent (level {depth}, expected at most {last_depth + 1}) for the branch `{b}`. {hint}")
-        last_depth = depth
-
-        at_depth[depth] = b
-        if depth:
-            p = at_depth[depth - 1]
-            up_branch[b] = p
-            if p in down_branches:
-                down_branches[p] += [b]
+            if pfx:
+                depth: int = len(pfx) // len(indent)
+                if pfx != indent * depth:
+                    mapping: Dict[str, str] = {" ": "<SPACE>", "\t": "<TAB>"}
+                    pfx_expanded: str = "".join(mapping[c] for c in pfx)
+                    indent_expanded: str = "".join(mapping[c] for c in indent)
+                    raise MacheteException(
+                        f"{definition_file_path}, line {idx + 1}: invalid indent `{pfx_expanded}`, expected a multiply of `{indent_expanded}`. {hint}")
             else:
-                down_branches[p] = [b]
-        else:
-            roots += [b]
+                depth = 0
 
-    if not invalid_branches:
-        return
+            if depth > last_depth + 1:
+                raise MacheteException(
+                    f"{definition_file_path}, line {idx + 1}: too much indent (level {depth}, expected at most {last_depth + 1}) for the branch `{b}`. {hint}")
+            last_depth = depth
 
-    if len(invalid_branches) == 1:
-        ans: str = ask_if(cli_ctxt,
-                          f"Skipping `{invalid_branches[0]}` " +
-                          "which is not a local branch (perhaps it has been deleted?).\n" +
-                          "Slide it out from the definition file?" +
-                          pretty_choices("y", "e[dit]", "N"), opt_yes_msg=None)
-    else:
-        ans = ask_if(cli_ctxt,
-                     f"Skipping {', '.join(f'`{b}`' for b in invalid_branches)} " +
-                     "which are not local branches (perhaps they have been deleted?).\n" +
-                     "Slide them out from the definition file?" +
-                     pretty_choices("y", "e[dit]", "N"), opt_yes_msg=None)
-
-    def recursive_slide_out_invalid_branches(b: str) -> List[str]:
-        new_down_branches = flat_map(recursive_slide_out_invalid_branches, down_branches.get(b, []))
-        if b in invalid_branches:
-            if b in down_branches:
-                del down_branches[b]
-            if b in annotations:
-                del annotations[b]
-            if b in up_branch:
-                for d in new_down_branches:
-                    up_branch[d] = up_branch[b]
-                del up_branch[b]
+            at_depth[depth] = b
+            if depth:
+                p = at_depth[depth - 1]
+                up_branch[b] = p
+                if p in down_branches:
+                    down_branches[p] += [b]
+                else:
+                    down_branches[p] = [b]
             else:
-                for d in new_down_branches:
-                    del up_branch[d]
-            return new_down_branches
+                roots += [b]
+
+        if not invalid_branches:
+            return
+
+        if len(invalid_branches) == 1:
+            ans: str = ask_if(cli_ctxt,
+                              f"Skipping `{invalid_branches[0]}` " +
+                              "which is not a local branch (perhaps it has been deleted?).\n" +
+                              "Slide it out from the definition file?" +
+                              pretty_choices("y", "e[dit]", "N"), opt_yes_msg=None)
         else:
-            down_branches[b] = new_down_branches
-            return [b]
+            ans = ask_if(cli_ctxt,
+                         f"Skipping {', '.join(f'`{b}`' for b in invalid_branches)} " +
+                         "which are not local branches (perhaps they have been deleted?).\n" +
+                         "Slide them out from the definition file?" +
+                         pretty_choices("y", "e[dit]", "N"), opt_yes_msg=None)
 
-    roots = flat_map(recursive_slide_out_invalid_branches, roots)
-    managed_branches = excluding(managed_branches, invalid_branches)
-    if ans in ('y', 'yes'):
-        save_definition_file()
-    elif ans in ('e', 'edit'):
-        edit(cli_ctxt)
-        read_definition_file(cli_ctxt, verify_branches)
+        def recursive_slide_out_invalid_branches(b: str) -> List[str]:
+            new_down_branches = flat_map(recursive_slide_out_invalid_branches, down_branches.get(b, []))
+            if b in invalid_branches:
+                if b in down_branches:
+                    del down_branches[b]
+                if b in annotations:
+                    del annotations[b]
+                if b in up_branch:
+                    for d in new_down_branches:
+                        up_branch[d] = up_branch[b]
+                    del up_branch[b]
+                else:
+                    for d in new_down_branches:
+                        del up_branch[d]
+                return new_down_branches
+            else:
+                down_branches[b] = new_down_branches
+                return [b]
 
+        roots = flat_map(recursive_slide_out_invalid_branches, roots)
+        managed_branches = excluding(managed_branches, invalid_branches)
+        if ans in ('y', 'yes'):
+            save_definition_file()
+        elif ans in ('e', 'edit'):
+            edit(cli_ctxt)
+            MacheteContext.read_definition_file(cli_ctxt, verify_branches)
 
-def render_tree() -> List[str]:
-    global roots, down_branches, indent, annotations
-    if not indent:
-        indent = "\t"
+    def render_tree() -> List[str]:
+        global roots, down_branches, indent, annotations
+        if not indent:
+            indent = "\t"
 
-    def render_dfs(b: str, depth: int) -> List[str]:
-        annotation = f" {annotations[b]}" if b in annotations else ""
-        res: List[str] = [depth * indent + b + annotation]
-        for d in down_branches.get(b, []):
-            res += render_dfs(d, depth + 1)
-        return res
+        def render_dfs(b: str, depth: int) -> List[str]:
+            annotation = f" {annotations[b]}" if b in annotations else ""
+            res: List[str] = [depth * indent + b + annotation]
+            for d in down_branches.get(b, []):
+                res += render_dfs(d, depth + 1)
+            return res
 
-    total: List[str] = []
-    for r in roots:
-        total += render_dfs(r, depth=0)
-    return total
+        total: List[str] = []
+        for r in roots:
+            total += render_dfs(r, depth=0)
+        return total
 
 
 def back_up_definition_file() -> None:
