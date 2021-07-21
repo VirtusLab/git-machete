@@ -473,8 +473,8 @@ class MacheteContext:
             self.indent = "\t"
 
         def render_dfs(b: str, depth: int) -> List[str]:
-            annotation = f" {self.annotations[b]}" if b in MacheteContext.annotations else ""
-            res: List[str] = [depth * self.indent + b + annotation]
+            self.annotation = f" {self.annotations[b]}" if b in self.annotations else ""
+            res: List[str] = [depth * self.indent + b + self.annotation]
             for d in self.down_branches.get(b, []):
                 res += render_dfs(d, depth + 1)
             return res
@@ -744,16 +744,16 @@ class MacheteContext:
             if r not in local_branches(cli_ctxt):
                 raise MacheteException(f"`{r}` is not a local branch")
         if cli_ctxt.opt_roots:
-            roots = list(cli_ctxt.opt_roots)
+            self.roots = list(cli_ctxt.opt_roots)
         else:
-            roots = []
+            self.roots = []
             if "master" in local_branches(cli_ctxt):
-                roots += ["master"]
+                self.roots += ["master"]
             elif "main" in local_branches(cli_ctxt):
                 # See https://github.com/github/renaming
-                roots += ["main"]
+                self.roots += ["main"]
             if "develop" in local_branches(cli_ctxt):
-                roots += ["develop"]
+                self.roots += ["develop"]
         self.down_branches = {}
         self.up_branch = {}
         self.indent = "\t"
@@ -766,7 +766,7 @@ class MacheteContext:
                 root_of[b] = get_root_of(root_of[b])
             return root_of[b]
 
-        non_root_fixed_branches = excluding(all_local_branches, roots)
+        non_root_fixed_branches = excluding(all_local_branches, self.roots)
         last_checkout_timestamps = get_latest_checkout_timestamps(cli_ctxt)
         non_root_fixed_branches_by_last_checkout_timestamps = sorted(
             (last_checkout_timestamps.get(b, 0), b) for b in non_root_fixed_branches)
@@ -810,7 +810,7 @@ class MacheteContext:
                     self.down_branches[u] = [b]
             else:
                 debug(cli_ctxt, "discover_tree()", f"inferred no upstream for {b}, attaching {b} as a new root\n")
-                roots += [b]
+                self.roots += [b]
 
         # Let's remove merged branches for which no downstream branch have been found.
         merged_branches_to_skip = []
@@ -3858,3 +3858,4 @@ def launch(orig_args: List[str]) -> None:
 
 if __name__ == "__main__":
     main()
+
