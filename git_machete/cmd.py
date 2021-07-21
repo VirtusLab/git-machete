@@ -343,18 +343,21 @@ branch_defs_by_sha_in_reflog: Optional[Dict[str, Optional[List[Tuple[str, str]]]
 
 BRANCH_DEF = Tuple[str, str]
 
+
 class MacheteContext:
 
     cli_ctxt: CommandLineContext = CommandLineContext()
     DISCOVER_DEFAULT_FRESH_BRANCH_COUNT = 10
-    PICK_FIRST_ROOT: int = 0
-    PICK_LAST_ROOT: int = -1
-    managed_branches: List[str] = []
-    down_branches: Dict[str, List[str]] = {}  # TODO (#110): default dict with []
-    up_branch: Dict[str, str] = {}  # TODO (#110): default dict with None
-    indent: Optional[str] = None
-    roots: List[str] = []
-    annotations: Dict[str, str] = {}
+
+    def __init__(self) -> None:
+        self.PICK_FIRST_ROOT: int = 0
+        self.PICK_LAST_ROOT: int = -1
+        self.managed_branches: List[str] = []
+        self.down_branches: Dict[str, List[str]] = {}  # TODO (#110): default dict with []
+        self.up_branch: Dict[str, str] = {}  # TODO (#110): default dict with None
+        self.indent: Optional[str] = None
+        self.roots: List[str] = []
+        self.annotations: Dict[str, str] = {}
 
     def expect_in_managed_branches(self, b: str) -> None:
         if b not in self.managed_branches:
@@ -369,45 +372,38 @@ class MacheteContext:
         raise MacheteException(
             f"No branches listed in {definition_file_path}; use `git machete discover` or `git machete edit`, or edit {definition_file_path} manually.")
 
-    @staticmethod  # This method should also be instance method
-    def read_definition_file(cli_ctxt: CommandLineContext, verify_branches: bool = True) -> None:
-
+    def read_definition_file(self, cli_ctxt: CommandLineContext, verify_branches: bool = True) -> None:
         with open(definition_file_path) as f:
             lines: List[str] = [line.rstrip() for line in f.readlines() if not line.isspace()]
 
-        managed_branches_1 = []
-        down_branches_1 = {}
-        up_branch_1 = {}
-        indent_1 = None
-        roots_1 = []
-        annotations_1 = {}
         at_depth = {}
         last_depth = -1
+
         hint = "Edit the definition file manually with `git machete edit`"
 
         invalid_branches: List[str] = []
         for idx, l in enumerate(lines):
             pfx = "".join(itertools.takewhile(str.isspace, l))
-            if pfx and not indent_1:
-                indent_1 = pfx
+            if pfx and not self.indent:
+                self.indent = pfx
 
             b_a: List[str] = l.strip().split(" ", 1)
             b = b_a[0]
             if len(b_a) > 1:
-                annotations_1[b] = b_a[1]
-            if b in managed_branches_1:
+                self.annotations[b] = b_a[1]
+            if b in self.managed_branches:
                 raise MacheteException(
                     f"{definition_file_path}, line {idx + 1}: branch `{b}` re-appears in the tree definition. {hint}")
             if verify_branches and b not in local_branches(cli_ctxt):
                 invalid_branches += [b]
-            managed_branches_1 += [b]
+            self.managed_branches += [b]
 
             if pfx:
-                depth: int = len(pfx) // len(indent_1)
-                if pfx != indent_1 * depth:
+                depth: int = len(pfx) // len(self.indent)
+                if pfx != self.indent * depth:
                     mapping: Dict[str, str] = {" ": "<SPACE>", "\t": "<TAB>"}
                     pfx_expanded: str = "".join(mapping[c] for c in pfx)
-                    indent_expanded: str = "".join(mapping[c] for c in indent_1)
+                    indent_expanded: str = "".join(mapping[c] for c in self.indent)
                     raise MacheteException(
                         f"{definition_file_path}, line {idx + 1}: invalid indent `{pfx_expanded}`, expected a multiply of `{indent_expanded}`. {hint}")
             else:
@@ -421,13 +417,13 @@ class MacheteContext:
             at_depth[depth] = b
             if depth:
                 p = at_depth[depth - 1]
-                up_branch[b] = p
-                if p in down_branches_1:
-                    down_branches_1[p] += [b]
+                self.up_branch[b] = p
+                if p in self.down_branches:
+                    self.down_branches[p] += [b]
                 else:
-                    down_branches_1[p] = [b]
+                    self.down_branches[p] = [b]
             else:
-                roots_1 += [b]
+                self.roots += [b]
 
         if not invalid_branches:
             return
@@ -446,46 +442,45 @@ class MacheteContext:
                          pretty_choices("y", "e[dit]", "N"), opt_yes_msg=None)
 
         def recursive_slide_out_invalid_branches(b: str) -> List[str]:
-            new_down_branches = flat_map(recursive_slide_out_invalid_branches, down_branches_1.get(b, []))
+            new_down_branches = flat_map(recursive_slide_out_invalid_branches, self.down_branches.get(b, []))
             if b in invalid_branches:
-                if b in down_branches_1:
-                    del down_branches_1[b]
-                if b in annotations_1:
-                    del annotations_1[b]
-                if b in up_branch_1:
+                if b in self.down_branches:
+                    del self.down_branches[b]
+                if b in self.annotations:
+                    del self.annotations[b]
+                if b in self.up_branch:
                     for d in new_down_branches:
-                        up_branch_1[d] = up_branch_1[b]
-                    del up_branch_1[b]
+                        self.up_branch[d] = self.up_branch[b]
+                    del self.up_branch[b]
                 else:
                     for d in new_down_branches:
-                        del up_branch_1[d]
+                        del self.up_branch[d]
                 return new_down_branches
             else:
-                down_branches_1[b] = new_down_branches
+                self.down_branches[b] = new_down_branches
                 return [b]
 
-        roots_1 = flat_map(recursive_slide_out_invalid_branches, roots_1)
-        managed_branches_1 = excluding(managed_branches_1, invalid_branches)
+        self.roots = flat_map(recursive_slide_out_invalid_branches, self.roots)
+        self.managed_branches = excluding(self.managed_branches, invalid_branches)
         if ans in ('y', 'yes'):
-            MacheteContext.save_definition_file()
+            self.save_definition_file()
         elif ans in ('e', 'edit'):
             edit(cli_ctxt)
-            MacheteContext.read_definition_file(cli_ctxt, verify_branches)
+            self.read_definition_file(cli_ctxt, verify_branches)
 
-    @staticmethod
-    def render_tree() -> List[str]:
-        if not MacheteContext.indent:
-            MacheteContext.indent = "\t"
+    def render_tree(self) -> List[str]:
+        if not self.indent:
+            self.indent = "\t"
 
         def render_dfs(b: str, depth: int) -> List[str]:
-            annotation = f" {MacheteContext.annotations[b]}" if b in MacheteContext.annotations else ""
-            res: List[str] = [depth * MacheteContext.indent + b + annotation]
-            for d in MacheteContext.down_branches.get(b, []):
+            annotation = f" {self.annotations[b]}" if b in MacheteContext.annotations else ""
+            res: List[str] = [depth * self.indent + b + annotation]
+            for d in self.down_branches.get(b, []):
                 res += render_dfs(d, depth + 1)
             return res
 
         total: List[str] = []
-        for r in MacheteContext.roots:
+        for r in self.roots:
             total += render_dfs(r, depth=0)
         return total
 
@@ -493,10 +488,9 @@ class MacheteContext:
     def back_up_definition_file() -> None:
         shutil.copyfile(definition_file_path, definition_file_path + "~")
 
-    @staticmethod
-    def save_definition_file() -> None:
+    def save_definition_file(self) -> None:
         with open(definition_file_path, "w") as f:
-            f.write("\n".join(MacheteContext.render_tree()) + "\n")
+            f.write("\n".join(self.render_tree()) + "\n")
 
     # Allowed parameter values for show/go command
     @staticmethod
@@ -783,7 +777,7 @@ class MacheteContext:
                 non_root_fixed_branches_by_last_checkout_timestamps
             )]
         else:
-            c = self.DISCOVER_DEFAULT_FRESH_BRANCH_COUNT
+            c = MacheteContext.DISCOVER_DEFAULT_FRESH_BRANCH_COUNT
             stale, fresh = non_root_fixed_branches_by_last_checkout_timestamps[
                            :-c], non_root_fixed_branches_by_last_checkout_timestamps[-c:]
             stale_non_root_fixed_branches = [b for (timestamp, b) in stale]
@@ -793,8 +787,8 @@ class MacheteContext:
                      f"only branches checked out at or after ca. <b>{threshold_date}</b> are included.\n"
                      "Use `git machete discover --checked-out-since=<date>` (where <date> can be e.g. `'2 weeks ago'` or `2020-06-01`) "
                      "to change this threshold so that less or more branches are included.\n")
-        managed_branches = excluding(all_local_branches, stale_non_root_fixed_branches)
-        if cli_ctxt.opt_checked_out_since and not managed_branches:
+        self.managed_branches = excluding(all_local_branches, stale_non_root_fixed_branches)
+        if cli_ctxt.opt_checked_out_since and not self.managed_branches:
             warn(
                 "no branches satisfying the criteria. Try moving the value of `--checked-out-since` further to the past.")
             return
@@ -820,7 +814,7 @@ class MacheteContext:
 
         # Let's remove merged branches for which no downstream branch have been found.
         merged_branches_to_skip = []
-        for b in managed_branches:
+        for b in self.managed_branches:
             if b in self.up_branch and not self.down_branches.get(b):
                 u = self.up_branch[b]
                 if is_merged_to(cli_ctxt, b, u):
@@ -832,7 +826,7 @@ class MacheteContext:
             warn("skipping %s since %s merged to another branch and would not have any downstream branches.\n"
                  % (", ".join(f"`{b}`" for b in merged_branches_to_skip),
                     "it's" if len(merged_branches_to_skip) == 1 else "they're"))
-            managed_branches = excluding(managed_branches, merged_branches_to_skip)
+            self.managed_branches = excluding(self.managed_branches, merged_branches_to_skip)
             for b in merged_branches_to_skip:
                 u = self.up_branch[b]
                 self.down_branches[u] = excluding(self.down_branches[u], [b])
@@ -1005,7 +999,7 @@ class MacheteContext:
 
         b: str
         for b in itertools.dropwhile(lambda x: x != cb, self.managed_branches):
-            u = up_branch.get(b)
+            u = self.up_branch.get(b)
 
             needs_slide_out: bool = self.is_merged_to_upstream(cli_ctxt, b)
             s, remote = get_strict_remote_sync_status(cli_ctxt, b)
@@ -3626,7 +3620,7 @@ def launch(orig_args: List[str]) -> None:
         else:
             return in_args[0]
 
-    global definition_file_path, up_branch
+    global definition_file_path
     try:
         cmd = None
         cmd_and_args = parse_options(orig_args, gnu=False)
@@ -3709,7 +3703,7 @@ def launch(orig_args: List[str]) -> None:
             elif cli_ctxt.opt_override_to_inferred:
                 set_fork_point_override(cli_ctxt, b, machete_ctxt.fork_point(cli_ctxt, b, use_overrides=False))
             elif cli_ctxt.opt_override_to_parent:
-                u = up_branch.get(b)
+                u = machete_ctxt.up_branch.get(b)
                 if u:
                     set_fork_point_override(cli_ctxt, b, u)
                 else:
