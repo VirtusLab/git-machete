@@ -339,10 +339,14 @@ def popen_git(cli_ctxt: CommandLineContext, git_cmd: str, *args: str, **kwargs: 
 
 # Manipulation on definition file/tree of branches
 
+branch_defs_by_sha_in_reflog: Optional[Dict[str, Optional[List[Tuple[str, str]]]]] = None
+
+BRANCH_DEF = Tuple[str, str]
+
 class MacheteContext:
 
     cli_ctxt: CommandLineContext = CommandLineContext()
-
+    DISCOVER_DEFAULT_FRESH_BRANCH_COUNT = 10
     PICK_FIRST_ROOT: int = 0
     PICK_LAST_ROOT: int = -1
     managed_branches: List[str] = []
@@ -371,12 +375,12 @@ class MacheteContext:
         with open(definition_file_path) as f:
             lines: List[str] = [line.rstrip() for line in f.readlines() if not line.isspace()]
 
-        MacheteContext.managed_branches = []
-        MacheteContext.down_branches = {}
-        MacheteContext.up_branch = {}
-        MacheteContext.indent = None
-        MacheteContext.roots = []
-        MacheteContext.annotations = {}
+        managed_branches_1 = []
+        down_branches_1 = {}
+        up_branch_1 = {}
+        indent_1 = None
+        roots_1 = []
+        annotations_1 = {}
         at_depth = {}
         last_depth = -1
         hint = "Edit the definition file manually with `git machete edit`"
@@ -384,26 +388,26 @@ class MacheteContext:
         invalid_branches: List[str] = []
         for idx, l in enumerate(lines):
             pfx = "".join(itertools.takewhile(str.isspace, l))
-            if pfx and not MacheteContext.indent:
-                MacheteContext.indent = pfx
+            if pfx and not indent_1:
+                indent_1 = pfx
 
             b_a: List[str] = l.strip().split(" ", 1)
             b = b_a[0]
             if len(b_a) > 1:
-                annotations[b] = b_a[1]
-            if b in MacheteContext.managed_branches:
+                annotations_1[b] = b_a[1]
+            if b in managed_branches_1:
                 raise MacheteException(
                     f"{definition_file_path}, line {idx + 1}: branch `{b}` re-appears in the tree definition. {hint}")
             if verify_branches and b not in local_branches(cli_ctxt):
                 invalid_branches += [b]
-            MacheteContext.managed_branches += [b]
+            managed_branches_1 += [b]
 
             if pfx:
-                depth: int = len(pfx) // len(indent)
-                if pfx != indent * depth:
+                depth: int = len(pfx) // len(indent_1)
+                if pfx != indent_1 * depth:
                     mapping: Dict[str, str] = {" ": "<SPACE>", "\t": "<TAB>"}
                     pfx_expanded: str = "".join(mapping[c] for c in pfx)
-                    indent_expanded: str = "".join(mapping[c] for c in indent)
+                    indent_expanded: str = "".join(mapping[c] for c in indent_1)
                     raise MacheteException(
                         f"{definition_file_path}, line {idx + 1}: invalid indent `{pfx_expanded}`, expected a multiply of `{indent_expanded}`. {hint}")
             else:
@@ -417,13 +421,13 @@ class MacheteContext:
             at_depth[depth] = b
             if depth:
                 p = at_depth[depth - 1]
-                MacheteContext.up_branch[b] = p
-                if p in MacheteContext.down_branches:
-                    MacheteContext.down_branches[p] += [b]
+                up_branch[b] = p
+                if p in down_branches_1:
+                    down_branches_1[p] += [b]
                 else:
-                    MacheteContext.down_branches[p] = [b]
+                    down_branches_1[p] = [b]
             else:
-                MacheteContext.roots += [b]
+                roots_1 += [b]
 
         if not invalid_branches:
             return
@@ -442,26 +446,26 @@ class MacheteContext:
                          pretty_choices("y", "e[dit]", "N"), opt_yes_msg=None)
 
         def recursive_slide_out_invalid_branches(b: str) -> List[str]:
-            new_down_branches = flat_map(recursive_slide_out_invalid_branches, down_branches.get(b, []))
+            new_down_branches = flat_map(recursive_slide_out_invalid_branches, down_branches_1.get(b, []))
             if b in invalid_branches:
-                if b in MacheteContext.down_branches:
-                    del MacheteContext.down_branches[b]
-                if b in MacheteContext.annotations:
-                    del MacheteContext.annotations[b]
-                if b in MacheteContext.up_branch:
+                if b in down_branches_1:
+                    del down_branches_1[b]
+                if b in annotations_1:
+                    del annotations_1[b]
+                if b in up_branch_1:
                     for d in new_down_branches:
-                        MacheteContext.up_branch[d] = MacheteContext.up_branch[b]
-                    del MacheteContext.up_branch[b]
+                        up_branch_1[d] = up_branch_1[b]
+                    del up_branch_1[b]
                 else:
                     for d in new_down_branches:
-                        del MacheteContext.up_branch[d]
+                        del up_branch_1[d]
                 return new_down_branches
             else:
-                down_branches[b] = new_down_branches
+                down_branches_1[b] = new_down_branches
                 return [b]
 
-        MacheteContext.roots = flat_map(recursive_slide_out_invalid_branches, MacheteContext.roots)
-        MacheteContext.managed_branches = excluding(MacheteContext.managed_branches, invalid_branches)
+        roots_1 = flat_map(recursive_slide_out_invalid_branches, roots_1)
+        managed_branches_1 = excluding(managed_branches_1, invalid_branches)
         if ans in ('y', 'yes'):
             MacheteContext.save_definition_file()
         elif ans in ('e', 'edit'):
@@ -575,7 +579,6 @@ class MacheteContext:
             u = self.up_branch.get(b)
         return b
 
-
     def up(self, cli_ctxt: CommandLineContext, b: str, prompt_if_inferred_msg: Optional[str], prompt_if_inferred_yes_opt_msg: Optional[str]) -> str:
         if b in self.managed_branches:
             u = self.up_branch.get(b)
@@ -658,7 +661,7 @@ class MacheteContext:
                         return
 
             self.up_branch[b] = onto
-            if onto in down_branches:
+            if onto in self.down_branches:
                 self.down_branches[onto].append(b)
             else:
                 self.down_branches[onto] = [b]
@@ -721,8 +724,799 @@ class MacheteContext:
         if b in self.annotations:
             print(self.annotations[b])
 
+    def update(self, cli_ctxt: CommandLineContext) -> None:
+        cb = current_branch(cli_ctxt)
+        if cli_ctxt.opt_merge:
+            with_branch = self.up(cli_ctxt,
+                                  cb,
+                                  prompt_if_inferred_msg="Branch `%s` not found in the tree of branch dependencies. Merge with the inferred upstream `%s`?" + pretty_choices(
+                                  'y', 'N'),
+                                  prompt_if_inferred_yes_opt_msg="Branch `%s` not found in the tree of branch dependencies. Merging with the inferred upstream `%s`...")
+            merge(cli_ctxt, with_branch, cb)
+        else:
+            onto_branch = self.up(cli_ctxt,
+                                  cb,
+                                  prompt_if_inferred_msg="Branch `%s` not found in the tree of branch dependencies. Rebase onto the inferred upstream `%s`?" + pretty_choices(
+                                  'y', 'N'),
+                                  prompt_if_inferred_yes_opt_msg="Branch `%s` not found in the tree of branch dependencies. Rebasing onto the inferred upstream `%s`...")
+            rebase(cli_ctxt, f"refs/heads/{onto_branch}",
+                   cli_ctxt.opt_fork_point or self.fork_point(cli_ctxt, cb, use_overrides=True), cb)
 
-# Implementation of basic git or git-related commands
+    def discover_tree(self, cli_ctxt: CommandLineContext) -> None:
+        all_local_branches = local_branches(cli_ctxt)
+        if not all_local_branches:
+            raise MacheteException("No local branches found")
+        for r in cli_ctxt.opt_roots:
+            if r not in local_branches(cli_ctxt):
+                raise MacheteException(f"`{r}` is not a local branch")
+        if cli_ctxt.opt_roots:
+            roots = list(cli_ctxt.opt_roots)
+        else:
+            roots = []
+            if "master" in local_branches(cli_ctxt):
+                roots += ["master"]
+            elif "main" in local_branches(cli_ctxt):
+                # See https://github.com/github/renaming
+                roots += ["main"]
+            if "develop" in local_branches(cli_ctxt):
+                roots += ["develop"]
+        self.down_branches = {}
+        self.up_branch = {}
+        self.indent = "\t"
+        self.annotations = {}
+
+        root_of = dict((b, b) for b in all_local_branches)
+
+        def get_root_of(b: str) -> str:
+            if b != root_of[b]:
+                root_of[b] = get_root_of(root_of[b])
+            return root_of[b]
+
+        non_root_fixed_branches = excluding(all_local_branches, roots)
+        last_checkout_timestamps = get_latest_checkout_timestamps(cli_ctxt)
+        non_root_fixed_branches_by_last_checkout_timestamps = sorted(
+            (last_checkout_timestamps.get(b, 0), b) for b in non_root_fixed_branches)
+        if cli_ctxt.opt_checked_out_since:
+            threshold = parse_git_timespec_to_unix_timestamp(cli_ctxt, cli_ctxt.opt_checked_out_since)
+            stale_non_root_fixed_branches = [b for (timestamp, b) in itertools.takewhile(
+                tupled(lambda timestamp, b: timestamp < threshold),
+                non_root_fixed_branches_by_last_checkout_timestamps
+            )]
+        else:
+            c = self.DISCOVER_DEFAULT_FRESH_BRANCH_COUNT
+            stale, fresh = non_root_fixed_branches_by_last_checkout_timestamps[
+                           :-c], non_root_fixed_branches_by_last_checkout_timestamps[-c:]
+            stale_non_root_fixed_branches = [b for (timestamp, b) in stale]
+            if stale:
+                threshold_date = datetime.datetime.utcfromtimestamp(fresh[0][0]).strftime("%Y-%m-%d")
+                warn(f"to keep the size of the discovered tree reasonable (ca. {c} branches), "
+                     f"only branches checked out at or after ca. <b>{threshold_date}</b> are included.\n"
+                     "Use `git machete discover --checked-out-since=<date>` (where <date> can be e.g. `'2 weeks ago'` or `2020-06-01`) "
+                     "to change this threshold so that less or more branches are included.\n")
+        managed_branches = excluding(all_local_branches, stale_non_root_fixed_branches)
+        if cli_ctxt.opt_checked_out_since and not managed_branches:
+            warn(
+                "no branches satisfying the criteria. Try moving the value of `--checked-out-since` further to the past.")
+            return
+
+        for b in excluding(non_root_fixed_branches, stale_non_root_fixed_branches):
+            u = infer_upstream(cli_ctxt,
+                               b,
+                               condition=lambda candidate: get_root_of(
+                                   candidate) != b and candidate not in stale_non_root_fixed_branches,
+                               reject_reason_message="choosing this candidate would form a cycle in the resulting graph or the candidate is a stale branch")
+            if u:
+                debug(cli_ctxt, "discover_tree()",
+                      f"inferred upstream of {b} is {u}, attaching {b} as a child of {u}\n")
+                self.up_branch[b] = u
+                root_of[b] = u
+                if u in self.down_branches:
+                    self.down_branches[u].append(b)
+                else:
+                    self.down_branches[u] = [b]
+            else:
+                debug(cli_ctxt, "discover_tree()", f"inferred no upstream for {b}, attaching {b} as a new root\n")
+                roots += [b]
+
+        # Let's remove merged branches for which no downstream branch have been found.
+        merged_branches_to_skip = []
+        for b in managed_branches:
+            if b in self.up_branch and not self.down_branches.get(b):
+                u = self.up_branch[b]
+                if is_merged_to(cli_ctxt, b, u):
+                    debug(cli_ctxt,
+                          "discover_tree()",
+                          f"inferred upstream of {b} is {u}, but {b} is merged to {u}; skipping {b} from discovered tree\n")
+                    merged_branches_to_skip += [b]
+        if merged_branches_to_skip:
+            warn("skipping %s since %s merged to another branch and would not have any downstream branches.\n"
+                 % (", ".join(f"`{b}`" for b in merged_branches_to_skip),
+                    "it's" if len(merged_branches_to_skip) == 1 else "they're"))
+            managed_branches = excluding(managed_branches, merged_branches_to_skip)
+            for b in merged_branches_to_skip:
+                u = self.up_branch[b]
+                self.down_branches[u] = excluding(self.down_branches[u], [b])
+                del self.up_branch[b]
+            # We're NOT applying the removal process recursively,
+            # so it's theoretically possible that some merged branches became childless
+            # after removing the outer layer of childless merged branches.
+            # This is rare enough, however, that we can pretty much ignore this corner case.
+
+        print(bold("Discovered tree of branch dependencies:\n"))
+        self.status(cli_ctxt, warn_on_yellow_edges=False)
+        print("")
+        do_backup = os.path.isfile(definition_file_path)
+        backup_msg = f"\nThe existing definition file will be backed up as {definition_file_path}~" if do_backup else ""
+        msg = f"Save the above tree to {definition_file_path}?{backup_msg}" + pretty_choices('y', 'e[dit]', 'N')
+        opt_yes_msg = f"Saving the above tree to {definition_file_path}... {backup_msg}"
+        ans = ask_if(cli_ctxt, msg, opt_yes_msg)
+        if ans in ('y', 'yes'):
+            if do_backup:
+                MacheteContext.back_up_definition_file()
+            self.save_definition_file()
+        elif ans in ('e', 'edit'):
+            if do_backup:
+                MacheteContext.back_up_definition_file()
+            self.save_definition_file()
+            edit(cli_ctxt)
+
+    def slide_out(self, cli_ctxt: CommandLineContext, branches_to_slide_out: List[str]) -> None:
+        # Verify that all branches exist, are managed, and have an upstream.
+        for b in branches_to_slide_out:
+            self.expect_in_managed_branches(b)
+            new_upstream = self.up_branch.get(b)
+            if not new_upstream:
+                raise MacheteException(f"No upstream branch defined for `{b}`, cannot slide out")
+
+        # Verify that all "interior" slide-out branches have a single downstream pointing to the next slide-out
+        for bu, bd in zip(branches_to_slide_out[:-1], branches_to_slide_out[1:]):
+            dbs = self.down_branches.get(bu)
+            if not dbs or len(dbs) == 0:
+                raise MacheteException(f"No downstream branch defined for `{bu}`, cannot slide out")
+            elif len(dbs) > 1:
+                flat_dbs = ", ".join(f"`{x}`" for x in dbs)
+                raise MacheteException(f"Multiple downstream branches defined for `{bu}`: {flat_dbs}; cannot slide out")
+            elif dbs != [bd]:
+                raise MacheteException(f"'{bd}' is not downstream of '{bu}', cannot slide out")
+
+            if self.up_branch[bd] != bu:
+                raise MacheteException(f"`{bu}` is not upstream of `{bd}`, cannot slide out")
+
+        # Get new branches
+        new_upstream = self.up_branch[branches_to_slide_out[0]]
+        new_downstreams = self.down_branches.get(branches_to_slide_out[-1], [])
+
+        # Remove the slide-out branches from the tree
+        for b in branches_to_slide_out:
+            self.up_branch[b] = None
+            self.down_branches[b] = None
+        self.down_branches[new_upstream] = [b for b in self.down_branches[new_upstream] if b != branches_to_slide_out[0]]
+
+        # Reconnect the downstreams to the new upstream in the tree
+        for new_downstream in new_downstreams:
+            self.up_branch[new_downstream] = new_upstream
+            self.down_branches[new_upstream].append(new_downstream)
+
+        # Update definition, fire post-hook, and perform the branch update
+        self.save_definition_file()
+        run_post_slide_out_hook(cli_ctxt, new_upstream, branches_to_slide_out[-1], new_downstreams)
+
+        go(cli_ctxt, new_upstream)
+        for new_downstream in new_downstreams:
+            go(cli_ctxt, new_downstream)
+            if cli_ctxt.opt_merge:
+                print(f"Merging {bold(new_upstream)} into {bold(new_downstream)}...")
+                merge(cli_ctxt, new_upstream, new_downstream)
+            else:
+                print(f"Rebasing {bold(new_downstream)} onto {bold(new_upstream)}...")
+                rebase(cli_ctxt, f"refs/heads/{new_upstream}",
+                       cli_ctxt.opt_down_fork_point or self.fork_point(cli_ctxt, new_downstream, use_overrides=True),
+                       new_downstream)
+
+    def advance(self, cli_ctxt: CommandLineContext, b: str) -> None:
+        if not self.down_branches.get(b):
+            raise MacheteException(f"`{b}` does not have any downstream (child) branches to advance towards")
+
+        def connected_with_green_edge(bd: str) -> bool:
+            return bool(
+                not self.is_merged_to_upstream(cli_ctxt, bd) and
+                is_ancestor_or_equal(cli_ctxt, b, bd) and
+                (get_overridden_fork_point(cli_ctxt, bd) or commit_sha_by_revision(cli_ctxt, b) == self.fork_point(cli_ctxt,
+                                                                                                              bd,
+                                                                                                              use_overrides=False)))
+
+        candidate_downstreams = list(filter(connected_with_green_edge, self.down_branches[b]))
+        if not candidate_downstreams:
+            raise MacheteException(f"No downstream (child) branch of `{b}` is connected to `{b}` with a green edge")
+        if len(candidate_downstreams) > 1:
+            if cli_ctxt.opt_yes:
+                raise MacheteException(
+                    f"More than one downstream (child) branch of `{b}` is connected to `{b}` with a green edge "
+                    "and `-y/--yes` option is specified")
+            else:
+                d = pick(candidate_downstreams, f"downstream branch towards which `{b}` is to be fast-forwarded")
+                merge_fast_forward_only(cli_ctxt, d)
+        else:
+            d = candidate_downstreams[0]
+            ans = ask_if(
+                cli_ctxt,
+                f"Fast-forward {bold(b)} to match {bold(d)}?" + pretty_choices('y', 'N'),
+                f"Fast-forwarding {bold(b)} to match {bold(d)}..."
+            )
+            if ans in ('y', 'yes'):
+                merge_fast_forward_only(cli_ctxt, d)
+            else:
+                return
+
+        ans = ask_if(
+            cli_ctxt,
+            f"\nBranch {bold(d)} is now merged into {bold(b)}. Slide {bold(d)} out of the tree of branch dependencies?" + pretty_choices(
+                'y', 'N'),
+            f"\nBranch {bold(d)} is now merged into {bold(b)}. Sliding {bold(d)} out of the tree of branch dependencies..."
+        )
+        if ans in ('y', 'yes'):
+            dds = self.down_branches.get(d, [])
+            for dd in dds:
+                self.up_branch[dd] = b
+            self.down_branches[b] = flat_map(
+                lambda bd: dds if bd == d else [bd],
+                self.down_branches[b])
+            self.save_definition_file()
+            run_post_slide_out_hook(cli_ctxt, b, d, dds)
+
+    def traverse(self, cli_ctxt: CommandLineContext) -> None:
+
+        self.expect_at_least_one_managed_branch()
+
+        empty_line_status = True
+
+        def print_new_line(new_status: bool) -> None:
+            global empty_line_status
+            if not empty_line_status:
+                print("")
+            empty_line_status = new_status
+
+        if cli_ctxt.opt_fetch:
+            for r in remotes(cli_ctxt):
+                print(f"Fetching {r}...")
+                fetch_remote(cli_ctxt, r)
+            if remotes(cli_ctxt):
+                flush_caches()
+                print("")
+
+        initial_branch = nearest_remaining_branch = current_branch(cli_ctxt)
+
+        if cli_ctxt.opt_start_from == "root":
+            dest = self.root_branch(current_branch(cli_ctxt), if_unmanaged=self.PICK_FIRST_ROOT)
+            print_new_line(False)
+            print(f"Checking out the root branch ({bold(dest)})")
+            go(cli_ctxt, dest)
+            cb = dest
+        elif cli_ctxt.opt_start_from == "first-root":
+            # Note that we already ensured that there is at least one managed branch.
+            dest = self.managed_branches[0]
+            print_new_line(False)
+            print(f"Checking out the first root branch ({bold(dest)})")
+            go(cli_ctxt, dest)
+            cb = dest
+        else:  # cli_ctxt.opt_start_from == "here"
+            cb = current_branch(cli_ctxt)
+            self.expect_in_managed_branches(cb)
+
+        b: str
+        for b in itertools.dropwhile(lambda x: x != cb, self.managed_branches):
+            u = up_branch.get(b)
+
+            needs_slide_out: bool = self.is_merged_to_upstream(cli_ctxt, b)
+            s, remote = get_strict_remote_sync_status(cli_ctxt, b)
+            statuses_to_sync = (UNTRACKED,
+                                AHEAD_OF_REMOTE,
+                                BEHIND_REMOTE,
+                                DIVERGED_FROM_AND_OLDER_THAN_REMOTE,
+                                DIVERGED_FROM_AND_NEWER_THAN_REMOTE)
+            needs_remote_sync = s in statuses_to_sync
+
+            if needs_slide_out:
+                # Avoid unnecessary fork point check if we already know that the branch qualifies for slide out;
+                # neither rebase nor merge will be suggested in such case anyway.
+                needs_parent_sync: bool = False
+            elif s == DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
+                # Avoid unnecessary fork point check if we already know that the branch qualifies for resetting to remote counterpart;
+                # neither rebase nor merge will be suggested in such case anyway.
+                needs_parent_sync = False
+            elif cli_ctxt.opt_merge:
+                needs_parent_sync = bool(u and not is_ancestor_or_equal(cli_ctxt, u, b))
+            else:  # using rebase
+                needs_parent_sync = bool(u and not (
+                            is_ancestor_or_equal(cli_ctxt, u, b) and commit_sha_by_revision(cli_ctxt, u) == self.fork_point(
+                        cli_ctxt, b, use_overrides=True)))
+
+            if b != cb and (needs_slide_out or needs_parent_sync or needs_remote_sync):
+                print_new_line(False)
+                sys.stdout.write(f"Checking out {bold(b)}\n")
+                go(cli_ctxt, b)
+                cb = b
+                print_new_line(False)
+                self.status(cli_ctxt, warn_on_yellow_edges=True)
+                print_new_line(True)
+            if needs_slide_out:
+                print_new_line(False)
+                ans: str = ask_if(
+                    cli_ctxt,
+                    f"Branch {bold(b)} is merged into {bold(u)}. Slide {bold(b)} out of the tree of branch dependencies?" + pretty_choices(
+                        'y', 'N', 'q', 'yq'),
+                    f"Branch {bold(b)} is merged into {bold(u)}. Sliding {bold(b)} out of the tree of branch dependencies..."
+                )
+                if ans in ('y', 'yes', 'yq'):
+                    if nearest_remaining_branch == b:
+                        if self.down_branches.get(b):
+                            nearest_remaining_branch = self.down_branches[b][0]
+                        else:
+                            nearest_remaining_branch = u
+                    for d in self.down_branches.get(b) or []:
+                        self.up_branch[d] = u
+                    self.down_branches[u] = flat_map(
+                        lambda ud: (self.down_branches.get(b) or []) if ud == b else [ud],
+                        self.down_branches[u])
+                    if b in self.annotations:
+                        del self.annotations[b]
+                    self.save_definition_file()
+                    run_post_slide_out_hook(cli_ctxt, u, b, self.down_branches.get(b) or [])
+                    if ans == 'yq':
+                        return
+                    # No need to flush caches since nothing changed in commit/branch structure (only machete-specific changes happened).
+                    continue  # No need to sync branch 'b' with remote since it just got removed from the tree of dependencies.
+                elif ans in ('q', 'quit'):
+                    return
+                # If user answered 'no', we don't try to rebase/merge but still suggest to sync with remote (if needed; very rare in practice).
+            elif needs_parent_sync:
+                print_new_line(False)
+                if cli_ctxt.opt_merge:
+                    ans = ask_if(
+                        cli_ctxt,
+                        f"Merge {bold(u)} into {bold(b)}?" + pretty_choices('y', 'N', 'q', 'yq'),
+                        f"Merging {bold(u)} into {bold(b)}..."
+                    )
+                else:
+                    ans = ask_if(
+                        cli_ctxt,
+                        f"Rebase {bold(b)} onto {bold(u)}?" + pretty_choices('y', 'N', 'q', 'yq'),
+                        f"Rebasing {bold(b)} onto {bold(u)}..."
+                    )
+                if ans in ('y', 'yes', 'yq'):
+                    if cli_ctxt.opt_merge:
+                        merge(cli_ctxt, u, b)
+                        # It's clearly possible that merge can be in progress after 'git merge' returned non-zero exit code;
+                        # this happens most commonly in case of conflicts.
+                        # As for now, we're not aware of any case when merge can be still in progress after 'git merge' returns zero,
+                        # at least not with the options that git-machete passes to merge; this happens though in case of 'git merge --no-commit' (which we don't ever invoke).
+                        # It's still better, however, to be on the safe side.
+                        if is_merge_in_progress(cli_ctxt):
+                            sys.stdout.write("\nMerge in progress; stopping the traversal\n")
+                            return
+                    else:
+                        rebase(cli_ctxt, f"refs/heads/{u}", self.fork_point(cli_ctxt, b, use_overrides=True), b)
+                        # It's clearly possible that rebase can be in progress after 'git rebase' returned non-zero exit code;
+                        # this happens most commonly in case of conflicts, regardless of whether the rebase is interactive or not.
+                        # But for interactive rebases, it's still possible that even if 'git rebase' returned zero,
+                        # the rebase is still in progress; e.g. when interactive rebase gets to 'edit' command, it will exit returning zero,
+                        # but the rebase will be still in progress, waiting for user edits and a subsequent 'git rebase --continue'.
+                        rb = currently_rebased_branch_or_none(cli_ctxt)
+                        if rb:  # 'rb' should be equal to 'b' at this point anyway
+                            sys.stdout.write(fmt(f"\nRebase of `{rb}` in progress; stopping the traversal\n"))
+                            return
+                    if ans == 'yq':
+                        return
+
+                    flush_caches()
+                    s, remote = get_strict_remote_sync_status(cli_ctxt, b)
+                    needs_remote_sync = s in statuses_to_sync
+                elif ans in ('q', 'quit'):
+                    return
+
+            if needs_remote_sync:
+                if s == BEHIND_REMOTE:
+                    rb = strict_counterpart_for_fetching_of_branch(cli_ctxt, b)
+                    ans = ask_if(
+                        cli_ctxt,
+                        f"Branch {bold(b)} is behind its remote counterpart {bold(rb)}.\n"
+                        f"Pull {bold(b)} (fast-forward only) from {bold(remote)}?" + pretty_choices('y', 'N', 'q',
+                                                                                                    'yq'),
+                        f"Branch {bold(b)} is behind its remote counterpart {bold(rb)}.\n"
+                        f"Pulling {bold(b)} (fast-forward only) from {bold(remote)}..."
+                    )
+                    if ans in ('y', 'yes', 'yq'):
+                        pull_ff_only(cli_ctxt, remote, rb)
+                        if ans == 'yq':
+                            return
+                        flush_caches()
+                        print("")
+                    elif ans in ('q', 'quit'):
+                        return
+
+                elif s == AHEAD_OF_REMOTE:
+                    print_new_line(False)
+                    ans = ask_if(
+                        cli_ctxt,
+                        f"Push {bold(b)} to {bold(remote)}?" + pretty_choices('y', 'N', 'q', 'yq'),
+                        f"Pushing {bold(b)} to {bold(remote)}...",
+                        override_answer=None if cli_ctxt.opt_push_tracked else "N"
+                    )
+                    if ans in ('y', 'yes', 'yq'):
+                        push(cli_ctxt, remote, b)
+                        if ans == 'yq':
+                            return
+                        flush_caches()
+                    elif ans in ('q', 'quit'):
+                        return
+
+                elif s == DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
+                    print_new_line(False)
+                    rb = strict_counterpart_for_fetching_of_branch(cli_ctxt, b)
+                    ans = ask_if(
+                        cli_ctxt,
+                        f"Branch {bold(b)} diverged from (and has older commits than) its remote counterpart {bold(rb)}.\n"
+                        f"Reset branch {bold(b)} to the commit pointed by {bold(rb)}?" + pretty_choices('y', 'N', 'q',
+                                                                                                        'yq'),
+                        f"Branch {bold(b)} diverged from (and has older commits than) its remote counterpart {bold(rb)}.\n"
+                        f"Resetting branch {bold(b)} to the commit pointed by {bold(rb)}..."
+                    )
+                    if ans in ('y', 'yes', 'yq'):
+                        reset_keep(cli_ctxt, rb)
+                        if ans == 'yq':
+                            return
+                        flush_caches()
+                    elif ans in ('q', 'quit'):
+                        return
+
+                elif s == DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
+                    print_new_line(False)
+                    rb = strict_counterpart_for_fetching_of_branch(cli_ctxt, b)
+                    ans = ask_if(
+                        cli_ctxt,
+                        f"Branch {bold(b)} diverged from (and has newer commits than) its remote counterpart {bold(rb)}.\n"
+                        f"Push {bold(b)} with force-with-lease to {bold(remote)}?" + pretty_choices('y', 'N', 'q',
+                                                                                                    'yq'),
+                        f"Branch {bold(b)} diverged from (and has newer commits than) its remote counterpart {bold(rb)}.\n"
+                        f"Pushing {bold(b)} with force-with-lease to {bold(remote)}...",
+                        override_answer=None if cli_ctxt.opt_push_tracked else "N"
+                    )
+                    if ans in ('y', 'yes', 'yq'):
+                        push(cli_ctxt, remote, b, force_with_lease=True)
+                        if ans == 'yq':
+                            return
+                        flush_caches()
+                    elif ans in ('q', 'quit'):
+                        return
+
+                elif s == UNTRACKED:
+                    rems: List[str] = remotes(cli_ctxt)
+                    rmt: Optional[str] = inferred_remote_for_fetching_of_branch(cli_ctxt, b)
+                    print_new_line(False)
+                    if rmt:
+                        handle_untracked_branch(cli_ctxt, rmt, b)
+                    elif len(rems) == 1:
+                        handle_untracked_branch(cli_ctxt, rems[0], b)
+                    elif "origin" in rems:
+                        handle_untracked_branch(cli_ctxt, "origin", b)
+                    else:
+                        # We know that there is at least 1 remote, otherwise 's' would be 'NO_REMOTES'
+                        print(fmt(f"Branch `{bold(b)}` is untracked and there's no `{bold('origin')}` repository."))
+                        pick_remote(cli_ctxt, b)
+
+        if cli_ctxt.opt_return_to == "here":
+            go(cli_ctxt, initial_branch)
+        elif cli_ctxt.opt_return_to == "nearest-remaining":
+            go(cli_ctxt, nearest_remaining_branch)
+        # otherwise cli_ctxt.opt_return_to == "stay", so no action is needed
+
+        print_new_line(False)
+        self.status(cli_ctxt, warn_on_yellow_edges=True)
+        print("")
+        if cb == self.managed_branches[-1]:
+            msg: str = f"Reached branch {bold(cb)} which has no successor"
+        else:
+            msg = f"No successor of {bold(cb)} needs to be slid out or synced with upstream branch or remote"
+        sys.stdout.write(f"{msg}; nothing left to update\n")
+
+        if cli_ctxt.opt_return_to == "here" or (
+                cli_ctxt.opt_return_to == "nearest-remaining" and nearest_remaining_branch == initial_branch):
+            print(f"Returned to the initial branch {bold(initial_branch)}")
+        elif cli_ctxt.opt_return_to == "nearest-remaining" and nearest_remaining_branch != initial_branch:
+            print(
+                f"The initial branch {bold(initial_branch)} has been slid out. Returned to nearest remaining managed branch {bold(nearest_remaining_branch)}")
+
+    def status(self, cli_ctxt: CommandLineContext, warn_on_yellow_edges: bool) -> None:
+        dfs_res = []
+
+        def prefix_dfs(u_: str, prefix: List[Optional[str]]) -> None:
+            dfs_res.append((u_, prefix))
+            if self.down_branches.get(u_):
+                for (v, nv) in zip(self.down_branches[u_][:-1], self.down_branches[u_][1:]):
+                    prefix_dfs(v, prefix + [nv])
+                prefix_dfs(self.down_branches[u_][-1], prefix + [None])
+
+        for u in self.roots:
+            prefix_dfs(u, prefix=[])
+
+        out = io.StringIO()
+        edge_color: Dict[str, str] = {}
+        fp_sha_cached: Dict[str, Optional[str]] = {}  # TODO (#110): default dict with None
+        fp_branches_cached: Dict[str, List[BRANCH_DEF]] = {}
+
+        def fp_sha(b: str) -> Optional[str]:
+            if b not in fp_sha_cached:
+                try:
+                    # We're always using fork point overrides, even when status is launched from discover().
+                    fp_sha_cached[b], fp_branches_cached[b] = self.fork_point_and_containing_branch_defs(cli_ctxt, b,
+                                                                                                    use_overrides=True)
+                except MacheteException:
+                    fp_sha_cached[b], fp_branches_cached[b] = None, []
+            return fp_sha_cached[b]
+
+        # Edge colors need to be precomputed
+        # in order to render the leading parts of lines properly.
+        for b in self.up_branch:
+            u = self.up_branch[b]
+            if is_merged_to(cli_ctxt, b, u):
+                edge_color[b] = DIM
+            elif not is_ancestor_or_equal(cli_ctxt, u, b):
+                edge_color[b] = RED
+            elif get_overridden_fork_point(cli_ctxt, b) or commit_sha_by_revision(cli_ctxt, u) == fp_sha(b):
+                edge_color[b] = GREEN
+            else:
+                edge_color[b] = YELLOW
+
+        crb = currently_rebased_branch_or_none(cli_ctxt)
+        ccob = currently_checked_out_branch_or_none(cli_ctxt)
+
+        hook_path = get_hook_path(cli_ctxt, "machete-status-branch")
+        hook_executable = check_hook_executable(cli_ctxt, hook_path)
+
+        def print_line_prefix(b_: str, suffix: str) -> None:
+            out.write("  ")
+            for p in pfx[:-1]:
+                if not p:
+                    out.write("  ")
+                else:
+                    out.write(colored(f"{vertical_bar()} ", edge_color[p]))
+            out.write(colored(suffix, edge_color[b_]))
+
+        for b, pfx in dfs_res:
+            if b in self.up_branch:
+                print_line_prefix(b, f"{vertical_bar()} \n")
+                if cli_ctxt.opt_list_commits:
+                    if edge_color[b] in (RED, DIM):
+                        commits: List[Hash_ShortHash_Message] = commits_between(cli_ctxt, fp_sha(b),
+                                                                                f"refs/heads/{b}") if fp_sha(b) else []
+                    elif edge_color[b] == YELLOW:
+                        commits = commits_between(cli_ctxt, f"refs/heads/{self.up_branch[b]}", f"refs/heads/{b}")
+                    else:  # edge_color == GREEN
+                        commits = commits_between(cli_ctxt, fp_sha(b), f"refs/heads/{b}")
+
+                    for sha, short_sha, subject in commits:
+                        if sha == fp_sha(b):
+                            # fp_branches_cached will already be there thanks to the above call to 'fp_sha'.
+                            fp_branches_formatted: str = " and ".join(
+                                sorted(underline(lb_or_rb) for lb, lb_or_rb in fp_branches_cached[b]))
+                            fp_suffix: str = " %s %s %s seems to be a part of the unique history of %s" % \
+                                             (colored(right_arrow(), RED), colored("fork point ???", RED),
+                                              "this commit" if cli_ctxt.opt_list_commits_with_hashes else f"commit {short_sha}",
+                                              fp_branches_formatted)
+                        else:
+                            fp_suffix = ''
+                        print_line_prefix(b, vertical_bar())
+                        out.write(" %s%s%s\n" % (
+                        f"{dim(short_sha)}  " if cli_ctxt.opt_list_commits_with_hashes else "", dim(subject),
+                        fp_suffix))
+                elbow_ascii_only: Dict[str, str] = {DIM: "m-", RED: "x-", GREEN: "o-", YELLOW: "?-"}
+                elbow: str = u"└─" if not ascii_only else elbow_ascii_only[edge_color[b]]
+                print_line_prefix(b, elbow)
+            else:
+                if b != dfs_res[0][0]:
+                    out.write("\n")
+                out.write("  ")
+
+            if b in (ccob, crb):  # i.e. if b is the current branch (checked out or being rebased)
+                if b == crb:
+                    prefix = "REBASING "
+                elif is_am_in_progress(cli_ctxt):
+                    prefix = "GIT AM IN PROGRESS "
+                elif is_cherry_pick_in_progress(cli_ctxt):
+                    prefix = "CHERRY-PICKING "
+                elif is_merge_in_progress(cli_ctxt):
+                    prefix = "MERGING "
+                elif is_revert_in_progress(cli_ctxt):
+                    prefix = "REVERTING "
+                else:
+                    prefix = ""
+                current = "%s%s" % (bold(colored(prefix, RED)), bold(underline(b, star_if_ascii_only=True)))
+            else:
+                current = bold(b)
+
+            anno: str = f"  {dim(self.annotations[b])}" if b in self.annotations else ""
+
+            s, remote = get_combined_remote_sync_status(cli_ctxt, b)
+            sync_status = {
+                NO_REMOTES: "",
+                UNTRACKED: colored(" (untracked)", ORANGE),
+                IN_SYNC_WITH_REMOTE: "",
+                BEHIND_REMOTE: colored(f" (behind {remote})", RED),
+                AHEAD_OF_REMOTE: colored(f" (ahead of {remote})", RED),
+                DIVERGED_FROM_AND_OLDER_THAN_REMOTE: colored(f" (diverged from & older than {remote})", RED),
+                DIVERGED_FROM_AND_NEWER_THAN_REMOTE: colored(f" (diverged from {remote})", RED)
+            }[s]
+
+            hook_output = ""
+            if hook_executable:
+                debug(cli_ctxt, "status()", f"running machete-status-branch hook ({hook_path}) for branch {b}")
+                hook_env = dict(os.environ, ASCII_ONLY=str(ascii_only).lower())
+                status_code, stdout, stderr = popen_cmd(cli_ctxt, hook_path, b, cwd=get_root_dir(cli_ctxt),
+                                                        env=hook_env)
+                if status_code == 0:
+                    if not stdout.isspace():
+                        hook_output = f"  {stdout.rstrip()}"
+                else:
+                    debug(cli_ctxt,
+                          "status()",
+                          f"machete-status-branch hook ({hook_path}) for branch {b} returned {status_code}; stdout: '{stdout}'; stderr: '{stderr}'")
+
+            out.write(current + anno + sync_status + hook_output + "\n")
+
+        sys.stdout.write(out.getvalue())
+        out.close()
+
+        yellow_edge_branches = [k for k, v in edge_color.items() if v == YELLOW]
+        if yellow_edge_branches and warn_on_yellow_edges:
+            if len(yellow_edge_branches) == 1:
+                first_part = f"yellow edge indicates that fork point for `{yellow_edge_branches[0]}` is probably incorrectly inferred,\n" \
+                             f"or that some extra branch should be between `{self.up_branch[yellow_edge_branches[0]]}` and `{yellow_edge_branches[0]}`"
+            else:
+                affected_branches = ", ".join(map(lambda x: f"`{x}`", yellow_edge_branches))
+                first_part = f"yellow edges indicate that fork points for {affected_branches} are probably incorrectly inferred" \
+                             f"or that some extra branch should be added between each of these branches and its parent"
+
+            if not cli_ctxt.opt_list_commits:
+                second_part = "Run `git machete status --list-commits` or `git machete status --list-commits-with-hashes` to see more details"
+            elif len(yellow_edge_branches) == 1:
+                second_part = f"Consider using `git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent {yellow_edge_branches[0]}`\n" \
+                              f"or reattaching `{yellow_edge_branches[0]}` under a different parent branch"
+            else:
+                second_part = "Consider using `git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent <branch>` for each affected branch" \
+                              "or reattaching the affected branches under different parent branches"
+
+            sys.stderr.write("\n")
+            warn(f"{first_part}.\n\n{second_part}.")
+
+    def delete_unmanaged(self, cli_ctxt: CommandLineContext) -> None:
+        branches_to_delete = excluding(local_branches(cli_ctxt), self.managed_branches)
+        cb = current_branch_or_none(cli_ctxt)
+        if cb and cb in branches_to_delete:
+            branches_to_delete = excluding(branches_to_delete, [cb])
+            print(fmt(f"Skipping current branch `{cb}`"))
+        if branches_to_delete:
+            branches_merged_to_head = merged_local_branches(cli_ctxt)
+
+            branches_to_delete_merged_to_head = [b for b in branches_to_delete if b in branches_merged_to_head]
+            for b in branches_to_delete_merged_to_head:
+                rb = strict_counterpart_for_fetching_of_branch(cli_ctxt, b)
+                is_merged_to_remote = is_ancestor_or_equal(cli_ctxt, b, rb,
+                                                           later_prefix="refs/remotes/") if rb else True
+                msg_core = f"{bold(b)} (merged to HEAD{'' if is_merged_to_remote else f', but not merged to {rb}'})"
+                msg = f"Delete branch {msg_core}?" + pretty_choices('y', 'N', 'q')
+                opt_yes_msg = f"Deleting branch {msg_core}"
+                ans = ask_if(cli_ctxt, msg, opt_yes_msg)
+                if ans in ('y', 'yes'):
+                    run_git(cli_ctxt, "branch", "-d" if is_merged_to_remote else "-D", b)
+                elif ans in ('q', 'quit'):
+                    return
+
+            branches_to_delete_unmerged_to_head = [b for b in branches_to_delete if b not in branches_merged_to_head]
+            for b in branches_to_delete_unmerged_to_head:
+                msg_core = f"{bold(b)} (unmerged to HEAD)"
+                msg = f"Delete branch {msg_core}?" + pretty_choices('y', 'N', 'q')
+                opt_yes_msg = f"Deleting branch {msg_core}"
+                ans = ask_if(cli_ctxt, msg, opt_yes_msg)
+                if ans in ('y', 'yes'):
+                    run_git(cli_ctxt, "branch", "-D", b)
+                elif ans in ('q', 'quit'):
+                    return
+        else:
+            print("No branches to delete")
+
+    def slidable(self) -> List[str]:
+        return [b for b in self.managed_branches if b in self.up_branch]
+
+    def slidable_after(self, b: str) -> List[str]:
+        if b in self.up_branch:
+            dbs = self.down_branches.get(b)
+            if dbs and len(dbs) == 1:
+                return dbs
+        return []
+
+    def fork_point_and_containing_branch_defs(self, cli_ctxt: CommandLineContext, b: str, use_overrides: bool) -> Tuple[
+        Optional[str], List[BRANCH_DEF]]:
+        u = self.up_branch.get(b)
+
+        if self.is_merged_to_upstream(cli_ctxt, b):
+            fp_sha = commit_sha_by_revision(cli_ctxt, b)
+            debug(cli_ctxt,
+                    f"fork_point_and_containing_branch_defs({b})",
+                    f"{b} is merged to {u}; skipping inference, using tip of {b} ({fp_sha}) as fork point")
+            return fp_sha, []
+
+        if use_overrides:
+            overridden_fp_sha = get_overridden_fork_point(cli_ctxt, b)
+            if overridden_fp_sha:
+                if u and is_ancestor_or_equal(cli_ctxt, u, b) and not is_ancestor_or_equal(cli_ctxt, u,
+                                                                                            overridden_fp_sha,
+                                                                                            later_prefix=""):
+                    # We need to handle the case when b is a descendant of u,
+                    # but the fork point of b is overridden to a commit that is NOT a descendant of u.
+                    # In this case it's more reasonable to assume that u (and not overridden_fp_sha) is the fork point.
+                    debug(cli_ctxt,
+                            f"fork_point_and_containing_branch_defs({b})",
+                            f"{b} is descendant of its upstream {u}, but overridden fork point commit {overridden_fp_sha} is NOT a descendant of {u}; falling back to {u} as fork point")
+                    return commit_sha_by_revision(cli_ctxt, u), []
+                else:
+                    debug(cli_ctxt,
+                              f"fork_point_and_containing_branch_defs({b})",
+                              f"fork point of {b} is overridden to {overridden_fp_sha}; skipping inference")
+                    return overridden_fp_sha, []
+
+        try:
+            fp_sha, containing_branch_defs = next(match_log_to_filtered_reflogs(cli_ctxt, b))
+        except StopIteration:
+            if u and is_ancestor_or_equal(cli_ctxt, u, b):
+                debug(cli_ctxt,
+                          f"fork_point_and_containing_branch_defs({b})",
+                          f"cannot find fork point, but {b} is descendant of its upstream {u}; falling back to {u} as fork point")
+                return commit_sha_by_revision(cli_ctxt, u), []
+            else:
+                raise MacheteException(f"Cannot find fork point for branch `{b}`")
+        else:
+            debug(cli_ctxt,
+                      "fork_point_and_containing_branch_defs({b})",
+                      f"commit {fp_sha} is the most recent point in history of {b} to occur on "
+                      "filtered reflog of any other branch or its remote counterpart "
+                      f"(specifically: {' and '.join(map(get_second, containing_branch_defs))})")
+
+            if u and is_ancestor_or_equal(cli_ctxt, u, b) and not is_ancestor_or_equal(cli_ctxt, u, fp_sha,
+                                                                                           later_prefix=""):
+                # That happens very rarely in practice (typically current head of any branch, including u, should occur on the reflog of this
+                # branch, thus is_ancestor(u, b) should imply is_ancestor(u, FP(b)), but it's still possible in case reflog of
+                # u is incomplete for whatever reason.
+                debug(cli_ctxt,
+                          f"fork_point_and_containing_branch_defs({b})",
+                          f"{u} is descendant of its upstream {b}, but inferred fork point commit {fp_sha} is NOT a descendant of {u}; falling back to {u} as fork point")
+                return commit_sha_by_revision(cli_ctxt, u), []
+            else:
+                debug(cli_ctxt,
+                          f"fork_point_and_containing_branch_defs({b})",
+                          f"choosing commit {fp_sha} as fork point")
+                return fp_sha, containing_branch_defs
+
+    def fork_point(self, cli_ctxt: CommandLineContext, b: str, use_overrides: bool) -> Optional[str]:
+        sha, containing_branch_defs = self.fork_point_and_containing_branch_defs(cli_ctxt, b, use_overrides)
+        return sha
+
+    def diff(self, cli_ctxt: CommandLineContext, branch: Optional[str]) -> None:
+        fp: str = self.fork_point(cli_ctxt, branch if branch else current_branch(cli_ctxt), use_overrides=True)
+        params = \
+            (["--stat"] if cli_ctxt.opt_stat else []) + \
+            [fp] + \
+            ([f"refs/heads/{branch}"] if branch else []) + \
+            ["--"]
+        run_git(cli_ctxt, "diff", *params)
+
+    def log(self, cli_ctxt: CommandLineContext, branch: str) -> None:
+        run_git(cli_ctxt, "log", "^" +self.fork_point(cli_ctxt, branch, use_overrides=True), f"refs/heads/{branch}")
+
+    def is_merged_to_upstream(self, cli_ctxt: CommandLineContext, b: str) -> bool:
+        if b not in self.up_branch:
+            return False
+        return is_merged_to(cli_ctxt, b, self.up_branch[b])
+        # Implementation of basic git or git-related commands
 
 def is_executable(path: str) -> bool:
     return os.access(path, os.X_OK)
@@ -1401,20 +2195,7 @@ def rebase_onto_ancestor_commit(cli_ctxt: CommandLineContext, branch: str, ances
     rebase(cli_ctxt, ancestor_commit, ancestor_commit, branch)
 
 
-def update(cli_ctxt: CommandLineContext) -> None:
-    cb = current_branch(cli_ctxt)
-    if cli_ctxt.opt_merge:
-        with_branch = up(cli_ctxt,
-                         cb,
-                         prompt_if_inferred_msg="Branch `%s` not found in the tree of branch dependencies. Merge with the inferred upstream `%s`?" + pretty_choices('y', 'N'),
-                         prompt_if_inferred_yes_opt_msg="Branch `%s` not found in the tree of branch dependencies. Merging with the inferred upstream `%s`...")
-        merge(cli_ctxt, with_branch, cb)
-    else:
-        onto_branch = up(cli_ctxt,
-                         cb,
-                         prompt_if_inferred_msg="Branch `%s` not found in the tree of branch dependencies. Rebase onto the inferred upstream `%s`?" + pretty_choices('y', 'N'),
-                         prompt_if_inferred_yes_opt_msg="Branch `%s` not found in the tree of branch dependencies. Rebasing onto the inferred upstream `%s`...")
-        rebase(cli_ctxt, f"refs/heads/{onto_branch}", cli_ctxt.opt_fork_point or fork_point(cli_ctxt, cb, use_overrides=True), cb)
+
 
 
 Hash_ShortHash_Message = Tuple[str, str, str]
@@ -1465,20 +2246,6 @@ def squash(cli_ctxt: CommandLineContext, cb: str, fork_commit: str) -> None:
     print("To restore the original pre-squash commit, run:")
     print()
     print(fmt(f"\t`git reset {latest_sha}`"))
-
-
-def diff(cli_ctxt: CommandLineContext, branch: Optional[str]) -> None:
-    fp: str = fork_point(cli_ctxt, branch if branch else current_branch(cli_ctxt), use_overrides=True)
-    params = \
-        (["--stat"] if cli_ctxt.opt_stat else []) + \
-        [fp] + \
-        ([f"refs/heads/{branch}"] if branch else []) + \
-        ["--"]
-    run_git(cli_ctxt, "diff", *params)
-
-
-def log(cli_ctxt: CommandLineContext, branch: str) -> None:
-    run_git(cli_ctxt, "log", "^" + fork_point(cli_ctxt, branch, use_overrides=True), f"refs/heads/{branch}")
 
 
 def commits_between(cli_ctxt: CommandLineContext, earliest_exclusive: str, latest_inclusive: str) -> List[Hash_ShortHash_Message]:
@@ -1642,9 +2409,7 @@ def get_latest_checkout_timestamps(cli_ctxt: CommandLineContext) -> Dict[str, in
     return result
 
 
-branch_defs_by_sha_in_reflog: Optional[Dict[str, Optional[List[Tuple[str, str]]]]] = None
 
-BRANCH_DEF = Tuple[str, str]
 
 
 def match_log_to_filtered_reflogs(cli_ctxt: CommandLineContext, b: str) -> Generator[Tuple[str, List[BRANCH_DEF]], None, None]:
@@ -1730,12 +2495,6 @@ def is_merged_to(cli_ctxt: CommandLineContext, b: str, target: str) -> bool:
         return contains_equivalent_tree(cli_ctxt, b, target)
 
 
-def is_merged_to_upstream(cli_ctxt: CommandLineContext, b: str) -> bool:
-    if b not in up_branch:
-        return False
-    return is_merged_to(cli_ctxt, b, up_branch[b])
-
-
 def infer_upstream(cli_ctxt: CommandLineContext, b: str, condition: Callable[[str], bool] = lambda u: True, reject_reason_message: str = "") -> Optional[str]:
     for sha, containing_branch_defs in match_log_to_filtered_reflogs(cli_ctxt, b):
         debug(cli_ctxt,
@@ -1754,188 +2513,6 @@ def infer_upstream(cli_ctxt: CommandLineContext, b: str, condition: Callable[[st
             else:
                 debug(cli_ctxt, f"infer_upstream({b})", f"upstream candidate {candidate} rejected ({reject_reason_message})")
     return None
-
-
-DISCOVER_DEFAULT_FRESH_BRANCH_COUNT = 10
-
-
-def discover_tree(cli_ctxt: CommandLineContext) -> None:
-    global managed_branches, roots, down_branches, up_branch, indent, annotations
-    all_local_branches = local_branches(cli_ctxt)
-    if not all_local_branches:
-        raise MacheteException("No local branches found")
-    for r in cli_ctxt.opt_roots:
-        if r not in local_branches(cli_ctxt):
-            raise MacheteException(f"`{r}` is not a local branch")
-    if cli_ctxt.opt_roots:
-        roots = list(cli_ctxt.opt_roots)
-    else:
-        roots = []
-        if "master" in local_branches(cli_ctxt):
-            roots += ["master"]
-        elif "main" in local_branches(cli_ctxt):
-            # See https://github.com/github/renaming
-            roots += ["main"]
-        if "develop" in local_branches(cli_ctxt):
-            roots += ["develop"]
-    down_branches = {}
-    up_branch = {}
-    indent = "\t"
-    annotations = {}
-
-    root_of = dict((b, b) for b in all_local_branches)
-
-    def get_root_of(b: str) -> str:
-        if b != root_of[b]:
-            root_of[b] = get_root_of(root_of[b])
-        return root_of[b]
-
-    non_root_fixed_branches = excluding(all_local_branches, roots)
-    last_checkout_timestamps = get_latest_checkout_timestamps(cli_ctxt)
-    non_root_fixed_branches_by_last_checkout_timestamps = sorted((last_checkout_timestamps.get(b, 0), b) for b in non_root_fixed_branches)
-    if cli_ctxt.opt_checked_out_since:
-        threshold = parse_git_timespec_to_unix_timestamp(cli_ctxt, cli_ctxt.opt_checked_out_since)
-        stale_non_root_fixed_branches = [b for (timestamp, b) in itertools.takewhile(
-            tupled(lambda timestamp, b: timestamp < threshold),
-            non_root_fixed_branches_by_last_checkout_timestamps
-        )]
-    else:
-        c = DISCOVER_DEFAULT_FRESH_BRANCH_COUNT
-        stale, fresh = non_root_fixed_branches_by_last_checkout_timestamps[:-c], non_root_fixed_branches_by_last_checkout_timestamps[-c:]
-        stale_non_root_fixed_branches = [b for (timestamp, b) in stale]
-        if stale:
-            threshold_date = datetime.datetime.utcfromtimestamp(fresh[0][0]).strftime("%Y-%m-%d")
-            warn(f"to keep the size of the discovered tree reasonable (ca. {c} branches), "
-                 f"only branches checked out at or after ca. <b>{threshold_date}</b> are included.\n"
-                 "Use `git machete discover --checked-out-since=<date>` (where <date> can be e.g. `'2 weeks ago'` or `2020-06-01`) "
-                 "to change this threshold so that less or more branches are included.\n")
-    managed_branches = excluding(all_local_branches, stale_non_root_fixed_branches)
-    if cli_ctxt.opt_checked_out_since and not managed_branches:
-        warn("no branches satisfying the criteria. Try moving the value of `--checked-out-since` further to the past.")
-        return
-
-    for b in excluding(non_root_fixed_branches, stale_non_root_fixed_branches):
-        u = infer_upstream(cli_ctxt,
-                           b,
-                           condition=lambda candidate: get_root_of(candidate) != b and candidate not in stale_non_root_fixed_branches,
-                           reject_reason_message="choosing this candidate would form a cycle in the resulting graph or the candidate is a stale branch")
-        if u:
-            debug(cli_ctxt, "discover_tree()", f"inferred upstream of {b} is {u}, attaching {b} as a child of {u}\n")
-            up_branch[b] = u
-            root_of[b] = u
-            if u in down_branches:
-                down_branches[u].append(b)
-            else:
-                down_branches[u] = [b]
-        else:
-            debug(cli_ctxt, "discover_tree()", f"inferred no upstream for {b}, attaching {b} as a new root\n")
-            roots += [b]
-
-    # Let's remove merged branches for which no downstream branch have been found.
-    merged_branches_to_skip = []
-    for b in managed_branches:
-        if b in up_branch and not down_branches.get(b):
-            u = up_branch[b]
-            if is_merged_to(cli_ctxt, b, u):
-                debug(cli_ctxt,
-                      "discover_tree()",
-                      f"inferred upstream of {b} is {u}, but {b} is merged to {u}; skipping {b} from discovered tree\n")
-                merged_branches_to_skip += [b]
-    if merged_branches_to_skip:
-        warn("skipping %s since %s merged to another branch and would not have any downstream branches.\n"
-             % (", ".join(f"`{b}`" for b in merged_branches_to_skip), "it's" if len(merged_branches_to_skip) == 1 else "they're"))
-        managed_branches = excluding(managed_branches, merged_branches_to_skip)
-        for b in merged_branches_to_skip:
-            u = up_branch[b]
-            down_branches[u] = excluding(down_branches[u], [b])
-            del up_branch[b]
-        # We're NOT applying the removal process recursively,
-        # so it's theoretically possible that some merged branches became childless
-        # after removing the outer layer of childless merged branches.
-        # This is rare enough, however, that we can pretty much ignore this corner case.
-
-    print(bold("Discovered tree of branch dependencies:\n"))
-    status(cli_ctxt, warn_on_yellow_edges=False)
-    print("")
-    do_backup = os.path.isfile(definition_file_path)
-    backup_msg = f"\nThe existing definition file will be backed up as {definition_file_path}~" if do_backup else ""
-    msg = f"Save the above tree to {definition_file_path}?{backup_msg}" + pretty_choices('y', 'e[dit]', 'N')
-    opt_yes_msg = f"Saving the above tree to {definition_file_path}... {backup_msg}"
-    ans = ask_if(cli_ctxt, msg, opt_yes_msg)
-    if ans in ('y', 'yes'):
-        if do_backup:
-            back_up_definition_file()
-        save_definition_file()
-    elif ans in ('e', 'edit'):
-        if do_backup:
-            back_up_definition_file()
-        save_definition_file()
-        edit(cli_ctxt)
-
-
-def fork_point_and_containing_branch_defs(cli_ctxt: CommandLineContext, b: str, use_overrides: bool) -> Tuple[Optional[str], List[BRANCH_DEF]]:
-    global up_branch
-    u = up_branch.get(b)
-
-    if is_merged_to_upstream(cli_ctxt, b):
-        fp_sha = commit_sha_by_revision(cli_ctxt, b)
-        debug(cli_ctxt,
-              f"fork_point_and_containing_branch_defs({b})",
-              f"{b} is merged to {u}; skipping inference, using tip of {b} ({fp_sha}) as fork point")
-        return fp_sha, []
-
-    if use_overrides:
-        overridden_fp_sha = get_overridden_fork_point(cli_ctxt, b)
-        if overridden_fp_sha:
-            if u and is_ancestor_or_equal(cli_ctxt, u, b) and not is_ancestor_or_equal(cli_ctxt, u, overridden_fp_sha, later_prefix=""):
-                # We need to handle the case when b is a descendant of u,
-                # but the fork point of b is overridden to a commit that is NOT a descendant of u.
-                # In this case it's more reasonable to assume that u (and not overridden_fp_sha) is the fork point.
-                debug(cli_ctxt,
-                      f"fork_point_and_containing_branch_defs({b})",
-                      f"{b} is descendant of its upstream {u}, but overridden fork point commit {overridden_fp_sha} is NOT a descendant of {u}; falling back to {u} as fork point")
-                return commit_sha_by_revision(cli_ctxt, u), []
-            else:
-                debug(cli_ctxt,
-                      f"fork_point_and_containing_branch_defs({b})",
-                      f"fork point of {b} is overridden to {overridden_fp_sha}; skipping inference")
-                return overridden_fp_sha, []
-
-    try:
-        fp_sha, containing_branch_defs = next(match_log_to_filtered_reflogs(cli_ctxt, b))
-    except StopIteration:
-        if u and is_ancestor_or_equal(cli_ctxt, u, b):
-            debug(cli_ctxt,
-                  f"fork_point_and_containing_branch_defs({b})",
-                  f"cannot find fork point, but {b} is descendant of its upstream {u}; falling back to {u} as fork point")
-            return commit_sha_by_revision(cli_ctxt, u), []
-        else:
-            raise MacheteException(f"Cannot find fork point for branch `{b}`")
-    else:
-        debug(cli_ctxt,
-              "fork_point_and_containing_branch_defs({b})",
-              f"commit {fp_sha} is the most recent point in history of {b} to occur on "
-              "filtered reflog of any other branch or its remote counterpart "
-              f"(specifically: {' and '.join(map(get_second, containing_branch_defs))})")
-
-        if u and is_ancestor_or_equal(cli_ctxt, u, b) and not is_ancestor_or_equal(cli_ctxt, u, fp_sha, later_prefix=""):
-            # That happens very rarely in practice (typically current head of any branch, including u, should occur on the reflog of this
-            # branch, thus is_ancestor(u, b) should imply is_ancestor(u, FP(b)), but it's still possible in case reflog of
-            # u is incomplete for whatever reason.
-            debug(cli_ctxt,
-                  f"fork_point_and_containing_branch_defs({b})",
-                  f"{u} is descendant of its upstream {b}, but inferred fork point commit {fp_sha} is NOT a descendant of {u}; falling back to {u} as fork point")
-            return commit_sha_by_revision(cli_ctxt, u), []
-        else:
-            debug(cli_ctxt,
-                  f"fork_point_and_containing_branch_defs({b})",
-                  f"choosing commit {fp_sha} as fork point")
-            return fp_sha, containing_branch_defs
-
-
-def fork_point(cli_ctxt: CommandLineContext, b: str, use_overrides: bool) -> Optional[str]:
-    sha, containing_branch_defs = fork_point_and_containing_branch_defs(cli_ctxt, b, use_overrides)
-    return sha
 
 
 def config_key_for_override_fork_point_to(b: str) -> str:
@@ -2044,42 +2621,6 @@ def unset_fork_point_override(cli_ctxt: CommandLineContext, b: str) -> None:
     unset_config(cli_ctxt, config_key_for_override_fork_point_while_descendant_of(b))
 
 
-def delete_unmanaged(cli_ctxt: CommandLineContext) -> None:
-    branches_to_delete = excluding(local_branches(cli_ctxt), managed_branches)
-    cb = current_branch_or_none(cli_ctxt)
-    if cb and cb in branches_to_delete:
-        branches_to_delete = excluding(branches_to_delete, [cb])
-        print(fmt(f"Skipping current branch `{cb}`"))
-    if branches_to_delete:
-        branches_merged_to_head = merged_local_branches(cli_ctxt)
-
-        branches_to_delete_merged_to_head = [b for b in branches_to_delete if b in branches_merged_to_head]
-        for b in branches_to_delete_merged_to_head:
-            rb = strict_counterpart_for_fetching_of_branch(cli_ctxt, b)
-            is_merged_to_remote = is_ancestor_or_equal(cli_ctxt, b, rb, later_prefix="refs/remotes/") if rb else True
-            msg_core = f"{bold(b)} (merged to HEAD{'' if is_merged_to_remote else f', but not merged to {rb}'})"
-            msg = f"Delete branch {msg_core}?" + pretty_choices('y', 'N', 'q')
-            opt_yes_msg = f"Deleting branch {msg_core}"
-            ans = ask_if(cli_ctxt, msg, opt_yes_msg)
-            if ans in ('y', 'yes'):
-                run_git(cli_ctxt, "branch", "-d" if is_merged_to_remote else "-D", b)
-            elif ans in ('q', 'quit'):
-                return
-
-        branches_to_delete_unmerged_to_head = [b for b in branches_to_delete if b not in branches_merged_to_head]
-        for b in branches_to_delete_unmerged_to_head:
-            msg_core = f"{bold(b)} (unmerged to HEAD)"
-            msg = f"Delete branch {msg_core}?" + pretty_choices('y', 'N', 'q')
-            opt_yes_msg = f"Deleting branch {msg_core}"
-            ans = ask_if(cli_ctxt, msg, opt_yes_msg)
-            if ans in ('y', 'yes'):
-                run_git(cli_ctxt, "branch", "-D", b)
-            elif ans in ('q', 'quit'):
-                return
-    else:
-        print("No branches to delete")
-
-
 def run_post_slide_out_hook(cli_ctxt: CommandLineContext, new_upstream: str, slid_out_branch: str, new_downstreams: List[str]) -> None:
     hook_path = get_hook_path(cli_ctxt, "machete-post-slide-out")
     if check_hook_executable(cli_ctxt, hook_path):
@@ -2090,118 +2631,6 @@ def run_post_slide_out_hook(cli_ctxt: CommandLineContext, new_upstream: str, sli
         if exit_code != 0:
             sys.stderr.write(f"The machete-post-slide-out hook exited with {exit_code}, aborting.\n")
             sys.exit(exit_code)
-
-
-def slide_out(cli_ctxt: CommandLineContext, branches_to_slide_out: List[str]) -> None:
-    # Verify that all branches exist, are managed, and have an upstream.
-    for b in branches_to_slide_out:
-        expect_in_managed_branches(b)
-        new_upstream = up_branch.get(b)
-        if not new_upstream:
-            raise MacheteException(f"No upstream branch defined for `{b}`, cannot slide out")
-
-    # Verify that all "interior" slide-out branches have a single downstream pointing to the next slide-out
-    for bu, bd in zip(branches_to_slide_out[:-1], branches_to_slide_out[1:]):
-        dbs = down_branches.get(bu)
-        if not dbs or len(dbs) == 0:
-            raise MacheteException(f"No downstream branch defined for `{bu}`, cannot slide out")
-        elif len(dbs) > 1:
-            flat_dbs = ", ".join(f"`{x}`" for x in dbs)
-            raise MacheteException(f"Multiple downstream branches defined for `{bu}`: {flat_dbs}; cannot slide out")
-        elif dbs != [bd]:
-            raise MacheteException(f"'{bd}' is not downstream of '{bu}', cannot slide out")
-
-        if up_branch[bd] != bu:
-            raise MacheteException(f"`{bu}` is not upstream of `{bd}`, cannot slide out")
-
-    # Get new branches
-    new_upstream = up_branch[branches_to_slide_out[0]]
-    new_downstreams = down_branches.get(branches_to_slide_out[-1], [])
-
-    # Remove the slide-out branches from the tree
-    for b in branches_to_slide_out:
-        up_branch[b] = None
-        down_branches[b] = None
-    down_branches[new_upstream] = [b for b in down_branches[new_upstream] if b != branches_to_slide_out[0]]
-
-    # Reconnect the downstreams to the new upstream in the tree
-    for new_downstream in new_downstreams:
-        up_branch[new_downstream] = new_upstream
-        down_branches[new_upstream].append(new_downstream)
-
-    # Update definition, fire post-hook, and perform the branch update
-    save_definition_file()
-    run_post_slide_out_hook(cli_ctxt, new_upstream, branches_to_slide_out[-1], new_downstreams)
-
-    go(cli_ctxt, new_upstream)
-    for new_downstream in new_downstreams:
-        go(cli_ctxt, new_downstream)
-        if cli_ctxt.opt_merge:
-            print(f"Merging {bold(new_upstream)} into {bold(new_downstream)}...")
-            merge(cli_ctxt, new_upstream, new_downstream)
-        else:
-            print(f"Rebasing {bold(new_downstream)} onto {bold(new_upstream)}...")
-            rebase(cli_ctxt, f"refs/heads/{new_upstream}", cli_ctxt.opt_down_fork_point or fork_point(cli_ctxt, new_downstream, use_overrides=True), new_downstream)
-
-
-def slidable() -> List[str]:
-    return [b for b in managed_branches if b in up_branch]
-
-
-def slidable_after(b: str) -> List[str]:
-    if b in up_branch:
-        dbs = down_branches.get(b)
-        if dbs and len(dbs) == 1:
-            return dbs
-    return []
-
-
-def advance(cli_ctxt: CommandLineContext, b: str) -> None:
-    if not down_branches.get(b):
-        raise MacheteException(f"`{b}` does not have any downstream (child) branches to advance towards")
-
-    def connected_with_green_edge(bd: str) -> bool:
-        return bool(
-            not is_merged_to_upstream(cli_ctxt, bd) and
-            is_ancestor_or_equal(cli_ctxt, b, bd) and
-            (get_overridden_fork_point(cli_ctxt, bd) or commit_sha_by_revision(cli_ctxt, b) == fork_point(cli_ctxt, bd, use_overrides=False)))
-
-    candidate_downstreams = list(filter(connected_with_green_edge, down_branches[b]))
-    if not candidate_downstreams:
-        raise MacheteException(f"No downstream (child) branch of `{b}` is connected to `{b}` with a green edge")
-    if len(candidate_downstreams) > 1:
-        if cli_ctxt.opt_yes:
-            raise MacheteException(f"More than one downstream (child) branch of `{b}` is connected to `{b}` with a green edge "
-                                   "and `-y/--yes` option is specified")
-        else:
-            d = pick(candidate_downstreams, f"downstream branch towards which `{b}` is to be fast-forwarded")
-            merge_fast_forward_only(cli_ctxt, d)
-    else:
-        d = candidate_downstreams[0]
-        ans = ask_if(
-            cli_ctxt,
-            f"Fast-forward {bold(b)} to match {bold(d)}?" + pretty_choices('y', 'N'),
-            f"Fast-forwarding {bold(b)} to match {bold(d)}..."
-        )
-        if ans in ('y', 'yes'):
-            merge_fast_forward_only(cli_ctxt, d)
-        else:
-            return
-
-    ans = ask_if(
-        cli_ctxt,
-        f"\nBranch {bold(d)} is now merged into {bold(b)}. Slide {bold(d)} out of the tree of branch dependencies?" + pretty_choices('y', 'N'),
-        f"\nBranch {bold(d)} is now merged into {bold(b)}. Sliding {bold(d)} out of the tree of branch dependencies..."
-    )
-    if ans in ('y', 'yes'):
-        dds = down_branches.get(d, [])
-        for dd in dds:
-            up_branch[dd] = b
-        down_branches[b] = flat_map(
-            lambda bd: dds if bd == d else [bd],
-            down_branches[b])
-        save_definition_file()
-        run_post_slide_out_hook(cli_ctxt, b, d, dds)
 
 
 class StopTraversal(Exception):
@@ -2330,418 +2759,6 @@ def handle_untracked_branch(cli_ctxt: CommandLineContext, new_remote: str, b: st
 
 
 empty_line_status: Optional[bool] = None
-
-
-def traverse(cli_ctxt: CommandLineContext) -> None:
-    global down_branches, up_branch, empty_line_status, managed_branches
-
-    expect_at_least_one_managed_branch()
-
-    empty_line_status = True
-
-    def print_new_line(new_status: bool) -> None:
-        global empty_line_status
-        if not empty_line_status:
-            print("")
-        empty_line_status = new_status
-
-    if cli_ctxt.opt_fetch:
-        for r in remotes(cli_ctxt):
-            print(f"Fetching {r}...")
-            fetch_remote(cli_ctxt, r)
-        if remotes(cli_ctxt):
-            flush_caches()
-            print("")
-
-    initial_branch = nearest_remaining_branch = current_branch(cli_ctxt)
-
-    if cli_ctxt.opt_start_from == "root":
-        dest = root_branch(current_branch(cli_ctxt), if_unmanaged=PICK_FIRST_ROOT)
-        print_new_line(False)
-        print(f"Checking out the root branch ({bold(dest)})")
-        go(cli_ctxt, dest)
-        cb = dest
-    elif cli_ctxt.opt_start_from == "first-root":
-        # Note that we already ensured that there is at least one managed branch.
-        dest = managed_branches[0]
-        print_new_line(False)
-        print(f"Checking out the first root branch ({bold(dest)})")
-        go(cli_ctxt, dest)
-        cb = dest
-    else:  # cli_ctxt.opt_start_from == "here"
-        cb = current_branch(cli_ctxt)
-        expect_in_managed_branches(cb)
-
-    b: str
-    for b in itertools.dropwhile(lambda x: x != cb, managed_branches):
-        u = up_branch.get(b)
-
-        needs_slide_out: bool = is_merged_to_upstream(cli_ctxt, b)
-        s, remote = get_strict_remote_sync_status(cli_ctxt, b)
-        statuses_to_sync = (UNTRACKED,
-                            AHEAD_OF_REMOTE,
-                            BEHIND_REMOTE,
-                            DIVERGED_FROM_AND_OLDER_THAN_REMOTE,
-                            DIVERGED_FROM_AND_NEWER_THAN_REMOTE)
-        needs_remote_sync = s in statuses_to_sync
-
-        if needs_slide_out:
-            # Avoid unnecessary fork point check if we already know that the branch qualifies for slide out;
-            # neither rebase nor merge will be suggested in such case anyway.
-            needs_parent_sync: bool = False
-        elif s == DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
-            # Avoid unnecessary fork point check if we already know that the branch qualifies for resetting to remote counterpart;
-            # neither rebase nor merge will be suggested in such case anyway.
-            needs_parent_sync = False
-        elif cli_ctxt.opt_merge:
-            needs_parent_sync = bool(u and not is_ancestor_or_equal(cli_ctxt, u, b))
-        else:  # using rebase
-            needs_parent_sync = bool(u and not (is_ancestor_or_equal(cli_ctxt, u, b) and commit_sha_by_revision(cli_ctxt, u) == fork_point(cli_ctxt, b, use_overrides=True)))
-
-        if b != cb and (needs_slide_out or needs_parent_sync or needs_remote_sync):
-            print_new_line(False)
-            sys.stdout.write(f"Checking out {bold(b)}\n")
-            go(cli_ctxt, b)
-            cb = b
-            print_new_line(False)
-            status(cli_ctxt, warn_on_yellow_edges=True)
-            print_new_line(True)
-        if needs_slide_out:
-            print_new_line(False)
-            ans: str = ask_if(
-                cli_ctxt,
-                f"Branch {bold(b)} is merged into {bold(u)}. Slide {bold(b)} out of the tree of branch dependencies?" + pretty_choices('y', 'N', 'q', 'yq'),
-                f"Branch {bold(b)} is merged into {bold(u)}. Sliding {bold(b)} out of the tree of branch dependencies..."
-            )
-            if ans in ('y', 'yes', 'yq'):
-                if nearest_remaining_branch == b:
-                    if down_branches.get(b):
-                        nearest_remaining_branch = down_branches[b][0]
-                    else:
-                        nearest_remaining_branch = u
-                for d in down_branches.get(b) or []:
-                    up_branch[d] = u
-                down_branches[u] = flat_map(
-                    lambda ud: (down_branches.get(b) or []) if ud == b else [ud],
-                    down_branches[u])
-                if b in annotations:
-                    del annotations[b]
-                save_definition_file()
-                run_post_slide_out_hook(cli_ctxt, u, b, down_branches.get(b) or [])
-                if ans == 'yq':
-                    return
-                # No need to flush caches since nothing changed in commit/branch structure (only machete-specific changes happened).
-                continue  # No need to sync branch 'b' with remote since it just got removed from the tree of dependencies.
-            elif ans in ('q', 'quit'):
-                return
-            # If user answered 'no', we don't try to rebase/merge but still suggest to sync with remote (if needed; very rare in practice).
-        elif needs_parent_sync:
-            print_new_line(False)
-            if cli_ctxt.opt_merge:
-                ans = ask_if(
-                    cli_ctxt,
-                    f"Merge {bold(u)} into {bold(b)}?" + pretty_choices('y', 'N', 'q', 'yq'),
-                    f"Merging {bold(u)} into {bold(b)}..."
-                )
-            else:
-                ans = ask_if(
-                    cli_ctxt,
-                    f"Rebase {bold(b)} onto {bold(u)}?" + pretty_choices('y', 'N', 'q', 'yq'),
-                    f"Rebasing {bold(b)} onto {bold(u)}..."
-                )
-            if ans in ('y', 'yes', 'yq'):
-                if cli_ctxt.opt_merge:
-                    merge(cli_ctxt, u, b)
-                    # It's clearly possible that merge can be in progress after 'git merge' returned non-zero exit code;
-                    # this happens most commonly in case of conflicts.
-                    # As for now, we're not aware of any case when merge can be still in progress after 'git merge' returns zero,
-                    # at least not with the options that git-machete passes to merge; this happens though in case of 'git merge --no-commit' (which we don't ever invoke).
-                    # It's still better, however, to be on the safe side.
-                    if is_merge_in_progress(cli_ctxt):
-                        sys.stdout.write("\nMerge in progress; stopping the traversal\n")
-                        return
-                else:
-                    rebase(cli_ctxt, f"refs/heads/{u}", fork_point(cli_ctxt, b, use_overrides=True), b)
-                    # It's clearly possible that rebase can be in progress after 'git rebase' returned non-zero exit code;
-                    # this happens most commonly in case of conflicts, regardless of whether the rebase is interactive or not.
-                    # But for interactive rebases, it's still possible that even if 'git rebase' returned zero,
-                    # the rebase is still in progress; e.g. when interactive rebase gets to 'edit' command, it will exit returning zero,
-                    # but the rebase will be still in progress, waiting for user edits and a subsequent 'git rebase --continue'.
-                    rb = currently_rebased_branch_or_none(cli_ctxt)
-                    if rb:  # 'rb' should be equal to 'b' at this point anyway
-                        sys.stdout.write(fmt(f"\nRebase of `{rb}` in progress; stopping the traversal\n"))
-                        return
-                if ans == 'yq':
-                    return
-
-                flush_caches()
-                s, remote = get_strict_remote_sync_status(cli_ctxt, b)
-                needs_remote_sync = s in statuses_to_sync
-            elif ans in ('q', 'quit'):
-                return
-
-        if needs_remote_sync:
-            if s == BEHIND_REMOTE:
-                rb = strict_counterpart_for_fetching_of_branch(cli_ctxt, b)
-                ans = ask_if(
-                    cli_ctxt,
-                    f"Branch {bold(b)} is behind its remote counterpart {bold(rb)}.\n"
-                    f"Pull {bold(b)} (fast-forward only) from {bold(remote)}?" + pretty_choices('y', 'N', 'q', 'yq'),
-                    f"Branch {bold(b)} is behind its remote counterpart {bold(rb)}.\n"
-                    f"Pulling {bold(b)} (fast-forward only) from {bold(remote)}..."
-                )
-                if ans in ('y', 'yes', 'yq'):
-                    pull_ff_only(cli_ctxt, remote, rb)
-                    if ans == 'yq':
-                        return
-                    flush_caches()
-                    print("")
-                elif ans in ('q', 'quit'):
-                    return
-
-            elif s == AHEAD_OF_REMOTE:
-                print_new_line(False)
-                ans = ask_if(
-                    cli_ctxt,
-                    f"Push {bold(b)} to {bold(remote)}?" + pretty_choices('y', 'N', 'q', 'yq'),
-                    f"Pushing {bold(b)} to {bold(remote)}...",
-                    override_answer=None if cli_ctxt.opt_push_tracked else "N"
-                )
-                if ans in ('y', 'yes', 'yq'):
-                    push(cli_ctxt, remote, b)
-                    if ans == 'yq':
-                        return
-                    flush_caches()
-                elif ans in ('q', 'quit'):
-                    return
-
-            elif s == DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
-                print_new_line(False)
-                rb = strict_counterpart_for_fetching_of_branch(cli_ctxt, b)
-                ans = ask_if(
-                    cli_ctxt,
-                    f"Branch {bold(b)} diverged from (and has older commits than) its remote counterpart {bold(rb)}.\n"
-                    f"Reset branch {bold(b)} to the commit pointed by {bold(rb)}?" + pretty_choices('y', 'N', 'q', 'yq'),
-                    f"Branch {bold(b)} diverged from (and has older commits than) its remote counterpart {bold(rb)}.\n"
-                    f"Resetting branch {bold(b)} to the commit pointed by {bold(rb)}..."
-                )
-                if ans in ('y', 'yes', 'yq'):
-                    reset_keep(cli_ctxt, rb)
-                    if ans == 'yq':
-                        return
-                    flush_caches()
-                elif ans in ('q', 'quit'):
-                    return
-
-            elif s == DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
-                print_new_line(False)
-                rb = strict_counterpart_for_fetching_of_branch(cli_ctxt, b)
-                ans = ask_if(
-                    cli_ctxt,
-                    f"Branch {bold(b)} diverged from (and has newer commits than) its remote counterpart {bold(rb)}.\n"
-                    f"Push {bold(b)} with force-with-lease to {bold(remote)}?" + pretty_choices('y', 'N', 'q', 'yq'),
-                    f"Branch {bold(b)} diverged from (and has newer commits than) its remote counterpart {bold(rb)}.\n"
-                    f"Pushing {bold(b)} with force-with-lease to {bold(remote)}...",
-                    override_answer=None if cli_ctxt.opt_push_tracked else "N"
-                )
-                if ans in ('y', 'yes', 'yq'):
-                    push(cli_ctxt, remote, b, force_with_lease=True)
-                    if ans == 'yq':
-                        return
-                    flush_caches()
-                elif ans in ('q', 'quit'):
-                    return
-
-            elif s == UNTRACKED:
-                rems: List[str] = remotes(cli_ctxt)
-                rmt: Optional[str] = inferred_remote_for_fetching_of_branch(cli_ctxt, b)
-                print_new_line(False)
-                if rmt:
-                    handle_untracked_branch(cli_ctxt, rmt, b)
-                elif len(rems) == 1:
-                    handle_untracked_branch(cli_ctxt, rems[0], b)
-                elif "origin" in rems:
-                    handle_untracked_branch(cli_ctxt, "origin", b)
-                else:
-                    # We know that there is at least 1 remote, otherwise 's' would be 'NO_REMOTES'
-                    print(fmt(f"Branch `{bold(b)}` is untracked and there's no `{bold('origin')}` repository."))
-                    pick_remote(cli_ctxt, b)
-
-    if cli_ctxt.opt_return_to == "here":
-        go(cli_ctxt, initial_branch)
-    elif cli_ctxt.opt_return_to == "nearest-remaining":
-        go(cli_ctxt, nearest_remaining_branch)
-    # otherwise cli_ctxt.opt_return_to == "stay", so no action is needed
-
-    print_new_line(False)
-    status(cli_ctxt, warn_on_yellow_edges=True)
-    print("")
-    if cb == managed_branches[-1]:
-        msg: str = f"Reached branch {bold(cb)} which has no successor"
-    else:
-        msg = f"No successor of {bold(cb)} needs to be slid out or synced with upstream branch or remote"
-    sys.stdout.write(f"{msg}; nothing left to update\n")
-
-    if cli_ctxt.opt_return_to == "here" or (cli_ctxt.opt_return_to == "nearest-remaining" and nearest_remaining_branch == initial_branch):
-        print(f"Returned to the initial branch {bold(initial_branch)}")
-    elif cli_ctxt.opt_return_to == "nearest-remaining" and nearest_remaining_branch != initial_branch:
-        print(
-            f"The initial branch {bold(initial_branch)} has been slid out. Returned to nearest remaining managed branch {bold(nearest_remaining_branch)}")
-
-
-def status(cli_ctxt: CommandLineContext, warn_on_yellow_edges: bool) -> None:
-    dfs_res = []
-
-    def prefix_dfs(u_: str, prefix: List[Optional[str]]) -> None:
-        dfs_res.append((u_, prefix))
-        if down_branches.get(u_):
-            for (v, nv) in zip(down_branches[u_][:-1], down_branches[u_][1:]):
-                prefix_dfs(v, prefix + [nv])
-            prefix_dfs(down_branches[u_][-1], prefix + [None])
-
-    for u in roots:
-        prefix_dfs(u, prefix=[])
-
-    out = io.StringIO()
-    edge_color: Dict[str, str] = {}
-    fp_sha_cached: Dict[str, Optional[str]] = {}  # TODO (#110): default dict with None
-    fp_branches_cached: Dict[str, List[BRANCH_DEF]] = {}
-
-    def fp_sha(b: str) -> Optional[str]:
-        if b not in fp_sha_cached:
-            try:
-                # We're always using fork point overrides, even when status is launched from discover().
-                fp_sha_cached[b], fp_branches_cached[b] = fork_point_and_containing_branch_defs(cli_ctxt, b, use_overrides=True)
-            except MacheteException:
-                fp_sha_cached[b], fp_branches_cached[b] = None, []
-        return fp_sha_cached[b]
-
-    # Edge colors need to be precomputed
-    # in order to render the leading parts of lines properly.
-    for b in up_branch:
-        u = up_branch[b]
-        if is_merged_to(cli_ctxt, b, u):
-            edge_color[b] = DIM
-        elif not is_ancestor_or_equal(cli_ctxt, u, b):
-            edge_color[b] = RED
-        elif get_overridden_fork_point(cli_ctxt, b) or commit_sha_by_revision(cli_ctxt, u) == fp_sha(b):
-            edge_color[b] = GREEN
-        else:
-            edge_color[b] = YELLOW
-
-    crb = currently_rebased_branch_or_none(cli_ctxt)
-    ccob = currently_checked_out_branch_or_none(cli_ctxt)
-
-    hook_path = get_hook_path(cli_ctxt, "machete-status-branch")
-    hook_executable = check_hook_executable(cli_ctxt, hook_path)
-
-    def print_line_prefix(b_: str, suffix: str) -> None:
-        out.write("  ")
-        for p in pfx[:-1]:
-            if not p:
-                out.write("  ")
-            else:
-                out.write(colored(f"{vertical_bar()} ", edge_color[p]))
-        out.write(colored(suffix, edge_color[b_]))
-
-    for b, pfx in dfs_res:
-        if b in up_branch:
-            print_line_prefix(b, f"{vertical_bar()} \n")
-            if cli_ctxt.opt_list_commits:
-                if edge_color[b] in (RED, DIM):
-                    commits: List[Hash_ShortHash_Message] = commits_between(cli_ctxt, fp_sha(b), f"refs/heads/{b}") if fp_sha(b) else []
-                elif edge_color[b] == YELLOW:
-                    commits = commits_between(cli_ctxt, f"refs/heads/{up_branch[b]}", f"refs/heads/{b}")
-                else:  # edge_color == GREEN
-                    commits = commits_between(cli_ctxt, fp_sha(b), f"refs/heads/{b}")
-
-                for sha, short_sha, subject in commits:
-                    if sha == fp_sha(b):
-                        # fp_branches_cached will already be there thanks to the above call to 'fp_sha'.
-                        fp_branches_formatted: str = " and ".join(sorted(underline(lb_or_rb) for lb, lb_or_rb in fp_branches_cached[b]))
-                        fp_suffix: str = " %s %s %s seems to be a part of the unique history of %s" %\
-                            (colored(right_arrow(), RED), colored("fork point ???", RED), "this commit" if cli_ctxt.opt_list_commits_with_hashes else f"commit {short_sha}", fp_branches_formatted)
-                    else:
-                        fp_suffix = ''
-                    print_line_prefix(b, vertical_bar())
-                    out.write(" %s%s%s\n" % (f"{dim(short_sha)}  " if cli_ctxt.opt_list_commits_with_hashes else "", dim(subject), fp_suffix))
-            elbow_ascii_only: Dict[str, str] = {DIM: "m-", RED: "x-", GREEN: "o-", YELLOW: "?-"}
-            elbow: str = u"└─" if not ascii_only else elbow_ascii_only[edge_color[b]]
-            print_line_prefix(b, elbow)
-        else:
-            if b != dfs_res[0][0]:
-                out.write("\n")
-            out.write("  ")
-
-        if b in (ccob, crb):  # i.e. if b is the current branch (checked out or being rebased)
-            if b == crb:
-                prefix = "REBASING "
-            elif is_am_in_progress(cli_ctxt):
-                prefix = "GIT AM IN PROGRESS "
-            elif is_cherry_pick_in_progress(cli_ctxt):
-                prefix = "CHERRY-PICKING "
-            elif is_merge_in_progress(cli_ctxt):
-                prefix = "MERGING "
-            elif is_revert_in_progress(cli_ctxt):
-                prefix = "REVERTING "
-            else:
-                prefix = ""
-            current = "%s%s" % (bold(colored(prefix, RED)), bold(underline(b, star_if_ascii_only=True)))
-        else:
-            current = bold(b)
-
-        anno: str = f"  {dim(annotations[b])}" if b in annotations else ""
-
-        s, remote = get_combined_remote_sync_status(cli_ctxt, b)
-        sync_status = {
-            NO_REMOTES: "",
-            UNTRACKED: colored(" (untracked)", ORANGE),
-            IN_SYNC_WITH_REMOTE: "",
-            BEHIND_REMOTE: colored(f" (behind {remote})", RED),
-            AHEAD_OF_REMOTE: colored(f" (ahead of {remote})", RED),
-            DIVERGED_FROM_AND_OLDER_THAN_REMOTE: colored(f" (diverged from & older than {remote})", RED),
-            DIVERGED_FROM_AND_NEWER_THAN_REMOTE: colored(f" (diverged from {remote})", RED)
-        }[s]
-
-        hook_output = ""
-        if hook_executable:
-            debug(cli_ctxt, "status()", f"running machete-status-branch hook ({hook_path}) for branch {b}")
-            hook_env = dict(os.environ, ASCII_ONLY=str(ascii_only).lower())
-            status_code, stdout, stderr = popen_cmd(cli_ctxt, hook_path, b, cwd=get_root_dir(cli_ctxt), env=hook_env)
-            if status_code == 0:
-                if not stdout.isspace():
-                    hook_output = f"  {stdout.rstrip()}"
-            else:
-                debug(cli_ctxt,
-                      "status()",
-                      f"machete-status-branch hook ({hook_path}) for branch {b} returned {status_code}; stdout: '{stdout}'; stderr: '{stderr}'")
-
-        out.write(current + anno + sync_status + hook_output + "\n")
-
-    sys.stdout.write(out.getvalue())
-    out.close()
-
-    yellow_edge_branches = [k for k, v in edge_color.items() if v == YELLOW]
-    if yellow_edge_branches and warn_on_yellow_edges:
-        if len(yellow_edge_branches) == 1:
-            first_part = f"yellow edge indicates that fork point for `{yellow_edge_branches[0]}` is probably incorrectly inferred,\n" \
-                         f"or that some extra branch should be between `{up_branch[yellow_edge_branches[0]]}` and `{yellow_edge_branches[0]}`"
-        else:
-            affected_branches = ", ".join(map(lambda x: f"`{x}`", yellow_edge_branches))
-            first_part = f"yellow edges indicate that fork points for {affected_branches} are probably incorrectly inferred" \
-                         f"or that some extra branch should be added between each of these branches and its parent"
-
-        if not cli_ctxt.opt_list_commits:
-            second_part = "Run `git machete status --list-commits` or `git machete status --list-commits-with-hashes` to see more details"
-        elif len(yellow_edge_branches) == 1:
-            second_part = f"Consider using `git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent {yellow_edge_branches[0]}`\n" \
-                          f"or reattaching `{yellow_edge_branches[0]}` under a different parent branch"
-        else:
-            second_part = "Consider using `git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent <branch>` for each affected branch" \
-                          "or reattaching the affected branches under different parent branches"
-
-        sys.stderr.write("\n")
-        warn(f"{first_part}.\n\n{second_part}.")
 
 
 # Main
@@ -2935,7 +2952,7 @@ long_docs: Dict[str, str] = {
 
         Options:
           <b>-C, --checked-out-since=<date></b>   Only consider branches checked out at least once since the given date. <date> can be e.g. `2 weeks ago` or `2020-06-01`, as in `git log --since=<date>`.
-                                           If not present, the date is selected automatically so that around """ + str(DISCOVER_DEFAULT_FRESH_BRANCH_COUNT) + """ branches are included.
+                                           If not present, the date is selected automatically so that around """ + str(MacheteContext.DISCOVER_DEFAULT_FRESH_BRANCH_COUNT) + """ branches are included.
 
           <b>-l, --list-commits</b>               When printing the discovered tree, additionally lists the messages of commits introduced on each branch (as for `git machete status`).
 
@@ -3636,7 +3653,7 @@ def launch(orig_args: List[str]) -> None:
         if cmd == "add":
             param = check_optional_param(parse_options(args, "o:Ry", ["onto=", "as-root", "yes"]))
             machete_ctxt.read_definition_file(cli_ctxt)
-            add(cli_ctxt, param or current_branch(cli_ctxt))
+            machete_ctxt.add(cli_ctxt, param or current_branch(cli_ctxt))
         elif cmd == "advance":
             args1 = parse_options(args, "y", ["yes"])
             expect_no_param(args1)
@@ -3644,31 +3661,31 @@ def launch(orig_args: List[str]) -> None:
             expect_no_operation_in_progress(cli_ctxt)
             cb = current_branch(cli_ctxt)
             machete_ctxt.expect_in_managed_branches(cb)
-            advance(cli_ctxt, cb)
+            machete_ctxt.advance(cli_ctxt, cb)
         elif cmd == "anno":
             params = parse_options(args, "b:H", ["branch=", "sync-github-prs"])
             machete_ctxt.read_definition_file(cli_ctxt, verify_branches=False)
             if cli_ctxt.opt_sync_github_prs:
-                sync_annotations_to_github_prs(cli_ctxt)
+                machete_ctxt.sync_annotations_to_github_prs(cli_ctxt)
             else:
                 b = cli_ctxt.opt_branch or current_branch(cli_ctxt)
                 machete_ctxt.expect_in_managed_branches(b)
                 if params:
-                    annotate(b, params)
+                    machete_ctxt.annotate(b, params)
                 else:
-                    print_annotation(b)
+                    machete_ctxt.print_annotation(b)
         elif cmd == "delete-unmanaged":
             expect_no_param(parse_options(args, "y", ["yes"]))
             machete_ctxt.read_definition_file(cli_ctxt)
-            delete_unmanaged(cli_ctxt)
+            machete_ctxt.delete_unmanaged(cli_ctxt)
         elif cmd in ("d", "diff"):
             param = check_optional_param(parse_options(args, "s", ["stat"]))
             machete_ctxt.read_definition_file(cli_ctxt)
-            diff(cli_ctxt, param)  # passing None if not specified
+            machete_ctxt.diff(cli_ctxt, param)  # passing None if not specified
         elif cmd == "discover":
             expect_no_param(parse_options(args, "C:lr:y", ["checked-out-since=", "list-commits", "roots=", "yes"]))
             # No need to read definition file.
-            discover_tree(cli_ctxt)
+            machete_ctxt.discover_tree(cli_ctxt)
         elif cmd in ("e", "edit"):
             expect_no_param(parse_options(args))
             # No need to read definition file.
@@ -3686,11 +3703,11 @@ def launch(orig_args: List[str]) -> None:
                 long_options_string = ", ".join(map(lambda x: x.replace("=", ""), long_options))
                 raise MacheteException(f"At most one of {long_options_string} options may be present")
             if cli_ctxt.opt_inferred:
-                print(fork_point(cli_ctxt, b, use_overrides=False))
+                print(machete_ctxt.fork_point(cli_ctxt, b, use_overrides=False))
             elif cli_ctxt.opt_override_to:
                 set_fork_point_override(cli_ctxt, b, cli_ctxt.opt_override_to)
             elif cli_ctxt.opt_override_to_inferred:
-                set_fork_point_override(cli_ctxt, b, fork_point(cli_ctxt, b, use_overrides=False))
+                set_fork_point_override(cli_ctxt, b, machete_ctxt.fork_point(cli_ctxt, b, use_overrides=False))
             elif cli_ctxt.opt_override_to_parent:
                 u = up_branch.get(b)
                 if u:
@@ -3700,13 +3717,13 @@ def launch(orig_args: List[str]) -> None:
             elif cli_ctxt.opt_unset_override:
                 unset_fork_point_override(cli_ctxt, b)
             else:
-                print(fork_point(cli_ctxt, b, use_overrides=True))
+                print(machete_ctxt.fork_point(cli_ctxt, b, use_overrides=True))
         elif cmd in ("g", "go"):
-            param = check_required_param(parse_options(args), allowed_directions(allow_current=False))
+            param = check_required_param(parse_options(args), machete_ctxt.allowed_directions(allow_current=False))
             machete_ctxt.read_definition_file(cli_ctxt)
             expect_no_operation_in_progress(cli_ctxt)
             cb = current_branch(cli_ctxt)
-            dest = parse_direction(cli_ctxt, param, cb, allow_current=False, down_pick_mode=True)
+            dest = machete_ctxt.parse_direction(cli_ctxt, param, cb, allow_current=False, down_pick_mode=True)
             if dest != cb:
                 go(cli_ctxt, dest)
         elif cmd == "help":
@@ -3717,7 +3734,7 @@ def launch(orig_args: List[str]) -> None:
             param = check_optional_param(parse_options(args))
             machete_ctxt.read_definition_file(cli_ctxt)
             b = param or current_branch_or_none(cli_ctxt)
-            if b is None or b not in managed_branches:
+            if b is None or b not in machete_ctxt.managed_branches:
                 sys.exit(1)
         elif cmd == "list":
             list_allowed_values = "addable|managed|slidable|slidable-after <branch>|unmanaged|with-overridden-fork-point"
@@ -3747,17 +3764,17 @@ def launch(orig_args: List[str]) -> None:
 
                 remote_counterparts_of_local_branches = map_truthy_only(lambda b: combined_counterpart_for_fetching_of_branch(cli_ctxt, b), local_branches(cli_ctxt))
                 qualifying_remote_branches = excluding(remote_branches(cli_ctxt), remote_counterparts_of_local_branches)
-                res = excluding(local_branches(cli_ctxt), managed_branches) + list(map(strip_first_fragment, qualifying_remote_branches))
+                res = excluding(local_branches(cli_ctxt), machete_ctxt.managed_branches) + list(map(strip_first_fragment, qualifying_remote_branches))
             elif param == "managed":
-                res = managed_branches
+                res = machete_ctxt.managed_branches
             elif param == "slidable":
-                res = slidable()
+                res = machete_ctxt.slidable()
             elif param == "slidable-after":
                 b_arg = list_args[1]
                 machete_ctxt.expect_in_managed_branches(b_arg)
-                res = slidable_after(b_arg)
+                res = machete_ctxt.slidable_after(b_arg)
             elif param == "unmanaged":
-                res = excluding(local_branches(cli_ctxt), managed_branches)
+                res = excluding(local_branches(cli_ctxt), machete_ctxt.managed_branches)
             elif param == "with-overridden-fork-point":
                 res = list(filter(lambda b: has_any_fork_point_override_config(cli_ctxt, b), local_branches(cli_ctxt)))
 
@@ -3766,38 +3783,38 @@ def launch(orig_args: List[str]) -> None:
         elif cmd in ("l", "log"):
             param = check_optional_param(parse_options(args))
             machete_ctxt.read_definition_file(cli_ctxt)
-            log(cli_ctxt, param or current_branch(cli_ctxt))
+            machete_ctxt.log(cli_ctxt, param or current_branch(cli_ctxt))
         elif cmd == "reapply":
             args1 = parse_options(args, "f:", ["fork-point="])
             expect_no_param(args1, ". Use `-f` or `--fork-point` to specify the fork point commit")
             machete_ctxt.read_definition_file(cli_ctxt)
             expect_no_operation_in_progress(cli_ctxt)
             cb = current_branch(cli_ctxt)
-            rebase_onto_ancestor_commit(cli_ctxt, cb, cli_ctxt.opt_fork_point or fork_point(cli_ctxt, cb, use_overrides=True))
+            rebase_onto_ancestor_commit(cli_ctxt, cb, cli_ctxt.opt_fork_point or machete_ctxt.fork_point(cli_ctxt, cb, use_overrides=True))
         elif cmd == "show":
-            param = check_required_param(args[:1], allowed_directions(allow_current=True))
+            param = check_required_param(args[:1], machete_ctxt.allowed_directions(allow_current=True))
             branch = check_optional_param(args[1:])
             if param == "current" and branch is not None:
                 raise MacheteException(f'`show current` with a branch (`{branch}`) does not make sense')
             machete_ctxt.read_definition_file(cli_ctxt, verify_branches=False)
-            print(parse_direction(cli_ctxt, param, branch or current_branch(cli_ctxt), allow_current=True, down_pick_mode=False))
+            print(machete_ctxt.parse_direction(cli_ctxt, param, branch or current_branch(cli_ctxt), allow_current=True, down_pick_mode=False))
         elif cmd == "slide-out":
             params = parse_options(args, "d:Mn", ["down-fork-point=", "merge", "no-edit-merge", "no-interactive-rebase"])
             machete_ctxt.read_definition_file(cli_ctxt)
             expect_no_operation_in_progress(cli_ctxt)
-            slide_out(cli_ctxt, params or [current_branch(cli_ctxt)])
+            machete_ctxt.slide_out(cli_ctxt, params or [current_branch(cli_ctxt)])
         elif cmd == "squash":
             args1 = parse_options(args, "f:", ["fork-point="])
             expect_no_param(args1, ". Use `-f` or `--fork-point` to specify the fork point commit")
             machete_ctxt.read_definition_file(cli_ctxt)
             expect_no_operation_in_progress(cli_ctxt)
             cb = current_branch(cli_ctxt)
-            squash(cli_ctxt, cb, cli_ctxt.opt_fork_point or fork_point(cli_ctxt, cb, use_overrides=True))
+            squash(cli_ctxt, cb, cli_ctxt.opt_fork_point or machete_ctxt.fork_point(cli_ctxt, cb, use_overrides=True))
         elif cmd in ("s", "status"):
             expect_no_param(parse_options(args, "Ll", ["color=", "list-commits-with-hashes", "list-commits", "no-detect-squash-merges"]))
             machete_ctxt.read_definition_file(cli_ctxt)
             machete_ctxt.expect_at_least_one_managed_branch()
-            status(cli_ctxt, warn_on_yellow_edges=True)
+            machete_ctxt.status(cli_ctxt, warn_on_yellow_edges=True)
         elif cmd == "traverse":
             traverse_long_opts = ["fetch", "list-commits", "merge",
                                   "no-detect-squash-merges", "no-edit-merge", "no-interactive-rebase",
@@ -3810,13 +3827,13 @@ def launch(orig_args: List[str]) -> None:
                 raise MacheteException("Invalid argument for `--return-to`. Valid arguments: here|nearest-remaining|stay.")
             machete_ctxt.read_definition_file(cli_ctxt)
             expect_no_operation_in_progress(cli_ctxt)
-            traverse(cli_ctxt)
+            machete_ctxt.traverse(cli_ctxt)
         elif cmd == "update":
             args1 = parse_options(args, "f:Mn", ["fork-point=", "merge", "no-edit-merge", "no-interactive-rebase"])
             expect_no_param(args1, ". Use `-f` or `--fork-point` to specify the fork point commit")
             machete_ctxt.read_definition_file(cli_ctxt)
             expect_no_operation_in_progress(cli_ctxt)
-            update(cli_ctxt)
+            machete_ctxt.update(cli_ctxt)
         elif cmd == "version":
             version()
             sys.exit()
