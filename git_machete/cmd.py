@@ -339,17 +339,18 @@ def popen_git(cli_ctxt: CommandLineContext, git_cmd: str, *args: str, **kwargs: 
 
 # Manipulation on definition file/tree of branches
 
-
 class MacheteContext:
+
     cli_ctxt: CommandLineContext = CommandLineContext()
 
-    def __init__(self) -> None:
-        self.managed_branches: List[str] = []
-        self.down_branches: Dict[str, List[str]] = {}  # TODO (#110): default dict with []
-        self.up_branch: Dict[str, str] = {}  # TODO (#110): default dict with None
-        self.indent: Optional[str] = None
-        self.roots: List[str] = []
-        self.annotations: Dict[str, str] = {}
+    PICK_FIRST_ROOT: int = 0
+    PICK_LAST_ROOT: int = -1
+    managed_branches: List[str] = []
+    down_branches: Dict[str, List[str]] = {}  # TODO (#110): default dict with []
+    up_branch: Dict[str, str] = {}  # TODO (#110): default dict with None
+    indent: Optional[str] = None
+    roots: List[str] = []
+    annotations: Dict[str, str] = {}
 
     def expect_in_managed_branches(self, b: str) -> None:
         if b not in self.managed_branches:
@@ -364,18 +365,18 @@ class MacheteContext:
         raise MacheteException(
             f"No branches listed in {definition_file_path}; use `git machete discover` or `git machete edit`, or edit {definition_file_path} manually.")
 
-    @staticmethod
+    @staticmethod  # This method should also be instance method
     def read_definition_file(cli_ctxt: CommandLineContext, verify_branches: bool = True) -> None:
 
         with open(definition_file_path) as f:
             lines: List[str] = [line.rstrip() for line in f.readlines() if not line.isspace()]
 
-        managed_branches = []
-        down_branches = {}
-        up_branch = {}
-        indent = None
-        roots = []
-        annotations = {}
+        MacheteContext.managed_branches = []
+        MacheteContext.down_branches = {}
+        MacheteContext.up_branch = {}
+        MacheteContext.indent = None
+        MacheteContext.roots = []
+        MacheteContext.annotations = {}
         at_depth = {}
         last_depth = -1
         hint = "Edit the definition file manually with `git machete edit`"
@@ -383,19 +384,19 @@ class MacheteContext:
         invalid_branches: List[str] = []
         for idx, l in enumerate(lines):
             pfx = "".join(itertools.takewhile(str.isspace, l))
-            if pfx and not indent:
-                indent = pfx
+            if pfx and not MacheteContext.indent:
+                MacheteContext.indent = pfx
 
             b_a: List[str] = l.strip().split(" ", 1)
             b = b_a[0]
             if len(b_a) > 1:
                 annotations[b] = b_a[1]
-            if b in managed_branches:
+            if b in MacheteContext.managed_branches:
                 raise MacheteException(
                     f"{definition_file_path}, line {idx + 1}: branch `{b}` re-appears in the tree definition. {hint}")
             if verify_branches and b not in local_branches(cli_ctxt):
                 invalid_branches += [b]
-            managed_branches += [b]
+            MacheteContext.managed_branches += [b]
 
             if pfx:
                 depth: int = len(pfx) // len(indent)
@@ -416,13 +417,13 @@ class MacheteContext:
             at_depth[depth] = b
             if depth:
                 p = at_depth[depth - 1]
-                up_branch[b] = p
-                if p in down_branches:
-                    down_branches[p] += [b]
+                MacheteContext.up_branch[b] = p
+                if p in MacheteContext.down_branches:
+                    MacheteContext.down_branches[p] += [b]
                 else:
-                    down_branches[p] = [b]
+                    MacheteContext.down_branches[p] = [b]
             else:
-                roots += [b]
+                MacheteContext.roots += [b]
 
         if not invalid_branches:
             return
@@ -443,302 +444,282 @@ class MacheteContext:
         def recursive_slide_out_invalid_branches(b: str) -> List[str]:
             new_down_branches = flat_map(recursive_slide_out_invalid_branches, down_branches.get(b, []))
             if b in invalid_branches:
-                if b in down_branches:
-                    del down_branches[b]
-                if b in annotations:
-                    del annotations[b]
-                if b in up_branch:
+                if b in MacheteContext.down_branches:
+                    del MacheteContext.down_branches[b]
+                if b in MacheteContext.annotations:
+                    del MacheteContext.annotations[b]
+                if b in MacheteContext.up_branch:
                     for d in new_down_branches:
-                        up_branch[d] = up_branch[b]
-                    del up_branch[b]
+                        MacheteContext.up_branch[d] = MacheteContext.up_branch[b]
+                    del MacheteContext.up_branch[b]
                 else:
                     for d in new_down_branches:
-                        del up_branch[d]
+                        del MacheteContext.up_branch[d]
                 return new_down_branches
             else:
                 down_branches[b] = new_down_branches
                 return [b]
 
-        roots = flat_map(recursive_slide_out_invalid_branches, roots)
-        managed_branches = excluding(managed_branches, invalid_branches)
+        MacheteContext.roots = flat_map(recursive_slide_out_invalid_branches, MacheteContext.roots)
+        MacheteContext.managed_branches = excluding(MacheteContext.managed_branches, invalid_branches)
         if ans in ('y', 'yes'):
-            save_definition_file()
+            MacheteContext.save_definition_file()
         elif ans in ('e', 'edit'):
             edit(cli_ctxt)
             MacheteContext.read_definition_file(cli_ctxt, verify_branches)
 
+    @staticmethod
     def render_tree() -> List[str]:
-        global roots, down_branches, indent, annotations
-        if not indent:
-            indent = "\t"
+        if not MacheteContext.indent:
+            MacheteContext.indent = "\t"
 
         def render_dfs(b: str, depth: int) -> List[str]:
-            annotation = f" {annotations[b]}" if b in annotations else ""
-            res: List[str] = [depth * indent + b + annotation]
-            for d in down_branches.get(b, []):
+            annotation = f" {MacheteContext.annotations[b]}" if b in MacheteContext.annotations else ""
+            res: List[str] = [depth * MacheteContext.indent + b + annotation]
+            for d in MacheteContext.down_branches.get(b, []):
                 res += render_dfs(d, depth + 1)
             return res
 
         total: List[str] = []
-        for r in roots:
+        for r in MacheteContext.roots:
             total += render_dfs(r, depth=0)
         return total
 
+    @staticmethod
+    def back_up_definition_file() -> None:
+        shutil.copyfile(definition_file_path, definition_file_path + "~")
 
-def back_up_definition_file() -> None:
-    shutil.copyfile(definition_file_path, definition_file_path + "~")
+    @staticmethod
+    def save_definition_file() -> None:
+        with open(definition_file_path, "w") as f:
+            f.write("\n".join(MacheteContext.render_tree()) + "\n")
 
+    # Allowed parameter values for show/go command
+    @staticmethod
+    def allowed_directions(allow_current: bool) -> str:
+        current = "c[urrent]|" if allow_current else ""
+        return current + "d[own]|f[irst]|l[ast]|n[ext]|p[rev]|r[oot]|u[p]"
 
-def save_definition_file() -> None:
-    with open(definition_file_path, "w") as f:
-        f.write("\n".join(render_tree()) + "\n")
-
-
-# Allowed parameter values for show/go command
-def allowed_directions(allow_current: bool) -> str:
-    current = "c[urrent]|" if allow_current else ""
-    return current + "d[own]|f[irst]|l[ast]|n[ext]|p[rev]|r[oot]|u[p]"
-
-
-# Parse and evaluate direction against current branch for show/go commands
-def parse_direction(cli_ctxt: CommandLineContext, param: str, b: str, allow_current: bool, down_pick_mode: bool) -> str:
-    if param in ("c", "current") and allow_current:
-        return current_branch(cli_ctxt)  # throws in case of detached HEAD, as in the spec
-    elif param in ("d", "down"):
-        return down(b, pick_mode=down_pick_mode)
-    elif param in ("f", "first"):
-        return first_branch(b)
-    elif param in ("l", "last"):
-        return last_branch(b)
-    elif param in ("n", "next"):
-        return next_branch(b)
-    elif param in ("p", "prev"):
-        return prev_branch(b)
-    elif param in ("r", "root"):
-        return root_branch(b, if_unmanaged=PICK_FIRST_ROOT)
-    elif param in ("u", "up"):
-        return up(cli_ctxt, b, prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)
-    else:
-        raise MacheteException(f"Invalid direction: `{param}` expected: {allowed_directions(allow_current)}")
-
-
-def down(b: str, pick_mode: bool) -> str:
-    expect_in_managed_branches(b)
-    dbs = down_branches.get(b)
-    if not dbs:
-        raise MacheteException(f"Branch `{b}` has no downstream branch")
-    elif len(dbs) == 1:
-        return dbs[0]
-    elif pick_mode:
-        return pick(dbs, "downstream branch")
-    else:
-        return "\n".join(dbs)
-
-
-def first_branch(b: str) -> str:
-    root = root_branch(b, if_unmanaged=PICK_FIRST_ROOT)
-    root_dbs = down_branches.get(root)
-    return root_dbs[0] if root_dbs else root
-
-
-def last_branch(b: str) -> str:
-    d = root_branch(b, if_unmanaged=PICK_LAST_ROOT)
-    while down_branches.get(d):
-        d = down_branches[d][-1]
-    return d
-
-
-def next_branch(b: str) -> str:
-    expect_in_managed_branches(b)
-    idx: int = managed_branches.index(b) + 1
-    if idx == len(managed_branches):
-        raise MacheteException(f"Branch `{b}` has no successor")
-    return managed_branches[idx]
-
-
-def prev_branch(b: str) -> str:
-    expect_in_managed_branches(b)
-    idx: int = managed_branches.index(b) - 1
-    if idx == -1:
-        raise MacheteException(f"Branch `{b}` has no predecessor")
-    return managed_branches[idx]
-
-
-PICK_FIRST_ROOT: int = 0
-PICK_LAST_ROOT: int = -1
-
-
-def root_branch(b: str, if_unmanaged: int) -> str:
-    if b not in managed_branches:
-        if roots:
-            if if_unmanaged == PICK_FIRST_ROOT:
-                warn(f"{b} is not a managed branch, assuming {roots[0]} (the first root) instead as root")
-                return roots[0]
-            else:  # if_unmanaged == PICK_LAST_ROOT
-                warn(f"{b} is not a managed branch, assuming {roots[-1]} (the last root) instead as root")
-                return roots[-1]
+    # Parse and evaluate direction against current branch for show/go commands
+    def parse_direction(self, cli_ctxt: CommandLineContext,  param: str, b: str, allow_current: bool, down_pick_mode: bool) -> str:
+        if param in ("c", "current") and allow_current:
+            return current_branch(cli_ctxt)  # throws in case of detached HEAD, as in the spec
+        elif param in ("d", "down"):
+            return self.down(b, pick_mode=down_pick_mode)
+        elif param in ("f", "first"):
+            return self.first_branch(b)
+        elif param in ("l", "last"):
+            return self.last_branch(b)
+        elif param in ("n", "next"):
+            return self.next_branch(b)
+        elif param in ("p", "prev"):
+            return self.prev_branch(b)
+        elif param in ("r", "root"):
+            return self.root_branch(b, if_unmanaged=self.PICK_FIRST_ROOT)
+        elif param in ("u", "up"):
+            return self.up(cli_ctxt, b, prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)
         else:
-            raise_no_branches_error()
-    u = up_branch.get(b)
-    while u:
-        b = u
-        u = up_branch.get(b)
-    return b
+            raise MacheteException(f"Invalid direction: `{param}` expected: {self.allowed_directions(allow_current)}")
 
-
-def up(cli_ctxt: CommandLineContext, b: str, prompt_if_inferred_msg: Optional[str], prompt_if_inferred_yes_opt_msg: Optional[str]) -> str:
-    if b in managed_branches:
-        u = up_branch.get(b)
-        if u:
-            return u
+    def down(self, b: str, pick_mode: bool) -> str:
+        self.expect_in_managed_branches(b)
+        dbs = self.down_branches.get(b)
+        if not dbs:
+            raise MacheteException(f"Branch `{b}` has no downstream branch")
+        elif len(dbs) == 1:
+            return dbs[0]
+        elif pick_mode:
+            return pick(dbs, "downstream branch")
         else:
-            raise MacheteException(f"Branch `{b}` has no upstream branch")
-    else:
-        u = infer_upstream(cli_ctxt, b)
-        if u:
-            if prompt_if_inferred_msg:
-                if ask_if(
-                        cli_ctxt,
-                        prompt_if_inferred_msg % (b, u),
-                        prompt_if_inferred_yes_opt_msg % (b, u)
-                ) in ('y', 'yes'):
-                    return u
-                else:
-                    sys.exit(1)
+            return "\n".join(dbs)
+
+    def first_branch(self, b: str) -> str:
+        root = self.root_branch(b, if_unmanaged=self.PICK_FIRST_ROOT)
+        root_dbs = self.down_branches.get(root)
+        return root_dbs[0] if root_dbs else root
+
+    def last_branch(self, b: str) -> str:
+        d = self.root_branch(b, if_unmanaged=self.PICK_LAST_ROOT)
+        while self.down_branches.get(d):
+            d = self.down_branches[d][-1]
+        return d
+
+    def next_branch(self, b: str) -> str:
+        self.expect_in_managed_branches(b)
+        idx: int = self.managed_branches.index(b) + 1
+        if idx == len(self.managed_branches):
+            raise MacheteException(f"Branch `{b}` has no successor")
+        return self.managed_branches[idx]
+
+    def prev_branch(self, b: str) -> str:
+        self.expect_in_managed_branches(b)
+        idx: int = self.managed_branches.index(b) - 1
+        if idx == -1:
+            raise MacheteException(f"Branch `{b}` has no predecessor")
+        return self.managed_branches[idx]
+
+    def root_branch(self, b: str, if_unmanaged: int) -> str:
+        if b not in self.managed_branches:
+            if self.roots:
+                if if_unmanaged == self.PICK_FIRST_ROOT:
+                    warn(f"{b} is not a managed branch, assuming {self.roots[0]} (the first root) instead as root")
+                    return self.roots[0]
+                else:  # if_unmanaged == self.PICK_LAST_ROOT
+                    warn(f"{b} is not a managed branch, assuming {self.roots[-1]} (the last root) instead as root")
+                    return self.roots[-1]
             else:
-                warn(
-                    f"branch `{b}` not found in the tree of branch dependencies; the upstream has been inferred to `{u}`")
+                self.raise_no_branches_error()
+        u = self.up_branch.get(b)
+        while u:
+            b = u
+            u = self.up_branch.get(b)
+        return b
+
+
+    def up(self, cli_ctxt: CommandLineContext, b: str, prompt_if_inferred_msg: Optional[str], prompt_if_inferred_yes_opt_msg: Optional[str]) -> str:
+        if b in self.managed_branches:
+            u = self.up_branch.get(b)
+            if u:
                 return u
+            else:
+                raise MacheteException(f"Branch `{b}` has no upstream branch")
         else:
-            raise MacheteException(
-                f"Branch `{b}` not found in the tree of branch dependencies and its upstream could not be inferred")
-
-
-def add(cli_ctxt: CommandLineContext, b: str) -> None:
-
-    global roots
-
-    if b in managed_branches:
-        raise MacheteException(f"Branch `{b}` already exists in the tree of branch dependencies")
-
-    onto: Optional[str] = cli_ctxt.opt_onto
-    if onto:
-        expect_in_managed_branches(onto)
-
-    if b not in local_branches(cli_ctxt):
-        rb: Optional[str] = get_sole_remote_branch(cli_ctxt, b)
-        if rb:
-            common_line = f"A local branch `{b}` does not exist, but a remote branch `{rb}` exists.\n"
-            msg = common_line + f"Check out `{b}` locally?" + pretty_choices('y', 'N')
-            opt_yes_msg = common_line + f"Checking out `{b}` locally..."
-            if ask_if(cli_ctxt, msg, opt_yes_msg) in ('y', 'yes'):
-                create_branch(cli_ctxt, b, f"refs/remotes/{rb}")
+            u = infer_upstream(cli_ctxt, b)
+            if u:
+                if prompt_if_inferred_msg:
+                    if ask_if(
+                            cli_ctxt,
+                            prompt_if_inferred_msg % (b, u),
+                            prompt_if_inferred_yes_opt_msg % (b, u)
+                    ) in ('y', 'yes'):
+                        return u
+                    else:
+                        sys.exit(1)
+                else:
+                    warn(
+                        f"branch `{b}` not found in the tree of branch dependencies; the upstream has been inferred to `{u}`")
+                    return u
             else:
-                return
-            # Not dealing with `onto` here. If it hasn't been explicitly specified via `--onto`, we'll try to infer it now.
-        else:
-            out_of = f"refs/heads/{onto}" if onto else "HEAD"
-            out_of_str = f"`{onto}`" if onto else "the current HEAD"
-            msg = f"A local branch `{b}` does not exist. Create (out of {out_of_str})?" + pretty_choices('y', 'N')
-            opt_yes_msg = f"A local branch `{b}` does not exist. Creating out of {out_of_str}"
-            if ask_if(cli_ctxt, msg, opt_yes_msg) in ('y', 'yes'):
-                # If `--onto` hasn't been explicitly specified, let's try to assess if the current branch would be a good `onto`.
-                if roots and not onto:
-                    cb = current_branch_or_none(cli_ctxt)
-                    if cb and cb in managed_branches:
-                        onto = cb
-                create_branch(cli_ctxt, b, out_of)
-            else:
-                return
+                raise MacheteException(
+                    f"Branch `{b}` not found in the tree of branch dependencies and its upstream could not be inferred")
 
-    if cli_ctxt.opt_as_root or not roots:
-        roots += [b]
-        print(fmt(f"Added branch `{b}` as a new root"))
-    else:
-        if not onto:
-            u = infer_upstream(cli_ctxt, b, condition=lambda x: x in managed_branches, reject_reason_message="this candidate is not a managed branch")
-            if not u:
-                raise MacheteException(f"Could not automatically infer upstream (parent) branch for `{b}`.\n"
-                                       "You can either:\n"
-                                       "1) specify the desired upstream branch with `--onto` or\n"
-                                       f"2) pass `--as-root` to attach `{b}` as a new root or\n"
-                                       "3) edit the definition file manually with `git machete edit`")
-            else:
-                msg = f"Add `{b}` onto the inferred upstream (parent) branch `{u}`?" + pretty_choices('y', 'N')
-                opt_yes_msg = f"Adding `{b}` onto the inferred upstream (parent) branch `{u}`"
+    def add(self, cli_ctxt: CommandLineContext, b: str) -> None:
+        if b in self.managed_branches:
+            raise MacheteException(f"Branch `{b}` already exists in the tree of branch dependencies")
+
+        onto: Optional[str] = cli_ctxt.opt_onto
+        if onto:
+            self.expect_in_managed_branches(onto)
+
+        if b not in local_branches(cli_ctxt):
+            rb: Optional[str] = get_sole_remote_branch(cli_ctxt, b)
+            if rb:
+                common_line = f"A local branch `{b}` does not exist, but a remote branch `{rb}` exists.\n"
+                msg = common_line + f"Check out `{b}` locally?" + pretty_choices('y', 'N')
+                opt_yes_msg = common_line + f"Checking out `{b}` locally..."
                 if ask_if(cli_ctxt, msg, opt_yes_msg) in ('y', 'yes'):
-                    onto = u
+                    create_branch(cli_ctxt, b, f"refs/remotes/{rb}")
+                else:
+                    return
+                # Not dealing with `onto` here. If it hasn't been explicitly specified via `--onto`, we'll try to infer it now.
+            else:
+                out_of = f"refs/heads/{onto}" if onto else "HEAD"
+                out_of_str = f"`{onto}`" if onto else "the current HEAD"
+                msg = f"A local branch `{b}` does not exist. Create (out of {out_of_str})?" + pretty_choices('y', 'N')
+                opt_yes_msg = f"A local branch `{b}` does not exist. Creating out of {out_of_str}"
+                if ask_if(cli_ctxt, msg, opt_yes_msg) in ('y', 'yes'):
+                    # If `--onto` hasn't been explicitly specified, let's try to assess if the current branch would be a good `onto`.
+                    if self.roots and not onto:
+                        cb = current_branch_or_none(cli_ctxt)
+                        if cb and cb in self.managed_branches:
+                            onto = cb
+                    create_branch(cli_ctxt, b, out_of)
                 else:
                     return
 
-        up_branch[b] = onto
-        if onto in down_branches:
-            down_branches[onto].append(b)
+        if cli_ctxt.opt_as_root or not self.roots:
+            self.roots += [b]
+            print(fmt(f"Added branch `{b}` as a new root"))
         else:
-            down_branches[onto] = [b]
-        print(fmt(f"Added branch `{b}` onto `{onto}`"))
+            if not onto:
+                u = infer_upstream(cli_ctxt, b, condition=lambda x: x in self.managed_branches, reject_reason_message="this candidate is not a managed branch")
+                if not u:
+                    raise MacheteException(f"Could not automatically infer upstream (parent) branch for `{b}`.\n"
+                                           "You can either:\n"
+                                           "1) specify the desired upstream branch with `--onto` or\n"
+                                           f"2) pass `--as-root` to attach `{b}` as a new root or\n"
+                                           "3) edit the definition file manually with `git machete edit`")
+                else:
+                    msg = f"Add `{b}` onto the inferred upstream (parent) branch `{u}`?" + pretty_choices('y', 'N')
+                    opt_yes_msg = f"Adding `{b}` onto the inferred upstream (parent) branch `{u}`"
+                    if ask_if(cli_ctxt, msg, opt_yes_msg) in ('y', 'yes'):
+                        onto = u
+                    else:
+                        return
 
-    save_definition_file()
+            self.up_branch[b] = onto
+            if onto in down_branches:
+                self.down_branches[onto].append(b)
+            else:
+                self.down_branches[onto] = [b]
+            print(fmt(f"Added branch `{b}` onto `{onto}`"))
 
+        self.save_definition_file()
 
-def annotate(b: str, words: List[str]) -> None:
-    global annotations
-    if b in annotations and words == ['']:
-        del annotations[b]
-    else:
-        annotations[b] = " ".join(words)
-    save_definition_file()
+    def annotate(self, b: str, words: List[str]) -> None:
 
-
-def sync_annotations_to_github_prs(cli_ctxt: CommandLineContext) -> None:
-    global annotations, managed_branches
-    from git_machete.github import derive_current_user_login, derive_pull_requests, GitHubPullRequest, parse_github_remote_url
-
-    url_for_remote: Dict[str, str] = {r: get_url_of_remote(cli_ctxt, r) for r in remotes(cli_ctxt)}
-    if not url_for_remote:
-        raise MacheteException(fmt('No remotes defined for this repository (see `git remote`)'))
-
-    optional_org_name_for_github_remote: Dict[str, Optional[Tuple[str, str]]] = {remote: parse_github_remote_url(url) for remote, url in url_for_remote.items()}
-    org_name_for_github_remote: Dict[str, Tuple[str, str]] = {remote: org_name for remote, org_name in optional_org_name_for_github_remote.items() if org_name}
-    if not org_name_for_github_remote:
-        raise MacheteException(fmt('Remotes are defined for this repository, but none of them corresponds to GitHub (see `git remote -v` for details)'))
-
-    org: str
-    repo: str
-    if len(org_name_for_github_remote) == 1:
-        org, repo = list(org_name_for_github_remote.values())[0]
-    elif len(org_name_for_github_remote) > 1:
-        if 'origin' in org_name_for_github_remote:
-            org, repo = org_name_for_github_remote['origin']
+        if b in self.annotations and words == ['']:
+            del self.annotations[b]
         else:
-            raise MacheteException(f'Multiple non-origin remotes correspond to GitHub in this repository: '
-                                   f'{", ".join(org_name_for_github_remote.keys())}, aborting')
-    current_user: Optional[str] = derive_current_user_login()
-    debug(cli_ctxt, 'sync_annotations_to_github_prs()', 'Current GitHub user is ' + (current_user or '<none>'))
-    pr: GitHubPullRequest
-    for pr in derive_pull_requests(org, repo):
-        if pr.head in managed_branches:
-            debug(cli_ctxt, 'sync_annotations_to_github_prs()', f'{pr} corresponds to a managed branch')
-            anno: str = f'PR #{pr.number}'
-            if pr.user != current_user:
-                anno += f' ({pr.user})'
-            u: Optional[str] = up_branch.get(pr.head)
-            if pr.base != u:
-                warn(f'branch `{pr.head}` has a different base in PR #{pr.number} (`{pr.base}`) '
-                     f'than in machete file (`{u or "<none, is a root>"}`)')
-                anno += f" WRONG PR BASE or MACHETE PARENT? PR has '{pr.base}'"
-            if annotations.get(pr.head) != anno:
-                print(fmt(f'Annotating <b>{pr.head}</b> as `{anno}`'))
-                annotations[pr.head] = anno
-        else:
-            debug(cli_ctxt, 'sync_annotations_to_github_prs()', f'{pr} does NOT correspond to a managed branch')
-    save_definition_file()
+            self.annotations[b] = " ".join(words)
+        self.save_definition_file()
 
+    def sync_annotations_to_github_prs(self, cli_ctxt: CommandLineContext) -> None:
+        from git_machete.github import derive_current_user_login, derive_pull_requests, GitHubPullRequest, parse_github_remote_url
 
-def print_annotation(b: str) -> None:
-    global annotations
-    if b in annotations:
-        print(annotations[b])
+        url_for_remote: Dict[str, str] = {r: get_url_of_remote(cli_ctxt, r) for r in remotes(cli_ctxt)}
+        if not url_for_remote:
+            raise MacheteException(fmt('No remotes defined for this repository (see `git remote`)'))
+
+        optional_org_name_for_github_remote: Dict[str, Optional[Tuple[str, str]]] = {remote: parse_github_remote_url(url) for remote, url in url_for_remote.items()}
+        org_name_for_github_remote: Dict[str, Tuple[str, str]] = {remote: org_name for remote, org_name in optional_org_name_for_github_remote.items() if org_name}
+        if not org_name_for_github_remote:
+            raise MacheteException(fmt('Remotes are defined for this repository, but none of them corresponds to GitHub (see `git remote -v` for details)'))
+
+        org: str
+        repo: str
+        if len(org_name_for_github_remote) == 1:
+            org, repo = list(org_name_for_github_remote.values())[0]
+        elif len(org_name_for_github_remote) > 1:
+            if 'origin' in org_name_for_github_remote:
+                org, repo = org_name_for_github_remote['origin']
+            else:
+                raise MacheteException(f'Multiple non-origin remotes correspond to GitHub in this repository: '
+                                       f'{", ".join(org_name_for_github_remote.keys())}, aborting')
+        current_user: Optional[str] = derive_current_user_login()
+        debug(cli_ctxt, 'sync_annotations_to_github_prs()', 'Current GitHub user is ' + (current_user or '<none>'))
+        pr: GitHubPullRequest
+        for pr in derive_pull_requests(org, repo):
+            if pr.head in self.managed_branches:
+                debug(cli_ctxt, 'sync_annotations_to_github_prs()', f'{pr} corresponds to a managed branch')
+                anno: str = f'PR #{pr.number}'
+                if pr.user != current_user:
+                    anno += f' ({pr.user})'
+                u: Optional[str] = self.up_branch.get(pr.head)
+                if pr.base != u:
+                    warn(f'branch `{pr.head}` has a different base in PR #{pr.number} (`{pr.base}`) '
+                         f'than in machete file (`{u or "<none, is a root>"}`)')
+                    anno += f" WRONG PR BASE or MACHETE PARENT? PR has '{pr.base}'"
+                if self.annotations.get(pr.head) != anno:
+                    print(fmt(f'Annotating <b>{pr.head}</b> as `{anno}`'))
+                    self.annotations[pr.head] = anno
+            else:
+                debug(cli_ctxt, 'sync_annotations_to_github_prs()', f'{pr} does NOT correspond to a managed branch')
+        self.save_definition_file()
+
+    def print_annotation(self, b: str) -> None:
+        if b in self.annotations:
+            print(self.annotations[b])
 
 
 # Implementation of basic git or git-related commands
@@ -3482,6 +3463,7 @@ definition_file_path: str = ""
 def launch(orig_args: List[str]) -> None:
 
     cli_ctxt = CommandLineContext()
+    machete_ctxt = MacheteContext()
 
     if sys.version_info.major == 2 or (sys.version_info.major == 3 and sys.version_info.minor < 6):
         version_str = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
@@ -3653,35 +3635,35 @@ def launch(orig_args: List[str]) -> None:
 
         if cmd == "add":
             param = check_optional_param(parse_options(args, "o:Ry", ["onto=", "as-root", "yes"]))
-            read_definition_file(cli_ctxt)
+            machete_ctxt.read_definition_file(cli_ctxt)
             add(cli_ctxt, param or current_branch(cli_ctxt))
         elif cmd == "advance":
             args1 = parse_options(args, "y", ["yes"])
             expect_no_param(args1)
-            read_definition_file(cli_ctxt)
+            machete_ctxt.read_definition_file(cli_ctxt)
             expect_no_operation_in_progress(cli_ctxt)
             cb = current_branch(cli_ctxt)
-            expect_in_managed_branches(cb)
+            machete_ctxt.expect_in_managed_branches(cb)
             advance(cli_ctxt, cb)
         elif cmd == "anno":
             params = parse_options(args, "b:H", ["branch=", "sync-github-prs"])
-            read_definition_file(cli_ctxt, verify_branches=False)
+            machete_ctxt.read_definition_file(cli_ctxt, verify_branches=False)
             if cli_ctxt.opt_sync_github_prs:
                 sync_annotations_to_github_prs(cli_ctxt)
             else:
                 b = cli_ctxt.opt_branch or current_branch(cli_ctxt)
-                expect_in_managed_branches(b)
+                machete_ctxt.expect_in_managed_branches(b)
                 if params:
                     annotate(b, params)
                 else:
                     print_annotation(b)
         elif cmd == "delete-unmanaged":
             expect_no_param(parse_options(args, "y", ["yes"]))
-            read_definition_file(cli_ctxt)
+            machete_ctxt.read_definition_file(cli_ctxt)
             delete_unmanaged(cli_ctxt)
         elif cmd in ("d", "diff"):
             param = check_optional_param(parse_options(args, "s", ["stat"]))
-            read_definition_file(cli_ctxt)
+            machete_ctxt.read_definition_file(cli_ctxt)
             diff(cli_ctxt, param)  # passing None if not specified
         elif cmd == "discover":
             expect_no_param(parse_options(args, "C:lr:y", ["checked-out-since=", "list-commits", "roots=", "yes"]))
@@ -3698,7 +3680,7 @@ def launch(orig_args: List[str]) -> None:
         elif cmd == "fork-point":
             long_options = ["inferred", "override-to=", "override-to-inferred", "override-to-parent", "unset-override"]
             param = check_optional_param(parse_options(args, "", long_options))
-            read_definition_file(cli_ctxt)
+            machete_ctxt.read_definition_file(cli_ctxt)
             b = param or current_branch(cli_ctxt)
             if len(list(filter(None, [cli_ctxt.opt_inferred, cli_ctxt.opt_override_to, cli_ctxt.opt_override_to_inferred, cli_ctxt.opt_override_to_parent, cli_ctxt.opt_unset_override]))) > 1:
                 long_options_string = ", ".join(map(lambda x: x.replace("=", ""), long_options))
@@ -3721,7 +3703,7 @@ def launch(orig_args: List[str]) -> None:
                 print(fork_point(cli_ctxt, b, use_overrides=True))
         elif cmd in ("g", "go"):
             param = check_required_param(parse_options(args), allowed_directions(allow_current=False))
-            read_definition_file(cli_ctxt)
+            machete_ctxt.read_definition_file(cli_ctxt)
             expect_no_operation_in_progress(cli_ctxt)
             cb = current_branch(cli_ctxt)
             dest = parse_direction(cli_ctxt, param, cb, allow_current=False, down_pick_mode=True)
@@ -3733,7 +3715,7 @@ def launch(orig_args: List[str]) -> None:
             usage(param)
         elif cmd == "is-managed":
             param = check_optional_param(parse_options(args))
-            read_definition_file(cli_ctxt)
+            machete_ctxt.read_definition_file(cli_ctxt)
             b = param or current_branch_or_none(cli_ctxt)
             if b is None or b not in managed_branches:
                 sys.exit(1)
@@ -3757,7 +3739,7 @@ def launch(orig_args: List[str]) -> None:
                 raise MacheteException(f"`git machete list {list_args[0]}` requires an extra <branch> argument")
 
             param = list_args[0]
-            read_definition_file(cli_ctxt)
+            machete_ctxt.read_definition_file(cli_ctxt)
             res = []
             if param == "addable":
                 def strip_first_fragment(rb: str) -> str:
@@ -3772,7 +3754,7 @@ def launch(orig_args: List[str]) -> None:
                 res = slidable()
             elif param == "slidable-after":
                 b_arg = list_args[1]
-                expect_in_managed_branches(b_arg)
+                machete_ctxt.expect_in_managed_branches(b_arg)
                 res = slidable_after(b_arg)
             elif param == "unmanaged":
                 res = excluding(local_branches(cli_ctxt), managed_branches)
@@ -3783,12 +3765,12 @@ def launch(orig_args: List[str]) -> None:
                 print("\n".join(res))
         elif cmd in ("l", "log"):
             param = check_optional_param(parse_options(args))
-            read_definition_file(cli_ctxt)
+            machete_ctxt.read_definition_file(cli_ctxt)
             log(cli_ctxt, param or current_branch(cli_ctxt))
         elif cmd == "reapply":
             args1 = parse_options(args, "f:", ["fork-point="])
             expect_no_param(args1, ". Use `-f` or `--fork-point` to specify the fork point commit")
-            read_definition_file(cli_ctxt)
+            machete_ctxt.read_definition_file(cli_ctxt)
             expect_no_operation_in_progress(cli_ctxt)
             cb = current_branch(cli_ctxt)
             rebase_onto_ancestor_commit(cli_ctxt, cb, cli_ctxt.opt_fork_point or fork_point(cli_ctxt, cb, use_overrides=True))
@@ -3797,24 +3779,24 @@ def launch(orig_args: List[str]) -> None:
             branch = check_optional_param(args[1:])
             if param == "current" and branch is not None:
                 raise MacheteException(f'`show current` with a branch (`{branch}`) does not make sense')
-            read_definition_file(cli_ctxt, verify_branches=False)
+            machete_ctxt.read_definition_file(cli_ctxt, verify_branches=False)
             print(parse_direction(cli_ctxt, param, branch or current_branch(cli_ctxt), allow_current=True, down_pick_mode=False))
         elif cmd == "slide-out":
             params = parse_options(args, "d:Mn", ["down-fork-point=", "merge", "no-edit-merge", "no-interactive-rebase"])
-            read_definition_file(cli_ctxt)
+            machete_ctxt.read_definition_file(cli_ctxt)
             expect_no_operation_in_progress(cli_ctxt)
             slide_out(cli_ctxt, params or [current_branch(cli_ctxt)])
         elif cmd == "squash":
             args1 = parse_options(args, "f:", ["fork-point="])
             expect_no_param(args1, ". Use `-f` or `--fork-point` to specify the fork point commit")
-            read_definition_file(cli_ctxt)
+            machete_ctxt.read_definition_file(cli_ctxt)
             expect_no_operation_in_progress(cli_ctxt)
             cb = current_branch(cli_ctxt)
             squash(cli_ctxt, cb, cli_ctxt.opt_fork_point or fork_point(cli_ctxt, cb, use_overrides=True))
         elif cmd in ("s", "status"):
             expect_no_param(parse_options(args, "Ll", ["color=", "list-commits-with-hashes", "list-commits", "no-detect-squash-merges"]))
-            read_definition_file(cli_ctxt)
-            expect_at_least_one_managed_branch()
+            machete_ctxt.read_definition_file(cli_ctxt)
+            machete_ctxt.expect_at_least_one_managed_branch()
             status(cli_ctxt, warn_on_yellow_edges=True)
         elif cmd == "traverse":
             traverse_long_opts = ["fetch", "list-commits", "merge",
@@ -3826,13 +3808,13 @@ def launch(orig_args: List[str]) -> None:
                 raise MacheteException("Invalid argument for `--start-from`. Valid arguments: `here|root|first-root`.")
             if cli_ctxt.opt_return_to not in ("here", "nearest-remaining", "stay"):
                 raise MacheteException("Invalid argument for `--return-to`. Valid arguments: here|nearest-remaining|stay.")
-            read_definition_file(cli_ctxt)
+            machete_ctxt.read_definition_file(cli_ctxt)
             expect_no_operation_in_progress(cli_ctxt)
             traverse(cli_ctxt)
         elif cmd == "update":
             args1 = parse_options(args, "f:Mn", ["fork-point=", "merge", "no-edit-merge", "no-interactive-rebase"])
             expect_no_param(args1, ". Use `-f` or `--fork-point` to specify the fork point commit")
-            read_definition_file(cli_ctxt)
+            machete_ctxt.read_definition_file(cli_ctxt)
             expect_no_operation_in_progress(cli_ctxt)
             update(cli_ctxt)
         elif cmd == "version":
