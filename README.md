@@ -1,9 +1,9 @@
 # git-machete
 
 [![Join the chat at https://gitter.im/VirtusLab/git-machete](https://badges.gitter.im/VirtusLab/git-machete.svg)](https://gitter.im/VirtusLab/git-machete)
-[![CircleCI](https://circleci.com/gh/VirtusLab/git-machete/tree/develop.svg?style=shield)](https://app.circleci.com/pipelines/github/VirtusLab/git-machete?branch=develop)
+[![CircleCI](https://circleci.com/gh/VirtusLab/git-machete/tree/master.svg?style=shield)](https://app.circleci.com/pipelines/github/VirtusLab/git-machete?branch=master)
 [![PyPI package](https://img.shields.io/pypi/v/git-machete.svg)](https://pypi.org/project/git-machete)
-[![PyPI package monthly downloads](https://img.shields.io/pypi/dm/git-machete.svg)](https://pypi.org/project/git-machete)
+[![PyPI package monthly downloads](https://img.shields.io/pypi/dm/git-machete.svg)](https://pypistats.org/packages/git-machete)
 [![Snap](https://snapcraft.io/git-machete/badge.svg)](https://snapcraft.io/git-machete)
 [![License: MIT](https://img.shields.io/github/license/VirtusLab/git-machete)](https://github.com/VirtusLab/git-machete/blob/master/LICENSE)
 
