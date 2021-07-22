@@ -724,15 +724,13 @@ class MacheteContext:
         if cli_ctxt.opt_merge:
             with_branch = self.up(cli_ctxt,
                                   cb,
-                                  prompt_if_inferred_msg="Branch `%s` not found in the tree of branch dependencies. Merge with the inferred upstream `%s`?" + pretty_choices(
-                                    'y', 'N'),
+                                  prompt_if_inferred_msg="Branch `%s` not found in the tree of branch dependencies. Merge with the inferred upstream `%s`?" + pretty_choices('y', 'N'),
                                   prompt_if_inferred_yes_opt_msg="Branch `%s` not found in the tree of branch dependencies. Merging with the inferred upstream `%s`...")
             merge(cli_ctxt, with_branch, cb)
         else:
             onto_branch = self.up(cli_ctxt,
                                   cb,
-                                  prompt_if_inferred_msg="Branch `%s` not found in the tree of branch dependencies. Rebase onto the inferred upstream `%s`?" + pretty_choices(
-                                    'y', 'N'),
+                                  prompt_if_inferred_msg="Branch `%s` not found in the tree of branch dependencies. Rebase onto the inferred upstream `%s`?" + pretty_choices('y', 'N'),
                                   prompt_if_inferred_yes_opt_msg="Branch `%s` not found in the tree of branch dependencies. Rebasing onto the inferred upstream `%s`...")
             rebase(cli_ctxt, f"refs/heads/{onto_branch}",
                    cli_ctxt.opt_fork_point or self.fork_point(cli_ctxt, cb, use_overrides=True), cb)
@@ -916,8 +914,8 @@ class MacheteContext:
                 not self.is_merged_to_upstream(cli_ctxt, bd) and
                 is_ancestor_or_equal(cli_ctxt, b, bd) and
                 (get_overridden_fork_point(cli_ctxt, bd) or commit_sha_by_revision(cli_ctxt, b) == self.fork_point(cli_ctxt,
-                                                                                                                        bd,
-                                                                                                                        use_overrides=False)))
+                                                                                                                   bd,
+                                                                                                                   use_overrides=False)))
 
         candidate_downstreams = list(filter(connected_with_green_edge, self.down_branches[b]))
         if not candidate_downstreams:
@@ -1022,8 +1020,8 @@ class MacheteContext:
                 needs_parent_sync = bool(u and not is_ancestor_or_equal(cli_ctxt, u, b))
             else:  # using rebase
                 needs_parent_sync = bool(u and not (
-                                            is_ancestor_or_equal(cli_ctxt, u, b) and commit_sha_by_revision(cli_ctxt, u) == self.fork_point(
-                                                cli_ctxt, b, use_overrides=True)))
+                                         is_ancestor_or_equal(cli_ctxt, u, b) and commit_sha_by_revision(cli_ctxt, u) == self.fork_point(
+                                            cli_ctxt, b, use_overrides=True)))
 
             if b != cb and (needs_slide_out or needs_parent_sync or needs_remote_sync):
                 print_new_line(False)
@@ -1300,8 +1298,8 @@ class MacheteContext:
                             fp_suffix = ''
                         print_line_prefix(b, vertical_bar())
                         out.write(" %s%s%s\n" % (
-                                    f"{dim(short_sha)}  " if cli_ctxt.opt_list_commits_with_hashes else "", dim(subject),
-                                    fp_suffix))
+                                  f"{dim(short_sha)}  " if cli_ctxt.opt_list_commits_with_hashes else "", dim(subject),
+                                  fp_suffix))
                 elbow_ascii_only: Dict[str, str] = {DIM: "m-", RED: "x-", GREEN: "o-", YELLOW: "?-"}
                 elbow: str = u"└─" if not ascii_only else elbow_ascii_only[edge_color[b]]
                 print_line_prefix(b, elbow)
@@ -2741,8 +2739,8 @@ def handle_untracked_branch(cli_ctxt: CommandLineContext, new_remote: str, b: st
     elif ans in ('q', 'quit'):
         raise StopTraversal
 
-# Main
 
+# Main
 alias_by_command: Dict[str, str] = {
     "diff": "d",
     "edit": "e",
