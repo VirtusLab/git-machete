@@ -499,7 +499,7 @@ class MacheteContext:
         return current + "d[own]|f[irst]|l[ast]|n[ext]|p[rev]|r[oot]|u[p]"
 
     # Parse and evaluate direction against current branch for show/go commands
-    def parse_direction(self, cli_ctxt: CommandLineContext,  param: str, b: str, allow_current: bool, down_pick_mode: bool) -> str:
+    def parse_direction(self, cli_ctxt: CommandLineContext, param: str, b: str, allow_current: bool, down_pick_mode: bool) -> str:
         if param in ("c", "current") and allow_current:
             return current_branch(cli_ctxt)  # throws in case of detached HEAD, as in the spec
         elif param in ("d", "down"):
@@ -724,14 +724,14 @@ class MacheteContext:
             with_branch = self.up(cli_ctxt,
                                   cb,
                                   prompt_if_inferred_msg="Branch `%s` not found in the tree of branch dependencies. Merge with the inferred upstream `%s`?" + pretty_choices(
-                                  'y', 'N'),
+                                    'y', 'N'),
                                   prompt_if_inferred_yes_opt_msg="Branch `%s` not found in the tree of branch dependencies. Merging with the inferred upstream `%s`...")
             merge(cli_ctxt, with_branch, cb)
         else:
             onto_branch = self.up(cli_ctxt,
                                   cb,
                                   prompt_if_inferred_msg="Branch `%s` not found in the tree of branch dependencies. Rebase onto the inferred upstream `%s`?" + pretty_choices(
-                                  'y', 'N'),
+                                    'y', 'N'),
                                   prompt_if_inferred_yes_opt_msg="Branch `%s` not found in the tree of branch dependencies. Rebasing onto the inferred upstream `%s`...")
             rebase(cli_ctxt, f"refs/heads/{onto_branch}",
                    cli_ctxt.opt_fork_point or self.fork_point(cli_ctxt, cb, use_overrides=True), cb)
@@ -778,8 +778,7 @@ class MacheteContext:
             )]
         else:
             c = MacheteContext.DISCOVER_DEFAULT_FRESH_BRANCH_COUNT
-            stale, fresh = non_root_fixed_branches_by_last_checkout_timestamps[
-                           :-c], non_root_fixed_branches_by_last_checkout_timestamps[-c:]
+            stale, fresh = non_root_fixed_branches_by_last_checkout_timestamps[:-c], non_root_fixed_branches_by_last_checkout_timestamps[-c:]
             stale_non_root_fixed_branches = [b for (timestamp, b) in stale]
             if stale:
                 threshold_date = datetime.datetime.utcfromtimestamp(fresh[0][0]).strftime("%Y-%m-%d")
@@ -916,8 +915,8 @@ class MacheteContext:
                 not self.is_merged_to_upstream(cli_ctxt, bd) and
                 is_ancestor_or_equal(cli_ctxt, b, bd) and
                 (get_overridden_fork_point(cli_ctxt, bd) or commit_sha_by_revision(cli_ctxt, b) == self.fork_point(cli_ctxt,
-                                                                                                              bd,
-                                                                                                              use_overrides=False)))
+                                                                                                                        bd,
+                                                                                                                        use_overrides=False)))
 
         candidate_downstreams = list(filter(connected_with_green_edge, self.down_branches[b]))
         if not candidate_downstreams:
@@ -1022,8 +1021,8 @@ class MacheteContext:
                 needs_parent_sync = bool(u and not is_ancestor_or_equal(cli_ctxt, u, b))
             else:  # using rebase
                 needs_parent_sync = bool(u and not (
-                            is_ancestor_or_equal(cli_ctxt, u, b) and commit_sha_by_revision(cli_ctxt, u) == self.fork_point(
-                        cli_ctxt, b, use_overrides=True)))
+                                            is_ancestor_or_equal(cli_ctxt, u, b) and commit_sha_by_revision(cli_ctxt, u) == self.fork_point(
+                                                cli_ctxt, b, use_overrides=True)))
 
             if b != cb and (needs_slide_out or needs_parent_sync or needs_remote_sync):
                 print_new_line(False)
@@ -1242,8 +1241,7 @@ class MacheteContext:
             if b not in fp_sha_cached:
                 try:
                     # We're always using fork point overrides, even when status is launched from discover().
-                    fp_sha_cached[b], fp_branches_cached[b] = self.fork_point_and_containing_branch_defs(cli_ctxt, b,
-                                                                                                    use_overrides=True)
+                    fp_sha_cached[b], fp_branches_cached[b] = self.fork_point_and_containing_branch_defs(cli_ctxt, b, use_overrides=True)
                 except MacheteException:
                     fp_sha_cached[b], fp_branches_cached[b] = None, []
             return fp_sha_cached[b]
@@ -1301,8 +1299,8 @@ class MacheteContext:
                             fp_suffix = ''
                         print_line_prefix(b, vertical_bar())
                         out.write(" %s%s%s\n" % (
-                        f"{dim(short_sha)}  " if cli_ctxt.opt_list_commits_with_hashes else "", dim(subject),
-                        fp_suffix))
+                                    f"{dim(short_sha)}  " if cli_ctxt.opt_list_commits_with_hashes else "", dim(subject),
+                                    fp_suffix))
                 elbow_ascii_only: Dict[str, str] = {DIM: "m-", RED: "x-", GREEN: "o-", YELLOW: "?-"}
                 elbow: str = u"└─" if not ascii_only else elbow_ascii_only[edge_color[b]]
                 print_line_prefix(b, elbow)
@@ -1428,66 +1426,62 @@ class MacheteContext:
                 return dbs
         return []
 
-    def fork_point_and_containing_branch_defs(self, cli_ctxt: CommandLineContext, b: str, use_overrides: bool) -> Tuple[
-        Optional[str], List[BRANCH_DEF]]:
+    def fork_point_and_containing_branch_defs(self, cli_ctxt: CommandLineContext, b: str, use_overrides: bool) -> Tuple[Optional[str], List[BRANCH_DEF]]:
         u = self.up_branch.get(b)
 
         if self.is_merged_to_upstream(cli_ctxt, b):
             fp_sha = commit_sha_by_revision(cli_ctxt, b)
-            debug(cli_ctxt,
-                    f"fork_point_and_containing_branch_defs({b})",
-                    f"{b} is merged to {u}; skipping inference, using tip of {b} ({fp_sha}) as fork point")
+            debug(cli_ctxt, f"fork_point_and_containing_branch_defs({b})",
+                            f"{b} is merged to {u}; skipping inference, using tip of {b} ({fp_sha}) as fork point")
             return fp_sha, []
 
         if use_overrides:
             overridden_fp_sha = get_overridden_fork_point(cli_ctxt, b)
             if overridden_fp_sha:
-                if u and is_ancestor_or_equal(cli_ctxt, u, b) and not is_ancestor_or_equal(cli_ctxt, u,
-                                                                                            overridden_fp_sha,
-                                                                                            later_prefix=""):
+                if u and is_ancestor_or_equal(cli_ctxt, u, b) and not is_ancestor_or_equal(cli_ctxt,
+                                                                                           u,
+                                                                                           overridden_fp_sha,
+                                                                                           later_prefix=""):
                     # We need to handle the case when b is a descendant of u,
                     # but the fork point of b is overridden to a commit that is NOT a descendant of u.
                     # In this case it's more reasonable to assume that u (and not overridden_fp_sha) is the fork point.
-                    debug(cli_ctxt,
-                            f"fork_point_and_containing_branch_defs({b})",
-                            f"{b} is descendant of its upstream {u}, but overridden fork point commit {overridden_fp_sha} is NOT a descendant of {u}; falling back to {u} as fork point")
+                    debug(cli_ctxt, f"fork_point_and_containing_branch_defs({b})",
+                          f"{b} is descendant of its upstream {u}, but overridden fork point commit {overridden_fp_sha} is NOT a descendant of {u}; falling back to {u} as fork point")
                     return commit_sha_by_revision(cli_ctxt, u), []
                 else:
-                    debug(cli_ctxt,
-                              f"fork_point_and_containing_branch_defs({b})",
-                              f"fork point of {b} is overridden to {overridden_fp_sha}; skipping inference")
+                    debug(cli_ctxt, f"fork_point_and_containing_branch_defs({b})",
+                          f"fork point of {b} is overridden to {overridden_fp_sha}; skipping inference")
                     return overridden_fp_sha, []
 
         try:
             fp_sha, containing_branch_defs = next(match_log_to_filtered_reflogs(cli_ctxt, b))
         except StopIteration:
             if u and is_ancestor_or_equal(cli_ctxt, u, b):
-                debug(cli_ctxt,
-                          f"fork_point_and_containing_branch_defs({b})",
-                          f"cannot find fork point, but {b} is descendant of its upstream {u}; falling back to {u} as fork point")
+                debug(cli_ctxt, f"fork_point_and_containing_branch_defs({b})",
+                      f"cannot find fork point, but {b} is descendant of its upstream {u}; falling back to {u} as fork point")
                 return commit_sha_by_revision(cli_ctxt, u), []
             else:
                 raise MacheteException(f"Cannot find fork point for branch `{b}`")
         else:
             debug(cli_ctxt,
-                      "fork_point_and_containing_branch_defs({b})",
-                      f"commit {fp_sha} is the most recent point in history of {b} to occur on "
-                      "filtered reflog of any other branch or its remote counterpart "
-                      f"(specifically: {' and '.join(map(get_second, containing_branch_defs))})")
+                  "fork_point_and_containing_branch_defs({b})",
+                  f"commit {fp_sha} is the most recent point in history of {b} to occur on "
+                  "filtered reflog of any other branch or its remote counterpart "
+                  f"(specifically: {' and '.join(map(get_second, containing_branch_defs))})")
 
             if u and is_ancestor_or_equal(cli_ctxt, u, b) and not is_ancestor_or_equal(cli_ctxt, u, fp_sha,
-                                                                                           later_prefix=""):
+                                                                                       later_prefix=""):
                 # That happens very rarely in practice (typically current head of any branch, including u, should occur on the reflog of this
                 # branch, thus is_ancestor(u, b) should imply is_ancestor(u, FP(b)), but it's still possible in case reflog of
                 # u is incomplete for whatever reason.
                 debug(cli_ctxt,
-                          f"fork_point_and_containing_branch_defs({b})",
-                          f"{u} is descendant of its upstream {b}, but inferred fork point commit {fp_sha} is NOT a descendant of {u}; falling back to {u} as fork point")
+                      f"fork_point_and_containing_branch_defs({b})",
+                      f"{u} is descendant of its upstream {b}, but inferred fork point commit {fp_sha} is NOT a descendant of {u}; falling back to {u} as fork point")
                 return commit_sha_by_revision(cli_ctxt, u), []
             else:
                 debug(cli_ctxt,
-                          f"fork_point_and_containing_branch_defs({b})",
-                          f"choosing commit {fp_sha} as fork point")
+                      f"fork_point_and_containing_branch_defs({b})",
+                      f"choosing commit {fp_sha} as fork point")
                 return fp_sha, containing_branch_defs
 
     def fork_point(self, cli_ctxt: CommandLineContext, b: str, use_overrides: bool) -> Optional[str]:
@@ -1504,13 +1498,14 @@ class MacheteContext:
         run_git(cli_ctxt, "diff", *params)
 
     def log(self, cli_ctxt: CommandLineContext, branch: str) -> None:
-        run_git(cli_ctxt, "log", "^" +self.fork_point(cli_ctxt, branch, use_overrides=True), f"refs/heads/{branch}")
+        run_git(cli_ctxt, "log", "^" + self.fork_point(cli_ctxt, branch, use_overrides=True), f"refs/heads/{branch}")
 
     def is_merged_to_upstream(self, cli_ctxt: CommandLineContext, b: str) -> bool:
         if b not in self.up_branch:
             return False
         return is_merged_to(cli_ctxt, b, self.up_branch[b])
         # Implementation of basic git or git-related commands
+
 
 def is_executable(path: str) -> bool:
     return os.access(path, os.X_OK)
@@ -2189,9 +2184,6 @@ def rebase_onto_ancestor_commit(cli_ctxt: CommandLineContext, branch: str, ances
     rebase(cli_ctxt, ancestor_commit, ancestor_commit, branch)
 
 
-
-
-
 Hash_ShortHash_Message = Tuple[str, str, str]
 
 
@@ -2401,9 +2393,6 @@ def get_latest_checkout_timestamps(cli_ctxt: CommandLineContext) -> Dict[str, in
             if to_branch not in result:
                 result[to_branch] = int(match.group(1))
     return result
-
-
-
 
 
 def match_log_to_filtered_reflogs(cli_ctxt: CommandLineContext, b: str) -> Generator[Tuple[str, List[BRANCH_DEF]], None, None]:
@@ -3858,4 +3847,3 @@ def launch(orig_args: List[str]) -> None:
 
 if __name__ == "__main__":
     main()
-
