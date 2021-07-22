@@ -1020,8 +1020,7 @@ class MacheteContext:
                 needs_parent_sync = bool(u and not is_ancestor_or_equal(cli_ctxt, u, b))
             else:  # using rebase
                 needs_parent_sync = bool(u and not (
-                                         is_ancestor_or_equal(cli_ctxt, u, b) and commit_sha_by_revision(cli_ctxt, u) == self.fork_point(
-                                            cli_ctxt, b, use_overrides=True)))
+                                         is_ancestor_or_equal(cli_ctxt, u, b) and commit_sha_by_revision(cli_ctxt, u) == self.fork_point(cli_ctxt, b, use_overrides=True)))
 
             if b != cb and (needs_slide_out or needs_parent_sync or needs_remote_sync):
                 print_new_line(False)
