@@ -342,6 +342,7 @@ def popen_git(cli_ctxt: CommandLineContext, git_cmd: str, *args: str, **kwargs: 
 branch_defs_by_sha_in_reflog: Optional[Dict[str, Optional[List[Tuple[str, str]]]]] = None
 
 BRANCH_DEF = Tuple[str, str]
+empty_line_status: Optional[bool] = None
 
 
 class MacheteContext:
@@ -2739,10 +2740,6 @@ def handle_untracked_branch(cli_ctxt: CommandLineContext, new_remote: str, b: st
         pick_remote(cli_ctxt, b)
     elif ans in ('q', 'quit'):
         raise StopTraversal
-
-
-empty_line_status: Optional[bool] = None
-
 
 # Main
 
