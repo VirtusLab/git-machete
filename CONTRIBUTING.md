@@ -66,8 +66,6 @@ Output format of any non-plumbing command can change in non-backward-compatible 
 
 1. Verify that the latest version is uploaded to [PyPI](https://pypi.org/project/git-machete).
 
-1. Verify that a [version-bump PRs to NixOS/nixpkgs](https://github.com/NixOS/nixpkgs/pulls?q=is%3Apr+git-machete) has been opened.
-
 1. Verify that the latest commit in [VirtusLab/homebrew-git-machete](https://github.com/VirtusLab/homebrew-git-machete) tap repo refers to the latest version.
 
 1. Verify that a build started for [Snap](https://build.snapcraft.io/user/VirtusLab/git-machete).
@@ -86,9 +84,23 @@ Output format of any non-plumbing command can change in non-backward-compatible 
    follow the instructions from [ci/deb-ppa-test-install/README.md](https://github.com/VirtusLab/git-machete/tree/master/ci/deb-ppa-test-install).
    Inspect the output of `docker-compose` and verify that the latest version gets correctly installed on Ubuntu (esp. see the output of `git machete --version`).
 
+1. Thanks to the courtesy of [@blitz (Julian Stecklina)](https://github.com/blitz),
+   a [git-machete package](https://github.com/NixOS/nixpkgs/blob/master/pkgs/applications/version-management/git-and-tools/git-machete/default.nix)
+   lives in [Nixpkgs](https://github.com/NixOS/nixpkgs) &mdash; the collection of packages for [Nix package manager](https://nixos.org/).
+
+   Since @blitz's [PR #131141 to NixOS/nixpkgs](https://github.com/NixOS/nixpkgs/pull/131141),
+   automatic updates of this package (based on the package hosted on PyPI) should be performed by [@r-ryantm bot](https://github.com/r-ryantm).
+   Verify that [version-bump PRs to NixOS/nixpkgs](https://github.com/NixOS/nixpkgs/pulls?q=is%3Apr+git-machete),
+   are regularly opened so that Nix package is kept up to date with git-machete releases.
+
 1. Thanks to the courtesy of [Ila&iuml; Deutel](https://github.com/ilai-deutel),
    a [git-machete package](https://aur.archlinux.org/packages/git-machete) is hosted in Arch User Repository (AUR).
    If the release introduces significant changes/critical bugfixes, please [flag the package as out of date](https://aur.archlinux.org/pkgbase/git-machete/flag).
 
-1. Verify if changes you made in [blog-1.md](https://github.com/VirtusLab/git-machete/blob/develop/docs/blog-1/blog-1.md) and [blog-2.md](https://github.com/VirtusLab/git-machete/blob/develop/docs/blog-2/blog-2.md) are reflected in corresponding medium articles: [Make your way through the git (rebase) jungle with Git Machete](https://medium.com/virtuslab/make-your-way-through-the-git-rebase-jungle-with-git-machete-e2ed4dbacd02) or [Git Machete Strikes again!](https://medium.com/virtuslab/git-machete-strikes-again-traverse-the-git-rebase-jungle-even-faster-with-v2-0-f43ebaf8abb0).
-   If not please apply changes also here to keep consistency.
+1. Verify if changes you made in [blog-1.md](https://github.com/VirtusLab/git-machete/blob/develop/docs/blog-1/blog-1.md)
+   and [blog-2.md](https://github.com/VirtusLab/git-machete/blob/develop/docs/blog-2/blog-2.md)
+   are reflected in the corresponding medium articles:
+   [Make your way through the git (rebase) jungle with Git Machete](https://medium.com/virtuslab/make-your-way-through-the-git-rebase-jungle-with-git-machete-e2ed4dbacd02)
+   and [Git Machete Strikes again!](https://medium.com/virtuslab/git-machete-strikes-again-traverse-the-git-rebase-jungle-even-faster-with-v2-0-f43ebaf8abb0).
+   If not, please apply changes on Medium to keep consistency.
+   Since Medium does not offer conversion directly from Markdown, copy the formatted blog text from a GitHub and paste it into the Medium rich text editor.

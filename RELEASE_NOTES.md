@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.3.1
+
+- removed: releases to Nixpkgs no longer happen directly from our CI pipeline
+
 ## New in git-machete 3.3.0
 
 - improved: `show` can accept a target branch other than the current branch (contributed by @asford)
