@@ -871,7 +871,7 @@ class MacheteContext:
         initial_branch = nearest_remaining_branch = current_branch(cli_ctxt)
 
         if cli_ctxt.opt_start_from == "root":
-            dest = root_branch(current_branch(cli_ctxt), if_unmanaged=self.PICK_FIRST_ROOT)
+            dest = root_branch(machete_context, current_branch(cli_ctxt), if_unmanaged=self.PICK_FIRST_ROOT)
             print_new_line(False)
             print(f"Checking out the root branch ({bold(dest)})")
             go(cli_ctxt, dest)
@@ -1433,13 +1433,13 @@ def down(machete_context: MacheteContext, b: str, pick_mode: bool) -> str:
 
 
 def first_branch(machete_context: MacheteContext, b: str) -> str:
-    root = root_branch(b, if_unmanaged=machete_context.PICK_FIRST_ROOT)
+    root = root_branch(machete_context, b, if_unmanaged=machete_context.PICK_FIRST_ROOT)
     root_dbs = machete_context.down_branches.get(root)
     return root_dbs[0] if root_dbs else root
 
 
 def last_branch(machete_context: MacheteContext, b: str) -> str:
-    d = root_branch(b, if_unmanaged=machete_context.PICK_LAST_ROOT)
+    d = root_branch(machete_context, b, if_unmanaged=machete_context.PICK_LAST_ROOT)
     while machete_context.down_branches.get(d):
         d = machete_context.down_branches[d][-1]
     return d
@@ -1503,8 +1503,7 @@ def up(machete_context: MacheteContext, cli_ctxt: CommandLineContext, b: str, pr
                     f"branch `{b}` not found in the tree of branch dependencies; the upstream has been inferred to `{u}`")
                 return u
         else:
-            raise MacheteException(
-                    f"Branch `{b}` not found in the tree of branch dependencies and its upstream could not be inferred")
+            raise MacheteException(f"Branch `{b}` not found in the tree of branch dependencies and its upstream could not be inferred")
 
 
 # Allowed parameter values for show/go command
@@ -3848,4 +3847,4 @@ def launch(orig_args: List[str]) -> None:
 
 
 if __name__ == "__main__":
-    launch(['discover'])#main()
+    main()
