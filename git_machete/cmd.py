@@ -349,10 +349,10 @@ class MacheteContext:
 
     cli_ctxt: CommandLineContext = CommandLineContext()
     DISCOVER_DEFAULT_FRESH_BRANCH_COUNT = 10
+    PICK_FIRST_ROOT: int = 0
+    PICK_LAST_ROOT: int = -1
 
     def __init__(self) -> None:
-        self.PICK_FIRST_ROOT: int = 0
-        self.PICK_LAST_ROOT: int = -1
         self.managed_branches: List[str] = []
         self.down_branches: Dict[str, List[str]] = {}  # TODO (#110): default dict with []
         self.up_branch: Dict[str, str] = {}  # TODO (#110): default dict with None
@@ -873,7 +873,7 @@ class MacheteContext:
         initial_branch = nearest_remaining_branch = current_branch(cli_ctxt)
 
         if cli_ctxt.opt_start_from == "root":
-            dest = root_branch(self, current_branch(cli_ctxt), if_unmanaged=self.PICK_FIRST_ROOT)
+            dest = root_branch(self, current_branch(cli_ctxt), if_unmanaged=MacheteContext.PICK_FIRST_ROOT)
             print_new_line(False)
             print(f"Checking out the root branch ({bold(dest)})")
             go(cli_ctxt, dest)
@@ -1414,7 +1414,7 @@ def parse_direction(machete_context: MacheteContext, cli_ctxt: CommandLineContex
     elif param in ("p", "prev"):
         return prev_branch(machete_context, b)
     elif param in ("r", "root"):
-        return root_branch(machete_context, b, if_unmanaged=machete_context.PICK_FIRST_ROOT)
+        return root_branch(machete_context, b, if_unmanaged=MacheteContext.PICK_FIRST_ROOT)
     elif param in ("u", "up"):
         return up(machete_context, cli_ctxt, b, prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)
     else:
@@ -1435,13 +1435,13 @@ def down(machete_context: MacheteContext, b: str, pick_mode: bool) -> str:
 
 
 def first_branch(machete_context: MacheteContext, b: str) -> str:
-    root = root_branch(machete_context, b, if_unmanaged=machete_context.PICK_FIRST_ROOT)
+    root = root_branch(machete_context, b, if_unmanaged=MacheteContext.PICK_FIRST_ROOT)
     root_dbs = machete_context.down_branches.get(root)
     return root_dbs[0] if root_dbs else root
 
 
 def last_branch(machete_context: MacheteContext, b: str) -> str:
-    d = root_branch(machete_context, b, if_unmanaged=machete_context.PICK_LAST_ROOT)
+    d = root_branch(machete_context, b, if_unmanaged=MacheteContext.PICK_LAST_ROOT)
     while machete_context.down_branches.get(d):
         d = machete_context.down_branches[d][-1]
     return d
@@ -1466,10 +1466,10 @@ def prev_branch(machete_context: MacheteContext, b: str) -> str:
 def root_branch(machete_context: MacheteContext, b: str, if_unmanaged: int) -> str:
     if b not in machete_context.managed_branches:
         if machete_context.roots:
-            if if_unmanaged == machete_context.PICK_FIRST_ROOT:
+            if if_unmanaged == MacheteContext.PICK_FIRST_ROOT:
                 warn(f"{b} is not a managed branch, assuming {machete_context.roots[0]} (the first root) instead as root")
                 return machete_context.roots[0]
-            else:  # if_unmanaged == self.PICK_LAST_ROOT
+            else:  # if_unmanaged == MacheteContext.PICK_LAST_ROOT
                 warn(f"{b} is not a managed branch, assuming {machete_context.roots[-1]} (the last root) instead as root")
                 return machete_context.roots[-1]
         else:
