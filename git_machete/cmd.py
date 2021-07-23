@@ -556,7 +556,7 @@ class MacheteContext:
 
         self.save_definition_file()
 
-    def annotate(self, b: str, words: List[str]) -> None: # this one maybe to take out
+    def annotate(self, b: str, words: List[str]) -> None:  # this one maybe to take out
 
         if b in self.annotations and words == ['']:
             del self.annotations[b]
@@ -871,7 +871,7 @@ class MacheteContext:
         initial_branch = nearest_remaining_branch = current_branch(cli_ctxt)
 
         if cli_ctxt.opt_start_from == "root":
-            dest = root_branch(machete_context, current_branch(cli_ctxt), if_unmanaged=self.PICK_FIRST_ROOT)
+            dest = root_branch(self, current_branch(cli_ctxt), if_unmanaged=self.PICK_FIRST_ROOT)
             print_new_line(False)
             print(f"Checking out the root branch ({bold(dest)})")
             go(cli_ctxt, dest)
