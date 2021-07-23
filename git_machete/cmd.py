@@ -351,6 +351,7 @@ class MacheteClient:
     DISCOVER_DEFAULT_FRESH_BRANCH_COUNT = 10
     PICK_FIRST_ROOT: int = 0
     PICK_LAST_ROOT: int = -1
+    definition_file_path: str = ""
 
     def __init__(self) -> None:
         self.managed_branches: List[str] = []
@@ -371,10 +372,10 @@ class MacheteClient:
 
     def raise_no_branches_error(self) -> None:
         raise MacheteException(
-            f"No branches listed in {definition_file_path}; use `git machete discover` or `git machete edit`, or edit {definition_file_path} manually.")
+            f"No branches listed in {MacheteClient.definition_file_path}; use `git machete discover` or `git machete edit`, or edit {MacheteClient.definition_file_path} manually.")
 
     def read_definition_file(self, cli_ctxt: CommandLineContext, verify_branches: bool = True) -> None:
-        with open(definition_file_path) as f:
+        with open(MacheteClient.definition_file_path) as f:
             lines: List[str] = [line.rstrip() for line in f.readlines() if not line.isspace()]
 
         at_depth = {}
@@ -394,7 +395,7 @@ class MacheteClient:
                 self.annotations[b] = b_a[1]
             if b in self.managed_branches:
                 raise MacheteException(
-                    f"{definition_file_path}, line {idx + 1}: branch `{b}` re-appears in the tree definition. {hint}")
+                    f"{MacheteClient.definition_file_path}, line {idx + 1}: branch `{b}` re-appears in the tree definition. {hint}")
             if verify_branches and b not in local_branches(cli_ctxt):
                 invalid_branches += [b]
             self.managed_branches += [b]
@@ -406,13 +407,13 @@ class MacheteClient:
                     pfx_expanded: str = "".join(mapping[c] for c in pfx)
                     indent_expanded: str = "".join(mapping[c] for c in self.indent)
                     raise MacheteException(
-                        f"{definition_file_path}, line {idx + 1}: invalid indent `{pfx_expanded}`, expected a multiply of `{indent_expanded}`. {hint}")
+                        f"{MacheteClient.definition_file_path}, line {idx + 1}: invalid indent `{pfx_expanded}`, expected a multiply of `{indent_expanded}`. {hint}")
             else:
                 depth = 0
 
             if depth > last_depth + 1:
                 raise MacheteException(
-                    f"{definition_file_path}, line {idx + 1}: too much indent (level {depth}, expected at most {last_depth + 1}) for the branch `{b}`. {hint}")
+                    f"{MacheteClient.definition_file_path}, line {idx + 1}: too much indent (level {depth}, expected at most {last_depth + 1}) for the branch `{b}`. {hint}")
             last_depth = depth
 
             at_depth[depth] = b
@@ -487,10 +488,10 @@ class MacheteClient:
 
     @staticmethod
     def back_up_definition_file() -> None:
-        shutil.copyfile(definition_file_path, definition_file_path + "~")
+        shutil.copyfile(MacheteClient.definition_file_path, MacheteClient.definition_file_path + "~")
 
     def save_definition_file(self) -> None:
-        with open(definition_file_path, "w") as f:
+        with open(MacheteClient.definition_file_path, "w") as f:
             f.write("\n".join(self.render_tree()) + "\n")
 
     def add(self, cli_ctxt: CommandLineContext, b: str) -> None:
@@ -688,10 +689,10 @@ class MacheteClient:
         print(bold("Discovered tree of branch dependencies:\n"))
         self.status(cli_ctxt, warn_on_yellow_edges=False)
         print("")
-        do_backup = os.path.isfile(definition_file_path)
-        backup_msg = f"\nThe existing definition file will be backed up as {definition_file_path}~" if do_backup else ""
-        msg = f"Save the above tree to {definition_file_path}?{backup_msg}" + pretty_choices('y', 'e[dit]', 'N')
-        opt_yes_msg = f"Saving the above tree to {definition_file_path}... {backup_msg}"
+        do_backup = os.path.isfile(MacheteClient.definition_file_path)
+        backup_msg = f"\nThe existing definition file will be backed up as {MacheteClient.definition_file_path}~" if do_backup else ""
+        msg = f"Save the above tree to {MacheteClient.definition_file_path}?{backup_msg}" + pretty_choices('y', 'e[dit]', 'N')
+        opt_yes_msg = f"Saving the above tree to {MacheteClient.definition_file_path}... {backup_msg}"
         ans = ask_if(cli_ctxt, msg, opt_yes_msg)
         if ans in ('y', 'yes'):
             if do_backup:
@@ -1267,7 +1268,7 @@ class MacheteClient:
 
     @staticmethod
     def edit(cli_ctxt: CommandLineContext) -> int:
-        return run_cmd(cli_ctxt, get_default_editor(cli_ctxt), definition_file_path)
+        return run_cmd(cli_ctxt, get_default_editor(cli_ctxt), MacheteClient.definition_file_path)
 
     def fork_point_and_containing_branch_defs(self, cli_ctxt: CommandLineContext, b: str, use_overrides: bool) -> Tuple[Optional[str], List[BRANCH_DEF]]:
         u = self.up_branch.get(b)
@@ -1585,7 +1586,7 @@ def get_default_editor(cli_ctxt: CommandLineContext) -> str:
 
     # This case is extremely unlikely on a modern Unix-like system.
     raise MacheteException(
-        f"Cannot determine editor. Set `{git_machete_editor_var}` environment variable or edit {definition_file_path} directly.")
+        f"Cannot determine editor. Set `{git_machete_editor_var}` environment variable or edit {MacheteClient.definition_file_path} directly.")
 
 
 git_version = None
@@ -3464,9 +3465,6 @@ def main() -> None:
     launch(sys.argv[1:])
 
 
-definition_file_path: str = ""
-
-
 def launch(orig_args: List[str]) -> None:
 
     cli_ctxt = CommandLineContext()
@@ -3616,7 +3614,6 @@ def launch(orig_args: List[str]) -> None:
         else:
             return in_args[0]
 
-    global definition_file_path
     try:
         cmd = None
         cmd_and_args = parse_options(orig_args, gnu=False)
@@ -3627,18 +3624,18 @@ def launch(orig_args: List[str]) -> None:
         args = cmd_and_args[1:]
 
         if cmd != "help":
-            definition_file_path = get_git_subpath(cli_ctxt, "machete")
+            MacheteClient.definition_file_path = get_git_subpath(cli_ctxt, "machete")
             if cmd != "discover":
-                if not os.path.exists(definition_file_path):
+                if not os.path.exists(MacheteClient.definition_file_path):
                     # We're opening in "append" and not "write" mode to avoid a race condition:
                     # if other process writes to the file between we check the result of `os.path.exists` and call `open`,
                     # then open(..., "w") would result in us clearing up the file contents, while open(..., "a") has no effect.
-                    with open(definition_file_path, "a"):
+                    with open(MacheteClient.definition_file_path, "a"):
                         pass
-                elif os.path.isdir(definition_file_path):
+                elif os.path.isdir(MacheteClient.definition_file_path):
                     # Extremely unlikely case, basically checking if anybody tampered with the repository.
                     raise MacheteException(
-                        f"{definition_file_path} is a directory rather than a regular file, aborting")
+                        f"{MacheteClient.definition_file_path} is a directory rather than a regular file, aborting")
 
         if cmd == "add":
             param = check_optional_param(parse_options(args, "o:Ry", ["onto=", "as-root", "yes"]))
@@ -3683,7 +3680,7 @@ def launch(orig_args: List[str]) -> None:
         elif cmd == "file":
             expect_no_param(parse_options(args))
             # No need to read definition file.
-            print(os.path.abspath(definition_file_path))
+            print(os.path.abspath(MacheteClient.definition_file_path))
         elif cmd == "fork-point":
             long_options = ["inferred", "override-to=", "override-to-inferred", "override-to-parent", "unset-override"]
             param = check_optional_param(parse_options(args, "", long_options))
