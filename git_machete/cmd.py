@@ -614,13 +614,15 @@ class MacheteContext:
     def update(self, cli_ctxt: CommandLineContext) -> None:
         cb = current_branch(cli_ctxt)
         if cli_ctxt.opt_merge:
-            with_branch = up(cli_ctxt,
+            with_branch = up(self,
+                             cli_ctxt,
                              cb,
                              prompt_if_inferred_msg="Branch `%s` not found in the tree of branch dependencies. Merge with the inferred upstream `%s`?" + pretty_choices('y', 'N'),
                              prompt_if_inferred_yes_opt_msg="Branch `%s` not found in the tree of branch dependencies. Merging with the inferred upstream `%s`...")
             merge(cli_ctxt, with_branch, cb)
         else:
-            onto_branch = up(cli_ctxt,
+            onto_branch = up(self,
+                             cli_ctxt,
                              cb,
                              prompt_if_inferred_msg="Branch `%s` not found in the tree of branch dependencies. Rebase onto the inferred upstream `%s`?" + pretty_choices('y', 'N'),
                              prompt_if_inferred_yes_opt_msg="Branch `%s` not found in the tree of branch dependencies. Rebasing onto the inferred upstream `%s`...")
