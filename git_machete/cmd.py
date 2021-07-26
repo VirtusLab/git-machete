@@ -572,14 +572,12 @@ class MacheteClient:
         cb = current_branch(self.cli_ctxt)
         if self.cli_ctxt.opt_merge:
             with_branch = up(self,
-                             self.cli_ctxt,
                              cb,
                              prompt_if_inferred_msg="Branch `%s` not found in the tree of branch dependencies. Merge with the inferred upstream `%s`?" + pretty_choices('y', 'N'),
                              prompt_if_inferred_yes_opt_msg="Branch `%s` not found in the tree of branch dependencies. Merging with the inferred upstream `%s`...")
             merge(self.cli_ctxt, with_branch, cb)
         else:
             onto_branch = up(self,
-                             self.cli_ctxt,
                              cb,
                              prompt_if_inferred_msg="Branch `%s` not found in the tree of branch dependencies. Rebase onto the inferred upstream `%s`?" + pretty_choices('y', 'N'),
                              prompt_if_inferred_yes_opt_msg="Branch `%s` not found in the tree of branch dependencies. Rebasing onto the inferred upstream `%s`...")
@@ -762,7 +760,7 @@ class MacheteClient:
 
         def connected_with_green_edge(bd: str) -> bool:
             return bool(
-                not is_merged_to_upstream(self, self.cli_ctxt, bd) and
+                not is_merged_to_upstream(self, bd) and
                 is_ancestor_or_equal(self.cli_ctxt, b, bd) and
                 (get_overridden_fork_point(self.cli_ctxt, bd) or commit_sha_by_revision(self.cli_ctxt, b) == self.fork_point(bd, use_overrides=False)))
 
@@ -847,7 +845,7 @@ class MacheteClient:
         for b in itertools.dropwhile(lambda x: x != cb, self.managed_branches):
             u = self.up_branch.get(b)
 
-            needs_slide_out: bool = is_merged_to_upstream(self, self.cli_ctxt, b)
+            needs_slide_out: bool = is_merged_to_upstream(self, b)
             s, remote = get_strict_remote_sync_status(self.cli_ctxt, b)
             statuses_to_sync = (UNTRACKED,
                                 AHEAD_OF_REMOTE,
@@ -1268,7 +1266,7 @@ class MacheteClient:
     def fork_point_and_containing_branch_defs(self, b: str, use_overrides: bool) -> Tuple[Optional[str], List[BRANCH_DEF]]:
         u = self.up_branch.get(b)
 
-        if is_merged_to_upstream(self, self.cli_ctxt, b):
+        if is_merged_to_upstream(self, b):
             fp_sha = commit_sha_by_revision(self.cli_ctxt, b)
             debug(self.cli_ctxt, f"fork_point_and_containing_branch_defs({b})",
                   f"{b} is merged to {u}; skipping inference, using tip of {b} ({fp_sha}) as fork point")
@@ -1396,16 +1394,16 @@ def sync_annotations_to_github_prs(machete_client: MacheteClient) -> None:
     machete_client.save_definition_file()
 
 
-def is_merged_to_upstream(machete_client: MacheteClient, cli_ctxt: CommandLineContext, b: str) -> bool:
+def is_merged_to_upstream(machete_client: MacheteClient, b: str) -> bool:
     if b not in machete_client.up_branch:
         return False
-    return is_merged_to(cli_ctxt, b, machete_client.up_branch[b])
+    return is_merged_to(machete_client.cli_ctxt, b, machete_client.up_branch[b])
 
 
 # Parse and evaluate direction against current branch for show/go commands
-def parse_direction(machete_client: MacheteClient, cli_ctxt: CommandLineContext, param: str, b: str, allow_current: bool, down_pick_mode: bool) -> str:
+def parse_direction(machete_client: MacheteClient, param: str, b: str, allow_current: bool, down_pick_mode: bool) -> str:
     if param in ("c", "current") and allow_current:
-        return current_branch(cli_ctxt)  # throws in case of detached HEAD, as in the spec
+        return current_branch(machete_client.cli_ctxt)  # throws in case of detached HEAD, as in the spec
     elif param in ("d", "down"):
         return down(machete_client, b, pick_mode=down_pick_mode)
     elif param in ("f", "first"):
@@ -1419,7 +1417,7 @@ def parse_direction(machete_client: MacheteClient, cli_ctxt: CommandLineContext,
     elif param in ("r", "root"):
         return root_branch(machete_client, b, if_unmanaged=MacheteClient.PICK_FIRST_ROOT)
     elif param in ("u", "up"):
-        return up(machete_client, cli_ctxt, b, prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)
+        return up(machete_client, b, prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)
     else:
         raise MacheteException(f"Invalid direction: `{param}` expected: {allowed_directions(allow_current)}")
 
@@ -1484,7 +1482,7 @@ def root_branch(machete_client: MacheteClient, b: str, if_unmanaged: int) -> str
     return b
 
 
-def up(machete_client: MacheteClient, cli_ctxt: CommandLineContext, b: str, prompt_if_inferred_msg: Optional[str], prompt_if_inferred_yes_opt_msg: Optional[str]) -> str:
+def up(machete_client: MacheteClient, b: str, prompt_if_inferred_msg: Optional[str], prompt_if_inferred_yes_opt_msg: Optional[str]) -> str:
     if b in machete_client.managed_branches:
         u = machete_client.up_branch.get(b)
         if u:
@@ -1492,11 +1490,11 @@ def up(machete_client: MacheteClient, cli_ctxt: CommandLineContext, b: str, prom
         else:
             raise MacheteException(f"Branch `{b}` has no upstream branch")
     else:
-        u = infer_upstream(cli_ctxt, b)
+        u = infer_upstream(machete_client.cli_ctxt, b)
         if u:
             if prompt_if_inferred_msg:
                 if ask_if(
-                        cli_ctxt,
+                        machete_client.cli_ctxt,
                         prompt_if_inferred_msg % (b, u),
                         prompt_if_inferred_yes_opt_msg % (b, u)
                 ) in ('y', 'yes'):
@@ -3705,7 +3703,7 @@ def launch(orig_args: List[str]) -> None:
             machete_client.read_definition_file()
             expect_no_operation_in_progress(cli_ctxt)
             cb = current_branch(cli_ctxt)
-            dest = parse_direction(machete_client, cli_ctxt, param, cb, allow_current=False, down_pick_mode=True)
+            dest = parse_direction(machete_client, param, cb, allow_current=False, down_pick_mode=True)
             if dest != cb:
                 go(cli_ctxt, dest)
         elif cmd == "help":
@@ -3779,7 +3777,7 @@ def launch(orig_args: List[str]) -> None:
             if param == "current" and branch is not None:
                 raise MacheteException(f'`show current` with a branch (`{branch}`) does not make sense')
             machete_client.read_definition_file(verify_branches=False)
-            print(parse_direction(machete_client, cli_ctxt, param, branch or current_branch(cli_ctxt), allow_current=True, down_pick_mode=False))
+            print(parse_direction(machete_client, param, branch or current_branch(cli_ctxt), allow_current=True, down_pick_mode=False))
         elif cmd == "slide-out":
             params = parse_options(args, "d:Mn", ["down-fork-point=", "merge", "no-edit-merge", "no-interactive-rebase"])
             machete_client.read_definition_file()
