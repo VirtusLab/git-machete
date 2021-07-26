@@ -182,18 +182,18 @@ def pretty_choices(*choices: str) -> str:
 
 
 def pick(choices: List[str], name: str, apply_fmt: bool = True) -> str:
-    xs: str = "".join(f"[{idx + 1}] {x}\n" for idx, x in enumerate(choices))
+    xs: str = "".join(f"[{index + 1}] {x}\n" for index, x in enumerate(choices))
     msg: str = xs + f"Specify {name} or hit <return> to skip: "
     try:
         ans: str = input(fmt(msg) if apply_fmt else msg)
         if not ans:
             sys.exit(0)
-        idx: int = int(ans) - 1
+        index: int = int(ans) - 1
     except ValueError:
         sys.exit(1)
-    if idx not in range(len(choices)):
-        raise MacheteException(f"Invalid index: {idx + 1}")
-    return choices[idx]
+    if index not in range(len(choices)):
+        raise MacheteException(f"Invalid index: {index + 1}")
+    return choices[index]
 
 
 def debug(cli_ctxt: CommandLineContext, hdr: str, msg: str) -> None:
@@ -384,36 +384,36 @@ class MacheteClient:
         hint = "Edit the definition file manually with `git machete edit`"
 
         invalid_branches: List[str] = []
-        for idx, l in enumerate(lines):
-            pfx = "".join(itertools.takewhile(str.isspace, l))
-            if pfx and not self.indent:
-                self.indent = pfx
+        for index, line in enumerate(lines):
+            prefix = "".join(itertools.takewhile(str.isspace, line))
+            if prefix and not self.indent:
+                self.indent = prefix
 
-            b_a: List[str] = l.strip().split(" ", 1)
+            b_a: List[str] = line.strip().split(" ", 1)
             b = b_a[0]
             if len(b_a) > 1:
                 self.annotations[b] = b_a[1]
             if b in self.managed_branches:
                 raise MacheteException(
-                    f"{self.definition_file_path}, line {idx + 1}: branch `{b}` re-appears in the tree definition. {hint}")
+                    f"{self.definition_file_path}, line {index + 1}: branch `{b}` re-appears in the tree definition. {hint}")
             if verify_branches and b not in local_branches(self.cli_ctxt):
                 invalid_branches += [b]
             self.managed_branches += [b]
 
-            if pfx:
-                depth: int = len(pfx) // len(self.indent)
-                if pfx != self.indent * depth:
+            if prefix:
+                depth: int = len(prefix) // len(self.indent)
+                if prefix != self.indent * depth:
                     mapping: Dict[str, str] = {" ": "<SPACE>", "\t": "<TAB>"}
-                    pfx_expanded: str = "".join(mapping[c] for c in pfx)
+                    prefix_expanded: str = "".join(mapping[c] for c in prefix)
                     indent_expanded: str = "".join(mapping[c] for c in self.indent)
                     raise MacheteException(
-                        f"{self.definition_file_path}, line {idx + 1}: invalid indent `{pfx_expanded}`, expected a multiply of `{indent_expanded}`. {hint}")
+                        f"{self.definition_file_path}, line {index + 1}: invalid indent `{prefix_expanded}`, expected a multiply of `{indent_expanded}`. {hint}")
             else:
                 depth = 0
 
             if depth > last_depth + 1:
                 raise MacheteException(
-                    f"{self.definition_file_path}, line {idx + 1}: too much indent (level {depth}, expected at most {last_depth + 1}) for the branch `{b}`. {hint}")
+                    f"{self.definition_file_path}, line {index + 1}: too much indent (level {depth}, expected at most {last_depth + 1}) for the branch `{b}`. {hint}")
             last_depth = depth
 
             at_depth[depth] = b
@@ -1111,14 +1111,14 @@ class MacheteClient:
 
         def print_line_prefix(b_: str, suffix: str) -> None:
             out.write("  ")
-            for p in pfx[:-1]:
+            for p in prefix[:-1]:
                 if not p:
                     out.write("  ")
                 else:
                     out.write(colored(f"{vertical_bar()} ", edge_color[p]))
             out.write(colored(suffix, edge_color[b_]))
 
-        for b, pfx in dfs_res:
+        for b, prefix in dfs_res:
             if b in self.up_branch:
                 print_line_prefix(b, f"{vertical_bar()} \n")
                 if self.cli_ctxt.opt_list_commits:
@@ -1450,18 +1450,18 @@ def last_branch(machete_client: MacheteClient, b: str) -> str:
 
 def next_branch(machete_client: MacheteClient, b: str) -> str:
     machete_client.expect_in_managed_branches(b)
-    idx: int = machete_client.managed_branches.index(b) + 1
-    if idx == len(machete_client.managed_branches):
+    index: int = machete_client.managed_branches.index(b) + 1
+    if index == len(machete_client.managed_branches):
         raise MacheteException(f"Branch `{b}` has no successor")
-    return machete_client.managed_branches[idx]
+    return machete_client.managed_branches[index]
 
 
 def prev_branch(machete_client: MacheteClient, b: str) -> str:
     machete_client.expect_in_managed_branches(b)
-    idx: int = machete_client.managed_branches.index(b) - 1
-    if idx == -1:
+    index: int = machete_client.managed_branches.index(b) - 1
+    if index == -1:
         raise MacheteException(f"Branch `{b}` has no predecessor")
-    return machete_client.managed_branches[idx]
+    return machete_client.managed_branches[index]
 
 
 def root_branch(machete_client: MacheteClient, b: str, if_unmanaged: int) -> str:
@@ -2642,7 +2642,7 @@ def flush_caches() -> None:
 
 def pick_remote(cli_ctxt: CommandLineContext, b: str) -> None:
     rems = remotes(cli_ctxt)
-    print("\n".join(f"[{idx + 1}] {r}" for idx, r in enumerate(rems)))
+    print("\n".join(f"[{index + 1}] {r}" for index, r in enumerate(rems)))
     msg = f"Select number 1..{len(rems)} to specify the destination remote " \
           "repository, or 'n' to skip this branch, or " \
           "'q' to quit the traverse: "
@@ -2650,10 +2650,10 @@ def pick_remote(cli_ctxt: CommandLineContext, b: str) -> None:
     if ans in ('q', 'quit'):
         raise StopTraversal
     try:
-        idx = int(ans) - 1
-        if idx not in range(len(rems)):
-            raise MacheteException(f"Invalid index: {idx + 1}")
-        handle_untracked_branch(cli_ctxt, rems[idx], b)
+        index = int(ans) - 1
+        if index not in range(len(rems)):
+            raise MacheteException(f"Invalid index: {index + 1}")
+        handle_untracked_branch(cli_ctxt, rems[index], b)
     except ValueError:
         pass
 
