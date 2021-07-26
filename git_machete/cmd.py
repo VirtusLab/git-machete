@@ -347,17 +347,13 @@ empty_line_status: Optional[bool] = None
 
 class MacheteClient:
 
-    cli_ctxt: CommandLineContext = CommandLineContext()
     DISCOVER_DEFAULT_FRESH_BRANCH_COUNT = 10
     PICK_FIRST_ROOT: int = 0
     PICK_LAST_ROOT: int = -1
     definition_file_path: str = ""
 
-    def __init__(self, cli_ctxt: CommandLineContext = None) -> None:
-        if cli_ctxt is None:
-            self.cli_ctxt = CommandLineContext()
-        else:
-            self.cli_ctxt = cli_ctxt
+    def __init__(self, cli_ctxt: CommandLineContext) -> None:
+        self.cli_ctxt = cli_ctxt
         self.managed_branches: List[str] = []
         self.down_branches: Dict[str, List[str]] = {}  # TODO (#110): default dict with []
         self.up_branch: Dict[str, str] = {}  # TODO (#110): default dict with None
