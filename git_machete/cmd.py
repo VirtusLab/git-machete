@@ -344,7 +344,6 @@ branch_defs_by_sha_in_reflog: Optional[Dict[str, Optional[List[Tuple[str, str]]]
 BRANCH_DEF = Tuple[str, str]
 
 
-
 class MacheteClient:
 
     DISCOVER_DEFAULT_FRESH_BRANCH_COUNT = 10
@@ -1341,22 +1340,22 @@ class MacheteClient:
         run_git(self.cli_ctxt, "log", "^" + self.fork_point(branch, use_overrides=True), f"refs/heads/{branch}")
 
 
-def slidable(machete_context: MacheteClient) -> List[str]:
-    return [b for b in machete_context.managed_branches if b in machete_context.up_branch]
+def slidable(machete_client: MacheteClient) -> List[str]:
+    return [b for b in machete_client.managed_branches if b in machete_client.up_branch]
 
 
-def slidable_after(machete_context: MacheteClient, b: str) -> List[str]:
-    if b in machete_context.up_branch:
-        dbs = machete_context.down_branches.get(b)
+def slidable_after(machete_client: MacheteClient, b: str) -> List[str]:
+    if b in machete_client.up_branch:
+        dbs = machete_client.down_branches.get(b)
         if dbs and len(dbs) == 1:
             return dbs
     return []
 
 
-def sync_annotations_to_github_prs(machete_context: MacheteClient) -> None:
+def sync_annotations_to_github_prs(machete_client: MacheteClient) -> None:
     from git_machete.github import derive_current_user_login, derive_pull_requests, GitHubPullRequest, parse_github_remote_url
 
-    url_for_remote: Dict[str, str] = {r: get_url_of_remote(machete_context.cli_ctxt, r) for r in remotes(machete_context.cli_ctxt)}
+    url_for_remote: Dict[str, str] = {r: get_url_of_remote(machete_client.cli_ctxt, r) for r in remotes(machete_client.cli_ctxt)}
     if not url_for_remote:
         raise MacheteException(fmt('No remotes defined for this repository (see `git remote`)'))
 
@@ -1376,58 +1375,58 @@ def sync_annotations_to_github_prs(machete_context: MacheteClient) -> None:
             raise MacheteException(f'Multiple non-origin remotes correspond to GitHub in this repository: '
                                    f'{", ".join(org_name_for_github_remote.keys())}, aborting')
     current_user: Optional[str] = derive_current_user_login()
-    debug(machete_context.cli_ctxt, 'sync_annotations_to_github_prs()', 'Current GitHub user is ' + (current_user or '<none>'))
+    debug(machete_client.cli_ctxt, 'sync_annotations_to_github_prs()', 'Current GitHub user is ' + (current_user or '<none>'))
     pr: GitHubPullRequest
     for pr in derive_pull_requests(org, repo):
-        if pr.head in machete_context.managed_branches:
-            debug(machete_context.cli_ctxt, 'sync_annotations_to_github_prs()', f'{pr} corresponds to a managed branch')
+        if pr.head in machete_client.managed_branches:
+            debug(machete_client.cli_ctxt, 'sync_annotations_to_github_prs()', f'{pr} corresponds to a managed branch')
             anno: str = f'PR #{pr.number}'
             if pr.user != current_user:
                 anno += f' ({pr.user})'
-            u: Optional[str] = machete_context.up_branch.get(pr.head)
+            u: Optional[str] = machete_client.up_branch.get(pr.head)
             if pr.base != u:
                 warn(f'branch `{pr.head}` has a different base in PR #{pr.number} (`{pr.base}`) '
                      f'than in machete file (`{u or "<none, is a root>"}`)')
                 anno += f" WRONG PR BASE or MACHETE PARENT? PR has '{pr.base}'"
-            if machete_context.annotations.get(pr.head) != anno:
+            if machete_client.annotations.get(pr.head) != anno:
                 print(fmt(f'Annotating <b>{pr.head}</b> as `{anno}`'))
-                machete_context.annotations[pr.head] = anno
+                machete_client.annotations[pr.head] = anno
         else:
-            debug(machete_context.cli_ctxt, 'sync_annotations_to_github_prs()', f'{pr} does NOT correspond to a managed branch')
-    machete_context.save_definition_file()
+            debug(machete_client.cli_ctxt, 'sync_annotations_to_github_prs()', f'{pr} does NOT correspond to a managed branch')
+    machete_client.save_definition_file()
 
 
-def is_merged_to_upstream(machete_context: MacheteClient, cli_ctxt: CommandLineContext, b: str) -> bool:
-    if b not in machete_context.up_branch:
+def is_merged_to_upstream(machete_client: MacheteClient, cli_ctxt: CommandLineContext, b: str) -> bool:
+    if b not in machete_client.up_branch:
         return False
-    return is_merged_to(cli_ctxt, b, machete_context.up_branch[b])
+    return is_merged_to(cli_ctxt, b, machete_client.up_branch[b])
 
 
 # Parse and evaluate direction against current branch for show/go commands
-def parse_direction(machete_context: MacheteClient, cli_ctxt: CommandLineContext, param: str, b: str, allow_current: bool, down_pick_mode: bool) -> str:
+def parse_direction(machete_client: MacheteClient, cli_ctxt: CommandLineContext, param: str, b: str, allow_current: bool, down_pick_mode: bool) -> str:
     if param in ("c", "current") and allow_current:
         return current_branch(cli_ctxt)  # throws in case of detached HEAD, as in the spec
     elif param in ("d", "down"):
-        return down(machete_context, b, pick_mode=down_pick_mode)
+        return down(machete_client, b, pick_mode=down_pick_mode)
     elif param in ("f", "first"):
-        return first_branch(machete_context, b)
+        return first_branch(machete_client, b)
     elif param in ("l", "last"):
-        return last_branch(machete_context, b)
+        return last_branch(machete_client, b)
     elif param in ("n", "next"):
-        return next_branch(machete_context, b)
+        return next_branch(machete_client, b)
     elif param in ("p", "prev"):
-        return prev_branch(machete_context, b)
+        return prev_branch(machete_client, b)
     elif param in ("r", "root"):
-        return root_branch(machete_context, b, if_unmanaged=MacheteClient.PICK_FIRST_ROOT)
+        return root_branch(machete_client, b, if_unmanaged=MacheteClient.PICK_FIRST_ROOT)
     elif param in ("u", "up"):
-        return up(machete_context, cli_ctxt, b, prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)
+        return up(machete_client, cli_ctxt, b, prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)
     else:
         raise MacheteException(f"Invalid direction: `{param}` expected: {allowed_directions(allow_current)}")
 
 
-def down(machete_context: MacheteClient, b: str, pick_mode: bool) -> str:
-    machete_context.expect_in_managed_branches(b)
-    dbs = machete_context.down_branches.get(b)
+def down(machete_client: MacheteClient, b: str, pick_mode: bool) -> str:
+    machete_client.expect_in_managed_branches(b)
+    dbs = machete_client.down_branches.get(b)
     if not dbs:
         raise MacheteException(f"Branch `{b}` has no downstream branch")
     elif len(dbs) == 1:
@@ -1438,56 +1437,56 @@ def down(machete_context: MacheteClient, b: str, pick_mode: bool) -> str:
         return "\n".join(dbs)
 
 
-def first_branch(machete_context: MacheteClient, b: str) -> str:
-    root = root_branch(machete_context, b, if_unmanaged=MacheteClient.PICK_FIRST_ROOT)
-    root_dbs = machete_context.down_branches.get(root)
+def first_branch(machete_client: MacheteClient, b: str) -> str:
+    root = root_branch(machete_client, b, if_unmanaged=MacheteClient.PICK_FIRST_ROOT)
+    root_dbs = machete_client.down_branches.get(root)
     return root_dbs[0] if root_dbs else root
 
 
-def last_branch(machete_context: MacheteClient, b: str) -> str:
-    d = root_branch(machete_context, b, if_unmanaged=MacheteClient.PICK_LAST_ROOT)
-    while machete_context.down_branches.get(d):
-        d = machete_context.down_branches[d][-1]
+def last_branch(machete_client: MacheteClient, b: str) -> str:
+    d = root_branch(machete_client, b, if_unmanaged=MacheteClient.PICK_LAST_ROOT)
+    while machete_client.down_branches.get(d):
+        d = machete_client.down_branches[d][-1]
     return d
 
 
-def next_branch(machete_context: MacheteClient, b: str) -> str:
-    machete_context.expect_in_managed_branches(b)
-    idx: int = machete_context.managed_branches.index(b) + 1
-    if idx == len(machete_context.managed_branches):
+def next_branch(machete_client: MacheteClient, b: str) -> str:
+    machete_client.expect_in_managed_branches(b)
+    idx: int = machete_client.managed_branches.index(b) + 1
+    if idx == len(machete_client.managed_branches):
         raise MacheteException(f"Branch `{b}` has no successor")
-    return machete_context.managed_branches[idx]
+    return machete_client.managed_branches[idx]
 
 
-def prev_branch(machete_context: MacheteClient, b: str) -> str:
-    machete_context.expect_in_managed_branches(b)
-    idx: int = machete_context.managed_branches.index(b) - 1
+def prev_branch(machete_client: MacheteClient, b: str) -> str:
+    machete_client.expect_in_managed_branches(b)
+    idx: int = machete_client.managed_branches.index(b) - 1
     if idx == -1:
         raise MacheteException(f"Branch `{b}` has no predecessor")
-    return machete_context.managed_branches[idx]
+    return machete_client.managed_branches[idx]
 
 
-def root_branch(machete_context: MacheteClient, b: str, if_unmanaged: int) -> str:
-    if b not in machete_context.managed_branches:
-        if machete_context.roots:
+def root_branch(machete_client: MacheteClient, b: str, if_unmanaged: int) -> str:
+    if b not in machete_client.managed_branches:
+        if machete_client.roots:
             if if_unmanaged == MacheteClient.PICK_FIRST_ROOT:
-                warn(f"{b} is not a managed branch, assuming {machete_context.roots[0]} (the first root) instead as root")
-                return machete_context.roots[0]
+                warn(f"{b} is not a managed branch, assuming {machete_client.roots[0]} (the first root) instead as root")
+                return machete_client.roots[0]
             else:  # if_unmanaged == MacheteContext.PICK_LAST_ROOT
-                warn(f"{b} is not a managed branch, assuming {machete_context.roots[-1]} (the last root) instead as root")
-                return machete_context.roots[-1]
+                warn(f"{b} is not a managed branch, assuming {machete_client.roots[-1]} (the last root) instead as root")
+                return machete_client.roots[-1]
         else:
-            machete_context.raise_no_branches_error()
-    u = machete_context.up_branch.get(b)
+            machete_client.raise_no_branches_error()
+    u = machete_client.up_branch.get(b)
     while u:
         b = u
-        u = machete_context.up_branch.get(b)
+        u = machete_client.up_branch.get(b)
     return b
 
 
-def up(machete_context: MacheteClient, cli_ctxt: CommandLineContext, b: str, prompt_if_inferred_msg: Optional[str], prompt_if_inferred_yes_opt_msg: Optional[str]) -> str:
-    if b in machete_context.managed_branches:
-        u = machete_context.up_branch.get(b)
+def up(machete_client: MacheteClient, cli_ctxt: CommandLineContext, b: str, prompt_if_inferred_msg: Optional[str], prompt_if_inferred_yes_opt_msg: Optional[str]) -> str:
+    if b in machete_client.managed_branches:
+        u = machete_client.up_branch.get(b)
         if u:
             return u
         else:
@@ -1542,14 +1541,14 @@ def find_executable(cli_ctxt: CommandLineContext, executable: str) -> Optional[s
     return None
 
 
-def get_default_editor(machete_context: MacheteClient) -> str:
+def get_default_editor(machete_client: MacheteClient) -> str:
     # Based on the git's own algorithm for identifying the editor.
     # '$GIT_MACHETE_EDITOR', 'editor' (to please Debian-based systems) and 'nano' have been added.
     git_machete_editor_var = "GIT_MACHETE_EDITOR"
     proposed_editor_funs: List[Tuple[str, Callable[[], Optional[str]]]] = [
         ("$" + git_machete_editor_var, lambda: os.environ.get(git_machete_editor_var)),
         ("$GIT_EDITOR", lambda: os.environ.get("GIT_EDITOR")),
-        ("git config core.editor", lambda: get_config_or_none(machete_context.cli_ctxt, "core.editor")),
+        ("git config core.editor", lambda: get_config_or_none(machete_client.cli_ctxt, "core.editor")),
         ("$VISUAL", lambda: os.environ.get("VISUAL")),
         ("$EDITOR", lambda: os.environ.get("EDITOR")),
         ("editor", lambda: "editor"),
@@ -1560,18 +1559,18 @@ def get_default_editor(machete_context: MacheteClient) -> str:
     for name, fun in proposed_editor_funs:
         editor = fun()
         if not editor:
-            debug(machete_context.cli_ctxt, "get_default_editor()", f"'{name}' is undefined")
+            debug(machete_client.cli_ctxt, "get_default_editor()", f"'{name}' is undefined")
         else:
             editor_repr = f"'{name}'{(' (' + editor + ')') if editor != name else ''}"
-            if not find_executable(machete_context.cli_ctxt, editor):
-                debug(machete_context.cli_ctxt, "get_default_editor()", f"{editor_repr} is not available")
+            if not find_executable(machete_client.cli_ctxt, editor):
+                debug(machete_client.cli_ctxt, "get_default_editor()", f"{editor_repr} is not available")
                 if name == "$" + git_machete_editor_var:
                     # In this specific case, when GIT_MACHETE_EDITOR is defined but doesn't point to a valid executable,
                     # it's more reasonable/less confusing to raise an error and exit without opening anything.
                     raise MacheteException(f"<b>{editor_repr}</b> is not available")
             else:
-                debug(machete_context.cli_ctxt, "get_default_editor()", f"{editor_repr} is available")
-                if name != "$" + git_machete_editor_var and get_config_or_none(machete_context.cli_ctxt, 'advice.macheteEditorSelection') != 'false':
+                debug(machete_client.cli_ctxt, "get_default_editor()", f"{editor_repr} is available")
+                if name != "$" + git_machete_editor_var and get_config_or_none(machete_client.cli_ctxt, 'advice.macheteEditorSelection') != 'false':
                     sample_alternative = 'nano' if editor.startswith('vi') else 'vi'
                     sys.stderr.write(
                         fmt(f"Opening <b>{editor_repr}</b>.\n",
@@ -1582,7 +1581,7 @@ def get_default_editor(machete_context: MacheteClient) -> str:
 
     # This case is extremely unlikely on a modern Unix-like system.
     raise MacheteException(
-        f"Cannot determine editor. Set `{git_machete_editor_var}` environment variable or edit {machete_context.definition_file_path} directly.")
+        f"Cannot determine editor. Set `{git_machete_editor_var}` environment variable or edit {machete_client.definition_file_path} directly.")
 
 
 git_version = None
@@ -3464,7 +3463,7 @@ def main() -> None:
 def launch(orig_args: List[str]) -> None:
 
     cli_ctxt = CommandLineContext()
-    machete_ctxt = MacheteClient(cli_ctxt)
+    machete_client = MacheteClient(cli_ctxt)
 
     if sys.version_info.major == 2 or (sys.version_info.major == 3 and sys.version_info.minor < 6):
         version_str = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
@@ -3620,79 +3619,79 @@ def launch(orig_args: List[str]) -> None:
         args = cmd_and_args[1:]
 
         if cmd != "help":
-            machete_ctxt.definition_file_path = get_git_subpath(cli_ctxt, "machete")
+            machete_client.definition_file_path = get_git_subpath(cli_ctxt, "machete")
             if cmd != "discover":
-                if not os.path.exists(machete_ctxt.definition_file_path):
+                if not os.path.exists(machete_client.definition_file_path):
                     # We're opening in "append" and not "write" mode to avoid a race condition:
                     # if other process writes to the file between we check the result of `os.path.exists` and call `open`,
                     # then open(..., "w") would result in us clearing up the file contents, while open(..., "a") has no effect.
-                    with open(machete_ctxt.definition_file_path, "a"):
+                    with open(machete_client.definition_file_path, "a"):
                         pass
-                elif os.path.isdir(machete_ctxt.definition_file_path):
+                elif os.path.isdir(machete_client.definition_file_path):
                     # Extremely unlikely case, basically checking if anybody tampered with the repository.
                     raise MacheteException(
-                        f"{machete_ctxt.definition_file_path} is a directory rather than a regular file, aborting")
+                        f"{machete_client.definition_file_path} is a directory rather than a regular file, aborting")
 
         if cmd == "add":
             param = check_optional_param(parse_options(args, "o:Ry", ["onto=", "as-root", "yes"]))
-            machete_ctxt.read_definition_file()
-            machete_ctxt.add(param or current_branch(cli_ctxt))
+            machete_client.read_definition_file()
+            machete_client.add(param or current_branch(cli_ctxt))
         elif cmd == "advance":
             args1 = parse_options(args, "y", ["yes"])
             expect_no_param(args1)
-            machete_ctxt.read_definition_file()
+            machete_client.read_definition_file()
             expect_no_operation_in_progress(cli_ctxt)
             cb = current_branch(cli_ctxt)
-            machete_ctxt.expect_in_managed_branches(cb)
-            machete_ctxt.advance(cb)
+            machete_client.expect_in_managed_branches(cb)
+            machete_client.advance(cb)
         elif cmd == "anno":
             params = parse_options(args, "b:H", ["branch=", "sync-github-prs"])
-            machete_ctxt.read_definition_file(verify_branches=False)
+            machete_client.read_definition_file(verify_branches=False)
             if cli_ctxt.opt_sync_github_prs:
-                sync_annotations_to_github_prs(machete_ctxt)
+                sync_annotations_to_github_prs(machete_client)
             else:
                 b = cli_ctxt.opt_branch or current_branch(cli_ctxt)
-                machete_ctxt.expect_in_managed_branches(b)
+                machete_client.expect_in_managed_branches(b)
                 if params:
-                    machete_ctxt.annotate(b, params)
+                    machete_client.annotate(b, params)
                 else:
-                    machete_ctxt.print_annotation(b)
+                    machete_client.print_annotation(b)
         elif cmd == "delete-unmanaged":
             expect_no_param(parse_options(args, "y", ["yes"]))
-            machete_ctxt.read_definition_file()
-            machete_ctxt.delete_unmanaged()
+            machete_client.read_definition_file()
+            machete_client.delete_unmanaged()
         elif cmd in ("d", "diff"):
             param = check_optional_param(parse_options(args, "s", ["stat"]))
-            machete_ctxt.read_definition_file()
-            machete_ctxt.diff(param)  # passing None if not specified
+            machete_client.read_definition_file()
+            machete_client.diff(param)  # passing None if not specified
         elif cmd == "discover":
             expect_no_param(parse_options(args, "C:lr:y", ["checked-out-since=", "list-commits", "roots=", "yes"]))
             # No need to read definition file.
-            machete_ctxt.discover_tree()
+            machete_client.discover_tree()
         elif cmd in ("e", "edit"):
             expect_no_param(parse_options(args))
             # No need to read definition file.
-            machete_ctxt.edit()
+            machete_client.edit()
         elif cmd == "file":
             expect_no_param(parse_options(args))
             # No need to read definition file.
-            print(os.path.abspath(machete_ctxt.definition_file_path))
+            print(os.path.abspath(machete_client.definition_file_path))
         elif cmd == "fork-point":
             long_options = ["inferred", "override-to=", "override-to-inferred", "override-to-parent", "unset-override"]
             param = check_optional_param(parse_options(args, "", long_options))
-            machete_ctxt.read_definition_file()
+            machete_client.read_definition_file()
             b = param or current_branch(cli_ctxt)
             if len(list(filter(None, [cli_ctxt.opt_inferred, cli_ctxt.opt_override_to, cli_ctxt.opt_override_to_inferred, cli_ctxt.opt_override_to_parent, cli_ctxt.opt_unset_override]))) > 1:
                 long_options_string = ", ".join(map(lambda x: x.replace("=", ""), long_options))
                 raise MacheteException(f"At most one of {long_options_string} options may be present")
             if cli_ctxt.opt_inferred:
-                print(machete_ctxt.fork_point(b, use_overrides=False))
+                print(machete_client.fork_point(b, use_overrides=False))
             elif cli_ctxt.opt_override_to:
                 set_fork_point_override(cli_ctxt, b, cli_ctxt.opt_override_to)
             elif cli_ctxt.opt_override_to_inferred:
-                set_fork_point_override(cli_ctxt, b, machete_ctxt.fork_point(b, use_overrides=False))
+                set_fork_point_override(cli_ctxt, b, machete_client.fork_point(b, use_overrides=False))
             elif cli_ctxt.opt_override_to_parent:
-                u = machete_ctxt.up_branch.get(b)
+                u = machete_client.up_branch.get(b)
                 if u:
                     set_fork_point_override(cli_ctxt, b, u)
                 else:
@@ -3700,13 +3699,13 @@ def launch(orig_args: List[str]) -> None:
             elif cli_ctxt.opt_unset_override:
                 unset_fork_point_override(cli_ctxt, b)
             else:
-                print(machete_ctxt.fork_point(b, use_overrides=True))
+                print(machete_client.fork_point(b, use_overrides=True))
         elif cmd in ("g", "go"):
             param = check_required_param(parse_options(args), allowed_directions(allow_current=False))
-            machete_ctxt.read_definition_file()
+            machete_client.read_definition_file()
             expect_no_operation_in_progress(cli_ctxt)
             cb = current_branch(cli_ctxt)
-            dest = parse_direction(machete_ctxt, cli_ctxt, param, cb, allow_current=False, down_pick_mode=True)
+            dest = parse_direction(machete_client, cli_ctxt, param, cb, allow_current=False, down_pick_mode=True)
             if dest != cb:
                 go(cli_ctxt, dest)
         elif cmd == "help":
@@ -3715,9 +3714,9 @@ def launch(orig_args: List[str]) -> None:
             usage(param)
         elif cmd == "is-managed":
             param = check_optional_param(parse_options(args))
-            machete_ctxt.read_definition_file()
+            machete_client.read_definition_file()
             b = param or current_branch_or_none(cli_ctxt)
-            if b is None or b not in machete_ctxt.managed_branches:
+            if b is None or b not in machete_client.managed_branches:
                 sys.exit(1)
         elif cmd == "list":
             list_allowed_values = "addable|managed|slidable|slidable-after <branch>|unmanaged|with-overridden-fork-point"
@@ -3739,7 +3738,7 @@ def launch(orig_args: List[str]) -> None:
                 raise MacheteException(f"`git machete list {list_args[0]}` requires an extra <branch> argument")
 
             param = list_args[0]
-            machete_ctxt.read_definition_file()
+            machete_client.read_definition_file()
             res = []
             if param == "addable":
                 def strip_first_fragment(rb: str) -> str:
@@ -3747,17 +3746,17 @@ def launch(orig_args: List[str]) -> None:
 
                 remote_counterparts_of_local_branches = map_truthy_only(lambda b: combined_counterpart_for_fetching_of_branch(cli_ctxt, b), local_branches(cli_ctxt))
                 qualifying_remote_branches = excluding(remote_branches(cli_ctxt), remote_counterparts_of_local_branches)
-                res = excluding(local_branches(cli_ctxt), machete_ctxt.managed_branches) + list(map(strip_first_fragment, qualifying_remote_branches))
+                res = excluding(local_branches(cli_ctxt), machete_client.managed_branches) + list(map(strip_first_fragment, qualifying_remote_branches))
             elif param == "managed":
-                res = machete_ctxt.managed_branches
+                res = machete_client.managed_branches
             elif param == "slidable":
-                res = slidable(machete_ctxt)
+                res = slidable(machete_client)
             elif param == "slidable-after":
                 b_arg = list_args[1]
-                machete_ctxt.expect_in_managed_branches(b_arg)
-                res = slidable_after(machete_ctxt, b_arg)
+                machete_client.expect_in_managed_branches(b_arg)
+                res = slidable_after(machete_client, b_arg)
             elif param == "unmanaged":
-                res = excluding(local_branches(cli_ctxt), machete_ctxt.managed_branches)
+                res = excluding(local_branches(cli_ctxt), machete_client.managed_branches)
             elif param == "with-overridden-fork-point":
                 res = list(filter(lambda b: has_any_fork_point_override_config(cli_ctxt, b), local_branches(cli_ctxt)))
 
@@ -3765,39 +3764,39 @@ def launch(orig_args: List[str]) -> None:
                 print("\n".join(res))
         elif cmd in ("l", "log"):
             param = check_optional_param(parse_options(args))
-            machete_ctxt.read_definition_file()
-            machete_ctxt.log(param or current_branch(cli_ctxt))
+            machete_client.read_definition_file()
+            machete_client.log(param or current_branch(cli_ctxt))
         elif cmd == "reapply":
             args1 = parse_options(args, "f:", ["fork-point="])
             expect_no_param(args1, ". Use `-f` or `--fork-point` to specify the fork point commit")
-            machete_ctxt.read_definition_file()
+            machete_client.read_definition_file()
             expect_no_operation_in_progress(cli_ctxt)
             cb = current_branch(cli_ctxt)
-            rebase_onto_ancestor_commit(cli_ctxt, cb, cli_ctxt.opt_fork_point or machete_ctxt.fork_point(cb, use_overrides=True))
+            rebase_onto_ancestor_commit(cli_ctxt, cb, cli_ctxt.opt_fork_point or machete_client.fork_point(cb, use_overrides=True))
         elif cmd == "show":
             param = check_required_param(args[:1], allowed_directions(allow_current=True))
             branch = check_optional_param(args[1:])
             if param == "current" and branch is not None:
                 raise MacheteException(f'`show current` with a branch (`{branch}`) does not make sense')
-            machete_ctxt.read_definition_file(verify_branches=False)
-            print(parse_direction(machete_ctxt, cli_ctxt, param, branch or current_branch(cli_ctxt), allow_current=True, down_pick_mode=False))
+            machete_client.read_definition_file(verify_branches=False)
+            print(parse_direction(machete_client, cli_ctxt, param, branch or current_branch(cli_ctxt), allow_current=True, down_pick_mode=False))
         elif cmd == "slide-out":
             params = parse_options(args, "d:Mn", ["down-fork-point=", "merge", "no-edit-merge", "no-interactive-rebase"])
-            machete_ctxt.read_definition_file()
+            machete_client.read_definition_file()
             expect_no_operation_in_progress(cli_ctxt)
-            machete_ctxt.slide_out(params or [current_branch(cli_ctxt)])
+            machete_client.slide_out(params or [current_branch(cli_ctxt)])
         elif cmd == "squash":
             args1 = parse_options(args, "f:", ["fork-point="])
             expect_no_param(args1, ". Use `-f` or `--fork-point` to specify the fork point commit")
-            machete_ctxt.read_definition_file()
+            machete_client.read_definition_file()
             expect_no_operation_in_progress(cli_ctxt)
             cb = current_branch(cli_ctxt)
-            squash(cli_ctxt, cb, cli_ctxt.opt_fork_point or machete_ctxt.fork_point(cb, use_overrides=True))
+            squash(cli_ctxt, cb, cli_ctxt.opt_fork_point or machete_client.fork_point(cb, use_overrides=True))
         elif cmd in ("s", "status"):
             expect_no_param(parse_options(args, "Ll", ["color=", "list-commits-with-hashes", "list-commits", "no-detect-squash-merges"]))
-            machete_ctxt.read_definition_file()
-            machete_ctxt.expect_at_least_one_managed_branch()
-            machete_ctxt.status(warn_on_yellow_edges=True)
+            machete_client.read_definition_file()
+            machete_client.expect_at_least_one_managed_branch()
+            machete_client.status(warn_on_yellow_edges=True)
         elif cmd == "traverse":
             traverse_long_opts = ["fetch", "list-commits", "merge",
                                   "no-detect-squash-merges", "no-edit-merge", "no-interactive-rebase",
@@ -3808,15 +3807,15 @@ def launch(orig_args: List[str]) -> None:
                 raise MacheteException("Invalid argument for `--start-from`. Valid arguments: `here|root|first-root`.")
             if cli_ctxt.opt_return_to not in ("here", "nearest-remaining", "stay"):
                 raise MacheteException("Invalid argument for `--return-to`. Valid arguments: here|nearest-remaining|stay.")
-            machete_ctxt.read_definition_file()
+            machete_client.read_definition_file()
             expect_no_operation_in_progress(cli_ctxt)
-            machete_ctxt.traverse()
+            machete_client.traverse()
         elif cmd == "update":
             args1 = parse_options(args, "f:Mn", ["fork-point=", "merge", "no-edit-merge", "no-interactive-rebase"])
             expect_no_param(args1, ". Use `-f` or `--fork-point` to specify the fork point commit")
-            machete_ctxt.read_definition_file()
+            machete_client.read_definition_file()
             expect_no_operation_in_progress(cli_ctxt)
-            machete_ctxt.update()
+            machete_client.update()
         elif cmd == "version":
             version()
             sys.exit()
