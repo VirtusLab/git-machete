@@ -350,10 +350,10 @@ class MacheteClient:
     DISCOVER_DEFAULT_FRESH_BRANCH_COUNT = 10
     PICK_FIRST_ROOT: int = 0
     PICK_LAST_ROOT: int = -1
-    definition_file_path: str = ""
 
     def __init__(self, cli_ctxt: CommandLineContext) -> None:
         self.cli_ctxt = cli_ctxt
+        self.definition_file_path: str = ""
         self.managed_branches: List[str] = []
         self.down_branches: Dict[str, List[str]] = {}  # TODO (#110): default dict with []
         self.up_branch: Dict[str, str] = {}  # TODO (#110): default dict with None
@@ -372,10 +372,10 @@ class MacheteClient:
 
     def raise_no_branches_error(self) -> None:
         raise MacheteException(
-            f"No branches listed in {MacheteClient.definition_file_path}; use `git machete discover` or `git machete edit`, or edit {MacheteClient.definition_file_path} manually.")
+            f"No branches listed in {self.definition_file_path}; use `git machete discover` or `git machete edit`, or edit {self.definition_file_path} manually.")
 
     def read_definition_file(self, verify_branches: bool = True) -> None:
-        with open(MacheteClient.definition_file_path) as f:
+        with open(self.definition_file_path) as f:
             lines: List[str] = [line.rstrip() for line in f.readlines() if not line.isspace()]
 
         at_depth = {}
@@ -395,7 +395,7 @@ class MacheteClient:
                 self.annotations[b] = b_a[1]
             if b in self.managed_branches:
                 raise MacheteException(
-                    f"{MacheteClient.definition_file_path}, line {idx + 1}: branch `{b}` re-appears in the tree definition. {hint}")
+                    f"{self.definition_file_path}, line {idx + 1}: branch `{b}` re-appears in the tree definition. {hint}")
             if verify_branches and b not in local_branches(self.cli_ctxt):
                 invalid_branches += [b]
             self.managed_branches += [b]
@@ -407,13 +407,13 @@ class MacheteClient:
                     pfx_expanded: str = "".join(mapping[c] for c in pfx)
                     indent_expanded: str = "".join(mapping[c] for c in self.indent)
                     raise MacheteException(
-                        f"{MacheteClient.definition_file_path}, line {idx + 1}: invalid indent `{pfx_expanded}`, expected a multiply of `{indent_expanded}`. {hint}")
+                        f"{self.definition_file_path}, line {idx + 1}: invalid indent `{pfx_expanded}`, expected a multiply of `{indent_expanded}`. {hint}")
             else:
                 depth = 0
 
             if depth > last_depth + 1:
                 raise MacheteException(
-                    f"{MacheteClient.definition_file_path}, line {idx + 1}: too much indent (level {depth}, expected at most {last_depth + 1}) for the branch `{b}`. {hint}")
+                    f"{self.definition_file_path}, line {idx + 1}: too much indent (level {depth}, expected at most {last_depth + 1}) for the branch `{b}`. {hint}")
             last_depth = depth
 
             at_depth[depth] = b
@@ -467,7 +467,7 @@ class MacheteClient:
         if ans in ('y', 'yes'):
             self.save_definition_file()
         elif ans in ('e', 'edit'):
-            MacheteClient.edit(self.cli_ctxt)
+            self.edit()
             self.read_definition_file(verify_branches)
 
     def render_tree(self) -> List[str]:
@@ -486,12 +486,11 @@ class MacheteClient:
             total += render_dfs(r, depth=0)
         return total
 
-    @staticmethod
-    def back_up_definition_file() -> None:
-        shutil.copyfile(MacheteClient.definition_file_path, MacheteClient.definition_file_path + "~")
+    def back_up_definition_file(self) -> None:
+        shutil.copyfile(self.definition_file_path, self.definition_file_path + "~")
 
     def save_definition_file(self) -> None:
-        with open(MacheteClient.definition_file_path, "w") as f:
+        with open(self.definition_file_path, "w") as f:
             f.write("\n".join(self.render_tree()) + "\n")
 
     def add(self, b: str) -> None:
@@ -689,20 +688,20 @@ class MacheteClient:
         print(bold("Discovered tree of branch dependencies:\n"))
         self.status(warn_on_yellow_edges=False)
         print("")
-        do_backup = os.path.isfile(MacheteClient.definition_file_path)
-        backup_msg = f"\nThe existing definition file will be backed up as {MacheteClient.definition_file_path}~" if do_backup else ""
-        msg = f"Save the above tree to {MacheteClient.definition_file_path}?{backup_msg}" + pretty_choices('y', 'e[dit]', 'N')
-        opt_yes_msg = f"Saving the above tree to {MacheteClient.definition_file_path}... {backup_msg}"
+        do_backup = os.path.isfile(self.definition_file_path)
+        backup_msg = f"\nThe existing definition file will be backed up as {self.definition_file_path}~" if do_backup else ""
+        msg = f"Save the above tree to {self.definition_file_path}?{backup_msg}" + pretty_choices('y', 'e[dit]', 'N')
+        opt_yes_msg = f"Saving the above tree to {self.definition_file_path}... {backup_msg}"
         ans = ask_if(self.cli_ctxt, msg, opt_yes_msg)
         if ans in ('y', 'yes'):
             if do_backup:
-                MacheteClient.back_up_definition_file()
+                self.back_up_definition_file()
             self.save_definition_file()
         elif ans in ('e', 'edit'):
             if do_backup:
-                MacheteClient.back_up_definition_file()
+                self.back_up_definition_file()
             self.save_definition_file()
-            MacheteClient.edit(self.cli_ctxt)
+            self.edit()
 
     def slide_out(self, branches_to_slide_out: List[str]) -> None:
         # Verify that all branches exist, are managed, and have an upstream.
@@ -1264,9 +1263,8 @@ class MacheteClient:
         else:
             print("No branches to delete")
 
-    @staticmethod
-    def edit(cli_ctxt: CommandLineContext) -> int:
-        return run_cmd(cli_ctxt, get_default_editor(cli_ctxt), MacheteClient.definition_file_path)
+    def edit(self) -> int:
+        return run_cmd(self.cli_ctxt, get_default_editor(self), self.definition_file_path)
 
     def fork_point_and_containing_branch_defs(self, b: str, use_overrides: bool) -> Tuple[Optional[str], List[BRANCH_DEF]]:
         u = self.up_branch.get(b)
@@ -1355,10 +1353,10 @@ def slidable_after(machete_context: MacheteClient, b: str) -> List[str]:
     return []
 
 
-def sync_annotations_to_github_prs(machete_context: MacheteClient, cli_ctxt: CommandLineContext) -> None:
+def sync_annotations_to_github_prs(machete_context: MacheteClient) -> None:
     from git_machete.github import derive_current_user_login, derive_pull_requests, GitHubPullRequest, parse_github_remote_url
 
-    url_for_remote: Dict[str, str] = {r: get_url_of_remote(cli_ctxt, r) for r in remotes(cli_ctxt)}
+    url_for_remote: Dict[str, str] = {r: get_url_of_remote(machete_context.cli_ctxt, r) for r in remotes(machete_context.cli_ctxt)}
     if not url_for_remote:
         raise MacheteException(fmt('No remotes defined for this repository (see `git remote`)'))
 
@@ -1378,11 +1376,11 @@ def sync_annotations_to_github_prs(machete_context: MacheteClient, cli_ctxt: Com
             raise MacheteException(f'Multiple non-origin remotes correspond to GitHub in this repository: '
                                    f'{", ".join(org_name_for_github_remote.keys())}, aborting')
     current_user: Optional[str] = derive_current_user_login()
-    debug(cli_ctxt, 'sync_annotations_to_github_prs()', 'Current GitHub user is ' + (current_user or '<none>'))
+    debug(machete_context.cli_ctxt, 'sync_annotations_to_github_prs()', 'Current GitHub user is ' + (current_user or '<none>'))
     pr: GitHubPullRequest
     for pr in derive_pull_requests(org, repo):
         if pr.head in machete_context.managed_branches:
-            debug(cli_ctxt, 'sync_annotations_to_github_prs()', f'{pr} corresponds to a managed branch')
+            debug(machete_context.cli_ctxt, 'sync_annotations_to_github_prs()', f'{pr} corresponds to a managed branch')
             anno: str = f'PR #{pr.number}'
             if pr.user != current_user:
                 anno += f' ({pr.user})'
@@ -1395,7 +1393,7 @@ def sync_annotations_to_github_prs(machete_context: MacheteClient, cli_ctxt: Com
                 print(fmt(f'Annotating <b>{pr.head}</b> as `{anno}`'))
                 machete_context.annotations[pr.head] = anno
         else:
-            debug(cli_ctxt, 'sync_annotations_to_github_prs()', f'{pr} does NOT correspond to a managed branch')
+            debug(machete_context.cli_ctxt, 'sync_annotations_to_github_prs()', f'{pr} does NOT correspond to a managed branch')
     machete_context.save_definition_file()
 
 
@@ -1544,14 +1542,14 @@ def find_executable(cli_ctxt: CommandLineContext, executable: str) -> Optional[s
     return None
 
 
-def get_default_editor(cli_ctxt: CommandLineContext) -> str:
+def get_default_editor(machete_context: MacheteClient) -> str:
     # Based on the git's own algorithm for identifying the editor.
     # '$GIT_MACHETE_EDITOR', 'editor' (to please Debian-based systems) and 'nano' have been added.
     git_machete_editor_var = "GIT_MACHETE_EDITOR"
     proposed_editor_funs: List[Tuple[str, Callable[[], Optional[str]]]] = [
         ("$" + git_machete_editor_var, lambda: os.environ.get(git_machete_editor_var)),
         ("$GIT_EDITOR", lambda: os.environ.get("GIT_EDITOR")),
-        ("git config core.editor", lambda: get_config_or_none(cli_ctxt, "core.editor")),
+        ("git config core.editor", lambda: get_config_or_none(machete_context.cli_ctxt, "core.editor")),
         ("$VISUAL", lambda: os.environ.get("VISUAL")),
         ("$EDITOR", lambda: os.environ.get("EDITOR")),
         ("editor", lambda: "editor"),
@@ -1562,18 +1560,18 @@ def get_default_editor(cli_ctxt: CommandLineContext) -> str:
     for name, fun in proposed_editor_funs:
         editor = fun()
         if not editor:
-            debug(cli_ctxt, "get_default_editor()", f"'{name}' is undefined")
+            debug(machete_context.cli_ctxt, "get_default_editor()", f"'{name}' is undefined")
         else:
             editor_repr = f"'{name}'{(' (' + editor + ')') if editor != name else ''}"
-            if not find_executable(cli_ctxt, editor):
-                debug(cli_ctxt, "get_default_editor()", f"{editor_repr} is not available")
+            if not find_executable(machete_context.cli_ctxt, editor):
+                debug(machete_context.cli_ctxt, "get_default_editor()", f"{editor_repr} is not available")
                 if name == "$" + git_machete_editor_var:
                     # In this specific case, when GIT_MACHETE_EDITOR is defined but doesn't point to a valid executable,
                     # it's more reasonable/less confusing to raise an error and exit without opening anything.
                     raise MacheteException(f"<b>{editor_repr}</b> is not available")
             else:
-                debug(cli_ctxt, "get_default_editor()", f"{editor_repr} is available")
-                if name != "$" + git_machete_editor_var and get_config_or_none(cli_ctxt, 'advice.macheteEditorSelection') != 'false':
+                debug(machete_context.cli_ctxt, "get_default_editor()", f"{editor_repr} is available")
+                if name != "$" + git_machete_editor_var and get_config_or_none(machete_context.cli_ctxt, 'advice.macheteEditorSelection') != 'false':
                     sample_alternative = 'nano' if editor.startswith('vi') else 'vi'
                     sys.stderr.write(
                         fmt(f"Opening <b>{editor_repr}</b>.\n",
@@ -1584,7 +1582,7 @@ def get_default_editor(cli_ctxt: CommandLineContext) -> str:
 
     # This case is extremely unlikely on a modern Unix-like system.
     raise MacheteException(
-        f"Cannot determine editor. Set `{git_machete_editor_var}` environment variable or edit {MacheteClient.definition_file_path} directly.")
+        f"Cannot determine editor. Set `{git_machete_editor_var}` environment variable or edit {machete_context.definition_file_path} directly.")
 
 
 git_version = None
@@ -3622,18 +3620,18 @@ def launch(orig_args: List[str]) -> None:
         args = cmd_and_args[1:]
 
         if cmd != "help":
-            MacheteClient.definition_file_path = get_git_subpath(cli_ctxt, "machete")
+            machete_ctxt.definition_file_path = get_git_subpath(cli_ctxt, "machete")
             if cmd != "discover":
-                if not os.path.exists(MacheteClient.definition_file_path):
+                if not os.path.exists(machete_ctxt.definition_file_path):
                     # We're opening in "append" and not "write" mode to avoid a race condition:
                     # if other process writes to the file between we check the result of `os.path.exists` and call `open`,
                     # then open(..., "w") would result in us clearing up the file contents, while open(..., "a") has no effect.
-                    with open(MacheteClient.definition_file_path, "a"):
+                    with open(machete_ctxt.definition_file_path, "a"):
                         pass
-                elif os.path.isdir(MacheteClient.definition_file_path):
+                elif os.path.isdir(machete_ctxt.definition_file_path):
                     # Extremely unlikely case, basically checking if anybody tampered with the repository.
                     raise MacheteException(
-                        f"{MacheteClient.definition_file_path} is a directory rather than a regular file, aborting")
+                        f"{machete_ctxt.definition_file_path} is a directory rather than a regular file, aborting")
 
         if cmd == "add":
             param = check_optional_param(parse_options(args, "o:Ry", ["onto=", "as-root", "yes"]))
@@ -3651,7 +3649,7 @@ def launch(orig_args: List[str]) -> None:
             params = parse_options(args, "b:H", ["branch=", "sync-github-prs"])
             machete_ctxt.read_definition_file(verify_branches=False)
             if cli_ctxt.opt_sync_github_prs:
-                sync_annotations_to_github_prs(machete_ctxt, cli_ctxt)
+                sync_annotations_to_github_prs(machete_ctxt)
             else:
                 b = cli_ctxt.opt_branch or current_branch(cli_ctxt)
                 machete_ctxt.expect_in_managed_branches(b)
@@ -3674,11 +3672,11 @@ def launch(orig_args: List[str]) -> None:
         elif cmd in ("e", "edit"):
             expect_no_param(parse_options(args))
             # No need to read definition file.
-            machete_ctxt.edit(cli_ctxt)
+            machete_ctxt.edit()
         elif cmd == "file":
             expect_no_param(parse_options(args))
             # No need to read definition file.
-            print(os.path.abspath(MacheteClient.definition_file_path))
+            print(os.path.abspath(machete_ctxt.definition_file_path))
         elif cmd == "fork-point":
             long_options = ["inferred", "override-to=", "override-to-inferred", "override-to-parent", "unset-override"]
             param = check_optional_param(parse_options(args, "", long_options))
