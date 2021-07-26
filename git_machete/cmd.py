@@ -342,7 +342,7 @@ def popen_git(cli_ctxt: CommandLineContext, git_cmd: str, *args: str, **kwargs: 
 branch_defs_by_sha_in_reflog: Optional[Dict[str, Optional[List[Tuple[str, str]]]]] = None
 
 BRANCH_DEF = Tuple[str, str]
-empty_line_status: Optional[bool] = None
+
 
 
 class MacheteClient:
@@ -360,6 +360,7 @@ class MacheteClient:
         self.indent: Optional[str] = None
         self.roots: List[str] = []
         self.annotations: Dict[str, str] = {}
+        self.empty_line_status: Optional[bool] = None
 
     def expect_in_managed_branches(self, b: str) -> None:
         if b not in self.managed_branches:
@@ -809,13 +810,12 @@ class MacheteClient:
 
         self.expect_at_least_one_managed_branch()
 
-        empty_line_status = True
+        self.empty_line_status = True
 
         def print_new_line(new_status: bool) -> None:
-            global empty_line_status
-            if not empty_line_status:
+            if not self.empty_line_status:
                 print("")
-            empty_line_status = new_status
+            self.empty_line_status = new_status
 
         if self.cli_ctxt.opt_fetch:
             for r in remotes(self.cli_ctxt):
