@@ -1094,7 +1094,7 @@ class MacheteClient:
         # in order to render the leading parts of lines properly.
         for b in self.up_branch:
             u = self.up_branch[b]
-            if is_merged_to(self.cli_ctxt, b, u):
+            if is_merged_to(self, self.cli_ctxt, b, u):
                 edge_color[b] = DIM
             elif not is_ancestor_or_equal(self.cli_ctxt, u, b):
                 edge_color[b] = RED
@@ -1530,53 +1530,60 @@ class MacheteClient:
         debug(self.cli_ctxt,
               f"filtered_reflog({b}, {prefix})",
               "computed filtered reflog (= reflog without branch creation "
-              "and branch reset events irrelevant for fork point/upstream inference): %s\n" % (
-                      ", ".join(result) or "<empty>"))
+              "and branch reset events irrelevant for fork point/upstream inference): %s\n" % (", ".join(result) or "<empty>"))
         return result
 
+    def sync_annotations_to_github_prs(self) -> None:
+        from git_machete.github import derive_current_user_login, derive_pull_requests, GitHubPullRequest, \
+            parse_github_remote_url
 
-def sync_annotations_to_github_prs(machete_client: MacheteClient) -> None:  # ask if member of MacheteClient
-    from git_machete.github import derive_current_user_login, derive_pull_requests, GitHubPullRequest, parse_github_remote_url
+        url_for_remote: Dict[str, str] = {r: get_url_of_remote(self.cli_ctxt, r) for r in
+                                          remotes(self.cli_ctxt)}
+        if not url_for_remote:
+            raise MacheteException(fmt('No remotes defined for this repository (see `git remote`)'))
 
-    url_for_remote: Dict[str, str] = {r: get_url_of_remote(machete_client.cli_ctxt, r) for r in remotes(machete_client.cli_ctxt)}
-    if not url_for_remote:
-        raise MacheteException(fmt('No remotes defined for this repository (see `git remote`)'))
+        optional_org_name_for_github_remote: Dict[str, Optional[Tuple[str, str]]] = {
+            remote: parse_github_remote_url(url) for remote, url in url_for_remote.items()}
+        org_name_for_github_remote: Dict[str, Tuple[str, str]] = {remote: org_name for remote, org_name in
+                                                                  optional_org_name_for_github_remote.items() if
+                                                                  org_name}
+        if not org_name_for_github_remote:
+            raise MacheteException(
+                fmt('Remotes are defined for this repository, but none of them corresponds to GitHub (see `git remote -v` for details)'))
 
-    optional_org_name_for_github_remote: Dict[str, Optional[Tuple[str, str]]] = {remote: parse_github_remote_url(url) for remote, url in url_for_remote.items()}
-    org_name_for_github_remote: Dict[str, Tuple[str, str]] = {remote: org_name for remote, org_name in optional_org_name_for_github_remote.items() if org_name}
-    if not org_name_for_github_remote:
-        raise MacheteException(fmt('Remotes are defined for this repository, but none of them corresponds to GitHub (see `git remote -v` for details)'))
-
-    org: str
-    repo: str
-    if len(org_name_for_github_remote) == 1:
-        org, repo = list(org_name_for_github_remote.values())[0]
-    elif len(org_name_for_github_remote) > 1:
-        if 'origin' in org_name_for_github_remote:
-            org, repo = org_name_for_github_remote['origin']
-        else:
-            raise MacheteException(f'Multiple non-origin remotes correspond to GitHub in this repository: '
-                                   f'{", ".join(org_name_for_github_remote.keys())}, aborting')
-    current_user: Optional[str] = derive_current_user_login()
-    debug(machete_client.cli_ctxt, 'sync_annotations_to_github_prs()', 'Current GitHub user is ' + (current_user or '<none>'))
-    pr: GitHubPullRequest
-    for pr in derive_pull_requests(org, repo):
-        if pr.head in machete_client.managed_branches:
-            debug(machete_client.cli_ctxt, 'sync_annotations_to_github_prs()', f'{pr} corresponds to a managed branch')
-            anno: str = f'PR #{pr.number}'
-            if pr.user != current_user:
-                anno += f' ({pr.user})'
-            u: Optional[str] = machete_client.up_branch.get(pr.head)
-            if pr.base != u:
-                warn(f'branch `{pr.head}` has a different base in PR #{pr.number} (`{pr.base}`) '
-                     f'than in machete file (`{u or "<none, is a root>"}`)')
-                anno += f" WRONG PR BASE or MACHETE PARENT? PR has '{pr.base}'"
-            if machete_client.annotations.get(pr.head) != anno:
-                print(fmt(f'Annotating <b>{pr.head}</b> as `{anno}`'))
-                machete_client.annotations[pr.head] = anno
-        else:
-            debug(machete_client.cli_ctxt, 'sync_annotations_to_github_prs()', f'{pr} does NOT correspond to a managed branch')
-    machete_client.save_definition_file()
+        org: str
+        repo: str
+        if len(org_name_for_github_remote) == 1:
+            org, repo = list(org_name_for_github_remote.values())[0]
+        elif len(org_name_for_github_remote) > 1:
+            if 'origin' in org_name_for_github_remote:
+                org, repo = org_name_for_github_remote['origin']
+            else:
+                raise MacheteException(f'Multiple non-origin remotes correspond to GitHub in this repository: '
+                                       f'{", ".join(org_name_for_github_remote.keys())}, aborting')
+        current_user: Optional[str] = derive_current_user_login()
+        debug(self.cli_ctxt, 'sync_annotations_to_github_prs()',
+              'Current GitHub user is ' + (current_user or '<none>'))
+        pr: GitHubPullRequest
+        for pr in derive_pull_requests(org, repo):
+            if pr.head in self.managed_branches:
+                debug(self.cli_ctxt, 'sync_annotations_to_github_prs()',
+                      f'{pr} corresponds to a managed branch')
+                anno: str = f'PR #{pr.number}'
+                if pr.user != current_user:
+                    anno += f' ({pr.user})'
+                u: Optional[str] = self.up_branch.get(pr.head)
+                if pr.base != u:
+                    warn(f'branch `{pr.head}` has a different base in PR #{pr.number} (`{pr.base}`) '
+                         f'than in machete file (`{u or "<none, is a root>"}`)')
+                    anno += f" WRONG PR BASE or MACHETE PARENT? PR has '{pr.base}'"
+                if self.annotations.get(pr.head) != anno:
+                    print(fmt(f'Annotating <b>{pr.head}</b> as `{anno}`'))
+                    self.annotations[pr.head] = anno
+            else:
+                debug(self.cli_ctxt, 'sync_annotations_to_github_prs()',
+                      f'{pr} does NOT correspond to a managed branch')
+        self.save_definition_file()
 
 
 # Parse and evaluate direction against current branch for show/go commands
@@ -3643,7 +3650,7 @@ def launch(orig_args: List[str]) -> None:
             params = parse_options(args, "b:H", ["branch=", "sync-github-prs"])
             machete_client.read_definition_file(verify_branches=False)
             if cli_ctxt.opt_sync_github_prs:
-                sync_annotations_to_github_prs(machete_client)
+                machete_client.sync_annotations_to_github_prs()
             else:
                 b = cli_ctxt.opt_branch or current_branch(cli_ctxt)
                 machete_client.expect_in_managed_branches(b)
