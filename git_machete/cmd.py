@@ -532,7 +532,7 @@ class MacheteClient:
             print(fmt(f"Added branch `{b}` as a new root"))
         else:
             if not onto:
-                u = infer_upstream(self.cli_ctxt, b, condition=lambda x: x in self.managed_branches, reject_reason_message="this candidate is not a managed branch")
+                u = infer_upstream(self, self.cli_ctxt, b, condition=lambda x: x in self.managed_branches, reject_reason_message="this candidate is not a managed branch")
                 if not u:
                     raise MacheteException(f"Could not automatically infer upstream (parent) branch for `{b}`.\n"
                                            "You can either:\n"
@@ -641,7 +641,7 @@ class MacheteClient:
             return
 
         for b in excluding(non_root_fixed_branches, stale_non_root_fixed_branches):
-            u = infer_upstream(self.cli_ctxt,
+            u = infer_upstream(self, self.cli_ctxt,
                                b,
                                condition=lambda candidate: get_root_of(
                                    candidate) != b and candidate not in stale_non_root_fixed_branches,
@@ -664,7 +664,7 @@ class MacheteClient:
         for b in self.managed_branches:
             if b in self.up_branch and not self.down_branches.get(b):
                 u = self.up_branch[b]
-                if is_merged_to(self.cli_ctxt, b, u):
+                if is_merged_to(self, self.cli_ctxt, b, u):
                     debug(self.cli_ctxt,
                           "discover_tree()",
                           f"inferred upstream of {b} is {u}, but {b} is merged to {u}; skipping {b} from discovered tree\n")
@@ -1094,7 +1094,7 @@ class MacheteClient:
         # in order to render the leading parts of lines properly.
         for b in self.up_branch:
             u = self.up_branch[b]
-            if is_merged_to(self.cli_ctxt, b, u):
+            if is_merged_to(self, self.cli_ctxt, b, u):
                 edge_color[b] = DIM
             elif not is_ancestor_or_equal(self.cli_ctxt, u, b):
                 edge_color[b] = RED
@@ -1291,7 +1291,7 @@ class MacheteClient:
                     return overridden_fp_sha, []
 
         try:
-            fp_sha, containing_branch_defs = next(match_log_to_filtered_reflogs(self.cli_ctxt, b))
+            fp_sha, containing_branch_defs = next(match_log_to_filtered_reflogs(self, self.cli_ctxt, b))
         except StopIteration:
             if u and is_ancestor_or_equal(self.cli_ctxt, u, b):
                 debug(self.cli_ctxt, f"fork_point_and_containing_branch_defs({b})",
@@ -1402,7 +1402,7 @@ class MacheteClient:
             else:
                 raise MacheteException(f"Branch `{b}` has no upstream branch")
         else:
-            u = infer_upstream(cli_ctxt, b)
+            u = infer_upstream(self, self.cli_ctxt, b)
             if u:
                 if prompt_if_inferred_msg:
                     if ask_if(
@@ -1434,7 +1434,7 @@ class MacheteClient:
     def is_merged_to_upstream(self, b: str) -> bool:
         if b not in self.up_branch:
             return False
-        return is_merged_to(self.cli_ctxt, b, self.up_branch[b])
+        return is_merged_to(self, self.cli_ctxt, b, self.up_branch[b])
 
     def run_post_slide_out_hook(self, new_upstream: str, slid_out_branch: str,
                                 new_downstreams: List[str]) -> None:
@@ -1496,6 +1496,44 @@ class MacheteClient:
         print("To restore the original pre-squash commit, run:")
         print()
         print(fmt(f"\t`git reset {latest_sha}`"))
+
+    def filtered_reflog(self, b: str, prefix: str) -> List[str]:  # add
+        def is_excluded_reflog_subject(sha_: str, gs_: str) -> bool:
+            is_excluded = (
+                    gs_.startswith("branch: Created from") or
+                    gs_ == f"branch: Reset to {b}" or
+                    gs_ == "branch: Reset to HEAD" or
+                    gs_.startswith("reset: moving to ") or
+                    gs_.startswith("fetch . ") or
+                    # The rare case of a no-op rebase, the exact wording likely depends on git version
+                    gs_ == f"rebase finished: {prefix}{b} onto {sha_}" or
+                    gs_ == f"rebase -i (finish): {prefix}{b} onto {sha_}"
+            )
+            if is_excluded:
+                debug(self.cli_ctxt, f"filtered_reflog({b}, {prefix}) -> is_excluded_reflog_subject({sha_}, <<<{gs_}>>>)",
+                      "skipping reflog entry")
+            return is_excluded
+
+        b_reflog = reflog(self.cli_ctxt, prefix + b)
+        if not b_reflog:
+            return []
+
+        earliest_sha, earliest_gs = b_reflog[-1]  # Note that the reflog is returned from latest to earliest entries.
+        shas_to_exclude = set()
+        if earliest_gs.startswith("branch: Created from"):
+            debug(self.cli_ctxt,
+                  f"filtered_reflog({b}, {prefix})",
+                  f"skipping any reflog entry with the hash equal to the hash of the earliest (branch creation) entry: {earliest_sha}")
+            shas_to_exclude.add(earliest_sha)
+
+        result = [sha for (sha, gs) in b_reflog if
+                  sha not in shas_to_exclude and not is_excluded_reflog_subject(sha, gs)]
+        debug(self.cli_ctxt,
+              f"filtered_reflog({b}, {prefix})",
+              "computed filtered reflog (= reflog without branch creation "
+              "and branch reset events irrelevant for fork point/upstream inference): %s\n" % (
+                          ", ".join(result) or "<empty>"))
+        return result
 
 
 def sync_annotations_to_github_prs(machete_client: MacheteClient) -> None:  # ask if member of MacheteClient
@@ -2350,42 +2388,6 @@ def reflog(cli_ctxt: CommandLineContext, b: str) -> List[REFLOG_ENTRY]:
         return reflogs_cached[b]
 
 
-def filtered_reflog(cli_ctxt: CommandLineContext, b: str, prefix: str) -> List[str]: #add
-    def is_excluded_reflog_subject(sha_: str, gs_: str) -> bool:
-        is_excluded = (
-            gs_.startswith("branch: Created from") or
-            gs_ == f"branch: Reset to {b}" or
-            gs_ == "branch: Reset to HEAD" or
-            gs_.startswith("reset: moving to ") or
-            gs_.startswith("fetch . ") or
-            # The rare case of a no-op rebase, the exact wording likely depends on git version
-            gs_ == f"rebase finished: {prefix}{b} onto {sha_}" or
-            gs_ == f"rebase -i (finish): {prefix}{b} onto {sha_}"
-        )
-        if is_excluded:
-            debug(cli_ctxt, f"filtered_reflog({b}, {prefix}) -> is_excluded_reflog_subject({sha_}, <<<{gs_}>>>)", "skipping reflog entry")
-        return is_excluded
-
-    b_reflog = reflog(cli_ctxt, prefix + b)
-    if not b_reflog:
-        return []
-
-    earliest_sha, earliest_gs = b_reflog[-1]  # Note that the reflog is returned from latest to earliest entries.
-    shas_to_exclude = set()
-    if earliest_gs.startswith("branch: Created from"):
-        debug(cli_ctxt,
-              f"filtered_reflog({b}, {prefix})",
-              f"skipping any reflog entry with the hash equal to the hash of the earliest (branch creation) entry: {earliest_sha}")
-        shas_to_exclude.add(earliest_sha)
-
-    result = [sha for (sha, gs) in b_reflog if sha not in shas_to_exclude and not is_excluded_reflog_subject(sha, gs)]
-    debug(cli_ctxt,
-          f"filtered_reflog({b}, {prefix})",
-          "computed filtered reflog (= reflog without branch creation "
-          "and branch reset events irrelevant for fork point/upstream inference): %s\n" % (", ".join(result) or "<empty>"))
-    return result
-
-
 def get_latest_checkout_timestamps(cli_ctxt: CommandLineContext) -> Dict[str, int]:  # TODO (#110): default dict with 0
     # Entries are in the format '<branch_name>@{<unix_timestamp> <time-zone>}'
     result = {}
@@ -2408,7 +2410,7 @@ def get_latest_checkout_timestamps(cli_ctxt: CommandLineContext) -> Dict[str, in
     return result
 
 
-def match_log_to_filtered_reflogs(cli_ctxt: CommandLineContext, b: str) -> Generator[Tuple[str, List[BRANCH_DEF]], None, None]:
+def match_log_to_filtered_reflogs(machete_context: MacheteClient,cli_ctxt: CommandLineContext, b: str) -> Generator[Tuple[str, List[BRANCH_DEF]], None, None]:
     global branch_defs_by_sha_in_reflog
 
     if b not in local_branches(cli_ctxt):
@@ -2418,12 +2420,12 @@ def match_log_to_filtered_reflogs(cli_ctxt: CommandLineContext, b: str) -> Gener
         def generate_entries() -> Generator[Tuple[str, BRANCH_DEF], None, None]:
             for lb in local_branches(cli_ctxt):
                 lb_shas = set()
-                for sha_ in filtered_reflog(cli_ctxt, lb, prefix="refs/heads/"):
+                for sha_ in machete_context.filtered_reflog(lb, prefix="refs/heads/"):
                     lb_shas.add(sha_)
                     yield sha_, (lb, lb)
                 rb = combined_counterpart_for_fetching_of_branch(cli_ctxt, lb)
                 if rb:
-                    for sha_ in filtered_reflog(cli_ctxt, rb, prefix="refs/remotes/"):
+                    for sha_ in machete_context.filtered_reflog(rb, prefix="refs/remotes/"):
                         if sha_ not in lb_shas:
                             yield sha_, (lb, rb)
 
@@ -2473,7 +2475,7 @@ def match_log_to_filtered_reflogs(cli_ctxt: CommandLineContext, b: str) -> Gener
 
 # Complex routines/commands
 
-def is_merged_to(cli_ctxt: CommandLineContext, b: str, target: str) -> bool:
+def is_merged_to(machete_context: MacheteClient, cli_ctxt: CommandLineContext, b: str, target: str) -> bool:
     if is_ancestor_or_equal(cli_ctxt, b, target):
         # If branch is ancestor of or equal to the target, we need to distinguish between the
         # case of branch being "recently" created from the target and the case of
@@ -2481,7 +2483,7 @@ def is_merged_to(cli_ctxt: CommandLineContext, b: str, target: str) -> bool:
         # The applied heuristics is to check if the filtered reflog of the branch
         # (reflog stripped of trivial events like branch creation, reset etc.)
         # is non-empty.
-        return bool(filtered_reflog(cli_ctxt, b, prefix="refs/heads/"))
+        return bool(machete_context.filtered_reflog(b, prefix="refs/heads/"))
     elif cli_ctxt.opt_no_detect_squash_merges:
         return False
     else:
@@ -2491,8 +2493,8 @@ def is_merged_to(cli_ctxt: CommandLineContext, b: str, target: str) -> bool:
         return contains_equivalent_tree(cli_ctxt, b, target)
 
 
-def infer_upstream(cli_ctxt: CommandLineContext, b: str, condition: Callable[[str], bool] = lambda u: True, reject_reason_message: str = "") -> Optional[str]:
-    for sha, containing_branch_defs in match_log_to_filtered_reflogs(cli_ctxt, b):
+def infer_upstream(machete_context: MacheteClient, cli_ctxt: CommandLineContext, b: str, condition: Callable[[str], bool] = lambda u: True, reject_reason_message: str = "") -> Optional[str]:
+    for sha, containing_branch_defs in match_log_to_filtered_reflogs(machete_context, cli_ctxt, b):
         debug(cli_ctxt,
               f"infer_upstream({b})",
               f"commit {sha} found in filtered reflog of {' and '.join(map(get_second, containing_branch_defs))}")
