@@ -740,7 +740,7 @@ class MacheteClient:
 
         # Update definition, fire post-hook, and perform the branch update
         self.save_definition_file()
-        run_post_slide_out_hook(self.cli_ctxt, new_upstream, branches_to_slide_out[-1], new_downstreams)
+        self.run_post_slide_out_hook(new_upstream, branches_to_slide_out[-1], new_downstreams)
 
         go(self.cli_ctxt, new_upstream)
         for new_downstream in new_downstreams:
@@ -801,7 +801,7 @@ class MacheteClient:
                 lambda bd: dds if bd == d else [bd],
                 self.down_branches[b])
             self.save_definition_file()
-            run_post_slide_out_hook(self.cli_ctxt, b, d, dds)
+            self.run_post_slide_out_hook(b, d, dds)
 
     def traverse(self) -> None:
 
@@ -825,7 +825,7 @@ class MacheteClient:
         initial_branch = nearest_remaining_branch = current_branch(self.cli_ctxt)
 
         if self.cli_ctxt.opt_start_from == "root":
-            dest = self.root_branch(self, current_branch(self.cli_ctxt), if_unmanaged=MacheteClient.PICK_FIRST_ROOT)
+            dest = self.root_branch(current_branch(self.cli_ctxt), if_unmanaged=MacheteClient.PICK_FIRST_ROOT)
             print_new_line(False)
             print(f"Checking out the root branch ({bold(dest)})")
             go(self.cli_ctxt, dest)
@@ -898,7 +898,7 @@ class MacheteClient:
                     if b in self.annotations:
                         del self.annotations[b]
                     self.save_definition_file()
-                    run_post_slide_out_hook(self.cli_ctxt, u, b, self.down_branches.get(b) or [])
+                    self.run_post_slide_out_hook(u, b, self.down_branches.get(b) or [])
                     if ans == 'yq':
                         return
                     # No need to flush caches since nothing changed in commit/branch structure (only machete-specific changes happened).
@@ -1435,6 +1435,19 @@ class MacheteClient:
         if b not in self.up_branch:
             return False
         return is_merged_to(self.cli_ctxt, b, self.up_branch[b])
+
+    def run_post_slide_out_hook(self, new_upstream: str, slid_out_branch: str,
+                                new_downstreams: List[str]) -> None:
+        hook_path = get_hook_path(self.cli_ctxt, "machete-post-slide-out")
+        if check_hook_executable(self.cli_ctxt, hook_path):
+            debug(self.cli_ctxt,
+                  f"run_post_slide_out_hook({new_upstream}, {slid_out_branch}, {new_downstreams})",
+                  f"running machete-post-slide-out hook ({hook_path})")
+            exit_code = run_cmd(self.cli_ctxt, hook_path, new_upstream, slid_out_branch, *new_downstreams,
+                                cwd=get_root_dir(self.cli_ctxt))
+            if exit_code != 0:
+                sys.stderr.write(f"The machete-post-slide-out hook exited with {exit_code}, aborting.\n")
+                sys.exit(exit_code)
 
 
 def sync_annotations_to_github_prs(machete_client: MacheteClient) -> None: #ask
@@ -2601,18 +2614,6 @@ def set_fork_point_override(cli_ctxt: CommandLineContext, b: str, to_revision: s
 def unset_fork_point_override(cli_ctxt: CommandLineContext, b: str) -> None:
     unset_config(cli_ctxt, config_key_for_override_fork_point_to(b))
     unset_config(cli_ctxt, config_key_for_override_fork_point_while_descendant_of(b))
-
-
-def run_post_slide_out_hook(cli_ctxt: CommandLineContext, new_upstream: str, slid_out_branch: str, new_downstreams: List[str]) -> None: #add
-    hook_path = get_hook_path(cli_ctxt, "machete-post-slide-out")
-    if check_hook_executable(cli_ctxt, hook_path):
-        debug(cli_ctxt,
-              f"run_post_slide_out_hook({new_upstream}, {slid_out_branch}, {new_downstreams})",
-              f"running machete-post-slide-out hook ({hook_path})")
-        exit_code = run_cmd(cli_ctxt, hook_path, new_upstream, slid_out_branch, *new_downstreams, cwd=get_root_dir(cli_ctxt))
-        if exit_code != 0:
-            sys.stderr.write(f"The machete-post-slide-out hook exited with {exit_code}, aborting.\n")
-            sys.exit(exit_code)
 
 
 class StopTraversal(Exception):
