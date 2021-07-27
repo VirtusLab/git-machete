@@ -1255,7 +1255,7 @@ class MacheteClient:
 
     def edit(self) -> int:
         if self.definition_file_path is None or self.definition_file_path == "":
-            raise MacheteException(f"Cannot find configuration file.")
+            raise MacheteException("Cannot find configuration file.")
         return run_cmd(self.cli_ctxt, get_default_editor(self.cli_ctxt), self.definition_file_path)
 
     def fork_point_and_containing_branch_defs(self, b: str, use_overrides: bool) -> Tuple[Optional[str], List[BRANCH_DEF]]:
