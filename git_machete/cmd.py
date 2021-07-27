@@ -1094,7 +1094,7 @@ class MacheteClient:
         # in order to render the leading parts of lines properly.
         for b in self.up_branch:
             u = self.up_branch[b]
-            if is_merged_to(self, self.cli_ctxt, b, u):
+            if is_merged_to(self.cli_ctxt, b, u):
                 edge_color[b] = DIM
             elif not is_ancestor_or_equal(self.cli_ctxt, u, b):
                 edge_color[b] = RED
@@ -1111,14 +1111,14 @@ class MacheteClient:
 
         def print_line_prefix(b_: str, suffix: str) -> None:
             out.write("  ")
-            for p in line_prefix[:-1]:
+            for p in pfx[:-1]:
                 if not p:
                     out.write("  ")
                 else:
                     out.write(colored(f"{vertical_bar()} ", edge_color[p]))
             out.write(colored(suffix, edge_color[b_]))
 
-        for b, line_prefix in dfs_res:
+        for b, pfx in dfs_res:
             if b in self.up_branch:
                 print_line_prefix(b, f"{vertical_bar()} \n")
                 if self.cli_ctxt.opt_list_commits:
@@ -1155,18 +1155,18 @@ class MacheteClient:
 
             if b in (ccob, crb):  # i.e. if b is the current branch (checked out or being rebased)
                 if b == crb:
-                    line_prefix = "REBASING "
+                    prefix = "REBASING "
                 elif is_am_in_progress(self.cli_ctxt):
-                    line_prefix = "GIT AM IN PROGRESS "
+                    prefix = "GIT AM IN PROGRESS "
                 elif is_cherry_pick_in_progress(self.cli_ctxt):
-                    line_prefix = "CHERRY-PICKING "
+                    prefix = "CHERRY-PICKING "
                 elif is_merge_in_progress(self.cli_ctxt):
-                    line_prefix = "MERGING "
+                    prefix = "MERGING "
                 elif is_revert_in_progress(self.cli_ctxt):
-                    line_prefix = "REVERTING "
+                    prefix = "REVERTING "
                 else:
-                    line_prefix = ""
-                current = "%s%s" % (bold(colored(line_prefix, RED)), bold(underline(b, star_if_ascii_only=True)))
+                    prefix = ""
+                current = "%s%s" % (bold(colored(prefix, RED)), bold(underline(b, star_if_ascii_only=True)))
             else:
                 current = bold(b)
 
@@ -1499,16 +1499,15 @@ class MacheteClient:
 
     def filtered_reflog(self, b: str, prefix: str) -> List[str]:
         def is_excluded_reflog_subject(sha_: str, gs_: str) -> bool:
-            is_excluded = (
-                    gs_.startswith("branch: Created from") or
-                    gs_ == f"branch: Reset to {b}" or
-                    gs_ == "branch: Reset to HEAD" or
-                    gs_.startswith("reset: moving to ") or
-                    gs_.startswith("fetch . ") or
-                    # The rare case of a no-op rebase, the exact wording likely depends on git version
-                    gs_ == f"rebase finished: {prefix}{b} onto {sha_}" or
-                    gs_ == f"rebase -i (finish): {prefix}{b} onto {sha_}"
-            )
+            is_excluded = (gs_.startswith("branch: Created from") or
+                           gs_ == f"branch: Reset to {b}" or
+                           gs_ == "branch: Reset to HEAD" or
+                           gs_.startswith("reset: moving to ") or
+                           gs_.startswith("fetch . ") or
+                           # The rare case of a no-op rebase, the exact wording likely depends on git version
+                           gs_ == f"rebase finished: {prefix}{b} onto {sha_}" or
+                           gs_ == f"rebase -i (finish): {prefix}{b} onto {sha_}"
+                           )
             if is_excluded:
                 debug(self.cli_ctxt, f"filtered_reflog({b}, {prefix}) -> is_excluded_reflog_subject({sha_}, <<<{gs_}>>>)",
                       "skipping reflog entry")
