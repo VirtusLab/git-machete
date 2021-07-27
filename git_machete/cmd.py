@@ -1065,16 +1065,17 @@ class MacheteClient:
 
     def status(self, warn_on_yellow_edges: bool) -> None:
         dfs_res = []
+        prefix: str
 
-        def prefix_dfs(u_: str, prefix: List[Optional[str]]) -> None:
-            dfs_res.append((u_, prefix))
+        def prefix_dfs(u_: str, prefix_df: List[Optional[str]]) -> None:
+            dfs_res.append((u_, prefix_df))
             if self.down_branches.get(u_):
                 for (v, nv) in zip(self.down_branches[u_][:-1], self.down_branches[u_][1:]):
-                    prefix_dfs(v, prefix + [nv])
-                prefix_dfs(self.down_branches[u_][-1], prefix + [None])
+                    prefix_dfs(v, prefix_df + [nv])
+                prefix_dfs(self.down_branches[u_][-1], prefix_df + [None])
 
         for u in self.roots:
-            prefix_dfs(u, prefix=[])
+            prefix_dfs(u, prefix_df=[])
 
         out = io.StringIO()
         edge_color: Dict[str, str] = {}
@@ -2350,7 +2351,7 @@ def reflog(cli_ctxt: CommandLineContext, b: str) -> List[REFLOG_ENTRY]:
         return reflogs_cached[b]
 
 
-def filtered_reflog(cli_ctxt: CommandLineContext, b: str, prefix: str) -> List[str]:
+def filtered_reflog(cli_ctxt: CommandLineContext, b: str, prefix: str) -> List[str]: #add
     def is_excluded_reflog_subject(sha_: str, gs_: str) -> bool:
         is_excluded = (
             gs_.startswith("branch: Created from") or
