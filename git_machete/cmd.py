@@ -1498,7 +1498,7 @@ class MacheteClient:
         print(fmt(f"\t`git reset {latest_sha}`"))
 
 
-def sync_annotations_to_github_prs(machete_client: MacheteClient) -> None: #ask
+def sync_annotations_to_github_prs(machete_client: MacheteClient) -> None:  # ask if member of MacheteClient
     from git_machete.github import derive_current_user_login, derive_pull_requests, GitHubPullRequest, parse_github_remote_url
 
     url_for_remote: Dict[str, str] = {r: get_url_of_remote(machete_client.cli_ctxt, r) for r in remotes(machete_client.cli_ctxt)}
@@ -2580,7 +2580,7 @@ def get_overridden_fork_point(cli_ctxt: CommandLineContext, b: str) -> Optional[
     return to
 
 
-def get_revision_repr(cli_ctxt: CommandLineContext, revision: str) -> str: #add
+def get_revision_repr(cli_ctxt: CommandLineContext, revision: str) -> str:
     short_sha = short_commit_sha_by_revision(cli_ctxt, revision)
     if is_full_sha(revision) or revision == short_sha:
         return f"commit {revision}"
@@ -2588,7 +2588,7 @@ def get_revision_repr(cli_ctxt: CommandLineContext, revision: str) -> str: #add
         return f"{revision} (commit {short_commit_sha_by_revision(cli_ctxt, revision)})"
 
 
-def set_fork_point_override(cli_ctxt: CommandLineContext, b: str, to_revision: str) -> None: #add
+def set_fork_point_override(cli_ctxt: CommandLineContext, b: str, to_revision: str) -> None:
     if b not in local_branches(cli_ctxt):
         raise MacheteException(f"`{b}` is not a local branch")
     to_sha = commit_sha_by_revision(cli_ctxt, to_revision, prefix="")
