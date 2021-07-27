@@ -1066,15 +1066,15 @@ class MacheteClient:
     def status(self, warn_on_yellow_edges: bool) -> None:
         dfs_res = []
 
-        def prefix_dfs(u_: str, prefix_df: List[Optional[str]]) -> None:
-            dfs_res.append((u_, prefix_df))
+        def prefix_dfs(u_: str, accumulated_path: List[Optional[str]]) -> None:
+            dfs_res.append((u_, accumulated_path))
             if self.down_branches.get(u_):
                 for (v, nv) in zip(self.down_branches[u_][:-1], self.down_branches[u_][1:]):
-                    prefix_dfs(v, prefix_df + [nv])
-                prefix_dfs(self.down_branches[u_][-1], prefix_df + [None])
+                    prefix_dfs(v, accumulated_path + [nv])
+                prefix_dfs(self.down_branches[u_][-1], accumulated_path + [None])
 
         for u in self.roots:
-            prefix_dfs(u, prefix_df=[])
+            prefix_dfs(u, accumulated_path=[])
 
         out = io.StringIO()
         edge_color: Dict[str, str] = {}
@@ -1500,14 +1500,14 @@ class MacheteClient:
     def filtered_reflog(self, b: str, prefix: str) -> List[str]:
         def is_excluded_reflog_subject(sha_: str, gs_: str) -> bool:
             is_excluded = (
-                           gs_.startswith("branch: Created from") or
-                           gs_ == f"branch: Reset to {b}" or
-                           gs_ == "branch: Reset to HEAD" or
-                           gs_.startswith("reset: moving to ") or
-                           gs_.startswith("fetch . ") or
-                           # The rare case of a no-op rebase, the exact wording likely depends on git version
-                           gs_ == f"rebase finished: {prefix}{b} onto {sha_}" or
-                           gs_ == f"rebase -i (finish): {prefix}{b} onto {sha_}"
+                    gs_.startswith("branch: Created from") or
+                    gs_ == f"branch: Reset to {b}" or
+                    gs_ == "branch: Reset to HEAD" or
+                    gs_.startswith("reset: moving to ") or
+                    gs_.startswith("fetch . ") or
+                    # The rare case of a no-op rebase, the exact wording likely depends on git version
+                    gs_ == f"rebase finished: {prefix}{b} onto {sha_}" or
+                    gs_ == f"rebase -i (finish): {prefix}{b} onto {sha_}"
             )
             if is_excluded:
                 debug(self.cli_ctxt, f"filtered_reflog({b}, {prefix}) -> is_excluded_reflog_subject({sha_}, <<<{gs_}>>>)",
@@ -1532,7 +1532,7 @@ class MacheteClient:
               f"filtered_reflog({b}, {prefix})",
               "computed filtered reflog (= reflog without branch creation "
               "and branch reset events irrelevant for fork point/upstream inference): %s\n" % (
-                                                                                               ", ".join(result) or "<empty>"))
+                      ", ".join(result) or "<empty>"))
         return result
 
 
