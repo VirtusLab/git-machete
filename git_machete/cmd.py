@@ -1111,14 +1111,14 @@ class MacheteClient:
 
         def print_line_prefix(b_: str, suffix: str) -> None:
             out.write("  ")
-            for p in prefix[:-1]:
+            for p in line_prefix[:-1]:
                 if not p:
                     out.write("  ")
                 else:
                     out.write(colored(f"{vertical_bar()} ", edge_color[p]))
             out.write(colored(suffix, edge_color[b_]))
 
-        for b, prefix in dfs_res:
+        for b, line_prefix in dfs_res:
             if b in self.up_branch:
                 print_line_prefix(b, f"{vertical_bar()} \n")
                 if self.cli_ctxt.opt_list_commits:
@@ -1155,18 +1155,18 @@ class MacheteClient:
 
             if b in (ccob, crb):  # i.e. if b is the current branch (checked out or being rebased)
                 if b == crb:
-                    prefix = "REBASING "
+                    line_prefix = "REBASING "
                 elif is_am_in_progress(self.cli_ctxt):
-                    prefix = "GIT AM IN PROGRESS "
+                    line_prefix = "GIT AM IN PROGRESS "
                 elif is_cherry_pick_in_progress(self.cli_ctxt):
-                    prefix = "CHERRY-PICKING "
+                    line_prefix = "CHERRY-PICKING "
                 elif is_merge_in_progress(self.cli_ctxt):
-                    prefix = "MERGING "
+                    line_prefix = "MERGING "
                 elif is_revert_in_progress(self.cli_ctxt):
-                    prefix = "REVERTING "
+                    line_prefix = "REVERTING "
                 else:
-                    prefix = ""
-                current = "%s%s" % (bold(colored(prefix, RED)), bold(underline(b, star_if_ascii_only=True)))
+                    line_prefix = ""
+                current = "%s%s" % (bold(colored(line_prefix, RED)), bold(underline(b, star_if_ascii_only=True)))
             else:
                 current = bold(b)
 
@@ -1497,17 +1497,17 @@ class MacheteClient:
         print()
         print(fmt(f"\t`git reset {latest_sha}`"))
 
-    def filtered_reflog(self, b: str, prefix: str) -> List[str]:  # add
+    def filtered_reflog(self, b: str, prefix: str) -> List[str]:
         def is_excluded_reflog_subject(sha_: str, gs_: str) -> bool:
             is_excluded = (
-                    gs_.startswith("branch: Created from") or
-                    gs_ == f"branch: Reset to {b}" or
-                    gs_ == "branch: Reset to HEAD" or
-                    gs_.startswith("reset: moving to ") or
-                    gs_.startswith("fetch . ") or
-                    # The rare case of a no-op rebase, the exact wording likely depends on git version
-                    gs_ == f"rebase finished: {prefix}{b} onto {sha_}" or
-                    gs_ == f"rebase -i (finish): {prefix}{b} onto {sha_}"
+                           gs_.startswith("branch: Created from") or
+                           gs_ == f"branch: Reset to {b}" or
+                           gs_ == "branch: Reset to HEAD" or
+                           gs_.startswith("reset: moving to ") or
+                           gs_.startswith("fetch . ") or
+                           # The rare case of a no-op rebase, the exact wording likely depends on git version
+                           gs_ == f"rebase finished: {prefix}{b} onto {sha_}" or
+                           gs_ == f"rebase -i (finish): {prefix}{b} onto {sha_}"
             )
             if is_excluded:
                 debug(self.cli_ctxt, f"filtered_reflog({b}, {prefix}) -> is_excluded_reflog_subject({sha_}, <<<{gs_}>>>)",
@@ -1532,7 +1532,7 @@ class MacheteClient:
               f"filtered_reflog({b}, {prefix})",
               "computed filtered reflog (= reflog without branch creation "
               "and branch reset events irrelevant for fork point/upstream inference): %s\n" % (
-                          ", ".join(result) or "<empty>"))
+                                                                                               ", ".join(result) or "<empty>"))
         return result
 
 
@@ -2410,7 +2410,7 @@ def get_latest_checkout_timestamps(cli_ctxt: CommandLineContext) -> Dict[str, in
     return result
 
 
-def match_log_to_filtered_reflogs(machete_context: MacheteClient,cli_ctxt: CommandLineContext, b: str) -> Generator[Tuple[str, List[BRANCH_DEF]], None, None]:
+def match_log_to_filtered_reflogs(machete_context: MacheteClient, cli_ctxt: CommandLineContext, b: str) -> Generator[Tuple[str, List[BRANCH_DEF]], None, None]:
     global branch_defs_by_sha_in_reflog
 
     if b not in local_branches(cli_ctxt):
