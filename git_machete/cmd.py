@@ -1006,8 +1006,7 @@ class MacheteClient:
                     ans = ask_if(
                         self.cli_ctxt,
                         f"Branch {bold(b)} diverged from (and has newer commits than) its remote counterpart {bold(rb)}.\n"
-                        f"Push {bold(b)} with force-with-lease to {bold(remote)}?" + pretty_choices('y', 'N', 'q',
-                                                                                                    'yq'),
+                        f"Push {bold(b)} with force-with-lease to {bold(remote)}?" + pretty_choices('y', 'N', 'q', 'yq'),
                         f"Branch {bold(b)} diverged from (and has newer commits than) its remote counterpart {bold(rb)}.\n"
                         f"Pushing {bold(b)} with force-with-lease to {bold(remote)}...",
                         override_answer=None if self.cli_ctxt.opt_push_tracked else "N"
@@ -1105,14 +1104,14 @@ class MacheteClient:
 
         def print_line_prefix(b_: str, suffix: str) -> None:
             out.write("  ")
-            for p in pfx[:-1]:
+            for p in accumulated_path[:-1]:
                 if not p:
                     out.write("  ")
                 else:
                     out.write(colored(f"{vertical_bar()} ", edge_color[p]))
             out.write(colored(suffix, edge_color[b_]))
 
-        for b, pfx in dfs_res:
+        for b, accumulated_path in dfs_res:
             if b in self.up_branch:
                 print_line_prefix(b, f"{vertical_bar()} \n")
                 if self.cli_ctxt.opt_list_commits:
@@ -1663,7 +1662,7 @@ class MacheteClient:
             else:
                 debug(self.cli_ctxt, f"match_log_to_filtered_reflogs({b})", f"commit {sha} not found in any filtered reflog")
 
-    def infer_upstream(self, b: str,condition: Callable[[str], bool] = lambda u: True, reject_reason_message: str = "") -> Optional[str]:
+    def infer_upstream(self, b: str, condition: Callable[[str], bool] = lambda u: True, reject_reason_message: str = "") -> Optional[str]:
         for sha, containing_branch_defs in self.match_log_to_filtered_reflogs(b):
             debug(self.cli_ctxt,
                   f"infer_upstream({b})",
