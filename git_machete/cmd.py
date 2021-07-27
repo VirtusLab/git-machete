@@ -532,7 +532,7 @@ class MacheteClient:
             print(fmt(f"Added branch `{b}` as a new root"))
         else:
             if not onto:
-                u = infer_upstream(self, self.cli_ctxt, b, condition=lambda x: x in self.managed_branches, reject_reason_message="this candidate is not a managed branch")
+                u = self.infer_upstream(b, condition=lambda x: x in self.managed_branches, reject_reason_message="this candidate is not a managed branch")
                 if not u:
                     raise MacheteException(f"Could not automatically infer upstream (parent) branch for `{b}`.\n"
                                            "You can either:\n"
@@ -639,11 +639,7 @@ class MacheteClient:
             return
 
         for b in excluding(non_root_fixed_branches, stale_non_root_fixed_branches):
-            u = infer_upstream(self, self.cli_ctxt,
-                               b,
-                               condition=lambda candidate: get_root_of(
-                                   candidate) != b and candidate not in stale_non_root_fixed_branches,
-                               reject_reason_message="choosing this candidate would form a cycle in the resulting graph or the candidate is a stale branch")
+            u = self.infer_upstream(b, condition=lambda candidate: get_root_of(candidate) != b and candidate not in stale_non_root_fixed_branches, reject_reason_message="choosing this candidate would form a cycle in the resulting graph or the candidate is a stale branch")
             if u:
                 debug(self.cli_ctxt, "discover_tree()",
                       f"inferred upstream of {b} is {u}, attaching {b} as a child of {u}\n")
@@ -1289,7 +1285,7 @@ class MacheteClient:
                     return overridden_fp_sha, []
 
         try:
-            fp_sha, containing_branch_defs = next(match_log_to_filtered_reflogs(self, self.cli_ctxt, b))
+            fp_sha, containing_branch_defs = next(self.match_log_to_filtered_reflogs(b))
         except StopIteration:
             if u and is_ancestor_or_equal(self.cli_ctxt, u, b):
                 debug(self.cli_ctxt, f"fork_point_and_containing_branch_defs({b})",
@@ -1400,7 +1396,7 @@ class MacheteClient:
             else:
                 raise MacheteException(f"Branch `{b}` has no upstream branch")
         else:
-            u = infer_upstream(self, self.cli_ctxt, b)
+            u = self.infer_upstream(b)
             if u:
                 if prompt_if_inferred_msg:
                     if ask_if(
@@ -1603,6 +1599,89 @@ class MacheteClient:
             return self.up(b, prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)
         else:
             raise MacheteException(f"Invalid direction: `{param}` expected: {allowed_directions(allow_current)}")
+
+    def match_log_to_filtered_reflogs(self, b: str) -> Generator[Tuple[str, List[BRANCH_DEF]], None, None]:
+        global branch_defs_by_sha_in_reflog
+
+        if b not in local_branches(self.cli_ctxt):
+            raise MacheteException(f"`{b}` is not a local branch")
+
+        if branch_defs_by_sha_in_reflog is None:
+            def generate_entries() -> Generator[Tuple[str, BRANCH_DEF], None, None]:
+                for lb in local_branches(self.cli_ctxt):
+                    lb_shas = set()
+                    for sha_ in self.filtered_reflog(lb, prefix="refs/heads/"):
+                        lb_shas.add(sha_)
+                        yield sha_, (lb, lb)
+                    rb = combined_counterpart_for_fetching_of_branch(self.cli_ctxt, lb)
+                    if rb:
+                        for sha_ in self.filtered_reflog(rb, prefix="refs/remotes/"):
+                            if sha_ not in lb_shas:
+                                yield sha_, (lb, rb)
+
+            branch_defs_by_sha_in_reflog = {}
+            for sha, branch_def in generate_entries():
+                if sha in branch_defs_by_sha_in_reflog:
+                    # The practice shows that it's rather unlikely for a given commit to appear on filtered reflogs of two unrelated branches
+                    # ("unrelated" as in, not a local branch and its remote counterpart) but we need to handle this case anyway.
+                    branch_defs_by_sha_in_reflog[sha] += [branch_def]
+                else:
+                    branch_defs_by_sha_in_reflog[sha] = [branch_def]
+
+            def log_result() -> Generator[str, None, None]:
+                branch_defs: List[BRANCH_DEF]
+                sha_: str
+                for sha_, branch_defs in branch_defs_by_sha_in_reflog.items():
+                    def branch_def_to_str(lb: str, lb_or_rb: str) -> str:
+                        return lb if lb == lb_or_rb else f"{lb_or_rb} (remote counterpart of {lb})"
+
+                    joined_branch_defs = ", ".join(map(tupled(branch_def_to_str), branch_defs))
+                    yield dim(f"{sha_} => {joined_branch_defs}")
+
+            debug(self.cli_ctxt, f"match_log_to_filtered_reflogs({b})",
+                  "branches containing the given SHA in their filtered reflog: \n%s\n" % "\n".join(log_result()))
+
+        for sha in spoonfeed_log_shas(self.cli_ctxt, b):
+            if sha in branch_defs_by_sha_in_reflog:
+                # The entries must be sorted by lb_or_rb to make sure the upstream inference is deterministic
+                # (and does not depend on the order in which `generate_entries` iterated through the local branches).
+                branch_defs: List[BRANCH_DEF] = branch_defs_by_sha_in_reflog[sha]
+
+                def lb_is_not_b(lb: str, lb_or_rb: str) -> bool:
+                    return lb != b
+
+                containing_branch_defs = sorted(filter(tupled(lb_is_not_b), branch_defs), key=get_second)
+                if containing_branch_defs:
+                    debug(self.cli_ctxt,
+                          f"match_log_to_filtered_reflogs({b})",
+                          f"commit {sha} found in filtered reflog of {' and '.join(map(get_second, branch_defs))}")
+                    yield sha, containing_branch_defs
+                else:
+                    debug(self.cli_ctxt,
+                          f"match_log_to_filtered_reflogs({b})",
+                          f"commit {sha} found only in filtered reflog of {' and '.join(map(get_second, branch_defs))}; ignoring")
+            else:
+                debug(self.cli_ctxt, f"match_log_to_filtered_reflogs({b})", f"commit {sha} not found in any filtered reflog")
+
+    def infer_upstream(self, b: str,condition: Callable[[str], bool] = lambda u: True, reject_reason_message: str = "") -> Optional[str]:
+        for sha, containing_branch_defs in self.match_log_to_filtered_reflogs(b):
+            debug(self.cli_ctxt,
+                  f"infer_upstream({b})",
+                  f"commit {sha} found in filtered reflog of {' and '.join(map(get_second, containing_branch_defs))}")
+
+            for candidate, original_matched_branch in containing_branch_defs:
+                if candidate != original_matched_branch:
+                    debug(self.cli_ctxt,
+                          f"infer_upstream({b})",
+                          f"upstream candidate is {candidate}, which is the local counterpart of {original_matched_branch}")
+
+                if condition(candidate):
+                    debug(self.cli_ctxt, f"infer_upstream({b})", f"upstream candidate {candidate} accepted")
+                    return candidate
+                else:
+                    debug(self.cli_ctxt, f"infer_upstream({b})",
+                          f"upstream candidate {candidate} rejected ({reject_reason_message})")
+        return None
 
 
 # Allowed parameter values for show/go command
@@ -2413,69 +2492,6 @@ def get_latest_checkout_timestamps(cli_ctxt: CommandLineContext) -> Dict[str, in
     return result
 
 
-def match_log_to_filtered_reflogs(machete_context: MacheteClient, cli_ctxt: CommandLineContext, b: str) -> Generator[Tuple[str, List[BRANCH_DEF]], None, None]:
-    global branch_defs_by_sha_in_reflog
-
-    if b not in local_branches(cli_ctxt):
-        raise MacheteException(f"`{b}` is not a local branch")
-
-    if branch_defs_by_sha_in_reflog is None:
-        def generate_entries() -> Generator[Tuple[str, BRANCH_DEF], None, None]:
-            for lb in local_branches(cli_ctxt):
-                lb_shas = set()
-                for sha_ in machete_context.filtered_reflog(lb, prefix="refs/heads/"):
-                    lb_shas.add(sha_)
-                    yield sha_, (lb, lb)
-                rb = combined_counterpart_for_fetching_of_branch(cli_ctxt, lb)
-                if rb:
-                    for sha_ in machete_context.filtered_reflog(rb, prefix="refs/remotes/"):
-                        if sha_ not in lb_shas:
-                            yield sha_, (lb, rb)
-
-        branch_defs_by_sha_in_reflog = {}
-        for sha, branch_def in generate_entries():
-            if sha in branch_defs_by_sha_in_reflog:
-                # The practice shows that it's rather unlikely for a given commit to appear on filtered reflogs of two unrelated branches
-                # ("unrelated" as in, not a local branch and its remote counterpart) but we need to handle this case anyway.
-                branch_defs_by_sha_in_reflog[sha] += [branch_def]
-            else:
-                branch_defs_by_sha_in_reflog[sha] = [branch_def]
-
-        def log_result() -> Generator[str, None, None]:
-            branch_defs: List[BRANCH_DEF]
-            sha_: str
-            for sha_, branch_defs in branch_defs_by_sha_in_reflog.items():
-                def branch_def_to_str(lb: str, lb_or_rb: str) -> str:
-                    return lb if lb == lb_or_rb else f"{lb_or_rb} (remote counterpart of {lb})"
-
-                joined_branch_defs = ", ".join(map(tupled(branch_def_to_str), branch_defs))
-                yield dim(f"{sha_} => {joined_branch_defs}")
-
-        debug(cli_ctxt, f"match_log_to_filtered_reflogs({b})", "branches containing the given SHA in their filtered reflog: \n%s\n" % "\n".join(log_result()))
-
-    for sha in spoonfeed_log_shas(cli_ctxt, b):
-        if sha in branch_defs_by_sha_in_reflog:
-            # The entries must be sorted by lb_or_rb to make sure the upstream inference is deterministic
-            # (and does not depend on the order in which `generate_entries` iterated through the local branches).
-            branch_defs: List[BRANCH_DEF] = branch_defs_by_sha_in_reflog[sha]
-
-            def lb_is_not_b(lb: str, lb_or_rb: str) -> bool:
-                return lb != b
-
-            containing_branch_defs = sorted(filter(tupled(lb_is_not_b), branch_defs), key=get_second)
-            if containing_branch_defs:
-                debug(cli_ctxt,
-                      f"match_log_to_filtered_reflogs({b})",
-                      f"commit {sha} found in filtered reflog of {' and '.join(map(get_second, branch_defs))}")
-                yield sha, containing_branch_defs
-            else:
-                debug(cli_ctxt,
-                      f"match_log_to_filtered_reflogs({b})",
-                      f"commit {sha} found only in filtered reflog of {' and '.join(map(get_second, branch_defs))}; ignoring")
-        else:
-            debug(cli_ctxt, f"match_log_to_filtered_reflogs({b})", f"commit {sha} not found in any filtered reflog")
-
-
 # Complex routines/commands
 
 def is_merged_to(machete_context: MacheteClient, cli_ctxt: CommandLineContext, b: str, target: str) -> bool:
@@ -2494,26 +2510,6 @@ def is_merged_to(machete_context: MacheteClient, cli_ctxt: CommandLineContext, b
         # If there is a commit in target with an identical tree state to b,
         # then b may be squash or rebase merged into target.
         return contains_equivalent_tree(cli_ctxt, b, target)
-
-
-def infer_upstream(machete_context: MacheteClient, cli_ctxt: CommandLineContext, b: str, condition: Callable[[str], bool] = lambda u: True, reject_reason_message: str = "") -> Optional[str]:
-    for sha, containing_branch_defs in match_log_to_filtered_reflogs(machete_context, cli_ctxt, b):
-        debug(cli_ctxt,
-              f"infer_upstream({b})",
-              f"commit {sha} found in filtered reflog of {' and '.join(map(get_second, containing_branch_defs))}")
-
-        for candidate, original_matched_branch in containing_branch_defs:
-            if candidate != original_matched_branch:
-                debug(cli_ctxt,
-                      f"infer_upstream({b})",
-                      f"upstream candidate is {candidate}, which is the local counterpart of {original_matched_branch}")
-
-            if condition(candidate):
-                debug(cli_ctxt, f"infer_upstream({b})", f"upstream candidate {candidate} accepted")
-                return candidate
-            else:
-                debug(cli_ctxt, f"infer_upstream({b})", f"upstream candidate {candidate} rejected ({reject_reason_message})")
-    return None
 
 
 def config_key_for_override_fork_point_to(b: str) -> str:
