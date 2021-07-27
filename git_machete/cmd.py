@@ -571,16 +571,16 @@ class MacheteClient:
     def update(self) -> None:
         cb = current_branch(self.cli_ctxt)
         if self.cli_ctxt.opt_merge:
-            with_branch = up(self,
-                             cb,
-                             prompt_if_inferred_msg="Branch `%s` not found in the tree of branch dependencies. Merge with the inferred upstream `%s`?" + pretty_choices('y', 'N'),
-                             prompt_if_inferred_yes_opt_msg="Branch `%s` not found in the tree of branch dependencies. Merging with the inferred upstream `%s`...")
+            with_branch = self.up(self.cli_ctxt,
+                                  cb,
+                                  prompt_if_inferred_msg="Branch `%s` not found in the tree of branch dependencies. Merge with the inferred upstream `%s`?" + pretty_choices('y', 'N'),
+                                  prompt_if_inferred_yes_opt_msg="Branch `%s` not found in the tree of branch dependencies. Merging with the inferred upstream `%s`...")
             merge(self.cli_ctxt, with_branch, cb)
         else:
-            onto_branch = up(self,
-                             cb,
-                             prompt_if_inferred_msg="Branch `%s` not found in the tree of branch dependencies. Rebase onto the inferred upstream `%s`?" + pretty_choices('y', 'N'),
-                             prompt_if_inferred_yes_opt_msg="Branch `%s` not found in the tree of branch dependencies. Rebasing onto the inferred upstream `%s`...")
+            onto_branch = self.up(self.cli_ctxt,
+                                  cb,
+                                  prompt_if_inferred_msg="Branch `%s` not found in the tree of branch dependencies. Rebase onto the inferred upstream `%s`?" + pretty_choices('y', 'N'),
+                                  prompt_if_inferred_yes_opt_msg="Branch `%s` not found in the tree of branch dependencies. Rebasing onto the inferred upstream `%s`...")
             rebase(self.cli_ctxt, f"refs/heads/{onto_branch}",
                    self.cli_ctxt.opt_fork_point or self.fork_point(cb, use_overrides=True), cb)
 
@@ -760,7 +760,7 @@ class MacheteClient:
 
         def connected_with_green_edge(bd: str) -> bool:
             return bool(
-                not is_merged_to_upstream(self, bd) and
+                not self.is_merged_to_upstream(bd) and
                 is_ancestor_or_equal(self.cli_ctxt, b, bd) and
                 (get_overridden_fork_point(self.cli_ctxt, bd) or commit_sha_by_revision(self.cli_ctxt, b) == self.fork_point(bd, use_overrides=False)))
 
@@ -825,7 +825,7 @@ class MacheteClient:
         initial_branch = nearest_remaining_branch = current_branch(self.cli_ctxt)
 
         if self.cli_ctxt.opt_start_from == "root":
-            dest = root_branch(self, current_branch(self.cli_ctxt), if_unmanaged=MacheteClient.PICK_FIRST_ROOT)
+            dest = self.root_branch(self, current_branch(self.cli_ctxt), if_unmanaged=MacheteClient.PICK_FIRST_ROOT)
             print_new_line(False)
             print(f"Checking out the root branch ({bold(dest)})")
             go(self.cli_ctxt, dest)
@@ -845,7 +845,7 @@ class MacheteClient:
         for b in itertools.dropwhile(lambda x: x != cb, self.managed_branches):
             u = self.up_branch.get(b)
 
-            needs_slide_out: bool = is_merged_to_upstream(self, b)
+            needs_slide_out: bool = self.is_merged_to_upstream(b)
             s, remote = get_strict_remote_sync_status(self.cli_ctxt, b)
             statuses_to_sync = (UNTRACKED,
                                 AHEAD_OF_REMOTE,
@@ -1266,7 +1266,7 @@ class MacheteClient:
     def fork_point_and_containing_branch_defs(self, b: str, use_overrides: bool) -> Tuple[Optional[str], List[BRANCH_DEF]]:
         u = self.up_branch.get(b)
 
-        if is_merged_to_upstream(self, b):
+        if self.is_merged_to_upstream(b):
             fp_sha = commit_sha_by_revision(self.cli_ctxt, b)
             debug(self.cli_ctxt, f"fork_point_and_containing_branch_defs({b})",
                   f"{b} is merged to {u}; skipping inference, using tip of {b} ({fp_sha}) as fork point")
@@ -1337,20 +1337,107 @@ class MacheteClient:
     def log(self, branch: str) -> None:
         run_git(self.cli_ctxt, "log", "^" + self.fork_point(branch, use_overrides=True), f"refs/heads/{branch}")
 
+    def down(self, b: str, pick_mode: bool) -> str:
+        self.expect_in_managed_branches(b)
+        dbs = self.down_branches.get(b)
+        if not dbs:
+            raise MacheteException(f"Branch `{b}` has no downstream branch")
+        elif len(dbs) == 1:
+            return dbs[0]
+        elif pick_mode:
+            return pick(dbs, "downstream branch")
+        else:
+            return "\n".join(dbs)
 
-def slidable(machete_client: MacheteClient) -> List[str]:
-    return [b for b in machete_client.managed_branches if b in machete_client.up_branch]
+    def first_branch(self, b: str) -> str:
+        root = self.root_branch(b, if_unmanaged=MacheteClient.PICK_FIRST_ROOT)
+        root_dbs = self.down_branches.get(root)
+        return root_dbs[0] if root_dbs else root
+
+    def last_branch(self, b: str) -> str:
+        destination = self.root_branch(b, if_unmanaged=MacheteClient.PICK_LAST_ROOT)
+        while self.down_branches.get(destination):
+            destination = self.down_branches[destination][-1]
+        return destination
+
+    def next_branch(self, b: str) -> str:
+        self.expect_in_managed_branches(b)
+        index: int = self.managed_branches.index(b) + 1
+        if index == len(self.managed_branches):
+            raise MacheteException(f"Branch `{b}` has no successor")
+        return self.managed_branches[index]
+
+    def prev_branch(self, b: str) -> str:
+        self.expect_in_managed_branches(b)
+        index: int = self.managed_branches.index(b) - 1
+        if index == -1:
+            raise MacheteException(f"Branch `{b}` has no predecessor")
+        return self.managed_branches[index]
+
+    def root_branch(self, b: str, if_unmanaged: int) -> str:
+        if b not in self.managed_branches:
+            if self.roots:
+                if if_unmanaged == MacheteClient.PICK_FIRST_ROOT:
+                    warn(
+                        f"{b} is not a managed branch, assuming {self.roots[0]} (the first root) instead as root")
+                    return self.roots[0]
+                else:  # if_unmanaged == MacheteContext.PICK_LAST_ROOT
+                    warn(
+                        f"{b} is not a managed branch, assuming {self.roots[-1]} (the last root) instead as root")
+                    return self.roots[-1]
+            else:
+                self.raise_no_branches_error()
+        u = self.up_branch.get(b)
+        while u:
+            b = u
+            u = self.up_branch.get(b)
+        return b
+
+    def up(self, cli_ctxt: CommandLineContext, b: str, prompt_if_inferred_msg: Optional[str],
+           prompt_if_inferred_yes_opt_msg: Optional[str]) -> str:
+        if b in self.managed_branches:
+            u = self.up_branch.get(b)
+            if u:
+                return u
+            else:
+                raise MacheteException(f"Branch `{b}` has no upstream branch")
+        else:
+            u = infer_upstream(cli_ctxt, b)
+            if u:
+                if prompt_if_inferred_msg:
+                    if ask_if(
+                            cli_ctxt,
+                            prompt_if_inferred_msg % (b, u),
+                            prompt_if_inferred_yes_opt_msg % (b, u)
+                    ) in ('y', 'yes'):
+                        return u
+                    else:
+                        sys.exit(1)
+                else:
+                    warn(
+                        f"branch `{b}` not found in the tree of branch dependencies; the upstream has been inferred to `{u}`")
+                    return u
+            else:
+                raise MacheteException(
+                    f"Branch `{b}` not found in the tree of branch dependencies and its upstream could not be inferred")
+
+    def slidable(self) -> List[str]:
+        return [b for b in self.managed_branches if b in self.up_branch]
+
+    def slidable_after(self, b: str) -> List[str]:
+        if b in self.up_branch:
+            dbs = self.down_branches.get(b)
+            if dbs and len(dbs) == 1:
+                return dbs
+        return []
+
+    def is_merged_to_upstream(self, b: str) -> bool:
+        if b not in self.up_branch:
+            return False
+        return is_merged_to(self.cli_ctxt, b, self.up_branch[b])
 
 
-def slidable_after(machete_client: MacheteClient, b: str) -> List[str]:
-    if b in machete_client.up_branch:
-        dbs = machete_client.down_branches.get(b)
-        if dbs and len(dbs) == 1:
-            return dbs
-    return []
-
-
-def sync_annotations_to_github_prs(machete_client: MacheteClient) -> None:
+def sync_annotations_to_github_prs(machete_client: MacheteClient) -> None: #ask
     from git_machete.github import derive_current_user_login, derive_pull_requests, GitHubPullRequest, parse_github_remote_url
 
     url_for_remote: Dict[str, str] = {r: get_url_of_remote(machete_client.cli_ctxt, r) for r in remotes(machete_client.cli_ctxt)}
@@ -1394,119 +1481,26 @@ def sync_annotations_to_github_prs(machete_client: MacheteClient) -> None:
     machete_client.save_definition_file()
 
 
-def is_merged_to_upstream(machete_client: MacheteClient, b: str) -> bool:
-    if b not in machete_client.up_branch:
-        return False
-    return is_merged_to(machete_client.cli_ctxt, b, machete_client.up_branch[b])
-
-
 # Parse and evaluate direction against current branch for show/go commands
-def parse_direction(machete_client: MacheteClient, param: str, b: str, allow_current: bool, down_pick_mode: bool) -> str:
+def parse_direction(machete_client: MacheteClient, cli_ctxt: CommandLineContext, param: str, b: str, allow_current: bool, down_pick_mode: bool) -> str:
     if param in ("c", "current") and allow_current:
-        return current_branch(machete_client.cli_ctxt)  # throws in case of detached HEAD, as in the spec
+        return current_branch(cli_ctxt)  # throws in case of detached HEAD, as in the spec
     elif param in ("d", "down"):
-        return down(machete_client, b, pick_mode=down_pick_mode)
+        return machete_client.down(b, pick_mode=down_pick_mode)
     elif param in ("f", "first"):
-        return first_branch(machete_client, b)
+        return machete_client.first_branch(b)
     elif param in ("l", "last"):
-        return last_branch(machete_client, b)
+        return machete_client.last_branch(b)
     elif param in ("n", "next"):
-        return next_branch(machete_client, b)
+        return machete_client.next_branch(b)
     elif param in ("p", "prev"):
-        return prev_branch(machete_client, b)
+        return machete_client.prev_branch(b)
     elif param in ("r", "root"):
-        return root_branch(machete_client, b, if_unmanaged=MacheteClient.PICK_FIRST_ROOT)
+        return machete_client.root_branch(b, if_unmanaged=MacheteClient.PICK_FIRST_ROOT)
     elif param in ("u", "up"):
-        return up(machete_client, b, prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)
+        return machete_client.up(cli_ctxt, b, prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)
     else:
         raise MacheteException(f"Invalid direction: `{param}` expected: {allowed_directions(allow_current)}")
-
-
-def down(machete_client: MacheteClient, b: str, pick_mode: bool) -> str:
-    machete_client.expect_in_managed_branches(b)
-    dbs = machete_client.down_branches.get(b)
-    if not dbs:
-        raise MacheteException(f"Branch `{b}` has no downstream branch")
-    elif len(dbs) == 1:
-        return dbs[0]
-    elif pick_mode:
-        return pick(dbs, "downstream branch")
-    else:
-        return "\n".join(dbs)
-
-
-def first_branch(machete_client: MacheteClient, b: str) -> str:
-    root = root_branch(machete_client, b, if_unmanaged=MacheteClient.PICK_FIRST_ROOT)
-    root_dbs = machete_client.down_branches.get(root)
-    return root_dbs[0] if root_dbs else root
-
-
-def last_branch(machete_client: MacheteClient, b: str) -> str:
-    d = root_branch(machete_client, b, if_unmanaged=MacheteClient.PICK_LAST_ROOT)
-    while machete_client.down_branches.get(d):
-        d = machete_client.down_branches[d][-1]
-    return d
-
-
-def next_branch(machete_client: MacheteClient, b: str) -> str:
-    machete_client.expect_in_managed_branches(b)
-    index: int = machete_client.managed_branches.index(b) + 1
-    if index == len(machete_client.managed_branches):
-        raise MacheteException(f"Branch `{b}` has no successor")
-    return machete_client.managed_branches[index]
-
-
-def prev_branch(machete_client: MacheteClient, b: str) -> str:
-    machete_client.expect_in_managed_branches(b)
-    index: int = machete_client.managed_branches.index(b) - 1
-    if index == -1:
-        raise MacheteException(f"Branch `{b}` has no predecessor")
-    return machete_client.managed_branches[index]
-
-
-def root_branch(machete_client: MacheteClient, b: str, if_unmanaged: int) -> str:
-    if b not in machete_client.managed_branches:
-        if machete_client.roots:
-            if if_unmanaged == MacheteClient.PICK_FIRST_ROOT:
-                warn(f"{b} is not a managed branch, assuming {machete_client.roots[0]} (the first root) instead as root")
-                return machete_client.roots[0]
-            else:  # if_unmanaged == MacheteContext.PICK_LAST_ROOT
-                warn(f"{b} is not a managed branch, assuming {machete_client.roots[-1]} (the last root) instead as root")
-                return machete_client.roots[-1]
-        else:
-            machete_client.raise_no_branches_error()
-    u = machete_client.up_branch.get(b)
-    while u:
-        b = u
-        u = machete_client.up_branch.get(b)
-    return b
-
-
-def up(machete_client: MacheteClient, b: str, prompt_if_inferred_msg: Optional[str], prompt_if_inferred_yes_opt_msg: Optional[str]) -> str:
-    if b in machete_client.managed_branches:
-        u = machete_client.up_branch.get(b)
-        if u:
-            return u
-        else:
-            raise MacheteException(f"Branch `{b}` has no upstream branch")
-    else:
-        u = infer_upstream(machete_client.cli_ctxt, b)
-        if u:
-            if prompt_if_inferred_msg:
-                if ask_if(
-                        machete_client.cli_ctxt,
-                        prompt_if_inferred_msg % (b, u),
-                        prompt_if_inferred_yes_opt_msg % (b, u)
-                ) in ('y', 'yes'):
-                    return u
-                else:
-                    sys.exit(1)
-            else:
-                warn(
-                    f"branch `{b}` not found in the tree of branch dependencies; the upstream has been inferred to `{u}`")
-                return u
-        else:
-            raise MacheteException(f"Branch `{b}` not found in the tree of branch dependencies and its upstream could not be inferred")
 
 
 # Allowed parameter values for show/go command
@@ -1701,7 +1695,7 @@ def reset_keep(cli_ctxt: CommandLineContext, to_revision: str) -> None:
             f"Cannot perform `git reset --keep {to_revision}`. This is most likely caused by local uncommitted changes.")
 
 
-def push(cli_ctxt: CommandLineContext, remote: str, b: str, force_with_lease: bool = False) -> None:  # utils maybe
+def push(cli_ctxt: CommandLineContext, remote: str, b: str, force_with_lease: bool = False) -> None:
     if not force_with_lease:
         opt_force = []
     elif get_git_version(cli_ctxt) >= (1, 8, 5):  # earliest version of git to support 'push --force-with-lease'
@@ -2572,7 +2566,7 @@ def get_overridden_fork_point(cli_ctxt: CommandLineContext, b: str) -> Optional[
     return to
 
 
-def get_revision_repr(cli_ctxt: CommandLineContext, revision: str) -> str:
+def get_revision_repr(cli_ctxt: CommandLineContext, revision: str) -> str: #add
     short_sha = short_commit_sha_by_revision(cli_ctxt, revision)
     if is_full_sha(revision) or revision == short_sha:
         return f"commit {revision}"
@@ -2580,7 +2574,7 @@ def get_revision_repr(cli_ctxt: CommandLineContext, revision: str) -> str:
         return f"{revision} (commit {short_commit_sha_by_revision(cli_ctxt, revision)})"
 
 
-def set_fork_point_override(cli_ctxt: CommandLineContext, b: str, to_revision: str) -> None:
+def set_fork_point_override(cli_ctxt: CommandLineContext, b: str, to_revision: str) -> None: #add
     if b not in local_branches(cli_ctxt):
         raise MacheteException(f"`{b}` is not a local branch")
     to_sha = commit_sha_by_revision(cli_ctxt, to_revision, prefix="")
@@ -2609,7 +2603,7 @@ def unset_fork_point_override(cli_ctxt: CommandLineContext, b: str) -> None:
     unset_config(cli_ctxt, config_key_for_override_fork_point_while_descendant_of(b))
 
 
-def run_post_slide_out_hook(cli_ctxt: CommandLineContext, new_upstream: str, slid_out_branch: str, new_downstreams: List[str]) -> None:
+def run_post_slide_out_hook(cli_ctxt: CommandLineContext, new_upstream: str, slid_out_branch: str, new_downstreams: List[str]) -> None: #add
     hook_path = get_hook_path(cli_ctxt, "machete-post-slide-out")
     if check_hook_executable(cli_ctxt, hook_path):
         debug(cli_ctxt,
@@ -3703,7 +3697,7 @@ def launch(orig_args: List[str]) -> None:
             machete_client.read_definition_file()
             expect_no_operation_in_progress(cli_ctxt)
             cb = current_branch(cli_ctxt)
-            dest = parse_direction(machete_client, param, cb, allow_current=False, down_pick_mode=True)
+            dest = parse_direction(machete_client, cli_ctxt, param, cb, allow_current=False, down_pick_mode=True)
             if dest != cb:
                 go(cli_ctxt, dest)
         elif cmd == "help":
@@ -3748,11 +3742,11 @@ def launch(orig_args: List[str]) -> None:
             elif param == "managed":
                 res = machete_client.managed_branches
             elif param == "slidable":
-                res = slidable(machete_client)
+                res = machete_client.slidable()
             elif param == "slidable-after":
                 b_arg = list_args[1]
                 machete_client.expect_in_managed_branches(b_arg)
-                res = slidable_after(machete_client, b_arg)
+                res = machete_client.slidable_after(b_arg)
             elif param == "unmanaged":
                 res = excluding(local_branches(cli_ctxt), machete_client.managed_branches)
             elif param == "with-overridden-fork-point":
@@ -3777,7 +3771,7 @@ def launch(orig_args: List[str]) -> None:
             if param == "current" and branch is not None:
                 raise MacheteException(f'`show current` with a branch (`{branch}`) does not make sense')
             machete_client.read_definition_file(verify_branches=False)
-            print(parse_direction(machete_client, param, branch or current_branch(cli_ctxt), allow_current=True, down_pick_mode=False))
+            print(parse_direction(machete_client, cli_ctxt, param, branch or current_branch(cli_ctxt), allow_current=True, down_pick_mode=False))
         elif cmd == "slide-out":
             params = parse_options(args, "d:Mn", ["down-fork-point=", "merge", "no-edit-merge", "no-interactive-rebase"])
             machete_client.read_definition_file()
