@@ -1254,7 +1254,9 @@ class MacheteClient:
             print("No branches to delete")
 
     def edit(self) -> int:
-        return run_cmd(self.cli_ctxt, get_default_editor(self), self.definition_file_path)
+        if self.definition_file_path is None or self.definition_file_path == "":
+            raise MacheteException(f"Cannot find configuration file.")
+        return run_cmd(self.cli_ctxt, get_default_editor(self.cli_ctxt), self.definition_file_path)
 
     def fork_point_and_containing_branch_defs(self, b: str, use_overrides: bool) -> Tuple[Optional[str], List[BRANCH_DEF]]:
         u = self.up_branch.get(b)
@@ -1806,14 +1808,14 @@ def find_executable(cli_ctxt: CommandLineContext, executable: str) -> Optional[s
     return None
 
 
-def get_default_editor(machete_client: MacheteClient) -> str:
+def get_default_editor(cli_ctxt: CommandLineContext) -> str:
     # Based on the git's own algorithm for identifying the editor.
     # '$GIT_MACHETE_EDITOR', 'editor' (to please Debian-based systems) and 'nano' have been added.
     git_machete_editor_var = "GIT_MACHETE_EDITOR"
     proposed_editor_funs: List[Tuple[str, Callable[[], Optional[str]]]] = [
         ("$" + git_machete_editor_var, lambda: os.environ.get(git_machete_editor_var)),
         ("$GIT_EDITOR", lambda: os.environ.get("GIT_EDITOR")),
-        ("git config core.editor", lambda: get_config_or_none(machete_client.cli_ctxt, "core.editor")),
+        ("git config core.editor", lambda: get_config_or_none(cli_ctxt, "core.editor")),
         ("$VISUAL", lambda: os.environ.get("VISUAL")),
         ("$EDITOR", lambda: os.environ.get("EDITOR")),
         ("editor", lambda: "editor"),
@@ -1824,18 +1826,18 @@ def get_default_editor(machete_client: MacheteClient) -> str:
     for name, fun in proposed_editor_funs:
         editor = fun()
         if not editor:
-            debug(machete_client.cli_ctxt, "get_default_editor()", f"'{name}' is undefined")
+            debug(cli_ctxt, "get_default_editor()", f"'{name}' is undefined")
         else:
             editor_repr = f"'{name}'{(' (' + editor + ')') if editor != name else ''}"
-            if not find_executable(machete_client.cli_ctxt, editor):
-                debug(machete_client.cli_ctxt, "get_default_editor()", f"{editor_repr} is not available")
+            if not find_executable(cli_ctxt, editor):
+                debug(cli_ctxt, "get_default_editor()", f"{editor_repr} is not available")
                 if name == "$" + git_machete_editor_var:
                     # In this specific case, when GIT_MACHETE_EDITOR is defined but doesn't point to a valid executable,
                     # it's more reasonable/less confusing to raise an error and exit without opening anything.
                     raise MacheteException(f"<b>{editor_repr}</b> is not available")
             else:
-                debug(machete_client.cli_ctxt, "get_default_editor()", f"{editor_repr} is available")
-                if name != "$" + git_machete_editor_var and get_config_or_none(machete_client.cli_ctxt, 'advice.macheteEditorSelection') != 'false':
+                debug(cli_ctxt, "get_default_editor()", f"{editor_repr} is available")
+                if name != "$" + git_machete_editor_var and get_config_or_none(cli_ctxt, 'advice.macheteEditorSelection') != 'false':
                     sample_alternative = 'nano' if editor.startswith('vi') else 'vi'
                     sys.stderr.write(
                         fmt(f"Opening <b>{editor_repr}</b>.\n",
@@ -1846,7 +1848,7 @@ def get_default_editor(machete_client: MacheteClient) -> str:
 
     # This case is extremely unlikely on a modern Unix-like system.
     raise MacheteException(
-        f"Cannot determine editor. Set `{git_machete_editor_var}` environment variable or edit {machete_client.definition_file_path} directly.")
+        f"Cannot determine editor. Set `{git_machete_editor_var}` environment variable.")
 
 
 git_version = None
