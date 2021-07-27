@@ -1449,6 +1449,54 @@ class MacheteClient:
                 sys.stderr.write(f"The machete-post-slide-out hook exited with {exit_code}, aborting.\n")
                 sys.exit(exit_code)
 
+    def squash(self, cb: str, fork_commit: str) -> None:
+        commits: List[Hash_ShortHash_Message] = commits_between(self.cli_ctxt, fork_commit, cb)
+        if not commits:
+            raise MacheteException(
+                "No commits to squash. Use `-f` or `--fork-point` to specify the start of range of commits to squash.")
+        if len(commits) == 1:
+            sha, short_sha, subject = commits[0]
+            print(f"Exactly one commit ({short_sha}) to squash, ignoring.\n")
+            print("Tip: use `-f` or `--fork-point` to specify where the range of commits to squash starts.")
+            return
+
+        earliest_sha, earliest_short_sha, earliest_subject = commits[0]
+        earliest_full_body = popen_git(self.cli_ctxt, "log", "-1", "--format=%B", earliest_sha).strip()
+        # %ai for ISO-8601 format; %aE/%aN for respecting .mailmap; see `git rev-list --help`
+        earliest_author_date = popen_git(self.cli_ctxt, "log", "-1", "--format=%ai", earliest_sha).strip()
+        earliest_author_email = popen_git(self.cli_ctxt, "log", "-1", "--format=%aE", earliest_sha).strip()
+        earliest_author_name = popen_git(self.cli_ctxt, "log", "-1", "--format=%aN", earliest_sha).strip()
+
+        # Following the convention of `git cherry-pick`, `git commit --amend`, `git rebase` etc.,
+        # let's retain the original author (only committer will be overwritten).
+        author_env = dict(os.environ,
+                          GIT_AUTHOR_DATE=earliest_author_date,
+                          GIT_AUTHOR_EMAIL=earliest_author_email,
+                          GIT_AUTHOR_NAME=earliest_author_name)
+        # Using `git commit-tree` since it's cleaner than any high-level command
+        # like `git merge --squash` or `git rebase --interactive`.
+        # The tree (HEAD^{tree}) argument must be passed as first,
+        # otherwise the entire `commit-tree` will fail on some ancient supported versions of git (at least on v1.7.10).
+        squashed_sha = popen_git(self.cli_ctxt, "commit-tree", "HEAD^{tree}", "-p", fork_commit, "-m", earliest_full_body,
+                                 env=author_env).strip()
+
+        # This can't be done with `git reset` since it doesn't allow for a custom reflog message.
+        # Even worse, reset's reflog message would be filtered out in our fork point algorithm,
+        # so the squashed commit would not even be considered to "belong"
+        # (in the FP sense) to the current branch's history.
+        run_git(self.cli_ctxt, "update-ref", "HEAD", squashed_sha, "-m", f"squash: {earliest_subject}")
+
+        print(f"Squashed {len(commits)} commits:")
+        print()
+        for sha, short_sha, subject in commits:
+            print(f"\t{short_sha} {subject}")
+
+        latest_sha, latest_short_sha, latest_subject = commits[-1]
+        print()
+        print("To restore the original pre-squash commit, run:")
+        print()
+        print(fmt(f"\t`git reset {latest_sha}`"))
+
 
 def sync_annotations_to_github_prs(machete_client: MacheteClient) -> None: #ask
     from git_machete.github import derive_current_user_login, derive_pull_requests, GitHubPullRequest, parse_github_remote_url
@@ -2197,53 +2245,6 @@ def rebase_onto_ancestor_commit(cli_ctxt: CommandLineContext, branch: str, ances
 
 
 Hash_ShortHash_Message = Tuple[str, str, str]
-
-
-def squash(cli_ctxt: CommandLineContext, cb: str, fork_commit: str) -> None:
-    commits: List[Hash_ShortHash_Message] = commits_between(cli_ctxt, fork_commit, cb)
-    if not commits:
-        raise MacheteException("No commits to squash. Use `-f` or `--fork-point` to specify the start of range of commits to squash.")
-    if len(commits) == 1:
-        sha, short_sha, subject = commits[0]
-        print(f"Exactly one commit ({short_sha}) to squash, ignoring.\n")
-        print("Tip: use `-f` or `--fork-point` to specify where the range of commits to squash starts.")
-        return
-
-    earliest_sha, earliest_short_sha, earliest_subject = commits[0]
-    earliest_full_body = popen_git(cli_ctxt, "log", "-1", "--format=%B", earliest_sha).strip()
-    # %ai for ISO-8601 format; %aE/%aN for respecting .mailmap; see `git rev-list --help`
-    earliest_author_date = popen_git(cli_ctxt, "log", "-1", "--format=%ai", earliest_sha).strip()
-    earliest_author_email = popen_git(cli_ctxt, "log", "-1", "--format=%aE", earliest_sha).strip()
-    earliest_author_name = popen_git(cli_ctxt, "log", "-1", "--format=%aN", earliest_sha).strip()
-
-    # Following the convention of `git cherry-pick`, `git commit --amend`, `git rebase` etc.,
-    # let's retain the original author (only committer will be overwritten).
-    author_env = dict(os.environ,
-                      GIT_AUTHOR_DATE=earliest_author_date,
-                      GIT_AUTHOR_EMAIL=earliest_author_email,
-                      GIT_AUTHOR_NAME=earliest_author_name)
-    # Using `git commit-tree` since it's cleaner than any high-level command
-    # like `git merge --squash` or `git rebase --interactive`.
-    # The tree (HEAD^{tree}) argument must be passed as first,
-    # otherwise the entire `commit-tree` will fail on some ancient supported versions of git (at least on v1.7.10).
-    squashed_sha = popen_git(cli_ctxt, "commit-tree", "HEAD^{tree}", "-p", fork_commit, "-m", earliest_full_body, env=author_env).strip()
-
-    # This can't be done with `git reset` since it doesn't allow for a custom reflog message.
-    # Even worse, reset's reflog message would be filtered out in our fork point algorithm,
-    # so the squashed commit would not even be considered to "belong"
-    # (in the FP sense) to the current branch's history.
-    run_git(cli_ctxt, "update-ref", "HEAD", squashed_sha, "-m", f"squash: {earliest_subject}")
-
-    print(f"Squashed {len(commits)} commits:")
-    print()
-    for sha, short_sha, subject in commits:
-        print(f"\t{short_sha} {subject}")
-
-    latest_sha, latest_short_sha, latest_subject = commits[-1]
-    print()
-    print("To restore the original pre-squash commit, run:")
-    print()
-    print(fmt(f"\t`git reset {latest_sha}`"))
 
 
 def commits_between(cli_ctxt: CommandLineContext, earliest_exclusive: str, latest_inclusive: str) -> List[Hash_ShortHash_Message]:
@@ -3784,7 +3785,7 @@ def launch(orig_args: List[str]) -> None:
             machete_client.read_definition_file()
             expect_no_operation_in_progress(cli_ctxt)
             cb = current_branch(cli_ctxt)
-            squash(cli_ctxt, cb, cli_ctxt.opt_fork_point or machete_client.fork_point(cb, use_overrides=True))
+            machete_client.squash(cb, cli_ctxt.opt_fork_point or machete_client.fork_point(cb, use_overrides=True))
         elif cmd in ("s", "status"):
             expect_no_param(parse_options(args, "Ll", ["color=", "list-commits-with-hashes", "list-commits", "no-detect-squash-merges"]))
             machete_client.read_definition_file()
