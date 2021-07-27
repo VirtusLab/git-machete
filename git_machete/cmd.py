@@ -756,7 +756,7 @@ class MacheteClient:
             return bool(
                 not self.is_merged_to_upstream(bd) and
                 is_ancestor_or_equal(self.cli_ctxt, b, bd) and
-                (get_overridden_fork_point(self.cli_ctxt, bd) or commit_sha_by_revision(self.cli_ctxt, b) == self.fork_point(bd, use_overrides=False)))
+                (self.get_overridden_fork_point(bd) or commit_sha_by_revision(self.cli_ctxt, b) == self.fork_point(bd, use_overrides=False)))
 
         candidate_downstreams = list(filter(connected_with_green_edge, self.down_branches[b]))
         if not candidate_downstreams:
@@ -1091,7 +1091,7 @@ class MacheteClient:
                 edge_color[b] = DIM
             elif not is_ancestor_or_equal(self.cli_ctxt, u, b):
                 edge_color[b] = RED
-            elif get_overridden_fork_point(self.cli_ctxt, b) or commit_sha_by_revision(self.cli_ctxt, u) == fp_sha(b):
+            elif self.get_overridden_fork_point(b) or commit_sha_by_revision(self.cli_ctxt, u) == fp_sha(b):
                 edge_color[b] = GREEN
             else:
                 edge_color[b] = YELLOW
@@ -1266,7 +1266,7 @@ class MacheteClient:
             return fp_sha, []
 
         if use_overrides:
-            overridden_fp_sha = get_overridden_fork_point(self.cli_ctxt, b)
+            overridden_fp_sha = self.get_overridden_fork_point(b)
             if overridden_fp_sha:
                 if u and is_ancestor_or_equal(self.cli_ctxt, u, b) and not is_ancestor_or_equal(self.cli_ctxt,
                                                                                                 u,
@@ -1681,6 +1681,99 @@ class MacheteClient:
                     debug(self.cli_ctxt, f"infer_upstream({b})",
                           f"upstream candidate {candidate} rejected ({reject_reason_message})")
         return None
+
+    @staticmethod
+    def config_key_for_override_fork_point_to(b: str) -> str:
+        return f"machete.overrideForkPoint.{b}.to"
+
+    @staticmethod
+    def config_key_for_override_fork_point_while_descendant_of(b: str) -> str:
+        return f"machete.overrideForkPoint.{b}.whileDescendantOf"
+
+    # Also includes config that is incomplete (only one entry out of two) or otherwise invalid.
+    def has_any_fork_point_override_config(self, b: str) -> bool:
+        return (get_config_or_none(self.cli_ctxt, self.config_key_for_override_fork_point_to(b)) or
+                get_config_or_none(self.cli_ctxt, self.config_key_for_override_fork_point_while_descendant_of(b))) is not None
+
+    def get_fork_point_override_data(self, b: str) -> Optional[Tuple[str, str]]:
+        to_key = self.config_key_for_override_fork_point_to(b)
+        to = get_config_or_none(self.cli_ctxt, to_key)
+        while_descendant_of_key = self.config_key_for_override_fork_point_while_descendant_of(b)
+        while_descendant_of = get_config_or_none(self.cli_ctxt, while_descendant_of_key)
+        if not to and not while_descendant_of:
+            return None
+        if to and not while_descendant_of:
+            warn(f"{to_key} config is set but {while_descendant_of_key} config is missing")
+            return None
+        if not to and while_descendant_of:
+            warn(f"{while_descendant_of_key} config is set but {to_key} config is missing")
+            return None
+
+        to_sha: Optional[str] = commit_sha_by_revision(self.cli_ctxt, to, prefix="")
+        while_descendant_of_sha: Optional[str] = commit_sha_by_revision(self.cli_ctxt, while_descendant_of, prefix="")
+        if not to_sha or not while_descendant_of_sha:
+            if not to_sha:
+                warn(f"{to_key} config value `{to}` does not point to a valid commit")
+            if not while_descendant_of_sha:
+                warn(f"{while_descendant_of_key} config value `{while_descendant_of}` does not point to a valid commit")
+            return None
+        # This check needs to be performed every time the config is retrieved.
+        # We can't rely on the values being validated in set_fork_point_override(), since the config could have been modified outside of git-machete.
+        if not is_ancestor_or_equal(self.cli_ctxt, to_sha, while_descendant_of_sha, earlier_prefix="", later_prefix=""):
+            warn(
+                f"commit {short_commit_sha_by_revision(self.cli_ctxt, to)} pointed by {to_key} config "
+                f"is not an ancestor of commit {short_commit_sha_by_revision(self.cli_ctxt, while_descendant_of)} "
+                f"pointed by {while_descendant_of_key} config")
+            return None
+        return to_sha, while_descendant_of_sha
+
+    def get_overridden_fork_point(self, b: str) -> Optional[str]:
+        override_data = self.get_fork_point_override_data(b)
+        if not override_data:
+            return None
+
+        to, while_descendant_of = override_data
+        # Note that this check is distinct from the is_ancestor check performed in get_fork_point_override_data.
+        # While the latter checks the sanity of fork point override configuration,
+        # the former checks if the override still applies to wherever the given branch currently points.
+        if not is_ancestor_or_equal(self.cli_ctxt, while_descendant_of, b, earlier_prefix=""):
+            warn(fmt(
+                f"since branch <b>{b}</b> is no longer a descendant of commit {short_commit_sha_by_revision(self.cli_ctxt, while_descendant_of)}, ",
+                f"the fork point override to commit {short_commit_sha_by_revision(self.cli_ctxt, to)} no longer applies.\n",
+                "Consider running:\n",
+                f"  `git machete fork-point --unset-override {b}`\n"))
+            return None
+        debug(self.cli_ctxt,
+              f"get_overridden_fork_point({b})",
+              f"since branch {b} is descendant of while_descendant_of={while_descendant_of}, fork point of {b} is overridden to {to}")
+        return to
+
+    def unset_fork_point_override(self, b: str) -> None:
+        unset_config(self.cli_ctxt, self.config_key_for_override_fork_point_to(b))
+        unset_config(self.cli_ctxt, self.config_key_for_override_fork_point_while_descendant_of(b))
+
+    def set_fork_point_override(self, b: str, to_revision: str) -> None:
+        if b not in local_branches(self.cli_ctxt):
+            raise MacheteException(f"`{b}` is not a local branch")
+        to_sha = commit_sha_by_revision(self.cli_ctxt, to_revision, prefix="")
+        if not to_sha:
+            raise MacheteException(f"Cannot find revision {to_revision}")
+        if not is_ancestor_or_equal(self.cli_ctxt, to_sha, b, earlier_prefix=""):
+            raise MacheteException(
+                f"Cannot override fork point: {get_revision_repr(self.cli_ctxt, to_revision)} is not an ancestor of {b}")
+
+        to_key = self.config_key_for_override_fork_point_to(b)
+        set_config(self.cli_ctxt, to_key, to_sha)
+
+        while_descendant_of_key = self.config_key_for_override_fork_point_while_descendant_of(b)
+        b_sha = commit_sha_by_revision(self.cli_ctxt, b, prefix="refs/heads/")
+        set_config(self.cli_ctxt, while_descendant_of_key, b_sha)
+
+        sys.stdout.write(
+            fmt(f"Fork point for <b>{b}</b> is overridden to <b>{get_revision_repr(self.cli_ctxt, to_revision)}</b>.\n",
+                f"This applies as long as {b} points to (or is descendant of) its current head (commit {short_commit_sha_by_revision(self.cli_ctxt, b_sha)}).\n\n",
+                f"This information is stored under git config keys:\n  * `{to_key}`\n  * `{while_descendant_of_key}`\n\n",
+                f"To unset this override, use:\n  `git machete fork-point --unset-override {b}`\n"))
 
 
 # Allowed parameter values for show/go command
@@ -2493,7 +2586,7 @@ def get_latest_checkout_timestamps(cli_ctxt: CommandLineContext) -> Dict[str, in
 
 # Complex routines/commands
 
-def is_merged_to(machete_context: MacheteClient, cli_ctxt: CommandLineContext, b: str, target: str) -> bool:
+def is_merged_to(machete_client: MacheteClient, cli_ctxt: CommandLineContext, b: str, target: str) -> bool:
     if is_ancestor_or_equal(cli_ctxt, b, target):
         # If branch is ancestor of or equal to the target, we need to distinguish between the
         # case of branch being "recently" created from the target and the case of
@@ -2501,7 +2594,7 @@ def is_merged_to(machete_context: MacheteClient, cli_ctxt: CommandLineContext, b
         # The applied heuristics is to check if the filtered reflog of the branch
         # (reflog stripped of trivial events like branch creation, reset etc.)
         # is non-empty.
-        return bool(machete_context.filtered_reflog(b, prefix="refs/heads/"))
+        return bool(machete_client.filtered_reflog(b, prefix="refs/heads/"))
     elif cli_ctxt.opt_no_detect_squash_merges:
         return False
     else:
@@ -2511,110 +2604,12 @@ def is_merged_to(machete_context: MacheteClient, cli_ctxt: CommandLineContext, b
         return contains_equivalent_tree(cli_ctxt, b, target)
 
 
-def config_key_for_override_fork_point_to(b: str) -> str:
-    return f"machete.overrideForkPoint.{b}.to"
-
-
-def config_key_for_override_fork_point_while_descendant_of(b: str) -> str:
-    return f"machete.overrideForkPoint.{b}.whileDescendantOf"
-
-
-# Also includes config that is incomplete (only one entry out of two) or otherwise invalid.
-def has_any_fork_point_override_config(cli_ctxt: CommandLineContext, b: str) -> bool:
-    return (get_config_or_none(cli_ctxt, config_key_for_override_fork_point_to(b)) or
-            get_config_or_none(cli_ctxt, config_key_for_override_fork_point_while_descendant_of(b))) is not None
-
-
-def get_fork_point_override_data(cli_ctxt: CommandLineContext, b: str) -> Optional[Tuple[str, str]]:
-    to_key = config_key_for_override_fork_point_to(b)
-    to = get_config_or_none(cli_ctxt, to_key)
-    while_descendant_of_key = config_key_for_override_fork_point_while_descendant_of(b)
-    while_descendant_of = get_config_or_none(cli_ctxt, while_descendant_of_key)
-    if not to and not while_descendant_of:
-        return None
-    if to and not while_descendant_of:
-        warn(f"{to_key} config is set but {while_descendant_of_key} config is missing")
-        return None
-    if not to and while_descendant_of:
-        warn(f"{while_descendant_of_key} config is set but {to_key} config is missing")
-        return None
-
-    to_sha: Optional[str] = commit_sha_by_revision(cli_ctxt, to, prefix="")
-    while_descendant_of_sha: Optional[str] = commit_sha_by_revision(cli_ctxt, while_descendant_of, prefix="")
-    if not to_sha or not while_descendant_of_sha:
-        if not to_sha:
-            warn(f"{to_key} config value `{to}` does not point to a valid commit")
-        if not while_descendant_of_sha:
-            warn(f"{while_descendant_of_key} config value `{while_descendant_of}` does not point to a valid commit")
-        return None
-    # This check needs to be performed every time the config is retrieved.
-    # We can't rely on the values being validated in set_fork_point_override(), since the config could have been modified outside of git-machete.
-    if not is_ancestor_or_equal(cli_ctxt, to_sha, while_descendant_of_sha, earlier_prefix="", later_prefix=""):
-        warn(
-            f"commit {short_commit_sha_by_revision(cli_ctxt, to)} pointed by {to_key} config "
-            f"is not an ancestor of commit {short_commit_sha_by_revision(cli_ctxt, while_descendant_of)} "
-            f"pointed by {while_descendant_of_key} config")
-        return None
-    return to_sha, while_descendant_of_sha
-
-
-def get_overridden_fork_point(cli_ctxt: CommandLineContext, b: str) -> Optional[str]:
-    override_data = get_fork_point_override_data(cli_ctxt, b)
-    if not override_data:
-        return None
-
-    to, while_descendant_of = override_data
-    # Note that this check is distinct from the is_ancestor check performed in get_fork_point_override_data.
-    # While the latter checks the sanity of fork point override configuration,
-    # the former checks if the override still applies to wherever the given branch currently points.
-    if not is_ancestor_or_equal(cli_ctxt, while_descendant_of, b, earlier_prefix=""):
-        warn(fmt(
-            f"since branch <b>{b}</b> is no longer a descendant of commit {short_commit_sha_by_revision(cli_ctxt, while_descendant_of)}, ",
-            f"the fork point override to commit {short_commit_sha_by_revision(cli_ctxt, to)} no longer applies.\n",
-            "Consider running:\n",
-            f"  `git machete fork-point --unset-override {b}`\n"))
-        return None
-    debug(cli_ctxt,
-          f"get_overridden_fork_point({b})",
-          f"since branch {b} is descendant of while_descendant_of={while_descendant_of}, fork point of {b} is overridden to {to}")
-    return to
-
-
 def get_revision_repr(cli_ctxt: CommandLineContext, revision: str) -> str:
     short_sha = short_commit_sha_by_revision(cli_ctxt, revision)
     if is_full_sha(revision) or revision == short_sha:
         return f"commit {revision}"
     else:
         return f"{revision} (commit {short_commit_sha_by_revision(cli_ctxt, revision)})"
-
-
-def set_fork_point_override(cli_ctxt: CommandLineContext, b: str, to_revision: str) -> None:
-    if b not in local_branches(cli_ctxt):
-        raise MacheteException(f"`{b}` is not a local branch")
-    to_sha = commit_sha_by_revision(cli_ctxt, to_revision, prefix="")
-    if not to_sha:
-        raise MacheteException(f"Cannot find revision {to_revision}")
-    if not is_ancestor_or_equal(cli_ctxt, to_sha, b, earlier_prefix=""):
-        raise MacheteException(
-            f"Cannot override fork point: {get_revision_repr(cli_ctxt, to_revision)} is not an ancestor of {b}")
-
-    to_key = config_key_for_override_fork_point_to(b)
-    set_config(cli_ctxt, to_key, to_sha)
-
-    while_descendant_of_key = config_key_for_override_fork_point_while_descendant_of(b)
-    b_sha = commit_sha_by_revision(cli_ctxt, b, prefix="refs/heads/")
-    set_config(cli_ctxt, while_descendant_of_key, b_sha)
-
-    sys.stdout.write(
-        fmt(f"Fork point for <b>{b}</b> is overridden to <b>{get_revision_repr(cli_ctxt, to_revision)}</b>.\n",
-            f"This applies as long as {b} points to (or is descendant of) its current head (commit {short_commit_sha_by_revision(cli_ctxt, b_sha)}).\n\n",
-            f"This information is stored under git config keys:\n  * `{to_key}`\n  * `{while_descendant_of_key}`\n\n",
-            f"To unset this override, use:\n  `git machete fork-point --unset-override {b}`\n"))
-
-
-def unset_fork_point_override(cli_ctxt: CommandLineContext, b: str) -> None:
-    unset_config(cli_ctxt, config_key_for_override_fork_point_to(b))
-    unset_config(cli_ctxt, config_key_for_override_fork_point_while_descendant_of(b))
 
 
 class StopTraversal(Exception):
@@ -3681,17 +3676,17 @@ def launch(orig_args: List[str]) -> None:
             if cli_ctxt.opt_inferred:
                 print(machete_client.fork_point(b, use_overrides=False))
             elif cli_ctxt.opt_override_to:
-                set_fork_point_override(cli_ctxt, b, cli_ctxt.opt_override_to)
+                machete_client.set_fork_point_override(b, cli_ctxt.opt_override_to)
             elif cli_ctxt.opt_override_to_inferred:
-                set_fork_point_override(cli_ctxt, b, machete_client.fork_point(b, use_overrides=False))
+                machete_client.set_fork_point_override(b, machete_client.fork_point(b, use_overrides=False))
             elif cli_ctxt.opt_override_to_parent:
                 u = machete_client.up_branch.get(b)
                 if u:
-                    set_fork_point_override(cli_ctxt, b, u)
+                    machete_client.set_fork_point_override(b, u)
                 else:
                     raise MacheteException(f"Branch {b} does not have upstream (parent) branch")
             elif cli_ctxt.opt_unset_override:
-                unset_fork_point_override(cli_ctxt, b)
+                machete_client.unset_fork_point_override(b)
             else:
                 print(machete_client.fork_point(b, use_overrides=True))
         elif cmd in ("g", "go"):
@@ -3752,7 +3747,7 @@ def launch(orig_args: List[str]) -> None:
             elif param == "unmanaged":
                 res = excluding(local_branches(cli_ctxt), machete_client.managed_branches)
             elif param == "with-overridden-fork-point":
-                res = list(filter(lambda b: has_any_fork_point_override_config(cli_ctxt, b), local_branches(cli_ctxt)))
+                res = list(filter(lambda b: machete_client.has_any_fork_point_override_config(b), local_branches(cli_ctxt)))
 
             if res:
                 print("\n".join(res))
