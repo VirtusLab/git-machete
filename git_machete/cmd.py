@@ -1065,7 +1065,6 @@ class MacheteClient:
 
     def status(self, warn_on_yellow_edges: bool) -> None:
         dfs_res = []
-        prefix: str
 
         def prefix_dfs(u_: str, prefix_df: List[Optional[str]]) -> None:
             dfs_res.append((u_, prefix_df))
