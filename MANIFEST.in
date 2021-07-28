@@ -1,4 +1,5 @@
 include LICENSE
+include VERSION
 
 # Needed for the Homebrew formula to install the completion scripts correctly
 recursive-include completion *
