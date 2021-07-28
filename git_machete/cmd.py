@@ -352,7 +352,7 @@ class MacheteClient:
 
     def __init__(self, cli_ctxt: CommandLineContext) -> None:
         self.cli_ctxt = cli_ctxt
-        self.definition_file_path: str = ""
+        self.definition_file_path: str = get_git_subpath(self.cli_ctxt, "machete")
         self.managed_branches: List[str] = []
         self.down_branches: Dict[str, List[str]] = {}  # TODO (#110): default dict with []
         self.up_branch: Dict[str, str] = {}  # TODO (#110): default dict with None
@@ -1254,7 +1254,7 @@ class MacheteClient:
             print("No branches to delete")
 
     def edit(self) -> int:
-        if self.definition_file_path is None or self.definition_file_path == "":
+        if get_default_editor(self.cli_ctxt) is None:
             raise MacheteException(f"Cannot determine editor. Set `GIT_MACHETE_EDITOR` environment variable or edit {self.definition_file_path} directly.")
         return run_cmd(self.cli_ctxt, get_default_editor(self.cli_ctxt), self.definition_file_path)
 
@@ -3609,7 +3609,6 @@ def launch(orig_args: List[str]) -> None:
         args = cmd_and_args[1:]
 
         if cmd != "help":
-            machete_client.definition_file_path = get_git_subpath(cli_ctxt, "machete")
             if cmd != "discover":
                 if not os.path.exists(machete_client.definition_file_path):
                     # We're opening in "append" and not "write" mode to avoid a race condition:
