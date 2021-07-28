@@ -62,12 +62,6 @@ jobs:
                 command: bash ci/deb-ppa-upload/ci-deploy.sh --dry-run
 
             - deploy:
-                name: '[Dry run] Open PR to NixOS/nixpkgs'
-                # Prerequisites: artifacts must be released to test PyPI first
-                # Side effects: potentially pushes a regenerated Docker image
-                command: bash ci/nixpkgs-pr/ci-deploy.sh --dry-run
-
-            - deploy:
                 name: '[Dry run] Build rpm package'
                 # Side effects: potentially pushes a regenerated Docker image
                 # Other than that, it just builds the package without publishing anything; there's no special dry-run mode
@@ -91,11 +85,6 @@ jobs:
                 command: bash ci/deb-ppa-upload/ci-deploy.sh
 
             - deploy:
-                name: 'Open PR to NixOS/nixpkgs'
-                # Prerequisites: artifacts must be released to PyPI first
-                command: bash ci/nixpkgs-pr/ci-deploy.sh
-
-            - deploy:
                 name: 'Build rpm package'
                 command: bash ci/rpm/ci-run.sh
 
@@ -108,6 +97,9 @@ jobs:
                   sudo apt-get update
                   sudo apt-get install hub
                   bash ci/github-releases/ci-deploy.sh
-            # Note: also, each time a commit is pushed to master,
-            # a Snap build for `edge` channel is also triggered automatically via GitHub webhook on https://build.snapcraft.io/user/VirtusLab/git-machete
-            # This happens completely outside of the CI, however.
+
+            # Note: there are also releases happening outside of our CI:
+            # 1) every time a commit is pushed to `master`, a Snap build for `edge` channel
+            #    is triggered automatically via GitHub webhook on https://build.snapcraft.io/user/VirtusLab/git-machete,
+            # 2) every time a https://github.com/r-ryantm bot runs on NixOS/nixpkgs repository,
+            #    Nix git-machete package is updated with the fresh version/package hash according to the data from PyPI.
