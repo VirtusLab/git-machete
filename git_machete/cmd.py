@@ -1255,7 +1255,7 @@ class MacheteClient:
 
     def edit(self) -> int:
         if self.definition_file_path is None or self.definition_file_path == "":
-            raise MacheteException("Cannot find configuration file.")
+            raise MacheteException(f"Cannot determine editor. Set `GIT_MACHETE_EDITOR` environment variable or edit {self.definition_file_path} directly.")
         return run_cmd(self.cli_ctxt, get_default_editor(self.cli_ctxt), self.definition_file_path)
 
     def fork_point_and_containing_branch_defs(self, b: str, use_overrides: bool) -> Tuple[Optional[str], List[BRANCH_DEF]]:
@@ -1847,8 +1847,7 @@ def get_default_editor(cli_ctxt: CommandLineContext) -> str:
                 return editor
 
     # This case is extremely unlikely on a modern Unix-like system.
-    raise MacheteException(
-        f"Cannot determine editor. Set `{git_machete_editor_var}` environment variable.")
+    raise None
 
 
 git_version = None
