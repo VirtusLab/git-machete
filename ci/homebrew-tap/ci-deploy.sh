@@ -10,7 +10,7 @@ else
   pypi_host=pypi.org
 fi
 
-version=$(grep '__version__ = ' git_machete/__init__.py | cut -d\' -f2)
+version=$(cat VERSION | cut -d\' -f2)
 
 git clone https://${GITHUB_TOKEN}@github.com/VirtusLab/homebrew-git-machete.git ../homebrew-git-machete
 cd ../homebrew-git-machete/

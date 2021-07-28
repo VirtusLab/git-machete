@@ -3469,7 +3469,9 @@ def short_usage() -> None:
 
 
 def version() -> None:
-    print(f"git-machete version {__version__}")
+    with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'VERSION')) as f:
+        version_no = f.readline().strip()
+    print(f"git-machete version {version_no}")
 
 
 def main() -> None:

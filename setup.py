@@ -8,9 +8,12 @@ this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, 'README.md')) as f:
     long_description = f.read()
 
+with open(path.join(this_directory, 'VERSION')) as f:
+    version_no = f.readline().strip()
+
 setup(
     name='git-machete',
-    version=__version__,
+    version=version_no,
     description='Probably the sharpest git repository organizer & rebase/merge workflow automation tool you\'ve ever seen',
     long_description=long_description,
     long_description_content_type='text/markdown',
