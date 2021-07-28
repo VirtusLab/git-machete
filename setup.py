@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from git_machete import __version__
 from os import path
 from setuptools import setup
 
