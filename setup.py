@@ -35,6 +35,7 @@ setup(
         'Operating System :: OS Independent'
     ],
     options={'bdist_wheel': {'universal': '1'}},
-    package_data={'git-machete': ['VERSION']},
+    data_files=[('.', ['VERSION'])],
+    package_data={'': ['VERSION']},
     include_package_data=True
 )
