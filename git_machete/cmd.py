@@ -2,7 +2,6 @@
 
 from typing import Any, Callable, Dict, Generator, Iterable, Iterator, List, Match, Optional, Set, Tuple, TypeVar
 
-from git_machete import __version__
 import datetime
 import getopt
 import io
