@@ -3468,8 +3468,10 @@ def short_usage() -> None:
 
 
 def version() -> None:
-    with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'VERSION')) as f:
-        version_no = f.readline().strip()
+    site_packages_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..')
+    info_folder = [f for f in os.listdir(site_packages_path) if f.startswith('git_machete') and f.endswith('dist-info')][0]
+    with open(os.path.join(site_packages_path, info_folder, 'VERSION')) as file:
+        version_no = file.readline().strip()
     print(f"git-machete version {version_no}")
 
 
