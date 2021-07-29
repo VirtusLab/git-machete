@@ -1254,9 +1254,10 @@ class MacheteClient:
             print("No branches to delete")
 
     def edit(self) -> int:
-        if get_default_editor(self.cli_ctxt) is None:
+        default_editor_name: Optional[str] = get_default_editor(self.cli_ctxt)
+        if default_editor_name is None:
             raise MacheteException(f"Cannot determine editor. Set `GIT_MACHETE_EDITOR` environment variable or edit {self.definition_file_path} directly.")
-        return run_cmd(self.cli_ctxt, get_default_editor(self.cli_ctxt), self.definition_file_path)
+        return run_cmd(self.cli_ctxt, default_editor_name, self.definition_file_path)
 
     def fork_point_and_containing_branch_defs(self, b: str, use_overrides: bool) -> Tuple[Optional[str], List[BRANCH_DEF]]:
         u = self.up_branch.get(b)
@@ -1807,7 +1808,7 @@ def find_executable(cli_ctxt: CommandLineContext, executable: str) -> Optional[s
     return None
 
 
-def get_default_editor(cli_ctxt: CommandLineContext) -> str:
+def get_default_editor(cli_ctxt: CommandLineContext) -> Optional[str]:
     # Based on the git's own algorithm for identifying the editor.
     # '$GIT_MACHETE_EDITOR', 'editor' (to please Debian-based systems) and 'nano' have been added.
     git_machete_editor_var = "GIT_MACHETE_EDITOR"
