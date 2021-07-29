@@ -1847,7 +1847,7 @@ def get_default_editor(cli_ctxt: CommandLineContext) -> Optional[str]:
                 return editor
 
     # This case is extremely unlikely on a modern Unix-like system.
-    raise None
+    return None
 
 
 git_version = None
