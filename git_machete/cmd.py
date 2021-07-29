@@ -339,8 +339,6 @@ def popen_git(cli_ctxt: CommandLineContext, git_cmd: str, *args: str, **kwargs: 
 
 # Manipulation on definition file/tree of branches
 
-branch_defs_by_sha_in_reflog: Optional[Dict[str, Optional[List[Tuple[str, str]]]]] = None
-
 BRANCH_DEF = Tuple[str, str]
 
 
@@ -349,6 +347,8 @@ class MacheteClient:
     DISCOVER_DEFAULT_FRESH_BRANCH_COUNT = 10
     PICK_FIRST_ROOT: int = 0
     PICK_LAST_ROOT: int = -1
+
+    branch_defs_by_sha_in_reflog: Optional[Dict[str, Optional[List[Tuple[str, str]]]]] = None
 
     def __init__(self, cli_ctxt: CommandLineContext) -> None:
         self.cli_ctxt = cli_ctxt
@@ -1602,12 +1602,11 @@ class MacheteClient:
             raise MacheteException(f"Invalid direction: `{param}` expected: {allowed_directions(allow_current)}")
 
     def match_log_to_filtered_reflogs(self, b: str) -> Generator[Tuple[str, List[BRANCH_DEF]], None, None]:
-        global branch_defs_by_sha_in_reflog
 
         if b not in local_branches(self.cli_ctxt):
             raise MacheteException(f"`{b}` is not a local branch")
 
-        if branch_defs_by_sha_in_reflog is None:
+        if self.branch_defs_by_sha_in_reflog is None:
             def generate_entries() -> Generator[Tuple[str, BRANCH_DEF], None, None]:
                 for lb in local_branches(self.cli_ctxt):
                     lb_shas = set()
@@ -1620,19 +1619,19 @@ class MacheteClient:
                             if sha_ not in lb_shas:
                                 yield sha_, (lb, rb)
 
-            branch_defs_by_sha_in_reflog = {}
+            self.branch_defs_by_sha_in_reflog = {}
             for sha, branch_def in generate_entries():
-                if sha in branch_defs_by_sha_in_reflog:
+                if sha in self.branch_defs_by_sha_in_reflog:
                     # The practice shows that it's rather unlikely for a given commit to appear on filtered reflogs of two unrelated branches
                     # ("unrelated" as in, not a local branch and its remote counterpart) but we need to handle this case anyway.
-                    branch_defs_by_sha_in_reflog[sha] += [branch_def]
+                    self.branch_defs_by_sha_in_reflog[sha] += [branch_def]
                 else:
-                    branch_defs_by_sha_in_reflog[sha] = [branch_def]
+                    self.branch_defs_by_sha_in_reflog[sha] = [branch_def]
 
             def log_result() -> Generator[str, None, None]:
                 branch_defs: List[BRANCH_DEF]
                 sha_: str
-                for sha_, branch_defs in branch_defs_by_sha_in_reflog.items():
+                for sha_, branch_defs in self.branch_defs_by_sha_in_reflog.items():
                     def branch_def_to_str(lb: str, lb_or_rb: str) -> str:
                         return lb if lb == lb_or_rb else f"{lb_or_rb} (remote counterpart of {lb})"
 
@@ -1643,10 +1642,10 @@ class MacheteClient:
                   "branches containing the given SHA in their filtered reflog: \n%s\n" % "\n".join(log_result()))
 
         for sha in spoonfeed_log_shas(self.cli_ctxt, b):
-            if sha in branch_defs_by_sha_in_reflog:
+            if sha in self.branch_defs_by_sha_in_reflog:
                 # The entries must be sorted by lb_or_rb to make sure the upstream inference is deterministic
                 # (and does not depend on the order in which `generate_entries` iterated through the local branches).
-                branch_defs: List[BRANCH_DEF] = branch_defs_by_sha_in_reflog[sha]
+                branch_defs: List[BRANCH_DEF] = self.branch_defs_by_sha_in_reflog[sha]
 
                 def lb_is_not_b(lb: str, lb_or_rb: str) -> bool:
                     return lb != b
@@ -2619,9 +2618,9 @@ class StopTraversal(Exception):
 
 
 def flush_caches() -> None:
-    global branch_defs_by_sha_in_reflog, commit_sha_by_revision_cached, config_cached, counterparts_for_fetching_cached, initial_log_shas_cached
+    global commit_sha_by_revision_cached, config_cached, counterparts_for_fetching_cached, initial_log_shas_cached
     global local_branches_cached, reflogs_cached, remaining_log_shas_cached, remote_branches_cached
-    branch_defs_by_sha_in_reflog = None
+    MacheteClient.branch_defs_by_sha_in_reflog = None
     commit_sha_by_revision_cached = None
     config_cached = None
     counterparts_for_fetching_cached = None
