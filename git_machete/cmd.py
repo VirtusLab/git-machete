@@ -3468,8 +3468,13 @@ def short_usage() -> None:
 
 
 def version() -> None:
-    site_packages_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..')
-    info_folder = [f for f in os.listdir(site_packages_path) if f.startswith('git_machete-')][0]
+    try:
+        site_packages_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..')
+        info_folder = [f for f in os.listdir(site_packages_path) if f.startswith('git_machete-')][0]
+    except IndexError:
+        # If not found try to look one folder deeper
+        site_packages_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', '..')
+        info_folder = [f for f in os.listdir(site_packages_path) if f.startswith('git_machete-')][0]
     version_no = re.search(r'\d+.\d+.\d+', info_folder).group()
     print(f"git-machete version {version_no}")
 
