@@ -1807,6 +1807,7 @@ def get_default_editor(cli_ctxt: CommandLineContext) -> Optional[str]:
     # This case is extremely unlikely on a modern Unix-like system.
     return None
 
+
 def get_git_version(cli_ctxt: CommandLineContext) -> Tuple[int, int, int]:
     global git_version
     if not git_version:
@@ -2510,7 +2511,7 @@ def reflog(cli_ctxt: CommandLineContext, b: str) -> List[REFLOG_ENTRY]:
             # %H - full hash
             # %gs - reflog subject
             reflogs_cached[b] = [
-                tuple(entry.split(":", 1)) for entry in non_empty_lines(  # type: ignore
+                tuple(entry.split(":", 1)) for entry in utils.non_empty_lines(  # type: ignore
                     # The trailing '--' is necessary to avoid ambiguity in case there is a file called just exactly like the branch 'b'.
                     popen_git(cli_ctxt, "reflog", "show", "--format=%H:%gs", b, "--"))
             ]
