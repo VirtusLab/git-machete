@@ -1747,6 +1747,25 @@ def allowed_directions(allow_current: bool) -> str:
 git_version = None
 
 
+def find_executable(cli_ctxt: CommandLineContext, executable: str) -> Optional[str]:
+    base, ext = os.path.splitext(executable)
+
+    if (sys.platform == 'win32' or os.name == 'os2') and (ext != '.exe'):
+        executable = f"{executable}.exe"
+
+    if os.path.isfile(executable):
+        return executable
+
+    path = os.environ.get('PATH', os.defpath)
+    paths = path.split(os.pathsep)
+    for p in paths:
+        f = os.path.join(p, executable)
+        if os.path.isfile(f) and utils.is_executable(f):
+            debug(cli_ctxt, f"find_executable({executable})", f"found {executable} at {f}")
+            return f
+    return None
+
+    
 def get_default_editor(cli_ctxt: CommandLineContext) -> Optional[str]:
     # Based on the git's own algorithm for identifying the editor.
     # '$GIT_MACHETE_EDITOR', 'editor' (to please Debian-based systems) and 'nano' have been added.
@@ -1768,7 +1787,7 @@ def get_default_editor(cli_ctxt: CommandLineContext) -> Optional[str]:
             debug(cli_ctxt, "get_default_editor()", f"'{name}' is undefined")
         else:
             editor_repr = f"'{name}'{(' (' + editor + ')') if editor != name else ''}"
-            if not utils.find_executable(cli_ctxt, editor):
+            if not find_executable(cli_ctxt, editor):
                 debug(cli_ctxt, "get_default_editor()", f"{editor_repr} is not available")
                 if name == "$" + git_machete_editor_var:
                     # In this specific case, when GIT_MACHETE_EDITOR is defined but doesn't point to a valid executable,
