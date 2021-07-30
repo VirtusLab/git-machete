@@ -1,6 +1,6 @@
 from typing import Dict
 
-DISCOVER_DEFAULT_FRESH_BRANCH_COUNT = 10  # TODO: make variable declaration in one file only
+DISCOVER_DEFAULT_FRESH_BRANCH_COUNT = 10  # make variable declaration in one file only
 
 short_docs: Dict[str, str] = {
     "add": "Add a branch to the tree of branch dependencies",
