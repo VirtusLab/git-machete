@@ -2760,7 +2760,6 @@ def launch(orig_args: List[str]) -> None:
     cli_ctxt = CommandLineContext()
     machete_client = MacheteClient(cli_ctxt)
 
-
     if sys.version_info.major == 2 or (sys.version_info.major == 3 and sys.version_info.minor < 6):
         version_str = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
         sys.stderr.write(f"Python {version_str} is no longer supported. Please switch to Python 3.6 or higher.\n")
