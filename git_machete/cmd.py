@@ -1765,7 +1765,7 @@ def find_executable(cli_ctxt: CommandLineContext, executable: str) -> Optional[s
             return f
     return None
 
-    
+
 def get_default_editor(cli_ctxt: CommandLineContext) -> Optional[str]:
     # Based on the git's own algorithm for identifying the editor.
     # '$GIT_MACHETE_EDITOR', 'editor' (to please Debian-based systems) and 'nano' have been added.
