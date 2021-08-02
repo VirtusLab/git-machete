@@ -2909,5 +2909,4 @@ def launch(orig_args: List[str]) -> None:
 
 
 if __name__ == "__main__":
-    #main()
-    launch(['status'])
+    main()

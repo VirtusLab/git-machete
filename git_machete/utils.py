@@ -89,7 +89,7 @@ YELLOW = '\033[33m'
 ORANGE = '\033[00;38;5;208m'
 RED = '\033[91m'
 
-ascii_only: bool = True
+ascii_only: bool = True  # as ascii_only is manipulated in cmd.py, probably it has to be moved back, because now this vaule is unchangeable
 
 
 def bold(s: str) -> str:
