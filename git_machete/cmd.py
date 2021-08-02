@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from typing import Any, Callable, Dict, Generator, Iterator, List, Match, Optional, Set, Tuple, TypeVar
+from typing import Callable, Dict, Generator, Iterator, List, Match, Optional, Set, Tuple, TypeVar
 
 from git_machete import __version__
 import datetime
@@ -10,121 +10,19 @@ import itertools
 import os
 import re
 import shutil
-import subprocess
 import sys
 import textwrap
 
 from git_machete import utils
+from git_machete.utils import RED, YELLOW, ORANGE, GREEN, DIM, BOLD, ENDC, dim, pretty_choices, bold, colored, debug, fmt, underline, ascii_only
+from git_machete.contexts import CommandLineContext
+from git_machete.exceptions import MacheteException, StopTraversal
 from git_machete.docs import short_docs, long_docs
 
 
 # Core utils
 
 T = TypeVar('T')
-
-
-class MacheteException(Exception):
-    def __init__(self, msg: str, apply_fmt: bool = True) -> None:
-        self.parameter = fmt(msg) if apply_fmt else msg
-
-    def __str__(self) -> str:
-        return str(self.parameter)
-
-
-ENDC = '\033[0m'
-BOLD = '\033[1m'
-# `GIT_MACHETE_DIM_AS_GRAY` remains undocumented as for now,
-# was just needed for animated gifs to render correctly (`[2m`-style dimmed text was invisible)
-DIM = '\033[38;2;128;128;128m' if os.environ.get('GIT_MACHETE_DIM_AS_GRAY') == 'true' else '\033[2m'
-UNDERLINE = '\033[4m'
-GREEN = '\033[32m'
-YELLOW = '\033[33m'
-ORANGE = '\033[00;38;5;208m'
-RED = '\033[91m'
-
-
-ascii_only: bool = False
-
-
-def bold(s: str) -> str:
-    return s if ascii_only or not s else BOLD + s + ENDC
-
-
-def dim(s: str) -> str:
-    return s if ascii_only or not s else DIM + s + ENDC
-
-
-def underline(s: str, star_if_ascii_only: bool = False) -> str:
-    if s and not ascii_only:
-        return UNDERLINE + s + ENDC
-    elif s and star_if_ascii_only:
-        return s + " *"
-    else:
-        return s
-
-
-def colored(s: str, color: str) -> str:
-    return s if ascii_only or not s else color + s + ENDC
-
-
-fmt_transformations: List[Callable[[str], str]] = [
-    lambda x: re.sub('<b>(.*?)</b>', bold(r"\1"), x, flags=re.DOTALL),
-    lambda x: re.sub('<u>(.*?)</u>', underline(r"\1"), x, flags=re.DOTALL),
-    lambda x: re.sub('<dim>(.*?)</dim>', dim(r"\1"), x, flags=re.DOTALL),
-    lambda x: re.sub('<red>(.*?)</red>', colored(r"\1", RED), x, flags=re.DOTALL),
-    lambda x: re.sub('<yellow>(.*?)</yellow>', colored(r"\1", YELLOW), x, flags=re.DOTALL),
-    lambda x: re.sub('<green>(.*?)</green>', colored(r"\1", GREEN), x, flags=re.DOTALL),
-    lambda x: re.sub('`(.*?)`', r"`\1`" if ascii_only else UNDERLINE + r"\1" + ENDC, x),
-]
-
-
-def fmt(*parts: str) -> str:
-    result = ''.join(parts)
-    for f in fmt_transformations:
-        result = f(result)
-    return result
-
-
-def vertical_bar() -> str:
-    return "|" if ascii_only else u"│"
-
-
-def right_arrow() -> str:
-    return "->" if ascii_only else u"➔"
-
-
-class CommandLineContext:
-    def __init__(self) -> None:
-        self.opt_as_root: bool = False
-        self.opt_branch: Optional[str] = None
-        self.opt_checked_out_since: Optional[str] = None
-        self.opt_color: str = "auto"
-        self.opt_debug: bool = False
-        self.opt_down_fork_point: Optional[str] = None
-        self.opt_fetch: bool = False
-        self.opt_fork_point: Optional[str] = None
-        self.opt_inferred: bool = False
-        self.opt_list_commits: bool = False
-        self.opt_list_commits_with_hashes: bool = False
-        self.opt_merge: bool = False
-        self.opt_n: bool = False
-        self.opt_no_detect_squash_merges: bool = False
-        self.opt_no_edit_merge: bool = False
-        self.opt_no_interactive_rebase: bool = False
-        self.opt_onto: Optional[str] = None
-        self.opt_override_to: Optional[str] = None
-        self.opt_override_to_inferred: bool = False
-        self.opt_override_to_parent: bool = False
-        self.opt_push_tracked: Optional[bool] = True
-        self.opt_push_untracked: Optional[bool] = True
-        self.opt_return_to: str = "stay"
-        self.opt_roots: List[str] = list()
-        self.opt_start_from: str = "here"
-        self.opt_stat: bool = False
-        self.opt_sync_github_prs: bool = False
-        self.opt_unset_override: bool = False
-        self.opt_verbose: bool = False
-        self.opt_yes: bool = False
 
 
 def ask_if(
@@ -142,21 +40,6 @@ def ask_if(
     return input(fmt(msg) if apply_fmt else msg).lower()
 
 
-def pretty_choices(*choices: str) -> str:
-    def format_choice(c: str) -> str:
-        if not c:
-            return ''
-        elif c.lower() == 'y':
-            return colored(c, GREEN)
-        elif c.lower() == 'yq':
-            return colored(c[0], GREEN) + colored(c[1], RED)
-        elif c.lower() in ('n', 'q'):
-            return colored(c, RED)
-        else:
-            return colored(c, ORANGE)
-    return f" ({', '.join(utils.map_truthy_only(format_choice, choices))}) "
-
-
 def pick(choices: List[str], name: str, apply_fmt: bool = True) -> str:
     xs: str = "".join(f"[{index + 1}] {x}\n" for index, x in enumerate(choices))
     msg: str = xs + f"Specify {name} or hit <return> to skip: "
@@ -172,11 +55,6 @@ def pick(choices: List[str], name: str, apply_fmt: bool = True) -> str:
     return choices[index]
 
 
-def debug(cli_ctxt: CommandLineContext, hdr: str, msg: str) -> None:
-    if cli_ctxt.opt_debug:
-        sys.stderr.write(f"{bold(hdr)}: {dim(msg)}\n")
-
-
 # To avoid displaying the same warning multiple times during a single run.
 displayed_warnings: Set[str] = set()
 
@@ -190,105 +68,22 @@ def warn(msg: str, apply_fmt: bool = True) -> None:
 
 # Let's keep the flag to avoid checking for current directory's existence
 # every time any command is being popened or run.
-current_directory_confirmed_to_exist: bool = False
 initial_current_directory: Optional[str] = utils.current_directory_or_none() or os.getenv('PWD')
-
-
-def mark_current_directory_as_possibly_non_existent() -> None:
-    global current_directory_confirmed_to_exist
-    current_directory_confirmed_to_exist = False
-
-
-def chdir_upwards_until_current_directory_exists(cli_ctxt: CommandLineContext) -> None:
-    global current_directory_confirmed_to_exist
-    if not current_directory_confirmed_to_exist:
-        current_directory: Optional[str] = utils.current_directory_or_none()
-        if not current_directory:
-            while not current_directory:
-                # Note: 'os.chdir' only affects the current process and its subprocesses;
-                # it doesn't propagate to the parent process (which is typically a shell).
-                os.chdir(os.path.pardir)
-                current_directory = utils.current_directory_or_none()
-            debug(cli_ctxt,
-                  "chdir_upwards_until_current_directory_exists()",
-                  f"current directory did not exist, chdired up into {current_directory}")
-        current_directory_confirmed_to_exist = True
-
-
-def run_cmd(cli_ctxt: CommandLineContext, cmd: str, *args: str, **kwargs: Any) -> int:
-    chdir_upwards_until_current_directory_exists(cli_ctxt)
-
-    flat_cmd: str = cmd_shell_repr(cmd, *args, **kwargs)
-    if cli_ctxt.opt_debug:
-        sys.stderr.write(bold(f">>> {flat_cmd}") + "\n")
-    elif cli_ctxt.opt_verbose:
-        sys.stderr.write(flat_cmd + "\n")
-
-    exit_code: int = subprocess.call([cmd] + list(args), **kwargs)
-
-    # Let's defensively assume that every command executed via run_cmd
-    # (but not via popen_cmd) can make the current directory disappear.
-    # In practice, it's mostly 'git checkout' that carries such risk.
-    mark_current_directory_as_possibly_non_existent()
-
-    if cli_ctxt.opt_debug and exit_code != 0:
-        sys.stderr.write(dim(f"<exit code: {exit_code}>\n\n"))
-    return exit_code
-
-
-def popen_cmd(cli_ctxt: CommandLineContext, cmd: str, *args: str, **kwargs: Any) -> Tuple[int, str, str]:
-    chdir_upwards_until_current_directory_exists(cli_ctxt)
-
-    flat_cmd = cmd_shell_repr(cmd, *args, **kwargs)
-    if cli_ctxt.opt_debug:
-        sys.stderr.write(bold(f">>> {flat_cmd}") + "\n")
-    elif cli_ctxt.opt_verbose:
-        sys.stderr.write(flat_cmd + "\n")
-
-    process = subprocess.Popen([cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
-    stdout_bytes, stderr_bytes = process.communicate()
-    stdout: str = stdout_bytes.decode('utf-8')
-    stderr: str = stderr_bytes.decode('utf-8')
-    exit_code: int = process.returncode
-
-    if cli_ctxt.opt_debug:
-        if exit_code != 0:
-            sys.stderr.write(colored(f"<exit code: {exit_code}>\n\n", RED))
-        if stdout:
-            sys.stderr.write(f"{dim('<stdout>:')}\n{dim(stdout)}\n")
-        if stderr:
-            sys.stderr.write(f"{dim('<stderr>:')}\n{colored(stderr, RED)}\n")
-
-    return exit_code, stdout, stderr
 
 # Git core
 
 
-def cmd_shell_repr(cmd: str, *args: str, **kwargs: Dict[str, str]) -> str:
-    def shell_escape(arg: str) -> str:
-        return arg.replace("(", "\\(") \
-            .replace(")", "\\)") \
-            .replace(" ", "\\ ") \
-            .replace("\t", "$'\\t'") \
-            .replace("\n", "$'\\n'")
-
-    env: Dict[str, str] = kwargs.get("env", {})
-    # We don't want to include the env vars that are inherited from the environment of git-machete process
-    env_repr = [k + "=" + shell_escape(v) for k, v in env.items() if k not in os.environ]
-    return " ".join(env_repr + [cmd] + list(map(shell_escape, args)))
-
-
 def run_git(cli_ctxt: CommandLineContext, git_cmd: str, *args: str, **kwargs: Dict[str, str]) -> int:
-    exit_code = run_cmd(cli_ctxt, "git", git_cmd, *args, **kwargs)
+    exit_code = utils.run_cmd(cli_ctxt, "git", git_cmd, *args, **kwargs)
     if not kwargs.get("allow_non_zero") and exit_code != 0:
-        raise MacheteException(f"`{cmd_shell_repr('git', git_cmd, *args, **kwargs)}` returned {exit_code}")
+        raise MacheteException(f"`{utils.cmd_shell_repr('git', git_cmd, *args, **kwargs)}` returned {exit_code}")
     return exit_code
 
 
 def popen_git(cli_ctxt: CommandLineContext, git_cmd: str, *args: str, **kwargs: Dict[str, str]) -> str:
-    exit_code, stdout, stderr = popen_cmd(cli_ctxt, "git", git_cmd, *args, **kwargs)
+    exit_code, stdout, stderr = utils.popen_cmd(cli_ctxt, "git", git_cmd, *args, **kwargs)
     if not kwargs.get("allow_non_zero") and exit_code != 0:
-        exit_code_msg: str = fmt(f"`{cmd_shell_repr('git', git_cmd, *args, **kwargs)}` returned {exit_code}\n")
+        exit_code_msg: str = fmt(f"`{utils.cmd_shell_repr('git', git_cmd, *args, **kwargs)}` returned {exit_code}\n")
         stdout_msg: str = f"\n{bold('stdout')}:\n{dim(stdout)}" if stdout else ""
         stderr_msg: str = f"\n{bold('stderr')}:\n{dim(stderr)}" if stderr else ""
         # Not applying the formatter to avoid transforming whatever characters might be in the output of the command.
@@ -1067,12 +862,12 @@ class MacheteClient:
                 if not p:
                     out.write("  ")
                 else:
-                    out.write(colored(f"{vertical_bar()} ", edge_color[p]))
+                    out.write(colored(f"{utils.vertical_bar()} ", edge_color[p]))
             out.write(colored(suffix, edge_color[b_]))
 
         for b, accumulated_path in dfs_res:
             if b in self.up_branch:
-                print_line_prefix(b, f"{vertical_bar()} \n")
+                print_line_prefix(b, f"{utils.vertical_bar()} \n")
                 if self.cli_ctxt.opt_list_commits:
                     if edge_color[b] in (RED, DIM):
                         commits: List[Hash_ShortHash_Message] = commits_between(self.cli_ctxt, fp_sha(b),
@@ -1088,12 +883,12 @@ class MacheteClient:
                             fp_branches_formatted: str = " and ".join(
                                 sorted(underline(lb_or_rb) for lb, lb_or_rb in fp_branches_cached[b]))
                             fp_suffix: str = " %s %s %s seems to be a part of the unique history of %s" % \
-                                             (colored(right_arrow(), RED), colored("fork point ???", RED),
+                                             (colored(utils.right_arrow(), RED), colored("fork point ???", RED),
                                               "this commit" if self.cli_ctxt.opt_list_commits_with_hashes else f"commit {short_sha}",
                                               fp_branches_formatted)
                         else:
                             fp_suffix = ''
-                        print_line_prefix(b, vertical_bar())
+                        print_line_prefix(b, utils.vertical_bar())
                         out.write(" %s%s%s\n" % (
                                   f"{dim(short_sha)}  " if self.cli_ctxt.opt_list_commits_with_hashes else "", dim(subject),
                                   fp_suffix))
@@ -1139,8 +934,8 @@ class MacheteClient:
             if hook_executable:
                 debug(self.cli_ctxt, "status()", f"running machete-status-branch hook ({hook_path}) for branch {b}")
                 hook_env = dict(os.environ, ASCII_ONLY=str(ascii_only).lower())
-                status_code, stdout, stderr = popen_cmd(self.cli_ctxt, hook_path, b, cwd=get_root_dir(self.cli_ctxt),
-                                                        env=hook_env)
+                status_code, stdout, stderr = utils.popen_cmd(self.cli_ctxt, hook_path, b, cwd=get_root_dir(self.cli_ctxt),
+                                                              env=hook_env)
                 if status_code == 0:
                     if not stdout.isspace():
                         hook_output = f"  {stdout.rstrip()}"
@@ -1216,7 +1011,7 @@ class MacheteClient:
         default_editor_name: Optional[str] = get_default_editor(self.cli_ctxt)
         if default_editor_name is None:
             raise MacheteException(f"Cannot determine editor. Set `GIT_MACHETE_EDITOR` environment variable or edit {self.definition_file_path} directly.")
-        return run_cmd(self.cli_ctxt, default_editor_name, self.definition_file_path)
+        return utils.run_cmd(self.cli_ctxt, default_editor_name, self.definition_file_path)
 
     def fork_point_and_containing_branch_defs(self, b: str, use_overrides: bool) -> Tuple[Optional[str], List[BRANCH_DEF]]:
         u = self.up_branch.get(b)
@@ -1398,7 +1193,7 @@ class MacheteClient:
             debug(self.cli_ctxt,
                   f"run_post_slide_out_hook({new_upstream}, {slid_out_branch}, {new_downstreams})",
                   f"running machete-post-slide-out hook ({hook_path})")
-            exit_code = run_cmd(self.cli_ctxt, hook_path, new_upstream, slid_out_branch, *new_downstreams,
+            exit_code = utils.run_cmd(self.cli_ctxt, hook_path, new_upstream, slid_out_branch, *new_downstreams,
                                 cwd=get_root_dir(self.cli_ctxt))
             if exit_code != 0:
                 sys.stderr.write(f"The machete-post-slide-out hook exited with {exit_code}, aborting.\n")
@@ -1746,26 +1541,6 @@ def allowed_directions(allow_current: bool) -> str:
 # Implementation of basic git or git-related commands
 git_version = None
 
-
-def find_executable(cli_ctxt: CommandLineContext, executable: str) -> Optional[str]:
-    base, ext = os.path.splitext(executable)
-
-    if (sys.platform == 'win32' or os.name == 'os2') and (ext != '.exe'):
-        executable = f"{executable}.exe"
-
-    if os.path.isfile(executable):
-        return executable
-
-    path = os.environ.get('PATH', os.defpath)
-    paths = path.split(os.pathsep)
-    for p in paths:
-        f = os.path.join(p, executable)
-        if os.path.isfile(f) and utils.is_executable(f):
-            debug(cli_ctxt, f"find_executable({executable})", f"found {executable} at {f}")
-            return f
-    return None
-
-
 def get_default_editor(cli_ctxt: CommandLineContext) -> Optional[str]:
     # Based on the git's own algorithm for identifying the editor.
     # '$GIT_MACHETE_EDITOR', 'editor' (to please Debian-based systems) and 'nano' have been added.
@@ -1787,7 +1562,7 @@ def get_default_editor(cli_ctxt: CommandLineContext) -> Optional[str]:
             debug(cli_ctxt, "get_default_editor()", f"'{name}' is undefined")
         else:
             editor_repr = f"'{name}'{(' (' + editor + ')') if editor != name else ''}"
-            if not find_executable(cli_ctxt, editor):
+            if not utils.find_executable(cli_ctxt, editor):
                 debug(cli_ctxt, "get_default_editor()", f"{editor_repr} is not available")
                 if name == "$" + git_machete_editor_var:
                     # In this specific case, when GIT_MACHETE_EDITOR is defined but doesn't point to a valid executable,
@@ -2398,7 +2173,7 @@ def rebase(cli_ctxt: CommandLineContext, onto: str, fork_commit: str, branch: st
     hook_path = get_hook_path(cli_ctxt, "machete-pre-rebase")
     if check_hook_executable(cli_ctxt, hook_path):
         debug(cli_ctxt, f"rebase({onto}, {fork_commit}, {branch})", f"running machete-pre-rebase hook ({hook_path})")
-        exit_code = run_cmd(cli_ctxt, hook_path, onto, fork_commit, branch, cwd=get_root_dir(cli_ctxt))
+        exit_code = utils.run_cmd(cli_ctxt, hook_path, onto, fork_commit, branch, cwd=get_root_dir(cli_ctxt))
         if exit_code == 0:
             do_rebase()
         else:
@@ -2566,11 +2341,6 @@ def get_revision_repr(cli_ctxt: CommandLineContext, revision: str) -> str:
         return f"commit {revision}"
     else:
         return f"{revision} (commit {short_commit_sha_by_revision(cli_ctxt, revision)})"
-
-
-class StopTraversal(Exception):
-    def __init__(self) -> None:
-        pass
 
 
 def flush_caches() -> None:
@@ -3139,4 +2909,5 @@ def launch(orig_args: List[str]) -> None:
 
 
 if __name__ == "__main__":
-    main()
+    #main()
+    launch(['status'])
