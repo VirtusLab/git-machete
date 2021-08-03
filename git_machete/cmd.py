@@ -62,7 +62,6 @@ displayed_warnings: Set[str] = set()
 
 
 def warn(msg: str, apply_fmt: bool = True) -> None:
-    global displayed_warnings
     if msg not in displayed_warnings:
         sys.stderr.write(colored("Warn: ", RED) + (fmt(msg) if apply_fmt else msg) + "\n")
         displayed_warnings.add(msg)
