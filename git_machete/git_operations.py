@@ -14,11 +14,11 @@ REFLOG_ENTRY = Tuple[str, str]
 class GitContext:
 
     counterparts_for_fetching_cached: Optional[Dict[str, Optional[str]]] = None  # TODO (#110): default dict with None
-    git_version: Tuple[int, int, int] = None
+    git_version: Tuple[int, ...] = None
     root_dir: str = None
     git_dir: str = None
     config_cached: Optional[Dict[str, str]] = None
-    remotes_cached = None
+    remotes_cached: Optional[List[str]] = None
     fetch_done_for: Set[str] = set()
     short_commit_sha_by_revision_cached: Dict[str, str] = {}
     tree_sha_by_commit_sha_cached: Optional[Dict[str, Optional[str]]] = None  # TODO (#110): default dict with None
