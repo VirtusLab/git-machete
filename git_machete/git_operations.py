@@ -14,7 +14,7 @@ REFLOG_ENTRY = Tuple[str, str]
 class GitContext:
 
     counterparts_for_fetching_cached: Optional[Dict[str, Optional[str]]] = None  # TODO (#110): default dict with None
-    git_version: Tuple[int, ...] = None
+    git_version: Optional[Tuple[int, int, int]] = None
     root_dir: str = None
     git_dir: str = None
     config_cached: Optional[Dict[str, str]] = None
