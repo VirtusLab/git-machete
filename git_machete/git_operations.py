@@ -1,4 +1,4 @@
-from typing import List, Optional, Callable, Tuple, Dict, Match
+from typing import List, Optional, Callable, Tuple, Dict, Match, Set
 
 import os
 import re
@@ -14,12 +14,12 @@ REFLOG_ENTRY = Tuple[str, str]
 class GitContext:
 
     counterparts_for_fetching_cached: Optional[Dict[str, Optional[str]]] = None  # TODO (#110): default dict with None
-    git_version = None
-    root_dir = None
-    git_dir = None
+    git_version: Tuple[int, int, int] = None
+    root_dir: str = None
+    git_dir: str = None
     config_cached: Optional[Dict[str, str]] = None
     remotes_cached = None
-    fetch_done_for = set()
+    fetch_done_for: Set[str] = set()
     short_commit_sha_by_revision_cached: Dict[str, str] = {}
     tree_sha_by_commit_sha_cached: Optional[Dict[str, Optional[str]]] = None  # TODO (#110): default dict with None
     commit_sha_by_revision_cached: Optional[Dict[str, Optional[str]]] = None  # TODO (#110): default dict with None
@@ -101,7 +101,7 @@ def get_git_version(cli_ctxt: CommandLineContext) -> Tuple[int, int, int]:
         # which is irrelevant for our purpose (checking whether certain git CLI features are available/bugs are fixed).
         raw = re.search(r"\d+.\d+.\d+", popen_git(cli_ctxt, "version")).group(0)
         GitContext.git_version = tuple(map(int, raw.split(".")))
-    return GitContext.git_version  # type: ignore
+    return GitContext.git_version
 
 
 def get_root_dir(cli_ctxt: CommandLineContext) -> str:
