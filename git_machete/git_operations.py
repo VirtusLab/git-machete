@@ -14,7 +14,7 @@ REFLOG_ENTRY = Tuple[str, str]
 class GitContext:
 
     counterparts_for_fetching_cached: Optional[Dict[str, Optional[str]]] = None  # TODO (#110): default dict with None
-    git_version: Optional[Tuple[int, int, int]] = None
+    git_version: Tuple[int, ...] = None
     root_dir: str = None
     git_dir: str = None
     config_cached: Optional[Dict[str, str]] = None
@@ -94,7 +94,7 @@ def get_default_editor(cli_ctxt: CommandLineContext) -> Optional[str]:
     return None
 
 
-def get_git_version(cli_ctxt: CommandLineContext) -> Tuple[int, int, int]:
+def get_git_version(cli_ctxt: CommandLineContext) -> Tuple[int, ...]:
     if not GitContext.git_version:
         # We need to cut out the x.y.z part and not just take the result of 'git version' as is,
         # because the version string in certain distributions of git (esp. on OS X) has an extra suffix,
