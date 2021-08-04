@@ -14,7 +14,7 @@ import sys
 import textwrap
 
 from git_machete import utils
-from git_machete.utils import RED, YELLOW, ORANGE, GREEN, DIM, BOLD, ENDC, dim, pretty_choices, bold, colored, debug, fmt, underline
+from git_machete.utils import RED, YELLOW, ORANGE, GREEN, DIM, BOLD, ENDC, dim, pretty_choices, bold, colored, debug, fmt, underline, flat_map, tupled, get_second, excluding
 from git_machete.contexts import CommandLineContext
 from git_machete.exceptions import MacheteException, StopTraversal
 from git_machete.docs import short_docs, long_docs
@@ -179,7 +179,7 @@ class MacheteClient:
                          pretty_choices("y", "e[dit]", "N"), opt_yes_msg=None)
 
         def recursive_slide_out_invalid_branches(b: str) -> List[str]:
-            new_down_branches = utils.flat_map(recursive_slide_out_invalid_branches, self.down_branches.get(b, []))
+            new_down_branches = flat_map(recursive_slide_out_invalid_branches, self.down_branches.get(b, []))
             if b in invalid_branches:
                 if b in self.down_branches:
                     del self.down_branches[b]
@@ -197,8 +197,8 @@ class MacheteClient:
                 self.down_branches[b] = new_down_branches
                 return [b]
 
-        self.roots = utils.flat_map(recursive_slide_out_invalid_branches, self.roots)
-        self.managed_branches = utils.excluding(self.managed_branches, invalid_branches)
+        self.roots = flat_map(recursive_slide_out_invalid_branches, self.roots)
+        self.managed_branches = excluding(self.managed_branches, invalid_branches)
         if ans in ('y', 'yes'):
             self.save_definition_file()
         elif ans in ('e', 'edit'):
@@ -347,14 +347,14 @@ class MacheteClient:
                 root_of[b] = get_root_of(root_of[b])
             return root_of[b]
 
-        non_root_fixed_branches = utils.excluding(all_local_branches, self.roots)
+        non_root_fixed_branches = excluding(all_local_branches, self.roots)
         last_checkout_timestamps = get_latest_checkout_timestamps(self.cli_ctxt)
         non_root_fixed_branches_by_last_checkout_timestamps = sorted(
             (last_checkout_timestamps.get(b, 0), b) for b in non_root_fixed_branches)
         if self.cli_ctxt.opt_checked_out_since:
             threshold = git_operations.parse_git_timespec_to_unix_timestamp(self.cli_ctxt, self.cli_ctxt.opt_checked_out_since)
             stale_non_root_fixed_branches = [b for (timestamp, b) in itertools.takewhile(
-                utils.tupled(lambda timestamp, b: timestamp < threshold),
+                tupled(lambda timestamp, b: timestamp < threshold),
                 non_root_fixed_branches_by_last_checkout_timestamps
             )]
         else:
@@ -367,13 +367,13 @@ class MacheteClient:
                      f"only branches checked out at or after ca. <b>{threshold_date}</b> are included.\n"
                      "Use `git machete discover --checked-out-since=<date>` (where <date> can be e.g. `'2 weeks ago'` or `2020-06-01`) "
                      "to change this threshold so that less or more branches are included.\n")
-        self.managed_branches = utils.excluding(all_local_branches, stale_non_root_fixed_branches)
+        self.managed_branches = excluding(all_local_branches, stale_non_root_fixed_branches)
         if self.cli_ctxt.opt_checked_out_since and not self.managed_branches:
             warn(
                 "no branches satisfying the criteria. Try moving the value of `--checked-out-since` further to the past.")
             return
 
-        for b in utils.excluding(non_root_fixed_branches, stale_non_root_fixed_branches):
+        for b in excluding(non_root_fixed_branches, stale_non_root_fixed_branches):
             u = self.infer_upstream(b, condition=lambda candidate: get_root_of(candidate) != b and candidate not in stale_non_root_fixed_branches, reject_reason_message="choosing this candidate would form a cycle in the resulting graph or the candidate is a stale branch")
             if u:
                 debug(self.cli_ctxt, "discover_tree()",
@@ -402,10 +402,10 @@ class MacheteClient:
             warn("skipping %s since %s merged to another branch and would not have any downstream branches.\n"
                  % (", ".join(f"`{b}`" for b in merged_branches_to_skip),
                     "it's" if len(merged_branches_to_skip) == 1 else "they're"))
-            self.managed_branches = utils.excluding(self.managed_branches, merged_branches_to_skip)
+            self.managed_branches = excluding(self.managed_branches, merged_branches_to_skip)
             for b in merged_branches_to_skip:
                 u = self.up_branch[b]
-                self.down_branches[u] = utils.excluding(self.down_branches[u], [b])
+                self.down_branches[u] = excluding(self.down_branches[u], [b])
                 del self.up_branch[b]
             # We're NOT applying the removal process recursively,
             # so it's theoretically possible that some merged branches became childless
@@ -526,7 +526,7 @@ class MacheteClient:
             dds = self.down_branches.get(d, [])
             for dd in dds:
                 self.up_branch[dd] = b
-            self.down_branches[b] = utils.flat_map(
+            self.down_branches[b] = flat_map(
                 lambda bd: dds if bd == d else [bd],
                 self.down_branches[b])
             self.save_definition_file()
@@ -621,7 +621,7 @@ class MacheteClient:
                             nearest_remaining_branch = u
                     for d in self.down_branches.get(b) or []:
                         self.up_branch[d] = u
-                    self.down_branches[u] = utils.flat_map(
+                    self.down_branches[u] = flat_map(
                         lambda ud: (self.down_branches.get(b) or []) if ud == b else [ud],
                         self.down_branches[u])
                     if b in self.annotations:
@@ -953,10 +953,10 @@ class MacheteClient:
             warn(f"{first_part}.\n\n{second_part}.")
 
     def delete_unmanaged(self) -> None:
-        branches_to_delete = utils.excluding(git_operations.local_branches(self.cli_ctxt), self.managed_branches)
+        branches_to_delete = excluding(git_operations.local_branches(self.cli_ctxt), self.managed_branches)
         cb = current_branch_or_none(self.cli_ctxt)
         if cb and cb in branches_to_delete:
-            branches_to_delete = utils.excluding(branches_to_delete, [cb])
+            branches_to_delete = excluding(branches_to_delete, [cb])
             print(fmt(f"Skipping current branch `{cb}`"))
         if branches_to_delete:
             branches_merged_to_head = merged_local_branches(self.cli_ctxt)
@@ -1371,7 +1371,7 @@ class MacheteClient:
                     def branch_def_to_str(lb: str, lb_or_rb: str) -> str:
                         return lb if lb == lb_or_rb else f"{lb_or_rb} (remote counterpart of {lb})"
 
-                    joined_branch_defs = ", ".join(map(utils.tupled(branch_def_to_str), branch_defs))
+                    joined_branch_defs = ", ".join(map(tupled(branch_def_to_str), branch_defs))
                     yield dim(f"{sha_} => {joined_branch_defs}")
 
             debug(self.cli_ctxt, f"match_log_to_filtered_reflogs({b})",
@@ -1386,16 +1386,16 @@ class MacheteClient:
                 def lb_is_not_b(lb: str, lb_or_rb: str) -> bool:
                     return lb != b
 
-                containing_branch_defs = sorted(filter(utils.tupled(lb_is_not_b), branch_defs), key=utils.get_second)
+                containing_branch_defs = sorted(filter(tupled(lb_is_not_b), branch_defs), key=get_second)
                 if containing_branch_defs:
                     debug(self.cli_ctxt,
                           f"match_log_to_filtered_reflogs({b})",
-                          f"commit {sha} found in filtered reflog of {' and '.join(map(utils.get_second, branch_defs))}")
+                          f"commit {sha} found in filtered reflog of {' and '.join(map(get_second, branch_defs))}")
                     yield sha, containing_branch_defs
                 else:
                     debug(self.cli_ctxt,
                           f"match_log_to_filtered_reflogs({b})",
-                          f"commit {sha} found only in filtered reflog of {' and '.join(map(utils.get_second, branch_defs))}; ignoring")
+                          f"commit {sha} found only in filtered reflog of {' and '.join(map(get_second, branch_defs))}; ignoring")
             else:
                 debug(self.cli_ctxt, f"match_log_to_filtered_reflogs({b})", f"commit {sha} not found in any filtered reflog")
 
@@ -1403,7 +1403,7 @@ class MacheteClient:
         for sha, containing_branch_defs in self.match_log_to_filtered_reflogs(b):
             debug(self.cli_ctxt,
                   f"infer_upstream({b})",
-                  f"commit {sha} found in filtered reflog of {' and '.join(map(utils.get_second, containing_branch_defs))}")
+                  f"commit {sha} found in filtered reflog of {' and '.join(map(get_second, containing_branch_defs))}")
 
             for candidate, original_matched_branch in containing_branch_defs:
                 if candidate != original_matched_branch:
@@ -2403,8 +2403,8 @@ def launch(orig_args: List[str]) -> None:
                     return re.sub("^[^/]+/", "", rb)
 
                 remote_counterparts_of_local_branches = utils.map_truthy_only(lambda b: git_operations.combined_counterpart_for_fetching_of_branch(cli_ctxt, b), git_operations.local_branches(cli_ctxt))
-                qualifying_remote_branches = utils.excluding(git_operations.remote_branches(cli_ctxt), remote_counterparts_of_local_branches)
-                res = utils.excluding(git_operations.local_branches(cli_ctxt), machete_client.managed_branches) + list(map(strip_first_fragment, qualifying_remote_branches))
+                qualifying_remote_branches = excluding(git_operations.remote_branches(cli_ctxt), remote_counterparts_of_local_branches)
+                res = excluding(git_operations.local_branches(cli_ctxt), machete_client.managed_branches) + list(map(strip_first_fragment, qualifying_remote_branches))
             elif param == "managed":
                 res = machete_client.managed_branches
             elif param == "slidable":
@@ -2414,7 +2414,7 @@ def launch(orig_args: List[str]) -> None:
                 machete_client.expect_in_managed_branches(b_arg)
                 res = machete_client.slidable_after(b_arg)
             elif param == "unmanaged":
-                res = utils.excluding(git_operations.local_branches(cli_ctxt), machete_client.managed_branches)
+                res = excluding(git_operations.local_branches(cli_ctxt), machete_client.managed_branches)
             elif param == "with-overridden-fork-point":
                 res = list(filter(lambda b: machete_client.has_any_fork_point_override_config(b), git_operations.local_branches(cli_ctxt)))
 
