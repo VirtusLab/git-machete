@@ -7,6 +7,7 @@ import re
 import subprocess
 
 from git_machete.contexts import CommandLineContext
+from git_machete.constants import ENDC, BOLD, DIM, RED, UNDERLINE, YELLOW, GREEN, ORANGE
 
 T = TypeVar('T')
 # To avoid displaying the same warning multiple times during a single run.
@@ -84,18 +85,6 @@ def find_executable(cli_ctxt: CommandLineContext, executable: str) -> Optional[s
             debug(cli_ctxt, f"find_executable({executable})", f"found {executable} at {f}")
             return f
     return None
-
-
-ENDC = '\033[0m'
-BOLD = '\033[1m'
-# `GIT_MACHETE_DIM_AS_GRAY` remains undocumented as for now,
-# was just needed for animated gifs to render correctly (`[2m`-style dimmed text was invisible)
-DIM = '\033[38;2;128;128;128m' if os.environ.get('GIT_MACHETE_DIM_AS_GRAY') == 'true' else '\033[2m'
-UNDERLINE = '\033[4m'
-GREEN = '\033[32m'
-YELLOW = '\033[33m'
-ORANGE = '\033[00;38;5;208m'
-RED = '\033[91m'
 
 
 def bold(s: str) -> str:

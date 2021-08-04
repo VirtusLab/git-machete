@@ -7,8 +7,7 @@ import sys
 from git_machete.contexts import CommandLineContext
 from git_machete.exceptions import MacheteException
 from git_machete import utils
-
-REFLOG_ENTRY = Tuple[str, str]
+from git_machete.constants import MAX_COUNT_FOR_INITIAL_LOG, REFLOG_ENTRY
 
 
 class GitContext:

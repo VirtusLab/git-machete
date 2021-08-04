@@ -1,6 +1,5 @@
 from typing import Dict
-
-DISCOVER_DEFAULT_FRESH_BRANCH_COUNT = 10  # make variable declaration in one file only
+from git_machete.constants import DISCOVER_DEFAULT_FRESH_BRANCH_COUNT
 
 short_docs: Dict[str, str] = {
     "add": "Add a branch to the tree of branch dependencies",

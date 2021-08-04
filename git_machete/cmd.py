@@ -14,12 +14,16 @@ import sys
 import textwrap
 
 from git_machete import utils
-from git_machete.utils import RED, YELLOW, ORANGE, GREEN, DIM, BOLD, ENDC, dim, pretty_choices, bold, colored, debug, fmt, underline, flat_map, tupled, get_second, excluding, warn
+from git_machete.utils import dim, pretty_choices, bold, colored, debug, fmt, underline, flat_map, tupled, get_second, excluding, warn
 from git_machete.contexts import CommandLineContext
 from git_machete.exceptions import MacheteException, StopTraversal
 from git_machete.docs import short_docs, long_docs
 from git_machete.git_operations import GitContext, REFLOG_ENTRY
 from git_machete import git_operations
+from git_machete.constants import PICK_FIRST_ROOT, PICK_LAST_ROOT, DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, BRANCH_DEF, RED,\
+    YELLOW, ORANGE, GREEN, DIM, BOLD, ENDC, UNTRACKED, AHEAD_OF_REMOTE, BEHIND_REMOTE, DIVERGED_FROM_AND_OLDER_THAN_REMOTE, \
+    DIVERGED_FROM_AND_NEWER_THAN_REMOTE, NO_REMOTES, IN_SYNC_WITH_REMOTE
+
 
 
 # Core utils
@@ -62,14 +66,8 @@ initial_current_directory: Optional[str] = utils.current_directory_or_none() or 
 
 # Manipulation on definition file/tree of branches
 
-BRANCH_DEF = Tuple[str, str]
-
 
 class MacheteClient:
-
-    DISCOVER_DEFAULT_FRESH_BRANCH_COUNT = 10
-    PICK_FIRST_ROOT: int = 0
-    PICK_LAST_ROOT: int = -1
 
     branch_defs_by_sha_in_reflog: Optional[Dict[str, Optional[List[Tuple[str, str]]]]] = None
 
@@ -346,7 +344,7 @@ class MacheteClient:
                 non_root_fixed_branches_by_last_checkout_timestamps
             )]
         else:
-            c = MacheteClient.DISCOVER_DEFAULT_FRESH_BRANCH_COUNT
+            c = DISCOVER_DEFAULT_FRESH_BRANCH_COUNT
             stale, fresh = non_root_fixed_branches_by_last_checkout_timestamps[:-c], non_root_fixed_branches_by_last_checkout_timestamps[-c:]
             stale_non_root_fixed_branches = [b for (timestamp, b) in stale]
             if stale:
@@ -542,7 +540,7 @@ class MacheteClient:
         initial_branch = nearest_remaining_branch = current_branch(self.cli_ctxt)
 
         if self.cli_ctxt.opt_start_from == "root":
-            dest = self.root_branch(current_branch(self.cli_ctxt), if_unmanaged=MacheteClient.PICK_FIRST_ROOT)
+            dest = self.root_branch(current_branch(self.cli_ctxt), if_unmanaged=PICK_FIRST_ROOT)
             print_new_line(False)
             print(f"Checking out the root branch ({bold(dest)})")
             git_operations.checkout(self.cli_ctxt, dest)
@@ -1069,12 +1067,12 @@ class MacheteClient:
             return "\n".join(dbs)
 
     def first_branch(self, b: str) -> str:
-        root = self.root_branch(b, if_unmanaged=MacheteClient.PICK_FIRST_ROOT)
+        root = self.root_branch(b, if_unmanaged=PICK_FIRST_ROOT)
         root_dbs = self.down_branches.get(root)
         return root_dbs[0] if root_dbs else root
 
     def last_branch(self, b: str) -> str:
-        destination = self.root_branch(b, if_unmanaged=MacheteClient.PICK_LAST_ROOT)
+        destination = self.root_branch(b, if_unmanaged=PICK_LAST_ROOT)
         while self.down_branches.get(destination):
             destination = self.down_branches[destination][-1]
         return destination
@@ -1096,11 +1094,11 @@ class MacheteClient:
     def root_branch(self, b: str, if_unmanaged: int) -> str:
         if b not in self.managed_branches:
             if self.roots:
-                if if_unmanaged == MacheteClient.PICK_FIRST_ROOT:
+                if if_unmanaged == PICK_FIRST_ROOT:
                     warn(
                         f"{b} is not a managed branch, assuming {self.roots[0]} (the first root) instead as root")
                     return self.roots[0]
-                else:  # if_unmanaged == MacheteContext.PICK_LAST_ROOT
+                else:  # if_unmanaged == PICK_LAST_ROOT
                     warn(
                         f"{b} is not a managed branch, assuming {self.roots[-1]} (the last root) instead as root")
                     return self.roots[-1]
@@ -1319,7 +1317,7 @@ class MacheteClient:
         elif param in ("p", "prev"):
             return self.prev_branch(b)
         elif param in ("r", "root"):
-            return self.root_branch(b, if_unmanaged=MacheteClient.PICK_FIRST_ROOT)
+            return self.root_branch(b, if_unmanaged=PICK_FIRST_ROOT)
         elif param in ("u", "up"):
             return self.up(b, prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)
         else:
@@ -1655,9 +1653,6 @@ def create_branch(cli_ctxt: CommandLineContext, b: str, out_of_revision: str) ->
     flush_caches()  # the repository state has changed b/c of a successful branch creation, let's defensively flush all the caches
 
 
-MAX_COUNT_FOR_INITIAL_LOG = 10
-
-
 def get_sole_remote_branch(cli_ctxt: CommandLineContext, b: str) -> Optional[str]:
     def matches(rb: str) -> bool:
         # Note that this matcher is defensively too inclusive:
@@ -1768,16 +1763,6 @@ def commits_between(cli_ctxt: CommandLineContext, earliest_exclusive: str, lates
         lambda x: tuple(x.split(":", 2)),  # type: ignore
         utils.non_empty_lines(git_operations.popen_git(cli_ctxt, "log", "--format=%H:%h:%s", f"^{earliest_exclusive}", latest_inclusive, "--"))
     ))))
-
-
-# TODO (#117): extract to namespace, use mypy
-NO_REMOTES = 0
-UNTRACKED = 1
-IN_SYNC_WITH_REMOTE = 2
-BEHIND_REMOTE = 3
-AHEAD_OF_REMOTE = 4
-DIVERGED_FROM_AND_OLDER_THAN_REMOTE = 5
-DIVERGED_FROM_AND_NEWER_THAN_REMOTE = 6
 
 
 def get_relation_to_remote_counterpart(cli_ctxt: CommandLineContext, b: str, rb: str) -> int:
