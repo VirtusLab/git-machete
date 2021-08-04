@@ -12,6 +12,12 @@ T = TypeVar('T')
 # To avoid displaying the same warning multiple times during a single run.
 displayed_warnings: Set[str] = set()
 
+# Let's keep the flag to avoid checking for current directory's existence
+# every time any command is being popened or run.
+current_directory_confirmed_to_exist: bool = False
+
+ascii_only: bool = False
+
 
 def excluding(iterable: Iterable[T], s: Iterable[T]) -> List[T]:
     return list(filter(lambda x: x not in s, iterable))
@@ -90,8 +96,6 @@ GREEN = '\033[32m'
 YELLOW = '\033[33m'
 ORANGE = '\033[00;38;5;208m'
 RED = '\033[91m'
-
-ascii_only: bool = False
 
 
 def bold(s: str) -> str:
@@ -180,9 +184,6 @@ def run_cmd(cli_ctxt: CommandLineContext, cmd: str, *args: str, **kwargs: Any) -
     if cli_ctxt.opt_debug and exit_code != 0:
         sys.stderr.write(dim(f"<exit code: {exit_code}>\n\n"))
     return exit_code
-
-
-current_directory_confirmed_to_exist: bool = False
 
 
 def mark_current_directory_as_possibly_non_existent() -> None:

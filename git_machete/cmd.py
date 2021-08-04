@@ -57,8 +57,6 @@ def pick(choices: List[str], name: str, apply_fmt: bool = True) -> str:
     return choices[index]
 
 
-# Let's keep the flag to avoid checking for current directory's existence
-# every time any command is being popened or run.
 initial_current_directory: Optional[str] = utils.current_directory_or_none() or os.getenv('PWD')
 
 
@@ -1367,7 +1365,7 @@ class MacheteClient:
             debug(self.cli_ctxt, f"match_log_to_filtered_reflogs({b})",
                   "branches containing the given SHA in their filtered reflog: \n%s\n" % "\n".join(log_result()))
 
-        for sha in spoonfeed_log_shas(self.cli_ctxt, b):
+        for sha in git_operations.spoonfeed_log_shas(self.cli_ctxt, b):
             if sha in self.branch_defs_by_sha_in_reflog:
                 # The entries must be sorted by lb_or_rb to make sure the upstream inference is deterministic
                 # (and does not depend on the order in which `generate_entries` iterated through the local branches).
@@ -1657,27 +1655,7 @@ def create_branch(cli_ctxt: CommandLineContext, b: str, out_of_revision: str) ->
     flush_caches()  # the repository state has changed b/c of a successful branch creation, let's defensively flush all the caches
 
 
-def log_shas(cli_ctxt: CommandLineContext, revision: str, max_count: Optional[int]) -> List[str]:
-    opts = ([f"--max-count={str(max_count)}"] if max_count else []) + ["--format=%H", f"refs/heads/{revision}"]
-    return utils.non_empty_lines(git_operations.popen_git(cli_ctxt, "log", *opts))
-
-
 MAX_COUNT_FOR_INITIAL_LOG = 10
-
-
-# Since getting the full history of a branch can be an expensive operation for large repositories (compared to all other underlying git operations),
-# there's a simple optimization in place: we first fetch only a couple of first commits in the history,
-# and only fetch the rest if none of them occurs on reflog of any other branch.
-def spoonfeed_log_shas(cli_ctxt: CommandLineContext, b: str) -> Generator[str, None, None]:
-    if b not in GitContext.initial_log_shas_cached:
-        GitContext.initial_log_shas_cached[b] = log_shas(cli_ctxt, b, max_count=MAX_COUNT_FOR_INITIAL_LOG)
-    for sha in GitContext.initial_log_shas_cached[b]:
-        yield sha
-
-    if b not in GitContext.remaining_log_shas_cached:
-        GitContext.remaining_log_shas_cached[b] = log_shas(cli_ctxt, b, max_count=None)[MAX_COUNT_FOR_INITIAL_LOG:]
-    for sha in GitContext.remaining_log_shas_cached[b]:
-        yield sha
 
 
 def get_sole_remote_branch(cli_ctxt: CommandLineContext, b: str) -> Optional[str]:

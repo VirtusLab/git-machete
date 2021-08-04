@@ -1,4 +1,4 @@
-from typing import List, Optional, Callable, Tuple, Dict, Match, Set
+from typing import List, Optional, Callable, Tuple, Dict, Match, Set, Generator
 
 import os
 import re
@@ -13,13 +13,13 @@ REFLOG_ENTRY = Tuple[str, str]
 
 class GitContext:
 
-    counterparts_for_fetching_cached: Optional[Dict[str, Optional[str]]] = None  # TODO (#110): default dict with None
     git_version: Tuple[int, ...] = None
     root_dir: str = None
     git_dir: str = None
     config_cached: Optional[Dict[str, str]] = None
     remotes_cached: Optional[List[str]] = None
     fetch_done_for: Set[str] = set()
+    counterparts_for_fetching_cached: Optional[Dict[str, Optional[str]]] = None  # TODO (#110): default dict with None
     short_commit_sha_by_revision_cached: Dict[str, str] = {}
     tree_sha_by_commit_sha_cached: Optional[Dict[str, Optional[str]]] = None  # TODO (#110): default dict with None
     commit_sha_by_revision_cached: Optional[Dict[str, Optional[str]]] = None  # TODO (#110): default dict with None
@@ -376,3 +376,24 @@ def load_branches(cli_ctxt: CommandLineContext) -> None:
         GitContext.committer_unix_timestamp_by_revision_cached[b] = int(committer_unix_timestamp_and_time_zone.split(' ')[0])
         if fetch_counterpart_stripped in GitContext.remote_branches_cached:
             GitContext.counterparts_for_fetching_cached[b_stripped] = fetch_counterpart_stripped
+
+
+def log_shas(cli_ctxt: CommandLineContext, revision: str, max_count: Optional[int]) -> List[str]:
+    opts = ([f"--max-count={str(max_count)}"] if max_count else []) + ["--format=%H", f"refs/heads/{revision}"]
+    return utils.non_empty_lines(popen_git(cli_ctxt, "log", *opts))
+
+
+# Since getting the full history of a branch can be an expensive operation for large repositories (compared to all other underlying git operations),
+# there's a simple optimization in place: we first fetch only a couple of first commits in the history,
+# and only fetch the rest if none of them occurs on reflog of any other branch.
+def spoonfeed_log_shas(cli_ctxt: CommandLineContext, b: str) -> Generator[str, None, None]:
+    if b not in GitContext.initial_log_shas_cached:
+        GitContext.initial_log_shas_cached[b] = log_shas(cli_ctxt, b, max_count=MAX_COUNT_FOR_INITIAL_LOG)
+    for sha in GitContext.initial_log_shas_cached[b]:
+        yield sha
+
+    if b not in GitContext.remaining_log_shas_cached:
+        GitContext.remaining_log_shas_cached[b] = log_shas(cli_ctxt, b, max_count=None)[MAX_COUNT_FOR_INITIAL_LOG:]
+    for sha in GitContext.remaining_log_shas_cached[b]:
+        yield sha
+
