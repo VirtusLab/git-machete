@@ -324,7 +324,7 @@ def is_revert_in_progress(cli_ctxt: CommandLineContext) -> bool:
     return os.path.isfile(get_git_subpath(cli_ctxt, "REVERT_HEAD"))
 
 
-def go(cli_ctxt: CommandLineContext, branch: str) -> None:
+def checkout(cli_ctxt: CommandLineContext, branch: str) -> None:
     run_git(cli_ctxt, "checkout", "--quiet", branch, "--")
 
 

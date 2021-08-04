@@ -461,9 +461,9 @@ class MacheteClient:
         self.save_definition_file()
         self.run_post_slide_out_hook(new_upstream, branches_to_slide_out[-1], new_downstreams)
 
-        git_operations.go(self.cli_ctxt, new_upstream)
+        git_operations.checkout(self.cli_ctxt, new_upstream)
         for new_downstream in new_downstreams:
-            git_operations.go(self.cli_ctxt, new_downstream)
+            git_operations.checkout(self.cli_ctxt, new_downstream)
             if self.cli_ctxt.opt_merge:
                 print(f"Merging {bold(new_upstream)} into {bold(new_downstream)}...")
                 merge(self.cli_ctxt, new_upstream, new_downstream)
@@ -547,14 +547,14 @@ class MacheteClient:
             dest = self.root_branch(current_branch(self.cli_ctxt), if_unmanaged=MacheteClient.PICK_FIRST_ROOT)
             print_new_line(False)
             print(f"Checking out the root branch ({bold(dest)})")
-            git_operations.go(self.cli_ctxt, dest)
+            git_operations.checkout(self.cli_ctxt, dest)
             cb = dest
         elif self.cli_ctxt.opt_start_from == "first-root":
             # Note that we already ensured that there is at least one managed branch.
             dest = self.managed_branches[0]
             print_new_line(False)
             print(f"Checking out the first root branch ({bold(dest)})")
-            git_operations.go(self.cli_ctxt, dest)
+            git_operations.checkout(self.cli_ctxt, dest)
             cb = dest
         else:  # cli_ctxt.opt_start_from == "here"
             cb = current_branch(self.cli_ctxt)
@@ -590,7 +590,7 @@ class MacheteClient:
             if b != cb and (needs_slide_out or needs_parent_sync or needs_remote_sync):
                 print_new_line(False)
                 sys.stdout.write(f"Checking out {bold(b)}\n")
-                git_operations.go(self.cli_ctxt, b)
+                git_operations.checkout(self.cli_ctxt, b)
                 cb = b
                 print_new_line(False)
                 self.status(warn_on_yellow_edges=True)
@@ -760,9 +760,9 @@ class MacheteClient:
                         pick_remote(self.cli_ctxt, b)
 
         if self.cli_ctxt.opt_return_to == "here":
-            git_operations.go(self.cli_ctxt, initial_branch)
+            git_operations.checkout(self.cli_ctxt, initial_branch)
         elif self.cli_ctxt.opt_return_to == "nearest-remaining":
-            git_operations.go(self.cli_ctxt, nearest_remaining_branch)
+            git_operations.checkout(self.cli_ctxt, nearest_remaining_branch)
         # otherwise cli_ctxt.opt_return_to == "stay", so no action is needed
 
         print_new_line(False)
@@ -2355,7 +2355,7 @@ def launch(orig_args: List[str]) -> None:
             cb = current_branch(cli_ctxt)
             dest = machete_client.parse_direction(param, cb, allow_current=False, down_pick_mode=True)
             if dest != cb:
-                git_operations.go(cli_ctxt, dest)
+                git_operations.checkout(cli_ctxt, dest)
         elif cmd == "help":
             param = check_optional_param(parse_options(args))
             # No need to read definition file.
