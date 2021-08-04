@@ -25,7 +25,6 @@ from git_machete.constants import PICK_FIRST_ROOT, PICK_LAST_ROOT, DISCOVER_DEFA
     DIVERGED_FROM_AND_NEWER_THAN_REMOTE, NO_REMOTES, IN_SYNC_WITH_REMOTE
 
 
-
 # Core utils
 
 T = TypeVar('T')
