@@ -1,5 +1,5 @@
 
-from typing import Any, Callable, Iterable, List, Optional, Tuple, TypeVar, Dict
+from typing import Any, Callable, Iterable, List, Optional, Tuple, TypeVar, Dict, Set
 
 import os
 import sys
@@ -9,6 +9,8 @@ import subprocess
 from git_machete.contexts import CommandLineContext
 
 T = TypeVar('T')
+# To avoid displaying the same warning multiple times during a single run.
+displayed_warnings: Set[str] = set()
 
 
 def excluding(iterable: Iterable[T], s: Iterable[T]) -> List[T]:
@@ -242,3 +244,9 @@ def cmd_shell_repr(cmd: str, *args: str, **kwargs: Dict[str, str]) -> str:
     # We don't want to include the env vars that are inherited from the environment of git-machete process
     env_repr = [k + "=" + shell_escape(v) for k, v in env.items() if k not in os.environ]
     return " ".join(env_repr + [cmd] + list(map(shell_escape, args)))
+
+
+def warn(msg: str, apply_fmt: bool = True) -> None:
+    if msg not in displayed_warnings:
+        sys.stderr.write(colored("Warn: ", RED) + (fmt(msg) if apply_fmt else msg) + "\n")
+        displayed_warnings.add(msg)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from typing import Callable, Dict, Generator, Iterator, List, Optional, Set, Tuple, TypeVar
+from typing import Callable, Dict, Generator, Iterator, List, Optional, Tuple, TypeVar
 
 from git_machete import __version__
 import datetime
@@ -14,7 +14,7 @@ import sys
 import textwrap
 
 from git_machete import utils
-from git_machete.utils import RED, YELLOW, ORANGE, GREEN, DIM, BOLD, ENDC, dim, pretty_choices, bold, colored, debug, fmt, underline, flat_map, tupled, get_second, excluding
+from git_machete.utils import RED, YELLOW, ORANGE, GREEN, DIM, BOLD, ENDC, dim, pretty_choices, bold, colored, debug, fmt, underline, flat_map, tupled, get_second, excluding, warn
 from git_machete.contexts import CommandLineContext
 from git_machete.exceptions import MacheteException, StopTraversal
 from git_machete.docs import short_docs, long_docs
@@ -55,16 +55,6 @@ def pick(choices: List[str], name: str, apply_fmt: bool = True) -> str:
     if index not in range(len(choices)):
         raise MacheteException(f"Invalid index: {index + 1}")
     return choices[index]
-
-
-# To avoid displaying the same warning multiple times during a single run.
-displayed_warnings: Set[str] = set()
-
-
-def warn(msg: str, apply_fmt: bool = True) -> None:
-    if msg not in displayed_warnings:
-        sys.stderr.write(colored("Warn: ", RED) + (fmt(msg) if apply_fmt else msg) + "\n")
-        displayed_warnings.add(msg)
 
 
 # Let's keep the flag to avoid checking for current directory's existence
