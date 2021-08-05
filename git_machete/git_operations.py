@@ -34,14 +34,16 @@ class GitContext:
         self.reflogs_cached: Optional[Dict[str, Optional[List[REFLOG_ENTRY]]]] = None
         self.branch_defs_by_sha_in_reflog: Optional[Dict[str, Optional[List[Tuple[str, str]]]]] = None
 
-    def run_git(self, git_cmd: str, *args: str, **kwargs: Dict[str, str]) -> int:
-        exit_code = utils.run_cmd(self.cli_opts, "git", git_cmd, *args, **kwargs)
+    @staticmethod
+    def run_git(git_cmd: str, *args: str, **kwargs: Dict[str, str]) -> int:
+        exit_code = utils.run_cmd("git", git_cmd, *args, **kwargs)
         if not kwargs.get("allow_non_zero") and exit_code != 0:
             raise MacheteException(f"`{utils.cmd_shell_repr('git', git_cmd, *args, **kwargs)}` returned {exit_code}")
         return exit_code
 
-    def popen_git(self, git_cmd: str, *args: str, **kwargs: Dict[str, str]) -> str:
-        exit_code, stdout, stderr = utils.popen_cmd(self.cli_opts, "git", git_cmd, *args, **kwargs)
+    @staticmethod
+    def popen_git(git_cmd: str, *args: str, **kwargs: Dict[str, str]) -> str:
+        exit_code, stdout, stderr = utils.popen_cmd("git", git_cmd, *args, **kwargs)
         if not kwargs.get("allow_non_zero") and exit_code != 0:
             exit_code_msg: str = utils.fmt(f"`{utils.cmd_shell_repr('git', git_cmd, *args, **kwargs)}` returned {exit_code}\n")
             stdout_msg: str = f"\n{utils.bold('stdout')}:\n{utils.dim(stdout)}" if stdout else ""
@@ -68,17 +70,17 @@ class GitContext:
         for name, fun in proposed_editor_funs:
             editor = fun()
             if not editor:
-                utils.debug(self.cli_opts, "get_default_editor()", f"'{name}' is undefined")
+                utils.debug("get_default_editor()", f"'{name}' is undefined")
             else:
                 editor_repr = f"'{name}'{(' (' + editor + ')') if editor != name else ''}"
-                if not utils.find_executable(self.cli_opts, editor):
-                    utils.debug(self.cli_opts, "get_default_editor()", f"{editor_repr} is not available")
+                if not utils.find_executable(editor):
+                    utils.debug("get_default_editor()", f"{editor_repr} is not available")
                     if name == "$" + git_machete_editor_var:
                         # In this specific case, when GIT_MACHETE_EDITOR is defined but doesn't point to a valid executable,
                         # it's more reasonable/less confusing to raise an error and exit without opening anything.
                         raise MacheteException(f"<b>{editor_repr}</b> is not available")
                 else:
-                    utils.debug(self.cli_opts, "get_default_editor()", f"{editor_repr} is available")
+                    utils.debug("get_default_editor()", f"{editor_repr} is available")
                     if name != "$" + git_machete_editor_var and self.get_config_or_none('advice.macheteEditorSelection') != 'false':
                         sample_alternative = 'nano' if editor.startswith('vi') else 'vi'
                         sys.stderr.write(

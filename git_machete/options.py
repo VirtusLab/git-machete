@@ -2,12 +2,14 @@ from typing import Optional, List
 
 
 class CommandLineOptions:
+    opt_debug: bool = False
+    opt_verbose: bool = False
+
     def __init__(self) -> None:
         self.opt_as_root: bool = False
         self.opt_branch: Optional[str] = None
         self.opt_checked_out_since: Optional[str] = None
         self.opt_color: str = "auto"
-        self.opt_debug: bool = False
         self.opt_down_fork_point: Optional[str] = None
         self.opt_fetch: bool = False
         self.opt_fork_point: Optional[str] = None
@@ -31,5 +33,4 @@ class CommandLineOptions:
         self.opt_stat: bool = False
         self.opt_sync_github_prs: bool = False
         self.opt_unset_override: bool = False
-        self.opt_verbose: bool = False
         self.opt_yes: bool = False

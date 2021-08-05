@@ -354,8 +354,7 @@ class MacheteClient:
         for b in excluding(non_root_fixed_branches, stale_non_root_fixed_branches):
             u = self.infer_upstream(b, condition=lambda candidate: get_root_of(candidate) != b and candidate not in stale_non_root_fixed_branches, reject_reason_message="choosing this candidate would form a cycle in the resulting graph or the candidate is a stale branch")
             if u:
-                debug(self.cli_ctxt, "discover_tree()",
-                      f"inferred upstream of {b} is {u}, attaching {b} as a child of {u}\n")
+                debug("discover_tree()", f"inferred upstream of {b} is {u}, attaching {b} as a child of {u}\n")
                 self.up_branch[b] = u
                 root_of[b] = u
                 if u in self.down_branches:
@@ -363,7 +362,7 @@ class MacheteClient:
                 else:
                     self.down_branches[u] = [b]
             else:
-                debug(self.cli_ctxt, "discover_tree()", f"inferred no upstream for {b}, attaching {b} as a new root\n")
+                debug("discover_tree()", f"inferred no upstream for {b}, attaching {b} as a new root\n")
                 self.roots += [b]
 
         # Let's remove merged branches for which no downstream branch have been found.
@@ -372,8 +371,7 @@ class MacheteClient:
             if b in self.up_branch and not self.down_branches.get(b):
                 u = self.up_branch[b]
                 if is_merged_to(self, b, u):
-                    debug(self.cli_ctxt,
-                          "discover_tree()",
+                    debug("discover_tree()",
                           f"inferred upstream of {b} is {u}, but {b} is merged to {u}; skipping {b} from discovered tree\n")
                     merged_branches_to_skip += [b]
         if merged_branches_to_skip:
@@ -875,16 +873,15 @@ class MacheteClient:
 
             hook_output = ""
             if hook_executable:
-                debug(self.cli_ctxt, "status()", f"running machete-status-branch hook ({hook_path}) for branch {b}")
+                debug("status()", f"running machete-status-branch hook ({hook_path}) for branch {b}")
                 hook_env = dict(os.environ, ASCII_ONLY=str(utils.ascii_only).lower())
-                status_code, stdout, stderr = utils.popen_cmd(self.cli_ctxt, hook_path, b, cwd=self.git_ctxt.get_root_dir(),
+                status_code, stdout, stderr = utils.popen_cmd(hook_path, b, cwd=self.git_ctxt.get_root_dir(),
                                                               env=hook_env)
                 if status_code == 0:
                     if not stdout.isspace():
                         hook_output = f"  {stdout.rstrip()}"
                 else:
-                    debug(self.cli_ctxt,
-                          "status()",
+                    debug("status()",
                           f"machete-status-branch hook ({hook_path}) for branch {b} returned {status_code}; stdout: '{stdout}'; stderr: '{stderr}'")
 
             out.write(current + anno + sync_status + hook_output + "\n")
@@ -954,14 +951,14 @@ class MacheteClient:
         default_editor_name: Optional[str] = self.git_ctxt.get_default_editor()
         if default_editor_name is None:
             raise MacheteException(f"Cannot determine editor. Set `GIT_MACHETE_EDITOR` environment variable or edit {self.definition_file_path} directly.")
-        return utils.run_cmd(self.cli_ctxt, default_editor_name, self.definition_file_path)
+        return utils.run_cmd(default_editor_name, self.definition_file_path)
 
     def fork_point_and_containing_branch_defs(self, b: str, use_overrides: bool) -> Tuple[Optional[str], List[BRANCH_DEF]]:
         u = self.up_branch.get(b)
 
         if self.is_merged_to_upstream(b):
             fp_sha = self.git_ctxt.commit_sha_by_revision(b)
-            debug(self.cli_ctxt, f"fork_point_and_containing_branch_defs({b})",
+            debug(f"fork_point_and_containing_branch_defs({b})",
                   f"{b} is merged to {u}; skipping inference, using tip of {b} ({fp_sha}) as fork point")
             return fp_sha, []
 
@@ -975,11 +972,11 @@ class MacheteClient:
                     # We need to handle the case when b is a descendant of u,
                     # but the fork point of b is overridden to a commit that is NOT a descendant of u.
                     # In this case it's more reasonable to assume that u (and not overridden_fp_sha) is the fork point.
-                    debug(self.cli_ctxt, f"fork_point_and_containing_branch_defs({b})",
+                    debug(f"fork_point_and_containing_branch_defs({b})",
                           f"{b} is descendant of its upstream {u}, but overridden fork point commit {overridden_fp_sha} is NOT a descendant of {u}; falling back to {u} as fork point")
                     return self.git_ctxt.commit_sha_by_revision(u), []
                 else:
-                    debug(self.cli_ctxt, f"fork_point_and_containing_branch_defs({b})",
+                    debug(f"fork_point_and_containing_branch_defs({b})",
                           f"fork point of {b} is overridden to {overridden_fp_sha}; skipping inference")
                     return overridden_fp_sha, []
 
@@ -987,14 +984,13 @@ class MacheteClient:
             fp_sha, containing_branch_defs = next(self.match_log_to_filtered_reflogs(b))
         except StopIteration:
             if u and is_ancestor_or_equal(self.git_ctxt, u, b):
-                debug(self.cli_ctxt, f"fork_point_and_containing_branch_defs({b})",
+                debug(f"fork_point_and_containing_branch_defs({b})",
                       f"cannot find fork point, but {b} is descendant of its upstream {u}; falling back to {u} as fork point")
                 return self.git_ctxt.commit_sha_by_revision(u), []
             else:
                 raise MacheteException(f"Cannot find fork point for branch `{b}`")
         else:
-            debug(self.cli_ctxt,
-                  "fork_point_and_containing_branch_defs({b})",
+            debug("fork_point_and_containing_branch_defs({b})",
                   f"commit {fp_sha} is the most recent point in history of {b} to occur on "
                   "filtered reflog of any other branch or its remote counterpart "
                   f"(specifically: {' and '.join(map(utils.get_second, containing_branch_defs))})")
@@ -1004,13 +1000,11 @@ class MacheteClient:
                 # That happens very rarely in practice (typically current head of any branch, including u, should occur on the reflog of this
                 # branch, thus is_ancestor(u, b) should imply is_ancestor(u, FP(b)), but it's still possible in case reflog of
                 # u is incomplete for whatever reason.
-                debug(self.cli_ctxt,
-                      f"fork_point_and_containing_branch_defs({b})",
+                debug(f"fork_point_and_containing_branch_defs({b})",
                       f"{u} is descendant of its upstream {b}, but inferred fork point commit {fp_sha} is NOT a descendant of {u}; falling back to {u} as fork point")
                 return self.git_ctxt.commit_sha_by_revision(u), []
             else:
-                debug(self.cli_ctxt,
-                      f"fork_point_and_containing_branch_defs({b})",
+                debug(f"fork_point_and_containing_branch_defs({b})",
                       f"choosing commit {fp_sha} as fork point")
                 return fp_sha, containing_branch_defs
 
@@ -1130,10 +1124,9 @@ class MacheteClient:
                                 new_downstreams: List[str]) -> None:
         hook_path = get_hook_path(self.git_ctxt, "machete-post-slide-out")
         if check_hook_executable(self.git_ctxt, hook_path):
-            debug(self.cli_ctxt,
-                  f"run_post_slide_out_hook({new_upstream}, {slid_out_branch}, {new_downstreams})",
+            debug(f"run_post_slide_out_hook({new_upstream}, {slid_out_branch}, {new_downstreams})",
                   f"running machete-post-slide-out hook ({hook_path})")
-            exit_code = utils.run_cmd(self.cli_ctxt, hook_path, new_upstream, slid_out_branch, *new_downstreams,
+            exit_code = utils.run_cmd(hook_path, new_upstream, slid_out_branch, *new_downstreams,
                                       cwd=self.git_ctxt.get_root_dir())
             if exit_code != 0:
                 sys.stderr.write(f"The machete-post-slide-out hook exited with {exit_code}, aborting.\n")
@@ -1198,7 +1191,7 @@ class MacheteClient:
                            gs_ == f"rebase -i (finish): {prefix}{b} onto {sha_}"
                            )
             if is_excluded:
-                debug(self.cli_ctxt, f"filtered_reflog({b}, {prefix}) -> is_excluded_reflog_subject({sha_}, <<<{gs_}>>>)",
+                debug(f"filtered_reflog({b}, {prefix}) -> is_excluded_reflog_subject({sha_}, <<<{gs_}>>>)",
                       "skipping reflog entry")
             return is_excluded
 
@@ -1209,15 +1202,13 @@ class MacheteClient:
         earliest_sha, earliest_gs = b_reflog[-1]  # Note that the reflog is returned from latest to earliest entries.
         shas_to_exclude = set()
         if earliest_gs.startswith("branch: Created from"):
-            debug(self.cli_ctxt,
-                  f"filtered_reflog({b}, {prefix})",
+            debug(f"filtered_reflog({b}, {prefix})",
                   f"skipping any reflog entry with the hash equal to the hash of the earliest (branch creation) entry: {earliest_sha}")
             shas_to_exclude.add(earliest_sha)
 
         result = [sha for (sha, gs) in b_reflog if
                   sha not in shas_to_exclude and not is_excluded_reflog_subject(sha, gs)]
-        debug(self.cli_ctxt,
-              f"filtered_reflog({b}, {prefix})",
+        debug(f"filtered_reflog({b}, {prefix})",
               "computed filtered reflog (= reflog without branch creation "
               "and branch reset events irrelevant for fork point/upstream inference): %s\n" % (", ".join(result) or "<empty>"))
         return result
@@ -1251,12 +1242,12 @@ class MacheteClient:
                 raise MacheteException(f'Multiple non-origin remotes correspond to GitHub in this repository: '
                                        f'{", ".join(org_name_for_github_remote.keys())}, aborting')
         current_user: Optional[str] = derive_current_user_login()
-        debug(self.cli_ctxt, 'sync_annotations_to_github_prs()',
+        debug('sync_annotations_to_github_prs()',
               'Current GitHub user is ' + (current_user or '<none>'))
         pr: GitHubPullRequest
         for pr in derive_pull_requests(org, repo):
             if pr.head in self.managed_branches:
-                debug(self.cli_ctxt, 'sync_annotations_to_github_prs()',
+                debug('sync_annotations_to_github_prs()',
                       f'{pr} corresponds to a managed branch')
                 anno: str = f'PR #{pr.number}'
                 if pr.user != current_user:
@@ -1270,7 +1261,7 @@ class MacheteClient:
                     print(fmt(f'Annotating <b>{pr.head}</b> as `{anno}`'))
                     self.annotations[pr.head] = anno
             else:
-                debug(self.cli_ctxt, 'sync_annotations_to_github_prs()',
+                debug('sync_annotations_to_github_prs()',
                       f'{pr} does NOT correspond to a managed branch')
         self.save_definition_file()
 
@@ -1332,7 +1323,7 @@ class MacheteClient:
                     joined_branch_defs = ", ".join(map(tupled(branch_def_to_str), branch_defs))
                     yield dim(f"{sha_} => {joined_branch_defs}")
 
-            debug(self.cli_ctxt, f"match_log_to_filtered_reflogs({b})",
+            debug(f"match_log_to_filtered_reflogs({b})",
                   "branches containing the given SHA in their filtered reflog: \n%s\n" % "\n".join(log_result()))
 
         for sha in self.git_ctxt.spoonfeed_log_shas(b):
@@ -1346,34 +1337,30 @@ class MacheteClient:
 
                 containing_branch_defs = sorted(filter(tupled(lb_is_not_b), branch_defs), key=get_second)
                 if containing_branch_defs:
-                    debug(self.cli_ctxt,
-                          f"match_log_to_filtered_reflogs({b})",
+                    debug(f"match_log_to_filtered_reflogs({b})",
                           f"commit {sha} found in filtered reflog of {' and '.join(map(get_second, branch_defs))}")
                     yield sha, containing_branch_defs
                 else:
-                    debug(self.cli_ctxt,
-                          f"match_log_to_filtered_reflogs({b})",
+                    debug(f"match_log_to_filtered_reflogs({b})",
                           f"commit {sha} found only in filtered reflog of {' and '.join(map(get_second, branch_defs))}; ignoring")
             else:
-                debug(self.cli_ctxt, f"match_log_to_filtered_reflogs({b})", f"commit {sha} not found in any filtered reflog")
+                debug(f"match_log_to_filtered_reflogs({b})", f"commit {sha} not found in any filtered reflog")
 
     def infer_upstream(self, b: str, condition: Callable[[str], bool] = lambda u: True, reject_reason_message: str = "") -> Optional[str]:
         for sha, containing_branch_defs in self.match_log_to_filtered_reflogs(b):
-            debug(self.cli_ctxt,
-                  f"infer_upstream({b})",
+            debug(f"infer_upstream({b})",
                   f"commit {sha} found in filtered reflog of {' and '.join(map(get_second, containing_branch_defs))}")
 
             for candidate, original_matched_branch in containing_branch_defs:
                 if candidate != original_matched_branch:
-                    debug(self.cli_ctxt,
-                          f"infer_upstream({b})",
+                    debug(f"infer_upstream({b})",
                           f"upstream candidate is {candidate}, which is the local counterpart of {original_matched_branch}")
 
                 if condition(candidate):
-                    debug(self.cli_ctxt, f"infer_upstream({b})", f"upstream candidate {candidate} accepted")
+                    debug(f"infer_upstream({b})", f"upstream candidate {candidate} accepted")
                     return candidate
                 else:
-                    debug(self.cli_ctxt, f"infer_upstream({b})",
+                    debug(f"infer_upstream({b})",
                           f"upstream candidate {candidate} rejected ({reject_reason_message})")
         return None
 
@@ -1438,8 +1425,7 @@ class MacheteClient:
                 "Consider running:\n",
                 f"  `git machete fork-point --unset-override {b}`\n"))
             return None
-        debug(self.cli_ctxt,
-              f"get_overridden_fork_point({b})",
+        debug(f"get_overridden_fork_point({b})",
               f"since branch {b} is descendant of while_descendant_of={while_descendant_of}, fork point of {b} is overridden to {to}")
         return to
 
@@ -1600,7 +1586,6 @@ def contains_equivalent_tree(
         return contains_equivalent_tree_cached[earlier_commit_sha, later_commit_sha]
 
     debug(
-        git_ctxt.cli_opts,
         "contains_equivalent_tree",
         f"earlier_revision={earlier_revision} later_revision={later_revision}",
     )
@@ -1709,8 +1694,8 @@ def rebase(git_ctxt: GitContext, onto: str, fork_commit: str, branch: str) -> No
 
     hook_path = get_hook_path(git_ctxt, "machete-pre-rebase")
     if check_hook_executable(git_ctxt, hook_path):
-        debug(git_ctxt.cli_opts, f"rebase({onto}, {fork_commit}, {branch})", f"running machete-pre-rebase hook ({hook_path})")
-        exit_code = utils.run_cmd(git_ctxt.cli_opts, hook_path, onto, fork_commit, branch, cwd=git_ctxt.get_root_dir())
+        debug(f"rebase({onto}, {fork_commit}, {branch})", f"running machete-pre-rebase hook ({hook_path})")
+        exit_code = utils.run_cmd(hook_path, onto, fork_commit, branch, cwd=git_ctxt.get_root_dir())
         if exit_code == 0:
             do_rebase()
         else:
@@ -2010,7 +1995,7 @@ def launch(orig_args: List[str]) -> None:
             elif opt in ("-d", "--down-fork-point"):
                 cli_opts.opt_down_fork_point = arg
             elif opt == "--debug":
-                cli_opts.opt_debug = True
+                CommandLineOptions.opt_debug = True
             elif opt in ("-F", "--fetch"):
                 cli_opts.opt_fetch = True
             elif opt in ("-f", "--fork-point"):
@@ -2067,7 +2052,7 @@ def launch(orig_args: List[str]) -> None:
             elif opt == "--unset-override":
                 cli_opts.opt_unset_override = True
             elif opt in ("-v", "--verbose"):
-                cli_opts.opt_verbose = True
+                CommandLineOptions.opt_verbose = True
             elif opt == "--version":
                 version()
                 sys.exit()
