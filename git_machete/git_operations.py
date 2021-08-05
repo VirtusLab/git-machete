@@ -15,7 +15,7 @@ REFLOG_ENTRY = Tuple[str, str]
 class GitContext:
 
     def __init__(self, cli_opts: CommandLineOptions) -> None:
-        self.cli_opts = cli_opts
+        self.cli_opts: CommandLineOptions = cli_opts
         self.git_version: Tuple[int, ...] = None
         self.root_dir: str = None
         self.git_dir: str = None
@@ -355,7 +355,6 @@ class GitContext:
         for sha in self.remaining_log_shas_cached[b]:
             yield sha
 
-    # Reflog magic
     def load_all_reflogs(self) -> None:
         # %gd - reflog selector (refname@{num})
         # %H - full hash
@@ -398,7 +397,7 @@ class GitContext:
                 ]
             return self.reflogs_cached[b]
 
-    def create_branch(self, b: str, out_of_revision: str) -> None:  # maybe move such a methods into github.py
+    def create_branch(self, b: str, out_of_revision: str) -> None:
         self.run_git("checkout", "-b", b, out_of_revision)
         self.flush_caches()  # the repository state has changed b/c of a successful branch creation, let's defensively flush all the caches
 

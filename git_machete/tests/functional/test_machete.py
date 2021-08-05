@@ -13,8 +13,8 @@ from git_machete import cmd
 from git_machete.git_operations import GitContext
 from git_machete.options import CommandLineOptions
 
-cli_opts = CommandLineOptions()
-git_ctxt = GitContext(cli_opts)
+cli_opts: CommandLineOptions = CommandLineOptions()
+git: GitContext = GitContext(cli_opts)
 
 
 class SandboxSetup:
@@ -84,7 +84,7 @@ class MacheteTester(unittest.TestCase):
         with io.StringIO() as out:
             with redirect_stdout(out):
                 cmd.launch(list(args))
-                git_ctxt.flush_caches()
+                git.flush_caches()
             return out.getvalue()
 
     def assert_command(self, cmd: Iterable[str], expected_result: str) -> None:
