@@ -565,8 +565,7 @@ class MacheteClient:
             elif self.cli_opts.opt_merge:
                 needs_parent_sync = bool(u and not is_ancestor_or_equal(self.git, u, b))
             else:  # using rebase
-                needs_parent_sync = bool(u and not (
-                        is_ancestor_or_equal(self.git, u, b) and self.git.commit_sha_by_revision(u) == self.fork_point(b, use_overrides=True)))
+                needs_parent_sync = bool(u and not (is_ancestor_or_equal(self.git, u, b) and self.git.commit_sha_by_revision(u) == self.fork_point(b, use_overrides=True)))
 
             if b != cb and (needs_slide_out or needs_parent_sync or needs_remote_sync):
                 print_new_line(False)
