@@ -1,4 +1,3 @@
-from typing import Tuple
 
 import os
 
@@ -7,9 +6,6 @@ DISCOVER_DEFAULT_FRESH_BRANCH_COUNT = 10
 
 PICK_FIRST_ROOT: int = 0
 PICK_LAST_ROOT: int = -1
-
-BRANCH_DEF = Tuple[str, str]
-REFLOG_ENTRY = Tuple[str, str]
 
 ENDC = '\033[0m'
 BOLD = '\033[1m'

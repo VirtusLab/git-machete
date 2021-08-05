@@ -6,7 +6,7 @@ import sys
 import re
 import subprocess
 
-from git_machete.contexts import CommandLineContext
+from git_machete.options import CommandLineOptions
 from git_machete.constants import ENDC, BOLD, DIM, RED, UNDERLINE, YELLOW, GREEN, ORANGE
 
 T = TypeVar('T')
@@ -68,7 +68,7 @@ def is_executable(path: str) -> bool:
     return os.access(path, os.X_OK)
 
 
-def find_executable(cli_ctxt: CommandLineContext, executable: str) -> Optional[str]:
+def find_executable(cli_opts: CommandLineOptions, executable: str) -> Optional[str]:
     base, ext = os.path.splitext(executable)
 
     if (sys.platform == 'win32' or os.name == 'os2') and (ext != '.exe'):
@@ -82,7 +82,7 @@ def find_executable(cli_ctxt: CommandLineContext, executable: str) -> Optional[s
     for p in paths:
         f = os.path.join(p, executable)
         if os.path.isfile(f) and is_executable(f):
-            debug(cli_ctxt, f"find_executable({executable})", f"found {executable} at {f}")
+            debug(cli_opts, f"find_executable({executable})", f"found {executable} at {f}")
             return f
     return None
 
@@ -149,18 +149,18 @@ def pretty_choices(*choices: str) -> str:
     return f" ({', '.join(map_truthy_only(format_choice, choices))}) "
 
 
-def debug(cli_ctxt: CommandLineContext, hdr: str, msg: str) -> None:
-    if cli_ctxt.opt_debug:
+def debug(cli_opts: CommandLineOptions, hdr: str, msg: str) -> None:
+    if cli_opts.opt_debug:
         sys.stderr.write(f"{bold(hdr)}: {dim(msg)}\n")
 
 
-def run_cmd(cli_ctxt: CommandLineContext, cmd: str, *args: str, **kwargs: Any) -> int:
-    chdir_upwards_until_current_directory_exists(cli_ctxt)
+def run_cmd(cli_opts: CommandLineOptions, cmd: str, *args: str, **kwargs: Any) -> int:
+    chdir_upwards_until_current_directory_exists(cli_opts)
 
     flat_cmd: str = cmd_shell_repr(cmd, *args, **kwargs)
-    if cli_ctxt.opt_debug:
+    if cli_opts.opt_debug:
         sys.stderr.write(bold(f">>> {flat_cmd}") + "\n")
-    elif cli_ctxt.opt_verbose:
+    elif cli_opts.opt_verbose:
         sys.stderr.write(flat_cmd + "\n")
 
     exit_code: int = subprocess.call([cmd] + list(args), **kwargs)
@@ -170,7 +170,7 @@ def run_cmd(cli_ctxt: CommandLineContext, cmd: str, *args: str, **kwargs: Any) -
     # In practice, it's mostly 'git checkout' that carries such risk.
     mark_current_directory_as_possibly_non_existent()
 
-    if cli_ctxt.opt_debug and exit_code != 0:
+    if cli_opts.opt_debug and exit_code != 0:
         sys.stderr.write(dim(f"<exit code: {exit_code}>\n\n"))
     return exit_code
 
@@ -180,7 +180,7 @@ def mark_current_directory_as_possibly_non_existent() -> None:
     current_directory_confirmed_to_exist = False
 
 
-def chdir_upwards_until_current_directory_exists(cli_ctxt: CommandLineContext) -> None:
+def chdir_upwards_until_current_directory_exists(cli_opts: CommandLineOptions) -> None:
     global current_directory_confirmed_to_exist
     if not current_directory_confirmed_to_exist:
         current_directory: Optional[str] = current_directory_or_none()
@@ -190,13 +190,13 @@ def chdir_upwards_until_current_directory_exists(cli_ctxt: CommandLineContext) -
                 # it doesn't propagate to the parent process (which is typically a shell).
                 os.chdir(os.path.pardir)
                 current_directory = current_directory_or_none()
-            debug(cli_ctxt,
+            debug(cli_opts,
                   "chdir_upwards_until_current_directory_exists()",
                   f"current directory did not exist, chdired up into {current_directory}")
         current_directory_confirmed_to_exist = True
 
 
-def popen_cmd(cli_ctxt: CommandLineContext, cmd: str, *args: str, **kwargs: Any) -> Tuple[int, str, str]:
+def popen_cmd(cli_ctxt: CommandLineOptions, cmd: str, *args: str, **kwargs: Any) -> Tuple[int, str, str]:
     chdir_upwards_until_current_directory_exists(cli_ctxt)
 
     flat_cmd = cmd_shell_repr(cmd, *args, **kwargs)
