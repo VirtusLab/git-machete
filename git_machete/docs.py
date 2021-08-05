@@ -299,9 +299,17 @@ long_docs: Dict[str, str] = {
         <b>Usage: git machete g[o] <direction></b>
         where <direction> is one of: `d[own]`, `f[irst]`, `l[ast]`, `n[ext]`, `p[rev]`, `r[oot]`, `u[p]`
 
-        Checks out the branch specified by the given direction relative to the currently checked out branch.
+        Checks out the branch specified by the given direction relative to the currently checked out branch:
+
+        * `down`:    the direct children/downstream branch of the given branch.
+        * `first`:   the first downstream of the root branch of the given branch (like `root` followed by `next`), or the root branch itself if the root has no downstream branches.
+        * `last`:    the last branch in the definition file that has the same root as the given branch; can be the root branch itself if the root has no downstream branches.
+        * `next`:    the direct successor of the given branch in the definition file.
+        * `prev`:    the direct predecessor of the given branch in the definition file.
+        * `root`:    the root of the tree where the given branch is located. Note: this will typically be something like `develop` or `master`, since all branches are usually meant to be ultimately merged to one of those.
+        * `up`:      the direct parent/upstream branch of the given branch.
+
         Roughly equivalent to `git checkout $(git machete show <direction>)`.
-        See `git machete help show` on more details on meaning of each direction.
     """,
     "help": """
         <b>Usage: git machete help [<command>]</b>
@@ -414,18 +422,18 @@ long_docs: Dict[str, str] = {
     "show": """
         <b>Usage: git machete show <direction> [<branch>]</b>
         where <direction> is one of: `c[urrent]`, `d[own]`, `f[irst]`, `l[ast]`, `n[ext]`, `p[rev]`, `r[oot]`, `u[p]`
-        displayed relative to target <branch>, or the current checked out branch if <branch> is unspecified.
+        displayed relative to given <branch>, or the current checked out branch if <branch> is unspecified.
 
         Outputs name of the branch (or possibly multiple branches, in case of `down`) that is:
 
         * `current`: the current branch; exits with a non-zero status if none (detached HEAD)
-        * `down`:    the direct children/downstream branch of the target branch.
-        * `first`:   the first downstream of the root branch of the target branch (like `root` followed by `next`), or the root branch itself if the root has no downstream branches.
-        * `last`:    the last branch in the definition file that has the same root as the target branch; can be the root branch itself if the root has no downstream branches.
-        * `next`:    the direct successor of the target branch in the definition file.
-        * `prev`:    the direct predecessor of the target branch in the definition file.
-        * `root`:    the root of the tree where the target branch is located. Note: this will typically be something like `develop` or `master`, since all branches are usually meant to be ultimately merged to one of those.
-        * `up`:      the direct parent/upstream branch of the target branch.
+        * `down`:    the direct children/downstream branch of the given branch.
+        * `first`:   the first downstream of the root branch of the given branch (like `root` followed by `next`), or the root branch itself if the root has no downstream branches.
+        * `last`:    the last branch in the definition file that has the same root as the given branch; can be the root branch itself if the root has no downstream branches.
+        * `next`:    the direct successor of the given branch in the definition file.
+        * `prev`:    the direct predecessor of the given branch in the definition file.
+        * `root`:    the root of the tree where the given branch is located. Note: this will typically be something like `develop` or `master`, since all branches are usually meant to be ultimately merged to one of those.
+        * `up`:      the direct parent/upstream branch of the given branch.
     """,
     "slide-out": """
         <b>Usage: git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] <branch> [<branch> [<branch> ...]]</b>

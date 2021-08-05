@@ -2281,8 +2281,9 @@ def launch(orig_args: List[str]) -> None:
             cb = current_branch(git)
             rebase_onto_ancestor_commit(git, cb, cli_opts.opt_fork_point or machete_client.fork_point(cb, use_overrides=True))
         elif cmd == "show":
-            param = check_required_param(args[:1], allowed_directions(allow_current=True))
-            branch = check_optional_param(args[1:])
+            args1 = parse_options(args)
+            param = check_required_param(args1[:1], allowed_directions(allow_current=True))
+            branch = check_optional_param(args1[1:])
             if param == "current" and branch is not None:
                 raise MacheteException(f'`show current` with a branch (`{branch}`) does not make sense')
             machete_client.read_definition_file(verify_branches=False)

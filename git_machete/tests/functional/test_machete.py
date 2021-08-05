@@ -662,3 +662,13 @@ class MacheteTester(unittest.TestCase):
         for (description, commands) in cmd.command_groups:
             for command in commands:
                 self.launch_command("help", command)
+
+                if command not in ("format", "hooks"):
+                    try:
+                        self.launch_command(command, "--help")
+                    except SystemExit as e:
+                        self.assertIs(e.code, None)
+                    except Exception as e:
+                        self.fail(f'Unexpected exception raised: {e}')
+                    else:
+                        self.fail('SystemExit expected but not raised')
