@@ -1,5 +1,5 @@
 
-from typing import Any, Callable, Iterable, List, Optional, Tuple, TypeVar, Dict, Set
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, TypeVar
 
 import os
 import sys
@@ -7,7 +7,7 @@ import re
 import subprocess
 
 from git_machete.options import CommandLineOptions
-from git_machete.constants import ENDC, BOLD, DIM, RED, UNDERLINE, YELLOW, GREEN, ORANGE
+from git_machete.constants import BOLD, DIM, ENDC, ORANGE, GREEN, RED, UNDERLINE, YELLOW
 
 T = TypeVar('T')
 # To avoid displaying the same warning multiple times during a single run.

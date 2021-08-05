@@ -19,9 +19,9 @@ from git_machete.options import CommandLineOptions
 from git_machete.exceptions import MacheteException, StopTraversal
 from git_machete.docs import short_docs, long_docs
 from git_machete.git_operations import GitContext
-from git_machete.constants import PICK_FIRST_ROOT, PICK_LAST_ROOT, DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, RED,\
-    YELLOW, ORANGE, GREEN, DIM, BOLD, ENDC, UNTRACKED, AHEAD_OF_REMOTE, BEHIND_REMOTE, DIVERGED_FROM_AND_OLDER_THAN_REMOTE, \
-    DIVERGED_FROM_AND_NEWER_THAN_REMOTE, NO_REMOTES, IN_SYNC_WITH_REMOTE
+from git_machete.constants import AHEAD_OF_REMOTE, BEHIND_REMOTE, BOLD, DIM, DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, \
+    DIVERGED_FROM_AND_NEWER_THAN_REMOTE, DIVERGED_FROM_AND_OLDER_THAN_REMOTE, ENDC, GREEN, IN_SYNC_WITH_REMOTE, \
+    NO_REMOTES, ORANGE, PICK_FIRST_ROOT, PICK_LAST_ROOT, RED, UNTRACKED, YELLOW
 
 
 # Core utils

@@ -1,4 +1,4 @@
-from typing import List, Optional, Callable, Tuple, Dict, Match, Set, Generator
+from typing import Callable, Dict, Generator, List, Match, Optional, Tuple, Set
 
 import os
 import re
@@ -341,7 +341,7 @@ class GitContext:
 
     # Since getting the full history of a branch can be an expensive operation for large repositories (compared to all other underlying git operations),
     # there's a simple optimization in place: we first fetch only a couple of first commits in the history,
-    # and only fetch the rest if none of them occurs on reflog of any other branch.
+    # and only fetch the rest if needed.
     def spoonfeed_log_shas(self, b: str) -> Generator[str, None, None]:
         if b not in self.initial_log_shas_cached:
             self.initial_log_shas_cached[b] = self.log_shas(b, max_count=MAX_COUNT_FOR_INITIAL_LOG)
