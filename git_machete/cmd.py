@@ -1979,9 +1979,9 @@ def launch(orig_args: List[str]) -> None:
         sys.stderr.write(f"Python {version_str} is no longer supported. Please switch to Python 3.6 or higher.\n")
         sys.exit(1)
 
-    def parse_options(in_args: List[str], short_opts: str = "", long_opts: List[str] = [], gnu: bool = True) -> List[str]:
+    def parse_options(in_args: List[str], short_opts: str = "", long_opts: List[str] = [], allow_intermixing_options_and_params: bool = True) -> List[str]:
 
-        fun = getopt.gnu_getopt if gnu else getopt.getopt
+        fun = getopt.gnu_getopt if allow_intermixing_options_and_params else getopt.getopt
         opts, rest = fun(in_args, short_opts + "hv", long_opts + ['debug', 'help', 'verbose', 'version'])
 
         for opt, arg in opts:
@@ -2119,7 +2119,10 @@ def launch(orig_args: List[str]) -> None:
 
     try:
         cmd = None
-        cmd_and_args = parse_options(orig_args, gnu=False)
+        # Let's first extract the common options like `--help` or `--verbose` that might appear BEFORE the command,
+        # as in e.g. `git machete --verbose status`.
+        cmd_and_args = parse_options(orig_args, allow_intermixing_options_and_params=False)
+        # Subsequent calls to `parse_options` will, in turn, extract the options appearing AFTER the command.
         if not cmd_and_args:
             usage()
             sys.exit(2)
