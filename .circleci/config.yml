@@ -35,6 +35,7 @@ jobs:
             enforce-issue-number-for-todos.sh
             ensure-completion-scripts-correct.sh
             ensure-links-correct.sh
+            ensure-version-bumped.sh
             prohibit-tab-character.sh
             prohibit-trailing-whitespace.sh
       - run: PYTHON_VERSION=3.6 GIT_VERSION=1.8.0  bash ci/tox/ci-run.sh  # Earliest versions of python/git supported by git-machete
