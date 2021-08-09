@@ -30,33 +30,6 @@ T = TypeVar('T')
 
 BRANCH_DEF = Tuple[str, str]
 Hash_ShortHash_Message = Tuple[str, str, str]
-
-
-def ask_if(cli_opts: CommandLineOptions, msg: str, opt_yes_msg: Optional[str], override_answer: Optional[str] = None,
-           apply_fmt: bool = True) -> str:
-    if override_answer:
-        return override_answer
-    if cli_opts.opt_yes and opt_yes_msg:
-        print(fmt(opt_yes_msg) if apply_fmt else opt_yes_msg)
-        return 'y'
-    return input(fmt(msg) if apply_fmt else msg).lower()
-
-
-def pick(choices: List[str], name: str, apply_fmt: bool = True) -> str:
-    xs: str = "".join(f"[{index + 1}] {x}\n" for index, x in enumerate(choices))
-    msg: str = xs + f"Specify {name} or hit <return> to skip: "
-    try:
-        ans: str = input(fmt(msg) if apply_fmt else msg)
-        if not ans:
-            sys.exit(0)
-        index: int = int(ans) - 1
-    except ValueError:
-        sys.exit(1)
-    if index not in range(len(choices)):
-        raise MacheteException(f"Invalid index: {index + 1}")
-    return choices[index]
-
-
 initial_current_directory: Optional[str] = utils.current_directory_or_none() or os.getenv('PWD')
 
 
@@ -163,15 +136,15 @@ class MacheteClient:
             return
 
         if len(invalid_branches) == 1:
-            ans: str = ask_if(self.cli_opts, f"Skipping `{invalid_branches[0]}` " +
-                              "which is not a local branch (perhaps it has been deleted?).\n" +
-                              "Slide it out from the definition file?" +
-                              pretty_choices("y", "e[dit]", "N"), opt_yes_msg=None)
+            ans: str = self.ask_if(f"Skipping `{invalid_branches[0]}` " +
+                                   "which is not a local branch (perhaps it has been deleted?).\n" +
+                                   "Slide it out from the definition file?" +
+                                   pretty_choices("y", "e[dit]", "N"), opt_yes_msg=None)
         else:
-            ans = ask_if(self.cli_opts, f"Skipping {', '.join(f'`{b}`' for b in invalid_branches)} " +
-                         "which are not local branches (perhaps they have been deleted?).\n" +
-                         "Slide them out from the definition file?" +
-                         pretty_choices("y", "e[dit]", "N"), opt_yes_msg=None)
+            ans = self.ask_if(f"Skipping {', '.join(f'`{b}`' for b in invalid_branches)} " +
+                              "which are not local branches (perhaps they have been deleted?).\n" +
+                              "Slide them out from the definition file?" +
+                              pretty_choices("y", "e[dit]", "N"), opt_yes_msg=None)
 
         def recursive_slide_out_invalid_branches(b: str) -> List[str]:
             new_down_branches = flat_map(recursive_slide_out_invalid_branches, self.down_branches.get(b, []))
@@ -237,7 +210,7 @@ class MacheteClient:
                 common_line = f"A local branch `{b}` does not exist, but a remote branch `{rb}` exists.\n"
                 msg = common_line + f"Check out `{b}` locally?" + pretty_choices('y', 'N')
                 opt_yes_msg = common_line + f"Checking out `{b}` locally..."
-                if ask_if(self.cli_opts, msg, opt_yes_msg) in ('y', 'yes'):
+                if self.ask_if(msg, opt_yes_msg) in ('y', 'yes'):
                     self.git.create_branch(b, f"refs/remotes/{rb}")
                 else:
                     return
@@ -247,7 +220,7 @@ class MacheteClient:
                 out_of_str = f"`{onto}`" if onto else "the current HEAD"
                 msg = f"A local branch `{b}` does not exist. Create (out of {out_of_str})?" + pretty_choices('y', 'N')
                 opt_yes_msg = f"A local branch `{b}` does not exist. Creating out of {out_of_str}"
-                if ask_if(self.cli_opts, msg, opt_yes_msg) in ('y', 'yes'):
+                if self.ask_if(msg, opt_yes_msg) in ('y', 'yes'):
                     # If `--onto` hasn't been explicitly specified, let's try to assess if the current branch would be a good `onto`.
                     if self.__roots and not onto:
                         cb = self.git.current_branch_or_none()
@@ -272,7 +245,7 @@ class MacheteClient:
                 else:
                     msg = f"Add `{b}` onto the inferred upstream (parent) branch `{u}`?" + pretty_choices('y', 'N')
                     opt_yes_msg = f"Adding `{b}` onto the inferred upstream (parent) branch `{u}`"
-                    if ask_if(self.cli_opts, msg, opt_yes_msg) in ('y', 'yes'):
+                    if self.ask_if(msg, opt_yes_msg) in ('y', 'yes'):
                         onto = u
                     else:
                         return
@@ -411,7 +384,7 @@ class MacheteClient:
         backup_msg = f"\nThe existing definition file will be backed up as {self._definition_file_path}~" if do_backup else ""
         msg = f"Save the above tree to {self._definition_file_path}?{backup_msg}" + pretty_choices('y', 'e[dit]', 'N')
         opt_yes_msg = f"Saving the above tree to {self._definition_file_path}... {backup_msg}"
-        ans = ask_if(self.cli_opts, msg, opt_yes_msg)
+        ans = self.ask_if(msg, opt_yes_msg)
         if ans in ('y', 'yes'):
             if do_backup:
                 self.back_up_definition_file()
@@ -492,21 +465,20 @@ class MacheteClient:
                     f"More than one downstream (child) branch of `{b}` is connected to `{b}` with a green edge "
                     "and `-y/--yes` option is specified")
             else:
-                d = pick(candidate_downstreams, f"downstream branch towards which `{b}` is to be fast-forwarded")
+                d = self.pick(candidate_downstreams, f"downstream branch towards which `{b}` is to be fast-forwarded")
                 self.git.merge_fast_forward_only(d)
         else:
             d = candidate_downstreams[0]
-            ans = ask_if(self.cli_opts, f"Fast-forward {bold(b)} to match {bold(d)}?" + pretty_choices('y', 'N'),
-                         f"Fast-forwarding {bold(b)} to match {bold(d)}...")
+            ans = self.ask_if(f"Fast-forward {bold(b)} to match {bold(d)}?" + pretty_choices('y', 'N'),
+                              f"Fast-forwarding {bold(b)} to match {bold(d)}...")
             if ans in ('y', 'yes'):
                 self.git.merge_fast_forward_only(d)
             else:
                 return
 
-        ans = ask_if(self.cli_opts,
-                     f"\nBranch {bold(d)} is now merged into {bold(b)}. Slide {bold(d)} out of the tree of branch dependencies?" + pretty_choices(
+        ans = self.ask_if(f"\nBranch {bold(d)} is now merged into {bold(b)}. Slide {bold(d)} out of the tree of branch dependencies?" + pretty_choices(
                          'y', 'N'),
-                     f"\nBranch {bold(d)} is now merged into {bold(b)}. Sliding {bold(d)} out of the tree of branch dependencies...")
+                         f"\nBranch {bold(d)} is now merged into {bold(b)}. Sliding {bold(d)} out of the tree of branch dependencies...")
         if ans in ('y', 'yes'):
             dds = self.down_branches.get(d, [])
             for dd in dds:
@@ -591,10 +563,9 @@ class MacheteClient:
                 print_new_line(True)
             if needs_slide_out:
                 print_new_line(False)
-                ans: str = ask_if(self.cli_opts,
-                                  f"Branch {bold(b)} is merged into {bold(u)}. Slide {bold(b)} out of the tree of branch dependencies?" + pretty_choices(
+                ans: str = self.ask_if(f"Branch {bold(b)} is merged into {bold(u)}. Slide {bold(b)} out of the tree of branch dependencies?" + pretty_choices(
                                       'y', 'N', 'q', 'yq'),
-                                  f"Branch {bold(b)} is merged into {bold(u)}. Sliding {bold(b)} out of the tree of branch dependencies...")
+                                      f"Branch {bold(b)} is merged into {bold(u)}. Sliding {bold(b)} out of the tree of branch dependencies...")
                 if ans in ('y', 'yes', 'yq'):
                     if nearest_remaining_branch == b:
                         if self.down_branches.get(b):
@@ -620,13 +591,11 @@ class MacheteClient:
             elif needs_parent_sync:
                 print_new_line(False)
                 if self.cli_opts.opt_merge:
-                    ans = ask_if(self.cli_opts,
-                                 f"Merge {bold(u)} into {bold(b)}?" + pretty_choices('y', 'N', 'q', 'yq'),
-                                 f"Merging {bold(u)} into {bold(b)}...")
+                    ans = self.ask_if(f"Merge {bold(u)} into {bold(b)}?" + pretty_choices('y', 'N', 'q', 'yq'),
+                                      f"Merging {bold(u)} into {bold(b)}...")
                 else:
-                    ans = ask_if(self.cli_opts,
-                                 f"Rebase {bold(b)} onto {bold(u)}?" + pretty_choices('y', 'N', 'q', 'yq'),
-                                 f"Rebasing {bold(b)} onto {bold(u)}...")
+                    ans = self.ask_if(f"Rebase {bold(b)} onto {bold(u)}?" + pretty_choices('y', 'N', 'q', 'yq'),
+                                      f"Rebasing {bold(b)} onto {bold(u)}...")
                 if ans in ('y', 'yes', 'yq'):
                     if self.cli_opts.opt_merge:
                         self.git.merge(u, b)
@@ -661,12 +630,9 @@ class MacheteClient:
             if needs_remote_sync:
                 if s == BEHIND_REMOTE:
                     rb = self.git.strict_counterpart_for_fetching_of_branch(b)
-                    ans = ask_if(self.cli_opts,
-                                 f"Branch {bold(b)} is behind its remote counterpart {bold(rb)}.\n"
-                                 f"Pull {bold(b)} (fast-forward only) from {bold(remote)}?" + pretty_choices(
-                                     'y', 'N', 'q',
-                                     'yq'), f"Branch {bold(b)} is behind its remote counterpart {bold(rb)}.\n"
-                                            f"Pulling {bold(b)} (fast-forward only) from {bold(remote)}...")
+                    ans = self.ask_if(f"Branch {bold(b)} is behind its remote counterpart {bold(rb)}.\n"
+                                      f"Pull {bold(b)} (fast-forward only) from {bold(remote)}?" + pretty_choices('y', 'N', 'q', 'yq'), f"Branch {bold(b)} is behind its remote counterpart {bold(rb)}.\n",
+                                      f"Pulling {bold(b)} (fast-forward only) from {bold(remote)}...")
                     if ans in ('y', 'yes', 'yq'):
                         self.git.pull_ff_only(remote, rb)
                         if ans == 'yq':
@@ -678,10 +644,9 @@ class MacheteClient:
 
                 elif s == AHEAD_OF_REMOTE:
                     print_new_line(False)
-                    ans = ask_if(self.cli_opts,
-                                 f"Push {bold(b)} to {bold(remote)}?" + pretty_choices('y', 'N', 'q', 'yq'),
-                                 f"Pushing {bold(b)} to {bold(remote)}...",
-                                 override_answer=None if self.cli_opts.opt_push_tracked else "N")
+                    ans = self.ask_if(f"Push {bold(b)} to {bold(remote)}?" + pretty_choices('y', 'N', 'q', 'yq'),
+                                      f"Pushing {bold(b)} to {bold(remote)}...",
+                                      override_answer=None if self.cli_opts.opt_push_tracked else "N")
                     if ans in ('y', 'yes', 'yq'):
                         self.git.push(remote, b)
                         if ans == 'yq':
@@ -693,14 +658,10 @@ class MacheteClient:
                 elif s == DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
                     print_new_line(False)
                     rb = self.git.strict_counterpart_for_fetching_of_branch(b)
-                    ans = ask_if(self.cli_opts,
-                                 f"Branch {bold(b)} diverged from (and has older commits than) its remote counterpart {bold(rb)}.\n"
-                                 f"Reset branch {bold(b)} to the commit pointed by {bold(rb)}?" + pretty_choices('y',
-                                                                                                                 'N',
-                                                                                                                 'q',
-                                                                                                                 'yq'),
-                                 f"Branch {bold(b)} diverged from (and has older commits than) its remote counterpart {bold(rb)}.\n"
-                                 f"Resetting branch {bold(b)} to the commit pointed by {bold(rb)}...")
+                    ans = self.ask_if(f"Branch {bold(b)} diverged from (and has older commits than) its remote counterpart {bold(rb)}.\n"
+                                      f"Reset branch {bold(b)} to the commit pointed by {bold(rb)}?" + pretty_choices('y', 'N', 'q', 'yq'),
+                                      f"Branch {bold(b)} diverged from (and has older commits than) its remote counterpart {bold(rb)}.\n"
+                                      f"Resetting branch {bold(b)} to the commit pointed by {bold(rb)}...")
                     if ans in ('y', 'yes', 'yq'):
                         self.git.reset_keep(rb)
                         if ans == 'yq':
@@ -712,13 +673,11 @@ class MacheteClient:
                 elif s == DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
                     print_new_line(False)
                     rb = self.git.strict_counterpart_for_fetching_of_branch(b)
-                    ans = ask_if(self.cli_opts,
-                                 f"Branch {bold(b)} diverged from (and has newer commits than) its remote counterpart {bold(rb)}.\n"
-                                 f"Push {bold(b)} with force-with-lease to {bold(remote)}?" + pretty_choices('y', 'N',
-                                                                                                             'q', 'yq'),
-                                 f"Branch {bold(b)} diverged from (and has newer commits than) its remote counterpart {bold(rb)}.\n"
-                                 f"Pushing {bold(b)} with force-with-lease to {bold(remote)}...",
-                                 override_answer=None if self.cli_opts.opt_push_tracked else "N")
+                    ans = self.ask_if(f"Branch {bold(b)} diverged from (and has newer commits than) its remote counterpart {bold(rb)}.\n"
+                                      f"Push {bold(b)} with force-with-lease to {bold(remote)}?" + pretty_choices('y', 'N', 'q', 'yq'),
+                                      f"Branch {bold(b)} diverged from (and has newer commits than) its remote counterpart {bold(rb)}.\n"
+                                      f"Pushing {bold(b)} with force-with-lease to {bold(remote)}...",
+                                      override_answer=None if self.cli_opts.opt_push_tracked else "N")
                     if ans in ('y', 'yes', 'yq'):
                         self.git.push(remote, b, force_with_lease=True)
                         if ans == 'yq':
@@ -939,7 +898,7 @@ class MacheteClient:
                 msg_core = f"{bold(b)} (merged to HEAD{'' if is_merged_to_remote else f', but not merged to {rb}'})"
                 msg = f"Delete branch {msg_core}?" + pretty_choices('y', 'N', 'q')
                 opt_yes_msg = f"Deleting branch {msg_core}"
-                ans = ask_if(self.cli_opts, msg, opt_yes_msg)
+                ans = self.ask_if(msg, opt_yes_msg)
                 if ans in ('y', 'yes'):
                     self.git.run_git("branch", "-d" if is_merged_to_remote else "-D", b)
                 elif ans in ('q', 'quit'):
@@ -950,7 +909,7 @@ class MacheteClient:
                 msg_core = f"{bold(b)} (unmerged to HEAD)"
                 msg = f"Delete branch {msg_core}?" + pretty_choices('y', 'N', 'q')
                 opt_yes_msg = f"Deleting branch {msg_core}"
-                ans = ask_if(self.cli_opts, msg, opt_yes_msg)
+                ans = self.ask_if(msg, opt_yes_msg)
                 if ans in ('y', 'yes'):
                     self.git.run_git("branch", "-D", b)
                 elif ans in ('q', 'quit'):
@@ -1039,7 +998,7 @@ class MacheteClient:
         elif len(dbs) == 1:
             return dbs[0]
         elif pick_mode:
-            return pick(dbs, "downstream branch")
+            return self.pick(dbs, "downstream branch")
         else:
             return "\n".join(dbs)
 
@@ -1099,8 +1058,7 @@ class MacheteClient:
             u = self.__infer_upstream(b)
             if u:
                 if prompt_if_inferred_msg:
-                    if ask_if(self.cli_opts, prompt_if_inferred_msg % (b, u),
-                              prompt_if_inferred_yes_opt_msg % (b, u)) in ('y', 'yes'):
+                    if self.ask_if(prompt_if_inferred_msg % (b, u), prompt_if_inferred_yes_opt_msg % (b, u)) in ('y', 'yes'):
                         return u
                     else:
                         sys.exit(1)
@@ -1490,8 +1448,8 @@ class MacheteClient:
                                                                                                      'yq',
                                                                                                      other_remote_choice)
             ask_opt_yes_message = f"Pushing untracked branch {bold(b)} to {bold(new_remote)}..."
-            ans = ask_if(self.cli_opts, ask_message, ask_opt_yes_message,
-                         override_answer=None if self.git.cli_opts.opt_push_untracked else "N")
+            ans = self.ask_if(ask_message, ask_opt_yes_message,
+                              override_answer=None if self.git.cli_opts.opt_push_untracked else "N")
             if ans in ('y', 'yes', 'yq'):
                 self.git.push(new_remote, b)
                 if ans == 'yq':
@@ -1567,7 +1525,7 @@ class MacheteClient:
         }[relation]
 
         print(message)
-        ans = ask_if(self.cli_opts, ask_message, ask_opt_yes_message, override_answer=override_answer)
+        ans = self.ask_if(ask_message, ask_opt_yes_message, override_answer=override_answer)
         if ans in ('y', 'yes', 'yq'):
             yes_action()
             if ans == 'yq':
@@ -1594,6 +1552,31 @@ class MacheteClient:
             # If there is a commit in target with an identical tree state to b,
             # then b may be squash or rebase merged into target.
             return self.git.contains_equivalent_tree(b, target)
+
+    def ask_if(self, msg: str, opt_yes_msg: Optional[str],
+               override_answer: Optional[str] = None,
+               apply_fmt: bool = True) -> str:
+        if override_answer:
+            return override_answer
+        if self.cli_opts.opt_yes and opt_yes_msg:
+            print(fmt(opt_yes_msg) if apply_fmt else opt_yes_msg)
+            return 'y'
+        return input(fmt(msg) if apply_fmt else msg).lower()
+
+    @staticmethod
+    def pick(choices: List[str], name: str, apply_fmt: bool = True) -> str:
+        xs: str = "".join(f"[{index + 1}] {x}\n" for index, x in enumerate(choices))
+        msg: str = xs + f"Specify {name} or hit <return> to skip: "
+        try:
+            ans: str = input(fmt(msg) if apply_fmt else msg)
+            if not ans:
+                sys.exit(0)
+            index: int = int(ans) - 1
+        except ValueError:
+            sys.exit(1)
+        if index not in range(len(choices)):
+            raise MacheteException(f"Invalid index: {index + 1}")
+        return choices[index]
 
 
 # Allowed parameter values for show/go command
