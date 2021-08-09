@@ -336,8 +336,7 @@ class MacheteClient:
                      "to change this threshold so that less or more branches are included.\n")
         self.managed_branches = excluding(all_local_branches, stale_non_root_fixed_branches)
         if self.cli_opts.opt_checked_out_since and not self.managed_branches:
-            warn(
-                "no branches satisfying the criteria. Try moving the value of `--checked-out-since` further to the past.")
+            warn("no branches satisfying the criteria. Try moving the value of `--checked-out-since` further to the past.")
             return
 
         for b in excluding(non_root_fixed_branches, stale_non_root_fixed_branches):
@@ -462,8 +461,7 @@ class MacheteClient:
         if len(candidate_downstreams) > 1:
             if self.cli_opts.opt_yes:
                 raise MacheteException(
-                    f"More than one downstream (child) branch of `{b}` is connected to `{b}` with a green edge "
-                    "and `-y/--yes` option is specified")
+                    f"More than one downstream (child) branch of `{b}` is connected to `{b}` with a green edge and `-y/--yes` option is specified")
             else:
                 d = self.pick(candidate_downstreams, f"downstream branch towards which `{b}` is to be fast-forwarded")
                 self.git.merge_fast_forward_only(d)
@@ -476,9 +474,8 @@ class MacheteClient:
             else:
                 return
 
-        ans = self.ask_if(f"\nBranch {bold(d)} is now merged into {bold(b)}. Slide {bold(d)} out of the tree of branch dependencies?" + pretty_choices(
-                         'y', 'N'),
-                         f"\nBranch {bold(d)} is now merged into {bold(b)}. Sliding {bold(d)} out of the tree of branch dependencies...")
+        ans = self.ask_if(f"\nBranch {bold(d)} is now merged into {bold(b)}. Slide {bold(d)} out of the tree of branch dependencies?" + pretty_choices('y', 'N'),
+                          f"\nBranch {bold(d)} is now merged into {bold(b)}. Sliding {bold(d)} out of the tree of branch dependencies...")
         if ans in ('y', 'yes'):
             dds = self.down_branches.get(d, [])
             for dd in dds:
@@ -563,9 +560,8 @@ class MacheteClient:
                 print_new_line(True)
             if needs_slide_out:
                 print_new_line(False)
-                ans: str = self.ask_if(f"Branch {bold(b)} is merged into {bold(u)}. Slide {bold(b)} out of the tree of branch dependencies?" + pretty_choices(
-                                      'y', 'N', 'q', 'yq'),
-                                      f"Branch {bold(b)} is merged into {bold(u)}. Sliding {bold(b)} out of the tree of branch dependencies...")
+                ans: str = self.ask_if(f"Branch {bold(b)} is merged into {bold(u)}. Slide {bold(b)} out of the tree of branch dependencies?" + pretty_choices('y', 'N', 'q', 'yq'),
+                                       f"Branch {bold(b)} is merged into {bold(u)}. Sliding {bold(b)} out of the tree of branch dependencies...")
                 if ans in ('y', 'yes', 'yq'):
                     if nearest_remaining_branch == b:
                         if self.down_branches.get(b):
@@ -631,8 +627,7 @@ class MacheteClient:
                 if s == BEHIND_REMOTE:
                     rb = self.git.strict_counterpart_for_fetching_of_branch(b)
                     ans = self.ask_if(f"Branch {bold(b)} is behind its remote counterpart {bold(rb)}.\n"
-                                      f"Pull {bold(b)} (fast-forward only) from {bold(remote)}?" + pretty_choices('y', 'N', 'q', 'yq'), f"Branch {bold(b)} is behind its remote counterpart {bold(rb)}.\n",
-                                      f"Pulling {bold(b)} (fast-forward only) from {bold(remote)}...")
+                                      f"Pull {bold(b)} (fast-forward only) from {bold(remote)}?" + pretty_choices('y', 'N', 'q', 'yq'), f"Branch {bold(b)} is behind its remote counterpart {bold(rb)}.\nPulling {bold(b)} (fast-forward only) from {bold(remote)}...")
                     if ans in ('y', 'yes', 'yq'):
                         self.git.pull_ff_only(remote, rb)
                         if ans == 'yq':
@@ -658,10 +653,8 @@ class MacheteClient:
                 elif s == DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
                     print_new_line(False)
                     rb = self.git.strict_counterpart_for_fetching_of_branch(b)
-                    ans = self.ask_if(f"Branch {bold(b)} diverged from (and has older commits than) its remote counterpart {bold(rb)}.\n"
-                                      f"Reset branch {bold(b)} to the commit pointed by {bold(rb)}?" + pretty_choices('y', 'N', 'q', 'yq'),
-                                      f"Branch {bold(b)} diverged from (and has older commits than) its remote counterpart {bold(rb)}.\n"
-                                      f"Resetting branch {bold(b)} to the commit pointed by {bold(rb)}...")
+                    ans = self.ask_if(f"Branch {bold(b)} diverged from (and has older commits than) its remote counterpart {bold(rb)}.\nReset branch {bold(b)} to the commit pointed by {bold(rb)}?" + pretty_choices('y', 'N', 'q', 'yq'),
+                                      f"Branch {bold(b)} diverged from (and has older commits than) its remote counterpart {bold(rb)}.\nResetting branch {bold(b)} to the commit pointed by {bold(rb)}...")
                     if ans in ('y', 'yes', 'yq'):
                         self.git.reset_keep(rb)
                         if ans == 'yq':
@@ -1444,9 +1437,7 @@ class MacheteClient:
         other_remote_choice = "o[ther-remote]" if can_pick_other_remote else ""
         rb = f"{new_remote}/{b}"
         if not self.git.commit_sha_by_revision(rb, prefix="refs/remotes/"):
-            ask_message = f"Push untracked branch {bold(b)} to {bold(new_remote)}?" + pretty_choices('y', 'N', 'q',
-                                                                                                     'yq',
-                                                                                                     other_remote_choice)
+            ask_message = f"Push untracked branch {bold(b)} to {bold(new_remote)}?" + pretty_choices('y', 'N', 'q', 'yq', other_remote_choice)
             ask_opt_yes_message = f"Pushing untracked branch {bold(b)} to {bold(new_remote)}..."
             ans = self.ask_if(ask_message, ask_opt_yes_message,
                               override_answer=None if self.git.cli_opts.opt_push_untracked else "N")
@@ -1478,16 +1469,11 @@ class MacheteClient:
 
         ask_message, ask_opt_yes_message = {
             IN_SYNC_WITH_REMOTE: (
-                f"Set the remote of {bold(b)} to {bold(new_remote)} without pushing or pulling?" + pretty_choices('y',
-                                                                                                                  'N',
-                                                                                                                  'q',
-                                                                                                                  'yq',
-                                                                                                                  other_remote_choice),
+                f"Set the remote of {bold(b)} to {bold(new_remote)} without pushing or pulling?" + pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
                 f"Setting the remote of {bold(b)} to {bold(new_remote)}..."
             ),
             BEHIND_REMOTE: (
-                f"Pull {bold(b)} (fast-forward only) from {bold(new_remote)}?" + pretty_choices('y', 'N', 'q', 'yq',
-                                                                                                other_remote_choice),
+                f"Pull {bold(b)} (fast-forward only) from {bold(new_remote)}?" + pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
                 f"Pulling {bold(b)} (fast-forward only) from {bold(new_remote)}..."
             ),
             AHEAD_OF_REMOTE: (
