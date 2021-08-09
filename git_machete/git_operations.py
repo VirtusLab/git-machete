@@ -37,6 +37,7 @@ class GitContext:
         self.__remaining_log_shas_cached: Dict[str, List[str]] = {}
         self.__reflogs_cached: Optional[Dict[str, Optional[List[REFLOG_ENTRY]]]] = None
         self.__merge_base_cached: Dict[Tuple[str, str], str] = {}
+        self.__contains_equivalent_tree_cached: Dict[Tuple[str, str], bool] = {}
         self.branch_defs_by_sha_in_reflog: Optional[Dict[str, Optional[List[Tuple[str, str]]]]] = None
 
     @staticmethod
@@ -482,7 +483,7 @@ class GitContext:
             raise MacheteException("Not currently on any branch")
         return result
 
-    def merge_base(self, sha1: str, sha2: str) -> str:
+    def __merge_base(self, sha1: str, sha2: str) -> str:
         if sha1 > sha2:
             sha1, sha2 = sha2, sha1
         if not (sha1, sha2) in self.__merge_base_cached:
@@ -510,9 +511,7 @@ class GitContext:
 
         if earlier_sha == later_sha:
             return True
-        return self.merge_base(earlier_sha, later_sha) == earlier_sha
-
-    contains_equivalent_tree_cached: Dict[Tuple[str, str], bool] = {}
+        return self.__merge_base(earlier_sha, later_sha) == earlier_sha
 
     # Determine if later_revision, or any ancestors of later_revision that are NOT ancestors of earlier_revision,
     # contain a tree with identical contents to earlier_revision, indicating that
@@ -530,8 +529,8 @@ class GitContext:
         if earlier_commit_sha == later_commit_sha:
             return True
 
-        if (earlier_commit_sha, later_commit_sha) in self.contains_equivalent_tree_cached:
-            return self.contains_equivalent_tree_cached[earlier_commit_sha, later_commit_sha]
+        if (earlier_commit_sha, later_commit_sha) in self.__contains_equivalent_tree_cached:
+            return self.__contains_equivalent_tree_cached[earlier_commit_sha, later_commit_sha]
 
         debug(
             "contains_equivalent_tree",
@@ -552,7 +551,7 @@ class GitContext:
         )
 
         result = earlier_tree_sha in intermediate_tree_shas
-        self.contains_equivalent_tree_cached[earlier_commit_sha, later_commit_sha] = result
+        self.__contains_equivalent_tree_cached[earlier_commit_sha, later_commit_sha] = result
         return result
 
     def get_sole_remote_branch(self, b: str) -> Optional[str]:
