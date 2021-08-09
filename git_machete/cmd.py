@@ -81,7 +81,7 @@ class MacheteClient:
         return self._definition_file_path
 
     @definition_file_path.setter
-    def definition_file_path(self, val) -> None:
+    def definition_file_path(self, val: str) -> None:
         self._definition_file_path = val
 
     @property
@@ -89,7 +89,7 @@ class MacheteClient:
         return self._managed_branches
 
     @managed_branches.setter
-    def managed_branches(self, val) -> None:
+    def managed_branches(self, val: List[str]) -> None:
         self._managed_branches = val
 
     def expect_in_managed_branches(self, b: str) -> None:
