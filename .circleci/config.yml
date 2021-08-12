@@ -3,7 +3,7 @@ version: 2.1
 jobs:
   build:
     machine:
-      image: ubuntu-2004:202101-01
+      image: ubuntu-2004:202107-02
     environment:
       # Needed to avoid warning: https://superuser.com/questions/575844/warning-terminal-is-not-fully-functional
       TERM: ansi
@@ -38,11 +38,22 @@ jobs:
             ensure-version-bumped.sh
             prohibit-tab-character.sh
             prohibit-trailing-whitespace.sh
-      - run: PYTHON_VERSION=3.6 GIT_VERSION=1.8.0  bash ci/tox/ci-run.sh  # Earliest versions of python/git supported by git-machete
-      - run: PYTHON_VERSION=3.7 GIT_VERSION=2.7.6  bash ci/tox/ci-run.sh
-      - run: PYTHON_VERSION=3.8 GIT_VERSION=2.25.0 bash ci/tox/ci-run.sh
-      - run: PYTHON_VERSION=3.9 GIT_VERSION=2.30.1 bash ci/tox/ci-run.sh
+      - run:
+          name: Run tests against Python 3.6 and git 1.8.0 (without checking coverage)
+          command: PYTHON_VERSION=3.6 GIT_VERSION=1.8.0  bash ci/tox/ci-run.sh  # Earliest versions of python/git supported by git-machete
+      - run:
+          name: Run tests against Python 3.7 and git 2.7.6 (without checking coverage)
+          command: PYTHON_VERSION=3.7 GIT_VERSION=2.7.6  bash ci/tox/ci-run.sh
+      - run:
+          name: Run tests against Python 3.8 and git 2.25.0 (without checking coverage)
+          command: PYTHON_VERSION=3.8 GIT_VERSION=2.25.0 bash ci/tox/ci-run.sh
+      - run:
+          name: Run tests against Python 3.9 and git 2.30.1 (with checking coverage)
+          command: PYTHON_VERSION=3.9 GIT_VERSION=2.30.1 CHECK_COVERAGE=true bash ci/tox/ci-run.sh
 
+      - store_artifacts:
+          path: htmlcov
+          destination: coverage
       - when:
           condition:
             equal: [ "develop", << pipeline.git.branch >> ]
