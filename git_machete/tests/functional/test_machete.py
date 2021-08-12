@@ -17,59 +17,64 @@ cli_opts: CommandLineOptions = CommandLineOptions()
 git: GitContext = GitContext(cli_opts)
 
 
-class SandboxSetup:
-    def __init__(self) -> None:
-        self.file_dir = os.path.dirname(os.path.abspath(__file__))
-        self.remote_path = os.popen("mktemp -d").read().strip()
-        self.sandbox_path = os.popen("mktemp -d").read().strip()
+def get_head_commit_hash() -> str:
+    """Returns hash of a commit of the current branch head."""
+    return os.popen("git rev-parse HEAD").read().strip()
 
-    def execute(self, command: str) -> "SandboxSetup":
+
+class GitRepositorySandbox:
+    def __init__(self) -> None:
+        self.remote_path = os.popen("mktemp -d").read().strip()
+        self.local_path = os.popen("mktemp -d").read().strip()
+
+    def execute(self, command: str) -> "GitRepositorySandbox":
         result = os.system(command)
         assert result == 0, f"{command} returned {result}"
         return self
 
-    def new_repo(self, *args: str) -> "SandboxSetup":
+    def new_repo(self, *args: str) -> "GitRepositorySandbox":
         os.chdir(args[0])
-        if len(args) > 1:
-            opt = args[1]
-            self.execute(f"git init {opt}")
-        else:
-            self.execute("git init")
+        opts = args[1:]
+        self.execute(f"git init -q {' '.join(opts)}")
         return self
 
-    def new_branch(self, branch_name: str) -> "SandboxSetup":
+    def new_branch(self, branch_name: str) -> "GitRepositorySandbox":
         self.execute(f"git checkout -q -b {branch_name}")
         return self
 
-    def check_out(self, branch: str) -> "SandboxSetup":
+    def new_root_branch(self, branch_name: str) -> "GitRepositorySandbox":
+        self.execute(f"git checkout --orphan {branch_name}")
+        return self
+
+    def check_out(self, branch: str) -> "GitRepositorySandbox":
         self.execute(f"git checkout -q {branch}")
         return self
 
-    def commit(self, message: str) -> "SandboxSetup":
+    def commit(self, message: str = "Some commit message.") -> "GitRepositorySandbox":
         f = "%s.txt" % "".join(random.choice(string.ascii_letters) for _ in range(20))
         self.execute(f"touch {f}")
         self.execute(f"git add {f}")
         self.execute(f'git commit -q -m "{message}"')
         return self
 
-    def commit_amend(self, message: str) -> "SandboxSetup":
+    def commit_amend(self, message: str) -> "GitRepositorySandbox":
         self.execute(f'git commit -q --amend -m "{message}"')
         return self
 
-    def push(self) -> "SandboxSetup":
+    def push(self) -> "GitRepositorySandbox":
         branch = os.popen("git symbolic-ref --short HEAD").read()
         self.execute(f"git push -q -u origin {branch}")
         return self
 
-    def sleep(self, seconds: int) -> "SandboxSetup":
+    def sleep(self, seconds: int) -> "GitRepositorySandbox":
         time.sleep(seconds)
         return self
 
-    def reset_to(self, revision: str) -> "SandboxSetup":
+    def reset_to(self, revision: str) -> "GitRepositorySandbox":
         self.execute(f'git reset --keep "{revision}"')
         return self
 
-    def delete_branch(self, branch: str) -> "SandboxSetup":
+    def delete_branch(self, branch: str) -> "GitRepositorySandbox":
         self.execute(f'git branch -d "{branch}"')
         return self
 
@@ -87,29 +92,29 @@ class MacheteTester(unittest.TestCase):
                 git.flush_caches()
             return out.getvalue()
 
-    def assert_command(self, cmd: Iterable[str], expected_result: str) -> None:
-        self.assertEqual(self.launch_command(*cmd), self.adapt(expected_result))
+    def assert_command(self, cmds: Iterable[str], expected_result: str) -> None:
+        self.assertEqual(self.launch_command(*cmds), self.adapt(expected_result))
 
     def setUp(self) -> None:
         # Status diffs can be quite large, default to ~256 lines of diff context
         # https://docs.python.org/3/library/unittest.html#unittest.TestCase.maxDiff
         self.maxDiff = 80 * 256
 
-        self.setup = SandboxSetup()
+        self.repo_sandbox = GitRepositorySandbox()
 
         (
-            self.setup
+            self.repo_sandbox
             # Create the remote and sandbox repos, chdir into sandbox repo
-            .new_repo(self.setup.remote_path, "--bare")
-            .new_repo(self.setup.sandbox_path)
-            .execute(f"git remote add origin {self.setup.remote_path}")
+            .new_repo(self.repo_sandbox.remote_path, "--bare")
+            .new_repo(self.repo_sandbox.local_path)
+            .execute(f"git remote add origin {self.repo_sandbox.remote_path}")
             .execute('git config user.email "tester@test.com"')
             .execute('git config user.name "Tester Test"')
         )
 
     def setup_discover_standard_tree(self) -> None:
         (
-            self.setup.new_branch("root")
+            self.repo_sandbox.new_branch("root")
             .commit("root")
             .new_branch("develop")
             .commit("develop commit")
@@ -364,7 +369,7 @@ class MacheteTester(unittest.TestCase):
 
     def test_slide_out(self) -> None:
         (
-            self.setup.new_branch("develop")
+            self.repo_sandbox.new_branch("develop")
             .commit("develop commit")
             .push()
             .new_branch("slide_root")
@@ -515,8 +520,8 @@ class MacheteTester(unittest.TestCase):
         )
 
     def test_squash_merge(self) -> None:
-        repo = (
-            self.setup.new_branch("root")
+        (
+            self.repo_sandbox.new_branch("root")
             .commit("root")
             .push()
             .new_branch("develop")
@@ -553,8 +558,8 @@ class MacheteTester(unittest.TestCase):
         )
 
         # squash-merge feature onto develop
-        repo = (
-            repo.check_out("develop")
+        (
+            self.repo_sandbox.check_out("develop")
             .execute("git merge --squash feature")
             .execute("git commit -m squash_feature")
             .check_out("child")
@@ -616,8 +621,8 @@ class MacheteTester(unittest.TestCase):
         )
 
         # simulate an upstream squash-merge of the feature branch
-        repo = (
-            repo.check_out("develop")
+        (
+            self.repo_sandbox.check_out("develop")
             .new_branch("upstream_squash")
             .execute("git merge --squash child")
             .execute("git commit -m squash_child")
@@ -672,3 +677,680 @@ class MacheteTester(unittest.TestCase):
                         self.fail(f'Unexpected exception raised: {e}')
                     else:
                         self.fail('SystemExit expected but not raised')
+
+    def test_go_up(self) -> None:
+        """Verify behaviour of a 'git machete go up' command.
+
+        Verify that 'git machete go up' performs 'git checkout' to the
+        parent/upstream branch of the current branch.
+
+        """
+        (
+            self.repo_sandbox.new_branch("level-0-branch")
+            .commit()
+            .new_branch("level-1-branch")
+            .commit()
+        )
+        self.launch_command("discover", "-y")
+
+        self.launch_command("go", "up")
+
+        self.assertEqual(
+            'level-0-branch',
+            self.launch_command("show", "current").strip(),
+            msg="Verify that 'git machete go up' performs 'git checkout' to "
+                "the parent/upstream branch of the current branch."
+        )
+
+    def test_go_down(self) -> None:
+        """Verify behaviour of a 'git machete go down' command.
+
+        Verify that 'git machete go down' performs 'git checkout' to the
+        child/downstream branch of the current branch.
+
+        """
+        (
+            self.repo_sandbox.new_branch("level-0-branch")
+            .commit()
+            .new_branch("level-1-branch")
+            .commit()
+            .check_out("level-0-branch")
+        )
+        self.launch_command("discover", "-y")
+
+        self.launch_command("go", "down")
+
+        self.assertEqual(
+            'level-1-branch',
+            self.launch_command("show", "current").strip(),
+            msg="Verify that 'git machete go down' performs 'git checkout' to "
+                "the child/downstream branch of the current branch."
+        )
+
+    def test_go_first_root_with_downstream(self) -> None:
+        """Verify behaviour of a 'git machete go first' command.
+
+        Verify that 'git machete go first' performs 'git checkout' to
+        the first downstream branch of a root branch in the config file
+        if root branch has any downstream branches.
+
+        """
+        (
+            self.repo_sandbox.new_branch("level-0-branch")
+            .commit()
+            .new_branch("level-1a-branch")
+            .commit()
+            .new_branch("level-2a-branch")
+            .commit()
+            .check_out("level-0-branch")
+            .new_branch("level-1b-branch")
+            .commit()
+            .new_branch("level-2b-branch")
+            .commit()
+            .new_branch("level-3b-branch")
+            .commit()
+            # a added so root will be placed in the config file after the level-0-branch
+            .new_root_branch("a-additional-root")
+            .commit()
+            .new_branch("branch-from-a-additional-root")
+            .commit()
+            .check_out("level-3b-branch")
+        )
+        self.launch_command("discover", "-y")
+
+        self.launch_command("go", "first")
+
+        self.assertEqual(
+            'level-1a-branch',
+            self.launch_command("show", "current").strip(),
+            msg="Verify that 'git machete go first' performs 'git checkout' to"
+                "the first downstream branch of a root branch if root branch "
+                "has any downstream branches."
+        )
+
+    def test_go_first_root_without_downstream(self) -> None:
+        """Verify behaviour of a 'git machete go first' command.
+
+        Verify that 'git machete go first' set current branch to root
+        if root branch has no downstream.
+
+        """
+        (
+            self.repo_sandbox.new_branch("level-0-branch")
+            .commit()
+        )
+        self.launch_command("discover", "-y")
+
+        self.launch_command("go", "first")
+
+        self.assertEqual(
+            'level-0-branch',
+            self.launch_command("show", "current").strip(),
+            msg="Verify that 'git machete go first' set current branch to root"
+                "if root branch has no downstream."
+        )
+
+    def test_go_last(self) -> None:
+        """Verify behaviour of a 'git machete go last' command.
+
+        Verify that 'git machete go last' performs 'git checkout' to
+        the last downstream branch of a root branch if root branch
+        has any downstream branches.
+
+        """
+        (
+            self.repo_sandbox.new_branch("level-0-branch")
+            .commit()
+            .new_branch("level-1a-branch")
+            .commit()
+            .new_branch("level-2a-branch")
+            .commit()
+            .check_out("level-0-branch")
+            .new_branch("level-1b-branch")
+            .commit()
+            # x added so root will be placed in the config file after the level-0-branch
+            .new_root_branch("x-additional-root")
+            .commit()
+            .new_branch("branch-from-x-additional-root")
+            .commit()
+            .check_out("level-1a-branch")
+        )
+        self.launch_command("discover", "-y")
+
+        self.launch_command("go", "last")
+
+        self.assertEqual(
+            'level-1b-branch',
+            self.launch_command("show", "current").strip(),
+            msg="Verify that 'git machete go last' performs 'git checkout' to"
+                "the last downstream branch of a root branch if root branch "
+                "has any downstream branches."
+        )
+
+    def test_go_next_successor_exists(self) -> None:
+        """Verify behaviour of a 'git machete go next' command.
+
+        Verify that 'git machete go next' performs 'git checkout' to
+        the branch right after the current one in the config file
+        when successor branch exists within the root tree.
+
+        """
+        (
+            self.repo_sandbox.new_branch("level-0-branch")
+            .commit()
+            .new_branch("level-1a-branch")
+            .commit()
+            .new_branch("level-2a-branch")
+            .commit()
+            .check_out("level-0-branch")
+            .new_branch("level-1b-branch")
+            .commit()
+            .check_out("level-2a-branch")
+        )
+        self.launch_command("discover", "-y")
+
+        self.launch_command("go", "next")
+
+        self.assertEqual(
+            'level-1b-branch',
+            self.launch_command("show", "current").strip(),
+            msg="Verify that 'git machete go next' performs 'git checkout' to"
+                "the next downstream branch right after the current one in the"
+                "config file if successor branch exists."
+        )
+
+    def test_go_next_successor_on_another_root_tree(self) -> None:
+        """Verify behaviour of a 'git machete go next' command.
+
+        Verify that 'git machete go next' can checkout to branch that doesn't
+        share root with the current branch.
+
+        """
+        (
+            self.repo_sandbox.new_branch("level-0-branch")
+            .commit()
+            .new_branch("level-1-branch")
+            .commit()
+            # x added so root will be placed in the config file after the level-0-branch
+            .new_root_branch("x-additional-root")
+            .commit()
+            .check_out("level-1-branch")
+        )
+        self.launch_command("discover", "-y")
+
+        self.launch_command("go", "next")
+        self.assertEqual(
+            'x-additional-root',
+            self.launch_command("show", "current").strip(),
+            msg="Verify that 'git machete go next' can checkout to branch that doesn't"
+                "share root with the current branch.")
+
+    def test_go_prev_successor_exists(self) -> None:
+        """Verify behaviour of a 'git machete go prev' command.
+
+        Verify that 'git machete go prev' performs 'git checkout' to
+        the branch right before the current one in the config file
+        when predecessor branch exists within the root tree.
+
+        """
+        (
+            self.repo_sandbox.new_branch("level-0-branch")
+            .commit()
+            .new_branch("level-1a-branch")
+            .commit()
+            .new_branch("level-2a-branch")
+            .commit()
+            .check_out("level-0-branch")
+            .new_branch("level-1b-branch")
+            .commit()
+        )
+        self.launch_command("discover", "-y")
+
+        self.launch_command("go", "prev")
+
+        self.assertEqual(
+            'level-2a-branch',
+            self.launch_command("show", "current").strip(),
+            msg="Verify that 'git machete go prev' performs 'git checkout' to"
+                "the branch right before the current one in the config file"
+                "when predecessor branch exists within the root tree."
+        )
+
+    def test_go_prev_successor_on_another_root_tree(self) -> None:
+        """Verify behaviour of a 'git machete go prev' command.
+
+        Verify that 'git machete go prev' raises an error when predecessor
+        branch doesn't exist.
+
+        """
+        (
+            self.repo_sandbox.new_branch("level-0-branch")
+            .commit()
+            # a added so root will be placed in the config file before the level-0-branch
+            .new_root_branch("a-additional-root")
+            .commit()
+            .check_out("level-0-branch")
+        )
+        self.launch_command("discover", "-y")
+
+        self.launch_command("go", "prev")
+        self.assertEqual(
+            'a-additional-root',
+            self.launch_command("show", "current").strip(),
+            msg="Verify that 'git machete go prev' can checkout to branch that doesn't"
+                "share root with the current branch.")
+
+    def test_go_root(self) -> None:
+        """Verify behaviour of a 'git machete go root' command.
+
+        Verify that 'git machete go root' performs 'git checkout' to
+        the root of the current branch.
+
+        """
+        (
+            self.repo_sandbox.new_branch("level-0-branch")
+            .commit()
+            .new_branch("level-1a-branch")
+            .commit()
+            .new_branch("level-2a-branch")
+            .commit()
+            .check_out("level-0-branch")
+            .new_branch("level-1b-branch")
+            .commit()
+            .new_root_branch("additional-root")
+            .commit()
+            .new_branch("branch-from-additional-root")
+            .commit()
+            .check_out("level-2a-branch")
+        )
+        self.launch_command("discover", "-y")
+
+        self.launch_command("go", "root")
+
+        self.assertEqual(
+            'level-0-branch',
+            self.launch_command("show", "current").strip(),
+            msg="Verify that 'git machete go root' performs 'git checkout' to"
+                "the root of the current branch."
+        )
+
+    def test_show_up(self) -> None:
+        """Verify behaviour of a 'git machete show up' command.
+
+        Verify that 'git machete show up' displays name of a parent/upstream
+        branch one above current one in the config file from within current
+        root tree.
+
+        """
+        (
+            self.repo_sandbox.new_branch("level-0-branch")
+            .commit()
+            .new_branch("level-1-branch")
+            .commit()
+        )
+        self.launch_command("discover", "-y")
+
+        self.assertEqual(
+            'level-0-branch',
+            self.launch_command("show", "up").strip(),
+            msg="Verify that 'git machete show up' displays name of a parent/upstream"
+                "branch one above current one."
+        )
+
+    def test_show_down(self) -> None:
+        """Verify behaviour of a 'git machete show down' command.
+
+        Verify that 'git machete show down' displays name of a
+        child/downstream branch one below current one.
+
+        """
+        (
+            self.repo_sandbox.new_branch("level-0-branch")
+            .commit()
+            .new_branch("level-1-branch")
+            .commit()
+            .check_out("level-0-branch")
+        )
+        self.launch_command("discover", "-y")
+
+        self.assertEqual(
+            'level-1-branch',
+            self.launch_command("show", "down").strip(),
+            msg="Verify that 'git machete show down' displays name of "
+                "a child/downstream branch one below current one."
+        )
+
+    def test_show_first(self) -> None:
+        """Verify behaviour of a 'git machete show first' command.
+
+        Verify that 'git machete show first' displays name of the first downstream
+        branch of a root branch of the current branch in the config file if root
+        branch has any downstream branches.
+
+        """
+        (
+            self.repo_sandbox.new_branch("level-0-branch")
+            .commit()
+            .new_branch("level-1a-branch")
+            .commit()
+            .new_branch("level-2a-branch")
+            .commit()
+            .check_out("level-0-branch")
+            .new_branch("level-1b-branch")
+            .commit()
+            .new_branch("level-2b-branch")
+            .commit()
+            .new_branch("level-3b-branch")
+            .commit()
+            # a added so root will be placed in the config file after the level-0-branch
+            .new_root_branch("a-additional-root")
+            .commit()
+            .new_branch("branch-from-a-additional-root")
+            .commit()
+            .check_out("level-3b-branch")
+        )
+        self.launch_command("discover", "-y")
+
+        self.assertEqual(
+            'level-1a-branch',
+            self.launch_command("show", "first").strip(),
+            msg="Verify that 'git machete show first' displays name of the first downstream"
+                "branch of a root branch of the current branch in the config file if root"
+                "branch has any downstream branches."
+        )
+
+    def test_show_last(self) -> None:
+        """Verify behaviour of a 'git machete show last' command.
+
+        Verify that 'git machete show last' displays name of the last downstream
+        branch of a root branch of the current branch in the config file if root
+        branch has any downstream branches.
+
+        """
+        (
+            self.repo_sandbox.new_branch("level-0-branch")
+            .commit()
+            .new_branch("level-1a-branch")
+            .commit()
+            .new_branch("level-2a-branch")
+            .commit()
+            .check_out("level-0-branch")
+            .new_branch("level-1b-branch")
+            .commit()
+            # x added so root will be placed in the config file after the level-0-branch
+            .new_root_branch("x-additional-root")
+            .commit()
+            .new_branch("branch-from-x-additional-root")
+            .commit()
+            .check_out("level-1a-branch")
+        )
+        self.launch_command("discover", "-y")
+
+        self.assertEqual(
+            'level-1b-branch',
+            self.launch_command("show", "last").strip(),
+            msg="Verify that 'git machete show last' displays name of the last downstream"
+                "branch of a root branch of the current branch in the config file if root"
+                "branch has any downstream branches."
+        )
+
+    def test_show_next(self) -> None:
+        """Verify behaviour of a 'git machete show next' command.
+
+        Verify that 'git machete show next' displays name of
+        a branch right after the current one in the config file
+        when successor branch exists within the root tree.
+
+        """
+        (
+            self.repo_sandbox.new_branch("level-0-branch")
+            .commit()
+            .new_branch("level-1a-branch")
+            .commit()
+            .new_branch("level-2a-branch")
+            .commit()
+            .check_out("level-0-branch")
+            .new_branch("level-1b-branch")
+            .commit()
+            .check_out("level-2a-branch")
+        )
+        self.launch_command("discover", "-y")
+
+        self.assertEqual(
+            'level-1b-branch',
+            self.launch_command("show", "next").strip(),
+            msg="Verify that 'git machete show next' displays name of "
+                "a branch right after the current one in the config file"
+                "when successor branch exists within the root tree."
+        )
+
+    def test_show_prev(self) -> None:
+        """Verify behaviour of a 'git machete show prev' command.
+
+        Verify that 'git machete show prev' displays name of
+        a branch right before the current one in the config file
+        when predecessor branch exists within the root tree.
+
+        """
+        (
+            self.repo_sandbox.new_branch("level-0-branch")
+            .commit()
+            .new_branch("level-1a-branch")
+            .commit()
+            .new_branch("level-2a-branch")
+            .commit()
+            .check_out("level-0-branch")
+            .new_branch("level-1b-branch")
+            .commit()
+        )
+        self.launch_command("discover", "-y")
+
+        self.assertEqual(
+            'level-2a-branch',
+            self.launch_command("show", "prev").strip(),
+            msg="Verify that 'git machete show prev' displays name of"
+                "a branch right before the current one in the config file"
+                "when predecessor branch exists within the root tree."
+        )
+
+    def test_show_root(self) -> None:
+        """Verify behaviour of a 'git machete show root' command.
+
+        Verify that 'git machete show root' displays name of the root of
+        the current branch.
+
+        """
+        (
+            self.repo_sandbox.new_branch("level-0-branch")
+            .commit()
+            .new_branch("level-1a-branch")
+            .commit()
+            .new_branch("level-2a-branch")
+            .commit()
+            .check_out("level-0-branch")
+            .new_branch("level-1b-branch")
+            .commit()
+            .new_root_branch("additional-root")
+            .commit()
+            .new_branch("branch-from-additional-root")
+            .commit()
+            .check_out("level-2a-branch")
+        )
+        self.launch_command("discover", "-y")
+
+        self.assertEqual(
+            'level-0-branch',
+            self.launch_command("show", "root").strip(),
+            msg="Verify that 'git machete show root' displays name of the root of"
+                "the current branch."
+        )
+
+    def test_advance_with_no_downstream_branches(self) -> None:
+        """Verify behaviour of a 'git machete advance' command.
+
+        Verify that 'git machete advance' raises an error when current branch
+        has no downstream branches.
+
+        """
+        (
+            self.repo_sandbox.new_branch("root")
+            .commit()
+        )
+        self.launch_command("discover", "-y")
+
+        with self.assertRaises(
+                SystemExit,
+                msg="Verify that 'git machete advance' raises an error when current branch"
+                    "has no downstream branches."):
+            self.launch_command("advance")
+
+    def test_advance_with_one_downstream_branch(self) -> None:
+        """Verify behaviour of a 'git machete advance' command.
+
+        Verify that when there is only one, rebased downstream branch of a
+        current branch 'git machete advance' merges commits from that branch
+        and slides out child branches of the downstream branch. It edits the git
+        machete discovered tree to reflect new dependencies.
+
+        """
+        (
+            self.repo_sandbox.new_branch("root")
+            .commit()
+            .new_branch("level-1-branch")
+            .commit()
+            .new_branch("level-2-branch")
+            .commit()
+            .check_out("level-1-branch")
+        )
+        self.launch_command("discover", "-y")
+        level_1_commit_hash = get_head_commit_hash()
+
+        self.repo_sandbox.check_out("root")
+        self.launch_command("advance", "-y")
+
+        root_top_commit_hash = get_head_commit_hash()
+
+        self.assertEqual(
+            level_1_commit_hash,
+            root_top_commit_hash,
+            msg="Verify that when there is only one, rebased downstream branch of a"
+                "current branch 'git machete advance' merges commits from that branch"
+                "and slides out child branches of the downstream branch."
+        )
+        self.assertNotIn(
+            "level-1-branch",
+            self.launch_command("status"),
+            msg="Verify that branch to which advance was performed is removed "
+                "from the git-machete tree and the structure of the git machete "
+                "tree is updated.")
+
+    def test_advance_with_few_possible_downstream_branches_and_yes_option(self) -> None:
+        """Verify behaviour of a 'git machete advance' command.
+
+        Verify that 'git machete advance -y' raises an error when current branch
+        has more than one synchronized downstream branch and option '-y' is passed.
+
+        """
+        (
+            self.repo_sandbox.new_branch("root")
+            .commit()
+            .new_branch("level-1a-branch")
+            .commit()
+            .check_out("root")
+            .new_branch("level-1b-branch")
+            .commit()
+            .check_out("root")
+        )
+        self.launch_command("discover", "-y")
+
+        with self.assertRaises(
+                SystemExit,
+                msg="Verify that 'git machete advance' raises an error when current branch"
+                    "has more than one synchronized downstream branch."):
+            self.launch_command("advance", '-y')
+
+    def test_update_with_fork_point_not_specified(self) -> None:
+        """Verify behaviour of a 'git machete update --no-interactive rebase' command.
+
+        Verify that 'git machete update --no-interactive rebase' performs
+        'git rebase' to the parent branch of the current branch.
+
+        """
+        (
+            self.repo_sandbox.new_branch("level-0-branch")
+            .commit("Basic commit.")
+            .new_branch("level-1-branch")
+            .commit("Only level-1 commit.")
+            .new_branch("level-2-branch")
+            .commit("Only level-2 commit.")
+            .check_out("level-0-branch")
+            .commit("New commit on level-0-branch")
+        )
+        self.launch_command("discover", "-y")
+
+        parents_new_commit_hash = get_head_commit_hash()
+        self.repo_sandbox.check_out("level-1-branch")
+        self.launch_command("update", "--no-interactive-rebase")
+        new_forkpoint_hash = self.launch_command("fork-point").strip()
+
+        self.assertEqual(
+            parents_new_commit_hash,
+            new_forkpoint_hash,
+            msg="Verify that 'git machete update --no-interactive rebase' perform"
+                "'git rebase' to the parent branch of the current branch."
+        )
+
+    def test_update_with_fork_point_specified(self) -> None:
+        """Verify behaviour of a 'git machete update --no-interactive rebase -f <commit_hash>' cmd.
+
+        Verify that 'git machete update --no-interactive rebase -f <commit_hash>'
+        performs 'git rebase' to the upstream branch and drops the commits until
+        (included) fork point specified by the option '-f'.
+
+        """
+        branchs_first_commit_msg = "First commit on branch."
+        branchs_second_commit_msg = "Second commit on branch."
+        (
+            self.repo_sandbox.new_branch("root")
+            .commit("First commit on root.")
+            .new_branch("branch-1")
+            .commit(branchs_first_commit_msg)
+            .commit(branchs_second_commit_msg)
+        )
+        branch_second_commit_hash = get_head_commit_hash()
+        (
+            self.repo_sandbox.commit("Third commit on branch.")
+            .check_out("root")
+            .commit("Second commit on root.")
+        )
+        roots_second_commit_hash = get_head_commit_hash()
+        self.repo_sandbox.check_out("branch-1")
+        self.launch_command("discover", "-y")
+
+        self.launch_command(
+            "update", "--no-interactive-rebase", "-f", branch_second_commit_hash)
+        new_forkpoint_hash = self.launch_command("fork-point").strip()
+        branch_history = os.popen('git log -10 --oneline').read()
+
+        self.assertEqual(
+            roots_second_commit_hash,
+            new_forkpoint_hash,
+            msg="Verify that 'git machete update --no-interactive rebase -f "
+                "<commit_hash>' performs 'git rebase' to the upstream branch."
+        )
+
+        self.assertNotIn(
+            branchs_first_commit_msg,
+            branch_history,
+            msg="Verify that 'git machete update --no-interactive rebase -f "
+                "<commit_hash>' drops the commits until (included) fork point "
+                "specified by the option '-f' from the current branch."
+        )
+
+        self.assertNotIn(
+            branchs_second_commit_msg,
+            branch_history,
+            msg="Verify that 'git machete update --no-interactive rebase -f "
+                "<commit_hash>' drops the commits until (included) fork point "
+                "specified by the option '-f' from the current branch."
+        )
