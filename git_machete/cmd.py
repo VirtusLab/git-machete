@@ -1659,6 +1659,9 @@ def create_github_pr(cli_ctxt: CommandLineOptions, head: str, draft: bool) -> No
     from git_machete.github import GitHubPullRequest, add_assignees_to_pull_request, add_reviewers_to_pull_request, \
         create_pull_request, derive_current_user_login, set_milestone_of_pull_request
 
+    # first make sure that head branch is synced with remote
+    sync_before_pr(cli_ctxt)
+
     base: Optional[str] = up_branch.get(head)
     if not base:
         raise MacheteException(f'Branch {head} does not have a parent branch (it is a root), base branch for the PR cannot be established')
@@ -1708,6 +1711,74 @@ def create_github_pr(cli_ctxt: CommandLineOptions, head: str, draft: bool) -> No
     save_definition_file()
 
 
+def sync_before_pr(cli_ctxt: CommandLineOptions) -> None:
+    global empty_line_status
+
+    expect_at_least_one_managed_branch()
+
+    empty_line_status = True
+
+    def print_new_line(new_status: bool) -> None:
+        global empty_line_status
+        if not empty_line_status:
+            print("")
+        empty_line_status = new_status
+
+    cb = current_branch(cli_ctxt)
+    try:
+        expect_in_managed_branches(cb)
+    except MacheteException:
+        add(cli_ctxt, cb)
+
+    if is_merged_to_upstream(cli_ctxt, cb):
+        return
+    s, remote = get_strict_remote_sync_status(cli_ctxt, cb)
+    statuses_to_sync = (UNTRACKED, AHEAD_OF_REMOTE)
+    needs_remote_sync = s in statuses_to_sync
+
+    if needs_remote_sync:
+        print_new_line(False)
+        sys.stdout.write(f"Checking out {bold(cb)}\n")
+        go(cli_ctxt, cb)
+        print_new_line(False)
+        status(cli_ctxt, warn_on_yellow_edges=True)
+        print_new_line(True)
+
+        if s == AHEAD_OF_REMOTE:
+            print_new_line(False)
+            ans = ask_if(
+                cli_ctxt,
+                f"Push {bold(cb)} to {bold(remote)}?" + pretty_choices('y', 'N', 'q', 'yq'),
+                f"Pushing {bold(cb)} to {bold(remote)}...",
+                override_answer=None if cli_ctxt.opt_push_tracked else "N"
+            )
+            if ans in ('y', 'yes', 'yq'):
+                push(cli_ctxt, remote, cb)
+                if ans == 'yq':
+                    return
+                flush_caches()
+            elif ans in ('q', 'quit'):
+                return
+
+        elif s == UNTRACKED:
+            rems: List[str] = remotes(cli_ctxt)
+            rmt: Optional[str] = inferred_remote_for_fetching_of_branch(cli_ctxt, cb)
+            print_new_line(False)
+            if rmt:
+                handle_untracked_branch(cli_ctxt, rmt, cb)
+            elif len(rems) == 1:
+                handle_untracked_branch(cli_ctxt, rems[0], cb)
+            elif "origin" in rems:
+                handle_untracked_branch(cli_ctxt, "origin", cb)
+            else:
+                # We know that there is at least 1 remote, otherwise 's' would be 'NO_REMOTES'
+                print(fmt(f"Branch `{bold(cb)}` is untracked and there's no `{bold('origin')}` repository."))
+                pick_remote(cli_ctxt, cb)
+
+    print_new_line(False)
+    status(cli_ctxt, warn_on_yellow_edges=True)
+
+
 def retarget_github_pr(cli_ctxt: CommandLineOptions, head: str) -> None:
     global up_branch
     from git_machete.github import GitHubPullRequest, derive_pull_request_by_head, set_base_of_pull_request
@@ -1731,6 +1802,7 @@ def retarget_github_pr(cli_ctxt: CommandLineOptions, head: str) -> None:
 
     if pr.base != new_base:
         set_base_of_pull_request(org, repo, pr.number, base=new_base)
+        print(fmt(f'The base branch of PR #{pr.number} is switched to `{new_base}`'))
     else:
         print(fmt(f'The base branch of PR #{pr.number} is already `{new_base}`'))
 
@@ -2003,10 +2075,10 @@ def launch(orig_args: List[str]) -> None:
             param = check_optional_param(parse_options(args))
             # No need to read definition file.
             usage(param)
-        elif cmd == "hub":
-            hub_allowed_values = "anno-prs|create-pr|retarget-pr"
-            param = check_required_param(parse_options(args, "", ["draft"]), hub_allowed_values)
-            machete_client.read_definition_file(cli_opts)
+        elif cmd == "gh":
+            gh_allowed_values = "anno-prs|create-pr|retarget-pr"
+            param = check_required_param(parse_options(args, "", ["draft"]), gh_allowed_values)
+            machete_client.read_definition_file(cli_ctxt)
             if param == "anno-prs":
                 machete_client.sync_annotations_to_github_prs(cli_opts)
             elif param == "create-pr":
@@ -2018,7 +2090,7 @@ def launch(orig_args: List[str]) -> None:
                 machete_client.expect_in_managed_branches(cb)
                 retarget_github_pr(cli_opts, cb)
             else:
-                raise MacheteException(f"`hub` requires a subcommand: one of `{hub_allowed_values}`")
+                raise MacheteException(f"`gh` requires a subcommand: one of `{gh_allowed_values}`")
         elif cmd == "is-managed":
             param = check_optional_param(parse_options(args))
             machete_client.read_definition_file()

@@ -123,6 +123,8 @@ def fire_github_api_get_request(method: str, url: str, token: Optional[str], req
 
         if 200 <= response.status < 300:
             return parsed_response_body
+        elif response.status == 422 and parsed_response_body.get("message") == "Validation Failed":
+            raise MacheteException("Cannot create pull request on untracked branch. \nPlease push your changes before making pull request.")
         else:
             first_line = fmt(f'GitHub API returned {response.status} HTTP status with error message: `{parsed_response_body.get("message")}`\n')
             if token:
@@ -148,8 +150,22 @@ def create_pull_request(org: str, repo: str, head: str, base: str, title: str, d
         'body': description,
         'draft': draft
     }
-    pr = fire_github_api_get_request('POST', f'/repos/{org}/{repo}/pulls', token, request_body)
-    return parse_pr_json(pr)
+    prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
+    to_load: GitHubPullRequest = GitHubPullRequest(1, 'user', base, head, '')
+    if not is_pr_already_created(to_load, prs):
+        pr = fire_github_api_get_request('POST', f'/repos/{org}/{repo}/pulls', token, request_body)
+        return parse_pr_json(pr)
+    else:
+        raise MacheteException('Given Pull Request is already created!')
+
+
+def is_pr_already_created(pull: GitHubPullRequest, pull_requests: List[GitHubPullRequest]) -> bool:
+    if not pull_requests:
+        return False
+    for pr in pull_requests:
+        if all((pull.base == pr.base, pull.head == pr.head)):
+            return True
+    return False
 
 
 def add_assignees_to_pull_request(org: str, repo: str, number: int, assignees: List[str]) -> None:
