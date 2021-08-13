@@ -68,7 +68,7 @@ class MacheteClient:
         return self._up_branch
 
     @up_branch.setter
-    def up_branch(self, val: List[str]) -> None:
+    def up_branch(self, val: Dict[str, str]) -> None:
         self._up_branch = val
 
     def expect_in_managed_branches(self, b: str) -> None:
