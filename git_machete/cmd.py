@@ -49,14 +49,11 @@ class MacheteClient:
         self.__roots: List[str] = []
         self.__annotations: Dict[str, str] = {}
         self.__empty_line_status: Optional[bool] = None
+        self.__branch_defs_by_sha_in_reflog: Optional[Dict[str, Optional[List[Tuple[str, str]]]]] = None
 
     @property
     def definition_file_path(self) -> str:
         return self._definition_file_path
-
-    @definition_file_path.setter
-    def definition_file_path(self, val: str) -> None:
-        self._definition_file_path = val
 
     @property
     def managed_branches(self) -> List[str]:
@@ -502,7 +499,7 @@ class MacheteClient:
                 print(f"Fetching {r}...")
                 self.git.fetch_remote(r)
             if self.git.remotes():
-                self.git.flush_caches()
+                self.flush_caches()
                 print("")
 
         initial_branch = nearest_remaining_branch = self.git.current_branch()
@@ -617,7 +614,7 @@ class MacheteClient:
                     if ans == 'yq':
                         return
 
-                    self.git.flush_caches()
+                    self.flush_caches()
                     s, remote = self.git.get_strict_remote_sync_status(b)
                     needs_remote_sync = s in statuses_to_sync
                 elif ans in ('q', 'quit'):
@@ -632,7 +629,7 @@ class MacheteClient:
                         self.git.pull_ff_only(remote, rb)
                         if ans == 'yq':
                             return
-                        self.git.flush_caches()
+                        self.flush_caches()
                         print("")
                     elif ans in ('q', 'quit'):
                         return
@@ -646,7 +643,7 @@ class MacheteClient:
                         self.git.push(remote, b)
                         if ans == 'yq':
                             return
-                        self.git.flush_caches()
+                        self.flush_caches()
                     elif ans in ('q', 'quit'):
                         return
 
@@ -659,7 +656,7 @@ class MacheteClient:
                         self.git.reset_keep(rb)
                         if ans == 'yq':
                             return
-                        self.git.flush_caches()
+                        self.flush_caches()
                     elif ans in ('q', 'quit'):
                         return
 
@@ -675,7 +672,7 @@ class MacheteClient:
                         self.git.push(remote, b, force_with_lease=True)
                         if ans == 'yq':
                             return
-                        self.git.flush_caches()
+                        self.flush_caches()
                     elif ans in ('q', 'quit'):
                         return
 
@@ -1249,7 +1246,7 @@ class MacheteClient:
         if b not in self.git.local_branches():
             raise MacheteException(f"`{b}` is not a local branch")
 
-        if self.git.branch_defs_by_sha_in_reflog is None:
+        if self.__branch_defs_by_sha_in_reflog is None:
             def generate_entries() -> Generator[Tuple[str, BRANCH_DEF], None, None]:
                 for lb in self.git.local_branches():
                     lb_shas = set()
@@ -1262,19 +1259,19 @@ class MacheteClient:
                             if sha_ not in lb_shas:
                                 yield sha_, (lb, rb)
 
-            self.git.branch_defs_by_sha_in_reflog = {}
+            self.__branch_defs_by_sha_in_reflog = {}
             for sha, branch_def in generate_entries():
-                if sha in self.git.branch_defs_by_sha_in_reflog:
+                if sha in self.__branch_defs_by_sha_in_reflog:
                     # The practice shows that it's rather unlikely for a given commit to appear on filtered reflogs of two unrelated branches
                     # ("unrelated" as in, not a local branch and its remote counterpart) but we need to handle this case anyway.
-                    self.git.branch_defs_by_sha_in_reflog[sha] += [branch_def]
+                    self.__branch_defs_by_sha_in_reflog[sha] += [branch_def]
                 else:
-                    self.git.branch_defs_by_sha_in_reflog[sha] = [branch_def]
+                    self.__branch_defs_by_sha_in_reflog[sha] = [branch_def]
 
             def log_result() -> Generator[str, None, None]:
                 branch_defs: List[BRANCH_DEF]
                 sha_: str
-                for sha_, branch_defs in self.git.branch_defs_by_sha_in_reflog.items():
+                for sha_, branch_defs in self.__branch_defs_by_sha_in_reflog.items():
                     def branch_def_to_str(lb: str, lb_or_rb: str) -> str:
                         return lb if lb == lb_or_rb else f"{lb_or_rb} (remote counterpart of {lb})"
 
@@ -1285,10 +1282,10 @@ class MacheteClient:
                   "branches containing the given SHA in their filtered reflog: \n%s\n" % "\n".join(log_result()))
 
         for sha in self.git.spoonfeed_log_shas(b):
-            if sha in self.git.branch_defs_by_sha_in_reflog:
+            if sha in self.__branch_defs_by_sha_in_reflog:
                 # The entries must be sorted by lb_or_rb to make sure the upstream inference is deterministic
                 # (and does not depend on the order in which `generate_entries` iterated through the local branches).
-                branch_defs: List[BRANCH_DEF] = self.git.branch_defs_by_sha_in_reflog[sha]
+                branch_defs: List[BRANCH_DEF] = self.__branch_defs_by_sha_in_reflog[sha]
 
                 def lb_is_not_b(lb: str, lb_or_rb: str) -> bool:
                     return lb != b
@@ -1445,7 +1442,7 @@ class MacheteClient:
                 self.git.push(new_remote, b)
                 if ans == 'yq':
                     raise StopTraversal
-                self.git.flush_caches()
+                self.flush_caches()
             elif can_pick_other_remote and ans in ('o', 'other'):
                 self.__pick_remote(b)
             elif ans in ('q', 'quit'):
@@ -1482,14 +1479,11 @@ class MacheteClient:
                 f"Pushing branch {bold(b)} to {bold(new_remote)}..."
             ),
             DIVERGED_FROM_AND_OLDER_THAN_REMOTE: (
-                f"Reset branch {bold(b)} to the commit pointed by {bold(rb)}?" + pretty_choices('y', 'N', 'q', 'yq',
-                                                                                                other_remote_choice),
+                f"Reset branch {bold(b)} to the commit pointed by {bold(rb)}?" + pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
                 f"Resetting branch {bold(b)} to the commit pointed by {bold(rb)}..."
             ),
             DIVERGED_FROM_AND_NEWER_THAN_REMOTE: (
-                f"Push branch {bold(b)} with force-with-lease to {bold(new_remote)}?" + pretty_choices('y', 'N', 'q',
-                                                                                                       'yq',
-                                                                                                       other_remote_choice),
+                f"Push branch {bold(b)} with force-with-lease to {bold(new_remote)}?" + pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
                 f"Pushing branch {bold(b)} with force-with-lease to {bold(new_remote)}..."
             )
         }[relation]
@@ -1516,7 +1510,7 @@ class MacheteClient:
             yes_action()
             if ans == 'yq':
                 raise StopTraversal
-            self.git.flush_caches()
+            self.flush_caches()
         elif can_pick_other_remote and ans in ('o', 'other'):
             self.__pick_remote(b)
         elif ans in ('q', 'quit'):
@@ -1563,6 +1557,10 @@ class MacheteClient:
         if index not in range(len(choices)):
             raise MacheteException(f"Invalid index: {index + 1}")
         return choices[index]
+
+    def flush_caches(self) -> None:
+        self.__branch_defs_by_sha_in_reflog = None
+        self.git.flush_caches()
 
 
 # Allowed parameter values for show/go command

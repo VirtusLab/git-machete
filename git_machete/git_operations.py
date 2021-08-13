@@ -20,9 +20,9 @@ class GitContext:
 
     def __init__(self, cli_opts: CommandLineOptions) -> None:
         self.cli_opts: CommandLineOptions = cli_opts
-        self.git_version: Tuple[int, ...] = None
-        self.root_dir: str = None
-        self.git_dir: str = None
+        self.git_version: Optional[Tuple[int, ...]] = None
+        self.root_dir: Optional[str] = None
+        self.git_dir: Optional[str] = None
         self.__fetch_done_for: Set[str] = set()
         self.__config_cached: Optional[Dict[str, str]] = None
         self.__remotes_cached: Optional[List[str]] = None
@@ -38,7 +38,6 @@ class GitContext:
         self.__reflogs_cached: Optional[Dict[str, Optional[List[REFLOG_ENTRY]]]] = None
         self.__merge_base_cached: Dict[Tuple[str, str], str] = {}
         self.__contains_equivalent_tree_cached: Dict[Tuple[str, str], bool] = {}
-        self.branch_defs_by_sha_in_reflog: Optional[Dict[str, Optional[List[Tuple[str, str]]]]] = None
 
     @staticmethod
     def run_git(git_cmd: str, *args: str, **kwargs: Dict[str, str]) -> int:
@@ -406,7 +405,6 @@ class GitContext:
         self.flush_caches()  # the repository state has changed b/c of a successful branch creation, let's defensively flush all the caches
 
     def flush_caches(self) -> None:
-        self.branch_defs_by_sha_in_reflog = None
         self.__commit_sha_by_revision_cached = None
         self.__config_cached = None
         self.__counterparts_for_fetching_cached = None
