@@ -34,3 +34,4 @@ class CommandLineOptions:
         self.opt_sync_github_prs: bool = False
         self.opt_unset_override: bool = False
         self.opt_yes: bool = False
+        self.opt_draft: bool = False

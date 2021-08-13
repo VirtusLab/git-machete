@@ -12,3 +12,7 @@ class MacheteException(Exception):
 class StopTraversal(Exception):
     def __init__(self) -> None:
         pass
+
+
+class UnprocessableEntityError(Exception):
+    pass

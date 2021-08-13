@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
 _git_machete() {
-  local cmds="add advance anno d delete-unmanaged diff discover e edit file fork-point g go help hub is-managed l list log reapply s show slide-out squash status traverse update version"
+  local cmds="add advance anno d delete-unmanaged diff discover e edit file fork-point g github go help is-managed l list log reapply s show slide-out squash status traverse update version"
   local help_topics="$cmds format hooks"
 
   local categories="addable managed slidable slidable-after unmanaged with-overridden-fork-point"
   local directions="down first last next prev root up"
-  local hub_subcommands="anno-prs create-pr retarget-pr"
+  local github_subcommands="anno-prs create-pr retarget-pr"
   local locations="current $directions"
   local opt_color_args="always auto never"
   local opt_return_to_args="here nearest-remaining stay"
@@ -20,7 +20,7 @@ _git_machete() {
   local diff_opts="-s --stat"
   local discover_opts="-C --checked-out-since= -l --list-commits -r --roots= -y --yes"
   local fork_point_opts="--inferred --override-to= --override-to-inferred --override-to-parent --unset-override"
-  local hub_create_pr_opts="--draft"
+  local github_create_pr_opts="--draft"
   local reapply_opts="-f --fork-point="
   local slide_out_opts="-d --down-fork-point= -M --merge -n --no-edit-merge --no-interactive-rebase"
   local squash_opts="-f --fork-point="
@@ -45,9 +45,9 @@ _git_machete() {
         delete-unmanaged) __gitcomp "$common_opts $delete_unmanaged_opts" ;;
         discover) __gitcomp "$common_opts $discover_opts" ;;
         fork-point) __gitcomp "$common_opts $fork_point_opts" ;;
-        hub)
+        github)
           if [[ ${COMP_WORDS[3]} == "create-pr" ]]; then
-            __gitcomp "$common_opts $hub_create_pr_opts"
+            __gitcomp "$common_opts $github_create_pr_opts"
           else
             __gitcomp "$common_opts"
           fi ;;
@@ -95,11 +95,11 @@ _git_machete() {
                 else
                   COMPREPLY=('')
                 fi ;;
-              hub)
+              github)
                 if [[ $COMP_CWORD -eq 3 ]]; then
-                  __gitcomp "$hub_subcommands"
+                  __gitcomp "$github_subcommands"
                 elif [[ ${COMP_WORDS[3]} == "create-pr" ]]; then
-                  __gitcomp "$common_opts $hub_create_pr_opts"
+                  __gitcomp "$common_opts $github_create_pr_opts"
                 else
                   COMPREPLY=('')
                 fi ;;

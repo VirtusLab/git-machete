@@ -13,9 +13,9 @@ short_docs: Dict[str, str] = {
     "fork-point": "Display or override fork point for a branch",
     "format": "Display docs for the format of the definition file",
     "go": "Check out the branch relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument",
+    "github": "Create, checkout and manage GitHub PRs while keeping them reflected in git machete",
     "help": "Display this overview, or detailed help for a specified command",
     "hooks": "Display docs for the extra hooks added by git machete",
-    "gh": "Create, checkout and manage GitHub PRs while keeping them reflected in git machete",
     "is-managed": "Check if the current branch is managed by git machete (mostly for scripts)",
     "list": "List all branches that fall into one of pre-defined categories (mostly for internal use)",
     "log": "Log the part of history specific to the given branch",
@@ -304,6 +304,38 @@ long_docs: Dict[str, str] = {
         Roughly equivalent to `git checkout $(git machete show <direction>)`.
         See `git machete help show` on more details on meaning of each direction.
     """,
+    "github": """
+        <b>Usage: git machete github <subcommand></b>
+        where <subcommand> is one of: `anno-prs`, `create-pr`, `retarget-pr`.
+
+        Creates, checks out and manages GitHub PRs while keeping them reflected in branch definition file.
+
+        For all subcommands, to allow GitHub API access for private repositories
+        (and also to correctly identify the current user, even in case of public repositories),
+        `GITHUB_TOKEN` env var must contain a GitHub API token with `repo` scope, see `https://github.com/settings/tokens`.
+
+        <b>`anno-prs`:</b>
+
+          Annotates the branches based on their corresponding GitHub PR numbers and authors.
+          Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
+          Equivalent to `git machete anno --sync-github-prs`.
+
+        <b>`create-pr [--draft]`:</b>
+
+          Creates a PR for the current branch, using the upstream (parent) branch as the PR base.
+          Once the PR is successfully created, annotates the current branch with the new PR's number.
+
+          If `.git/info/description` file is present, its contents is used as PR description.
+          If `.git/info/milestone` file is present, its contents (a single number - milestone id) is used as milestone.
+          If `.git/info/reviewers` file is present, its contents (one GitHub login per line) are used to set reviewers.
+
+          <b>Options:</b>
+            <b>--draft</b>    Creates the new PR as a draft.
+
+        <b>`retarget-pr`:</b>
+
+          Sets the base of the current branch's PR to upstream (parent) branch, as seen by git machete (see `git machete show up`).
+    """,
     "help": """
         <b>Usage: git machete help [<command>]</b>
 
@@ -364,38 +396,6 @@ long_docs: Dict[str, str] = {
 
         Please see hook_samples/ directory of git-machete project for examples.
         An example of using the standard git `post-commit` hook to `git machete add` branches automatically is also included.
-    """,
-    "gh": """
-        <b>Usage: git machete hub <subcommand></b>
-        where <subcommand> is one of: `anno-prs`, `create-pr`, `retarget-pr`.
-
-        Creates, checks out and manages GitHub PRs while keeping them reflected in branch definition file.
-
-        For all subcommands, to allow GitHub API access for private repositories
-        (and also to correctly identify the current user, even in case of public repositories),
-        `GITHUB_TOKEN` env var must contain a GitHub API token with `repo` scope, see `https://github.com/settings/tokens`.
-
-        <b>`anno-prs`:</b>
-
-          Annotates the branches based on their corresponding GitHub PR numbers and authors.
-          Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
-          Equivalent to `git machete anno --sync-github-prs`.
-
-        <b>`create-pr [--draft]`:</b>
-
-          Creates a PR for the current branch, using the upstream (parent) branch as the PR base.
-          Once the PR is successfully created, annotates the current branch with the new PR's number.
-
-          If `.git/info/description` file is present, its contents is used as PR description.
-          If `.git/info/milestone` file is present, its contents (a single number - milestone id) is used as milestone.
-          If `.git/info/reviewers` file is present, its contents (one GitHub login per line) are used to set reviewers.
-
-          <b>Options:</b>
-            <b>--draft</b>    Creates the new PR as a draft.
-
-        <b>`retarget-pr`:</b>
-
-          Sets the base of the current branch's PR to upstream (parent) branch, as seen by git machete (see `git machete show up`).
     """,
     "is-managed": """
         <b>Usage: git machete is-managed [<branch>]</b>

@@ -19,6 +19,9 @@ from git_machete.options import CommandLineOptions
 from git_machete.exceptions import MacheteException, StopTraversal
 from git_machete.docs import short_docs, long_docs
 from git_machete.git_operations import GitContext
+from git_machete.github import GitHubPullRequest, derive_pull_request_by_head, set_base_of_pull_request, is_github_remote_url,\
+    parse_github_remote_url, add_assignees_to_pull_request, add_reviewers_to_pull_request, create_pull_request,\
+    derive_current_user_login, set_milestone_of_pull_request
 from git_machete.constants import AHEAD_OF_REMOTE, BEHIND_REMOTE, BOLD, DIM, DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, \
     DIVERGED_FROM_AND_NEWER_THAN_REMOTE, DIVERGED_FROM_AND_OLDER_THAN_REMOTE, ENDC, GREEN, IN_SYNC_WITH_REMOTE, \
     NO_REMOTES, ORANGE, PICK_FIRST_ROOT, PICK_LAST_ROOT, RED, UNTRACKED, YELLOW
@@ -491,16 +494,16 @@ class MacheteClient:
             self.save_definition_file()
             self.__run_post_slide_out_hook(b, d, dds)
 
+    def __print_new_line(self, new_status: bool) -> None:
+        if not self.__empty_line_status:
+            print("")
+        self.__empty_line_status = new_status
+
     def traverse(self) -> None:
 
         self.expect_at_least_one_managed_branch()
 
         self.__empty_line_status = True
-
-        def print_new_line(new_status: bool) -> None:
-            if not self.__empty_line_status:
-                print("")
-            self.__empty_line_status = new_status
 
         if self.__cli_opts.opt_fetch:
             for r in self.__git.remotes():
@@ -514,14 +517,14 @@ class MacheteClient:
 
         if self.__cli_opts.opt_start_from == "root":
             dest = self.root_branch(self.__git.current_branch(), if_unmanaged=PICK_FIRST_ROOT)
-            print_new_line(False)
+            self.__print_new_line(False)
             print(f"Checking out the root branch ({bold(dest)})")
             self.__git.checkout(dest)
             cb = dest
         elif self.__cli_opts.opt_start_from == "first-root":
             # Note that we already ensured that there is at least one managed branch.
             dest = self.managed_branches[0]
-            print_new_line(False)
+            self.__print_new_line(False)
             print(f"Checking out the first root branch ({bold(dest)})")
             self.__git.checkout(dest)
             cb = dest
@@ -556,15 +559,15 @@ class MacheteClient:
                 needs_parent_sync = bool(u and not (self.__git.is_ancestor_or_equal(u, b) and self.__git.commit_sha_by_revision(u) == self.fork_point(b, use_overrides=True)))
 
             if b != cb and (needs_slide_out or needs_parent_sync or needs_remote_sync):
-                print_new_line(False)
+                self.__print_new_line(False)
                 sys.stdout.write(f"Checking out {bold(b)}\n")
                 self.__git.checkout(b)
                 cb = b
-                print_new_line(False)
+                self.__print_new_line(False)
                 self.status(warn_on_yellow_edges=True)
-                print_new_line(True)
+                self.__print_new_line(True)
             if needs_slide_out:
-                print_new_line(False)
+                self.__print_new_line(False)
                 ans: str = self.ask_if(f"Branch {bold(b)} is merged into {bold(u)}. Slide {bold(b)} out of the tree of branch dependencies?" + pretty_choices('y', 'N', 'q', 'yq'),
                                        f"Branch {bold(b)} is merged into {bold(u)}. Sliding {bold(b)} out of the tree of branch dependencies...")
                 if ans in ('y', 'yes', 'yq'):
@@ -590,7 +593,7 @@ class MacheteClient:
                     return
                 # If user answered 'no', we don't try to rebase/merge but still suggest to sync with remote (if needed; very rare in practice).
             elif needs_parent_sync:
-                print_new_line(False)
+                self.__print_new_line(False)
                 if self.__cli_opts.opt_merge:
                     ans = self.ask_if(f"Merge {bold(u)} into {bold(b)}?" + pretty_choices('y', 'N', 'q', 'yq'),
                                       f"Merging {bold(u)} into {bold(b)}...")
@@ -643,7 +646,7 @@ class MacheteClient:
                         return
 
                 elif s == AHEAD_OF_REMOTE:
-                    print_new_line(False)
+                    self.__print_new_line(False)
                     ans = self.ask_if(f"Push {bold(b)} to {bold(remote)}?" + pretty_choices('y', 'N', 'q', 'yq'),
                                       f"Pushing {bold(b)} to {bold(remote)}...",
                                       override_answer=None if self.__cli_opts.opt_push_tracked else "N")
@@ -656,7 +659,7 @@ class MacheteClient:
                         return
 
                 elif s == DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
-                    print_new_line(False)
+                    self.__print_new_line(False)
                     rb = self.__git.strict_counterpart_for_fetching_of_branch(b)
                     ans = self.ask_if(f"Branch {bold(b)} diverged from (and has older commits than) its remote counterpart {bold(rb)}.\nReset branch {bold(b)} to the commit pointed by {bold(rb)}?" + pretty_choices('y', 'N', 'q', 'yq'),
                                       f"Branch {bold(b)} diverged from (and has older commits than) its remote counterpart {bold(rb)}.\nResetting branch {bold(b)} to the commit pointed by {bold(rb)}...")
@@ -669,7 +672,7 @@ class MacheteClient:
                         return
 
                 elif s == DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
-                    print_new_line(False)
+                    self.__print_new_line(False)
                     rb = self.__git.strict_counterpart_for_fetching_of_branch(b)
                     ans = self.ask_if(f"Branch {bold(b)} diverged from (and has newer commits than) its remote counterpart {bold(rb)}.\n"
                                       f"Push {bold(b)} with force-with-lease to {bold(remote)}?" + pretty_choices('y', 'N', 'q', 'yq'),
@@ -687,7 +690,7 @@ class MacheteClient:
                 elif s == UNTRACKED:
                     rems: List[str] = self.__git.remotes()
                     rmt: Optional[str] = self.__git.inferred_remote_for_fetching_of_branch(b)
-                    print_new_line(False)
+                    self.__print_new_line(False)
                     if rmt:
                         self.handle_untracked_branch(rmt, b)
                     elif len(rems) == 1:
@@ -705,7 +708,7 @@ class MacheteClient:
             self.__git.checkout(nearest_remaining_branch)
         # otherwise cli_opts.opt_return_to == "stay", so no action is needed
 
-        print_new_line(False)
+        self.__print_new_line(False)
         self.status(warn_on_yellow_edges=True)
         print("")
         if cb == self.managed_branches[-1]:
@@ -1570,6 +1573,165 @@ class MacheteClient:
         self.__branch_defs_by_sha_in_reflog = None
         self.__git.flush_caches()
 
+    def retarget_github_pr(self, head: str) -> None:
+        org: str
+        repo: str
+        _, (org, repo) = self.__derive_remote_and_github_org_and_repo()
+
+        debug(f'retarget_github_pr({head})', f'organization is {org}, repository is {repo}')
+
+        pr: Optional[GitHubPullRequest] = derive_pull_request_by_head(org, repo, head)
+        if not pr:
+            raise MacheteException(f'No PR is opened in `{org}/{repo}` for branch `{head}`')
+        debug(f'retarget_github_pr({head})', f'found {pr}')
+
+        new_base: Optional[str] = self.up_branch.get(head)
+        if not new_base:
+            raise MacheteException(f'Branch `{head}` does not have a parent branch (it is a root) '
+                                   f'even though there is an open PR #{pr.number} to `{pr.base}`.\n'
+                                   f'Consider modifying the branch definition file (`git machete edit`) so that `{head}` is a child of `{pr.base}`.')
+
+        if pr.base != new_base:
+            set_base_of_pull_request(org, repo, pr.number, base=new_base)
+            print(fmt(f'The base branch of PR #{pr.number} is switched to `{new_base}`'))
+        else:
+            print(fmt(f'The base branch of PR #{pr.number} is already `{new_base}`'))
+
+    def __derive_remote_and_github_org_and_repo(self) -> Tuple[str, Tuple[str, str]]:
+        url_for_remote: Dict[str, str] = {
+            remote: self.__git.get_url_of_remote(remote) for remote in self.__git.remotes()
+        }
+        if not url_for_remote:
+            raise MacheteException(fmt('No remotes defined for this repository (see `git remote`)'))
+
+        org_and_repo_for_github_remote: Dict[str, Tuple[str, str]] = {
+            remote: parse_github_remote_url(url) for remote, url in url_for_remote.items() if is_github_remote_url(url)
+        }
+        if not org_and_repo_for_github_remote:
+            raise MacheteException(
+                fmt('Remotes are defined for this repository, but none of them corresponds to GitHub (see `git remote -v` for details)'))
+
+        if len(org_and_repo_for_github_remote) == 1:
+            return list(org_and_repo_for_github_remote.items())[0]
+
+        if 'origin' in org_and_repo_for_github_remote:
+            return 'origin', org_and_repo_for_github_remote['origin']
+
+        raise MacheteException(f'Multiple non-origin remotes correspond to GitHub in this repository: '
+                               f'{", ".join(org_and_repo_for_github_remote.keys())}, aborting')
+
+    def create_github_pr(self, head: str, draft: bool) -> None:
+        # first make sure that head branch is synced with remote
+        self.__sync_before_creating_pr()
+
+        base: Optional[str] = self.up_branch.get(head)
+        if not base:
+            raise MacheteException(
+                f'Branch {head} does not have a parent branch (it is a root), base branch for the PR cannot be established')
+
+        org: str
+        repo: str
+        _, (org, repo) = self.__derive_remote_and_github_org_and_repo()
+        current_user: Optional[str] = derive_current_user_login()
+        debug(f'create_github_pr({head})', f'organization is {org}, repository is {repo}')
+        debug(f'create_github_pr({head})', 'current GitHub user is ' + (current_user or '<none>'))
+
+        def slurp_file_or_empty(path: str) -> str:
+            try:
+                return open(path).read()
+            except IOError:
+                return ''
+
+        title: str = self.__git.popen_git("log", "-1", "--format=%s").strip()
+        description_path = self.__git.get_git_subpath('info', 'description')
+        description: str = slurp_file_or_empty(description_path)
+
+        ok_str = ' <green><b>OK</b></green>'
+        print(fmt(f'Creating a {"draft " if draft else ""}PR from `{head}` to `{base}`...'), end='', flush=True)
+        pr: GitHubPullRequest = create_pull_request(org, repo, head=head, base=base, title=title,
+                                                    description=description, draft=draft)
+        print(fmt(f'{ok_str}, see <b>{pr.html_url}</b>'))
+
+        milestone_path: str = self.__git.get_git_subpath('info', 'milestone')
+        milestone: str = slurp_file_or_empty(milestone_path).strip()
+        if milestone:
+            print(fmt(f'Setting milestone of PR #{pr.number} to {milestone}...'), end='', flush=True)
+            set_milestone_of_pull_request(org, repo, pr.number, milestone=milestone)
+            print(fmt(ok_str))
+
+        if current_user:
+            print(fmt(f'Adding `{current_user}` as assignee to PR #{pr.number}...'), end='', flush=True)
+            add_assignees_to_pull_request(org, repo, pr.number, [current_user])
+            print(fmt(ok_str))
+
+        reviewers_path = self.__git.get_git_subpath('info', 'reviewers')
+        reviewers: List[str] = utils.non_empty_lines(slurp_file_or_empty(reviewers_path))
+        if reviewers:
+            print(
+                fmt(f'Adding {", ".join(f"`{r}`" for r in reviewers)} as reviewer{"s" if len(reviewers) > 1 else ""} to PR #{pr.number}...'),
+                end='', flush=True)
+            add_reviewers_to_pull_request(org, repo, pr.number, reviewers)
+            print(fmt(ok_str))
+
+        self.__annotations[head] = f'PR #{pr.number}'
+        self.save_definition_file()
+
+    def __sync_before_creating_pr(self) -> None:
+
+        self.expect_at_least_one_managed_branch()
+        self.__empty_line_status = True
+
+        cb = self.__git.current_branch()
+        try:
+            self.expect_in_managed_branches(cb)
+        except MacheteException:
+            self.add(cb)
+
+        if self.__is_merged_to_upstream(cb):
+            return
+
+        s, remote = self.__git.get_strict_remote_sync_status(cb)
+        statuses_to_sync = (UNTRACKED, AHEAD_OF_REMOTE)
+        needs_remote_sync = s in statuses_to_sync
+
+        if needs_remote_sync:
+            self.__print_new_line(False)
+            self.status(warn_on_yellow_edges=True)
+            self.__print_new_line(True)
+
+            if s == AHEAD_OF_REMOTE:
+                self.__print_new_line(False)
+                ans = self.ask_if(
+                    f"Push {bold(cb)} to {bold(remote)}?" + pretty_choices('y', 'N', 'q', 'yq'),
+                    f"Pushing {bold(cb)} to {bold(remote)}...",
+                    override_answer=None if self.__cli_opts.opt_push_tracked else "N"
+                )
+                if ans in ('y', 'yes', 'yq'):
+                    self.__git.push(remote, cb)
+                    if ans == 'yq':
+                        return
+                    self.flush_caches()
+                elif ans in ('q', 'quit'):
+                    return
+
+            elif s == UNTRACKED:
+                rems: List[str] = self.__git.remotes()
+                rmt: Optional[str] = self.__git.inferred_remote_for_fetching_of_branch(cb)
+                self.__print_new_line(False)
+                if rmt:
+                    self.handle_untracked_branch(rmt, cb)
+                elif len(rems) == 1:
+                    self.handle_untracked_branch(rems[0], cb)
+                elif "origin" in rems:
+                    self.handle_untracked_branch("origin", cb)
+                else:
+                    # We know that there is at least 1 remote, otherwise 's' would be 'NO_REMOTES'
+                    print(fmt(f"Branch `{bold(cb)}` is untracked and there's no `{bold('origin')}` repository."))
+                    self.__pick_remote(cb)
+
+        self.__print_new_line(False)
+        self.status(warn_on_yellow_edges=True)
+
 
 # Allowed parameter values for show/go command
 def allowed_directions(allow_current: bool) -> str:
@@ -1625,186 +1787,6 @@ def usage(c: str = None) -> None:
                 <b>-v, --verbose</b>     Log the executed git commands.
                 <b>--version</b>         Print version and exit.
         """[1:])))
-
-
-# GitHub support
-
-def derive_remote_and_github_org_and_repo(cli_ctxt: CommandLineOptions) -> Tuple[str, Tuple[str, str]]:
-    from git_machete.github import is_github_remote_url, parse_github_remote_url
-
-    url_for_remote: Dict[str, str] = {
-        remote: get_url_of_remote(cli_ctxt, remote) for remote in remotes(cli_ctxt)
-    }
-    if not url_for_remote:
-        raise MacheteException(fmt('No remotes defined for this repository (see `git remote`)'))
-
-    org_and_repo_for_github_remote: Dict[str, Tuple[str, str]] = {
-        remote: parse_github_remote_url(url) for remote, url in url_for_remote.items() if is_github_remote_url(url)
-    }
-    if not org_and_repo_for_github_remote:
-        raise MacheteException(fmt('Remotes are defined for this repository, but none of them corresponds to GitHub (see `git remote -v` for details)'))
-
-    if len(org_and_repo_for_github_remote) == 1:
-        return list(org_and_repo_for_github_remote.items())[0]
-
-    if 'origin' in org_and_repo_for_github_remote:
-        return 'origin', org_and_repo_for_github_remote['origin']
-
-    raise MacheteException(f'Multiple non-origin remotes correspond to GitHub in this repository: '
-                           f'{", ".join(org_and_repo_for_github_remote.keys())}, aborting')
-
-
-def create_github_pr(cli_ctxt: CommandLineOptions, head: str, draft: bool) -> None:
-    global annotations, up_branch
-    from git_machete.github import GitHubPullRequest, add_assignees_to_pull_request, add_reviewers_to_pull_request, \
-        create_pull_request, derive_current_user_login, set_milestone_of_pull_request
-
-    # first make sure that head branch is synced with remote
-    sync_before_pr(cli_ctxt)
-
-    base: Optional[str] = up_branch.get(head)
-    if not base:
-        raise MacheteException(f'Branch {head} does not have a parent branch (it is a root), base branch for the PR cannot be established')
-
-    org: str
-    repo: str
-    _, (org, repo) = derive_remote_and_github_org_and_repo(cli_ctxt)
-    current_user: Optional[str] = derive_current_user_login()
-    debug(cli_ctxt, f'create_github_pr({head})', f'organization is {org}, repository is {repo}')
-    debug(cli_ctxt, f'create_github_pr({head})', 'current GitHub user is ' + (current_user or '<none>'))
-
-    def slurp_file_or_empty(path: str) -> str:
-        try:
-            return open(path).read()
-        except IOError:
-            return ''
-
-    title: str = popen_git(cli_ctxt, "log", "-1", "--format=%s").strip()
-    description_path = get_git_subpath(cli_ctxt, 'info', 'description')
-    description: str = slurp_file_or_empty(description_path)
-
-    ok_str = ' <green><b>OK</b></green>'
-    print(fmt(f'Creating a {"draft " if draft else ""}PR from `{head}` to `{base}`...'), end='', flush=True)
-    pr: GitHubPullRequest = create_pull_request(org, repo, head=head, base=base, title=title, description=description, draft=draft)
-    print(fmt(f'{ok_str}, see <b>{pr.html_url}</b>'))
-
-    milestone_path: str = get_git_subpath(cli_ctxt, 'info', 'milestone')
-    milestone: str = slurp_file_or_empty(milestone_path).strip()
-    if milestone:
-        print(fmt(f'Setting milestone of PR #{pr.number} to {milestone}...'), end='', flush=True)
-        set_milestone_of_pull_request(org, repo, pr.number, milestone=milestone)
-        print(fmt(ok_str))
-
-    if current_user:
-        print(fmt(f'Adding `{current_user}` as assignee to PR #{pr.number}...'), end='', flush=True)
-        add_assignees_to_pull_request(org, repo, pr.number, [current_user])
-        print(fmt(ok_str))
-
-    reviewers_path = get_git_subpath(cli_ctxt, 'info', 'reviewers')
-    reviewers: List[str] = non_empty_lines(slurp_file_or_empty(reviewers_path))
-    if reviewers:
-        print(fmt(f'Adding {", ".join(f"`{r}`" for r in reviewers)} as reviewer{"s" if len(reviewers) > 1 else ""} to PR #{pr.number}...'), end='', flush=True)
-        add_reviewers_to_pull_request(org, repo, pr.number, reviewers)
-        print(fmt(ok_str))
-
-    annotations[head] = f'PR #{pr.number}'
-    save_definition_file()
-
-
-def sync_before_pr(cli_ctxt: CommandLineOptions) -> None:
-    global empty_line_status
-
-    expect_at_least_one_managed_branch()
-
-    empty_line_status = True
-
-    def print_new_line(new_status: bool) -> None:
-        global empty_line_status
-        if not empty_line_status:
-            print("")
-        empty_line_status = new_status
-
-    cb = current_branch(cli_ctxt)
-    try:
-        expect_in_managed_branches(cb)
-    except MacheteException:
-        add(cli_ctxt, cb)
-
-    if is_merged_to_upstream(cli_ctxt, cb):
-        return
-    s, remote = get_strict_remote_sync_status(cli_ctxt, cb)
-    statuses_to_sync = (UNTRACKED, AHEAD_OF_REMOTE)
-    needs_remote_sync = s in statuses_to_sync
-
-    if needs_remote_sync:
-        print_new_line(False)
-        sys.stdout.write(f"Checking out {bold(cb)}\n")
-        go(cli_ctxt, cb)
-        print_new_line(False)
-        status(cli_ctxt, warn_on_yellow_edges=True)
-        print_new_line(True)
-
-        if s == AHEAD_OF_REMOTE:
-            print_new_line(False)
-            ans = ask_if(
-                cli_ctxt,
-                f"Push {bold(cb)} to {bold(remote)}?" + pretty_choices('y', 'N', 'q', 'yq'),
-                f"Pushing {bold(cb)} to {bold(remote)}...",
-                override_answer=None if cli_ctxt.opt_push_tracked else "N"
-            )
-            if ans in ('y', 'yes', 'yq'):
-                push(cli_ctxt, remote, cb)
-                if ans == 'yq':
-                    return
-                flush_caches()
-            elif ans in ('q', 'quit'):
-                return
-
-        elif s == UNTRACKED:
-            rems: List[str] = remotes(cli_ctxt)
-            rmt: Optional[str] = inferred_remote_for_fetching_of_branch(cli_ctxt, cb)
-            print_new_line(False)
-            if rmt:
-                handle_untracked_branch(cli_ctxt, rmt, cb)
-            elif len(rems) == 1:
-                handle_untracked_branch(cli_ctxt, rems[0], cb)
-            elif "origin" in rems:
-                handle_untracked_branch(cli_ctxt, "origin", cb)
-            else:
-                # We know that there is at least 1 remote, otherwise 's' would be 'NO_REMOTES'
-                print(fmt(f"Branch `{bold(cb)}` is untracked and there's no `{bold('origin')}` repository."))
-                pick_remote(cli_ctxt, cb)
-
-    print_new_line(False)
-    status(cli_ctxt, warn_on_yellow_edges=True)
-
-
-def retarget_github_pr(cli_ctxt: CommandLineOptions, head: str) -> None:
-    global up_branch
-    from git_machete.github import GitHubPullRequest, derive_pull_request_by_head, set_base_of_pull_request
-
-    org: str
-    repo: str
-    _, (org, repo) = derive_remote_and_github_org_and_repo(cli_ctxt)
-
-    debug(cli_ctxt, f'retarget_github_pr({head})', f'organization is {org}, repository is {repo}')
-
-    pr: Optional[GitHubPullRequest] = derive_pull_request_by_head(org, repo, head)
-    if not pr:
-        raise MacheteException(f'No PR is opened in `{org}/{repo}` for branch `{head}`')
-    debug(cli_ctxt, f'retarget_github_pr({head})', f'found {pr}')
-
-    new_base: Optional[str] = up_branch.get(head)
-    if not new_base:
-        raise MacheteException(f'Branch `{head}` does not have a parent branch (it is a root) '
-                               f'even though there is an open PR #{pr.number} to `{pr.base}`.\n'
-                               f'Consider modifying the branch definition file (`git machete edit`) so that `{head}` is a child of `{pr.base}`.')
-
-    if pr.base != new_base:
-        set_base_of_pull_request(org, repo, pr.number, base=new_base)
-        print(fmt(f'The base branch of PR #{pr.number} is switched to `{new_base}`'))
-    else:
-        print(fmt(f'The base branch of PR #{pr.number} is already `{new_base}`'))
 
 
 def short_usage() -> None:
@@ -2071,26 +2053,26 @@ def launch(orig_args: List[str]) -> None:
             dest = machete_client.parse_direction(param, cb, allow_current=False, down_pick_mode=True)
             if dest != cb:
                 git.checkout(dest)
+        elif cmd == "github":
+            github_allowed_subcommands = "anno-prs|create-pr|retarget-pr"
+            param = check_required_param(parse_options(args, "", ["draft"]), github_allowed_subcommands)
+            machete_client.read_definition_file()
+            if param == "anno-prs":
+                machete_client.sync_annotations_to_github_prs()
+            elif param == "create-pr":
+                cb = git.current_branch()
+                machete_client.expect_in_managed_branches(cb)
+                machete_client.create_github_pr(cb, draft=cli_opts.opt_draft)
+            elif param == "retarget-pr":
+                cb = git.current_branch()
+                machete_client.expect_in_managed_branches(cb)
+                machete_client.retarget_github_pr(cb)
+            else:
+                raise MacheteException(f"`gh` requires a subcommand: one of `{github_allowed_subcommands}`")
         elif cmd == "help":
             param = check_optional_param(parse_options(args))
             # No need to read definition file.
             usage(param)
-        elif cmd == "gh":
-            gh_allowed_values = "anno-prs|create-pr|retarget-pr"
-            param = check_required_param(parse_options(args, "", ["draft"]), gh_allowed_values)
-            machete_client.read_definition_file(cli_ctxt)
-            if param == "anno-prs":
-                machete_client.sync_annotations_to_github_prs(cli_opts)
-            elif param == "create-pr":
-                cb = git.current_branch(cli_opts)
-                machete_client.expect_in_managed_branches(cb)
-                create_github_pr(cli_opts, cb, draft=cli_opts.opt_draft)
-            elif param == "retarget-pr":
-                cb = git.current_branch(cli_opts)
-                machete_client.expect_in_managed_branches(cb)
-                retarget_github_pr(cli_opts, cb)
-            else:
-                raise MacheteException(f"`gh` requires a subcommand: one of `{gh_allowed_values}`")
         elif cmd == "is-managed":
             param = check_optional_param(parse_options(args))
             machete_client.read_definition_file()

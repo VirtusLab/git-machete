@@ -152,17 +152,17 @@ Useful for merging the child branch to the current branch in a linear fashion (w
 
 Annotate the branches with GitHub PR numbers: <br/>
 ```shell script
-git machete hub anno-prs
+git machete github anno-prs
 ```
 
-Check out PR and reflect its parent (grandparent, etc.) in `.git/machete`: <br/>
+Sets the base of the current branch's PR to upstream (parent) branch, as seen by git machete: <br/>
 ```shell script
-git machete hub checkout-pr <pr-number>
+git machete github retarget-pr
 ```
 
 Create the PR, using the parent branch from `.git/machete` as the base: <br/>
 ```shell script
-git machete hub create-pr [--draft]
+git machete github create-pr [--draft]
 ```
 
 **Note**: for private repositories, a GitHub API token with `repo` access is required.
