@@ -128,8 +128,7 @@ def __fire_github_api_request(method: str, url: str, token: Optional[str], reque
             first_line = fmt(f'GitHub API returned {err.code} HTTP status with error message: `{err.reason}`\n')
             if token:
                 raise MacheteException(
-                        first_line + fmt(f'Make sure that the token provided in `gh auth status` or `~/.config/hub` or <b>{GITHUB_TOKEN_ENV_VAR}</b> is valid '
-                                         f'and allows for access to `{method.upper()}` https://{host}{url}`.'))
+                        first_line + fmt(f'Make sure that the token provided in `gh auth status` or `~/.config/hub` or <b>{GITHUB_TOKEN_ENV_VAR}</b> is valid and allows for access to `{method.upper()}` https://{host}{url}`.'))
             else:
                 raise MacheteException(
                     first_line + fmt(f'This repository might be private. Provide a GitHub API token with `repo` access via `gh` or `hub` or <b>{GITHUB_TOKEN_ENV_VAR}</b> env var.\n'
@@ -139,12 +138,10 @@ def __fire_github_api_request(method: str, url: str, token: Optional[str], reque
 
 
 def __check_pr_already_created(pull: GitHubPullRequest, pull_requests: List[GitHubPullRequest]) -> Optional[GitHubPullRequest]:
-    if not pull_requests:
-        return
     for pr in pull_requests:
         if pull.base == pr.base and pull.head == pr.head:
             return pr
-    return
+    return None
 
 
 def create_pull_request(org: str, repo: str, head: str, base: str, title: str, description: str, draft: bool) -> GitHubPullRequest:
