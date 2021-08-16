@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
 
 from git_machete.utils import fmt
-from git_machete.exceptions import MacheteException, UnprocessableEntityError
+from git_machete.exceptions import MacheteException, UnprocessableEntityHTTPError
 
 
 class GitHubPullRequest(object):
@@ -124,7 +124,7 @@ def __fire_github_api_request(method: str, url: str, token: Optional[str], reque
             return parsed_response_body
     except HTTPError as err:
         if err.code == http.HTTPStatus.UNPROCESSABLE_ENTITY:
-            raise UnprocessableEntityError(err.reason)
+            raise UnprocessableEntityHTTPError(err.reason)
         else:
             first_line = fmt(f'GitHub API returned {err.code} HTTP status with error message: `{err.reason}`\n')
             if token:
