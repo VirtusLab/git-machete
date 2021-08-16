@@ -299,7 +299,7 @@ long_docs: Dict[str, str] = {
     "go": """
         <b>Usage: git machete g[o] <direction></b>
         where <direction> is one of: `d[own]`, `f[irst]`, `l[ast]`, `n[ext]`, `p[rev]`, `r[oot]`, `u[p]`
-        
+
         Checks out the branch specified by the given direction relative to the current branch:
         * `down`:    the direct children/downstream branch of the current branch.
         * `first`:   the first downstream of the root branch of the current branch (like `root` followed by `next`), or the root branch itself if the root has no downstream branches.
@@ -456,7 +456,7 @@ long_docs: Dict[str, str] = {
         <b>Usage: git machete show <direction> [<branch>]</b>
         where <direction> is one of: `c[urrent]`, `d[own]`, `f[irst]`, `l[ast]`, `n[ext]`, `p[rev]`, `r[oot]`, `u[p]`
         displayed relative to given <branch>, or the current checked out branch if <branch> is unspecified.
-        
+
         Outputs name of the branch (or possibly multiple branches, in case of `down`) that is:
         * `current`: the current branch; exits with a non-zero status if none (detached HEAD)
         * `down`:    the direct children/downstream branch of the given branch.
