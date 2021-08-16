@@ -43,7 +43,7 @@ GITHUB_REMOTE_PATTERNS = [
 ]
 
 
-def _token_from_gh() -> Optional[str]:
+def __token_from_gh() -> Optional[str]:
 
     # Abort without error if `gh` isn't available
     gh = shutil.which('gh')
@@ -78,7 +78,7 @@ def _token_from_gh() -> Optional[str]:
     return None
 
 
-def _token_from_hub() -> Optional[str]:
+def __token_from_hub() -> Optional[str]:
     home_path: str = str(Path.home())
     config_hub_path: str = os.path.join(home_path, ".config", "hub")
     if os.path.isfile(config_hub_path):
@@ -97,12 +97,12 @@ def _token_from_hub() -> Optional[str]:
     return None
 
 
-def _token_from_env() -> Optional[str]:
+def __token_from_env() -> Optional[str]:
     return os.environ.get(GITHUB_TOKEN_ENV_VAR)
 
 
 def github_token() -> Optional[str]:
-    return _token_from_env() or _token_from_gh() or _token_from_hub()
+    return __token_from_env() or __token_from_gh() or __token_from_hub()
 
 
 def __fire_github_api_request(method: str, url: str, token: Optional[str], request_body: Optional[Dict[str, Any]] = None) -> Any:
@@ -123,9 +123,9 @@ def __fire_github_api_request(method: str, url: str, token: Optional[str], reque
             return parsed_response_body
     except HTTPError as err:
         if err.code == 422:
-            raise UnprocessableEntityError(err.msg)
+            raise UnprocessableEntityError(err.reason)
         else:
-            first_line = fmt(f'GitHub API returned {err.code} HTTP status with error message: `{err.msg}`\n')
+            first_line = fmt(f'GitHub API returned {err.code} HTTP status with error message: `{err.reason}`\n')
             if token:
                 raise MacheteException(
                         first_line + fmt(f'Make sure that the token provided in `gh auth status` or `~/.config/hub` or <b>{GITHUB_TOKEN_ENV_VAR}</b> is valid '
@@ -133,18 +133,18 @@ def __fire_github_api_request(method: str, url: str, token: Optional[str], reque
             else:
                 raise MacheteException(
                     first_line + fmt(f'This repository might be private. Provide a GitHub API token with `repo` access via `gh` or `hub` or <b>{GITHUB_TOKEN_ENV_VAR}</b> env var.\n'
-                                         'Visit `https://github.com/settings/tokens` to generate a new one.'))
+                                     'Visit `https://github.com/settings/tokens` to generate a new one.'))
     except OSError as e:
         raise MacheteException(f'Could not connect to {host}: {e}')
 
 
-def is_pr_already_created(pull: GitHubPullRequest, pull_requests: List[GitHubPullRequest]) -> bool:
+def __check_pr_already_created(pull: GitHubPullRequest, pull_requests: List[GitHubPullRequest]) -> Optional[GitHubPullRequest]:
     if not pull_requests:
-        return False
+        return
     for pr in pull_requests:
-        if all((pull.base == pr.base, pull.head == pr.head)):
-            return True
-    return False
+        if pull.base == pr.base and pull.head == pr.head:
+            return pr
+    return
 
 
 def create_pull_request(org: str, repo: str, head: str, base: str, title: str, description: str, draft: bool) -> GitHubPullRequest:
@@ -158,11 +158,12 @@ def create_pull_request(org: str, repo: str, head: str, base: str, title: str, d
     }
     prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
     to_load: GitHubPullRequest = GitHubPullRequest(1, 'user', base, head, '')
-    if not is_pr_already_created(to_load, prs):
+    pr_found: Optional[GitHubPullRequest] = __check_pr_already_created(to_load, prs)
+    if not pr_found:
         pr = __fire_github_api_request('POST', f'/repos/{org}/{repo}/pulls', token, request_body)
         return parse_pr_json(pr)
     else:
-        raise MacheteException('Given Pull Request is already created!')
+        raise MacheteException(f'Pull request for branch {head} is already created under link {pr_found.html_url}! PR details:\n{pr_found}')
 
 
 def add_assignees_to_pull_request(org: str, repo: str, number: int, assignees: List[str]) -> None:
