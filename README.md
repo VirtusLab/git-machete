@@ -155,14 +155,14 @@ Annotate the branches with GitHub PR numbers: <br/>
 git machete github anno-prs
 ```
 
-Sets the base of the current branch's PR to upstream (parent) branch, as seen by git machete: <br/>
-```shell script
-git machete github retarget-pr
-```
-
 Create the PR, using the parent branch from `.git/machete` as the base: <br/>
 ```shell script
 git machete github create-pr [--draft]
+```
+
+Sets the base of the current branch's PR to upstream (parent) branch, as seen by git machete: <br/>
+```shell script
+git machete github retarget-pr
 ```
 
 **Note**: for private repositories, a GitHub API token with `repo` access is required.

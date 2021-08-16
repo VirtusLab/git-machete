@@ -89,17 +89,17 @@ _git_machete() {
                 else
                   COMPREPLY=('')
                 fi ;;
-              help)
-                if [[ $COMP_CWORD -eq 3 ]]; then
-                  __gitcomp "$help_topics"
-                else
-                  COMPREPLY=('')
-                fi ;;
               github)
                 if [[ $COMP_CWORD -eq 3 ]]; then
                   __gitcomp "$github_subcommands"
                 elif [[ ${COMP_WORDS[3]} == "create-pr" ]]; then
                   __gitcomp "$common_opts $github_create_pr_opts"
+                else
+                  COMPREPLY=('')
+                fi ;;
+              help)
+                if [[ $COMP_CWORD -eq 3 ]]; then
+                  __gitcomp "$help_topics"
                 else
                   COMPREPLY=('')
                 fi ;;

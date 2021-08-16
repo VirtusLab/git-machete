@@ -14,5 +14,8 @@ class StopTraversal(Exception):
         pass
 
 
-class UnprocessableEntityError(Exception):
+class UnprocessableEntityHTTPError(Exception):
+    """This exception is raised when Github API returns HTTP status code 422 - Unprocessable Entity.
+    Such a situation occurs when trying to do something not allowed by github, egz. assign as a reviewer someone from outside organization or create a pull request which is already created.
+    """
     pass

@@ -12,8 +12,8 @@ short_docs: Dict[str, str] = {
     "file": "Display the location of the definition file",
     "fork-point": "Display or override fork point for a branch",
     "format": "Display docs for the format of the definition file",
-    "go": "Check out the branch relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument",
     "github": "Create, retarget and manage GitHub PRs while keeping them reflected in git machete",
+    "go": "Check out the branch relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument",
     "help": "Display this overview, or detailed help for a specified command",
     "hooks": "Display docs for the extra hooks added by git machete",
     "is-managed": "Check if the current branch is managed by git machete (mostly for scripts)",
@@ -299,6 +299,7 @@ long_docs: Dict[str, str] = {
     "go": """
         <b>Usage: git machete g[o] <direction></b>
         where <direction> is one of: `d[own]`, `f[irst]`, `l[ast]`, `n[ext]`, `p[rev]`, `r[oot]`, `u[p]`
+        
         Checks out the branch specified by the given direction relative to the current branch:
         * `down`:    the direct children/downstream branch of the current branch.
         * `first`:   the first downstream of the root branch of the current branch (like `root` followed by `next`), or the root branch itself if the root has no downstream branches.
@@ -455,6 +456,7 @@ long_docs: Dict[str, str] = {
         <b>Usage: git machete show <direction> [<branch>]</b>
         where <direction> is one of: `c[urrent]`, `d[own]`, `f[irst]`, `l[ast]`, `n[ext]`, `p[rev]`, `r[oot]`, `u[p]`
         displayed relative to given <branch>, or the current checked out branch if <branch> is unspecified.
+        
         Outputs name of the branch (or possibly multiple branches, in case of `down`) that is:
         * `current`: the current branch; exits with a non-zero status if none (detached HEAD)
         * `down`:    the direct children/downstream branch of the given branch.

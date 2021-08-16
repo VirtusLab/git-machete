@@ -8,6 +8,7 @@ import subprocess
 # Deliberately NOT using much more convenient `requests` to avoid external dependencies
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
+import http
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
 
@@ -122,7 +123,7 @@ def __fire_github_api_request(method: str, url: str, token: Optional[str], reque
             parsed_response_body: Any = json.loads(response.read().decode())
             return parsed_response_body
     except HTTPError as err:
-        if err.code == 422:
+        if err.code == http.HTTPStatus.UNPROCESSABLE_ENTITY:
             raise UnprocessableEntityError(err.reason)
         else:
             first_line = fmt(f'GitHub API returned {err.code} HTTP status with error message: `{err.reason}`\n')
@@ -219,9 +220,9 @@ def is_github_remote_url(url: str) -> bool:
     return any((re.match(pattern, url) for pattern in GITHUB_REMOTE_PATTERNS))
 
 
-def parse_github_remote_url(github_url: str) -> Tuple[str, str]:
+def parse_github_remote_url(url: str) -> Optional[Tuple[str, str]]:
     for pattern in GITHUB_REMOTE_PATTERNS:
-        match = re.match(pattern, github_url)
+        match = re.match(pattern, url)
         if match:
             return match.group(1), match.group(2)
-    raise MacheteException(f'{github_url} is not a GitHub remote URL')
+    return None
