@@ -127,8 +127,7 @@ def __fire_github_api_request(method: str, url: str, token: Optional[str], reque
         else:
             first_line = fmt(f'GitHub API returned {err.code} HTTP status with error message: `{err.reason}`\n')
             if token:
-                raise MacheteException(
-                        first_line + fmt(f'Make sure that the token provided in `gh auth status` or `~/.config/hub` or <b>{GITHUB_TOKEN_ENV_VAR}</b> is valid and allows for access to `{method.upper()}` https://{host}{url}`.'))
+                raise MacheteException(first_line + fmt(f'Make sure that the token provided in `gh auth status` or `~/.config/hub` or <b>{GITHUB_TOKEN_ENV_VAR}</b> is valid and allows for access to `{method.upper()}` https://{host}{url}`.'))
             else:
                 raise MacheteException(
                     first_line + fmt(f'This repository might be private. Provide a GitHub API token with `repo` access via `gh` or `hub` or <b>{GITHUB_TOKEN_ENV_VAR}</b> env var.\n'

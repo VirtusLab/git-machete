@@ -13,7 +13,7 @@ short_docs: Dict[str, str] = {
     "fork-point": "Display or override fork point for a branch",
     "format": "Display docs for the format of the definition file",
     "go": "Check out the branch relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument",
-    "github": "Create, retarged and manage GitHub PRs while keeping them reflected in git machete",
+    "github": "Create, retarget and manage GitHub PRs while keeping them reflected in git machete",
     "help": "Display this overview, or detailed help for a specified command",
     "hooks": "Display docs for the extra hooks added by git machete",
     "is-managed": "Check if the current branch is managed by git machete (mostly for scripts)",
@@ -126,7 +126,7 @@ long_docs: Dict[str, str] = {
         Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
 
         To allow GitHub API access for private repositories (and also to correctly identify the current user, even in case of public repositories),
-        a GitHub API token with `repo` scope is required, see `https://github.com/settings/tokens`. This can be resolved in three ways:
+        a GitHub API token with `repo` scope is required, see `https://github.com/settings/tokens`. This will be resolved from the first of:
         1. `GITHUB_TOKEN` env var,
         2. current auth token from the `gh` GitHub CLI,
         3. current auth token from the `hub` GitHub CLI.
@@ -316,7 +316,7 @@ long_docs: Dict[str, str] = {
         Creates, checks out and manages GitHub PRs while keeping them reflected in branch definition file.
 
         To allow GitHub API access for private repositories (and also to correctly identify the current user, even in case of public repositories),
-        a GitHub API token with `repo` scope is required, see `https://github.com/settings/tokens`. This can be resolved in three ways:
+        a GitHub API token with `repo` scope is required, see `https://github.com/settings/tokens`. This will be resolved from the first of:
         1. `GITHUB_TOKEN` env var,
         2. current auth token from the `gh` GitHub CLI,
         3. current auth token from the `hub` GitHub CLI.
@@ -452,18 +452,18 @@ long_docs: Dict[str, str] = {
           <b>-f, --fork-point=<fork-point-commit></b>    Specifies the alternative fork point commit after which the rebased part of history is meant to start.
     """,
     "show": """
-    <b>Usage: git machete show <direction> [<branch>]</b>
-    where <direction> is one of: `c[urrent]`, `d[own]`, `f[irst]`, `l[ast]`, `n[ext]`, `p[rev]`, `r[oot]`, `u[p]`
-    displayed relative to given <branch>, or the current checked out branch if <branch> is unspecified.
-    Outputs name of the branch (or possibly multiple branches, in case of `down`) that is:
-    * `current`: the current branch; exits with a non-zero status if none (detached HEAD)
-    * `down`:    the direct children/downstream branch of the given branch.
-    * `first`:   the first downstream of the root branch of the given branch (like `root` followed by `next`), or the root branch itself if the root has no downstream branches.
-    * `last`:    the last branch in the definition file that has the same root as the given branch; can be the root branch itself if the root has no downstream branches.
-    * `next`:    the direct successor of the given branch in the definition file.
-    * `prev`:    the direct predecessor of the given branch in the definition file.
-    * `root`:    the root of the tree where the given branch is located. Note: this will typically be something like `develop` or `master`, since all branches are usually meant to be ultimately merged to one of those.
-    * `up`:      the direct parent/upstream branch of the given branch.
+        <b>Usage: git machete show <direction> [<branch>]</b>
+        where <direction> is one of: `c[urrent]`, `d[own]`, `f[irst]`, `l[ast]`, `n[ext]`, `p[rev]`, `r[oot]`, `u[p]`
+        displayed relative to given <branch>, or the current checked out branch if <branch> is unspecified.
+        Outputs name of the branch (or possibly multiple branches, in case of `down`) that is:
+        * `current`: the current branch; exits with a non-zero status if none (detached HEAD)
+        * `down`:    the direct children/downstream branch of the given branch.
+        * `first`:   the first downstream of the root branch of the given branch (like `root` followed by `next`), or the root branch itself if the root has no downstream branches.
+        * `last`:    the last branch in the definition file that has the same root as the given branch; can be the root branch itself if the root has no downstream branches.
+        * `next`:    the direct successor of the given branch in the definition file.
+        * `prev`:    the direct predecessor of the given branch in the definition file.
+        * `root`:    the root of the tree where the given branch is located. Note: this will typically be something like `develop` or `master`, since all branches are usually meant to be ultimately merged to one of those.
+        * `up`:      the direct parent/upstream branch of the given branch.
     """,
     "slide-out": """
         <b>Usage: git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] <branch> [<branch> [<branch> ...]]</b>
