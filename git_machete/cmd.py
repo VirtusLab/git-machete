@@ -1635,7 +1635,7 @@ class MacheteClient:
                     return
                 raise MacheteException('Process interrupted.')
             self.flush_caches()
-        elif ans in ('n', 'N', 'q', 'quit'):
+        elif ans in ('q', 'quit'):
             if not abort:
                 return
             raise MacheteException('Process interrupted.')
@@ -1669,7 +1669,7 @@ class MacheteClient:
                     return
                 raise MacheteException('Process interrupted.')
             self.flush_caches()
-        elif ans in ('n', 'N', 'q', 'quit'):
+        elif ans in ('q', 'quit'):
             if not abort:
                 return
             raise MacheteException('Process interrupted.')
