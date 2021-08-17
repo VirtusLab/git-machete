@@ -632,75 +632,20 @@ class MacheteClient:
                     return
 
             if needs_remote_sync:
-                if s == BEHIND_REMOTE:
-                    rb = self.__git.strict_counterpart_for_fetching_of_branch(b)
-                    ans = self.ask_if(f"Branch {bold(b)} is behind its remote counterpart {bold(rb)}.\n"
-                                      f"Pull {bold(b)} (fast-forward only) from {bold(remote)}?" + pretty_choices('y', 'N', 'q', 'yq'), f"Branch {bold(b)} is behind its remote counterpart {bold(rb)}.\nPulling {bold(b)} (fast-forward only) from {bold(remote)}...")
-                    if ans in ('y', 'yes', 'yq'):
-                        self.__git.pull_ff_only(remote, rb)
-                        if ans == 'yq':
-                            return
-                        self.flush_caches()
-                        print("")
-                    elif ans in ('q', 'quit'):
-                        return
-
-                elif s == AHEAD_OF_REMOTE:
-                    self.__print_new_line(False)
-                    ans = self.ask_if(f"Push {bold(b)} to {bold(remote)}?" + pretty_choices('y', 'N', 'q', 'yq'),
-                                      f"Pushing {bold(b)} to {bold(remote)}...",
-                                      override_answer=None if self.__cli_opts.opt_push_tracked else "N")
-                    if ans in ('y', 'yes', 'yq'):
-                        self.__git.push(remote, b)
-                        if ans == 'yq':
-                            return
-                        self.flush_caches()
-                    elif ans in ('q', 'quit'):
-                        return
-
-                elif s == DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
-                    self.__print_new_line(False)
-                    rb = self.__git.strict_counterpart_for_fetching_of_branch(b)
-                    ans = self.ask_if(f"Branch {bold(b)} diverged from (and has older commits than) its remote counterpart {bold(rb)}.\nReset branch {bold(b)} to the commit pointed by {bold(rb)}?" + pretty_choices('y', 'N', 'q', 'yq'),
-                                      f"Branch {bold(b)} diverged from (and has older commits than) its remote counterpart {bold(rb)}.\nResetting branch {bold(b)} to the commit pointed by {bold(rb)}...")
-                    if ans in ('y', 'yes', 'yq'):
-                        self.__git.reset_keep(rb)
-                        if ans == 'yq':
-                            return
-                        self.flush_caches()
-                    elif ans in ('q', 'quit'):
-                        return
-
-                elif s == DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
-                    self.__print_new_line(False)
-                    rb = self.__git.strict_counterpart_for_fetching_of_branch(b)
-                    ans = self.ask_if(f"Branch {bold(b)} diverged from (and has newer commits than) its remote counterpart {bold(rb)}.\n"
-                                      f"Push {bold(b)} with force-with-lease to {bold(remote)}?" + pretty_choices('y', 'N', 'q', 'yq'),
-                                      f"Branch {bold(b)} diverged from (and has newer commits than) its remote counterpart {bold(rb)}.\n"
-                                      f"Pushing {bold(b)} with force-with-lease to {bold(remote)}...",
-                                      override_answer=None if self.__cli_opts.opt_push_tracked else "N")
-                    if ans in ('y', 'yes', 'yq'):
-                        self.__git.push(remote, b, force_with_lease=True)
-                        if ans == 'yq':
-                            return
-                        self.flush_caches()
-                    elif ans in ('q', 'quit'):
-                        return
-
-                elif s == UNTRACKED:
-                    rems: List[str] = self.__git.remotes()
-                    rmt: Optional[str] = self.__git.inferred_remote_for_fetching_of_branch(b)
-                    self.__print_new_line(False)
-                    if rmt:
-                        self.handle_untracked_branch(rmt, b)
-                    elif len(rems) == 1:
-                        self.handle_untracked_branch(rems[0], b)
-                    elif "origin" in rems:
-                        self.handle_untracked_branch("origin", b)
-                    else:
-                        # We know that there is at least 1 remote, otherwise 's' would be 'NO_REMOTES'
-                        print(fmt(f"Branch `{bold(b)}` is untracked and there's no `{bold('origin')}` repository."))
-                        self.__pick_remote(b)
+                try:
+                    if s == BEHIND_REMOTE:
+                        self.__handle_behind_state(cb, remote)
+                    elif s == AHEAD_OF_REMOTE:
+                        self.__handle_ahead_state(cb, remote)
+                    elif s == DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
+                        self.__handle_diverged_and_older_state(cb)
+                    elif s == DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
+                        self.__handle_diverged_and_newer_state(cb, remote)
+                    elif s == UNTRACKED:
+                        self.__handle_untracked_state(cb)
+                except MacheteException as e:
+                    print(e)
+                    return
 
         if self.__cli_opts.opt_return_to == "here":
             self.__git.checkout(initial_branch)
@@ -1622,7 +1567,11 @@ class MacheteClient:
 
     def create_github_pr(self, head: str, draft: bool) -> None:
         # first make sure that head branch is synced with remote
-        self.__sync_before_creating_pr()
+        try:
+            self.__sync_before_creating_pr()
+        except MacheteException as e:
+            print(e)
+            return
 
         base: Optional[str] = self.up_branch.get(head)
         if not base:
@@ -1636,15 +1585,9 @@ class MacheteClient:
         debug(f'create_github_pr({head})', f'organization is {org}, repository is {repo}')
         debug(f'create_github_pr({head})', 'current GitHub user is ' + (current_user or '<none>'))
 
-        def slurp_file_or_empty(path: str) -> str:
-            try:
-                return open(path).read()
-            except IOError:
-                return ''
-
         title: str = self.__git.popen_git("log", "-1", "--format=%s").strip()
         description_path = self.__git.get_git_subpath('info', 'description')
-        description: str = slurp_file_or_empty(description_path)
+        description: str = utils.slurp_file_or_empty(description_path)
 
         ok_str = ' <green><b>OK</b></green>'
         print(fmt(f'Creating a {"draft " if draft else ""}PR from `{head}` to `{base}`...'), end='', flush=True)
@@ -1653,7 +1596,7 @@ class MacheteClient:
         print(fmt(f'{ok_str}, see <b>{pr.html_url}</b>'))
 
         milestone_path: str = self.__git.get_git_subpath('info', 'milestone')
-        milestone: str = slurp_file_or_empty(milestone_path).strip()
+        milestone: str = utils.slurp_file_or_empty(milestone_path).strip()
         if milestone:
             print(fmt(f'Setting milestone of PR #{pr.number} to {milestone}...'), end='', flush=True)
             set_milestone_of_pull_request(org, repo, pr.number, milestone=milestone)
@@ -1665,7 +1608,7 @@ class MacheteClient:
             print(fmt(ok_str))
 
         reviewers_path = self.__git.get_git_subpath('info', 'reviewers')
-        reviewers: List[str] = utils.non_empty_lines(slurp_file_or_empty(reviewers_path))
+        reviewers: List[str] = utils.non_empty_lines(utils.slurp_file_or_empty(reviewers_path))
         if reviewers:
             print(
                 fmt(f'Adding {", ".join(f"`{r}`" for r in reviewers)} as reviewer{"s" if len(reviewers) > 1 else ""} to PR #{pr.number}...'),
@@ -1675,6 +1618,90 @@ class MacheteClient:
 
         self.__annotations[head] = f'PR #{pr.number}'
         self.save_definition_file()
+
+    def __handle_diverged_and_newer_state(self, cb: str, remote: str, abort: bool = True) -> None:
+        self.__print_new_line(False)
+        rb = self.__git.strict_counterpart_for_fetching_of_branch(cb)
+        ans = self.ask_if(
+            f"Branch {bold(cb)} diverged from (and has newer commits than) its remote counterpart {bold(rb)}.\n"
+            f"Push {bold(cb)} with force-with-lease to {bold(remote)}?" + pretty_choices('y', 'N', 'q', 'yq'),
+            f"Branch {bold(cb)} diverged from (and has newer commits than) its remote counterpart {bold(rb)}.\n"
+            f"Pushing {bold(cb)} with force-with-lease to {bold(remote)}...",
+            override_answer=None if self.__cli_opts.opt_push_tracked else "N")
+        if ans in ('y', 'yes', 'yq'):
+            self.__git.push(remote, cb, force_with_lease=True)
+            if ans == 'yq':
+                if not abort:
+                    return
+                raise MacheteException('Process interrupted.')
+            self.flush_caches()
+        elif ans in ('n', 'N', 'q', 'quit'):
+            if not abort:
+                return
+            raise MacheteException('Process interrupted.')
+
+    def __handle_untracked_state(self, b: str) -> None:
+        rems: List[str] = self.__git.remotes()
+        rmt: Optional[str] = self.__git.inferred_remote_for_fetching_of_branch(b)
+        self.__print_new_line(False)
+        if rmt:
+            self.handle_untracked_branch(rmt, b)
+        elif len(rems) == 1:
+            self.handle_untracked_branch(rems[0], b)
+        elif "origin" in rems:
+            self.handle_untracked_branch("origin", b)
+        else:
+            # We know that there is at least 1 remote, otherwise 's' would be 'NO_REMOTES'
+            print(fmt(f"Branch `{bold(b)}` is untracked and there's no `{bold('origin')}` repository."))
+            self.__pick_remote(b)
+
+    def __handle_ahead_state(self, cb: str, remote: str, abort: bool = True) -> None:
+        self.__print_new_line(False)
+        ans = self.ask_if(
+            f"Push {bold(cb)} to {bold(remote)}?" + pretty_choices('y', 'N', 'q', 'yq'),
+            f"Pushing {bold(cb)} to {bold(remote)}...",
+            override_answer=None if self.__cli_opts.opt_push_tracked else "N"
+        )
+        if ans in ('y', 'yes', 'yq'):
+            self.__git.push(remote, cb)
+            if ans == 'yq':
+                if not abort:
+                    return
+                raise MacheteException('Process interrupted.')
+            self.flush_caches()
+        elif ans in ('n', 'N', 'q', 'quit'):
+            if not abort:
+                return
+            raise MacheteException('Process interrupted.')
+
+    def __handle_diverged_and_older_state(self, b: str) -> None:
+        self.__print_new_line(False)
+        rb = self.__git.strict_counterpart_for_fetching_of_branch(b)
+        ans = self.ask_if(
+            f"Branch {bold(b)} diverged from (and has older commits than) its remote counterpart {bold(rb)}.\nReset branch {bold(b)} to the commit pointed by {bold(rb)}?" + pretty_choices(
+                'y', 'N', 'q', 'yq'),
+            f"Branch {bold(b)} diverged from (and has older commits than) its remote counterpart {bold(rb)}.\nResetting branch {bold(b)} to the commit pointed by {bold(rb)}...")
+        if ans in ('y', 'yes', 'yq'):
+            self.__git.reset_keep(rb)
+            if ans == 'yq':
+                raise MacheteException('Process interrupted.')
+            self.flush_caches()
+        elif ans in ('q', 'quit'):
+            raise MacheteException('Process interrupted.')
+
+    def __handle_behind_state(self, b: str, remote: str) -> None:
+        rb = self.__git.strict_counterpart_for_fetching_of_branch(b)
+        ans = self.ask_if(f"Branch {bold(b)} is behind its remote counterpart {bold(rb)}.\n"
+                          f"Pull {bold(b)} (fast-forward only) from {bold(remote)}?" + pretty_choices('y', 'N', 'q', 'yq'),
+                          f"Branch {bold(b)} is behind its remote counterpart {bold(rb)}.\nPulling {bold(b)} (fast-forward only) from {bold(remote)}...")
+        if ans in ('y', 'yes', 'yq'):
+            self.__git.pull_ff_only(remote, rb)
+            if ans == 'yq':
+                raise MacheteException('Process interrupted.')
+            self.flush_caches()
+            print("")
+        elif ans in ('n', 'N', 'q', 'quit'):
+            raise MacheteException('Process interrupted.')
 
     def __sync_before_creating_pr(self) -> None:
 
@@ -1691,46 +1718,35 @@ class MacheteClient:
             return
 
         s, remote = self.__git.get_strict_remote_sync_status(cb)
-        statuses_to_sync = (UNTRACKED, AHEAD_OF_REMOTE)
+        statuses_to_sync = (UNTRACKED, AHEAD_OF_REMOTE, DIVERGED_FROM_AND_NEWER_THAN_REMOTE)
         needs_remote_sync = s in statuses_to_sync
 
         if needs_remote_sync:
+            if s == AHEAD_OF_REMOTE:
+                self.__handle_ahead_state(cb, remote, abort=False)
+            elif s == UNTRACKED:
+                self.__handle_untracked_state(cb)
+            elif s == DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
+                self.__handle_diverged_and_newer_state(cb, remote, abort=False)
+
             self.__print_new_line(False)
             self.status(warn_on_yellow_edges=True)
-            self.__print_new_line(True)
 
-            if s == AHEAD_OF_REMOTE:
+        else:
+            if s == BEHIND_REMOTE:
+                warn(f"Branch {cb} is in <b>BEHIND_REMOTE</b> state.\nConsider using 'git pull'.\n")
                 self.__print_new_line(False)
-                ans = self.ask_if(
-                    f"Push {bold(cb)} to {bold(remote)}?" + pretty_choices('y', 'N', 'q', 'yq'),
-                    f"Pushing {bold(cb)} to {bold(remote)}...",
-                    override_answer=None if self.__cli_opts.opt_push_tracked else "N"
-                )
-                if ans in ('y', 'yes', 'yq'):
-                    self.__git.push(remote, cb)
-                    if ans == 'yq':
-                        return
-                    self.flush_caches()
-                elif ans in ('q', 'quit'):
-                    return
-
-            elif s == UNTRACKED:
-                rems: List[str] = self.__git.remotes()
-                rmt: Optional[str] = self.__git.inferred_remote_for_fetching_of_branch(cb)
+                ans = self.ask_if("Proceed with Pull Request creation?" + pretty_choices('y', 'N', 'q', 'yq'),
+                                  "Proceeding with Pull Request creation...")
+            elif s == DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
+                warn(f"Branch {cb} is in <b>DIVERGED_FROM_AND_OLDER_THAN_REMOTE</b> state.\nConsider using 'git reset --keep'.\n")
                 self.__print_new_line(False)
-                if rmt:
-                    self.handle_untracked_branch(rmt, cb)
-                elif len(rems) == 1:
-                    self.handle_untracked_branch(rems[0], cb)
-                elif "origin" in rems:
-                    self.handle_untracked_branch("origin", cb)
-                else:
-                    # We know that there is at least 1 remote, otherwise 's' would be 'NO_REMOTES'
-                    print(fmt(f"Branch `{bold(cb)}` is untracked and there's no `{bold('origin')}` repository."))
-                    self.__pick_remote(cb)
-
-        self.__print_new_line(False)
-        self.status(warn_on_yellow_edges=True)
+                ans = self.ask_if("Proceed with Pull Request creation?" + pretty_choices('y', 'N', 'q', 'yq'),
+                                  "Proceeding with Pull Request creation...")
+            if ans in ('y', 'yes', 'yq'):
+                return
+            elif ans in ('N', 'n', 'q', 'quit'):
+                raise MacheteException('Pull Request creation interrupted.')
 
 
 # Allowed parameter values for show/go command
@@ -2061,7 +2077,6 @@ def launch(orig_args: List[str]) -> None:
                 machete_client.sync_annotations_to_github_prs()
             elif param == "create-pr":
                 cb = git.current_branch()
-                machete_client.expect_in_managed_branches(cb)
                 machete_client.create_github_pr(cb, draft=cli_opts.opt_draft)
             elif param == "retarget-pr":
                 cb = git.current_branch()

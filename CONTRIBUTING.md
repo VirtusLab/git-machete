@@ -37,7 +37,7 @@ Deprecated commands are excluded.
 
 (\*\*\*) A stable output is only guaranteed for `fork-point` when invoked without any option or only with `--inferred` option.
 
-(\*\*\*\*) `github` can display status and accept interactive mode only when `create-pr` subcommand is passed and the current branch is untracked or ahead of its remote.
+(\*\*\*\*) `github` can only display status, accept interactive mode or modify git repository when `create-pr` subcommand is passed and the current branch is untracked or ahead of its remote.
 
 
 ## Versioning
