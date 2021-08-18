@@ -643,8 +643,7 @@ class MacheteClient:
                         self.__handle_diverged_and_newer_state(cb, remote)
                     elif s == UNTRACKED:
                         self.__handle_untracked_state(cb)
-                except MacheteException as e:
-                    print(e)
+                except StopTraversal:
                     return
 
         if self.__cli_opts.opt_return_to == "here":
@@ -1619,7 +1618,7 @@ class MacheteClient:
         self.__annotations[head] = f'PR #{pr.number}'
         self.save_definition_file()
 
-    def __handle_diverged_and_newer_state(self, cb: str, remote: str, abort: bool = True) -> None:
+    def __handle_diverged_and_newer_state(self, cb: str, remote: str, abort_on_quit: bool = True) -> None:
         self.__print_new_line(False)
         rb = self.__git.strict_counterpart_for_fetching_of_branch(cb)
         ans = self.ask_if(
@@ -1631,14 +1630,14 @@ class MacheteClient:
         if ans in ('y', 'yes', 'yq'):
             self.__git.push(remote, cb, force_with_lease=True)
             if ans == 'yq':
-                if not abort:
+                if not abort_on_quit:
                     return
-                raise MacheteException('Process interrupted.')
+                raise StopTraversal
             self.flush_caches()
         elif ans in ('q', 'quit'):
-            if not abort:
+            if not abort_on_quit:
                 return
-            raise MacheteException('Process interrupted.')
+            raise StopTraversal
 
     def __handle_untracked_state(self, b: str) -> None:
         rems: List[str] = self.__git.remotes()
@@ -1655,7 +1654,7 @@ class MacheteClient:
             print(fmt(f"Branch `{bold(b)}` is untracked and there's no `{bold('origin')}` repository."))
             self.__pick_remote(b)
 
-    def __handle_ahead_state(self, cb: str, remote: str, abort: bool = True) -> None:
+    def __handle_ahead_state(self, cb: str, remote: str, abort_on_quit: bool = True) -> None:
         self.__print_new_line(False)
         ans = self.ask_if(
             f"Push {bold(cb)} to {bold(remote)}?" + pretty_choices('y', 'N', 'q', 'yq'),
@@ -1665,14 +1664,14 @@ class MacheteClient:
         if ans in ('y', 'yes', 'yq'):
             self.__git.push(remote, cb)
             if ans == 'yq':
-                if not abort:
+                if not abort_on_quit:
                     return
-                raise MacheteException('Process interrupted.')
+                raise StopTraversal
             self.flush_caches()
         elif ans in ('q', 'quit'):
-            if not abort:
+            if not abort_on_quit:
                 return
-            raise MacheteException('Process interrupted.')
+            raise StopTraversal
 
     def __handle_diverged_and_older_state(self, b: str) -> None:
         self.__print_new_line(False)
@@ -1723,11 +1722,11 @@ class MacheteClient:
 
         if needs_remote_sync:
             if s == AHEAD_OF_REMOTE:
-                self.__handle_ahead_state(cb, remote, abort=False)
+                self.__handle_ahead_state(cb, remote, abort_on_quit=False)
             elif s == UNTRACKED:
                 self.__handle_untracked_state(cb)
             elif s == DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
-                self.__handle_diverged_and_newer_state(cb, remote, abort=False)
+                self.__handle_diverged_and_newer_state(cb, remote, abort_on_quit=False)
 
             self.__print_new_line(False)
             self.status(warn_on_yellow_edges=True)
@@ -1736,17 +1735,17 @@ class MacheteClient:
             if s == BEHIND_REMOTE:
                 warn(f"Branch {cb} is in <b>BEHIND_REMOTE</b> state.\nConsider using 'git pull'.\n")
                 self.__print_new_line(False)
-                ans = self.ask_if("Proceed with Pull Request creation?" + pretty_choices('y', 'N', 'q', 'yq'),
-                                  "Proceeding with Pull Request creation...")
+                ans = self.ask_if("Proceed with pull request creation?" + pretty_choices('y', 'N', 'q', 'yq'),
+                                  "Proceeding with pull request creation...")
             elif s == DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
                 warn(f"Branch {cb} is in <b>DIVERGED_FROM_AND_OLDER_THAN_REMOTE</b> state.\nConsider using 'git reset --keep'.\n")
                 self.__print_new_line(False)
-                ans = self.ask_if("Proceed with Pull Request creation?" + pretty_choices('y', 'N', 'q', 'yq'),
-                                  "Proceeding with Pull Request creation...")
+                ans = self.ask_if("Proceed with pull request creation?" + pretty_choices('y', 'N', 'q', 'yq'),
+                                  "Proceeding with pull request creation...")
             if ans in ('y', 'yes', 'yq'):
                 return
             elif ans in ('N', 'n', 'q', 'quit'):
-                raise MacheteException('Pull Request creation interrupted.')
+                raise MacheteException('Pull request creation interrupted.')
 
 
 # Allowed parameter values for show/go command
