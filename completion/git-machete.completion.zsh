@@ -64,11 +64,11 @@ _git-machete() {
         (g|go)
           _arguments '1:: :__git_machete_directions_go' && ret=0
           ;;
-        (help)
-          _arguments '1:: :__git_machete_help_topics' && ret=0
-          ;;
         (github)
           _arguments '1:: :__git_machete_github_subcommands' && ret=0
+          ;;
+        (help)
+          _arguments '1:: :__git_machete_help_topics' && ret=0
           ;;
         (is-managed|l|log)
           _arguments '1:: :__git_branch_names' && ret=0
@@ -154,6 +154,7 @@ __git_machete_cmds=(
   'file:Display the location of the definition file'
   'fork-point:Display SHA of the fork point commit of a branch'
   {go,g}':Check out the branch relative to the position of the current branch'
+  'github:Creates, checks out and manages GitHub PRs while keeping them reflected in branch definition file'
   'help:Display this overview, or detailed help for a specified command'
   'is-managed:Check if the current branch is managed by git-machete (mostly for scripts)'
   'list:List all branches that fall into one of pre-defined categories (mostly for internal use)'

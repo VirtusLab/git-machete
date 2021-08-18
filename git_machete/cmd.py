@@ -1630,14 +1630,12 @@ class MacheteClient:
         if ans in ('y', 'yes', 'yq'):
             self.__git.push(remote, cb, force_with_lease=True)
             if ans == 'yq':
-                if not abort_on_quit:
-                    return
-                raise StopTraversal
+                if abort_on_quit:
+                    raise StopTraversal
             self.flush_caches()
         elif ans in ('q', 'quit'):
-            if not abort_on_quit:
-                return
-            raise StopTraversal
+            if abort_on_quit:
+                raise StopTraversal
 
     def __handle_untracked_state(self, b: str) -> None:
         rems: List[str] = self.__git.remotes()
@@ -1664,14 +1662,13 @@ class MacheteClient:
         if ans in ('y', 'yes', 'yq'):
             self.__git.push(remote, cb)
             if ans == 'yq':
-                if not abort_on_quit:
-                    return
-                raise StopTraversal
+                if abort_on_quit:
+                    raise StopTraversal
             self.flush_caches()
         elif ans in ('q', 'quit'):
-            if not abort_on_quit:
-                return
-            raise StopTraversal
+            if abort_on_quit:
+                raise StopTraversal
+
 
     def __handle_diverged_and_older_state(self, b: str) -> None:
         self.__print_new_line(False)
