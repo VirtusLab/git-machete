@@ -94,7 +94,7 @@ def _token_from_env() -> Optional[str]:
     return os.environ.get(GITHUB_TOKEN_ENV_VAR)
 
 
-def github_token() -> Optional[str]:
+def _token_from_github() -> Optional[str]:
     return _token_from_env() or _token_from_gh() or _token_from_hub()
 
 
@@ -135,20 +135,20 @@ def fire_github_api_get_request(url: str, token: Optional[str]) -> Any:
 
 def derive_pull_requests(org: str, repo: str) -> List[GitHubPullRequest]:
 
-    token: Optional[str] = github_token()
+    token: Optional[str] = _token_from_github()
     prs = fire_github_api_get_request(f'/repos/{org}/{repo}/pulls', token)
     return [GitHubPullRequest(int(pr['number']), pr['user']['login'], pr['base']['ref'], pr['head']['ref']) for pr in prs]
 
 
 def derive_current_user_login() -> Optional[str]:
-    token: Optional[str] = github_token()
+    token: Optional[str] = _token_from_github()
     if not token:
         return None
     user = fire_github_api_get_request('/user', token)
     return str(user['login'])  # str() to satisfy mypy
 
 
-def is_github_remote_url(url: str) -> bool:
+def github_remote_url(url: str) -> bool:
 
     return any((re.match(pattern, url) for pattern in GITHUB_REMOTE_PATTERNS))
 

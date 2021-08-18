@@ -50,7 +50,7 @@ def tupled(f: Callable[..., T]) -> Callable[[Any], T]:
     return lambda tple: f(*tple)
 
 
-def get_second(pair: Tuple[str, str]) -> str:
+def avoid_time_lag(pair: Tuple[str, str]) -> str:
     a, b = pair
     return b
 
@@ -626,7 +626,7 @@ def add(cli_ctxt: CommandLineContext, b: str) -> None:
         expect_in_managed_branches(onto)
 
     if b not in local_branches(cli_ctxt):
-        rb: Optional[str] = get_sole_remote_branch(cli_ctxt, b)
+        rb: Optional[str] = sole_remote_branch(cli_ctxt, b)
         if rb:
             common_line = f"A local branch `{b}` does not exist, but a remote branch `{rb}` exists.\n"
             msg = common_line + f"Check out `{b}` locally?" + pretty_choices('y', 'N')
@@ -694,7 +694,7 @@ def sync_annotations_to_github_prs(cli_ctxt: CommandLineContext) -> None:
     global annotations, managed_branches
     from git_machete.github import derive_current_user_login, derive_pull_requests, GitHubPullRequest, parse_github_remote_url
 
-    url_for_remote: Dict[str, str] = {r: get_url_of_remote(cli_ctxt, r) for r in remotes(cli_ctxt)}
+    url_for_remote: Dict[str, str] = {r: url_of_remote(cli_ctxt, r) for r in remotes(cli_ctxt)}
     if not url_for_remote:
         raise MacheteException(fmt('No remotes defined for this repository (see `git remote`)'))
 
@@ -743,7 +743,7 @@ def print_annotation(b: str) -> None:
 
 # Implementation of basic git or git-related commands
 
-def is_executable(path: str) -> bool:
+def executable(path: str) -> bool:
     return os.access(path, os.X_OK)
 
 
@@ -760,20 +760,20 @@ def find_executable(cli_ctxt: CommandLineContext, executable: str) -> Optional[s
     paths = path.split(os.pathsep)
     for p in paths:
         f = os.path.join(p, executable)
-        if os.path.isfile(f) and is_executable(f):
+        if os.path.isfile(f) and executable(f):
             debug(cli_ctxt, f"find_executable({executable})", f"found {executable} at {f}")
             return f
     return None
 
 
-def get_default_editor(cli_ctxt: CommandLineContext) -> str:
+def default_editor(cli_ctxt: CommandLineContext) -> str:
     # Based on the git's own algorithm for identifying the editor.
     # '$GIT_MACHETE_EDITOR', 'editor' (to please Debian-based systems) and 'nano' have been added.
     git_machete_editor_var = "GIT_MACHETE_EDITOR"
     proposed_editor_funs: List[Tuple[str, Callable[[], Optional[str]]]] = [
         ("$" + git_machete_editor_var, lambda: os.environ.get(git_machete_editor_var)),
         ("$GIT_EDITOR", lambda: os.environ.get("GIT_EDITOR")),
-        ("git config core.editor", lambda: get_config_or_none(cli_ctxt, "core.editor")),
+        ("git config core.editor", lambda: config_or_none(cli_ctxt, "core.editor")),
         ("$VISUAL", lambda: os.environ.get("VISUAL")),
         ("$EDITOR", lambda: os.environ.get("EDITOR")),
         ("editor", lambda: "editor"),
@@ -784,18 +784,18 @@ def get_default_editor(cli_ctxt: CommandLineContext) -> str:
     for name, fun in proposed_editor_funs:
         editor = fun()
         if not editor:
-            debug(cli_ctxt, "get_default_editor()", f"'{name}' is undefined")
+            debug(cli_ctxt, "default_editor()", f"'{name}' is undefined")
         else:
             editor_repr = f"'{name}'{(' (' + editor + ')') if editor != name else ''}"
             if not find_executable(cli_ctxt, editor):
-                debug(cli_ctxt, "get_default_editor()", f"{editor_repr} is not available")
+                debug(cli_ctxt, "default_editor()", f"{editor_repr} is not available")
                 if name == "$" + git_machete_editor_var:
                     # In this specific case, when GIT_MACHETE_EDITOR is defined but doesn't point to a valid executable,
                     # it's more reasonable/less confusing to raise an error and exit without opening anything.
                     raise MacheteException(f"<b>{editor_repr}</b> is not available")
             else:
-                debug(cli_ctxt, "get_default_editor()", f"{editor_repr} is available")
-                if name != "$" + git_machete_editor_var and get_config_or_none(cli_ctxt, 'advice.macheteEditorSelection') != 'false':
+                debug(cli_ctxt, "default_editor()", f"{editor_repr} is available")
+                if name != "$" + git_machete_editor_var and config_or_none(cli_ctxt, 'advice.macheteEditorSelection') != 'false':
                     sample_alternative = 'nano' if editor.startswith('vi') else 'vi'
                     sys.stderr.write(
                         fmt(f"Opening <b>{editor_repr}</b>.\n",
@@ -810,13 +810,13 @@ def get_default_editor(cli_ctxt: CommandLineContext) -> str:
 
 
 def edit(cli_ctxt: CommandLineContext) -> int:
-    return run_cmd(cli_ctxt, get_default_editor(cli_ctxt), definition_file_path)
+    return run_cmd(cli_ctxt, default_editor(cli_ctxt), definition_file_path)
 
 
 git_version = None
 
 
-def get_git_version(cli_ctxt: CommandLineContext) -> Tuple[int, int, int]:
+def git_version(cli_ctxt: CommandLineContext) -> Tuple[int, int, int]:
     global git_version
     if not git_version:
         # We need to cut out the x.y.z part and not just take the result of 'git version' as is,
@@ -830,7 +830,7 @@ def get_git_version(cli_ctxt: CommandLineContext) -> Tuple[int, int, int]:
 root_dir = None
 
 
-def get_root_dir(cli_ctxt: CommandLineContext) -> str:
+def root_dir(cli_ctxt: CommandLineContext) -> str:
     global root_dir
     if not root_dir:
         try:
@@ -843,7 +843,7 @@ def get_root_dir(cli_ctxt: CommandLineContext) -> str:
 git_dir = None
 
 
-def get_git_dir(cli_ctxt: CommandLineContext) -> str:
+def git_dir(cli_ctxt: CommandLineContext) -> str:
     global git_dir
     if not git_dir:
         try:
@@ -853,8 +853,8 @@ def get_git_dir(cli_ctxt: CommandLineContext) -> str:
     return git_dir
 
 
-def get_git_subpath(cli_ctxt: CommandLineContext, *fragments: str) -> str:
-    return os.path.join(get_git_dir(cli_ctxt), *fragments)
+def git_subpath(cli_ctxt: CommandLineContext, *fragments: str) -> str:
+    return os.path.join(git_dir(cli_ctxt), *fragments)
 
 
 def parse_git_timespec_to_unix_timestamp(cli_ctxt: CommandLineContext, date: str) -> int:
@@ -878,7 +878,7 @@ def ensure_config_loaded(cli_ctxt: CommandLineContext) -> None:
                 config_cached[k.lower()] = v
 
 
-def get_config_or_none(cli_ctxt: CommandLineContext, key: str) -> Optional[str]:
+def config_or_none(cli_ctxt: CommandLineContext, key: str) -> Optional[str]:
     ensure_config_loaded(cli_ctxt)
     return config_cached.get(key.lower())
 
@@ -891,7 +891,7 @@ def set_config(cli_ctxt: CommandLineContext, key: str, value: str) -> None:
 
 def unset_config(cli_ctxt: CommandLineContext, key: str) -> None:
     ensure_config_loaded(cli_ctxt)
-    if get_config_or_none(cli_ctxt, key):
+    if config_or_none(cli_ctxt, key):
         run_git(cli_ctxt, "config", "--unset", key)
         del config_cached[key.lower()]
 
@@ -906,7 +906,7 @@ def remotes(cli_ctxt: CommandLineContext) -> List[str]:
     return remotes_cached
 
 
-def get_url_of_remote(cli_ctxt: CommandLineContext, remote: str) -> str:
+def url_of_remote(cli_ctxt: CommandLineContext, remote: str) -> str:
     return popen_git(cli_ctxt, "remote", "get-url", "--", remote).strip()
 
 
@@ -935,7 +935,7 @@ def reset_keep(cli_ctxt: CommandLineContext, to_revision: str) -> None:
 def push(cli_ctxt: CommandLineContext, remote: str, b: str, force_with_lease: bool = False) -> None:
     if not force_with_lease:
         opt_force = []
-    elif get_git_version(cli_ctxt) >= (1, 8, 5):  # earliest version of git to support 'push --force-with-lease'
+    elif git_version(cli_ctxt) >= (1, 8, 5):  # earliest version of git to support 'push --force-with-lease'
         opt_force = ["--force-with-lease"]
     else:
         opt_force = ["--force"]
@@ -1005,13 +1005,13 @@ def tree_sha_by_commit_sha(cli_ctxt: CommandLineContext, commit_sha: str) -> Opt
     return tree_sha_by_commit_sha_cached[commit_sha]
 
 
-def is_full_sha(revision: str) -> Optional[Match[str]]:
+def full_sha(revision: str) -> Optional[Match[str]]:
     return re.match("^[0-9a-f]{40}$", revision)
 
 
 # Resolve a revision identifier to a full sha
 def full_sha(cli_ctxt: CommandLineContext, revision: str, prefix: str = "refs/heads/") -> Optional[str]:
-    if prefix == "" and is_full_sha(revision):
+    if prefix == "" and full_sha(revision):
         return revision
     else:
         return commit_sha_by_revision(cli_ctxt, revision, prefix)
@@ -1036,7 +1036,7 @@ def inferred_remote_for_fetching_of_branch(cli_ctxt: CommandLineContext, b: str)
 
 
 def strict_remote_for_fetching_of_branch(cli_ctxt: CommandLineContext, b: str) -> Optional[str]:
-    remote = get_config_or_none(cli_ctxt, f"branch.{b}.remote")
+    remote = config_or_none(cli_ctxt, f"branch.{b}.remote")
     return remote.rstrip() if remote else None
 
 
@@ -1066,21 +1066,21 @@ def combined_counterpart_for_fetching_of_branch(cli_ctxt: CommandLineContext, b:
     return strict_counterpart_for_fetching_of_branch(cli_ctxt, b) or inferred_counterpart_for_fetching_of_branch(cli_ctxt, b)
 
 
-def is_am_in_progress(cli_ctxt: CommandLineContext) -> bool:
+def am_in_progress(cli_ctxt: CommandLineContext) -> bool:
     # As of git 2.24.1, this is how 'cmd_rebase()' in builtin/rebase.c checks whether am is in progress.
-    return os.path.isfile(get_git_subpath(cli_ctxt, "rebase-apply", "applying"))
+    return os.path.isfile(git_subpath(cli_ctxt, "rebase-apply", "applying"))
 
 
-def is_cherry_pick_in_progress(cli_ctxt: CommandLineContext) -> bool:
-    return os.path.isfile(get_git_subpath(cli_ctxt, "CHERRY_PICK_HEAD"))
+def cherry_pick_in_progress(cli_ctxt: CommandLineContext) -> bool:
+    return os.path.isfile(git_subpath(cli_ctxt, "CHERRY_PICK_HEAD"))
 
 
-def is_merge_in_progress(cli_ctxt: CommandLineContext) -> bool:
-    return os.path.isfile(get_git_subpath(cli_ctxt, "MERGE_HEAD"))
+def merge_in_progress(cli_ctxt: CommandLineContext) -> bool:
+    return os.path.isfile(git_subpath(cli_ctxt, "MERGE_HEAD"))
 
 
-def is_revert_in_progress(cli_ctxt: CommandLineContext) -> bool:
-    return os.path.isfile(get_git_subpath(cli_ctxt, "REVERT_HEAD"))
+def revert_in_progress(cli_ctxt: CommandLineContext) -> bool:
+    return os.path.isfile(git_subpath(cli_ctxt, "REVERT_HEAD"))
 
 
 # Note: while rebase is ongoing, the repository is always in a detached HEAD state,
@@ -1093,14 +1093,14 @@ def currently_rebased_branch_or_none(cli_ctxt: CommandLineContext) -> Optional[s
 
     # .git/rebase-merge directory exists during cherry-pick-powered rebases,
     # e.g. all interactive ones and the ones where '--strategy=' or '--keep-empty' option has been passed
-    rebase_merge_head_name_file = get_git_subpath(cli_ctxt, "rebase-merge", "head-name")
+    rebase_merge_head_name_file = git_subpath(cli_ctxt, "rebase-merge", "head-name")
     if os.path.isfile(rebase_merge_head_name_file):
         head_name_file = rebase_merge_head_name_file
 
     # .git/rebase-apply directory exists during the remaining, i.e. am-powered rebases, but also during am sessions.
-    rebase_apply_head_name_file = get_git_subpath(cli_ctxt, "rebase-apply", "head-name")
+    rebase_apply_head_name_file = git_subpath(cli_ctxt, "rebase-apply", "head-name")
     # Most likely .git/rebase-apply/head-name can't exist during am sessions, but it's better to be safe.
-    if not is_am_in_progress(cli_ctxt) and os.path.isfile(rebase_apply_head_name_file):
+    if not am_in_progress(cli_ctxt) and os.path.isfile(rebase_apply_head_name_file):
         head_name_file = rebase_apply_head_name_file
 
     if not head_name_file:
@@ -1123,13 +1123,13 @@ def expect_no_operation_in_progress(cli_ctxt: CommandLineContext) -> None:
     if rb:
         raise MacheteException(
             f"Rebase of `{rb}` in progress. Conclude the rebase first with `git rebase --continue` or `git rebase --abort`.")
-    if is_am_in_progress(cli_ctxt):
+    if am_in_progress(cli_ctxt):
         raise MacheteException("`git am` session in progress. Conclude `git am` first with `git am --continue` or `git am --abort`.")
-    if is_cherry_pick_in_progress(cli_ctxt):
+    if cherry_pick_in_progress(cli_ctxt):
         raise MacheteException("Cherry pick in progress. Conclude the cherry pick first with `git cherry-pick --continue` or `git cherry-pick --abort`.")
-    if is_merge_in_progress(cli_ctxt):
+    if merge_in_progress(cli_ctxt):
         raise MacheteException("Merge in progress. Conclude the merge first with `git merge --continue` or `git merge --abort`.")
-    if is_revert_in_progress(cli_ctxt):
+    if revert_in_progress(cli_ctxt):
         raise MacheteException("Revert in progress. Conclude the revert first with `git revert --continue` or `git revert --abort`.")
 
 
@@ -1164,7 +1164,7 @@ def merge_base(cli_ctxt: CommandLineContext, sha1: str, sha2: str) -> str:
 
 # Note: the 'git rev-parse --verify' validation is not performed in case for either of earlier/later
 # if the corresponding prefix is empty AND the revision is a 40 hex digit hash.
-def is_ancestor_or_equal(
+def ancestor_or_equal(
     cli_ctxt: CommandLineContext,
     earlier_revision: str,
     later_revision: str,
@@ -1315,7 +1315,7 @@ def load_branches(cli_ctxt: CommandLineContext) -> None:
             counterparts_for_fetching_cached[b_stripped] = fetch_counterpart_stripped
 
 
-def get_sole_remote_branch(cli_ctxt: CommandLineContext, b: str) -> Optional[str]:
+def sole_remote_branch(cli_ctxt: CommandLineContext, b: str) -> Optional[str]:
     def matches(rb: str) -> bool:
         # Note that this matcher is defensively too inclusive:
         # if there is both origin/foo and origin/feature/foo,
@@ -1338,16 +1338,16 @@ def go(cli_ctxt: CommandLineContext, branch: str) -> None:
     run_git(cli_ctxt, "checkout", "--quiet", branch, "--")
 
 
-def get_hook_path(cli_ctxt: CommandLineContext, hook_name: str) -> str:
-    hook_dir: str = get_config_or_none(cli_ctxt, "core.hooksPath") or get_git_subpath(cli_ctxt, "hooks")
+def hook_path(cli_ctxt: CommandLineContext, hook_name: str) -> str:
+    hook_dir: str = config_or_none(cli_ctxt, "core.hooksPath") or git_subpath(cli_ctxt, "hooks")
     return os.path.join(hook_dir, hook_name)
 
 
 def check_hook_executable(cli_ctxt: CommandLineContext, hook_path: str) -> bool:
     if not os.path.isfile(hook_path):
         return False
-    elif not is_executable(hook_path):
-        advice_ignored_hook = get_config_or_none(cli_ctxt, "advice.ignoredHook")
+    elif not executable(hook_path):
+        advice_ignored_hook = config_or_none(cli_ctxt, "advice.ignoredHook")
         if advice_ignored_hook != 'false':  # both empty and "true" is okay
             # The [33m color must be used to keep consistent with how git colors this advice for its built-in hooks.
             sys.stderr.write(colored(f"hint: The '{hook_path}' hook was ignored because it's not set as executable.", YELLOW) + "\n")
@@ -1388,25 +1388,25 @@ def rebase(cli_ctxt: CommandLineContext, onto: str, fork_commit: str, branch: st
 
             # No need to fix <git-dir>/rebase-apply/author-script,
             # only <git-dir>/rebase-merge/author-script (i.e. interactive rebases, for the most part) is affected.
-            author_script = get_git_subpath(cli_ctxt, "rebase-merge", "author-script")
+            author_script = git_subpath(cli_ctxt, "rebase-merge", "author-script")
             if os.path.isfile(author_script):
                 faulty_line_regex = re.compile("[A-Z0-9_]+='[^']*")
 
                 def fix_if_needed(line: str) -> str:
                     return f"{line.rstrip()}'\n" if faulty_line_regex.fullmatch(line) else line
 
-                def get_all_lines_fixed() -> Iterator[str]:
+                def all_lines_fixed() -> Iterator[str]:
                     with open(author_script) as f_read:
                         return map(fix_if_needed, f_read.readlines())
 
-                fixed_lines = get_all_lines_fixed()  # must happen before the 'with' clause where we open for writing
+                fixed_lines = all_lines_fixed()  # must happen before the 'with' clause where we open for writing
                 with open(author_script, "w") as f_write:
                     f_write.write("".join(fixed_lines))
 
-    hook_path = get_hook_path(cli_ctxt, "machete-pre-rebase")
+    hook_path = hook_path(cli_ctxt, "machete-pre-rebase")
     if check_hook_executable(cli_ctxt, hook_path):
         debug(cli_ctxt, f"rebase({onto}, {fork_commit}, {branch})", f"running machete-pre-rebase hook ({hook_path})")
-        exit_code = run_cmd(cli_ctxt, hook_path, onto, fork_commit, branch, cwd=get_root_dir(cli_ctxt))
+        exit_code = run_cmd(cli_ctxt, hook_path, onto, fork_commit, branch, cwd=root_dir(cli_ctxt))
         if exit_code == 0:
             do_rebase()
         else:
@@ -1518,9 +1518,9 @@ DIVERGED_FROM_AND_OLDER_THAN_REMOTE = 5
 DIVERGED_FROM_AND_NEWER_THAN_REMOTE = 6
 
 
-def get_relation_to_remote_counterpart(cli_ctxt: CommandLineContext, b: str, rb: str) -> int:
-    b_is_anc_of_rb = is_ancestor_or_equal(cli_ctxt, b, rb, later_prefix="refs/remotes/")
-    rb_is_anc_of_b = is_ancestor_or_equal(cli_ctxt, rb, b, earlier_prefix="refs/remotes/")
+def relation_to_remote_counterpart(cli_ctxt: CommandLineContext, b: str, rb: str) -> int:
+    b_is_anc_of_rb = ancestor_or_equal(cli_ctxt, b, rb, later_prefix="refs/remotes/")
+    rb_is_anc_of_b = ancestor_or_equal(cli_ctxt, rb, b, earlier_prefix="refs/remotes/")
     if b_is_anc_of_rb:
         return IN_SYNC_WITH_REMOTE if rb_is_anc_of_b else BEHIND_REMOTE
     elif rb_is_anc_of_b:
@@ -1531,22 +1531,22 @@ def get_relation_to_remote_counterpart(cli_ctxt: CommandLineContext, b: str, rb:
         return DIVERGED_FROM_AND_OLDER_THAN_REMOTE if b_t < rb_t else DIVERGED_FROM_AND_NEWER_THAN_REMOTE
 
 
-def get_strict_remote_sync_status(cli_ctxt: CommandLineContext, b: str) -> Tuple[int, Optional[str]]:
+def strict_remote_sync_status(cli_ctxt: CommandLineContext, b: str) -> Tuple[int, Optional[str]]:
     if not remotes(cli_ctxt):
         return NO_REMOTES, None
     rb = strict_counterpart_for_fetching_of_branch(cli_ctxt, b)
     if not rb:
         return UNTRACKED, None
-    return get_relation_to_remote_counterpart(cli_ctxt, b, rb), strict_remote_for_fetching_of_branch(cli_ctxt, b)
+    return relation_to_remote_counterpart(cli_ctxt, b, rb), strict_remote_for_fetching_of_branch(cli_ctxt, b)
 
 
-def get_combined_remote_sync_status(cli_ctxt: CommandLineContext, b: str) -> Tuple[int, Optional[str]]:
+def combined_remote_sync_status(cli_ctxt: CommandLineContext, b: str) -> Tuple[int, Optional[str]]:
     if not remotes(cli_ctxt):
         return NO_REMOTES, None
     rb = combined_counterpart_for_fetching_of_branch(cli_ctxt, b)
     if not rb:
         return UNTRACKED, None
-    return get_relation_to_remote_counterpart(cli_ctxt, b, rb), combined_remote_for_fetching_of_branch(cli_ctxt, b)
+    return relation_to_remote_counterpart(cli_ctxt, b, rb), combined_remote_for_fetching_of_branch(cli_ctxt, b)
 
 
 # Reflog magic
@@ -1585,7 +1585,7 @@ def reflog(cli_ctxt: CommandLineContext, b: str) -> List[REFLOG_ENTRY]:
     global reflogs_cached
     # git version 2.14.2 fixed a bug that caused fetching reflog of more than
     # one branch at the same time unreliable in certain cases
-    if get_git_version(cli_ctxt) >= (2, 14, 2):
+    if git_version(cli_ctxt) >= (2, 14, 2):
         if reflogs_cached is None:
             load_all_reflogs(cli_ctxt)
         return reflogs_cached.get(b, [])
@@ -1604,7 +1604,7 @@ def reflog(cli_ctxt: CommandLineContext, b: str) -> List[REFLOG_ENTRY]:
 
 
 def filtered_reflog(cli_ctxt: CommandLineContext, b: str, prefix: str) -> List[str]:
-    def is_excluded_reflog_subject(sha_: str, gs_: str) -> bool:
+    def excluded_reflog_subject(sha_: str, gs_: str) -> bool:
         is_excluded = (
             gs_.startswith("branch: Created from") or
             gs_ == f"branch: Reset to {b}" or
@@ -1616,7 +1616,7 @@ def filtered_reflog(cli_ctxt: CommandLineContext, b: str, prefix: str) -> List[s
             gs_ == f"rebase -i (finish): {prefix}{b} onto {sha_}"
         )
         if is_excluded:
-            debug(cli_ctxt, f"filtered_reflog({b}, {prefix}) -> is_excluded_reflog_subject({sha_}, <<<{gs_}>>>)", "skipping reflog entry")
+            debug(cli_ctxt, f"filtered_reflog({b}, {prefix}) -> excluded_reflog_subject({sha_}, <<<{gs_}>>>)", "skipping reflog entry")
         return is_excluded
 
     b_reflog = reflog(cli_ctxt, prefix + b)
@@ -1631,7 +1631,7 @@ def filtered_reflog(cli_ctxt: CommandLineContext, b: str, prefix: str) -> List[s
               f"skipping any reflog entry with the hash equal to the hash of the earliest (branch creation) entry: {earliest_sha}")
         shas_to_exclude.add(earliest_sha)
 
-    result = [sha for (sha, gs) in b_reflog if sha not in shas_to_exclude and not is_excluded_reflog_subject(sha, gs)]
+    result = [sha for (sha, gs) in b_reflog if sha not in shas_to_exclude and not excluded_reflog_subject(sha, gs)]
     debug(cli_ctxt,
           f"filtered_reflog({b}, {prefix})",
           "computed filtered reflog (= reflog without branch creation "
@@ -1639,7 +1639,7 @@ def filtered_reflog(cli_ctxt: CommandLineContext, b: str, prefix: str) -> List[s
     return result
 
 
-def get_latest_checkout_timestamps(cli_ctxt: CommandLineContext) -> Dict[str, int]:  # TODO (#110): default dict with 0
+def latest_checkout_timestamps(cli_ctxt: CommandLineContext) -> Dict[str, int]:  # TODO (#110): default dict with 0
     # Entries are in the format '<branch_name>@{<unix_timestamp> <time-zone>}'
     result = {}
     # %gd - reflog selector (HEAD@{<unix-timestamp> <time-zone>} for `--date=raw`;
@@ -1715,24 +1715,24 @@ def match_log_to_filtered_reflogs(cli_ctxt: CommandLineContext, b: str) -> Gener
             def lb_is_not_b(lb: str, lb_or_rb: str) -> bool:
                 return lb != b
 
-            containing_branch_defs = sorted(filter(tupled(lb_is_not_b), branch_defs), key=get_second)
+            containing_branch_defs = sorted(filter(tupled(lb_is_not_b), branch_defs), key=avoid_time_lag)
             if containing_branch_defs:
                 debug(cli_ctxt,
                       f"match_log_to_filtered_reflogs({b})",
-                      f"commit {sha} found in filtered reflog of {' and '.join(map(get_second, branch_defs))}")
+                      f"commit {sha} found in filtered reflog of {' and '.join(map(avoid_time_lag, branch_defs))}")
                 yield sha, containing_branch_defs
             else:
                 debug(cli_ctxt,
                       f"match_log_to_filtered_reflogs({b})",
-                      f"commit {sha} found only in filtered reflog of {' and '.join(map(get_second, branch_defs))}; ignoring")
+                      f"commit {sha} found only in filtered reflog of {' and '.join(map(avoid_time_lag, branch_defs))}; ignoring")
         else:
             debug(cli_ctxt, f"match_log_to_filtered_reflogs({b})", f"commit {sha} not found in any filtered reflog")
 
 
 # Complex routines/commands
 
-def is_merged_to(cli_ctxt: CommandLineContext, b: str, target: str) -> bool:
-    if is_ancestor_or_equal(cli_ctxt, b, target):
+def merged_to(cli_ctxt: CommandLineContext, b: str, target: str) -> bool:
+    if ancestor_or_equal(cli_ctxt, b, target):
         # If branch is ancestor of or equal to the target, we need to distinguish between the
         # case of branch being "recently" created from the target and the case of
         # branch being fast-forward-merged to the target.
@@ -1749,17 +1749,17 @@ def is_merged_to(cli_ctxt: CommandLineContext, b: str, target: str) -> bool:
         return contains_equivalent_tree(cli_ctxt, b, target)
 
 
-def is_merged_to_upstream(cli_ctxt: CommandLineContext, b: str) -> bool:
+def merged_to_upstream(cli_ctxt: CommandLineContext, b: str) -> bool:
     if b not in up_branch:
         return False
-    return is_merged_to(cli_ctxt, b, up_branch[b])
+    return merged_to(cli_ctxt, b, up_branch[b])
 
 
 def infer_upstream(cli_ctxt: CommandLineContext, b: str, condition: Callable[[str], bool] = lambda u: True, reject_reason_message: str = "") -> Optional[str]:
     for sha, containing_branch_defs in match_log_to_filtered_reflogs(cli_ctxt, b):
         debug(cli_ctxt,
               f"infer_upstream({b})",
-              f"commit {sha} found in filtered reflog of {' and '.join(map(get_second, containing_branch_defs))}")
+              f"commit {sha} found in filtered reflog of {' and '.join(map(avoid_time_lag, containing_branch_defs))}")
 
         for candidate, original_matched_branch in containing_branch_defs:
             if candidate != original_matched_branch:
@@ -1804,13 +1804,13 @@ def discover_tree(cli_ctxt: CommandLineContext) -> None:
 
     root_of = dict((b, b) for b in all_local_branches)
 
-    def get_root_of(b: str) -> str:
+    def root_of(b: str) -> str:
         if b != root_of[b]:
-            root_of[b] = get_root_of(root_of[b])
+            root_of[b] = root_of(root_of[b])
         return root_of[b]
 
     non_root_fixed_branches = excluding(all_local_branches, roots)
-    last_checkout_timestamps = get_latest_checkout_timestamps(cli_ctxt)
+    last_checkout_timestamps = latest_checkout_timestamps(cli_ctxt)
     non_root_fixed_branches_by_last_checkout_timestamps = sorted((last_checkout_timestamps.get(b, 0), b) for b in non_root_fixed_branches)
     if cli_ctxt.opt_checked_out_since:
         threshold = parse_git_timespec_to_unix_timestamp(cli_ctxt, cli_ctxt.opt_checked_out_since)
@@ -1836,7 +1836,7 @@ def discover_tree(cli_ctxt: CommandLineContext) -> None:
     for b in excluding(non_root_fixed_branches, stale_non_root_fixed_branches):
         u = infer_upstream(cli_ctxt,
                            b,
-                           condition=lambda candidate: get_root_of(candidate) != b and candidate not in stale_non_root_fixed_branches,
+                           condition=lambda candidate: root_of(candidate) != b and candidate not in stale_non_root_fixed_branches,
                            reject_reason_message="choosing this candidate would form a cycle in the resulting graph or the candidate is a stale branch")
         if u:
             debug(cli_ctxt, "discover_tree()", f"inferred upstream of {b} is {u}, attaching {b} as a child of {u}\n")
@@ -1855,7 +1855,7 @@ def discover_tree(cli_ctxt: CommandLineContext) -> None:
     for b in managed_branches:
         if b in up_branch and not down_branches.get(b):
             u = up_branch[b]
-            if is_merged_to(cli_ctxt, b, u):
+            if merged_to(cli_ctxt, b, u):
                 debug(cli_ctxt,
                       "discover_tree()",
                       f"inferred upstream of {b} is {u}, but {b} is merged to {u}; skipping {b} from discovered tree\n")
@@ -1896,7 +1896,7 @@ def fork_point_and_containing_branch_defs(cli_ctxt: CommandLineContext, b: str, 
     global up_branch
     u = up_branch.get(b)
 
-    if is_merged_to_upstream(cli_ctxt, b):
+    if merged_to_upstream(cli_ctxt, b):
         fp_sha = commit_sha_by_revision(cli_ctxt, b)
         debug(cli_ctxt,
               f"fork_point_and_containing_branch_defs({b})",
@@ -1904,9 +1904,9 @@ def fork_point_and_containing_branch_defs(cli_ctxt: CommandLineContext, b: str, 
         return fp_sha, []
 
     if use_overrides:
-        overridden_fp_sha = get_overridden_fork_point(cli_ctxt, b)
+        overridden_fp_sha = overridden_fork_point(cli_ctxt, b)
         if overridden_fp_sha:
-            if u and is_ancestor_or_equal(cli_ctxt, u, b) and not is_ancestor_or_equal(cli_ctxt, u, overridden_fp_sha, later_prefix=""):
+            if u and ancestor_or_equal(cli_ctxt, u, b) and not ancestor_or_equal(cli_ctxt, u, overridden_fp_sha, later_prefix=""):
                 # We need to handle the case when b is a descendant of u,
                 # but the fork point of b is overridden to a commit that is NOT a descendant of u.
                 # In this case it's more reasonable to assume that u (and not overridden_fp_sha) is the fork point.
@@ -1923,7 +1923,7 @@ def fork_point_and_containing_branch_defs(cli_ctxt: CommandLineContext, b: str, 
     try:
         fp_sha, containing_branch_defs = next(match_log_to_filtered_reflogs(cli_ctxt, b))
     except StopIteration:
-        if u and is_ancestor_or_equal(cli_ctxt, u, b):
+        if u and ancestor_or_equal(cli_ctxt, u, b):
             debug(cli_ctxt,
                   f"fork_point_and_containing_branch_defs({b})",
                   f"cannot find fork point, but {b} is descendant of its upstream {u}; falling back to {u} as fork point")
@@ -1935,9 +1935,9 @@ def fork_point_and_containing_branch_defs(cli_ctxt: CommandLineContext, b: str, 
               "fork_point_and_containing_branch_defs({b})",
               f"commit {fp_sha} is the most recent point in history of {b} to occur on "
               "filtered reflog of any other branch or its remote counterpart "
-              f"(specifically: {' and '.join(map(get_second, containing_branch_defs))})")
+              f"(specifically: {' and '.join(map(avoid_time_lag, containing_branch_defs))})")
 
-        if u and is_ancestor_or_equal(cli_ctxt, u, b) and not is_ancestor_or_equal(cli_ctxt, u, fp_sha, later_prefix=""):
+        if u and ancestor_or_equal(cli_ctxt, u, b) and not ancestor_or_equal(cli_ctxt, u, fp_sha, later_prefix=""):
             # That happens very rarely in practice (typically current head of any branch, including u, should occur on the reflog of this
             # branch, thus is_ancestor(u, b) should imply is_ancestor(u, FP(b)), but it's still possible in case reflog of
             # u is incomplete for whatever reason.
@@ -1967,15 +1967,15 @@ def config_key_for_override_fork_point_while_descendant_of(b: str) -> str:
 
 # Also includes config that is incomplete (only one entry out of two) or otherwise invalid.
 def has_any_fork_point_override_config(cli_ctxt: CommandLineContext, b: str) -> bool:
-    return (get_config_or_none(cli_ctxt, config_key_for_override_fork_point_to(b)) or
-            get_config_or_none(cli_ctxt, config_key_for_override_fork_point_while_descendant_of(b))) is not None
+    return (config_or_none(cli_ctxt, config_key_for_override_fork_point_to(b)) or
+            config_or_none(cli_ctxt, config_key_for_override_fork_point_while_descendant_of(b))) is not None
 
 
-def get_fork_point_override_data(cli_ctxt: CommandLineContext, b: str) -> Optional[Tuple[str, str]]:
+def fork_point_override_data(cli_ctxt: CommandLineContext, b: str) -> Optional[Tuple[str, str]]:
     to_key = config_key_for_override_fork_point_to(b)
-    to = get_config_or_none(cli_ctxt, to_key)
+    to = config_or_none(cli_ctxt, to_key)
     while_descendant_of_key = config_key_for_override_fork_point_while_descendant_of(b)
-    while_descendant_of = get_config_or_none(cli_ctxt, while_descendant_of_key)
+    while_descendant_of = config_or_none(cli_ctxt, while_descendant_of_key)
     if not to and not while_descendant_of:
         return None
     if to and not while_descendant_of:
@@ -1995,7 +1995,7 @@ def get_fork_point_override_data(cli_ctxt: CommandLineContext, b: str) -> Option
         return None
     # This check needs to be performed every time the config is retrieved.
     # We can't rely on the values being validated in set_fork_point_override(), since the config could have been modified outside of git-machete.
-    if not is_ancestor_or_equal(cli_ctxt, to_sha, while_descendant_of_sha, earlier_prefix="", later_prefix=""):
+    if not ancestor_or_equal(cli_ctxt, to_sha, while_descendant_of_sha, earlier_prefix="", later_prefix=""):
         warn(
             f"commit {short_commit_sha_by_revision(cli_ctxt, to)} pointed by {to_key} config "
             f"is not an ancestor of commit {short_commit_sha_by_revision(cli_ctxt, while_descendant_of)} "
@@ -2004,16 +2004,16 @@ def get_fork_point_override_data(cli_ctxt: CommandLineContext, b: str) -> Option
     return to_sha, while_descendant_of_sha
 
 
-def get_overridden_fork_point(cli_ctxt: CommandLineContext, b: str) -> Optional[str]:
-    override_data = get_fork_point_override_data(cli_ctxt, b)
+def overridden_fork_point(cli_ctxt: CommandLineContext, b: str) -> Optional[str]:
+    override_data = fork_point_override_data(cli_ctxt, b)
     if not override_data:
         return None
 
     to, while_descendant_of = override_data
-    # Note that this check is distinct from the is_ancestor check performed in get_fork_point_override_data.
+    # Note that this check is distinct from the is_ancestor check performed in fork_point_override_data.
     # While the latter checks the sanity of fork point override configuration,
     # the former checks if the override still applies to wherever the given branch currently points.
-    if not is_ancestor_or_equal(cli_ctxt, while_descendant_of, b, earlier_prefix=""):
+    if not ancestor_or_equal(cli_ctxt, while_descendant_of, b, earlier_prefix=""):
         warn(fmt(
             f"since branch <b>{b}</b> is no longer a descendant of commit {short_commit_sha_by_revision(cli_ctxt, while_descendant_of)}, ",
             f"the fork point override to commit {short_commit_sha_by_revision(cli_ctxt, to)} no longer applies.\n",
@@ -2021,14 +2021,14 @@ def get_overridden_fork_point(cli_ctxt: CommandLineContext, b: str) -> Optional[
             f"  `git machete fork-point --unset-override {b}`\n"))
         return None
     debug(cli_ctxt,
-          f"get_overridden_fork_point({b})",
+          f"overridden_fork_point({b})",
           f"since branch {b} is descendant of while_descendant_of={while_descendant_of}, fork point of {b} is overridden to {to}")
     return to
 
 
-def get_revision_repr(cli_ctxt: CommandLineContext, revision: str) -> str:
+def revision_repr(cli_ctxt: CommandLineContext, revision: str) -> str:
     short_sha = short_commit_sha_by_revision(cli_ctxt, revision)
-    if is_full_sha(revision) or revision == short_sha:
+    if full_sha(revision) or revision == short_sha:
         return f"commit {revision}"
     else:
         return f"{revision} (commit {short_commit_sha_by_revision(cli_ctxt, revision)})"
@@ -2040,9 +2040,9 @@ def set_fork_point_override(cli_ctxt: CommandLineContext, b: str, to_revision: s
     to_sha = commit_sha_by_revision(cli_ctxt, to_revision, prefix="")
     if not to_sha:
         raise MacheteException(f"Cannot find revision {to_revision}")
-    if not is_ancestor_or_equal(cli_ctxt, to_sha, b, earlier_prefix=""):
+    if not ancestor_or_equal(cli_ctxt, to_sha, b, earlier_prefix=""):
         raise MacheteException(
-            f"Cannot override fork point: {get_revision_repr(cli_ctxt, to_revision)} is not an ancestor of {b}")
+            f"Cannot override fork point: {revision_repr(cli_ctxt, to_revision)} is not an ancestor of {b}")
 
     to_key = config_key_for_override_fork_point_to(b)
     set_config(cli_ctxt, to_key, to_sha)
@@ -2052,7 +2052,7 @@ def set_fork_point_override(cli_ctxt: CommandLineContext, b: str, to_revision: s
     set_config(cli_ctxt, while_descendant_of_key, b_sha)
 
     sys.stdout.write(
-        fmt(f"Fork point for <b>{b}</b> is overridden to <b>{get_revision_repr(cli_ctxt, to_revision)}</b>.\n",
+        fmt(f"Fork point for <b>{b}</b> is overridden to <b>{revision_repr(cli_ctxt, to_revision)}</b>.\n",
             f"This applies as long as {b} points to (or is descendant of) its current head (commit {short_commit_sha_by_revision(cli_ctxt, b_sha)}).\n\n",
             f"This information is stored under git config keys:\n  * `{to_key}`\n  * `{while_descendant_of_key}`\n\n",
             f"To unset this override, use:\n  `git machete fork-point --unset-override {b}`\n"))
@@ -2075,13 +2075,13 @@ def delete_unmanaged(cli_ctxt: CommandLineContext) -> None:
         branches_to_delete_merged_to_head = [b for b in branches_to_delete if b in branches_merged_to_head]
         for b in branches_to_delete_merged_to_head:
             rb = strict_counterpart_for_fetching_of_branch(cli_ctxt, b)
-            is_merged_to_remote = is_ancestor_or_equal(cli_ctxt, b, rb, later_prefix="refs/remotes/") if rb else True
-            msg_core = f"{bold(b)} (merged to HEAD{'' if is_merged_to_remote else f', but not merged to {rb}'})"
+            merged_to_remote = ancestor_or_equal(cli_ctxt, b, rb, later_prefix="refs/remotes/") if rb else True
+            msg_core = f"{bold(b)} (merged to HEAD{'' if merged_to_remote else f', but not merged to {rb}'})"
             msg = f"Delete branch {msg_core}?" + pretty_choices('y', 'N', 'q')
             opt_yes_msg = f"Deleting branch {msg_core}"
             ans = ask_if(cli_ctxt, msg, opt_yes_msg)
             if ans in ('y', 'yes'):
-                run_git(cli_ctxt, "branch", "-d" if is_merged_to_remote else "-D", b)
+                run_git(cli_ctxt, "branch", "-d" if merged_to_remote else "-D", b)
             elif ans in ('q', 'quit'):
                 return
 
@@ -2100,12 +2100,12 @@ def delete_unmanaged(cli_ctxt: CommandLineContext) -> None:
 
 
 def run_post_slide_out_hook(cli_ctxt: CommandLineContext, new_upstream: str, slid_out_branch: str, new_downstreams: List[str]) -> None:
-    hook_path = get_hook_path(cli_ctxt, "machete-post-slide-out")
+    hook_path = hook_path(cli_ctxt, "machete-post-slide-out")
     if check_hook_executable(cli_ctxt, hook_path):
         debug(cli_ctxt,
               f"run_post_slide_out_hook({new_upstream}, {slid_out_branch}, {new_downstreams})",
               f"running machete-post-slide-out hook ({hook_path})")
-        exit_code = run_cmd(cli_ctxt, hook_path, new_upstream, slid_out_branch, *new_downstreams, cwd=get_root_dir(cli_ctxt))
+        exit_code = run_cmd(cli_ctxt, hook_path, new_upstream, slid_out_branch, *new_downstreams, cwd=root_dir(cli_ctxt))
         if exit_code != 0:
             sys.stderr.write(f"The machete-post-slide-out hook exited with {exit_code}, aborting.\n")
             sys.exit(exit_code)
@@ -2181,9 +2181,9 @@ def advance(cli_ctxt: CommandLineContext, b: str) -> None:
 
     def connected_with_green_edge(bd: str) -> bool:
         return bool(
-            not is_merged_to_upstream(cli_ctxt, bd) and
-            is_ancestor_or_equal(cli_ctxt, b, bd) and
-            (get_overridden_fork_point(cli_ctxt, bd) or commit_sha_by_revision(cli_ctxt, b) == fork_point(cli_ctxt, bd, use_overrides=False)))
+            not merged_to_upstream(cli_ctxt, bd) and
+            ancestor_or_equal(cli_ctxt, b, bd) and
+            (overridden_fork_point(cli_ctxt, bd) or commit_sha_by_revision(cli_ctxt, b) == fork_point(cli_ctxt, bd, use_overrides=False)))
 
     candidate_downstreams = list(filter(connected_with_green_edge, down_branches[b]))
     if not candidate_downstreams:
@@ -2281,7 +2281,7 @@ def handle_untracked_branch(cli_ctxt: CommandLineContext, new_remote: str, b: st
             raise StopTraversal
         return
 
-    relation: int = get_relation_to_remote_counterpart(cli_ctxt, b, rb)
+    relation: int = relation_to_remote_counterpart(cli_ctxt, b, rb)
 
     message: str = {
         IN_SYNC_WITH_REMOTE:
@@ -2395,8 +2395,8 @@ def traverse(cli_ctxt: CommandLineContext) -> None:
     for b in itertools.dropwhile(lambda x: x != cb, managed_branches):
         u = up_branch.get(b)
 
-        needs_slide_out: bool = is_merged_to_upstream(cli_ctxt, b)
-        s, remote = get_strict_remote_sync_status(cli_ctxt, b)
+        needs_slide_out: bool = merged_to_upstream(cli_ctxt, b)
+        s, remote = strict_remote_sync_status(cli_ctxt, b)
         statuses_to_sync = (UNTRACKED,
                             AHEAD_OF_REMOTE,
                             BEHIND_REMOTE,
@@ -2413,9 +2413,9 @@ def traverse(cli_ctxt: CommandLineContext) -> None:
             # neither rebase nor merge will be suggested in such case anyway.
             needs_parent_sync = False
         elif cli_ctxt.opt_merge:
-            needs_parent_sync = bool(u and not is_ancestor_or_equal(cli_ctxt, u, b))
+            needs_parent_sync = bool(u and not ancestor_or_equal(cli_ctxt, u, b))
         else:  # using rebase
-            needs_parent_sync = bool(u and not (is_ancestor_or_equal(cli_ctxt, u, b) and commit_sha_by_revision(cli_ctxt, u) == fork_point(cli_ctxt, b, use_overrides=True)))
+            needs_parent_sync = bool(u and not (ancestor_or_equal(cli_ctxt, u, b) and commit_sha_by_revision(cli_ctxt, u) == fork_point(cli_ctxt, b, use_overrides=True)))
 
         if b != cb and (needs_slide_out or needs_parent_sync or needs_remote_sync):
             print_new_line(False)
@@ -2476,7 +2476,7 @@ def traverse(cli_ctxt: CommandLineContext) -> None:
                     # As for now, we're not aware of any case when merge can be still in progress after 'git merge' returns zero,
                     # at least not with the options that git-machete passes to merge; this happens though in case of 'git merge --no-commit' (which we don't ever invoke).
                     # It's still better, however, to be on the safe side.
-                    if is_merge_in_progress(cli_ctxt):
+                    if merge_in_progress(cli_ctxt):
                         sys.stdout.write("\nMerge in progress; stopping the traversal\n")
                         return
                 else:
@@ -2494,7 +2494,7 @@ def traverse(cli_ctxt: CommandLineContext) -> None:
                     return
 
                 flush_caches()
-                s, remote = get_strict_remote_sync_status(cli_ctxt, b)
+                s, remote = strict_remote_sync_status(cli_ctxt, b)
                 needs_remote_sync = s in statuses_to_sync
             elif ans in ('q', 'quit'):
                 return
@@ -2639,11 +2639,11 @@ def status(cli_ctxt: CommandLineContext, warn_on_yellow_edges: bool) -> None:
     # in order to render the leading parts of lines properly.
     for b in up_branch:
         u = up_branch[b]
-        if is_merged_to(cli_ctxt, b, u):
+        if merged_to(cli_ctxt, b, u):
             edge_color[b] = DIM
-        elif not is_ancestor_or_equal(cli_ctxt, u, b):
+        elif not ancestor_or_equal(cli_ctxt, u, b):
             edge_color[b] = RED
-        elif get_overridden_fork_point(cli_ctxt, b) or commit_sha_by_revision(cli_ctxt, u) == fp_sha(b):
+        elif overridden_fork_point(cli_ctxt, b) or commit_sha_by_revision(cli_ctxt, u) == fp_sha(b):
             edge_color[b] = GREEN
         else:
             edge_color[b] = YELLOW
@@ -2651,7 +2651,7 @@ def status(cli_ctxt: CommandLineContext, warn_on_yellow_edges: bool) -> None:
     crb = currently_rebased_branch_or_none(cli_ctxt)
     ccob = currently_checked_out_branch_or_none(cli_ctxt)
 
-    hook_path = get_hook_path(cli_ctxt, "machete-status-branch")
+    hook_path = hook_path(cli_ctxt, "machete-status-branch")
     hook_executable = check_hook_executable(cli_ctxt, hook_path)
 
     def print_line_prefix(b_: str, suffix: str) -> None:
@@ -2695,13 +2695,13 @@ def status(cli_ctxt: CommandLineContext, warn_on_yellow_edges: bool) -> None:
         if b in (ccob, crb):  # i.e. if b is the current branch (checked out or being rebased)
             if b == crb:
                 prefix = "REBASING "
-            elif is_am_in_progress(cli_ctxt):
+            elif am_in_progress(cli_ctxt):
                 prefix = "GIT AM IN PROGRESS "
-            elif is_cherry_pick_in_progress(cli_ctxt):
+            elif cherry_pick_in_progress(cli_ctxt):
                 prefix = "CHERRY-PICKING "
-            elif is_merge_in_progress(cli_ctxt):
+            elif merge_in_progress(cli_ctxt):
                 prefix = "MERGING "
-            elif is_revert_in_progress(cli_ctxt):
+            elif revert_in_progress(cli_ctxt):
                 prefix = "REVERTING "
             else:
                 prefix = ""
@@ -2711,7 +2711,7 @@ def status(cli_ctxt: CommandLineContext, warn_on_yellow_edges: bool) -> None:
 
         anno: str = f"  {dim(annotations[b])}" if b in annotations else ""
 
-        s, remote = get_combined_remote_sync_status(cli_ctxt, b)
+        s, remote = combined_remote_sync_status(cli_ctxt, b)
         sync_status = {
             NO_REMOTES: "",
             UNTRACKED: colored(" (untracked)", ORANGE),
@@ -2726,7 +2726,7 @@ def status(cli_ctxt: CommandLineContext, warn_on_yellow_edges: bool) -> None:
         if hook_executable:
             debug(cli_ctxt, "status()", f"running machete-status-branch hook ({hook_path}) for branch {b}")
             hook_env = dict(os.environ, ASCII_ONLY=str(ascii_only).lower())
-            status_code, stdout, stderr = popen_cmd(cli_ctxt, hook_path, b, cwd=get_root_dir(cli_ctxt), env=hook_env)
+            status_code, stdout, stderr = popen_cmd(cli_ctxt, hook_path, b, cwd=root_dir(cli_ctxt), env=hook_env)
             if status_code == 0:
                 if not stdout.isspace():
                     hook_output = f"  {stdout.rstrip()}"
@@ -3638,7 +3638,7 @@ def launch(orig_args: List[str]) -> None:
         args = cmd_and_args[1:]
 
         if cmd != "help":
-            definition_file_path = get_git_subpath(cli_ctxt, "machete")
+            definition_file_path = git_subpath(cli_ctxt, "machete")
             if cmd != "discover":
                 if not os.path.exists(definition_file_path):
                     # We're opening in "append" and not "write" mode to avoid a race condition:
