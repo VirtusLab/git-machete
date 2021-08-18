@@ -1669,7 +1669,6 @@ class MacheteClient:
             if abort_on_quit:
                 raise StopTraversal
 
-
     def __handle_diverged_and_older_state(self, b: str) -> None:
         self.__print_new_line(False)
         rb = self.__git.strict_counterpart_for_fetching_of_branch(b)
