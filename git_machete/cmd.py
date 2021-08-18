@@ -1683,10 +1683,10 @@ class MacheteClient:
         if ans in ('y', 'yes', 'yq'):
             self.__git.reset_keep(rb)
             if ans == 'yq':
-                raise MacheteException('Process interrupted.')
+                raise StopTraversal
             self.flush_caches()
         elif ans in ('q', 'quit'):
-            raise MacheteException('Process interrupted.')
+            raise StopTraversal
 
     def __handle_behind_state(self, b: str, remote: str) -> None:
         rb = self.__git.strict_counterpart_for_fetching_of_branch(b)
@@ -1696,11 +1696,11 @@ class MacheteClient:
         if ans in ('y', 'yes', 'yq'):
             self.__git.pull_ff_only(remote, rb)
             if ans == 'yq':
-                raise MacheteException('Process interrupted.')
+                raise StopTraversal
             self.flush_caches()
             print("")
         elif ans in ('n', 'N', 'q', 'quit'):
-            raise MacheteException('Process interrupted.')
+            raise StopTraversal
 
     def __sync_before_creating_pr(self) -> None:
 
