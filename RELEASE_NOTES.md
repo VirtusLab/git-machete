@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.4.0
+
+- added: `github` command with `anno-prs`, `create-pr` and `retarget-pr` subcommands
+
 ## New in git-machete 3.3.1
 
 - removed: releases to Nixpkgs no longer happen directly from our CI pipeline

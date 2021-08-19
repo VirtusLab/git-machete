@@ -21,10 +21,10 @@ Deprecated commands are excluded.
 
 | Property                                                          | Commands                                                                                           |
 | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| can accept interactive input on stdin                             | `add`, `advance`, `delete-unmanaged`, `discover`, `go`, `traverse`, `update`                       |
-| can display status (and run `machete-status-branch` hook)         | `discover`, `status`, `traverse`                                                                   |
-| can modify the .git/machete file                                  | `add`, `advance`, `anno`, `discover`, `edit`, `slide-out`, `traverse`                              |
-| can modify the git repository (excluding .git/machete)            | `add`, `advance`, `delete-unmanaged`, `go`, `reapply`, `slide-out`, `squash`, `traverse`, `update` |
+| can accept interactive input on stdin                             | `add`, `advance`, `delete-unmanaged`, `discover`,`github` (\*\*\*\*), `go`, `traverse`, `update`     |
+| can display status (and run `machete-status-branch` hook)         | `discover`, `github` (\*\*\*\*), `status`, `traverse`                                                 |
+| can modify the .git/machete file                                  | `add`, `advance`, `anno`, `discover`, `edit`, `github`, `slide-out`, `traverse`         |
+| can modify the git repository (excluding .git/machete)            | `add`, `advance`, `delete-unmanaged`, `github` (\*\*\*\*), `go`, `reapply`, `slide-out`, `squash`, `traverse`, `update` |
 | can run merge                                                     | `advance` (\*), `slide-out`, `traverse`, `update`                                                  |
 | can run rebase (and run `machete-pre-rebase` hook)                | `reapply` (\*\*), `slide-out`, `traverse`, `update`                                                |
 | can slide out a branch (and run `machete-post-slide-out` hook)    | `advance`, `slide-out`, `traverse`                                                                 |
@@ -36,6 +36,8 @@ Deprecated commands are excluded.
 (\*\*) `reapply` can run rebase but can't run merge since merging a branch with its own fork point is a no-op and generally doesn't make much sense.
 
 (\*\*\*) A stable output is only guaranteed for `fork-point` when invoked without any option or only with `--inferred` option.
+
+(\*\*\*\*) `github` can only display status, accept interactive mode or modify git repository when `create-pr` subcommand is passed and the current branch is untracked or ahead of its remote.
 
 
 ## Versioning

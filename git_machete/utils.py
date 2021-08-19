@@ -239,3 +239,11 @@ def warn(msg: str, apply_fmt: bool = True) -> None:
     if msg not in displayed_warnings:
         sys.stderr.write(colored("Warn: ", RED) + (fmt(msg) if apply_fmt else msg) + "\n")
         displayed_warnings.add(msg)
+
+
+def slurp_file_or_empty(path: str) -> str:
+    try:
+        with open(path, 'r') as file:
+            return file.read()
+    except IOError:
+        return ''
