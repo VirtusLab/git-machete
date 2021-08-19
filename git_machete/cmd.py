@@ -1738,6 +1738,11 @@ class MacheteClient:
                 self.__print_new_line(False)
                 ans = self.ask_if("Proceed with pull request creation?" + pretty_choices('y', 'N', 'q', 'yq'),
                                   "Proceeding with pull request creation...")
+            elif s == NO_REMOTES:
+                raise MacheteException("Could not create pull request - there is no remote repository!")
+            else:
+                ans = 'y'  # only IN SYNC status is left
+
             if ans in ('y', 'yes', 'yq'):
                 return
             elif ans in ('N', 'n', 'q', 'quit'):

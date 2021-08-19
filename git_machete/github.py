@@ -125,7 +125,7 @@ def __fire_github_api_request(method: str, url: str, token: Optional[str], reque
     except HTTPError as err:
         if err.code == http.HTTPStatus.UNPROCESSABLE_ENTITY:
             raise UnprocessableEntityHTTPError(str(err.reason))
-        else:
+        elif err.code in (http.HTTPStatus.UNAUTHORIZED, http.HTTPStatus.FORBIDDEN):
             first_line = fmt(f'GitHub API returned {err.code} HTTP status with error message: `{err.reason}`\n')
             if token:
                 raise MacheteException(first_line + fmt(f'Make sure that the token provided in `gh auth status` or `~/.config/hub` or <b>{GITHUB_TOKEN_ENV_VAR}</b> is valid and allows for access to `{method.upper()}` https://{host}{url}`.'))
@@ -133,6 +133,9 @@ def __fire_github_api_request(method: str, url: str, token: Optional[str], reque
                 raise MacheteException(
                     first_line + fmt(f'This repository might be private. Provide a GitHub API token with `repo` access via `gh` or `hub` or <b>{GITHUB_TOKEN_ENV_VAR}</b> env var.\n'
                                      'Visit `https://github.com/settings/tokens` to generate a new one.'))
+        else:
+            first_line = fmt(f'GitHub API returned {err.code} HTTP status with error message: `{err.reason}`\n')
+            raise MacheteException(first_line + "Please open an issue regaring this topic under link: https://github.com/VirtusLab/git-machete/issues/new")
     except OSError as e:
         raise MacheteException(f'Could not connect to {host}: {e}')
 
