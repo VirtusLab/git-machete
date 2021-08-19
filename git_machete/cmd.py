@@ -89,7 +89,7 @@ class MacheteClient:
 
     def read_definition_file(self, verify_branches: bool = True) -> None:
         with open(self._definition_file_path) as f:
-            lines: List[str] = [line.rstrip() for line in f.readlines() if not line.isspace()]
+            lines: List[str] = [line.rstrip() for line in f.readlines()]
 
         at_depth = {}
         last_depth = -1
@@ -98,6 +98,8 @@ class MacheteClient:
 
         invalid_branches: List[str] = []
         for index, line in enumerate(lines):
+            if line == "" or line.isspace():
+                continue
             prefix = "".join(itertools.takewhile(str.isspace, line))
             if prefix and not self.__indent:
                 self.__indent = prefix
