@@ -135,7 +135,7 @@ def __fire_github_api_request(method: str, url: str, token: Optional[str], reque
                                      'Visit `https://github.com/settings/tokens` to generate a new one.'))
         else:
             first_line = fmt(f'GitHub API returned {err.code} HTTP status with error message: `{err.reason}`\n')
-            raise MacheteException(first_line + "Please open an issue regaring this topic under link: https://github.com/VirtusLab/git-machete/issues/new")
+            raise MacheteException(first_line + "Please open an issue regarding this topic under link: https://github.com/VirtusLab/git-machete/issues/new")
     except OSError as e:
         raise MacheteException(f'Could not connect to {host}: {e}')
 

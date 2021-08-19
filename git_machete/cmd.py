@@ -1537,7 +1537,7 @@ class MacheteClient:
 
         if pr.base != new_base:
             set_base_of_pull_request(org, repo, pr.number, base=new_base)
-            print(fmt(f'The base branch of PR #{pr.number} is switched to `{new_base}`'))
+            print(fmt(f'The base branch of PR #{pr.number} has been switched to `{new_base}`'))
         else:
             print(fmt(f'The base branch of PR #{pr.number} is already `{new_base}`'))
 
@@ -1695,7 +1695,7 @@ class MacheteClient:
                 raise StopTraversal
             self.flush_caches()
             print("")
-        elif ans in ('n', 'N', 'q', 'quit'):
+        elif ans in ('n', 'q', 'quit'):
             raise StopTraversal
 
     def __sync_before_creating_pr(self) -> None:
@@ -1704,9 +1704,7 @@ class MacheteClient:
         self.__empty_line_status = True
 
         cb = self.__git.current_branch()
-        try:
-            self.expect_in_managed_branches(cb)
-        except MacheteException:
+        if cb not in self.managed_branches:
             self.add(cb)
 
         if self.__is_merged_to_upstream(cb):
@@ -1739,13 +1737,13 @@ class MacheteClient:
                 ans = self.ask_if("Proceed with pull request creation?" + pretty_choices('y', 'N', 'q', 'yq'),
                                   "Proceeding with pull request creation...")
             elif s == NO_REMOTES:
-                raise MacheteException("Could not create pull request - there is no remote repository!")
+                raise MacheteException("Could not create pull request - there are no remote repositories!")
             else:
                 ans = 'y'  # only IN SYNC status is left
 
             if ans in ('y', 'yes', 'yq'):
                 return
-            elif ans in ('N', 'n', 'q', 'quit'):
+            elif ans in ('n', 'q', 'quit'):
                 raise MacheteException('Pull request creation interrupted.')
 
 
@@ -2083,7 +2081,7 @@ def launch(orig_args: List[str]) -> None:
                 machete_client.expect_in_managed_branches(cb)
                 machete_client.retarget_github_pr(cb)
             else:
-                raise MacheteException(f"`gh` requires a subcommand: one of `{github_allowed_subcommands}`")
+                raise MacheteException(f"`github` requires a subcommand: one of `{github_allowed_subcommands}`")
         elif cmd == "help":
             param = check_optional_param(parse_options(args))
             # No need to read definition file.

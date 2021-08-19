@@ -21,7 +21,7 @@ class UnprocessableEntityHTTPError(Exception):
     or creating a pull request for a branch that already has a PR.
     """
     def __init__(self, msg: str) -> None:
-        self.msg: str = msg + "\nPlease open an issue regaring this topic under link: https://github.com/VirtusLab/git-machete/issues/new"
+        self.msg: str = msg + "\nPlease open an issue regarding this topic under link: https://github.com/VirtusLab/git-machete/issues/new"
 
     def __str__(self) -> str:
         return str(self.msg)
