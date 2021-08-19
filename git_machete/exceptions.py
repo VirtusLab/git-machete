@@ -1,9 +1,16 @@
+import sys
+
 from git_machete import utils
 
 
 class MacheteException(Exception):
-    def __init__(self, msg: str, apply_fmt: bool = True) -> None:
+    def __init__(self, msg: str, apply_fmt: bool = True, verbose: bool = True) -> None:
         self.parameter = utils.fmt(msg) if apply_fmt else msg
+        if not verbose:
+            sys.tracebacklimit = 0
+        else:
+            if hasattr(sys, 'tracebacklimit'):
+                del sys.tracebacklimit
 
     def __str__(self) -> str:
         return str(self.parameter)
