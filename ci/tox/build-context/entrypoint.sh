@@ -7,8 +7,6 @@
 
 set -e -u -x
 
-$PYTHON -m pip install --user tox
-
 if [[ $CHECK_COVERAGE = true ]]; then
   TOX_ENV_LIST="pep8,py${PYTHON_VERSION/./},coverage"
 else
