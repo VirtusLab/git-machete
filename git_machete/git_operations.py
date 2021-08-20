@@ -111,7 +111,7 @@ class GitContext:
             try:
                 self.root_dir = self.popen_git("rev-parse", "--show-toplevel").strip()
             except MacheteException:
-                raise MacheteException("Not a git repository", verbose=False)
+                raise MacheteException("Not a git repository")
         return self.root_dir
 
     def __get_git_dir(self) -> str:
@@ -119,7 +119,7 @@ class GitContext:
             try:
                 self.git_dir = self.popen_git("rev-parse", "--git-dir").strip()
             except MacheteException:
-                raise MacheteException("Not a git repository", verbose=False)
+                raise MacheteException("Not a git repository")
         return self.git_dir
 
     def get_git_subpath(self, *fragments: str) -> str:

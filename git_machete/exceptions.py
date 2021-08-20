@@ -4,7 +4,7 @@ from git_machete import utils
 
 
 class MacheteException(Exception):
-    def __init__(self, msg: str, apply_fmt: bool = True, verbose: bool = True) -> None:
+    def __init__(self, msg: str, apply_fmt: bool = True, verbose: bool = False) -> None:
         self.parameter = utils.fmt(msg) if apply_fmt else msg
         if not verbose:
             sys.tracebacklimit = 0
