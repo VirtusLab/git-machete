@@ -89,7 +89,9 @@ class GitContext:
                     if name != "$" + git_machete_editor_var and self.get_config_or_none('advice.macheteEditorSelection') != 'false':
                         sample_alternative = 'nano' if editor.startswith('vi') else 'vi'
                         sys.stderr.write(
-                            fmt(f"Opening <b>{editor_repr}</b>.\n", f"To override this choice, use <b>{git_machete_editor_var}</b> env var, e.g. `export {git_machete_editor_var}={sample_alternative}`.\n\n", "See `git machete help edit` and `git machete edit --debug` for more details.\n\nUse `git config --global advice.macheteEditorSelection false` to suppress this message.\n"))
+                            fmt(f"Opening <b>{editor_repr}</b>.\n",
+                                f"To override this choice, use <b>{git_machete_editor_var}</b> env var, e.g. `export {git_machete_editor_var}={sample_alternative}`.\n\n",
+                                "See `git machete help edit` and `git machete edit --debug` for more details.\n\nUse `git config --global advice.macheteEditorSelection false` to suppress this message.\n"))
                     return editor
 
         # This case is extremely unlikely on a modern Unix-like system.
