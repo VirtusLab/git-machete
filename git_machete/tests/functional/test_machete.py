@@ -7,7 +7,7 @@ import textwrap
 import time
 import unittest
 from contextlib import redirect_stdout
-from typing import Iterable, List
+from typing import Iterable
 
 from git_machete import cmd
 from git_machete.exceptions import MacheteException
@@ -94,7 +94,7 @@ class MacheteTester(unittest.TestCase):
             return out.getvalue()
 
     @staticmethod
-    def edit_definition_file(new_body: List[str]) -> None:
+    def rewrite_definition_file(new_body: str) -> None:
         definition_file_path = git.get_git_subpath("machete")
         with open(os.path.join(os.getcwd(), definition_file_path), 'w') as def_file:
             def_file.writelines(new_body)
@@ -183,13 +183,19 @@ class MacheteTester(unittest.TestCase):
         )
 
     def test_branch_reappers_in_definition(self) -> None:
-        body: List[str] = ['master\n', '    develop\n', '    \n', '    \n', 'develop\n']
+        body: str = \
+            """master
+                develop
+                
+                
+                develop
+            """
         expected_error_msg: str = '.git/machete, line 5: branch `develop` re-appears in the tree definition. Edit the definition file manually with `git machete edit`'
 
         self.repo_sandbox.new_branch("root")
-        self.edit_definition_file(body)
+        self.rewrite_definition_file(body)
 
-        machete_client = cmd.MacheteClient(cli_opts, git)  # Only to workaround sys.exit while calling launch(['status])
+        machete_client = cmd.MacheteClient(cli_opts, git)  # Only to workaround sys.exit while calling launch(['status'])
         try:
             machete_client.read_definition_file()
         except MacheteException as e:
