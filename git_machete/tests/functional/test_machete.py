@@ -185,10 +185,10 @@ class MacheteTester(unittest.TestCase):
     def test_branch_reappers_in_definition(self) -> None:
         body: str = \
             """master
-                develop
-                
-                
-                develop
+            \tdevelop
+            \t
+            \t
+            develop
             """
         expected_error_msg: str = '.git/machete, line 5: branch `develop` re-appears in the tree definition. Edit the definition file manually with `git machete edit`'
 
