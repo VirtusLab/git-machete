@@ -27,6 +27,11 @@ ENV PYTHON_VERSION=${python_version}
 ENV PYTHON=python${python_version}
 RUN apk add --no-cache gcc musl-dev # both packages are required to install mypy
 
+# Pass build argument to CHECK_COVERAGE environment variable that is used to
+# determine tox environment list in 'entrypoint.sh'.
+ARG check_coverage
+ENV CHECK_COVERAGE=${check_coverage}
+
 ARG user_id
 ARG group_id
 RUN set -x \
