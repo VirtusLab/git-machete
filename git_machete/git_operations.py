@@ -514,7 +514,7 @@ class GitContext:
     # Determine if later_revision, or any ancestors of later_revision that are NOT ancestors of earlier_revision,
     # contain a tree with identical contents to earlier_revision, indicating that
     # later_revision contains a rebase or squash merge of earlier_revision.
-    def does_contains_equivalent_tree(
+    def does_contain_equivalent_tree(
             self,
             earlier_revision: str,
             later_revision: str,
