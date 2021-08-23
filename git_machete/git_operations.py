@@ -6,7 +6,7 @@ import sys
 
 from git_machete.options import CommandLineOptions
 from git_machete.exceptions import MacheteException
-from git_machete.utils import get_colored, debug, get_fmt
+from git_machete.utils import colored, debug, fmt
 from git_machete import utils
 from git_machete.constants import AHEAD_OF_REMOTE, BEHIND_REMOTE, DIVERGED_FROM_AND_NEWER_THAN_REMOTE, \
     DIVERGED_FROM_AND_OLDER_THAN_REMOTE, IN_SYNC_WITH_REMOTE, \
@@ -48,11 +48,11 @@ class GitContext:
 
     @staticmethod
     def get_popen_git(git_cmd: str, *args: str, **kwargs: Dict[str, str]) -> str:
-        exit_code, stdout, stderr = utils.get_popen_cmd("git", git_cmd, *args, **kwargs)
+        exit_code, stdout, stderr = utils.popen_cmd("git", git_cmd, *args, **kwargs)
         if not kwargs.get("allow_non_zero") and exit_code != 0:
-            exit_code_msg: str = get_fmt(f"`{utils.get_cmd_shell_repr('git', git_cmd, *args, **kwargs)}` returned {exit_code}\n")
-            stdout_msg: str = f"\n{utils.get_bold('stdout')}:\n{utils.get_dim(stdout)}" if stdout else ""
-            stderr_msg: str = f"\n{utils.get_bold('stderr')}:\n{utils.get_dim(stderr)}" if stderr else ""
+            exit_code_msg: str = fmt(f"`{utils.get_cmd_shell_repr('git', git_cmd, *args, **kwargs)}` returned {exit_code}\n")
+            stdout_msg: str = f"\n{utils.bold('stdout')}:\n{utils.dim(stdout)}" if stdout else ""
+            stderr_msg: str = f"\n{utils.bold('stderr')}:\n{utils.dim(stderr)}" if stderr else ""
             # Not applying the formatter to avoid transforming whatever characters might be in the output of the command.
             raise MacheteException(exit_code_msg + stdout_msg + stderr_msg, apply_fmt=False)
         return stdout
@@ -89,7 +89,7 @@ class GitContext:
                     if name != "$" + git_machete_editor_var and self.get_config_or_none('advice.macheteEditorSelection') != 'false':
                         sample_alternative = 'nano' if editor.startswith('vi') else 'vi'
                         sys.stderr.write(
-                            get_fmt(f"Opening <b>{editor_repr}</b>.\n", f"To override this choice, use <b>{git_machete_editor_var}</b> env var, e.g. `export {git_machete_editor_var}={sample_alternative}`.\n\n", "See `git machete help edit` and `git machete edit --debug` for more details.\n\nUse `git config --global advice.macheteEditorSelection false` to suppress this message.\n"))
+                            fmt(f"Opening <b>{editor_repr}</b>.\n", f"To override this choice, use <b>{git_machete_editor_var}</b> env var, e.g. `export {git_machete_editor_var}={sample_alternative}`.\n\n", "See `git machete help edit` and `git machete edit --debug` for more details.\n\nUse `git config --global advice.macheteEditorSelection false` to suppress this message.\n"))
                     return editor
 
         # This case is extremely unlikely on a modern Unix-like system.
@@ -123,7 +123,7 @@ class GitContext:
     def get_git_subpath(self, *fragments: str) -> str:
         return os.path.join(self.__get_git_dir(), *fragments)
 
-    def get_parse_git_timespec_to_unix_timestamp(self, date: str) -> int:
+    def get_git_parse_timespec_to_unix_timestamp(self, date: str) -> int:
         try:
             return int(self.get_popen_git("rev-parse", "--since=" + date).replace("--max-age=", "").strip())
         except (MacheteException, ValueError):
@@ -581,9 +581,9 @@ class GitContext:
             if advice_ignored_hook != 'false':  # both empty and "true" is okay
                 # The [33m color must be used to keep consistent with how git colors this advice for its built-in hooks.
                 sys.stderr.write(
-                    get_colored(f"hint: The '{hook_path}' hook was ignored because it's not set as executable.", YELLOW) + "\n")
+                    colored(f"hint: The '{hook_path}' hook was ignored because it's not set as executable.", YELLOW) + "\n")
                 sys.stderr.write(
-                    get_colored("hint: You can disable this warning with `git config advice.ignoredHook false`.", YELLOW) + "\n")
+                    colored("hint: You can disable this warning with `git config advice.ignoredHook false`.", YELLOW) + "\n")
             return False
         else:
             return True

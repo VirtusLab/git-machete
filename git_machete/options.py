@@ -11,6 +11,7 @@ class CommandLineOptions:
         self.opt_checked_out_since: Optional[str] = None
         self.opt_color: str = "auto"
         self.opt_down_fork_point: Optional[str] = None
+        self.opt_draft: bool = False
         self.opt_fetch: bool = False
         self.opt_fork_point: Optional[str] = None
         self.opt_inferred: bool = False

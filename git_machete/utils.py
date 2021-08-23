@@ -20,15 +20,15 @@ current_directory_confirmed_to_exist: bool = False
 ascii_only: bool = False
 
 
-def get_excluding(iterable: Iterable[T], s: Iterable[T]) -> List[T]:
+def excluding(iterable: Iterable[T], s: Iterable[T]) -> List[T]:
     return list(filter(lambda x: x not in s, iterable))
 
 
-def get_flat_map(func: Callable[[T], List[T]], iterable: Iterable[T]) -> List[T]:
+def flat_map(func: Callable[[T], List[T]], iterable: Iterable[T]) -> List[T]:
     return sum(map(func, iterable), [])
 
 
-def get_map_truthy_only(func: Callable[[T], Optional[T]], iterable: Iterable[T]) -> List[T]:
+def map_truthy_only(func: Callable[[T], Optional[T]], iterable: Iterable[T]) -> List[T]:
     return list(filter(None, map(func, iterable)))
 
 
@@ -38,7 +38,7 @@ def get_non_empty_lines(s: str) -> List[str]:
 
 # Converts a lambda accepting N arguments to a lambda accepting one argument, an N-element tuple.
 # Name matching Scala's `tupled` on `FunctionX`.
-def get_tupled(f: Callable[..., T]) -> Callable[[Any], T]:
+def tupled(f: Callable[..., T]) -> Callable[[Any], T]:
     return lambda tple: f(*tple)
 
 
@@ -47,7 +47,7 @@ def get_second(pair: Tuple[str, str]) -> str:
     return b
 
 
-def is_directory_exists(path: str) -> bool:
+def does_directory_exists(path: str) -> bool:
     try:
         # Note that os.path.isdir itself (without os.path.abspath) isn't reliable
         # since it returns a false positive (True) for the current directory when if it doesn't exist
@@ -87,15 +87,15 @@ def find_executable(executable: str) -> Optional[str]:
     return None
 
 
-def get_bold(s: str) -> str:
+def bold(s: str) -> str:
     return s if ascii_only or not s else BOLD + s + ENDC
 
 
-def get_dim(s: str) -> str:
+def dim(s: str) -> str:
     return s if ascii_only or not s else DIM + s + ENDC
 
 
-def get_underline(s: str, star_if_ascii_only: bool = False) -> str:
+def underline(s: str, star_if_ascii_only: bool = False) -> str:
     if s and not ascii_only:
         return UNDERLINE + s + ENDC
     elif s and star_if_ascii_only:
@@ -104,22 +104,22 @@ def get_underline(s: str, star_if_ascii_only: bool = False) -> str:
         return s
 
 
-def get_colored(s: str, color: str) -> str:
+def colored(s: str, color: str) -> str:
     return s if ascii_only or not s else color + s + ENDC
 
 
 fmt_transformations: List[Callable[[str], str]] = [
-    lambda x: re.sub('<b>(.*?)</b>', get_bold(r"\1"), x, flags=re.DOTALL),
-    lambda x: re.sub('<u>(.*?)</u>', get_underline(r"\1"), x, flags=re.DOTALL),
-    lambda x: re.sub('<dim>(.*?)</dim>', get_dim(r"\1"), x, flags=re.DOTALL),
-    lambda x: re.sub('<red>(.*?)</red>', get_colored(r"\1", RED), x, flags=re.DOTALL),
-    lambda x: re.sub('<yellow>(.*?)</yellow>', get_colored(r"\1", YELLOW), x, flags=re.DOTALL),
-    lambda x: re.sub('<green>(.*?)</green>', get_colored(r"\1", GREEN), x, flags=re.DOTALL),
+    lambda x: re.sub('<b>(.*?)</b>', bold(r"\1"), x, flags=re.DOTALL),
+    lambda x: re.sub('<u>(.*?)</u>', underline(r"\1"), x, flags=re.DOTALL),
+    lambda x: re.sub('<dim>(.*?)</dim>', dim(r"\1"), x, flags=re.DOTALL),
+    lambda x: re.sub('<red>(.*?)</red>', colored(r"\1", RED), x, flags=re.DOTALL),
+    lambda x: re.sub('<yellow>(.*?)</yellow>', colored(r"\1", YELLOW), x, flags=re.DOTALL),
+    lambda x: re.sub('<green>(.*?)</green>', colored(r"\1", GREEN), x, flags=re.DOTALL),
     lambda x: re.sub('`(.*?)`', r"`\1`" if ascii_only else UNDERLINE + r"\1" + ENDC, x),
 ]
 
 
-def get_fmt(*parts: str) -> str:
+def fmt(*parts: str) -> str:
     result = ''.join(parts)
     for f in fmt_transformations:
         result = f(result)
@@ -139,19 +139,19 @@ def get_pretty_choices(*choices: str) -> str:
         if not c:
             return ''
         elif c.lower() == 'y':
-            return get_colored(c, GREEN)
+            return colored(c, GREEN)
         elif c.lower() == 'yq':
-            return get_colored(c[0], GREEN) + get_colored(c[1], RED)
+            return colored(c[0], GREEN) + colored(c[1], RED)
         elif c.lower() in ('n', 'q'):
-            return get_colored(c, RED)
+            return colored(c, RED)
         else:
-            return get_colored(c, ORANGE)
-    return f" ({', '.join(get_map_truthy_only(format_choice, choices))}) "
+            return colored(c, ORANGE)
+    return f" ({', '.join(map_truthy_only(format_choice, choices))}) "
 
 
 def debug(hdr: str, msg: str) -> None:
     if CommandLineOptions.opt_debug:
-        sys.stderr.write(f"{get_bold(hdr)}: {get_dim(msg)}\n")
+        sys.stderr.write(f"{bold(hdr)}: {dim(msg)}\n")
 
 
 def run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
@@ -159,7 +159,7 @@ def run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
 
     flat_cmd: str = get_cmd_shell_repr(cmd, *args, **kwargs)
     if CommandLineOptions.opt_debug:
-        sys.stderr.write(get_bold(f">>> {flat_cmd}") + "\n")
+        sys.stderr.write(bold(f">>> {flat_cmd}") + "\n")
     elif CommandLineOptions.opt_verbose:
         sys.stderr.write(flat_cmd + "\n")
 
@@ -171,7 +171,7 @@ def run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
     mark_current_directory_as_possibly_non_existent()
 
     if CommandLineOptions.opt_debug and exit_code != 0:
-        sys.stderr.write(get_dim(f"<exit code: {exit_code}>\n\n"))
+        sys.stderr.write(dim(f"<exit code: {exit_code}>\n\n"))
     return exit_code
 
 
@@ -195,12 +195,12 @@ def chdir_upwards_until_current_directory_exists() -> None:
         current_directory_confirmed_to_exist = True
 
 
-def get_popen_cmd(cmd: str, *args: str, **kwargs: Any) -> Tuple[int, str, str]:
+def popen_cmd(cmd: str, *args: str, **kwargs: Any) -> Tuple[int, str, str]:
     chdir_upwards_until_current_directory_exists()
 
     flat_cmd = get_cmd_shell_repr(cmd, *args, **kwargs)
     if CommandLineOptions.opt_debug:
-        sys.stderr.write(get_bold(f">>> {flat_cmd}") + "\n")
+        sys.stderr.write(bold(f">>> {flat_cmd}") + "\n")
     elif CommandLineOptions.opt_verbose:
         sys.stderr.write(flat_cmd + "\n")
 
@@ -212,11 +212,11 @@ def get_popen_cmd(cmd: str, *args: str, **kwargs: Any) -> Tuple[int, str, str]:
 
     if CommandLineOptions.opt_debug:
         if exit_code != 0:
-            sys.stderr.write(get_colored(f"<exit code: {exit_code}>\n\n", RED))
+            sys.stderr.write(colored(f"<exit code: {exit_code}>\n\n", RED))
         if stdout:
-            sys.stderr.write(f"{get_dim('<stdout>:')}\n{get_dim(stdout)}\n")
+            sys.stderr.write(f"{dim('<stdout>:')}\n{dim(stdout)}\n")
         if stderr:
-            sys.stderr.write(f"{get_dim('<stderr>:')}\n{get_colored(stderr, RED)}\n")
+            sys.stderr.write(f"{dim('<stderr>:')}\n{colored(stderr, RED)}\n")
 
     return exit_code, stdout, stderr
 
@@ -237,5 +237,13 @@ def get_cmd_shell_repr(cmd: str, *args: str, **kwargs: Dict[str, str]) -> str:
 
 def warn(msg: str, apply_fmt: bool = True) -> None:
     if msg not in displayed_warnings:
-        sys.stderr.write(get_colored("Warn: ", RED) + (get_fmt(msg) if apply_fmt else msg) + "\n")
+        sys.stderr.write(colored("Warn: ", RED) + (fmt(msg) if apply_fmt else msg) + "\n")
         displayed_warnings.add(msg)
+
+
+def slurp_file_or_empty(path: str) -> str:
+    try:
+        with open(path, 'r') as file:
+            return file.read()
+    except IOError:
+        return ''
