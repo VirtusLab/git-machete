@@ -1483,7 +1483,7 @@ class MacheteClient:
             # In the default mode.
             # If there is a commit in target with an identical tree state to b,
             # then b may be squash or rebase merged into target.
-            return self.__git.is_contains_equivalent_tree(b, target)
+            return self.__git.does_contains_equivalent_tree(b, target)
 
     def ask_if(self, msg: str, opt_yes_msg: Optional[str],
                override_answer: Optional[str] = None,
