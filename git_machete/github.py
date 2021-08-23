@@ -44,7 +44,7 @@ def __parse_pr_json(pr_json: Any) -> GitHubPullRequest:
     return GitHubPullRequest(int(pr_json['number']), pr_json['user']['login'], pr_json['base']['ref'], pr_json['head']['ref'], pr_json['html_url'])
 
 
-def __token_from_gh() -> Optional[str]:
+def __get_token_from_gh() -> Optional[str]:
 
     # Abort without error if `gh` isn't available
     gh = shutil.which('gh')
@@ -79,7 +79,7 @@ def __token_from_gh() -> Optional[str]:
     return None
 
 
-def __token_from_hub() -> Optional[str]:
+def _get_token_from_hub() -> Optional[str]:
     home_path: str = str(Path.home())
     config_hub_path: str = os.path.join(home_path, ".config", "hub")
     if os.path.isfile(config_hub_path):
@@ -98,12 +98,12 @@ def __token_from_hub() -> Optional[str]:
     return None
 
 
-def __token_from_env() -> Optional[str]:
+def _get_token_from_env() -> Optional[str]:
     return os.environ.get(GITHUB_TOKEN_ENV_VAR)
 
 
-def __github_token() -> Optional[str]:
-    return __token_from_env() or __token_from_gh() or __token_from_hub()
+def _get_github_token() -> Optional[str]:
+    return _get_token_from_env() or __get_token_from_gh() or _get_token_from_hub()
 
 
 def __fire_github_api_request(method: str, url: str, token: Optional[str], request_body: Optional[Dict[str, Any]] = None) -> Any:
@@ -148,7 +148,7 @@ def __check_pr_already_created(pull: GitHubPullRequest, pull_requests: List[GitH
 
 
 def create_pull_request(org: str, repo: str, head: str, base: str, title: str, description: str, draft: bool) -> GitHubPullRequest:
-    token: Optional[str] = __github_token()
+    token: Optional[str] = _get_token_from_env()
     request_body: Dict[str, Any] = {
         'head': head,
         'base': base,
@@ -167,7 +167,7 @@ def create_pull_request(org: str, repo: str, head: str, base: str, title: str, d
 
 
 def add_assignees_to_pull_request(org: str, repo: str, number: int, assignees: List[str]) -> None:
-    token: Optional[str] = __github_token()
+    token: Optional[str] = _get_github_token()
     request_body: Dict[str, List[str]] = {
         'assignees': assignees
     }
@@ -176,7 +176,7 @@ def add_assignees_to_pull_request(org: str, repo: str, number: int, assignees: L
 
 
 def add_reviewers_to_pull_request(org: str, repo: str, number: int, reviewers: List[str]) -> None:
-    token: Optional[str] = __github_token()
+    token: Optional[str] = _get_token_from_env()
     request_body: Dict[str, List[str]] = {
         'reviewers': reviewers
     }
@@ -184,20 +184,20 @@ def add_reviewers_to_pull_request(org: str, repo: str, number: int, reviewers: L
 
 
 def set_base_of_pull_request(org: str, repo: str, number: int, base: str) -> None:
-    token: Optional[str] = __github_token()
+    token: Optional[str] = _get_token_from_env()
     request_body: Dict[str, str] = {'base': base}
     __fire_github_api_request('PATCH', f'/repos/{org}/{repo}/pulls/{number}', token, request_body)
 
 
 def set_milestone_of_pull_request(org: str, repo: str, number: int, milestone: str) -> None:
-    token: Optional[str] = __github_token()
+    token: Optional[str] = _get_token_from_env()
     request_body: Dict[str, str] = {'milestone': milestone}
     # Setting milestone is only available via the Issues API, not PRs API.
     __fire_github_api_request('PATCH', f'/repos/{org}/{repo}/issues/{number}', token, request_body)
 
 
 def derive_pull_request_by_head(org: str, repo: str, head: str) -> Optional[GitHubPullRequest]:
-    token: Optional[str] = __github_token()
+    token: Optional[str] = _get_token_from_env()
     prs = __fire_github_api_request('GET', f'/repos/{org}/{repo}/pulls?head={org}:{head}', token)
     if len(prs) >= 1:
         return __parse_pr_json(prs[0])
@@ -206,13 +206,13 @@ def derive_pull_request_by_head(org: str, repo: str, head: str) -> Optional[GitH
 
 
 def derive_pull_requests(org: str, repo: str) -> List[GitHubPullRequest]:
-    token: Optional[str] = __github_token()
+    token: Optional[str] = _get_token_from_env()
     prs = __fire_github_api_request('GET', f'/repos/{org}/{repo}/pulls', token)
     return list(map(__parse_pr_json, prs))
 
 
 def derive_current_user_login() -> Optional[str]:
-    token: Optional[str] = __github_token()
+    token: Optional[str] = _get_token_from_env()
     if not token:
         return None
     user = __fire_github_api_request('GET', '/user', token)
@@ -223,7 +223,8 @@ def is_github_remote_url(url: str) -> bool:
     return any((re.match(pattern, url) for pattern in GITHUB_REMOTE_PATTERNS))
 
 
-def parse_github_remote_url(url: str) -> Optional[Tuple[str, str]]:
+def get_parsed_github_remote_url(url: str) -> Optional[Tuple[str, str]]:
+
     for pattern in GITHUB_REMOTE_PATTERNS:
         match = re.match(pattern, url)
         if match:

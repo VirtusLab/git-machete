@@ -32,7 +32,7 @@ def map_truthy_only(func: Callable[[T], Optional[T]], iterable: Iterable[T]) -> 
     return list(filter(None, map(func, iterable)))
 
 
-def non_empty_lines(s: str) -> List[str]:
+def get_non_empty_lines(s: str) -> List[str]:
     return list(filter(None, s.split("\n")))
 
 
@@ -47,7 +47,7 @@ def get_second(pair: Tuple[str, str]) -> str:
     return b
 
 
-def directory_exists(path: str) -> bool:
+def does_directory_exist(path: str) -> bool:
     try:
         # Note that os.path.isdir itself (without os.path.abspath) isn't reliable
         # since it returns a false positive (True) for the current directory when if it doesn't exist
@@ -56,7 +56,7 @@ def directory_exists(path: str) -> bool:
         return False
 
 
-def current_directory_or_none() -> Optional[str]:
+def get_current_directory_or_none() -> Optional[str]:
     try:
         return os.getcwd()
     except OSError:
@@ -126,15 +126,15 @@ def fmt(*parts: str) -> str:
     return result
 
 
-def vertical_bar() -> str:
+def get_vertical_bar() -> str:
     return "|" if ascii_only else u"│"
 
 
-def right_arrow() -> str:
+def get_right_arrow() -> str:
     return "->" if ascii_only else u"➔"
 
 
-def pretty_choices(*choices: str) -> str:
+def get_pretty_choices(*choices: str) -> str:
     def format_choice(c: str) -> str:
         if not c:
             return ''
@@ -157,7 +157,7 @@ def debug(hdr: str, msg: str) -> None:
 def run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
     chdir_upwards_until_current_directory_exists()
 
-    flat_cmd: str = cmd_shell_repr(cmd, *args, **kwargs)
+    flat_cmd: str = get_cmd_shell_repr(cmd, *args, **kwargs)
     if CommandLineOptions.opt_debug:
         sys.stderr.write(bold(f">>> {flat_cmd}") + "\n")
     elif CommandLineOptions.opt_verbose:
@@ -183,13 +183,13 @@ def mark_current_directory_as_possibly_non_existent() -> None:
 def chdir_upwards_until_current_directory_exists() -> None:
     global current_directory_confirmed_to_exist
     if not current_directory_confirmed_to_exist:
-        current_directory: Optional[str] = current_directory_or_none()
+        current_directory: Optional[str] = get_current_directory_or_none()
         if not current_directory:
             while not current_directory:
                 # Note: 'os.chdir' only affects the current process and its subprocesses;
                 # it doesn't propagate to the parent process (which is typically a shell).
                 os.chdir(os.path.pardir)
-                current_directory = current_directory_or_none()
+                current_directory = get_current_directory_or_none()
             debug("chdir_upwards_until_current_directory_exists()",
                   f"current directory did not exist, chdired up into {current_directory}")
         current_directory_confirmed_to_exist = True
@@ -198,7 +198,7 @@ def chdir_upwards_until_current_directory_exists() -> None:
 def popen_cmd(cmd: str, *args: str, **kwargs: Any) -> Tuple[int, str, str]:
     chdir_upwards_until_current_directory_exists()
 
-    flat_cmd = cmd_shell_repr(cmd, *args, **kwargs)
+    flat_cmd = get_cmd_shell_repr(cmd, *args, **kwargs)
     if CommandLineOptions.opt_debug:
         sys.stderr.write(bold(f">>> {flat_cmd}") + "\n")
     elif CommandLineOptions.opt_verbose:
@@ -221,7 +221,7 @@ def popen_cmd(cmd: str, *args: str, **kwargs: Any) -> Tuple[int, str, str]:
     return exit_code, stdout, stderr
 
 
-def cmd_shell_repr(cmd: str, *args: str, **kwargs: Dict[str, str]) -> str:
+def get_cmd_shell_repr(cmd: str, *args: str, **kwargs: Dict[str, str]) -> str:
     def shell_escape(arg: str) -> str:
         return arg.replace("(", "\\(") \
             .replace(")", "\\)") \
