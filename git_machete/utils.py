@@ -47,7 +47,7 @@ def get_second(pair: Tuple[str, str]) -> str:
     return b
 
 
-def does_directory_exists(path: str) -> bool:
+def does_directory_exist(path: str) -> bool:
     try:
         # Note that os.path.isdir itself (without os.path.abspath) isn't reliable
         # since it returns a false positive (True) for the current directory when if it doesn't exist
