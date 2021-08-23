@@ -47,7 +47,7 @@ class GitContext:
         return exit_code
 
     @staticmethod
-    def get_popen_git(git_cmd: str, *args: str, **kwargs: Dict[str, str]) -> str:
+    def popen_git(git_cmd: str, *args: str, **kwargs: Dict[str, str]) -> str:
         exit_code, stdout, stderr = utils.popen_cmd("git", git_cmd, *args, **kwargs)
         if not kwargs.get("allow_non_zero") and exit_code != 0:
             exit_code_msg: str = fmt(f"`{utils.get_cmd_shell_repr('git', git_cmd, *args, **kwargs)}` returned {exit_code}\n")
@@ -100,14 +100,14 @@ class GitContext:
             # We need to cut out the x.y.z part and not just take the result of 'git version' as is,
             # because the version string in certain distributions of git (esp. on OS X) has an extra suffix,
             # which is irrelevant for our purpose (checking whether certain git CLI features are available/bugs are fixed).
-            raw = re.search(r"\d+.\d+.\d+", self.get_popen_git("version")).group(0)
+            raw = re.search(r"\d+.\d+.\d+", self.popen_git("version")).group(0)
             self.git_version = tuple(map(int, raw.split(".")))
         return self.git_version
 
     def get_root_dir(self) -> str:
         if not self.root_dir:
             try:
-                self.root_dir = self.get_popen_git("rev-parse", "--show-toplevel").strip()
+                self.root_dir = self.popen_git("rev-parse", "--show-toplevel").strip()
             except MacheteException:
                 raise MacheteException("Not a git repository")
         return self.root_dir
@@ -115,7 +115,7 @@ class GitContext:
     def __get_git_dir(self) -> str:
         if not self.git_dir:
             try:
-                self.git_dir = self.get_popen_git("rev-parse", "--git-dir").strip()
+                self.git_dir = self.popen_git("rev-parse", "--git-dir").strip()
             except MacheteException:
                 raise MacheteException("Not a git repository")
         return self.git_dir
@@ -125,14 +125,14 @@ class GitContext:
 
     def get_git_timespec_parsed_to_unix_timestamp(self, date: str) -> int:
         try:
-            return int(self.get_popen_git("rev-parse", "--since=" + date).replace("--max-age=", "").strip())
+            return int(self.popen_git("rev-parse", "--since=" + date).replace("--max-age=", "").strip())
         except (MacheteException, ValueError):
             raise MacheteException(f"Cannot parse timespec: `{date}`")
 
     def __ensure_config_loaded(self) -> None:
         if self.__config_cached is None:
             self.__config_cached = {}
-            for config_line in utils.get_non_empty_lines(self.get_popen_git("config", "--list")):
+            for config_line in utils.get_non_empty_lines(self.popen_git("config", "--list")):
                 k_v = config_line.split("=", 1)
                 if len(k_v) == 2:
                     k, v = k_v
@@ -155,11 +155,11 @@ class GitContext:
 
     def remotes(self) -> List[str]:
         if self.__remotes_cached is None:
-            self.__remotes_cached = utils.get_non_empty_lines(self.get_popen_git("remote"))
+            self.__remotes_cached = utils.get_non_empty_lines(self.popen_git("remote"))
         return self.__remotes_cached
 
     def get_url_of_remote(self, remote: str) -> str:
-        return self.get_popen_git("remote", "get-url", "--", remote).strip()
+        return self.popen_git("remote", "get-url", "--", remote).strip()
 
     def fetch_remote(self, remote: str) -> None:
         if remote not in self.__fetch_done_for:
@@ -194,7 +194,7 @@ class GitContext:
         self.set_upstream_to(rb)
 
     def __find_short_commit_sha_by_revision(self, revision: str) -> str:
-        return self.get_popen_git("rev-parse", "--short", revision + "^{commit}").rstrip()
+        return self.popen_git("rev-parse", "--short", revision + "^{commit}").rstrip()
 
     def get_short_commit_sha_by_revision(self, revision: str) -> str:
         if revision not in self.__short_commit_sha_by_revision_cached:
@@ -205,7 +205,7 @@ class GitContext:
         # Without ^{commit}, 'git rev-parse --verify' will not only accept references to other kinds of objects (like trees and blobs),
         # but just echo the argument (and exit successfully) even if the argument doesn't match anything in the object store.
         try:
-            return self.get_popen_git("rev-parse", "--verify", "--quiet", revision + "^{commit}").rstrip()
+            return self.popen_git("rev-parse", "--verify", "--quiet", revision + "^{commit}").rstrip()
         except MacheteException:
             return None
 
@@ -219,7 +219,7 @@ class GitContext:
 
     def __find_tree_sha_by_revision(self, revision: str) -> Optional[str]:
         try:
-            return self.get_popen_git("rev-parse", "--verify", "--quiet", revision + "^{tree}").rstrip()
+            return self.popen_git("rev-parse", "--verify", "--quiet", revision + "^{tree}").rstrip()
         except MacheteException:
             return None
 
@@ -310,7 +310,7 @@ class GitContext:
         self.__tree_sha_by_commit_sha_cached = {}
 
         # Using 'committerdate:raw' instead of 'committerdate:unix' since the latter isn't supported by some older versions of git.
-        raw_remote = utils.get_non_empty_lines(self.get_popen_git("for-each-ref", "--format=%(refname)\t%(objectname)\t%(tree)\t%(committerdate:raw)", "refs/remotes"))
+        raw_remote = utils.get_non_empty_lines(self.popen_git("for-each-ref", "--format=%(refname)\t%(objectname)\t%(tree)\t%(committerdate:raw)", "refs/remotes"))
         for line in raw_remote:
             values = line.split("\t")
             if len(values) != 4:
@@ -322,7 +322,7 @@ class GitContext:
             self.__tree_sha_by_commit_sha_cached[commit_sha] = tree_sha
             self.__committer_unix_timestamp_by_revision_cached[b] = int(committer_unix_timestamp_and_time_zone.split(' ')[0])
 
-        raw_local = utils.get_non_empty_lines(self.get_popen_git("for-each-ref", "--format=%(refname)\t%(objectname)\t%(tree)\t%(committerdate:raw)\t%(upstream)", "refs/heads"))
+        raw_local = utils.get_non_empty_lines(self.popen_git("for-each-ref", "--format=%(refname)\t%(objectname)\t%(tree)\t%(committerdate:raw)\t%(upstream)", "refs/heads"))
 
         for line in raw_local:
             values = line.split("\t")
@@ -340,7 +340,7 @@ class GitContext:
 
     def __get_log_shas(self, revision: str, max_count: Optional[int]) -> List[str]:
         opts = ([f"--max-count={str(max_count)}"] if max_count else []) + ["--format=%H", f"refs/heads/{revision}"]
-        return utils.get_non_empty_lines(self.get_popen_git("log", *opts))
+        return utils.get_non_empty_lines(self.popen_git("log", *opts))
 
     # Since getting the full history of a branch can be an expensive operation for large repositories (compared to all other underlying git operations),
     # there's a simple optimization in place: we first fetch only a couple of first commits in the history,
@@ -363,7 +363,7 @@ class GitContext:
         all_branches = [f"refs/heads/{b}" for b in self.get_local_branches()] + \
                        [f"refs/remotes/{self.get_combined_counterpart_for_fetching_of_branch(b)}" for b in self.get_local_branches() if self.get_combined_counterpart_for_fetching_of_branch(b)]
         # The trailing '--' is necessary to avoid ambiguity in case there is a file called just exactly like one of the branches.
-        entries = utils.get_non_empty_lines(self.get_popen_git("reflog", "show", "--format=%gD\t%H\t%gs", *(all_branches + ["--"])))
+        entries = utils.get_non_empty_lines(self.popen_git("reflog", "show", "--format=%gD\t%H\t%gs", *(all_branches + ["--"])))
         self.__reflogs_cached = {}
         for entry in entries:
             values = entry.split("\t")
@@ -394,7 +394,7 @@ class GitContext:
                 self.__reflogs_cached[b] = [
                     tuple(entry.split(":", 1)) for entry in utils.get_non_empty_lines(  # type: ignore
                         # The trailing '--' is necessary to avoid ambiguity in case there is a file called just exactly like the branch 'b'.
-                        self.get_popen_git("reflog", "show", "--format=%H:%gs", b, "--"))
+                        self.popen_git("reflog", "show", "--format=%H:%gs", b, "--"))
                 ]
             return self.__reflogs_cached[b]
 
@@ -447,7 +447,7 @@ class GitContext:
 
     def get_currently_checked_out_branch_or_none(self) -> Optional[str]:
         try:
-            raw = self.get_popen_git("symbolic-ref", "--quiet", "HEAD").strip()
+            raw = self.popen_git("symbolic-ref", "--quiet", "HEAD").strip()
             return re.sub("^refs/heads/", "", raw)
         except MacheteException:
             return None
@@ -490,7 +490,7 @@ class GitContext:
             #   then there is exactly one merge-base - the ancestor,
             # * if neither of sha1, sha2 is an ancestor of another,
             #   then none of the (possibly more than one) merge-bases is equal to either of sha1/sha2 anyway.
-            self.__merge_base_cached[sha1, sha2] = self.get_popen_git("merge-base", sha1, sha2).rstrip()
+            self.__merge_base_cached[sha1, sha2] = self.popen_git("merge-base", sha1, sha2).rstrip()
         return self.__merge_base_cached[sha1, sha2]
 
     # Note: the 'git rev-parse --verify' validation is not performed in case for either of earlier/later
@@ -538,7 +538,7 @@ class GitContext:
         # `git log later_commit_sha ^earlier_commit_sha`
         # shows all commits reachable from later_commit_sha but NOT from earlier_commit_sha
         intermediate_tree_shas = utils.get_non_empty_lines(
-            self.get_popen_git(
+            self.popen_git(
                 "log",
                 "--format=%T",  # full commit's tree hash
                 "^" + earlier_commit_sha,
@@ -566,7 +566,7 @@ class GitContext:
         return list(map(
             lambda b: re.sub("^refs/heads/", "", b),
             utils.get_non_empty_lines(
-                self.get_popen_git("for-each-ref", "--format=%(refname)", "--merged", "HEAD", "refs/heads"))
+                self.popen_git("for-each-ref", "--format=%(refname)", "--merged", "HEAD", "refs/heads"))
         ))
 
     def get_hook_path(self, hook_name: str) -> str:
@@ -652,7 +652,7 @@ class GitContext:
         return list(reversed(list(map(
             lambda x: tuple(x.split(":", 2)),  # type: ignore
             utils.get_non_empty_lines(
-                self.get_popen_git("log", "--format=%H:%h:%s", f"^{earliest_exclusive}", latest_inclusive, "--"))
+                self.popen_git("log", "--format=%H:%h:%s", f"^{earliest_exclusive}", latest_inclusive, "--"))
         ))))
 
     def get_relation_to_remote_counterpart(self, b: str, rb: str) -> int:
@@ -689,7 +689,7 @@ class GitContext:
         # %gd - reflog selector (HEAD@{<unix-timestamp> <time-zone>} for `--date=raw`;
         #   `--date=unix` is not available on some older versions of git)
         # %gs - reflog subject
-        output = self.get_popen_git("reflog", "show", "--format=%gd:%gs", "--date=raw")
+        output = self.popen_git("reflog", "show", "--format=%gd:%gs", "--date=raw")
         for entry in utils.get_non_empty_lines(output):
             pattern = "^HEAD@\\{([0-9]+) .+\\}:checkout: moving from (.+) to (.+)$"
             match = re.search(pattern, entry)
