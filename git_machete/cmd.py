@@ -89,7 +89,7 @@ class MacheteClient:
 
     def read_definition_file(self, verify_branches: bool = True) -> None:
         with open(self._definition_file_path) as f:
-            lines: List[str] = [line.rstrip() for line in f.readlines() if not line.isspace()]
+            lines: List[str] = [line.rstrip() for line in f.readlines()]
 
         at_depth = {}
         last_depth = -1
@@ -98,6 +98,8 @@ class MacheteClient:
 
         invalid_branches: List[str] = []
         for index, line in enumerate(lines):
+            if line == "" or line.isspace():
+                continue
             prefix = "".join(itertools.takewhile(str.isspace, line))
             if prefix and not self.__indent:
                 self.__indent = prefix
@@ -1814,7 +1816,6 @@ def launch(orig_args: List[str]) -> None:
 
     cli_opts = CommandLineOptions()
     git = GitContext(cli_opts)
-    machete_client = MacheteClient(cli_opts, git)
 
     if sys.version_info.major == 2 or (sys.version_info.major == 3 and sys.version_info.minor < 6):
         version_str = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
@@ -1962,6 +1963,7 @@ def launch(orig_args: List[str]) -> None:
             return in_args[0]
 
     try:
+        machete_client = MacheteClient(cli_opts, git)
         cmd = None
         # Let's first extract the common options like `--help` or `--verbose` that might appear BEFORE the command,
         # as in e.g. `git machete --verbose status`.

@@ -10,8 +10,10 @@ from contextlib import redirect_stdout
 from typing import Iterable
 
 from git_machete import cmd
+from git_machete.exceptions import MacheteException
 from git_machete.git_operations import GitContext
 from git_machete.options import CommandLineOptions
+from git_machete.utils import fmt
 
 cli_opts: CommandLineOptions = CommandLineOptions()
 git: GitContext = GitContext(cli_opts)
@@ -91,6 +93,12 @@ class MacheteTester(unittest.TestCase):
                 cmd.launch(list(args))
                 git.flush_caches()
             return out.getvalue()
+
+    @staticmethod
+    def rewrite_definition_file(new_body: str) -> None:
+        definition_file_path = git.get_git_subpath("machete")
+        with open(os.path.join(os.getcwd(), definition_file_path), 'w') as def_file:
+            def_file.writelines(new_body)
 
     def assert_command(self, cmds: Iterable[str], expected_result: str) -> None:
         self.assertEqual(self.launch_command(*cmds), self.adapt(expected_result))
@@ -174,6 +182,25 @@ class MacheteTester(unittest.TestCase):
               o-ignore-trailing * (diverged from & older than origin)
             """,
         )
+
+    def test_branch_reappers_in_definition(self) -> None:
+        body: str = \
+            """master
+            \tdevelop
+            \t\n
+            develop
+            """
+        expected_error_msg: str = fmt('.git/machete, line 5: branch `develop` re-appears in the tree definition. Edit the definition file manually with `git machete edit`')
+
+        self.repo_sandbox.new_branch("root")
+        self.rewrite_definition_file(body)
+
+        machete_client = cmd.MacheteClient(cli_opts, git)  # Only to workaround sys.exit while calling launch(['status'])
+        try:
+            machete_client.read_definition_file()
+        except MacheteException as e:
+            if e.parameter != expected_error_msg:
+                self.fail(f'Actual Exception message: {e} \nis not equal to expected message: {expected_error_msg}')
 
     def test_show(self) -> None:
         self.setup_discover_standard_tree()
