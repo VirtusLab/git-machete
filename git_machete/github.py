@@ -163,7 +163,7 @@ def create_pull_request(org: str, repo: str, head: str, base: str, title: str, d
         pr = __fire_github_api_request('POST', f'/repos/{org}/{repo}/pulls', token, request_body)
         return __parse_pr_json(pr)
     else:
-        raise MacheteException(f'Pull request for branch {head} is already created under link {pr_found.html_url}!\nPR details: {pr_found}', verbose=False)
+        raise MacheteException(f'Pull request for branch {head} is already created under link {pr_found.html_url}!\nPR details: {pr_found}')
 
 
 def add_assignees_to_pull_request(org: str, repo: str, number: int, assignees: List[str]) -> None:

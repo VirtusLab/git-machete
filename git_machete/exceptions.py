@@ -1,5 +1,3 @@
-import sys
-
 from git_machete import utils
 
 

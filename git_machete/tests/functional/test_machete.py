@@ -13,6 +13,7 @@ from git_machete import cmd
 from git_machete.exceptions import MacheteException
 from git_machete.git_operations import GitContext
 from git_machete.options import CommandLineOptions
+from git_machete.utils import fmt
 
 cli_opts: CommandLineOptions = CommandLineOptions()
 git: GitContext = GitContext(cli_opts)
@@ -186,11 +187,10 @@ class MacheteTester(unittest.TestCase):
         body: str = \
             """master
             \tdevelop
-            \t
-            \t
+            \t\n
             develop
             """
-        expected_error_msg: str = '.git/machete, line 5: branch `develop` re-appears in the tree definition. Edit the definition file manually with `git machete edit`'
+        expected_error_msg: str = fmt('.git/machete, line 5: branch `develop` re-appears in the tree definition. Edit the definition file manually with `git machete edit`')
 
         self.repo_sandbox.new_branch("root")
         self.rewrite_definition_file(body)

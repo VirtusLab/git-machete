@@ -1821,7 +1821,6 @@ def launch(orig_args: List[str]) -> None:
 
     cli_opts = CommandLineOptions()
     git = GitContext(cli_opts)
-    #machete_client = MacheteClient(cli_opts, git)
 
     if sys.version_info.major == 2 or (sys.version_info.major == 3 and sys.version_info.minor < 6):
         version_str = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
