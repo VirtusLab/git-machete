@@ -329,7 +329,7 @@ class MacheteClient:
         non_root_fixed_branches_by_last_checkout_timestamps = sorted(
             (last_checkout_timestamps.get(b, 0), b) for b in non_root_fixed_branches)
         if self.__cli_opts.opt_checked_out_since:
-            threshold = self.__git.get_git_parse_timespec_to_unix_timestamp(self.__cli_opts.opt_checked_out_since)
+            threshold = self.__git.get_git_timespec_parsed_to_unix_timestamp(self.__cli_opts.opt_checked_out_since)
             stale_non_root_fixed_branches = [b for (timestamp, b) in itertools.takewhile(
                 tupled(lambda timestamp, b: timestamp < threshold),
                 non_root_fixed_branches_by_last_checkout_timestamps
@@ -1055,11 +1055,11 @@ class MacheteClient:
             return
 
         earliest_sha, earliest_short_sha, earliest_subject = commits[0]
-        earliest_full_body = self.__git.get_popen_git("log", "-1", "--format=%B", earliest_sha).strip()
+        earliest_full_body = self.__git.popen_git("log", "-1", "--format=%B", earliest_sha).strip()
         # %ai for ISO-8601 format; %aE/%aN for respecting .mailmap; see `git rev-list --help`
-        earliest_author_date = self.__git.get_popen_git("log", "-1", "--format=%ai", earliest_sha).strip()
-        earliest_author_email = self.__git.get_popen_git("log", "-1", "--format=%aE", earliest_sha).strip()
-        earliest_author_name = self.__git.get_popen_git("log", "-1", "--format=%aN", earliest_sha).strip()
+        earliest_author_date = self.__git.popen_git("log", "-1", "--format=%ai", earliest_sha).strip()
+        earliest_author_email = self.__git.popen_git("log", "-1", "--format=%aE", earliest_sha).strip()
+        earliest_author_name = self.__git.popen_git("log", "-1", "--format=%aN", earliest_sha).strip()
 
         # Following the convention of `git cherry-pick`, `git commit --amend`, `git rebase` etc.,
         # let's retain the original author (only committer will be overwritten).
@@ -1071,7 +1071,7 @@ class MacheteClient:
         # like `git merge --squash` or `git rebase --interactive`.
         # The tree (HEAD^{tree}) argument must be passed as first,
         # otherwise the entire `commit-tree` will fail on some ancient supported versions of git (at least on v1.7.10).
-        squashed_sha = self.__git.get_popen_git("commit-tree", "HEAD^{tree}", "-p", fork_commit, "-m", earliest_full_body, env=author_env).strip()
+        squashed_sha = self.__git.popen_git("commit-tree", "HEAD^{tree}", "-p", fork_commit, "-m", earliest_full_body, env=author_env).strip()
 
         # This can't be done with `git reset` since it doesn't allow for a custom reflog message.
         # Even worse, reset's reflog message would be filtered out in our fork point algorithm,
@@ -1581,7 +1581,7 @@ class MacheteClient:
         debug(f'create_github_pr({head})', f'organization is {org}, repository is {repo}')
         debug(f'create_github_pr({head})', 'current GitHub user is ' + (current_user or '<none>'))
 
-        title: str = self.__git.get_popen_git("log", "-1", "--format=%s").strip()
+        title: str = self.__git.popen_git("log", "-1", "--format=%s").strip()
         description_path = self.__git.get_git_subpath('info', 'description')
         description: str = utils.slurp_file_or_empty(description_path)
 
@@ -2208,9 +2208,9 @@ def launch(orig_args: List[str]) -> None:
     except StopTraversal:
         pass
     finally:
-        if initial_current_directory and not utils.does_directory_exists(initial_current_directory):
+        if initial_current_directory and not utils.does_directory_exist(initial_current_directory):
             nearest_existing_parent_directory = initial_current_directory
-            while not utils.does_directory_exists(nearest_existing_parent_directory):
+            while not utils.does_directory_exist(nearest_existing_parent_directory):
                 nearest_existing_parent_directory = os.path.join(nearest_existing_parent_directory, os.path.pardir)
             warn(f"current directory {initial_current_directory} no longer exists, "
                  f"the nearest existing parent directory is {os.path.abspath(nearest_existing_parent_directory)}")
