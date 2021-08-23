@@ -10,7 +10,7 @@ from http.client import HTTPResponse, HTTPSConnection
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
 
-from git_machete.cmd import MacheteException, fmt
+from git_machete.cmd import MacheteException, get_fmt
 
 
 class GitHubPullRequest(object):
@@ -36,7 +36,7 @@ GITHUB_REMOTE_PATTERNS = [
 ]
 
 
-def _token_from_gh() -> Optional[str]:
+def _get_token_from_gh() -> Optional[str]:
 
     # Abort without error if `gh` isn't available
     gh = shutil.which('gh')
@@ -71,7 +71,7 @@ def _token_from_gh() -> Optional[str]:
     return None
 
 
-def _token_from_hub() -> Optional[str]:
+def _get_token_from_hub() -> Optional[str]:
     home_path: str = str(Path.home())
     config_hub_path: str = os.path.join(home_path, ".config", "hub")
     if os.path.isfile(config_hub_path):
@@ -90,12 +90,12 @@ def _token_from_hub() -> Optional[str]:
     return None
 
 
-def _token_from_env() -> Optional[str]:
+def _get_token_from_env() -> Optional[str]:
     return os.environ.get(GITHUB_TOKEN_ENV_VAR)
 
 
-def github_token() -> Optional[str]:
-    return _token_from_env() or _token_from_gh() or _token_from_hub()
+def get_github_token() -> Optional[str]:
+    return _get_token_from_env() or _get_token_from_gh() or _get_token_from_hub()
 
 
 def fire_github_api_get_request(url: str, token: Optional[str]) -> Any:
@@ -118,15 +118,13 @@ def fire_github_api_get_request(url: str, token: Optional[str]) -> Any:
         if 200 <= response.status < 300:
             return body
         else:
-            first_line = fmt(f'GitHub API returned {response.status} HTTP status with error message: `{body.get("message")}`.\n')
+            first_line = get_fmt(f'GitHub API returned {response.status} HTTP status with error message: `{body.get("message")}`.\n')
             if token:
                 raise MacheteException(
-                    first_line + fmt(f'Make sure that the token provided in `gh auth status` or `~/.config/hub` or <b>{GITHUB_TOKEN_ENV_VAR}</b> is valid '
-                                     f'and allows for access to `GET https://{host}{url}`.'))
+                    first_line + get_fmt(f'Make sure that the token provided in `gh auth status` or `~/.config/hub` or <b>{GITHUB_TOKEN_ENV_VAR}</b> is valid ' f'and allows for access to `GET https://{host}{url}`.'))
             else:
                 raise MacheteException(
-                    first_line + fmt(f'This repository might be private. Provide a GitHub API token with `repo` access via `gh` or `hub` or <b>{GITHUB_TOKEN_ENV_VAR}</b> env var.\n'
-                                     'Visit `https://github.com/settings/tokens` to generate a new one.'))
+                    first_line + get_fmt(f'This repository might be private. Provide a GitHub API token with `repo` access via `gh` or `hub` or <b>{GITHUB_TOKEN_ENV_VAR}</b> env var.\n' 'Visit `https://github.com/settings/tokens` to generate a new one.'))
     except OSError as e:
         raise MacheteException(f'Could not connect to {host}: {e}')
     finally:
@@ -135,13 +133,13 @@ def fire_github_api_get_request(url: str, token: Optional[str]) -> Any:
 
 def derive_pull_requests(org: str, repo: str) -> List[GitHubPullRequest]:
 
-    token: Optional[str] = github_token()
+    token: Optional[str] = get_github_token()
     prs = fire_github_api_get_request(f'/repos/{org}/{repo}/pulls', token)
     return [GitHubPullRequest(int(pr['number']), pr['user']['login'], pr['base']['ref'], pr['head']['ref']) for pr in prs]
 
 
 def derive_current_user_login() -> Optional[str]:
-    token: Optional[str] = github_token()
+    token: Optional[str] = get_github_token()
     if not token:
         return None
     user = fire_github_api_get_request('/user', token)
@@ -153,7 +151,7 @@ def is_github_remote_url(url: str) -> bool:
     return any((re.match(pattern, url) for pattern in GITHUB_REMOTE_PATTERNS))
 
 
-def parse_github_remote_url(url: str) -> Optional[Tuple[str, str]]:
+def get_parse_github_remote_url(url: str) -> Optional[Tuple[str, str]]:
 
     for pattern in GITHUB_REMOTE_PATTERNS:
         match = re.match(pattern, url)
