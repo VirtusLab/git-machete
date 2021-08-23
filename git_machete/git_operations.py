@@ -392,7 +392,7 @@ class GitContext:
                 # %H - full hash
                 # %gs - reflog subject
                 self.__reflogs_cached[b] = [
-                    tuple(entry.split(":", 1)) for entry in utils.non_empty_lines(  # type: ignore
+                    tuple(entry.split(":", 1)) for entry in utils.get_non_empty_lines(  # type: ignore
                         # The trailing '--' is necessary to avoid ambiguity in case there is a file called just exactly like the branch 'b'.
                         self.get_popen_git("reflog", "show", "--format=%H:%gs", b, "--"))
                 ]
