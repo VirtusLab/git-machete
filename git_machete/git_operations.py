@@ -123,7 +123,7 @@ class GitContext:
     def get_git_subpath(self, *fragments: str) -> str:
         return os.path.join(self.__get_git_dir(), *fragments)
 
-    def get_git_parse_timespec_to_unix_timestamp(self, date: str) -> int:
+    def get_git_timespec_parsed_to_unix_timestamp(self, date: str) -> int:
         try:
             return int(self.get_popen_git("rev-parse", "--since=" + date).replace("--max-age=", "").strip())
         except (MacheteException, ValueError):
