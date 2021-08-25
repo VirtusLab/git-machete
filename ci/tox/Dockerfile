@@ -40,6 +40,7 @@ RUN set -x \
     && addgroup --gid=${group_id} ci-user \
     && adduser --uid=${user_id} --ingroup=ci-user --disabled-password ci-user
 USER ci-user
+RUN $PYTHON -m pip install --user tox
 ENV PATH=$PATH:/home/ci-user/.local/bin/
 COPY --chown=ci-user:ci-user entrypoint.sh /home/ci-user/
 RUN chmod +x ~/entrypoint.sh
