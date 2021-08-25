@@ -38,7 +38,8 @@ RUN set -x \
     && [ ${user_id:-0} -ne 0 ] \
     && [ ${group_id:-0} -ne 0 ] \
     && (grep -w $group_id /etc/group || addgroup --gid=${group_id} ci-user) \
-    && adduser --uid=${user_id} --ingroup=$(grep -w $group_id /etc/group | cut -d: -f4) --disabled-password ci-user
+    && adduser --uid=${user_id} --ingroup=$(grep -w $group_id /etc/group | cut -d: -f4) --disabled-password ci-user \
+    || adduser --uid=${user_id} --ingroup=ci_user --disabled-password ci-user
 USER ci-user
 RUN $PYTHON -m pip install --user tox
 ENV PATH=$PATH:/home/ci-user/.local/bin/
