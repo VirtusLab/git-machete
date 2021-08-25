@@ -81,6 +81,7 @@ jobs:
   dry_run_deploy_from_develop:
     executor: ubuntu_executor
     steps:
+      - checkout
       - deploy:
           name: '[Dry run] Deploy to PyPI'
           # Side effects: does an actual release, but to the test PyPI
@@ -105,6 +106,7 @@ jobs:
   deploy_from_master:
     executor: ubuntu_executor
     steps:
+      - checkout
       - deploy:
           name: 'Deploy to PyPI'
           command: bash ci/pypi/ci-deploy.sh
