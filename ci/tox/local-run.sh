@@ -21,5 +21,5 @@ else
   export DIRECTORY_HASH="$hash"-dirty
 fi
 
-docker-compose build --build-arg user_id="$(id -u)" --build-arg group_id="500" tox
+docker-compose build --build-arg user_id="$(id -u)" --build-arg group_id="$(id -g)" tox
 docker-compose run tox
