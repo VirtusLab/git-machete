@@ -77,6 +77,9 @@ jobs:
       - store_artifacts:
           path: htmlcov
           destination: coverage
+      - run:
+          name: test debppaupload
+          command: bash ci/ci-dockerized.sh deb-ppa-upload --dry-run
 
   dry_run_deploy_from_develop:
     executor: ubuntu_executor

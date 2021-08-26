@@ -1,10 +1,25 @@
 #!/usr/bin/env bash
 
 set -e -o pipefail -u -x
-
-DIRECTORY_HASH=$(git rev-parse HEAD:ci/tox)
-export DIRECTORY_HASH
 image_name=$1
+if [[ ${2-} == "--dry-run" || ${CIRCLE_BRANCH-} != "master" ]]; then
+  do_dput=false
+else
+  do_dput=true
+fi
+
+function run_docker(){
+  if [[ "$image_name" == "deb-ppa-upload" ]]; then
+    docker-compose --ansi never run -e TARGET_DISTRO_NAME=bionic -e TARGET_DISTRO_NUMBER=18.04 -e DO_DPUT=$do_dput $image_name
+    docker-compose --ansi never run -e TARGET_DISTRO_NAME=focal  -e TARGET_DISTRO_NUMBER=20.04 -e DO_DPUT=$do_dput $image_name
+  else
+    docker-compose --ansi never run $image_name
+  fi
+}
+
+DIRECTORY_HASH=$(git rev-parse HEAD:ci/$image_name)
+export DIRECTORY_HASH
+
 cd ci/$image_name/
 
 # If there is no cached image for the expected Git&Python versions and the current state of ci/tox,
@@ -22,4 +37,4 @@ docker image inspect "$image_tag" &>/dev/null || {
   fi
 }
 
-docker-compose --ansi never run $image_name
+run_docker
