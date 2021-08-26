@@ -8,7 +8,7 @@
 set -e -u -x
 
 if [[ $CHECK_COVERAGE = true ]]; then
-  TOX_ENV_LIST="pep8,py${PYTHON_VERSION/./},coverage"
+  TOX_ENV_LIST="pep8,coverage"
 else
   TOX_ENV_LIST="pep8,py${PYTHON_VERSION/./}"
 fi
