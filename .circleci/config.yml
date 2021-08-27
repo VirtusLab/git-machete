@@ -77,9 +77,6 @@ jobs:
       - store_artifacts:
           path: htmlcov
           destination: coverage
-      - run:
-          name: test debppaupload
-          command: bash ci/deb-ppa-upload/ci-deploy.sh --dry-run
 
   dry_run_deploy_from_develop:
     executor: ubuntu_executor
