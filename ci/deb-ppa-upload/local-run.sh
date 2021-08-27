@@ -10,12 +10,7 @@ done
 
 set -x
 
-hash=$(git rev-parse HEAD:ci/deb-ppa-upload)
-if git diff-index --quiet HEAD .; then
-  export DIRECTORY_HASH="$hash"
-else
-  export DIRECTORY_HASH="$hash"-dirty
-fi
+bash ../export-hash.sh deb-ppa-upload
 
 docker-compose build --build-arg user_id="$(id -u)" --build-arg group_id="$(id -g)" deb-ppa-upload
 docker-compose run -e TARGET_DISTRO_NAME=bionic -e TARGET_DISTRO_NUMBER=18.04 -e DO_DPUT=false deb-ppa-upload

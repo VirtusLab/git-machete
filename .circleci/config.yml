@@ -49,7 +49,7 @@ jobs:
       - checkout
       - run:
           name: Run tests against Python 3.6 and git 1.8.0
-          command: PYTHON_VERSION=3.6 GIT_VERSION=1.8.0  bash ci/ci-dockerized.sh tox # Earliest versions of python/git supported by git-machete
+          command: PYTHON_VERSION=3.6 GIT_VERSION=1.8.0  bash ci/tox/ci-run.sh # Earliest versions of python/git supported by git-machete
 
   tests_py37:
     executor: ubuntu_executor
@@ -57,7 +57,7 @@ jobs:
       - checkout
       - run:
           name: Run tests against Python 3.7 and git 2.7.6
-          command: PYTHON_VERSION=3.7 GIT_VERSION=2.7.6  bash ci/ci-dockerized.sh tox
+          command: PYTHON_VERSION=3.7 GIT_VERSION=2.7.6  bash ci/tox/ci-run.sh
 
   tests_py38:
     executor: ubuntu_executor
@@ -65,7 +65,7 @@ jobs:
       - checkout
       - run:
           name: Run tests against Python 3.8 and git 2.25.0
-          command: PYTHON_VERSION=3.8 GIT_VERSION=2.25.0 bash ci/ci-dockerized.sh tox
+          command: PYTHON_VERSION=3.8 GIT_VERSION=2.25.0 bash ci/tox/ci-run.sh
 
   tests_py39:
     executor: ubuntu_executor
@@ -73,13 +73,13 @@ jobs:
       - checkout
       - run:
           name: Run tests against Python 3.9 and git 2.30.1 (with checking coverage)
-          command: PYTHON_VERSION=3.9 GIT_VERSION=2.30.1 CHECK_COVERAGE=true bash ci/ci-dockerized.sh tox
+          command: PYTHON_VERSION=3.9 GIT_VERSION=2.30.1 CHECK_COVERAGE=true bash ci/tox/ci-run.sh
       - store_artifacts:
           path: htmlcov
           destination: coverage
       - run:
           name: test debppaupload
-          command: bash ci/ci-dockerized.sh deb-ppa-upload --dry-run
+          command: bash ci/deb-ppa-upload/ci-deploy.sh --dry-run
 
   dry_run_deploy_from_develop:
     executor: ubuntu_executor
@@ -104,7 +104,7 @@ jobs:
           name: '[Dry run] Build rpm package'
           # Side effects: potentially pushes a regenerated Docker image
           # Other than that, it just builds the package without publishing anything; there's no special dry-run mode
-          command: bash ci/ci-dockerized.sh rpm
+          command: bash ci/rpm/ci-run.sh
 
   deploy_from_master:
     executor: ubuntu_executor
@@ -125,7 +125,7 @@ jobs:
 
       - deploy:
           name: 'Build rpm package'
-          command: bash ci/ci-dockerized.sh rpm
+          command: bash ci/rpm/ci-run.sh
 
       # Let's do this at the very end to avoid opening a GH release (and notifying the watchers)
       # in case anything goes wrong in the previous steps.

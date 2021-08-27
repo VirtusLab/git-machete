@@ -14,12 +14,7 @@ check_var PYTHON_VERSION
 
 set -x
 
-hash=$(git rev-parse HEAD:ci/tox)
-if git diff-index --quiet HEAD .; then
-  export DIRECTORY_HASH="$hash"
-else
-  export DIRECTORY_HASH="$hash"-dirty
-fi
+bash ../export-hash.sh tox
 
 docker-compose build --build-arg user_id="$(id -u)" --build-arg group_id="$(id -g)" tox
 docker-compose run tox
