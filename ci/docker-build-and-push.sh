@@ -16,9 +16,10 @@ image_tag=$(docker-compose --ansi never config | yq eval ".services.$image_name.
 docker image inspect "$image_tag" &>/dev/null || {
   docker-compose --ansi never build --build-arg user_id="$(id -u)" --build-arg group_id="$(id -g)" $image_name
   # In builds coming from forks, secret vars are unavailable for security reasons; hence, we have to skip pushing the newly built image.
+  echo $PWD
   if [[ ${DOCKER_PASSWORD-} && ${DOCKER_USERNAME-} ]]; then
     echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-    docker-compose --ansi never -f $image_name/docker-compose.yml push $image_name || true
+    docker-compose --ansi never -f /$image_name/docker-compose.yml push $image_name || true
   fi
 }
 
