@@ -19,7 +19,7 @@ docker image inspect "$image_tag" &>/dev/null || {
   echo $PWD
   if [[ ${DOCKER_PASSWORD-} && ${DOCKER_USERNAME-} ]]; then
     echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-    docker-compose --ansi never -f /$image_name/docker-compose.yml push $image_name || true
+    docker-compose --ansi never -f /home/circleci/project/ci/$image_name/docker-compose.yml push $image_name || true
   fi
 }
 
