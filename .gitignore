@@ -8,6 +8,7 @@ ChangeLog
 build/
 .coverage
 dist/
+docs/html/
 *.egg-info/
 .eggs/
 htmlcov/

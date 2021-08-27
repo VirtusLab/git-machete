@@ -32,6 +32,11 @@ RUN apk add --no-cache gcc musl-dev # both packages are required to install mypy
 ARG check_coverage
 ENV CHECK_COVERAGE=${check_coverage}
 
+# Pass build argument to BUILD_DOCS environment variable that is used to
+# determine where to run tox enviornment that builds documentation.
+ARG build_docs
+ENV BUILD_DOCS=${build_docs}
+
 ARG user_id
 ARG group_id
 RUN set -x \
