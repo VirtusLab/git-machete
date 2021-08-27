@@ -53,6 +53,7 @@ class MacheteClient:
         self.__annotations: Dict[str, str] = {}
         self.__empty_line_status: Optional[bool] = None
         self.__branch_defs_by_sha_in_reflog: Optional[Dict[str, Optional[List[Tuple[str, str]]]]] = None
+        self.__is_called_from_traverse: bool = True
 
     @property
     def definition_file_path(self) -> str:
@@ -1387,7 +1388,10 @@ class MacheteClient:
         other_remote_choice = "o[ther-remote]" if can_pick_other_remote else ""
         rb = f"{new_remote}/{b}"
         if not self.__git.get_commit_sha_by_revision(rb, prefix="refs/remotes/"):
-            ask_message = f"Push untracked branch {bold(b)} to {bold(new_remote)}?" + get_pretty_choices('y', 'N', 'q', 'yq', other_remote_choice)
+            if self.__is_called_from_traverse:
+                ask_message = f"Push untracked branch {bold(b)} to {bold(new_remote)}?" + get_pretty_choices('y', 'N', 'q', 'yq', other_remote_choice)
+            else:
+                ask_message = f"Push untracked branch {bold(b)} to {bold(new_remote)}?" + get_pretty_choices('y', 'q', other_remote_choice)
             ask_opt_yes_message = f"Pushing untracked branch {bold(b)} to {bold(new_remote)}..."
             ans = self.ask_if(ask_message, ask_opt_yes_message,
                               override_answer=None if self.__git.cli_opts.opt_push_untracked else "N")
@@ -1562,6 +1566,7 @@ class MacheteClient:
                                f'{", ".join(org_and_repo_for_github_remote.keys())}, aborting')
 
     def create_github_pr(self, head: str, draft: bool) -> None:
+        self.__is_called_from_traverse = False
         # first make sure that head branch is synced with remote
         try:
             self.__sync_before_creating_pr()
@@ -1618,9 +1623,14 @@ class MacheteClient:
     def __handle_diverged_and_newer_state(self, cb: str, remote: str, abort_on_quit: bool = True) -> None:
         self.__print_new_line(False)
         rb = self.__git.get_strict_counterpart_for_fetching_of_branch(cb)
+        if self.__is_called_from_traverse:
+            msg = f"Branch {bold(cb)} diverged from (and has newer commits than) its remote counterpart {bold(rb)}.\n"
+            f"Push {bold(cb)} with force-with-lease to {bold(remote)}?" + get_pretty_choices('y', 'N', 'q', 'yq')
+        else:
+            msg = f"Branch {bold(cb)} diverged from (and has newer commits than) its remote counterpart {bold(rb)}.\n"
+            f"Push {bold(cb)} with force-with-lease to {bold(remote)}?" + get_pretty_choices('y', 'N', 'q')
         ans = self.ask_if(
-            f"Branch {bold(cb)} diverged from (and has newer commits than) its remote counterpart {bold(rb)}.\n"
-            f"Push {bold(cb)} with force-with-lease to {bold(remote)}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
+            msg,
             f"Branch {bold(cb)} diverged from (and has newer commits than) its remote counterpart {bold(rb)}.\n"
             f"Pushing {bold(cb)} with force-with-lease to {bold(remote)}...",
             override_answer=None if self.__cli_opts.opt_push_tracked else "N")
@@ -1651,8 +1661,12 @@ class MacheteClient:
 
     def __handle_ahead_state(self, cb: str, remote: str, abort_on_quit: bool = True) -> None:
         self.__print_new_line(False)
+        if self.__is_called_from_traverse:
+            msg = f"Push {bold(cb)} to {bold(remote)}?" + get_pretty_choices('y', 'N', 'q', 'yq')
+        else:
+            msg = f"Push {bold(cb)} to {bold(remote)}?" + get_pretty_choices('y', 'N', 'q')
         ans = self.ask_if(
-            f"Push {bold(cb)} to {bold(remote)}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
+            msg,
             f"Pushing {bold(cb)} to {bold(remote)}...",
             override_answer=None if self.__cli_opts.opt_push_tracked else "N"
         )
@@ -1721,26 +1735,27 @@ class MacheteClient:
 
             self.__print_new_line(False)
             self.status(warn_on_yellow_edges=True)
+            self.__print_new_line(False)
 
         else:
             if s == BEHIND_REMOTE:
                 warn(f"Branch {cb} is in <b>BEHIND_REMOTE</b> state.\nConsider using 'git pull'.\n")
                 self.__print_new_line(False)
-                ans = self.ask_if("Proceed with pull request creation?" + get_pretty_choices('y', 'N', 'q', 'yq'),
+                ans = self.ask_if("Proceed with pull request creation?" + get_pretty_choices('y', 'q'),
                                   "Proceeding with pull request creation...")
             elif s == DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
                 warn(f"Branch {cb} is in <b>DIVERGED_FROM_AND_OLDER_THAN_REMOTE</b> state.\nConsider using 'git reset --keep'.\n")
                 self.__print_new_line(False)
-                ans = self.ask_if("Proceed with pull request creation?" + get_pretty_choices('y', 'N', 'q', 'yq'),
+                ans = self.ask_if("Proceed with pull request creation?" + get_pretty_choices('y', 'q'),
                                   "Proceeding with pull request creation...")
             elif s == NO_REMOTES:
                 raise MacheteException("Could not create pull request - there are no remote repositories!")
             else:
                 ans = 'y'  # only IN SYNC status is left
 
-            if ans in ('y', 'yes', 'yq'):
+            if ans in ('y', 'yes'):
                 return
-            elif ans in ('n', 'q', 'quit'):
+            elif ans in ('q', 'quit'):
                 raise MacheteException('Pull request creation interrupted.')
 
 
