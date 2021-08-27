@@ -14,7 +14,7 @@ check_var PYTHON_VERSION
 
 set -x
 
-bash ../export-hash.sh tox
+source ../export-hash.sh tox
 
 docker-compose build --build-arg user_id="$(id -u)" --build-arg group_id="$(id -g)" tox
 docker-compose run tox
