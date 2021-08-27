@@ -10,15 +10,15 @@ function check_var() {
 
 function check_env() {
   cat $1 | while read -r var; do
-  [[ -n ${!var-} ]] || { echo "Var $var is missing from the environment"; exit 1; }
+    [[ -n ${!var-} ]] || { echo "Var $var is missing from the environment"; exit 1; }
   done
 }
 
-function export_hash() {
+function export_directory_hash() {
   hash=$(git rev-parse HEAD:ci/$1)
-if git diff-index --quiet HEAD .; then
-  export DIRECTORY_HASH="$hash"
-else
-  export DIRECTORY_HASH="$hash"-dirty
-fi
+  if git diff-index --quiet HEAD .; then
+    export DIRECTORY_HASH="$hash"
+  else
+    export DIRECTORY_HASH="$hash"-dirty
+  fi
 }
