@@ -2,7 +2,7 @@
 
 set -e -o pipefail -u
 source ../local-run-commons.sh rpm
-export_hash rpm
+export_directory_hash rpm
 cd "$(git rev-parse --show-toplevel)"/ci/rpm/
 
 set -x
