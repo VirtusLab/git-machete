@@ -37,8 +37,9 @@ ARG group_id
 RUN set -x \
     && [ ${user_id:-0} -ne 0 ] \
     && [ ${group_id:-0} -ne 0 ] \
-    && addgroup --gid=${group_id} ci-user \
-    && adduser --uid=${user_id} --ingroup=ci-user --disabled-password ci-user
+    # sometimes given group_id is already taken and addgroup outputs error, so let's check it's existence first
+    && (getent group $group_id || addgroup --gid=${group_id} ci-user) \
+    && adduser --uid=${user_id} --ingroup=$(getent group $group_id | cut -d: -f1) --disabled-password ci-user
 USER ci-user
 RUN $PYTHON -m pip install --user tox
 ENV PATH=$PATH:/home/ci-user/.local/bin/

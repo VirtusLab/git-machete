@@ -48,15 +48,15 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Run tests against Python 3.6 and git 1.8.0 (without checking coverage)
-          command: PYTHON_VERSION=3.6 GIT_VERSION=1.8.0  bash ci/tox/ci-run.sh  # Earliest versions of python/git supported by git-machete
+          name: Run tests against Python 3.6 and git 1.8.0
+          command: PYTHON_VERSION=3.6 GIT_VERSION=1.8.0  bash ci/tox/ci-run.sh # Earliest versions of python/git supported by git-machete
 
   tests_py37:
     executor: ubuntu_executor
     steps:
       - checkout
       - run:
-          name: Run tests against Python 3.7 and git 2.7.6 (without checking coverage)
+          name: Run tests against Python 3.7 and git 2.7.6
           command: PYTHON_VERSION=3.7 GIT_VERSION=2.7.6  bash ci/tox/ci-run.sh
 
   tests_py38:
@@ -64,7 +64,7 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Run tests against Python 3.8 and git 2.25.0 (without checking coverage)
+          name: Run tests against Python 3.8 and git 2.25.0
           command: PYTHON_VERSION=3.8 GIT_VERSION=2.25.0 bash ci/tox/ci-run.sh
 
   tests_py39:
