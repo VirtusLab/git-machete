@@ -53,7 +53,6 @@ class MacheteClient:
         self.__annotations: Dict[str, str] = {}
         self.__empty_line_status: Optional[bool] = None
         self.__branch_defs_by_sha_in_reflog: Optional[Dict[str, Optional[List[Tuple[str, str]]]]] = None
-        self.__is_called_from_traverse: bool = True
 
     @property
     def definition_file_path(self) -> str:
@@ -639,13 +638,13 @@ class MacheteClient:
                     if s == BEHIND_REMOTE:
                         self.__handle_behind_state(cb, remote)
                     elif s == AHEAD_OF_REMOTE:
-                        self.__handle_ahead_state(cb, remote)
+                        self.__handle_ahead_state(cb, remote, is_called_from_traverse=True)
                     elif s == DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
                         self.__handle_diverged_and_older_state(cb)
                     elif s == DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
                         self.__handle_diverged_and_newer_state(cb, remote)
                     elif s == UNTRACKED:
-                        self.__handle_untracked_state(cb)
+                        self.__handle_untracked_state(cb, is_called_from_traverse=True)
                 except StopTraversal:
                     return
 
@@ -1365,7 +1364,7 @@ class MacheteClient:
         sys.stdout.write(
             fmt(f"Fork point for <b>{b}</b> is overridden to <b>{self.__git.get_revision_repr(to_revision)}</b>.\n", f"This applies as long as {b} points to (or is descendant of) its current head (commit {self.__git.get_short_commit_sha_by_revision(b_sha)}).\n\n", f"This information is stored under git config keys:\n  * `{to_key}`\n  * `{while_descendant_of_key}`\n\n", f"To unset this override, use:\n  `git machete fork-point --unset-override {b}`\n"))
 
-    def __pick_remote(self, b: str) -> None:
+    def __pick_remote(self, b: str, is_called_from_traverse: bool) -> None:
         rems = self.__git.remotes()
         print("\n".join(f"[{index + 1}] {r}" for index, r in enumerate(rems)))
         msg = f"Select number 1..{len(rems)} to specify the destination remote " \
@@ -1378,20 +1377,18 @@ class MacheteClient:
             index = int(ans) - 1
             if index not in range(len(rems)):
                 raise MacheteException(f"Invalid index: {index + 1}")
-            self.handle_untracked_branch(rems[index], b)
+            self.handle_untracked_branch(rems[index], b, is_called_from_traverse)
         except ValueError:
             pass
 
-    def handle_untracked_branch(self, new_remote: str, b: str) -> None:
+    def handle_untracked_branch(self, new_remote: str, b: str, is_called_from_traverse: bool) -> None:
         rems: List[str] = self.__git.remotes()
         can_pick_other_remote = len(rems) > 1
         other_remote_choice = "o[ther-remote]" if can_pick_other_remote else ""
         rb = f"{new_remote}/{b}"
         if not self.__git.get_commit_sha_by_revision(rb, prefix="refs/remotes/"):
-            if self.__is_called_from_traverse:
-                ask_message = f"Push untracked branch {bold(b)} to {bold(new_remote)}?" + get_pretty_choices('y', 'N', 'q', 'yq', other_remote_choice)
-            else:
-                ask_message = f"Push untracked branch {bold(b)} to {bold(new_remote)}?" + get_pretty_choices('y', 'q', other_remote_choice)
+            choices = get_pretty_choices(*('y', 'N', 'q', 'yq', other_remote_choice) if is_called_from_traverse else ('y', 'q', other_remote_choice))
+            ask_message = f"Push untracked branch {bold(b)} to {bold(new_remote)}?" + choices
             ask_opt_yes_message = f"Pushing untracked branch {bold(b)} to {bold(new_remote)}..."
             ans = self.ask_if(ask_message, ask_opt_yes_message,
                               override_answer=None if self.__git.cli_opts.opt_push_untracked else "N")
@@ -1401,7 +1398,7 @@ class MacheteClient:
                     raise StopTraversal
                 self.flush_caches()
             elif can_pick_other_remote and ans in ('o', 'other'):
-                self.__pick_remote(b)
+                self.__pick_remote(b, is_called_from_traverse)
             elif ans in ('q', 'quit'):
                 raise StopTraversal
             return
@@ -1468,7 +1465,7 @@ class MacheteClient:
                 raise StopTraversal
             self.flush_caches()
         elif can_pick_other_remote and ans in ('o', 'other'):
-            self.__pick_remote(b)
+            self.__pick_remote(b, is_called_from_traverse)
         elif ans in ('q', 'quit'):
             raise StopTraversal
 
@@ -1566,7 +1563,6 @@ class MacheteClient:
                                f'{", ".join(org_and_repo_for_github_remote.keys())}, aborting')
 
     def create_github_pr(self, head: str, draft: bool) -> None:
-        self.__is_called_from_traverse = False
         # first make sure that head branch is synced with remote
         try:
             self.__sync_before_creating_pr()
@@ -1620,64 +1616,57 @@ class MacheteClient:
         self.__annotations[head] = f'PR #{pr.number}'
         self.save_definition_file()
 
-    def __handle_diverged_and_newer_state(self, cb: str, remote: str, abort_on_quit: bool = True) -> None:
+    def __handle_diverged_and_newer_state(self, cb: str, remote: str, is_called_from_traverse: bool = True) -> None:
         self.__print_new_line(False)
         rb = self.__git.get_strict_counterpart_for_fetching_of_branch(cb)
-        if self.__is_called_from_traverse:
-            msg = f"Branch {bold(cb)} diverged from (and has newer commits than) its remote counterpart {bold(rb)}.\n"
-            f"Push {bold(cb)} with force-with-lease to {bold(remote)}?" + get_pretty_choices('y', 'N', 'q', 'yq')
-        else:
-            msg = f"Branch {bold(cb)} diverged from (and has newer commits than) its remote counterpart {bold(rb)}.\n"
-            f"Push {bold(cb)} with force-with-lease to {bold(remote)}?" + get_pretty_choices('y', 'N', 'q')
+        choices = get_pretty_choices(*('y', 'N', 'q', 'yq') if is_called_from_traverse else ('y', 'N', 'q'))
         ans = self.ask_if(
-            msg,
+            f"Branch {bold(cb)} diverged from (and has newer commits than) its remote counterpart {bold(rb)}.\n"
+            f"Push {bold(cb)} with force-with-lease to {bold(remote)}?" + choices,
             f"Branch {bold(cb)} diverged from (and has newer commits than) its remote counterpart {bold(rb)}.\n"
             f"Pushing {bold(cb)} with force-with-lease to {bold(remote)}...",
             override_answer=None if self.__cli_opts.opt_push_tracked else "N")
         if ans in ('y', 'yes', 'yq'):
             self.__git.push(remote, cb, force_with_lease=True)
             if ans == 'yq':
-                if abort_on_quit:
+                if is_called_from_traverse:
                     raise StopTraversal
             self.flush_caches()
         elif ans in ('q', 'quit'):
-            if abort_on_quit:
+            if is_called_from_traverse:
                 raise StopTraversal
 
-    def __handle_untracked_state(self, b: str) -> None:
+    def __handle_untracked_state(self, b: str, is_called_from_traverse: bool) -> None:
         rems: List[str] = self.__git.remotes()
         rmt: Optional[str] = self.__git.get_inferred_remote_for_fetching_of_branch(b)
         self.__print_new_line(False)
         if rmt:
-            self.handle_untracked_branch(rmt, b)
+            self.handle_untracked_branch(rmt, b, is_called_from_traverse)
         elif len(rems) == 1:
-            self.handle_untracked_branch(rems[0], b)
+            self.handle_untracked_branch(rems[0], b, is_called_from_traverse)
         elif "origin" in rems:
-            self.handle_untracked_branch("origin", b)
+            self.handle_untracked_branch("origin", b, is_called_from_traverse)
         else:
             # We know that there is at least 1 remote, otherwise 's' would be 'NO_REMOTES'
             print(fmt(f"Branch `{bold(b)}` is untracked and there's no `{bold('origin')}` repository."))
-            self.__pick_remote(b)
+            self.__pick_remote(b, is_called_from_traverse)
 
-    def __handle_ahead_state(self, cb: str, remote: str, abort_on_quit: bool = True) -> None:
+    def __handle_ahead_state(self, cb: str, remote: str, is_called_from_traverse: bool) -> None:
         self.__print_new_line(False)
-        if self.__is_called_from_traverse:
-            msg = f"Push {bold(cb)} to {bold(remote)}?" + get_pretty_choices('y', 'N', 'q', 'yq')
-        else:
-            msg = f"Push {bold(cb)} to {bold(remote)}?" + get_pretty_choices('y', 'N', 'q')
+        choices = get_pretty_choices(*('y', 'N', 'q', 'yq') if is_called_from_traverse else ('y', 'N', 'q'))
         ans = self.ask_if(
-            msg,
+            f"Push {bold(cb)} to {bold(remote)}?" + choices,
             f"Pushing {bold(cb)} to {bold(remote)}...",
             override_answer=None if self.__cli_opts.opt_push_tracked else "N"
         )
         if ans in ('y', 'yes', 'yq'):
             self.__git.push(remote, cb)
             if ans == 'yq':
-                if abort_on_quit:
+                if is_called_from_traverse:
                     raise StopTraversal
             self.flush_caches()
         elif ans in ('q', 'quit'):
-            if abort_on_quit:
+            if is_called_from_traverse:
                 raise StopTraversal
 
     def __handle_diverged_and_older_state(self, b: str) -> None:
@@ -1727,11 +1716,11 @@ class MacheteClient:
 
         if needs_remote_sync:
             if s == AHEAD_OF_REMOTE:
-                self.__handle_ahead_state(cb, remote, abort_on_quit=False)
+                self.__handle_ahead_state(cb, remote, is_called_from_traverse=False)
             elif s == UNTRACKED:
-                self.__handle_untracked_state(cb)
+                self.__handle_untracked_state(cb, is_called_from_traverse=False)
             elif s == DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
-                self.__handle_diverged_and_newer_state(cb, remote, abort_on_quit=False)
+                self.__handle_diverged_and_newer_state(cb, remote, is_called_from_traverse=False)
 
             self.__print_new_line(False)
             self.status(warn_on_yellow_edges=True)
