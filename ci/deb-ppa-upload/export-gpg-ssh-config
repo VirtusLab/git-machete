@@ -1,7 +1,15 @@
 
 export GPG_PRIVATE_KEY_PASSPHRASE=$(cat ~/.gnupg/passphrase.txt)
-export GPG_PRIVATE_KEY_ID=$(basename --suffix=.key ~/.gnupg/private-keys-v1.d/*.key)
-export GPG_PRIVATE_KEY_CONTENTS_BASE64=$(base64 --wrap=0 ~/.gnupg/private-keys-v1.d/$GPG_PRIVATE_KEY_ID.key)
-export GPG_PUBRING_KEYBOX_CONTENTS_BASE64=$(base64 --wrap=0 ~/.gnupg/pubring.kbx)
-export GPG_TRUSTDB_GPG_CONTENTS_BASE64=$(base64 --wrap=0 ~/.gnupg/trustdb.gpg)
-export SSH_PRIVATE_KEY_CONTENTS_BASE64=$(base64 --wrap=0 ~/.ssh/launchpad/id_rsa)
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  export GPG_PRIVATE_KEY_ID=$(basename -s .key ~/.gnupg/private-keys-v1.d/*.key)
+  export GPG_PRIVATE_KEY_CONTENTS_BASE64=$(base64 ~/.gnupg/private-keys-v1.d/$GPG_PRIVATE_KEY_ID.key)
+  export GPG_PUBRING_KEYBOX_CONTENTS_BASE64=$(base64 ~/.gnupg/pubring.kbx)
+  export GPG_TRUSTDB_GPG_CONTENTS_BASE64=$(base64 ~/.gnupg/trustdb.gpg)
+  export SSH_PRIVATE_KEY_CONTENTS_BASE64=$(base64 ~/.ssh/id_rsa)
+else
+  export GPG_PRIVATE_KEY_ID=$(basename --suffix=.key ~/.gnupg/private-keys-v1.d/*.key)
+  export GPG_PRIVATE_KEY_CONTENTS_BASE64=$(base64 --wrap=0 ~/.gnupg/private-keys-v1.d/$GPG_PRIVATE_KEY_ID.key)
+  export GPG_PUBRING_KEYBOX_CONTENTS_BASE64=$(base64 --wrap=0 ~/.gnupg/pubring.kbx)
+  export GPG_TRUSTDB_GPG_CONTENTS_BASE64=$(base64 --wrap=0 ~/.gnupg/trustdb.gpg)
+  export SSH_PRIVATE_KEY_CONTENTS_BASE64=$(base64 --wrap=0 ~/.ssh/launchpad/id_rsa)
+fi
