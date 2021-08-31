@@ -8,7 +8,7 @@
 [![License: MIT](https://img.shields.io/github/license/VirtusLab/git-machete)](https://github.com/VirtusLab/git-machete/blob/master/LICENSE)
 
 <img src="https://raw.githubusercontent.com/VirtusLab/git-machete/develop/graphics/logo_with_name.svg"; style="width: 100%; display: block; margin-bottom: 10pt;" />
-<!-- The image is referenced by full URL, corresponding master branch to ensure it renders correctly on https://pypi.org/project/git-machete/ -->
+<!-- The image is referenced by full URL, corresponding develop branch to ensure it renders correctly on https://pypi.org/project/git-machete/ -->
 
 💪 git-machete is a robust tool that **simplifies your git workflows**.<br/>
 
@@ -28,7 +28,7 @@ even when **multiple branches** are present in the repository
     <img src="https://raw.githubusercontent.com/VirtusLab/git-machete/develop/graphics/discover-status-traverse.gif"
          alt="git machete discover, status and traverse" />
 </p>
-<!-- The gif in here is referenced by full URL, corresponding master branch to ensure it renders correctly on https://pypi.org/project/git-machete/ -->
+<!-- The gif in here is referenced by full URL, corresponding develop branch to ensure it renders correctly on https://pypi.org/project/git-machete/ -->
 
 🔌 See also [VirtusLab/git-machete-intellij-plugin](https://github.com/VirtusLab/git-machete-intellij-plugin#git-machete-intellij-plugin) &mdash;
 a port into a plugin for the IntelliJ Platform products, including PyCharm, WebStorm etc.
