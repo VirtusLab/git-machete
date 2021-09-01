@@ -16,9 +16,6 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            # We don't want `less` to open for `git grep` results.
-            export GIT_PAGER=cat
-
             # For ensure-completion-scripts-correct.sh
             sudo apt-get update
             sudo apt-get install zsh
@@ -33,6 +30,9 @@ jobs:
       - run:
           name: Perform initial checks
           command: |
+            # We don't want `less` to open for `git grep` results.
+            export GIT_PAGER=cat
+
             PATH=./ci/checks:$PATH
             set -x
             enforce-indent-two-spaces-outside-python.sh
