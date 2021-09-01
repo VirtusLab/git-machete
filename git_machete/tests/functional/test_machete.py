@@ -27,9 +27,9 @@ class SandboxSetup:
         os.chdir(args[0])
         if len(args) > 1:
             opt = args[1]
-            self.execute(f"git init {opt}")
+            self.execute(f"git init {opt} --quiet")
         else:
-            self.execute("git init")
+            self.execute("git init --quiet")
         return self
 
     def new_branch(self, branch_name: str) -> "SandboxSetup":
@@ -43,7 +43,7 @@ class SandboxSetup:
     def commit(self, message: str) -> "SandboxSetup":
         f = "%s.txt" % "".join(random.choice(string.ascii_letters) for _ in range(20))
         self.execute(f"touch {f}")
-        self.execute(f"git add {f}")
+        self.execute(f"git add {f} >/dev/null")
         self.execute(f'git commit -q -m "{message}"')
         return self
 
@@ -52,7 +52,7 @@ class SandboxSetup:
         return self
 
     def push(self) -> "SandboxSetup":
-        branch = os.popen("git symbolic-ref --short HEAD").read()
+        branch = os.popen("git symbolic-ref -q --short HEAD").read()
         self.execute(f"git push -q -u origin {branch}")
         return self
 
@@ -61,11 +61,11 @@ class SandboxSetup:
         return self
 
     def reset_to(self, revision: str) -> "SandboxSetup":
-        self.execute(f'git reset --keep "{revision}"')
+        self.execute(f'git reset -q --keep "{revision}"')
         return self
 
     def delete_branch(self, branch: str) -> "SandboxSetup":
-        self.execute(f'git branch -d "{branch}"')
+        self.execute(f'git branch -q -d "{branch}"')
         return self
 
 
@@ -97,9 +97,9 @@ class MacheteTester(unittest.TestCase):
             # Create the remote and sandbox repos, chdir into sandbox repo
             .new_repo(self.setup.remote_path, "--bare")
             .new_repo(self.setup.sandbox_path)
-            .execute(f"git remote add origin {self.setup.remote_path}")
-            .execute('git config user.email "tester@test.com"')
-            .execute('git config user.name "Tester Test"')
+            .execute(f"git remote add origin {self.setup.remote_path} > /dev/null")
+            .execute('git config user.email "tester@test.com" --quiet')
+            .execute('git config user.name "Tester Test" --quiet')
         )
 
     def setup_discover_standard_tree(self) -> None:
@@ -550,8 +550,8 @@ class MacheteTester(unittest.TestCase):
         # squash-merge feature onto develop
         repo = (
             repo.check_out("develop")
-            .execute("git merge --squash feature")
-            .execute("git commit -m squash_feature")
+            .execute("git merge -q --squash feature")
+            .execute("git commit -q -m squash_feature")
             .check_out("child")
         )
 
@@ -614,11 +614,11 @@ class MacheteTester(unittest.TestCase):
         repo = (
             repo.check_out("develop")
             .new_branch("upstream_squash")
-            .execute("git merge --squash child")
-            .execute("git commit -m squash_child")
-            .execute("git push origin upstream_squash:develop")
+            .execute("git merge -q --squash child")
+            .execute("git commit -q -m squash_child")
+            .execute("git push -q origin upstream_squash:develop")
             .check_out("child")
-            .execute("git branch -D upstream_squash")
+            .execute("git branch -q -D upstream_squash")
         )
 
         # status before fetch will show develop as out of date
