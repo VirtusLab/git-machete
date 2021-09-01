@@ -27,14 +27,21 @@ ENV PYTHON_VERSION=${python_version}
 ENV PYTHON=python${python_version}
 RUN apk add --no-cache gcc musl-dev # both packages are required to install mypy
 
+# Pass build argument to CHECK_COVERAGE environment variable that is used to
+# determine tox environment list in 'entrypoint.sh'.
+ARG check_coverage
+ENV CHECK_COVERAGE=${check_coverage}
+
 ARG user_id
 ARG group_id
 RUN set -x \
     && [ ${user_id:-0} -ne 0 ] \
     && [ ${group_id:-0} -ne 0 ] \
-    && addgroup --gid=${group_id} ci-user \
-    && adduser --uid=${user_id} --ingroup=ci-user --disabled-password ci-user
+    # sometimes given group_id is already taken and addgroup outputs error, so let's check it's existence first
+    && (getent group $group_id || addgroup --gid=${group_id} ci-user) \
+    && adduser --uid=${user_id} --ingroup=$(getent group $group_id | cut -d: -f1) --disabled-password ci-user
 USER ci-user
+RUN $PYTHON -m pip install --user tox
 ENV PATH=$PATH:/home/ci-user/.local/bin/
 COPY --chown=ci-user:ci-user entrypoint.sh /home/ci-user/
 RUN chmod +x ~/entrypoint.sh

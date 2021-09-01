@@ -1,14 +1,14 @@
 # git-machete
 
 [![Join the chat at https://gitter.im/VirtusLab/git-machete](https://badges.gitter.im/VirtusLab/git-machete.svg)](https://gitter.im/VirtusLab/git-machete)
-[![CircleCI](https://circleci.com/gh/VirtusLab/git-machete/tree/develop.svg?style=shield)](https://app.circleci.com/pipelines/github/VirtusLab/git-machete?branch=develop)
+[![CircleCI](https://circleci.com/gh/VirtusLab/git-machete/tree/master.svg?style=shield)](https://app.circleci.com/pipelines/github/VirtusLab/git-machete?branch=master)
 [![PyPI package](https://img.shields.io/pypi/v/git-machete.svg)](https://pypi.org/project/git-machete)
-[![PyPI package monthly downloads](https://img.shields.io/pypi/dm/git-machete.svg)](https://pypi.org/project/git-machete)
+[![PyPI package monthly downloads](https://img.shields.io/pypi/dm/git-machete.svg)](https://pypistats.org/packages/git-machete)
 [![Snap](https://snapcraft.io/git-machete/badge.svg)](https://snapcraft.io/git-machete)
 [![License: MIT](https://img.shields.io/github/license/VirtusLab/git-machete)](https://github.com/VirtusLab/git-machete/blob/master/LICENSE)
 
-<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/docs/logo.svg"
-     style="width: 100%; display: block; margin-bottom: 10pt;" />
+<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/develop/graphics/logo_with_name.svg"; style="width: 100%; display: block; margin-bottom: 10pt;" />
+<!-- The image is referenced by full URL, corresponding develop branch to ensure it renders correctly on https://pypi.org/project/git-machete/ -->
 
 💪 git-machete is a robust tool that **simplifies your git workflows**.<br/>
 
@@ -25,9 +25,10 @@ even when **multiple branches** are present in the repository
 🚜 `git machete traverse` semi-automatically traverses the branches, helping you effortlessly rebase, merge, push and pull.
 
 <p align="center">
-    <img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/docs/discover-status-traverse.gif"
+    <img src="https://raw.githubusercontent.com/VirtusLab/git-machete/develop/graphics/discover-status-traverse.gif"
          alt="git machete discover, status and traverse" />
 </p>
+<!-- The gif in here is referenced by full URL, corresponding develop branch to ensure it renders correctly on https://pypi.org/project/git-machete/ -->
 
 🔌 See also [VirtusLab/git-machete-intellij-plugin](https://github.com/VirtusLab/git-machete-intellij-plugin#git-machete-intellij-plugin) &mdash;
 a port into a plugin for the IntelliJ Platform products, including PyCharm, WebStorm etc.
@@ -149,11 +150,21 @@ git machete advance
 Useful for merging the child branch to the current branch in a linear fashion (without creating a merge commit).
 
 ### GitHub integration
+
+Annotate the branches with GitHub PR numbers: <br/>
 ```shell script
-git machete anno --sync-github-prs
+git machete github anno-prs
 ```
 
-This will automatically annotate the branches with GitHub PR numbers. <br/>
+Create the PR, using the upstream (parent) branch from `.git/machete` as the base: <br/>
+```shell script
+git machete github create-pr [--draft]
+```
+
+Sets the base of the current branch's PR to its upstream (parent) branch, as seen by git machete: <br/>
+```shell script
+git machete github retarget-pr
+```
 
 **Note**: for private repositories, a GitHub API token with `repo` access is required.
 This will be resolved from the first of:

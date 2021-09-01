@@ -6,9 +6,11 @@
 AUTHORS
 ChangeLog
 build/
+.coverage
 dist/
 *.egg-info/
 .eggs/
+htmlcov/
 *.pyc
 .python-version
 .stestr/
