@@ -82,7 +82,7 @@ As in the first point, if the PR author accepts the suggested comment without an
 
 **Can I resolve all comments in a single commit or each comment in an individual commit?**
 
-Review fixes should be pushed on separate commits (unlike in e.g. Gerrit's amend-based flow).
+Review fixes should be pushed on separate commits for easier viewing on GitHub (unlike in e.g. Gerrit's amend-based flow).
 
 
 ## Release TODO list
