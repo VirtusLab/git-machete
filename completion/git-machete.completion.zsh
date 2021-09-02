@@ -64,11 +64,11 @@ _git-machete() {
         (g|go)
           _arguments '1:: :__git_machete_directions_go' && ret=0
           ;;
-        (github)
-          _arguments '1:: :__git_machete_github_subcommands' && ret=0
-          ;;
         (help)
           _arguments '1:: :__git_machete_help_topics' && ret=0
+          ;;
+        (github)
+          _arguments '1:: :__git_machete_github_subcommands' && ret=0
           ;;
         (is-managed|l|log)
           _arguments '1:: :__git_branch_names' && ret=0
