@@ -72,7 +72,7 @@ Author of changes, reviewer or initiator of the conversation. It makes sense to 
 
 Any technique is okay as long as there are NO unnecessary merge commits. Squash and merge from Github is okay, fast-forward made from console or over there via git machete advance & git push is ok too.
 
-**Is there any commit message convention that goes into develop?**
+**Is there any commit message convention?**
 
 Nothing special, as long as they look neat in the sense that they are written in imperative form and describe what actually happened on a given commit.
 
