@@ -70,7 +70,8 @@ Author of changes, reviewer or initiator of the conversation. It makes sense to 
 
 **Do you make squash before develop?**
 
-Any technique is okay as long as there are NO unnecessary merge commits. Squash and merge from Github is okay, fast-forward made from console or over there via git machete advance & git push is ok too.
+Any technique is okay as long as there are [NO unnecessary merge commits](https://slides.com/plipski/git-machete#/8).
+`Squash and merge` from Github is okay, fast-forward made from console or via `git machete advance` & `git push` is ok too.
 
 **Is there any commit message convention?**
 
