@@ -6,6 +6,7 @@ import string
 import textwrap
 import time
 import unittest
+import subprocess
 from contextlib import redirect_stdout
 from typing import Iterable
 
@@ -30,8 +31,7 @@ class GitRepositorySandbox:
         self.local_path = os.popen("mktemp -d").read().strip()
 
     def execute(self, command: str) -> "GitRepositorySandbox":
-        result = os.system(command)
-        assert result == 0, f"{command} returned {result}"
+        os.popen(command).read().strip()
         return self
 
     def new_repo(self, *args: str) -> "GitRepositorySandbox":
