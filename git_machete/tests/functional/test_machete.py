@@ -37,11 +37,11 @@ class GitRepositorySandbox:
     def new_repo(self, *args: str) -> "GitRepositorySandbox":
         os.chdir(args[0])
         opts = args[1:]
-        self.execute(f"git init -q {' '.join(opts)}")
+        self.execute(f"git init {' '.join(opts)}")
         return self
 
     def new_branch(self, branch_name: str) -> "GitRepositorySandbox":
-        self.execute(f"git checkout -q -b {branch_name}")
+        self.execute(f"git checkout -b {branch_name}")
         return self
 
     def new_root_branch(self, branch_name: str) -> "GitRepositorySandbox":
@@ -49,23 +49,23 @@ class GitRepositorySandbox:
         return self
 
     def check_out(self, branch: str) -> "GitRepositorySandbox":
-        self.execute(f"git checkout -q {branch}")
+        self.execute(f"git checkout {branch}")
         return self
 
     def commit(self, message: str = "Some commit message.") -> "GitRepositorySandbox":
         f = "%s.txt" % "".join(random.choice(string.ascii_letters) for _ in range(20))
         self.execute(f"touch {f}")
-        self.execute(f"git add {f} >/dev/null")
-        self.execute(f'git commit -q -m "{message}"')
+        self.execute(f"git add {f}")
+        self.execute(f'git commit -m "{message}"')
         return self
 
     def commit_amend(self, message: str) -> "GitRepositorySandbox":
-        self.execute(f'git commit -q --amend -m "{message}"')
+        self.execute(f'git commit --amend -m "{message}"')
         return self
 
     def push(self) -> "GitRepositorySandbox":
         branch = os.popen("git symbolic-ref -q --short HEAD").read()
-        self.execute(f"git push -q -u origin {branch}")
+        self.execute(f"git push -u origin {branch}")
         return self
 
     def sleep(self, seconds: int) -> "GitRepositorySandbox":
@@ -73,11 +73,11 @@ class GitRepositorySandbox:
         return self
 
     def reset_to(self, revision: str) -> "GitRepositorySandbox":
-        self.execute(f'git reset -q --keep "{revision}"')
+        self.execute(f'git reset --keep "{revision}"')
         return self
 
     def delete_branch(self, branch: str) -> "GitRepositorySandbox":
-        self.execute(f'git branch -q -d "{branch}"')
+        self.execute(f'git branch -d "{branch}"')
         return self
 
 
@@ -115,7 +115,7 @@ class MacheteTester(unittest.TestCase):
             # Create the remote and sandbox repos, chdir into sandbox repo
             .new_repo(self.repo_sandbox.remote_path, "--bare")
             .new_repo(self.repo_sandbox.local_path)
-            .execute(f"git remote add origin {self.repo_sandbox.remote_path} > /dev/null")
+            .execute(f"git remote add origin {self.repo_sandbox.remote_path}")
             .execute('git config user.email "tester@test.com"')
             .execute('git config user.name "Tester Test"')
         )
@@ -587,8 +587,8 @@ class MacheteTester(unittest.TestCase):
         # squash-merge feature onto develop
         (
             self.repo_sandbox.check_out("develop")
-            .execute("git merge -q --squash feature")
-            .execute("git commit -q -m squash_feature")
+            .execute("git merge --squash feature")
+            .execute("git commit -m squash_feature")
             .check_out("child")
         )
 
@@ -651,11 +651,11 @@ class MacheteTester(unittest.TestCase):
         (
             self.repo_sandbox.check_out("develop")
             .new_branch("upstream_squash")
-            .execute("git merge -q --squash child")
-            .execute("git commit -q -m squash_child")
-            .execute("git push -q origin upstream_squash:develop")
+            .execute("git merge --squash child")
+            .execute("git commit -m squash_child")
+            .execute("git push origin upstream_squash:develop")
             .check_out("child")
-            .execute("git branch -q -D upstream_squash")
+            .execute("git branch -D upstream_squash")
         )
 
         # status before fetch will show develop as out of date
