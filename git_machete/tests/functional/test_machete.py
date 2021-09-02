@@ -6,6 +6,7 @@ import string
 import textwrap
 import time
 import unittest
+import subprocess
 from contextlib import redirect_stdout
 from typing import Iterable
 
@@ -30,18 +31,17 @@ class GitRepositorySandbox:
         self.local_path = os.popen("mktemp -d").read().strip()
 
     def execute(self, command: str) -> "GitRepositorySandbox":
-        result = os.system(command)
-        assert result == 0, f"{command} returned {result}"
+        subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)
         return self
 
     def new_repo(self, *args: str) -> "GitRepositorySandbox":
         os.chdir(args[0])
         opts = args[1:]
-        self.execute(f"git init -q {' '.join(opts)}")
+        self.execute(f"git init {' '.join(opts)}")
         return self
 
     def new_branch(self, branch_name: str) -> "GitRepositorySandbox":
-        self.execute(f"git checkout -q -b {branch_name}")
+        self.execute(f"git checkout -b {branch_name}")
         return self
 
     def new_root_branch(self, branch_name: str) -> "GitRepositorySandbox":
@@ -49,23 +49,23 @@ class GitRepositorySandbox:
         return self
 
     def check_out(self, branch: str) -> "GitRepositorySandbox":
-        self.execute(f"git checkout -q {branch}")
+        self.execute(f"git checkout {branch}")
         return self
 
     def commit(self, message: str = "Some commit message.") -> "GitRepositorySandbox":
         f = "%s.txt" % "".join(random.choice(string.ascii_letters) for _ in range(20))
         self.execute(f"touch {f}")
         self.execute(f"git add {f}")
-        self.execute(f'git commit -q -m "{message}"')
+        self.execute(f'git commit -m "{message}"')
         return self
 
     def commit_amend(self, message: str) -> "GitRepositorySandbox":
-        self.execute(f'git commit -q --amend -m "{message}"')
+        self.execute(f'git commit --amend -m "{message}"')
         return self
 
     def push(self) -> "GitRepositorySandbox":
-        branch = os.popen("git symbolic-ref --short HEAD").read()
-        self.execute(f"git push -q -u origin {branch}")
+        branch = os.popen("git symbolic-ref -q --short HEAD").read()
+        self.execute(f"git push -u origin {branch}")
         return self
 
     def sleep(self, seconds: int) -> "GitRepositorySandbox":
