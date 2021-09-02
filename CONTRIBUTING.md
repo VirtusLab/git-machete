@@ -61,7 +61,7 @@ Output format of any non-plumbing command can change in non-backward-compatible 
 
 ## FAQ's about Pull Requests
 
-**Who closes Github comments? Author of changes, reviewer or initiator of the conversation?** 
+**Who closes Github comments? Author of changes, reviewer or initiator of the conversation?**
 
 It makes sense to close comment:
 
