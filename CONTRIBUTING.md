@@ -61,9 +61,9 @@ Output format of any non-plumbing command can change in non-backward-compatible 
 
 ## FAQ's about Pull Requests
 
-**Who closes Github comments?**
+**Who closes Github comments? Author of changes, reviewer or initiator of the conversation?** 
 
-Author of changes, reviewer or initiator of the conversation. It makes sense to close comment:
+It makes sense to close comment:
 
 1) If the comment was trivial and was addressed as suggested by the reviewer, then it is enough for the PR author to simply `Resolve` the thread and that's it
 2) If the comment was not trivial and/or for some reason the PR author believes that the comment should not be addressed as suggested by the reviewer, then it is best to leave the thread open after replying; then the reviewer can press `Resolve` once they have decided that the matter is cleared.
