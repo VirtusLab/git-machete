@@ -31,7 +31,7 @@ Deprecated commands are excluded.
 | expects no ongoing rebase/merge/cherry-pick/revert/am             | `advance`, `go`, `reapply`, `slide-out`, `squash`, `traverse`, `update`                                                                        |
 | has stable output format across minor versions (plumbing command) | `file`, `fork-point`<sup>[4]</sup>, `is-managed`, `list`, `show`, `version`                                                                    |
 
-[1]: `github` can only display status, accept interactive mode or modify git repository when `create-pr` subcommand is passed and the current branch is untracked or ahead of its remote.
+[1]: `github` can only display status, accept interactive mode or modify git repository when `create-pr` or `checkout-pr` subcommand is passed.
 
 [2]: `advance` can only run fast-forward merge (`git merge --ff-only`).
 

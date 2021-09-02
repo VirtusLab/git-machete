@@ -64,11 +64,11 @@ _git-machete() {
         (g|go)
           _arguments '1:: :__git_machete_directions_go' && ret=0
           ;;
-        (github)
-          _arguments '1:: :__git_machete_github_subcommands' && ret=0
-          ;;
         (help)
           _arguments '1:: :__git_machete_help_topics' && ret=0
+          ;;
+        (github)
+          _arguments '1:: :__git_machete_github_subcommands' && ret=0
           ;;
         (is-managed|l|log)
           _arguments '1:: :__git_branch_names' && ret=0
@@ -217,6 +217,7 @@ __git_machete_github_subcommands() {
   local github_subcommands
   github_subcommands=(
     'anno-prs:annotate the branches based on their corresponding GitHub PR numbers and authors'
+    'checkout-pr:checks out locally given pull request'
     'create-pr:create a PR for the current branch, using the upstream (parent) branch as the PR base'
     'retarget-pr:set the base of the current branch PR to upstream (parent) branch'
   )
