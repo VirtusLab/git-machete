@@ -31,7 +31,7 @@ class GitRepositorySandbox:
         self.local_path = os.popen("mktemp -d").read().strip()
 
     def execute(self, command: str) -> "GitRepositorySandbox":
-        os.popen(command).read().strip()
+        subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)
         return self
 
     def new_repo(self, *args: str) -> "GitRepositorySandbox":
