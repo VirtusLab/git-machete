@@ -168,8 +168,8 @@ class GitContext:
             self.run_git("fetch", remote)
             self.__fetch_done_for.add(remote)
 
-    def set_upstream_to(self, rb: str) -> None:
-        self.run_git("branch", "--set-upstream-to", rb)
+    def set_upstream_to(self, remote_branch: str) -> None:
+        self.run_git("branch", "--set-upstream-to", remote_branch)
 
     def reset_keep(self, to_revision: str) -> None:
         try:
@@ -188,12 +188,12 @@ class GitContext:
         args = [remote, b]
         self.run_git("push", "--set-upstream", *(opt_force + args))
 
-    def pull_ff_only(self, remote: str, rb: str) -> None:
+    def pull_ff_only(self, remote: str, remote_branch: str) -> None:
         self.fetch_remote(remote)
-        self.run_git("merge", "--ff-only", rb)
+        self.run_git("merge", "--ff-only", remote_branch)
         # There's apparently no way to set remote automatically when doing 'git pull' (as opposed to 'git push'),
         # so a separate 'git branch --set-upstream-to' is needed.
-        self.set_upstream_to(rb)
+        self.set_upstream_to(remote_branch)
 
     def __find_short_commit_sha_by_revision(self, revision: str) -> str:
         return self.popen_git("rev-parse", "--short", revision + "^{commit}").rstrip()
@@ -250,9 +250,9 @@ class GitContext:
 
     def get_inferred_remote_for_fetching_of_branch(self, b: str) -> Optional[str]:
         # Since many people don't use '--set-upstream' flag of 'push', we try to infer the remote instead.
-        for r in self.remotes():
-            if f"{r}/{b}" in self.get_remote_branches():
-                return r
+        for remote in self.remotes():
+            if f"{remote}/{b}" in self.get_remote_branches():
+                return remote
         return None
 
     def get_strict_remote_for_fetching_of_branch(self, b: str) -> Optional[str]:
@@ -263,9 +263,9 @@ class GitContext:
         return self.get_strict_remote_for_fetching_of_branch(b) or self.get_inferred_remote_for_fetching_of_branch(b)
 
     def __get_inferred_counterpart_for_fetching_of_branch(self, b: str) -> Optional[str]:
-        for r in self.remotes():
-            if f"{r}/{b}" in self.get_remote_branches():
-                return f"{r}/{b}"
+        for remote in self.remotes():
+            if f"{remote}/{b}" in self.get_remote_branches():
+                return f"{remote}/{b}"
         return None
 
     def get_strict_counterpart_for_fetching_of_branch(self, b: str) -> Optional[str]:
@@ -455,10 +455,10 @@ class GitContext:
             return None
 
     def expect_no_operation_in_progress(self) -> None:
-        rb = self.get_currently_rebased_branch_or_none()
-        if rb:
+        remote_branch = self.get_currently_rebased_branch_or_none()
+        if remote_branch:
             raise MacheteException(
-                f"Rebase of `{rb}` in progress. Conclude the rebase first with `git rebase --continue` or `git rebase --abort`.")
+                f"Rebase of `{remote_branch}` in progress. Conclude the rebase first with `git rebase --continue` or `git rebase --abort`.")
         if self.is_am_in_progress():
             raise MacheteException(
                 "`git am` session in progress. Conclude `git am` first with `git am --continue` or `git am --abort`.")
@@ -553,13 +553,13 @@ class GitContext:
         return result
 
     def get_sole_remote_branch(self, b: str) -> Optional[str]:
-        def matches(rb: str) -> bool:
+        def matches(remote_branch: str) -> bool:
             # Note that this matcher is defensively too inclusive:
             # if there is both origin/foo and origin/feature/foo,
             # then both are matched for 'foo';
             # this is to reduce risk wrt. which '/'-separated fragments belong to remote and which to branch name.
             # FIXME (#116): this is still likely to deliver incorrect results in rare corner cases with compound remote names.
-            return rb.endswith(f"/{b}")
+            return remote_branch.endswith(f"/{b}")
 
         matching_remote_branches = list(filter(matches, self.get_remote_branches()))
         return matching_remote_branches[0] if len(matching_remote_branches) == 1 else None
@@ -657,33 +657,33 @@ class GitContext:
                 self.popen_git("log", "--format=%H:%h:%s", f"^{earliest_exclusive}", latest_inclusive, "--"))
         ))))
 
-    def get_relation_to_remote_counterpart(self, b: str, rb: str) -> int:
-        b_is_anc_of_rb = self.is_ancestor_or_equal(b, rb, later_prefix="refs/remotes/")
-        rb_is_anc_of_b = self.is_ancestor_or_equal(rb, b, earlier_prefix="refs/remotes/")
+    def get_relation_to_remote_counterpart(self, b: str, remote_branch: str) -> int:
+        b_is_anc_of_rb = self.is_ancestor_or_equal(b, remote_branch, later_prefix="refs/remotes/")
+        rb_is_anc_of_b = self.is_ancestor_or_equal(remote_branch, b, earlier_prefix="refs/remotes/")
         if b_is_anc_of_rb:
             return IN_SYNC_WITH_REMOTE if rb_is_anc_of_b else BEHIND_REMOTE
         elif rb_is_anc_of_b:
             return AHEAD_OF_REMOTE
         else:
             b_t = self.get_committer_unix_timestamp_by_revision(b, "refs/heads/")
-            rb_t = self.get_committer_unix_timestamp_by_revision(rb, "refs/remotes/")
+            rb_t = self.get_committer_unix_timestamp_by_revision(remote_branch, "refs/remotes/")
             return DIVERGED_FROM_AND_OLDER_THAN_REMOTE if b_t < rb_t else DIVERGED_FROM_AND_NEWER_THAN_REMOTE
 
     def get_strict_remote_sync_status(self, b: str) -> Tuple[int, Optional[str]]:
         if not self.remotes():
             return NO_REMOTES, None
-        rb = self.get_strict_counterpart_for_fetching_of_branch(b)
-        if not rb:
+        remote_branch = self.get_strict_counterpart_for_fetching_of_branch(b)
+        if not remote_branch:
             return UNTRACKED, None
-        return self.get_relation_to_remote_counterpart(b, rb), self.get_strict_remote_for_fetching_of_branch(b)
+        return self.get_relation_to_remote_counterpart(b, remote_branch), self.get_strict_remote_for_fetching_of_branch(b)
 
     def get_combined_remote_sync_status(self, b: str) -> Tuple[int, Optional[str]]:
         if not self.remotes():
             return NO_REMOTES, None
-        rb = self.get_combined_counterpart_for_fetching_of_branch(b)
-        if not rb:
+        remote_branch = self.get_combined_counterpart_for_fetching_of_branch(b)
+        if not remote_branch:
             return UNTRACKED, None
-        return self.get_relation_to_remote_counterpart(b, rb), self.get_combined_remote_for_fetching_of_branch(b)
+        return self.get_relation_to_remote_counterpart(b, remote_branch), self.get_combined_remote_for_fetching_of_branch(b)
 
     def get_latest_checkout_timestamps(self) -> Dict[str, int]:  # TODO (#110): default dict with 0
         # Entries are in the format '<branch_name>@{<unix_timestamp> <time-zone>}'
