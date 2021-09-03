@@ -59,6 +59,33 @@ Output format of any non-plumbing command can change in non-backward-compatible 
 * [Nifty Docker tricks for your CI (vol. 2)](https://medium.com/virtuslab/nifty-docker-tricks-for-your-ci-vol-2-c5191a67f1a4)
 
 
+## FAQ's about Pull Requests
+
+**Who closes Github comments? Author of changes, reviewer or initiator of the conversation?**
+
+It makes sense to close comment:
+
+1) If the comment was trivial and was addressed as suggested by the reviewer, then it is enough for the PR author to simply `Resolve` the thread and that's it
+2) If the comment was not trivial and/or for some reason the PR author believes that the comment should not be addressed as suggested by the reviewer, then it is best to leave the thread open after replying; then the reviewer can press `Resolve` once they have decided that the matter is cleared.
+
+**Do you make squash before develop?**
+
+Any technique is okay as long as there are [NO unnecessary merge commits](https://slides.com/plipski/git-machete#/8).
+`Squash and merge` from Github is okay, fast-forward made from console or via `git machete advance` & `git push` is ok too.
+
+**Is there any commit message convention?**
+
+Nothing special, as long as they look neat in the sense that they are written in imperative form and describe what actually happened on a given commit.
+
+**How do you know that the comment has been approved?**
+
+As in the first point, if the PR author accepts the suggested comment without any additional comments, simply `Resolve` on Github will suffice. There is no need to reply things like "Accepted", "Done", etc as it just spams the reviewer's email.
+
+**Can I resolve all comments in a single commit or each comment in an individual commit?**
+
+Review fixes should be pushed on separate commits for easier viewing on GitHub (unlike in e.g. Gerrit's amend-based flow).
+
+
 ## Release TODO list
 
 1. Merge the changes from `develop` to `master` and push `master`.
