@@ -711,7 +711,7 @@ class MacheteClient:
                 edge_color[branch] = YELLOW
 
         currently_rebased_branch = self.__git.get_currently_rebased_branch_or_none()
-        current_checkedout_branch = self.__git.get_currently_checked_out_branch_or_none()
+        currently_checked_out_branch = self.__git.get_currently_checked_out_branch_or_none()
 
         hook_path = self.__git.get_hook_path("machete-status-branch")
         hook_executable = self.__git.check_hook_executable(hook_path)
