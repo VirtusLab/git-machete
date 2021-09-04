@@ -350,10 +350,10 @@ class MacheteClient:
             return
 
         for branch in excluding(non_root_fixed_branches, stale_non_root_fixed_branches):
-            upstream = self.__infer_upstream(branch, condition=lambda
-                candidate: get_root_of(
-                candidate) != branch and candidate not in stale_non_root_fixed_branches,
-                                             reject_reason_message="choosing this candidate would form a cycle in the resulting graph or the candidate is a stale branch")
+            upstream = self.__infer_upstream(
+                branch,
+                condition=lambda candidate: get_root_of(candidate) != branch and candidate not in stale_non_root_fixed_branches,
+                reject_reason_message="choosing this candidate would form a cycle in the resulting graph or the candidate is a stale branch")
             if upstream:
                 debug("discover_tree()", f"inferred upstream of {branch} is {upstream}, attaching {branch} as a child of {upstream}\n")
                 self.up_branch[branch] = upstream
