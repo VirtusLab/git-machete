@@ -759,8 +759,8 @@ class MacheteClient:
                     out.write("\n")
                 out.write("  ")
 
-            if branch in (current_checkedout_branch, current_rebase_branch):  # i.e. if branch is the current branch (checked out or being rebased)
-                if branch == current_rebase_branch:
+            if branch in (currently_checked_out_branch, currently_rebased_branch):  # i.e. if branch is the current branch (checked out or being rebased)
+                if branch == currently_rebased_branch:
                     prefix = "REBASING "
                 elif self.__git.is_am_in_progress():
                     prefix = "GIT AM IN PROGRESS "
