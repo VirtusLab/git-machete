@@ -125,7 +125,7 @@ long_docs: Dict[str, str] = {
         If invoked with `-H` or `--sync-github-prs`, annotates the branches based on their corresponding GitHub PR numbers and authors.
         Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
 
-        To allow GitHub API access for private repositories (and also to correctly identify the current user, even in case of public repositories),
+        To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR, even in case of public repositories),
         a GitHub API token with `repo` scope is required, see `https://github.com/settings/tokens`. This will be resolved from the first of:
         1. `GITHUB_TOKEN` env var,
         2. current auth token from the `gh` GitHub CLI,
@@ -164,7 +164,7 @@ long_docs: Dict[str, str] = {
         Options:
           <b>-s, --stat</b>    Makes `git machete diff` pass `--stat` option to `git diff`, so that only summary (diffstat) is printed.
     """,
-    "discover": """
+    "discover": f"""
         <b>Usage: git machete discover [-C|--checked-out-since=<date>] [-l|--list-commits] [-r|--roots=<branch1>,<branch2>,...] [-y|--yes]</b>
 
         Discovers and displays tree of branch dependencies using a heuristic based on reflogs and asks whether to overwrite the existing definition file with the new discovered tree.
@@ -173,7 +173,7 @@ long_docs: Dict[str, str] = {
 
         Options:
           <b>-C, --checked-out-since=<date></b>   Only consider branches checked out at least once since the given date. <date> can be e.g. `2 weeks ago` or `2020-06-01`, as in `git log --since=<date>`.
-                                           If not present, the date is selected automatically so that around """ + str(DISCOVER_DEFAULT_FRESH_BRANCH_COUNT) + """ branches are included.
+                                           If not present, the date is selected automatically so that around {str(DISCOVER_DEFAULT_FRESH_BRANCH_COUNT)} branches are included.
 
           <b>-l, --list-commits</b>               When printing the discovered tree, additionally lists the messages of commits introduced on each branch (as for `git machete status`).
 
@@ -203,7 +203,7 @@ long_docs: Dict[str, str] = {
         Note that the above editor selection only applies for editing the definition file,
         but not for any other actions that may be indirectly triggered by git-machete, including editing of rebase TODO list, commit messages etc.
 
-        The definition file can be always accessed and edited directly under path returned by `git machete file` (currently fixed to <git-directory>/machete).
+        The definition file can be always accessed and edited directly under the path returned by `git machete file` (currently fixed to <git-directory>/machete).
     """,
     "file": """
         <b>Usage: git machete file</b>
@@ -234,14 +234,14 @@ long_docs: Dict[str, str] = {
         but instead occurs on a reflog (see help for `git reflog`) of some other, usually chronologically earlier, branch.
         This yields a correct result in typical cases, but there are some situations
         (esp. when some local branches have been deleted) where the fork point might not be determined correctly.
-        Thus, all rebase-involving operations (`reapply`, `slide-out`, `traverse` and `update`) run `git rebase` in the interactive mode,
+        Thus, all rebase-involving operations (`reapply`, `slide-out`, `traverse` and `update`) run `git rebase` in the interactive mode by default,
         unless told explicitly not to do so by `--no-interactive-rebase` flag, so that the suggested commit range can be inspected before the rebase commences.
         Also, `reapply`, `slide-out`, `squash`, and `update` allow to specify the fork point explicitly by a command-line option.
 
         `git machete fork-point` is different (and more powerful) than `git merge-base --fork-point`,
         since the latter takes into account only the reflog of the one provided upstream branch,
         while the former scans reflogs of all local branches and their remote tracking branches.
-        This makes git-machete's `fork-point` more resilient to modifications of the tree definition which change the upstreams of branches.
+        This makes git-machete's `fork-point` more resilient to modifications of .git/machete file where certain branches are re-attached under new parents (upstreams).
 
 
         With `--override-to=<revision>`, sets up a fork point override for <branch>.
@@ -296,28 +296,13 @@ long_docs: Dict[str, str] = {
         Tabs or any number of spaces can be used as indentation.
         It's only important to be consistent wrt. the sequence of characters used for indentation between all lines.
     """,
-    "go": """
-        <b>Usage: git machete g[o] <direction></b>
-        where <direction> is one of: `d[own]`, `f[irst]`, `l[ast]`, `n[ext]`, `p[rev]`, `r[oot]`, `u[p]`
-
-        Checks out the branch specified by the given direction relative to the current branch:
-        * `down`:    the direct children/downstream branch of the current branch.
-        * `first`:   the first downstream of the root branch of the current branch (like `root` followed by `next`), or the root branch itself if the root has no downstream branches.
-        * `last`:    the last branch in the definition file that has the same root as the current branch; can be the root branch itself if the root has no downstream branches.
-        * `next`:    the direct successor of the current branch in the definition file.
-        * `prev`:    the direct predecessor of the current branch in the definition file.
-        * `root`:    the root of the tree where the current branch is located. Note: this will typically be something like `develop` or `master`, since all branches are usually meant to be ultimately merged to one of those.
-        * `up`:      the direct parent/upstream branch of the current branch.
-
-        Roughly equivalent to `git checkout $(git machete show <direction>)`.
-    """,
     "github": """
         <b>Usage: git machete github <subcommand></b>
         where <subcommand> is one of: `anno-prs`, `create-pr`, `retarget-pr`.
 
         Creates, checks out and manages GitHub PRs while keeping them reflected in branch definition file.
 
-        To allow GitHub API access for private repositories (and also to correctly identify the current user, even in case of public repositories),
+        To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR, even in case of public repositories),
         a GitHub API token with `repo` scope is required, see `https://github.com/settings/tokens`. This will be resolved from the first of:
         1. `GITHUB_TOKEN` env var,
         2. current auth token from the `gh` GitHub CLI,
@@ -345,10 +330,25 @@ long_docs: Dict[str, str] = {
 
           Sets the base of the current branch's PR to upstream (parent) branch, as seen by git machete (see `git machete show up`).
     """,
+    "go": """
+        <b>Usage: git machete g[o] <direction></b>
+        where <direction> is one of: `d[own]`, `f[irst]`, `l[ast]`, `n[ext]`, `p[rev]`, `r[oot]`, `u[p]`
+
+        Checks out the branch specified by the given direction relative to the current branch:
+        * `down`:    the direct children/downstream branch of the current branch.
+        * `first`:   the first downstream of the root branch of the current branch (like `root` followed by `next`), or the root branch itself if the root has no downstream branches.
+        * `last`:    the last branch in the definition file that has the same root as the current branch; can be the root branch itself if the root has no downstream branches.
+        * `next`:    the direct successor of the current branch in the definition file.
+        * `prev`:    the direct predecessor of the current branch in the definition file.
+        * `root`:    the root of the tree where the current branch is located. Note: this will typically be something like `develop` or `master`, since all branches are usually meant to be ultimately merged to one of those.
+        * `up`:      the direct parent/upstream branch of the current branch.
+
+        Roughly equivalent to `git checkout $(git machete show <direction>)`.
+    """,
     "help": """
         <b>Usage: git machete help [<command>]</b>
 
-        Prints a summary of this tool, or a detailed info on a command if defined.
+        Prints a summary of this tool, or a detailed info on a command if provided.
     """,
     "hooks": """
         As with the standard git hooks, git-machete looks for its own specific hooks in `$GIT_DIR/hooks/*` (or `$(git config core.hooksPath)/*`, if set).
@@ -412,7 +412,7 @@ long_docs: Dict[str, str] = {
         Returns with zero exit code if the given branch (or current branch, if none specified) is managed by git-machete (i.e. listed in .git/machete).
 
         Returns with a non-zero exit code in case:
-        * the <branch> is provided but isn't managed, or
+        * the <branch> is provided but isn't managed (or doesn't exist), or
         * the <branch> isn't provided and the current branch isn't managed, or
         * the <branch> isn't provided and there's no current branch (detached HEAD).
     """,
@@ -527,9 +527,9 @@ long_docs: Dict[str, str] = {
         See `git machete help fork-point` for more details on meaning of the "fork point".
         The message for the squashed is taken from the earliest squashed commit, i.e. the commit directly following the fork point.
 
-        Note: the current reapplied branch does not need to occur in the definition file.
+        Note: the current squashed branch does not need to occur in the definition file.
 
-        Tip: for more complex scenarios that require rewriting the history of current branch, see `reapply` and `update`.
+        Tip: `squash` does NOT run `git rebase` under the hood. For more complex scenarios that require rewriting the history of current branch, see `reapply` and `update`.
 
         <b>Options:</b>
           <b>-f, --fork-point=<fork-point-commit></b>    Specifies the alternative fork point commit after which the squashed part of history is meant to start.

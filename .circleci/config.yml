@@ -67,16 +67,19 @@ jobs:
           name: Run tests against Python 3.8 and git 2.25.0
           command: PYTHON_VERSION=3.8 GIT_VERSION=2.25.0 bash ci/tox/ci-run.sh
 
-  tests_py39:
+  tests_py39_coverage_docs:
     executor: ubuntu_executor
     steps:
       - checkout
       - run:
-          name: Run tests against Python 3.9 and git 2.30.1 (with checking coverage)
-          command: PYTHON_VERSION=3.9 GIT_VERSION=2.30.1 CHECK_COVERAGE=true bash ci/tox/ci-run.sh
+          name: Run tests against Python 3.9 and git 2.30.1 (with checking coverage and building documentation)
+          command: PYTHON_VERSION=3.9 GIT_VERSION=2.30.1 CHECK_COVERAGE=true BUILD_DOCS=true bash ci/tox/ci-run.sh
       - store_artifacts:
           path: htmlcov
           destination: coverage
+      - store_artifacts:
+          path: docs/html
+          destination: docs
 
   dry_run_deploy_from_develop:
     executor: ubuntu_executor
@@ -148,7 +151,7 @@ workflows:
       - tests_py36
       - tests_py37
       - tests_py38
-      - tests_py39
+      - tests_py39_coverage_docs
       - dry_run_deploy_from_develop:
           filters:
             branches:
@@ -158,7 +161,7 @@ workflows:
             - tests_py36
             - tests_py37
             - tests_py38
-            - tests_py39
+            - tests_py39_coverage_docs
       - deploy_from_master:
           filters:
             branches:
@@ -168,4 +171,4 @@ workflows:
             - tests_py36
             - tests_py37
             - tests_py38
-            - tests_py39
+            - tests_py39_coverage_docs
