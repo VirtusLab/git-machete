@@ -140,9 +140,10 @@ jobs:
       # Note: there are also releases happening outside of our CI:
       # 1) every time a commit is pushed to `master`, a Snap build for `edge` channel
       #    is triggered automatically via GitHub webhook on https://build.snapcraft.io/user/VirtusLab/git-machete,
-      # 2) every time a https://github.com/r-ryantm bot runs on NixOS/nixpkgs repository,
+      # 2) every time a commit is pushed to `develop` or `master`, a build for docs (`latest` or `stable` version, respectively)
+      #    is triggered automatically via GitHub webhook on https://readthedocs.org/projects/git-machete/builds/,
+      # 3) every time a https://github.com/r-ryantm bot runs on NixOS/nixpkgs repository,
       #    Nix git-machete package is updated with the fresh version/package hash according to the data from PyPI.
-
 workflows:
   version: 2
   build:

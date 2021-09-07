@@ -98,14 +98,19 @@ Review fixes should be pushed on separate commits for easier viewing on GitHub (
 1. Verify that the latest commit in [VirtusLab/homebrew-git-machete](https://github.com/VirtusLab/homebrew-git-machete) tap repo refers to the latest version.
 
 1. Verify that a build started for [Snap](https://build.snapcraft.io/user/VirtusLab/git-machete).
-   If not, check `build.snapcraft.io` webhook on Github (under Settings > Webhooks) -
+   If not, check `snapcraft.io` webhook on Github (under Settings > Webhooks) &mdash;
    sometimes the Snap Store's build system responds with 500 status for no clear reason, in such case `Redeliver` the call.
 
-   Once ready, install the `latest/edge` revision locally (`sudo snap install --edge --classic git-machete`)
-   and verify that it works correctly, esp. wrt. push/pull via ssh/https and editor (`git machete edit` and interactive rebases).
+   Once the build is ready, install the `latest/edge` revision locally (`sudo snap install --edge --classic git-machete`)
+   and verify that it works correctly, esp. if it comes to push/pull via ssh/https and editor (`git machete edit` and interactive rebases).
 
    Then, perform a release from `latest/edge` to `latest/stable` for both `i386` and `amd64`
    from [Snapcraft web dashboard](https://snapcraft.io/git-machete/releases) or via CLI.
+
+1. Verify that a build started for [docs at Read the Docs](https://readthedocs.org/projects/git-machete/builds/).
+   If not, check `readthedocs.org` webhook on Github (under Settings > Webhooks).
+
+   Once the build is ready, verify the [doc contents](https://git-machete.readthedocs.io/en/stable).
 
 1. Verify that a build started on [git-machete PPA](https://launchpad.net/~virtuslab/+archive/ubuntu/git-machete/+packages).
 
@@ -127,10 +132,10 @@ Review fixes should be pushed on separate commits for easier viewing on GitHub (
    If the release introduces significant changes/critical bugfixes, please [flag the package as out of date](https://aur.archlinux.org/pkgbase/git-machete/flag).
 
 1. Verify that changes you made in files holding blogs content are reflected in the corresponding medium articles. Files and corresponding to them articles:
-   * [blogs/git-machete-1/blog.md](https://github.com/VirtusLab/git-machete/blob/develop/blogs/git-machete-1/blog.md) - [Make your way through the git (rebase) jungle with Git Machete](https://medium.com/virtuslab/make-your-way-through-the-git-rebase-jungle-with-git-machete-e2ed4dbacd02);
-   * [blogs/git-machete-2/blog.md](https://github.com/VirtusLab/git-machete/blob/develop/blogs/git-machete-2/blog.md) - [Git Machete Strikes again!](https://medium.com/virtuslab/git-machete-strikes-again-traverse-the-git-rebase-jungle-even-faster-with-v2-0-f43ebaf8abb0);
-   * [blogs/docker-ci-tricks-1/blog.md](https://github.com/VirtusLab/git-machete/blob/develop/blogs/docker-ci-tricks-1/blog.md) - [Nifty Docker tricks for your CI (vol. 1)](https://medium.com/virtuslab/nifty-docker-tricks-for-your-ci-vol-1-c4a36d2192ea);
-   * [blogs/docker-ci-tricks-2/blog.md](https://github.com/VirtusLab/git-machete/blob/develop/blogs/docker-ci-tricks-2/blog.md) - [Nifty Docker tricks for your CI (vol. 2)](https://medium.com/virtuslab/nifty-docker-tricks-for-your-ci-vol-2-c5191a67f1a4).
+   * [blogs/git-machete-1/blog.md](https://github.com/VirtusLab/git-machete/blob/develop/blogs/git-machete-1/blog.md) &mdash; [Make your way through the git (rebase) jungle with Git Machete](https://medium.com/virtuslab/make-your-way-through-the-git-rebase-jungle-with-git-machete-e2ed4dbacd02);
+   * [blogs/git-machete-2/blog.md](https://github.com/VirtusLab/git-machete/blob/develop/blogs/git-machete-2/blog.md) &mdash; [Git Machete Strikes again!](https://medium.com/virtuslab/git-machete-strikes-again-traverse-the-git-rebase-jungle-even-faster-with-v2-0-f43ebaf8abb0);
+   * [blogs/docker-ci-tricks-1/blog.md](https://github.com/VirtusLab/git-machete/blob/develop/blogs/docker-ci-tricks-1/blog.md) &mdash; [Nifty Docker tricks for your CI (vol. 1)](https://medium.com/virtuslab/nifty-docker-tricks-for-your-ci-vol-1-c4a36d2192ea);
+   * [blogs/docker-ci-tricks-2/blog.md](https://github.com/VirtusLab/git-machete/blob/develop/blogs/docker-ci-tricks-2/blog.md) &mdash; [Nifty Docker tricks for your CI (vol. 2)](https://medium.com/virtuslab/nifty-docker-tricks-for-your-ci-vol-2-c5191a67f1a4).
 
    If not, please apply changes on Medium to keep consistency.
-Since Medium does not offer conversion directly from Markdown, copy the formatted blog text from a GitHub and paste it into the Medium rich text editor.
+   Since Medium does not offer conversion directly from Markdown, copy the formatted blog text from a GitHub and paste it into the Medium rich text editor.
