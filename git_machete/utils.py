@@ -7,7 +7,7 @@ import re
 import subprocess
 
 from git_machete.options import CommandLineOptions
-from git_machete.constants import BOLD, DIM, ENDC, ORANGE, GREEN, RED, UNDERLINE, YELLOW
+from git_machete.constants import EscapeCodes
 
 T = TypeVar('T')
 # To avoid displaying the same warning multiple times during a single run.
@@ -88,16 +88,16 @@ def find_executable(executable: str) -> Optional[str]:
 
 
 def bold(s: str) -> str:
-    return s if ascii_only or not s else BOLD + s + ENDC
+    return s if ascii_only or not s else EscapeCodes.BOLD + s + EscapeCodes.ENDC
 
 
 def dim(s: str) -> str:
-    return s if ascii_only or not s else DIM + s + ENDC
+    return s if ascii_only or not s else EscapeCodes.DIM + s + EscapeCodes.ENDC
 
 
 def underline(s: str, star_if_ascii_only: bool = False) -> str:
     if s and not ascii_only:
-        return UNDERLINE + s + ENDC
+        return EscapeCodes.UNDERLINE + s + EscapeCodes.ENDC
     elif s and star_if_ascii_only:
         return s + " *"
     else:
@@ -105,17 +105,17 @@ def underline(s: str, star_if_ascii_only: bool = False) -> str:
 
 
 def colored(s: str, color: str) -> str:
-    return s if ascii_only or not s else color + s + ENDC
+    return s if ascii_only or not s else color + s + EscapeCodes.ENDC
 
 
 fmt_transformations: List[Callable[[str], str]] = [
     lambda x: re.sub('<b>(.*?)</b>', bold(r"\1"), x, flags=re.DOTALL),
     lambda x: re.sub('<u>(.*?)</u>', underline(r"\1"), x, flags=re.DOTALL),
     lambda x: re.sub('<dim>(.*?)</dim>', dim(r"\1"), x, flags=re.DOTALL),
-    lambda x: re.sub('<red>(.*?)</red>', colored(r"\1", RED), x, flags=re.DOTALL),
-    lambda x: re.sub('<yellow>(.*?)</yellow>', colored(r"\1", YELLOW), x, flags=re.DOTALL),
-    lambda x: re.sub('<green>(.*?)</green>', colored(r"\1", GREEN), x, flags=re.DOTALL),
-    lambda x: re.sub('`(.*?)`', r"`\1`" if ascii_only else UNDERLINE + r"\1" + ENDC, x),
+    lambda x: re.sub('<red>(.*?)</red>', colored(r"\1", EscapeCodes.RED), x, flags=re.DOTALL),
+    lambda x: re.sub('<yellow>(.*?)</yellow>', colored(r"\1", EscapeCodes.YELLOW), x, flags=re.DOTALL),
+    lambda x: re.sub('<green>(.*?)</green>', colored(r"\1", EscapeCodes.GREEN), x, flags=re.DOTALL),
+    lambda x: re.sub('`(.*?)`', r"`\1`" if ascii_only else EscapeCodes.UNDERLINE + r"\1" + EscapeCodes.ENDC, x),
 ]
 
 
@@ -139,13 +139,13 @@ def get_pretty_choices(*choices: str) -> str:
         if not c:
             return ''
         elif c.lower() == 'y':
-            return colored(c, GREEN)
+            return colored(c, EscapeCodes.GREEN)
         elif c.lower() == 'yq':
-            return colored(c[0], GREEN) + colored(c[1], RED)
+            return colored(c[0], EscapeCodes.GREEN) + colored(c[1], EscapeCodes.RED)
         elif c.lower() in ('n', 'q'):
-            return colored(c, RED)
+            return colored(c, EscapeCodes.RED)
         else:
-            return colored(c, ORANGE)
+            return colored(c, EscapeCodes.ORANGE)
     return f" ({', '.join(map_truthy_only(format_choice, choices))}) "
 
 
@@ -212,11 +212,11 @@ def popen_cmd(cmd: str, *args: str, **kwargs: Any) -> Tuple[int, str, str]:
 
     if CommandLineOptions.opt_debug:
         if exit_code != 0:
-            sys.stderr.write(colored(f"<exit code: {exit_code}>\n\n", RED))
+            sys.stderr.write(colored(f"<exit code: {exit_code}>\n\n", EscapeCodes.RED))
         if stdout:
             sys.stderr.write(f"{dim('<stdout>:')}\n{dim(stdout)}\n")
         if stderr:
-            sys.stderr.write(f"{dim('<stderr>:')}\n{colored(stderr, RED)}\n")
+            sys.stderr.write(f"{dim('<stderr>:')}\n{colored(stderr, EscapeCodes.RED)}\n")
 
     return exit_code, stdout, stderr
 
@@ -237,7 +237,7 @@ def get_cmd_shell_repr(cmd: str, *args: str, **kwargs: Dict[str, str]) -> str:
 
 def warn(msg: str, apply_fmt: bool = True) -> None:
     if msg not in displayed_warnings:
-        sys.stderr.write(colored("Warn: ", RED) + (fmt(msg) if apply_fmt else msg) + "\n")
+        sys.stderr.write(colored("Warn: ", EscapeCodes.RED) + (fmt(msg) if apply_fmt else msg) + "\n")
         displayed_warnings.add(msg)
 
 

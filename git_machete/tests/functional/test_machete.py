@@ -10,7 +10,8 @@ import subprocess
 from contextlib import redirect_stdout
 from typing import Iterable
 
-from git_machete import cmd
+from git_machete import cli
+from git_machete.client import MacheteClient
 from git_machete.exceptions import MacheteException
 from git_machete.git_operations import GitContext
 from git_machete.options import CommandLineOptions
@@ -90,7 +91,7 @@ class MacheteTester(unittest.TestCase):
     def launch_command(*args: str) -> str:
         with io.StringIO() as out:
             with redirect_stdout(out):
-                cmd.launch(list(args))
+                cli.launch(list(args))
                 git.flush_caches()
             return out.getvalue()
 
@@ -195,7 +196,7 @@ class MacheteTester(unittest.TestCase):
         self.repo_sandbox.new_branch("root")
         self.rewrite_definition_file(body)
 
-        machete_client = cmd.MacheteClient(cli_opts, git)  # Only to workaround sys.exit while calling launch(['status'])
+        machete_client = MacheteClient(cli_opts, git)  # Only to workaround sys.exit while calling launch(['status'])
         try:
             machete_client.read_definition_file()
         except MacheteException as e:
@@ -691,7 +692,7 @@ class MacheteTester(unittest.TestCase):
 
     def test_help(self) -> None:
         self.launch_command("help")
-        for (description, commands) in cmd.command_groups:
+        for (description, commands) in cli.command_groups:
             for command in commands:
                 self.launch_command("help", command)
 
