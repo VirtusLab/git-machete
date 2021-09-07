@@ -883,11 +883,11 @@ class MacheteTester(unittest.TestCase):
             for command in commands:
                 self.launch_command("help", command)
 
-                if command not in ("format", "hooks"):
+                if command not in {"format", "hooks"}:
                     try:
                         self.launch_command(command, "--help")
                     except SystemExit as e:
-                        self.assertIs(e.code, None)
+                        self.assertIs(e.code, 0)
                     except Exception as e:
                         self.fail(f'Unexpected exception raised: {e}')
                     else:

@@ -6,7 +6,6 @@ import sys
 import re
 import subprocess
 
-from git_machete.options import CommandLineOptions
 from git_machete.constants import EscapeCodes
 
 T = TypeVar('T')
@@ -18,6 +17,8 @@ displayed_warnings: Set[str] = set()
 current_directory_confirmed_to_exist: bool = False
 
 ascii_only: bool = False
+debug_mode: bool = False
+verbose_mode: bool = False
 
 
 def excluding(iterable: Iterable[T], s: Iterable[T]) -> List[T]:
@@ -154,7 +155,7 @@ def get_pretty_choices(*choices: str) -> str:
 
 
 def debug(hdr: str, msg: str) -> None:
-    if CommandLineOptions.opt_debug:
+    if debug_mode:
         sys.stderr.write(f"{bold(hdr)}: {dim(msg)}\n")
 
 
@@ -162,9 +163,9 @@ def run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
     chdir_upwards_until_current_directory_exists()
 
     flat_cmd: str = get_cmd_shell_repr(cmd, *args, **kwargs)
-    if CommandLineOptions.opt_debug:
+    if debug_mode:
         sys.stderr.write(bold(f">>> {flat_cmd}") + "\n")
-    elif CommandLineOptions.opt_verbose:
+    elif verbose_mode:
         sys.stderr.write(flat_cmd + "\n")
 
     exit_code: int = subprocess.call([cmd] + list(args), **kwargs)
@@ -174,7 +175,7 @@ def run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
     # In practice, it's mostly 'git checkout' that carries such risk.
     mark_current_directory_as_possibly_non_existent()
 
-    if CommandLineOptions.opt_debug and exit_code != 0:
+    if debug_mode and exit_code != 0:
         sys.stderr.write(dim(f"<exit code: {exit_code}>\n\n"))
     return exit_code
 
@@ -203,9 +204,9 @@ def popen_cmd(cmd: str, *args: str, **kwargs: Any) -> Tuple[int, str, str]:
     chdir_upwards_until_current_directory_exists()
 
     flat_cmd = get_cmd_shell_repr(cmd, *args, **kwargs)
-    if CommandLineOptions.opt_debug:
+    if debug_mode:
         sys.stderr.write(bold(f">>> {flat_cmd}") + "\n")
-    elif CommandLineOptions.opt_verbose:
+    elif verbose_mode:
         sys.stderr.write(flat_cmd + "\n")
 
     process = subprocess.Popen([cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
@@ -214,7 +215,7 @@ def popen_cmd(cmd: str, *args: str, **kwargs: Any) -> Tuple[int, str, str]:
     stderr: str = stderr_bytes.decode('utf-8')
     exit_code: int = process.returncode
 
-    if CommandLineOptions.opt_debug:
+    if debug_mode:
         if exit_code != 0:
             sys.stderr.write(colored(f"<exit code: {exit_code}>\n\n", EscapeCodes.RED))
         if stdout:

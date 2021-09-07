@@ -1,15 +1,16 @@
 from typing import Optional, List
 
+from git_machete.exceptions import MacheteException
+
 
 class CommandLineOptions:
-    opt_debug: bool = False
-    opt_verbose: bool = False
 
     def __init__(self) -> None:
         self.opt_as_root: bool = False
         self.opt_branch: Optional[str] = None
         self.opt_checked_out_since: Optional[str] = None
         self.opt_color: str = "auto"
+        self.opt_debug: bool = False
         self.opt_down_fork_point: Optional[str] = None
         self.opt_draft: bool = False
         self.opt_fetch: bool = False
@@ -34,4 +35,26 @@ class CommandLineOptions:
         self.opt_stat: bool = False
         self.opt_sync_github_prs: bool = False
         self.opt_unset_override: bool = False
+        self.opt_verbose: bool = False
         self.opt_yes: bool = False
+
+    def validate(self) -> None:
+        if self.opt_as_root and self.opt_onto:
+            raise MacheteException(
+                "Option `-R/--as-root` cannot be specified together with `-o/--onto`.")
+        if self.opt_no_edit_merge and not self.opt_merge:
+            raise MacheteException(
+                "Option `--no-edit-merge` only makes sense when using merge and "
+                "must be specified together with `-M/--merge`.")
+        if self.opt_no_interactive_rebase and self.opt_merge:
+            raise MacheteException(
+                "Option `--no-interactive-rebase` only makes sense when using "
+                "rebase and cannot be specified together with `-M/--merge`.")
+        if self.opt_down_fork_point and self.opt_merge:
+            raise MacheteException(
+                "Option `-d/--down-fork-point` only makes sense when using "
+                "rebase and cannot be specified together with `-M/--merge`.")
+        if self.opt_fork_point and self.opt_merge:
+            raise MacheteException(
+                "Option `-f/--fork-point` only makes sense when using rebase and"
+                " cannot be specified together with `-M/--merge`.")
