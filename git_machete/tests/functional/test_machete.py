@@ -14,6 +14,7 @@ from typing import Any, Dict, Iterable, List, Optional, Union
 from unittest import mock
 from urllib.parse import urlparse, ParseResult, parse_qs
 
+
 from git_machete import cli
 from git_machete.client import MacheteClient
 from git_machete.exceptions import MacheteException
@@ -142,7 +143,6 @@ class MockGithubAPIRequest:
     def fill_pull_request_data(self, data: Dict[str, Any], pull: Dict[str, Any]) -> "MockGithubAPIResponse":
         index = self.get_index_or_none(pull, self.github_api_state.issues)
         for key in data.keys():
-
             if key in ('base', 'head'):
                 pull[key] = {'ref': ""}
                 pull[key]['ref'] = json.loads(self.json_data)[key]
@@ -1647,6 +1647,7 @@ class MacheteTester(unittest.TestCase):
                 .delete_branch("root")
                 .add_remote('new_origin', 'https://github.com/user/repo.git')
         )
+
         self.launch_command("discover", "-y")
         self.launch_command('github', 'anno-prs')
         self.assert_command(
@@ -1720,7 +1721,6 @@ class MacheteTester(unittest.TestCase):
                 .commit("remove outdated fields")
                 .check_out("call-ws")
         )
-
         self.launch_command("discover")
         self.launch_command("github", "create-pr")
         # ahead of origin state, push is advised and accepted
