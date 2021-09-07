@@ -1,4 +1,5 @@
 import io
+import json
 import os
 import random
 import re
@@ -8,7 +9,9 @@ import time
 import unittest
 import subprocess
 from contextlib import redirect_stdout
-from typing import Iterable
+from typing import Any, Dict, Iterable, List, Optional, Union
+from unittest import mock
+
 
 from git_machete import cli
 from git_machete.client import MacheteClient
@@ -24,6 +27,170 @@ git: GitContext = GitContext(cli_opts)
 def get_head_commit_hash() -> str:
     """Returns hash of a commit of the current branch head."""
     return os.popen("git rev-parse HEAD").read().strip()
+
+
+class FakeCommandLineOptions:
+    opt_debug: bool = False
+    opt_verbose: bool = False
+
+    def __init__(self) -> None:
+        self.opt_as_root: bool = False
+        self.opt_branch: Optional[str] = None
+        self.opt_checked_out_since: Optional[str] = None
+        self.opt_color: str = "auto"
+        self.opt_down_fork_point: Optional[str] = None
+        self.opt_draft: bool = False
+        self.opt_fetch: bool = False
+        self.opt_fork_point: Optional[str] = None
+        self.opt_inferred: bool = False
+        self.opt_list_commits: bool = False
+        self.opt_list_commits_with_hashes: bool = False
+        self.opt_merge: bool = False
+        self.opt_n: bool = False
+        self.opt_no_detect_squash_merges: bool = False
+        self.opt_no_edit_merge: bool = False
+        self.opt_no_interactive_rebase: bool = True
+        self.opt_onto: Optional[str] = None
+        self.opt_override_to: Optional[str] = None
+        self.opt_override_to_inferred: bool = False
+        self.opt_override_to_parent: bool = False
+        self.opt_push_tracked: Optional[bool] = True
+        self.opt_push_untracked: Optional[bool] = True
+        self.opt_return_to: str = "stay"
+        self.opt_roots: List[str] = list()
+        self.opt_start_from: str = "here"
+        self.opt_stat: bool = False
+        self.opt_sync_github_prs: bool = False
+        self.opt_unset_override: bool = False
+        self.opt_yes: bool = True
+
+
+class GitAPIState:
+    pulls: List[Dict[str, Any]] = [{'head': {'ref': 'bugfix/remove'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '15', 'html_url': 'www.github.com'}]
+    user: Dict[str, str] = {'login': 'github_user', 'type': 'User', 'company': 'VirtusLab'}
+    issues: List[Dict[str, Any]] = []
+    remote_branches: List[str] = []
+
+    def __init__(self, url: str, headers: Dict[str, str] = None, data: Union[str, bytes, None] = None, method: str = ''):
+        self.url: str = url
+        self.status_code: Optional[int] = None
+        self.json_data: Union[str, bytes] = data
+        self.return_data: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None
+        self.headers: Dict[str, str] = headers
+        if method == "GET":
+            self.handle_get()
+        elif method == "PATCH":
+            self.handle_patch()
+        elif method == "POST":
+            self.handle_post()
+
+    def read(self) -> Union[str, bytes]:
+        return json.dumps(self.return_data).encode()
+
+    def handle_get(self) -> None:
+        if 'pulls' in self.url:
+            if '?head' in self.url:
+                head: str = self.url[self.url.rfind(':') + 1:]
+                for pr in GitAPIState.pulls:
+                    if pr['head']['ref'] == head:
+                        self.return_data = [pr]
+                        self.status_code = 200
+                        return
+                self.return_data = []
+                self.status_code = 404
+                return
+            else:
+                self.status_code = 200
+                self.return_data = GitAPIState.pulls
+                return
+        elif 'user' in self.url:
+            self.status_code = 200
+            self.return_data = GitAPIState.user
+            return
+
+    def handle_patch(self) -> None:
+        if 'issues' in self.url:
+            self.update_issue()
+        elif 'pulls' in self.url:
+            self.update_pull()
+
+    def handle_post(self) -> None:
+        if 'issues' in self.url:
+            if self.url.endswith('issues'):
+                self.update_issue(new=True)
+        elif 'pulls' in self.url:
+            if self.url.endswith('pulls'):
+                self.update_pull(new=True)
+
+    def update_pull(self, new: bool = False) -> None:
+        pull: Dict[str, Any]
+        if new:
+            pull = {'number': self.get_new_number(GitAPIState.pulls),
+                    'user': {'login': 'githubuser'},
+                    'html_url': 'www.github.com'}
+        else:
+            pull_no: str = self.find_number(self.url)
+            pull = self.get_pull(pull_no)
+        for key in json.loads(self.json_data).keys():
+            if key in ('base', 'head'):
+                pull[key] = {'ref': ""}
+                pull[key]['ref'] = json.loads(self.json_data)[key]
+            else:
+                pull[key] = json.loads(self.json_data)[key]
+        GitAPIState.pulls.append(pull)
+        self.status_code = 201
+        self.return_data = pull
+
+    def update_issue(self, new: bool = False) -> None:
+        issue: Dict[str, Any]
+        if new:
+            issue = {'number': self.get_new_number(GitAPIState.issues)}
+        else:
+            issue_no = self.find_number(self.url)
+            issue = self.get_issue(issue_no)
+        for key in json.loads(self.json_data).keys():
+            issue[key] = json.loads(self.json_data)[key]
+        GitAPIState.issues.append(issue)
+        self.status_code = 201
+        self.return_data = issue
+        return
+
+    @staticmethod
+    def get_issue(issue_no: str) -> Optional[Dict[str, Any]]:
+        for index, issue in enumerate(GitAPIState.issues):
+            if issue['number'] == issue_no:
+                return GitAPIState.issues.pop(index)
+        return None
+
+    @staticmethod
+    def get_pull(pull_no: str) -> Optional[Dict[str, Any]]:
+        for index, pull in enumerate(GitAPIState.pulls):
+            if pull['number'] == pull_no:
+                return GitAPIState.pulls.pop(index)
+        return None
+
+    @staticmethod
+    def find_number(url: str) -> str:
+        m = re.search(r'\d+', url)
+        return m.group()
+
+    @staticmethod
+    def get_new_number(entities: List[Dict[str, Any]]) -> str:
+        numbers = []
+        for item in entities:
+            numbers.append(int(item['number']))
+        return str(max(numbers) + 1)
+
+
+class Opener:
+    def __init__(self, obj: GitAPIState) -> None:
+        self.obj = obj
+
+    def __enter__(self) -> GitAPIState:
+        return self.obj
+
+    def __exit__(self, *args: Any) -> None:
+        pass
 
 
 class GitRepositorySandbox:
@@ -81,6 +248,10 @@ class GitRepositorySandbox:
         self.execute(f'git branch -d "{branch}"')
         return self
 
+    def add_remote(self, remote: str, url: str) -> "GitRepositorySandbox":
+        self.execute(f'git remote add {remote} {url}')
+        return self
+
 
 class MacheteTester(unittest.TestCase):
     @staticmethod
@@ -101,8 +272,8 @@ class MacheteTester(unittest.TestCase):
         with open(os.path.join(os.getcwd(), definition_file_path), 'w') as def_file:
             def_file.writelines(new_body)
 
-    def assert_command(self, cmds: Iterable[str], expected_result: str) -> None:
-        self.assertEqual(self.launch_command(*cmds), self.adapt(expected_result))
+    def assert_command(self, cmds: Iterable[str], expected_result: str, adapt: bool = True) -> None:
+        self.assertEqual(self.launch_command(*cmds), self.adapt(expected_result) if adapt else expected_result)
 
     def setUp(self) -> None:
         # Status diffs can be quite large, default to ~256 lines of diff context
@@ -1382,3 +1553,235 @@ class MacheteTester(unittest.TestCase):
                 "<commit_hash>' drops the commits until (included) fork point "
                 "specified by the option '-f' from the current branch."
         )
+
+    @mock.patch('urllib.request.urlopen', Opener)
+    @mock.patch('urllib.request.Request', GitAPIState)
+    def test_retarget_pr(self) -> None:
+        branchs_first_commit_msg = "First commit on branch."
+        branchs_second_commit_msg = "Second commit on branch."
+        (
+            self.repo_sandbox.new_branch("root")
+                .commit("First commit on root.")
+                .new_branch("branch-1")
+                .commit(branchs_first_commit_msg)
+                .commit(branchs_second_commit_msg)
+                .push()
+                .new_branch('feature')
+                .commit('introduce feature')
+                .push()
+                .check_out('feature')
+                .add_remote('new_origin', 'https://github.com/user/repo.git')
+        )
+        GitAPIState.pulls = [{'head': {'ref': 'feature'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'root'}, 'number': '15', 'html_url': 'www.github.com'}]
+        self.launch_command("discover", "-y")
+        self.assert_command(['github', 'retarget-pr'], 'The base branch of PR #15 has been switched to `branch-1`\n', adapt=False)
+        self.assert_command(['github', 'retarget-pr'], 'The base branch of PR #15 is already `branch-1`\n', adapt=False)
+
+    @mock.patch('urllib.request.urlopen', Opener)
+    @mock.patch('urllib.request.Request', GitAPIState)
+    def test_anno_prs(self) -> None:
+        (
+            self.repo_sandbox.new_branch("root")
+                .commit("root")
+                .new_branch("develop")
+                .commit("develop commit")
+                .new_branch("allow-ownership-link")
+                .commit("Allow ownership links")
+                .push()
+                .new_branch("build-chain")
+                .commit("Build arbitrarily long chains")
+                .check_out("allow-ownership-link")
+                .commit("1st round of fixes")
+                .check_out("develop")
+                .commit("Other develop commit")
+                .push()
+                .new_branch("call-ws")
+                .commit("Call web service")
+                .commit("1st round of fixes")
+                .push()
+                .new_branch("drop-constraint")
+                .commit("Drop unneeded SQL constraints")
+                .check_out("call-ws")
+                .commit("2nd round of fixes")
+                .check_out("root")
+                .new_branch("master")
+                .commit("Master commit")
+                .push()
+                .new_branch("hotfix/add-trigger")
+                .commit("HOTFIX Add the trigger")
+                .push()
+                .commit_amend("HOTFIX Add the trigger (amended)")
+                .new_branch("ignore-trailing")
+                .commit("Ignore trailing data")
+                .sleep(1)
+                .commit_amend("Ignore trailing data (amended)")
+                .push()
+                .reset_to("ignore-trailing@{1}")
+                .delete_branch("root")
+                .add_remote('new_origin', 'https://github.com/user/repo.git')
+        )
+        GitAPIState.pulls = [
+            {'head': {'ref': 'ignore-trailing'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com'},
+            {'head': {'ref': 'allow-ownership-link'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '7', 'html_url': 'www.github.com'},
+            {'head': {'ref': 'call-ws'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '31', 'html_url': 'www.github.com'}
+        ]
+        self.launch_command("discover", "-y")
+        self.launch_command('github', 'anno-prs')
+        self.assert_command(
+            ["status"],
+            """
+            master
+            |
+            o-hotfix/add-trigger (diverged from origin)
+              |
+              o-ignore-trailing *  PR #3 (github_user) (diverged from & older than origin)
+
+            develop
+            |
+            x-allow-ownership-link  PR #7 (github_user) (ahead of origin)
+            | |
+            | x-build-chain (untracked)
+            |
+            o-call-ws  PR #31 (github_user) (ahead of origin)
+              |
+              x-drop-constraint (untracked)
+            """,
+        )
+
+    @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
+    @mock.patch('urllib.request.urlopen', Opener)
+    @mock.patch('urllib.request.Request', GitAPIState)
+    def test_github_create_pr(self) -> None:
+        (
+            self.repo_sandbox.new_branch("root")
+                .commit("initial commit")
+                .new_branch("develop")
+                .commit("first commit")
+                .new_branch("allow-ownership-link")
+                .commit("Enable ownership links")
+                .push()
+                .new_branch("build-chain")
+                .commit("Build arbitrarily long chains of PRs")
+                .check_out("allow-ownership-link")
+                .commit("fixes")
+                .check_out("develop")
+                .commit("Other develop commit")
+                .push()
+                .new_branch("call-ws")
+                .commit("Call web service")
+                .commit("1st round of fixes")
+                .push()
+                .new_branch("drop-constraint")
+                .commit("Drop unneeded SQL constraints")
+                .check_out("call-ws")
+                .commit("2nd round of fixes")
+                .check_out("root")
+                .new_branch("master")
+                .commit("Master commit")
+                .push()
+                .new_branch("hotfix/add-trigger")
+                .commit("HOTFIX Add the trigger")
+                .push()
+                .commit_amend("HOTFIX Add the trigger (amended)")
+                .new_branch("ignore-trailing")
+                .commit("Ignore trailing data")
+                .sleep(1)
+                .commit_amend("Ignore trailing data (amended)")
+                .push()
+                .reset_to("ignore-trailing@{1}")
+                .delete_branch("root")
+                .new_branch('chore/fields')
+                .commit("remove outdated fields")
+                .add_remote('new_origin', 'https://github.com/user/repo.git')
+                .check_out("call-ws")
+        )
+        GitAPIState.pulls = [{'head': {'ref': 'ignore-trailing'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com'}]
+        self.launch_command("discover", "-y")
+        self.launch_command("github", "create-pr")
+        # ahead of origin state, push is advised and accepted
+        self.assert_command(
+            ['status'],
+            """
+            master
+            |
+            o-hotfix/add-trigger (diverged from origin)
+              |
+              o-ignore-trailing (diverged from & older than origin)
+                |
+                o-chore/fields (untracked)
+
+            develop
+            |
+            x-allow-ownership-link (ahead of origin)
+            | |
+            | x-build-chain (untracked)
+            |
+            o-call-ws *  PR #4
+              |
+              x-drop-constraint (untracked)
+            """,
+        )
+        self.repo_sandbox.check_out('chore/fields')
+        #  untracked state (can only create pr when branch is pushed)
+        self.launch_command("github", "create-pr")
+        self.assert_command(
+            ['status'],
+            """
+            master
+            |
+            o-hotfix/add-trigger (diverged from origin)
+              |
+              o-ignore-trailing (diverged from & older than origin)
+                |
+                o-chore/fields *  PR #5
+
+            develop
+            |
+            x-allow-ownership-link (ahead of origin)
+            | |
+            | x-build-chain (untracked)
+            |
+            o-call-ws  PR #4
+              |
+              x-drop-constraint (untracked)
+            """,
+        )
+
+        (
+            self.repo_sandbox.check_out('hotfix/add-trigger')
+            .commit('trigger released')
+            .commit('minor changes applied')
+        )
+
+        # diverged from and newer than origin
+        self.launch_command("github", "create-pr")
+        self.assert_command(
+            ['status'],
+            """
+            master
+            |
+            o-hotfix/add-trigger *  PR #6
+              |
+              x-ignore-trailing (diverged from & older than origin)
+                |
+                o-chore/fields  PR #5
+
+            develop
+            |
+            x-allow-ownership-link (ahead of origin)
+            | |
+            | x-build-chain (untracked)
+            |
+            o-call-ws  PR #4
+              |
+              x-drop-constraint (untracked)
+            """,
+        )
+        # check against attempt to create already existing pull request
+        machete_client = cmd.MacheteClient(cli_opts, git)
+        expected_error_message = "Pull request for branch hotfix/add-trigger is already created under link www.github.com!\nPR details: PR #6 by githubuser: hotfix/add-trigger -> master"
+        try:
+            machete_client.create_github_pr('hotfix/add-trigger', draft=False)
+        except MacheteException as e:
+            if e.parameter != expected_error_message:
+                self.fail(f'Actual Exception message: {e} \nis not equal to expected message: {expected_error_message}')

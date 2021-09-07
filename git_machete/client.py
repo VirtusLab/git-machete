@@ -6,6 +6,7 @@ import shutil
 import sys
 from typing import List, Dict, Optional, Tuple, Generator, Callable
 
+import git_machete.options
 from git_machete import utils
 from git_machete.constants import (
     DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, PICK_FIRST_ROOT, UNTRACKED,
@@ -36,8 +37,8 @@ def allowed_directions(allow_current: bool) -> str:
 
 class MacheteClient:
 
-    def __init__(self, cli_opts: CommandLineOptions, git: GitContext) -> None:
-        self.__cli_opts: CommandLineOptions = cli_opts
+    def __init__(self, cli_opts: git_machete.options.CommandLineOptions, git: GitContext) -> None:
+        self.__cli_opts: git_machete.options.CommandLineOptions = cli_opts
         self.__git: GitContext = git
         self._definition_file_path: str = self.__git.get_git_subpath("machete")
         self._managed_branches: List[str] = []
