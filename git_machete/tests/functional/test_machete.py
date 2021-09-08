@@ -1780,8 +1780,9 @@ class MacheteTester(unittest.TestCase):
         # check against attempt to create already existing pull request
         machete_client = cmd.MacheteClient(cli_opts, git)
         expected_error_message = "Pull request for branch hotfix/add-trigger is already created under link www.github.com!\nPR details: PR #6 by githubuser: hotfix/add-trigger -> master"
-        try:
+        with self.assertRaises(MacheteException) as e:
+            machete_client.read_definition_file()
             machete_client.create_github_pr('hotfix/add-trigger', draft=False)
-        except MacheteException as e:
-            if e.parameter != expected_error_message:
-                self.fail(f'Actual Exception message: {e} \nis not equal to expected message: {expected_error_message}')
+        if e:
+            self.assertEqual(e.exception.parameter, expected_error_message,
+                             'Verify that expected error message has appeared when given pull request to create is already created.')
