@@ -29,39 +29,10 @@ def get_head_commit_hash() -> str:
     return os.popen("git rev-parse HEAD").read().strip()
 
 
-class FakeCommandLineOptions:
-    opt_debug: bool = False
-    opt_verbose: bool = False
-
+class FakeCommandLineOptions(CommandLineOptions):
     def __init__(self) -> None:
-        self.opt_as_root: bool = False
-        self.opt_branch: Optional[str] = None
-        self.opt_checked_out_since: Optional[str] = None
-        self.opt_color: str = "auto"
-        self.opt_down_fork_point: Optional[str] = None
-        self.opt_draft: bool = False
-        self.opt_fetch: bool = False
-        self.opt_fork_point: Optional[str] = None
-        self.opt_inferred: bool = False
-        self.opt_list_commits: bool = False
-        self.opt_list_commits_with_hashes: bool = False
-        self.opt_merge: bool = False
-        self.opt_n: bool = False
-        self.opt_no_detect_squash_merges: bool = False
-        self.opt_no_edit_merge: bool = False
+        super().__init__()
         self.opt_no_interactive_rebase: bool = True
-        self.opt_onto: Optional[str] = None
-        self.opt_override_to: Optional[str] = None
-        self.opt_override_to_inferred: bool = False
-        self.opt_override_to_parent: bool = False
-        self.opt_push_tracked: Optional[bool] = True
-        self.opt_push_untracked: Optional[bool] = True
-        self.opt_return_to: str = "stay"
-        self.opt_roots: List[str] = list()
-        self.opt_start_from: str = "here"
-        self.opt_stat: bool = False
-        self.opt_sync_github_prs: bool = False
-        self.opt_unset_override: bool = False
         self.opt_yes: bool = True
 
 
@@ -125,8 +96,8 @@ class GitAPIState:
     def update_pull(self, new: bool = False) -> None:
         pull: Dict[str, Any]
         if new:
-            pull = {'number': self.get_new_number(GitAPIState.pulls),
-                    'user': {'login': 'githubuser'},
+            pull = {'number': self.get_next_free_number(GitAPIState.pulls),
+                    'user': {'login': 'github_user'},
                     'html_url': 'www.github.com'}
         else:
             pull_no: str = self.find_number(self.url)
@@ -144,7 +115,7 @@ class GitAPIState:
     def update_issue(self, new: bool = False) -> None:
         issue: Dict[str, Any]
         if new:
-            issue = {'number': self.get_new_number(GitAPIState.issues)}
+            issue = {'number': self.get_next_free_number(GitAPIState.issues)}
         else:
             issue_no = self.find_number(self.url)
             issue = self.get_issue(issue_no)
@@ -175,14 +146,12 @@ class GitAPIState:
         return m.group()
 
     @staticmethod
-    def get_new_number(entities: List[Dict[str, Any]]) -> str:
-        numbers = []
-        for item in entities:
-            numbers.append(int(item['number']))
+    def get_next_free_number(entities: List[Dict[str, Any]]) -> str:
+        numbers = [int(item['number']) for item in entities]
         return str(max(numbers) + 1)
 
 
-class Opener:
+class ContextManager:
     def __init__(self, obj: GitAPIState) -> None:
         self.obj = obj
 
@@ -1554,7 +1523,7 @@ class MacheteTester(unittest.TestCase):
                 "specified by the option '-f' from the current branch."
         )
 
-    @mock.patch('urllib.request.urlopen', Opener)
+    @mock.patch('urllib.request.urlopen', ContextManager)
     @mock.patch('urllib.request.Request', GitAPIState)
     def test_retarget_pr(self) -> None:
         branchs_first_commit_msg = "First commit on branch."
@@ -1577,7 +1546,7 @@ class MacheteTester(unittest.TestCase):
         self.assert_command(['github', 'retarget-pr'], 'The base branch of PR #15 has been switched to `branch-1`\n', adapt=False)
         self.assert_command(['github', 'retarget-pr'], 'The base branch of PR #15 is already `branch-1`\n', adapt=False)
 
-    @mock.patch('urllib.request.urlopen', Opener)
+    @mock.patch('urllib.request.urlopen', ContextManager)
     @mock.patch('urllib.request.Request', GitAPIState)
     def test_anno_prs(self) -> None:
         (
@@ -1649,7 +1618,7 @@ class MacheteTester(unittest.TestCase):
         )
 
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
-    @mock.patch('urllib.request.urlopen', Opener)
+    @mock.patch('urllib.request.urlopen', ContextManager)
     @mock.patch('urllib.request.Request', GitAPIState)
     def test_github_create_pr(self) -> None:
         (
@@ -1696,7 +1665,7 @@ class MacheteTester(unittest.TestCase):
                 .check_out("call-ws")
         )
         GitAPIState.pulls = [{'head': {'ref': 'ignore-trailing'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com'}]
-        self.launch_command("discover", "-y")
+        self.launch_command("discover")
         self.launch_command("github", "create-pr")
         # ahead of origin state, push is advised and accepted
         self.assert_command(
@@ -1779,9 +1748,9 @@ class MacheteTester(unittest.TestCase):
         )
         # check against attempt to create already existing pull request
         machete_client = cmd.MacheteClient(cli_opts, git)
-        expected_error_message = "Pull request for branch hotfix/add-trigger is already created under link www.github.com!\nPR details: PR #6 by githubuser: hotfix/add-trigger -> master"
+        expected_error_message = "Pull request for branch hotfix/add-trigger is already created under link www.github.com!\nPR details: PR #6 by github_user: hotfix/add-trigger -> master"
+        machete_client.read_definition_file()
         with self.assertRaises(MacheteException) as e:
-            machete_client.read_definition_file()
             machete_client.create_github_pr('hotfix/add-trigger', draft=False)
         if e:
             self.assertEqual(e.exception.parameter, expected_error_message,
