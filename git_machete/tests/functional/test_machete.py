@@ -196,6 +196,15 @@ class MockGithubAPIRequest:
         numbers = [int(item['number']) for item in entities]
         return str(max(numbers) + 1)
 
+    @staticmethod
+    def set_initial_values() -> None:
+        GitAPIState.pulls = [
+            {'head': {'ref': 'bugfix/remove'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'},
+             'number': '15', 'html_url': 'www.github.com'}]
+        GitAPIState.user = {'login': 'github_user', 'type': 'User', 'company': 'VirtusLab'}
+        GitAPIState.issues = []
+        GitAPIState.remote_branches = []
+
 
 class MockContextManager:
     def __init__(self, obj: MockGithubAPIRequest) -> None:
@@ -1576,6 +1585,7 @@ class MacheteTester(unittest.TestCase):
     @mock.patch('urllib.request.Request', git_api_state_for_test_retarget_pr.new_request())
     @mock.patch('urllib.request.urlopen', MockContextManager)
     def test_retarget_pr(self) -> None:
+        GitAPIState.set_initial_values()
         branchs_first_commit_msg = "First commit on branch."
         branchs_second_commit_msg = "Second commit on branch."
         (
@@ -1605,6 +1615,7 @@ class MacheteTester(unittest.TestCase):
     @mock.patch('urllib.request.urlopen', MockContextManager)
     @mock.patch('urllib.request.Request', git_api_state_for_test_anno_prs.new_request())
     def test_anno_prs(self) -> None:
+        GitAPIState.set_initial_values()
         (
             self.repo_sandbox.new_branch("root")
                 .commit("root")
@@ -1677,6 +1688,7 @@ class MacheteTester(unittest.TestCase):
     @mock.patch('urllib.request.urlopen', MockContextManager)
     @mock.patch('urllib.request.Request', git_api_state_for_test_create_pr.new_request())
     def test_github_create_pr(self) -> None:
+        GitAPIState.set_initial_values()
         (
             self.repo_sandbox.new_branch("root")
                 .commit("initial commit")
