@@ -19,7 +19,6 @@ from git_machete.github import (
     get_parsed_github_remote_url, is_github_remote_url, create_pull_request,
     derive_current_user_login, set_milestone_of_pull_request,
     add_assignees_to_pull_request, add_reviewers_to_pull_request)
-from git_machete.options import CommandLineOptions
 from git_machete.utils import (
     get_pretty_choices, flat_map, excluding, fmt, tupled, warn, debug, bold,
     colored, underline, dim, get_second)

@@ -1747,7 +1747,7 @@ class MacheteTester(unittest.TestCase):
             """,
         )
         # check against attempt to create already existing pull request
-        machete_client = cmd.MacheteClient(cli_opts, git)
+        machete_client = MacheteClient(cli_opts, git)
         expected_error_message = "Pull request for branch hotfix/add-trigger is already created under link www.github.com!\nPR details: PR #6 by github_user: hotfix/add-trigger -> master"
         machete_client.read_definition_file()
         with self.assertRaises(MacheteException) as e:
