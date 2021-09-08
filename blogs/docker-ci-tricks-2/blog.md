@@ -71,11 +71,25 @@ There is no definition of a `DIRECTORY_HASH` in here, but there is an execution 
 
 ```shell script
 # ... skipped ...
+image_name=$1
 
 DIRECTORY_HASH=$(git rev-parse HEAD:ci/$image_name)
 export DIRECTORY_HASH
+cd ci/$image_name/
 
-# ... skipped ...
+# If image is not found by pull, build the image and push it to the Docker Hub.
+docker-compose pull $image_name
+
+image_tag=$(docker-compose config | yq eval ".services.$image_name.image" -)
+docker image inspect "$image_tag" &>/dev/null || {
+  docker-compose build --build-arg user_id="$(id -u)" --build-arg group_id="$(id -g)" $image_name
+  # In builds coming from forks, secret vars are unavailable for security reasons; hence, we have to skip pushing the newly built image.
+  if [[ ${DOCKER_PASSWORD-} && ${DOCKER_USERNAME-} ]]; then
+    echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+    # In case the push fails due to e.g. timeouts (which unfortunately sometimes happen on CI), we don't want to fail the entire deployment.
+    docker-compose push $image_name || true
+  fi
+}
 ```
 
 Once we've got the directory hash, we check (`docker-compose pull`) whether the image with the given tag is already present
