@@ -365,19 +365,33 @@ def launch(orig_args: List[str]) -> None:
             if dest != current_branch:
                 git.checkout(dest)
         elif cmd == "github":
-            github_allowed_subcommands = "anno-prs|create-pr|retarget-pr"
-            param = check_required_param(parse_options(args, "", ["draft"]),
-                                         github_allowed_subcommands)
+            github_allowed_subcommands = "anno-prs|create-pr|retarget-pr|checkout-pr"
+            list_args = parse_options(args) if args[0] == 'checkout-pr' \
+                else check_required_param(parse_options(args, "", ["draft"]), github_allowed_subcommands)
+            if not list_args:
+                raise MacheteException(f"`git machete github` expects argument(s): {github_allowed_subcommands}")
+
+            param = args[0]
             machete_client.read_definition_file()
             if param == "anno-prs":
                 machete_client.sync_annotations_to_github_prs()
             elif param == "create-pr":
+                check_required_param(parse_options(args, "", ["draft"]), github_allowed_subcommands)
                 current_branch = git.get_current_branch()
                 machete_client.create_github_pr(current_branch, draft=cli_opts.opt_draft)
             elif param == "retarget-pr":
                 current_branch = git.get_current_branch()
                 machete_client.expect_in_managed_branches(current_branch)
                 machete_client.retarget_github_pr(current_branch)
+            elif param == "checkout-pr":
+                if len(list_args) == 1:
+                    raise MacheteException(
+                        "Argument to `git machete github checkout-pr` cannot be empty; expected PR number.")
+                try:
+                    pr_no: int = int(list_args[1])
+                except ValueError:
+                    raise MacheteException("PR number is not integer value!")
+                machete_client.checkout_github_pr(pr_no)
             else:
                 raise MacheteException(
                     f"`github` requires a subcommand: one of `{github_allowed_subcommands}`")
@@ -409,8 +423,8 @@ def launch(orig_args: List[str]) -> None:
             elif len(list_args) > 2:
                 raise MacheteException(f"Too many arguments to `git machete list {list_args[0]}` ")
             elif (list_args[0] in (
-                  "addable", "managed", "slidable", "unmanaged", "with-overridden-fork-point") and
-                  len(list_args) > 1):
+                 "addable", "managed", "slidable", "unmanaged", "with-overridden-fork-point") and\
+                 len(list_args) > 1):
                 raise MacheteException(
                     f"`git machete list {list_args[0]}` does not expect extra arguments")
             elif list_args[0] == "slidable-after" and len(list_args) != 2:
@@ -495,8 +509,8 @@ def launch(orig_args: List[str]) -> None:
             machete_client.status(warn_on_yellow_edges=True)
         elif cmd == "traverse":
             traverse_long_opts = ["fetch", "list-commits", "merge",
-                                  "no-detect-squash-merges", "no-edit-merge",
-                                  "no-interactive-rebase",
+                                  "no-detect-squash-merges",
+                                  "no-edit-merge", "no-interactive-rebase",
                                   "no-push", "no-push-untracked", "push", "push-untracked",
                                   "return-to=", "start-from=", "whole", "yes"]
             expect_no_param(parse_options(args, "FlMnWwy", traverse_long_opts))
