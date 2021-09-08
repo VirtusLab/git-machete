@@ -10,7 +10,7 @@ from git_machete.utils import colored, debug, fmt
 from git_machete import utils
 from git_machete.constants import AHEAD_OF_REMOTE, BEHIND_REMOTE, DIVERGED_FROM_AND_NEWER_THAN_REMOTE, \
     DIVERGED_FROM_AND_OLDER_THAN_REMOTE, IN_SYNC_WITH_REMOTE, \
-    NO_REMOTES, MAX_COUNT_FOR_INITIAL_LOG, UNTRACKED, YELLOW
+    NO_REMOTES, MAX_COUNT_FOR_INITIAL_LOG, UNTRACKED, EscapeCodes
 
 
 REFLOG_ENTRY = Tuple[str, str]
@@ -583,9 +583,9 @@ class GitContext:
             if advice_ignored_hook != 'false':  # both empty and "true" is okay
                 # The [33m color must be used to keep consistent with how git colors this advice for its built-in hooks.
                 sys.stderr.write(
-                    colored(f"hint: The '{hook_path}' hook was ignored because it's not set as executable.", YELLOW) + "\n")
+                    colored(f"hint: The '{hook_path}' hook was ignored because it's not set as executable.", EscapeCodes.YELLOW) + "\n")
                 sys.stderr.write(
-                    colored("hint: You can disable this warning with `git config advice.ignoredHook false`.", YELLOW) + "\n")
+                    colored("hint: You can disable this warning with `git config advice.ignoredHook false`.", EscapeCodes.YELLOW) + "\n")
             return False
         else:
             return True

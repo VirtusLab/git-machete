@@ -1,42 +1,37 @@
-#!/usr/bin/env python
-
-from typing import Callable, Dict, Generator, List, Optional, Tuple, TypeVar
-
-from git_machete import __version__
 import datetime
-import getopt
 import io
 import itertools
 import os
-import re
 import shutil
 import sys
-import textwrap
+from typing import List, Dict, Optional, Tuple, Generator, Callable
 
 from git_machete import utils
-from git_machete.utils import dim, get_pretty_choices, bold, colored, debug, fmt, underline, flat_map, tupled, get_second, excluding, warn
-from git_machete.options import CommandLineOptions
+from git_machete.constants import (
+    DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, PICK_FIRST_ROOT, UNTRACKED,
+    AHEAD_OF_REMOTE, BEHIND_REMOTE, DIVERGED_FROM_AND_OLDER_THAN_REMOTE,
+    DIVERGED_FROM_AND_NEWER_THAN_REMOTE, NO_REMOTES, IN_SYNC_WITH_REMOTE, PICK_LAST_ROOT, EscapeCodes)
 from git_machete.exceptions import MacheteException, StopTraversal
-from git_machete.docs import short_docs, long_docs
 from git_machete.git_operations import GitContext
-from git_machete.github import GitHubPullRequest, derive_pull_request_by_head, set_base_of_pull_request, is_github_remote_url,\
-    get_parsed_github_remote_url, add_assignees_to_pull_request, add_reviewers_to_pull_request, create_pull_request,\
-    derive_current_user_login, set_milestone_of_pull_request
-from git_machete.constants import AHEAD_OF_REMOTE, BEHIND_REMOTE, BOLD, DIM, DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, \
-    DIVERGED_FROM_AND_NEWER_THAN_REMOTE, DIVERGED_FROM_AND_OLDER_THAN_REMOTE, ENDC, GREEN, IN_SYNC_WITH_REMOTE, \
-    NO_REMOTES, ORANGE, PICK_FIRST_ROOT, PICK_LAST_ROOT, RED, UNTRACKED, YELLOW
+from git_machete.github import (
+    GitHubPullRequest, derive_pull_request_by_head, set_base_of_pull_request,
+    get_parsed_github_remote_url, is_github_remote_url, create_pull_request,
+    derive_current_user_login, set_milestone_of_pull_request,
+    add_assignees_to_pull_request, add_reviewers_to_pull_request)
+from git_machete.options import CommandLineOptions
+from git_machete.utils import (
+    get_pretty_choices, flat_map, excluding, fmt, tupled, warn, debug, bold,
+    colored, underline, dim, get_second)
 
-
-# Core utils
-
-T = TypeVar('T')
 
 BRANCH_DEF = Tuple[str, str]
 Hash_ShortHash_Message = Tuple[str, str, str]
-initial_current_directory: Optional[str] = utils.get_current_directory_or_none() or os.getenv('PWD')
 
 
-# Manipulation on definition file/tree of branches
+# Allowed parameter values for show/go command
+def allowed_directions(allow_current: bool) -> str:
+    current = "c[urrent]|" if allow_current else ""
+    return current + "d[own]|f[irst]|l[ast]|n[ext]|p[rev]|r[oot]|u[p]"
 
 
 class MacheteClient:
@@ -52,7 +47,8 @@ class MacheteClient:
         self.__roots: List[str] = []
         self.__annotations: Dict[str, str] = {}
         self.__empty_line_status: Optional[bool] = None
-        self.__branch_defs_by_sha_in_reflog: Optional[Dict[str, Optional[List[Tuple[str, str]]]]] = None
+        self.__branch_defs_by_sha_in_reflog: Optional[
+            Dict[str, Optional[List[Tuple[str, str]]]]] = None
 
     @property
     def definition_file_path(self) -> str:
@@ -77,7 +73,8 @@ class MacheteClient:
     def expect_in_managed_branches(self, branch: str) -> None:
         if branch not in self.managed_branches:
             raise MacheteException(
-                f"Branch `{branch}` not found in the tree of branch dependencies.\nUse `git machete add {branch}` or `git machete edit`")
+                f"Branch `{branch}` not found in the tree of branch dependencies."
+                f"\nUse `git machete add {branch}` or `git machete edit`")
 
     def expect_at_least_one_managed_branch(self) -> None:
         if not self.__roots:
@@ -85,7 +82,9 @@ class MacheteClient:
 
     def __raise_no_branches_error(self) -> None:
         raise MacheteException(
-            f"No branches listed in {self._definition_file_path}; use `git machete discover` or `git machete edit`, or edit {self._definition_file_path} manually.")
+            f"No branches listed in {self._definition_file_path}; use `git "
+            f"machete discover` or `git machete edit`, or edit"
+            f" {self._definition_file_path} manually.")
 
     def read_definition_file(self, verify_branches: bool = True) -> None:
         with open(self._definition_file_path) as file:
@@ -110,7 +109,8 @@ class MacheteClient:
                 self.__annotations[branch] = b_a[1]
             if branch in self.managed_branches:
                 raise MacheteException(
-                    f"{self._definition_file_path}, line {index + 1}: branch `{branch}` re-appears in the tree definition. {hint}")
+                    f"{self._definition_file_path}, line {index + 1}: branch "
+                    f"`{branch}` re-appears in the tree definition. {hint}")
             if verify_branches and branch not in self.__git.get_local_branches():
                 invalid_branches += [branch]
             self.managed_branches += [branch]
@@ -122,13 +122,17 @@ class MacheteClient:
                     prefix_expanded: str = "".join(mapping[c] for c in prefix)
                     indent_expanded: str = "".join(mapping[c] for c in self.__indent)
                     raise MacheteException(
-                        f"{self._definition_file_path}, line {index + 1}: invalid indent `{prefix_expanded}`, expected a multiply of `{indent_expanded}`. {hint}")
+                        f"{self._definition_file_path}, line {index + 1}: "
+                        f"invalid indent `{prefix_expanded}`, expected a multiply"
+                        f" of `{indent_expanded}`. {hint}")
             else:
                 depth = 0
 
             if depth > last_depth + 1:
                 raise MacheteException(
-                    f"{self._definition_file_path}, line {index + 1}: too much indent (level {depth}, expected at most {last_depth + 1}) for the branch `{branch}`. {hint}")
+                    f"{self._definition_file_path}, line {index + 1}: too much "
+                    f"indent (level {depth}, expected at most {last_depth + 1}) "
+                    f"for the branch `{branch}`. {hint}")
             last_depth = depth
 
             at_depth[depth] = branch
@@ -146,18 +150,21 @@ class MacheteClient:
             return
 
         if len(invalid_branches) == 1:
-            ans: str = self.ask_if(f"Skipping `{invalid_branches[0]}` " +
-                                   "which is not a local branch (perhaps it has been deleted?).\n" +
-                                   "Slide it out from the definition file?" +
-                                   get_pretty_choices("y", "e[dit]", "N"), opt_yes_msg=None)
+            ans: str = self.ask_if(
+                f"Skipping `{invalid_branches[0]}` " +
+                "which is not a local branch (perhaps it has been deleted?).\n" +
+                "Slide it out from the definition file?" +
+                get_pretty_choices("y", "e[dit]", "N"), opt_yes_msg=None)
         else:
-            ans = self.ask_if(f"Skipping {', '.join(f'`{branch}`' for branch in invalid_branches)} " +
-                              "which are not local branches (perhaps they have been deleted?).\n" +
-                              "Slide them out from the definition file?" +
-                              get_pretty_choices("y", "e[dit]", "N"), opt_yes_msg=None)
+            ans = self.ask_if(
+                f"Skipping {', '.join(f'`{branch}`' for branch in invalid_branches)}"
+                " which are not local branches (perhaps they have been deleted?).\n"
+                "Slide them out from the definition file?" + get_pretty_choices("y", "e[dit]", "N"),
+                opt_yes_msg=None)
 
         def recursive_slide_out_invalid_branches(branch: str) -> List[str]:
-            new_down_branches = flat_map(recursive_slide_out_invalid_branches, self.__down_branches.get(branch, []))
+            new_down_branches = flat_map(
+                recursive_slide_out_invalid_branches, self.__down_branches.get(branch, []))
             if branch in invalid_branches:
                 if branch in self.__down_branches:
                     del self.__down_branches[branch]
@@ -208,7 +215,8 @@ class MacheteClient:
 
     def add(self, branch: str) -> None:
         if branch in self.managed_branches:
-            raise MacheteException(f"Branch `{branch}` already exists in the tree of branch dependencies")
+            raise MacheteException(
+                f"Branch `{branch}` already exists in the tree of branch dependencies")
 
         onto: Optional[str] = self.__cli_opts.opt_onto
         if onto:
@@ -217,21 +225,27 @@ class MacheteClient:
         if branch not in self.__git.get_local_branches():
             remote_branch: Optional[str] = self.__git.get_sole_remote_branch(branch)
             if remote_branch:
-                common_line = f"A local branch `{branch}` does not exist, but a remote branch `{remote_branch}` exists.\n"
+                common_line = (
+                    f"A local branch `{branch}` does not exist, but a remote "
+                    f"branch `{remote_branch}` exists.\n")
                 msg = common_line + f"Check out `{branch}` locally?" + get_pretty_choices('y', 'N')
                 opt_yes_msg = common_line + f"Checking out `{branch}` locally..."
                 if self.ask_if(msg, opt_yes_msg) in ('y', 'yes'):
                     self.__git.create_branch(branch, f"refs/remotes/{remote_branch}")
                 else:
                     return
-                # Not dealing with `onto` here. If it hasn't been explicitly specified via `--onto`, we'll try to infer it now.
+                # Not dealing with `onto` here. If it hasn't been explicitly
+                # specified via `--onto`, we'll try to infer it now.
             else:
                 out_of = f"refs/heads/{onto}" if onto else "HEAD"
                 out_of_str = f"`{onto}`" if onto else "the current HEAD"
-                msg = f"A local branch `{branch}` does not exist. Create (out of {out_of_str})?" + get_pretty_choices('y', 'N')
-                opt_yes_msg = f"A local branch `{branch}` does not exist. Creating out of {out_of_str}"
+                msg = (f"A local branch `{branch}` does not exist. Create (out "
+                       f"of {out_of_str})?" + get_pretty_choices('y', 'N'))
+                opt_yes_msg = (f"A local branch `{branch}` does not exist. "
+                               f"Creating out of {out_of_str}")
                 if self.ask_if(msg, opt_yes_msg) in ('y', 'yes'):
-                    # If `--onto` hasn't been explicitly specified, let's try to assess if the current branch would be a good `onto`.
+                    # If `--onto` hasn't been explicitly specified, let's try to
+                    # assess if the current branch would be a good `onto`.
                     if self.__roots and not onto:
                         current_branch = self.__git.get_current_branch_or_none()
                         if current_branch and current_branch in self.managed_branches:
@@ -245,16 +259,22 @@ class MacheteClient:
             print(fmt(f"Added branch `{branch}` as a new root"))
         else:
             if not onto:
-                upstream = self.__infer_upstream(branch, condition=lambda x: x in self.managed_branches, reject_reason_message="this candidate is not a managed branch")
+                upstream = self.__infer_upstream(
+                    branch,
+                    condition=lambda x: x in self.managed_branches,
+                    reject_reason_message="this candidate is not a managed branch")
                 if not upstream:
-                    raise MacheteException(f"Could not automatically infer upstream (parent) branch for `{branch}`.\n"
-                                           "You can either:\n"
-                                           "1) specify the desired upstream branch with `--onto` or\n"
-                                           f"2) pass `--as-root` to attach `{branch}` as a new root or\n"
-                                           "3) edit the definition file manually with `git machete edit`")
+                    raise MacheteException(
+                        f"Could not automatically infer upstream (parent) branch for `{branch}`.\n"
+                        "You can either:\n"
+                        "1) specify the desired upstream branch with `--onto` or\n"
+                        f"2) pass `--as-root` to attach `{branch}` as a new root or\n"
+                        "3) edit the definition file manually with `git machete edit`")
                 else:
-                    msg = f"Add `{branch}` onto the inferred upstream (parent) branch `{upstream}`?" + get_pretty_choices('y', 'N')
-                    opt_yes_msg = f"Adding `{branch}` onto the inferred upstream (parent) branch `{upstream}`"
+                    msg = (f"Add `{branch}` onto the inferred upstream (parent) "
+                           f"branch `{upstream}`?" + get_pretty_choices('y', 'N'))
+                    opt_yes_msg = (f"Adding `{branch}` onto the inferred upstream"
+                                   f" (parent) branch `{upstream}`")
                     if self.ask_if(msg, opt_yes_msg) in ('y', 'yes'):
                         onto = upstream
                     else:
@@ -284,15 +304,28 @@ class MacheteClient:
     def update(self) -> None:
         current_branch = self.__git.get_current_branch()
         if self.__cli_opts.opt_merge:
-            with_branch = self.up(current_branch,
-                                  prompt_if_inferred_msg="Branch `%s` not found in the tree of branch dependencies. Merge with the inferred upstream `%s`?" + get_pretty_choices('y', 'N'),
-                                  prompt_if_inferred_yes_opt_msg="Branch `%s` not found in the tree of branch dependencies. Merging with the inferred upstream `%s`...")
+            with_branch = self.up(
+                current_branch,
+                prompt_if_inferred_msg=(
+                    "Branch `%s` not found in the tree of branch dependencies. "
+                    "Merge with the inferred upstream `%s`?" + get_pretty_choices('y', 'N')),
+                prompt_if_inferred_yes_opt_msg=(
+                    "Branch `%s` not found in the tree of branch dependencies. "
+                    "Merging with the inferred upstream `%s`..."))
             self.__git.merge(with_branch, current_branch)
         else:
-            onto_branch = self.up(current_branch,
-                                  prompt_if_inferred_msg="Branch `%s` not found in the tree of branch dependencies. Rebase onto the inferred upstream `%s`?" + get_pretty_choices('y', 'N'),
-                                  prompt_if_inferred_yes_opt_msg="Branch `%s` not found in the tree of branch dependencies. Rebasing onto the inferred upstream `%s`...")
-            self.__git.rebase(f"refs/heads/{onto_branch}", self.__cli_opts.opt_fork_point or self.fork_point(current_branch, use_overrides=True), current_branch)
+            onto_branch = self.up(
+                current_branch,
+                prompt_if_inferred_msg=(
+                    "Branch `%s` not found in the tree of branch dependencies. "
+                    "Rebase onto the inferred upstream `%s`?" + get_pretty_choices('y', 'N')),
+                prompt_if_inferred_yes_opt_msg=(
+                    "Branch `%s` not found in the tree of branch dependencies. "
+                    "Rebasing onto the inferred upstream `%s`..."))
+            self.__git.rebase(
+                f"refs/heads/{onto_branch}",
+                self.__cli_opts.opt_fork_point or self.fork_point(current_branch, use_overrides=True),
+                current_branch)
 
     def discover_tree(self) -> None:
         all_local_branches = self.__git.get_local_branches()
@@ -329,7 +362,8 @@ class MacheteClient:
         non_root_fixed_branches_by_last_checkout_timestamps = sorted(
             (last_checkout_timestamps.get(branch, 0), branch) for branch in non_root_fixed_branches)
         if self.__cli_opts.opt_checked_out_since:
-            threshold = self.__git.get_git_timespec_parsed_to_unix_timestamp(self.__cli_opts.opt_checked_out_since)
+            threshold = self.__git.get_git_timespec_parsed_to_unix_timestamp(
+                self.__cli_opts.opt_checked_out_since)
             stale_non_root_fixed_branches = [branch for (timestamp, branch) in itertools.takewhile(
                 tupled(lambda timestamp, branch: timestamp < threshold),
                 non_root_fixed_branches_by_last_checkout_timestamps
@@ -340,22 +374,35 @@ class MacheteClient:
             stale_non_root_fixed_branches = [branch for (timestamp, branch) in stale]
             if stale:
                 threshold_date = datetime.datetime.utcfromtimestamp(fresh[0][0]).strftime("%Y-%m-%d")
-                warn(f"to keep the size of the discovered tree reasonable (ca. {c} branches), "
-                     f"only branches checked out at or after ca. <b>{threshold_date}</b> are included.\n"
-                     "Use `git machete discover --checked-out-since=<date>` (where <date> can be e.g. `'2 weeks ago'` or `2020-06-01`) "
-                     "to change this threshold so that less or more branches are included.\n")
+                warn(
+                    f"to keep the size of the discovered tree reasonable (ca. "
+                    f"{c} branches), only branches checked out at or after ca. "
+                    f"<b>{threshold_date}</b> are included.\n Use `git machete "
+                    f"discover --checked-out-since=<date>` (where <date> can be "
+                    f"e.g. `'2 weeks ago'` or `2020-06-01`) to change this "
+                    f"threshold so that less or more branches are included.\n")
         self.managed_branches = excluding(all_local_branches, stale_non_root_fixed_branches)
         if self.__cli_opts.opt_checked_out_since and not self.managed_branches:
-            warn("no branches satisfying the criteria. Try moving the value of `--checked-out-since` further to the past.")
+            warn(
+                "no branches satisfying the criteria. Try moving the value of "
+                "`--checked-out-since` further to the past.")
             return
 
         for branch in excluding(non_root_fixed_branches, stale_non_root_fixed_branches):
             upstream = self.__infer_upstream(
                 branch,
-                condition=lambda candidate: get_root_of(candidate) != branch and candidate not in stale_non_root_fixed_branches,
-                reject_reason_message="choosing this candidate would form a cycle in the resulting graph or the candidate is a stale branch")
+                condition=lambda candidate: (
+                    get_root_of(candidate) != branch and
+                    candidate not in stale_non_root_fixed_branches),
+                reject_reason_message=(
+                    "choosing this candidate would form a "
+                    "cycle in the resulting graph or the candidate is a stale branch"))
             if upstream:
-                debug("discover_tree()", f"inferred upstream of {branch} is {upstream}, attaching {branch} as a child of {upstream}\n")
+                debug(
+                    "discover_tree()",
+                    (f"inferred upstream of {branch} is {upstream}, attaching "
+                     f"{branch} as a child of {upstream}\n")
+                )
                 self.up_branch[branch] = upstream
                 root_of[branch] = upstream
                 if upstream in self.__down_branches:
@@ -363,7 +410,9 @@ class MacheteClient:
                 else:
                     self.__down_branches[upstream] = [branch]
             else:
-                debug("discover_tree()", f"inferred no upstream for {branch}, attaching {branch} as a new root\n")
+                debug(
+                    "discover_tree()",
+                    f"inferred no upstream for {branch}, attaching {branch} as a new root\n")
                 self.__roots += [branch]
 
         # Let's remove merged branches for which no downstream branch have been found.
@@ -372,12 +421,18 @@ class MacheteClient:
             if branch in self.up_branch and not self.__down_branches.get(branch):
                 upstream = self.up_branch[branch]
                 if self.is_merged_to(branch, upstream):
-                    debug("discover_tree()",
-                          f"inferred upstream of {branch} is {upstream}, but {branch} is merged to {upstream}; skipping {branch} from discovered tree\n")
+                    debug(
+                        "discover_tree()",
+                        (f"inferred upstream of {branch} is {upstream}, but "
+                         f"{branch} is merged to {upstream}; skipping {branch}"
+                         f" from discovered tree\n")
+                    )
                     merged_branches_to_skip += [branch]
         if merged_branches_to_skip:
-            warn("skipping %s since %s merged to another branch and would not have any downstream branches.\n"
-                 % (", ".join(f"`{branch}`" for branch in merged_branches_to_skip),
+            warn(
+                "skipping %s since %s merged to another branch and would not "
+                "have any downstream branches.\n"
+                % (", ".join(f"`{branch}`" for branch in merged_branches_to_skip),
                     "it's" if len(merged_branches_to_skip) == 1 else "they're"))
             self.managed_branches = excluding(self.managed_branches, merged_branches_to_skip)
             for branch in merged_branches_to_skip:
@@ -393,7 +448,9 @@ class MacheteClient:
         self.status(warn_on_yellow_edges=False)
         print("")
         do_backup = os.path.isfile(self._definition_file_path)
-        backup_msg = f"\nThe existing definition file will be backed up as {self._definition_file_path}~" if do_backup else ""
+        backup_msg = (
+            f"\nThe existing definition file will be backed up as {self._definition_file_path}~"
+            if do_backup else "")
         msg = f"Save the above tree to {self._definition_file_path}?{backup_msg}" + get_pretty_choices('y', 'e[dit]', 'N')
         opt_yes_msg = f"Saving the above tree to {self._definition_file_path}... {backup_msg}"
         ans = self.ask_if(msg, opt_yes_msg)
@@ -415,14 +472,16 @@ class MacheteClient:
             if not new_upstream:
                 raise MacheteException(f"No upstream branch defined for `{branch}`, cannot slide out")
 
-        # Verify that all "interior" slide-out branches have a single downstream pointing to the next slide-out
+        # Verify that all "interior" slide-out branches have a single downstream
+        # pointing to the next slide-out
         for bu, bd in zip(branches_to_slide_out[:-1], branches_to_slide_out[1:]):
             dbs = self.__down_branches.get(bu)
             if not dbs or len(dbs) == 0:
                 raise MacheteException(f"No downstream branch defined for `{bu}`, cannot slide out")
             elif len(dbs) > 1:
                 flat_dbs = ", ".join(f"`{x}`" for x in dbs)
-                raise MacheteException(f"Multiple downstream branches defined for `{bu}`: {flat_dbs}; cannot slide out")
+                raise MacheteException(
+                    f"Multiple downstream branches defined for `{bu}`: {flat_dbs}; cannot slide out")
             elif dbs != [bd]:
                 raise MacheteException(f"'{bd}' is not downstream of '{bu}', cannot slide out")
 
@@ -437,7 +496,9 @@ class MacheteClient:
         for branch in branches_to_slide_out:
             self.up_branch[branch] = None
             self.__down_branches[branch] = None
-        self.__down_branches[new_upstream] = [branch for branch in self.__down_branches[new_upstream] if branch != branches_to_slide_out[0]]
+        self.__down_branches[new_upstream] = [
+            branch for branch in self.__down_branches[new_upstream]
+            if branch != branches_to_slide_out[0]]
 
         # Reconnect the downstreams to the new upstream in the tree
         for new_downstream in new_downstreams:
@@ -456,11 +517,15 @@ class MacheteClient:
                 self.__git.merge(new_upstream, new_downstream)
             else:
                 print(f"Rebasing {bold(new_downstream)} onto {bold(new_upstream)}...")
-                self.__git.rebase(f"refs/heads/{new_upstream}", self.__cli_opts.opt_down_fork_point or self.fork_point(new_downstream, use_overrides=True), new_downstream)
+                self.__git.rebase(
+                    f"refs/heads/{new_upstream}",
+                    self.__cli_opts.opt_down_fork_point or
+                    self.fork_point(new_downstream, use_overrides=True), new_downstream)
 
     def advance(self, branch: str) -> None:
         if not self.__down_branches.get(branch):
-            raise MacheteException(f"`{branch}` does not have any downstream (child) branches to advance towards")
+            raise MacheteException(
+                f"`{branch}` does not have any downstream (child) branches to advance towards")
 
         def connected_with_green_edge(bd: str) -> bool:
             return bool(
@@ -470,18 +535,24 @@ class MacheteClient:
 
         candidate_downstreams = list(filter(connected_with_green_edge, self.__down_branches[branch]))
         if not candidate_downstreams:
-            raise MacheteException(f"No downstream (child) branch of `{branch}` is connected to `{branch}` with a green edge")
+            raise MacheteException(
+                f"No downstream (child) branch of `{branch}` is connected to "
+                f"`{branch}` with a green edge")
         if len(candidate_downstreams) > 1:
             if self.__cli_opts.opt_yes:
                 raise MacheteException(
-                    f"More than one downstream (child) branch of `{branch}` is connected to `{branch}` with a green edge and `-y/--yes` option is specified")
+                    f"More than one downstream (child) branch of `{branch}` is "
+                    f"connected to `{branch}` with a green edge and `-y/--yes` option is specified")
             else:
-                down_branch = self.pick(candidate_downstreams, f"downstream branch towards which `{branch}` is to be fast-forwarded")
+                down_branch = self.pick(
+                    candidate_downstreams,
+                    f"downstream branch towards which `{branch}` is to be fast-forwarded")
                 self.__git.merge_fast_forward_only(down_branch)
         else:
             down_branch = candidate_downstreams[0]
-            ans = self.ask_if(f"Fast-forward {bold(branch)} to match {bold(down_branch)}?" + get_pretty_choices('y', 'N'),
-                              f"Fast-forwarding {bold(branch)} to match {bold(down_branch)}...")
+            ans = self.ask_if(
+                f"Fast-forward {bold(branch)} to match {bold(down_branch)}?" + get_pretty_choices('y', 'N'),
+                f"Fast-forwarding {bold(branch)} to match {bold(down_branch)}...")
             if ans in ('y', 'yes'):
                 self.__git.merge_fast_forward_only(down_branch)
             else:
@@ -551,17 +622,25 @@ class MacheteClient:
             needs_remote_sync = s in statuses_to_sync
 
             if needs_slide_out:
-                # Avoid unnecessary fork point check if we already know that the branch qualifies for slide out;
+                # Avoid unnecessary fork point check if we already know that the
+                # branch qualifies for slide out;
                 # neither rebase nor merge will be suggested in such case anyway.
                 needs_parent_sync: bool = False
             elif s == DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
-                # Avoid unnecessary fork point check if we already know that the branch qualifies for resetting to remote counterpart;
+                # Avoid unnecessary fork point check if we already know that the
+                # branch qualifies for resetting to remote counterpart;
                 # neither rebase nor merge will be suggested in such case anyway.
                 needs_parent_sync = False
             elif self.__cli_opts.opt_merge:
-                needs_parent_sync = bool(upstream and not self.__git.is_ancestor_or_equal(upstream, branch))
+                needs_parent_sync = bool(
+                    upstream and not self.__git.is_ancestor_or_equal(upstream, branch))
             else:  # using rebase
-                needs_parent_sync = bool(upstream and not (self.__git.is_ancestor_or_equal(upstream, branch) and self.__git.get_commit_sha_by_revision(upstream) == self.fork_point(branch, use_overrides=True)))
+                needs_parent_sync = bool(
+                    upstream and
+                    not (self.__git.is_ancestor_or_equal(upstream, branch) and
+                         (self.__git.get_commit_sha_by_revision(upstream) ==
+                          self.fork_point(branch, use_overrides=True)))
+                )
 
             if branch != current_branch and (needs_slide_out or needs_parent_sync or needs_remote_sync):
                 self.__print_new_line(False)
@@ -592,11 +671,13 @@ class MacheteClient:
                     self.__run_post_slide_out_hook(upstream, branch, self.__down_branches.get(branch) or [])
                     if ans == 'yq':
                         return
-                    # No need to flush caches since nothing changed in commit/branch structure (only machete-specific changes happened).
+                    # No need to flush caches since nothing changed in commit/branch
+                    # structure (only machete-specific changes happened).
                     continue  # No need to sync branch 'branch' with remote since it just got removed from the tree of dependencies.
                 elif ans in ('q', 'quit'):
                     return
-                # If user answered 'no', we don't try to rebase/merge but still suggest to sync with remote (if needed; very rare in practice).
+                # If user answered 'no', we don't try to rebase/merge but still
+                # suggest to sync with remote (if needed; very rare in practice).
             elif needs_parent_sync:
                 self.__print_new_line(False)
                 if self.__cli_opts.opt_merge:
@@ -608,24 +689,34 @@ class MacheteClient:
                 if ans in ('y', 'yes', 'yq'):
                     if self.__cli_opts.opt_merge:
                         self.__git.merge(upstream, branch)
-                        # It's clearly possible that merge can be in progress after 'git merge' returned non-zero exit code;
+                        # It's clearly possible that merge can be in progress
+                        # after 'git merge' returned non-zero exit code;
                         # this happens most commonly in case of conflicts.
-                        # As for now, we're not aware of any case when merge can be still in progress after 'git merge' returns zero,
-                        # at least not with the options that git-machete passes to merge; this happens though in case of 'git merge --no-commit' (which we don't ever invoke).
+                        # As for now, we're not aware of any case when merge can
+                        # be still in progress after 'git merge' returns zero,
+                        # at least not with the options that git-machete passes
+                        # to merge; this happens though in case of 'git merge
+                        # --no-commit' (which we don't ever invoke).
                         # It's still better, however, to be on the safe side.
                         if self.__git.is_merge_in_progress():
                             sys.stdout.write("\nMerge in progress; stopping the traversal\n")
                             return
                     else:
                         self.__git.rebase(f"refs/heads/{upstream}", self.fork_point(branch, use_overrides=True), branch)
-                        # It's clearly possible that rebase can be in progress after 'git rebase' returned non-zero exit code;
-                        # this happens most commonly in case of conflicts, regardless of whether the rebase is interactive or not.
-                        # But for interactive rebases, it's still possible that even if 'git rebase' returned zero,
-                        # the rebase is still in progress; e.g. when interactive rebase gets to 'edit' command, it will exit returning zero,
-                        # but the rebase will be still in progress, waiting for user edits and a subsequent 'git rebase --continue'.
+                        # It's clearly possible that rebase can be in progress
+                        # after 'git rebase' returned non-zero exit code;
+                        # this happens most commonly in case of conflicts,
+                        # regardless of whether the rebase is interactive or not.
+                        # But for interactive rebases, it's still possible that
+                        # even if 'git rebase' returned zero, the rebase is still
+                        # in progress; e.g. when interactive rebase gets to 'edit'
+                        # command, it will exit returning zero, but the rebase
+                        # will be still in progress, waiting for user edits and
+                        # a subsequent 'git rebase --continue'.
                         rebased_branch = self.__git.get_currently_rebased_branch_or_none()
                         if rebased_branch:  # 'remote_branch' should be equal to 'branch' at this point anyway
-                            sys.stdout.write(fmt(f"\nRebase of `{rebased_branch}` in progress; stopping the traversal\n"))
+                            sys.stdout.write(
+                                fmt(f"\nRebase of `{rebased_branch}` in progress; stopping the traversal\n"))
                             return
                     if ans == 'yq':
                         return
@@ -641,7 +732,8 @@ class MacheteClient:
                     if s == BEHIND_REMOTE:
                         self.__handle_behind_state(current_branch, remote)
                     elif s == AHEAD_OF_REMOTE:
-                        self.__handle_ahead_state(current_branch, remote, is_called_from_traverse=True)
+                        self.__handle_ahead_state(
+                            current_branch, remote, is_called_from_traverse=True)
                     elif s == DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
                         self.__handle_diverged_and_older_state(current_branch)
                     elif s == DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
@@ -671,7 +763,8 @@ class MacheteClient:
             print(f"Returned to the initial branch {bold(initial_branch)}")
         elif self.__cli_opts.opt_return_to == "nearest-remaining" and nearest_remaining_branch != initial_branch:
             print(
-                f"The initial branch {bold(initial_branch)} has been slid out. Returned to nearest remaining managed branch {bold(nearest_remaining_branch)}")
+                f"The initial branch {bold(initial_branch)} has been slid out. "
+                f"Returned to nearest remaining managed branch {bold(nearest_remaining_branch)}")
 
     def status(self, warn_on_yellow_edges: bool) -> None:
         dfs_res = []
@@ -694,7 +787,8 @@ class MacheteClient:
         def fp_sha(branch: str) -> Optional[str]:
             if branch not in fp_sha_cached:
                 try:
-                    # We're always using fork point overrides, even when status is launched from discover().
+                    # We're always using fork point overrides, even when status
+                    # is launched from discover().
                     fp_sha_cached[branch], fp_branches_cached[branch] = self.__fork_point_and_containing_branch_defs(branch, use_overrides=True)
                 except MacheteException:
                     fp_sha_cached[branch], fp_branches_cached[branch] = None, []
@@ -705,13 +799,13 @@ class MacheteClient:
         for branch in self.up_branch:
             upstream = self.up_branch[branch]
             if self.is_merged_to(branch, upstream):
-                edge_color[branch] = DIM
+                edge_color[branch] = EscapeCodes.DIM
             elif not self.__git.is_ancestor_or_equal(upstream, branch):
-                edge_color[branch] = RED
+                edge_color[branch] = EscapeCodes.RED
             elif self.__get_overridden_fork_point(branch) or self.__git.get_commit_sha_by_revision(upstream) == fp_sha(branch):
-                edge_color[branch] = GREEN
+                edge_color[branch] = EscapeCodes.GREEN
             else:
-                edge_color[branch] = YELLOW
+                edge_color[branch] = EscapeCodes.YELLOW
 
         currently_rebased_branch = self.__git.get_currently_rebased_branch_or_none()
         currently_checked_out_branch = self.__git.get_currently_checked_out_branch_or_none()
@@ -732,20 +826,21 @@ class MacheteClient:
             if branch in self.up_branch:
                 print_line_prefix(branch, f"{utils.get_vertical_bar()} \n")
                 if self.__cli_opts.opt_list_commits:
-                    if edge_color[branch] in (RED, DIM):
+                    if edge_color[branch] in (EscapeCodes.RED, EscapeCodes.DIM):
                         commits: List[Hash_ShortHash_Message] = self.__git.get_commits_between(fp_sha(branch), f"refs/heads/{branch}") if fp_sha(branch) else []
-                    elif edge_color[branch] == YELLOW:
+                    elif edge_color[branch] == EscapeCodes.YELLOW:
                         commits = self.__git.get_commits_between(f"refs/heads/{self.up_branch[branch]}", f"refs/heads/{branch}")
-                    else:  # edge_color == GREEN
+                    else:  # edge_color == EscapeCodes.GREEN
                         commits = self.__git.get_commits_between(fp_sha(branch), f"refs/heads/{branch}")
 
                     for sha, short_sha, subject in commits:
                         if sha == fp_sha(branch):
-                            # fp_branches_cached will already be there thanks to the above call to 'fp_sha'.
+                            # fp_branches_cached will already be there thanks to
+                            # the above call to 'fp_sha'.
                             fp_branches_formatted: str = " and ".join(
                                 sorted(underline(lb_or_rb) for lb, lb_or_rb in fp_branches_cached[branch]))
                             fp_suffix: str = " %s %s %s seems to be a part of the unique history of %s" % \
-                                             (colored(utils.get_right_arrow(), RED), colored("fork point ???", RED),
+                                             (colored(utils.get_right_arrow(), EscapeCodes.RED), colored("fork point ???", EscapeCodes.RED),
                                               "this commit" if self.__cli_opts.opt_list_commits_with_hashes else f"commit {short_sha}",
                                               fp_branches_formatted)
                         else:
@@ -754,7 +849,7 @@ class MacheteClient:
                         out.write(" %s%s%s\n" % (
                                   f"{dim(short_sha)}  " if self.__cli_opts.opt_list_commits_with_hashes else "", dim(subject),
                                   fp_suffix))
-                elbow_ascii_only: Dict[str, str] = {DIM: "m-", RED: "x-", GREEN: "o-", YELLOW: "?-"}
+                elbow_ascii_only: Dict[str, str] = {EscapeCodes.DIM: "m-", EscapeCodes.RED: "x-", EscapeCodes.GREEN: "o-", EscapeCodes.YELLOW: "?-"}
                 elbow: str = u"└─" if not utils.ascii_only else elbow_ascii_only[edge_color[branch]]
                 print_line_prefix(branch, elbow)
             else:
@@ -775,7 +870,7 @@ class MacheteClient:
                     prefix = "REVERTING "
                 else:
                     prefix = ""
-                current = "%s%s" % (bold(colored(prefix, RED)), bold(underline(branch, star_if_ascii_only=True)))
+                current = "%s%s" % (bold(colored(prefix, EscapeCodes.RED)), bold(underline(branch, star_if_ascii_only=True)))
             else:
                 current = bold(branch)
 
@@ -784,12 +879,12 @@ class MacheteClient:
             s, remote = self.__git.get_combined_remote_sync_status(branch)
             sync_status = {
                 NO_REMOTES: "",
-                UNTRACKED: colored(" (untracked)", ORANGE),
+                UNTRACKED: colored(" (untracked)", EscapeCodes.ORANGE),
                 IN_SYNC_WITH_REMOTE: "",
-                BEHIND_REMOTE: colored(f" (behind {remote})", RED),
-                AHEAD_OF_REMOTE: colored(f" (ahead of {remote})", RED),
-                DIVERGED_FROM_AND_OLDER_THAN_REMOTE: colored(f" (diverged from & older than {remote})", RED),
-                DIVERGED_FROM_AND_NEWER_THAN_REMOTE: colored(f" (diverged from {remote})", RED)
+                BEHIND_REMOTE: colored(f" (behind {remote})", EscapeCodes.RED),
+                AHEAD_OF_REMOTE: colored(f" (ahead of {remote})", EscapeCodes.RED),
+                DIVERGED_FROM_AND_OLDER_THAN_REMOTE: colored(f" (diverged from & older than {remote})", EscapeCodes.RED),
+                DIVERGED_FROM_AND_NEWER_THAN_REMOTE: colored(f" (diverged from {remote})", EscapeCodes.RED)
             }[s]
 
             hook_output = ""
@@ -809,7 +904,7 @@ class MacheteClient:
         sys.stdout.write(out.getvalue())
         out.close()
 
-        yellow_edge_branches = [k for k, v in edge_color.items() if v == YELLOW]
+        yellow_edge_branches = [k for k, v in edge_color.items() if v == EscapeCodes.YELLOW]
         if yellow_edge_branches and warn_on_yellow_edges:
             if len(yellow_edge_branches) == 1:
                 first_part = f"yellow edge indicates that fork point for `{yellow_edge_branches[0]}` is probably incorrectly inferred,\n" \
@@ -869,7 +964,9 @@ class MacheteClient:
     def edit(self) -> int:
         default_editor_name: Optional[str] = self.__git.get_default_editor()
         if default_editor_name is None:
-            raise MacheteException(f"Cannot determine editor. Set `GIT_MACHETE_EDITOR` environment variable or edit {self._definition_file_path} directly.")
+            raise MacheteException(
+                f"Cannot determine editor. Set `GIT_MACHETE_EDITOR` environment "
+                f"variable or edit {self._definition_file_path} directly.")
         return utils.run_cmd(default_editor_name, self._definition_file_path)
 
     def __fork_point_and_containing_branch_defs(self, branch: str, use_overrides: bool) -> Tuple[Optional[str], List[BRANCH_DEF]]:
@@ -886,8 +983,10 @@ class MacheteClient:
             if overridden_fp_sha:
                 if upstream and self.__git.is_ancestor_or_equal(upstream, branch) and not self.__git.is_ancestor_or_equal(upstream, overridden_fp_sha, later_prefix=""):
                     # We need to handle the case when branch is a descendant of upstream,
-                    # but the fork point of branch is overridden to a commit that is NOT a descendant of upstream.
-                    # In this case it's more reasonable to assume that upstream (and not overridden_fp_sha) is the fork point.
+                    # but the fork point of branch is overridden to a commit that
+                    # is NOT a descendant of upstream. In this case it's more
+                    # reasonable to assume that upstream (and not overridden_fp_sha)
+                    # is the fork point.
                     debug(f"fork_point_and_containing_branch_defs({branch})",
                           f"{branch} is descendant of its upstream {upstream}, but overridden fork point commit {overridden_fp_sha} is NOT a descendant of {upstream}; falling back to {upstream} as fork point")
                     return self.__git.get_commit_sha_by_revision(upstream), []
@@ -912,9 +1011,11 @@ class MacheteClient:
                   f"(specifically: {' and '.join(map(utils.get_second, containing_branch_defs))})")
 
             if upstream and self.__git.is_ancestor_or_equal(upstream, branch) and not self.__git.is_ancestor_or_equal(upstream, fp_sha, later_prefix=""):
-                # That happens very rarely in practice (typically current head of any branch, including upstream, should occur on the reflog of this
-                # branch, thus is_ancestor(upstream, branch) should imply is_ancestor(upstream, FP(branch)), but it's still possible in case reflog of
-                # upstream is incomplete for whatever reason.
+                # That happens very rarely in practice (typically current head
+                # of any branch, including upstream, should occur on the reflog
+                # of this branch, thus is_ancestor(upstream, branch) should imply
+                # is_ancestor(upstream, FP(branch)), but it's still possible in
+                # case reflog of upstream is incomplete for whatever reason.
                 debug(f"fork_point_and_containing_branch_defs({branch})",
                       f"{upstream} is descendant of its upstream {branch}, but inferred fork point commit {fp_sha} is NOT a descendant of {upstream}; falling back to {upstream} as fork point")
                 return self.__git.get_commit_sha_by_revision(upstream), []
@@ -924,11 +1025,14 @@ class MacheteClient:
                 return fp_sha, containing_branch_defs
 
     def fork_point(self, branch: str, use_overrides: bool) -> Optional[str]:
-        sha, containing_branch_defs = self.__fork_point_and_containing_branch_defs(branch, use_overrides)
+        sha, containing_branch_defs = self.__fork_point_and_containing_branch_defs(
+            branch, use_overrides)
         return sha
 
     def diff(self, branch: Optional[str]) -> None:
-        fp: str = self.fork_point(branch if branch else self.__git.get_current_branch(), use_overrides=True)
+        fp: str = self.fork_point(
+            branch if branch else self.__git.get_current_branch(),
+            use_overrides=True)
         params = \
             (["--stat"] if self.__cli_opts.opt_stat else []) + \
             [fp] + \
@@ -937,7 +1041,10 @@ class MacheteClient:
         self.__git.run_git("diff", *params)
 
     def log(self, branch: str) -> None:
-        self.__git.run_git("log", "^" + self.fork_point(branch, use_overrides=True), f"refs/heads/{branch}")
+        self.__git.run_git(
+            "log",
+            "^" + self.fork_point(branch, use_overrides=True),
+            f"refs/heads/{branch}")
 
     def down(self, branch: str, pick_mode: bool) -> str:
         self.expect_in_managed_branches(branch)
@@ -981,11 +1088,13 @@ class MacheteClient:
             if self.__roots:
                 if if_unmanaged == PICK_FIRST_ROOT:
                     warn(
-                        f"{branch} is not a managed branch, assuming {self.__roots[0]} (the first root) instead as root")
+                        f"{branch} is not a managed branch, assuming "
+                        f"{self.__roots[0]} (the first root) instead as root")
                     return self.__roots[0]
                 else:  # if_unmanaged == PICK_LAST_ROOT
                     warn(
-                        f"{branch} is not a managed branch, assuming {self.__roots[-1]} (the last root) instead as root")
+                        f"{branch} is not a managed branch, assuming "
+                        f"{self.__roots[-1]} (the last root) instead as root")
                     return self.__roots[-1]
             else:
                 self.__raise_no_branches_error()
@@ -1007,17 +1116,22 @@ class MacheteClient:
             upstream = self.__infer_upstream(branch)
             if upstream:
                 if prompt_if_inferred_msg:
-                    if self.ask_if(prompt_if_inferred_msg % (branch, upstream), prompt_if_inferred_yes_opt_msg % (branch, upstream)) in ('y', 'yes'):
+                    if self.ask_if(
+                            prompt_if_inferred_msg % (branch, upstream),
+                            prompt_if_inferred_yes_opt_msg % (branch, upstream)
+                    ) in ('y', 'yes'):
                         return upstream
                     else:
                         sys.exit(1)
                 else:
                     warn(
-                        f"branch `{branch}` not found in the tree of branch dependencies; the upstream has been inferred to `{upstream}`")
+                        f"branch `{branch}` not found in the tree of branch "
+                        f"dependencies; the upstream has been inferred to `{upstream}`")
                     return upstream
             else:
                 raise MacheteException(
-                    f"Branch `{branch}` not found in the tree of branch dependencies and its upstream could not be inferred")
+                    f"Branch `{branch}` not found in the tree of branch "
+                    f"dependencies and its upstream could not be inferred")
 
     def slidable(self) -> List[str]:
         return [branch for branch in self.managed_branches if branch in self.up_branch]
@@ -1043,26 +1157,34 @@ class MacheteClient:
             exit_code = utils.run_cmd(hook_path, new_upstream, slid_out_branch, *new_downstreams,
                                       cwd=self.__git.get_root_dir())
             if exit_code != 0:
-                sys.stderr.write(f"The machete-post-slide-out hook exited with {exit_code}, aborting.\n")
+                sys.stderr.write(
+                    f"The machete-post-slide-out hook exited with {exit_code}, aborting.\n")
                 sys.exit(exit_code)
 
     def squash(self, current_branch: str, fork_commit: str) -> None:
-        commits: List[Hash_ShortHash_Message] = self.__git.get_commits_between(fork_commit, current_branch)
+        commits: List[Hash_ShortHash_Message] = self.__git.get_commits_between(
+            fork_commit, current_branch)
         if not commits:
             raise MacheteException(
-                "No commits to squash. Use `-f` or `--fork-point` to specify the start of range of commits to squash.")
+                "No commits to squash. Use `-f` or `--fork-point` to specify the "
+                "start of range of commits to squash.")
         if len(commits) == 1:
             sha, short_sha, subject = commits[0]
             print(f"Exactly one commit ({short_sha}) to squash, ignoring.\n")
-            print("Tip: use `-f` or `--fork-point` to specify where the range of commits to squash starts.")
+            print("Tip: use `-f` or `--fork-point` to specify where the range of "
+                  "commits to squash starts.")
             return
 
         earliest_sha, earliest_short_sha, earliest_subject = commits[0]
-        earliest_full_body = self.__git.popen_git("log", "-1", "--format=%B", earliest_sha).strip()
+        earliest_full_body = self.__git.popen_git(
+            "log", "-1", "--format=%B", earliest_sha).strip()
         # %ai for ISO-8601 format; %aE/%aN for respecting .mailmap; see `git rev-list --help`
-        earliest_author_date = self.__git.popen_git("log", "-1", "--format=%ai", earliest_sha).strip()
-        earliest_author_email = self.__git.popen_git("log", "-1", "--format=%aE", earliest_sha).strip()
-        earliest_author_name = self.__git.popen_git("log", "-1", "--format=%aN", earliest_sha).strip()
+        earliest_author_date = self.__git.popen_git(
+            "log", "-1", "--format=%ai", earliest_sha).strip()
+        earliest_author_email = self.__git.popen_git(
+            "log", "-1", "--format=%aE", earliest_sha).strip()
+        earliest_author_name = self.__git.popen_git(
+            "log", "-1", "--format=%aN", earliest_sha).strip()
 
         # Following the convention of `git cherry-pick`, `git commit --amend`, `git rebase` etc.,
         # let's retain the original author (only committer will be overwritten).
@@ -1073,8 +1195,11 @@ class MacheteClient:
         # Using `git commit-tree` since it's cleaner than any high-level command
         # like `git merge --squash` or `git rebase --interactive`.
         # The tree (HEAD^{tree}) argument must be passed as first,
-        # otherwise the entire `commit-tree` will fail on some ancient supported versions of git (at least on v1.7.10).
-        squashed_sha = self.__git.popen_git("commit-tree", "HEAD^{tree}", "-p", fork_commit, "-m", earliest_full_body, env=author_env).strip()
+        # otherwise the entire `commit-tree` will fail on some ancient supported
+        # versions of git (at least on v1.7.10).
+        squashed_sha = self.__git.popen_git(
+            "commit-tree", "HEAD^{tree}", "-p", fork_commit, "-m", earliest_full_body,
+            env=author_env).strip()
 
         # This can't be done with `git reset` since it doesn't allow for a custom reflog message.
         # Even worse, reset's reflog message would be filtered out in our fork point algorithm,
@@ -1100,13 +1225,16 @@ class MacheteClient:
                            gs_ == "branch: Reset to HEAD" or
                            gs_.startswith("reset: moving to ") or
                            gs_.startswith("fetch . ") or
-                           # The rare case of a no-op rebase, the exact wording likely depends on git version
+                           # The rare case of a no-op rebase, the exact wording
+                           # likely depends on git version
                            gs_ == f"rebase finished: {prefix}{branch} onto {sha_}" or
                            gs_ == f"rebase -i (finish): {prefix}{branch} onto {sha_}"
                            )
             if is_excluded:
-                debug(f"filtered_reflog({branch}, {prefix}) -> is_excluded_reflog_subject({sha_}, <<<{gs_}>>>)",
-                      "skipping reflog entry")
+                debug(
+                    (f"filtered_reflog({branch}, {prefix}) -> is_excluded_reflog_subject({sha_},"
+                     f" <<<{gs_}>>>)"),
+                    "skipping reflog entry")
             return is_excluded
 
         branch_reflog = self.__git.get_reflog(prefix + branch)
@@ -1143,7 +1271,8 @@ class MacheteClient:
                                                                   org_name}
         if not org_name_for_github_remote:
             raise MacheteException(
-                fmt('Remotes are defined for this repository, but none of them corresponds to GitHub (see `git remote -v` for details)'))
+                fmt('Remotes are defined for this repository, but none of them '
+                    'corresponds to GitHub (see `git remote -v` for details)'))
 
         org: str
         repo: str
@@ -1153,8 +1282,9 @@ class MacheteClient:
             if 'origin' in org_name_for_github_remote:
                 org, repo = org_name_for_github_remote['origin']
             else:
-                raise MacheteException(f'Multiple non-origin remotes correspond to GitHub in this repository: '
-                                       f'{", ".join(org_name_for_github_remote.keys())}, aborting')
+                raise MacheteException(
+                    f'Multiple non-origin remotes correspond to GitHub in this repository: '
+                    f'{", ".join(org_name_for_github_remote.keys())}, aborting')
         current_user: Optional[str] = derive_current_user_login()
         debug('sync_annotations_to_github_prs()',
               'Current GitHub user is ' + (current_user or '<none>'))
@@ -1221,8 +1351,10 @@ class MacheteClient:
             self.__branch_defs_by_sha_in_reflog = {}
             for sha, branch_def in generate_entries():
                 if sha in self.__branch_defs_by_sha_in_reflog:
-                    # The practice shows that it's rather unlikely for a given commit to appear on filtered reflogs of two unrelated branches
-                    # ("unrelated" as in, not a local branch and its remote counterpart) but we need to handle this case anyway.
+                    # The practice shows that it's rather unlikely for a given
+                    # commit to appear on filtered reflogs of two unrelated branches
+                    # ("unrelated" as in, not a local branch and its remote
+                    # counterpart) but we need to handle this case anyway.
                     self.__branch_defs_by_sha_in_reflog[sha] += [branch_def]
                 else:
                     self.__branch_defs_by_sha_in_reflog[sha] = [branch_def]
@@ -1242,8 +1374,9 @@ class MacheteClient:
 
         for sha in self.__git.spoonfeed_log_shas(branch):
             if sha in self.__branch_defs_by_sha_in_reflog:
-                # The entries must be sorted by lb_or_rb to make sure the upstream inference is deterministic
-                # (and does not depend on the order in which `generate_entries` iterated through the local branches).
+                # The entries must be sorted by lb_or_rb to make sure the
+                # upstream inference is deterministic (and does not depend on the
+                # order in which `generate_entries` iterated through the local branches).
                 branch_defs: List[BRANCH_DEF] = self.__branch_defs_by_sha_in_reflog[sha]
 
                 def lb_is_not_b(lb: str, lb_or_rb: str) -> bool:
@@ -1258,7 +1391,8 @@ class MacheteClient:
                     debug(f"match_log_to_filtered_reflogs({branch})",
                           f"commit {sha} found only in filtered reflog of {' and '.join(map(get_second, branch_defs))}; ignoring")
             else:
-                debug(f"match_log_to_filtered_reflogs({branch})", f"commit {sha} not found in any filtered reflog")
+                debug(f"match_log_to_filtered_reflogs({branch})",
+                      f"commit {sha} not found in any filtered reflog")
 
     def __infer_upstream(self, branch: str, condition: Callable[[str], bool] = lambda upstream: True, reject_reason_message: str = "") -> Optional[str]:
         for sha, containing_branch_defs in self.__match_log_to_filtered_reflogs(branch):
@@ -1314,7 +1448,8 @@ class MacheteClient:
                 warn(f"{while_descendant_of_key} config value `{while_descendant_of}` does not point to a valid commit")
             return None
         # This check needs to be performed every time the config is retrieved.
-        # We can't rely on the values being validated in set_fork_point_override(), since the config could have been modified outside of git-machete.
+        # We can't rely on the values being validated in set_fork_point_override(),
+        # since the config could have been modified outside of git-machete.
         if not self.__git.is_ancestor_or_equal(to_sha, while_descendant_of_sha, earlier_prefix="", later_prefix=""):
             warn(
                 f"commit {self.__git.get_short_commit_sha_by_revision(to)} pointed by {to_key} config "
@@ -1329,9 +1464,11 @@ class MacheteClient:
             return None
 
         to, while_descendant_of = override_data
-        # Note that this check is distinct from the is_ancestor check performed in get_fork_point_override_data.
+        # Note that this check is distinct from the is_ancestor check performed in
+        # get_fork_point_override_data.
         # While the latter checks the sanity of fork point override configuration,
-        # the former checks if the override still applies to wherever the given branch currently points.
+        # the former checks if the override still applies to wherever the given
+        # branch currently points.
         if not self.__git.is_ancestor_or_equal(while_descendant_of, branch, earlier_prefix=""):
             warn(fmt(
                 f"since branch <b>{branch}</b> is no longer a descendant of commit {self.__git.get_short_commit_sha_by_revision(while_descendant_of)}, ",
@@ -1457,7 +1594,8 @@ class MacheteClient:
             BEHIND_REMOTE: lambda: self.__git.pull_ff_only(new_remote, remote_branch),
             AHEAD_OF_REMOTE: lambda: self.__git.push(new_remote, branch),
             DIVERGED_FROM_AND_OLDER_THAN_REMOTE: lambda: self.__git.reset_keep(remote_branch),
-            DIVERGED_FROM_AND_NEWER_THAN_REMOTE: lambda: self.__git.push(new_remote, branch, force_with_lease=True)
+            DIVERGED_FROM_AND_NEWER_THAN_REMOTE: lambda: self.__git.push(
+                new_remote, branch, force_with_lease=True)
         }[relation]
 
         print(message)
@@ -1532,9 +1670,11 @@ class MacheteClient:
 
         new_base: Optional[str] = self.up_branch.get(head)
         if not new_base:
-            raise MacheteException(f'Branch `{head}` does not have a parent branch (it is a root) '
-                                   f'even though there is an open PR #{pr.number} to `{pr.base}`.\n'
-                                   f'Consider modifying the branch definition file (`git machete edit`) so that `{head}` is a child of `{pr.base}`.')
+            raise MacheteException(
+                f'Branch `{head}` does not have a parent branch (it is a root) '
+                f'even though there is an open PR #{pr.number} to `{pr.base}`.\n'
+                'Consider modifying the branch definition file (`git machete edit`)'
+                f' so that `{head}` is a child of `{pr.base}`.')
 
         if pr.base != new_base:
             set_base_of_pull_request(org, repo, pr.number, base=new_base)
@@ -1554,7 +1694,8 @@ class MacheteClient:
         }
         if not org_and_repo_for_github_remote:
             raise MacheteException(
-                fmt('Remotes are defined for this repository, but none of them corresponds to GitHub (see `git remote -v` for details)'))
+                fmt('Remotes are defined for this repository, but none of them '
+                    'corresponds to GitHub (see `git remote -v` for details)'))
 
         if len(org_and_repo_for_github_remote) == 1:
             return list(org_and_repo_for_github_remote.items())[0]
@@ -1562,8 +1703,9 @@ class MacheteClient:
         if 'origin' in org_and_repo_for_github_remote:
             return 'origin', org_and_repo_for_github_remote['origin']
 
-        raise MacheteException(f'Multiple non-origin remotes correspond to GitHub in this repository: '
-                               f'{", ".join(org_and_repo_for_github_remote.keys())}, aborting')
+        raise MacheteException(
+            f'Multiple non-origin remotes correspond to GitHub in this repository: '
+            f'{", ".join(org_and_repo_for_github_remote.keys())}, aborting')
 
     def create_github_pr(self, head: str, draft: bool) -> None:
         # first make sure that head branch is synced with remote
@@ -1576,7 +1718,8 @@ class MacheteClient:
         base: Optional[str] = self.up_branch.get(head)
         if not base:
             raise MacheteException(
-                f'Branch {head} does not have a parent branch (it is a root), base branch for the PR cannot be established')
+                f'Branch {head} does not have a parent branch (it is a root), '
+                'base branch for the PR cannot be established')
 
         org: str
         repo: str
@@ -1689,9 +1832,10 @@ class MacheteClient:
 
     def __handle_behind_state(self, branch: str, remote: str) -> None:
         remote_branch = self.__git.get_strict_counterpart_for_fetching_of_branch(branch)
-        ans = self.ask_if(f"Branch {bold(branch)} is behind its remote counterpart {bold(remote_branch)}.\n"
-                          f"Pull {bold(branch)} (fast-forward only) from {bold(remote)}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
-                          f"Branch {bold(branch)} is behind its remote counterpart {bold(remote_branch)}.\nPulling {bold(branch)} (fast-forward only) from {bold(remote)}...")
+        ans = self.ask_if(
+            f"Branch {bold(branch)} is behind its remote counterpart {bold(remote_branch)}.\n"
+            f"Pull {bold(branch)} (fast-forward only) from {bold(remote)}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
+            f"Branch {bold(branch)} is behind its remote counterpart {bold(remote_branch)}.\nPulling {bold(branch)} (fast-forward only) from {bold(remote)}...")
         if ans in ('y', 'yes', 'yq'):
             self.__git.pull_ff_only(remote, remote_branch)
             if ans == 'yq':
@@ -1723,7 +1867,8 @@ class MacheteClient:
             elif s == UNTRACKED:
                 self.__handle_untracked_state(current_branch, is_called_from_traverse=False)
             elif s == DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
-                self.__handle_diverged_and_newer_state(current_branch, remote, is_called_from_traverse=False)
+                self.__handle_diverged_and_newer_state(
+                    current_branch, remote, is_called_from_traverse=False)
 
             self.__print_new_line(False)
             self.status(warn_on_yellow_edges=True)
@@ -1741,7 +1886,8 @@ class MacheteClient:
                 ans = self.ask_if("Proceed with pull request creation?" + get_pretty_choices('y', 'q'),
                                   "Proceeding with pull request creation...")
             elif s == NO_REMOTES:
-                raise MacheteException("Could not create pull request - there are no remote repositories!")
+                raise MacheteException(
+                    "Could not create pull request - there are no remote repositories!")
             else:
                 ans = 'y'  # only IN SYNC status is left
 
@@ -1749,479 +1895,3 @@ class MacheteClient:
                 return
             elif ans in ('q', 'quit'):
                 raise MacheteException('Pull request creation interrupted.')
-
-
-# Allowed parameter values for show/go command
-def allowed_directions(allow_current: bool) -> str:
-    current = "c[urrent]|" if allow_current else ""
-    return current + "d[own]|f[irst]|l[ast]|n[ext]|p[rev]|r[oot]|u[p]"
-
-# Main
-
-
-alias_by_command: Dict[str, str] = {
-    "diff": "d",
-    "edit": "e",
-    "go": "g",
-    "log": "l",
-    "status": "s"
-}
-command_by_alias: Dict[str, str] = {v: k for k, v in alias_by_command.items()}
-
-command_groups: List[Tuple[str, List[str]]] = [
-    # 'is-managed' is mostly for scripting use and therefore skipped
-    ("General topics", ["file", "help", "hooks", "version"]),
-    ("Build, display and modify the tree of branch dependencies", ["add", "anno", "discover", "edit", "status"]),
-    ("List, check out and delete branches", ["delete-unmanaged", "go", "list", "show"]),
-    ("Determine changes specific to the given branch", ["diff", "fork-point", "log"]),
-    ("Update git history in accordance with the tree of branch dependencies", ["advance", "reapply", "slide-out", "squash", "traverse", "update"])
-]
-
-
-def usage(c: str = None) -> None:
-
-    if c and c in command_by_alias:
-        c = command_by_alias[c]
-    if c and c in long_docs:
-        print(fmt(textwrap.dedent(long_docs[c])))
-    else:
-        print()
-        short_usage()
-        if c and c not in long_docs:
-            print(f"\nUnknown command: '{c}'")
-        print(fmt("\n<u>TL;DR tip</u>\n\n"
-              "    Get familiar with the help for <b>format</b>, <b>edit</b>, <b>status</b> and <b>update</b>, in this order.\n"))
-        for hdr, cmds in command_groups:
-            print(underline(hdr))
-            print("")
-            for cm in cmds:
-                alias = f", {alias_by_command[cm]}" if cm in alias_by_command else ""
-                print("    %s%-18s%s%s" % (BOLD, cm + alias, ENDC, short_docs[cm]))  # bold(...) can't be used here due to the %-18s format specifier
-            sys.stdout.write("\n")
-        print(fmt(textwrap.dedent("""
-            <u>General options</u>\n
-                <b>--debug</b>           Log detailed diagnostic info, including outputs of the executed git commands.
-                <b>-h, --help</b>        Print help and exit.
-                <b>-v, --verbose</b>     Log the executed git commands.
-                <b>--version</b>         Print version and exit.
-        """[1:])))
-
-
-def short_usage() -> None:
-    print(fmt("<b>Usage: git machete [--debug] [-h] [-v|--verbose] [--version] <command> [command-specific options] [command-specific argument]</b>"))
-
-
-def version() -> None:
-    print(f"git-machete version {__version__}")
-
-
-def main() -> None:
-    launch(sys.argv[1:])
-
-
-def launch(orig_args: List[str]) -> None:
-
-    cli_opts = CommandLineOptions()
-    git = GitContext(cli_opts)
-
-    if sys.version_info.major == 2 or (sys.version_info.major == 3 and sys.version_info.minor < 6):
-        version_str = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
-        sys.stderr.write(f"Python {version_str} is no longer supported. Please switch to Python 3.6 or higher.\n")
-        sys.exit(1)
-
-    def parse_options(in_args: List[str], short_opts: str = "", long_opts: List[str] = [], allow_intermixing_options_and_params: bool = True) -> List[str]:
-
-        fun = getopt.gnu_getopt if allow_intermixing_options_and_params else getopt.getopt
-        opts, rest = fun(in_args, short_opts + "hv", long_opts + ['debug', 'help', 'verbose', 'version'])
-
-        for opt, arg in opts:
-            if opt in ("-b", "--branch"):
-                cli_opts.opt_branch = arg
-            elif opt in ("-C", "--checked-out-since"):
-                cli_opts.opt_checked_out_since = arg
-            elif opt == "--color":
-                cli_opts.opt_color = arg
-            elif opt in ("-d", "--down-fork-point"):
-                cli_opts.opt_down_fork_point = arg
-            elif opt == "--debug":
-                CommandLineOptions.opt_debug = True
-            elif opt == "--draft":
-                cli_opts.opt_draft = True
-            elif opt in ("-F", "--fetch"):
-                cli_opts.opt_fetch = True
-            elif opt in ("-f", "--fork-point"):
-                cli_opts.opt_fork_point = arg
-            elif opt in ("-H", "--sync-github-prs"):
-                cli_opts.opt_sync_github_prs = True
-            elif opt in ("-h", "--help"):
-                usage(cmd)
-                sys.exit()
-            elif opt == "--inferred":
-                cli_opts.opt_inferred = True
-            elif opt in ("-L", "--list-commits-with-hashes"):
-                cli_opts.opt_list_commits = cli_opts.opt_list_commits_with_hashes = True
-            elif opt in ("-l", "--list-commits"):
-                cli_opts.opt_list_commits = True
-            elif opt in ("-M", "--merge"):
-                cli_opts.opt_merge = True
-            elif opt == "-n":
-                cli_opts.opt_n = True
-            elif opt == "--no-detect-squash-merges":
-                cli_opts.opt_no_detect_squash_merges = True
-            elif opt == "--no-edit-merge":
-                cli_opts.opt_no_edit_merge = True
-            elif opt == "--no-interactive-rebase":
-                cli_opts.opt_no_interactive_rebase = True
-            elif opt == "--no-push":
-                cli_opts.opt_push_tracked = False
-                cli_opts.opt_push_untracked = False
-            elif opt == "--no-push-untracked":
-                cli_opts.opt_push_untracked = False
-            elif opt in ("-o", "--onto"):
-                cli_opts.opt_onto = arg
-            elif opt == "--override-to":
-                cli_opts.opt_override_to = arg
-            elif opt == "--override-to-inferred":
-                cli_opts.opt_override_to_inferred = True
-            elif opt == "--override-to-parent":
-                cli_opts.opt_override_to_parent = True
-            elif opt == "--push":
-                cli_opts.opt_push_tracked = True
-                cli_opts.opt_push_untracked = True
-            elif opt == "--push-untracked":
-                cli_opts.opt_push_untracked = True
-            elif opt in ("-R", "--as-root"):
-                cli_opts.opt_as_root = True
-            elif opt in ("-r", "--roots"):
-                cli_opts.opt_roots = arg.split(",")
-            elif opt == "--return-to":
-                cli_opts.opt_return_to = arg
-            elif opt in ("-s", "--stat"):
-                cli_opts.opt_stat = True
-            elif opt == "--start-from":
-                cli_opts.opt_start_from = arg
-            elif opt == "--unset-override":
-                cli_opts.opt_unset_override = True
-            elif opt in ("-v", "--verbose"):
-                CommandLineOptions.opt_verbose = True
-            elif opt == "--version":
-                version()
-                sys.exit()
-            elif opt == "-W":
-                cli_opts.opt_fetch = True
-                cli_opts.opt_start_from = "first-root"
-                cli_opts.opt_n = True
-                cli_opts.opt_return_to = "nearest-remaining"
-            elif opt in ("-w", "--whole"):
-                cli_opts.opt_start_from = "first-root"
-                cli_opts.opt_n = True
-                cli_opts.opt_return_to = "nearest-remaining"
-            elif opt in ("-y", "--yes"):
-                cli_opts.opt_yes = cli_opts.opt_no_interactive_rebase = True
-
-        if cli_opts.opt_color not in ("always", "auto", "never"):
-            raise MacheteException("Invalid argument for `--color`. Valid arguments: `always|auto|never`.")
-        else:
-            utils.ascii_only = cli_opts.opt_color == "never" or (cli_opts.opt_color == "auto" and not sys.stdout.isatty())
-
-        if cli_opts.opt_as_root and cli_opts.opt_onto:
-            raise MacheteException("Option `-R/--as-root` cannot be specified together with `-o/--onto`.")
-
-        if cli_opts.opt_no_edit_merge and not cli_opts.opt_merge:
-            raise MacheteException("Option `--no-edit-merge` only makes sense when using merge and must be specified together with `-M/--merge`.")
-        if cli_opts.opt_no_interactive_rebase and cli_opts.opt_merge:
-            raise MacheteException("Option `--no-interactive-rebase` only makes sense when using rebase and cannot be specified together with `-M/--merge`.")
-        if cli_opts.opt_down_fork_point and cli_opts.opt_merge:
-            raise MacheteException("Option `-d/--down-fork-point` only makes sense when using rebase and cannot be specified together with `-M/--merge`.")
-        if cli_opts.opt_fork_point and cli_opts.opt_merge:
-            raise MacheteException("Option `-f/--fork-point` only makes sense when using rebase and cannot be specified together with `-M/--merge`.")
-
-        if cli_opts.opt_n and cli_opts.opt_merge:
-            cli_opts.opt_no_edit_merge = True
-        if cli_opts.opt_n and not cli_opts.opt_merge:
-            cli_opts.opt_no_interactive_rebase = True
-
-        return rest
-
-    def expect_no_param(in_args: List[str], extra_explanation: str = '') -> None:
-        if len(in_args) > 0:
-            raise MacheteException(f"No argument expected for `{cmd}`{extra_explanation}")
-
-    def check_optional_param(in_args: List[str]) -> Optional[str]:
-        if not in_args:
-            return None
-        elif len(in_args) > 1:
-            raise MacheteException(f"`{cmd}` accepts at most one argument")
-        elif not in_args[0]:
-            raise MacheteException(f"Argument to `{cmd}` cannot be empty")
-        elif in_args[0][0] == "-":
-            raise MacheteException(f"Option `{in_args[0]}` not recognized")
-        else:
-            return in_args[0]
-
-    def check_required_param(in_args: List[str], allowed_values_string: str) -> str:
-        if not in_args or len(in_args) > 1:
-            raise MacheteException(f"`{cmd}` expects exactly one argument: one of {allowed_values_string}")
-        elif not in_args[0]:
-            raise MacheteException(f"Argument to `{cmd}` cannot be empty; expected one of {allowed_values_string}")
-        elif in_args[0][0] == "-":
-            raise MacheteException(f"Option `{in_args[0]}` not recognized")
-        else:
-            return in_args[0]
-
-    try:
-        machete_client = MacheteClient(cli_opts, git)
-        cmd = None
-        # Let's first extract the common options like `--help` or `--verbose` that might appear BEFORE the command,
-        # as in e.g. `git machete --verbose status`.
-        cmd_and_args = parse_options(orig_args, allow_intermixing_options_and_params=False)
-        # Subsequent calls to `parse_options` will, in turn, extract the options appearing AFTER the command.
-        if not cmd_and_args:
-            usage()
-            sys.exit(2)
-        cmd = cmd_and_args[0]
-        args = cmd_and_args[1:]
-
-        if cmd != "help":
-            if cmd != "discover":
-                if not os.path.exists(machete_client.definition_file_path):
-                    # We're opening in "append" and not "write" mode to avoid a race condition:
-                    # if other process writes to the file between we check the result of `os.path.exists` and call `open`,
-                    # then open(..., "w") would result in us clearing up the file contents, while open(..., "a") has no effect.
-                    with open(machete_client.definition_file_path, "a"):
-                        pass
-                elif os.path.isdir(machete_client.definition_file_path):
-                    # Extremely unlikely case, basically checking if anybody tampered with the repository.
-                    raise MacheteException(
-                        f"{machete_client.definition_file_path} is a directory rather than a regular file, aborting")
-
-        if cmd == "add":
-            param = check_optional_param(parse_options(args, "o:Ry", ["onto=", "as-root", "yes"]))
-            machete_client.read_definition_file()
-            machete_client.add(param or git.get_current_branch())
-        elif cmd == "advance":
-            args1 = parse_options(args, "y", ["yes"])
-            expect_no_param(args1)
-            machete_client.read_definition_file()
-            git.expect_no_operation_in_progress()
-            current_branch = git.get_current_branch()
-            machete_client.expect_in_managed_branches(current_branch)
-            machete_client.advance(current_branch)
-        elif cmd == "anno":
-            params = parse_options(args, "b:H", ["branch=", "sync-github-prs"])
-            machete_client.read_definition_file(verify_branches=False)
-            if cli_opts.opt_sync_github_prs:
-                machete_client.sync_annotations_to_github_prs()
-            else:
-                branch = cli_opts.opt_branch or git.get_current_branch()
-                machete_client.expect_in_managed_branches(branch)
-                if params:
-                    machete_client.annotate(branch, params)
-                else:
-                    machete_client.print_annotation(branch)
-        elif cmd == "delete-unmanaged":
-            expect_no_param(parse_options(args, "y", ["yes"]))
-            machete_client.read_definition_file()
-            machete_client.delete_unmanaged()
-        elif cmd in ("d", "diff"):
-            param = check_optional_param(parse_options(args, "s", ["stat"]))
-            machete_client.read_definition_file()
-            machete_client.diff(param)  # passing None if not specified
-        elif cmd == "discover":
-            expect_no_param(parse_options(args, "C:lr:y", ["checked-out-since=", "list-commits", "roots=", "yes"]))
-            # No need to read definition file.
-            machete_client.discover_tree()
-        elif cmd in ("e", "edit"):
-            expect_no_param(parse_options(args))
-            # No need to read definition file.
-            machete_client.edit()
-        elif cmd == "file":
-            expect_no_param(parse_options(args))
-            # No need to read definition file.
-            print(os.path.abspath(machete_client.definition_file_path))
-        elif cmd == "fork-point":
-            long_options = ["inferred", "override-to=", "override-to-inferred", "override-to-parent", "unset-override"]
-            param = check_optional_param(parse_options(args, "", long_options))
-            machete_client.read_definition_file()
-            branch = param or git.get_current_branch()
-            if len(list(filter(None, [cli_opts.opt_inferred, cli_opts.opt_override_to, cli_opts.opt_override_to_inferred, cli_opts.opt_override_to_parent, cli_opts.opt_unset_override]))) > 1:
-                long_options_string = ", ".join(map(lambda x: x.replace("=", ""), long_options))
-                raise MacheteException(f"At most one of {long_options_string} options may be present")
-            if cli_opts.opt_inferred:
-                print(machete_client.fork_point(branch, use_overrides=False))
-            elif cli_opts.opt_override_to:
-                machete_client.set_fork_point_override(branch, cli_opts.opt_override_to)
-            elif cli_opts.opt_override_to_inferred:
-                machete_client.set_fork_point_override(branch, machete_client.fork_point(branch, use_overrides=False))
-            elif cli_opts.opt_override_to_parent:
-                upstream = machete_client.up_branch.get(branch)
-                if upstream:
-                    machete_client.set_fork_point_override(branch, upstream)
-                else:
-                    raise MacheteException(f"Branch {branch} does not have upstream (parent) branch")
-            elif cli_opts.opt_unset_override:
-                machete_client.unset_fork_point_override(branch)
-            else:
-                print(machete_client.fork_point(branch, use_overrides=True))
-        elif cmd in ("g", "go"):
-            param = check_required_param(parse_options(args), allowed_directions(allow_current=False))
-            machete_client.read_definition_file()
-            git.expect_no_operation_in_progress()
-            current_branch = git.get_current_branch()
-            dest = machete_client.parse_direction(param, current_branch, allow_current=False, down_pick_mode=True)
-            if dest != current_branch:
-                git.checkout(dest)
-        elif cmd == "github":
-            github_allowed_subcommands = "anno-prs|create-pr|retarget-pr"
-            param = check_required_param(parse_options(args, "", ["draft"]), github_allowed_subcommands)
-            machete_client.read_definition_file()
-            if param == "anno-prs":
-                machete_client.sync_annotations_to_github_prs()
-            elif param == "create-pr":
-                current_branch = git.get_current_branch()
-                machete_client.create_github_pr(current_branch, draft=cli_opts.opt_draft)
-            elif param == "retarget-pr":
-                current_branch = git.get_current_branch()
-                machete_client.expect_in_managed_branches(current_branch)
-                machete_client.retarget_github_pr(current_branch)
-            else:
-                raise MacheteException(f"`github` requires a subcommand: one of `{github_allowed_subcommands}`")
-        elif cmd == "help":
-            param = check_optional_param(parse_options(args))
-            # No need to read definition file.
-            usage(param)
-        elif cmd == "is-managed":
-            param = check_optional_param(parse_options(args))
-            machete_client.read_definition_file()
-            branch = param or git.get_current_branch_or_none()
-            if branch is None or branch not in machete_client.managed_branches:
-                sys.exit(1)
-        elif cmd == "list":
-            list_allowed_values = "addable|managed|slidable|slidable-after <branch>|unmanaged|with-overridden-fork-point"
-            list_args = parse_options(args)
-            if not list_args:
-                raise MacheteException(f"`git machete list` expects argument(s): {list_allowed_values}")
-            elif not list_args[0]:
-                raise MacheteException(
-                    f"Argument to `git machete list` cannot be empty; expected {list_allowed_values}")
-            elif list_args[0][0] == "-":
-                raise MacheteException(f"Option `{list_args[0]}` not recognized")
-            elif list_args[0] not in ("addable", "managed", "slidable", "slidable-after", "unmanaged", "with-overridden-fork-point"):
-                raise MacheteException(f"Usage: git machete list {list_allowed_values}")
-            elif len(list_args) > 2:
-                raise MacheteException(f"Too many arguments to `git machete list {list_args[0]}` ")
-            elif list_args[0] in ("addable", "managed", "slidable", "unmanaged", "with-overridden-fork-point") and len(list_args) > 1:
-                raise MacheteException(f"`git machete list {list_args[0]}` does not expect extra arguments")
-            elif list_args[0] == "slidable-after" and len(list_args) != 2:
-                raise MacheteException(f"`git machete list {list_args[0]}` requires an extra <branch> argument")
-
-            param = list_args[0]
-            machete_client.read_definition_file()
-            res = []
-            if param == "addable":
-                def strip_first_fragment(remote_branch: str) -> str:
-                    return re.sub("^[^/]+/", "", remote_branch)
-
-                remote_counterparts_of_local_branches = utils.map_truthy_only(lambda branch: git.get_combined_counterpart_for_fetching_of_branch(branch), git.get_local_branches())
-                qualifying_remote_branches = excluding(git.get_remote_branches(), remote_counterparts_of_local_branches)
-                res = excluding(git.get_local_branches(), machete_client.managed_branches) + list(map(strip_first_fragment, qualifying_remote_branches))
-            elif param == "managed":
-                res = machete_client.managed_branches
-            elif param == "slidable":
-                res = machete_client.slidable()
-            elif param == "slidable-after":
-                b_arg = list_args[1]
-                machete_client.expect_in_managed_branches(b_arg)
-                res = machete_client.slidable_after(b_arg)
-            elif param == "unmanaged":
-                res = excluding(git.get_local_branches(), machete_client.managed_branches)
-            elif param == "with-overridden-fork-point":
-                res = list(filter(lambda branch: machete_client.has_any_fork_point_override_config(branch), git.get_local_branches()))
-
-            if res:
-                print("\n".join(res))
-        elif cmd in ("l", "log"):
-            param = check_optional_param(parse_options(args))
-            machete_client.read_definition_file()
-            machete_client.log(param or git.get_current_branch())
-        elif cmd == "reapply":
-            args1 = parse_options(args, "f:", ["fork-point="])
-            expect_no_param(args1, ". Use `-f` or `--fork-point` to specify the fork point commit")
-            machete_client.read_definition_file()
-            git.expect_no_operation_in_progress()
-            current_branch = git.get_current_branch()
-            git.rebase_onto_ancestor_commit(current_branch, cli_opts.opt_fork_point or machete_client.fork_point(current_branch, use_overrides=True))
-        elif cmd == "show":
-            args1 = parse_options(args)
-            param = check_required_param(args1[:1], allowed_directions(allow_current=True))
-            branch = check_optional_param(args1[1:])
-            if param == "current" and branch is not None:
-                raise MacheteException(f'`show current` with a branch (`{branch}`) does not make sense')
-            machete_client.read_definition_file(verify_branches=False)
-            print(machete_client.parse_direction(param, branch or git.get_current_branch(), allow_current=True, down_pick_mode=False))
-        elif cmd == "slide-out":
-            params = parse_options(args, "d:Mn", ["down-fork-point=", "merge", "no-edit-merge", "no-interactive-rebase"])
-            machete_client.read_definition_file()
-            git.expect_no_operation_in_progress()
-            machete_client.slide_out(params or [git.get_current_branch()])
-        elif cmd == "squash":
-            args1 = parse_options(args, "f:", ["fork-point="])
-            expect_no_param(args1, ". Use `-f` or `--fork-point` to specify the fork point commit")
-            machete_client.read_definition_file()
-            git.expect_no_operation_in_progress()
-            current_branch = git.get_current_branch()
-            machete_client.squash(current_branch, cli_opts.opt_fork_point or machete_client.fork_point(current_branch, use_overrides=True))
-        elif cmd in ("s", "status"):
-            expect_no_param(parse_options(args, "Ll", ["color=", "list-commits-with-hashes", "list-commits", "no-detect-squash-merges"]))
-            machete_client.read_definition_file()
-            machete_client.expect_at_least_one_managed_branch()
-            machete_client.status(warn_on_yellow_edges=True)
-        elif cmd == "traverse":
-            traverse_long_opts = ["fetch", "list-commits", "merge",
-                                  "no-detect-squash-merges", "no-edit-merge", "no-interactive-rebase",
-                                  "no-push", "no-push-untracked", "push", "push-untracked",
-                                  "return-to=", "start-from=", "whole", "yes"]
-            expect_no_param(parse_options(args, "FlMnWwy", traverse_long_opts))
-            if cli_opts.opt_start_from not in ("here", "root", "first-root"):
-                raise MacheteException("Invalid argument for `--start-from`. Valid arguments: `here|root|first-root`.")
-            if cli_opts.opt_return_to not in ("here", "nearest-remaining", "stay"):
-                raise MacheteException("Invalid argument for `--return-to`. Valid arguments: here|nearest-remaining|stay.")
-            machete_client.read_definition_file()
-            git.expect_no_operation_in_progress()
-            machete_client.traverse()
-        elif cmd == "update":
-            args1 = parse_options(args, "f:Mn", ["fork-point=", "merge", "no-edit-merge", "no-interactive-rebase"])
-            expect_no_param(args1, ". Use `-f` or `--fork-point` to specify the fork point commit")
-            machete_client.read_definition_file()
-            git.expect_no_operation_in_progress()
-            machete_client.update()
-        elif cmd == "version":
-            version()
-            sys.exit()
-        else:
-            short_usage()
-            raise MacheteException(f"\nUnknown command: `{cmd}`. Use `git machete help` to list possible commands")
-
-    except getopt.GetoptError as e:
-        short_usage()
-        sys.stderr.write(f"\n{e}\n")
-        sys.exit(2)
-    except MacheteException as e:
-        sys.stderr.write(f"\n{e}\n")
-        sys.exit(1)
-    except KeyboardInterrupt:
-        sys.stderr.write("\nInterrupted by the user")
-        sys.exit(1)
-    except StopTraversal:
-        pass
-    finally:
-        if initial_current_directory and not utils.does_directory_exist(initial_current_directory):
-            nearest_existing_parent_directory = initial_current_directory
-            while not utils.does_directory_exist(nearest_existing_parent_directory):
-                nearest_existing_parent_directory = os.path.join(nearest_existing_parent_directory, os.path.pardir)
-            warn(f"current directory {initial_current_directory} no longer exists, "
-                 f"the nearest existing parent directory is {os.path.abspath(nearest_existing_parent_directory)}")
-
-
-if __name__ == "__main__":
-    main()
