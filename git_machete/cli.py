@@ -423,8 +423,8 @@ def launch(orig_args: List[str]) -> None:
             elif len(list_args) > 2:
                 raise MacheteException(f"Too many arguments to `git machete list {list_args[0]}` ")
             elif (list_args[0] in (
-                 "addable", "managed", "slidable", "unmanaged", "with-overridden-fork-point") and\
-                 len(list_args) > 1):
+                    "addable", "managed", "slidable", "unmanaged", "with-overridden-fork-point") and
+                  len(list_args) > 1):
                 raise MacheteException(
                     f"`git machete list {list_args[0]}` does not expect extra arguments")
             elif list_args[0] == "slidable-after" and len(list_args) != 2:
