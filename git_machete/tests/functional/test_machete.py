@@ -1604,6 +1604,7 @@ class MacheteTester(unittest.TestCase):
         {'head': {'ref': 'call-ws'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '31', 'html_url': 'www.github.com'}
     ])
 
+
     @mock.patch('urllib.request.urlopen', MockContextManager)
     @mock.patch('urllib.request.Request', git_api_state_for_test_anno_prs.new_request())
     def test_anno_prs(self) -> None:
@@ -1803,7 +1804,6 @@ class MacheteTester(unittest.TestCase):
             """,
         )
         # check against attempt to create already existing pull request
-
         machete_client = MacheteClient(cli_opts, git)
         expected_error_message = "Pull request for branch hotfix/add-trigger is already created under link www.github.com!\nPR details: PR #6 by github_user: hotfix/add-trigger -> master"
         machete_client.read_definition_file()
