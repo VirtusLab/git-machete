@@ -115,8 +115,6 @@ class MockGithubAPIRequest:
             return self.update_issue()
         elif 'pulls' in self.parsed_url.path:
             return self.update_pull_request()
-        else:
-            return self.make_response_object(HTTPStatus.NOT_FOUND, [])
 
     def handle_post(self) -> "MockGithubAPIResponse":
         assert not self.parsed_query
@@ -1721,6 +1719,7 @@ class MacheteTester(unittest.TestCase):
                 .commit("remove outdated fields")
                 .check_out("call-ws")
         )
+
         self.launch_command("discover")
         self.launch_command("github", "create-pr")
         # ahead of origin state, push is advised and accepted
