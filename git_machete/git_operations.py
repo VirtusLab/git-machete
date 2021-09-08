@@ -161,7 +161,7 @@ class GitContext:
         return self.__remotes_cached
 
     def get_url_of_remote(self, remote: str) -> str:
-        return self.popen_git("remote", "get-url", "--", remote).strip()
+        return self.popen_git("config", "--get", f"remote.{remote}.url").strip()
 
     def fetch_remote(self, remote: str) -> None:
         if remote not in self.__fetch_done_for:
