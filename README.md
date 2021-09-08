@@ -8,7 +8,7 @@
 [![Snap](https://snapcraft.io/git-machete/badge.svg)](https://snapcraft.io/git-machete)
 [![License: MIT](https://img.shields.io/github/license/VirtusLab/git-machete)](https://github.com/VirtusLab/git-machete/blob/master/LICENSE)
 
-<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/develop/graphics/logo_with_name.svg"; style="width: 100%; display: block; margin-bottom: 10pt;" />
+<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/develop/graphics/logo_with_name.svg" style="width: 100%; display: block; margin-bottom: 10pt;" />
 <!-- The image is referenced by full URL, corresponding develop branch to ensure it renders correctly on https://pypi.org/project/git-machete/ -->
 
 💪 git-machete is a robust tool that **simplifies your git workflows**.<br/>
