@@ -265,10 +265,6 @@ class GitRepositorySandbox:
         self.execute(f'git branch -d "{branch}"')
         return self
 
-    def add_remote(self, remote: str, url: str) -> "GitRepositorySandbox":
-        self.execute(f'git remote add {remote} {url}')
-        return self
-
 
 class MacheteTester(unittest.TestCase):
     @staticmethod
@@ -1591,12 +1587,12 @@ class MacheteTester(unittest.TestCase):
                 .commit('introduce feature')
                 .push()
                 .check_out('feature')
-                .add_remote('new_origin', 'https://github.com/user/repo.git')
         )
 
         self.launch_command("discover", "-y")
         self.assert_command(['github', 'retarget-pr'], 'The base branch of PR #15 has been switched to `branch-1`\n', strip_indentation=False)
         self.assert_command(['github', 'retarget-pr'], 'The base branch of PR #15 is already `branch-1`\n', strip_indentation=False)
+
 
     git_api_state_for_test_anno_prs = MockGithubAPIState([
         {'head': {'ref': 'ignore-trailing'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com'},
@@ -1645,7 +1641,6 @@ class MacheteTester(unittest.TestCase):
                 .push()
                 .reset_to("ignore-trailing@{1}")
                 .delete_branch("root")
-                .add_remote('new_origin', 'https://github.com/user/repo.git')
         )
         self.launch_command("discover", "-y")
         self.launch_command('github', 'anno-prs')
