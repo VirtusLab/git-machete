@@ -287,6 +287,7 @@ class MacheteClient:
                 self.__down_branches[onto] = [branch]
             print(fmt(f"Added branch `{branch}` onto `{onto}`"))
 
+        self.managed_branches += [branch]
         self.save_definition_file()
 
     def annotate(self, branch: str, words: List[str]) -> None:

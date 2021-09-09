@@ -17,12 +17,15 @@ from urllib.parse import urlparse, ParseResult, parse_qs
 from git_machete import cli
 from git_machete.client import MacheteClient
 from git_machete.exceptions import MacheteException
+from git_machete.github import get_parsed_github_remote_url
 from git_machete.git_operations import GitContext
 from git_machete.options import CommandLineOptions
 from git_machete.utils import fmt
 
 cli_opts: CommandLineOptions = CommandLineOptions()
 git: GitContext = GitContext(cli_opts)
+
+FAKE_GITHUB_REMOTE_PATTERNS = ['(.*)/(.*)']
 
 
 def get_head_commit_hash() -> str:
@@ -1808,3 +1811,177 @@ class MacheteTester(unittest.TestCase):
         if e:
             self.assertEqual(e.exception.parameter, expected_error_message,
                              'Verify that expected error message has appeared when given pull request to create is already created.')
+
+    @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
+    @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
+    @mock.patch('urllib.request.urlopen', ContextManager)
+    @mock.patch('urllib.request.Request', GitAPIState)
+    def test_checkout_pr(self) -> None:
+        GitAPIState.set_initial_values()
+        (
+            self.repo_sandbox.new_branch("root")
+            .commit("initial commit")
+            .new_branch("develop")
+            .commit("first commit")
+            .push()
+            .new_branch("enchance/feature")
+            .commit("introduce feature")
+            .push()
+            .new_branch("bugfix/feature")
+            .commit("bugs removed")
+            .push()
+            .new_branch("allow-ownership-link")
+            .commit("fixes")
+            .push()
+            .new_branch('restrict_access')
+            .commit('authorized users only')
+            .push()
+            .new_branch("chore/redundant_checks")
+            .commit('remove some checks')
+            .push()
+            .check_out("root")
+            .new_branch("master")
+            .commit("Master commit")
+            .push()
+            .new_branch("hotfix/add-trigger")
+            .commit("HOTFIX Add the trigger")
+            .push()
+            .new_branch("ignore-trailing")
+            .commit("Ignore trailing data")
+            .push()
+            .delete_branch("root")
+            .new_branch('chore/fields')
+            .commit("remove outdated fields")
+            .push()
+            .check_out('develop')
+            .new_branch('enchance/add_user')
+            .commit('allow externals to add users')
+            .push()
+            .new_branch('bugfix/add_user')
+            .commit('first round of fixes')
+            .push()
+            .new_branch('testing/add_user')
+            .commit('add test set for add_user feature')
+            .push()
+            .new_branch('chore/comments')
+            .commit('code maintenance')
+            .push()
+            .check_out('master')
+        )
+        GitAPIState.pulls = [
+            {'head': {'ref': 'chore/redundant_checks'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'restrict_access'}, 'number': '18', 'html_url': 'www.github.com'},
+            {'head': {'ref': 'restrict_access'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'allow-ownership-link'}, 'number': '17', 'html_url': 'www.github.com'},
+            {'head': {'ref': 'allow-ownership-link'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'bugfix/feature'}, 'number': '12', 'html_url': 'www.github.com'},
+            {'head': {'ref': 'bugfix/feature'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'enchance/feature'}, 'number': '6', 'html_url': 'www.github.com'},
+            {'head': {'ref': 'enchance/add_user'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '19', 'html_url': 'www.github.com'},
+            {'head': {'ref': 'testing/add_user'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'bugfix/add_user'}, 'number': '22', 'html_url': 'www.github.com'},
+            {'head': {'ref': 'chore/comments'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'testing/add_user'}, 'number': '24', 'html_url': 'www.github.com'},
+            {'head': {'ref': 'ignore-trailing'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com'}
+        ]
+        for branch in ('chore/redundant_checks', 'restrict_access', 'allow-ownership-link', 'bugfix/feature', 'enchance/add_user', 'testing/add_user', 'chore/comments', 'bugfix/add_user'):
+            self.repo_sandbox.execute(f"git branch -D {branch}")
+
+        self.launch_command('discover')
+
+        # not broken chain of pull requests (root found in dependency tree)
+        self.launch_command('github', 'checkout-pr', '18')
+        self.assert_command(
+            ["status"],
+            """
+            master
+            |
+            o-hotfix/add-trigger
+              |
+              o-ignore-trailing  PR #3 (github_user)
+                |
+                o-chore/fields
+
+            develop
+            |
+            o-enchance/feature
+              |
+              o-bugfix/feature  PR #6 (github_user)
+                |
+                o-allow-ownership-link  PR #12 (github_user)
+                  |
+                  o-restrict_access  PR #17 (github_user)
+                    |
+                    o-chore/redundant_checks *  PR #18 (github_user)
+            """
+        )
+        # broken chain of pull requests (add new root)
+        self.launch_command('github', 'checkout-pr', '24')
+        self.assert_command(
+            ["status"],
+            """
+            master
+            |
+            o-hotfix/add-trigger
+              |
+              o-ignore-trailing  PR #3 (github_user)
+                |
+                o-chore/fields
+
+            develop
+            |
+            o-enchance/feature
+              |
+              o-bugfix/feature  PR #6 (github_user)
+                |
+                o-allow-ownership-link  PR #12 (github_user)
+                  |
+                  o-restrict_access  PR #17 (github_user)
+                    |
+                    o-chore/redundant_checks  PR #18 (github_user)
+
+            bugfix/add_user
+            |
+            o-testing/add_user  PR #22 (github_user)
+              |
+              o-chore/comments *  PR #24 (github_user)
+            """
+        )
+
+        # broken chain of pull requests (branches already added)
+        self.launch_command('github', 'checkout-pr', '24')
+        self.assert_command(
+            ["status"],
+            """
+            master
+            |
+            o-hotfix/add-trigger
+              |
+              o-ignore-trailing  PR #3 (github_user)
+                |
+                o-chore/fields
+
+            develop
+            |
+            o-enchance/feature
+              |
+              o-bugfix/feature  PR #6 (github_user)
+                |
+                o-allow-ownership-link  PR #12 (github_user)
+                  |
+                  o-restrict_access  PR #17 (github_user)
+                    |
+                    o-chore/redundant_checks  PR #18 (github_user)
+
+            bugfix/add_user
+            |
+            o-testing/add_user  PR #22 (github_user)
+              |
+              o-chore/comments *  PR #24 (github_user)
+            """
+        )
+        # check against wrong pr number
+        machete_client = MacheteClient(cli_opts, git)
+        repo: str
+        (_, repo) = get_parsed_github_remote_url(self.repo_sandbox.remote_path)
+        expected_error_message = f"PR number 100 is not found in repository {repo}"
+        machete_client.read_definition_file()
+        with self.assertRaises(MacheteException) as e:
+            machete_client.checkout_github_pr(100)
+        if e:
+            self.assertEqual(e.exception.parameter, expected_error_message,
+                             'Verify that expected error message has appeared when given pull request to checkout does not exists.')
