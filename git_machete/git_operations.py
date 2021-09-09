@@ -171,9 +171,6 @@ class GitContext:
     def set_upstream_to(self, remote_branch: str) -> None:
         self.run_git("branch", "--set-upstream-to", remote_branch)
 
-    def fetch_pull_request(self, remote: str, pr_no: int) -> None:
-        self.run_git("fetch", remote, f"refs/pull/{pr_no}/head:PR_{pr_no}")
-
     def reset_keep(self, to_revision: str) -> None:
         try:
             self.run_git("reset", "--keep", to_revision)
