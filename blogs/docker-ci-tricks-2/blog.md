@@ -83,8 +83,7 @@ docker-compose pull $image_name || {
   # In builds coming from forks, secret vars are unavailable for security reasons; hence, we have to skip pushing the newly built image.
   if [[ ${DOCKER_PASSWORD-} && ${DOCKER_USERNAME-} ]]; then
     echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-    # In case the push fails due to e.g. timeouts (which unfortunately sometimes happen on CI), we don't want to fail the entire deployment.
-    docker-compose push $image_name || true
+    docker-compose push $image_name
   fi
 }
 ```
