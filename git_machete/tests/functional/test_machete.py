@@ -172,7 +172,7 @@ class MockGithubAPIRequest:
         return self.make_response_object(HTTPStatus.CREATED, issue)
 
     @staticmethod
-    def get_index_or_None(entity: Dict[str, Any], base: List[Dict[str, Any]]) -> Optional[int]:
+    def get_index_or_none(entity: Dict[str, Any], base: List[Dict[str, Any]]) -> Optional[int]:
         try:
             return base.index(entity)
         except ValueError:
@@ -193,15 +193,6 @@ class MockGithubAPIRequest:
     def get_next_free_number(entities: List[Dict[str, Any]]) -> str:
         numbers = [int(item['number']) for item in entities]
         return str(max(numbers) + 1)
-
-    @staticmethod
-    def set_initial_values() -> None:
-        GitAPIState.pulls = [
-            {'head': {'ref': 'bugfix/remove'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'},
-             'number': '15', 'html_url': 'www.github.com'}]
-        GitAPIState.user = {'login': 'github_user', 'type': 'User', 'company': 'VirtusLab'}
-        GitAPIState.issues = []
-        GitAPIState.remote_branches = []
 
 
 class MockContextManager:
@@ -1576,6 +1567,7 @@ class MacheteTester(unittest.TestCase):
                 "specified by the option '-f' from the current branch."
         )
 
+
     git_api_state_for_test_retarget_pr = MockGithubAPIState(
         [{'head': {'ref': 'feature'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'root'}, 'number': '15',
           'html_url': 'www.github.com'}])
@@ -1583,7 +1575,6 @@ class MacheteTester(unittest.TestCase):
     @mock.patch('urllib.request.Request', git_api_state_for_test_retarget_pr.new_request())
     @mock.patch('urllib.request.urlopen', MockContextManager)
     def test_retarget_pr(self) -> None:
-        GitAPIState.set_initial_values()
         branchs_first_commit_msg = "First commit on branch."
         branchs_second_commit_msg = "Second commit on branch."
         (
@@ -1614,7 +1605,6 @@ class MacheteTester(unittest.TestCase):
     @mock.patch('urllib.request.urlopen', MockContextManager)
     @mock.patch('urllib.request.Request', git_api_state_for_test_anno_prs.new_request())
     def test_anno_prs(self) -> None:
-        GitAPIState.set_initial_values()
         (
             self.repo_sandbox.new_branch("root")
                 .commit("root")
@@ -1655,6 +1645,7 @@ class MacheteTester(unittest.TestCase):
                 .delete_branch("root")
                 .add_remote('new_origin', 'https://github.com/user/repo.git')
         )
+
         self.launch_command("discover", "-y")
         self.launch_command('github', 'anno-prs')
         self.assert_command(
@@ -1685,7 +1676,6 @@ class MacheteTester(unittest.TestCase):
     @mock.patch('urllib.request.urlopen', MockContextManager)
     @mock.patch('urllib.request.Request', git_api_state_for_test_create_pr.new_request())
     def test_github_create_pr(self) -> None:
-        GitAPIState.set_initial_values()
         (
             self.repo_sandbox.new_branch("root")
                 .commit("initial commit")
@@ -1729,7 +1719,6 @@ class MacheteTester(unittest.TestCase):
                 .add_remote('new_origin', 'https://github.com/user/repo.git')
                 .check_out("call-ws")
         )
-
         self.launch_command("discover")
         self.launch_command("github", "create-pr")
         # ahead of origin state, push is advised and accepted
