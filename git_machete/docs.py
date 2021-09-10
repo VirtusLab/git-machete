@@ -316,7 +316,7 @@ long_docs: Dict[str, str] = {
 
         <b>`checkout-pr <PR-number>`:</b>
 
-          Check out given pull request (by number) locally under head branch name of pull request, 
+          Check out given pull request (by number) locally under head branch name of pull request,
           also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally.
           Once pull request is checked-out locally, modify definition file according to structure found and synchronize pull requests annotations.
 
