@@ -14,7 +14,6 @@ from typing import Any, Dict, Iterable, List, Optional, Union
 from unittest import mock
 from urllib.parse import urlparse, ParseResult, parse_qs
 
-
 from git_machete import cli
 from git_machete.client import MacheteClient
 from git_machete.exceptions import MacheteException
@@ -115,6 +114,8 @@ class MockGithubAPIRequest:
             return self.update_issue()
         elif 'pulls' in self.parsed_url.path:
             return self.update_pull_request()
+        else:
+            return self.make_response_object(HTTPStatus.NOT_FOUND, [])
 
     def handle_post(self) -> "MockGithubAPIResponse":
         assert not self.parsed_query
@@ -195,15 +196,6 @@ class MockGithubAPIRequest:
     def get_next_free_number(entities: List[Dict[str, Any]]) -> str:
         numbers = [int(item['number']) for item in entities]
         return str(max(numbers) + 1)
-
-    @staticmethod
-    def set_initial_values() -> None:
-        GitAPIState.pulls = [
-            {'head': {'ref': 'bugfix/remove'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'},
-             'number': '15', 'html_url': 'www.github.com'}]
-        GitAPIState.user = {'login': 'github_user', 'type': 'User', 'company': 'VirtusLab'}
-        GitAPIState.issues = []
-        GitAPIState.remote_branches = []
 
 
 class MockContextManager:
@@ -1585,7 +1577,7 @@ class MacheteTester(unittest.TestCase):
     @mock.patch('urllib.request.Request', git_api_state_for_test_retarget_pr.new_request())
     @mock.patch('urllib.request.urlopen', MockContextManager)
     def test_retarget_pr(self) -> None:
-        GitAPIState.set_initial_values()
+
         branchs_first_commit_msg = "First commit on branch."
         branchs_second_commit_msg = "Second commit on branch."
         (
@@ -1615,7 +1607,6 @@ class MacheteTester(unittest.TestCase):
     @mock.patch('urllib.request.urlopen', MockContextManager)
     @mock.patch('urllib.request.Request', git_api_state_for_test_anno_prs.new_request())
     def test_anno_prs(self) -> None:
-        GitAPIState.set_initial_values()
         (
             self.repo_sandbox.new_branch("root")
                 .commit("root")
@@ -1688,7 +1679,6 @@ class MacheteTester(unittest.TestCase):
     @mock.patch('urllib.request.urlopen', MockContextManager)
     @mock.patch('urllib.request.Request', git_api_state_for_test_create_pr.new_request())
     def test_github_create_pr(self) -> None:
-        GitAPIState.set_initial_values()
         (
             self.repo_sandbox.new_branch("root")
                 .commit("initial commit")
