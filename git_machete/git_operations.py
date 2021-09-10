@@ -706,18 +706,3 @@ class GitContext:
                 if to_branch not in result:
                     result[to_branch] = int(match.group(1))
         return result
-
-    def get_stripped_remote_branches(self, remote: str) -> List[str]:
-        def strip_remote(branch: str, remote: str) -> str:
-            index = branch.rfind(remote)
-            return branch[index + len(remote) + 1:]
-        branches = self.get_remote_branches()
-        return [strip_remote(b, remote) for b in branches if 'HEAD' not in b]
-
-    def get_commit_timestamp(self, commit_hash: str) -> str:
-        return self.popen_git('show', '-s', '--format=%ct', commit_hash).rstrip()
-
-    def get_first_reflog_entry_timestamp(self, remote: str, branch: str) -> str:
-        output: List[str] = self.popen_git('reflog', '--format=%ct', "/".join([remote, branch])).split('\n')
-        output.remove('')
-        return output[-1].strip()  # take only last value
