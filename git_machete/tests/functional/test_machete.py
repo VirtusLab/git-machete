@@ -11,7 +11,7 @@ import subprocess
 from contextlib import redirect_stdout
 from typing import Any, Dict, Iterable, List, Optional, Union
 from unittest import mock
-
+from urllib.parse import urlparse, ParseResult, parse_qs
 
 from git_machete import cli
 from git_machete.client import MacheteClient
@@ -36,18 +36,48 @@ class FakeCommandLineOptions(CommandLineOptions):
         self.opt_yes: bool = True
 
 
-class GitAPIState:
-    pulls: List[Dict[str, Any]] = [{'head': {'ref': 'bugfix/remove'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '15', 'html_url': 'www.github.com'}]
-    user: Dict[str, str] = {'login': 'github_user', 'type': 'User', 'company': 'VirtusLab'}
-    issues: List[Dict[str, Any]] = []
-    remote_branches: List[str] = []
+class MockGitAPIState:
+    def __init__(self) -> None:
+        self.pulls: List[Dict[str, Any]] = [
+            {'head': {'ref': 'bugfix/remove'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'},
+             'number': '15', 'html_url': 'www.github.com'}]
+        self.user: Dict[str, str] = {'login': 'github_user', 'type': 'User', 'company': 'VirtusLab'}
+        self.issues: List[Dict[str, Any]] = []
+
+    def get_issue(self, issue_no: str) -> Optional[Dict[str, Any]]:
+        for index, issue in enumerate(self.issues):
+            if issue['number'] == issue_no:
+                return self.issues.pop(index)
+        return None
+
+    def get_pull(self, pull_no: str) -> Optional[Dict[str, Any]]:
+        for index, pull in enumerate(self.pulls):
+            if pull['number'] == pull_no:
+                return self.pulls.pop(index)
+        return None
+
+    def set_initial_values(self) -> None:
+        self.pulls = [
+            {'head': {'ref': 'bugfix/remove'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'},
+             'number': '15', 'html_url': 'www.github.com'}]
+        self.user = {'login': 'github_user', 'type': 'User', 'company': 'VirtusLab'}
+        self.issues = []
+
+
+class MockGitAPIRequest:
+
+    git_api_state: MockGitAPIState = MockGitAPIState()
 
     def __init__(self, url: str, headers: Dict[str, str] = None, data: Union[str, bytes, None] = None, method: str = ''):
-        self.url: str = url
+        self.parsed_url: ParseResult = urlparse(url, allow_fragments=True)
+        self.parsed_query = parse_qs(self.parsed_url.query)
         self.status_code: Optional[int] = None
         self.json_data: Union[str, bytes] = data
         self.return_data: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None
         self.headers: Dict[str, str] = headers
+        self.handle_method(method)
+
+    def handle_method(self, method: str) -> None:
         if method == "GET":
             self.handle_get()
         elif method == "PATCH":
@@ -59,11 +89,13 @@ class GitAPIState:
         return json.dumps(self.return_data).encode()
 
     def handle_get(self) -> None:
-        if 'pulls' in self.url:
-            if '?head' in self.url:
-                head: str = self.url[self.url.rfind(':') + 1:]
-                for pr in GitAPIState.pulls:
-                    if pr['head']['ref'] == head:
+        if self.parsed_url.path.endswith('pulls'):
+            full_head_name: Optional[List[str]] = self.parsed_query.get('head')
+            if full_head_name:
+                head: str = full_head_name[0]
+                head_name: str = head[head.rfind(':') + 1:]
+                for pr in MockGitAPIRequest.git_api_state.pulls:
+                    if pr['head']['ref'] == head_name:
                         self.return_data = [pr]
                         self.status_code = 200
                         return
@@ -72,73 +104,59 @@ class GitAPIState:
                 return
             else:
                 self.status_code = 200
-                self.return_data = GitAPIState.pulls
+                self.return_data = MockGitAPIRequest.git_api_state.pulls
                 return
-        elif 'user' in self.url:
+        elif self.parsed_url.path.endswith('user'):
             self.status_code = 200
-            self.return_data = GitAPIState.user
+            self.return_data = MockGitAPIRequest.git_api_state.user
             return
 
     def handle_patch(self) -> None:
-        if 'issues' in self.url:
+        if 'issues' in self.parsed_url.path:
             self.update_issue()
-        elif 'pulls' in self.url:
+        elif 'pulls' in self.parsed_url.path:
             self.update_pull()
 
     def handle_post(self) -> None:
-        if 'issues' in self.url:
-            if self.url.endswith('issues'):
+        if self.parsed_url.path.endswith('issues'):
+            if not self.parsed_query:
                 self.update_issue(new=True)
-        elif 'pulls' in self.url:
-            if self.url.endswith('pulls'):
+        elif self.parsed_url.path.endswith('pulls'):
+            if not self.parsed_query:
                 self.update_pull(new=True)
 
     def update_pull(self, new: bool = False) -> None:
         pull: Dict[str, Any]
         if new:
-            pull = {'number': self.get_next_free_number(GitAPIState.pulls),
+            pull = {'number': self.get_next_free_number(MockGitAPIRequest.git_api_state.pulls),
                     'user': {'login': 'github_user'},
                     'html_url': 'www.github.com'}
         else:
-            pull_no: str = self.find_number(self.url)
-            pull = self.get_pull(pull_no)
+            pull_no: str = self.find_number(self.parsed_url.path)
+            pull = MockGitAPIRequest.git_api_state.get_pull(pull_no)
         for key in json.loads(self.json_data).keys():
             if key in ('base', 'head'):
                 pull[key] = {'ref': ""}
                 pull[key]['ref'] = json.loads(self.json_data)[key]
             else:
                 pull[key] = json.loads(self.json_data)[key]
-        GitAPIState.pulls.append(pull)
+        MockGitAPIRequest.git_api_state.pulls.append(pull)
         self.status_code = 201
         self.return_data = pull
 
     def update_issue(self, new: bool = False) -> None:
         issue: Dict[str, Any]
         if new:
-            issue = {'number': self.get_next_free_number(GitAPIState.issues)}
+            issue = {'number': self.get_next_free_number(MockGitAPIRequest.git_api_state.issues)}
         else:
-            issue_no = self.find_number(self.url)
-            issue = self.get_issue(issue_no)
+            issue_no = self.find_number(self.parsed_url.path)
+            issue = MockGitAPIRequest.git_api_state.get_issue(issue_no)
         for key in json.loads(self.json_data).keys():
             issue[key] = json.loads(self.json_data)[key]
-        GitAPIState.issues.append(issue)
+        MockGitAPIRequest.git_api_state.issues.append(issue)
         self.status_code = 201
         self.return_data = issue
         return
-
-    @staticmethod
-    def get_issue(issue_no: str) -> Optional[Dict[str, Any]]:
-        for index, issue in enumerate(GitAPIState.issues):
-            if issue['number'] == issue_no:
-                return GitAPIState.issues.pop(index)
-        return None
-
-    @staticmethod
-    def get_pull(pull_no: str) -> Optional[Dict[str, Any]]:
-        for index, pull in enumerate(GitAPIState.pulls):
-            if pull['number'] == pull_no:
-                return GitAPIState.pulls.pop(index)
-        return None
 
     @staticmethod
     def find_number(url: str) -> str:
@@ -150,21 +168,12 @@ class GitAPIState:
         numbers = [int(item['number']) for item in entities]
         return str(max(numbers) + 1)
 
-    @staticmethod
-    def set_initial_values() -> None:
-        GitAPIState.pulls = [
-            {'head': {'ref': 'bugfix/remove'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'},
-             'number': '15', 'html_url': 'www.github.com'}]
-        GitAPIState.user = {'login': 'github_user', 'type': 'User', 'company': 'VirtusLab'}
-        GitAPIState.issues = []
-        GitAPIState.remote_branches = []
 
-
-class ContextManager:
-    def __init__(self, obj: GitAPIState) -> None:
+class MockContextManager:
+    def __init__(self, obj: MockGitAPIRequest) -> None:
         self.obj = obj
 
-    def __enter__(self) -> GitAPIState:
+    def __enter__(self) -> MockGitAPIRequest:
         return self.obj
 
     def __exit__(self, *args: Any) -> None:
@@ -250,8 +259,8 @@ class MacheteTester(unittest.TestCase):
         with open(os.path.join(os.getcwd(), definition_file_path), 'w') as def_file:
             def_file.writelines(new_body)
 
-    def assert_command(self, cmds: Iterable[str], expected_result: str, adapt: bool = True) -> None:
-        self.assertEqual(self.launch_command(*cmds), self.adapt(expected_result) if adapt else expected_result)
+    def assert_command(self, cmds: Iterable[str], expected_result: str, strip_indentation: bool = True) -> None:
+        self.assertEqual(self.launch_command(*cmds), self.adapt(expected_result) if strip_indentation else expected_result)
 
     def setUp(self) -> None:
         # Status diffs can be quite large, default to ~256 lines of diff context
@@ -1532,10 +1541,10 @@ class MacheteTester(unittest.TestCase):
                 "specified by the option '-f' from the current branch."
         )
 
-    @mock.patch('urllib.request.urlopen', ContextManager)
-    @mock.patch('urllib.request.Request', GitAPIState)
+    @mock.patch('urllib.request.urlopen', MockContextManager)
+    @mock.patch('urllib.request.Request', MockGitAPIRequest)
     def test_retarget_pr(self) -> None:
-        GitAPIState.set_initial_values()
+        MockGitAPIRequest.git_api_state.set_initial_values()
         branchs_first_commit_msg = "First commit on branch."
         branchs_second_commit_msg = "Second commit on branch."
         (
@@ -1551,15 +1560,15 @@ class MacheteTester(unittest.TestCase):
                 .check_out('feature')
                 .add_remote('new_origin', 'https://github.com/user/repo.git')
         )
-        GitAPIState.pulls = [{'head': {'ref': 'feature'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'root'}, 'number': '15', 'html_url': 'www.github.com'}]
+        MockGitAPIRequest.git_api_state.pulls = [{'head': {'ref': 'feature'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'root'}, 'number': '15', 'html_url': 'www.github.com'}]
         self.launch_command("discover", "-y")
-        self.assert_command(['github', 'retarget-pr'], 'The base branch of PR #15 has been switched to `branch-1`\n', adapt=False)
-        self.assert_command(['github', 'retarget-pr'], 'The base branch of PR #15 is already `branch-1`\n', adapt=False)
+        self.assert_command(['github', 'retarget-pr'], 'The base branch of PR #15 has been switched to `branch-1`\n', strip_indentation=False)
+        self.assert_command(['github', 'retarget-pr'], 'The base branch of PR #15 is already `branch-1`\n', strip_indentation=False)
 
-    @mock.patch('urllib.request.urlopen', ContextManager)
-    @mock.patch('urllib.request.Request', GitAPIState)
+    @mock.patch('urllib.request.urlopen', MockContextManager)
+    @mock.patch('urllib.request.Request', MockGitAPIRequest)
     def test_anno_prs(self) -> None:
-        GitAPIState.set_initial_values()
+        MockGitAPIRequest.git_api_state.set_initial_values()
         (
             self.repo_sandbox.new_branch("root")
                 .commit("root")
@@ -1600,7 +1609,7 @@ class MacheteTester(unittest.TestCase):
                 .delete_branch("root")
                 .add_remote('new_origin', 'https://github.com/user/repo.git')
         )
-        GitAPIState.pulls = [
+        MockGitAPIRequest.git_api_state.pulls = [
             {'head': {'ref': 'ignore-trailing'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com'},
             {'head': {'ref': 'allow-ownership-link'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '7', 'html_url': 'www.github.com'},
             {'head': {'ref': 'call-ws'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '31', 'html_url': 'www.github.com'}
@@ -1629,10 +1638,10 @@ class MacheteTester(unittest.TestCase):
         )
 
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
-    @mock.patch('urllib.request.urlopen', ContextManager)
-    @mock.patch('urllib.request.Request', GitAPIState)
+    @mock.patch('urllib.request.urlopen', MockContextManager)
+    @mock.patch('urllib.request.Request', MockGitAPIRequest)
     def test_github_create_pr(self) -> None:
-        GitAPIState.set_initial_values()
+        MockGitAPIRequest.git_api_state.set_initial_values()
         (
             self.repo_sandbox.new_branch("root")
                 .commit("initial commit")
@@ -1676,7 +1685,7 @@ class MacheteTester(unittest.TestCase):
                 .add_remote('new_origin', 'https://github.com/user/repo.git')
                 .check_out("call-ws")
         )
-        GitAPIState.pulls = [{'head': {'ref': 'ignore-trailing'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com'}]
+        MockGitAPIRequest.git_api_state.pulls = [{'head': {'ref': 'ignore-trailing'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com'}]
         self.launch_command("discover")
         self.launch_command("github", "create-pr")
         # ahead of origin state, push is advised and accepted
@@ -1704,7 +1713,7 @@ class MacheteTester(unittest.TestCase):
         )
         self.repo_sandbox.check_out('chore/fields')
         #  untracked state (can only create pr when branch is pushed)
-        self.launch_command("github", "create-pr")
+        self.launch_command("github", "create-pr", "--draft")
         self.assert_command(
             ['status'],
             """
