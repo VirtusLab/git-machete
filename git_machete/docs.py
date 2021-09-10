@@ -314,11 +314,11 @@ long_docs: Dict[str, str] = {
           Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
           Equivalent to `git machete anno --sync-github-prs`.
 
-        <b>`checkout-pr` [PR_number]`:</b>
+        <b>`checkout-pr <PR-number>`:</b>
 
-          Checks out given pull request (by number) locally under <PR_number> branch. Note this branch is read only, so there is no possibility to push changes there.
-          If pull request if found on any parent branch, `checkout-pr` will check out locally every parent branch up to root branch as seen by git-machete,
-          modify definition file according to structure found and synchronize PR annotations.
+          Check out given pull request (by number) locally under head branch name of pull request, 
+          also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally.
+          Once pull request is checked-out locally, modify definition file according to structure found and synchronize pull requests annotations.
 
         <b>`create-pr [--draft]`:</b>
 

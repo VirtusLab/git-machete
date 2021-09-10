@@ -1688,7 +1688,7 @@ class MacheteClient:
         self.sync_annotations_to_github_prs()
 
         self.__git.checkout(pr.head)
-        print(fmt(f"Pull request #{pr.number} checked out at local branch {pr.head}"))
+        print(fmt(f"Pull request `#{pr.number}` checked out at local branch `{pr.head}`"))
 
     def get_path(self, last_branch: str) -> List[str]:
         def get_parent_branch_from_pr(branch: str) -> Optional[str]:
