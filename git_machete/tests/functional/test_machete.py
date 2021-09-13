@@ -1577,7 +1577,6 @@ class MacheteTester(unittest.TestCase):
     @mock.patch('urllib.request.Request', git_api_state_for_test_retarget_pr.new_request())
     @mock.patch('urllib.request.urlopen', MockContextManager)
     def test_retarget_pr(self) -> None:
-
         branchs_first_commit_msg = "First commit on branch."
         branchs_second_commit_msg = "Second commit on branch."
         (
@@ -1647,7 +1646,6 @@ class MacheteTester(unittest.TestCase):
                 .delete_branch("root")
                 .add_remote('new_origin', 'https://github.com/user/repo.git')
         )
-
         self.launch_command("discover", "-y")
         self.launch_command('github', 'anno-prs')
         self.assert_command(
