@@ -1574,6 +1574,7 @@ class MacheteTester(unittest.TestCase):
 
     @mock.patch('urllib.request.Request', git_api_state_for_test_retarget_pr.new_request())
     @mock.patch('urllib.request.urlopen', MockContextManager)
+    @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     def test_retarget_pr(self) -> None:
         branchs_first_commit_msg = "First commit on branch."
         branchs_second_commit_msg = "Second commit on branch."
@@ -1594,7 +1595,6 @@ class MacheteTester(unittest.TestCase):
         self.assert_command(['github', 'retarget-pr'], 'The base branch of PR #15 has been switched to `branch-1`\n', strip_indentation=False)
         self.assert_command(['github', 'retarget-pr'], 'The base branch of PR #15 is already `branch-1`\n', strip_indentation=False)
 
-
     git_api_state_for_test_anno_prs = MockGithubAPIState([
         {'head': {'ref': 'ignore-trailing'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com'},
         {'head': {'ref': 'allow-ownership-link'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '7', 'html_url': 'www.github.com'},
@@ -1602,6 +1602,7 @@ class MacheteTester(unittest.TestCase):
     ])
 
     @mock.patch('urllib.request.urlopen', MockContextManager)
+    @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     @mock.patch('urllib.request.Request', git_api_state_for_test_anno_prs.new_request())
     def test_anno_prs(self) -> None:
         (
@@ -1669,6 +1670,7 @@ class MacheteTester(unittest.TestCase):
     git_api_state_for_test_create_pr = MockGithubAPIState([{'head': {'ref': 'ignore-trailing'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com'}])
 
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
+    @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     @mock.patch('urllib.request.urlopen', MockContextManager)
     @mock.patch('urllib.request.Request', git_api_state_for_test_create_pr.new_request())
     def test_github_create_pr(self) -> None:
@@ -1806,12 +1808,22 @@ class MacheteTester(unittest.TestCase):
             self.assertEqual(e.exception.parameter, expected_error_message,
                              'Verify that expected error message has appeared when given pull request to create is already created.')
 
+    git_api_state_for_test_checkout_pr = MockGithubAPIState([
+        {'head': {'ref': 'chore/redundant_checks'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'restrict_access'}, 'number': '18', 'html_url': 'www.github.com'},
+        {'head': {'ref': 'restrict_access'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'allow-ownership-link'}, 'number': '17', 'html_url': 'www.github.com'},
+        {'head': {'ref': 'allow-ownership-link'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'bugfix/feature'}, 'number': '12', 'html_url': 'www.github.com'},
+        {'head': {'ref': 'bugfix/feature'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'enchance/feature'}, 'number': '6', 'html_url': 'www.github.com'},
+        {'head': {'ref': 'enchance/add_user'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '19', 'html_url': 'www.github.com'},
+        {'head': {'ref': 'testing/add_user'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'bugfix/add_user'}, 'number': '22', 'html_url': 'www.github.com'},
+        {'head': {'ref': 'chore/comments'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'testing/add_user'}, 'number': '24', 'html_url': 'www.github.com'},
+        {'head': {'ref': 'ignore-trailing'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com'}
+    ])
+
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
-    @mock.patch('urllib.request.urlopen', ContextManager)
-    @mock.patch('urllib.request.Request', GitAPIState)
+    @mock.patch('urllib.request.urlopen', MockContextManager)
+    @mock.patch('urllib.request.Request', git_api_state_for_test_checkout_pr.new_request())
     def test_checkout_pr(self) -> None:
-        GitAPIState.set_initial_values()
         (
             self.repo_sandbox.new_branch("root")
             .commit("initial commit")
@@ -1862,16 +1874,6 @@ class MacheteTester(unittest.TestCase):
             .push()
             .check_out('master')
         )
-        GitAPIState.pulls = [
-            {'head': {'ref': 'chore/redundant_checks'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'restrict_access'}, 'number': '18', 'html_url': 'www.github.com'},
-            {'head': {'ref': 'restrict_access'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'allow-ownership-link'}, 'number': '17', 'html_url': 'www.github.com'},
-            {'head': {'ref': 'allow-ownership-link'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'bugfix/feature'}, 'number': '12', 'html_url': 'www.github.com'},
-            {'head': {'ref': 'bugfix/feature'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'enchance/feature'}, 'number': '6', 'html_url': 'www.github.com'},
-            {'head': {'ref': 'enchance/add_user'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '19', 'html_url': 'www.github.com'},
-            {'head': {'ref': 'testing/add_user'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'bugfix/add_user'}, 'number': '22', 'html_url': 'www.github.com'},
-            {'head': {'ref': 'chore/comments'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'testing/add_user'}, 'number': '24', 'html_url': 'www.github.com'},
-            {'head': {'ref': 'ignore-trailing'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com'}
-        ]
         for branch in ('chore/redundant_checks', 'restrict_access', 'allow-ownership-link', 'bugfix/feature', 'enchance/add_user', 'testing/add_user', 'chore/comments', 'bugfix/add_user'):
             self.repo_sandbox.execute(f"git branch -D {branch}")
 

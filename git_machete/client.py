@@ -1673,6 +1673,7 @@ class MacheteClient:
 
         self.__git.fetch_remote(remote)
 
+        self.__cli_opts.opt_yes = True
         path: List[str] = self.get_path(pr.head)
         reversed_path: List[str] = path[::-1]  # need to add from root do down
         for index, branch in enumerate(reversed_path):
@@ -1684,7 +1685,7 @@ class MacheteClient:
                     continue
                 self.__cli_opts.opt_onto = reversed_path[index - 1]
                 self.add(branch)
-
+        self.__cli_opts.opt_yes = False
         self.sync_annotations_to_github_prs()
 
         self.__git.checkout(pr.head)
