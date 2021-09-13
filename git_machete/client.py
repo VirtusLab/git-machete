@@ -1905,8 +1905,9 @@ class MacheteClient:
         if current_branch not in self.managed_branches:
             self.add(current_branch)
 
-        if self.__is_merged_to_upstream(current_branch):
-            return
+        if self.__git.is_ancestor_or_equal(current_branch, self.up_branch.get(current_branch), equal_only=True):
+            raise MacheteException(
+                'Head Branch for this pull request is equal to base branch.\nCannot create pull request.')
 
         s, remote = self.__git.get_strict_remote_sync_status(current_branch)
         statuses_to_sync = (UNTRACKED, AHEAD_OF_REMOTE, DIVERGED_FROM_AND_NEWER_THAN_REMOTE)

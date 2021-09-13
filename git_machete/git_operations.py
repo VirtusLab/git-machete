@@ -504,12 +504,15 @@ class GitContext:
             later_revision: str,
             earlier_prefix: str = "refs/heads/",
             later_prefix: str = "refs/heads/",
+            equal_only: bool = False
     ) -> bool:
         earlier_sha = self.get_full_sha(earlier_revision, earlier_prefix)
         later_sha = self.get_full_sha(later_revision, later_prefix)
 
         if earlier_sha == later_sha:
             return True
+        if equal_only:
+            return False
         return self.__get_merge_base(earlier_sha, later_sha) == earlier_sha
 
     # Determine if later_revision, or any ancestors of later_revision that are NOT ancestors of earlier_revision,
