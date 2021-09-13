@@ -182,6 +182,7 @@ class MockGithubAPIRequest:
         except ValueError:
             return None
 
+
     @staticmethod
     def make_response_object(status_code: int, response_data: Union[List[Dict[str, Any]], Dict[str, Any]]) -> "MockGithubAPIResponse":
         return MockGithubAPIResponse(status_code, response_data)
@@ -1571,7 +1572,6 @@ class MacheteTester(unittest.TestCase):
                 "specified by the option '-f' from the current branch."
         )
 
-
     git_api_state_for_test_retarget_pr = MockGithubAPIState(
         [{'head': {'ref': 'feature'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'root'}, 'number': '15',
           'html_url': 'www.github.com'}])
@@ -1604,7 +1604,6 @@ class MacheteTester(unittest.TestCase):
         {'head': {'ref': 'allow-ownership-link'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '7', 'html_url': 'www.github.com'},
         {'head': {'ref': 'call-ws'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '31', 'html_url': 'www.github.com'}
     ])
-
 
     @mock.patch('urllib.request.urlopen', MockContextManager)
     @mock.patch('urllib.request.Request', git_api_state_for_test_anno_prs.new_request())
@@ -1649,7 +1648,6 @@ class MacheteTester(unittest.TestCase):
                 .delete_branch("root")
                 .add_remote('new_origin', 'https://github.com/user/repo.git')
         )
-
         self.launch_command("discover", "-y")
         self.launch_command('github', 'anno-prs')
         self.assert_command(
@@ -1672,7 +1670,6 @@ class MacheteTester(unittest.TestCase):
               x-drop-constraint (untracked)
             """,
         )
-
 
     git_api_state_for_test_create_pr = MockGithubAPIState([{'head': {'ref': 'ignore-trailing'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com'}])
 
@@ -1723,6 +1720,7 @@ class MacheteTester(unittest.TestCase):
                 .check_out("call-ws")
                 .add_remote('new_origin', 'https://github.com/user/repo.git')
         )
+
         self.launch_command("discover")
         self.launch_command("github", "create-pr")
         # ahead of origin state, push is advised and accepted
