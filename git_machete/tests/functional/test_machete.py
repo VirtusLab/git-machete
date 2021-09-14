@@ -88,7 +88,7 @@ class MockGithubAPIRequest:
         elif method == "POST":
             return self.handle_post()
         else:
-            return self.make_reponse_object(HTTPStatus.NOT_FOUND, [])
+            return self.make_response_object(HTTPStatus.METHOD_NOT_ALLOWED, [])
 
     def handle_get(self) -> "MockGithubAPIResponse":
         if self.parsed_url.path.endswith('pulls'):
@@ -97,14 +97,14 @@ class MockGithubAPIRequest:
                 head: str = full_head_name[0].split(':')[1]
                 for pr in self.github_api_state.pulls:
                     if pr['head']['ref'] == head:
-                        return self.make_reponse_object(HTTPStatus.OK, [pr])
-                return self.make_reponse_object(HTTPStatus.NOT_FOUND, [])
+                        return self.make_response_object(HTTPStatus.OK, [pr])
+                return self.make_response_object(HTTPStatus.NOT_FOUND, [])
             else:
-                return self.make_reponse_object(HTTPStatus.OK, self.github_api_state.pulls)
+                return self.make_response_object(HTTPStatus.OK, self.github_api_state.pulls)
         elif self.parsed_url.path.endswith('user'):
-            return self.make_reponse_object(HTTPStatus.OK, [self.github_api_state.user])
+            return self.make_response_object(HTTPStatus.OK, [self.github_api_state.user])
         else:
-            return self.make_reponse_object(HTTPStatus.NOT_FOUND, [])
+            return self.make_response_object(HTTPStatus.NOT_FOUND, [])
 
     def handle_patch(self) -> "MockGithubAPIResponse":
         if 'issues' in self.parsed_url.path:
@@ -112,7 +112,7 @@ class MockGithubAPIRequest:
         elif 'pulls' in self.parsed_url.path:
             return self.update_pull_request()
         else:
-            return self.make_reponse_object(HTTPStatus.NOT_FOUND, [])
+            return self.make_response_object(HTTPStatus.NOT_FOUND, [])
 
     def handle_post(self) -> "MockGithubAPIResponse":
         assert not self.parsed_query
@@ -121,7 +121,7 @@ class MockGithubAPIRequest:
         elif self.parsed_url.path.endswith('pulls'):
             return self.update_pull_request()
         else:
-            return self.make_reponse_object(HTTPStatus.NOT_FOUND, [])
+            return self.make_response_object(HTTPStatus.NOT_FOUND, [])
 
     def update_pull_request(self) -> "MockGithubAPIResponse":
         pull_no: str = self.find_number(self.parsed_url.path)
@@ -148,7 +148,7 @@ class MockGithubAPIRequest:
             self.github_api_state.pulls[index] = pull
         else:
             self.github_api_state.pulls.append(pull)
-        return self.make_reponse_object(HTTPStatus.CREATED, pull)
+        return self.make_response_object(HTTPStatus.CREATED, pull)
 
     def update_issue(self) -> "MockGithubAPIResponse":
         issue_no: str = self.find_number(self.parsed_url.path)
@@ -169,7 +169,7 @@ class MockGithubAPIRequest:
             self.github_api_state.issues[index] = issue
         else:
             self.github_api_state.issues.append(issue)
-        return self.make_reponse_object(HTTPStatus.CREATED, issue)
+        return self.make_response_object(HTTPStatus.CREATED, issue)
 
     @staticmethod
     def get_index_or_None(entity: Dict[str, Any], base: List[Dict[str, Any]]) -> Optional[int]:
@@ -179,7 +179,7 @@ class MockGithubAPIRequest:
             return None
 
     @staticmethod
-    def make_reponse_object(status_code: int, response_data: Union[List[Dict[str, Any]], Dict[str, Any]]) -> "MockGithubAPIResponse":
+    def make_response_object(status_code: int, response_data: Union[List[Dict[str, Any]], Dict[str, Any]]) -> "MockGithubAPIResponse":
         return MockGithubAPIResponse(status_code, response_data)
 
     @staticmethod
