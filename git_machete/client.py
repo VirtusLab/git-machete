@@ -15,7 +15,7 @@ from git_machete.constants import (
 from git_machete.exceptions import MacheteException, StopTraversal
 from git_machete.git_operations import GitContext
 from git_machete.github import (
-    GitHubPullRequest, check_pr_already_created_by_number, derive_pull_requests,
+    GitHubPullRequest, find_pr_by_number, derive_pull_requests,
     derive_pull_request_by_head, set_base_of_pull_request, get_parsed_github_remote_url, is_github_remote_url,
     create_pull_request, derive_current_user_login, set_milestone_of_pull_request,
     add_assignees_to_pull_request, add_reviewers_to_pull_request)
@@ -1257,8 +1257,6 @@ class MacheteClient:
         return result
 
     def sync_annotations_to_github_prs(self) -> None:
-        from git_machete.github import derive_current_user_login, derive_pull_requests, GitHubPullRequest, \
-            get_parsed_github_remote_url
 
         url_for_remote: Dict[str, str] = {remote: self.__git.get_url_of_remote(remote) for remote in
                                           self.__git.remotes()}
@@ -1290,9 +1288,13 @@ class MacheteClient:
         debug('sync_annotations_to_github_prs()',
               'Current GitHub user is ' + (current_user or '<none>'))
         pr: GitHubPullRequest
-        for pr in derive_pull_requests(org, repo):
+        all_prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
+        self.__sync_annotations_to_definition_file(all_prs, current_user)
+
+    def __sync_annotations_to_definition_file(self, pr_base: List[GitHubPullRequest], current_user: Optional[str] = None) -> None:
+        for pr in pr_base:
             if pr.head in self.managed_branches:
-                debug('sync_annotations_to_github_prs()',
+                debug('sync_annotations_to_definition_file()',
                       f'{pr} corresponds to a managed branch')
                 anno: str = f'PR #{pr.number}'
                 if pr.user != current_user:
@@ -1306,7 +1308,7 @@ class MacheteClient:
                     print(fmt(f'Annotating <b>{pr.head}</b> as `{anno}`'))
                     self.__annotations[pr.head] = anno
             else:
-                debug('sync_annotations_to_github_prs()',
+                debug('sync_annotations_to_definition_file()',
                       f'{pr} does NOT correspond to a managed branch')
         self.save_definition_file()
 
@@ -1662,36 +1664,41 @@ class MacheteClient:
         repo: str
         remote: str
         remote, (org, repo) = self.__derive_remote_and_github_org_and_repo()
-        debug('checkout_github_pr', f'organization is {org}, repository is {repo}')
+        debug('checkout_github_pr()', f'organization is {org}, repository is {repo}')
 
         all_prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
-        pr: GitHubPullRequest = check_pr_already_created_by_number(pr_no, all_prs)
+        pr: GitHubPullRequest = find_pr_by_number(pr_no, all_prs)
 
         if not pr:
             raise MacheteException(f"PR number {pr_no} is not found in repository {repo}")
-        debug('checkout_github_pr', f'found {pr}')
+        debug('checkout_github_pr()', f'found {pr}')
 
+        print(f"Fetching {remote}...")
         self.__git.fetch_remote(remote)
 
-        self.__cli_opts.opt_yes = True
-        path: List[str] = self.get_path(pr.head)
-        reversed_path: List[str] = path[::-1]  # need to add from root do down
+        self.__cli_opts.opt_yes = True  # TODO (#161): pass only needed options to methods
+        path: List[str] = self.__get_path_from_pr_chain(pr.head, all_prs)
+        reversed_path: List[str] = path[::-1]  # need to add from root downwards
         for index, branch in enumerate(reversed_path):
             if branch not in self.managed_branches:
                 if index == 0:
                     self.__cli_opts.opt_as_root = True
                     self.add(branch)
                     self.__cli_opts.opt_as_root = False
-                    continue
-                self.__cli_opts.opt_onto = reversed_path[index - 1]
-                self.add(branch)
+                else:
+                    self.__cli_opts.opt_onto = reversed_path[index - 1]
+                    self.add(branch)
         self.__cli_opts.opt_yes = False
-        self.sync_annotations_to_github_prs()
+
+        current_user: Optional[str] = derive_current_user_login()
+        debug('checkout_github_pr()',
+              'Current GitHub user is ' + (current_user or '<none>'))
+        self.__sync_annotations_to_definition_file(all_prs, current_user)
 
         self.__git.checkout(pr.head)
         print(fmt(f"Pull request `#{pr.number}` checked out at local branch `{pr.head}`"))
 
-    def get_path(self, last_branch: str) -> List[str]:
+    def __get_path_from_pr_chain(self, last_branch: str, all_prs: List[GitHubPullRequest]) -> List[str]:
         def get_parent_branch_from_pr(branch: str) -> Optional[str]:
             for pr in all_prs:
                 if pr.head == branch:
@@ -1700,8 +1707,6 @@ class MacheteClient:
 
         path: List[str] = []
         current_branch: str = last_branch
-        remote, (org, repo) = self.__derive_remote_and_github_org_and_repo()
-        all_prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
         while current_branch:
             path.append(current_branch)
             current_branch = get_parent_branch_from_pr(current_branch)

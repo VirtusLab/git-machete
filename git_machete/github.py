@@ -143,14 +143,14 @@ def __fire_github_api_request(method: str, path: str, token: Optional[str], requ
         raise MacheteException(f'Could not connect to {host}: {e}')
 
 
-def check_pr_already_created(pull: GitHubPullRequest, pull_requests: List[GitHubPullRequest]) -> Optional[GitHubPullRequest]:
+def find_pr_by_base_and_head(base: str, head: str, pull_requests: List[GitHubPullRequest]) -> Optional[GitHubPullRequest]:
     for pr in pull_requests:
-        if pull.base == pr.base and pull.head == pr.head:
+        if base == pr.base and head == pr.head:
             return pr
     return None
 
 
-def check_pr_already_created_by_number(no: int, pull_requests: List[GitHubPullRequest]) -> Optional[GitHubPullRequest]:
+def find_pr_by_number(no: int, pull_requests: List[GitHubPullRequest]) -> Optional[GitHubPullRequest]:
     for pr in pull_requests:
         if no == pr.number:
             return pr
@@ -167,8 +167,7 @@ def create_pull_request(org: str, repo: str, head: str, base: str, title: str, d
         'draft': draft
     }
     prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
-    to_load: GitHubPullRequest = GitHubPullRequest(1, 'user', base, head, '')
-    pr_found: Optional[GitHubPullRequest] = check_pr_already_created(to_load, prs)
+    pr_found: Optional[GitHubPullRequest] = find_pr_by_base_and_head(base, head, prs)
     if not pr_found:
         pr = __fire_github_api_request('POST', f'/repos/{org}/{repo}/pulls', token, request_body)
         return __parse_pr_json(pr)

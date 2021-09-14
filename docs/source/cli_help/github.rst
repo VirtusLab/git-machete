@@ -27,9 +27,9 @@ a GitHub API token with ``repo`` scope is required, see https://github.com/setti
 
 ``checkout-pr``:
 
-  Check out given pull request (by number) locally under head branch name of pull request,
+  Check out the head branch of the given pull request (specified by number),
   also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally.
-  Once pull request is checked-out locally, modify definition file according to structure found and synchronize pull requests annotations.
+  Once pull request is checked out locally, add new branches to the definition file according to the PR structure and annotate them with pull request numbers.
 
   **Parameters:**
 
