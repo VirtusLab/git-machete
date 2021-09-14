@@ -47,122 +47,147 @@ class MockGithubAPIState:
         return MockGithubAPIRequest(self)
 
     def get_issue(self, issue_no: str) -> Optional[Dict[str, Any]]:
-        for index, issue in enumerate(self.issues):
+        for issue in self.issues:
             if issue['number'] == issue_no:
-                return self.issues.pop(index)
+                return issue
         return None
 
     def get_pull(self, pull_no: str) -> Optional[Dict[str, Any]]:
-        for index, pull in enumerate(self.pulls):
+        for pull in self.pulls:
             if pull['number'] == pull_no:
-                return self.pulls.pop(index)
+                return pull
         return None
 
 
-class ResponseWrapper:
-    def __init__(self, data: Union[List[Dict[str, Any]], Dict[str, Any]]) -> None:
-        self.data: Union[List[Dict[str, Any]], Dict[str, Any]] = data
+class MockGithubAPIResponse:
+    def __init__(self, status_code: int, response_data: Union[List[Dict[str, Any]], Dict[str, Any]]) -> None:
+        self.response_data: Union[List[Dict[str, Any]], Dict[str, Any]] = response_data
+        self.status_code: int = status_code
 
-    def read(self) -> Union[str, bytes]:
-        return json.dumps(self.data).encode()
+    def read(self) -> bytes:
+        return json.dumps(self.response_data).encode()
 
 
 class MockGithubAPIRequest:
+    def __init__(self, github_api_state: MockGithubAPIState) -> None:
+        self.github_api_state: MockGithubAPIState = github_api_state
 
-    def __init__(self, git_api_state: MockGithubAPIState) -> None:
-        self.git_api_state: MockGithubAPIState = git_api_state
-
-    def __call__(self, url: str, headers: Dict[str, str] = None, data: Union[str, bytes, None] = None, method: str = '') -> "ResponseWrapper":
+    def __call__(self, url: str, headers: Dict[str, str] = None, data: Union[str, bytes, None] = None, method: str = '') -> "MockGithubAPIResponse":
         self.parsed_url: ParseResult = urlparse(url, allow_fragments=True)
         self.parsed_query: Dict[str, List[str]] = parse_qs(self.parsed_url.query)
-        self.status_code: Optional[int] = None
         self.json_data: Union[str, bytes] = data
         self.return_data: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None
         self.headers: Dict[str, str] = headers
-        self.handle_method(method)
-        return ResponseWrapper(self.return_data)
+        return self.handle_method(method)
 
-    def handle_method(self, method: str) -> None:
+    def handle_method(self, method: str) -> "MockGithubAPIResponse":
         if method == "GET":
-            self.handle_get()
+            return self.handle_get()
         elif method == "PATCH":
-            self.handle_patch()
+            return self.handle_patch()
         elif method == "POST":
-            self.handle_post()
+            return self.handle_post()
+        else:
+            return self.make_reponse_object(HTTPStatus.NOT_FOUND, [])
 
-    def handle_get(self) -> None:
+    def handle_get(self) -> "MockGithubAPIResponse":
         if self.parsed_url.path.endswith('pulls'):
             full_head_name: Optional[List[str]] = self.parsed_query.get('head')
             if full_head_name:
-                head: str = full_head_name[0]
-                head_name: str = head[head.rfind(':') + 1:]
-                for pr in self.git_api_state.pulls:
-                    if pr['head']['ref'] == head_name:
-                        self.return_data = [pr]
-                        self.status_code = HTTPStatus.OK
-                        return
-                self.return_data = []
-                self.status_code = HTTPStatus.NOT_FOUND
-                return
+                head: str = full_head_name[0].split(':')[1]
+                for pr in self.github_api_state.pulls:
+                    if pr['head']['ref'] == head:
+                        return self.make_reponse_object(HTTPStatus.OK, [pr])
+                return self.make_reponse_object(HTTPStatus.NOT_FOUND, [])
             else:
-                self.status_code = HTTPStatus.OK
-                self.return_data = self.git_api_state.pulls
-                return
+                return self.make_reponse_object(HTTPStatus.OK, self.github_api_state.pulls)
         elif self.parsed_url.path.endswith('user'):
-            self.status_code = HTTPStatus.OK
-            self.return_data = self.git_api_state.user
-            return
+            return self.make_reponse_object(HTTPStatus.OK, [self.github_api_state.user])
+        else:
+            return self.make_reponse_object(HTTPStatus.NOT_FOUND, [])
 
-    def handle_patch(self) -> None:
+    def handle_patch(self) -> "MockGithubAPIResponse":
         if 'issues' in self.parsed_url.path:
-            self.update_issue()
+            return self.update_issue()
         elif 'pulls' in self.parsed_url.path:
-            self.update_pull()
+            return self.update_pull_request()
+        else:
+            return self.make_reponse_object(HTTPStatus.NOT_FOUND, [])
 
-    def handle_post(self) -> None:
+    def handle_post(self) -> "MockGithubAPIResponse":
         assert not self.parsed_query
         if self.parsed_url.path.endswith('issues'):
-            self.update_issue(new=True)
+            return self.update_issue()
         elif self.parsed_url.path.endswith('pulls'):
-            self.update_pull(new=True)
-
-    def update_pull(self, new: bool = False) -> None:
-        pull: Dict[str, Any]
-        if new:
-            pull = {'number': self.get_next_free_number(self.git_api_state.pulls),
-                    'user': {'login': 'github_user'},
-                    'html_url': 'www.github.com'}
+            return self.update_pull_request()
         else:
-            pull_no: str = self.find_number(self.parsed_url.path)
-            pull = self.git_api_state.get_pull(pull_no)
-        for key in json.loads(self.json_data).keys():
+            return self.make_reponse_object(HTTPStatus.NOT_FOUND, [])
+
+    def update_pull_request(self) -> "MockGithubAPIResponse":
+        pull_no: str = self.find_number(self.parsed_url.path)
+        if not pull_no:
+            return self.create_pull_request()
+        pull: Dict[str, Any] = self.github_api_state.get_pull(pull_no)
+        return self.fill_pull_request_data(json.loads(self.json_data), pull)
+
+    def create_pull_request(self) -> "MockGithubAPIResponse":
+        pull = {'number': self.get_next_free_number(self.github_api_state.pulls),
+                'user': {'login': 'github_user'},
+                'html_url': 'www.github.com'}
+        return self.fill_pull_request_data(json.loads(self.json_data), pull)
+
+    def fill_pull_request_data(self, data: Dict[str, Any], pull: Dict[str, Any]) -> "MockGithubAPIResponse":
+        index = self.get_index_or_None(pull, self.github_api_state.issues)
+        for key in data.keys():
             if key in ('base', 'head'):
                 pull[key] = {'ref': ""}
                 pull[key]['ref'] = json.loads(self.json_data)[key]
             else:
                 pull[key] = json.loads(self.json_data)[key]
-        self.git_api_state.pulls.append(pull)
-        self.status_code = HTTPStatus.CREATED
-        self.return_data = pull
-
-    def update_issue(self, new: bool = False) -> None:
-        issue: Dict[str, Any]
-        if new:
-            issue = {'number': self.get_next_free_number(self.git_api_state.issues)}
+        if index:
+            self.github_api_state.pulls[index] = pull
         else:
-            issue_no = self.find_number(self.parsed_url.path)
-            issue = self.git_api_state.get_issue(issue_no)
-        for key in json.loads(self.json_data).keys():
-            issue[key] = json.loads(self.json_data)[key]
-        self.git_api_state.issues.append(issue)
-        self.status_code = HTTPStatus.CREATED
-        self.return_data = issue
-        return
+            self.github_api_state.pulls.append(pull)
+        return self.make_reponse_object(HTTPStatus.CREATED, pull)
+
+    def update_issue(self) -> "MockGithubAPIResponse":
+        issue_no: str = self.find_number(self.parsed_url.path)
+        if not issue_no:
+            return self.create_issue()
+        issue: Dict[str, Any] = self.github_api_state.get_issue(issue_no)
+        return self.fill_issue_data(json.loads(self.json_data), issue)
+
+    def create_issue(self) -> "MockGithubAPIResponse":
+        issue = {'number': self.get_next_free_number(self.github_api_state.issues)}
+        return self.fill_issue_data(json.loads(self.json_data), issue)
+
+    def fill_issue_data(self, data: Dict[str, Any], issue: Dict[str, Any]) -> "MockGithubAPIResponse":
+        index = self.get_index_or_None(issue, self.github_api_state.issues)
+        for key in data.keys():
+            issue[key] = data[key]
+        if index:
+            self.github_api_state.issues[index] = issue
+        else:
+            self.github_api_state.issues.append(issue)
+        return self.make_reponse_object(HTTPStatus.CREATED, issue)
 
     @staticmethod
-    def find_number(url: str) -> str:
+    def get_index_or_None(entity: Dict[str, Any], base: List[Dict[str, Any]]) -> Optional[int]:
+        try:
+            return base.index(entity)
+        except ValueError:
+            return None
+
+    @staticmethod
+    def make_reponse_object(status_code: int, response_data: Union[List[Dict[str, Any]], Dict[str, Any]]) -> "MockGithubAPIResponse":
+        return MockGithubAPIResponse(status_code, response_data)
+
+    @staticmethod
+    def find_number(url: str) -> Optional[str]:
         m = re.search(r'\d+', url)
-        return m.group()
+        if m:
+            return m.group()
+        return None
 
     @staticmethod
     def get_next_free_number(entities: List[Dict[str, Any]]) -> str:
