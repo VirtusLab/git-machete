@@ -182,7 +182,6 @@ class MockGithubAPIRequest:
         except ValueError:
             return None
 
-
     @staticmethod
     def make_response_object(status_code: int, response_data: Union[List[Dict[str, Any]], Dict[str, Any]]) -> "MockGithubAPIResponse":
         return MockGithubAPIResponse(status_code, response_data)
