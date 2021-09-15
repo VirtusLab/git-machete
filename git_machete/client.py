@@ -1905,7 +1905,7 @@ class MacheteClient:
         if current_branch not in self.managed_branches:
             self.add(current_branch)
 
-        if self.__git.is_head_in_base_branch(current_branch, self.up_branch.get(current_branch)):
+        if self.__git.is_ancestor_or_equal(current_branch, self.up_branch.get(current_branch)):
             raise MacheteException(
                 'All commits in head branch for this pull request are already included in base branch.\nCannot create pull request.')
 

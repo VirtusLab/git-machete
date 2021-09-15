@@ -706,20 +706,3 @@ class GitContext:
                 if to_branch not in result:
                     result[to_branch] = int(match.group(1))
         return result
-
-    def get_commmit_date(self, commit_sha: str) -> str:
-        return self.popen_git('show', '-s', '--format=%cd', "--date=format:'%Y-%m-%d %H:%M:%S'", commit_sha).strip()
-
-    def get_history_since_fork_point(self, branch: str, fork_point_date: str) -> Set[str]:
-        return set(
-            self.popen_git('log', f'--since={fork_point_date}', '--pretty=format:"%H"', branch).strip().split('\n'))
-
-    def is_head_in_base_branch(self, head: str, base: str) -> bool:
-        fork_point_sha: str = self.popen_git('merge-base', head, base).strip()
-        fork_point_date: str = self.get_commmit_date(fork_point_sha)
-
-        head_history: Set[str] = self.get_history_since_fork_point(head, fork_point_date)
-        base_history: Set[str] = self.get_history_since_fork_point(base, fork_point_date)
-        head_unique_commits: Set[str] = head_history - base_history
-
-        return True if not head_unique_commits else False
