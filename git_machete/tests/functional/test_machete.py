@@ -1813,6 +1813,15 @@ class MacheteTester(unittest.TestCase):
             self.assertEqual(e.exception.parameter, expected_error_message,
                              'Verify that expected error message has appeared when given pull request to create is already created.')
 
+        # check against head branch is ancestor or equal to base branch
+        (
+            self.repo_sandbox.check_out('develop')
+            .new_branch('testing/endpoints')
+            .push()
+        )
+        self.launch_command('discover')
+        self.assert_command(['github', 'create-pr'], "All commits in `testing/endpoints` branch  are already included in `develop` branch.\nCannot create pull request.\n", strip_indentation=False)
+
     git_api_state_for_test_checkout_prs = MockGithubAPIState([
         {'head': {'ref': 'chore/redundant_checks'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'restrict_access'}, 'number': '18', 'html_url': 'www.github.com'},
         {'head': {'ref': 'restrict_access'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'allow-ownership-link'}, 'number': '17', 'html_url': 'www.github.com'},
