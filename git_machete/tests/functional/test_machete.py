@@ -1820,10 +1820,23 @@ class MacheteTester(unittest.TestCase):
             .push()
         )
         self.launch_command('discover')
-        self.assert_command(['github', 'create-pr'], "All commits in `testing/endpoints` branch  are already included in `develop` branch.\nCannot create pull request.\n", strip_indentation=False)
+
+        machete_client = MacheteClient(cli_opts, git)
+        machete_client.read_definition_file()
+        expected_error_message = "All commits in `testing/endpoints` branch  are already included in `develop` branch.\nCannot create pull request."
+        with self.assertRaises(MacheteException) as e:
+            machete_client.create_github_pr('testing/endpoints', draft=False)
+        if e:
+            self.assertEqual(e.exception.parameter, expected_error_message,
+                             'Verify that expected error message has appeared when head branch is equal or ancestor of base branch.')
 
         self.repo_sandbox.check_out('develop')
-        self.assert_command(['github', 'create-pr'], "Branch `develop` does not have a parent branch (it is a root), base branch for the PR cannot be established.\n", strip_indentation=False)
+        expected_error_message = "Branch `develop` does not have a parent branch (it is a root), base branch for the PR cannot be established."
+        with self.assertRaises(MacheteException) as e:
+            machete_client.create_github_pr('develop', draft=False)
+        if e:
+            self.assertEqual(e.exception.parameter, expected_error_message,
+                             'Verify that expected error message has appeared when creating PR from root branch.')
 
     git_api_state_for_test_checkout_prs = MockGithubAPIState([
         {'head': {'ref': 'chore/redundant_checks'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'restrict_access'}, 'number': '18', 'html_url': 'www.github.com'},
