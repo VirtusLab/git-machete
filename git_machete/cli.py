@@ -7,6 +7,7 @@ import sys
 import textwrap
 from typing import Dict, List, Optional, Tuple, TypeVar
 
+import git_machete.options
 from git_machete import __version__
 from git_machete import utils
 from git_machete.client import MacheteClient, allowed_directions
@@ -14,7 +15,6 @@ from git_machete.constants import EscapeCodes
 from git_machete.docs import short_docs, long_docs
 from git_machete.exceptions import MacheteException, StopTraversal
 from git_machete.git_operations import GitContext
-from git_machete.options import CommandLineOptions
 from git_machete.utils import fmt, underline, excluding, warn
 
 T = TypeVar('T')
@@ -90,7 +90,7 @@ def main() -> None:
 
 
 def launch(orig_args: List[str]) -> None:
-    cli_opts = CommandLineOptions()
+    cli_opts = git_machete.options.CommandLineOptions()
     git = GitContext(cli_opts)
 
     if sys.version_info.major == 2 or (sys.version_info.major == 3 and sys.version_info.minor < 6):
@@ -116,7 +116,7 @@ def launch(orig_args: List[str]) -> None:
             elif opt in ("-d", "--down-fork-point"):
                 cli_opts.opt_down_fork_point = arg
             elif opt == "--debug":
-                CommandLineOptions.opt_debug = True
+                git_machete.options.CommandLineOptions.opt_debug = True
             elif opt == "--draft":
                 cli_opts.opt_draft = True
             elif opt in ("-F", "--fetch"):
@@ -175,7 +175,7 @@ def launch(orig_args: List[str]) -> None:
             elif opt == "--unset-override":
                 cli_opts.opt_unset_override = True
             elif opt in ("-v", "--verbose"):
-                CommandLineOptions.opt_verbose = True
+                git_machete.options.CommandLineOptions.opt_verbose = True
             elif opt == "--version":
                 version()
                 sys.exit()

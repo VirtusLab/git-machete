@@ -9,7 +9,7 @@ import shutil
 import subprocess
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
-from urllib.request import Request, urlopen
+import urllib.request
 from urllib.error import HTTPError
 
 from git_machete.utils import debug, fmt
@@ -115,12 +115,12 @@ def __fire_github_api_request(method: str, path: str, token: Optional[str], requ
     host = 'https://api.' + GITHUB_DOMAIN
     url = host + path
     json_body: Optional[str] = json.dumps(request_body) if request_body else None
-    http_request = Request(url, headers=headers, data=json_body.encode() if json_body else None, method=method.upper())
+    http_request = urllib.request.Request(url, headers=headers, data=json_body.encode() if json_body else None, method=method.upper())
     debug(f'__fire_github_api_request({method}, {path}, ..., ...)',
           f'firing a {method} request to {url} with {"a" if token else "no"} bearer token and request body {json_body or "<none>"}')
 
     try:
-        with urlopen(http_request) as response:
+        with urllib.request.urlopen(http_request) as response:
             parsed_response_body: Any = json.loads(response.read().decode())
             return parsed_response_body
     except HTTPError as err:

@@ -1,4 +1,5 @@
 import io
+import json
 import os
 import random
 import re
@@ -8,7 +9,10 @@ import time
 import unittest
 import subprocess
 from contextlib import redirect_stdout
-from typing import Iterable
+from http import HTTPStatus
+from typing import Any, Dict, Iterable, List, Optional, Union
+from unittest import mock
+from urllib.parse import urlparse, ParseResult, parse_qs
 
 from git_machete import cli
 from git_machete.client import MacheteClient
@@ -24,6 +28,182 @@ git: GitContext = GitContext(cli_opts)
 def get_head_commit_hash() -> str:
     """Returns hash of a commit of the current branch head."""
     return os.popen("git rev-parse HEAD").read().strip()
+
+
+class FakeCommandLineOptions(CommandLineOptions):
+    def __init__(self) -> None:
+        super().__init__()
+        self.opt_no_interactive_rebase: bool = True
+        self.opt_yes: bool = True
+
+
+class MockGithubAPIState:
+    def __init__(self, pulls: List[Dict[str, Any]]) -> None:
+        self.pulls: List[Dict[str, Any]] = pulls
+        self.user: Dict[str, str] = {'login': 'github_user', 'type': 'User', 'company': 'VirtusLab'}
+        self.issues: List[Dict[str, Any]] = []
+
+    def new_request(self) -> "MockGithubAPIRequest":
+        return MockGithubAPIRequest(self)
+
+    def get_issue(self, issue_no: str) -> Optional[Dict[str, Any]]:
+        for issue in self.issues:
+            if issue['number'] == issue_no:
+                return issue
+        return None
+
+    def get_pull(self, pull_no: str) -> Optional[Dict[str, Any]]:
+        for pull in self.pulls:
+            if pull['number'] == pull_no:
+                return pull
+        return None
+
+
+class MockGithubAPIResponse:
+    def __init__(self, status_code: int, response_data: Union[List[Dict[str, Any]], Dict[str, Any]]) -> None:
+        self.response_data: Union[List[Dict[str, Any]], Dict[str, Any]] = response_data
+        self.status_code: int = status_code
+
+    def read(self) -> bytes:
+        return json.dumps(self.response_data).encode()
+
+
+class MockGithubAPIRequest:
+    def __init__(self, github_api_state: MockGithubAPIState) -> None:
+        self.github_api_state: MockGithubAPIState = github_api_state
+
+    def __call__(self, url: str, headers: Dict[str, str] = None, data: Union[str, bytes, None] = None, method: str = '') -> "MockGithubAPIResponse":
+        self.parsed_url: ParseResult = urlparse(url, allow_fragments=True)
+        self.parsed_query: Dict[str, List[str]] = parse_qs(self.parsed_url.query)
+        self.json_data: Union[str, bytes] = data
+        self.return_data: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None
+        self.headers: Dict[str, str] = headers
+        return self.handle_method(method)
+
+    def handle_method(self, method: str) -> "MockGithubAPIResponse":
+        if method == "GET":
+            return self.handle_get()
+        elif method == "PATCH":
+            return self.handle_patch()
+        elif method == "POST":
+            return self.handle_post()
+        else:
+            return self.make_response_object(HTTPStatus.METHOD_NOT_ALLOWED, [])
+
+    def handle_get(self) -> "MockGithubAPIResponse":
+        if self.parsed_url.path.endswith('pulls'):
+            full_head_name: Optional[List[str]] = self.parsed_query.get('head')
+            if full_head_name:
+                head: str = full_head_name[0].split(':')[1]
+                for pr in self.github_api_state.pulls:
+                    if pr['head']['ref'] == head:
+                        return self.make_response_object(HTTPStatus.OK, [pr])
+                return self.make_response_object(HTTPStatus.NOT_FOUND, [])
+            else:
+                return self.make_response_object(HTTPStatus.OK, self.github_api_state.pulls)
+        elif self.parsed_url.path.endswith('user'):
+            return self.make_response_object(HTTPStatus.OK, [self.github_api_state.user])
+        else:
+            return self.make_response_object(HTTPStatus.NOT_FOUND, [])
+
+    def handle_patch(self) -> "MockGithubAPIResponse":
+        if 'issues' in self.parsed_url.path:
+            return self.update_issue()
+        elif 'pulls' in self.parsed_url.path:
+            return self.update_pull_request()
+        else:
+            return self.make_response_object(HTTPStatus.NOT_FOUND, [])
+
+    def handle_post(self) -> "MockGithubAPIResponse":
+        assert not self.parsed_query
+        if self.parsed_url.path.endswith('issues'):
+            return self.update_issue()
+        elif self.parsed_url.path.endswith('pulls'):
+            return self.update_pull_request()
+        else:
+            return self.make_response_object(HTTPStatus.NOT_FOUND, [])
+
+    def update_pull_request(self) -> "MockGithubAPIResponse":
+        pull_no: str = self.find_number(self.parsed_url.path)
+        if not pull_no:
+            return self.create_pull_request()
+        pull: Dict[str, Any] = self.github_api_state.get_pull(pull_no)
+        return self.fill_pull_request_data(json.loads(self.json_data), pull)
+
+    def create_pull_request(self) -> "MockGithubAPIResponse":
+        pull = {'number': self.get_next_free_number(self.github_api_state.pulls),
+                'user': {'login': 'github_user'},
+                'html_url': 'www.github.com'}
+        return self.fill_pull_request_data(json.loads(self.json_data), pull)
+
+    def fill_pull_request_data(self, data: Dict[str, Any], pull: Dict[str, Any]) -> "MockGithubAPIResponse":
+        index = self.get_index_or_None(pull, self.github_api_state.issues)
+        for key in data.keys():
+            if key in ('base', 'head'):
+                pull[key] = {'ref': ""}
+                pull[key]['ref'] = json.loads(self.json_data)[key]
+            else:
+                pull[key] = json.loads(self.json_data)[key]
+        if index:
+            self.github_api_state.pulls[index] = pull
+        else:
+            self.github_api_state.pulls.append(pull)
+        return self.make_response_object(HTTPStatus.CREATED, pull)
+
+    def update_issue(self) -> "MockGithubAPIResponse":
+        issue_no: str = self.find_number(self.parsed_url.path)
+        if not issue_no:
+            return self.create_issue()
+        issue: Dict[str, Any] = self.github_api_state.get_issue(issue_no)
+        return self.fill_issue_data(json.loads(self.json_data), issue)
+
+    def create_issue(self) -> "MockGithubAPIResponse":
+        issue = {'number': self.get_next_free_number(self.github_api_state.issues)}
+        return self.fill_issue_data(json.loads(self.json_data), issue)
+
+    def fill_issue_data(self, data: Dict[str, Any], issue: Dict[str, Any]) -> "MockGithubAPIResponse":
+        index = self.get_index_or_None(issue, self.github_api_state.issues)
+        for key in data.keys():
+            issue[key] = data[key]
+        if index:
+            self.github_api_state.issues[index] = issue
+        else:
+            self.github_api_state.issues.append(issue)
+        return self.make_response_object(HTTPStatus.CREATED, issue)
+
+    @staticmethod
+    def get_index_or_None(entity: Dict[str, Any], base: List[Dict[str, Any]]) -> Optional[int]:
+        try:
+            return base.index(entity)
+        except ValueError:
+            return None
+
+    @staticmethod
+    def make_response_object(status_code: int, response_data: Union[List[Dict[str, Any]], Dict[str, Any]]) -> "MockGithubAPIResponse":
+        return MockGithubAPIResponse(status_code, response_data)
+
+    @staticmethod
+    def find_number(url: str) -> Optional[str]:
+        m = re.search(r'\d+', url)
+        if m:
+            return m.group()
+        return None
+
+    @staticmethod
+    def get_next_free_number(entities: List[Dict[str, Any]]) -> str:
+        numbers = [int(item['number']) for item in entities]
+        return str(max(numbers) + 1)
+
+
+class MockContextManager:
+    def __init__(self, obj: MockGithubAPIRequest) -> None:
+        self.obj = obj
+
+    def __enter__(self) -> MockGithubAPIRequest:
+        return self.obj
+
+    def __exit__(self, *args: Any) -> None:
+        pass
 
 
 class GitRepositorySandbox:
@@ -81,6 +261,10 @@ class GitRepositorySandbox:
         self.execute(f'git branch -d "{branch}"')
         return self
 
+    def add_remote(self, remote: str, url: str) -> "GitRepositorySandbox":
+        self.execute(f'git remote add {remote} {url}')
+        return self
+
 
 class MacheteTester(unittest.TestCase):
     @staticmethod
@@ -101,8 +285,8 @@ class MacheteTester(unittest.TestCase):
         with open(os.path.join(os.getcwd(), definition_file_path), 'w') as def_file:
             def_file.writelines(new_body)
 
-    def assert_command(self, cmds: Iterable[str], expected_result: str) -> None:
-        self.assertEqual(self.launch_command(*cmds), self.adapt(expected_result))
+    def assert_command(self, cmds: Iterable[str], expected_result: str, strip_indentation: bool = True) -> None:
+        self.assertEqual(self.launch_command(*cmds), self.adapt(expected_result) if strip_indentation else expected_result)
 
     def setUp(self) -> None:
         # Status diffs can be quite large, default to ~256 lines of diff context
@@ -1382,3 +1566,245 @@ class MacheteTester(unittest.TestCase):
                 "<commit_hash>' drops the commits until (included) fork point "
                 "specified by the option '-f' from the current branch."
         )
+
+    git_api_state_for_test_retarget_pr = MockGithubAPIState(
+        [{'head': {'ref': 'feature'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'root'}, 'number': '15',
+          'html_url': 'www.github.com'}])
+
+    @mock.patch('urllib.request.Request', git_api_state_for_test_retarget_pr.new_request())
+    @mock.patch('urllib.request.urlopen', MockContextManager)
+    def test_retarget_pr(self) -> None:
+        branchs_first_commit_msg = "First commit on branch."
+        branchs_second_commit_msg = "Second commit on branch."
+        (
+            self.repo_sandbox.new_branch("root")
+                .commit("First commit on root.")
+                .new_branch("branch-1")
+                .commit(branchs_first_commit_msg)
+                .commit(branchs_second_commit_msg)
+                .push()
+                .new_branch('feature')
+                .commit('introduce feature')
+                .push()
+                .check_out('feature')
+                .add_remote('new_origin', 'https://github.com/user/repo.git')
+        )
+
+        self.launch_command("discover", "-y")
+        self.assert_command(['github', 'retarget-pr'], 'The base branch of PR #15 has been switched to `branch-1`\n', strip_indentation=False)
+        self.assert_command(['github', 'retarget-pr'], 'The base branch of PR #15 is already `branch-1`\n', strip_indentation=False)
+
+    git_api_state_for_test_anno_prs = MockGithubAPIState([
+        {'head': {'ref': 'ignore-trailing'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com'},
+        {'head': {'ref': 'allow-ownership-link'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '7', 'html_url': 'www.github.com'},
+        {'head': {'ref': 'call-ws'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '31', 'html_url': 'www.github.com'}
+    ])
+
+    @mock.patch('urllib.request.urlopen', MockContextManager)
+    @mock.patch('urllib.request.Request', git_api_state_for_test_anno_prs.new_request())
+    def test_anno_prs(self) -> None:
+
+        (
+            self.repo_sandbox.new_branch("root")
+                .commit("root")
+                .new_branch("develop")
+                .commit("develop commit")
+                .new_branch("allow-ownership-link")
+                .commit("Allow ownership links")
+                .push()
+                .new_branch("build-chain")
+                .commit("Build arbitrarily long chains")
+                .check_out("allow-ownership-link")
+                .commit("1st round of fixes")
+                .check_out("develop")
+                .commit("Other develop commit")
+                .push()
+                .new_branch("call-ws")
+                .commit("Call web service")
+                .commit("1st round of fixes")
+                .push()
+                .new_branch("drop-constraint")
+                .commit("Drop unneeded SQL constraints")
+                .check_out("call-ws")
+                .commit("2nd round of fixes")
+                .check_out("root")
+                .new_branch("master")
+                .commit("Master commit")
+                .push()
+                .new_branch("hotfix/add-trigger")
+                .commit("HOTFIX Add the trigger")
+                .push()
+                .commit_amend("HOTFIX Add the trigger (amended)")
+                .new_branch("ignore-trailing")
+                .commit("Ignore trailing data")
+                .sleep(1)
+                .commit_amend("Ignore trailing data (amended)")
+                .push()
+                .reset_to("ignore-trailing@{1}")
+                .delete_branch("root")
+                .add_remote('new_origin', 'https://github.com/user/repo.git')
+        )
+        self.launch_command("discover", "-y")
+        self.launch_command('github', 'anno-prs')
+        self.assert_command(
+            ["status"],
+            """
+            master
+            |
+            o-hotfix/add-trigger (diverged from origin)
+              |
+              o-ignore-trailing *  PR #3 (github_user) (diverged from & older than origin)
+
+            develop
+            |
+            x-allow-ownership-link  PR #7 (github_user) (ahead of origin)
+            | |
+            | x-build-chain (untracked)
+            |
+            o-call-ws  PR #31 (github_user) (ahead of origin)
+              |
+              x-drop-constraint (untracked)
+            """,
+        )
+
+    git_api_state_for_test_create_pr = MockGithubAPIState([{'head': {'ref': 'ignore-trailing'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com'}])
+
+    @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
+    @mock.patch('urllib.request.urlopen', MockContextManager)
+    @mock.patch('urllib.request.Request', git_api_state_for_test_create_pr.new_request())
+    def test_github_create_pr(self) -> None:
+
+        (
+            self.repo_sandbox.new_branch("root")
+                .commit("initial commit")
+                .new_branch("develop")
+                .commit("first commit")
+                .new_branch("allow-ownership-link")
+                .commit("Enable ownership links")
+                .push()
+                .new_branch("build-chain")
+                .commit("Build arbitrarily long chains of PRs")
+                .check_out("allow-ownership-link")
+                .commit("fixes")
+                .check_out("develop")
+                .commit("Other develop commit")
+                .push()
+                .new_branch("call-ws")
+                .commit("Call web service")
+                .commit("1st round of fixes")
+                .push()
+                .new_branch("drop-constraint")
+                .commit("Drop unneeded SQL constraints")
+                .check_out("call-ws")
+                .commit("2nd round of fixes")
+                .check_out("root")
+                .new_branch("master")
+                .commit("Master commit")
+                .push()
+                .new_branch("hotfix/add-trigger")
+                .commit("HOTFIX Add the trigger")
+                .push()
+                .commit_amend("HOTFIX Add the trigger (amended)")
+                .new_branch("ignore-trailing")
+                .commit("Ignore trailing data")
+                .sleep(1)
+                .commit_amend("Ignore trailing data (amended)")
+                .push()
+                .reset_to("ignore-trailing@{1}")
+                .delete_branch("root")
+                .new_branch('chore/fields')
+                .commit("remove outdated fields")
+                .add_remote('new_origin', 'https://github.com/user/repo.git')
+                .check_out("call-ws")
+        )
+
+        self.launch_command("discover")
+        self.launch_command("github", "create-pr")
+        # ahead of origin state, push is advised and accepted
+        self.assert_command(
+            ['status'],
+            """
+            master
+            |
+            o-hotfix/add-trigger (diverged from origin)
+              |
+              o-ignore-trailing (diverged from & older than origin)
+                |
+                o-chore/fields (untracked)
+
+            develop
+            |
+            x-allow-ownership-link (ahead of origin)
+            | |
+            | x-build-chain (untracked)
+            |
+            o-call-ws *  PR #4
+              |
+              x-drop-constraint (untracked)
+            """,
+        )
+        self.repo_sandbox.check_out('chore/fields')
+        #  untracked state (can only create pr when branch is pushed)
+        self.launch_command("github", "create-pr", "--draft")
+        self.assert_command(
+            ['status'],
+            """
+            master
+            |
+            o-hotfix/add-trigger (diverged from origin)
+              |
+              o-ignore-trailing (diverged from & older than origin)
+                |
+                o-chore/fields *  PR #5
+
+            develop
+            |
+            x-allow-ownership-link (ahead of origin)
+            | |
+            | x-build-chain (untracked)
+            |
+            o-call-ws  PR #4
+              |
+              x-drop-constraint (untracked)
+            """,
+        )
+
+        (
+            self.repo_sandbox.check_out('hotfix/add-trigger')
+            .commit('trigger released')
+            .commit('minor changes applied')
+        )
+
+        # diverged from and newer than origin
+        self.launch_command("github", "create-pr")
+        self.assert_command(
+            ['status'],
+            """
+            master
+            |
+            o-hotfix/add-trigger *  PR #6
+              |
+              x-ignore-trailing (diverged from & older than origin)
+                |
+                o-chore/fields  PR #5
+
+            develop
+            |
+            x-allow-ownership-link (ahead of origin)
+            | |
+            | x-build-chain (untracked)
+            |
+            o-call-ws  PR #4
+              |
+              x-drop-constraint (untracked)
+            """,
+        )
+        # check against attempt to create already existing pull request
+        machete_client = MacheteClient(cli_opts, git)
+        expected_error_message = "Pull request for branch hotfix/add-trigger is already created under link www.github.com!\nPR details: PR #6 by github_user: hotfix/add-trigger -> master"
+        machete_client.read_definition_file()
+        with self.assertRaises(MacheteException) as e:
+            machete_client.create_github_pr('hotfix/add-trigger', draft=False)
+        if e:
+            self.assertEqual(e.exception.parameter, expected_error_message,
+                             'Verify that expected error message has appeared when given pull request to create is already created.')
