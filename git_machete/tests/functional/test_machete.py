@@ -1822,6 +1822,9 @@ class MacheteTester(unittest.TestCase):
         self.launch_command('discover')
         self.assert_command(['github', 'create-pr'], "All commits in `testing/endpoints` branch  are already included in `develop` branch.\nCannot create pull request.\n", strip_indentation=False)
 
+        self.repo_sandbox.check_out('develop')
+        self.assert_command(['github', 'create-pr'], "Branch `develop` does not have a parent branch (it is a root), base branch for the PR cannot be established.\n", strip_indentation=False)
+
     git_api_state_for_test_checkout_prs = MockGithubAPIState([
         {'head': {'ref': 'chore/redundant_checks'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'restrict_access'}, 'number': '18', 'html_url': 'www.github.com'},
         {'head': {'ref': 'restrict_access'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'allow-ownership-link'}, 'number': '17', 'html_url': 'www.github.com'},

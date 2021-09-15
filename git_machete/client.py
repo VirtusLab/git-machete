@@ -1767,11 +1767,6 @@ class MacheteClient:
             return
         self.flush_caches()
         base: Optional[str] = self.up_branch.get(head)
-        if not base:
-            raise MacheteException(
-                f'Branch {head} does not have a parent branch (it is a root), '
-                'base branch for the PR cannot be established')
-
         org: str
         repo: str
         _, (org, repo) = self.__derive_remote_and_github_org_and_repo()
@@ -1905,7 +1900,12 @@ class MacheteClient:
         if current_branch not in self.managed_branches:
             self.add(current_branch)
 
-        up_branch = self.up_branch.get(current_branch)
+        up_branch: Optional[str] = self.up_branch.get(current_branch)
+        if not up_branch:
+            raise MacheteException(
+                f'Branch `{current_branch}` does not have a parent branch (it is a root), '
+                'base branch for the PR cannot be established.')
+
         if self.__git.is_ancestor_or_equal(current_branch, up_branch):
             raise MacheteException(
                 f'All commits in `{current_branch}` branch  are already included in `{up_branch}` branch.\nCannot create pull request.')
