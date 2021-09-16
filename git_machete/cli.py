@@ -365,8 +365,8 @@ def launch(orig_args: List[str]) -> None:
             if dest != current_branch:
                 git.checkout(dest)
         elif cmd == "github":
-            github_allowed_subcommands = "anno-prs|checkout-pr|create-pr|retarget-pr"
-            list_args = parse_options(args) if args[0] == 'checkout-pr' \
+            github_allowed_subcommands = "anno-prs|checkout-prs|create-pr|retarget-pr"
+            list_args = parse_options(args) if args[0] == 'checkout-prs' \
                 else check_required_param(parse_options(args, "", ["draft"]), github_allowed_subcommands)
             if not list_args:
                 raise MacheteException(f"`git machete github` expects argument(s): {github_allowed_subcommands}")
@@ -375,15 +375,15 @@ def launch(orig_args: List[str]) -> None:
             machete_client.read_definition_file()
             if param == "anno-prs":
                 machete_client.sync_annotations_to_github_prs()
-            elif param == "checkout-pr":
+            elif param == "checkout-prs":
                 if len(list_args) == 1:
                     raise MacheteException(
-                        "Argument to `git machete github checkout-pr` cannot be empty; expected PR number.")
+                        "Argument to `git machete github checkout-prs` cannot be empty; expected PR number.")
                 try:
                     pr_no: int = int(list_args[1])
                 except ValueError:
                     raise MacheteException("PR number is not integer value!")
-                machete_client.checkout_github_pr(pr_no)
+                machete_client.checkout_github_prs(pr_no)
             elif param == "create-pr":
                 check_required_param(parse_options(args, "", ["draft"]), github_allowed_subcommands)
                 current_branch = git.get_current_branch()

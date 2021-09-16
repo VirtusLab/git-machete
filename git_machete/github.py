@@ -150,9 +150,9 @@ def find_pr_by_base_and_head(base: str, head: str, pull_requests: List[GitHubPul
     return None
 
 
-def find_pr_by_number(no: int, pull_requests: List[GitHubPullRequest]) -> Optional[GitHubPullRequest]:
+def find_pr_by_number(number: int, pull_requests: List[GitHubPullRequest]) -> Optional[GitHubPullRequest]:
     for pr in pull_requests:
-        if no == pr.number:
+        if number == pr.number:
             return pr
     return None
 

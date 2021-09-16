@@ -265,6 +265,10 @@ class GitRepositorySandbox:
         self.execute(f'git branch -d "{branch}"')
         return self
 
+    def add_remote(self, remote: str, url: str) -> "GitRepositorySandbox":
+        self.execute(f'git remote add {remote} {url}')
+        return self
+
 
 class MacheteTester(unittest.TestCase):
     @staticmethod
@@ -1573,7 +1577,6 @@ class MacheteTester(unittest.TestCase):
 
     @mock.patch('urllib.request.Request', git_api_state_for_test_retarget_pr.new_request())
     @mock.patch('urllib.request.urlopen', MockContextManager)
-    @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     def test_retarget_pr(self) -> None:
         branchs_first_commit_msg = "First commit on branch."
         branchs_second_commit_msg = "Second commit on branch."
@@ -1588,6 +1591,7 @@ class MacheteTester(unittest.TestCase):
                 .commit('introduce feature')
                 .push()
                 .check_out('feature')
+                .add_remote('new_origin', 'https://github.com/user/repo.git')
         )
 
         self.launch_command("discover", "-y")
@@ -1601,7 +1605,6 @@ class MacheteTester(unittest.TestCase):
     ])
 
     @mock.patch('urllib.request.urlopen', MockContextManager)
-    @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     @mock.patch('urllib.request.Request', git_api_state_for_test_anno_prs.new_request())
     def test_anno_prs(self) -> None:
         (
@@ -1642,6 +1645,7 @@ class MacheteTester(unittest.TestCase):
                 .push()
                 .reset_to("ignore-trailing@{1}")
                 .delete_branch("root")
+                .add_remote('new_origin', 'https://github.com/user/repo.git')
         )
         self.launch_command("discover", "-y")
         self.launch_command('github', 'anno-prs')
@@ -1669,7 +1673,6 @@ class MacheteTester(unittest.TestCase):
     git_api_state_for_test_create_pr = MockGithubAPIState([{'head': {'ref': 'ignore-trailing'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com'}])
 
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
-    @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     @mock.patch('urllib.request.urlopen', MockContextManager)
     @mock.patch('urllib.request.Request', git_api_state_for_test_create_pr.new_request())
     def test_github_create_pr(self) -> None:
@@ -1714,6 +1717,7 @@ class MacheteTester(unittest.TestCase):
                 .new_branch('chore/fields')
                 .commit("remove outdated fields")
                 .check_out("call-ws")
+                .add_remote('new_origin', 'https://github.com/user/repo.git')
         )
 
         self.launch_command("discover")
@@ -1811,25 +1815,25 @@ class MacheteTester(unittest.TestCase):
         {'head': {'ref': 'chore/redundant_checks'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'restrict_access'}, 'number': '18', 'html_url': 'www.github.com'},
         {'head': {'ref': 'restrict_access'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'allow-ownership-link'}, 'number': '17', 'html_url': 'www.github.com'},
         {'head': {'ref': 'allow-ownership-link'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'bugfix/feature'}, 'number': '12', 'html_url': 'www.github.com'},
-        {'head': {'ref': 'bugfix/feature'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'enchance/feature'}, 'number': '6', 'html_url': 'www.github.com'},
-        {'head': {'ref': 'enchance/add_user'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '19', 'html_url': 'www.github.com'},
+        {'head': {'ref': 'bugfix/feature'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'enhance/feature'}, 'number': '6', 'html_url': 'www.github.com'},
+        {'head': {'ref': 'enhance/add_user'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '19', 'html_url': 'www.github.com'},
         {'head': {'ref': 'testing/add_user'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'bugfix/add_user'}, 'number': '22', 'html_url': 'www.github.com'},
         {'head': {'ref': 'chore/comments'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'testing/add_user'}, 'number': '24', 'html_url': 'www.github.com'},
         {'head': {'ref': 'ignore-trailing'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com'}
     ])
 
-    @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
+    @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('urllib.request.urlopen', MockContextManager)
     @mock.patch('urllib.request.Request', git_api_state_for_test_checkout_pr.new_request())
-    def test_checkout_pr(self) -> None:
+    def test_checkout_prs(self) -> None:
         (
             self.repo_sandbox.new_branch("root")
             .commit("initial commit")
             .new_branch("develop")
             .commit("first commit")
             .push()
-            .new_branch("enchance/feature")
+            .new_branch("enhance/feature")
             .commit("introduce feature")
             .push()
             .new_branch("bugfix/feature")
@@ -1859,7 +1863,7 @@ class MacheteTester(unittest.TestCase):
             .commit("remove outdated fields")
             .push()
             .check_out('develop')
-            .new_branch('enchance/add_user')
+            .new_branch('enhance/add_user')
             .commit('allow externals to add users')
             .push()
             .new_branch('bugfix/add_user')
@@ -1874,13 +1878,13 @@ class MacheteTester(unittest.TestCase):
             .check_out('master')
         )
 
-        for branch in ('chore/redundant_checks', 'restrict_access', 'allow-ownership-link', 'bugfix/feature', 'enchance/add_user', 'testing/add_user', 'chore/comments', 'bugfix/add_user'):
+        for branch in ('chore/redundant_checks', 'restrict_access', 'allow-ownership-link', 'bugfix/feature', 'enhance/add_user', 'testing/add_user', 'chore/comments', 'bugfix/add_user'):
             self.repo_sandbox.execute(f"git branch -D {branch}")
 
         self.launch_command('discover')
 
         # not broken chain of pull requests (root found in dependency tree)
-        self.launch_command('github', 'checkout-pr', '18')
+        self.launch_command('github', 'checkout-prs', '18')
         self.assert_command(
             ["status"],
             """
@@ -1894,7 +1898,7 @@ class MacheteTester(unittest.TestCase):
 
             develop
             |
-            o-enchance/feature
+            o-enhance/feature
               |
               o-bugfix/feature  PR #6 (github_user)
                 |
@@ -1906,7 +1910,7 @@ class MacheteTester(unittest.TestCase):
             """
         )
         # broken chain of pull requests (add new root)
-        self.launch_command('github', 'checkout-pr', '24')
+        self.launch_command('github', 'checkout-prs', '24')
         self.assert_command(
             ["status"],
             """
@@ -1920,7 +1924,7 @@ class MacheteTester(unittest.TestCase):
 
             develop
             |
-            o-enchance/feature
+            o-enhance/feature
               |
               o-bugfix/feature  PR #6 (github_user)
                 |
@@ -1939,7 +1943,7 @@ class MacheteTester(unittest.TestCase):
         )
 
         # broken chain of pull requests (branches already added)
-        self.launch_command('github', 'checkout-pr', '24')
+        self.launch_command('github', 'checkout-prs', '24')
         self.assert_command(
             ["status"],
             """
@@ -1953,7 +1957,7 @@ class MacheteTester(unittest.TestCase):
 
             develop
             |
-            o-enchance/feature
+            o-enhance/feature
               |
               o-bugfix/feature  PR #6 (github_user)
                 |
@@ -1973,11 +1977,12 @@ class MacheteTester(unittest.TestCase):
         # check against wrong pr number
         machete_client = MacheteClient(cli_opts, git)
         repo: str
-        (_, repo) = get_parsed_github_remote_url(self.repo_sandbox.remote_path)
-        expected_error_message = f"PR number 100 is not found in repository {repo}"
+        org: str
+        (org, repo) = get_parsed_github_remote_url(self.repo_sandbox.remote_path)
+        expected_error_message = f"PR #100 is not found in repository {org}/{repo}"
         machete_client.read_definition_file()
         with self.assertRaises(MacheteException) as e:
-            machete_client.checkout_github_pr(100)
+            machete_client.checkout_github_prs(100)
         if e:
             self.assertEqual(e.exception.parameter, expected_error_message,
                              'Verify that expected error message has appeared when given pull request to checkout does not exists.')
@@ -1992,7 +1997,7 @@ class MacheteTester(unittest.TestCase):
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     @mock.patch('urllib.request.urlopen', MockContextManager)
     @mock.patch('urllib.request.Request', git_api_state_for_test_checkout_pr_fresh_repo.new_request())
-    def test_checkout_pr_freshly_cloned(self) -> None:
+    def test_checkout_prs_freshly_cloned(self) -> None:
         (
             self.repo_sandbox.new_branch("root")
             .commit("initial commit")
@@ -2039,7 +2044,7 @@ class MacheteTester(unittest.TestCase):
                         "Annotating comments/add_docstrings as `PR #2 (github_user)`\nAnnotating improve/refactor as `PR #1 (github_user)`\n"
                         "Pull request `#2` checked out at local branch `comments/add_docstrings`\n")
         self.assert_command(
-            ['github', 'checkout-pr', '2'],
+            ['github', 'checkout-prs', '2'],
             expected_msg,
             strip_indentation=False
         )

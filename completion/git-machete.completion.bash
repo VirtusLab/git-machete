@@ -6,7 +6,7 @@ _git_machete() {
 
   local categories="addable managed slidable slidable-after unmanaged with-overridden-fork-point"
   local directions="down first last next prev root up"
-  local github_subcommands="anno-prs checkout-pr create-pr retarget-pr"
+  local github_subcommands="anno-prs checkout-prs create-pr retarget-pr"
   local locations="current $directions"
   local opt_color_args="always auto never"
   local opt_return_to_args="here nearest-remaining stay"
@@ -94,8 +94,6 @@ _git_machete() {
                   __gitcomp "$github_subcommands"
                 elif [[ ${COMP_WORDS[3]} == "create-pr" ]]; then
                   __gitcomp "$common_opts $github_create_pr_opts"
-                elif [[ ${COMP_WORDS[3]} == "checkout-pr" ]]; then
-                  __gitcomp "$common_opts $github_checkout_pr_opts"
                 else
                   COMPREPLY=('')
                 fi ;;
