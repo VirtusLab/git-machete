@@ -188,7 +188,7 @@ class MockGithubAPIRequest:
 
     @staticmethod
     def find_number(url: str, entity: str) -> Optional[str]:
-        m = re.search(f'{entity}\/(\d+)', url)
+        m = re.search(f'{entity}/(\\d+)', url)
         if m:
             return m.group(1)
         return None
@@ -2022,7 +2022,23 @@ class MacheteTester(unittest.TestCase):
         self.repo_sandbox.execute(f'git clone {self.repo_sandbox.remote_path}')
         os.chdir(os.path.join(local_path, os.listdir()[0]))
         self.rewrite_definition_file("master")
-        self.assert_command(['github', 'checkout-pr', '2'], "")
+        expected_msg = ("Fetching origin...\n"
+                        "A local branch `chore/sync_to_docs` does not exist, but a remote branch `origin/chore/sync_to_docs` exists.\n"
+                        "Checking out `chore/sync_to_docs` locally...\n"
+                        "Added branch `chore/sync_to_docs` as a new root\n"
+                        "A local branch `improve/refactor` does not exist, but a remote branch `origin/improve/refactor` exists.\n"
+                        "Checking out `improve/refactor` locally...\n"
+                        "Added branch `improve/refactor` onto `chore/sync_to_docs`\n"
+                        "A local branch `comments/add_docstrings` does not exist, but a remote branch `origin/comments/add_docstrings` exists.\n"
+                        "Checking out `comments/add_docstrings` locally...\nAdded branch `comments/add_docstrings` onto `improve/refactor`\n"
+                        "Annotating comments/add_docstrings as `PR #2 (github_user)`\nAnnotating improve/refactor as `PR #1 (github_user)`\n"
+                        "Pull request `#2` checked out at local branch `comments/add_docstrings`\n")
+        self.assert_command(
+            ['github', 'checkout-pr', '2'],
+            expected_msg,
+            strip_indentation=False
+        )
+
         self.assert_command(
             ["status"],
             """
