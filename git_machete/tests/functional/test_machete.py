@@ -127,7 +127,7 @@ class MockGithubAPIRequest:
             return self.make_response_object(HTTPStatus.NOT_FOUND, [])
 
     def update_pull_request(self) -> "MockGithubAPIResponse":
-        pull_no: str = self.find_number(self.parsed_url.path)
+        pull_no: str = self.find_number(self.parsed_url.path, 'pulls')
         if not pull_no:
             return self.create_pull_request()
         pull: Dict[str, Any] = self.github_api_state.get_pull(pull_no)
@@ -155,7 +155,7 @@ class MockGithubAPIRequest:
         return self.make_response_object(HTTPStatus.CREATED, pull)
 
     def update_issue(self) -> "MockGithubAPIResponse":
-        issue_no: str = self.find_number(self.parsed_url.path)
+        issue_no: str = self.find_number(self.parsed_url.path, 'issues')
         if not issue_no:
             return self.create_issue()
         issue: Dict[str, Any] = self.github_api_state.get_issue(issue_no)
@@ -187,10 +187,10 @@ class MockGithubAPIRequest:
         return MockGithubAPIResponse(status_code, response_data)
 
     @staticmethod
-    def find_number(url: str) -> Optional[str]:
-        m = re.search(r'\d+', url)
+    def find_number(url: str, entity: str) -> Optional[str]:
+        m = re.search(f'{entity}\/(\d+)', url)
         if m:
-            return m.group()
+            return m.group(1)
         return None
 
     @staticmethod
