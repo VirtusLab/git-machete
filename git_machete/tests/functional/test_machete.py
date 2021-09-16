@@ -1873,6 +1873,7 @@ class MacheteTester(unittest.TestCase):
             .push()
             .check_out('master')
         )
+
         for branch in ('chore/redundant_checks', 'restrict_access', 'allow-ownership-link', 'bugfix/feature', 'enchance/add_user', 'testing/add_user', 'chore/comments', 'bugfix/add_user'):
             self.repo_sandbox.execute(f"git branch -D {branch}")
 
@@ -1980,3 +1981,57 @@ class MacheteTester(unittest.TestCase):
         if e:
             self.assertEqual(e.exception.parameter, expected_error_message,
                              'Verify that expected error message has appeared when given pull request to checkout does not exists.')
+
+    git_api_state_for_test_checkout_pr_fresh_repo = MockGithubAPIState([
+        {'head': {'ref': 'comments/add_docstrings'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'improve/refactor'}, 'number': '2', 'html_url': 'www.github.com'},
+        {'head': {'ref': 'restrict_access'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'allow-ownership-link'}, 'number': '17', 'html_url': 'www.github.com'},
+        {'head': {'ref': 'improve/refactor'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'chore/sync_to_docs'}, 'number': '1', 'html_url': 'www.github.com'},
+    ])
+
+    @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
+    @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
+    @mock.patch('urllib.request.urlopen', MockContextManager)
+    @mock.patch('urllib.request.Request', git_api_state_for_test_checkout_pr_fresh_repo.new_request())
+    def test_checkout_pr_freshly_cloned(self) -> None:
+        (
+            self.repo_sandbox.new_branch("root")
+            .commit("initial commit")
+            .new_branch("develop")
+            .commit("first commit")
+            .push()
+            .new_branch("chore/sync_to_docs")
+            .commit("synchronize docs")
+            .push()
+            .new_branch("improve/refactor")
+            .commit("refactor code")
+            .push()
+            .new_branch("comments/add_docstrings")
+            .commit("docstring added")
+            .push()
+            .check_out("root")
+            .new_branch("master")
+            .commit("Master commit")
+            .push()
+            .delete_branch('root')
+            .push()
+        )
+        for branch in ('develop', 'chore/sync_to_docs', 'improve/refactor', 'comments/add_docstrings'):
+            self.repo_sandbox.execute(f"git branch -D {branch}")
+        local_path = os.popen("mktemp -d").read().strip()
+        os.chdir(local_path)
+        self.repo_sandbox.execute(f'git clone {self.repo_sandbox.remote_path}')
+        os.chdir(os.path.join(local_path, os.listdir()[0]))
+        self.rewrite_definition_file("master")
+        self.assert_command(['github', 'checkout-pr', '2'], "")
+        self.assert_command(
+            ["status"],
+            """
+            master
+
+            chore/sync_to_docs
+            |
+            o-improve/refactor  PR #1 (github_user)
+              |
+              o-comments/add_docstrings *  PR #2 (github_user)
+            """
+        )
