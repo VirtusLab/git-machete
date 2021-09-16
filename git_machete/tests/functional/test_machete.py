@@ -2017,10 +2017,15 @@ class MacheteTester(unittest.TestCase):
         )
         for branch in ('develop', 'chore/sync_to_docs', 'improve/refactor', 'comments/add_docstrings'):
             self.repo_sandbox.execute(f"git branch -D {branch}")
+
         local_path = os.popen("mktemp -d").read().strip()
         os.chdir(local_path)
         self.repo_sandbox.execute(f'git clone {self.repo_sandbox.remote_path}')
         os.chdir(os.path.join(local_path, os.listdir()[0]))
+
+        for branch in ('develop', 'chore/sync_to_docs', 'improve/refactor', 'comments/add_docstrings'):
+            self.repo_sandbox.execute(f"git branch -D -r origin/{branch}")
+
         self.rewrite_definition_file("master")
         expected_msg = ("Fetching origin...\n"
                         "A local branch `chore/sync_to_docs` does not exist, but a remote branch `origin/chore/sync_to_docs` exists.\n"

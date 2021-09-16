@@ -1675,6 +1675,8 @@ class MacheteClient:
 
         print(f"Fetching {remote}...")
         self.__git.fetch_remote(remote)
+        if self.__git.remotes():
+            self.flush_caches()
 
         self.__cli_opts.opt_yes = True  # TODO (#161): pass only needed options to methods
         path: List[str] = self.__get_path_from_pr_chain(pr.head, all_prs)
