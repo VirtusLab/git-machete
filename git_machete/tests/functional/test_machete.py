@@ -1674,7 +1674,6 @@ class MacheteTester(unittest.TestCase):
 
     # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_create_pr` to avoid situation where there is no remotes pointing to Github.
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
-    @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     @mock.patch('urllib.request.urlopen', MockContextManager)
     @mock.patch('urllib.request.Request', git_api_state_for_test_create_pr.new_request())
     def test_github_create_pr(self) -> None:
@@ -1719,6 +1718,7 @@ class MacheteTester(unittest.TestCase):
                 .new_branch('chore/fields')
                 .commit("remove outdated fields")
                 .check_out("call-ws")
+                .add_remote('new_origin', 'https://github.com/user/repo.git')
         )
 
         self.launch_command("discover")
@@ -1812,7 +1812,7 @@ class MacheteTester(unittest.TestCase):
             self.assertEqual(e.exception.parameter, expected_error_message,
                              'Verify that expected error message has appeared when given pull request to create is already created.')
 
-    git_api_state_for_test_checkout_pr = MockGithubAPIState([
+    git_api_state_for_test_checkout_prs = MockGithubAPIState([
         {'head': {'ref': 'chore/redundant_checks'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'restrict_access'}, 'number': '18', 'html_url': 'www.github.com'},
         {'head': {'ref': 'restrict_access'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'allow-ownership-link'}, 'number': '17', 'html_url': 'www.github.com'},
         {'head': {'ref': 'allow-ownership-link'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'bugfix/feature'}, 'number': '12', 'html_url': 'www.github.com'},
@@ -1827,7 +1827,7 @@ class MacheteTester(unittest.TestCase):
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('urllib.request.urlopen', MockContextManager)
-    @mock.patch('urllib.request.Request', git_api_state_for_test_checkout_pr.new_request())
+    @mock.patch('urllib.request.Request', git_api_state_for_test_checkout_prs.new_request())
     def test_checkout_prs(self) -> None:
         (
             self.repo_sandbox.new_branch("root")
@@ -1989,17 +1989,17 @@ class MacheteTester(unittest.TestCase):
             self.assertEqual(e.exception.parameter, expected_error_message,
                              'Verify that expected error message has appeared when given pull request to checkout does not exists.')
 
-    git_api_state_for_test_checkout_pr_fresh_repo = MockGithubAPIState([
+    git_api_state_for_test_checkout_prs_fresh_repo = MockGithubAPIState([
         {'head': {'ref': 'comments/add_docstrings'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'improve/refactor'}, 'number': '2', 'html_url': 'www.github.com'},
         {'head': {'ref': 'restrict_access'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'allow-ownership-link'}, 'number': '17', 'html_url': 'www.github.com'},
         {'head': {'ref': 'improve/refactor'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'chore/sync_to_docs'}, 'number': '1', 'html_url': 'www.github.com'},
     ])
 
-    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs` due to `git fetch` executed by `checkout-prs` subcommand.
+    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs_freshly_cloned` due to `git fetch` executed by `checkout-prs` subcommand.
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     @mock.patch('urllib.request.urlopen', MockContextManager)
-    @mock.patch('urllib.request.Request', git_api_state_for_test_checkout_pr_fresh_repo.new_request())
+    @mock.patch('urllib.request.Request', git_api_state_for_test_checkout_prs_fresh_repo.new_request())
     def test_checkout_prs_freshly_cloned(self) -> None:
         (
             self.repo_sandbox.new_branch("root")
