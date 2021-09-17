@@ -12,7 +12,7 @@ from typing import Dict, List, Optional, Any, Tuple
 import urllib.request
 from urllib.error import HTTPError
 
-from git_machete.utils import debug, fmt
+from git_machete.utils import debug, fmt, find_or_none
 from git_machete.exceptions import MacheteException, UnprocessableEntityHTTPError
 
 
@@ -143,20 +143,6 @@ def __fire_github_api_request(method: str, path: str, token: Optional[str], requ
         raise MacheteException(f'Could not connect to {host}: {e}')
 
 
-def find_pr_by_base_and_head(base: str, head: str, pull_requests: List[GitHubPullRequest]) -> Optional[GitHubPullRequest]:
-    for pr in pull_requests:
-        if base == pr.base and head == pr.head:
-            return pr
-    return None
-
-
-def find_pr_by_number(number: int, pull_requests: List[GitHubPullRequest]) -> Optional[GitHubPullRequest]:
-    for pr in pull_requests:
-        if number == pr.number:
-            return pr
-    return None
-
-
 def create_pull_request(org: str, repo: str, head: str, base: str, title: str, description: str, draft: bool) -> GitHubPullRequest:
     token: Optional[str] = __get_github_token()
     request_body: Dict[str, Any] = {
@@ -167,7 +153,7 @@ def create_pull_request(org: str, repo: str, head: str, base: str, title: str, d
         'draft': draft
     }
     prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
-    pr_found: Optional[GitHubPullRequest] = find_pr_by_base_and_head(base, head, prs)
+    pr_found: Optional[GitHubPullRequest] = find_or_none(lambda pr: pr.base == base and pr.head == head, prs)
     if not pr_found:
         pr = __fire_github_api_request('POST', f'/repos/{org}/{repo}/pulls', token, request_body)
         return __parse_pr_json(pr)

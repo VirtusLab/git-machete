@@ -15,7 +15,7 @@ from git_machete.constants import (
 from git_machete.exceptions import MacheteException, StopTraversal
 from git_machete.git_operations import GitContext
 from git_machete.github import (
-    GitHubPullRequest, find_pr_by_number, derive_pull_requests,
+    GitHubPullRequest, derive_pull_requests,
     derive_pull_request_by_head, set_base_of_pull_request, get_parsed_github_remote_url, is_github_remote_url,
     create_pull_request, derive_current_user_login, set_milestone_of_pull_request,
     add_assignees_to_pull_request, add_reviewers_to_pull_request)
@@ -1667,10 +1667,10 @@ class MacheteClient:
         debug('checkout_github_pr()', f'organization is {org}, repository is {repo}')
 
         all_prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
-        pr: GitHubPullRequest = find_pr_by_number(pr_no, all_prs)
+        pr = utils.find_or_none(lambda pr: pr.number == pr_no, all_prs)
 
         if not pr:
-            raise MacheteException(f"PR #{pr_no} is not found in repository {org}/{repo}")
+            raise MacheteException(f"PR #{pr_no} is not found in repository `{org}/{repo}`")
         debug('checkout_github_pr()', f'found {pr}')
 
         print(f"Fetching {remote}...")
@@ -1704,7 +1704,7 @@ class MacheteClient:
         path: List[str] = [current_pr.head]
         while current_pr:
             path.append(current_pr.base)
-            current_pr = next(filter(lambda x: x.head == current_pr.base, all_prs), None)
+            current_pr = utils.find_or_none(lambda x: x.head == current_pr.base, all_prs)
         return path
 
     def retarget_github_pr(self, head: str) -> None:
