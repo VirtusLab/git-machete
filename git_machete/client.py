@@ -1767,7 +1767,7 @@ class MacheteClient:
         except MacheteException as e:
             print(e)
             return
-
+        self.flush_caches()
         base: Optional[str] = self.up_branch.get(head)
         if not base:
             raise MacheteException(
