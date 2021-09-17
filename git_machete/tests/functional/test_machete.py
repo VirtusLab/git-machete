@@ -1592,6 +1592,7 @@ class MacheteTester(unittest.TestCase):
                 .push()
                 .check_out('feature')
                 .add_remote('new_origin', 'https://github.com/user/repo.git')
+                .sleep(1)
         )
 
         self.launch_command("discover", "-y")
@@ -1646,6 +1647,7 @@ class MacheteTester(unittest.TestCase):
                 .reset_to("ignore-trailing@{1}")
                 .delete_branch("root")
                 .add_remote('new_origin', 'https://github.com/user/repo.git')
+                .sleep(1)
         )
         self.launch_command("discover", "-y")
         self.launch_command('github', 'anno-prs')
@@ -1719,6 +1721,7 @@ class MacheteTester(unittest.TestCase):
                 .commit("remove outdated fields")
                 .check_out("call-ws")
                 .add_remote('new_origin', 'https://github.com/user/repo.git')
+                .sleep(1)
         )
 
         self.launch_command("discover")
