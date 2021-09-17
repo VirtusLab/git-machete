@@ -1672,6 +1672,7 @@ class MacheteTester(unittest.TestCase):
 
     git_api_state_for_test_create_pr = MockGithubAPIState([{'head': {'ref': 'ignore-trailing'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com'}])
 
+    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_create_pr` to avoid situation where there is no remotes pointing to Github.
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     @mock.patch('urllib.request.urlopen', MockContextManager)
