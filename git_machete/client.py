@@ -1746,9 +1746,7 @@ class MacheteClient:
         if not org_and_repo_for_github_remote:
             raise MacheteException(
                 fmt('Remotes are defined for this repository, but none of them '
-                    'corresponds to GitHub (see `git remote -v` for details)\n'
-                    f'Actual remotes from git:\n {self.__git.popen_git("remote", "-v")}\n'
-                    f'Actual remotes from git-machete: {self.__git.remotes()}'))
+                    'corresponds to GitHub (see `git remote -v` for details)\n'))
 
         if len(org_and_repo_for_github_remote) == 1:
             return list(org_and_repo_for_github_remote.items())[0]
