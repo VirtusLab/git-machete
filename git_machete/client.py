@@ -1760,18 +1760,10 @@ class MacheteClient:
 
     def create_github_pr(self, head: str, draft: bool) -> None:
         # first make sure that head branch is synced with remote
-        try:
-            self.__sync_before_creating_pr()
-        except MacheteException as e:
-            print(e)
-            return
+        self.__sync_before_creating_pr()
         self.flush_caches()
-        base: Optional[str] = self.up_branch.get(head)
-        if not base:
-            raise MacheteException(
-                f'Branch {head} does not have a parent branch (it is a root), '
-                'base branch for the PR cannot be established')
 
+        base: Optional[str] = self.up_branch.get(head)
         org: str
         repo: str
         _, (org, repo) = self.__derive_remote_and_github_org_and_repo()
@@ -1905,8 +1897,15 @@ class MacheteClient:
         if current_branch not in self.managed_branches:
             self.add(current_branch)
 
-        if self.__is_merged_to_upstream(current_branch):
-            return
+        up_branch: Optional[str] = self.up_branch.get(current_branch)
+        if not up_branch:
+            raise MacheteException(
+                f'Branch `{current_branch}` does not have a parent branch (it is a root), '
+                'base branch for the PR cannot be established.')
+
+        if self.__git.is_ancestor_or_equal(current_branch, up_branch):
+            raise MacheteException(
+                f'All commits in `{current_branch}` branch  are already included in `{up_branch}` branch.\nCannot create pull request.')
 
         s, remote = self.__git.get_strict_remote_sync_status(current_branch)
         statuses_to_sync = (UNTRACKED, AHEAD_OF_REMOTE, DIVERGED_FROM_AND_NEWER_THAN_REMOTE)
