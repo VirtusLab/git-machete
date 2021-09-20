@@ -1761,6 +1761,7 @@ class MacheteClient:
     def create_github_pr(self, head: str, draft: bool) -> None:
         # first make sure that head branch is synced with remote
         self.__sync_before_creating_pr()
+        self.flush_caches()
 
         base: Optional[str] = self.up_branch.get(head)
         org: str
