@@ -2,7 +2,7 @@
 
 ## New in git-machete 3.4.0
 
-- added: `github` command with `anno-prs`, `create-pr` and `retarget-pr` subcommands
+- added: `github` command with `anno-prs`, `checkout-prs`, `create-pr` and `retarget-pr` subcommands
 
 ## New in git-machete 3.3.1
 

@@ -156,6 +156,11 @@ Annotate the branches with GitHub PR numbers: <br/>
 git machete github anno-prs
 ```
 
+Check out the PR into local branch, also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally: <br/>
+```shell script
+git machete github checkout-prs <PR_number>
+```
+
 Create the PR, using the upstream (parent) branch from `.git/machete` as the base: <br/>
 ```shell script
 git machete github create-pr [--draft]

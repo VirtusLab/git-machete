@@ -28,6 +28,10 @@ def flat_map(func: Callable[[T], List[T]], iterable: Iterable[T]) -> List[T]:
     return sum(map(func, iterable), [])
 
 
+def find_or_none(func: Callable[[T], bool], iterable: Iterable[T]) -> T:
+    return next(filter(func, iterable), None)
+
+
 def map_truthy_only(func: Callable[[T], Optional[T]], iterable: Iterable[T]) -> List[T]:
     return list(filter(None, map(func, iterable)))
 

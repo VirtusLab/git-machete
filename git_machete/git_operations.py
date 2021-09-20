@@ -413,6 +413,7 @@ class GitContext:
         self.__reflogs_cached = None
         self.__remaining_log_shas_cached = {}
         self.__remote_branches_cached = None
+        self.__remotes_cached = None
 
     def get_revision_repr(self, revision: str) -> str:
         short_sha = self.get_short_commit_sha_by_revision(revision)

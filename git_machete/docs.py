@@ -298,7 +298,7 @@ long_docs: Dict[str, str] = {
     """,
     "github": """
         <b>Usage: git machete github <subcommand></b>
-        where <subcommand> is one of: `anno-prs`, `create-pr`, `retarget-pr`.
+        where <subcommand> is one of: `anno-prs`, `checkout-prs`, `create-pr`, `retarget-pr`.
 
         Creates, checks out and manages GitHub PRs while keeping them reflected in branch definition file.
 
@@ -313,6 +313,15 @@ long_docs: Dict[str, str] = {
           Annotates the branches based on their corresponding GitHub PR numbers and authors.
           Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
           Equivalent to `git machete anno --sync-github-prs`.
+
+        <b>`checkout-prs <PR-number>`:</b>
+
+          Check out the head branch of the given pull request (specified by number),
+          also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally.
+          Once pull request is checked out locally, annotate local branches with corresponding pull request numbers.
+
+          <b>Parameters:</b>
+            <b><PR-number></b>    Pull request number to checkout.
 
         <b>`create-pr [--draft]`:</b>
 

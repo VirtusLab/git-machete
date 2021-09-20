@@ -17,12 +17,15 @@ from urllib.parse import urlparse, ParseResult, parse_qs
 from git_machete import cli
 from git_machete.client import MacheteClient
 from git_machete.exceptions import MacheteException
+from git_machete.github import get_parsed_github_remote_url
 from git_machete.git_operations import GitContext
 from git_machete.options import CommandLineOptions
 from git_machete.utils import fmt
 
 cli_opts: CommandLineOptions = CommandLineOptions()
 git: GitContext = GitContext(cli_opts)
+
+FAKE_GITHUB_REMOTE_PATTERNS = ['(.*)/(.*)']
 
 
 def get_head_commit_hash() -> str:
@@ -124,7 +127,7 @@ class MockGithubAPIRequest:
             return self.make_response_object(HTTPStatus.NOT_FOUND, [])
 
     def update_pull_request(self) -> "MockGithubAPIResponse":
-        pull_no: str = self.find_number(self.parsed_url.path)
+        pull_no: str = self.find_number(self.parsed_url.path, 'pulls')
         if not pull_no:
             return self.create_pull_request()
         pull: Dict[str, Any] = self.github_api_state.get_pull(pull_no)
@@ -137,8 +140,9 @@ class MockGithubAPIRequest:
         return self.fill_pull_request_data(json.loads(self.json_data), pull)
 
     def fill_pull_request_data(self, data: Dict[str, Any], pull: Dict[str, Any]) -> "MockGithubAPIResponse":
-        index = self.get_index_or_None(pull, self.github_api_state.issues)
+        index = self.get_index_or_none(pull, self.github_api_state.issues)
         for key in data.keys():
+
             if key in ('base', 'head'):
                 pull[key] = {'ref': ""}
                 pull[key]['ref'] = json.loads(self.json_data)[key]
@@ -151,7 +155,7 @@ class MockGithubAPIRequest:
         return self.make_response_object(HTTPStatus.CREATED, pull)
 
     def update_issue(self) -> "MockGithubAPIResponse":
-        issue_no: str = self.find_number(self.parsed_url.path)
+        issue_no: str = self.find_number(self.parsed_url.path, 'issues')
         if not issue_no:
             return self.create_issue()
         issue: Dict[str, Any] = self.github_api_state.get_issue(issue_no)
@@ -162,7 +166,7 @@ class MockGithubAPIRequest:
         return self.fill_issue_data(json.loads(self.json_data), issue)
 
     def fill_issue_data(self, data: Dict[str, Any], issue: Dict[str, Any]) -> "MockGithubAPIResponse":
-        index = self.get_index_or_None(issue, self.github_api_state.issues)
+        index = self.get_index_or_none(issue, self.github_api_state.issues)
         for key in data.keys():
             issue[key] = data[key]
         if index:
@@ -172,7 +176,7 @@ class MockGithubAPIRequest:
         return self.make_response_object(HTTPStatus.CREATED, issue)
 
     @staticmethod
-    def get_index_or_None(entity: Dict[str, Any], base: List[Dict[str, Any]]) -> Optional[int]:
+    def get_index_or_none(entity: Dict[str, Any], base: List[Dict[str, Any]]) -> Optional[int]:
         try:
             return base.index(entity)
         except ValueError:
@@ -183,10 +187,10 @@ class MockGithubAPIRequest:
         return MockGithubAPIResponse(status_code, response_data)
 
     @staticmethod
-    def find_number(url: str) -> Optional[str]:
-        m = re.search(r'\d+', url)
+    def find_number(url: str, entity: str) -> Optional[str]:
+        m = re.search(f'{entity}/(\\d+)', url)
         if m:
-            return m.group()
+            return m.group(1)
         return None
 
     @staticmethod
@@ -1603,7 +1607,6 @@ class MacheteTester(unittest.TestCase):
     @mock.patch('urllib.request.urlopen', MockContextManager)
     @mock.patch('urllib.request.Request', git_api_state_for_test_anno_prs.new_request())
     def test_anno_prs(self) -> None:
-
         (
             self.repo_sandbox.new_branch("root")
                 .commit("root")
@@ -1673,7 +1676,6 @@ class MacheteTester(unittest.TestCase):
     @mock.patch('urllib.request.urlopen', MockContextManager)
     @mock.patch('urllib.request.Request', git_api_state_for_test_create_pr.new_request())
     def test_github_create_pr(self) -> None:
-
         (
             self.repo_sandbox.new_branch("root")
                 .commit("initial commit")
@@ -1714,8 +1716,8 @@ class MacheteTester(unittest.TestCase):
                 .delete_branch("root")
                 .new_branch('chore/fields')
                 .commit("remove outdated fields")
-                .add_remote('new_origin', 'https://github.com/user/repo.git')
                 .check_out("call-ws")
+                .add_remote('new_origin', 'https://github.com/user/repo.git')
         )
 
         self.launch_command("discover")
@@ -1808,3 +1810,256 @@ class MacheteTester(unittest.TestCase):
         if e:
             self.assertEqual(e.exception.parameter, expected_error_message,
                              'Verify that expected error message has appeared when given pull request to create is already created.')
+
+    git_api_state_for_test_checkout_prs = MockGithubAPIState([
+        {'head': {'ref': 'chore/redundant_checks'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'restrict_access'}, 'number': '18', 'html_url': 'www.github.com'},
+        {'head': {'ref': 'restrict_access'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'allow-ownership-link'}, 'number': '17', 'html_url': 'www.github.com'},
+        {'head': {'ref': 'allow-ownership-link'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'bugfix/feature'}, 'number': '12', 'html_url': 'www.github.com'},
+        {'head': {'ref': 'bugfix/feature'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'enhance/feature'}, 'number': '6', 'html_url': 'www.github.com'},
+        {'head': {'ref': 'enhance/add_user'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '19', 'html_url': 'www.github.com'},
+        {'head': {'ref': 'testing/add_user'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'bugfix/add_user'}, 'number': '22', 'html_url': 'www.github.com'},
+        {'head': {'ref': 'chore/comments'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'testing/add_user'}, 'number': '24', 'html_url': 'www.github.com'},
+        {'head': {'ref': 'ignore-trailing'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com'}
+    ])
+
+    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs` due to `git fetch` executed by `checkout-prs` subcommand.
+    @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
+    @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
+    @mock.patch('urllib.request.urlopen', MockContextManager)
+    @mock.patch('urllib.request.Request', git_api_state_for_test_checkout_prs.new_request())
+    def test_checkout_prs(self) -> None:
+        (
+            self.repo_sandbox.new_branch("root")
+            .commit("initial commit")
+            .new_branch("develop")
+            .commit("first commit")
+            .push()
+            .new_branch("enhance/feature")
+            .commit("introduce feature")
+            .push()
+            .new_branch("bugfix/feature")
+            .commit("bugs removed")
+            .push()
+            .new_branch("allow-ownership-link")
+            .commit("fixes")
+            .push()
+            .new_branch('restrict_access')
+            .commit('authorized users only')
+            .push()
+            .new_branch("chore/redundant_checks")
+            .commit('remove some checks')
+            .push()
+            .check_out("root")
+            .new_branch("master")
+            .commit("Master commit")
+            .push()
+            .new_branch("hotfix/add-trigger")
+            .commit("HOTFIX Add the trigger")
+            .push()
+            .new_branch("ignore-trailing")
+            .commit("Ignore trailing data")
+            .push()
+            .delete_branch("root")
+            .new_branch('chore/fields')
+            .commit("remove outdated fields")
+            .push()
+            .check_out('develop')
+            .new_branch('enhance/add_user')
+            .commit('allow externals to add users')
+            .push()
+            .new_branch('bugfix/add_user')
+            .commit('first round of fixes')
+            .push()
+            .new_branch('testing/add_user')
+            .commit('add test set for add_user feature')
+            .push()
+            .new_branch('chore/comments')
+            .commit('code maintenance')
+            .push()
+            .check_out('master')
+        )
+
+        for branch in ('chore/redundant_checks', 'restrict_access', 'allow-ownership-link', 'bugfix/feature', 'enhance/add_user', 'testing/add_user', 'chore/comments', 'bugfix/add_user'):
+            self.repo_sandbox.execute(f"git branch -D {branch}")
+
+        self.launch_command('discover')
+
+        # not broken chain of pull requests (root found in dependency tree)
+        self.launch_command('github', 'checkout-prs', '18')
+        self.assert_command(
+            ["status"],
+            """
+            master
+            |
+            o-hotfix/add-trigger
+              |
+              o-ignore-trailing  PR #3 (github_user)
+                |
+                o-chore/fields
+
+            develop
+            |
+            o-enhance/feature
+              |
+              o-bugfix/feature  PR #6 (github_user)
+                |
+                o-allow-ownership-link  PR #12 (github_user)
+                  |
+                  o-restrict_access  PR #17 (github_user)
+                    |
+                    o-chore/redundant_checks *  PR #18 (github_user)
+            """
+        )
+        # broken chain of pull requests (add new root)
+        self.launch_command('github', 'checkout-prs', '24')
+        self.assert_command(
+            ["status"],
+            """
+            master
+            |
+            o-hotfix/add-trigger
+              |
+              o-ignore-trailing  PR #3 (github_user)
+                |
+                o-chore/fields
+
+            develop
+            |
+            o-enhance/feature
+              |
+              o-bugfix/feature  PR #6 (github_user)
+                |
+                o-allow-ownership-link  PR #12 (github_user)
+                  |
+                  o-restrict_access  PR #17 (github_user)
+                    |
+                    o-chore/redundant_checks  PR #18 (github_user)
+
+            bugfix/add_user
+            |
+            o-testing/add_user  PR #22 (github_user)
+              |
+              o-chore/comments *  PR #24 (github_user)
+            """
+        )
+
+        # broken chain of pull requests (branches already added)
+        self.launch_command('github', 'checkout-prs', '24')
+        self.assert_command(
+            ["status"],
+            """
+            master
+            |
+            o-hotfix/add-trigger
+              |
+              o-ignore-trailing  PR #3 (github_user)
+                |
+                o-chore/fields
+
+            develop
+            |
+            o-enhance/feature
+              |
+              o-bugfix/feature  PR #6 (github_user)
+                |
+                o-allow-ownership-link  PR #12 (github_user)
+                  |
+                  o-restrict_access  PR #17 (github_user)
+                    |
+                    o-chore/redundant_checks  PR #18 (github_user)
+
+            bugfix/add_user
+            |
+            o-testing/add_user  PR #22 (github_user)
+              |
+              o-chore/comments *  PR #24 (github_user)
+            """
+        )
+        # check against wrong pr number
+        machete_client = MacheteClient(cli_opts, git)
+        repo: str
+        org: str
+        (org, repo) = get_parsed_github_remote_url(self.repo_sandbox.remote_path)
+        expected_error_message = f"PR #100 is not found in repository `{org}/{repo}`"
+        machete_client.read_definition_file()
+        with self.assertRaises(MacheteException) as e:
+            machete_client.checkout_github_prs(100)
+        if e:
+            self.assertEqual(e.exception.parameter, expected_error_message,
+                             'Verify that expected error message has appeared when given pull request to checkout does not exists.')
+
+    git_api_state_for_test_checkout_prs_fresh_repo = MockGithubAPIState([
+        {'head': {'ref': 'comments/add_docstrings'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'improve/refactor'}, 'number': '2', 'html_url': 'www.github.com'},
+        {'head': {'ref': 'restrict_access'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'allow-ownership-link'}, 'number': '17', 'html_url': 'www.github.com'},
+        {'head': {'ref': 'improve/refactor'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'chore/sync_to_docs'}, 'number': '1', 'html_url': 'www.github.com'},
+    ])
+
+    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs_freshly_cloned` due to `git fetch` executed by `checkout-prs` subcommand.
+    @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
+    @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
+    @mock.patch('urllib.request.urlopen', MockContextManager)
+    @mock.patch('urllib.request.Request', git_api_state_for_test_checkout_prs_fresh_repo.new_request())
+    def test_checkout_prs_freshly_cloned(self) -> None:
+        (
+            self.repo_sandbox.new_branch("root")
+            .commit("initial commit")
+            .new_branch("develop")
+            .commit("first commit")
+            .push()
+            .new_branch("chore/sync_to_docs")
+            .commit("synchronize docs")
+            .push()
+            .new_branch("improve/refactor")
+            .commit("refactor code")
+            .push()
+            .new_branch("comments/add_docstrings")
+            .commit("docstring added")
+            .push()
+            .check_out("root")
+            .new_branch("master")
+            .commit("Master commit")
+            .push()
+            .delete_branch('root')
+            .push()
+        )
+        for branch in ('develop', 'chore/sync_to_docs', 'improve/refactor', 'comments/add_docstrings'):
+            self.repo_sandbox.execute(f"git branch -D {branch}")
+
+        local_path = os.popen("mktemp -d").read().strip()
+        os.chdir(local_path)
+        self.repo_sandbox.execute(f'git clone {self.repo_sandbox.remote_path}')
+        os.chdir(os.path.join(local_path, os.listdir()[0]))
+
+        for branch in ('develop', 'chore/sync_to_docs', 'improve/refactor', 'comments/add_docstrings'):
+            self.repo_sandbox.execute(f"git branch -D -r origin/{branch}")
+
+        self.rewrite_definition_file("master")
+        expected_msg = ("Fetching origin...\n"
+                        "A local branch `chore/sync_to_docs` does not exist, but a remote branch `origin/chore/sync_to_docs` exists.\n"
+                        "Checking out `chore/sync_to_docs` locally...\n"
+                        "Added branch `chore/sync_to_docs` as a new root\n"
+                        "A local branch `improve/refactor` does not exist, but a remote branch `origin/improve/refactor` exists.\n"
+                        "Checking out `improve/refactor` locally...\n"
+                        "Added branch `improve/refactor` onto `chore/sync_to_docs`\n"
+                        "A local branch `comments/add_docstrings` does not exist, but a remote branch `origin/comments/add_docstrings` exists.\n"
+                        "Checking out `comments/add_docstrings` locally...\nAdded branch `comments/add_docstrings` onto `improve/refactor`\n"
+                        "Annotating comments/add_docstrings as `PR #2 (github_user)`\nAnnotating improve/refactor as `PR #1 (github_user)`\n"
+                        "Pull request `#2` checked out at local branch `comments/add_docstrings`\n")
+        self.assert_command(
+            ['github', 'checkout-prs', '2'],
+            expected_msg,
+            strip_indentation=False
+        )
+
+        self.assert_command(
+            ["status"],
+            """
+            master
+
+            chore/sync_to_docs
+            |
+            o-improve/refactor  PR #1 (github_user)
+              |
+              o-comments/add_docstrings *  PR #2 (github_user)
+            """
+        )
