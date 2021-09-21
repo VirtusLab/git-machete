@@ -47,7 +47,7 @@ class FakeCommandLineOptions(CommandLineOptions):
 class MockGithubAPIState:
     def __init__(self, pulls: List[Dict[str, Any]]) -> None:
         self.pulls: List[Dict[str, Any]] = pulls
-        self.user: Dict[str, str] = {'login': 'other_user', 'type': 'User', 'company': 'VirtusLab'}  # login must be different to one used in pull requests, otherwise pull request author will not be annotated
+        self.user: Dict[str, str] = {'login': 'other_user', 'type': 'User', 'company': 'VirtusLab'}  # login must be different from the one used in pull requests, otherwise pull request author will not be annotated
         self.issues: List[Dict[str, Any]] = []
 
     def new_request(self) -> "MockGithubAPIRequest":
