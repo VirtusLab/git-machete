@@ -43,7 +43,7 @@ class FakeCommandLineOptions(CommandLineOptions):
 class MockGithubAPIState:
     def __init__(self, pulls: List[Dict[str, Any]]) -> None:
         self.pulls: List[Dict[str, Any]] = pulls
-        self.user: Dict[str, str] = {'login': 'github_user', 'type': 'User', 'company': 'VirtusLab'}
+        self.user: Dict[str, str] = {'login': 'github_admin', 'type': 'User', 'company': 'VirtusLab'}
         self.issues: List[Dict[str, Any]] = []
 
     def new_request(self) -> "MockGithubAPIRequest":
@@ -105,7 +105,7 @@ class MockGithubAPIRequest:
             else:
                 return self.make_response_object(HTTPStatus.OK, self.github_api_state.pulls)
         elif self.parsed_url.path.endswith('user'):
-            return self.make_response_object(HTTPStatus.OK, [self.github_api_state.user])
+            return self.make_response_object(HTTPStatus.OK, self.github_api_state.user)
         else:
             return self.make_response_object(HTTPStatus.NOT_FOUND, [])
 
