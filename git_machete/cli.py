@@ -13,7 +13,7 @@ from git_machete import utils
 from git_machete.client import MacheteClient
 from git_machete.constants import EscapeCodes
 from git_machete.docs import short_docs, long_docs
-from git_machete.exceptions import MacheteException, StopTraversal
+from git_machete.exceptions import MacheteException, StopInteraction
 from git_machete.git_operations import GitContext
 from git_machete.utils import fmt, underline, excluding, warn
 
@@ -721,7 +721,7 @@ def launch(orig_args: List[str]) -> None:
     except KeyboardInterrupt:
         sys.stderr.write("\nInterrupted by the user")
         sys.exit(1)
-    except StopTraversal:
+    except StopInteraction:
         pass
     finally:
         if initial_current_directory and not utils.does_directory_exist(initial_current_directory):

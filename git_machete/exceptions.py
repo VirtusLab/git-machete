@@ -9,7 +9,7 @@ class MacheteException(Exception):
         return str(self.parameter)
 
 
-class StopTraversal(Exception):
+class StopInteraction(Exception):
     def __init__(self) -> None:
         pass
 
