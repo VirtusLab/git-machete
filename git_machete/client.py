@@ -1519,7 +1519,7 @@ class MacheteClient:
 
         ans = input(msg).lower()
         if not is_called_from_traverse and not ans.isnumeric():
-            raise MacheteException('Could not establish remote repository, pull request creation inrupted.')
+            raise MacheteException('Could not establish remote repository, pull request creation interrupted.')
         if ans in ('q', 'quit'):
             raise StopTraversal
         try:
@@ -1536,7 +1536,7 @@ class MacheteClient:
         other_remote_choice = "o[ther-remote]" if can_pick_other_remote else ""
         remote_branch = f"{new_remote}/{branch}"
         if not self.__git.get_commit_sha_by_revision(remote_branch, prefix="refs/remotes/"):
-            choices = get_pretty_choices(*('y', 'N', 'q', 'yq', other_remote_choice) if is_called_from_traverse else ('Y', 'q', other_remote_choice))
+            choices = get_pretty_choices(*('y', 'N', 'q', 'yq', other_remote_choice) if is_called_from_traverse else ('y', 'Q', other_remote_choice))
             ask_message = f"Push untracked branch {bold(branch)} to {bold(new_remote)}?" + choices
             ask_opt_yes_message = f"Pushing untracked branch {bold(branch)} to {bold(new_remote)}..."
             ans = self.ask_if(ask_message, ask_opt_yes_message,
