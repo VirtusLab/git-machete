@@ -33,6 +33,10 @@ def get_head_commit_hash() -> str:
     return os.popen("git rev-parse HEAD").read().strip()
 
 
+def mock_derive_current_user_login() -> str:
+    return "very_complex_user_token"
+
+
 class FakeCommandLineOptions(CommandLineOptions):
     def __init__(self) -> None:
         super().__init__()
@@ -43,7 +47,7 @@ class FakeCommandLineOptions(CommandLineOptions):
 class MockGithubAPIState:
     def __init__(self, pulls: List[Dict[str, Any]]) -> None:
         self.pulls: List[Dict[str, Any]] = pulls
-        self.user: Dict[str, str] = {'login': 'github_admin', 'type': 'User', 'company': 'VirtusLab'}
+        self.user: Dict[str, str] = {'login': 'other_user', 'type': 'User', 'company': 'VirtusLab'}  # login must be different to one used in pull requests, otherwise pull request author will not be annotated
         self.issues: List[Dict[str, Any]] = []
 
     def new_request(self) -> "MockGithubAPIRequest":
@@ -1603,6 +1607,7 @@ class MacheteTester(unittest.TestCase):
         {'head': {'ref': 'call-ws'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '31', 'html_url': 'www.github.com'}
     ])
 
+    @mock.patch('git_machete.github.derive_current_user_login', mock_derive_current_user_login)
     @mock.patch('urllib.request.urlopen', MockContextManager)
     @mock.patch('urllib.request.Request', git_api_state_for_test_anno_prs.new_request())
     def test_anno_prs(self) -> None:

@@ -6,6 +6,7 @@ import shutil
 import sys
 from typing import List, Dict, Optional, Tuple, Generator, Callable
 
+import git_machete.github
 import git_machete.options
 from git_machete import utils
 from git_machete.constants import (
@@ -17,7 +18,7 @@ from git_machete.git_operations import GitContext
 from git_machete.github import (
     GitHubPullRequest, derive_pull_requests,
     derive_pull_request_by_head, set_base_of_pull_request, get_parsed_github_remote_url, is_github_remote_url,
-    create_pull_request, derive_current_user_login, set_milestone_of_pull_request,
+    create_pull_request, set_milestone_of_pull_request,
     add_assignees_to_pull_request, add_reviewers_to_pull_request)
 from git_machete.utils import (
     get_pretty_choices, flat_map, excluding, fmt, tupled, warn, debug, bold,
@@ -1284,7 +1285,7 @@ class MacheteClient:
                 raise MacheteException(
                     f'Multiple non-origin remotes correspond to GitHub in this repository: '
                     f'{", ".join(org_name_for_github_remote.keys())}, aborting')
-        current_user: Optional[str] = derive_current_user_login()
+        current_user: Optional[str] = git_machete.github.derive_current_user_login()
         debug('sync_annotations_to_github_prs()',
               'Current GitHub user is ' + (current_user or '<none>'))
         pr: GitHubPullRequest
@@ -1692,7 +1693,7 @@ class MacheteClient:
                     self.add(branch)
         self.__cli_opts.opt_yes = False
 
-        current_user: Optional[str] = derive_current_user_login()
+        current_user: Optional[str] = git_machete.github.derive_current_user_login()
         debug('checkout_github_pr()',
               'Current GitHub user is ' + (current_user or '<none>'))
         self.__sync_annotations_to_definition_file(all_prs, current_user)
@@ -1767,7 +1768,7 @@ class MacheteClient:
         org: str
         repo: str
         _, (org, repo) = self.__derive_remote_and_github_org_and_repo()
-        current_user: Optional[str] = derive_current_user_login()
+        current_user: Optional[str] = git_machete.github.derive_current_user_login()
         debug(f'create_github_pr({head})', f'organization is {org}, repository is {repo}')
         debug(f'create_github_pr({head})', 'current GitHub user is ' + (current_user or '<none>'))
 
