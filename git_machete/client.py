@@ -1520,14 +1520,14 @@ class MacheteClient:
         ans = input(msg).lower()
         if ans in ('q', 'quit'):
             raise StopInteraction
-        if not is_called_from_traverse and not ans.isnumeric():
-            raise MacheteException('Could not establish remote repository, pull request creation interrupted.')
         try:
             index = int(ans) - 1
             if index not in range(len(rems)):
                 raise MacheteException(f"Invalid index: {index + 1}")
             self.handle_untracked_branch(rems[index], branch, is_called_from_traverse)
         except ValueError:
+            if not is_called_from_traverse:
+                raise MacheteException('Could not establish remote repository, pull request creation interrupted.')
             pass
 
     def handle_untracked_branch(self, new_remote: str, branch: str, is_called_from_traverse: bool) -> None:
@@ -1560,7 +1560,7 @@ class MacheteClient:
                     self.__pick_remote(branch, is_called_from_traverse)
                 elif ans in ('q', 'quit'):
                     raise StopInteraction
-                elif not is_called_from_traverse and ans not in ('y', 'yes'):
+                else:
                     raise MacheteException(f'Cannot create pull request from untracked branch `{branch}`')
                 return
 
