@@ -8,9 +8,9 @@
 set -e -u -x
 
 if [[ $CHECK_COVERAGE = true ]]; then
-  TOX_ENV_LIST="pep8,coverage"
+  TOX_ENV_LIST="pep8,mypy-py${PYTHON_VERSION/./},coverage"
 else
-  TOX_ENV_LIST="pep8,py${PYTHON_VERSION/./}"
+  TOX_ENV_LIST="pep8,mypy-py${PYTHON_VERSION/./},py${PYTHON_VERSION/./}"
 fi
 
 if [[ $BUILD_DOCS = true ]]; then
