@@ -415,6 +415,22 @@ class GitContext:
         self.__remote_branches_cached = None
         self.__remotes_cached = None
 
+        # TODO: Temporary paste, to make it easier to compare stuff
+        self.__config_cached = None
+        self.__remotes_cached = None
+        self.__counterparts_for_fetching_cached = None
+        self.__short_commit_sha_by_revision_cached = {}
+        self.__tree_sha_by_commit_sha_cached = None
+        self.__commit_sha_by_revision_cached = None
+        self.__committer_unix_timestamp_by_revision_cached = None
+        self.__local_branches_cached = None
+        self.__remote_branches_cached = None
+        self.__initial_log_shas_cached = {}
+        self.__remaining_log_shas_cached = {}
+        self.__reflogs_cached = None
+        self.__merge_base_cached = {}
+        self.__contains_equivalent_tree_cached = {}
+
     def get_revision_repr(self, revision: str) -> str:
         short_sha = self.get_short_commit_sha_by_revision(revision)
         if self.is_full_sha(revision) or revision == short_sha:
