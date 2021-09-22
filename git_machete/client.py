@@ -1528,7 +1528,6 @@ class MacheteClient:
         except ValueError:
             if not is_called_from_traverse:
                 raise MacheteException('Could not establish remote repository, pull request creation interrupted.')
-            pass
 
     def handle_untracked_branch(self, new_remote: str, branch: str, is_called_from_traverse: bool) -> None:
         rems: List[str] = self.__git.remotes()
@@ -1556,13 +1555,13 @@ class MacheteClient:
                 if ans in ('y', 'yes'):
                     self.__git.push(new_remote, branch)
                     self.flush_caches()
+                    return
                 elif can_pick_other_remote and ans in ('o', 'other'):
                     self.__pick_remote(branch, is_called_from_traverse)
                 elif ans in ('q', 'quit'):
                     raise StopInteraction
                 else:
                     raise MacheteException(f'Cannot create pull request from untracked branch `{branch}`')
-                return
 
         relation: int = self.__git.get_relation_to_remote_counterpart(branch, remote_branch)
 
@@ -1946,12 +1945,12 @@ class MacheteClient:
             if s == BEHIND_REMOTE:
                 warn(f"Branch {current_branch} is in <b>BEHIND_REMOTE</b> state.\nConsider using 'git pull'.\n")
                 self.__print_new_line(False)
-                ans = self.ask_if("Proceed with pull request creation?" + get_pretty_choices('y', 'q'),
+                ans = self.ask_if("Proceed with pull request creation?" + get_pretty_choices('y', 'Q'),
                                   "Proceeding with pull request creation...")
             elif s == DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
                 warn(f"Branch {current_branch} is in <b>DIVERGED_FROM_AND_OLDER_THAN_REMOTE</b> state.\nConsider using 'git reset --keep'.\n")
                 self.__print_new_line(False)
-                ans = self.ask_if("Proceed with pull request creation?" + get_pretty_choices('y', 'q'),
+                ans = self.ask_if("Proceed with pull request creation?" + get_pretty_choices('y', 'Q'),
                                   "Proceeding with pull request creation...")
             elif s == NO_REMOTES:
                 raise MacheteException(
