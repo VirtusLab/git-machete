@@ -1555,13 +1555,13 @@ class MacheteClient:
                 if ans in ('y', 'yes'):
                     self.__git.push(new_remote, branch)
                     self.flush_caches()
-                    return
                 elif can_pick_other_remote and ans in ('o', 'other'):
                     self.__pick_remote(branch, is_called_from_traverse)
                 elif ans in ('q', 'quit'):
                     raise StopInteraction
                 else:
                     raise MacheteException(f'Cannot create pull request from untracked branch `{branch}`')
+                return
 
         relation: int = self.__git.get_relation_to_remote_counterpart(branch, remote_branch)
 
@@ -1902,7 +1902,7 @@ class MacheteClient:
                 raise StopInteraction
             self.flush_caches()
             print("")
-        elif ans in ('n', 'q', 'quit'):
+        elif ans in ('q', 'quit'):
             raise StopInteraction
 
     def __sync_before_creating_pr(self) -> None:
@@ -1960,5 +1960,5 @@ class MacheteClient:
 
             if ans in ('y', 'yes'):
                 return
-            elif ans in ('q', 'quit'):
+            else:
                 raise MacheteException('Pull request creation interrupted.')
