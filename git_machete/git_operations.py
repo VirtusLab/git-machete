@@ -167,6 +167,7 @@ class GitContext:
         if remote not in self.__fetch_done_for:
             self.run_git("fetch", remote)
             self.__fetch_done_for.add(remote)
+            # TODO: BS: flush, because now there is more remotes
 
     def set_upstream_to(self, remote_branch: str) -> None:
         self.run_git("branch", "--set-upstream-to", remote_branch)
