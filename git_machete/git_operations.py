@@ -64,7 +64,7 @@ class GitContext:
         proposed_editor_funs: List[Tuple[str, Callable[[], Optional[str]]]] = [
             ("$" + git_machete_editor_var, lambda: os.environ.get(git_machete_editor_var)),
             ("$GIT_EDITOR", lambda: os.environ.get("GIT_EDITOR")),
-            ("git config core.editor", lambda: self.get_config_or_none("core.editor")),
+            ("git config core.editor", lambda: self.get_config_attr_or_none("core.editor")),
             ("$VISUAL", lambda: os.environ.get("VISUAL")),
             ("$EDITOR", lambda: os.environ.get("EDITOR")),
             ("editor", lambda: "editor"),
@@ -86,7 +86,7 @@ class GitContext:
                         raise MacheteException(f"<b>{editor_repr}</b> is not available")
                 else:
                     debug("get_default_editor()", f"{editor_repr} is available")
-                    if name != "$" + git_machete_editor_var and self.get_config_or_none('advice.macheteEditorSelection') != 'false':
+                    if name != "$" + git_machete_editor_var and self.get_config_attr_or_none('advice.macheteEditorSelection') != 'false':
                         sample_alternative = 'nano' if editor.startswith('vi') else 'vi'
                         sys.stderr.write(
                             fmt(f"Opening <b>{editor_repr}</b>.\n",
@@ -140,22 +140,22 @@ class GitContext:
                     k, v = k_v
                     self.__config_cached[k.lower()] = v
 
-    def get_config_or_none(self, key: str) -> Optional[str]:
+    def get_config_attr_or_none(self, key: str) -> Optional[str]:
         self.__ensure_config_loaded()
         return self.__config_cached.get(key.lower())
 
-    def set_config(self, key: str, value: str) -> None:
+    def set_config_attr(self, key: str, value: str) -> None:
         self.run_git("config", "--", key, value)
         self.__ensure_config_loaded()
         self.__config_cached[key.lower()] = value
 
-    def unset_config(self, key: str) -> None:
+    def unset_config_attr(self, key: str) -> None:
         self.__ensure_config_loaded()
-        if self.get_config_or_none(key):
+        if self.get_config_attr_or_none(key):
             self.run_git("config", "--unset", key)
             del self.__config_cached[key.lower()]
 
-    def remotes(self) -> List[str]:
+    def get_remotes(self) -> List[str]:
         if self.__remotes_cached is None:
             self.__remotes_cached = utils.get_non_empty_lines(self.popen_git("remote"))
         return self.__remotes_cached
@@ -250,20 +250,20 @@ class GitContext:
 
     def get_inferred_remote_for_fetching_of_branch(self, branch: str) -> Optional[str]:
         # Since many people don't use '--set-upstream' flag of 'push', we try to infer the remote instead.
-        for remote in self.remotes():
+        for remote in self.get_remotes():
             if f"{remote}/{branch}" in self.get_remote_branches():
                 return remote
         return None
 
     def get_strict_remote_for_fetching_of_branch(self, branch: str) -> Optional[str]:
-        remote = self.get_config_or_none(f"branch.{branch}.remote")
+        remote = self.get_config_attr_or_none(f"branch.{branch}.remote")
         return remote.rstrip() if remote else None
 
     def get_combined_remote_for_fetching_of_branch(self, branch: str) -> Optional[str]:
         return self.get_strict_remote_for_fetching_of_branch(branch) or self.get_inferred_remote_for_fetching_of_branch(branch)
 
     def __get_inferred_counterpart_for_fetching_of_branch(self, branch: str) -> Optional[str]:
-        for remote in self.remotes():
+        for remote in self.get_remotes():
             if f"{remote}/{branch}" in self.get_remote_branches():
                 return f"{remote}/{branch}"
         return None
@@ -589,14 +589,14 @@ class GitContext:
         ))
 
     def get_hook_path(self, hook_name: str) -> str:
-        hook_dir: str = self.get_config_or_none("core.hooksPath") or self.get_git_subpath("hooks")
+        hook_dir: str = self.get_config_attr_or_none("core.hooksPath") or self.get_git_subpath("hooks")
         return os.path.join(hook_dir, hook_name)
 
     def check_hook_executable(self, hook_path: str) -> bool:
         if not os.path.isfile(hook_path):
             return False
         elif not utils.is_executable(hook_path):
-            advice_ignored_hook = self.get_config_or_none("advice.ignoredHook")
+            advice_ignored_hook = self.get_config_attr_or_none("advice.ignoredHook")
             if advice_ignored_hook != 'false':  # both empty and "true" is okay
                 # The [33m color must be used to keep consistent with how git colors this advice for its built-in hooks.
                 sys.stderr.write(
@@ -687,7 +687,7 @@ class GitContext:
             return DIVERGED_FROM_AND_OLDER_THAN_REMOTE if b_t < rb_t else DIVERGED_FROM_AND_NEWER_THAN_REMOTE
 
     def get_strict_remote_sync_status(self, branch: str) -> Tuple[int, Optional[str]]:
-        if not self.remotes():
+        if not self.get_remotes():
             return NO_REMOTES, None
         remote_branch = self.get_strict_counterpart_for_fetching_of_branch(branch)
         if not remote_branch:
@@ -695,7 +695,7 @@ class GitContext:
         return self.get_relation_to_remote_counterpart(branch, remote_branch), self.get_strict_remote_for_fetching_of_branch(branch)
 
     def get_combined_remote_sync_status(self, branch: str) -> Tuple[int, Optional[str]]:
-        if not self.remotes():
+        if not self.get_remotes():
             return NO_REMOTES, None
         remote_branch = self.get_combined_counterpart_for_fetching_of_branch(branch)
         if not remote_branch:

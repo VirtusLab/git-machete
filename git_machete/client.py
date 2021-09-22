@@ -584,10 +584,10 @@ class MacheteClient:
         self.__empty_line_status = True
 
         if self.__cli_opts.opt_fetch:
-            for remote in self.__git.remotes():
+            for remote in self.__git.get_remotes():
                 print(f"Fetching {remote}...")
                 self.__git.fetch_remote(remote)
-            if self.__git.remotes():
+            if self.__git.get_remotes():
                 self.flush_caches()
                 print("")
 
@@ -1260,7 +1260,7 @@ class MacheteClient:
     def sync_annotations_to_github_prs(self) -> None:
 
         url_for_remote: Dict[str, str] = {remote: self.__git.get_url_of_remote(remote) for remote in
-                                          self.__git.remotes()}
+                                          self.__git.get_remotes()}
         if not url_for_remote:
             raise MacheteException(fmt('No remotes defined for this repository (see `git remote`)'))
 
@@ -1426,14 +1426,14 @@ class MacheteClient:
 
     # Also includes config that is incomplete (only one entry out of two) or otherwise invalid.
     def has_any_fork_point_override_config(self, branch: str) -> bool:
-        return (self.__git.get_config_or_none(self.config_key_for_override_fork_point_to(branch)) or
-                self.__git.get_config_or_none(self.config_key_for_override_fork_point_while_descendant_of(branch))) is not None
+        return (self.__git.get_config_attr_or_none(self.config_key_for_override_fork_point_to(branch)) or
+                self.__git.get_config_attr_or_none(self.config_key_for_override_fork_point_while_descendant_of(branch))) is not None
 
     def __get_fork_point_override_data(self, branch: str) -> Optional[Tuple[str, str]]:
         to_key = self.config_key_for_override_fork_point_to(branch)
-        to = self.__git.get_config_or_none(to_key)
+        to = self.__git.get_config_attr_or_none(to_key)
         while_descendant_of_key = self.config_key_for_override_fork_point_while_descendant_of(branch)
-        while_descendant_of = self.__git.get_config_or_none(while_descendant_of_key)
+        while_descendant_of = self.__git.get_config_attr_or_none(while_descendant_of_key)
         if not to and not while_descendant_of:
             return None
         if to and not while_descendant_of:
@@ -1485,8 +1485,8 @@ class MacheteClient:
         return to
 
     def unset_fork_point_override(self, branch: str) -> None:
-        self.__git.unset_config(self.config_key_for_override_fork_point_to(branch))
-        self.__git.unset_config(self.config_key_for_override_fork_point_while_descendant_of(branch))
+        self.__git.unset_config_attr(self.config_key_for_override_fork_point_to(branch))
+        self.__git.unset_config_attr(self.config_key_for_override_fork_point_while_descendant_of(branch))
 
     def set_fork_point_override(self, branch: str, to_revision: str) -> None:
         if branch not in self.__git.get_local_branches():
@@ -1499,17 +1499,17 @@ class MacheteClient:
                 f"Cannot override fork point: {self.__git.get_revision_repr(to_revision)} is not an ancestor of {branch}")
 
         to_key = self.config_key_for_override_fork_point_to(branch)
-        self.__git.set_config(to_key, to_sha)
+        self.__git.set_config_attr(to_key, to_sha)
 
         while_descendant_of_key = self.config_key_for_override_fork_point_while_descendant_of(branch)
         b_sha = self.__git.get_commit_sha_by_revision(branch, prefix="refs/heads/")
-        self.__git.set_config(while_descendant_of_key, b_sha)
+        self.__git.set_config_attr(while_descendant_of_key, b_sha)
 
         sys.stdout.write(
             fmt(f"Fork point for <b>{branch}</b> is overridden to <b>{self.__git.get_revision_repr(to_revision)}</b>.\n", f"This applies as long as {branch} points to (or is descendant of) its current head (commit {self.__git.get_short_commit_sha_by_revision(b_sha)}).\n\n", f"This information is stored under git config keys:\n  * `{to_key}`\n  * `{while_descendant_of_key}`\n\n", f"To unset this override, use:\n  `git machete fork-point --unset-override {branch}`\n"))
 
     def __pick_remote(self, branch: str, is_called_from_traverse: bool) -> None:
-        rems = self.__git.remotes()
+        rems = self.__git.get_remotes()
         print("\n".join(f"[{index + 1}] {rem}" for index, rem in enumerate(rems)))
         msg = f"Select number 1..{len(rems)} to specify the destination remote " \
               "repository, or 'n' to skip this branch, or " \
@@ -1530,7 +1530,7 @@ class MacheteClient:
                 raise MacheteException('Could not establish remote repository, pull request creation interrupted.')
 
     def handle_untracked_branch(self, new_remote: str, branch: str, is_called_from_traverse: bool) -> None:
-        rems: List[str] = self.__git.remotes()
+        rems: List[str] = self.__git.get_remotes()
         can_pick_other_remote = len(rems) > 1
         other_remote_choice = "o[ther-remote]" if can_pick_other_remote else ""
         remote_branch = f"{new_remote}/{branch}"
@@ -1754,7 +1754,7 @@ class MacheteClient:
 
     def __derive_remote_and_github_org_and_repo(self) -> Tuple[str, Tuple[str, str]]:
         url_for_remote: Dict[str, str] = {
-            remote: self.__git.get_url_of_remote(remote) for remote in self.__git.remotes()
+            remote: self.__git.get_url_of_remote(remote) for remote in self.__git.get_remotes()
         }
         if not url_for_remote:
             raise MacheteException(fmt('No remotes defined for this repository (see `git remote`)'))
@@ -1845,7 +1845,7 @@ class MacheteClient:
                 raise StopInteraction
 
     def __handle_untracked_state(self, branch: str, is_called_from_traverse: bool) -> None:
-        rems: List[str] = self.__git.remotes()
+        rems: List[str] = self.__git.get_remotes()
         rmt: Optional[str] = self.__git.get_inferred_remote_for_fetching_of_branch(branch)
         self.__print_new_line(False)
         if rmt:
