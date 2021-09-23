@@ -16,10 +16,10 @@ from git_machete.constants import (
 from git_machete.exceptions import MacheteException, StopInteraction
 from git_machete.git_operations import GitContext
 from git_machete.github import (
-    GitHubPullRequest, derive_pull_requests,
-    derive_pull_request_by_head, set_base_of_pull_request, get_parsed_github_remote_url, is_github_remote_url,
-    create_pull_request, set_milestone_of_pull_request,
-    add_assignees_to_pull_request, add_reviewers_to_pull_request)
+    add_assignees_to_pull_request, add_reviewers_to_pull_request,
+    create_pull_request, derive_pull_request_by_head, derive_pull_requests,
+    get_parsed_github_remote_url, get_pull_request_by_number, GitHubPullRequest,
+    is_github_remote_url, set_base_of_pull_request, set_milestone_of_pull_request)
 from git_machete.utils import (
     get_pretty_choices, flat_map, excluding, fmt, tupled, warn, debug, bold,
     colored, underline, dim, get_second)
@@ -1683,13 +1683,15 @@ class MacheteClient:
         remote, (org, repo) = self.__derive_remote_and_github_org_and_repo()
         debug('checkout_github_pr()', f'organization is {org}, repository is {repo}')
 
-        all_prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
-        pr = utils.find_or_none(lambda pr: pr.number == pr_no, all_prs)
-
+        pr = get_pull_request_by_number(str(pr_no), org, repo)
         if not pr:
             raise MacheteException(f"PR #{pr_no} is not found in repository `{org}/{repo}`")
+
+        if pr.state == 'closed':
+            warn(f'Pull request #{str(pr_no)} is already closed.')
         debug('checkout_github_pr()', f'found {pr}')
 
+        all_prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
         print(f"Fetching {remote}...")
         self.__git.fetch_remote(remote)
         if self.__git.remotes():

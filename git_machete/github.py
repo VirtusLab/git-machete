@@ -29,19 +29,20 @@ GITHUB_REMOTE_PATTERNS = [
 
 
 class GitHubPullRequest(object):
-    def __init__(self, number: int, user: str, base: str, head: str, html_url: str):
+    def __init__(self, number: int, user: str, base: str, head: str, html_url: str, state: str) -> None:
         self.number = number
         self.user = user
         self.base = base
         self.head = head
         self.html_url = html_url
+        self.state = state
 
     def __repr__(self) -> str:
         return f"PR #{self.number} by {self.user}: {self.head} -> {self.base}"
 
 
 def __parse_pr_json(pr_json: Any) -> GitHubPullRequest:
-    return GitHubPullRequest(int(pr_json['number']), pr_json['user']['login'], pr_json['base']['ref'], pr_json['head']['ref'], pr_json['html_url'])
+    return GitHubPullRequest(int(pr_json['number']), pr_json['user']['login'], pr_json['base']['ref'], pr_json['head']['ref'], pr_json['html_url'], pr_json['state'])
 
 
 def __get_github_token() -> Optional[str]:
@@ -126,7 +127,7 @@ def __fire_github_api_request(method: str, path: str, token: Optional[str], requ
     except HTTPError as err:
         if err.code == http.HTTPStatus.UNPROCESSABLE_ENTITY:
             raise UnprocessableEntityHTTPError(str(err.reason))
-        elif err.code in (http.HTTPStatus.UNAUTHORIZED, http.HTTPStatus.FORBIDDEN, http.HTTPStatus.NOT_FOUND):
+        elif err.code in (http.HTTPStatus.UNAUTHORIZED, http.HTTPStatus.FORBIDDEN):
             first_line = f'GitHub API returned {err.code} HTTP status with error message: `{err.reason}`\n'
             if token:
                 raise MacheteException(first_line + f'Make sure that the token provided in `gh auth status` or `~/.config/hub`'
@@ -136,6 +137,9 @@ def __fire_github_api_request(method: str, path: str, token: Optional[str], requ
                     first_line + f'You might not have the required permissions for this repository. '
                                  f'Provide a GitHub API token with `repo` access via <b>{GITHUB_TOKEN_ENV_VAR}</b> env var or `gh` or `hub`.\n'
                                  'Visit `https://github.com/settings/tokens` to generate a new one.')
+        elif err.code == http.HTTPStatus.NOT_FOUND:
+            raise MacheteException(
+                f'Given endpoint: {url}, not found in Github')  # TODO (#164): make dedicated exception here
         else:
             first_line = fmt(f'GitHub API returned {err.code} HTTP status with error message: `{err.reason}`\n')
             raise MacheteException(first_line + "Please open an issue regarding this topic under link: https://github.com/VirtusLab/git-machete/issues/new")
@@ -225,3 +229,12 @@ def get_parsed_github_remote_url(url: str) -> Optional[Tuple[str, str]]:
         if match:
             return match.group(1), match.group(2)
     return None
+
+
+def get_pull_request_by_number(number: str, org: str, repo: str) -> Optional[GitHubPullRequest]:
+    token: Optional[str] = __get_github_token()
+    try:
+        pr_json: Any = __fire_github_api_request('GET', f'/repos/{org}/{repo}/pulls/{number}', token)
+        return __parse_pr_json(pr_json)
+    except MacheteException:
+        return None

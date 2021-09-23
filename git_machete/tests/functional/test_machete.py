@@ -8,11 +8,12 @@ import textwrap
 import time
 import unittest
 import subprocess
-from contextlib import redirect_stdout
+from contextlib import redirect_stdout, redirect_stderr
 from http import HTTPStatus
 from typing import Any, Dict, Iterable, List, Optional, Union
 from unittest import mock
 from urllib.parse import urlparse, ParseResult, parse_qs
+from urllib.error import HTTPError
 
 from git_machete import cli
 from git_machete.client import MacheteClient
@@ -45,10 +46,13 @@ class FakeCommandLineOptions(CommandLineOptions):
 
 
 class MockGithubAPIState:
-    def __init__(self, pulls: List[Dict[str, Any]]) -> None:
+    def __init__(self, pulls: List[Dict[str, Any]], issues: List[Dict[str, Any]] = None) -> None:
         self.pulls: List[Dict[str, Any]] = pulls
         self.user: Dict[str, str] = {'login': 'other_user', 'type': 'User', 'company': 'VirtusLab'}  # login must be different from the one used in pull requests, otherwise pull request author will not be annotated
-        self.issues: List[Dict[str, Any]] = []
+        if issues:
+            self.issues: List[Dict[str, Any]] = issues
+        else:
+            self.issues = []
 
     def new_request(self) -> "MockGithubAPIRequest":
         return MockGithubAPIRequest(self)
@@ -98,9 +102,15 @@ class MockGithubAPIRequest:
             return self.make_response_object(HTTPStatus.METHOD_NOT_ALLOWED, [])
 
     def handle_get(self) -> "MockGithubAPIResponse":
-        if self.parsed_url.path.endswith('pulls'):
+        if 'pulls' in self.parsed_url.path:
             full_head_name: Optional[List[str]] = self.parsed_query.get('head')
-            if full_head_name:
+            number: Optional[str] = self.find_number(self.parsed_url.path, 'pulls')
+            if number:
+                for pr in self.github_api_state.pulls:
+                    if pr['number'] == number:
+                        return self.make_response_object(HTTPStatus.OK, pr)
+                return self.make_response_object(HTTPStatus.NOT_FOUND, [])
+            elif full_head_name:
                 head: str = full_head_name[0].split(':')[1]
                 for pr in self.github_api_state.pulls:
                     if pr['head']['ref'] == head:
@@ -123,9 +133,9 @@ class MockGithubAPIRequest:
 
     def handle_post(self) -> "MockGithubAPIResponse":
         assert not self.parsed_query
-        if self.parsed_url.path.endswith('issues'):
+        if 'issues' in self.parsed_url.path:
             return self.update_issue()
-        elif self.parsed_url.path.endswith('pulls'):
+        elif 'pulls' in self.parsed_url.path:
             return self.update_pull_request()
         else:
             return self.make_response_object(HTTPStatus.NOT_FOUND, [])
@@ -140,7 +150,8 @@ class MockGithubAPIRequest:
     def create_pull_request(self) -> "MockGithubAPIResponse":
         pull = {'number': self.get_next_free_number(self.github_api_state.pulls),
                 'user': {'login': 'github_user'},
-                'html_url': 'www.github.com'}
+                'html_url': 'www.github.com',
+                'state': 'open'}
         return self.fill_pull_request_data(json.loads(self.json_data), pull)
 
     def fill_pull_request_data(self, data: Dict[str, Any], pull: Dict[str, Any]) -> "MockGithubAPIResponse":
@@ -172,7 +183,7 @@ class MockGithubAPIRequest:
         index = self.get_index_or_none(issue, self.github_api_state.issues)
         for key in data.keys():
             issue[key] = data[key]
-        if index:
+        if index is not None:
             self.github_api_state.issues[index] = issue
         else:
             self.github_api_state.issues.append(issue)
@@ -203,10 +214,12 @@ class MockGithubAPIRequest:
 
 
 class MockContextManager:
-    def __init__(self, obj: MockGithubAPIRequest) -> None:
+    def __init__(self, obj: MockGithubAPIResponse) -> None:
         self.obj = obj
 
-    def __enter__(self) -> MockGithubAPIRequest:
+    def __enter__(self) -> MockGithubAPIResponse:
+        if self.obj.status_code == HTTPStatus.NOT_FOUND:
+            raise HTTPError(None, 404, 'Not found', None, None)
         return self.obj
 
     def __exit__(self, *args: Any) -> None:
@@ -282,8 +295,9 @@ class MacheteTester(unittest.TestCase):
     def launch_command(*args: str) -> str:
         with io.StringIO() as out:
             with redirect_stdout(out):
-                cli.launch(list(args))
-                git.flush_caches()
+                with redirect_stderr(out):
+                    cli.launch(list(args))
+                    git.flush_caches()
             return out.getvalue()
 
     @staticmethod
@@ -1576,7 +1590,7 @@ class MacheteTester(unittest.TestCase):
 
     git_api_state_for_test_retarget_pr = MockGithubAPIState(
         [{'head': {'ref': 'feature'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'root'}, 'number': '15',
-          'html_url': 'www.github.com'}])
+          'html_url': 'www.github.com', 'state': 'open'}])
 
     @mock.patch('urllib.request.Request', git_api_state_for_test_retarget_pr.new_request())
     @mock.patch('urllib.request.urlopen', MockContextManager)
@@ -1602,9 +1616,9 @@ class MacheteTester(unittest.TestCase):
         self.assert_command(['github', 'retarget-pr'], 'The base branch of PR #15 is already `branch-1`\n', strip_indentation=False)
 
     git_api_state_for_test_anno_prs = MockGithubAPIState([
-        {'head': {'ref': 'ignore-trailing'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com'},
-        {'head': {'ref': 'allow-ownership-link'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '7', 'html_url': 'www.github.com'},
-        {'head': {'ref': 'call-ws'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '31', 'html_url': 'www.github.com'}
+        {'head': {'ref': 'ignore-trailing'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'allow-ownership-link'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '7', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'call-ws'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '31', 'html_url': 'www.github.com', 'state': 'open'}
     ])
 
     @mock.patch('git_machete.github.derive_current_user_login', mock_derive_current_user_login)
@@ -1674,7 +1688,8 @@ class MacheteTester(unittest.TestCase):
             """,
         )
 
-    git_api_state_for_test_create_pr = MockGithubAPIState([{'head': {'ref': 'ignore-trailing'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com'}])
+    git_api_state_for_test_create_pr = MockGithubAPIState([{'head': {'ref': 'ignore-trailing'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com', 'state': 'open'}],
+                                                          issues=[{'number': '4'}, {'number': '5'}, {'number': '6'}])
 
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('urllib.request.urlopen', MockContextManager)
@@ -1841,14 +1856,14 @@ class MacheteTester(unittest.TestCase):
                              'Verify that expected error message has appeared when creating PR from root branch.')
 
     git_api_state_for_test_checkout_prs = MockGithubAPIState([
-        {'head': {'ref': 'chore/redundant_checks'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'restrict_access'}, 'number': '18', 'html_url': 'www.github.com'},
-        {'head': {'ref': 'restrict_access'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'allow-ownership-link'}, 'number': '17', 'html_url': 'www.github.com'},
-        {'head': {'ref': 'allow-ownership-link'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'bugfix/feature'}, 'number': '12', 'html_url': 'www.github.com'},
-        {'head': {'ref': 'bugfix/feature'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'enhance/feature'}, 'number': '6', 'html_url': 'www.github.com'},
-        {'head': {'ref': 'enhance/add_user'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '19', 'html_url': 'www.github.com'},
-        {'head': {'ref': 'testing/add_user'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'bugfix/add_user'}, 'number': '22', 'html_url': 'www.github.com'},
-        {'head': {'ref': 'chore/comments'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'testing/add_user'}, 'number': '24', 'html_url': 'www.github.com'},
-        {'head': {'ref': 'ignore-trailing'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com'}
+        {'head': {'ref': 'chore/redundant_checks'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'restrict_access'}, 'number': '18', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'restrict_access'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'allow-ownership-link'}, 'number': '17', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'allow-ownership-link'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'bugfix/feature'}, 'number': '12', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'bugfix/feature'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'enhance/feature'}, 'number': '6', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'enhance/add_user'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '19', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'testing/add_user'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'bugfix/add_user'}, 'number': '22', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'chore/comments'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'testing/add_user'}, 'number': '24', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'ignore-trailing'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com', 'state': 'open'}
     ])
 
     # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs` due to `git fetch` executed by `checkout-prs` subcommand.
@@ -2018,9 +2033,10 @@ class MacheteTester(unittest.TestCase):
                              'Verify that expected error message has appeared when given pull request to checkout does not exists.')
 
     git_api_state_for_test_checkout_prs_fresh_repo = MockGithubAPIState([
-        {'head': {'ref': 'comments/add_docstrings'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'improve/refactor'}, 'number': '2', 'html_url': 'www.github.com'},
-        {'head': {'ref': 'restrict_access'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'allow-ownership-link'}, 'number': '17', 'html_url': 'www.github.com'},
-        {'head': {'ref': 'improve/refactor'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'chore/sync_to_docs'}, 'number': '1', 'html_url': 'www.github.com'},
+        {'head': {'ref': 'comments/add_docstrings'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'improve/refactor'}, 'number': '2', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'restrict_access'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'allow-ownership-link'}, 'number': '17', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'improve/refactor'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'chore/sync_to_docs'}, 'number': '1', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'sphinx_export'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'comments/add_docstrings'}, 'number': '23', 'html_url': 'www.github.com', 'state': 'closed'},
     ])
 
     # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs_freshly_cloned` due to `git fetch` executed by `checkout-prs` subcommand.
@@ -2043,6 +2059,9 @@ class MacheteTester(unittest.TestCase):
             .push()
             .new_branch("comments/add_docstrings")
             .commit("docstring added")
+            .push()
+            .new_branch("sphinx_export")
+            .commit("export docs to html")
             .push()
             .check_out("root")
             .new_branch("master")
@@ -2090,5 +2109,33 @@ class MacheteTester(unittest.TestCase):
             o-improve/refactor  PR #1 (github_user)
               |
               o-comments/add_docstrings *  PR #2 (github_user)
+            """
+        )
+
+        # Check against closed pull request
+        expected_msg = ("Warn: Pull request #23 is already closed.\n"
+                        "Fetching origin...\n"
+                        "A local branch `sphinx_export` does not exist, but a remote branch `origin/sphinx_export` exists.\n"
+                        "Checking out `sphinx_export` locally...\n"
+                        "Added branch `sphinx_export` onto `comments/add_docstrings`\n"
+                        "Annotating sphinx_export as `PR #23 (github_user)`\n"
+                        "Pull request `#23` checked out at local branch `sphinx_export`\n")
+        self.assert_command(
+            ['github', 'checkout-prs', '23'],
+            expected_msg,
+            strip_indentation=False
+        )
+        self.assert_command(
+            ["status"],
+            """
+            master
+
+            chore/sync_to_docs
+            |
+            o-improve/refactor  PR #1 (github_user)
+              |
+              o-comments/add_docstrings  PR #2 (github_user)
+                |
+                o-sphinx_export *  PR #23 (github_user)
             """
         )
