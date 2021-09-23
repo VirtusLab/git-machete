@@ -234,7 +234,7 @@ def get_parsed_github_remote_url(url: str) -> Optional[Tuple[str, str]]:
 def get_pull_request_by_number(number: str, org: str, repo: str) -> Optional[GitHubPullRequest]:
     token: Optional[str] = __get_github_token()
     try:
-        pr_json: Any = __fire_github_api_request('GET', f'/repos/{org}/{repo}/pulls/{number}', token)
+        pr_json: Dict[str, Any] = __fire_github_api_request('GET', f'/repos/{org}/{repo}/pulls/{number}', token)
         return __parse_pr_json(pr_json)
     except MacheteException:
         return None
