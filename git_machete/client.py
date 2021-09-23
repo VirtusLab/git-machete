@@ -1688,7 +1688,7 @@ class MacheteClient:
             raise MacheteException(f"PR #{pr_no} is not found in repository `{org}/{repo}`")
 
         if pr.state == 'closed':
-            warn(f'Pull request #{str(pr_no)} is already closed.')
+            warn(f'Pull request #{pr_no} is already closed.')
         debug('checkout_github_pr()', f'found {pr}')
 
         all_prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
