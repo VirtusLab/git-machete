@@ -167,11 +167,13 @@ class GitContext:
         if remote not in self.__fetch_done_for:
             self.run_git("fetch", remote)
             self.__fetch_done_for.add(remote)
-            # TODO: BS: flush, because now there is more remote_branches_cached, counterparts_for_fetching_cached
+            # TODO: BS: flush, remote_branches_cached and others
+            self.flush_caches()
 
     def set_upstream_to(self, remote_branch: str) -> None:
         self.run_git("branch", "--set-upstream-to", remote_branch)
         # TODO: BS: flush, because now there is more counterparts_for_fetching_cached
+        self.flush_caches()
 
     def reset_keep(self, to_revision: str) -> None:
         try:
@@ -190,14 +192,16 @@ class GitContext:
         args = [remote, branch]
         self.run_git("push", "--set-upstream", *(opt_force + args))
         # TODO: BS: flush, because now there is more counterparts_for_fetching_cached, remote_branches_cached
+        self.flush_caches()
 
     def pull_ff_only(self, remote: str, remote_branch: str) -> None:
         self.fetch_remote(remote)
         self.run_git("merge", "--ff-only", remote_branch)
-        # TODO: BS: flush commit_sha_by_revision_cached, tree_sha_by_commit_sha_cached, initial_log_shas_cached, and more
         # There's apparently no way to set remote automatically when doing 'git pull' (as opposed to 'git push'),
         # so a separate 'git branch --set-upstream-to' is needed.
         self.set_upstream_to(remote_branch)
+        # TODO: BS: flush commit_sha_by_revision_cached, tree_sha_by_commit_sha_cached, initial_log_shas_cached, and more
+        self.flush_caches()
 
     def __find_short_commit_sha_by_revision(self, revision: str) -> str:
         return self.popen_git("rev-parse", "--short", revision + "^{commit}").rstrip()
@@ -409,17 +413,6 @@ class GitContext:
         self.flush_caches()  # the repository state has changed because of a successful branch creation, let's defensively flush all the caches
 
     def flush_caches(self) -> None:
-        # self.__commit_sha_by_revision_cached = None
-        # self.__config_cached = None
-        # self.__counterparts_for_fetching_cached = None
-        # self.__initial_log_shas_cached = {}
-        # self.__local_branches_cached = None
-        # self.__reflogs_cached = None
-        # self.__remaining_log_shas_cached = {}
-        # self.__remote_branches_cached = None
-        # self.__remotes_cached = None
-
-        # TODO: Temporary paste, to make it easier to compare stuff
         self.__config_cached = None
         self.__remotes_cached = None
         self.__counterparts_for_fetching_cached = None
@@ -618,13 +611,14 @@ class GitContext:
         # ...since we prepend 'refs/heads/' to the merged branch name for unambiguity.
         self.run_git("merge", "-m", commit_message, f"refs/heads/{branch}", *extra_params)
         # TODO: BS: commit_sha_by_revision_cached, commit_unix_timestamp_by_revisin_cached, remaining_log_sha_cached, merge_base_cached
+        self.flush_caches()
 
     def merge_fast_forward_only(self, branch: str) -> None:  # refs/heads/ prefix is assumed for 'branch'
         self.run_git("merge", "--ff-only", f"refs/heads/{branch}")
         # TODO: BS: commit_sha_by_revision_cached, commit_unix_timestamp_by_revisin_cached, remaining_log_sha_cached, merge_base_cached
+        self.flush_caches()
 
     def rebase(self, onto: str, fork_commit: str, branch: str) -> None:
-        # TODO: BS: commit_sha_by_revision_cached, commit_unix_timestamp_by_revisin_cached, remaining_log_sha_cached, merge_base_cached
         def do_rebase() -> None:
             try:
                 if self.cli_opts.opt_no_interactive_rebase:
@@ -657,6 +651,8 @@ class GitContext:
                     fixed_lines = get_all_lines_fixed()  # must happen before the 'with' clause where we open for writing
                     with open(author_script, "w") as f_write:
                         f_write.write("".join(fixed_lines))
+                # TODO: BS: commit_sha_by_revision_cached, commit_unix_timestamp_by_revisin_cached, remaining_log_sha_cached, initial_log_sha_cached
+                self.flush_caches()
 
         hook_path = self.get_hook_path("machete-pre-rebase")
         if self.check_hook_executable(hook_path):
