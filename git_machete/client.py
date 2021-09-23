@@ -13,7 +13,7 @@ from git_machete.constants import (
     DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, PICK_FIRST_ROOT, UNTRACKED,
     AHEAD_OF_REMOTE, BEHIND_REMOTE, DIVERGED_FROM_AND_OLDER_THAN_REMOTE,
     DIVERGED_FROM_AND_NEWER_THAN_REMOTE, NO_REMOTES, IN_SYNC_WITH_REMOTE, PICK_LAST_ROOT, EscapeCodes)
-from git_machete.exceptions import MacheteException, StopTraversal
+from git_machete.exceptions import MacheteException, StopInteraction
 from git_machete.git_operations import GitContext
 from git_machete.github import (
     GitHubPullRequest, derive_pull_requests,
@@ -742,7 +742,7 @@ class MacheteClient:
                         self.__handle_diverged_and_newer_state(current_branch, remote)
                     elif s == UNTRACKED:
                         self.__handle_untracked_state(current_branch, is_called_from_traverse=True)
-                except StopTraversal:
+                except StopInteraction:
                     return
 
         if self.__cli_opts.opt_return_to == "here":
@@ -1513,17 +1513,21 @@ class MacheteClient:
         print("\n".join(f"[{index + 1}] {rem}" for index, rem in enumerate(rems)))
         msg = f"Select number 1..{len(rems)} to specify the destination remote " \
               "repository, or 'n' to skip this branch, or " \
-              "'q' to quit the traverse: "
+              "'q' to quit the traverse: " if is_called_from_traverse \
+              else f"Select number 1..{len(rems)} to specify the destination remote " \
+                   "repository, or 'q' to quit creating pull request: "
+
         ans = input(msg).lower()
         if ans in ('q', 'quit'):
-            raise StopTraversal
+            raise StopInteraction
         try:
             index = int(ans) - 1
             if index not in range(len(rems)):
                 raise MacheteException(f"Invalid index: {index + 1}")
             self.handle_untracked_branch(rems[index], branch, is_called_from_traverse)
         except ValueError:
-            pass
+            if not is_called_from_traverse:
+                raise MacheteException('Could not establish remote repository, pull request creation interrupted.')
 
     def handle_untracked_branch(self, new_remote: str, branch: str, is_called_from_traverse: bool) -> None:
         rems: List[str] = self.__git.remotes()
@@ -1531,21 +1535,33 @@ class MacheteClient:
         other_remote_choice = "o[ther-remote]" if can_pick_other_remote else ""
         remote_branch = f"{new_remote}/{branch}"
         if not self.__git.get_commit_sha_by_revision(remote_branch, prefix="refs/remotes/"):
-            choices = get_pretty_choices(*('y', 'N', 'q', 'yq', other_remote_choice) if is_called_from_traverse else ('y', 'q', other_remote_choice))
+            choices = get_pretty_choices(*('y', 'N', 'q', 'yq', other_remote_choice) if is_called_from_traverse else ('y', 'Q', other_remote_choice))
             ask_message = f"Push untracked branch {bold(branch)} to {bold(new_remote)}?" + choices
             ask_opt_yes_message = f"Pushing untracked branch {bold(branch)} to {bold(new_remote)}..."
             ans = self.ask_if(ask_message, ask_opt_yes_message,
                               override_answer=None if self.__git.cli_opts.opt_push_untracked else "N")
-            if ans in ('y', 'yes', 'yq'):
-                self.__git.push(new_remote, branch)
-                if ans == 'yq':
-                    raise StopTraversal
-                self.flush_caches()
-            elif can_pick_other_remote and ans in ('o', 'other'):
-                self.__pick_remote(branch, is_called_from_traverse)
-            elif ans in ('q', 'quit'):
-                raise StopTraversal
-            return
+            if is_called_from_traverse:
+                if ans in ('y', 'yes', 'yq'):
+                    self.__git.push(new_remote, branch)
+                    if ans == 'yq':
+                        raise StopInteraction
+                    self.flush_caches()
+                elif can_pick_other_remote and ans in ('o', 'other'):
+                    self.__pick_remote(branch, is_called_from_traverse)
+                elif ans in ('q', 'quit'):
+                    raise StopInteraction
+                return
+            else:
+                if ans in ('y', 'yes'):
+                    self.__git.push(new_remote, branch)
+                    self.flush_caches()
+                elif can_pick_other_remote and ans in ('o', 'other'):
+                    self.__pick_remote(branch, is_called_from_traverse)
+                elif ans in ('q', 'quit'):
+                    raise StopInteraction
+                else:
+                    raise MacheteException(f'Cannot create pull request from untracked branch `{branch}`')
+                return
 
         relation: int = self.__git.get_relation_to_remote_counterpart(branch, remote_branch)
 
@@ -1607,12 +1623,12 @@ class MacheteClient:
         if ans in ('y', 'yes', 'yq'):
             yes_action()
             if ans == 'yq':
-                raise StopTraversal
+                raise StopInteraction
             self.flush_caches()
         elif can_pick_other_remote and ans in ('o', 'other'):
             self.__pick_remote(branch, is_called_from_traverse)
         elif ans in ('q', 'quit'):
-            raise StopTraversal
+            raise StopInteraction
 
     def is_merged_to(self, branch: str, target: str) -> bool:
         if self.__git.is_ancestor_or_equal(branch, target):
@@ -1820,11 +1836,11 @@ class MacheteClient:
             self.__git.push(remote, current_branch, force_with_lease=True)
             if ans == 'yq':
                 if is_called_from_traverse:
-                    raise StopTraversal
+                    raise StopInteraction
             self.flush_caches()
         elif ans in ('q', 'quit'):
             if is_called_from_traverse:
-                raise StopTraversal
+                raise StopInteraction
 
     def __handle_untracked_state(self, branch: str, is_called_from_traverse: bool) -> None:
         rems: List[str] = self.__git.remotes()
@@ -1853,11 +1869,11 @@ class MacheteClient:
             self.__git.push(remote, current_branch)
             if ans == 'yq':
                 if is_called_from_traverse:
-                    raise StopTraversal
+                    raise StopInteraction
             self.flush_caches()
         elif ans in ('q', 'quit'):
             if is_called_from_traverse:
-                raise StopTraversal
+                raise StopInteraction
 
     def __handle_diverged_and_older_state(self, branch: str) -> None:
         self.__print_new_line(False)
@@ -1869,10 +1885,10 @@ class MacheteClient:
         if ans in ('y', 'yes', 'yq'):
             self.__git.reset_keep(remote_branch)
             if ans == 'yq':
-                raise StopTraversal
+                raise StopInteraction
             self.flush_caches()
         elif ans in ('q', 'quit'):
-            raise StopTraversal
+            raise StopInteraction
 
     def __handle_behind_state(self, branch: str, remote: str) -> None:
         remote_branch = self.__git.get_strict_counterpart_for_fetching_of_branch(branch)
@@ -1883,11 +1899,11 @@ class MacheteClient:
         if ans in ('y', 'yes', 'yq'):
             self.__git.pull_ff_only(remote, remote_branch)
             if ans == 'yq':
-                raise StopTraversal
+                raise StopInteraction
             self.flush_caches()
             print("")
-        elif ans in ('n', 'q', 'quit'):
-            raise StopTraversal
+        elif ans in ('q', 'quit'):
+            raise StopInteraction
 
     def __sync_before_creating_pr(self) -> None:
 
@@ -1929,12 +1945,12 @@ class MacheteClient:
             if s == BEHIND_REMOTE:
                 warn(f"Branch {current_branch} is in <b>BEHIND_REMOTE</b> state.\nConsider using 'git pull'.\n")
                 self.__print_new_line(False)
-                ans = self.ask_if("Proceed with pull request creation?" + get_pretty_choices('y', 'q'),
+                ans = self.ask_if("Proceed with pull request creation?" + get_pretty_choices('y', 'Q'),
                                   "Proceeding with pull request creation...")
             elif s == DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
                 warn(f"Branch {current_branch} is in <b>DIVERGED_FROM_AND_OLDER_THAN_REMOTE</b> state.\nConsider using 'git reset --keep'.\n")
                 self.__print_new_line(False)
-                ans = self.ask_if("Proceed with pull request creation?" + get_pretty_choices('y', 'q'),
+                ans = self.ask_if("Proceed with pull request creation?" + get_pretty_choices('y', 'Q'),
                                   "Proceeding with pull request creation...")
             elif s == NO_REMOTES:
                 raise MacheteException(
@@ -1944,5 +1960,5 @@ class MacheteClient:
 
             if ans in ('y', 'yes'):
                 return
-            elif ans in ('q', 'quit'):
+            else:
                 raise MacheteException('Pull request creation interrupted.')
