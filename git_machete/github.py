@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 # Deliberately NOT using much more convenient `requests` to avoid external dependencies
 import http
