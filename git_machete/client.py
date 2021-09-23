@@ -18,7 +18,7 @@ from git_machete.git_operations import GitContext
 from git_machete.github import (
     add_assignees_to_pull_request, add_reviewers_to_pull_request,
     create_pull_request, derive_pull_request_by_head, derive_pull_requests,
-    get_parsed_github_remote_url, get_pull_request_by_number, GitHubPullRequest,
+    get_parsed_github_remote_url, get_pull_request_by_number_or_none, GitHubPullRequest,
     is_github_remote_url, set_base_of_pull_request, set_milestone_of_pull_request)
 from git_machete.utils import (
     get_pretty_choices, flat_map, excluding, fmt, tupled, warn, debug, bold,
@@ -1682,20 +1682,21 @@ class MacheteClient:
         remote: str
         remote, (org, repo) = self.__derive_remote_and_github_org_and_repo()
         debug('checkout_github_pr()', f'organization is {org}, repository is {repo}')
+        print(f"Fetching {remote}...")
+        self.__git.fetch_remote(remote)
+        if self.__git.remotes():
+            self.flush_caches()
 
-        pr = get_pull_request_by_number(str(pr_no), org, repo)
+        pr = get_pull_request_by_number_or_none(str(pr_no), org, repo)
         if not pr:
             raise MacheteException(f"PR #{pr_no} is not found in repository `{org}/{repo}`")
-
+        if '/'.join([remote, pr.head]) not in self.__git.get_remote_branches():
+            raise MacheteException(f"Could not checkout PR #{pr_no} because it's head branch `{pr.head}` is already deleted from `{remote}`.")
         if pr.state == 'closed':
             warn(f'Pull request #{pr_no} is already closed.')
         debug('checkout_github_pr()', f'found {pr}')
 
         all_prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
-        print(f"Fetching {remote}...")
-        self.__git.fetch_remote(remote)
-        if self.__git.remotes():
-            self.flush_caches()
 
         self.__cli_opts.opt_yes = True  # TODO (#161): pass only needed options to methods
         path: List[str] = self.__get_path_from_pr_chain(pr, all_prs)

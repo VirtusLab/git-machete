@@ -1863,7 +1863,8 @@ class MacheteTester(unittest.TestCase):
         {'head': {'ref': 'enhance/add_user'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '19', 'html_url': 'www.github.com', 'state': 'open'},
         {'head': {'ref': 'testing/add_user'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'bugfix/add_user'}, 'number': '22', 'html_url': 'www.github.com', 'state': 'open'},
         {'head': {'ref': 'chore/comments'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'testing/add_user'}, 'number': '24', 'html_url': 'www.github.com', 'state': 'open'},
-        {'head': {'ref': 'ignore-trailing'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com', 'state': 'open'}
+        {'head': {'ref': 'ignore-trailing'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'bugfix/remove-n-option'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '5', 'html_url': 'www.github.com', 'state': 'closed'}
     ])
 
     # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs` due to `git fetch` executed by `checkout-prs` subcommand.
@@ -2032,11 +2033,21 @@ class MacheteTester(unittest.TestCase):
             self.assertEqual(e.exception.parameter, expected_error_message,
                              'Verify that expected error message has appeared when given pull request to checkout does not exists.')
 
+        # Check against closed pull request with head branch deleted from remote
+        machete_client = MacheteClient(cli_opts, git)
+        machete_client.read_definition_file()
+        expected_error_message = "Could not checkout PR #5 because it's head branch `bugfix/remove-n-option` is already deleted from `origin`."
+        with self.assertRaises(MacheteException) as e:
+            machete_client.checkout_github_prs(5)
+        if e:
+            self.assertEqual(e.exception.parameter, expected_error_message,
+                             'Verify that expected error message has appeared when given pull request to checkout have already deleted branch from remote.')
+
     git_api_state_for_test_checkout_prs_fresh_repo = MockGithubAPIState([
         {'head': {'ref': 'comments/add_docstrings'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'improve/refactor'}, 'number': '2', 'html_url': 'www.github.com', 'state': 'open'},
         {'head': {'ref': 'restrict_access'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'allow-ownership-link'}, 'number': '17', 'html_url': 'www.github.com', 'state': 'open'},
         {'head': {'ref': 'improve/refactor'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'chore/sync_to_docs'}, 'number': '1', 'html_url': 'www.github.com', 'state': 'open'},
-        {'head': {'ref': 'sphinx_export'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'comments/add_docstrings'}, 'number': '23', 'html_url': 'www.github.com', 'state': 'closed'},
+        {'head': {'ref': 'sphinx_export'}, 'user': {'login': 'github_user'}, 'base': {'ref': 'comments/add_docstrings'}, 'number': '23', 'html_url': 'www.github.com', 'state': 'closed'}
     ])
 
     # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs_freshly_cloned` due to `git fetch` executed by `checkout-prs` subcommand.
@@ -2113,8 +2124,8 @@ class MacheteTester(unittest.TestCase):
         )
 
         # Check against closed pull request
-        expected_msg = ("Warn: Pull request #23 is already closed.\n"
-                        "Fetching origin...\n"
+        expected_msg = ("Fetching origin...\n"
+                        "Warn: Pull request #23 is already closed.\n"
                         "A local branch `sphinx_export` does not exist, but a remote branch `origin/sphinx_export` exists.\n"
                         "Checking out `sphinx_export` locally...\n"
                         "Added branch `sphinx_export` onto `comments/add_docstrings`\n"

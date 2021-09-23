@@ -231,7 +231,7 @@ def get_parsed_github_remote_url(url: str) -> Optional[Tuple[str, str]]:
     return None
 
 
-def get_pull_request_by_number(number: str, org: str, repo: str) -> Optional[GitHubPullRequest]:
+def get_pull_request_by_number_or_none(number: str, org: str, repo: str) -> Optional[GitHubPullRequest]:
     token: Optional[str] = __get_github_token()
     try:
         pr_json: Dict[str, Any] = __fire_github_api_request('GET', f'/repos/{org}/{repo}/pulls/{number}', token)
