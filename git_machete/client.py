@@ -1689,7 +1689,6 @@ class MacheteClient:
         debug('checkout_github_pr()', f'found {pr}')
 
         all_open_prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
-
         self.__cli_opts.opt_yes = True  # TODO (#161): pass only needed options to methods
         path: List[str] = self.__get_path_from_pr_chain(pr, all_open_prs)
         reversed_path: List[str] = path[::-1]  # need to add from root downwards
