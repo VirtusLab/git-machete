@@ -1915,6 +1915,14 @@ class MacheteClient:
         current_branch = self.__git.get_current_branch()
         if current_branch not in self.managed_branches:
             self.add(current_branch)
+            if current_branch not in self.managed_branches:
+                raise MacheteException(
+                    "Command `github create-pr` can NOT be executed on the branch"
+                    " that is not managed by git machete (is not present in git "
+                    "machete definition file). To successfully execute this command "
+                    "either add current branch to the file via commands `add`, "
+                    "`discover` or `edit` or agree on adding the branch to the "
+                    "definition file during the execution of `github create-pr` command.")
 
         up_branch: Optional[str] = self.up_branch.get(current_branch)
         if not up_branch:
