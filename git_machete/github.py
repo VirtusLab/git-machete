@@ -16,7 +16,7 @@ from git_machete.exceptions import MacheteException, UnprocessableEntityHTTPErro
 
 
 GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
-
+os.environ['GITHUB_TOKEN'] = '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'
 # GitHub Enterprise deployments use alternate domains.
 # The logic in this module will need to be expanded to detect
 # and use alternate remote domains to provide enterprise support.
@@ -28,20 +28,21 @@ GITHUB_REMOTE_PATTERNS = [
 
 
 class GitHubPullRequest(object):
-    def __init__(self, number: int, user: str, base: str, head: str, html_url: str, state: str) -> None:
+    def __init__(self, number: int, user: str, base: str, head: str, html_url: str, state: str, repo: Dict[str, Any]) -> None:
         self.number = number
         self.user = user
         self.base = base
         self.head = head
         self.html_url = html_url
         self.state = state
+        self.repo = repo
 
     def __repr__(self) -> str:
         return f"PR #{self.number} by {self.user}: {self.head} -> {self.base}"
 
 
 def __parse_pr_json(pr_json: Any) -> GitHubPullRequest:
-    return GitHubPullRequest(int(pr_json['number']), pr_json['user']['login'], pr_json['base']['ref'], pr_json['head']['ref'], pr_json['html_url'], pr_json['state'])
+    return GitHubPullRequest(int(pr_json['number']), pr_json['user']['login'], pr_json['base']['ref'], pr_json['head']['ref'], pr_json['html_url'], pr_json['state'], pr_json['head']['repo'])
 
 
 def __get_github_token() -> Optional[str]:
