@@ -479,9 +479,9 @@ long_docs: Dict[str, str] = {
         * `up`:      the direct parent/upstream branch of the given branch.
     """,
     "slide-out": """
-        <b>Usage: git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] <branch> [<branch> [<branch> ...]]</b>
+        <b>Usage: git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] [<branch> [<branch> [<branch> ...]]]</b>
 
-        Removes the given branch (or multiple branches) from the branch tree definition.
+        Removes the given branch (or multiple branches) from the branch tree definition. If no branch has been specified current branch is assumed as the only branch.
         Then synchronizes the downstream (child) branches of the last specified branch on the top of the upstream (parent) branch of the first specified branch.
         Sync is performed either by rebase (default) or by merge (if `--merge` option passed).
 
