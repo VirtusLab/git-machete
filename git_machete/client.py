@@ -1684,22 +1684,21 @@ class MacheteClient:
         debug('checkout_github_pr()', f'organization is {org}, repository is {repo}')
         print(f"Fetching {remote}...")
         self.__git.fetch_remote(remote)
-        if self.__git.remotes():
-            self.flush_caches()
+        self.flush_caches()
 
-        pr = get_pull_request_by_number_or_none(str(pr_no), org, repo)
+        pr = get_pull_request_by_number_or_none(pr_no, org, repo)
         if not pr:
             raise MacheteException(f"PR #{pr_no} is not found in repository `{org}/{repo}`")
         if '/'.join([remote, pr.head]) not in self.__git.get_remote_branches():
-            raise MacheteException(f"Could not checkout PR #{pr_no} because it's head branch `{pr.head}` is already deleted from `{remote}`.")
+            raise MacheteException(f"Could not check out PR #{pr_no} because its head branch `{pr.head}` is already deleted from `{remote}`.")
         if pr.state == 'closed':
             warn(f'Pull request #{pr_no} is already closed.')
         debug('checkout_github_pr()', f'found {pr}')
 
-        all_prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
+        all_open_prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
 
         self.__cli_opts.opt_yes = True  # TODO (#161): pass only needed options to methods
-        path: List[str] = self.__get_path_from_pr_chain(pr, all_prs)
+        path: List[str] = self.__get_path_from_pr_chain(pr, all_open_prs)
         reversed_path: List[str] = path[::-1]  # need to add from root downwards
         for index, branch in enumerate(reversed_path):
             if branch not in self.managed_branches:
@@ -1715,16 +1714,16 @@ class MacheteClient:
         current_user: Optional[str] = git_machete.github.derive_current_user_login()
         debug('checkout_github_pr()',
               'Current GitHub user is ' + (current_user or '<none>'))
-        self.__sync_annotations_to_definition_file(all_prs, current_user)
+        self.__sync_annotations_to_definition_file(all_open_prs, current_user)
 
         self.__git.checkout(pr.head)
         print(fmt(f"Pull request `#{pr.number}` checked out at local branch `{pr.head}`"))
 
-    def __get_path_from_pr_chain(self, current_pr: GitHubPullRequest, all_prs: List[GitHubPullRequest]) -> List[str]:
+    def __get_path_from_pr_chain(self, current_pr: GitHubPullRequest, all_open_prs: List[GitHubPullRequest]) -> List[str]:
         path: List[str] = [current_pr.head]
         while current_pr:
             path.append(current_pr.base)
-            current_pr = utils.find_or_none(lambda x: x.head == current_pr.base, all_prs)
+            current_pr = utils.find_or_none(lambda x: x.head == current_pr.base, all_open_prs)
         return path
 
     def retarget_github_pr(self, head: str) -> None:

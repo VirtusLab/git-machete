@@ -49,10 +49,7 @@ class MockGithubAPIState:
     def __init__(self, pulls: List[Dict[str, Any]], issues: List[Dict[str, Any]] = None) -> None:
         self.pulls: List[Dict[str, Any]] = pulls
         self.user: Dict[str, str] = {'login': 'other_user', 'type': 'User', 'company': 'VirtusLab'}  # login must be different from the one used in pull requests, otherwise pull request author will not be annotated
-        if issues:
-            self.issues: List[Dict[str, Any]] = issues
-        else:
-            self.issues = []
+        self.issues: List[Dict[str, Any]] = issues or []
 
     def new_request(self) -> "MockGithubAPIRequest":
         return MockGithubAPIRequest(self)
@@ -2036,7 +2033,7 @@ class MacheteTester(unittest.TestCase):
         # Check against closed pull request with head branch deleted from remote
         machete_client = MacheteClient(cli_opts, git)
         machete_client.read_definition_file()
-        expected_error_message = "Could not checkout PR #5 because it's head branch `bugfix/remove-n-option` is already deleted from `origin`."
+        expected_error_message = "Could not check out PR #5 because its head branch `bugfix/remove-n-option` is already deleted from `origin`."
         with self.assertRaises(MacheteException) as e:
             machete_client.checkout_github_prs(5)
         if e:
