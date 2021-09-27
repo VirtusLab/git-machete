@@ -64,7 +64,7 @@ class GitContext:
         proposed_editor_funs: List[Tuple[str, Callable[[], Optional[str]]]] = [
             ("$" + git_machete_editor_var, lambda: os.environ.get(git_machete_editor_var)),
             ("$GIT_EDITOR", lambda: os.environ.get("GIT_EDITOR")),
-            ("git config core.editor", lambda: self.get_config_or_none("core.editor")),
+            ("git config core.editor", lambda: self.get_config_attr_or_none("core.editor")),
             ("$VISUAL", lambda: os.environ.get("VISUAL")),
             ("$EDITOR", lambda: os.environ.get("EDITOR")),
             ("editor", lambda: "editor"),
@@ -86,7 +86,7 @@ class GitContext:
                         raise MacheteException(f"<b>{editor_repr}</b> is not available")
                 else:
                     debug("get_default_editor()", f"{editor_repr} is available")
-                    if name != "$" + git_machete_editor_var and self.get_config_or_none('advice.macheteEditorSelection') != 'false':
+                    if name != "$" + git_machete_editor_var and self.get_config_attr_or_none('advice.macheteEditorSelection') != 'false':
                         sample_alternative = 'nano' if editor.startswith('vi') else 'vi'
                         sys.stderr.write(
                             fmt(f"Opening <b>{editor_repr}</b>.\n",
@@ -140,22 +140,22 @@ class GitContext:
                     k, v = k_v
                     self.__config_cached[k.lower()] = v
 
-    def get_config_or_none(self, key: str) -> Optional[str]:
+    def get_config_attr_or_none(self, key: str) -> Optional[str]:
         self.__ensure_config_loaded()
         return self.__config_cached.get(key.lower())
 
-    def set_config(self, key: str, value: str) -> None:
+    def set_config_attr(self, key: str, value: str) -> None:
         self.run_git("config", "--", key, value)
         self.__ensure_config_loaded()
         self.__config_cached[key.lower()] = value
 
-    def unset_config(self, key: str) -> None:
+    def unset_config_attr(self, key: str) -> None:
         self.__ensure_config_loaded()
-        if self.get_config_or_none(key):
+        if self.get_config_attr_or_none(key):
             self.run_git("config", "--unset", key)
             del self.__config_cached[key.lower()]
 
-    def remotes(self) -> List[str]:
+    def get_remotes(self) -> List[str]:
         if self.__remotes_cached is None:
             self.__remotes_cached = utils.get_non_empty_lines(self.popen_git("remote"))
         return self.__remotes_cached
@@ -167,9 +167,11 @@ class GitContext:
         if remote not in self.__fetch_done_for:
             self.run_git("fetch", remote)
             self.__fetch_done_for.add(remote)
+            self.flush_caches()
 
     def set_upstream_to(self, remote_branch: str) -> None:
         self.run_git("branch", "--set-upstream-to", remote_branch)
+        self.flush_caches()
 
     def reset_keep(self, to_revision: str) -> None:
         try:
@@ -187,6 +189,7 @@ class GitContext:
             opt_force = ["--force"]
         args = [remote, branch]
         self.run_git("push", "--set-upstream", *(opt_force + args))
+        self.flush_caches()
 
     def pull_ff_only(self, remote: str, remote_branch: str) -> None:
         self.fetch_remote(remote)
@@ -194,6 +197,7 @@ class GitContext:
         # There's apparently no way to set remote automatically when doing 'git pull' (as opposed to 'git push'),
         # so a separate 'git branch --set-upstream-to' is needed.
         self.set_upstream_to(remote_branch)
+        self.flush_caches()
 
     def __find_short_commit_sha_by_revision(self, revision: str) -> str:
         return self.popen_git("rev-parse", "--short", revision + "^{commit}").rstrip()
@@ -250,20 +254,20 @@ class GitContext:
 
     def get_inferred_remote_for_fetching_of_branch(self, branch: str) -> Optional[str]:
         # Since many people don't use '--set-upstream' flag of 'push', we try to infer the remote instead.
-        for remote in self.remotes():
+        for remote in self.get_remotes():
             if f"{remote}/{branch}" in self.get_remote_branches():
                 return remote
         return None
 
     def get_strict_remote_for_fetching_of_branch(self, branch: str) -> Optional[str]:
-        remote = self.get_config_or_none(f"branch.{branch}.remote")
+        remote = self.get_config_attr_or_none(f"branch.{branch}.remote")
         return remote.rstrip() if remote else None
 
     def get_combined_remote_for_fetching_of_branch(self, branch: str) -> Optional[str]:
         return self.get_strict_remote_for_fetching_of_branch(branch) or self.get_inferred_remote_for_fetching_of_branch(branch)
 
     def __get_inferred_counterpart_for_fetching_of_branch(self, branch: str) -> Optional[str]:
-        for remote in self.remotes():
+        for remote in self.get_remotes():
             if f"{remote}/{branch}" in self.get_remote_branches():
                 return f"{remote}/{branch}"
         return None
@@ -292,6 +296,7 @@ class GitContext:
 
     def checkout(self, branch: str) -> None:
         self.run_git("checkout", "--quiet", branch, "--")
+        self.flush_caches()
 
     def get_local_branches(self) -> List[str]:
         if self.__local_branches_cached is None:
@@ -405,15 +410,20 @@ class GitContext:
         self.flush_caches()  # the repository state has changed because of a successful branch creation, let's defensively flush all the caches
 
     def flush_caches(self) -> None:
-        self.__commit_sha_by_revision_cached = None
         self.__config_cached = None
-        self.__counterparts_for_fetching_cached = None
-        self.__initial_log_shas_cached = {}
-        self.__local_branches_cached = None
-        self.__reflogs_cached = None
-        self.__remaining_log_shas_cached = {}
-        self.__remote_branches_cached = None
         self.__remotes_cached = None
+        self.__counterparts_for_fetching_cached = None
+        self.__short_commit_sha_by_revision_cached = {}
+        self.__tree_sha_by_commit_sha_cached = None
+        self.__commit_sha_by_revision_cached = None
+        self.__committer_unix_timestamp_by_revision_cached = None
+        self.__local_branches_cached = None
+        self.__remote_branches_cached = None
+        self.__initial_log_shas_cached = {}
+        self.__remaining_log_shas_cached = {}
+        self.__reflogs_cached = None
+        self.__merge_base_cached = {}
+        self.__contains_equivalent_tree_cached = {}
 
     def get_revision_repr(self, revision: str) -> str:
         short_sha = self.get_short_commit_sha_by_revision(revision)
@@ -565,7 +575,7 @@ class GitContext:
         matching_remote_branches = list(filter(matches, self.get_remote_branches()))
         return matching_remote_branches[0] if len(matching_remote_branches) == 1 else None
 
-    def merged_local_branches(self) -> List[str]:
+    def get_merged_local_branches(self) -> List[str]:
         return list(map(
             lambda branch: re.sub("^refs/heads/", "", branch),
             utils.get_non_empty_lines(
@@ -573,14 +583,14 @@ class GitContext:
         ))
 
     def get_hook_path(self, hook_name: str) -> str:
-        hook_dir: str = self.get_config_or_none("core.hooksPath") or self.get_git_subpath("hooks")
+        hook_dir: str = self.get_config_attr_or_none("core.hooksPath") or self.get_git_subpath("hooks")
         return os.path.join(hook_dir, hook_name)
 
     def check_hook_executable(self, hook_path: str) -> bool:
         if not os.path.isfile(hook_path):
             return False
         elif not utils.is_executable(hook_path):
-            advice_ignored_hook = self.get_config_or_none("advice.ignoredHook")
+            advice_ignored_hook = self.get_config_attr_or_none("advice.ignoredHook")
             if advice_ignored_hook != 'false':  # both empty and "true" is okay
                 # The [33m color must be used to keep consistent with how git colors this advice for its built-in hooks.
                 sys.stderr.write(
@@ -597,9 +607,11 @@ class GitContext:
         commit_message = f"Merge branch '{branch}' into {into}"
         # ...since we prepend 'refs/heads/' to the merged branch name for unambiguity.
         self.run_git("merge", "-m", commit_message, f"refs/heads/{branch}", *extra_params)
+        self.flush_caches()
 
     def merge_fast_forward_only(self, branch: str) -> None:  # refs/heads/ prefix is assumed for 'branch'
         self.run_git("merge", "--ff-only", f"refs/heads/{branch}")
+        self.flush_caches()
 
     def rebase(self, onto: str, fork_commit: str, branch: str) -> None:
         def do_rebase() -> None:
@@ -634,6 +646,7 @@ class GitContext:
                     fixed_lines = get_all_lines_fixed()  # must happen before the 'with' clause where we open for writing
                     with open(author_script, "w") as f_write:
                         f_write.write("".join(fixed_lines))
+                self.flush_caches()
 
         hook_path = self.get_hook_path("machete-pre-rebase")
         if self.check_hook_executable(hook_path):
@@ -671,7 +684,7 @@ class GitContext:
             return DIVERGED_FROM_AND_OLDER_THAN_REMOTE if b_t < rb_t else DIVERGED_FROM_AND_NEWER_THAN_REMOTE
 
     def get_strict_remote_sync_status(self, branch: str) -> Tuple[int, Optional[str]]:
-        if not self.remotes():
+        if not self.get_remotes():
             return NO_REMOTES, None
         remote_branch = self.get_strict_counterpart_for_fetching_of_branch(branch)
         if not remote_branch:
@@ -679,7 +692,7 @@ class GitContext:
         return self.get_relation_to_remote_counterpart(branch, remote_branch), self.get_strict_remote_for_fetching_of_branch(branch)
 
     def get_combined_remote_sync_status(self, branch: str) -> Tuple[int, Optional[str]]:
-        if not self.remotes():
+        if not self.get_remotes():
             return NO_REMOTES, None
         remote_branch = self.get_combined_counterpart_for_fetching_of_branch(branch)
         if not remote_branch:
