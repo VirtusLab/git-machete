@@ -935,7 +935,7 @@ class MacheteClient:
             branches_to_delete = excluding(branches_to_delete, [current_branch])
             print(fmt(f"Skipping current branch `{current_branch}`"))
         if branches_to_delete:
-            branches_merged_to_head = self.__git.merged_local_branches()
+            branches_merged_to_head = self.__git.get_merged_local_branches()
 
             branches_to_delete_merged_to_head = [branch for branch in branches_to_delete if branch in branches_merged_to_head]
             for branch in branches_to_delete_merged_to_head:

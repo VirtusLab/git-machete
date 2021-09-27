@@ -578,7 +578,7 @@ class GitContext:
         matching_remote_branches = list(filter(matches, self.get_remote_branches()))
         return matching_remote_branches[0] if len(matching_remote_branches) == 1 else None
 
-    def merged_local_branches(self) -> List[str]:
+    def get_merged_local_branches(self) -> List[str]:
         return list(map(
             lambda branch: re.sub("^refs/heads/", "", branch),
             utils.get_non_empty_lines(
