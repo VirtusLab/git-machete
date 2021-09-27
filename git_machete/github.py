@@ -16,7 +16,6 @@ from git_machete.exceptions import MacheteException, UnprocessableEntityHTTPErro
 
 
 GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
-os.environ['GITHUB_TOKEN'] = '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'
 # GitHub Enterprise deployments use alternate domains.
 # The logic in this module will need to be expanded to detect
 # and use alternate remote domains to provide enterprise support.
