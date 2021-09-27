@@ -946,7 +946,7 @@ class MacheteClient:
                 opt_yes_msg = f"Deleting branch {msg_core}"
                 ans = self.ask_if(msg, opt_yes_msg)
                 if ans in ('y', 'yes'):
-                    self.__git.run_git("branch", "-d" if is_merged_to_remote else "-D", branch)
+                    self.__git.run_branch("-d" if is_merged_to_remote else "-D", branch)
                 elif ans in ('q', 'quit'):
                     return
 
@@ -957,7 +957,7 @@ class MacheteClient:
                 opt_yes_msg = f"Deleting branch {msg_core}"
                 ans = self.ask_if(msg, opt_yes_msg)
                 if ans in ('y', 'yes'):
-                    self.__git.run_git("branch", "-D", branch)
+                    self.__git.run_branch("-D", branch)
                 elif ans in ('q', 'quit'):
                     return
         else:
@@ -1040,11 +1040,10 @@ class MacheteClient:
             [fp] + \
             ([f"refs/heads/{branch}"] if branch else []) + \
             ["--"]
-        self.__git.run_git("diff", *params)
+        self.__git.run_diff(*params)
 
     def log(self, branch: str) -> None:
-        self.__git.run_git(
-            "log",
+        self.__git.run_log(
             "^" + self.fork_point(branch, use_overrides=True),
             f"refs/heads/{branch}")
 
@@ -1203,7 +1202,7 @@ class MacheteClient:
         # Even worse, reset's reflog message would be filtered out in our fork point algorithm,
         # so the squashed commit would not even be considered to "belong"
         # (in the FP sense) to the current branch's history.
-        self.__git.run_git("update-ref", "HEAD", squashed_sha, "-m", f"squash: {earliest_subject}")
+        self.__git.run_update_ref("HEAD", squashed_sha, "-m", f"squash: {earliest_subject}")
 
         print(f"Squashed {len(commits)} commits:")
         print()
