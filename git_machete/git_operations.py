@@ -296,6 +296,7 @@ class GitContext:
 
     def checkout(self, branch: str) -> None:
         self.run_git("checkout", "--quiet", branch, "--")
+        self.flush_caches()
 
     def get_local_branches(self) -> List[str]:
         if self.__local_branches_cached is None:
