@@ -72,11 +72,10 @@ With ``--color=always``, git machete always emits colors and with ``--color=auto
 
 **Options:**
 
-  --color=WHEN                      Colorize the output; WHEN can be ``always``, ``auto`` (default; i.e. only if stdout is a terminal), or ``never``.
+--color=WHEN                      Colorize the output; WHEN can be ``always``, ``auto`` (default; i.e. only if stdout is a terminal), or ``never``.
 
-  -l, --list-commits                Additionally list the commits introduced on each branch.
+-l, --list-commits                Additionally list the commits introduced on each branch.
 
-  -L, --list-commits-with-hashes    Additionally list the short hashes and messages of commits introduced on each branch.
+-L, --list-commits-with-hashes    Additionally list the short hashes and messages of commits introduced on each branch.
 
-  --no-detect-squash-merges         Only consider `strict` (fast-forward or 2-parent) merges, rather than rebase/squash merges,
-                                    when detecting if a branch is merged into its upstream (parent).
+--no-detect-squash-merges         Only consider `strict` (fast-forward or 2-parent) merges, rather than rebase/squash merges, when detecting if a branch is merged into its upstream (parent).

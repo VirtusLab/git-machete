@@ -15,4 +15,4 @@ Note: the branch in question does not need to occur in the definition file.
 
 **Options:**
 
-  -s, --stat    Makes ``git machete diff`` pass ``--stat`` option to ``git diff``, so that only summary (diffstat) is printed.
+-s, --stat    Makes ``git machete diff`` pass ``--stat`` option to ``git diff``, so that only summary (diffstat) is printed.

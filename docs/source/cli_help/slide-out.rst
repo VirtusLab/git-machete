@@ -46,17 +46,12 @@ Note: This command doesn't delete any branches from git, just removes them from 
 
 **Options:**
 
-  -d, --down-fork-point=<down-fork-point-commit>    If updating by rebase, specifies the alternative fork point for downstream branches for the operation.
-                                                    ``git machete fork-point`` overrides for downstream branches are recommended over use of this option.
-                                                    See also doc for ``--fork-point`` option in ``git machete help reapply`` and ``git machete help update``.
-                                                    Not allowed if updating by merge.
+-d, --down-fork-point=<down-fork-point-commit>    If updating by rebase, specifies the alternative fork point for downstream branches for the operation. ``git machete fork-point`` overrides for downstream branches are recommended over use of this option. See also doc for ``--fork-point`` option in ``git machete help reapply`` and ``git machete help update``. Not allowed if updating by merge.
 
-  -M, --merge                                       Update the downstream branch by merge rather than by rebase.
+-M, --merge                                       Update the downstream branch by merge rather than by rebase.
 
-  -n                                                If updating by rebase, equivalent to ``--no-interactive-rebase``. If updating by merge, equivalent to ``--no-edit-merge``.
+-n                                                If updating by rebase, equivalent to ``--no-interactive-rebase``. If updating by merge, equivalent to ``--no-edit-merge``.
 
-  --no-edit-merge                                   If updating by merge, skip opening the editor for merge commit message while doing ``git merge`` (i.e. pass ``--no-edit`` flag to underlying ``git merge``).
-                                                    Not allowed if updating by rebase.
+--no-edit-merge                                   If updating by merge, skip opening the editor for merge commit message while doing ``git merge`` (i.e. pass ``--no-edit`` flag to underlying ``git merge``). Not allowed if updating by rebase.
 
-  --no-interactive-rebase                           If updating by rebase, run ``git rebase`` in non-interactive mode (without ``-i/--interactive`` flag).
-                                                    Not allowed if updating by merge.
+--no-interactive-rebase                           If updating by rebase, run ``git rebase`` in non-interactive mode (without ``-i/--interactive`` flag). Not allowed if updating by merge.

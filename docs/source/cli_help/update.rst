@@ -18,15 +18,12 @@ If updating by merge, merges the upstream (parent) branch into the current branc
 
 **Options:**
 
-  -f, --fork-point=<fork-point-commit>    If updating by rebase, specifies the alternative fork point commit after which the rebased part of history is meant to start.
-                                          Not allowed if updating by merge.
+-f, --fork-point=<fork-point-commit>    If updating by rebase, specifies the alternative fork point commit after which the rebased part of history is meant to start. Not allowed if updating by merge.
 
-  -M, --merge                             Update by merge rather than by rebase.
+-M, --merge                             Update by merge rather than by rebase.
 
-  -n                                      If updating by rebase, equivalent to ``--no-interactive-rebase``. If updating by merge, equivalent to ``--no-edit-merge``.
+-n                                      If updating by rebase, equivalent to ``--no-interactive-rebase``. If updating by merge, equivalent to ``--no-edit-merge``.
 
-  --no-edit-merge                         If updating by merge, skip opening the editor for merge commit message while doing ``git merge`` (i.e. pass ``--no-edit`` flag to underlying ``git merge``).
-                                          Not allowed if updating by rebase.
+--no-edit-merge                         If updating by merge, skip opening the editor for merge commit message while doing ``git merge`` (i.e. pass ``--no-edit`` flag to underlying ``git merge``). Not allowed if updating by rebase.
 
-  --no-interactive-rebase                 If updating by rebase, run ``git rebase`` in non-interactive mode (without ``-i/--interactive`` flag).
-                                          Not allowed if updating by merge.
+--no-interactive-rebase                 If updating by rebase, run ``git rebase`` in non-interactive mode (without ``-i/--interactive`` flag). Not allowed if updating by merge.

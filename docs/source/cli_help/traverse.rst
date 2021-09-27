@@ -50,42 +50,34 @@ In other words, there is no need to explicitly ask to `continue` as it is the ca
 
 **Options:**
 
-  -F, --fetch                  Fetch the remotes of all managed branches at the beginning of traversal (no ``git pull`` involved, only ``git fetch``).
+-F, --fetch                  Fetch the remotes of all managed branches at the beginning of traversal (no ``git pull`` involved, only ``git fetch``).
 
-  -l, --list-commits           When printing the status, additionally list the messages of commits introduced on each branch.
+-l, --list-commits           When printing the status, additionally list the messages of commits introduced on each branch.
 
-  -M, --merge                  Update by merge rather than by rebase.
+-M, --merge                  Update by merge rather than by rebase.
 
-  -n                           If updating by rebase, equivalent to ``--no-interactive-rebase``. If updating by merge, equivalent to ``--no-edit-merge``.
+-n                           If updating by rebase, equivalent to ``--no-interactive-rebase``. If updating by merge, equivalent to ``--no-edit-merge``.
 
-  --no-detect-squash-merges    Only consider `strict` (fast-forward or 2-parent) merges, rather than rebase/squash merges,
-                               when detecting if a branch is merged into its upstream (parent).
+--no-detect-squash-merges    Only consider `strict` (fast-forward or 2-parent) merges, rather than rebase/squash merges, when detecting if a branch is merged into its upstream (parent).
 
-  --no-edit-merge              If updating by merge, skip opening the editor for merge commit message while doing ``git merge`` (i.e. pass ``--no-edit flag`` to underlying ``git merge``).
-                               Not allowed if updating by rebase.
+--no-edit-merge              If updating by merge, skip opening the editor for merge commit message while doing ``git merge`` (i.e. pass ``--no-edit flag`` to underlying ``git merge``). Not allowed if updating by rebase.
 
-  --no-interactive-rebase      If updating by rebase, run ``git rebase`` in non-interactive mode (without ``-i/--interactive`` flag).
-                               Not allowed if updating by merge.
+--no-interactive-rebase      If updating by rebase, run ``git rebase`` in non-interactive mode (without ``-i/--interactive`` flag). Not allowed if updating by merge.
 
-  --no-push                    Do not push any (neither tracked nor untracked) branches to remote, re-enable via ``--push``.
+--no-push                    Do not push any (neither tracked nor untracked) branches to remote, re-enable via ``--push``.
 
-  --no-push-untracked          Do not push untracked branches to remote, re-enable via ``--push-untracked``.
+--no-push-untracked          Do not push untracked branches to remote, re-enable via ``--push-untracked``.
 
-  --push                       Push all (both tracked and untracked) branches to remote --- default behavior.
+--push                       Push all (both tracked and untracked) branches to remote --- default behavior.
 
-  --push-untracked             Push untracked branches to remote --- default behavior.
+--push-untracked             Push untracked branches to remote --- default behavior.
 
-  --return-to=WHERE            Specifies the branch to return after traversal is successfully completed; WHERE can be ``here`` (the current branch at the moment when traversal starts),
-                               ``nearest-remaining`` (nearest remaining branch in case the ``here`` branch has been slid out by the traversal)
-                               or ``stay`` (the default --- just stay wherever the traversal stops).
-                               Note: when user quits by ``q``/``yq`` or when traversal is stopped because one of git actions fails, the behavior is always ``stay``.
+--return-to=WHERE            Specifies the branch to return after traversal is successfully completed; WHERE can be ``here`` (the current branch at the moment when traversal starts), ``nearest-remaining`` (nearest remaining branch in case the ``here`` branch has been slid out by the traversal) or ``stay`` (the default --- just stay wherever the traversal stops). Note: when user quits by ``q``/``yq`` or when traversal is stopped because one of git actions fails, the behavior is always ``stay``.
 
-  --start-from=WHERE           Specifies the branch to start the traversal from; WHERE can be ``here`` (the default --- current branch, must be managed by git machete),
-                               ``root`` (root branch of the current branch, as in ``git machete show root``) or ``first-root`` (first listed managed branch).
+--start-from=WHERE           Specifies the branch to start the traversal from; WHERE can be ``here`` (the default --- current branch, must be managed by git machete), ``root`` (root branch of the current branch, as in ``git machete show root``) or ``first-root`` (first listed managed branch).
 
-  -w, --whole                  Equivalent to ``-n --start-from=first-root`` --return-to=nearest-remaining;
-                               useful for quickly traversing & syncing all branches (rather than doing more fine-grained operations on the local section of the branch tree).
+-w, --whole                  Equivalent to ``-n --start-from=first-root`` --return-to=nearest-remaining; useful for quickly traversing & syncing all branches (rather than doing more fine-grained operations on the local section of the branch tree).
 
-  -W                           Equivalent to ``--fetch --whole``; useful for even more automated traversal of all branches.
+-W                           Equivalent to ``--fetch --whole``; useful for even more automated traversal of all branches.
 
-  -y, --yes                    Don't ask for any interactive input, including confirmation of rebase/push/pull. Implies ``-n``.
+-y, --yes                    Don't ask for any interactive input, including confirmation of rebase/push/pull. Implies ``-n``.
