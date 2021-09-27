@@ -1,4 +1,4 @@
-from typing import Callable, Dict, Generator, Iterator, List, Match, Optional, Tuple, Set
+from typing import Callable, Dict, Generator, Iterator, List, Match, Optional, Set, Tuple
 
 import os
 import re
@@ -730,7 +730,7 @@ class GitContext:
         return self._popen_git("commit-tree", *args, **kwargs)
 
     def run_branch(self, *args: str, **kwargs: Dict[str, str]) -> int:
-        options_that_may_invalidate_cache: set = {'-d', "-D"}
+        options_that_may_invalidate_cache: Set[str] = {'-d', "-D"}
         if options_that_may_invalidate_cache.intersection(*args):
             self.flush_caches()
         return self._run_git("branch", *args, **kwargs)
