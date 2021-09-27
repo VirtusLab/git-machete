@@ -1178,15 +1178,11 @@ class MacheteClient:
             return
 
         earliest_sha, earliest_short_sha, earliest_subject = commits[0]
-        earliest_full_body = self.__git.popen_git(
-            "log", "-1", "--format=%B", earliest_sha).strip()
+        earliest_full_body = self.__git.get_log("-1", "--format=%B", earliest_sha).strip()
         # %ai for ISO-8601 format; %aE/%aN for respecting .mailmap; see `git rev-list --help`
-        earliest_author_date = self.__git.popen_git(
-            "log", "-1", "--format=%ai", earliest_sha).strip()
-        earliest_author_email = self.__git.popen_git(
-            "log", "-1", "--format=%aE", earliest_sha).strip()
-        earliest_author_name = self.__git.popen_git(
-            "log", "-1", "--format=%aN", earliest_sha).strip()
+        earliest_author_date = self.__git.get_log("-1", "--format=%ai", earliest_sha).strip()
+        earliest_author_email = self.__git.get_log("-1", "--format=%aE", earliest_sha).strip()
+        earliest_author_name = self.__git.get_log("-1", "--format=%aN", earliest_sha).strip()
 
         # Following the convention of `git cherry-pick`, `git commit --amend`, `git rebase` etc.,
         # let's retain the original author (only committer will be overwritten).
@@ -1199,8 +1195,8 @@ class MacheteClient:
         # The tree (HEAD^{tree}) argument must be passed as first,
         # otherwise the entire `commit-tree` will fail on some ancient supported
         # versions of git (at least on v1.7.10).
-        squashed_sha = self.__git.popen_git(
-            "commit-tree", "HEAD^{tree}", "-p", fork_commit, "-m", earliest_full_body,
+        squashed_sha = self.__git.get_commit_tree(
+            "HEAD^{tree}", "-p", fork_commit, "-m", earliest_full_body,
             env=author_env).strip()
 
         # This can't be done with `git reset` since it doesn't allow for a custom reflog message.
@@ -1790,7 +1786,7 @@ class MacheteClient:
         debug(f'create_github_pr({head})', f'organization is {org}, repository is {repo}')
         debug(f'create_github_pr({head})', 'current GitHub user is ' + (current_user or '<none>'))
 
-        title: str = self.__git.popen_git("log", "-1", "--format=%s").strip()
+        title: str = self.__git.get_log("-1", "--format=%s").strip()
         description_path = self.__git.get_git_subpath('info', 'description')
         description: str = utils.slurp_file_or_empty(description_path)
 
