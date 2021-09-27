@@ -739,4 +739,5 @@ class GitContext:
         return self._run_git("diff", *args, **kwargs)
 
     def run_update_ref(self, *args, **kwargs):
+        self.flush_caches()
         return self._run_git("update-ref", *args, **kwargs)
