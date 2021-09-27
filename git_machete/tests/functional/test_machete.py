@@ -931,6 +931,15 @@ class MacheteTester(unittest.TestCase):
             msg="Verify that 'git machete go up' performs 'git checkout' to "
                 "the parent/upstream branch of the current branch."
         )
+        # check short command behaviour
+        self.repo_sandbox.check_out("level-1-branch")
+        self.launch_command("g", "u")
+        self.assertEqual(
+            'level-0-branch',
+            self.launch_command("show", "current").strip(),
+            msg="Verify that 'git machete go up' performs 'git checkout' to "
+                "the parent/upstream branch of the current branch."
+        )
 
     def test_go_down(self) -> None:
         """Verify behaviour of a 'git machete go down' command.
@@ -956,6 +965,15 @@ class MacheteTester(unittest.TestCase):
             msg="Verify that 'git machete go down' performs 'git checkout' to "
                 "the child/downstream branch of the current branch."
         )
+        # check short command behaviour
+        self.repo_sandbox.check_out("level-0-branch")
+        self.launch_command("g", "d")
+
+        self.assertEqual(
+            'level-1-branch',
+            self.launch_command("show", "current").strip(),
+            msg="Verify that 'git machete go down' performs 'git checkout' to "
+                "the child/downstream branch of the current branch.")
 
     def test_go_first_root_with_downstream(self) -> None:
         """Verify behaviour of a 'git machete go first' command.
@@ -998,6 +1016,16 @@ class MacheteTester(unittest.TestCase):
                 "has any downstream branches."
         )
 
+        # check short command behaviour
+        self.repo_sandbox.check_out("level-3b-branch")
+        self.launch_command("g", "f")
+
+        self.assertEqual(
+            'level-1a-branch',
+            self.launch_command("show", "current").strip(),
+            msg="Verify that 'git machete go down' performs 'git checkout' to "
+                "the child/downstream branch of the current branch.")
+
     def test_go_first_root_without_downstream(self) -> None:
         """Verify behaviour of a 'git machete go first' command.
 
@@ -1012,6 +1040,16 @@ class MacheteTester(unittest.TestCase):
         self.launch_command("discover", "-y")
 
         self.launch_command("go", "first")
+
+        self.assertEqual(
+            'level-0-branch',
+            self.launch_command("show", "current").strip(),
+            msg="Verify that 'git machete go first' set current branch to root"
+                "if root branch has no downstream."
+        )
+
+        # check short command behaviour
+        self.launch_command("g", "f")
 
         self.assertEqual(
             'level-0-branch',
@@ -1057,6 +1095,18 @@ class MacheteTester(unittest.TestCase):
                 "has any downstream branches."
         )
 
+        # check short command behaviour
+        self.repo_sandbox.check_out("level-1a-branch")
+        self.launch_command("g", "l")
+
+        self.assertEqual(
+            'level-1b-branch',
+            self.launch_command("show", "current").strip(),
+            msg="Verify that 'git machete go last' performs 'git checkout' to"
+                "the last downstream branch of a root branch if root branch "
+                "has any downstream branches."
+        )
+
     def test_go_next_successor_exists(self) -> None:
         """Verify behaviour of a 'git machete go next' command.
 
@@ -1088,6 +1138,17 @@ class MacheteTester(unittest.TestCase):
                 "the next downstream branch right after the current one in the"
                 "config file if successor branch exists."
         )
+        # check short command behaviour
+        self.repo_sandbox.check_out("level-2a-branch")
+        self.launch_command("g", "n")
+
+        self.assertEqual(
+            'level-1b-branch',
+            self.launch_command("show", "current").strip(),
+            msg="Verify that 'git machete go next' performs 'git checkout' to"
+                "the next downstream branch right after the current one in the"
+                "config file if successor branch exists."
+        )
 
     def test_go_next_successor_on_another_root_tree(self) -> None:
         """Verify behaviour of a 'git machete go next' command.
@@ -1109,6 +1170,15 @@ class MacheteTester(unittest.TestCase):
         self.launch_command("discover", "-y")
 
         self.launch_command("go", "next")
+        self.assertEqual(
+            'x-additional-root',
+            self.launch_command("show", "current").strip(),
+            msg="Verify that 'git machete go next' can checkout to branch that doesn't"
+                "share root with the current branch.")
+
+        # check short command behaviour
+        self.repo_sandbox.check_out("level-1-branch")
+        self.launch_command("g", "n")
         self.assertEqual(
             'x-additional-root',
             self.launch_command("show", "current").strip(),
@@ -1145,6 +1215,17 @@ class MacheteTester(unittest.TestCase):
                 "the branch right before the current one in the config file"
                 "when predecessor branch exists within the root tree."
         )
+        # check short command behaviour
+        self.repo_sandbox.check_out("level-1b-branch")
+        self.launch_command("g", "p")
+
+        self.assertEqual(
+            'level-2a-branch',
+            self.launch_command("show", "current").strip(),
+            msg="Verify that 'git machete go prev' performs 'git checkout' to"
+                "the branch right before the current one in the config file"
+                "when predecessor branch exists within the root tree."
+        )
 
     def test_go_prev_successor_on_another_root_tree(self) -> None:
         """Verify behaviour of a 'git machete go prev' command.
@@ -1164,6 +1245,15 @@ class MacheteTester(unittest.TestCase):
         self.launch_command("discover", "-y")
 
         self.launch_command("go", "prev")
+        self.assertEqual(
+            'a-additional-root',
+            self.launch_command("show", "current").strip(),
+            msg="Verify that 'git machete go prev' can checkout to branch that doesn't"
+                "share root with the current branch.")
+
+        # check short command behaviour
+        self.repo_sandbox.check_out("level-0-branch")
+        self.launch_command("g", "p")
         self.assertEqual(
             'a-additional-root',
             self.launch_command("show", "current").strip(),
@@ -1203,6 +1293,15 @@ class MacheteTester(unittest.TestCase):
             msg="Verify that 'git machete go root' performs 'git checkout' to"
                 "the root of the current branch."
         )
+        # check short command behaviour
+        self.repo_sandbox.check_out("level-2a-branch")
+        self.launch_command("g", "r")
+        self.assertEqual(
+            'level-0-branch',
+            self.launch_command("show", "current").strip(),
+            msg="Verify that 'git machete go root' performs 'git checkout' to"
+                "the root of the current branch."
+        )
 
     def test_show_up(self) -> None:
         """Verify behaviour of a 'git machete show up' command.
@@ -1226,6 +1325,13 @@ class MacheteTester(unittest.TestCase):
             msg="Verify that 'git machete show up' displays name of a parent/upstream"
                 "branch one above current one."
         )
+        # check short command behaviour
+        self.assertEqual(
+            'level-0-branch',
+            self.launch_command("show", "u").strip(),
+            msg="Verify that 'git machete show up' displays name of a parent/upstream"
+                "branch one above current one."
+        )
 
     def test_show_down(self) -> None:
         """Verify behaviour of a 'git machete show down' command.
@@ -1246,6 +1352,13 @@ class MacheteTester(unittest.TestCase):
         self.assertEqual(
             'level-1-branch',
             self.launch_command("show", "down").strip(),
+            msg="Verify that 'git machete show down' displays name of "
+                "a child/downstream branch one below current one."
+        )
+        # check short command behaviour
+        self.assertEqual(
+            'level-1-branch',
+            self.launch_command("show", "d").strip(),
             msg="Verify that 'git machete show down' displays name of "
                 "a child/downstream branch one below current one."
         )
@@ -1288,6 +1401,14 @@ class MacheteTester(unittest.TestCase):
                 "branch of a root branch of the current branch in the config file if root"
                 "branch has any downstream branches."
         )
+        # check short command behaviour
+        self.assertEqual(
+            'level-1a-branch',
+            self.launch_command("show", "f").strip(),
+            msg="Verify that 'git machete show first' displays name of the first downstream"
+                "branch of a root branch of the current branch in the config file if root"
+                "branch has any downstream branches."
+        )
 
     def test_show_last(self) -> None:
         """Verify behaviour of a 'git machete show last' command.
@@ -1323,6 +1444,14 @@ class MacheteTester(unittest.TestCase):
                 "branch of a root branch of the current branch in the config file if root"
                 "branch has any downstream branches."
         )
+        # check short command behaviour
+        self.assertEqual(
+            'level-1b-branch',
+            self.launch_command("show", "l").strip(),
+            msg="Verify that 'git machete show last' displays name of the last downstream"
+                "branch of a root branch of the current branch in the config file if root"
+                "branch has any downstream branches."
+        )
 
     def test_show_next(self) -> None:
         """Verify behaviour of a 'git machete show next' command.
@@ -1349,6 +1478,14 @@ class MacheteTester(unittest.TestCase):
         self.assertEqual(
             'level-1b-branch',
             self.launch_command("show", "next").strip(),
+            msg="Verify that 'git machete show next' displays name of "
+                "a branch right after the current one in the config file"
+                "when successor branch exists within the root tree."
+        )
+        # check short command behaviour
+        self.assertEqual(
+            'level-1b-branch',
+            self.launch_command("show", "n").strip(),
             msg="Verify that 'git machete show next' displays name of "
                 "a branch right after the current one in the config file"
                 "when successor branch exists within the root tree."
@@ -1382,6 +1519,14 @@ class MacheteTester(unittest.TestCase):
                 "a branch right before the current one in the config file"
                 "when predecessor branch exists within the root tree."
         )
+        # check short command behaviour
+        self.assertEqual(
+            'level-2a-branch',
+            self.launch_command("show", "p").strip(),
+            msg="Verify that 'git machete show prev' displays name of"
+                "a branch right before the current one in the config file"
+                "when predecessor branch exists within the root tree."
+        )
 
     def test_show_root(self) -> None:
         """Verify behaviour of a 'git machete show root' command.
@@ -1411,6 +1556,13 @@ class MacheteTester(unittest.TestCase):
         self.assertEqual(
             'level-0-branch',
             self.launch_command("show", "root").strip(),
+            msg="Verify that 'git machete show root' displays name of the root of"
+                "the current branch."
+        )
+        # check short command behaviour
+        self.assertEqual(
+            'level-0-branch',
+            self.launch_command("show", "r").strip(),
             msg="Verify that 'git machete show root' displays name of the root of"
                 "the current branch."
         )

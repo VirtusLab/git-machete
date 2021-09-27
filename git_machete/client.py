@@ -1329,7 +1329,7 @@ class MacheteClient:
             return self.prev_branch(branch)
         elif param in ("r", "root"):
             return self.root_branch(branch, if_unmanaged=PICK_FIRST_ROOT)
-        elif param in ("upstream", "up"):
+        elif param in ("u", "up"):
             return self.up(branch, prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)
         else:
             raise MacheteException(f"Invalid direction: `{param}` expected: {allowed_directions(allow_current)}")
