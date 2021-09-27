@@ -720,24 +720,24 @@ class GitContext:
                     result[to_branch] = int(match.group(1))
         return result
 
-    def get_log(self, *args, **kwargs):
+    def get_log(self, *args: str, **kwargs: Dict[str, str]) -> str:
         return self._popen_git("log", *args, **kwargs)
 
-    def run_log(self, *args, **kwargs):
+    def run_log(self, *args: str, **kwargs: Dict[str, str]) -> int:
         return self._run_git("log", *args, **kwargs)
 
-    def get_commit_tree(self, *args, **kwargs):
+    def get_commit_tree(self, *args: str, **kwargs: Dict[str, str]) -> str:
         return self._popen_git("commit-tree", *args, **kwargs)
 
-    def run_branch(self, *args, **kwargs):
-        options_that_may_invalidate_cache = {'-d', "-D"}
-        if options_invalidation_cache.intersection(*args):
+    def run_branch(self, *args: str, **kwargs: Dict[str, str]) -> int:
+        options_that_may_invalidate_cache: set = {'-d', "-D"}
+        if options_that_may_invalidate_cache.intersection(*args):
             self.flush_caches()
         return self._run_git("branch", *args, **kwargs)
 
-    def run_diff(self, *args, **kwargs):
+    def run_diff(self, *args: str, **kwargs: Dict[str, str]) -> int:
         return self._run_git("diff", *args, **kwargs)
 
-    def run_update_ref(self, *args, **kwargs):
+    def run_update_ref(self, *args: str, **kwargs: Dict[str, str]) -> int:
         self.flush_caches()
         return self._run_git("update-ref", *args, **kwargs)
