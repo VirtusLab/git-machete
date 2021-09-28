@@ -1678,7 +1678,6 @@ class MacheteClient:
         debug('checkout_github_pr()', f'organization is {org}, repository is {repo}')
         print(f"Fetching {remote}...")
         self.__git.fetch_remote(remote)
-        self.flush_caches()
 
         pr = get_pull_request_by_number_or_none(pr_no, org, repo)
         if not pr:
@@ -1691,7 +1690,6 @@ class MacheteClient:
                 pass  # remote might be already added
             print(f"Fetching {remote_from_pr}...")
             self.__git.fetch_remote(remote_from_pr)
-            self.flush_caches()
             if '/'.join([remote_from_pr, pr.head]) not in self.__git.get_remote_branches():
                 raise MacheteException(f"Could not check out PR #{pr_no} because its head branch `{pr.head}` is already deleted from `{remote_from_pr}`.")
         if pr.state == 'closed':

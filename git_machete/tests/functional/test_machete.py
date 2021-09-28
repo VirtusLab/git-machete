@@ -2256,7 +2256,6 @@ class MacheteTester(unittest.TestCase):
             self.assertEqual(e.exception.parameter, expected_error_message,
                              'Verify that expected error message has appeared when given pull request to checkout have already deleted branch from remote.')
 
-        machete_client.flush_caches()
         # Check against pr come from fork
         os.chdir(local_path)
         (self.repo_sandbox

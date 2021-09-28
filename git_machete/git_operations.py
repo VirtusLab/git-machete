@@ -763,4 +763,4 @@ class GitContext:
         return self._run_git("update-ref", "HEAD", hash, "-m", msg)
 
     def add_remote(self, name: str, url: str) -> None:
-        self._popen_git('remote', 'add', name, url)
+        self._run_git('remote', 'add', name, url)
