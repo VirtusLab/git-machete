@@ -937,7 +937,7 @@ class MacheteTester(unittest.TestCase):
         self.assertEqual(
             'level-0-branch',
             self.launch_command("show", "current").strip(),
-            msg="Verify that 'git machete go up' performs 'git checkout' to "
+            msg="Verify that 'git machete g u' performs 'git checkout' to "
                 "the parent/upstream branch of the current branch."
         )
 
@@ -972,7 +972,7 @@ class MacheteTester(unittest.TestCase):
         self.assertEqual(
             'level-1-branch',
             self.launch_command("show", "current").strip(),
-            msg="Verify that 'git machete go down' performs 'git checkout' to "
+            msg="Verify that 'git machete g d' performs 'git checkout' to "
                 "the child/downstream branch of the current branch.")
 
     def test_go_first_root_with_downstream(self) -> None:
@@ -1023,7 +1023,7 @@ class MacheteTester(unittest.TestCase):
         self.assertEqual(
             'level-1a-branch',
             self.launch_command("show", "current").strip(),
-            msg="Verify that 'git machete go down' performs 'git checkout' to "
+            msg="Verify that 'git machete g d' performs 'git checkout' to "
                 "the child/downstream branch of the current branch.")
 
     def test_go_first_root_without_downstream(self) -> None:
@@ -1054,7 +1054,7 @@ class MacheteTester(unittest.TestCase):
         self.assertEqual(
             'level-0-branch',
             self.launch_command("show", "current").strip(),
-            msg="Verify that 'git machete go first' set current branch to root"
+            msg="Verify that 'git machete g f' set current branch to root"
                 "if root branch has no downstream."
         )
 
@@ -1102,7 +1102,7 @@ class MacheteTester(unittest.TestCase):
         self.assertEqual(
             'level-1b-branch',
             self.launch_command("show", "current").strip(),
-            msg="Verify that 'git machete go last' performs 'git checkout' to"
+            msg="Verify that 'git machete g l' performs 'git checkout' to"
                 "the last downstream branch of a root branch if root branch "
                 "has any downstream branches."
         )
@@ -1145,7 +1145,7 @@ class MacheteTester(unittest.TestCase):
         self.assertEqual(
             'level-1b-branch',
             self.launch_command("show", "current").strip(),
-            msg="Verify that 'git machete go next' performs 'git checkout' to"
+            msg="Verify that 'git machete g n' performs 'git checkout' to"
                 "the next downstream branch right after the current one in the"
                 "config file if successor branch exists."
         )
@@ -1182,7 +1182,7 @@ class MacheteTester(unittest.TestCase):
         self.assertEqual(
             'x-additional-root',
             self.launch_command("show", "current").strip(),
-            msg="Verify that 'git machete go next' can checkout to branch that doesn't"
+            msg="Verify that 'git machete g n' can checkout to branch that doesn't"
                 "share root with the current branch.")
 
     def test_go_prev_successor_exists(self) -> None:
@@ -1222,7 +1222,7 @@ class MacheteTester(unittest.TestCase):
         self.assertEqual(
             'level-2a-branch',
             self.launch_command("show", "current").strip(),
-            msg="Verify that 'git machete go prev' performs 'git checkout' to"
+            msg="Verify that 'git machete g p' performs 'git checkout' to"
                 "the branch right before the current one in the config file"
                 "when predecessor branch exists within the root tree."
         )
@@ -1257,7 +1257,7 @@ class MacheteTester(unittest.TestCase):
         self.assertEqual(
             'a-additional-root',
             self.launch_command("show", "current").strip(),
-            msg="Verify that 'git machete go prev' can checkout to branch that doesn't"
+            msg="Verify that 'git machete g p' can checkout to branch that doesn't"
                 "share root with the current branch.")
 
     def test_go_root(self) -> None:
@@ -1299,7 +1299,7 @@ class MacheteTester(unittest.TestCase):
         self.assertEqual(
             'level-0-branch',
             self.launch_command("show", "current").strip(),
-            msg="Verify that 'git machete go root' performs 'git checkout' to"
+            msg="Verify that 'git machete g r' performs 'git checkout' to"
                 "the root of the current branch."
         )
 
@@ -1329,7 +1329,7 @@ class MacheteTester(unittest.TestCase):
         self.assertEqual(
             'level-0-branch',
             self.launch_command("show", "u").strip(),
-            msg="Verify that 'git machete show up' displays name of a parent/upstream"
+            msg="Verify that 'git machete show u' displays name of a parent/upstream"
                 "branch one above current one."
         )
 
@@ -1359,7 +1359,7 @@ class MacheteTester(unittest.TestCase):
         self.assertEqual(
             'level-1-branch',
             self.launch_command("show", "d").strip(),
-            msg="Verify that 'git machete show down' displays name of "
+            msg="Verify that 'git machete show d' displays name of "
                 "a child/downstream branch one below current one."
         )
 
@@ -1405,7 +1405,7 @@ class MacheteTester(unittest.TestCase):
         self.assertEqual(
             'level-1a-branch',
             self.launch_command("show", "f").strip(),
-            msg="Verify that 'git machete show first' displays name of the first downstream"
+            msg="Verify that 'git machete show f' displays name of the first downstream"
                 "branch of a root branch of the current branch in the config file if root"
                 "branch has any downstream branches."
         )
@@ -1448,7 +1448,7 @@ class MacheteTester(unittest.TestCase):
         self.assertEqual(
             'level-1b-branch',
             self.launch_command("show", "l").strip(),
-            msg="Verify that 'git machete show last' displays name of the last downstream"
+            msg="Verify that 'git machete show l' displays name of the last downstream"
                 "branch of a root branch of the current branch in the config file if root"
                 "branch has any downstream branches."
         )
@@ -1486,7 +1486,7 @@ class MacheteTester(unittest.TestCase):
         self.assertEqual(
             'level-1b-branch',
             self.launch_command("show", "n").strip(),
-            msg="Verify that 'git machete show next' displays name of "
+            msg="Verify that 'git machete show n' displays name of "
                 "a branch right after the current one in the config file"
                 "when successor branch exists within the root tree."
         )
@@ -1523,7 +1523,7 @@ class MacheteTester(unittest.TestCase):
         self.assertEqual(
             'level-2a-branch',
             self.launch_command("show", "p").strip(),
-            msg="Verify that 'git machete show prev' displays name of"
+            msg="Verify that 'git machete show p' displays name of"
                 "a branch right before the current one in the config file"
                 "when predecessor branch exists within the root tree."
         )
@@ -1563,7 +1563,7 @@ class MacheteTester(unittest.TestCase):
         self.assertEqual(
             'level-0-branch',
             self.launch_command("show", "r").strip(),
-            msg="Verify that 'git machete show root' displays name of the root of"
+            msg="Verify that 'git machete show r' displays name of the root of"
                 "the current branch."
         )
 
