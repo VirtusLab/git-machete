@@ -946,7 +946,7 @@ class MacheteClient:
                 opt_yes_msg = f"Deleting branch {msg_core}"
                 ans = self.ask_if(msg, opt_yes_msg)
                 if ans in ('y', 'yes'):
-                    self.__git.run_branch("-d" if is_merged_to_remote else "-D", branch)
+                    self.__git.delete_branch(branch, force=is_merged_to_remote)
                 elif ans in ('q', 'quit'):
                     return
 
@@ -957,7 +957,7 @@ class MacheteClient:
                 opt_yes_msg = f"Deleting branch {msg_core}"
                 ans = self.ask_if(msg, opt_yes_msg)
                 if ans in ('y', 'yes'):
-                    self.__git.run_branch("-D", branch)
+                    self.__git.delete_branch(branch, force=True)
                 elif ans in ('q', 'quit'):
                     return
         else:
@@ -1043,7 +1043,7 @@ class MacheteClient:
         self.__git.run_diff(*params)
 
     def log(self, branch: str) -> None:
-        self.__git.run_log(
+        self.__git.display_log(
             "^" + self.fork_point(branch, use_overrides=True),
             f"refs/heads/{branch}")
 

@@ -723,17 +723,17 @@ class GitContext:
     def get_log(self, *args: str, **kwargs: Dict[str, str]) -> str:
         return self._popen_git("log", *args, **kwargs)
 
-    def run_log(self, *args: str, **kwargs: Dict[str, str]) -> int:
+    def display_log(self, *args: str, **kwargs: Dict[str, str]) -> int:
         return self._run_git("log", *args, **kwargs)
 
     def get_commit_tree(self, *args: str, **kwargs: Dict[str, str]) -> str:
         return self._popen_git("commit-tree", *args, **kwargs)
 
-    def run_branch(self, *args: str, **kwargs: Dict[str, str]) -> int:
-        options_that_may_invalidate_cache: Set[str] = {'-d', "-D"}
-        if options_that_may_invalidate_cache.intersection(*args):
-            self.flush_caches()
-        return self._run_git("branch", *args, **kwargs)
+    def delete_branch(
+            self, *args: str, force: bool=False, **kwargs: Dict[str, str]) -> int:
+        self.flush_caches()
+        delete_option = '-D' if force else '-d'
+        return self._run_git("branch", delete_option, *args, **kwargs)
 
     def run_diff(self, *args: str, **kwargs: Dict[str, str]) -> int:
         return self._run_git("diff", *args, **kwargs)
