@@ -71,5 +71,4 @@ Note that the current branch after the operation is still ``develop``, just poin
 
 **Options:**
 
-  -y, --yes         Don't ask for confirmation whether to fast-forward the current branch or whether to slide-out the downstream. Fails if the current branch has more than one :green:`green-edge` downstream branch.
-
+-y, --yes         Don't ask for confirmation whether to fast-forward the current branch or whether to slide-out the downstream. Fails if the current branch has more than one :green:`green-edge` downstream branch.

@@ -19,4 +19,4 @@ Tip: ``squash`` does NOT run ``git rebase`` under the hood. For more complex sce
 
 **Options:**
 
-  -f, --fork-point=<fork-point-commit>   Specifies the alternative fork point commit after which the squashed part of history is meant to start.
+-f, --fork-point=<fork-point-commit>   Specifies the alternative fork point commit after which the squashed part of history is meant to start.

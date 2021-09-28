@@ -36,7 +36,6 @@ Note: all the effects of ``anno`` can be always achieved by manually editing the
 
 **Options:**
 
-  -b, --branch=<branch>     Branch to set the annotation for.
+-b, --branch=<branch>     Branch to set the annotation for.
 
-  -H, --sync-github-prs     Annotate with GitHub PR numbers and authors where applicable.
-
+-H, --sync-github-prs     Annotate with GitHub PR numbers and authors where applicable.

@@ -17,4 +17,4 @@ See :ref:`fork-point` for more details.
 
 **Options:**
 
-  -y, --yes          Don't ask for confirmation.
+-y, --yes          Don't ask for confirmation.

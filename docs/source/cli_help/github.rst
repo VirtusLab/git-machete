@@ -33,7 +33,8 @@ a GitHub API token with ``repo`` scope is required, see https://github.com/setti
 
   **Parameters:**
 
-    <PR-number>    Pull request number to checkout.
+    **<PR-number>**
+      Pull request number to checkout.
 
 ``create-pr [--draft]``:
 
@@ -46,7 +47,8 @@ a GitHub API token with ``repo`` scope is required, see https://github.com/setti
 
   **Options:**
 
-    --draft    Creates the new PR as a draft.
+    --draft
+      Creates the new PR as a draft.
 
 ``retarget-pr``:
 
