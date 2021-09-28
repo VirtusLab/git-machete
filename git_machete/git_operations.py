@@ -19,10 +19,10 @@ REFLOG_ENTRY = Tuple[str, str]
 class GitContext:
 
     def __init__(self, cli_opts: CommandLineOptions) -> None:
-        self.cli_opts: CommandLineOptions = cli_opts
-        self.git_version: Optional[Tuple[int, ...]] = None
-        self.root_dir: Optional[str] = None
-        self.git_dir: Optional[str] = None
+        self._cli_opts: CommandLineOptions = cli_opts
+        self._git_version: Optional[Tuple[int, ...]] = None
+        self._root_dir: Optional[str] = None
+        self._git_dir: Optional[str] = None
         self.__fetch_done_for: Set[str] = set()
         self.__config_cached: Optional[Dict[str, str]] = None
         self.__remotes_cached: Optional[List[str]] = None
@@ -98,29 +98,29 @@ class GitContext:
         return None
 
     def get_git_version(self) -> Tuple[int, ...]:
-        if not self.git_version:
+        if not self._git_version:
             # We need to cut out the x.y.z part and not just take the result of 'git version' as is,
             # because the version string in certain distributions of git (esp. on OS X) has an extra suffix,
             # which is irrelevant for our purpose (checking whether certain git CLI features are available/bugs are fixed).
             raw = re.search(r"\d+.\d+.\d+", self._popen_git("version")).group(0)
-            self.git_version = tuple(map(int, raw.split(".")))
-        return self.git_version
+            self._git_version = tuple(map(int, raw.split(".")))
+        return self._git_version
 
     def get_root_dir(self) -> str:
-        if not self.root_dir:
+        if not self._root_dir:
             try:
-                self.root_dir = self._popen_git("rev-parse", "--show-toplevel").strip()
+                self._root_dir = self._popen_git("rev-parse", "--show-toplevel").strip()
             except MacheteException:
                 raise MacheteException("Not a git repository")
-        return self.root_dir
+        return self._root_dir
 
     def __get_git_dir(self) -> str:
-        if not self.git_dir:
+        if not self._git_dir:
             try:
-                self.git_dir = self._popen_git("rev-parse", "--git-dir").strip()
+                self._git_dir = self._popen_git("rev-parse", "--git-dir").strip()
             except MacheteException:
                 raise MacheteException("Not a git repository")
-        return self.git_dir
+        return self._git_dir
 
     def get_git_subpath(self, *fragments: str) -> str:
         return os.path.join(self.__get_git_dir(), *fragments)
@@ -602,7 +602,7 @@ class GitContext:
             return True
 
     def merge(self, branch: str, into: str) -> None:  # refs/heads/ prefix is assumed for 'branch'
-        extra_params = ["--no-edit"] if self.cli_opts.opt_no_edit_merge else ["--edit"]
+        extra_params = ["--no-edit"] if self._cli_opts.opt_no_edit_merge else ["--edit"]
         # We need to specify the message explicitly to avoid 'refs/heads/' prefix getting into the message...
         commit_message = f"Merge branch '{branch}' into {into}"
         # ...since we prepend 'refs/heads/' to the merged branch name for unambiguity.
@@ -616,7 +616,7 @@ class GitContext:
     def rebase(self, onto: str, fork_commit: str, branch: str) -> None:
         def do_rebase() -> None:
             try:
-                if self.cli_opts.opt_no_interactive_rebase:
+                if self._cli_opts.opt_no_interactive_rebase:
                     self._run_git("rebase", "--onto", onto, fork_commit, branch)
                 else:
                     self._run_git("rebase", "--interactive", "--onto", onto, fork_commit, branch)

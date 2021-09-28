@@ -1534,7 +1534,7 @@ class MacheteClient:
             ask_message = f"Push untracked branch {bold(branch)} to {bold(new_remote)}?" + choices
             ask_opt_yes_message = f"Pushing untracked branch {bold(branch)} to {bold(new_remote)}..."
             ans = self.ask_if(ask_message, ask_opt_yes_message,
-                              override_answer=None if self.__git.cli_opts.opt_push_untracked else "N")
+                              override_answer=None if self.__git._cli_opts.opt_push_untracked else "N")
             if is_called_from_traverse:
                 if ans in ('y', 'yes', 'yq'):
                     self.__git.push(new_remote, branch)
