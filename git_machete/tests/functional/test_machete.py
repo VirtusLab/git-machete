@@ -31,7 +31,8 @@ FAKE_GITHUB_REMOTE_PATTERNS = ['(.*)/(.*)']
 
 def get_head_commit_hash() -> str:
     """Returns hash of a commit of the current branch head."""
-    return os.popen("git rev-parse HEAD").read().strip()
+    with os.popen("git rev-parse HEAD") as git_call:
+        return git_call.read().strip()
 
 
 def mock_derive_current_user_login() -> str:
@@ -225,8 +226,10 @@ class MockContextManager:
 
 class GitRepositorySandbox:
     def __init__(self) -> None:
-        self.remote_path = os.popen("mktemp -d").read().strip()
-        self.local_path = os.popen("mktemp -d").read().strip()
+        with os.popen("mktemp -d") as temp_remote_folder:
+            self.remote_path = temp_remote_folder.read().strip()
+        with os.popen("mktemp -d") as temp_local_folder:
+            self.local_path = temp_local_folder.read().strip()
 
     def execute(self, command: str) -> "GitRepositorySandbox":
         subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)
@@ -262,7 +265,8 @@ class GitRepositorySandbox:
         return self
 
     def push(self) -> "GitRepositorySandbox":
-        branch = os.popen("git symbolic-ref -q --short HEAD").read()
+        with os.popen("git symbolic-ref -q --short HEAD") as git_call:
+            branch = git_call.read()
         self.execute(f"git push -u origin {branch}")
         return self
 
@@ -1712,7 +1716,8 @@ class MacheteTester(unittest.TestCase):
         self.launch_command(
             "update", "--no-interactive-rebase", "-f", branch_second_commit_hash)
         new_forkpoint_hash = self.launch_command("fork-point").strip()
-        branch_history = os.popen('git log -10 --oneline').read()
+        with os.popen('git log -10 --oneline') as git_call:
+            branch_history = git_call.read()
 
         self.assertEqual(
             roots_second_commit_hash,
@@ -2232,8 +2237,8 @@ class MacheteTester(unittest.TestCase):
         )
         for branch in ('develop', 'chore/sync_to_docs', 'improve/refactor', 'comments/add_docstrings'):
             self.repo_sandbox.execute(f"git branch -D {branch}")
-
-        local_path = os.popen("mktemp -d").read().strip()
+        with os.popen("mktemp -d") as local_temp_folder:
+            local_path = local_temp_folder.read().strip()
         os.chdir(local_path)
         self.repo_sandbox.execute(f'git clone {self.repo_sandbox.remote_path}')
         os.chdir(os.path.join(local_path, os.listdir()[0]))
