@@ -2,4 +2,7 @@
 
 set -e -o pipefail -u
 
-find ../../git_machete -type f -name "*.py" -exec sed -i '' 's/#!\/usr\/bin\/env python$/#!\/usr\/bin\/env python3/g;s/#!\/usr\/bin\/env python2$/#!\/usr\/bin\/env python3/g' {} \;
+if grep -r -e '^#!\/usr\/bin\/env python$' -e '^#!\/usr\/bin\/env python2$' ../../git_machete; then
+  echo "Ambigous python shebang"
+  exit 1
+fi
