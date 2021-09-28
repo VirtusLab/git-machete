@@ -1040,7 +1040,7 @@ class MacheteClient:
             [fp] + \
             ([f"refs/heads/{branch}"] if branch else []) + \
             ["--"]
-        self.__git.run_diff(*params)
+        self.__git.display_diff(*params)
 
     def log(self, branch: str) -> None:
         self.__git.display_log(
@@ -1202,7 +1202,7 @@ class MacheteClient:
         # Even worse, reset's reflog message would be filtered out in our fork point algorithm,
         # so the squashed commit would not even be considered to "belong"
         # (in the FP sense) to the current branch's history.
-        self.__git.run_update_ref("HEAD", squashed_sha, "-m", f"squash: {earliest_subject}")
+        self.__git.update_ref("HEAD", squashed_sha, "-m", f"squash: {earliest_subject}")
 
         print(f"Squashed {len(commits)} commits:")
         print()

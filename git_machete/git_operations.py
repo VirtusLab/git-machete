@@ -735,9 +735,9 @@ class GitContext:
         delete_option = '-D' if force else '-d'
         return self._run_git("branch", delete_option, *args, **kwargs)
 
-    def run_diff(self, *args: str, **kwargs: Dict[str, str]) -> int:
+    def display_diff(self, *args: str, **kwargs: Dict[str, str]) -> int:
         return self._run_git("diff", *args, **kwargs)
 
-    def run_update_ref(self, *args: str, **kwargs: Dict[str, str]) -> int:
+    def update_ref(self, *args: str, **kwargs: Dict[str, str]) -> int:
         self.flush_caches()
         return self._run_git("update-ref", *args, **kwargs)
