@@ -169,7 +169,6 @@ class MockGithubAPIRequest:
         for key in data.keys():
             if key in ('base', 'head'):
                 pull[key]['ref'] = json.loads(self.json_data)[key]
-                pull[key]['ref'] = json.loads(self.json_data)[key]
             else:
                 pull[key] = json.loads(self.json_data)[key]
         if index:
