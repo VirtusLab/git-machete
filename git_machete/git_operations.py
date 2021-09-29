@@ -10,7 +10,8 @@ from git_machete.utils import colored, debug, fmt
 from git_machete import utils
 from git_machete.constants import AHEAD_OF_REMOTE, BEHIND_REMOTE, DIVERGED_FROM_AND_NEWER_THAN_REMOTE, \
     DIVERGED_FROM_AND_OLDER_THAN_REMOTE, IN_SYNC_WITH_REMOTE, \
-    NO_REMOTES, MAX_COUNT_FOR_INITIAL_LOG, UNTRACKED, EscapeCodes
+    NO_REMOTES, MAX_COUNT_FOR_INITIAL_LOG, UNTRACKED, EscapeCodes, \
+    GIT_FORMAT_PATTERNS
 
 
 REFLOG_ENTRY = Tuple[str, str]
@@ -720,8 +721,19 @@ class GitContext:
                     result[to_branch] = int(match.group(1))
         return result
 
-    def get_log(self, *args: str, **kwargs: Dict[str, str]) -> str:
-        return self._popen_git("log", *args, **kwargs)
+    def get_commit_information(self, information: str, commit: str = '') -> str:
+        if information not in GIT_FORMAT_PATTERNS:
+            raise MacheteException(
+                f"Retriving {information} from commit is not supported by project"
+                " git-machete. Currently supported information are: "
+                f"{', '.join(GIT_FORMAT_PATTERNS.keys())}")
+
+        if commit:
+            return self._popen_git(
+                "log", "-1", f"--format={GIT_FORMAT_PATTERNS[information]}", commit)
+        else:
+            return self._popen_git(
+                "log", "-1", f"--format={GIT_FORMAT_PATTERNS[information]}")
 
     def display_log(self, *args: str, **kwargs: Dict[str, str]) -> int:
         return self._run_git("log", *args, **kwargs)
@@ -729,11 +741,10 @@ class GitContext:
     def get_commit_tree(self, *args: str, **kwargs: Dict[str, str]) -> str:
         return self._popen_git("commit-tree", *args, **kwargs)
 
-    def delete_branch(
-            self, *args: str, force: bool = False, **kwargs: Dict[str, str]) -> int:
+    def delete_branch(self, branch_name: str, force: bool = False) -> int:
         self.flush_caches()
         delete_option = '-D' if force else '-d'
-        return self._run_git("branch", delete_option, *args, **kwargs)
+        return self._run_git("branch", delete_option, branch_name)
 
     def display_diff(self, *args: str, **kwargs: Dict[str, str]) -> int:
         return self._run_git("diff", *args, **kwargs)

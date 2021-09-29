@@ -1177,11 +1177,11 @@ class MacheteClient:
             return
 
         earliest_sha, earliest_short_sha, earliest_subject = commits[0]
-        earliest_full_body = self.__git.get_log("-1", "--format=%B", earliest_sha).strip()
+        earliest_full_body = self.__git.get_commit_information("raw body", earliest_sha).strip()
         # %ai for ISO-8601 format; %aE/%aN for respecting .mailmap; see `git rev-list --help`
-        earliest_author_date = self.__git.get_log("-1", "--format=%ai", earliest_sha).strip()
-        earliest_author_email = self.__git.get_log("-1", "--format=%aE", earliest_sha).strip()
-        earliest_author_name = self.__git.get_log("-1", "--format=%aN", earliest_sha).strip()
+        earliest_author_date = self.__git.get_commit_information("author date", earliest_sha).strip()
+        earliest_author_email = self.__git.get_commit_information("author email", earliest_sha).strip()
+        earliest_author_name = self.__git.get_commit_information("author name", earliest_sha).strip()
 
         # Following the convention of `git cherry-pick`, `git commit --amend`, `git rebase` etc.,
         # let's retain the original author (only committer will be overwritten).
@@ -1785,7 +1785,7 @@ class MacheteClient:
         debug(f'create_github_pr({head})', f'organization is {org}, repository is {repo}')
         debug(f'create_github_pr({head})', 'current GitHub user is ' + (current_user or '<none>'))
 
-        title: str = self.__git.get_log("-1", "--format=%s").strip()
+        title: str = self.__git.get_commit_information("subject").strip()
         description_path = self.__git.get_git_subpath('info', 'description')
         description: str = utils.slurp_file_or_empty(description_path)
 
