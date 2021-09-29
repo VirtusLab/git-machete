@@ -747,7 +747,7 @@ class GitContext:
         delete_option = '-D' if force else '-d'
         return self._run_git("branch", delete_option, branch_name)
 
-    def display_diff(self, forkpoint, format_with_stat, branch = None) -> int:
+    def display_diff(self, forkpoint: str, format_with_stat: bool, branch: str= None) -> int:
         params = ["diff"]
         if format_with_stat:
             params.append("--stat")
