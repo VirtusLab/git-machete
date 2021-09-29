@@ -733,11 +733,11 @@ class GitContext:
             params.append(commit)
         return self._popen_git(*params)
 
-    def display_branch_history_from_forkpoint(self, branch: str, forkpoint: str):
+    def display_branch_history_from_forkpoint(self, branch: str, forkpoint: str) -> int:
         return self._run_git("log", f"^{forkpoint}", branch)
 
     def squash_commits_with_msg_and_new_env(
-            self, fork_commit: str, msg: str, env: dict) -> str:
+            self, fork_commit: str, msg: str, env: Dict[str, str]) -> str:
         # returns hash of the new commit
         return self._popen_git(
             "commit-tree", "HEAD^{tree}", "-p", fork_commit, "-m", msg, env=env)
