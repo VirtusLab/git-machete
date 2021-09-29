@@ -1194,9 +1194,8 @@ class MacheteClient:
         # The tree (HEAD^{tree}) argument must be passed as first,
         # otherwise the entire `commit-tree` will fail on some ancient supported
         # versions of git (at least on v1.7.10).
-        squashed_sha = self.__git.get_commit_tree(
-            "HEAD^{tree}", "-p", fork_commit, "-m", earliest_full_body,
-            env=author_env).strip()
+        squashed_sha = self.__git.squash_commits_with_msg_and_new_env(
+            fork_commit, earliest_full_body, author_env).strip()
 
         # This can't be done with `git reset` since it doesn't allow for a custom reflog message.
         # Even worse, reset's reflog message would be filtered out in our fork point algorithm,

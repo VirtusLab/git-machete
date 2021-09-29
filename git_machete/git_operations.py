@@ -738,8 +738,11 @@ class GitContext:
     def display_branch_history_from_forkpoint(self, branch: str, forkpoint: str):
         return self._run_git("log", f"^{forkpoint}", branch)
 
-    def get_commit_tree(self, *args: str, **kwargs: Dict[str, str]) -> str:  # TODO
-        return self._popen_git("commit-tree", *args, **kwargs)
+    def squash_commits_with_msg_and_new_env(
+            self, fork_commit: str, msg: str, env: dict) -> str:
+        # returns hash of the new commit
+        return self._popen_git(
+            "commit-tree", "HEAD^{tree}", "-p", fork_commit, "-m", msg, env=env)
 
     def delete_branch(self, branch_name: str, force: bool = False) -> int:
         self.flush_caches()
