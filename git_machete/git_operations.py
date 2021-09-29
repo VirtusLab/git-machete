@@ -730,7 +730,7 @@ class GitContext:
         return self._popen_git("commit-tree", *args, **kwargs)
 
     def delete_branch(
-            self, *args: str, force: bool=False, **kwargs: Dict[str, str]) -> int:
+            self, *args: str, force: bool = False, **kwargs: Dict[str, str]) -> int:
         self.flush_caches()
         delete_option = '-D' if force else '-d'
         return self._run_git("branch", delete_option, *args, **kwargs)
