@@ -728,12 +728,10 @@ class GitContext:
                 " git-machete. Currently supported information are: "
                 f"{', '.join(GIT_FORMAT_PATTERNS.keys())}")
 
+        params = ["log", "-1", f"--format={GIT_FORMAT_PATTERNS[information]}"]
         if commit:
-            return self._popen_git(
-                "log", "-1", f"--format={GIT_FORMAT_PATTERNS[information]}", commit)
-        else:
-            return self._popen_git(
-                "log", "-1", f"--format={GIT_FORMAT_PATTERNS[information]}")
+            params.append(commit)
+        return self._popen_git(*params)
 
     def display_branch_history_from_forkpoint(self, branch: str, forkpoint: str):
         return self._run_git("log", f"^{forkpoint}", branch)
@@ -749,8 +747,16 @@ class GitContext:
         delete_option = '-D' if force else '-d'
         return self._run_git("branch", delete_option, branch_name)
 
-    def display_diff(self, *args: str, **kwargs: Dict[str, str]) -> int:  # TODO
-        return self._run_git("diff", *args, **kwargs)
+    def display_diff(self, forkpoint, format_with_stat, branch = None) -> int:
+        params = ["diff"]
+        if format_with_stat:
+            params.append("--stat")
+        params.append(forkpoint)
+        if branch:
+            params.append(f"refs/heads/{branch}")
+        params.append("--")
+
+        return self._run_git(*params)
 
     def update_ref(self, *args: str, **kwargs: Dict[str, str]) -> int:  # TODO
         self.flush_caches()

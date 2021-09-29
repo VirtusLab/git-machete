@@ -1035,12 +1035,10 @@ class MacheteClient:
         fp: str = self.fork_point(
             branch if branch else self.__git.get_current_branch(),
             use_overrides=True)
-        params = \
-            (["--stat"] if self.__cli_opts.opt_stat else []) + \
-            [fp] + \
-            ([f"refs/heads/{branch}"] if branch else []) + \
-            ["--"]
-        self.__git.display_diff(*params)
+        self.__git.display_diff(
+            branch=branch,
+            forkpoint=fp,
+            format_with_stat=self.__cli_opts.opt_stat)
 
     def log(self, branch: str) -> None:
         full_branch_name = f"refs/heads{branch}"
