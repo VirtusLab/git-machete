@@ -758,6 +758,6 @@ class GitContext:
 
         return self._run_git(*params)
 
-    def update_ref(self, *args: str, **kwargs: Dict[str, str]) -> int:  # TODO
+    def update_head_ref_to_new_hash_with_msg(self, hash: str, msg: str) -> int:
         self.flush_caches()
-        return self._run_git("update-ref", *args, **kwargs)
+        return self._run_git("update-ref", "HEAD", hash, "-m", msg)

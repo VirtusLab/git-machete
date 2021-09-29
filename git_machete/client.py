@@ -1199,7 +1199,8 @@ class MacheteClient:
         # Even worse, reset's reflog message would be filtered out in our fork point algorithm,
         # so the squashed commit would not even be considered to "belong"
         # (in the FP sense) to the current branch's history.
-        self.__git.update_ref("HEAD", squashed_sha, "-m", f"squash: {earliest_subject}")
+        self.__git.update_head_ref_to_new_hash_with_msg(
+            squashed_sha, f"squash: {earliest_subject}")
 
         print(f"Squashed {len(commits)} commits:")
         print()
