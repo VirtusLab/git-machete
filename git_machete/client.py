@@ -1043,9 +1043,9 @@ class MacheteClient:
         self.__git.display_diff(*params)
 
     def log(self, branch: str) -> None:
-        self.__git.display_log(
-            "^" + self.fork_point(branch, use_overrides=True),
-            f"refs/heads/{branch}")
+        full_branch_name = f"refs/heads{branch}"
+        forkpoint = self.fork_point(branch, use_overrides=True)
+        self.__git.display_branch_history_from_forkpoint(full_branch_name, forkpoint)
 
     def down(self, branch: str, pick_mode: bool) -> str:
         self.expect_in_managed_branches(branch)

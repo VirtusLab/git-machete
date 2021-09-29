@@ -735,10 +735,10 @@ class GitContext:
             return self._popen_git(
                 "log", "-1", f"--format={GIT_FORMAT_PATTERNS[information]}")
 
-    def display_log(self, *args: str, **kwargs: Dict[str, str]) -> int:
-        return self._run_git("log", *args, **kwargs)
+    def display_branch_history_from_forkpoint(self, branch: str, forkpoint: str):
+        return self._run_git("log", f"^{forkpoint}", branch)
 
-    def get_commit_tree(self, *args: str, **kwargs: Dict[str, str]) -> str:
+    def get_commit_tree(self, *args: str, **kwargs: Dict[str, str]) -> str:  # TODO
         return self._popen_git("commit-tree", *args, **kwargs)
 
     def delete_branch(self, branch_name: str, force: bool = False) -> int:
@@ -746,9 +746,9 @@ class GitContext:
         delete_option = '-D' if force else '-d'
         return self._run_git("branch", delete_option, branch_name)
 
-    def display_diff(self, *args: str, **kwargs: Dict[str, str]) -> int:
+    def display_diff(self, *args: str, **kwargs: Dict[str, str]) -> int:  # TODO
         return self._run_git("diff", *args, **kwargs)
 
-    def update_ref(self, *args: str, **kwargs: Dict[str, str]) -> int:
+    def update_ref(self, *args: str, **kwargs: Dict[str, str]) -> int:  # TODO
         self.flush_caches()
         return self._run_git("update-ref", *args, **kwargs)
