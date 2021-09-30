@@ -12,6 +12,7 @@ services:
         - python_version=${PYTHON_VERSION:-0.0.0}
         - check_coverage=${CHECK_COVERAGE:-false}
         - build_docs=${BUILD_DOCS:-false}
+        - flake8_checks=${FLAKE8:-false}
     volumes:
       # Host path is relative to current directory, not build-context
       - ../..:/home/ci-user/git-machete

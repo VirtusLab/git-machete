@@ -65,8 +65,8 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Run tests against Python 3.8 and git 2.25.0
-          command: PYTHON_VERSION=3.8 GIT_VERSION=2.25.0 bash ci/tox/ci-run.sh
+          name: Run tests against Python 3.8 and git 2.25.0 (check PEP8 correctness)
+          command: PYTHON_VERSION=3.8 GIT_VERSION=2.25.0 FLAKE8=true bash ci/tox/ci-run.sh
 
   tests_py39_coverage_docs:
     executor: ubuntu_executor

@@ -8,13 +8,17 @@
 set -e -u -x
 
 if [[ $CHECK_COVERAGE = true ]]; then
-  TOX_ENV_LIST="pep8,mypy-py${PYTHON_VERSION/./},coverage"
+  TOX_ENV_LIST="mypy-py${PYTHON_VERSION/./},coverage"
 else
-  TOX_ENV_LIST="pep8,mypy-py${PYTHON_VERSION/./},py${PYTHON_VERSION/./}"
+  TOX_ENV_LIST="mypy-py${PYTHON_VERSION/./},py${PYTHON_VERSION/./}"
 fi
 
 if [[ $BUILD_DOCS = true ]]; then
   TOX_ENV_LIST="$TOX_ENV_LIST,docs"
+fi
+
+if [[ $FLAKE8 = true ]]; then
+  TOX_ENV_LIST="$TOX_ENV_LIST,pep8"
 fi
 
 tox -e $TOX_ENV_LIST
