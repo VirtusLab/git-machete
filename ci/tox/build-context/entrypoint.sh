@@ -13,12 +13,12 @@ else
   TOX_ENV_LIST="mypy-py${PYTHON_VERSION/./},py${PYTHON_VERSION/./}"
 fi
 
-if [[ $BUILD_DOCS = true ]]; then
-  TOX_ENV_LIST="$TOX_ENV_LIST,docs"
+if [[ $FLAKE = true ]]; then
+  TOX_ENV_LIST="$TOX_ENV_LIST,pep8"
 fi
 
-if [[ $FLAKE8 = true ]]; then
-  TOX_ENV_LIST="$TOX_ENV_LIST,pep8"
+if [[ $BUILD_DOCS = true ]]; then
+  TOX_ENV_LIST="$TOX_ENV_LIST,docs"
 fi
 
 tox -e $TOX_ENV_LIST

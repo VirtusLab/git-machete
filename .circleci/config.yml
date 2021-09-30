@@ -44,7 +44,7 @@ jobs:
             prohibit-tab-character.sh
             prohibit-trailing-whitespace.sh
 
-  tests_py36:
+  tests_py36_git_1.8.0:
     executor: ubuntu_executor
     steps:
       - checkout
@@ -52,7 +52,7 @@ jobs:
           name: Run tests against Python 3.6 and git 1.8.0
           command: PYTHON_VERSION=3.6 GIT_VERSION=1.8.0  bash ci/tox/ci-run.sh # Earliest versions of python/git supported by git-machete
 
-  tests_py37:
+  tests_py37_git_2.7.6:
     executor: ubuntu_executor
     steps:
       - checkout
@@ -60,15 +60,15 @@ jobs:
           name: Run tests against Python 3.7 and git 2.7.6
           command: PYTHON_VERSION=3.7 GIT_VERSION=2.7.6  bash ci/tox/ci-run.sh
 
-  tests_py38:
+  tests_py38_git_2.25.0_pep8:
     executor: ubuntu_executor
     steps:
       - checkout
       - run:
           name: Run tests against Python 3.8 and git 2.25.0 (check PEP8 correctness)
-          command: PYTHON_VERSION=3.8 GIT_VERSION=2.25.0 FLAKE8=true bash ci/tox/ci-run.sh
+          command: PYTHON_VERSION=3.8 GIT_VERSION=2.25.0 FLAKE=true bash ci/tox/ci-run.sh
 
-  tests_py39_coverage_docs:
+  tests_py39_git_2.30.1_coverage_docs:
     executor: ubuntu_executor
     steps:
       - checkout
@@ -150,27 +150,27 @@ workflows:
   build:
     jobs:
       - initial_checks
-      - tests_py36
-      - tests_py37
-      - tests_py38
-      - tests_py39_coverage_docs
+      - tests_py36_git_1.8.0
+      - tests_py37_git_2.7.6
+      - tests_py38_git_2.25.0_pep8
+      - tests_py39_git_2.30.1_coverage_docs
       - dry_run_deploy_from_develop:
           filters:
             branches:
               only: "develop"
           requires:
             - initial_checks
-            - tests_py36
-            - tests_py37
-            - tests_py38
-            - tests_py39_coverage_docs
+            - tests_py36_git_1.8.0
+            - tests_py37_git_2.7.6
+            - tests_py38_git_2.25.0_pep8
+            - tests_py39_git_2.30.1_coverage_docs
       - deploy_from_master:
           filters:
             branches:
               only: "master"
           requires:
             - initial_checks
-            - tests_py36
-            - tests_py37
-            - tests_py38
-            - tests_py39_coverage_docs
+            - tests_py36_git_1.8.0
+            - tests_py37_git_2.7.6
+            - tests_py38_git_2.25.0_pep8
+            - tests_py39_git_2.30.1_coverage_docs
