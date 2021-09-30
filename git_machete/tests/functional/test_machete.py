@@ -1787,7 +1787,7 @@ class MacheteTester(unittest.TestCase):
         )
 
     git_api_state_for_test_retarget_pr = MockGithubAPIState(
-        [{'head': {'ref': 'feature', 'repo': {}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'root'}, 'number': '15',
+        [{'head': {'ref': 'feature', 'repo': {'full_name': "testing/ingore", 'html_url': 'www.github.com'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'root'}, 'number': '15',
           'html_url': 'www.github.com', 'state': 'open'}])
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
@@ -1815,9 +1815,9 @@ class MacheteTester(unittest.TestCase):
         self.assert_command(['github', 'retarget-pr'], 'The base branch of PR #15 is already `branch-1`\n', strip_indentation=False)
 
     git_api_state_for_test_anno_prs = MockGithubAPIState([
-        {'head': {'ref': 'ignore-trailing', 'repo': {}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com', 'state': 'open'},
-        {'head': {'ref': 'allow-ownership-link', 'repo': {}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '7', 'html_url': 'www.github.com', 'state': 'open'},
-        {'head': {'ref': 'call-ws', 'repo': {}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '31', 'html_url': 'www.github.com', 'state': 'open'}
+        {'head': {'ref': 'ignore-trailing', 'repo': {'full_name': "testing/ingore", 'html_url': 'www.github.com'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'allow-ownership-link', 'repo': {'full_name': "testing/ingore", 'html_url': 'www.github.com'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '7', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'call-ws', 'repo': {'full_name': "testing/ingore", 'html_url': 'www.github.com'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '31', 'html_url': 'www.github.com', 'state': 'open'}
     ])
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
@@ -1888,7 +1888,7 @@ class MacheteTester(unittest.TestCase):
             """,
         )
 
-    git_api_state_for_test_create_pr = MockGithubAPIState([{'head': {'ref': 'ignore-trailing', 'repo': {}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com', 'state': 'open'}],
+    git_api_state_for_test_create_pr = MockGithubAPIState([{'head': {'ref': 'ignore-trailing', 'repo': {'full_name': "testing/ingore", 'html_url': 'www.github.com'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com', 'state': 'open'}],
                                                           issues=[{'number': '4'}, {'number': '5'}, {'number': '6'}])
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
@@ -2057,14 +2057,14 @@ class MacheteTester(unittest.TestCase):
                              'Verify that expected error message has appeared when creating PR from root branch.')
 
     git_api_state_for_test_checkout_prs = MockGithubAPIState([
-        {'head': {'ref': 'chore/redundant_checks', 'repo': {'full_name': 'testing/checkout_prs'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'restrict_access'}, 'number': '18', 'html_url': 'www.github.com', 'state': 'open'},
-        {'head': {'ref': 'restrict_access', 'repo': {'full_name': 'testing/checkout_prs'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'allow-ownership-link'}, 'number': '17', 'html_url': 'www.github.com', 'state': 'open'},
-        {'head': {'ref': 'allow-ownership-link', 'repo': {'full_name': 'testing/checkout_prs'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'bugfix/feature'}, 'number': '12', 'html_url': 'www.github.com', 'state': 'open'},
-        {'head': {'ref': 'bugfix/feature', 'repo': {'full_name': 'testing/checkout_prs'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'enhance/feature'}, 'number': '6', 'html_url': 'www.github.com', 'state': 'open'},
-        {'head': {'ref': 'enhance/add_user', 'repo': {'full_name': 'testing/checkout_prs'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '19', 'html_url': 'www.github.com', 'state': 'open'},
-        {'head': {'ref': 'testing/add_user', 'repo': {'full_name': 'testing/checkout_prs'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'bugfix/add_user'}, 'number': '22', 'html_url': 'www.github.com', 'state': 'open'},
-        {'head': {'ref': 'chore/comments', 'repo': {'full_name': 'testing/checkout_prs'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'testing/add_user'}, 'number': '24', 'html_url': 'www.github.com', 'state': 'open'},
-        {'head': {'ref': 'ignore-trailing', 'repo': {'full_name': 'testing/checkout_prs'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'chore/redundant_checks', 'repo': {'full_name': 'testing/checkout_prs', 'html_url': 'www.github.com'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'restrict_access'}, 'number': '18', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'restrict_access', 'repo': {'full_name': 'testing/checkout_prs', 'html_url': 'www.github.com'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'allow-ownership-link'}, 'number': '17', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'allow-ownership-link', 'repo': {'full_name': 'testing/checkout_prs', 'html_url': 'www.github.com'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'bugfix/feature'}, 'number': '12', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'bugfix/feature', 'repo': {'full_name': 'testing/checkout_prs', 'html_url': 'www.github.com'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'enhance/feature'}, 'number': '6', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'enhance/add_user', 'repo': {'full_name': 'testing/checkout_prs', 'html_url': 'www.github.com'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '19', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'testing/add_user', 'repo': {'full_name': 'testing/checkout_prs', 'html_url': 'www.github.com'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'bugfix/add_user'}, 'number': '22', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'chore/comments', 'repo': {'full_name': 'testing/checkout_prs', 'html_url': 'www.github.com'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'testing/add_user'}, 'number': '24', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'ignore-trailing', 'repo': {'full_name': 'testing/checkout_prs', 'html_url': 'www.github.com'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com', 'state': 'open'},
         {'head': {'ref': 'bugfix/remove-n-option', 'repo': {'full_name': 'testing/checkout_prs', 'html_url': GitRepositorySandbox.second_remote_path}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '5', 'html_url': 'www.github.com', 'state': 'closed'}
     ])
 
@@ -2277,10 +2277,10 @@ class MacheteTester(unittest.TestCase):
         self.assert_command(['github', 'checkout-prs', '5'], expected_msg, strip_indentation=False)
 
     git_api_state_for_test_checkout_prs_fresh_repo = MockGithubAPIState([
-        {'head': {'ref': 'comments/add_docstrings', 'repo': {'full_name': 'testing:checkout_prs'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'improve/refactor'}, 'number': '2', 'html_url': 'www.github.com', 'state': 'open'},
-        {'head': {'ref': 'restrict_access', 'repo': {'full_name': 'testing:checkout_prs'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'allow-ownership-link'}, 'number': '17', 'html_url': 'www.github.com', 'state': 'open'},
-        {'head': {'ref': 'improve/refactor', 'repo': {'full_name': 'testing:checkout_prs'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'chore/sync_to_docs'}, 'number': '1', 'html_url': 'www.github.com', 'state': 'open'},
-        {'head': {'ref': 'sphinx_export', 'repo': {'full_name': 'testing:checkout_prs'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'comments/add_docstrings'}, 'number': '23', 'html_url': 'www.github.com', 'state': 'closed'}
+        {'head': {'ref': 'comments/add_docstrings', 'repo': {'full_name': 'testing:checkout_prs', 'html_url': 'www.github.com'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'improve/refactor'}, 'number': '2', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'restrict_access', 'repo': {'full_name': 'testing:checkout_prs', 'html_url': 'www.github.com'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'allow-ownership-link'}, 'number': '17', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'improve/refactor', 'repo': {'full_name': 'testing:checkout_prs', 'html_url': 'www.github.com'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'chore/sync_to_docs'}, 'number': '1', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'sphinx_export', 'repo': {'full_name': 'testing:checkout_prs', 'html_url': 'www.github.com'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'comments/add_docstrings'}, 'number': '23', 'html_url': 'www.github.com', 'state': 'closed'}
     ])
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests

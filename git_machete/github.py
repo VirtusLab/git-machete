@@ -27,21 +27,29 @@ GITHUB_REMOTE_PATTERNS = [
 
 
 class GitHubPullRequest(object):
-    def __init__(self, number: int, user: str, base: str, head: str, html_url: str, state: str, repo: Dict[str, Any]) -> None:
+    def __init__(self, number: int, user: str, base: str, head: str, html_url: str, state: str, full_repository_name: str, repository_url: str) -> None:
         self.number = number
         self.user = user
         self.base = base
         self.head = head
         self.html_url = html_url
         self.state = state
-        self.repo = repo
+        self.full_repository_name = full_repository_name
+        self.repository_url = repository_url
 
     def __repr__(self) -> str:
         return f"PR #{self.number} by {self.user}: {self.head} -> {self.base}"
 
 
 def __parse_pr_json(pr_json: Any) -> GitHubPullRequest:
-    return GitHubPullRequest(int(pr_json['number']), pr_json['user']['login'], pr_json['base']['ref'], pr_json['head']['ref'], pr_json['html_url'], pr_json['state'], pr_json['head']['repo'])
+    return GitHubPullRequest(number=int(pr_json['number']),
+                             user=pr_json['user']['login'],
+                             base=pr_json['base']['ref'],
+                             head=pr_json['head']['ref'],
+                             html_url=pr_json['html_url'],
+                             state=pr_json['state'],
+                             full_repository_name=pr_json['head']['repo']['full_name'],
+                             repository_url=pr_json['head']['repo']['html_url'])
 
 
 def __get_github_token() -> Optional[str]:

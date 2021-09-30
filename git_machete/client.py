@@ -1683,11 +1683,9 @@ class MacheteClient:
         if not pr:
             raise MacheteException(f"PR #{pr_no} is not found in repository `{org}/{repo}`")
         if '/'.join([remote, pr.head]) not in self.__git.get_remote_branches():
-            remote_from_pr: str = pr.repo['full_name'].split('/')[0]
-            try:
-                self.__git.add_remote(remote_from_pr, pr.repo['html_url'])
-            except MacheteException:  # TODO (#164): make dedicated exception here
-                pass  # remote might be already added
+            remote_from_pr: str = pr.full_repository_name.split('/')[0]
+            if remote_from_pr not in self.__git.get_remotes():
+                self.__git.add_remote(remote_from_pr, pr.repository_url)
             print(f"Fetching {remote_from_pr}...")
             self.__git.fetch_remote(remote_from_pr)
             if '/'.join([remote_from_pr, pr.head]) not in self.__git.get_remote_branches():
