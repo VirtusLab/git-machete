@@ -30,7 +30,7 @@ git: GitContext = GitContext(cli_opts)
 FAKE_GITHUB_REMOTE_PATTERNS = ['(.*)/(.*)']
 
 
-def get_head_commit_hash() -> str:
+def get_current_commit_hash() -> str:
     """Returns hash of a commit of the current branch head."""
     with os.popen("git rev-parse HEAD") as git_call:
         return git_call.read().strip()
@@ -38,7 +38,7 @@ def get_head_commit_hash() -> str:
 
 def mock_fetch_ref(cls: Any, remote: str, ref: str) -> None:
     branch: str = ref[ref.index(':') + 1:]
-    git.create_branch(branch, get_head_commit_hash())
+    git.create_branch(branch, get_current_commit_hash())
     git.checkout(branch)
 
 
@@ -1660,12 +1660,12 @@ class MacheteTester(unittest.TestCase):
             .check_out("level-1-branch")
         )
         self.launch_command("discover", "-y")
-        level_1_commit_hash = get_head_commit_hash()
+        level_1_commit_hash = get_current_commit_hash()
 
         self.repo_sandbox.check_out("root")
         self.launch_command("advance", "-y")
 
-        root_top_commit_hash = get_head_commit_hash()
+        root_top_commit_hash = get_current_commit_hash()
 
         self.assertEqual(
             level_1_commit_hash,
@@ -1727,7 +1727,7 @@ class MacheteTester(unittest.TestCase):
         )
         self.launch_command("discover", "-y")
 
-        parents_new_commit_hash = get_head_commit_hash()
+        parents_new_commit_hash = get_current_commit_hash()
         self.repo_sandbox.check_out("level-1-branch")
         self.launch_command("update", "--no-interactive-rebase")
         new_forkpoint_hash = self.launch_command("fork-point").strip()
@@ -1757,13 +1757,13 @@ class MacheteTester(unittest.TestCase):
             .commit(branchs_first_commit_msg)
             .commit(branchs_second_commit_msg)
         )
-        branch_second_commit_hash = get_head_commit_hash()
+        branch_second_commit_hash = get_current_commit_hash()
         (
             self.repo_sandbox.commit("Third commit on branch.")
             .check_out("root")
             .commit("Second commit on root.")
         )
-        roots_second_commit_hash = get_head_commit_hash()
+        roots_second_commit_hash = get_current_commit_hash()
         self.repo_sandbox.check_out("branch-1")
         self.launch_command("discover", "-y")
 
@@ -2445,3 +2445,147 @@ class MacheteTester(unittest.TestCase):
             msg="Verify that 'git machete github checkout prs' performs 'git checkout' to "
                 "the head branch of given pull request."
         )
+
+    def test_squash_with_valid_fork_point(self) -> None:
+        (
+            self.repo_sandbox.new_branch('branch-0')
+                .commit("First commit.")
+                .commit("Second commit.")
+        )
+        fork_point = get_current_commit_hash()
+
+        (
+            self.repo_sandbox.commit("Third commit.")
+                .commit("Fourth commit.")
+        )
+
+        self.launch_command('squash', '-f', fork_point)
+
+        current_branch_log = os.popen('git log -3 --format=%s').read()
+
+        expected_branch_log = (
+            "Third commit.\n"
+            "Second commit.\n"
+            "First commit.\n"
+        )
+
+        self.assertEqual(
+            current_branch_log,
+            expected_branch_log,
+            msg=("Verify that `git machete squash -f <fork-point>` squashes commit"
+                 " from one succeeding the fork-point until tip of the branch.")
+        )
+
+    def test_squash_with_invalid_fork_point(self) -> None:
+        (
+            self.repo_sandbox.new_branch('branch-0')
+                .commit()
+                .new_branch('branch-1a')
+                .commit()
+        )
+        fork_point_to_branch_1a = get_current_commit_hash()
+
+        (
+            self.repo_sandbox.check_out('branch-0')
+                .new_branch('branch-1b')
+                .commit()
+        )
+
+        with self.assertRaises(SystemExit):
+            # First exception MacheteException is raised, followed by SystemExit.
+            self.launch_command('squash', '-f', fork_point_to_branch_1a)
+
+    def test_update_with_invalid_fork_point(self) -> None:
+        (
+            self.repo_sandbox.new_branch('branch-0')
+                .commit("Commit on branch-0.")
+                .new_branch("branch-1a")
+                .commit("Commit on branch-1a.")
+        )
+        branch_1a_hash = get_current_commit_hash()
+        (
+            self.repo_sandbox.check_out('branch-0')
+                .new_branch("branch-1b")
+                .commit("Commit on branch-1b.")
+        )
+
+        self.launch_command('discover', '-y')
+
+        with self.assertRaises(SystemExit):
+            # First exception MacheteException is raised, followed by SystemExit.
+            self.launch_command('update', '-f', branch_1a_hash)
+
+    def test_slide_out_with_valid_down_fork_point(self) -> None:
+        (
+            self.repo_sandbox.new_branch('branch-0')
+                .commit()
+                .new_branch('branch-1')
+                .commit()
+                .new_branch('branch-2')
+                .commit()
+                .new_branch('branch-3')
+                .commit()
+                .commit('Second commit on branch-3.')
+        )
+        hash_of_second_commit_on_branch_3 = get_current_commit_hash()
+        self.repo_sandbox.commit("Third commit on branch-3.")
+
+        self.launch_command('discover', '-y')
+        self.launch_command(
+            'slide-out', '-n', 'branch-1', 'branch-2', '-d',
+            hash_of_second_commit_on_branch_3)
+
+        expected_status_output = (
+            """
+            branch-0 (untracked)
+            |
+            | Third commit on branch-3.
+            o-branch-3 * (untracked)
+            """
+        )
+
+        self.assert_command(['status', '-l'], expected_status_output)
+
+    def test_slide_out_with_invalid_down_fork_point(self) -> None:
+        (
+            self.repo_sandbox.new_branch('branch-0')
+                .commit()
+                .new_branch('branch-1')
+                .commit()
+                .new_branch('branch-2')
+                .commit()
+                .new_branch('branch-3')
+                .commit()
+                .check_out('branch-2')
+                .commit('Commit that is not ancestor of branch-3.')
+        )
+        hash_of_commit_that_is_not_ancestor_of_branch_2 = get_current_commit_hash()
+
+        self.launch_command('discover', '-y')
+
+        with self.assertRaises(SystemExit):
+            self.launch_command(
+                'slide-out', '-n', 'branch-1', 'branch-2', '-d',
+                hash_of_commit_that_is_not_ancestor_of_branch_2)
+
+    def test_slide_out_with_down_fork_point_and_multiple_children_of_last_branch(self) -> None:
+        (
+            self.repo_sandbox.new_branch('branch-0')
+                .commit()
+                .new_branch('branch-1')
+                .commit()
+                .new_branch('branch-2a')
+                .commit()
+                .check_out('branch-1')
+                .new_branch('branch-2b')
+                .commit()
+        )
+
+        hash_of_only_commit_on_branch_2b = get_current_commit_hash()
+
+        self.launch_command('discover', '-y')
+
+        with self.assertRaises(SystemExit):
+            self.launch_command(
+                'slide-out', '-n', 'branch-1', '-d',
+                hash_of_only_commit_on_branch_2b)
