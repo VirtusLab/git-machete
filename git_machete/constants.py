@@ -29,3 +29,11 @@ BEHIND_REMOTE = 3
 AHEAD_OF_REMOTE = 4
 DIVERGED_FROM_AND_OLDER_THAN_REMOTE = 5
 DIVERGED_FROM_AND_NEWER_THAN_REMOTE = 6
+
+GIT_FORMAT_PATTERNS = {
+    "author name": "%aN",
+    "author email": "%aE",
+    "author date": "%ai",
+    "raw body": "%B",
+    "subject": "%s"
+}

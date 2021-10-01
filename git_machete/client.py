@@ -946,7 +946,7 @@ class MacheteClient:
                 opt_yes_msg = f"Deleting branch {msg_core}"
                 ans = self.ask_if(msg, opt_yes_msg)
                 if ans in ('y', 'yes'):
-                    self.__git.run_git("branch", "-d" if is_merged_to_remote else "-D", branch)
+                    self.__git.delete_branch(branch, force=is_merged_to_remote)
                 elif ans in ('q', 'quit'):
                     return
 
@@ -957,7 +957,7 @@ class MacheteClient:
                 opt_yes_msg = f"Deleting branch {msg_core}"
                 ans = self.ask_if(msg, opt_yes_msg)
                 if ans in ('y', 'yes'):
-                    self.__git.run_git("branch", "-D", branch)
+                    self.__git.delete_branch(branch, force=True)
                 elif ans in ('q', 'quit'):
                     return
         else:
@@ -1035,18 +1035,15 @@ class MacheteClient:
         fp: str = self.fork_point(
             branch if branch else self.__git.get_current_branch(),
             use_overrides=True)
-        params = \
-            (["--stat"] if self.__cli_opts.opt_stat else []) + \
-            [fp] + \
-            ([f"refs/heads/{branch}"] if branch else []) + \
-            ["--"]
-        self.__git.run_git("diff", *params)
+        self.__git.display_diff(
+            branch=branch,
+            forkpoint=fp,
+            format_with_stat=self.__cli_opts.opt_stat)
 
     def log(self, branch: str) -> None:
-        self.__git.run_git(
-            "log",
-            "^" + self.fork_point(branch, use_overrides=True),
-            f"refs/heads/{branch}")
+        full_branch_name = f"refs/heads{branch}"
+        forkpoint = self.fork_point(branch, use_overrides=True)
+        self.__git.display_branch_history_from_forkpoint(full_branch_name, forkpoint)
 
     def down(self, branch: str, pick_mode: bool) -> str:
         self.expect_in_managed_branches(branch)
@@ -1178,15 +1175,11 @@ class MacheteClient:
             return
 
         earliest_sha, earliest_short_sha, earliest_subject = commits[0]
-        earliest_full_body = self.__git.popen_git(
-            "log", "-1", "--format=%B", earliest_sha).strip()
+        earliest_full_body = self.__git.get_commit_information("raw body", earliest_sha).strip()
         # %ai for ISO-8601 format; %aE/%aN for respecting .mailmap; see `git rev-list --help`
-        earliest_author_date = self.__git.popen_git(
-            "log", "-1", "--format=%ai", earliest_sha).strip()
-        earliest_author_email = self.__git.popen_git(
-            "log", "-1", "--format=%aE", earliest_sha).strip()
-        earliest_author_name = self.__git.popen_git(
-            "log", "-1", "--format=%aN", earliest_sha).strip()
+        earliest_author_date = self.__git.get_commit_information("author date", earliest_sha).strip()
+        earliest_author_email = self.__git.get_commit_information("author email", earliest_sha).strip()
+        earliest_author_name = self.__git.get_commit_information("author name", earliest_sha).strip()
 
         # Following the convention of `git cherry-pick`, `git commit --amend`, `git rebase` etc.,
         # let's retain the original author (only committer will be overwritten).
@@ -1199,15 +1192,15 @@ class MacheteClient:
         # The tree (HEAD^{tree}) argument must be passed as first,
         # otherwise the entire `commit-tree` will fail on some ancient supported
         # versions of git (at least on v1.7.10).
-        squashed_sha = self.__git.popen_git(
-            "commit-tree", "HEAD^{tree}", "-p", fork_commit, "-m", earliest_full_body,
-            env=author_env).strip()
+        squashed_sha = self.__git.squash_commits_with_msg_and_new_env(
+            fork_commit, earliest_full_body, author_env).strip()
 
         # This can't be done with `git reset` since it doesn't allow for a custom reflog message.
         # Even worse, reset's reflog message would be filtered out in our fork point algorithm,
         # so the squashed commit would not even be considered to "belong"
         # (in the FP sense) to the current branch's history.
-        self.__git.run_git("update-ref", "HEAD", squashed_sha, "-m", f"squash: {earliest_subject}")
+        self.__git.update_head_ref_to_new_hash_with_msg(
+            squashed_sha, f"squash: {earliest_subject}")
 
         print(f"Squashed {len(commits)} commits:")
         print()
@@ -1539,7 +1532,7 @@ class MacheteClient:
             ask_message = f"Push untracked branch {bold(branch)} to {bold(new_remote)}?" + choices
             ask_opt_yes_message = f"Pushing untracked branch {bold(branch)} to {bold(new_remote)}..."
             ans = self.ask_if(ask_message, ask_opt_yes_message,
-                              override_answer=None if self.__git.cli_opts.opt_push_untracked else "N")
+                              override_answer=None if self.__git._cli_opts.opt_push_untracked else "N")
             if is_called_from_traverse:
                 if ans in ('y', 'yes', 'yq'):
                     self.__git.push(new_remote, branch)
@@ -1790,7 +1783,7 @@ class MacheteClient:
         debug(f'create_github_pr({head})', f'organization is {org}, repository is {repo}')
         debug(f'create_github_pr({head})', 'current GitHub user is ' + (current_user or '<none>'))
 
-        title: str = self.__git.popen_git("log", "-1", "--format=%s").strip()
+        title: str = self.__git.get_commit_information("subject").strip()
         description_path = self.__git.get_git_subpath('info', 'description')
         description: str = utils.slurp_file_or_empty(description_path)
 
