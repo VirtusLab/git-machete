@@ -1787,7 +1787,7 @@ class MacheteTester(unittest.TestCase):
         )
 
     git_api_state_for_test_retarget_pr = MockGithubAPIState(
-        [{'head': {'ref': 'feature', 'repo': {'full_name': "testing/ingore", 'html_url': 'www.github.com'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'root'}, 'number': '15',
+        [{'head': {'ref': 'feature', 'repo': {'full_name': "testing/ignore", 'html_url': 'www.github.com'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'root'}, 'number': '15',
           'html_url': 'www.github.com', 'state': 'open'}])
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
@@ -1815,9 +1815,9 @@ class MacheteTester(unittest.TestCase):
         self.assert_command(['github', 'retarget-pr'], 'The base branch of PR #15 is already `branch-1`\n', strip_indentation=False)
 
     git_api_state_for_test_anno_prs = MockGithubAPIState([
-        {'head': {'ref': 'ignore-trailing', 'repo': {'full_name': "testing/ingore", 'html_url': 'www.github.com'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com', 'state': 'open'},
-        {'head': {'ref': 'allow-ownership-link', 'repo': {'full_name': "testing/ingore", 'html_url': 'www.github.com'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '7', 'html_url': 'www.github.com', 'state': 'open'},
-        {'head': {'ref': 'call-ws', 'repo': {'full_name': "testing/ingore", 'html_url': 'www.github.com'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '31', 'html_url': 'www.github.com', 'state': 'open'}
+        {'head': {'ref': 'ignore-trailing', 'repo': {'full_name': "testing/ignore", 'html_url': 'www.github.com'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'allow-ownership-link', 'repo': {'full_name': "testing/ignore", 'html_url': 'www.github.com'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '7', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'call-ws', 'repo': {'full_name': "testing/ignore", 'html_url': 'www.github.com'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '31', 'html_url': 'www.github.com', 'state': 'open'}
     ])
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
@@ -1888,7 +1888,7 @@ class MacheteTester(unittest.TestCase):
             """,
         )
 
-    git_api_state_for_test_create_pr = MockGithubAPIState([{'head': {'ref': 'ignore-trailing', 'repo': {'full_name': "testing/ingore", 'html_url': 'www.github.com'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com', 'state': 'open'}],
+    git_api_state_for_test_create_pr = MockGithubAPIState([{'head': {'ref': 'ignore-trailing', 'repo': {'full_name': "testing/ignore", 'html_url': 'www.github.com'}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com', 'state': 'open'}],
                                                           issues=[{'number': '4'}, {'number': '5'}, {'number': '6'}])
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
