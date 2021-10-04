@@ -13,7 +13,7 @@ else
   TOX_ENV_LIST="mypy-py${PYTHON_VERSION/./},py${PYTHON_VERSION/./}"
 fi
 
-if [[ $FLAKE = true ]]; then
+if [[ $PEP8 = true ]]; then
   TOX_ENV_LIST="$TOX_ENV_LIST,pep8"
 fi
 

@@ -39,8 +39,8 @@ ENV BUILD_DOCS=${build_docs}
 
 # Pass build argument to flake8_check environment variable that is used to
 # determine where to run tox enviornment that runs check against PEP8 standard.
-ARG flake
-ENV FLAKE=${flake}
+ARG pep8
+ENV PEP8=${pep8}
 
 ARG user_id
 ARG group_id
