@@ -156,6 +156,9 @@ class GitContext:
             self._run_git("config", "--unset", key)
             del self.__config_cached[key.lower()]
 
+    def add_remote(self, name: str, url: str) -> None:
+        self._run_git('remote', 'add', name, url)
+
     def get_remotes(self) -> List[str]:
         if self.__remotes_cached is None:
             self.__remotes_cached = utils.get_non_empty_lines(self._popen_git("remote"))
@@ -761,6 +764,3 @@ class GitContext:
     def update_head_ref_to_new_hash_with_msg(self, hash: str, msg: str) -> int:
         self.flush_caches()
         return self._run_git("update-ref", "HEAD", hash, "-m", msg)
-
-    def add_remote(self, name: str, url: str) -> None:
-        self._run_git('remote', 'add', name, url)
