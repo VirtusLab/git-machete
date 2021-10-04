@@ -12,7 +12,7 @@ mandatory_jobs: &mandatory_jobs
   - test against python 3_6 and git 1_8_10
   - test against python 3_7 and git 2_7_6
   - test against python 3_8 and git 2_25_0 with PEP8 checks
-  - test against python 3_9 and git 2_30_1 with corevarage report and docs creation
+  - test against python 3_9 and git 2_30_1 with coverage report and docs creation
 
 jobs:
   "initial checks":
@@ -74,7 +74,7 @@ jobs:
           name: Run tests against Python 3.8 and git 2.25.0 (check PEP8 correctness)
           command: PYTHON_VERSION=3.8 GIT_VERSION=2.25.0 PEP8=true bash ci/tox/ci-run.sh
 
-  "test against python 3_9 and git 2_30_1 with corevarage report and docs creation":
+  "test against python 3_9 and git 2_30_1 with coverage report and docs creation":
     executor: ubuntu_executor
     steps:
       - checkout
@@ -159,7 +159,7 @@ workflows:
       - test against python 3_6 and git 1_8_10
       - test against python 3_7 and git 2_7_6
       - test against python 3_8 and git 2_25_0 with PEP8 checks
-      - test against python 3_9 and git 2_30_1 with corevarage report and docs creation
+      - test against python 3_9 and git 2_30_1 with coverage report and docs creation
       - dry_run_deploy_from_develop:
           filters:
             branches:
