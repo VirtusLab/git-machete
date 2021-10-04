@@ -8,8 +8,15 @@ executors:
       # Needed to avoid warning: https://superuser.com/questions/575844/warning-terminal-is-not-fully-functional
       TERM: ansi
 
+mandatory_jobs: &mandatory_jobs
+  - initial checks
+  - test against python 3_6 and git 1_8_10
+  - test against python 3_7 and git 2_7_6
+  - test against python 3_8 and git 2_25_0 with PEP8 checks
+  - test against python 3_9 and git 2_30_1 with coverage report and docs creation
+
 jobs:
-  initial_checks:
+  "initial checks":
     executor: ubuntu_executor
     steps:
       - checkout
@@ -44,7 +51,7 @@ jobs:
             prohibit-tab-character.sh
             prohibit-trailing-whitespace.sh
 
-  tests_py36:
+  "test against python 3_6 and git 1_8_10":
     executor: ubuntu_executor
     steps:
       - checkout
@@ -52,7 +59,7 @@ jobs:
           name: Run tests against Python 3.6 and git 1.8.0
           command: PYTHON_VERSION=3.6 GIT_VERSION=1.8.0  bash ci/tox/ci-run.sh # Earliest versions of python/git supported by git-machete
 
-  tests_py37:
+  "test against python 3_7 and git 2_7_6":
     executor: ubuntu_executor
     steps:
       - checkout
@@ -60,15 +67,15 @@ jobs:
           name: Run tests against Python 3.7 and git 2.7.6
           command: PYTHON_VERSION=3.7 GIT_VERSION=2.7.6  bash ci/tox/ci-run.sh
 
-  tests_py38:
+  "test against python 3_8 and git 2_25_0 with PEP8 checks":
     executor: ubuntu_executor
     steps:
       - checkout
       - run:
-          name: Run tests against Python 3.8 and git 2.25.0
-          command: PYTHON_VERSION=3.8 GIT_VERSION=2.25.0 bash ci/tox/ci-run.sh
+          name: Run tests against Python 3.8 and git 2.25.0 (check PEP8 correctness)
+          command: PYTHON_VERSION=3.8 GIT_VERSION=2.25.0 PEP8=true bash ci/tox/ci-run.sh
 
-  tests_py39_coverage_docs:
+  "test against python 3_9 and git 2_30_1 with coverage report and docs creation":
     executor: ubuntu_executor
     steps:
       - checkout
@@ -149,28 +156,20 @@ workflows:
   version: 2
   build:
     jobs:
-      - initial_checks
-      - tests_py36
-      - tests_py37
-      - tests_py38
-      - tests_py39_coverage_docs
+      - initial checks
+      - test against python 3_6 and git 1_8_10
+      - test against python 3_7 and git 2_7_6
+      - test against python 3_8 and git 2_25_0 with PEP8 checks
+      - test against python 3_9 and git 2_30_1 with coverage report and docs creation
       - dry_run_deploy_from_develop:
           filters:
             branches:
               only: "develop"
           requires:
-            - initial_checks
-            - tests_py36
-            - tests_py37
-            - tests_py38
-            - tests_py39_coverage_docs
+            *mandatory_jobs
       - deploy_from_master:
           filters:
             branches:
               only: "master"
           requires:
-            - initial_checks
-            - tests_py36
-            - tests_py37
-            - tests_py38
-            - tests_py39_coverage_docs
+            *mandatory_jobs

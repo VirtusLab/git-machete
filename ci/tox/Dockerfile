@@ -37,6 +37,11 @@ ENV CHECK_COVERAGE=${check_coverage}
 ARG build_docs
 ENV BUILD_DOCS=${build_docs}
 
+# Pass build argument to PEP8 environment variable that is used to
+# determine where to run tox environment that runs check against PEP8 standard.
+ARG pep8
+ENV PEP8=${pep8}
+
 ARG user_id
 ARG group_id
 RUN set -x \
