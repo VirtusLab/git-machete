@@ -7,6 +7,7 @@ executors:
     environment:
       # Needed to avoid warning: https://superuser.com/questions/575844/warning-terminal-is-not-fully-functional
       TERM: ansi
+
 mandatory_jobs: &mandatory_jobs
   - initial checks
   - test against python 3_6 and git 1_8_10
