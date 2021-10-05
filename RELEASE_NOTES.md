@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.5.0
+
+- added: new way of acquiring the github token (from the file in `~`)
+
 ## New in git-machete 3.4.0
 
 - added: `github` command with `anno-prs`, `checkout-prs`, `create-pr` and `retarget-pr` subcommands
