@@ -1682,14 +1682,18 @@ class MacheteClient:
         pr = get_pull_request_by_number_or_none(pr_no, org, repo)
         if not pr:
             raise MacheteException(f"PR #{pr_no} is not found in repository `{org}/{repo}`")
-        if '/'.join([remote, pr.head]) not in self.__git.get_remote_branches():
-            remote_from_pr: str = pr.full_repository_name.split('/')[0]
-            if remote_from_pr not in self.__git.get_remotes():
-                self.__git.add_remote(remote_from_pr, pr.repository_url)
-            print(f"Fetching {remote_from_pr}...")
-            self.__git.fetch_remote(remote_from_pr)
-            if '/'.join([remote_from_pr, pr.head]) not in self.__git.get_remote_branches():
-                raise MacheteException(f"Could not check out PR #{pr_no} because its head branch `{pr.head}` is already deleted from `{remote_from_pr}`.")
+        if pr.full_repository_name:
+            if '/'.join([remote, pr.head]) not in self.__git.get_remote_branches():
+                remote_from_pr: str = pr.full_repository_name.split('/')[0]
+                if remote_from_pr not in self.__git.get_remotes():
+                    self.__git.add_remote(remote_from_pr, pr.repository_url)
+                print(f"Fetching {remote_from_pr}...")
+                self.__git.fetch_remote(remote_from_pr)
+                if '/'.join([remote_from_pr, pr.head]) not in self.__git.get_remote_branches():
+                    raise MacheteException(f"Could not check out PR #{pr_no} because its head branch `{pr.head}` is already deleted from `{remote_from_pr}`.")
+        else:
+            warn(f'Pull request #{pr_no} comes from fork and its repository is already deleted. Read only view of this PR will be checked out.')
+            self.__git.checkout_pr_refs(pr_no, pr.head)
         if pr.state == 'closed':
             warn(f'Pull request #{pr_no} is already closed.')
         debug('checkout_github_pr()', f'found {pr}')

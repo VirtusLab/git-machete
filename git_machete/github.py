@@ -48,8 +48,8 @@ def __parse_pr_json(pr_json: Any) -> GitHubPullRequest:
                              head=pr_json['head']['ref'],
                              html_url=pr_json['html_url'],
                              state=pr_json['state'],
-                             full_repository_name=pr_json['head']['repo']['full_name'],
-                             repository_url=pr_json['head']['repo']['html_url'])
+                             full_repository_name=pr_json['head']['repo']['full_name'] if pr_json['head']['repo'] else None,
+                             repository_url=pr_json['head']['repo']['html_url'] if pr_json['head']['repo'] else None)
 
 
 def __get_github_token() -> Optional[str]:

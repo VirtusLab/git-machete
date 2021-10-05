@@ -302,6 +302,11 @@ class GitContext:
         self._run_git("checkout", "--quiet", branch, "--")
         self.flush_caches()
 
+    def checkout_pr_refs(self, pr_number: int, branch: str) -> None:
+        self._run_git("fetch", "origin", f'pull/{pr_number}/head:{branch}')
+        self.checkout(branch)
+        self.flush_caches()
+
     def get_local_branches(self) -> List[str]:
         if self.__local_branches_cached is None:
             self.__load_branches()
