@@ -1693,6 +1693,7 @@ class MacheteClient:
                     raise MacheteException(f"Could not check out PR #{pr_no} because its head branch `{pr.head}` is already deleted from `{remote_from_pr}`.")
         else:
             warn(f'Pull request #{pr_no} comes from fork and its repository is already deleted. Read only view of this PR will be checked out.')
+            print(f"Checking out `{pr.head}` locally...")
             self.__git.checkout_pr_refs(pr_no, pr.head)
         if pr.state == 'closed':
             warn(f'Pull request #{pr_no} is already closed.')

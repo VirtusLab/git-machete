@@ -740,4 +740,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    launch(['github', 'checkout-prs', '241'])
+    main()

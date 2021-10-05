@@ -36,6 +36,11 @@ def get_head_commit_hash() -> str:
         return git_call.read().strip()
 
 
+def mock_checkout_pr_refs(cls: Any, pr_no: int, branch: str) -> None:
+    git.create_branch(branch, get_head_commit_hash())
+    git.checkout(branch)
+
+
 def mock_run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
     completed_process: subprocess.CompletedProcess[bytes] = subprocess.run([cmd] + list(args), stdout=subprocess.PIPE,
                                                                            stderr=subprocess.PIPE, **kwargs)
@@ -125,7 +130,7 @@ class MockGithubAPIRequest:
                         return self.make_response_object(HTTPStatus.OK, [pr])
                 return self.make_response_object(HTTPStatus.NOT_FOUND, [])
             else:
-                return self.make_response_object(HTTPStatus.OK, self.github_api_state.pulls)
+                return self.make_response_object(HTTPStatus.OK, [pull for pull in self.github_api_state.pulls if pull['state'] == 'open'])
         elif self.parsed_url.path.endswith('user'):
             return self.make_response_object(HTTPStatus.OK, self.github_api_state.user)
         else:
@@ -2274,7 +2279,6 @@ class MacheteTester(unittest.TestCase):
                         "A local branch `bugfix/remove-n-option` does not exist, but a remote branch `testing/bugfix/remove-n-option` exists.\n"
                         "Checking out `bugfix/remove-n-option` locally...\n"
                         "Added branch `bugfix/remove-n-option` onto `develop`\n"
-                        "Annotating bugfix/remove-n-option as `PR #5 (github_user)`\n"
                         "Pull request `#5` checked out at local branch `bugfix/remove-n-option`\n")
 
         self.assert_command(['github', 'checkout-prs', '5'], expected_msg, strip_indentation=False)
@@ -2366,7 +2370,6 @@ class MacheteTester(unittest.TestCase):
                         "A local branch `sphinx_export` does not exist, but a remote branch `origin/sphinx_export` exists.\n"
                         "Checking out `sphinx_export` locally...\n"
                         "Added branch `sphinx_export` onto `comments/add_docstrings`\n"
-                        "Annotating sphinx_export as `PR #23 (github_user)`\n"
                         "Pull request `#23` checked out at local branch `sphinx_export`\n")
         self.assert_command(
             ['github', 'checkout-prs', '23'],
@@ -2384,6 +2387,48 @@ class MacheteTester(unittest.TestCase):
               |
               o-comments/add_docstrings  PR #2 (github_user)
                 |
-                o-sphinx_export *  PR #23 (github_user)
+                o-sphinx_export *
             """
+        )
+
+    git_api_state_for_test_checkout_prs_from_fork_with_deleted_repo = MockGithubAPIState([
+        {'head': {'ref': 'feature/allow_checkout', 'repo': None}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '2', 'html_url': 'www.github.com', 'state': 'closed'},
+        {'head': {'ref': 'bugfix/allow_checkout', 'repo': mock_repository_info}, 'user': {'login': 'github_user'},
+         'base': {'ref': 'develop'}, 'number': '3', 'html_url': 'www.github.com', 'state': 'open'}
+    ])
+
+    @mock.patch('git_machete.git_operations.GitContext.checkout_pr_refs', mock_checkout_pr_refs)  # need to mock checkout_pr_refs due to underlying `git fetch pull/head` calls
+    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs_from_fork_with_deleted_repo` due to `git fetch` executed by `checkout-prs` subcommand.
+    @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
+    @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
+    @mock.patch('urllib.request.urlopen', MockContextManager)
+    @mock.patch('urllib.request.Request', git_api_state_for_test_checkout_prs_from_fork_with_deleted_repo.new_request())
+    def test_checkout_prs_from_fork_with_deleted_repo(self) -> None:
+        (
+            self.repo_sandbox.new_branch("root")
+            .commit('initial master commit')
+            .push()
+            .new_branch('develop')
+            .commit('initial develop commit')
+            .push()
+        )
+        self.launch_command('discover')
+        expected_msg = ("Fetching origin...\n"
+                        "Warn: Pull request #2 comes from fork and its repository is already deleted. Read only view of this PR will be checked out.\n"
+                        "Checking out `feature/allow_checkout` locally...\n"
+                        "Warn: Pull request #2 is already closed.\n"
+                        "Added branch `feature/allow_checkout` onto `develop`\n"
+                        "Pull request `#2` checked out at local branch `feature/allow_checkout`\n")
+        self.assert_command(
+            ['github', 'checkout-prs', '2'],
+            expected_msg,
+            strip_indentation=False
+        )
+
+        self.assertEqual(
+            'feature/allow_checkout',
+            self.launch_command("show", "current").strip(),
+            msg="Verify that 'git machete github checkout prs' performs 'git checkout' to "
+                "the head branch of given pull request."
         )
