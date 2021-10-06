@@ -170,7 +170,7 @@ class GitContext:
 
     def fetch_remote(self, remote: str) -> None:
         if remote not in self.__fetch_done_for:
-            self._run_git("fetch", remote)
+            self._run_git("fetch", remote, '--prune')  # --prune added to remove remote branches that are already deleted from remote
             self.__fetch_done_for.add(remote)
             self.flush_caches()
 
