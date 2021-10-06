@@ -11,6 +11,7 @@ from typing import Dict, List, Optional, Any, Tuple
 import urllib.request
 from urllib.error import HTTPError
 
+from git_machete import ROOT_DIR
 from git_machete.utils import debug, fmt, find_or_none
 from git_machete.exceptions import MacheteException, UnprocessableEntityHTTPError
 
@@ -100,7 +101,20 @@ def __get_github_token() -> Optional[str]:
     def get_token_from_env() -> Optional[str]:
         return os.environ.get(GITHUB_TOKEN_ENV_VAR)
 
-    return get_token_from_env() or get_token_from_gh() or get_token_from_hub()
+    def get_token_from_file_in_root() -> Optional[str]:
+        required_file_name = '.github-token'
+        file_full_path = f'{ROOT_DIR}/{required_file_name}'
+
+        if os.path.isfile(file_full_path):
+            with open(file_full_path) as file:
+                return file.read().strip()
+
+        return None
+
+    return (get_token_from_env() or
+            get_token_from_gh() or
+            get_token_from_hub() or
+            get_token_from_file_in_root())
 
 
 def __fire_github_api_request(method: str, path: str, token: Optional[str], request_body: Optional[Dict[str, Any]] = None) -> Any:
