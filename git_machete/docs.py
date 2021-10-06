@@ -306,7 +306,8 @@ long_docs: Dict[str, str] = {
         a GitHub API token with `repo` scope is required, see `https://github.com/settings/tokens`. This will be resolved from the first of:
         1. `GITHUB_TOKEN` env var,
         2. current auth token from the `gh` GitHub CLI,
-        3. current auth token from the `hub` GitHub CLI.
+        3. current auth token from the `hub` GitHub CLI,
+        4. content of the .github-token file in the root of the project.
 
         <b>`anno-prs`:</b>
 
