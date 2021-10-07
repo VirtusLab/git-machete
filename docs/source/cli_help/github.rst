@@ -18,7 +18,7 @@ a GitHub API token with ``repo`` scope is required, see https://github.com/setti
     1. ``GITHUB_TOKEN`` env var,
     2. current auth token from the ``gh`` GitHub CLI,
     3. current auth token from the ``hub`` GitHub CLI,
-    4. content of the ``.github-token`` file in the root of the project.
+    4. content of the ``.github-token`` file in the ``~`` directory.
 
 ``anno-prs``:
 

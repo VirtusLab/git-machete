@@ -11,7 +11,6 @@ from typing import Dict, List, Optional, Any, Tuple
 import urllib.request
 from urllib.error import HTTPError
 
-from git_machete import ROOT_DIR
 from git_machete.utils import debug, fmt, find_or_none
 from git_machete.exceptions import MacheteException, UnprocessableEntityHTTPError
 
@@ -103,7 +102,7 @@ def __get_github_token() -> Optional[str]:
 
     def get_token_from_file_in_root() -> Optional[str]:
         required_file_name = '.github-token'
-        file_full_path = f'{ROOT_DIR}/{required_file_name}'
+        file_full_path = f'~/{required_file_name}'
 
         if os.path.isfile(file_full_path):
             with open(file_full_path) as file:
