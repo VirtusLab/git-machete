@@ -1742,7 +1742,7 @@ class MacheteClient:
         }
 
         for remote, url in url_for_remote.items():
-            if is_github_remote_url(url) and get_parsed_github_remote_url(url) == get_parsed_github_remote_url(remote_url):
+            if is_github_remote_url(url) and get_parsed_github_remote_url(url) == get_parsed_github_remote_url(remote_url + '.git'):
                 return remote
         return None
 
