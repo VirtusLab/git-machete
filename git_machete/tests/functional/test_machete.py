@@ -2338,14 +2338,15 @@ class MacheteTester(unittest.TestCase):
         with os.popen("mktemp -d") as local_temp_folder:
             local_path = local_temp_folder.read().strip()
         self.repo_sandbox.new_repo(GitRepositorySandbox.second_remote_path)
-        (self.repo_sandbox.new_repo(local_path)
+        (
+            self.repo_sandbox.new_repo(local_path)
             .execute(f"git remote add origin {GitRepositorySandbox.second_remote_path}")
             .execute('git config user.email "tester@test.com"')
             .execute('git config user.name "Tester Test"')
             .new_branch('feature')
             .commit('initial commit')
             .push()
-        )
+         )
         os.chdir(self.repo_sandbox.local_path)
         self.rewrite_definition_file("master")
         expected_msg = ("A local branch `chore/sync_to_docs` does not exist, but a remote branch `origin/chore/sync_to_docs` exists.\n"
