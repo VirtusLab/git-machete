@@ -307,7 +307,7 @@ long_docs: Dict[str, str] = {
         1. `GITHUB_TOKEN` env var,
         2. current auth token from the `gh` GitHub CLI,
         3. current auth token from the `hub` GitHub CLI,
-        4. content of the .github-token file in the `~` directory.
+        4. content of the .github-token file in the home directory (`~`).
 
         <b>`anno-prs`:</b>
 

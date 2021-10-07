@@ -176,7 +176,7 @@ This will be resolved from the first of:
 1. The `GITHUB_TOKEN` env var.
 2. The auth token from the current [`gh`](https://cli.github.com/) configuration.
 3. The auth token from the current [`hub`](https://github.com/github/hub) configuration.
-4. The content of the .github-token file in the `~` directory. This file has to be manually created by the user.
+4. The content of the .github-token file in the home directory (`~`). This file has to be manually created by the user.
 
 <br/>
 
