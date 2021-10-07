@@ -13,6 +13,7 @@ from urllib.error import HTTPError
 
 from git_machete.utils import debug, fmt, find_or_none
 from git_machete.exceptions import MacheteException, UnprocessableEntityHTTPError
+from git_machete.git_operations import GitContext
 
 
 GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
@@ -28,14 +29,14 @@ GITHUB_REMOTE_PATTERNS = [
 
 class GitHubPullRequest(object):
     def __init__(self, number: int, user: str, base: str, head: str, html_url: str, state: str, full_repository_name: str, repository_url: str) -> None:
-        self.number = number
-        self.user = user
-        self.base = base
-        self.head = head
-        self.html_url = html_url
-        self.state = state
-        self.full_repository_name = full_repository_name
-        self.repository_url = repository_url
+        self.number: int = number
+        self.user: str = user
+        self.base: str = base
+        self.head: str = head
+        self.html_url: str = html_url
+        self.state: str = state
+        self.full_repository_name: str = full_repository_name
+        self.repository_url: str = repository_url
 
     def __repr__(self) -> str:
         return f"PR #{self.number} by {self.user}: {self.head} -> {self.base}"
@@ -245,3 +246,8 @@ def get_pull_request_by_number_or_none(number: int, org: str, repo: str) -> Opti
         return __parse_pr_json(pr_json)
     except MacheteException:
         return None
+
+
+def checkout_pr_refs(git: GitContext, remote: str, pr_number: int, branch: str) -> None:
+    git.fetch_ref(remote, f'pull/{pr_number}/head:{branch}')
+    git.checkout(branch)

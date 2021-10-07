@@ -36,7 +36,8 @@ def get_head_commit_hash() -> str:
         return git_call.read().strip()
 
 
-def mock_checkout_pr_refs(cls: Any, pr_no: int, branch: str) -> None:
+def mock_fetch_ref(cls: Any, remote: str, ref: str) -> None:
+    branch: str = ref[ref.index(':') + 1:]
     git.create_branch(branch, get_head_commit_hash())
     git.checkout(branch)
 
@@ -241,7 +242,8 @@ class MockContextManager:
 
 
 class GitRepositorySandbox:
-    second_remote_path = os.popen("mktemp -d").read().strip()
+    with os.popen("mktemp -d") as local_temp_folder:
+        second_remote_path = local_temp_folder.read().strip()
 
     def __init__(self) -> None:
         with os.popen("mktemp -d") as temp_remote_folder:
@@ -2243,7 +2245,8 @@ class MacheteTester(unittest.TestCase):
                              'Verify that expected error message has appeared when given pull request to checkout does not exists.')
 
         # Check against closed pull request with head branch deleted from remote
-        local_path = os.popen("mktemp -d").read().strip()
+        with os.popen("mktemp -d") as local_temp_folder:
+            local_path = local_temp_folder.read().strip()
         self.repo_sandbox.new_repo(GitRepositorySandbox.second_remote_path)
         (self.repo_sandbox.new_repo(local_path)
             .execute(f"git remote add origin {GitRepositorySandbox.second_remote_path}")
@@ -2273,8 +2276,7 @@ class MacheteTester(unittest.TestCase):
          )
         os.chdir(self.repo_sandbox.local_path)
 
-        expected_msg = ("Fetching origin...\n"
-                        "Fetching testing...\n"
+        expected_msg = ("Fetching testing...\n"
                         "Warn: Pull request #5 is already closed.\n"
                         "A local branch `bugfix/remove-n-option` does not exist, but a remote branch `testing/bugfix/remove-n-option` exists.\n"
                         "Checking out `bugfix/remove-n-option` locally...\n"
@@ -2287,7 +2289,7 @@ class MacheteTester(unittest.TestCase):
         {'head': {'ref': 'comments/add_docstrings', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'improve/refactor'}, 'number': '2', 'html_url': 'www.github.com', 'state': 'open'},
         {'head': {'ref': 'restrict_access', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'allow-ownership-link'}, 'number': '17', 'html_url': 'www.github.com', 'state': 'open'},
         {'head': {'ref': 'improve/refactor', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'chore/sync_to_docs'}, 'number': '1', 'html_url': 'www.github.com', 'state': 'open'},
-        {'head': {'ref': 'sphinx_export', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'comments/add_docstrings'}, 'number': '23', 'html_url': 'www.github.com', 'state': 'closed'}
+        {'head': {'ref': 'sphinx_export', 'repo': {'full_name': 'testing/checkout_prs', 'html_url': GitRepositorySandbox.second_remote_path}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'comments/add_docstrings'}, 'number': '23', 'html_url': 'www.github.com', 'state': 'closed'}
     ])
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
@@ -2333,9 +2335,20 @@ class MacheteTester(unittest.TestCase):
         for branch in ('develop', 'chore/sync_to_docs', 'improve/refactor', 'comments/add_docstrings'):
             self.repo_sandbox.execute(f"git branch -D -r origin/{branch}")
 
+        with os.popen("mktemp -d") as local_temp_folder:
+            local_path = local_temp_folder.read().strip()
+        self.repo_sandbox.new_repo(GitRepositorySandbox.second_remote_path)
+        (self.repo_sandbox.new_repo(local_path)
+            .execute(f"git remote add origin {GitRepositorySandbox.second_remote_path}")
+            .execute('git config user.email "tester@test.com"')
+            .execute('git config user.name "Tester Test"')
+            .new_branch('feature')
+            .commit('initial commit')
+            .push()
+        )
+        os.chdir(self.repo_sandbox.local_path)
         self.rewrite_definition_file("master")
-        expected_msg = ("Fetching origin...\n"
-                        "A local branch `chore/sync_to_docs` does not exist, but a remote branch `origin/chore/sync_to_docs` exists.\n"
+        expected_msg = ("A local branch `chore/sync_to_docs` does not exist, but a remote branch `origin/chore/sync_to_docs` exists.\n"
                         "Checking out `chore/sync_to_docs` locally...\n"
                         "Added branch `chore/sync_to_docs` as a new root\n"
                         "A local branch `improve/refactor` does not exist, but a remote branch `origin/improve/refactor` exists.\n"
@@ -2365,8 +2378,8 @@ class MacheteTester(unittest.TestCase):
         )
 
         # Check against closed pull request
-        expected_msg = ("Fetching origin...\n"
-                        "Warn: Pull request #23 is already closed.\n"
+        self.repo_sandbox.execute('git branch -D sphinx_export')
+        expected_msg = ("Warn: Pull request #23 is already closed.\n"
                         "A local branch `sphinx_export` does not exist, but a remote branch `origin/sphinx_export` exists.\n"
                         "Checking out `sphinx_export` locally...\n"
                         "Added branch `sphinx_export` onto `comments/add_docstrings`\n"
@@ -2397,7 +2410,7 @@ class MacheteTester(unittest.TestCase):
          'base': {'ref': 'develop'}, 'number': '3', 'html_url': 'www.github.com', 'state': 'open'}
     ])
 
-    @mock.patch('git_machete.git_operations.GitContext.checkout_pr_refs', mock_checkout_pr_refs)  # need to mock checkout_pr_refs due to underlying `git fetch pull/head` calls
+    @mock.patch('git_machete.git_operations.GitContext.fetch_ref', mock_fetch_ref)  # need to mock fetch_ref due to underlying `git fetch pull/head` calls
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs_from_fork_with_deleted_repo` due to `git fetch` executed by `checkout-prs` subcommand.
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
@@ -2414,8 +2427,7 @@ class MacheteTester(unittest.TestCase):
             .push()
         )
         self.launch_command('discover')
-        expected_msg = ("Fetching origin...\n"
-                        "Warn: Pull request #2 comes from fork and its repository is already deleted. Read only view of this PR will be checked out.\n"
+        expected_msg = ("Warn: Pull request #2 comes from fork and its repository is already deleted. No remote tracking data will be set up for `feature/allow_checkout` branch.\n"
                         "Checking out `feature/allow_checkout` locally...\n"
                         "Warn: Pull request #2 is already closed.\n"
                         "Added branch `feature/allow_checkout` onto `develop`\n"

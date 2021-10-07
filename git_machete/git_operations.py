@@ -158,6 +158,7 @@ class GitContext:
 
     def add_remote(self, name: str, url: str) -> None:
         self._run_git('remote', 'add', name, url)
+        self.flush_caches()
 
     def get_remotes(self) -> List[str]:
         if self.__remotes_cached is None:
@@ -172,6 +173,10 @@ class GitContext:
             self._run_git("fetch", remote)
             self.__fetch_done_for.add(remote)
             self.flush_caches()
+
+    def fetch_ref(self, remote: str, ref: str) -> None:
+        self._run_git("fetch", remote, ref)
+        self.flush_caches()
 
     def set_upstream_to(self, remote_branch: str) -> None:
         self._run_git("branch", "--set-upstream-to", remote_branch)
@@ -300,11 +305,6 @@ class GitContext:
 
     def checkout(self, branch: str) -> None:
         self._run_git("checkout", "--quiet", branch, "--")
-        self.flush_caches()
-
-    def checkout_pr_refs(self, pr_number: int, branch: str) -> None:
-        self._run_git("fetch", "origin", f'pull/{pr_number}/head:{branch}')
-        self.checkout(branch)
         self.flush_caches()
 
     def get_local_branches(self) -> List[str]:
