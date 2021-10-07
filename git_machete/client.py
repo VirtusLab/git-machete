@@ -1685,7 +1685,8 @@ class MacheteClient:
                 remote_already_added: Optional[str] = self.__get_added_remote_name_or_none(pr.repository_url)
                 if not remote_already_added:
                     remote_from_pr: str = pr.full_repository_name.split('/')[0]
-                    self.__git.add_remote(remote_from_pr, pr.repository_url)
+                    if remote_from_pr not in self.__git.get_remotes():
+                        self.__git.add_remote(remote_from_pr, pr.repository_url)
                     remote_to_fetch: str = remote_from_pr
                 else:
                     remote_to_fetch = remote_already_added
@@ -1742,7 +1743,9 @@ class MacheteClient:
         }
 
         for remote, url in url_for_remote.items():
-            if is_github_remote_url(url) and get_parsed_github_remote_url(url) == get_parsed_github_remote_url(remote_url + '.git'):
+            url = url if url.endswith('.git') else url + '.git'
+            remote_url = remote_url if remote_url.endswith('.git') else remote_url + '.git'
+            if is_github_remote_url(url) and get_parsed_github_remote_url(url) == get_parsed_github_remote_url(remote_url):
                 return remote
         return None
 
