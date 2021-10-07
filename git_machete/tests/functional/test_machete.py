@@ -2346,7 +2346,7 @@ class MacheteTester(unittest.TestCase):
             .new_branch('feature')
             .commit('initial commit')
             .push()
-         )
+        )
         os.chdir(self.repo_sandbox.local_path)
         self.rewrite_definition_file("master")
         expected_msg = ("A local branch `chore/sync_to_docs` does not exist, but a remote branch `origin/chore/sync_to_docs` exists.\n"
