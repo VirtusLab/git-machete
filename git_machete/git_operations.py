@@ -156,6 +156,10 @@ class GitContext:
             self._run_git("config", "--unset", key)
             del self.__config_cached[key.lower()]
 
+    def add_remote(self, name: str, url: str) -> None:
+        self._run_git('remote', 'add', name, url)
+        self.flush_caches()
+
     def get_remotes(self) -> List[str]:
         if self.__remotes_cached is None:
             self.__remotes_cached = utils.get_non_empty_lines(self._popen_git("remote"))
@@ -169,6 +173,10 @@ class GitContext:
             self._run_git("fetch", remote)
             self.__fetch_done_for.add(remote)
             self.flush_caches()
+
+    def fetch_ref(self, remote: str, ref: str) -> None:
+        self._run_git("fetch", remote, ref)
+        self.flush_caches()
 
     def set_upstream_to(self, remote_branch: str) -> None:
         self._run_git("branch", "--set-upstream-to", remote_branch)

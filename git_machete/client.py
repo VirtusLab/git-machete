@@ -17,7 +17,7 @@ from git_machete.exceptions import MacheteException, StopInteraction
 from git_machete.git_operations import GitContext
 from git_machete.github import (
     add_assignees_to_pull_request, add_reviewers_to_pull_request,
-    create_pull_request, derive_pull_request_by_head, derive_pull_requests,
+    create_pull_request, checkout_pr_refs, derive_pull_request_by_head, derive_pull_requests,
     get_parsed_github_remote_url, get_pull_request_by_number_or_none, GitHubPullRequest,
     is_github_remote_url, set_base_of_pull_request, set_milestone_of_pull_request)
 from git_machete.utils import (
@@ -1674,16 +1674,31 @@ class MacheteClient:
         repo: str
         remote: str
         remote, (org, repo) = self.__derive_remote_and_github_org_and_repo()
+        current_user: Optional[str] = git_machete.github.derive_current_user_login()
         debug('checkout_github_pr()', f'organization is {org}, repository is {repo}')
-        print(f"Fetching {remote}...")
-        self.__git.fetch_remote(remote)
-        self.flush_caches()
 
         pr = get_pull_request_by_number_or_none(pr_no, org, repo)
         if not pr:
             raise MacheteException(f"PR #{pr_no} is not found in repository `{org}/{repo}`")
-        if '/'.join([remote, pr.head]) not in self.__git.get_remote_branches():
-            raise MacheteException(f"Could not check out PR #{pr_no} because its head branch `{pr.head}` is already deleted from `{remote}`.")
+        if pr.full_repository_name:
+            if '/'.join([remote, pr.head]) not in self.__git.get_remote_branches():
+                remote_already_added: Optional[str] = self.__get_added_remote_name_or_none(pr.repository_url)
+                if not remote_already_added:
+                    remote_from_pr: str = pr.full_repository_name.split('/')[0]
+                    if remote_from_pr not in self.__git.get_remotes():
+                        self.__git.add_remote(remote_from_pr, pr.repository_url)
+                    remote_to_fetch: str = remote_from_pr
+                else:
+                    remote_to_fetch = remote_already_added
+                print(f"Fetching {remote_to_fetch}...")
+                self.__git.fetch_remote(remote_to_fetch)
+                if '/'.join([remote_to_fetch, pr.head]) not in self.__git.get_remote_branches():
+                    raise MacheteException(f"Could not check out PR #{pr_no} because its head branch `{pr.head}` is already deleted from `{remote_to_fetch}`.")
+        else:
+            warn(f'Pull request #{pr_no} comes from fork and its repository is already deleted. No remote tracking data will be set up for `{pr.head}` branch.')
+            print(fmt(f"Checking out `{pr.head}` locally..."))
+            checkout_pr_refs(self.__git, remote, pr_no, pr.head)
+            self.flush_caches()
         if pr.state == 'closed':
             warn(f'Pull request #{pr_no} is already closed.')
         debug('checkout_github_pr()', f'found {pr}')
@@ -1704,7 +1719,6 @@ class MacheteClient:
                     self.add(branch)
         self.__cli_opts.opt_yes = False
 
-        current_user: Optional[str] = git_machete.github.derive_current_user_login()
         debug('checkout_github_pr()',
               'Current GitHub user is ' + (current_user or '<none>'))
         self.__sync_annotations_to_definition_file(all_open_prs, current_user)
@@ -1718,6 +1732,22 @@ class MacheteClient:
             path.append(current_pr.base)
             current_pr = utils.find_or_none(lambda x: x.head == current_pr.base, all_open_prs)
         return path
+
+    def __get_added_remote_name_or_none(self, remote_url: str) -> Optional[str]:
+        """
+        Function to check if remote is added locally by its url,
+        because it may happen that remote is already added under a name different from the name of organization on GitHub
+        """
+        url_for_remote: Dict[str, str] = {
+            remote: self.__git.get_url_of_remote(remote) for remote in self.__git.get_remotes()
+        }
+
+        for remote, url in url_for_remote.items():
+            url = url if url.endswith('.git') else url + '.git'
+            remote_url = remote_url if remote_url.endswith('.git') else remote_url + '.git'
+            if is_github_remote_url(url) and get_parsed_github_remote_url(url) == get_parsed_github_remote_url(remote_url):
+                return remote
+        return None
 
     def retarget_github_pr(self, head: str) -> None:
         org: str
