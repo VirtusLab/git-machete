@@ -3,6 +3,9 @@
 ## New in git-machete 3.4.0
 
 - added: `github` command with `anno-prs`, `checkout-prs`, `create-pr` and `retarget-pr` subcommands
+- added: documentation on readthedocs.io
+- fixed: documentation displayed with help/-h/--help
+- improved: content of git-machete project related blogs has been moved to this repo and updated
 
 ## New in git-machete 3.3.1
 
