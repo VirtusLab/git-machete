@@ -1696,7 +1696,7 @@ class MacheteClient:
                     raise MacheteException(f"Could not check out PR #{pr_no} because its head branch `{pr.head}` is already deleted from `{remote_to_fetch}`.")
         else:
             warn(f'Pull request #{pr_no} comes from fork and its repository is already deleted. No remote tracking data will be set up for `{pr.head}` branch.')
-            print(f"Checking out `{pr.head}` locally...")
+            print(fmt(f"Checking out `{pr.head}` locally..."))
             checkout_pr_refs(self.__git, remote, pr_no, pr.head)
             self.flush_caches()
         if pr.state == 'closed':
@@ -1736,7 +1736,7 @@ class MacheteClient:
     def __get_added_remote_name_or_none(self, remote_url: str) -> Optional[str]:
         """
         Function to check if remote is added locally by its url,
-        because it may happen that remote is added already under name other than `Organisation`
+        because it may happen that remote is already added under a name different from the name of organization on GitHub
         """
         url_for_remote: Dict[str, str] = {
             remote: self.__git.get_url_of_remote(remote) for remote in self.__git.get_remotes()
