@@ -3,6 +3,7 @@
 ## New in git-machete 3.5.0
 
 - added: new way of acquiring the github token (from the file in `~`)
+- fixed: fork-point and down-fork-point options values have to be ancestor of the current branch
 
 ## New in git-machete 3.4.0
 
