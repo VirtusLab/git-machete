@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.4.1
+
+- fixed: wrong logo path in Snapcraft config
+
 ## New in git-machete 3.4.0
 
 - added: `github` command with `anno-prs`, `checkout-prs`, `create-pr` and `retarget-pr` subcommands
