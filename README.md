@@ -174,8 +174,9 @@ git machete github retarget-pr
 **Note**: for private repositories, a GitHub API token with `repo` access is required.
 This will be resolved from the first of:
 1. The `GITHUB_TOKEN` env var.
-2. The auth token from the current [`gh`](https://cli.github.com/) configuration.
-3. The auth token from the current [`hub`](https://github.com/github/hub) configuration.
+2. The content of the .github-token file in the home directory (`~`). This file has to be manually created by the user.
+3. The auth token from the current [`gh`](https://cli.github.com/) configuration.
+4. The auth token from the current [`hub`](https://github.com/github/hub) configuration.
 
 <br/>
 
