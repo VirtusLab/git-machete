@@ -170,7 +170,7 @@ class GitContext:
 
     def fetch_remote(self, remote: str) -> None:
         if remote not in self.__fetch_done_for:
-            self._run_git("fetch", remote)
+            self._run_git("fetch", remote, "--prune")  # --prune added to remove remote branches that are already deleted from remote
             self.__fetch_done_for.add(remote)
             self.flush_caches()
 
@@ -527,8 +527,12 @@ class GitContext:
         earlier_sha = self.get_full_sha(earlier_revision, earlier_prefix)
         later_sha = self.get_full_sha(later_revision, later_prefix)
 
+        # This if statement is not changing the outcome of the later return, but
+        # it enhances the efficiency of the script. If both hashes are the same,
+        # there is no point running git merge-base.
         if earlier_sha == later_sha:
             return True
+
         return self.__get_merge_base(earlier_sha, later_sha) == earlier_sha
 
     # Determine if later_revision, or any ancestors of later_revision that are NOT ancestors of earlier_revision,
@@ -769,3 +773,13 @@ class GitContext:
     def update_head_ref_to_new_hash_with_msg(self, hash: str, msg: str) -> int:
         self.flush_caches()
         return self._run_git("update-ref", "HEAD", hash, "-m", msg)
+
+    def check_that_forkpoint_is_ancestor_or_equal_to_tip_of_branch(
+            self, forkpoint_sha: str, branch: str) -> None:
+        if not self.is_ancestor_or_equal(
+                earlier_revision=forkpoint_sha,
+                earlier_prefix='',
+                later_revision=branch):
+            raise MacheteException(
+                f"Forkpoint {forkpoint_sha} is not ancestor of or the tip "
+                f"of the {branch} branch.")
