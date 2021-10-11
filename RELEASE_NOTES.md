@@ -6,9 +6,6 @@
 - added: documentation on readthedocs.io
 - fixed: documentation displayed with `help`/`-h`/`--help`
 - improved: content of git-machete project related blogs has been moved to this repo and updated
-
-## New in git-machete 3.3.1
-
 - removed: releases to Nixpkgs no longer happen directly from our CI pipeline
 
 ## New in git-machete 3.3.0
