@@ -901,7 +901,7 @@ class MacheteClient:
                 SyncToRemoteStatuses.AHEAD_OF_REMOTE: colored(f" (ahead of {remote})", EscapeCodes.RED),
                 SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: colored(f" (diverged from & older than {remote})", EscapeCodes.RED),
                 SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: colored(f" (diverged from {remote})", EscapeCodes.RED)
-            }[s]
+            }[SyncToRemoteStatuses(s)]
 
             hook_output = ""
             if hook_executable:
@@ -1583,7 +1583,7 @@ class MacheteClient:
                 f"Branch {bold(branch)} is untracked, it diverged from its remote counterpart candidate {bold(remote_branch)}, and has {bold('older')} commits than {bold(remote_branch)}.",
             SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
                 f"Branch {bold(branch)} is untracked, it diverged from its remote counterpart candidate {bold(remote_branch)}, and has {bold('newer')} commits than {bold(remote_branch)}."
-        }[relation]
+        }[SyncToRemoteStatuses(relation)]
 
         ask_message, ask_opt_yes_message = {
             SyncToRemoteStatuses.IN_SYNC_WITH_REMOTE: (
@@ -1606,7 +1606,7 @@ class MacheteClient:
                 f"Push branch {bold(branch)} with force-with-lease to {bold(new_remote)}?" + get_pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
                 f"Pushing branch {bold(branch)} with force-with-lease to {bold(new_remote)}..."
             )
-        }[relation]
+        }[SyncToRemoteStatuses(relation)]
 
         override_answer: Optional[str] = {
             SyncToRemoteStatuses.IN_SYNC_WITH_REMOTE: None,
@@ -1614,7 +1614,7 @@ class MacheteClient:
             SyncToRemoteStatuses.AHEAD_OF_REMOTE: None if self.__cli_opts.opt_push_tracked else "N",
             SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: None,
             SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: None if self.__cli_opts.opt_push_tracked else "N",
-        }[relation]
+        }[SyncToRemoteStatuses(relation)]
 
         yes_action: Callable[[], None] = {
             SyncToRemoteStatuses.IN_SYNC_WITH_REMOTE: lambda: self.__git.set_upstream_to(remote_branch),
@@ -1623,7 +1623,7 @@ class MacheteClient:
             SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: lambda: self.__git.reset_keep(remote_branch),
             SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: lambda: self.__git.push(
                 new_remote, branch, force_with_lease=True)
-        }[relation]
+        }[SyncToRemoteStatuses(relation)]
 
         print(message)
         ans = self.ask_if(ask_message, ask_opt_yes_message, override_answer=override_answer)
