@@ -17,7 +17,7 @@ base: core18
 # See https://forum.snapcraft.io/t/-/15566 for discussion on why classic confinement was necessary.
 confinement: classic
 grade: stable
-icon: logo.png
+icon: graphics/logo.png
 license: MIT
 
 parts:
