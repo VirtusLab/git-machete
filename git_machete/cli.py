@@ -664,19 +664,22 @@ def launch(orig_args: List[str]) -> None:
                     current_branch, use_overrides=True))
         elif cmd == "show":
             direction = parsed_cli.direction
-            if direction == "current" and 'branch' in parsed_cli:
-                raise MacheteException(
-                    '`show current` with a <branch> argument does not make sense')
-            machete_client.read_definition_file(verify_branches=False)
             branch = get_branch_arg_or_current_branch(cli_opts, git)
-            print(
-                machete_client.parse_direction(
-                    direction,
-                    branch,
-                    allow_current=True,
-                    down_pick_mode=False
+            if direction == "current":
+                if 'branch' in parsed_cli:
+                    raise MacheteException(
+                        '`show current` with a <branch> argument does not make sense')
+                print(branch)
+            else:
+                machete_client.read_definition_file(verify_branches=False)
+                print(
+                    machete_client.parse_direction(
+                        direction,
+                        branch,
+                        allow_current=True,
+                        down_pick_mode=False
+                    )
                 )
-            )
         elif cmd == "slide-out":
             machete_client.read_definition_file()
             git.expect_no_operation_in_progress()
