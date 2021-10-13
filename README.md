@@ -182,7 +182,7 @@ This will be resolved from the first of:
 
 ## Reference
 
-Find the docs at [Read the Docs](https://git-machete.readthedocs.io/en/latest).
+Find the docs at [Read the Docs](https://git-machete.readthedocs.io/).
 You can also check `git machete help` and `git machete help <command>`.
 
 Take a look at
