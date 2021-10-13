@@ -29,7 +29,7 @@ class GitContext:
         self.__tree_sha_by_commit_sha_cached: Optional[Dict[str, Optional[str]]] = None  # TODO (#110): default dict with None
         self.__commit_sha_by_revision_cached: Optional[Dict[str, Optional[str]]] = None  # TODO (#110): default dict with None
         self.__committer_unix_timestamp_by_revision_cached: Optional[Dict[str, int]] = None  # TODO (#110): default dict with 0
-        self.__local_branches_cached: Optional[List[str]] = None
+        self.__local_branches_cached: Optional[List[local_branch_type]] = None
         self.__remote_branches_cached: Optional[List[str]] = None
         self.__initial_log_shas_cached: Dict[str, List[str]] = {}
         self.__remaining_log_shas_cached: Dict[str, List[str]] = {}
@@ -304,7 +304,7 @@ class GitContext:
         self._run_git("checkout", "--quiet", branch, "--")
         self.flush_caches()
 
-    def get_local_branches(self) -> List[str]:
+    def get_local_branches(self) -> List[local_branch_type]:
         if self.__local_branches_cached is None:
             self.__load_branches()
         return self.__local_branches_cached
@@ -489,10 +489,10 @@ class GitContext:
             raise MacheteException(
                 "Revert in progress. Conclude the revert first with `git revert --continue` or `git revert --abort`.")
 
-    def get_current_branch_or_none(self) -> Optional[str]:
+    def get_current_branch_or_none(self) -> Optional[local_branch_type]:
         return self.get_currently_checked_out_branch_or_none() or self.get_currently_rebased_branch_or_none()
 
-    def get_current_branch(self) -> str:
+    def get_current_branch(self) -> local_branch_type:
         result = self.get_current_branch_or_none()
         if not result:
             raise MacheteException("Not currently on any branch")

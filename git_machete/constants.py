@@ -1,5 +1,6 @@
 from enum import IntEnum
 import os
+from typing import NewType, Union
 
 MAX_COUNT_FOR_INITIAL_LOG = 10
 DISCOVER_DEFAULT_FRESH_BRANCH_COUNT = 10
@@ -39,3 +40,8 @@ GIT_FORMAT_PATTERNS = {
     "raw body": "%B",
     "subject": "%s"
 }
+
+local_branch_type = NewType("local_branch_type", str)
+remote_branch_type = NewType("remote_branch_type", str)
+commit_type = NewType("commit_type", str)
+any_branch_type = Union[local_branch_type, remote_branch_type]

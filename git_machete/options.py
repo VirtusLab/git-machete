@@ -1,7 +1,7 @@
 from typing import Optional, List
 
 from git_machete.exceptions import MacheteException
-
+from git_machete.constants import local_branch_type
 
 class CommandLineOptions:
 
@@ -23,14 +23,14 @@ class CommandLineOptions:
         self.opt_no_detect_squash_merges: bool = False
         self.opt_no_edit_merge: bool = False
         self.opt_no_interactive_rebase: bool = False
-        self.opt_onto: Optional[str] = None
+        self.opt_onto: Optional[local_branch_type] = None
         self.opt_override_to: Optional[str] = None
         self.opt_override_to_inferred: bool = False
         self.opt_override_to_parent: bool = False
         self.opt_push_tracked: Optional[bool] = True
         self.opt_push_untracked: Optional[bool] = True
         self.opt_return_to: str = "stay"
-        self.opt_roots: List[str] = list()
+        self.opt_roots: List[local_branch_type] = list()
         self.opt_start_from: str = "here"
         self.opt_stat: bool = False
         self.opt_sync_github_prs: bool = False
