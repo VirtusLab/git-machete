@@ -10,9 +10,8 @@ import git_machete.github
 import git_machete.options
 from git_machete import utils
 from git_machete.constants import (
-    DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, PICK_FIRST_ROOT, UNTRACKED,
-    AHEAD_OF_REMOTE, BEHIND_REMOTE, DIVERGED_FROM_AND_OLDER_THAN_REMOTE,
-    DIVERGED_FROM_AND_NEWER_THAN_REMOTE, NO_REMOTES, IN_SYNC_WITH_REMOTE, PICK_LAST_ROOT, EscapeCodes)
+    DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, PICK_FIRST_ROOT, PICK_LAST_ROOT,
+    EscapeCodes, SyncToRemoteStatuses)
 from git_machete.exceptions import MacheteException, StopInteraction
 from git_machete.git_operations import GitContext
 from git_machete.github import (
@@ -630,11 +629,12 @@ class MacheteClient:
 
             needs_slide_out: bool = self.__is_merged_to_upstream(branch)
             s, remote = self.__git.get_strict_remote_sync_status(branch)
-            statuses_to_sync = (UNTRACKED,
-                                AHEAD_OF_REMOTE,
-                                BEHIND_REMOTE,
-                                DIVERGED_FROM_AND_OLDER_THAN_REMOTE,
-                                DIVERGED_FROM_AND_NEWER_THAN_REMOTE)
+            statuses_to_sync = (
+                SyncToRemoteStatuses.UNTRACKED,
+                SyncToRemoteStatuses.AHEAD_OF_REMOTE,
+                SyncToRemoteStatuses.BEHIND_REMOTE,
+                SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE,
+                SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE)
             needs_remote_sync = s in statuses_to_sync
 
             if needs_slide_out:
@@ -642,7 +642,7 @@ class MacheteClient:
                 # branch qualifies for slide out;
                 # neither rebase nor merge will be suggested in such case anyway.
                 needs_parent_sync: bool = False
-            elif s == DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
+            elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
                 # Avoid unnecessary fork point check if we already know that the
                 # branch qualifies for resetting to remote counterpart;
                 # neither rebase nor merge will be suggested in such case anyway.
@@ -745,16 +745,16 @@ class MacheteClient:
 
             if needs_remote_sync:
                 try:
-                    if s == BEHIND_REMOTE:
+                    if s == SyncToRemoteStatuses.BEHIND_REMOTE:
                         self.__handle_behind_state(current_branch, remote)
-                    elif s == AHEAD_OF_REMOTE:
+                    elif s == SyncToRemoteStatuses.AHEAD_OF_REMOTE:
                         self.__handle_ahead_state(
                             current_branch, remote, is_called_from_traverse=True)
-                    elif s == DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
+                    elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
                         self.__handle_diverged_and_older_state(current_branch)
-                    elif s == DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
+                    elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
                         self.__handle_diverged_and_newer_state(current_branch, remote)
-                    elif s == UNTRACKED:
+                    elif s == SyncToRemoteStatuses.UNTRACKED:
                         self.__handle_untracked_state(current_branch, is_called_from_traverse=True)
                 except StopInteraction:
                     return
@@ -894,13 +894,13 @@ class MacheteClient:
 
             s, remote = self.__git.get_combined_remote_sync_status(branch)
             sync_status = {
-                NO_REMOTES: "",
-                UNTRACKED: colored(" (untracked)", EscapeCodes.ORANGE),
-                IN_SYNC_WITH_REMOTE: "",
-                BEHIND_REMOTE: colored(f" (behind {remote})", EscapeCodes.RED),
-                AHEAD_OF_REMOTE: colored(f" (ahead of {remote})", EscapeCodes.RED),
-                DIVERGED_FROM_AND_OLDER_THAN_REMOTE: colored(f" (diverged from & older than {remote})", EscapeCodes.RED),
-                DIVERGED_FROM_AND_NEWER_THAN_REMOTE: colored(f" (diverged from {remote})", EscapeCodes.RED)
+                SyncToRemoteStatuses.NO_REMOTES: "",
+                SyncToRemoteStatuses.UNTRACKED: colored(" (untracked)", EscapeCodes.ORANGE),
+                SyncToRemoteStatuses.IN_SYNC_WITH_REMOTE: "",
+                SyncToRemoteStatuses.BEHIND_REMOTE: colored(f" (behind {remote})", EscapeCodes.RED),
+                SyncToRemoteStatuses.AHEAD_OF_REMOTE: colored(f" (ahead of {remote})", EscapeCodes.RED),
+                SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: colored(f" (diverged from & older than {remote})", EscapeCodes.RED),
+                SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: colored(f" (diverged from {remote})", EscapeCodes.RED)
             }[s]
 
             hook_output = ""
@@ -1573,55 +1573,55 @@ class MacheteClient:
         relation: int = self.__git.get_relation_to_remote_counterpart(branch, remote_branch)
 
         message: str = {
-            IN_SYNC_WITH_REMOTE:
+            SyncToRemoteStatuses.IN_SYNC_WITH_REMOTE:
                 f"Branch {bold(branch)} is untracked, but its remote counterpart candidate {bold(remote_branch)} already exists and both branches point to the same commit.",
-            BEHIND_REMOTE:
+            SyncToRemoteStatuses.BEHIND_REMOTE:
                 f"Branch {bold(branch)} is untracked, but its remote counterpart candidate {bold(remote_branch)} already exists and is ahead of {bold(branch)}.",
-            AHEAD_OF_REMOTE:
+            SyncToRemoteStatuses.AHEAD_OF_REMOTE:
                 f"Branch {bold(branch)} is untracked, but its remote counterpart candidate {bold(remote_branch)} already exists and is behind {bold(branch)}.",
-            DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
+            SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
                 f"Branch {bold(branch)} is untracked, it diverged from its remote counterpart candidate {bold(remote_branch)}, and has {bold('older')} commits than {bold(remote_branch)}.",
-            DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
+            SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
                 f"Branch {bold(branch)} is untracked, it diverged from its remote counterpart candidate {bold(remote_branch)}, and has {bold('newer')} commits than {bold(remote_branch)}."
         }[relation]
 
         ask_message, ask_opt_yes_message = {
-            IN_SYNC_WITH_REMOTE: (
+            SyncToRemoteStatuses.IN_SYNC_WITH_REMOTE: (
                 f"Set the remote of {bold(branch)} to {bold(new_remote)} without pushing or pulling?" + get_pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
                 f"Setting the remote of {bold(branch)} to {bold(new_remote)}..."
             ),
-            BEHIND_REMOTE: (
+            SyncToRemoteStatuses.BEHIND_REMOTE: (
                 f"Pull {bold(branch)} (fast-forward only) from {bold(new_remote)}?" + get_pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
                 f"Pulling {bold(branch)} (fast-forward only) from {bold(new_remote)}..."
             ),
-            AHEAD_OF_REMOTE: (
+            SyncToRemoteStatuses.AHEAD_OF_REMOTE: (
                 f"Push branch {bold(branch)} to {bold(new_remote)}?" + get_pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
                 f"Pushing branch {bold(branch)} to {bold(new_remote)}..."
             ),
-            DIVERGED_FROM_AND_OLDER_THAN_REMOTE: (
+            SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: (
                 f"Reset branch {bold(branch)} to the commit pointed by {bold(remote_branch)}?" + get_pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
                 f"Resetting branch {bold(branch)} to the commit pointed by {bold(remote_branch)}..."
             ),
-            DIVERGED_FROM_AND_NEWER_THAN_REMOTE: (
+            SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: (
                 f"Push branch {bold(branch)} with force-with-lease to {bold(new_remote)}?" + get_pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
                 f"Pushing branch {bold(branch)} with force-with-lease to {bold(new_remote)}..."
             )
         }[relation]
 
         override_answer: Optional[str] = {
-            IN_SYNC_WITH_REMOTE: None,
-            BEHIND_REMOTE: None,
-            AHEAD_OF_REMOTE: None if self.__cli_opts.opt_push_tracked else "N",
-            DIVERGED_FROM_AND_OLDER_THAN_REMOTE: None,
-            DIVERGED_FROM_AND_NEWER_THAN_REMOTE: None if self.__cli_opts.opt_push_tracked else "N",
+            SyncToRemoteStatuses.IN_SYNC_WITH_REMOTE: None,
+            SyncToRemoteStatuses.BEHIND_REMOTE: None,
+            SyncToRemoteStatuses.AHEAD_OF_REMOTE: None if self.__cli_opts.opt_push_tracked else "N",
+            SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: None,
+            SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: None if self.__cli_opts.opt_push_tracked else "N",
         }[relation]
 
         yes_action: Callable[[], None] = {
-            IN_SYNC_WITH_REMOTE: lambda: self.__git.set_upstream_to(remote_branch),
-            BEHIND_REMOTE: lambda: self.__git.pull_ff_only(new_remote, remote_branch),
-            AHEAD_OF_REMOTE: lambda: self.__git.push(new_remote, branch),
-            DIVERGED_FROM_AND_OLDER_THAN_REMOTE: lambda: self.__git.reset_keep(remote_branch),
-            DIVERGED_FROM_AND_NEWER_THAN_REMOTE: lambda: self.__git.push(
+            SyncToRemoteStatuses.IN_SYNC_WITH_REMOTE: lambda: self.__git.set_upstream_to(remote_branch),
+            SyncToRemoteStatuses.BEHIND_REMOTE: lambda: self.__git.pull_ff_only(new_remote, remote_branch),
+            SyncToRemoteStatuses.AHEAD_OF_REMOTE: lambda: self.__git.push(new_remote, branch),
+            SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: lambda: self.__git.reset_keep(remote_branch),
+            SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: lambda: self.__git.push(
                 new_remote, branch, force_with_lease=True)
         }[relation]
 
@@ -1972,15 +1972,18 @@ class MacheteClient:
                 f'All commits in `{current_branch}` branch  are already included in `{up_branch}` branch.\nCannot create pull request.')
 
         s, remote = self.__git.get_strict_remote_sync_status(current_branch)
-        statuses_to_sync = (UNTRACKED, AHEAD_OF_REMOTE, DIVERGED_FROM_AND_NEWER_THAN_REMOTE)
+        statuses_to_sync = (
+            SyncToRemoteStatuses.UNTRACKED,
+            SyncToRemoteStatuses.AHEAD_OF_REMOTE,
+            SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE)
         needs_remote_sync = s in statuses_to_sync
 
         if needs_remote_sync:
-            if s == AHEAD_OF_REMOTE:
+            if s == SyncToRemoteStatuses.AHEAD_OF_REMOTE:
                 self.__handle_ahead_state(current_branch, remote, is_called_from_traverse=False)
-            elif s == UNTRACKED:
+            elif s == SyncToRemoteStatuses.UNTRACKED:
                 self.__handle_untracked_state(current_branch, is_called_from_traverse=False)
-            elif s == DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
+            elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
                 self.__handle_diverged_and_newer_state(
                     current_branch, remote, is_called_from_traverse=False)
 
@@ -1989,17 +1992,17 @@ class MacheteClient:
             self.__print_new_line(False)
 
         else:
-            if s == BEHIND_REMOTE:
+            if s == SyncToRemoteStatuses.BEHIND_REMOTE:
                 warn(f"Branch {current_branch} is in <b>BEHIND_REMOTE</b> state.\nConsider using 'git pull'.\n")
                 self.__print_new_line(False)
                 ans = self.ask_if("Proceed with pull request creation?" + get_pretty_choices('y', 'Q'),
                                   "Proceeding with pull request creation...")
-            elif s == DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
+            elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
                 warn(f"Branch {current_branch} is in <b>DIVERGED_FROM_AND_OLDER_THAN_REMOTE</b> state.\nConsider using 'git reset --keep'.\n")
                 self.__print_new_line(False)
                 ans = self.ask_if("Proceed with pull request creation?" + get_pretty_choices('y', 'Q'),
                                   "Proceeding with pull request creation...")
-            elif s == NO_REMOTES:
+            elif s == SyncToRemoteStatuses.NO_REMOTES:
                 raise MacheteException(
                     "Could not create pull request - there are no remote repositories!")
             else:
