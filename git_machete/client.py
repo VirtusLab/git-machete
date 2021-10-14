@@ -1225,8 +1225,8 @@ class MacheteClient:
                             opt_yes=False
                     ) in ('y', 'yes'):
                         return upstream
-                    else:
-                        sys.exit(1)
+                    raise MacheteException(
+                        "User answer doesn't allow for the git machete to continue.")
                 else:
                     warn(
                         f"branch `{branch}` not found in the tree of branch "
@@ -1265,9 +1265,8 @@ class MacheteClient:
             exit_code = utils.run_cmd(hook_path, new_upstream, slid_out_branch, *new_downstreams,
                                       cwd=self.__git.get_root_dir())
             if exit_code != 0:
-                sys.stderr.write(
+                raise MacheteException(
                     f"The machete-post-slide-out hook exited with {exit_code}, aborting.\n")
-                sys.exit(exit_code)
 
     def squash(self, *, current_branch: str, opt_fork_point: str) -> None:
         commits: List[Hash_ShortHash_Message] = self.__git.get_commits_between(
@@ -1433,8 +1432,6 @@ class MacheteClient:
             return self.root_branch(branch, if_unmanaged=PICK_FIRST_ROOT)
         elif param in ("u", "up"):
             return self.up(branch, prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)
-        else:
-            raise MacheteException(f"Invalid direction: `{param}` expected: {allowed_directions(allow_current)}")
 
     def __match_log_to_filtered_reflogs(self, branch: str) -> Generator[Tuple[str, List[BRANCH_DEF]], None, None]:
 
