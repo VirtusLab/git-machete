@@ -89,7 +89,7 @@ jobs:
           path: docs/html
           destination: docs
 
-  dry_run_deploy:
+  "dry run deploy":
     executor: ubuntu_executor
     steps:
       - checkout
@@ -124,7 +124,7 @@ jobs:
           # Other than that, it just builds the package without publishing anything; there's no special dry-run mode
           command: bash ci/rpm/ci-run.sh
 
-  deploy_from_master:
+  "deploy from master":
     executor: ubuntu_executor
     steps:
       - checkout
@@ -171,16 +171,15 @@ workflows:
       - test against python 3_7 and git 2_7_6
       - test against python 3_8 and git 2_25_0 with PEP8 checks
       - test against python 3_9 and git 2_30_1 with coverage report and docs creation
-      - dry_run_deploy:
+      - dry run deploy:
           filters:
             branches:
               only:
                 - "develop"
-                - "master"
                 - "/hotfix.*/"
           requires:
             *mandatory_jobs
-      - deploy_from_master:
+      - deploy from master:
           filters:
             branches:
               only: "master"
