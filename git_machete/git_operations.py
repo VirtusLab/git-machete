@@ -30,7 +30,7 @@ class GitContext:
         self.__commit_sha_by_revision_cached: Optional[Dict[str, Optional[str]]] = None  # TODO (#110): default dict with None
         self.__committer_unix_timestamp_by_revision_cached: Optional[Dict[str, int]] = None  # TODO (#110): default dict with 0
         self.__local_branches_cached: Optional[List[local_branch_type]] = None
-        self.__remote_branches_cached: Optional[List[str]] = None
+        self.__remote_branches_cached: Optional[List[remote_branch_type]] = None
         self.__initial_log_shas_cached: Dict[str, List[str]] = {}
         self.__remaining_log_shas_cached: Dict[str, List[str]] = {}
         self.__reflogs_cached: Optional[Dict[str, Optional[List[REFLOG_ENTRY]]]] = None
@@ -309,7 +309,7 @@ class GitContext:
             self.__load_branches()
         return self.__local_branches_cached
 
-    def get_remote_branches(self) -> List[str]:
+    def get_remote_branches(self) -> List[remote_branch_type]:
         if self.__remote_branches_cached is None:
             self.__load_branches()
         return self.__remote_branches_cached
@@ -330,7 +330,7 @@ class GitContext:
                 continue  # invalid, shouldn't happen
             branch, commit_sha, tree_sha, committer_unix_timestamp_and_time_zone = values
             b_stripped = re.sub("^refs/remotes/", "", branch)
-            self.__remote_branches_cached += [b_stripped]
+            self.__remote_branches_cached += [remote_branch_type(b_stripped)]
             self.__commit_sha_by_revision_cached[branch] = commit_sha
             self.__tree_sha_by_commit_sha_cached[commit_sha] = tree_sha
             self.__committer_unix_timestamp_by_revision_cached[branch] = int(committer_unix_timestamp_and_time_zone.split(' ')[0])
@@ -342,7 +342,7 @@ class GitContext:
             if len(values) != 5:
                 continue  # invalid, shouldn't happen
             branch, commit_sha, tree_sha, committer_unix_timestamp_and_time_zone, fetch_counterpart = values
-            b_stripped = re.sub("^refs/heads/", "", branch)
+            b_stripped = local_branch_type(re.sub("^refs/heads/", "", branch))
             fetch_counterpart_stripped = re.sub("^refs/remotes/", "", fetch_counterpart)
             self.__local_branches_cached += [b_stripped]
             self.__commit_sha_by_revision_cached[branch] = commit_sha
@@ -441,7 +441,7 @@ class GitContext:
     # Note: while rebase is ongoing, the repository is always in a detached HEAD state,
     # so we need to extract the name of the currently rebased branch from the rebase-specific internals
     # rather than rely on 'git symbolic-ref HEAD' (i.e. the contents of .git/HEAD).
-    def get_currently_rebased_branch_or_none(self) -> Optional[str]:  # utils/private
+    def get_currently_rebased_branch_or_none(self) -> Optional[local_branch_type]:  # utils/private
         # https://stackoverflow.com/questions/3921409
 
         head_name_file = None
@@ -462,12 +462,12 @@ class GitContext:
             return None
         with open(head_name_file) as f:
             raw = f.read().strip()
-            return re.sub("^refs/heads/", "", raw)
+            return local_branch_type(re.sub("^refs/heads/", "", raw))
 
-    def get_currently_checked_out_branch_or_none(self) -> Optional[str]:
+    def get_currently_checked_out_branch_or_none(self) -> Optional[local_branch_type]:
         try:
             raw = self._popen_git("symbolic-ref", "--quiet", "HEAD").strip()
-            return re.sub("^refs/heads/", "", raw)
+            return local_branch_type(re.sub("^refs/heads/", "", raw))
         except MacheteException:
             return None
 
@@ -573,7 +573,7 @@ class GitContext:
         self.__contains_equivalent_tree_cached[earlier_commit_sha, later_commit_sha] = result
         return result
 
-    def get_sole_remote_branch(self, branch: str) -> Optional[str]:
+    def get_sole_remote_branch(self, branch: str) -> Optional[remote_branch_type]:
         def matches(remote_branch: str) -> bool:
             # Note that this matcher is defensively too inclusive:
             # if there is both origin/foo and origin/feature/foo,

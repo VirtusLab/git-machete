@@ -40,8 +40,38 @@ GIT_FORMAT_PATTERNS = {
     "raw body": "%B",
     "subject": "%s"
 }
-
-local_branch_type = NewType("local_branch_type", str)
-remote_branch_type = NewType("remote_branch_type", str)
+any_branch_type = NewType("any_branch_type", str)
+local_branch_type = NewType("local_branch_type", any_branch_type)
+remote_branch_type = NewType("remote_branch_type", any_branch_type)
 commit_type = NewType("commit_type", str)
-any_branch_type = Union[local_branch_type, remote_branch_type]
+
+
+class AnyBranch(object):
+    pass
+
+
+class LocalBranch(AnyBranch):
+    pass
+
+
+class RemoteBranch(AnyBranch):
+    pass
+
+
+class Commit(str):
+    pass
+
+any_branch: AnyBranch = AnyBranch('A')
+local: LocalBranch = LocalBranch("B")
+remote: RemoteBranch = RemoteBranch("C")
+var: str = "D"
+
+# any_branch = local
+# any_branch = remote
+# any_branch = var   # fail
+# local = any_branch # fail
+# remote = any_branch # fail
+# var = any_branch
+# var = local
+# var = remote
+# local = remote  #fail
