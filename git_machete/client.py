@@ -1754,7 +1754,7 @@ class MacheteClient:
             SyncToRemoteStatuses.AHEAD_OF_REMOTE: None if opt_push_tracked else "N",
             SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: None,
             SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: None if opt_push_tracked else "N",
-        }[relation]
+        }[SyncToRemoteStatuses(relation)]
 
         yes_action: Callable[[], None] = {
             SyncToRemoteStatuses.IN_SYNC_WITH_REMOTE: lambda: self.__git.set_upstream_to(remote_branch),
