@@ -8,10 +8,9 @@ from git_machete.options import CommandLineOptions
 from git_machete.exceptions import MacheteException
 from git_machete.utils import colored, debug, fmt
 from git_machete import utils
-from git_machete.constants import AHEAD_OF_REMOTE, BEHIND_REMOTE, DIVERGED_FROM_AND_NEWER_THAN_REMOTE, \
-    DIVERGED_FROM_AND_OLDER_THAN_REMOTE, IN_SYNC_WITH_REMOTE, \
-    NO_REMOTES, MAX_COUNT_FOR_INITIAL_LOG, UNTRACKED, EscapeCodes, \
-    GIT_FORMAT_PATTERNS
+from git_machete.constants import (
+    MAX_COUNT_FOR_INITIAL_LOG, EscapeCodes, SyncToRemoteStatuses,
+    GIT_FORMAT_PATTERNS)
 
 
 REFLOG_ENTRY = Tuple[str, str]
@@ -688,28 +687,28 @@ class GitContext:
         b_is_anc_of_rb = self.is_ancestor_or_equal(branch, remote_branch, later_prefix="refs/remotes/")
         rb_is_anc_of_b = self.is_ancestor_or_equal(remote_branch, branch, earlier_prefix="refs/remotes/")
         if b_is_anc_of_rb:
-            return IN_SYNC_WITH_REMOTE if rb_is_anc_of_b else BEHIND_REMOTE
+            return SyncToRemoteStatuses.IN_SYNC_WITH_REMOTE if rb_is_anc_of_b else SyncToRemoteStatuses.BEHIND_REMOTE
         elif rb_is_anc_of_b:
-            return AHEAD_OF_REMOTE
+            return SyncToRemoteStatuses.AHEAD_OF_REMOTE
         else:
             b_t = self.get_committer_unix_timestamp_by_revision(branch, "refs/heads/")
             rb_t = self.get_committer_unix_timestamp_by_revision(remote_branch, "refs/remotes/")
-            return DIVERGED_FROM_AND_OLDER_THAN_REMOTE if b_t < rb_t else DIVERGED_FROM_AND_NEWER_THAN_REMOTE
+            return SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE if b_t < rb_t else SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE
 
     def get_strict_remote_sync_status(self, branch: str) -> Tuple[int, Optional[str]]:
         if not self.get_remotes():
-            return NO_REMOTES, None
+            return SyncToRemoteStatuses.NO_REMOTES, None
         remote_branch = self.get_strict_counterpart_for_fetching_of_branch(branch)
         if not remote_branch:
-            return UNTRACKED, None
+            return SyncToRemoteStatuses.UNTRACKED, None
         return self.get_relation_to_remote_counterpart(branch, remote_branch), self.get_strict_remote_for_fetching_of_branch(branch)
 
     def get_combined_remote_sync_status(self, branch: str) -> Tuple[int, Optional[str]]:
         if not self.get_remotes():
-            return NO_REMOTES, None
+            return SyncToRemoteStatuses.NO_REMOTES, None
         remote_branch = self.get_combined_counterpart_for_fetching_of_branch(branch)
         if not remote_branch:
-            return UNTRACKED, None
+            return SyncToRemoteStatuses.UNTRACKED, None
         return self.get_relation_to_remote_counterpart(branch, remote_branch), self.get_combined_remote_for_fetching_of_branch(branch)
 
     def get_latest_checkout_timestamps(self) -> Dict[str, int]:  # TODO (#110): default dict with 0
