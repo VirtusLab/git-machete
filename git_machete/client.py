@@ -450,7 +450,7 @@ class MacheteClient:
             self.managed_branches = excluding(self.managed_branches, merged_branches_to_skip)
             for branch in merged_branches_to_skip:
                 upstream = self.up_branch[branch]
-                self.__down_branches[upstream] = excluding(self.__down_branches.get(upstream), [branch])
+                self.__down_branches[upstream] = excluding(self.__down_branches[upstream], [branch])
                 del self.up_branch[branch]
             # We're NOT applying the removal process recursively,
             # so it's theoretically possible that some merged branches became childless
