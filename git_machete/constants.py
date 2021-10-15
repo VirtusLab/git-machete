@@ -1,6 +1,6 @@
 from enum import IntEnum
 import os
-from typing import NewType, Union
+from typing import Optional, Any
 
 MAX_COUNT_FOR_INITIAL_LOG = 10
 DISCOVER_DEFAULT_FRESH_BRANCH_COUNT = 10
@@ -40,31 +40,53 @@ GIT_FORMAT_PATTERNS = {
     "raw body": "%B",
     "subject": "%s"
 }
-any_branch_type = NewType("any_branch_type", str)
-local_branch_type = NewType("local_branch_type", any_branch_type)
-remote_branch_type = NewType("remote_branch_type", any_branch_type)
-commit_type = NewType("commit_type", str)
 
 
-class AnyBranch(object):
-    pass
+class AnyBranch:
+    def __init__(self, branch_name: Any):
+        self.name = str(branch_name)
+
+    def __str__(self) -> str:
+        return str(self.name)
+
+    def __bool__(self) -> bool:
+        return self.name != ''
+
+    def __le__(self, other) -> bool:
+        return self.name <= other
+
+    def __lt__(self, other) -> bool:
+        return self.name < other
+
+    def __ge__(self, other) -> bool:
+        return self.name >= other
+
+    def __gt__(self, other) -> bool:
+        return self.name > other
 
 
 class LocalBranch(AnyBranch):
-    pass
+    def __init__(self, branch_name: Any) -> None:
+        super().__init__(branch_name)
+        self.name = branch_name
+
 
 
 class RemoteBranch(AnyBranch):
-    pass
+    def __init__(self, branch_name: Any) -> None:
+        super().__init__(branch_name)
+        self.name = str(branch_name)
 
 
-class Commit(str):
-    pass
+class Commit:
+    def __init__(self, commit_string: Any):
+        self.name = str(commit_string)
 
-any_branch: AnyBranch = AnyBranch('A')
-local: LocalBranch = LocalBranch("B")
-remote: RemoteBranch = RemoteBranch("C")
-var: str = "D"
+    def __str__(self) -> str:
+        return self.name
+
+    def __bool__(self) -> bool:
+        return self.name != ''
 
 # any_branch = local
 # any_branch = remote

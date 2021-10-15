@@ -47,7 +47,7 @@ def tupled(f: Callable[..., T]) -> Callable[[Any], T]:
     return lambda tple: f(*tple)
 
 
-def get_second(pair: Tuple[str, str]) -> str:
+def get_second(pair: Tuple[Any, str]) -> str:
     a, b = pair
     return b
 

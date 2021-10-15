@@ -16,6 +16,7 @@ from git_machete.docs import short_docs, long_docs
 from git_machete.exceptions import MacheteException, StopInteraction
 from git_machete.git_operations import GitContext
 from git_machete.utils import fmt, underline, excluding, warn
+from git_machete.constants import LocalBranch, Commit, AnyBranch, RemoteBranch
 
 T = TypeVar('T')
 
@@ -456,7 +457,7 @@ def set_utils_global_variables(
 
 
 def get_branch_arg_or_current_branch(
-        cli_opts: git_machete.options.CommandLineOptions, git_context: GitContext) -> str:
+        cli_opts: git_machete.options.CommandLineOptions, git_context: GitContext) -> LocalBranch:
     return cli_opts.opt_branch or git_context.get_current_branch()
 
 
@@ -565,7 +566,7 @@ def launch(orig_args: List[str]) -> None:
                     use_overrides=False,
                     opt_no_detect_squash_merges=cli_opts.opt_no_detect_squash_merges))
             elif cli_opts.opt_override_to:
-                machete_client.set_fork_point_override(branch, cli_opts.opt_override_to)
+                machete_client.set_fork_point_override(branch, Commit(cli_opts.opt_override_to))
             elif cli_opts.opt_override_to_inferred:
                 machete_client.set_fork_point_override(
                     branch, machete_client.fork_point(
@@ -644,13 +645,13 @@ def launch(orig_args: List[str]) -> None:
             machete_client.read_definition_file()
             res = []
             if category == "addable":
-                def strip_first_fragment(remote_branch: str) -> str:
-                    return re.sub("^[^/]+/", "", remote_branch)
+                def strip_first_fragment(remote_branch: RemoteBranch) -> str:
+                    return re.sub("^[^/]+/", "", remote_branch.name)
 
                 remote_counterparts_of_local_branches = utils.map_truthy_only(
-                    lambda _branch: git.get_combined_counterpart_for_fetching_of_branch(_branch),
+                    lambda _branch: LocalBranch(git.get_combined_counterpart_for_fetching_of_branch(_branch)),
                     git.get_local_branches())
-                qualifying_remote_branches = excluding(git.get_remote_branches(),
+                qualifying_remote_branches: List[RemoteBranch] = excluding(git.get_remote_branches(),
                                                        remote_counterparts_of_local_branches)
                 res = excluding(git.get_local_branches(), machete_client.managed_branches) + list(
                     map(strip_first_fragment, qualifying_remote_branches))
@@ -670,7 +671,7 @@ def launch(orig_args: List[str]) -> None:
                         git.get_local_branches()))
 
             if res:
-                print("\n".join(res))
+                print("\n".join([str(ress) for ress in res]))
         elif cmd in {"log", alias_by_command["log"]}:
             machete_client.read_definition_file()
             branch = get_branch_arg_or_current_branch(cli_opts, git)
@@ -712,7 +713,7 @@ def launch(orig_args: List[str]) -> None:
             git.expect_no_operation_in_progress()
             branches = parsed_cli_as_dict.get('branches', [git.get_current_branch()])
             machete_client.slide_out(
-                branches_to_slide_out=list(branches),
+                branches_to_slide_out=list(map(LocalBranch, branches)),
                 opt_down_fork_point=cli_opts.opt_down_fork_point,
                 opt_merge=cli_opts.opt_merge,
                 opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
@@ -804,4 +805,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    launch(['discover'])
