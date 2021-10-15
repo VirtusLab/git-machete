@@ -61,7 +61,11 @@ _git_machete() {
       esac ;;
     *)
       if [[ $COMP_CWORD -eq 2 ]]; then
-        __gitcomp "$cmds"
+        if [[ $cmds =~ ^$cur ]] || [[ $cmds =~ ( $cur) ]]; then
+          __gitcomp "$cmds"
+        else
+          COMPREPLY=('')
+        fi
       else
         local prev=${COMP_WORDS[COMP_CWORD-1]}
         case $prev in
