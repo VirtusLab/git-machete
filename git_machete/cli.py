@@ -474,10 +474,10 @@ def launch(orig_args: List[str]) -> None:
         sys.exit(2)
 
     cli_opts = git_machete.options.CommandLineOptions()
-    git = GitContext(cli_opts)
+    git = GitContext()
 
     try:
-        machete_client = MacheteClient(cli_opts, git)
+        machete_client = MacheteClient(git)
 
         cli_parser: argparse.ArgumentParser = create_cli_parser()
         parsed_cli: argparse.Namespace = cli_parser.parse_args(orig_args)
@@ -508,13 +508,17 @@ def launch(orig_args: List[str]) -> None:
         if cmd == "add":
             machete_client.read_definition_file()
             branch = get_branch_arg_or_current_branch(cli_opts, git)
-            machete_client.add(branch)
+            machete_client.add(
+                branch=branch,
+                opt_onto=cli_opts.opt_onto,
+                opt_as_root=cli_opts.opt_as_root,
+                opt_yes=cli_opts.opt_yes)
         elif cmd == "advance":
             machete_client.read_definition_file()
             git.expect_no_operation_in_progress()
             current_branch = git.get_current_branch()
             machete_client.expect_in_managed_branches(current_branch)
-            machete_client.advance(current_branch)
+            machete_client.advance(branch=current_branch, opt_yes=cli_opts.opt_yes)
         elif cmd == "anno":
             machete_client.read_definition_file(verify_branches=False)
             if cli_opts.opt_sync_github_prs:
@@ -528,13 +532,17 @@ def launch(orig_args: List[str]) -> None:
                     machete_client.print_annotation(branch)
         elif cmd == "delete-unmanaged":
             machete_client.read_definition_file()
-            machete_client.delete_unmanaged()
+            machete_client.delete_unmanaged(opt_yes=cli_opts.opt_yes)
         elif cmd in {"diff", alias_by_command["diff"]}:
             machete_client.read_definition_file()
-            machete_client.diff(parsed_cli.branch)  # passing None if not specified
+            machete_client.diff(branch=parsed_cli.branch, opt_stat=cli_opts.opt_stat)  # passing None if not specified
         elif cmd == "discover":
             # No need to read definition file.
-            machete_client.discover_tree()
+            machete_client.discover_tree(
+                opt_checked_out_since=cli_opts.opt_checked_out_since,
+                opt_list_commits=cli_opts.opt_list_commits,
+                opt_roots=cli_opts.opt_roots,
+                opt_yes=cli_opts.opt_yes)
         elif cmd in {"edit", alias_by_command["edit"]}:
             # No need to read definition file.
             machete_client.edit()
@@ -545,12 +553,18 @@ def launch(orig_args: List[str]) -> None:
             machete_client.read_definition_file()
             branch = get_branch_arg_or_current_branch(cli_opts, git)
             if cli_opts.opt_inferred:
-                print(machete_client.fork_point(branch, use_overrides=False))
+                print(machete_client.fork_point(
+                    branch=branch,
+                    use_overrides=False,
+                    opt_no_detect_squash_merges=cli_opts.opt_no_detect_squash_merges))
             elif cli_opts.opt_override_to:
                 machete_client.set_fork_point_override(branch, cli_opts.opt_override_to)
             elif cli_opts.opt_override_to_inferred:
                 machete_client.set_fork_point_override(
-                    branch, machete_client.fork_point(branch, use_overrides=False))
+                    branch, machete_client.fork_point(
+                        branch=branch,
+                        use_overrides=False,
+                        opt_no_detect_squash_merges=cli_opts.opt_no_detect_squash_merges))
             elif cli_opts.opt_override_to_parent:
                 upstream = machete_client.up_branch.get(branch)
                 if upstream:
@@ -561,7 +575,10 @@ def launch(orig_args: List[str]) -> None:
             elif cli_opts.opt_unset_override:
                 machete_client.unset_fork_point_override(branch)
             else:
-                print(machete_client.fork_point(branch, use_overrides=True))
+                print(machete_client.fork_point(
+                    branch=branch,
+                    use_overrides=True,
+                    opt_no_detect_squash_merges=cli_opts.opt_no_detect_squash_merges))
         elif cmd in {"go", alias_by_command["go"]}:
             machete_client.read_definition_file()
             git.expect_no_operation_in_progress()
@@ -595,7 +612,10 @@ def launch(orig_args: List[str]) -> None:
                 machete_client.checkout_github_prs(pr_no)
             elif github_subcommand == "create-pr":
                 current_branch = git.get_current_branch()
-                machete_client.create_github_pr(current_branch, draft=cli_opts.opt_draft)
+                machete_client.create_github_pr(
+                    head=current_branch,
+                    opt_draft=cli_opts.opt_draft,
+                    opt_onto=cli_opts.opt_onto)
             elif github_subcommand == "retarget-pr":
                 current_branch = git.get_current_branch()
                 machete_client.expect_in_managed_branches(current_branch)
@@ -633,7 +653,7 @@ def launch(orig_args: List[str]) -> None:
             elif category == "managed":
                 res = machete_client.managed_branches
             elif category == "slidable":
-                res = machete_client.slidable()
+                res = machete_client.get_slidable_branches()
             elif category == "slidable-after":
                 machete_client.expect_in_managed_branches(parsed_cli.branch)
                 res = machete_client.slidable_after(parsed_cli.branch)
@@ -661,7 +681,10 @@ def launch(orig_args: List[str]) -> None:
             git.rebase_onto_ancestor_commit(
                 current_branch,
                 cli_opts.opt_fork_point or machete_client.fork_point(
-                    current_branch, use_overrides=True))
+                    branch=current_branch,
+                    use_overrides=True,
+                    opt_no_detect_squash_merges=cli_opts.opt_no_detect_squash_merges),
+                cli_opts.opt_no_interactive_rebase)
         elif cmd == "show":
             direction = parsed_cli.direction
             branch = get_branch_arg_or_current_branch(cli_opts, git)
@@ -684,7 +707,12 @@ def launch(orig_args: List[str]) -> None:
             machete_client.read_definition_file()
             git.expect_no_operation_in_progress()
             branches = parsed_cli_as_dict.get('branches', [git.get_current_branch()])
-            machete_client.slide_out(list(branches))
+            machete_client.slide_out(
+                branches_to_slide_out=list(branches),
+                opt_down_fork_point=cli_opts.opt_down_fork_point,
+                opt_merge=cli_opts.opt_merge,
+                opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
+                opt_no_edit_merge=cli_opts.opt_no_edit_merge)
         elif cmd == "squash":
             machete_client.read_definition_file()
             git.expect_no_operation_in_progress()
@@ -693,13 +721,19 @@ def launch(orig_args: List[str]) -> None:
                 git.check_that_forkpoint_is_ancestor_or_equal_to_tip_of_branch(
                     forkpoint_sha=cli_opts.opt_fork_point, branch=current_branch)
             machete_client.squash(
-                current_branch,
-                cli_opts.opt_fork_point or machete_client.fork_point(
-                    current_branch, use_overrides=True))
+                current_branch=current_branch,
+                opt_fork_point=cli_opts.opt_fork_point or machete_client.fork_point(
+                    branch=current_branch,
+                    use_overrides=True,
+                    opt_no_detect_squash_merges=cli_opts.opt_no_detect_squash_merges))
         elif cmd in {"status", alias_by_command["status"]}:
             machete_client.read_definition_file()
             machete_client.expect_at_least_one_managed_branch()
-            machete_client.status(warn_on_yellow_edges=True)
+            machete_client.status(
+                warn_on_yellow_edges=True,
+                opt_list_commits=cli_opts.opt_list_commits,
+                opt_list_commits_with_hashes=cli_opts.opt_list_commits_with_hashes,
+                opt_no_detect_squash_merges=cli_opts.opt_no_detect_squash_merges)
         elif cmd == "traverse":
             if cli_opts.opt_start_from not in {"here", "root", "first-root"}:
                 raise MacheteException(
@@ -711,14 +745,29 @@ def launch(orig_args: List[str]) -> None:
                     "Valid arguments: `here|nearest-remaining|stay`.")
             machete_client.read_definition_file()
             git.expect_no_operation_in_progress()
-            machete_client.traverse()
+            machete_client.traverse(
+                opt_fetch=cli_opts.opt_fetch,
+                opt_list_commits=cli_opts.opt_list_commits,
+                opt_merge=cli_opts.opt_merge,
+                opt_no_detect_squash_merges=cli_opts.opt_no_detect_squash_merges,
+                opt_no_edit_merge=cli_opts.opt_no_edit_merge,
+                opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
+                opt_push_tracked=cli_opts.opt_push_tracked,
+                opt_push_untracked=cli_opts.opt_push_untracked,
+                opt_return_to=cli_opts.opt_return_to,
+                opt_start_from=cli_opts.opt_start_from,
+                opt_yes=cli_opts.opt_yes)
         elif cmd == "update":
             machete_client.read_definition_file()
             git.expect_no_operation_in_progress()
             if "fork_point" in parsed_cli:
                 git.check_that_forkpoint_is_ancestor_or_equal_to_tip_of_branch(
                     forkpoint_sha=cli_opts.opt_fork_point, branch=git.get_current_branch())
-            machete_client.update()
+            machete_client.update(
+                opt_merge=cli_opts.opt_merge,
+                opt_no_edit_merge=cli_opts.opt_no_edit_merge,
+                opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
+                opt_fork_point=cli_opts.opt_fork_point)
         elif cmd == "version":
             version()
             sys.exit()

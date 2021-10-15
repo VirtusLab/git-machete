@@ -25,7 +25,7 @@ from git_machete.options import CommandLineOptions
 from git_machete.utils import dim, fmt
 
 cli_opts: CommandLineOptions = CommandLineOptions()
-git: GitContext = GitContext(cli_opts)
+git: GitContext = GitContext()
 
 FAKE_GITHUB_REMOTE_PATTERNS = ['(.*)/(.*)']
 
@@ -53,6 +53,10 @@ def mock_run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
 
 def mock_derive_current_user_login() -> str:
     return "very_complex_user_token"
+
+
+def mock_ask_if(*args: str, **kwargs: Any) -> str:
+    return 'y'
 
 
 class FakeCommandLineOptions(CommandLineOptions):
@@ -426,7 +430,7 @@ class MacheteTester(unittest.TestCase):
         self.repo_sandbox.new_branch("root")
         self.rewrite_definition_file(body)
 
-        machete_client = MacheteClient(cli_opts, git)  # Only to workaround sys.exit while calling launch(['status'])
+        machete_client = MacheteClient(git)  # Only to workaround sys.exit while calling launch(['status'])
         try:
             machete_client.read_definition_file()
         except MacheteException as e:
@@ -1903,6 +1907,7 @@ class MacheteTester(unittest.TestCase):
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
+    @mock.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
     @mock.patch('urllib.request.urlopen', MockContextManager)
     @mock.patch('urllib.request.Request', git_api_state_for_test_create_pr.new_request())
     def test_github_create_pr(self) -> None:
@@ -2032,11 +2037,11 @@ class MacheteTester(unittest.TestCase):
             """,
         )
         # check against attempt to create already existing pull request
-        machete_client = MacheteClient(cli_opts, git)
+        machete_client = MacheteClient(git)
         expected_error_message = "Pull request for branch hotfix/add-trigger is already created under link www.github.com!\nPR details: PR #6 by github_user: hotfix/add-trigger -> master"
         machete_client.read_definition_file()
         with self.assertRaises(MacheteException) as e:
-            machete_client.create_github_pr('hotfix/add-trigger', draft=False)
+            machete_client.create_github_pr(head='hotfix/add-trigger', opt_draft=False, opt_onto=None)
         if e:
             self.assertEqual(e.exception.parameter, expected_error_message,
                              'Verify that expected error message has appeared when given pull request to create is already created.')
@@ -2049,11 +2054,11 @@ class MacheteTester(unittest.TestCase):
         )
         self.launch_command('discover')
 
-        machete_client = MacheteClient(cli_opts, git)
+        machete_client = MacheteClient(git)
         machete_client.read_definition_file()
         expected_error_message = "All commits in `testing/endpoints` branch  are already included in `develop` branch.\nCannot create pull request."
         with self.assertRaises(MacheteException) as e:
-            machete_client.create_github_pr('testing/endpoints', draft=False)
+            machete_client.create_github_pr(head='testing/endpoints', opt_draft=False, opt_onto=None)
         if e:
             self.assertEqual(e.exception.parameter, expected_error_message,
                              'Verify that expected error message has appeared when head branch is equal or ancestor of base branch.')
@@ -2061,7 +2066,7 @@ class MacheteTester(unittest.TestCase):
         self.repo_sandbox.check_out('develop')
         expected_error_message = "Branch `develop` does not have a parent branch (it is a root), base branch for the PR cannot be established."
         with self.assertRaises(MacheteException) as e:
-            machete_client.create_github_pr('develop', draft=False)
+            machete_client.create_github_pr(head='develop', opt_draft=False, opt_onto=None)
         if e:
             self.assertEqual(e.exception.parameter, expected_error_message,
                              'Verify that expected error message has appeared when creating PR from root branch.')
@@ -2232,7 +2237,7 @@ class MacheteTester(unittest.TestCase):
             """
         )
         # check against wrong pr number
-        machete_client = MacheteClient(cli_opts, git)
+        machete_client = MacheteClient(git)
         repo: str
         org: str
         (org, repo) = get_parsed_github_remote_url(self.repo_sandbox.remote_path)
@@ -2258,7 +2263,7 @@ class MacheteTester(unittest.TestCase):
          )
         os.chdir(self.repo_sandbox.local_path)
 
-        machete_client = MacheteClient(cli_opts, git)
+        machete_client = MacheteClient(git)
         machete_client.read_definition_file()
         expected_error_message = "Could not check out PR #5 because its head branch `bugfix/remove-n-option` is already deleted from `testing`."
         with self.assertRaises(MacheteException) as e:

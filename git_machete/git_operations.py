@@ -4,7 +4,6 @@ import os
 import re
 import sys
 
-from git_machete.options import CommandLineOptions
 from git_machete.exceptions import MacheteException
 from git_machete.utils import colored, debug, fmt
 from git_machete import utils
@@ -18,8 +17,7 @@ REFLOG_ENTRY = Tuple[str, str]
 
 class GitContext:
 
-    def __init__(self, cli_opts: CommandLineOptions) -> None:
-        self._cli_opts: CommandLineOptions = cli_opts
+    def __init__(self) -> None:
         self._git_version: Optional[Tuple[int, ...]] = None
         self._root_dir: Optional[str] = None
         self._git_dir: Optional[str] = None
@@ -613,8 +611,8 @@ class GitContext:
         else:
             return True
 
-    def merge(self, branch: str, into: str) -> None:  # refs/heads/ prefix is assumed for 'branch'
-        extra_params = ["--no-edit"] if self._cli_opts.opt_no_edit_merge else ["--edit"]
+    def merge(self, branch: str, into: str, opt_no_edit_merge: bool) -> None:  # refs/heads/ prefix is assumed for 'branch'
+        extra_params = ["--no-edit"] if opt_no_edit_merge else ["--edit"]
         # We need to specify the message explicitly to avoid 'refs/heads/' prefix getting into the message...
         commit_message = f"Merge branch '{branch}' into {into}"
         # ...since we prepend 'refs/heads/' to the merged branch name for unambiguity.
@@ -625,10 +623,10 @@ class GitContext:
         self._run_git("merge", "--ff-only", f"refs/heads/{branch}")
         self.flush_caches()
 
-    def rebase(self, onto: str, fork_commit: str, branch: str) -> None:
+    def rebase(self, onto: str, fork_commit: str, branch: str, opt_no_interactive_rebase: bool) -> None:
         def do_rebase() -> None:
             try:
-                if self._cli_opts.opt_no_interactive_rebase:
+                if opt_no_interactive_rebase:
                     self._run_git("rebase", "--onto", onto, fork_commit, branch)
                 else:
                     self._run_git("rebase", "--interactive", "--onto", onto, fork_commit, branch)
@@ -672,8 +670,8 @@ class GitContext:
         else:
             do_rebase()
 
-    def rebase_onto_ancestor_commit(self, branch: str, ancestor_commit: str) -> None:
-        self.rebase(ancestor_commit, ancestor_commit, branch)
+    def rebase_onto_ancestor_commit(self, branch: str, ancestor_commit: str, opt_no_interactive_rebase: bool) -> None:
+        self.rebase(ancestor_commit, ancestor_commit, branch, opt_no_interactive_rebase)
 
     def get_commits_between(self, earliest_exclusive: str, latest_inclusive: str) -> List[Tuple[str, str, str]]:
         # Reverse the list, since `git log` by default returns the commits from the latest to earliest.
