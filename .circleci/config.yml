@@ -89,7 +89,7 @@ jobs:
           path: docs/html
           destination: docs
 
-  dry_run_deploy_from_develop:
+  "dry run deploy":
     executor: ubuntu_executor
     steps:
       - checkout
@@ -109,12 +109,22 @@ jobs:
           command: bash ci/deb-ppa-upload/ci-deploy.sh --dry-run
 
       - deploy:
+          name: '[Dry run] Build .snap for linux distros'
+          # Build snap for current branch of git-machete repository without publishing results to snapstore.
+          # --use-lxd applied to use a LXD container instead of a VM, to work around lack of support for KVM on CircleCI VMs.
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y snapd
+            sudo snap install snapcraft --classic
+            snapcraft --use-lxd
+
+      - deploy:
           name: '[Dry run] Build rpm package'
           # Side effects: potentially pushes a regenerated Docker image
           # Other than that, it just builds the package without publishing anything; there's no special dry-run mode
           command: bash ci/rpm/ci-run.sh
 
-  deploy_from_master:
+  "deploy from master":
     executor: ubuntu_executor
     steps:
       - checkout
@@ -161,13 +171,15 @@ workflows:
       - test against python 3_7 and git 2_7_6
       - test against python 3_8 and git 2_25_0 with PEP8 checks
       - test against python 3_9 and git 2_30_1 with coverage report and docs creation
-      - dry_run_deploy_from_develop:
+      - dry run deploy:
           filters:
             branches:
-              only: "develop"
+              only:
+                - "develop"
+                - "/hotfix.*/"
           requires:
             *mandatory_jobs
-      - deploy_from_master:
+      - deploy from master:
           filters:
             branches:
               only: "master"
