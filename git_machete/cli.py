@@ -459,7 +459,7 @@ def get_branch_arg_or_current_branch(
     return cli_opts.opt_branch or git_context.get_current_branch()
 
 
-def exit_script(status_code=None):
+def exit_script(status_code: Optional[int] = None) -> None:
     sys.exit(status_code)
 
 
