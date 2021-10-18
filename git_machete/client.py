@@ -105,7 +105,7 @@ class MacheteClient:
             b_a: List[LocalBranch] = [LocalBranch(entry) for entry in line.strip().split(" ", 1)]
             branch = b_a[0]
             if len(b_a) > 1:
-                self.__annotations[branch] = b_a[1].name
+                self.__annotations[branch] = b_a[1]
             if branch in self.managed_branches:
                 raise MacheteException(
                     f"{self._definition_file_path}, line {index + 1}: branch "
@@ -196,7 +196,7 @@ class MacheteClient:
 
         def render_dfs(branch: LocalBranch, depth: int) -> List[str]:
             self.annotation = f" {self.__annotations[branch]}" if branch in self.__annotations else ""
-            res: List[str] = [depth * self.__indent + branch.name + self.annotation]
+            res: List[str] = [depth * self.__indent + branch + self.annotation]
             for down_branch in self.__down_branches.get(branch, []):
                 res += render_dfs(down_branch, depth + 1)
             return res
@@ -230,7 +230,7 @@ class MacheteClient:
                 msg = common_line + f"Check out `{branch}` locally?" + get_pretty_choices('y', 'N')
                 opt_yes_msg = common_line + f"Checking out `{branch}` locally..."
                 if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes) in ('y', 'yes'):
-                    self.__git.create_branch(branch, f"refs/remotes/{remote_branch}")
+                    self.__git.create_branch(branch, RemoteBranch(f"refs/remotes/{remote_branch}"))
                 else:
                     return
                 # Not dealing with `onto` here. If it hasn't been explicitly
@@ -370,7 +370,7 @@ class MacheteClient:
         non_root_fixed_branches = excluding(all_local_branches, self.__roots)
         last_checkout_timestamps = self.__git.get_latest_checkout_timestamps()
         non_root_fixed_branches_by_last_checkout_timestamps = sorted(
-            (last_checkout_timestamps.get(branch.name, 0), branch.name) for branch in non_root_fixed_branches)
+            (last_checkout_timestamps.get(branch, 0), branch) for branch in non_root_fixed_branches)
         if self.__cli_opts.opt_checked_out_since:
             threshold = self.__git.get_git_timespec_parsed_to_unix_timestamp(
                 self.__cli_opts.opt_checked_out_since)
@@ -556,7 +556,7 @@ class MacheteClient:
                 print(f"Merging {bold(new_upstream)} into {bold(new_downstream)}...")
                 self.__git.merge(new_upstream, new_downstream, opt_no_edit_merge)
             else:
-                print(f"Rebasing {bold(new_downstream.name)} onto {bold(new_upstream.name)}...")
+                print(f"Rebasing {bold(new_downstream)} onto {bold(new_upstream)}...")
                 self.__git.rebase(
                     LocalBranch(f"refs/heads/{new_upstream}"),
                     opt_down_fork_point or
@@ -651,14 +651,14 @@ class MacheteClient:
         if opt_start_from == "root":
             dest = self.root_branch(self.__git.get_current_branch(), if_unmanaged=PICK_FIRST_ROOT)
             self.__print_new_line(False)
-            print(f"Checking out the root branch ({bold(dest.name)})")
+            print(f"Checking out the root branch ({bold(dest)})")
             self.__git.checkout(dest)
             current_branch = dest
         elif opt_start_from == "first-root":
             # Note that we already ensured that there is at least one managed branch.
             dest = self.managed_branches[0]
             self.__print_new_line(False)
-            print(f"Checking out the first root branch ({bold(dest.name)})")
+            print(f"Checking out the first root branch ({bold(dest)})")
             self.__git.checkout(dest)
             current_branch = dest
         else:  # cli_opts.opt_start_from == "here"
@@ -705,7 +705,7 @@ class MacheteClient:
 
             if branch != current_branch and (needs_slide_out or needs_parent_sync or needs_remote_sync):
                 self.__print_new_line(False)
-                sys.stdout.write(f"Checking out {bold(branch.name)}\n")
+                sys.stdout.write(f"Checking out {bold(branch)}\n")
                 self.__git.checkout(branch)
                 current_branch = branch
                 self.__print_new_line(False)
@@ -840,9 +840,9 @@ class MacheteClient:
             opt_no_detect_squash_merges=opt_no_detect_squash_merges)
         print("")
         if current_branch == self.managed_branches[-1]:
-            msg: str = f"Reached branch {bold(current_branch.name)} which has no successor"
+            msg: str = f"Reached branch {bold(current_branch)} which has no successor"
         else:
-            msg = f"No successor of {bold(current_branch.name)} needs to be slid out or synced with upstream branch or remote"
+            msg = f"No successor of {bold(current_branch)} needs to be slid out or synced with upstream branch or remote"
         sys.stdout.write(f"{msg}; nothing left to update\n")
 
         if opt_return_to == "here" or (
@@ -850,8 +850,8 @@ class MacheteClient:
             print(f"Returned to the initial branch {bold(initial_branch)}")
         elif opt_return_to == "nearest-remaining" and nearest_remaining_branch != initial_branch:
             print(
-                f"The initial branch {bold(initial_branch.name)} has been slid out. "
-                f"Returned to nearest remaining managed branch {bold(nearest_remaining_branch.name)}")
+                f"The initial branch {bold(initial_branch)} has been slid out. "
+                f"Returned to nearest remaining managed branch {bold(nearest_remaining_branch)}")
 
     def status(
             self,
@@ -970,9 +970,9 @@ class MacheteClient:
                     prefix = "REVERTING "
                 else:
                     prefix = ""
-                current = "%s%s" % (bold(colored(prefix, EscapeCodes.RED)), bold(underline(branch.name, star_if_ascii_only=True)))
+                current = "%s%s" % (bold(colored(prefix, EscapeCodes.RED)), bold(underline(branch, star_if_ascii_only=True)))
             else:
-                current = bold(branch.name)
+                current = bold(branch)
 
             anno: str = f"  {dim(self.__annotations[branch])}" if branch in self.__annotations else ""
 
@@ -991,7 +991,7 @@ class MacheteClient:
             if hook_executable:
                 debug("status()", f"running machete-status-branch hook ({hook_path}) for branch {branch}")
                 hook_env = dict(os.environ, ASCII_ONLY=str(utils.ascii_only).lower())
-                status_code, stdout, stderr = utils.popen_cmd(hook_path, branch.name, cwd=self.__git.get_root_dir(), env=hook_env)
+                status_code, stdout, stderr = utils.popen_cmd(hook_path, branch, cwd=self.__git.get_root_dir(), env=hook_env)
                 if status_code == 0:
                     if not stdout.isspace():
                         hook_output = f"  {stdout.rstrip()}"
@@ -1039,7 +1039,7 @@ class MacheteClient:
             for branch in branches_to_delete_merged_to_head:
                 remote_branch = self.__git.get_strict_counterpart_for_fetching_of_branch(branch)
                 is_merged_to_remote = self.__git.is_ancestor_or_equal(branch, remote_branch, later_prefix="refs/remotes/") if remote_branch else True
-                msg_core = f"{bold(branch.name)} (merged to HEAD{'' if is_merged_to_remote else f', but not merged to {remote_branch}'})"
+                msg_core = f"{bold(branch)} (merged to HEAD{'' if is_merged_to_remote else f', but not merged to {remote_branch}'})"
                 msg = f"Delete branch {msg_core}?" + get_pretty_choices('y', 'N', 'q')
                 opt_yes_msg = f"Deleting branch {msg_core}"
                 ans = self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes)
@@ -1050,7 +1050,7 @@ class MacheteClient:
 
             branches_to_delete_unmerged_to_head = [branch for branch in branches_to_delete if branch not in branches_merged_to_head]
             for branch in branches_to_delete_unmerged_to_head:
-                msg_core = f"{bold(branch.name)} (unmerged to HEAD)"
+                msg_core = f"{bold(branch)} (unmerged to HEAD)"
                 msg = f"Delete branch {msg_core}?" + get_pretty_choices('y', 'N', 'q')
                 opt_yes_msg = f"Deleting branch {msg_core}"
                 ans = self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes)
@@ -1263,7 +1263,7 @@ class MacheteClient:
             debug(f"run_post_slide_out_hook({new_upstream}, {slid_out_branch}, {new_downstreams})",
                   f"running machete-post-slide-out hook ({hook_path})")
             new_downstreams_strings: List[str] = [str(db) for db in new_downstreams]
-            exit_code = utils.run_cmd(hook_path, new_upstream.name, slid_out_branch.name, *new_downstreams_strings,
+            exit_code = utils.run_cmd(hook_path, new_upstream, slid_out_branch, *new_downstreams_strings,
                                       cwd=self.__git.get_root_dir())
             if exit_code != 0:
                 raise MacheteException(
@@ -2116,7 +2116,7 @@ class MacheteClient:
         self.__print_new_line(False)
         remote_branch = self.__git.get_strict_counterpart_for_fetching_of_branch(branch)
         ans = self.ask_if(
-            f"Branch {bold(branch.name)} diverged from (and has older commits than) its remote counterpart {bold(remote_branch.name)}.\nReset branch {bold(branch.name)} to the commit pointed by {bold(remote_branch.name)}?" + get_pretty_choices(
+            f"Branch {bold(branch)} diverged from (and has older commits than) its remote counterpart {bold(remote_branch)}.\nReset branch {bold(branch)} to the commit pointed by {bold(remote_branch)}?" + get_pretty_choices(
                 'y', 'N', 'q', 'yq'),
             f"Branch {bold(branch)} diverged from (and has older commits than) its remote counterpart {bold(remote_branch)}.\nResetting branch {bold(branch)} to the commit pointed by {bold(remote_branch)}...",
             opt_yes=opt_yes)

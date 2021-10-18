@@ -207,7 +207,7 @@ def add_reviewers_to_pull_request(org: str, repo: str, number: int, reviewers: L
 
 def set_base_of_pull_request(org: str, repo: str, number: int, base: LocalBranch) -> None:
     token: Optional[str] = __get_github_token()
-    request_body: Dict[str, str] = {'base': base.name}
+    request_body: Dict[str, str] = {'base': base}
     __fire_github_api_request('PATCH', f'/repos/{org}/{repo}/pulls/{number}', token, request_body)
 
 
