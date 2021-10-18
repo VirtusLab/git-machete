@@ -454,15 +454,6 @@ def set_utils_global_variables(
     utils.verbose_mode = cli_opts.opt_verbose
 
 
-def validate_python_version() -> None:
-    if sys.version_info[:2] < (3, 6):
-        version_str = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
-        sys.stderr.write(
-            f"Python {version_str} is no longer supported. "
-            "Please switch to Python 3.6 or higher.\n")
-        sys.exit(1)
-
-
 def get_branch_arg_or_current_branch(
         cli_opts: git_machete.options.CommandLineOptions, git_context: GitContext) -> str:
     return cli_opts.opt_branch or git_context.get_current_branch()
@@ -796,7 +787,6 @@ def launch(orig_args: List[str]) -> None:
 
 
 def main() -> None:
-    validate_python_version()
     launch(sys.argv[1:])
 
 
