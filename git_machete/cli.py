@@ -645,14 +645,14 @@ def launch(orig_args: List[str]) -> None:
             machete_client.read_definition_file()
             res = []
             if category == "addable":
-                def strip_first_fragment(remote_branch: RemoteBranch) -> str:
-                    return re.sub("^[^/]+/", "", remote_branch.name)
+                def strip_first_fragment(remote_branch: RemoteBranch) -> LocalBranch:
+                    return LocalBranch(re.sub("^[^/]+/", "", remote_branch))
 
                 remote_counterparts_of_local_branches = utils.map_truthy_only(
                     lambda _branch: LocalBranch(git.get_combined_counterpart_for_fetching_of_branch(_branch)),
                     git.get_local_branches())
                 qualifying_remote_branches: List[RemoteBranch] = excluding(git.get_remote_branches(),
-                                                       remote_counterparts_of_local_branches)
+                                                       [RemoteBranch(b) for b in remote_counterparts_of_local_branches])  # cast to RemoteBranch only t0 satisfy mypy
                 res = excluding(git.get_local_branches(), machete_client.managed_branches) + list(
                     map(strip_first_fragment, qualifying_remote_branches))
             elif category == "managed":
@@ -805,4 +805,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    launch(['discover'])
+    launch(['list', 'addable'])

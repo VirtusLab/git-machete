@@ -348,12 +348,12 @@ class MacheteClient:
             self.__roots = list(opt_roots)
         else:
             self.__roots = []
-            if LocalBranch("master") in self.__git.get_local_branches():
+            if "master" in self.__git.get_local_branches():
                 self.__roots += [LocalBranch("master")]
-            elif LocalBranch("main") in self.__git.get_local_branches():
+            elif "main" in self.__git.get_local_branches():
                 # See https://github.com/github/renaming
                 self.__roots += [LocalBranch("main")]
-            if LocalBranch("develop") in self.__git.get_local_branches():
+            if "develop" in self.__git.get_local_branches():
                 self.__roots += [LocalBranch("develop")]
         self.__down_branches = {}
         self.up_branch = {}
@@ -1134,7 +1134,7 @@ class MacheteClient:
     ) -> Optional[Commit]:
         sha, containing_branch_defs = self.__fork_point_and_containing_branch_defs(
             branch, use_overrides, opt_no_detect_squash_merges=opt_no_detect_squash_merges)
-        return Commit(sha)
+        return Commit(sha) if sha else None
 
     def diff(self, *, branch: Optional[LocalBranch], opt_stat: bool) -> None:
         fp: Commit = self.fork_point(
@@ -1341,7 +1341,7 @@ class MacheteClient:
                     "skipping reflog entry")
             return is_excluded
 
-        branch_reflog = self.__git.get_reflog(LocalBranch(prefix + branch))
+        branch_reflog = self.__git.get_reflog(LocalBranch((prefix + branch)))
         if not branch_reflog:
             return []
 
@@ -1532,9 +1532,9 @@ class MacheteClient:
 
     def __get_fork_point_override_data(self, branch: AnyBranch) -> Optional[Tuple[Commit, Commit]]:
         to_key = self.config_key_for_override_fork_point_to(branch)
-        to = Commit(self.__git.get_config_attr_or_none(to_key))
+        to = Commit(self.__git.get_config_attr_or_none(to_key) or "")
         while_descendant_of_key = self.config_key_for_override_fork_point_while_descendant_of(branch)
-        while_descendant_of = Commit(self.__git.get_config_attr_or_none(while_descendant_of_key))
+        while_descendant_of = Commit(self.__git.get_config_attr_or_none(while_descendant_of_key) or "")
         if not to and not while_descendant_of:
             return None
         if to and not while_descendant_of:

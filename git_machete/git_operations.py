@@ -24,7 +24,7 @@ class GitContext:
         self.__fetch_done_for: Set[str] = set()
         self.__config_cached: Optional[Dict[str, str]] = None
         self.__remotes_cached: Optional[List[str]] = None
-        self.__counterparts_for_fetching_cached: Optional[Dict[AnyBranch, Optional[str]]] = None  # TODO (#110): default dict with None
+        self.__counterparts_for_fetching_cached: Optional[Dict[AnyBranch, Optional[RemoteBranch]]] = None  # TODO (#110): default dict with None
         self.__short_commit_sha_by_revision_cached: Dict[Commit, Commit] = {}
         self.__tree_sha_by_commit_sha_cached: Optional[Dict[Commit, Optional[Commit]]] = None  # TODO (#110): default dict with None
         self.__commit_sha_by_revision_cached: Optional[Dict[Commit, Optional[Commit]]] = None  # TODO (#110): default dict with None
@@ -224,7 +224,7 @@ class GitContext:
     def get_commit_sha_by_revision(self, revision: Union[Commit, AnyBranch], prefix: str = "refs/heads/") -> Optional[Commit]:
         if self.__commit_sha_by_revision_cached is None:
             self.__load_branches()
-        full_revision = prefix + revision
+        full_revision: Commit = Commit(prefix + revision)
         if full_revision not in self.__commit_sha_by_revision_cached:
             self.__commit_sha_by_revision_cached[full_revision] = self.__find_commit_sha_by_revision(full_revision)
         return self.__commit_sha_by_revision_cached[full_revision]
@@ -349,7 +349,7 @@ class GitContext:
             self.__tree_sha_by_commit_sha_cached[Commit(commit_sha)] = Commit(tree_sha)
             self.__committer_unix_timestamp_by_revision_cached[branch] = int(committer_unix_timestamp_and_time_zone.split(' ')[0])
             if fetch_counterpart_stripped in self.__remote_branches_cached:
-                self.__counterparts_for_fetching_cached[b_stripped] = fetch_counterpart_stripped
+                self.__counterparts_for_fetching_cached[b_stripped] = RemoteBranch(fetch_counterpart_stripped)
 
     def __get_log_shas(self, revision: Union[Commit, LocalBranch], max_count: Optional[int]) -> List[str]:
         opts = ([f"--max-count={str(max_count)}"] if max_count else []) + ["--format=%H", f"refs/heads/{revision}"]
@@ -373,7 +373,6 @@ class GitContext:
         # %gd - reflog selector (refname@{num})
         # %H - full hash
         # %gs - reflog subject
-        a = self.get_combined_counterpart_for_fetching_of_branch('refs/heads/level-0-branch')
         all_branches = [f"refs/heads/{branch}" for branch in self.get_local_branches()] + \
                        [f"refs/remotes/{self.get_combined_counterpart_for_fetching_of_branch(branch)}" for branch in self.get_local_branches() if self.get_combined_counterpart_for_fetching_of_branch(branch)]
         # The trailing '--' is necessary to avoid ambiguity in case there is a file called just exactly like one of the branches.
