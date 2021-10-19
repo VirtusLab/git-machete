@@ -10,8 +10,8 @@ import git_machete.github
 import git_machete.options
 from git_machete import utils
 from git_machete.constants import (
-    DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, PICK_FIRST_ROOT, PICK_LAST_ROOT, EscapeCodes,
-    SyncToRemoteStatuses)
+    DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, PICK_FIRST_ROOT, PICK_LAST_ROOT,
+    EscapeCodes, SyncToRemoteStatuses)
 from git_machete.exceptions import MacheteException, StopInteraction
 from git_machete.git_operations import GitContext
 from git_machete.github import (
@@ -164,7 +164,7 @@ class MacheteClient:
 
         def recursive_slide_out_invalid_branches(branch_: LocalBranch) -> List[LocalBranch]:
             new_down_branches = flat_map(
-                recursive_slide_out_invalid_branches, self.__down_branches.get(branch, []))
+                recursive_slide_out_invalid_branches, self.__down_branches.get(branch_, []))
             if branch_ in invalid_branches:
                 if branch_ in self.__down_branches:
                     del self.__down_branches[branch_]
@@ -1160,7 +1160,7 @@ class MacheteClient:
         elif pick_mode:
             return str(self.pick(dbs, "downstream branch"))
         else:
-            return "\n".join([str(db) for db in dbs])
+            return "\n".join(dbs)
 
     def first_branch(self, branch: LocalBranch) -> LocalBranch:
         root = self.root_branch(branch, if_unmanaged=PICK_FIRST_ROOT)
@@ -1341,7 +1341,7 @@ class MacheteClient:
                     "skipping reflog entry")
             return is_excluded
 
-        branch_reflog = self.__git.get_reflog(LocalBranch.of((prefix + branch)))
+        branch_reflog = self.__git.get_reflog(LocalBranch.of(prefix + branch))
         if not branch_reflog:
             return []
 
@@ -1444,7 +1444,7 @@ class MacheteClient:
             def generate_entries() -> Generator[Tuple[Commit, BRANCH_DEF], None, None]:
                 for lb in self.__git.get_local_branches():
                     lb_shas = set()
-                    for sha_ in self.filtered_reflog(str(lb), prefix="refs/heads/"):
+                    for sha_ in self.filtered_reflog(lb, prefix="refs/heads/"):
                         lb_shas.add(sha_)
                         yield Commit.of(sha_), (lb, str(lb))
                     remote_branch = self.__git.get_combined_counterpart_for_fetching_of_branch(lb)

@@ -39,8 +39,8 @@ def get_current_commit_hash() -> str:
 
 
 def mock_fetch_ref(cls: Any, remote: str, ref: str) -> None:
-    branch: LocalBranch = LocalBranch(ref[ref.index(':') + 1:])
-    git.create_branch(branch, RemoteBranch(get_current_commit_hash()))
+    branch: LocalBranch = LocalBranch.of(ref[ref.index(':') + 1:])
+    git.create_branch(branch, RemoteBranch.of(get_current_commit_hash()))
     git.checkout(branch)
 
 
@@ -2052,7 +2052,7 @@ class MacheteTester(unittest.TestCase):
         expected_error_message = "Pull request for branch hotfix/add-trigger is already created under link www.github.com!\nPR details: PR #6 by github_user: hotfix/add-trigger -> master"
         machete_client.read_definition_file()
         with self.assertRaises(MacheteException) as e:
-            machete_client.create_github_pr(head=LocalBranch('hotfix/add-trigger'), opt_draft=False, opt_onto=None)
+            machete_client.create_github_pr(head=LocalBranch.of('hotfix/add-trigger'), opt_draft=False, opt_onto=None)
         if e:
             self.assertEqual(e.exception.parameter, expected_error_message,
                              'Verify that expected error message has appeared when given pull request to create is already created.')
@@ -2069,7 +2069,7 @@ class MacheteTester(unittest.TestCase):
         machete_client.read_definition_file()
         expected_error_message = "All commits in `testing/endpoints` branch  are already included in `develop` branch.\nCannot create pull request."
         with self.assertRaises(MacheteException) as e:
-            machete_client.create_github_pr(head=LocalBranch('testing/endpoints'), opt_draft=False, opt_onto=None)
+            machete_client.create_github_pr(head=LocalBranch.of('testing/endpoints'), opt_draft=False, opt_onto=None)
         if e:
             self.assertEqual(e.exception.parameter, expected_error_message,
                              'Verify that expected error message has appeared when head branch is equal or ancestor of base branch.')
@@ -2077,7 +2077,7 @@ class MacheteTester(unittest.TestCase):
         self.repo_sandbox.check_out('develop')
         expected_error_message = "Branch `develop` does not have a parent branch (it is a root), base branch for the PR cannot be established."
         with self.assertRaises(MacheteException) as e:
-            machete_client.create_github_pr(head=LocalBranch('develop'), opt_draft=False, opt_onto=None)
+            machete_client.create_github_pr(head=LocalBranch.of('develop'), opt_draft=False, opt_onto=None)
         if e:
             self.assertEqual(e.exception.parameter, expected_error_message,
                              'Verify that expected error message has appeared when creating PR from root branch.')
