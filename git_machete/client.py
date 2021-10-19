@@ -161,10 +161,9 @@ class MacheteClient:
                 "Slide them out from the definition file?" + get_pretty_choices("y", "e[dit]", "N"),
                 opt_yes_msg=None, opt_yes=False)
 
-
-        def recursive_slide_out_invalid_branches(branch: LocalBranch) -> List[LocalBranch]:
+        def recursive_slide_out_invalid_branches(branch_: LocalBranch) -> List[LocalBranch]:
             new_down_branches = flat_map(
-                recursive_slide_out_invalid_branches, self.__down_branches.get(branch_, []))
+                recursive_slide_out_invalid_branches, self.__down_branches.get(branch, []))
             if branch_ in invalid_branches:
                 if branch_ in self.__down_branches:
                     del self.__down_branches[branch_]
@@ -213,7 +212,7 @@ class MacheteClient:
         with open(self._definition_file_path, "w") as file:
             file.write("\n".join(self.render_tree()) + "\n")
 
-    def add(self, *, branch: LocalBranch, opt_onto: Optional[str], opt_as_root: bool, opt_yes: bool) -> None:
+    def add(self, *, branch: LocalBranch, opt_onto: Optional[LocalBranch], opt_as_root: bool, opt_yes: bool) -> None:
         if branch in self.managed_branches:
             raise MacheteException(
                 f"Branch `{branch}` already exists in the tree of branch dependencies")
@@ -236,7 +235,7 @@ class MacheteClient:
                 # Not dealing with `onto` here. If it hasn't been explicitly
                 # specified via `--onto`, we'll try to infer it now.
             else:
-                out_of = f"refs/heads/{opt_onto}" if opt_onto else "HEAD"
+                out_of = RemoteBranch(f"refs/heads/{opt_onto}") if opt_onto else RemoteBranch("HEAD")
                 out_of_str = f"`{opt_onto}`" if opt_onto else "the current HEAD"
                 msg = (f"A local branch `{branch}` does not exist. Create (out "
                        f"of {out_of_str})?" + get_pretty_choices('y', 'N'))
@@ -303,7 +302,7 @@ class MacheteClient:
 
     def update(
             self, *, opt_merge: bool, opt_no_edit_merge: bool,
-            opt_no_interactive_rebase: bool, opt_fork_point: str) -> None:
+            opt_no_interactive_rebase: bool, opt_fork_point: Commit) -> None:
         current_branch = self.__git.get_current_branch()
         if opt_merge:
             with_branch = self.up(
@@ -335,7 +334,7 @@ class MacheteClient:
             *,
             opt_checked_out_since: Optional[str],
             opt_list_commits: bool,
-            opt_roots: List[str],
+            opt_roots: List[LocalBranch],
             opt_yes: bool
     ) -> None:
         all_local_branches = self.__git.get_local_branches()
@@ -345,7 +344,7 @@ class MacheteClient:
             if root not in self.__git.get_local_branches():
                 raise MacheteException(f"`{root}` is not a local branch")
         if opt_roots:
-            self.__roots = list(opt_roots)
+            self.__roots = list(map(LocalBranch, opt_roots))
         else:
             self.__roots = []
             if "master" in self.__git.get_local_branches():
@@ -371,9 +370,9 @@ class MacheteClient:
         last_checkout_timestamps = self.__git.get_latest_checkout_timestamps()
         non_root_fixed_branches_by_last_checkout_timestamps = sorted(
             (last_checkout_timestamps.get(branch, 0), branch) for branch in non_root_fixed_branches)
-        if self.__cli_opts.opt_checked_out_since:
+        if opt_checked_out_since:
             threshold = self.__git.get_git_timespec_parsed_to_unix_timestamp(
-                self.__cli_opts.opt_checked_out_since)
+                opt_checked_out_since)
             stale_non_root_fixed_branches = [LocalBranch(branch) for (timestamp, branch) in itertools.takewhile(
                 tupled(lambda timestamp, branch: timestamp < threshold),
                 non_root_fixed_branches_by_last_checkout_timestamps
@@ -486,7 +485,7 @@ class MacheteClient:
             self,
             *,
             branches_to_slide_out: List[LocalBranch],
-            opt_down_fork_point: Optional[str],
+            opt_down_fork_point: Optional[Commit],
             opt_merge: bool,
             opt_no_interactive_rebase: bool,
             opt_no_edit_merge: bool
@@ -878,7 +877,7 @@ class MacheteClient:
         fp_sha_cached: Dict[Union[LocalBranch, Commit], Optional[Union[LocalBranch, Commit]]] = {}  # TODO (#110): default dict with None
         fp_branches_cached: Dict[LocalBranch, List[BRANCH_DEF]] = {}
 
-        def fp_sha(branch: LocalBranch) -> Optional[Union[LocalBranch, Commit]]:
+        def fp_sha(branch_: LocalBranch) -> Optional[Union[LocalBranch, Commit]]:
             if branch not in fp_sha_cached:
                 try:
                     # We're always using fork point overrides, even when status
@@ -1893,7 +1892,7 @@ class MacheteClient:
         print(fmt(f"Pull request `#{pr.number}` checked out at local branch `{pr.head}`"))
 
     @staticmethod
-    def __get_path_from_pr_chain(self, current_pr: GitHubPullRequest, all_open_prs: List[GitHubPullRequest]) -> List[LocalBranch]:
+    def __get_path_from_pr_chain(current_pr: GitHubPullRequest, all_open_prs: List[GitHubPullRequest]) -> List[LocalBranch]:
         path: List[LocalBranch] = [LocalBranch(current_pr.head)]
         while current_pr:
             path.append(LocalBranch(current_pr.base))
@@ -1968,7 +1967,7 @@ class MacheteClient:
             f'{", ".join(org_and_repo_for_github_remote.keys())}, aborting')
 
     def create_github_pr(
-            self, *, head: LocalBranch, opt_draft: bool, opt_onto: Optional[str]) -> None:
+            self, *, head: LocalBranch, opt_draft: bool, opt_onto: Optional[LocalBranch]) -> None:
         # first make sure that head branch is synced with remote
         self.__sync_before_creating_pr(opt_onto=opt_onto, opt_yes=False)
         self.flush_caches()
@@ -2144,7 +2143,7 @@ class MacheteClient:
         elif ans in ('q', 'quit'):
             raise StopInteraction
 
-    def __sync_before_creating_pr(self, *, opt_onto: Optional[str], opt_yes: bool) -> None:
+    def __sync_before_creating_pr(self, *, opt_onto: Optional[LocalBranch], opt_yes: bool) -> None:
 
         self.expect_at_least_one_managed_branch()
         self.__empty_line_status = True
