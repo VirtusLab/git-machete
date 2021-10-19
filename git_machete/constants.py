@@ -42,22 +42,6 @@ GIT_FORMAT_PATTERNS = {
 }
 
 
-class AnyBranch(str):
-    pass
-
-
-class LocalBranch(AnyBranch):
-    pass
-
-
-class RemoteBranch(AnyBranch):
-    pass
-
-
-class Commit(str):
-    pass
-
-
 # AnyBranch = NewType('AnyBranch', str)
 # LocalBranch = NewType('LocalBranch', AnyBranch)
 # RemoteBranch = NewType('RemoteBranch', AnyBranch)

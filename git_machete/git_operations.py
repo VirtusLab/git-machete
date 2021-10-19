@@ -9,8 +9,8 @@ from git_machete.utils import colored, debug, fmt
 from git_machete import utils
 from git_machete.constants import (
     MAX_COUNT_FOR_INITIAL_LOG, EscapeCodes, SyncToRemoteStatuses,
-    GIT_FORMAT_PATTERNS, LocalBranch, AnyBranch, RemoteBranch, Commit)
-
+    GIT_FORMAT_PATTERNS)
+from git_machete.custom_types import AnyBranch, Commit, LocalBranch, RemoteBranch
 
 REFLOG_ENTRY = Tuple[str, str]
 

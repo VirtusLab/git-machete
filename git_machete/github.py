@@ -7,14 +7,15 @@ import re
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 import urllib.request
 from urllib.error import HTTPError
 
 from git_machete.utils import debug, fmt, find_or_none
 from git_machete.exceptions import MacheteException, UnprocessableEntityHTTPError
 from git_machete.git_operations import GitContext
-from git_machete.constants import LocalBranch, AnyBranch
+from git_machete.custom_types import AnyBranch, LocalBranch
+
 
 
 GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'

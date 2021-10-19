@@ -16,7 +16,7 @@ from git_machete.docs import short_docs, long_docs
 from git_machete.exceptions import MacheteException, StopInteraction
 from git_machete.git_operations import GitContext
 from git_machete.utils import fmt, underline, excluding, warn
-from git_machete.constants import LocalBranch, Commit, AnyBranch, RemoteBranch
+from git_machete.custom_types import Commit, LocalBranch, RemoteBranch
 
 T = TypeVar('T')
 
