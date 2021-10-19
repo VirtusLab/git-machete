@@ -1,4 +1,4 @@
-from typing import Callable, Dict, Generator, Iterator, List, Match, Optional, Set, Tuple, Union, cast
+from typing import Callable, Dict, Generator, Iterator, List, Match, Optional, Set, Tuple, Union
 
 import os
 import re

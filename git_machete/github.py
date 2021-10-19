@@ -17,7 +17,6 @@ from git_machete.git_operations import GitContext
 from git_machete.custom_types import AnyBranch, LocalBranch
 
 
-
 GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
 # GitHub Enterprise deployments use alternate domains.
 # The logic in this module will need to be expanded to detect

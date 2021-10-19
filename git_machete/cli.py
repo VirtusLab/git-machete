@@ -652,7 +652,7 @@ def launch(orig_args: List[str]) -> None:
                     lambda _branch: LocalBranch(git.get_combined_counterpart_for_fetching_of_branch(_branch)),
                     git.get_local_branches())
                 qualifying_remote_branches: List[RemoteBranch] = excluding(git.get_remote_branches(),
-                                                       [RemoteBranch(b) for b in remote_counterparts_of_local_branches])  # cast to RemoteBranch only t0 satisfy mypy
+                                                                           [RemoteBranch(b) for b in remote_counterparts_of_local_branches])  # cast to RemoteBranch only to satisfy mypy
                 res = excluding(git.get_local_branches(), machete_client.managed_branches) + list(
                     map(strip_first_fragment, qualifying_remote_branches))
             elif category == "managed":
