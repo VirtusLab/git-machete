@@ -22,5 +22,5 @@ awk_script="$(cat <<'EOF'
 EOF
 )"
 
-git ls-files ':!/.circleci/config.yml' ':!*/Dockerfile' ':!graphics/setup-sandbox' ':!docs/*' ':!*.md' ':!*.py' ':!*.svg' ':!*.png' \
+git ls-files ':!/.circleci/config.yml' ':!*/Dockerfile' ':!docs/*' ':!graphics/setup-sandbox' ':!*.md' ':!*.png' ':!*.py' ':!*.svg' \
   | xargs awk "$awk_script"
