@@ -39,7 +39,7 @@ a port into a plugin for the IntelliJ Platform products, including PyCharm, WebS
 
 We suggest a couple of alternative ways of installation.
 
-**Instructions for installing bash and zsh completion scripts are provided in [completion/README.md](completion/README.md).**
+**Instructions for installing bash, zsh, and fish completion scripts are provided in [completion/README.md](completion/README.md).**
 
 git-machete requires Python >= 3.6. Python 2.x is no longer supported.
 
