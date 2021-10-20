@@ -29,6 +29,7 @@ set -l __mcht_commands \
 
 # git
 complete --command git --condition "not __fish_seen_subcommand_from machete" --no-files --arguments machete --description 'Tool for managing git workflows'
+complete --command git --condition "__fish_seen_subcommand_from machete" --no-files # (suppress file completion)
 
 # git machete (general options)
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from $__mcht_commands; and not __fish_seen_subcommand_from --help -h" --no-files --short-option h --long-option help --description 'Print help and exit'
