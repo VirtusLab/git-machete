@@ -97,4 +97,4 @@ Zsh:
 
 Fish:
 
-    * TODO
+    * TODO (#300): installation instruction

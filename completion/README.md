@@ -95,4 +95,4 @@ exec $SHELL -l
 
 ## Fish
 
-TODO
+TODO (#300): installation instructions

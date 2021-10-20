@@ -10,7 +10,7 @@ set -l __mcht_commands \
   update    \
   version
 
-# TODO: completion for all commands:
+# TODO (#300): completion for all commands:
   # advance
   # anno
   # delete-unmanaged
@@ -42,17 +42,17 @@ complete --command git --condition "__fish_seen_subcommand_from machete; and not
 # git machete add
 complete --command git --condition "__fish_seen_subcommand_from machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments add --description 'Add a branch to the tree of branch dependencies'
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from add; and not __fish_seen_subcommand_from --as-root -R --onto -o" --no-files --long-option onto    --short-option o --require-parameter --description 'Specifies the target parent branch to add the given branch onto. Cannot be specified together with -R/--as-root'
-# ^ TODO: arguments
+# ^ TODO (#300): arguments
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from add; and not __fish_seen_subcommand_from --onto -o --as-root -R" --no-files --long-option as-root --short-option R                     --description 'Add the given branch as a new root (and not onto any other branch). Cannot be specified together with -o/--onto'
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from add; and not __fish_seen_subcommand_from --yes -y"               --no-files --long-option yes     --short-option y                     --description 'Don\'t ask for confirmation whether to create the branch or whether to add onto the inferred upstream'
 
 # git machete discover
 complete --command git --condition "__fish_seen_subcommand_from machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments discover --description 'Automatically discover tree of branch dependencies'
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from discover; and not __fish_seen_subcommand_from --checked-out-since -C" --no-files --long-option checked-out-since --short-option C --require-parameter --description 'Only consider branches checked out at least once since the given date. <date> can be e.g. 2 weeks ago or 2020-06-01, as in git log --since=<date>. If not present, the date is selected automatically so that around 10 branches are included'
-# ^ TODO: arguments
+# ^ TODO (#300): arguments
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from discover; and not __fish_seen_subcommand_from --list-commits -l"      --no-files --long-option list-commits      --short-option l                     --description 'When printing the discovered tree, additionally lists the messages of commits introduced on each branch (as for git machete status)'
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from discover; and not __fish_seen_subcommand_from --roots -r"             --no-files --long-option roots             --short-option r --require-parameter --description 'Comma-separated list of branches that should be considered roots of trees of branch dependencies. If not present, master is assumed to be a root. Note that in the process of discovery, certain other branches can also be additionally deemed to be roots as well'
-# ^ TODO: arguments
+# ^ TODO (#300): arguments
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from discover; and not __fish_seen_subcommand_from --yes -y"               --no-files --long-option yes               --short-option y                     --description 'Don\'t ask for confirmation before saving the newly-discovered tree. Mostly useful in scripts; not recommended for manual use'
 
 # git machete edit
@@ -108,7 +108,7 @@ complete --command git --condition "__fish_seen_subcommand_from machete; and __f
 # git machete update
 complete --command git --condition "__fish_seen_subcommand_from machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments update --description 'Sync the current branch with its upstream (parent) branch via rebase or merge'
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from update; and not __fish_seen_subcommand_from --merge -M --fork-point -f" --no-files --long-option fork-point --short-option f --require-parameter --arguments "auto always never" --description 'If updating by rebase, specifies the alternative fork point commit after which the rebased part of history is meant to start. Not allowed if updating by merge'
-# ^ TODO: --argument: commits, branches, etc
+# ^ TODO (#300): --argument: commits, branches, etc
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from update; and not __fish_seen_subcommand_from -n --no-edit-merge --no-interactive-rebase"            --no-files                                     --short-option n --description 'If updating by rebase, equivalent to --no-interactive-rebase. If updating by merge, equivalent to --no-edit-merge'
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from update; and not __fish_seen_subcommand_from -n --no-edit-merge --no-interactive-rebase"            --no-files --long-option no-edit-merge                          --description 'If updating by merge, skip opening the editor for merge commit message while doing git merge (i.e. pass --no-edit flag to underlying git merge)'
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from update; and not __fish_seen_subcommand_from -n --no-edit-merge --no-interactive-rebase -M --merge" --no-files --long-option no-interactive-rebase                  --description 'If updating by rebase, run git rebase in non-interactive mode (without -i/--interactive flag). Not allowed if updating by merge'
