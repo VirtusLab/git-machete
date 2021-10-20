@@ -460,6 +460,13 @@ def get_branch_arg_or_current_branch(
 
 
 def exit_script(status_code: Optional[int] = None) -> None:
+    # Single point of exit is useful, because we can mock this method in tests
+    # and verify that actual errors like MacheteException are raised with
+    # appropriate messages. Otherwise it's not possible, because SystemError
+    # caused by sys.exit() is overshadowing actual errors. As of the issue #287,
+    # there are some additional points of exit from the script in client.py
+    # method MacheteClient.pick() there are left on purpose since removing them
+    # would enforce significant refactor.
     sys.exit(status_code)
 
 
