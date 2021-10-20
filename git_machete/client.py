@@ -1225,8 +1225,7 @@ class MacheteClient:
                             opt_yes=False
                     ) in ('y', 'yes'):
                         return upstream
-                    raise MacheteException(
-                        "User answer doesn't allow for the git machete to continue.")
+                    raise MacheteException("Aborting.")
                 else:
                     warn(
                         f"branch `{branch}` not found in the tree of branch "
