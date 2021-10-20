@@ -4,6 +4,7 @@
 
 - added: new way of acquiring the github token (from the file in `~`)
 - fixed: fork-point and down-fork-point options values have to be ancestor of the current branch
+- added: fish shell completions #290
 
 ## New in git-machete 3.4.1
 
