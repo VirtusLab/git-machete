@@ -21,10 +21,10 @@ from git_machete.client import MacheteClient
 from git_machete.docs import long_docs
 from git_machete.exceptions import MacheteException
 from git_machete.github import get_parsed_github_remote_url
-from git_machete.git_operations import GitContext
+from git_machete.git_operations import GitContext, LocalBranch, RemoteBranch
 from git_machete.options import CommandLineOptions
 from git_machete.utils import dim, fmt
-from git_machete.custom_types import LocalBranch, RemoteBranch
+
 
 cli_opts: CommandLineOptions = CommandLineOptions()
 git: GitContext = GitContext()

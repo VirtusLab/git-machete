@@ -14,9 +14,8 @@ from git_machete.client import MacheteClient
 from git_machete.constants import EscapeCodes
 from git_machete.docs import short_docs, long_docs
 from git_machete.exceptions import MacheteException, StopInteraction
-from git_machete.git_operations import GitContext
+from git_machete.git_operations import FullCommitSha, GitContext, LocalBranch, RemoteBranch
 from git_machete.utils import fmt, underline, excluding, warn
-from git_machete.custom_types import Commit, LocalBranch, RemoteBranch
 
 T = TypeVar('T')
 
@@ -566,7 +565,7 @@ def launch(orig_args: List[str]) -> None:
                     use_overrides=False,
                     opt_no_detect_squash_merges=cli_opts.opt_no_detect_squash_merges))
             elif cli_opts.opt_override_to:
-                machete_client.set_fork_point_override(branch, Commit.of(cli_opts.opt_override_to))
+                machete_client.set_fork_point_override(branch, FullCommitSha.of(cli_opts.opt_override_to))
             elif cli_opts.opt_override_to_inferred:
                 machete_client.set_fork_point_override(
                     branch, machete_client.fork_point(
@@ -652,7 +651,7 @@ def launch(orig_args: List[str]) -> None:
                     lambda _branch: LocalBranch.of(git.get_combined_counterpart_for_fetching_of_branch(_branch)),
                     git.get_local_branches())
                 qualifying_remote_branches: List[RemoteBranch] = excluding(git.get_remote_branches(),
-                                                                           [RemoteBranch.of(b) for b in remote_counterparts_of_local_branches])  # cast to RemoteBranch only to satisfy mypy
+                                                                           [RemoteBranch.of(b) for b in remote_counterparts_of_local_branches])
                 res = excluding(git.get_local_branches(), machete_client.managed_branches) + list(
                     map(strip_first_fragment, qualifying_remote_branches))
             elif category == "managed":

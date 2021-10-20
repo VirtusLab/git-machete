@@ -13,7 +13,7 @@ from git_machete.constants import (
     DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, PICK_FIRST_ROOT, PICK_LAST_ROOT,
     EscapeCodes, SyncToRemoteStatuses)
 from git_machete.exceptions import MacheteException, StopInteraction
-from git_machete.git_operations import GitContext
+from git_machete.git_operations import AnyBranch, AnyRevision, FullCommitSha, GitContext, LocalBranch, RemoteBranch
 from git_machete.github import (
     add_assignees_to_pull_request, add_reviewers_to_pull_request,
     create_pull_request, checkout_pr_refs, derive_pull_request_by_head, derive_pull_requests,
@@ -22,7 +22,6 @@ from git_machete.github import (
 from git_machete.utils import (
     get_pretty_choices, flat_map, excluding, fmt, tupled, warn, debug, bold,
     colored, underline, dim, get_second)
-from git_machete.custom_types import AnyBranch, Commit, LocalBranch, RemoteBranch
 
 
 BRANCH_DEF = Tuple[LocalBranch, str]
@@ -41,14 +40,14 @@ class MacheteClient:
         self.__git: GitContext = git
         self._definition_file_path: str = self.__git.get_git_subpath("machete")
         self._managed_branches: List[LocalBranch] = []
-        self._up_branch: Dict[LocalBranch, LocalBranch] = {}  # TODO (#110): default dict with None
-        self.__down_branches: Dict[LocalBranch, List[LocalBranch]] = {}  # TODO (#110): default dict with []
+        self._up_branch: Dict[LocalBranch, Optional[LocalBranch]] = {}  # TODO (#110): default dict with None
+        self.__down_branches: Dict[LocalBranch, Optional[List[LocalBranch]]] = {}  # TODO (#110): default dict with []
         self.__indent: Optional[str] = None
         self.__roots: List[LocalBranch] = []
         self.__annotations: Dict[LocalBranch, str] = {}
         self.__empty_line_status: Optional[bool] = None
         self.__branch_defs_by_sha_in_reflog: Optional[
-            Dict[Commit, Optional[List[Tuple[LocalBranch, str]]]]] = None
+            Dict[FullCommitSha, Optional[List[Tuple[LocalBranch, str]]]]] = None
 
     @property
     def definition_file_path(self) -> str:
@@ -63,11 +62,11 @@ class MacheteClient:
         self._managed_branches = val
 
     @property
-    def up_branch(self) -> Dict[LocalBranch, LocalBranch]:
+    def up_branch(self) -> Dict[LocalBranch, Optional[LocalBranch]]:
         return self._up_branch
 
     @up_branch.setter
-    def up_branch(self, val: Dict[LocalBranch, LocalBranch]) -> None:
+    def up_branch(self, val: Dict[LocalBranch, Optional[LocalBranch]]) -> None:
         self._up_branch = val
 
     def expect_in_managed_branches(self, branch: LocalBranch) -> None:
@@ -303,7 +302,7 @@ class MacheteClient:
 
     def update(
             self, *, opt_merge: bool, opt_no_edit_merge: bool,
-            opt_no_interactive_rebase: bool, opt_fork_point: Commit) -> None:
+            opt_no_interactive_rebase: bool, opt_fork_point: FullCommitSha) -> None:
         current_branch = self.__git.get_current_branch()
         if opt_merge:
             with_branch = self.up(
@@ -486,7 +485,7 @@ class MacheteClient:
             self,
             *,
             branches_to_slide_out: List[LocalBranch],
-            opt_down_fork_point: Optional[Commit],
+            opt_down_fork_point: Optional[FullCommitSha],
             opt_merge: bool,
             opt_no_interactive_rebase: bool,
             opt_no_edit_merge: bool
@@ -875,10 +874,10 @@ class MacheteClient:
 
         out = io.StringIO()
         edge_color: Dict[LocalBranch, str] = {}
-        fp_sha_cached: Dict[Union[LocalBranch, Commit], Optional[Union[LocalBranch, Commit]]] = {}  # TODO (#110): default dict with None
+        fp_sha_cached: Dict[Union[LocalBranch, FullCommitSha], Optional[Union[LocalBranch, FullCommitSha]]] = {}  # TODO (#110): default dict with None
         fp_branches_cached: Dict[LocalBranch, List[BRANCH_DEF]] = {}
 
-        def fp_sha(branch_: LocalBranch) -> Optional[Union[LocalBranch, Commit]]:
+        def fp_sha(branch_: LocalBranch) -> Optional[Union[LocalBranch, FullCommitSha]]:
             if branch not in fp_sha_cached:
                 try:
                     # We're always using fork point overrides, even when status
@@ -1069,7 +1068,7 @@ class MacheteClient:
                 f"variable or edit {self._definition_file_path} directly.")
         return utils.run_cmd(default_editor_name, self._definition_file_path)
 
-    def __fork_point_and_containing_branch_defs(self, branch: LocalBranch, use_overrides: bool, opt_no_detect_squash_merges: bool) -> Tuple[Union[LocalBranch, Commit], List[BRANCH_DEF]]:
+    def __fork_point_and_containing_branch_defs(self, branch: LocalBranch, use_overrides: bool, opt_no_detect_squash_merges: bool) -> Tuple[Union[LocalBranch, FullCommitSha], List[BRANCH_DEF]]:
         upstream = self.up_branch.get(branch)
 
         if self.__is_merged_to_upstream(
@@ -1131,13 +1130,13 @@ class MacheteClient:
             use_overrides: bool,
             *,
             opt_no_detect_squash_merges: bool
-    ) -> Optional[Commit]:
+    ) -> Optional[FullCommitSha]:
         sha, containing_branch_defs = self.__fork_point_and_containing_branch_defs(
             branch, use_overrides, opt_no_detect_squash_merges=opt_no_detect_squash_merges)
-        return Commit.of(sha) if sha else None
+        return FullCommitSha.of(sha) if sha else None
 
     def diff(self, *, branch: Optional[LocalBranch], opt_stat: bool) -> None:
-        fp: Commit = self.fork_point(
+        fp: FullCommitSha = self.fork_point(
             branch if branch else self.__git.get_current_branch(),
             use_overrides=True, opt_no_detect_squash_merges=False)
         self.__git.display_diff(
@@ -1269,7 +1268,7 @@ class MacheteClient:
                 raise MacheteException(
                     f"The machete-post-slide-out hook exited with {exit_code}, aborting.\n")
 
-    def squash(self, *, current_branch: LocalBranch, opt_fork_point: Commit) -> None:
+    def squash(self, *, current_branch: LocalBranch, opt_fork_point: FullCommitSha) -> None:
         commits: List[Hash_ShortHash_Message] = self.__git.get_commits_between(
             opt_fork_point, current_branch)
         if not commits:
@@ -1284,11 +1283,11 @@ class MacheteClient:
             return
 
         earliest_sha, earliest_short_sha, earliest_subject = commits[0]
-        earliest_full_body = self.__git.get_commit_information("raw body", earliest_sha).strip()
+        earliest_full_body = self.__git.get_commit_information("raw body", FullCommitSha(earliest_sha)).strip()
         # %ai for ISO-8601 format; %aE/%aN for respecting .mailmap; see `git rev-list --help`
-        earliest_author_date = self.__git.get_commit_information("author date", earliest_sha).strip()
-        earliest_author_email = self.__git.get_commit_information("author email", earliest_sha).strip()
-        earliest_author_name = self.__git.get_commit_information("author name", earliest_sha).strip()
+        earliest_author_date = self.__git.get_commit_information("author date", FullCommitSha(earliest_sha)).strip()
+        earliest_author_email = self.__git.get_commit_information("author email", FullCommitSha(earliest_sha)).strip()
+        earliest_author_name = self.__git.get_commit_information("author name", FullCommitSha(earliest_sha)).strip()
 
         # Following the convention of `git cherry-pick`, `git commit --amend`, `git rebase` etc.,
         # let's retain the original author (only committer will be overwritten).
@@ -1301,8 +1300,8 @@ class MacheteClient:
         # The tree (HEAD^{tree}) argument must be passed as first,
         # otherwise the entire `commit-tree` will fail on some ancient supported
         # versions of git (at least on v1.7.10).
-        squashed_sha = self.__git.squash_commits_with_msg_and_new_env(
-            opt_fork_point, earliest_full_body, author_env).strip()
+        squashed_sha = FullCommitSha.of(self.__git.squash_commits_with_msg_and_new_env(
+            opt_fork_point, earliest_full_body, author_env).strip())
 
         # This can't be done with `git reset` since it doesn't allow for a custom reflog message.
         # Even worse, reset's reflog message would be filtered out in our fork point algorithm,
@@ -1322,7 +1321,7 @@ class MacheteClient:
         print()
         print(fmt(f"\t`git reset {latest_sha}`"))
 
-    def filtered_reflog(self, branch: str, prefix: str) -> List[str]:
+    def filtered_reflog(self, branch: str, prefix: str) -> List[FullCommitSha]:
         def is_excluded_reflog_subject(sha_: str, gs_: str) -> bool:
             is_excluded = (gs_.startswith("branch: Created from") or
                            gs_ == f"branch: Reset to {branch}" or
@@ -1435,23 +1434,23 @@ class MacheteClient:
             return self.up(branch, prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)
         raise MacheteException(f"Specified direction '{param}' is not supported.")
 
-    def __match_log_to_filtered_reflogs(self, branch: LocalBranch) -> Generator[Tuple[Commit, List[BRANCH_DEF]], None, None]:
+    def __match_log_to_filtered_reflogs(self, branch: LocalBranch) -> Generator[Tuple[FullCommitSha, List[BRANCH_DEF]], None, None]:
 
         if branch not in self.__git.get_local_branches():
             raise MacheteException(f"`{branch}` is not a local branch")
 
         if self.__branch_defs_by_sha_in_reflog is None:
-            def generate_entries() -> Generator[Tuple[Commit, BRANCH_DEF], None, None]:
+            def generate_entries() -> Generator[Tuple[FullCommitSha, BRANCH_DEF], None, None]:
                 for lb in self.__git.get_local_branches():
                     lb_shas = set()
                     for sha_ in self.filtered_reflog(lb, prefix="refs/heads/"):
                         lb_shas.add(sha_)
-                        yield Commit.of(sha_), (lb, str(lb))
+                        yield FullCommitSha.of(sha_), (lb, str(lb))
                     remote_branch = self.__git.get_combined_counterpart_for_fetching_of_branch(lb)
                     if remote_branch:
                         for sha_ in self.filtered_reflog(str(remote_branch), prefix="refs/remotes/"):
                             if sha_ not in lb_shas:
-                                yield Commit.of(sha_), (lb, str(remote_branch))
+                                yield FullCommitSha.of(sha_), (lb, str(remote_branch))
 
             self.__branch_defs_by_sha_in_reflog = {}
             for sha, branch_def in generate_entries():
@@ -1466,7 +1465,7 @@ class MacheteClient:
 
             def log_result() -> Generator[str, None, None]:
                 branch_defs_: List[BRANCH_DEF]
-                sha_: Commit
+                sha_: FullCommitSha
                 for sha_, branch_defs_ in self.__branch_defs_by_sha_in_reflog.items():
                     def branch_def_to_str(lb: str, lb_or_rb: str) -> str:
                         return lb if lb == lb_or_rb else f"{lb_or_rb} (remote counterpart of {lb})"
@@ -1530,11 +1529,11 @@ class MacheteClient:
         return (self.__git.get_config_attr_or_none(self.config_key_for_override_fork_point_to(branch)) or
                 self.__git.get_config_attr_or_none(self.config_key_for_override_fork_point_while_descendant_of(branch))) is not None
 
-    def __get_fork_point_override_data(self, branch: AnyBranch) -> Optional[Tuple[Commit, Commit]]:
+    def __get_fork_point_override_data(self, branch: AnyBranch) -> Optional[Tuple[FullCommitSha, FullCommitSha]]:
         to_key = self.config_key_for_override_fork_point_to(branch)
-        to = Commit.of(self.__git.get_config_attr_or_none(to_key) or "")
+        to = FullCommitSha.of(self.__git.get_config_attr_or_none(to_key) or "")
         while_descendant_of_key = self.config_key_for_override_fork_point_while_descendant_of(branch)
-        while_descendant_of = Commit.of(self.__git.get_config_attr_or_none(while_descendant_of_key) or "")
+        while_descendant_of = FullCommitSha.of(self.__git.get_config_attr_or_none(while_descendant_of_key) or "")
         if not to and not while_descendant_of:
             return None
         if to and not while_descendant_of:
@@ -1544,8 +1543,8 @@ class MacheteClient:
             warn(f"{while_descendant_of_key} config is set but {to_key} config is missing")
             return None
 
-        to_sha: Optional[Commit] = self.__git.get_commit_sha_by_revision(to, prefix="")
-        while_descendant_of_sha: Optional[Commit] = self.__git.get_commit_sha_by_revision(while_descendant_of, prefix="")
+        to_sha: Optional[FullCommitSha] = self.__git.get_commit_sha_by_revision(to, prefix="")
+        while_descendant_of_sha: Optional[FullCommitSha] = self.__git.get_commit_sha_by_revision(while_descendant_of, prefix="")
         if not to_sha or not while_descendant_of_sha:
             if not to_sha:
                 warn(f"{to_key} config value `{to}` does not point to a valid commit")
@@ -1563,7 +1562,7 @@ class MacheteClient:
             return None
         return to_sha, while_descendant_of_sha
 
-    def __get_overridden_fork_point(self, branch: AnyBranch) -> Optional[Commit]:
+    def __get_overridden_fork_point(self, branch: AnyBranch) -> Optional[FullCommitSha]:
         override_data = self.__get_fork_point_override_data(branch)
         if not override_data:
             return None
@@ -1589,7 +1588,7 @@ class MacheteClient:
         self.__git.unset_config_attr(self.config_key_for_override_fork_point_to(branch))
         self.__git.unset_config_attr(self.config_key_for_override_fork_point_while_descendant_of(branch))
 
-    def set_fork_point_override(self, branch: AnyBranch, to_revision: Union[Commit, AnyBranch]) -> None:
+    def set_fork_point_override(self, branch: AnyBranch, to_revision: AnyRevision) -> None:
         if branch not in self.__git.get_local_branches():
             raise MacheteException(f"`{branch}` is not a local branch")
         to_sha = self.__git.get_commit_sha_by_revision(to_revision, prefix="")
@@ -1597,7 +1596,7 @@ class MacheteClient:
             raise MacheteException(f"Cannot find revision {to_revision}")
         if not self.__git.is_ancestor_or_equal(to_sha, branch, earlier_prefix=""):
             raise MacheteException(
-                f"Cannot override fork point: {self.__git.get_revision_repr(Commit.of(to_revision))} is not an ancestor of {branch}")
+                f"Cannot override fork point: {self.__git.get_revision_repr(FullCommitSha.of(to_revision))} is not an ancestor of {branch}")
 
         to_key = self.config_key_for_override_fork_point_to(branch)
         self.__git.set_config_attr(to_key, to_sha)
@@ -1609,7 +1608,7 @@ class MacheteClient:
         sys.stdout.write(
             fmt(
                 f"Fork point for <b>{branch}</b> is overridden to <b>"
-                f"{self.__git.get_revision_repr(Commit.of(to_revision))}</b>.\n",
+                f"{self.__git.get_revision_repr(FullCommitSha.of(to_revision))}</b>.\n",
                 f"This applies as long as {branch} points to (or is descendant of)"
                 " its current head (commit "
                 f"{self.__git.get_short_commit_sha_by_revision(b_sha)}).\n\n",
@@ -1916,7 +1915,7 @@ class MacheteClient:
                 return remote
         return None
 
-    def retarget_github_pr(self, head: AnyBranch) -> None:
+    def retarget_github_pr(self, head: LocalBranch) -> None:
         org: str
         repo: str
         _, (org, repo) = self.__derive_remote_and_github_org_and_repo()

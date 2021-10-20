@@ -1,7 +1,7 @@
 from typing import Optional, List
 
 from git_machete.exceptions import MacheteException
-from git_machete.custom_types import Commit, LocalBranch
+from git_machete.git_operations import FullCommitSha, LocalBranch
 
 
 class CommandLineOptions:
@@ -12,10 +12,10 @@ class CommandLineOptions:
         self.opt_checked_out_since: Optional[str] = None
         self.opt_color: str = "auto"
         self.opt_debug: bool = False
-        self.opt_down_fork_point: Optional[Commit] = None
+        self.opt_down_fork_point: Optional[FullCommitSha] = None
         self.opt_draft: bool = False
         self.opt_fetch: bool = False
-        self.opt_fork_point: Optional[Commit] = None
+        self.opt_fork_point: Optional[FullCommitSha] = None
         self.opt_inferred: bool = False
         self.opt_list_commits: bool = False
         self.opt_list_commits_with_hashes: bool = False
