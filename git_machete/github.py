@@ -13,7 +13,7 @@ from urllib.error import HTTPError
 
 from git_machete.utils import debug, fmt, find_or_none
 from git_machete.exceptions import MacheteException, UnprocessableEntityHTTPError
-from git_machete.git_operations import AnyBranch, GitContext, LocalBranch
+from git_machete.git_operations import GitContext, LocalBranch
 
 
 GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
