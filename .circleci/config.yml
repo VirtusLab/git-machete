@@ -26,7 +26,7 @@ jobs:
           command: |
             # For ensure-completion-scripts-correct.sh
             sudo apt-get update
-            sudo apt-get install zsh
+            sudo apt-get install zsh fish
 
             # For ensure-links-correct.sh
             npm install --global remark-cli remark-lint-no-dead-urls remark-validate-links
