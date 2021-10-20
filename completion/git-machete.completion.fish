@@ -1,31 +1,31 @@
 set -l __mcht_commands \
-    add       \
-    discover  \
-    edit e    \
-    go g      \
-    help      \
-    slide-out \
-    status s  \
-    traverse  \
-    update    \
-    version
+  add       \
+  discover  \
+  edit e    \
+  go g      \
+  help      \
+  slide-out \
+  status s  \
+  traverse  \
+  update    \
+  version
 
 # TODO: completion for all commands:
-    # advance
-    # anno
-    # delete-unmanaged
-    # diff d
-    # file
-    # fork-point
-    # format
-    # github
-    # hooks
-    # is-managed
-    # list
-    # log l
-    # reapply
-    # show
-    # squash
+  # advance
+  # anno
+  # delete-unmanaged
+  # diff d
+  # file
+  # fork-point
+  # format
+  # github
+  # hooks
+  # is-managed
+  # list
+  # log l
+  # reapply
+  # show
+  # squash
 
 # git
 complete --command git --condition "not __fish_seen_subcommand_from machete" --no-files --arguments machete --description 'Tool for managing git workflows'
@@ -71,7 +71,7 @@ complete --command git --condition "__fish_seen_subcommand_from machete; and __f
 # git machete help
 complete --command git --condition "__fish_seen_subcommand_from machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments help --description 'Display overview, or detailed help for a specified command'
 
-# git machete slide-out 
+# git machete slide-out
 complete --command git --condition "__fish_seen_subcommand_from machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments slide-out --description 'Slide out the current branch and sync its downstream (child) branches with its upstream (parent) branch via rebase or merge'
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from slide-out; and not __fish_seen_subcommand_from --merge -M --down-fork-point -d"                                --no-files --long-option down-fork-point --short-option d --require-parameter --description 'If updating by rebase, specifies the alternative fork point for downstream branches for the operation. git machete fork-point overrides for downstream branches are recommended over use of this option. See also doc for --fork-point option in git machete help reapply and git machete help update. Not allowed if updating by merge'
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from slide-out; and not __fish_seen_subcommand_from --merge -M"                                                     --no-files --long-option merge           --short-option M                     --description 'Update the downstream branch by merge rather than by rebase'
