@@ -480,8 +480,6 @@ def launch(orig_args: List[str]) -> None:
     git = GitContext()
 
     try:
-        machete_client = MacheteClient(git)
-
         cli_parser: argparse.ArgumentParser = create_cli_parser()
         parsed_cli: argparse.Namespace = cli_parser.parse_args(orig_args)
         parsed_cli_as_dict: Dict[str, str] = vars(parsed_cli)
@@ -491,6 +489,12 @@ def launch(orig_args: List[str]) -> None:
         set_utils_global_variables(cli_opts)
 
         cmd = parsed_cli.command
+
+        if cmd == "help":
+            print(get_help_description(parsed_cli.topic_or_cmd))
+            exit_script()
+
+        machete_client = MacheteClient(git)
 
         if cmd not in {'help', 'discover'}:
             if not os.path.exists(machete_client.definition_file_path):
@@ -623,9 +627,6 @@ def launch(orig_args: List[str]) -> None:
                 current_branch = git.get_current_branch()
                 machete_client.expect_in_managed_branches(current_branch)
                 machete_client.retarget_github_pr(current_branch)
-        elif cmd == "help":
-            # No need to read definition file.
-            print(get_help_description(parsed_cli.topic_or_cmd))
         elif cmd == "is-managed":
             machete_client.read_definition_file()
             branch = get_branch_arg_or_current_branch(cli_opts, git)
