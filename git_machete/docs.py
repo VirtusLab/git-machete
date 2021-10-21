@@ -398,7 +398,7 @@ long_docs: Dict[str, str] = {
             1. what is going to be the new base for the rebased commits,
             2. what is the fork point - the place where the rebased history diverges from the upstream history,
             3. what branch is rebased.
-            If the hook returns a non-zero exit code, the entire rebase is aborted.
+            If the hook returns a non-zero exit code, an error is raised and the entire rebase is aborted.
 
             Note: this hook is independent from git's standard `pre-rebase` hook.
             If machete-pre-rebase returns zero, the execution flow continues to `git rebase`, which may also run `pre-rebase` hook if present.
