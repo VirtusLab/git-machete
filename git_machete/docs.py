@@ -383,7 +383,7 @@ long_docs: Dict[str, str] = {
             * exactly once during a `slide-out` execution (even if multiple branches are slid out),
             * zero or more times during `traverse` (every time a slide-out operation is confirmed).
 
-            If the hook returns a non-zero exit code, then the execution of the command is aborted,
+            If the hook returns a non-zero exit code, then an error is raised and the execution of the command is aborted,
             i.e. `slide-out` won't attempt rebase of the new downstream branches and `traverse` won't continue the traversal.
             In case of `advance` there is no difference (other than exit code of the entire `advance` command being non-zero),
             since slide-out is the last operation that happens within `advance`.
