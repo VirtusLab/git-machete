@@ -2039,8 +2039,7 @@ class MacheteClient:
                     raise StopInteraction
             self.flush_caches()
         elif ans in ('q', 'quit'):
-            if is_called_from_traverse:
-                raise StopInteraction
+            raise StopInteraction
 
     def __handle_untracked_state(
             self,
@@ -2109,7 +2108,7 @@ class MacheteClient:
             if ans == 'yq' and is_called_from_traverse:
                 raise StopInteraction
             self.flush_caches()
-        elif ans in ('q', 'quit') and is_called_from_traverse:
+        elif ans in ('q', 'quit'):
             raise StopInteraction
 
     def __handle_diverged_and_older_state(self, branch: str, opt_yes: bool) -> None:
