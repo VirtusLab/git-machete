@@ -496,7 +496,7 @@ def launch(orig_args: List[str]) -> None:
 
         machete_client = MacheteClient(git)
 
-        if cmd not in {'help', 'discover'}:
+        if cmd != 'discover':
             if not os.path.exists(machete_client.definition_file_path):
                 # We're opening in "append" and not "write" mode to avoid a race condition:
                 # if other process writes to the file between we check the
