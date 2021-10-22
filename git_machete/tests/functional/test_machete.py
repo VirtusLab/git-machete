@@ -18,6 +18,7 @@ from urllib.error import HTTPError
 
 from git_machete import cli
 from git_machete.client import MacheteClient
+from git_machete.docs import long_docs
 from git_machete.exceptions import MacheteException
 from git_machete.github import get_parsed_github_remote_url
 from git_machete.git_operations import GitContext
@@ -933,20 +934,29 @@ class MacheteTester(unittest.TestCase):
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     def test_help(self) -> None:
-        self.launch_command("help")
-        for (description, commands) in cli.command_groups:
-            for command in commands:
-                self.launch_command("help", command)
+        expected_exit_code = None
 
-                if command not in {"format", "hooks"}:
-                    try:
-                        self.launch_command(command, "--help")
-                    except SystemExit as e:
-                        self.assertIs(e.code, 0)
-                    except Exception as e:
-                        self.fail(f'Unexpected exception raised: {e}')
-                    else:
-                        self.fail('SystemExit expected but not raised')
+        with self.assertRaises(SystemExit) as e:
+            self.launch_command("help")
+        self.assertEqual(
+            expected_exit_code, e.exception.code,
+            msg="Verify that `git machete help` causes SystemExit with "
+                f"{expected_exit_code} exit code.")
+
+        for command in long_docs:
+            with self.assertRaises(SystemExit) as e:
+                self.launch_command("help", command)
+            self.assertEqual(
+                expected_exit_code, e.exception.code,
+                msg=f"Verify that `git machete help {command}` causes SystemExit"
+                    f" with {expected_exit_code} exit code.")
+
+            with self.assertRaises(SystemExit) as e:
+                self.launch_command(command, "--help")
+            self.assertEqual(
+                expected_exit_code, e.exception.code,
+                msg=f"Verify that `git machete {command} --help` causes "
+                    f"SystemExit with {expected_exit_code} exit code.")
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     def test_go_up(self) -> None:

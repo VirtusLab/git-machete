@@ -110,7 +110,7 @@ class MacheteHelpAction(argparse.Action):
         # parser name (prog) is expected to be `git machete` or `git machete <command>`
         command_name = parser.prog.replace('git machete', '').strip()
         print(get_help_description(command_name))
-        parser.exit()
+        parser.exit(status=None)
 
 
 def create_cli_parser() -> argparse.ArgumentParser:
