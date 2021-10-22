@@ -60,6 +60,9 @@ Output format of any non-plumbing command can change in non-backward-compatible 
 
 
 ## FAQ's about Pull Requests
+**What is the proper base for pull request?**
+
+Please set the base of pull request to `develop` branch. Current branch protection rules on github only allow to merge `develop` or `hotfix` branches into `master`.
 
 **Who closes Github comments? Author of changes, reviewer or initiator of the conversation?**
 
