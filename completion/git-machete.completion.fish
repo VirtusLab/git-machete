@@ -12,28 +12,28 @@ set -l __mcht_help_topics \
   hooks
 
 set -l __mcht_commands \
-  add       \
-  advance   \
-  anno \
+  add              \
+  advance          \
+  anno             \
   delete-unmanaged \
-  diff d \
-  discover  \
-  edit e    \
-  file \
-  fork-point \
-  github \
-  go g      \
-  help      \
-  is-managed \
-  list \
-  log l \
-  reapply \
-  show \
-  slide-out \
-  squash \
-  status s  \
-  traverse  \
-  update    \
+  diff d           \
+  discover         \
+  edit e           \
+  file             \
+  fork-point       \
+  github           \
+  go g             \
+  help             \
+  is-managed       \
+  list             \
+  log l            \
+  reapply          \
+  show             \
+  slide-out        \
+  squash           \
+  status s         \
+  traverse         \
+  update           \
   version
 
 # git
