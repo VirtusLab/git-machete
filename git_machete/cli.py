@@ -31,7 +31,7 @@ alias_by_command: Dict[str, str] = {
 
 command_groups: List[Tuple[str, List[str]]] = [
     ("General topics",
-     ["file", "help", "hooks", "version"]),
+     ["file", "format", "help", "hooks", "version"]),
     ("Build, display and modify the tree of branch dependencies",
      ["add", "anno", "discover", "edit", "status"]),
     ("List, check out and delete branches",
