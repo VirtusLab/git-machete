@@ -14,6 +14,7 @@ mandatory_jobs: &mandatory_jobs
   - test against python 3_7 and git 2_7_6
   - test against python 3_8 and git 2_25_0 with PEP8 checks
   - test against python 3_9 and git 2_30_1 with coverage report and docs creation
+  - test against python 3_10 and git 2_33_1
 
 jobs:
   "initial checks":
@@ -88,6 +89,14 @@ jobs:
       - store_artifacts:
           path: docs/html
           destination: docs
+
+  "test against python 3_10 and git 2_33_1":
+    executor: ubuntu_executor
+    steps:
+      - checkout
+      - run:
+          name: Run tests against Python 3.10 and git 2.33.1
+          command: PYTHON_VERSION=3.10 GIT_VERSION=2.33.1 bash ci/tox/ci-run.sh
 
   "dry run deploy":
     executor: ubuntu_executor
@@ -171,6 +180,7 @@ workflows:
       - test against python 3_7 and git 2_7_6
       - test against python 3_8 and git 2_25_0 with PEP8 checks
       - test against python 3_9 and git 2_30_1 with coverage report and docs creation
+      - test against python 3_10 and git 2_33_1
       - dry run deploy:
           filters:
             branches:
