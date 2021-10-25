@@ -87,8 +87,7 @@ complete --command git --condition "__fish_git_using_command machete; and not __
 # git machete fork-point
 complete --command git --condition "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments fork-point --description 'Display or override fork point for a branch'
 # all forms
-#complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from fork-point" --no-files --arguments
-#^ TODO (#300): 6: provide branches
+complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from fork-point; and not __fish_seen_subcommand_from (__fish_git_local_branches)" --no-files --arguments '(__fish_git_local_branches)'
 # form 1
 complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from fork-point; and not __fish_seen_subcommand_from --inferred --unset-override --override-to --override-to-inferred --override-to-parent" --no-files --long-option inferred
 # form 2
