@@ -102,7 +102,6 @@ complete --command git --condition "__fish_git_using_command machete; and __fish
 complete --command git --condition "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments help --description 'Display overview, or detailed help for a specified command'
 complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from help" --no-files --arguments "$__mcht_help_topics"
 complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from help" --no-files --arguments "$__mcht_commands_long"
-# ^ TODO (#300): 9: add --description tags for all of commands here. Perhaps extract those strings
 
 # git machete is-managed
 complete --command git --condition "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments is-managed
