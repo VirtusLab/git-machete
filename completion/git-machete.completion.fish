@@ -50,8 +50,7 @@ complete --command git --condition "__fish_git_using_command machete; and not __
 
 # git machete add
 complete --command git --condition "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments add --description 'Add a branch to the tree of branch dependencies'
-complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from add; and not __fish_seen_subcommand_from --as-root -R --onto -o" --no-files --long-option onto    --short-option o --require-parameter --description 'Specifies the target parent branch to add the given branch onto. Cannot be specified together with -R/--as-root'
-# ^ TODO (#300): 2: arguments
+complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from add; and not __fish_seen_subcommand_from --as-root -R --onto -o" --no-files --long-option onto    --short-option o --require-parameter --arguments '(__fish_git_local_branches)' --description 'Specifies the target parent branch to add the given branch onto. Cannot be specified together with -R/--as-root'
 complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from add; and not __fish_seen_subcommand_from --onto -o --as-root -R" --no-files --long-option as-root --short-option R                     --description 'Add the given branch as a new root (and not onto any other branch). Cannot be specified together with -o/--onto'
 complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from add; and not __fish_seen_subcommand_from --yes -y"               --no-files --long-option yes     --short-option y                     --description 'Don\'t ask for confirmation whether to create the branch or whether to add onto the inferred upstream'
 
