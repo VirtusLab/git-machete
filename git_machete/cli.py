@@ -109,7 +109,7 @@ class MacheteHelpAction(argparse.Action):
         # parser name (prog) is expected to be `git machete` or `git machete <command>`
         command_name = parser.prog.replace('git machete', '').strip()
         print(get_help_description(command_name))
-        parser.exit()
+        parser.exit(status=None)
 
 
 def create_cli_parser() -> argparse.ArgumentParser:
@@ -479,8 +479,6 @@ def launch(orig_args: List[str]) -> None:
     git = GitContext()
 
     try:
-        machete_client = MacheteClient(git)
-
         cli_parser: argparse.ArgumentParser = create_cli_parser()
         parsed_cli: argparse.Namespace = cli_parser.parse_args(orig_args)
         parsed_cli_as_dict: Dict[str, str] = vars(parsed_cli)
@@ -491,7 +489,13 @@ def launch(orig_args: List[str]) -> None:
 
         cmd = parsed_cli.command
 
-        if cmd not in {'help', 'discover'}:
+        if cmd == "help":
+            print(get_help_description(parsed_cli.topic_or_cmd))
+            exit_script()
+
+        machete_client = MacheteClient(git)
+
+        if cmd != 'discover':
             if not os.path.exists(machete_client.definition_file_path):
                 # We're opening in "append" and not "write" mode to avoid a race condition:
                 # if other process writes to the file between we check the
@@ -622,9 +626,6 @@ def launch(orig_args: List[str]) -> None:
                 current_branch = git.get_current_branch()
                 machete_client.expect_in_managed_branches(current_branch)
                 machete_client.retarget_github_pr(current_branch)
-        elif cmd == "help":
-            # No need to read definition file.
-            print(get_help_description(parsed_cli.topic_or_cmd))
         elif cmd == "is-managed":
             machete_client.read_definition_file()
             branch = get_branch_arg_or_current_branch(cli_opts, git)
