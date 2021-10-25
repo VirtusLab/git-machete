@@ -8,33 +8,16 @@ complete -C "git "
 
 
 set -l __mcht_help_topics \
-  format \
-  hooks
+  format hooks
 
-set -l __mcht_commands \
-  add              \
-  advance          \
-  anno             \
-  delete-unmanaged \
-  diff d           \
-  discover         \
-  edit e           \
-  file             \
-  fork-point       \
-  github           \
-  go g             \
-  help             \
-  is-managed       \
-  list             \
-  log l            \
-  reapply          \
-  show             \
-  slide-out        \
-  squash           \
-  status s         \
-  traverse         \
-  update           \
-  version
+set -l __mcht_commands_long \
+  add advance anno delete-unmanaged diff discover edit file fork-point github go help is-managed \
+  list log reapply show slide-out squash status traverse update version
+
+set -l __mcht_commands_short \
+  d e g l s
+
+set -l __mcht_commands $__mcht_commands_long $__mcht_commands_short
 
 # git
 complete --command git --condition "__fish_git_needs_command" --no-files --arguments machete --description 'Tool for managing git workflows'
@@ -118,8 +101,7 @@ complete --command git --condition "__fish_git_using_command machete; and __fish
 # git machete help
 complete --command git --condition "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments help --description 'Display overview, or detailed help for a specified command'
 complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from help" --no-files --arguments "$__mcht_help_topics"
-complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from help" --no-files --arguments "$__mcht_commands"
-# ^ TODO (#300): 8: only suggest full-names
+complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from help" --no-files --arguments "$__mcht_commands_long"
 # ^ TODO (#300): 9: add --description tags for all of commands here. Perhaps extract those strings
 
 # git machete is-managed
