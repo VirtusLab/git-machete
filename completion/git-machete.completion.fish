@@ -60,8 +60,7 @@ complete --command git --condition "__fish_git_using_command machete; and __fish
 
 # git machete anno
 complete --command git --condition "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments anno --description 'Manage custom annotations'
-complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from anno; and not __fish_seen_subcommand_from --branch -b" --no-files --long-option branch --short-option b --require-parameter --description 'Branch to set the annotation for'
-# ^ TODO (#300): 3: arguments
+complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from anno; and not __fish_seen_subcommand_from --branch -b" --no-files --long-option branch --short-option b --require-parameter --arguments '(__fish_git_local_branches)'  --description 'Branch to set the annotation for'
 complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from anno; and not __fish_seen_subcommand_from --sync-github-prs -H" --no-files --long-option sync-github-prs --short-option H --description 'Annotate with GitHub PR numbers and authors where applicable'
 
 # git machete delete-unmanaged
