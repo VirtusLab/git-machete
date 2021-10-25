@@ -124,7 +124,7 @@ complete --command git --condition "__fish_git_using_command machete; and __fish
 # git machete reapply
 complete --command git --condition "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments reapply --description 'Rebase the current branch onto its computed fork point'
 complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from reapply; and not __fish_seen_subcommand_from --fork-point -f" --no-files --long-option fork-point --short-option f --description 'Specifies the alternative fork point commit after which the rebased part of history is meant to start'
-# ^ TODO (#300): 14: --arguments
+complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from reapply; and __fish_seen_subcommand_from --fork-point -f" --no-files --arguments '(__fish_git_local_branches)'
 
 # git machete show
 complete --command git --condition "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments show --description 'Show name(s) of the branch(es) relative to the position of a branch, accepts down/first/last/next/root/prev/up argument'
@@ -147,7 +147,7 @@ complete --command git --condition "__fish_git_using_command machete; and __fish
 
 # git machete squash
 complete --command git --condition "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments squash --description 'Squash the unique history of the current branch into a single commit'
-complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from squash; and not __fish_seen_subcommand_from --fork-point -f" --no-files --long-option fork-point --short-option f --require-parameter --description 'Specifies the alternative fork point commit after which the squashed part of history is meant to start'
+complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from squash" --no-files --long-option fork-point --short-option f --require-parameter --arguments '(__fish_git_local_branches)' --description 'Specifies the alternative fork point commit after which the squashed part of history is meant to start'
 # ^ TODO (#300): 15: --arguments
 
 # git machete status
