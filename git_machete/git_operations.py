@@ -665,8 +665,8 @@ class GitContext:
             if exit_code == 0:
                 do_rebase()
             else:
-                sys.stderr.write("The machete-pre-rebase hook refused to rebase.\n")
-                sys.exit(exit_code)
+                raise MacheteException(
+                    f"The machete-pre-rebase hook refused to rebase. Error code: {exit_code}\n")
         else:
             do_rebase()
 

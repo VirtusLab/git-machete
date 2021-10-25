@@ -1225,8 +1225,7 @@ class MacheteClient:
                             opt_yes=False
                     ) in ('y', 'yes'):
                         return upstream
-                    else:
-                        sys.exit(1)
+                    raise MacheteException("Aborting.")
                 else:
                     warn(
                         f"branch `{branch}` not found in the tree of branch "
@@ -1265,9 +1264,8 @@ class MacheteClient:
             exit_code = utils.run_cmd(hook_path, new_upstream, slid_out_branch, *new_downstreams,
                                       cwd=self.__git.get_root_dir())
             if exit_code != 0:
-                sys.stderr.write(
+                raise MacheteException(
                     f"The machete-post-slide-out hook exited with {exit_code}, aborting.\n")
-                sys.exit(exit_code)
 
     def squash(self, *, current_branch: str, opt_fork_point: str) -> None:
         commits: List[Hash_ShortHash_Message] = self.__git.get_commits_between(
@@ -1416,25 +1414,25 @@ class MacheteClient:
         self.save_definition_file()
 
     # Parse and evaluate direction against current branch for show/go commands
-    def parse_direction(self, param: str, branch: str, allow_current: bool, down_pick_mode: bool) -> str:
-        if param in ("c", "current") and allow_current:
+    def parse_direction(
+            self, param: str, branch: str, allow_current: bool, down_pick_mode: bool) -> Optional[str]:
+        if param in {"c", "current"} and allow_current:
             return self.__git.get_current_branch()  # throws in case of detached HEAD, as in the spec
-        elif param in ("d", "down"):
+        elif param in {"d", "down"}:
             return self.down(branch, pick_mode=down_pick_mode)
-        elif param in ("f", "first"):
+        elif param in {"f", "first"}:
             return self.first_branch(branch)
-        elif param in ("l", "last"):
+        elif param in {"l", "last"}:
             return self.last_branch(branch)
-        elif param in ("n", "next"):
+        elif param in {"n", "next"}:
             return self.next_branch(branch)
-        elif param in ("p", "prev"):
+        elif param in {"p", "prev"}:
             return self.prev_branch(branch)
-        elif param in ("r", "root"):
+        elif param in {"r", "root"}:
             return self.root_branch(branch, if_unmanaged=PICK_FIRST_ROOT)
-        elif param in ("u", "up"):
+        elif param in {"u", "up"}:
             return self.up(branch, prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)
-        else:
-            raise MacheteException(f"Invalid direction: `{param}` expected: {allowed_directions(allow_current)}")
+        raise MacheteException(f"Specified direction '{param}' is not supported.")
 
     def __match_log_to_filtered_reflogs(self, branch: str) -> Generator[Tuple[str, List[BRANCH_DEF]], None, None]:
 

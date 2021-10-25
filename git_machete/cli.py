@@ -459,10 +459,21 @@ def get_branch_arg_or_current_branch(
     return cli_opts.opt_branch or git_context.get_current_branch()
 
 
+def exit_script(status_code: Optional[int] = None) -> None:
+    # Single point of exit is useful, because we can mock this method in tests
+    # and verify that actual errors like MacheteException are raised with
+    # appropriate messages. Otherwise it's not possible, because SystemError
+    # caused by sys.exit() is overshadowing actual errors. As of the issue #287,
+    # there are some additional points of exit from the script in client.py
+    # method MacheteClient.pick() there are left on purpose since removing them
+    # would enforce significant refactor.
+    sys.exit(status_code)
+
+
 def launch(orig_args: List[str]) -> None:
     if not orig_args:
         print(get_help_description())
-        sys.exit(2)
+        exit_script(2)
 
     cli_opts = git_machete.options.CommandLineOptions()
     git = GitContext()
@@ -618,7 +629,7 @@ def launch(orig_args: List[str]) -> None:
             machete_client.read_definition_file()
             branch = get_branch_arg_or_current_branch(cli_opts, git)
             if branch is None or branch not in machete_client.managed_branches:
-                sys.exit(1)
+                exit_script(1)
         elif cmd == "list":
             category = parsed_cli.category
             if category == 'slidable-after' and 'branch' not in parsed_cli_as_dict:
@@ -761,18 +772,18 @@ def launch(orig_args: List[str]) -> None:
                 opt_fork_point=cli_opts.opt_fork_point)
         elif cmd == "version":
             version()
-            sys.exit()
+            exit_script()
 
     except (argparse.ArgumentError, argparse.ArgumentTypeError) as e:
         print(get_short_general_usage())
         sys.stderr.write(f"\n{e}\n")
-        sys.exit(2)
+        exit_script(2)
     except MacheteException as e:
         sys.stderr.write(f"\n{e}\n")
-        sys.exit(1)
+        exit_script(1)
     except KeyboardInterrupt:
         sys.stderr.write("\nInterrupted by the user")
-        sys.exit(1)
+        exit_script(1)
     except StopInteraction:
         pass
     finally:
