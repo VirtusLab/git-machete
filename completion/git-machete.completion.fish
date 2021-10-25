@@ -58,7 +58,7 @@ complete --command git --condition "__fish_git_using_command machete; and __fish
 complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from discover; and not __fish_seen_subcommand_from --yes -y"                    --no-files --long-option yes               --short-option y                     --description 'Don\'t ask for confirmation before saving the newly-discovered tree. Mostly useful in scripts; not recommended for manual use'
 
 # git machete diff
-complete --command git --condition "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments 'diff d' --description 'Diff current working directory or a given branch against its computed fork point'
+complete --command git --condition "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments diff --description 'Diff current working directory or a given branch against its computed fork point'
 complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from diff d; and not __fish_seen_subcommand_from --stat -s" --no-files --long-option stat --short-option s --description 'Makes git machete diff pass --stat option to git diff, so that only summary (diffstat) is printed'
 
 # git machete edit
@@ -101,8 +101,7 @@ complete --command git --condition "__fish_git_using_command machete; and __fish
 # git machete help
 complete --command git --condition "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments help --description 'Display overview, or detailed help for a specified command'
 complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from help" --no-files --arguments "$__mcht_help_topics"
-complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from help" --no-files --arguments "$__mcht_commands_long"
-# ^ TODO (#300): 9: add --description tags for all of commands here. Perhaps extract those strings
+complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from help" --no-files --arguments "(complete -C 'git machete ')"
 
 # git machete is-managed
 complete --command git --condition "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments is-managed
@@ -122,7 +121,7 @@ complete --command git --condition "__fish_git_using_command machete; and __fish
 complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from list; and not __fish_seen_subcommand_from addable managed slidable slidable-after unmanaged with-overridden-fork-point" --no-files --arguments with-overridden-fork-point --description 'all local branches that have a fork point override set up (even if this override does not affect the location of their fork point anymore).'
 
 # git machete log
-complete --command git --condition "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments 'log l' --description 'Log the part of history specific to the given branch'
+complete --command git --condition "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments log --description 'Log the part of history specific to the given branch'
 # ^ TODO (#300): 13: --arguments
 
 # git machete reapply
