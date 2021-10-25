@@ -1,3 +1,5 @@
+# TODO (#300): no machete if already git command provided
+
 set -l __mcht_help_topics \
   format \
   hooks
