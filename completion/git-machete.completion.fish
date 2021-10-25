@@ -108,7 +108,6 @@ complete --command git --condition "__fish_git_using_command machete; and not __
 complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from is-managed" --no-file --arguments '(__fish_git_local_branches)'s
 
 # git machete list
-# TODO (#300): 11: exclusiveness
 complete --command git --condition "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments list --description 'List all branches that fall into one of pre-defined categories (mostly for internal use)'
 complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from list; and not __fish_seen_subcommand_from addable managed slidable slidable-after unmanaged with-overridden-fork-point" --no-files --arguments addable --description 'all branches (local or remote) than can be added to the definition file'
 complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from list; and not __fish_seen_subcommand_from addable managed slidable slidable-after unmanaged with-overridden-fork-point" --no-files --arguments managed --description 'all branches that appear in the definition file'
