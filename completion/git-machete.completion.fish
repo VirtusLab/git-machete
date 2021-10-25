@@ -147,7 +147,6 @@ complete --command git --condition "__fish_git_using_command machete; and __fish
 # git machete squash
 complete --command git --condition "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments squash --description 'Squash the unique history of the current branch into a single commit'
 complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from squash" --no-files --long-option fork-point --short-option f --require-parameter --arguments '(__fish_git_local_branches)' --description 'Specifies the alternative fork point commit after which the squashed part of history is meant to start'
-# ^ TODO (#300): 15: --arguments
 
 # git machete status
 complete --command git --condition "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments status --description 'Display formatted tree of branch dependencies, including info on their sync with upstream branch and with remote'
