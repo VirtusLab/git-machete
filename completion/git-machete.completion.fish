@@ -1,4 +1,4 @@
-# TODO (#300): no machete if already git command provided
+# TODO (#300): 1: no machete if already git command provided
 
 set -l __mcht_help_topics \
   format \
@@ -44,7 +44,7 @@ complete --command git --condition "__fish_seen_subcommand_from machete; and not
 # git machete add
 complete --command git --condition "__fish_seen_subcommand_from machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments add --description 'Add a branch to the tree of branch dependencies'
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from add; and not __fish_seen_subcommand_from --as-root -R --onto -o" --no-files --long-option onto    --short-option o --require-parameter --description 'Specifies the target parent branch to add the given branch onto. Cannot be specified together with -R/--as-root'
-# ^ TODO (#300): arguments
+# ^ TODO (#300): 2: arguments
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from add; and not __fish_seen_subcommand_from --onto -o --as-root -R" --no-files --long-option as-root --short-option R                     --description 'Add the given branch as a new root (and not onto any other branch). Cannot be specified together with -o/--onto'
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from add; and not __fish_seen_subcommand_from --yes -y"               --no-files --long-option yes     --short-option y                     --description 'Don\'t ask for confirmation whether to create the branch or whether to add onto the inferred upstream'
 
@@ -55,7 +55,7 @@ complete --command git --condition "__fish_seen_subcommand_from machete; and __f
 # git machete anno
 complete --command git --condition "__fish_seen_subcommand_from machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments anno --description 'Manage custom annotations'
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from anno; and not __fish_seen_subcommand_from --branch -b" --no-files --long-option branch --short-option b --require-parameter --description 'Branch to set the annotation for'
-# ^ TODO (#300): arguments
+# ^ TODO (#300): 3: arguments
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from anno; and not __fish_seen_subcommand_from --sync-github-prs -H" --no-files --long-option sync-github-prs --short-option H --description 'Annotate with GitHub PR numbers and authors where applicable'
 
 # git machete delete-unmanaged
@@ -65,10 +65,10 @@ complete --command git --condition "__fish_seen_subcommand_from machete; and __f
 # git machete discover
 complete --command git --condition "__fish_seen_subcommand_from machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments discover --description 'Automatically discover tree of branch dependencies'
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from discover; and not __fish_seen_subcommand_from --checked-out-since -C" --no-files --long-option checked-out-since --short-option C --require-parameter --description 'Only consider branches checked out at least once since the given date. <date> can be e.g. 2 weeks ago or 2020-06-01, as in git log --since=<date>. If not present, the date is selected automatically so that around 10 branches are included'
-# ^ TODO (#300): arguments
+# ^ TODO (#300): 4: arguments
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from discover; and not __fish_seen_subcommand_from --list-commits -l"      --no-files --long-option list-commits      --short-option l                     --description 'When printing the discovered tree, additionally lists the messages of commits introduced on each branch (as for git machete status)'
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from discover; and not __fish_seen_subcommand_from --roots -r"             --no-files --long-option roots             --short-option r --require-parameter --description 'Comma-separated list of branches that should be considered roots of trees of branch dependencies. If not present, master is assumed to be a root. Note that in the process of discovery, certain other branches can also be additionally deemed to be roots as well'
-# ^ TODO (#300): arguments
+# ^ TODO (#300): 5: arguments
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from discover; and not __fish_seen_subcommand_from --yes -y"               --no-files --long-option yes               --short-option y                     --description 'Don\'t ask for confirmation before saving the newly-discovered tree. Mostly useful in scripts; not recommended for manual use'
 
 # git machete diff
@@ -85,7 +85,7 @@ complete --command git --condition "__fish_seen_subcommand_from machete; and not
 complete --command git --condition "__fish_seen_subcommand_from machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments fork-point --description 'Display or override fork point for a branch'
 # all forms
 #complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from fork-point" --no-files --arguments
-#^ TODO (#300): provide branches
+#^ TODO (#300): 6: provide branches
 # form 1
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from fork-point; and not __fish_seen_subcommand_from --inferred --unset-override --override-to --override-to-inferred --override-to-parent" --no-files --long-option inferred
 # form 2
@@ -99,7 +99,7 @@ complete --command git --condition "__fish_seen_subcommand_from machete; and __f
 complete --command git --condition "__fish_seen_subcommand_from machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments github
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from github; and not __fish_seen_subcommand_from anno-prs checkout-prs create-pr retarget-pr" --no-files --arguments anno-prs --description 'Annotates the branches based on their corresponding GitHub PR numbers and authors'
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from github; and not __fish_seen_subcommand_from anno-prs checkout-prs create-pr retarget-pr" --no-files --arguments checkout-prs --require-parameter --description 'Check out the head branch of the given pull request (specified by number), also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally'
-# ^ TODO (#300): --arguments
+# ^ TODO (#300): 7: --arguments
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from github; and not __fish_seen_subcommand_from anno-prs checkout-prs create-pr retarget-pr" --no-files --arguments create-pr --description 'Creates a PR for the current branch, using the upstream (parent) branch as the PR base'
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from github; and __fish_seen_subcommand_from create-pr; and not __fish_seen_subcommand_from --draft" --no-files --long-option draft --description 'Creates the new PR as a draft'
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from github; and not __fish_seen_subcommand_from anno-prs checkout-prs create-pr retarget-pr" --no-files --arguments retarget-pr --description 'Sets the base of the current branch\'s PR to upstream (parent) branch, as seen by git machete (see git machete show up)'
@@ -118,34 +118,34 @@ complete --command git --condition "__fish_seen_subcommand_from machete; and __f
 complete --command git --condition "__fish_seen_subcommand_from machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments help --description 'Display overview, or detailed help for a specified command'
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from help" --no-files --arguments "$__mcht_help_topics"
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from help" --no-files --arguments "$__mcht_commands"
-# ^ TODO (#300): only suggest full-names
-# ^ TODO (#300): add --description tags for all of commands here. Perhaps extract those strings
+# ^ TODO (#300): 8: only suggest full-names
+# ^ TODO (#300): 9: add --description tags for all of commands here. Perhaps extract those strings
 
 # git machete is-managed
 complete --command git --condition "__fish_seen_subcommand_from machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments is-managed
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from is-managed" --no-files
-# ^ TODO (#300): --arguments
+# ^ TODO (#300): 10: --arguments
 
 # git machete list
-# TODO (#300): exclusiveness
+# TODO (#300): 11: exclusiveness
 complete --command git --condition "__fish_seen_subcommand_from machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments list --description 'List all branches that fall into one of pre-defined categories (mostly for internal use)'
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from list; and not __fish_seen_subcommand_from addable managed slidable slidable-after unmanaged with-overridden-fork-point" --no-files --arguments addable --description 'all branches (local or remote) than can be added to the definition file'
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from list; and not __fish_seen_subcommand_from addable managed slidable slidable-after unmanaged with-overridden-fork-point" --no-files --arguments managed --description 'all branches that appear in the definition file'
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from list; and not __fish_seen_subcommand_from addable managed slidable slidable-after unmanaged with-overridden-fork-point" --no-files --arguments slidable --description 'all managed branches that have an upstream and can be slid out with slide-out command'
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from list; and not __fish_seen_subcommand_from addable managed slidable slidable-after unmanaged with-overridden-fork-point" --no-files --arguments slidable-after --description 'the downstream branch of the <branch>, if it exists and is the only downstream of <branch> (i.e. the one that can be slid out immediately following <branch>)'
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from list; and __fish_seen_subcommand_from slidable-after" --no-files
-# ^ TODO (#300): --arguments
+# ^ TODO (#300): 12: --arguments
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from list; and not __fish_seen_subcommand_from addable managed slidable slidable-after unmanaged with-overridden-fork-point" --no-files --arguments unmanaged --description 'all local branches that don\'t appear in the definition file'
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from list; and not __fish_seen_subcommand_from addable managed slidable slidable-after unmanaged with-overridden-fork-point" --no-files --arguments with-overridden-fork-point --description 'all local branches that have a fork point override set up (even if this override does not affect the location of their fork point anymore).'
 
 # git machete log
 complete --command git --condition "__fish_seen_subcommand_from machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments 'log l' --description 'Log the part of history specific to the given branch'
-# ^ TODO (#300): --arguments
+# ^ TODO (#300): 13: --arguments
 
 # git machete reapply
 complete --command git --condition "__fish_seen_subcommand_from machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments reapply --description 'Rebase the current branch onto its computed fork point'
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from reapply; and not __fish_seen_subcommand_from --fork-point -f" --no-files --long-option fork-point --short-option f --description 'Specifies the alternative fork point commit after which the rebased part of history is meant to start'
-# ^ TODO (#300): --arguments
+# ^ TODO (#300): 14: --arguments
 
 # git machete show
 complete --command git --condition "__fish_seen_subcommand_from machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments show --description 'Show name(s) of the branch(es) relative to the position of a branch, accepts down/first/last/next/root/prev/up argument'
@@ -169,7 +169,7 @@ complete --command git --condition "__fish_seen_subcommand_from machete; and __f
 # git machete squash
 complete --command git --condition "__fish_seen_subcommand_from machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments squash --description 'Squash the unique history of the current branch into a single commit'
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from squash; and not __fish_seen_subcommand_from --fork-point -f" --no-files --long-option fork-point --short-option f --require-parameter --description 'Specifies the alternative fork point commit after which the squashed part of history is meant to start'
-# ^ TODO (#300): --arguments
+# ^ TODO (#300): 15: --arguments
 
 # git machete status
 complete --command git --condition "__fish_seen_subcommand_from machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments status --description 'Display formatted tree of branch dependencies, including info on their sync with upstream branch and with remote'
@@ -200,7 +200,7 @@ complete --command git --condition "__fish_seen_subcommand_from machete; and __f
 # git machete update
 complete --command git --condition "__fish_seen_subcommand_from machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments update --description 'Sync the current branch with its upstream (parent) branch via rebase or merge'
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from update; and not __fish_seen_subcommand_from --merge -M --fork-point -f" --no-files --long-option fork-point --short-option f --require-parameter --arguments "auto always never" --description 'If updating by rebase, specifies the alternative fork point commit after which the rebased part of history is meant to start. Not allowed if updating by merge'
-# ^ TODO (#300): --arguments: commits, branches, etc
+# ^ TODO (#300): 16: --arguments: commits, branches, etc
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from update; and not __fish_seen_subcommand_from -n --no-edit-merge --no-interactive-rebase"            --no-files                                     --short-option n --description 'If updating by rebase, equivalent to --no-interactive-rebase. If updating by merge, equivalent to --no-edit-merge'
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from update; and not __fish_seen_subcommand_from -n --no-edit-merge --no-interactive-rebase"            --no-files --long-option no-edit-merge                          --description 'If updating by merge, skip opening the editor for merge commit message while doing git merge (i.e. pass --no-edit flag to underlying git merge)'
 complete --command git --condition "__fish_seen_subcommand_from machete; and __fish_seen_subcommand_from update; and not __fish_seen_subcommand_from -n --no-edit-merge --no-interactive-rebase -M --merge" --no-files --long-option no-interactive-rebase                  --description 'If updating by rebase, run git rebase in non-interactive mode (without -i/--interactive flag). Not allowed if updating by merge'
