@@ -40,7 +40,7 @@ command_groups: List[Tuple[str, List[str]]] = [
      ["diff", "fork-point", "log"]),
     ("Update git history in accordance with the tree of branch dependencies",
      ["advance", "reapply", "slide-out", "squash", "traverse", "update"]),
-    ("Utilities",
+    ("Integrate with third party tools",
      ["github"])
 ]
 
