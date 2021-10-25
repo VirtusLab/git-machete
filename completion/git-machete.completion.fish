@@ -1,3 +1,11 @@
+# This file will be loaded by git.fish completions and also provide all __fish_git_* functions here.
+#
+# Caveat:
+# > if the user types git-machete, then only git-machete.fish will be loaded, but you can trick
+# > fish into still loading git.fish by adding a complete -C"git " at the top
+# - https://gitter.im/fish-shell/fish-shell?at=6176a4bacd4972068b6a0804
+complete -C "git "
+
 # TODO (#300): 1: no machete if already git command provided
 
 set -l __mcht_help_topics \
