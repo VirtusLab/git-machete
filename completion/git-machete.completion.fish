@@ -6,8 +6,6 @@
 # - https://gitter.im/fish-shell/fish-shell?at=6176a4bacd4972068b6a0804
 complete -C "git "
 
-# TODO (#300): 1: no machete if already git command provided
-
 set -l __mcht_help_topics \
   format \
   hooks
@@ -38,7 +36,7 @@ set -l __mcht_commands \
   version
 
 # git
-complete --command git --condition "not __fish_seen_subcommand_from machete" --no-files --arguments machete --description 'Tool for managing git workflows'
+complete --command git --condition "__fish_git_needs_command" --no-files --arguments machete --description 'Tool for managing git workflows'
 complete --command git --condition "__fish_seen_subcommand_from machete" --no-files # (suppress file completion)
 
 # git machete (general options)
