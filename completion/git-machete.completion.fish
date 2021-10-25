@@ -105,8 +105,7 @@ complete --command git --condition "__fish_git_using_command machete; and __fish
 
 # git machete is-managed
 complete --command git --condition "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments is-managed
-complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from is-managed" --no-files
-# ^ TODO (#300): 10: --arguments
+complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from is-managed" --no-file --arguments '(__fish_git_local_branches)'s
 
 # git machete list
 # TODO (#300): 11: exclusiveness
