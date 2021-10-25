@@ -6,6 +6,9 @@
 # - https://gitter.im/fish-shell/fish-shell?at=6176a4bacd4972068b6a0804
 complete -C "git "
 
+
+# TODO (#300): 17: use __fish_git_using_command to resolve aliases
+
 set -l __mcht_help_topics \
   format \
   hooks
