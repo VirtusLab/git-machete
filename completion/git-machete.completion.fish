@@ -67,7 +67,7 @@ complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand
 # form 1
 complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand_from fork-point; and not __fish_seen_subcommand_from --inferred --unset-override --override-to --override-to-inferred --override-to-parent" -f -l inferred
 # form 2
-complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand_from fork-point; and not __fish_seen_subcommand_from --inferred --unset-override --override-to --override-to-inferred --override-to-parent" -x -l override-to          
+complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand_from fork-point; and not __fish_seen_subcommand_from --inferred --unset-override --override-to --override-to-inferred --override-to-parent" -x -l override-to
 complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand_from fork-point; and not __fish_seen_subcommand_from --inferred --unset-override --override-to --override-to-inferred --override-to-parent" -f -l override-to-inferred
 complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand_from fork-point; and not __fish_seen_subcommand_from --inferred --unset-override --override-to --override-to-inferred --override-to-parent" -f -l override-to-parent
 # form 3
