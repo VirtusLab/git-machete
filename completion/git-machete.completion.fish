@@ -119,7 +119,7 @@ complete --command git --condition "__fish_git_using_command machete; and __fish
 
 # git machete log
 complete --command git --condition "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments log --description 'Log the part of history specific to the given branch'
-# ^ TODO (#300): 13: --arguments
+complete --command git --condition "__fish_git_using_command machete; and __fish_seen_subcommand_from log" --no-files --arguments '(__fish_git_local_branches)'
 
 # git machete reapply
 complete --command git --condition "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands" --no-files --arguments reapply --description 'Rebase the current branch onto its computed fork point'
