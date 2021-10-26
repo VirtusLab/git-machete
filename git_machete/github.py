@@ -160,7 +160,8 @@ def __fire_github_api_request(method: str, path: str, token: Optional[str], requ
                                  'Visit `https://github.com/settings/tokens` to generate a new one.')
         elif err.code == http.HTTPStatus.NOT_FOUND:
             raise MacheteException(
-                f'Given endpoint: {url}, not found in Github')  # TODO (#164): make dedicated exception here
+                f'Given endpoint: {url}, not found in Github or you don\'t have'
+                f' the permission to access it (expired token?).')  # TODO (#164): make dedicated exception here
         else:
             first_line = fmt(f'GitHub API returned {err.code} HTTP status with error message: `{err.reason}`\n')
             raise MacheteException(first_line + "Please open an issue regarding this topic under link: https://github.com/VirtusLab/git-machete/issues/new")
