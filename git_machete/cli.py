@@ -14,7 +14,7 @@ from git_machete.client import MacheteClient
 from git_machete.constants import EscapeCodes
 from git_machete.docs import short_docs, long_docs
 from git_machete.exceptions import MacheteException, StopInteraction
-from git_machete.git_operations import FullCommitSha, GitContext, LocalBranch, RemoteBranch
+from git_machete.git_operations import AnyRevision, GitContext, LocalBranch, RemoteBranch
 from git_machete.utils import fmt, underline, excluding, warn
 
 T = TypeVar('T')
@@ -565,7 +565,7 @@ def launch(orig_args: List[str]) -> None:
                     use_overrides=False,
                     opt_no_detect_squash_merges=cli_opts.opt_no_detect_squash_merges))
             elif cli_opts.opt_override_to:
-                machete_client.set_fork_point_override(branch, FullCommitSha.of(cli_opts.opt_override_to))
+                machete_client.set_fork_point_override(branch, AnyRevision.of(cli_opts.opt_override_to))
             elif cli_opts.opt_override_to_inferred:
                 machete_client.set_fork_point_override(
                     branch, machete_client.fork_point(
@@ -591,7 +591,7 @@ def launch(orig_args: List[str]) -> None:
             git.expect_no_operation_in_progress()
             current_branch = git.get_current_branch()
             dest = machete_client.parse_direction(
-                parsed_cli.direction, current_branch, allow_current=False, down_pick_mode=True)
+                parsed_cli.direction, current_branch, allow_current=False, down_pick_mode=True)[0]  # with down_pick_mode=True there is only one element in list allowed
             if dest != current_branch:
                 git.checkout(dest)
         elif cmd == "github":
@@ -644,23 +644,23 @@ def launch(orig_args: List[str]) -> None:
             machete_client.read_definition_file()
             res = []
             if category == "addable":
-                def strip_first_fragment(remote_branch: RemoteBranch) -> LocalBranch:
+                def strip_remote_name(remote_branch: RemoteBranch) -> LocalBranch:
                     return LocalBranch.of(re.sub("^[^/]+/", "", remote_branch))
 
                 remote_counterparts_of_local_branches = utils.map_truthy_only(
                     lambda _branch: LocalBranch.of(git.get_combined_counterpart_for_fetching_of_branch(_branch)),
                     git.get_local_branches())
                 qualifying_remote_branches: List[RemoteBranch] = excluding(git.get_remote_branches(),
-                                                                           [RemoteBranch.of(b) for b in remote_counterparts_of_local_branches])
+                                                                           {RemoteBranch.of(b) for b in remote_counterparts_of_local_branches})
                 res = excluding(git.get_local_branches(), machete_client.managed_branches) + list(
-                    map(strip_first_fragment, qualifying_remote_branches))
+                    map(strip_remote_name, qualifying_remote_branches))
             elif category == "managed":
                 res = machete_client.managed_branches
             elif category == "slidable":
                 res = machete_client.get_slidable_branches()
             elif category == "slidable-after":
                 machete_client.expect_in_managed_branches(parsed_cli.branch)
-                res = machete_client.slidable_after(parsed_cli.branch)
+                res = machete_client.get_slidable_after(parsed_cli.branch)
             elif category == "unmanaged":
                 res = excluding(git.get_local_branches(), machete_client.managed_branches)
             elif category == "with-overridden-fork-point":
@@ -680,7 +680,7 @@ def launch(orig_args: List[str]) -> None:
             git.expect_no_operation_in_progress()
             current_branch = git.get_current_branch()
             if "fork_point" in parsed_cli:
-                git.check_that_forkpoint_is_ancestor_or_equal_to_tip_of_branch(
+                machete_client.check_that_forkpoint_is_ancestor_or_equal_to_tip_of_branch(
                     forkpoint_sha=cli_opts.opt_fork_point, branch=current_branch)
             git.rebase_onto_ancestor_commit(
                 current_branch,
@@ -700,12 +700,12 @@ def launch(orig_args: List[str]) -> None:
             else:
                 machete_client.read_definition_file(verify_branches=False)
                 print(
-                    machete_client.parse_direction(
+                    '\n'.join(machete_client.parse_direction(
                         direction,
                         branch,
                         allow_current=True,
                         down_pick_mode=False
-                    )
+                    ))
                 )
         elif cmd == "slide-out":
             machete_client.read_definition_file()
@@ -722,7 +722,7 @@ def launch(orig_args: List[str]) -> None:
             git.expect_no_operation_in_progress()
             current_branch = git.get_current_branch()
             if "fork_point" in parsed_cli:
-                git.check_that_forkpoint_is_ancestor_or_equal_to_tip_of_branch(
+                machete_client.check_that_forkpoint_is_ancestor_or_equal_to_tip_of_branch(
                     forkpoint_sha=cli_opts.opt_fork_point, branch=current_branch)
             machete_client.squash(
                 current_branch=current_branch,
@@ -765,7 +765,7 @@ def launch(orig_args: List[str]) -> None:
             machete_client.read_definition_file()
             git.expect_no_operation_in_progress()
             if "fork_point" in parsed_cli:
-                git.check_that_forkpoint_is_ancestor_or_equal_to_tip_of_branch(
+                machete_client.check_that_forkpoint_is_ancestor_or_equal_to_tip_of_branch(
                     forkpoint_sha=cli_opts.opt_fork_point, branch=git.get_current_branch())
             machete_client.update(
                 opt_merge=cli_opts.opt_merge,
