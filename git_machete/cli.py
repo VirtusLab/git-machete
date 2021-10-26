@@ -30,17 +30,18 @@ alias_by_command: Dict[str, str] = {
 }
 
 command_groups: List[Tuple[str, List[str]]] = [
-    # 'is-managed' is mostly for scripting use and therefore skipped
     ("General topics",
-     ["file", "help", "hooks", "version"]),
+     ["file", "format", "help", "hooks", "version"]),
     ("Build, display and modify the tree of branch dependencies",
      ["add", "anno", "discover", "edit", "status"]),
     ("List, check out and delete branches",
-     ["delete-unmanaged", "go", "list", "show"]),
+     ["delete-unmanaged", "go", "is-managed", "list", "show"]),
     ("Determine changes specific to the given branch",
      ["diff", "fork-point", "log"]),
     ("Update git history in accordance with the tree of branch dependencies",
-     ["advance", "reapply", "slide-out", "squash", "traverse", "update"])
+     ["advance", "reapply", "slide-out", "squash", "traverse", "update"]),
+    ("Integrate with third party tools",
+     ["github"])
 ]
 
 
