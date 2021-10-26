@@ -452,8 +452,8 @@ class GitContext:
         # %gd - reflog selector (refname@{num})
         # %H - full hash
         # %gs - reflog subject
-        all_branches = [branch.full_name() for branch in self.get_local_branches()] + \
-                       [self.get_combined_counterpart_for_fetching_of_branch(branch).full_name() for branch in self.get_local_branches() if self.get_combined_counterpart_for_fetching_of_branch(branch)]
+        all_branches = [str(branch.full_name()) for branch in self.get_local_branches()] + \
+                       [str(self.get_combined_counterpart_for_fetching_of_branch(branch).full_name()) for branch in self.get_local_branches() if self.get_combined_counterpart_for_fetching_of_branch(branch)]  # str here to match _popen_git() input type
         # The trailing '--' is necessary to avoid ambiguity in case there is a file called just exactly like one of the branches.
         entries = utils.get_non_empty_lines(self._popen_git("reflog", "show", "--format=%gD\t%H\t%gs", *(all_branches + ["--"])))
         self.__reflogs_cached = {}
