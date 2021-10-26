@@ -326,8 +326,8 @@ class GitContext:
         return re.match("^[0-9a-f]{40}$", revision)
 
     # Resolve a revision identifier to a full sha
-    def get_full_sha(self, revision: AnyRevision, prefix: str = "refs/heads/") -> Optional[FullCommitHash]:
-        if prefix == "" and self.is_full_sha(revision):
+    def get_full_sha(self, revision: AnyRevision) -> Optional[FullCommitHash]:
+        if self.is_full_sha(revision.full_name()):
             return FullCommitHash.of(revision)
         else:
             return self.get_commit_sha_by_revision(revision)
@@ -452,8 +452,8 @@ class GitContext:
         # %gd - reflog selector (refname@{num})
         # %H - full hash
         # %gs - reflog subject
-        all_branches = [f"refs/heads/{branch}" for branch in self.get_local_branches()] + \
-                       [f"refs/remotes/{self.get_combined_counterpart_for_fetching_of_branch(branch)}" for branch in self.get_local_branches() if self.get_combined_counterpart_for_fetching_of_branch(branch)]
+        all_branches = [branch.full_name() for branch in self.get_local_branches()] + \
+                       [self.get_combined_counterpart_for_fetching_of_branch(branch).full_name() for branch in self.get_local_branches() if self.get_combined_counterpart_for_fetching_of_branch(branch)]
         # The trailing '--' is necessary to avoid ambiguity in case there is a file called just exactly like one of the branches.
         entries = utils.get_non_empty_lines(self._popen_git("reflog", "show", "--format=%gD\t%H\t%gs", *(all_branches + ["--"])))
         self.__reflogs_cached = {}
@@ -600,8 +600,8 @@ class GitContext:
             earlier_prefix: str = "refs/heads/",
             later_prefix: str = "refs/heads/",
     ) -> bool:
-        earlier_sha = self.get_full_sha(earlier_revision, earlier_prefix)
-        later_sha = self.get_full_sha(later_revision, later_prefix)
+        earlier_sha = self.get_full_sha(earlier_revision)
+        later_sha = self.get_full_sha(later_revision)
 
         # This if statement is not changing the outcome of the later return, but
         # it enhances the efficiency of the script. If both hashes are the same,
@@ -621,8 +621,8 @@ class GitContext:
             earlier_prefix: str = "refs/heads/",
             later_prefix: str = "refs/heads/",
     ) -> bool:
-        earlier_commit_sha = self.get_full_sha(earlier_revision, earlier_prefix)
-        later_commit_sha = self.get_full_sha(later_revision, later_prefix)
+        earlier_commit_sha = self.get_full_sha(earlier_revision)
+        later_commit_sha = self.get_full_sha(later_revision)
 
         if earlier_commit_sha == later_commit_sha:
             return True
