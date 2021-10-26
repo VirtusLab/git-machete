@@ -17,9 +17,10 @@ complete -c git -n "__fish_git_needs_command" -f -a machete -d 'Tool for managin
 complete -c git -n "__fish_git_using_command machete" -f # (suppress file completion)
 
 # git machete (general options)
-complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand_from $__mcht_commands; and not __fish_seen_subcommand_from --help -h" -f -s h -l help -d 'Print help and exit'
-#  Parameters -h/--help work for subcommands only. ---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-#  See: https://github.com/VirtusLab/git-machete/issues/25
+complete -c git -n "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands; and not __fish_seen_subcommand_from --help -h" -f -s h -d 'Print help and exit'
+complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand_from $__mcht_commands;     and not __fish_seen_subcommand_from --help -h" -f -l help -s h -d 'Print help and exit'
+#     Parameters --help work for subcommands only. ---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#     See: https://github.com/VirtusLab/git-machete/issues/25
 complete -c git -n "__fish_git_using_command machete; and not __fish_seen_subcommand_from --verbose -v" -f -l verbose -s v -d 'Log the executed git commands'
 complete -c git -n "__fish_git_using_command machete; and not __fish_seen_subcommand_from --debug"      -f -l debug        -d 'Log detailed diagnostic info, including outputs of the executed git commands'
 complete -c git -n "__fish_git_using_command machete; and not __fish_seen_subcommand_from --version"    -f -l version      -d 'Print version and exit'
