@@ -26,6 +26,9 @@ class AnyBranch(AnyRevision):
     def of(value: str) -> Optional["AnyBranch"]:
         return AnyBranch(value) if value else None
 
+    def full_name(self) -> "AnyBranch":
+        return self
+
 
 class LocalBranch(AnyBranch):
     @staticmethod
@@ -68,6 +71,9 @@ class FullCommitHash(AnyRevision):
                 raise TypeError(f'FullCommitHash requires length of 40. Given value: {value}, has length: {len(value)}.')
         return None
 
+    def full_name(self) -> "FullCommitHash":
+        return self
+
 
 class ShortCommitHash(AnyRevision):
     @staticmethod
@@ -78,6 +84,9 @@ class ShortCommitHash(AnyRevision):
             else:
                 raise TypeError(f'ShortCommitHash requires length of 7. Given value: {value}, has length: {len(value)}.')
         return None
+
+    def full_name(self) -> "ShortCommitHash":
+        return self
 
 
 REFLOG_ENTRY = Tuple[FullCommitHash, str]
