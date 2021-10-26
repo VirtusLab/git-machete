@@ -1441,7 +1441,6 @@ class MacheteClient:
 
         if self.__branch_defs_by_sha_in_reflog is None:
             def generate_entries() -> Generator[Tuple[FullCommitHash, BRANCH_DEF], None, None]:
-                lbs = self.__git.get_local_branches()
                 for lb in self.__git.get_local_branches():
                     lb_shas = set()
                     for sha_ in self.filtered_reflog(lb):
