@@ -1037,7 +1037,7 @@ class MacheteClient:
             branches_to_delete_merged_to_head = [branch for branch in branches_to_delete if branch in branches_merged_to_head]
             for branch in branches_to_delete_merged_to_head:
                 remote_branch = self.__git.get_strict_counterpart_for_fetching_of_branch(branch)
-                is_merged_to_remote = self.__git.is_ancestor_or_equal(branch, remote_branch, later_prefix="refs/remotes/") if remote_branch else True
+                is_merged_to_remote = self.__git.is_ancestor_or_equal(branch, remote_branch.full_name()) if remote_branch else True
                 msg_core = f"{bold(branch)} (merged to HEAD{'' if is_merged_to_remote else f', but not merged to {remote_branch}'})"
                 msg = f"Delete branch {msg_core}?" + get_pretty_choices('y', 'N', 'q')
                 opt_yes_msg = f"Deleting branch {msg_core}"
@@ -1081,7 +1081,7 @@ class MacheteClient:
         if use_overrides:
             overridden_fp_sha = self.__get_overridden_fork_point(branch)
             if overridden_fp_sha:
-                if upstream and self.__git.is_ancestor_or_equal(upstream, branch) and not self.__git.is_ancestor_or_equal(upstream, overridden_fp_sha, later_prefix=""):
+                if upstream and self.__git.is_ancestor_or_equal(upstream, branch) and not self.__git.is_ancestor_or_equal(upstream, overridden_fp_sha.full_name()):
                     # We need to handle the case when branch is a descendant of upstream,
                     # but the fork point of branch is overridden to a commit that
                     # is NOT a descendant of upstream. In this case it's more
@@ -1110,7 +1110,7 @@ class MacheteClient:
                   "filtered reflog of any other branch or its remote counterpart "
                   f"(specifically: {' and '.join(map(utils.get_second, containing_branch_defs))})")
 
-            if upstream and self.__git.is_ancestor_or_equal(upstream, branch) and not self.__git.is_ancestor_or_equal(upstream, fp_sha, later_prefix=""):
+            if upstream and self.__git.is_ancestor_or_equal(upstream, branch) and not self.__git.is_ancestor_or_equal(upstream, fp_sha.full_name()):
                 # That happens very rarely in practice (typically current head
                 # of any branch, including upstream, should occur on the reflog
                 # of this branch, thus is_ancestor(upstream, branch) should imply
@@ -1554,7 +1554,7 @@ class MacheteClient:
         # This check needs to be performed every time the config is retrieved.
         # We can't rely on the values being validated in set_fork_point_override(),
         # since the config could have been modified outside of git-machete.
-        if not self.__git.is_ancestor_or_equal(to_sha, while_descendant_of_sha, earlier_prefix="", later_prefix=""):
+        if not self.__git.is_ancestor_or_equal(to_sha, while_descendant_of_sha):
             warn(
                 f"commit {self.__git.get_short_commit_sha_by_revision(to)} pointed by {to_key} config "
                 f"is not an ancestor of commit {self.__git.get_short_commit_sha_by_revision(while_descendant_of)} "
@@ -1573,7 +1573,7 @@ class MacheteClient:
         # While the latter checks the sanity of fork point override configuration,
         # the former checks if the override still applies to wherever the given
         # branch currently points.
-        if not self.__git.is_ancestor_or_equal(while_descendant_of, branch, earlier_prefix=""):
+        if not self.__git.is_ancestor_or_equal(while_descendant_of.full_name(), branch):
             warn(fmt(
                 f"since branch <b>{branch}</b> is no longer a descendant of commit {self.__git.get_short_commit_sha_by_revision(while_descendant_of)}, ",
                 f"the fork point override to commit {self.__git.get_short_commit_sha_by_revision(to)} no longer applies.\n",
@@ -1594,7 +1594,7 @@ class MacheteClient:
         to_sha = self.__git.get_commit_sha_by_revision(to_revision)
         if not to_sha:
             raise MacheteException(f"Cannot find revision {to_revision}")
-        if not self.__git.is_ancestor_or_equal(to_sha, branch, earlier_prefix=""):
+        if not self.__git.is_ancestor_or_equal(to_sha.full_name(), branch):
             raise MacheteException(
                 f"Cannot override fork point: {self.__git.get_revision_repr(to_revision)} is not an ancestor of {branch}")
 
@@ -1834,8 +1834,7 @@ class MacheteClient:
     def check_that_forkpoint_is_ancestor_or_equal_to_tip_of_branch(
             self, forkpoint_sha: AnyRevision, branch: AnyBranch) -> None:
         if not self.__git.is_ancestor_or_equal(
-                earlier_revision=forkpoint_sha,
-                earlier_prefix='',
+                earlier_revision=forkpoint_sha.full_name(),
                 later_revision=branch):
             raise MacheteException(
                 f"Forkpoint {forkpoint_sha} is not ancestor of or the tip "

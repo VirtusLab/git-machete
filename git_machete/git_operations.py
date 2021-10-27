@@ -44,6 +44,9 @@ class LocalBranchFullName(LocalBranch):
     def of(value: str) -> Optional["LocalBranchFullName"]:
         return LocalBranchFullName(f"refs/heads/{value}") if value else None
 
+    def full_name(self) -> Optional["LocalBranchFullName"]:
+        return LocalBranchFullName.of(self)
+
 
 class RemoteBranch(AnyBranch):
     @staticmethod
@@ -59,6 +62,8 @@ class RemoteBranchFullName(RemoteBranch):
     def of(value: str) -> Optional["RemoteBranchFullName"]:
         return RemoteBranchFullName(f"refs/remotes/{value}") if value else None
 
+    def full_name(self) -> "RemoteBranchFullName":
+        return self
 
 class FullCommitHash(AnyRevision):
     @staticmethod
@@ -107,7 +112,7 @@ class GitContext:
         self.__short_commit_sha_by_revision_cached: Dict[AnyRevision, ShortCommitHash] = {}
         self.__tree_sha_by_commit_sha_cached: Optional[Dict[FullCommitHash, Optional[FullCommitHash]]] = None  # TODO (#110): default dict with None
         self.__commit_sha_by_revision_cached: Optional[Dict[AnyRevision, Optional[FullCommitHash]]] = None  # TODO (#110): default dict with None
-        self.__committer_unix_timestamp_by_revision_cached: Optional[Dict[str, int]] = None  # TODO (#110): default dict with 0
+        self.__committer_unix_timestamp_by_revision_cached: Optional[Dict[AnyRevision, int]] = None  # TODO (#110): default dict with 0
         self.__local_branches_cached: Optional[List[LocalBranch]] = None
         self.__remote_branches_cached: Optional[List[RemoteBranch]] = None
         self.__initial_log_shas_cached: Dict[LocalBranch, List[FullCommitHash]] = {}
@@ -303,10 +308,10 @@ class GitContext:
     def get_commit_sha_by_revision(self, revision: AnyRevision) -> Optional[FullCommitHash]:
         if self.__commit_sha_by_revision_cached is None:
             self.__load_branches()
-        full_revision: AnyRevision = revision.full_name()
-        if full_revision not in self.__commit_sha_by_revision_cached:
-            self.__commit_sha_by_revision_cached[full_revision] = self.__find_commit_sha_by_revision(full_revision)
-        return self.__commit_sha_by_revision_cached[full_revision]
+        #full_revision: AnyRevision = revision.full_name()
+        if revision not in self.__commit_sha_by_revision_cached:
+            self.__commit_sha_by_revision_cached[revision] = self.__find_commit_sha_by_revision(revision)
+        return self.__commit_sha_by_revision_cached[revision]
 
     def __find_tree_sha_by_revision(self, revision: AnyRevision) -> Optional[FullCommitHash]:
         try:
@@ -412,7 +417,7 @@ class GitContext:
             self.__remote_branches_cached += [RemoteBranch.of(b_stripped)]
             self.__commit_sha_by_revision_cached[RemoteBranch.of(branch)] = FullCommitHash.of(commit_sha)
             self.__tree_sha_by_commit_sha_cached[FullCommitHash.of(commit_sha)] = FullCommitHash.of(tree_sha)
-            self.__committer_unix_timestamp_by_revision_cached[branch] = int(committer_unix_timestamp_and_time_zone.split(' ')[0])
+            self.__committer_unix_timestamp_by_revision_cached[RemoteBranch.of(branch)] = int(committer_unix_timestamp_and_time_zone.split(' ')[0])
 
         raw_local = utils.get_non_empty_lines(self._popen_git("for-each-ref", "--format=%(refname)\t%(objectname)\t%(tree)\t%(committerdate:raw)\t%(upstream)", "refs/heads"))
 
@@ -426,7 +431,7 @@ class GitContext:
             self.__local_branches_cached += [LocalBranch.of(b_stripped)]
             self.__commit_sha_by_revision_cached[LocalBranch.of(branch)] = FullCommitHash.of(commit_sha)
             self.__tree_sha_by_commit_sha_cached[FullCommitHash.of(commit_sha)] = FullCommitHash.of(tree_sha)
-            self.__committer_unix_timestamp_by_revision_cached[branch] = int(committer_unix_timestamp_and_time_zone.split(' ')[0])
+            self.__committer_unix_timestamp_by_revision_cached[LocalBranch.of(branch)] = int(committer_unix_timestamp_and_time_zone.split(' ')[0])
             if fetch_counterpart_stripped in self.__remote_branches_cached:
                 self.__counterparts_for_fetching_cached[b_stripped] = RemoteBranch.of(fetch_counterpart_stripped)
 
@@ -597,12 +602,9 @@ class GitContext:
             self,
             earlier_revision: AnyRevision,
             later_revision: AnyRevision,
-            earlier_prefix: str = "refs/heads/",
-            later_prefix: str = "refs/heads/",
     ) -> bool:
         earlier_sha = self.get_full_sha(earlier_revision)
         later_sha = self.get_full_sha(later_revision)
-
         # This if statement is not changing the outcome of the later return, but
         # it enhances the efficiency of the script. If both hashes are the same,
         # there is no point running git merge-base.
@@ -618,8 +620,6 @@ class GitContext:
             self,
             earlier_revision: AnyRevision,
             later_revision: AnyRevision,
-            earlier_prefix: str = "refs/heads/",
-            later_prefix: str = "refs/heads/",
     ) -> bool:
         earlier_commit_sha = self.get_full_sha(earlier_revision)
         later_commit_sha = self.get_full_sha(later_revision)
@@ -695,11 +695,11 @@ class GitContext:
         # We need to specify the message explicitly to avoid 'refs/heads/' prefix getting into the message...
         commit_message = f"Merge branch '{branch}' into {into}"
         # ...since we prepend 'refs/heads/' to the merged branch name for unambiguity.
-        self._run_git("merge", "-m", commit_message, f"refs/heads/{branch}", *extra_params)
+        self._run_git("merge", "-m", commit_message, branch.full_name(), *extra_params)
         self.flush_caches()
 
     def merge_fast_forward_only(self, branch: LocalBranch) -> None:  # refs/heads/ prefix is assumed for 'branch'
-        self._run_git("merge", "--ff-only", f"refs/heads/{branch}")
+        self._run_git("merge", "--ff-only", branch.full_name())
         self.flush_caches()
 
     def rebase(self, onto: AnyRevision, fork_revision: AnyRevision, branch: LocalBranch, opt_no_interactive_rebase: bool) -> None:
@@ -761,8 +761,8 @@ class GitContext:
         ))))
 
     def get_relation_to_remote_counterpart(self, branch: LocalBranch, remote_branch: RemoteBranch) -> int:
-        b_is_anc_of_rb = self.is_ancestor_or_equal(branch, remote_branch, later_prefix="refs/remotes/")
-        rb_is_anc_of_b = self.is_ancestor_or_equal(remote_branch, branch, earlier_prefix="refs/remotes/")
+        b_is_anc_of_rb = self.is_ancestor_or_equal(branch.full_name(), remote_branch.full_name())
+        rb_is_anc_of_b = self.is_ancestor_or_equal(remote_branch.full_name(), branch.full_name())
         if b_is_anc_of_rb:
             return SyncToRemoteStatuses.IN_SYNC_WITH_REMOTE if rb_is_anc_of_b else SyncToRemoteStatuses.BEHIND_REMOTE
         elif rb_is_anc_of_b:
