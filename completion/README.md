@@ -92,3 +92,7 @@ autoload -Uz compinit && compinit -i
 ```shell script
 exec $SHELL -l
 ```
+
+## Fish
+
+TODO (#315): installation instructions

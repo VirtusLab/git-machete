@@ -94,3 +94,7 @@ Zsh:
             .. code-block:: shell
 
                 exec $SHELL -l
+
+Fish:
+
+    * TODO (#315): installation instruction
