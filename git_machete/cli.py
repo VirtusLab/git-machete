@@ -14,7 +14,7 @@ from git_machete.client import MacheteClient
 from git_machete.constants import EscapeCodes
 from git_machete.docs import short_docs, long_docs
 from git_machete.exceptions import MacheteException, StopInteraction
-from git_machete.git_operations import AnyRevision, GitContext, LocalBranch, RemoteBranch
+from git_machete.git_operations import AnyRevision, GitContext, LocalBranchShortName, RemoteBranchShortName
 from git_machete.utils import fmt, underline, excluding, warn
 
 T = TypeVar('T')
@@ -456,7 +456,7 @@ def set_utils_global_variables(
 
 
 def get_branch_arg_or_current_branch(
-        cli_opts: git_machete.options.CommandLineOptions, git_context: GitContext) -> LocalBranch:
+        cli_opts: git_machete.options.CommandLineOptions, git_context: GitContext) -> LocalBranchShortName:
     return cli_opts.opt_branch or git_context.get_current_branch()
 
 
@@ -644,14 +644,14 @@ def launch(orig_args: List[str]) -> None:
             machete_client.read_definition_file()
             res = []
             if category == "addable":
-                def strip_remote_name(remote_branch: RemoteBranch) -> LocalBranch:
-                    return LocalBranch.of(re.sub("^[^/]+/", "", remote_branch))
+                def strip_remote_name(remote_branch: RemoteBranchShortName) -> LocalBranchShortName:
+                    return LocalBranchShortName.of(re.sub("^[^/]+/", "", remote_branch))
 
                 remote_counterparts_of_local_branches = utils.map_truthy_only(
-                    lambda _branch: LocalBranch.of(git.get_combined_counterpart_for_fetching_of_branch(_branch)),
+                    lambda _branch: LocalBranchShortName.of(git.get_combined_counterpart_for_fetching_of_branch(_branch)),
                     git.get_local_branches())
-                qualifying_remote_branches: List[RemoteBranch] = excluding(git.get_remote_branches(),
-                                                                           {RemoteBranch.of(b) for b in remote_counterparts_of_local_branches})
+                qualifying_remote_branches: List[RemoteBranchShortName] = excluding(git.get_remote_branches(),
+                                                                                    {RemoteBranchShortName.of(b) for b in remote_counterparts_of_local_branches})
                 res = excluding(git.get_local_branches(), machete_client.managed_branches) + list(
                     map(strip_remote_name, qualifying_remote_branches))
             elif category == "managed":
@@ -712,7 +712,7 @@ def launch(orig_args: List[str]) -> None:
             git.expect_no_operation_in_progress()
             branches = parsed_cli_as_dict.get('branches', [git.get_current_branch()])
             machete_client.slide_out(
-                branches_to_slide_out=list(map(LocalBranch.of, branches)),
+                branches_to_slide_out=list(map(LocalBranchShortName.of, branches)),
                 opt_down_fork_point=cli_opts.opt_down_fork_point,
                 opt_merge=cli_opts.opt_merge,
                 opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,

@@ -21,49 +21,58 @@ class AnyRevision(str):
         return self
 
 
-class AnyBranch(AnyRevision):
+class AnyBranchName(AnyRevision):
     @staticmethod
-    def of(value: str) -> Optional["AnyBranch"]:
-        return AnyBranch(value) if value else None
+    def of(value: str) -> Optional["AnyBranchName"]:
+        return AnyBranchName(value) if value else None
 
-    def full_name(self) -> "AnyBranch":
+    def full_name(self) -> "AnyBranchName":
         return self
 
 
-class LocalBranch(AnyBranch):
+class LocalBranchShortName(AnyBranchName):
     @staticmethod
-    def of(value: str) -> Optional["LocalBranch"]:
-        return LocalBranch(value) if value else None
+    def of(value: str) -> Optional["LocalBranchShortName"]:
+        return LocalBranchShortName(value) if value else None
 
     def full_name(self) -> Optional["LocalBranchFullName"]:
-        return LocalBranchFullName.of(self)
+        return LocalBranchFullName.from_short_name(self)
 
 
-class LocalBranchFullName(LocalBranch):
+class LocalBranchFullName(AnyBranchName):
     @staticmethod
     def of(value: str) -> Optional["LocalBranchFullName"]:
-        return LocalBranchFullName(f"refs/heads/{value}") if value else None
+        return LocalBranchFullName(value) if value else None
 
-    def full_name(self) -> Optional["LocalBranchFullName"]:
-        return LocalBranchFullName.of(self)
-
-
-class RemoteBranch(AnyBranch):
     @staticmethod
-    def of(value: str) -> Optional["RemoteBranch"]:
-        return RemoteBranch(value) if value else None
+    def from_short_name(value: LocalBranchShortName) -> Optional["LocalBranchFullName"]:
+        return LocalBranchFullName.of(f"refs/heads/{value}")
+
+    def full_name(self) -> "LocalBranchFullName":
+        return self
+
+
+class RemoteBranchShortName(AnyBranchName):
+    @staticmethod
+    def of(value: str) -> Optional["RemoteBranchShortName"]:
+        return RemoteBranchShortName(value) if value else None
 
     def full_name(self) -> Optional["RemoteBranchFullName"]:
-        return RemoteBranchFullName.of(self)
+        return RemoteBranchFullName.from_short_name(self)
 
 
-class RemoteBranchFullName(RemoteBranch):
+class RemoteBranchFullName(AnyBranchName):
     @staticmethod
     def of(value: str) -> Optional["RemoteBranchFullName"]:
-        return RemoteBranchFullName(f"refs/remotes/{value}") if value else None
+        return RemoteBranchFullName(value) if value else None
+
+    @staticmethod
+    def from_short_name(value: RemoteBranchShortName) -> Optional["RemoteBranchFullName"]:
+        return RemoteBranchFullName.of(f"refs/remotes/{value}")
 
     def full_name(self) -> "RemoteBranchFullName":
         return self
+
 
 class FullCommitHash(AnyRevision):
     @staticmethod
@@ -94,7 +103,16 @@ class ShortCommitHash(AnyRevision):
         return self
 
 
-REFLOG_ENTRY = Tuple[FullCommitHash, str]
+class FullTreeHash(str):
+    @staticmethod
+    def of(value: str) -> Optional["FullTreeHash"]:
+        return FullTreeHash(value) if value else None
+
+    def full_name(self) -> "FullTreeHash":
+        return self
+
+
+Reflog_Entry = Tuple[FullCommitHash, str]
 
 HEAD = AnyRevision.of("HEAD")
 
@@ -108,16 +126,16 @@ class GitContext:
         self.__fetch_done_for: Set[str] = set()
         self.__config_cached: Optional[Dict[str, str]] = None
         self.__remotes_cached: Optional[List[str]] = None
-        self.__counterparts_for_fetching_cached: Optional[Dict[LocalBranch, Optional[RemoteBranch]]] = None  # TODO (#110): default dict with None
+        self.__counterparts_for_fetching_cached: Optional[Dict[LocalBranchShortName, Optional[RemoteBranchShortName]]] = None  # TODO (#110): default dict with None
         self.__short_commit_sha_by_revision_cached: Dict[AnyRevision, ShortCommitHash] = {}
-        self.__tree_sha_by_commit_sha_cached: Optional[Dict[FullCommitHash, Optional[FullCommitHash]]] = None  # TODO (#110): default dict with None
+        self.__tree_sha_by_commit_sha_cached: Optional[Dict[FullCommitHash, Optional[FullTreeHash]]] = None  # TODO (#110): default dict with None
         self.__commit_sha_by_revision_cached: Optional[Dict[AnyRevision, Optional[FullCommitHash]]] = None  # TODO (#110): default dict with None
         self.__committer_unix_timestamp_by_revision_cached: Optional[Dict[AnyRevision, int]] = None  # TODO (#110): default dict with 0
-        self.__local_branches_cached: Optional[List[LocalBranch]] = None
-        self.__remote_branches_cached: Optional[List[RemoteBranch]] = None
-        self.__initial_log_shas_cached: Dict[LocalBranch, List[FullCommitHash]] = {}
-        self.__remaining_log_shas_cached: Dict[LocalBranch, List[FullCommitHash]] = {}
-        self.__reflogs_cached: Optional[Dict[AnyBranch, Optional[List[REFLOG_ENTRY]]]] = None
+        self.__local_branches_cached: Optional[List[LocalBranchShortName]] = None
+        self.__remote_branches_cached: Optional[List[RemoteBranchShortName]] = None
+        self.__initial_log_shas_cached: Dict[LocalBranchShortName, List[FullCommitHash]] = {}
+        self.__remaining_log_shas_cached: Dict[LocalBranchShortName, List[FullCommitHash]] = {}
+        self.__reflogs_cached: Optional[Dict[AnyBranchName, Optional[List[Reflog_Entry]]]] = None
         self.__merge_base_cached: Dict[Tuple[FullCommitHash, FullCommitHash], FullCommitHash] = {}
         self.__contains_equivalent_tree_cached: Dict[Tuple[FullCommitHash, FullCommitHash], bool] = {}
 
@@ -259,7 +277,7 @@ class GitContext:
         self._run_git("fetch", remote, ref)
         self.flush_caches()
 
-    def set_upstream_to(self, remote_branch: RemoteBranch) -> None:
+    def set_upstream_to(self, remote_branch: RemoteBranchShortName) -> None:
         self._run_git("branch", "--set-upstream-to", remote_branch)
         self.flush_caches()
 
@@ -270,7 +288,7 @@ class GitContext:
             raise MacheteException(
                 f"Cannot perform `git reset --keep {to_revision}`. This is most likely caused by local uncommitted changes.")
 
-    def push(self, remote: str, branch: LocalBranch, force_with_lease: bool = False) -> None:
+    def push(self, remote: str, branch: LocalBranchShortName, force_with_lease: bool = False) -> None:
         if not force_with_lease:
             opt_force = []
         elif self.get_git_version() >= (1, 8, 5):  # earliest version of git to support 'push --force-with-lease'
@@ -281,7 +299,7 @@ class GitContext:
         self._run_git("push", "--set-upstream", *(opt_force + args))
         self.flush_caches()
 
-    def pull_ff_only(self, remote: str, remote_branch: RemoteBranch) -> None:
+    def pull_ff_only(self, remote: str, remote_branch: RemoteBranchShortName) -> None:
         self.fetch_remote(remote)
         self._run_git("merge", "--ff-only", remote_branch)
         # There's apparently no way to set remote automatically when doing 'git pull' (as opposed to 'git push'),
@@ -308,18 +326,17 @@ class GitContext:
     def get_commit_sha_by_revision(self, revision: AnyRevision) -> Optional[FullCommitHash]:
         if self.__commit_sha_by_revision_cached is None:
             self.__load_branches()
-        #full_revision: AnyRevision = revision.full_name()
         if revision not in self.__commit_sha_by_revision_cached:
             self.__commit_sha_by_revision_cached[revision] = self.__find_commit_sha_by_revision(revision)
         return self.__commit_sha_by_revision_cached[revision]
 
-    def __find_tree_sha_by_revision(self, revision: AnyRevision) -> Optional[FullCommitHash]:
+    def __find_tree_sha_by_revision(self, revision: AnyRevision) -> Optional[FullTreeHash]:
         try:
-            return FullCommitHash.of(self._popen_git("rev-parse", "--verify", "--quiet", revision + "^{tree}").rstrip())
+            return FullTreeHash.of(self._popen_git("rev-parse", "--verify", "--quiet", revision + "^{tree}").rstrip())
         except MacheteException:
             return None
 
-    def get_tree_sha_by_commit_sha(self, commit_sha: FullCommitHash) -> Optional[FullCommitHash]:
+    def get_tree_sha_by_commit_sha(self, commit_sha: FullCommitHash) -> Optional[FullTreeHash]:
         if self.__tree_sha_by_commit_sha_cached is None:
             self.__load_branches()
         if commit_sha not in self.__tree_sha_by_commit_sha_cached:
@@ -337,37 +354,37 @@ class GitContext:
         else:
             return self.get_commit_sha_by_revision(revision)
 
-    def get_committer_unix_timestamp_by_revision(self, revision: AnyBranch) -> int:
+    def get_committer_unix_timestamp_by_revision(self, revision: AnyBranchName) -> int:
         if self.__committer_unix_timestamp_by_revision_cached is None:
             self.__load_branches()
         return self.__committer_unix_timestamp_by_revision_cached.get(revision.full_name(), 0)
 
-    def get_inferred_remote_for_fetching_of_branch(self, branch: LocalBranch) -> Optional[str]:
+    def get_inferred_remote_for_fetching_of_branch(self, branch: LocalBranchShortName) -> Optional[str]:
         # Since many people don't use '--set-upstream' flag of 'push', we try to infer the remote instead.
         for remote in self.get_remotes():
             if f"{remote}/{branch}" in self.get_remote_branches():
                 return remote
         return None
 
-    def get_strict_remote_for_fetching_of_branch(self, branch: LocalBranch) -> Optional[str]:
+    def get_strict_remote_for_fetching_of_branch(self, branch: LocalBranchShortName) -> Optional[str]:
         remote = self.get_config_attr_or_none(f"branch.{branch}.remote")
         return remote.rstrip() if remote else None
 
-    def get_combined_remote_for_fetching_of_branch(self, branch: LocalBranch) -> Optional[str]:
+    def get_combined_remote_for_fetching_of_branch(self, branch: LocalBranchShortName) -> Optional[str]:
         return self.get_strict_remote_for_fetching_of_branch(branch) or self.get_inferred_remote_for_fetching_of_branch(branch)
 
-    def __get_inferred_counterpart_for_fetching_of_branch(self, branch: LocalBranch) -> Optional[RemoteBranch]:
+    def __get_inferred_counterpart_for_fetching_of_branch(self, branch: LocalBranchShortName) -> Optional[RemoteBranchShortName]:
         for remote in self.get_remotes():
             if f"{remote}/{branch}" in self.get_remote_branches():
-                return RemoteBranch.of(f"{remote}/{branch}")
+                return RemoteBranchShortName.of(f"{remote}/{branch}")
         return None
 
-    def get_strict_counterpart_for_fetching_of_branch(self, branch: LocalBranch) -> Optional[RemoteBranch]:
+    def get_strict_counterpart_for_fetching_of_branch(self, branch: LocalBranchShortName) -> Optional[RemoteBranchShortName]:
         if self.__counterparts_for_fetching_cached is None:
             self.__load_branches()
         return self.__counterparts_for_fetching_cached.get(branch)
 
-    def get_combined_counterpart_for_fetching_of_branch(self, branch: LocalBranch) -> Optional[RemoteBranch]:
+    def get_combined_counterpart_for_fetching_of_branch(self, branch: LocalBranchShortName) -> Optional[RemoteBranchShortName]:
         # Since many people don't use '--set-upstream' flag of 'push' or 'branch', we try to infer the remote if the tracking data is missing.
         return self.get_strict_counterpart_for_fetching_of_branch(branch) or self.__get_inferred_counterpart_for_fetching_of_branch(branch)
 
@@ -384,16 +401,16 @@ class GitContext:
     def is_revert_in_progress(self) -> bool:
         return os.path.isfile(self.get_git_subpath("REVERT_HEAD"))
 
-    def checkout(self, branch: LocalBranch) -> None:
+    def checkout(self, branch: LocalBranchShortName) -> None:
         self._run_git("checkout", "--quiet", branch, "--")
         self.flush_caches()
 
-    def get_local_branches(self) -> List[LocalBranch]:
+    def get_local_branches(self) -> List[LocalBranchShortName]:
         if self.__local_branches_cached is None:
             self.__load_branches()
         return self.__local_branches_cached
 
-    def get_remote_branches(self) -> List[RemoteBranch]:
+    def get_remote_branches(self) -> List[RemoteBranchShortName]:
         if self.__remote_branches_cached is None:
             self.__load_branches()
         return self.__remote_branches_cached
@@ -414,10 +431,10 @@ class GitContext:
                 continue  # invalid, shouldn't happen
             branch, commit_sha, tree_sha, committer_unix_timestamp_and_time_zone = values
             b_stripped = re.sub("^refs/remotes/", "", branch)
-            self.__remote_branches_cached += [RemoteBranch.of(b_stripped)]
-            self.__commit_sha_by_revision_cached[RemoteBranch.of(branch)] = FullCommitHash.of(commit_sha)
-            self.__tree_sha_by_commit_sha_cached[FullCommitHash.of(commit_sha)] = FullCommitHash.of(tree_sha)
-            self.__committer_unix_timestamp_by_revision_cached[RemoteBranch.of(branch)] = int(committer_unix_timestamp_and_time_zone.split(' ')[0])
+            self.__remote_branches_cached += [RemoteBranchShortName.of(b_stripped)]
+            self.__commit_sha_by_revision_cached[RemoteBranchShortName.of(branch)] = FullCommitHash.of(commit_sha)
+            self.__tree_sha_by_commit_sha_cached[FullCommitHash.of(commit_sha)] = FullTreeHash.of(tree_sha)
+            self.__committer_unix_timestamp_by_revision_cached[RemoteBranchShortName.of(branch)] = int(committer_unix_timestamp_and_time_zone.split(' ')[0])
 
         raw_local = utils.get_non_empty_lines(self._popen_git("for-each-ref", "--format=%(refname)\t%(objectname)\t%(tree)\t%(committerdate:raw)\t%(upstream)", "refs/heads"))
 
@@ -426,14 +443,14 @@ class GitContext:
             if len(values) != 5:
                 continue  # invalid, shouldn't happen
             branch, commit_sha, tree_sha, committer_unix_timestamp_and_time_zone, fetch_counterpart = values
-            b_stripped = LocalBranch.of(re.sub("^refs/heads/", "", branch))
+            b_stripped = LocalBranchShortName.of(re.sub("^refs/heads/", "", branch))
             fetch_counterpart_stripped = re.sub("^refs/remotes/", "", fetch_counterpart)
-            self.__local_branches_cached += [LocalBranch.of(b_stripped)]
-            self.__commit_sha_by_revision_cached[LocalBranch.of(branch)] = FullCommitHash.of(commit_sha)
-            self.__tree_sha_by_commit_sha_cached[FullCommitHash.of(commit_sha)] = FullCommitHash.of(tree_sha)
-            self.__committer_unix_timestamp_by_revision_cached[LocalBranch.of(branch)] = int(committer_unix_timestamp_and_time_zone.split(' ')[0])
+            self.__local_branches_cached += [LocalBranchShortName.of(b_stripped)]
+            self.__commit_sha_by_revision_cached[LocalBranchShortName.of(branch)] = FullCommitHash.of(commit_sha)
+            self.__tree_sha_by_commit_sha_cached[FullCommitHash.of(commit_sha)] = FullTreeHash.of(tree_sha)
+            self.__committer_unix_timestamp_by_revision_cached[LocalBranchShortName.of(branch)] = int(committer_unix_timestamp_and_time_zone.split(' ')[0])
             if fetch_counterpart_stripped in self.__remote_branches_cached:
-                self.__counterparts_for_fetching_cached[b_stripped] = RemoteBranch.of(fetch_counterpart_stripped)
+                self.__counterparts_for_fetching_cached[b_stripped] = RemoteBranchShortName.of(fetch_counterpart_stripped)
 
     def __get_log_shas(self, revision: AnyRevision, max_count: Optional[int]) -> List[FullCommitHash]:
         opts = ([f"--max-count={str(max_count)}"] if max_count else []) + ["--format=%H", f"refs/heads/{revision}"]
@@ -442,7 +459,7 @@ class GitContext:
     # Since getting the full history of a branch can be an expensive operation for large repositories (compared to all other underlying git operations),
     # there's a simple optimization in place: we first fetch only a couple of first commits in the history,
     # and only fetch the rest if needed.
-    def spoonfeed_log_shas(self, branch: LocalBranch) -> Generator[FullCommitHash, None, None]:
+    def spoonfeed_log_shas(self, branch: LocalBranchShortName) -> Generator[FullCommitHash, None, None]:
         if branch not in self.__initial_log_shas_cached:
             self.__initial_log_shas_cached[branch] = self.__get_log_shas(branch, max_count=MAX_COUNT_FOR_INITIAL_LOG)
         for sha in self.__initial_log_shas_cached[branch]:
@@ -472,10 +489,10 @@ class GitContext:
                 continue
             branch, pos = branch_and_pos
             if branch not in self.__reflogs_cached:
-                self.__reflogs_cached[AnyBranch.of(branch)] = []
-            self.__reflogs_cached[AnyBranch.of(branch)] += [(FullCommitHash.of(sha), subject)]
+                self.__reflogs_cached[AnyBranchName.of(branch)] = []
+            self.__reflogs_cached[AnyBranchName.of(branch)] += [(FullCommitHash.of(sha), subject)]
 
-    def get_reflog(self, branch: AnyBranch) -> List[REFLOG_ENTRY]:
+    def get_reflog(self, branch: AnyBranchName) -> List[Reflog_Entry]:
         # git version 2.14.2 fixed a bug that caused fetching reflog of more than
         # one branch at the same time unreliable in certain cases
         if self.get_git_version() >= (2, 14, 2):
@@ -495,7 +512,7 @@ class GitContext:
                 ]
             return self.__reflogs_cached[branch]
 
-    def create_branch(self, branch: LocalBranch, out_of_revision: AnyRevision) -> None:
+    def create_branch(self, branch: LocalBranchShortName, out_of_revision: AnyRevision) -> None:
         self._run_git("checkout", "-b", branch, out_of_revision)
         self.flush_caches()  # the repository state has changed because of a successful branch creation, let's defensively flush all the caches
 
@@ -517,7 +534,7 @@ class GitContext:
 
     def get_revision_repr(self, revision: AnyRevision) -> str:
         short_sha = self.get_short_commit_sha_by_revision(revision)
-        if self.is_full_sha(revision) or revision == short_sha:
+        if self.is_full_sha(revision.full_name()) or revision == short_sha:
             return f"commit {revision}"
         else:
             return f"{revision} (commit {self.get_short_commit_sha_by_revision(revision)})"
@@ -525,7 +542,7 @@ class GitContext:
     # Note: while rebase is ongoing, the repository is always in a detached HEAD state,
     # so we need to extract the name of the currently rebased branch from the rebase-specific internals
     # rather than rely on 'git symbolic-ref HEAD' (i.e. the contents of .git/HEAD).
-    def get_currently_rebased_branch_or_none(self) -> Optional[LocalBranch]:  # utils/private
+    def get_currently_rebased_branch_or_none(self) -> Optional[LocalBranchShortName]:  # utils/private
         # https://stackoverflow.com/questions/3921409
 
         head_name_file = None
@@ -546,12 +563,12 @@ class GitContext:
             return None
         with open(head_name_file) as f:
             raw = f.read().strip()
-            return LocalBranch.of(re.sub("^refs/heads/", "", raw))
+            return LocalBranchShortName.of(re.sub("^refs/heads/", "", raw))
 
-    def get_currently_checked_out_branch_or_none(self) -> Optional[LocalBranch]:
+    def get_currently_checked_out_branch_or_none(self) -> Optional[LocalBranchShortName]:
         try:
             raw = self._popen_git("symbolic-ref", "--quiet", "HEAD").strip()
-            return LocalBranch.of(re.sub("^refs/heads/", "", raw))
+            return LocalBranchShortName.of(re.sub("^refs/heads/", "", raw))
         except MacheteException:
             return None
 
@@ -573,10 +590,10 @@ class GitContext:
             raise MacheteException(
                 "Revert in progress. Conclude the revert first with `git revert --continue` or `git revert --abort`.")
 
-    def get_current_branch_or_none(self) -> Optional[LocalBranch]:
+    def get_current_branch_or_none(self) -> Optional[LocalBranchShortName]:
         return self.get_currently_checked_out_branch_or_none() or self.get_currently_rebased_branch_or_none()
 
-    def get_current_branch(self) -> LocalBranch:
+    def get_current_branch(self) -> LocalBranchShortName:
         result = self.get_current_branch_or_none()
         if not result:
             raise MacheteException("Not currently on any branch")
@@ -652,8 +669,8 @@ class GitContext:
         self.__contains_equivalent_tree_cached[earlier_commit_sha, later_commit_sha] = result
         return result
 
-    def get_sole_remote_branch(self, branch: LocalBranch) -> Optional[RemoteBranch]:
-        def matches(remote_branch: RemoteBranch) -> bool:
+    def get_sole_remote_branch(self, branch: LocalBranchShortName) -> Optional[RemoteBranchShortName]:
+        def matches(remote_branch: RemoteBranchShortName) -> bool:
             # Note that this matcher is defensively too inclusive:
             # if there is both origin/foo and origin/feature/foo,
             # then both are matched for 'foo';
@@ -664,9 +681,9 @@ class GitContext:
         matching_remote_branches = list(filter(matches, self.get_remote_branches()))
         return matching_remote_branches[0] if len(matching_remote_branches) == 1 else None
 
-    def get_merged_local_branches(self) -> List[LocalBranch]:
+    def get_merged_local_branches(self) -> List[LocalBranchShortName]:
         return list(map(
-            lambda branch: LocalBranch.of(re.sub("^refs/heads/", "", branch)),
+            lambda branch: LocalBranchShortName.of(re.sub("^refs/heads/", "", branch)),
             utils.get_non_empty_lines(
                 self._popen_git("for-each-ref", "--format=%(refname)", "--merged", "HEAD", "refs/heads"))
         ))
@@ -690,7 +707,7 @@ class GitContext:
         else:
             return True
 
-    def merge(self, branch: LocalBranch, into: LocalBranch, opt_no_edit_merge: bool) -> None:  # refs/heads/ prefix is assumed for 'branch'
+    def merge(self, branch: LocalBranchShortName, into: LocalBranchShortName, opt_no_edit_merge: bool) -> None:  # refs/heads/ prefix is assumed for 'branch'
         extra_params = ["--no-edit"] if opt_no_edit_merge else ["--edit"]
         # We need to specify the message explicitly to avoid 'refs/heads/' prefix getting into the message...
         commit_message = f"Merge branch '{branch}' into {into}"
@@ -698,11 +715,11 @@ class GitContext:
         self._run_git("merge", "-m", commit_message, branch.full_name(), *extra_params)
         self.flush_caches()
 
-    def merge_fast_forward_only(self, branch: LocalBranch) -> None:  # refs/heads/ prefix is assumed for 'branch'
+    def merge_fast_forward_only(self, branch: LocalBranchShortName) -> None:  # refs/heads/ prefix is assumed for 'branch'
         self._run_git("merge", "--ff-only", branch.full_name())
         self.flush_caches()
 
-    def rebase(self, onto: AnyRevision, fork_revision: AnyRevision, branch: LocalBranch, opt_no_interactive_rebase: bool) -> None:
+    def rebase(self, onto: AnyRevision, fork_revision: AnyRevision, branch: LocalBranchShortName, opt_no_interactive_rebase: bool) -> None:
         def do_rebase() -> None:
             try:
                 if opt_no_interactive_rebase:
@@ -749,7 +766,7 @@ class GitContext:
         else:
             do_rebase()
 
-    def rebase_onto_ancestor_commit(self, branch: LocalBranch, ancestor_revision: AnyRevision, opt_no_interactive_rebase: bool) -> None:
+    def rebase_onto_ancestor_commit(self, branch: LocalBranchShortName, ancestor_revision: AnyRevision, opt_no_interactive_rebase: bool) -> None:
         self.rebase(ancestor_revision, ancestor_revision, branch, opt_no_interactive_rebase)
 
     def get_commits_between(self, earliest_exclusive: AnyRevision, latest_inclusive: AnyRevision) -> List[Tuple[str, str, str]]:
@@ -760,7 +777,7 @@ class GitContext:
                 self._popen_git("log", "--format=%H:%h:%s", f"^{earliest_exclusive}", latest_inclusive, "--"))
         ))))
 
-    def get_relation_to_remote_counterpart(self, branch: LocalBranch, remote_branch: RemoteBranch) -> int:
+    def get_relation_to_remote_counterpart(self, branch: LocalBranchShortName, remote_branch: RemoteBranchShortName) -> int:
         b_is_anc_of_rb = self.is_ancestor_or_equal(branch.full_name(), remote_branch.full_name())
         rb_is_anc_of_b = self.is_ancestor_or_equal(remote_branch.full_name(), branch.full_name())
         if b_is_anc_of_rb:
@@ -772,7 +789,7 @@ class GitContext:
             rb_t = self.get_committer_unix_timestamp_by_revision(remote_branch)
             return SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE if b_t < rb_t else SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE
 
-    def get_strict_remote_sync_status(self, branch: LocalBranch) -> Tuple[int, Optional[str]]:
+    def get_strict_remote_sync_status(self, branch: LocalBranchShortName) -> Tuple[int, Optional[str]]:
         if not self.get_remotes():
             return SyncToRemoteStatuses.NO_REMOTES, None
         remote_branch = self.get_strict_counterpart_for_fetching_of_branch(branch)
@@ -780,7 +797,7 @@ class GitContext:
             return SyncToRemoteStatuses.UNTRACKED, None
         return self.get_relation_to_remote_counterpart(branch, remote_branch), self.get_strict_remote_for_fetching_of_branch(branch)
 
-    def get_combined_remote_sync_status(self, branch: LocalBranch) -> Tuple[int, Optional[str]]:
+    def get_combined_remote_sync_status(self, branch: LocalBranchShortName) -> Tuple[int, Optional[str]]:
         if not self.get_remotes():
             return SyncToRemoteStatuses.NO_REMOTES, None
         remote_branch = self.get_combined_counterpart_for_fetching_of_branch(branch)
@@ -821,7 +838,7 @@ class GitContext:
             params.append(commit)
         return self._popen_git(*params)
 
-    def display_branch_history_from_forkpoint(self, branch: LocalBranch, fork_point: FullCommitHash) -> int:
+    def display_branch_history_from_forkpoint(self, branch: LocalBranchFullName, fork_point: FullCommitHash) -> int:
         return self._run_git("log", f"^{fork_point}", branch)
 
     def commit_tree_with_given_parent_and_message_and_env(
@@ -830,12 +847,12 @@ class GitContext:
         return FullCommitHash.of(self._popen_git(
             "commit-tree", "HEAD^{tree}", "-p", parent_revision, "-m", msg, env=env))
 
-    def delete_branch(self, branch_name: LocalBranch, force: bool = False) -> int:
+    def delete_branch(self, branch_name: LocalBranchShortName, force: bool = False) -> int:
         self.flush_caches()
         delete_option = '-D' if force else '-d'
         return self._run_git("branch", delete_option, branch_name)
 
-    def display_diff(self, fork_point: AnyRevision, format_with_stat: bool, branch: LocalBranch = None) -> int:
+    def display_diff(self, fork_point: AnyRevision, format_with_stat: bool, branch: LocalBranchShortName = None) -> int:
         params = ["diff"]
         if format_with_stat:
             params.append("--stat")
