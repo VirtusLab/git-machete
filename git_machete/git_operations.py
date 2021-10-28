@@ -51,6 +51,9 @@ class LocalBranchFullName(AnyBranchName):
     def full_name(self) -> "LocalBranchFullName":
         return self
 
+    def to_short_name(self) -> "LocalBranchShortName":
+        return LocalBranchShortName.of(re.sub("^refs/heads/", "", self))
+
 
 class RemoteBranchShortName(AnyBranchName):
     @staticmethod
@@ -72,6 +75,9 @@ class RemoteBranchFullName(AnyBranchName):
 
     def full_name(self) -> "RemoteBranchFullName":
         return self
+
+    def to_short_name(self) -> "RemoteBranchShortName":
+        return RemoteBranchShortName.of(re.sub("^refs/remotes/", "", self))
 
 
 class FullCommitHash(AnyRevision):
@@ -108,11 +114,8 @@ class FullTreeHash(str):
     def of(value: str) -> Optional["FullTreeHash"]:
         return FullTreeHash(value) if value else None
 
-    def full_name(self) -> "FullTreeHash":
-        return self
 
-
-Reflog_Entry = Tuple[FullCommitHash, str]
+ReflogEntry = Tuple[FullCommitHash, str]
 
 HEAD = AnyRevision.of("HEAD")
 
@@ -135,7 +138,7 @@ class GitContext:
         self.__remote_branches_cached: Optional[List[RemoteBranchShortName]] = None
         self.__initial_log_shas_cached: Dict[LocalBranchShortName, List[FullCommitHash]] = {}
         self.__remaining_log_shas_cached: Dict[LocalBranchShortName, List[FullCommitHash]] = {}
-        self.__reflogs_cached: Optional[Dict[AnyBranchName, Optional[List[Reflog_Entry]]]] = None
+        self.__reflogs_cached: Optional[Dict[AnyBranchName, Optional[List[ReflogEntry]]]] = None
         self.__merge_base_cached: Dict[Tuple[FullCommitHash, FullCommitHash], FullCommitHash] = {}
         self.__contains_equivalent_tree_cached: Dict[Tuple[FullCommitHash, FullCommitHash], bool] = {}
 
@@ -430,8 +433,8 @@ class GitContext:
             if len(values) != 4:
                 continue  # invalid, shouldn't happen
             branch, commit_sha, tree_sha, committer_unix_timestamp_and_time_zone = values
-            b_stripped = re.sub("^refs/remotes/", "", branch)
-            self.__remote_branches_cached += [RemoteBranchShortName.of(b_stripped)]
+            b_stripped_remote = RemoteBranchFullName.of(branch).to_short_name()
+            self.__remote_branches_cached += [b_stripped_remote]
             self.__commit_sha_by_revision_cached[RemoteBranchShortName.of(branch)] = FullCommitHash.of(commit_sha)
             self.__tree_sha_by_commit_sha_cached[FullCommitHash.of(commit_sha)] = FullTreeHash.of(tree_sha)
             self.__committer_unix_timestamp_by_revision_cached[RemoteBranchShortName.of(branch)] = int(committer_unix_timestamp_and_time_zone.split(' ')[0])
@@ -443,17 +446,17 @@ class GitContext:
             if len(values) != 5:
                 continue  # invalid, shouldn't happen
             branch, commit_sha, tree_sha, committer_unix_timestamp_and_time_zone, fetch_counterpart = values
-            b_stripped = LocalBranchShortName.of(re.sub("^refs/heads/", "", branch))
-            fetch_counterpart_stripped = re.sub("^refs/remotes/", "", fetch_counterpart)
-            self.__local_branches_cached += [LocalBranchShortName.of(b_stripped)]
+            b_stripped_local = LocalBranchFullName.of(branch).to_short_name()
+            fetch_counterpart_stripped = RemoteBranchFullName.of(fetch_counterpart).to_short_name() if fetch_counterpart else None  # fetch_counterpart might be empty
+            self.__local_branches_cached += [b_stripped_local]
             self.__commit_sha_by_revision_cached[LocalBranchShortName.of(branch)] = FullCommitHash.of(commit_sha)
             self.__tree_sha_by_commit_sha_cached[FullCommitHash.of(commit_sha)] = FullTreeHash.of(tree_sha)
             self.__committer_unix_timestamp_by_revision_cached[LocalBranchShortName.of(branch)] = int(committer_unix_timestamp_and_time_zone.split(' ')[0])
             if fetch_counterpart_stripped in self.__remote_branches_cached:
-                self.__counterparts_for_fetching_cached[b_stripped] = RemoteBranchShortName.of(fetch_counterpart_stripped)
+                self.__counterparts_for_fetching_cached[b_stripped_local] = fetch_counterpart_stripped
 
     def __get_log_shas(self, revision: AnyRevision, max_count: Optional[int]) -> List[FullCommitHash]:
-        opts = ([f"--max-count={str(max_count)}"] if max_count else []) + ["--format=%H", f"refs/heads/{revision}"]
+        opts = ([f"--max-count={str(max_count)}"] if max_count else []) + ["--format=%H", revision.full_name()]
         return list(map(FullCommitHash.of, utils.get_non_empty_lines(self._popen_git("log", *opts))))
 
     # Since getting the full history of a branch can be an expensive operation for large repositories (compared to all other underlying git operations),
@@ -492,7 +495,7 @@ class GitContext:
                 self.__reflogs_cached[AnyBranchName.of(branch)] = []
             self.__reflogs_cached[AnyBranchName.of(branch)] += [(FullCommitHash.of(sha), subject)]
 
-    def get_reflog(self, branch: AnyBranchName) -> List[Reflog_Entry]:
+    def get_reflog(self, branch: AnyBranchName) -> List[ReflogEntry]:
         # git version 2.14.2 fixed a bug that caused fetching reflog of more than
         # one branch at the same time unreliable in certain cases
         if self.get_git_version() >= (2, 14, 2):
@@ -563,12 +566,12 @@ class GitContext:
             return None
         with open(head_name_file) as f:
             raw = f.read().strip()
-            return LocalBranchShortName.of(re.sub("^refs/heads/", "", raw))
+            return LocalBranchFullName.of(raw).to_short_name()
 
     def get_currently_checked_out_branch_or_none(self) -> Optional[LocalBranchShortName]:
         try:
             raw = self._popen_git("symbolic-ref", "--quiet", "HEAD").strip()
-            return LocalBranchShortName.of(re.sub("^refs/heads/", "", raw))
+            return LocalBranchFullName.of(raw).to_short_name()
         except MacheteException:
             return None
 
@@ -683,7 +686,7 @@ class GitContext:
 
     def get_merged_local_branches(self) -> List[LocalBranchShortName]:
         return list(map(
-            lambda branch: LocalBranchShortName.of(re.sub("^refs/heads/", "", branch)),
+            lambda branch: LocalBranchFullName.of(branch).to_short_name(),
             utils.get_non_empty_lines(
                 self._popen_git("for-each-ref", "--format=%(refname)", "--merged", "HEAD", "refs/heads"))
         ))
