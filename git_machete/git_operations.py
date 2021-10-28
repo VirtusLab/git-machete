@@ -33,7 +33,13 @@ class AnyBranchName(AnyRevision):
 class LocalBranchShortName(AnyBranchName):
     @staticmethod
     def of(value: str) -> Optional["LocalBranchShortName"]:
-        return LocalBranchShortName(value) if value else None
+        if value:
+            if 'refs/heads' in value or 'refs/remotes' in value:
+                raise TypeError(
+                    f'LocalBranchShortName cannot accept refs/heads or refs/remotes. Given value: {value}.')
+            else:
+                return LocalBranchShortName(value)
+        return None
 
     def full_name(self) -> Optional["LocalBranchFullName"]:
         return LocalBranchFullName.from_short_name(self)
@@ -42,7 +48,12 @@ class LocalBranchShortName(AnyBranchName):
 class LocalBranchFullName(AnyBranchName):
     @staticmethod
     def of(value: str) -> Optional["LocalBranchFullName"]:
-        return LocalBranchFullName(value) if value else None
+        if value:
+            if 'refs/heads' in value:
+                return LocalBranchFullName(value)
+            else:
+                raise TypeError(f"LocalBranchFullName needs to have `refs/heads` prefix before branch name. Given value: {value}")
+        return None
 
     @staticmethod
     def from_short_name(value: LocalBranchShortName) -> Optional["LocalBranchFullName"]:
@@ -58,7 +69,13 @@ class LocalBranchFullName(AnyBranchName):
 class RemoteBranchShortName(AnyBranchName):
     @staticmethod
     def of(value: str) -> Optional["RemoteBranchShortName"]:
-        return RemoteBranchShortName(value) if value else None
+        if value:
+            if 'refs/heads' in value or 'refs/remotes' in value:
+                raise TypeError(
+                    f'RemoteBranchShortName cannot accept refs/heads or refs/remotes. Given value: {value}.')
+            else:
+                return RemoteBranchShortName(value)
+        return None
 
     def full_name(self) -> Optional["RemoteBranchFullName"]:
         return RemoteBranchFullName.from_short_name(self)
@@ -67,7 +84,12 @@ class RemoteBranchShortName(AnyBranchName):
 class RemoteBranchFullName(AnyBranchName):
     @staticmethod
     def of(value: str) -> Optional["RemoteBranchFullName"]:
-        return RemoteBranchFullName(value) if value else None
+        if value:
+            if 'refs/remotes' in value:
+                return RemoteBranchFullName(value)
+            else:
+                raise TypeError(f"RemoteBranchFullName needs to have `refs/remotes` prefix before branch name. Given value: {value}")
+        return None
 
     @staticmethod
     def from_short_name(value: RemoteBranchShortName) -> Optional["RemoteBranchFullName"]:
@@ -435,9 +457,9 @@ class GitContext:
             branch, commit_sha, tree_sha, committer_unix_timestamp_and_time_zone = values
             b_stripped_remote = RemoteBranchFullName.of(branch).to_short_name()
             self.__remote_branches_cached += [b_stripped_remote]
-            self.__commit_sha_by_revision_cached[RemoteBranchShortName.of(branch)] = FullCommitHash.of(commit_sha)
+            self.__commit_sha_by_revision_cached[RemoteBranchFullName.of(branch)] = FullCommitHash.of(commit_sha)
             self.__tree_sha_by_commit_sha_cached[FullCommitHash.of(commit_sha)] = FullTreeHash.of(tree_sha)
-            self.__committer_unix_timestamp_by_revision_cached[RemoteBranchShortName.of(branch)] = int(committer_unix_timestamp_and_time_zone.split(' ')[0])
+            self.__committer_unix_timestamp_by_revision_cached[RemoteBranchFullName.of(branch)] = int(committer_unix_timestamp_and_time_zone.split(' ')[0])
 
         raw_local = utils.get_non_empty_lines(self._popen_git("for-each-ref", "--format=%(refname)\t%(objectname)\t%(tree)\t%(committerdate:raw)\t%(upstream)", "refs/heads"))
 
@@ -449,9 +471,9 @@ class GitContext:
             b_stripped_local = LocalBranchFullName.of(branch).to_short_name()
             fetch_counterpart_stripped = RemoteBranchFullName.of(fetch_counterpart).to_short_name() if fetch_counterpart else None  # fetch_counterpart might be empty
             self.__local_branches_cached += [b_stripped_local]
-            self.__commit_sha_by_revision_cached[LocalBranchShortName.of(branch)] = FullCommitHash.of(commit_sha)
+            self.__commit_sha_by_revision_cached[LocalBranchFullName.of(branch)] = FullCommitHash.of(commit_sha)
             self.__tree_sha_by_commit_sha_cached[FullCommitHash.of(commit_sha)] = FullTreeHash.of(tree_sha)
-            self.__committer_unix_timestamp_by_revision_cached[LocalBranchShortName.of(branch)] = int(committer_unix_timestamp_and_time_zone.split(' ')[0])
+            self.__committer_unix_timestamp_by_revision_cached[LocalBranchFullName.of(branch)] = int(committer_unix_timestamp_and_time_zone.split(' ')[0])
             if fetch_counterpart_stripped in self.__remote_branches_cached:
                 self.__counterparts_for_fetching_cached[b_stripped_local] = fetch_counterpart_stripped
 
