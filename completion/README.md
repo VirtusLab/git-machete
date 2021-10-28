@@ -95,4 +95,8 @@ exec $SHELL -l
 
 ## Fish
 
-TODO (#315): installation instructions
+Place the completion script in `/path/to/fish/completions/` typically `~/.config/fish/completions/git-machete.fish`. You may have to create this directory if it doesn't exist.
+
+```shell script
+sudo curl -L https://raw.githubusercontent.com/VirtusLab/git-machete/develop/completion/git-machete.completion.fish -o ~/.config/fish/completions/git-machete.fish
+```
