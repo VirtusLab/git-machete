@@ -21,9 +21,10 @@ from git_machete.client import MacheteClient
 from git_machete.docs import long_docs
 from git_machete.exceptions import MacheteException
 from git_machete.github import get_parsed_github_remote_url
-from git_machete.git_operations import GitContext
+from git_machete.git_operations import FullCommitHash, GitContext, LocalBranchShortName
 from git_machete.options import CommandLineOptions
 from git_machete.utils import dim, fmt
+
 
 cli_opts: CommandLineOptions = CommandLineOptions()
 git: GitContext = GitContext()
@@ -31,14 +32,14 @@ git: GitContext = GitContext()
 FAKE_GITHUB_REMOTE_PATTERNS = ['(.*)/(.*)']
 
 
-def get_current_commit_hash() -> str:
+def get_current_commit_hash() -> FullCommitHash:
     """Returns hash of a commit of the current branch head."""
     with os.popen("git rev-parse HEAD") as git_call:
-        return git_call.read().strip()
+        return FullCommitHash.of(git_call.read().strip())
 
 
 def mock_fetch_ref(cls: Any, remote: str, ref: str) -> None:
-    branch: str = ref[ref.index(':') + 1:]
+    branch: LocalBranchShortName = LocalBranchShortName.of(ref[ref.index(':') + 1:])
     git.create_branch(branch, get_current_commit_hash())
     git.checkout(branch)
 
@@ -2051,7 +2052,7 @@ class MacheteTester(unittest.TestCase):
         expected_error_message = "Pull request for branch hotfix/add-trigger is already created under link www.github.com!\nPR details: PR #6 by github_user: hotfix/add-trigger -> master"
         machete_client.read_definition_file()
         with self.assertRaises(MacheteException) as e:
-            machete_client.create_github_pr(head='hotfix/add-trigger', opt_draft=False, opt_onto=None)
+            machete_client.create_github_pr(head=LocalBranchShortName.of('hotfix/add-trigger'), opt_draft=False, opt_onto=None)
         if e:
             self.assertEqual(e.exception.parameter, expected_error_message,
                              'Verify that expected error message has appeared when given pull request to create is already created.')
@@ -2066,9 +2067,9 @@ class MacheteTester(unittest.TestCase):
 
         machete_client = MacheteClient(git)
         machete_client.read_definition_file()
-        expected_error_message = "All commits in `testing/endpoints` branch  are already included in `develop` branch.\nCannot create pull request."
+        expected_error_message = "All commits in `testing/endpoints` branch are already included in `develop` branch.\nCannot create pull request."
         with self.assertRaises(MacheteException) as e:
-            machete_client.create_github_pr(head='testing/endpoints', opt_draft=False, opt_onto=None)
+            machete_client.create_github_pr(head=LocalBranchShortName.of('testing/endpoints'), opt_draft=False, opt_onto=None)
         if e:
             self.assertEqual(e.exception.parameter, expected_error_message,
                              'Verify that expected error message has appeared when head branch is equal or ancestor of base branch.')
@@ -2076,7 +2077,7 @@ class MacheteTester(unittest.TestCase):
         self.repo_sandbox.check_out('develop')
         expected_error_message = "Branch `develop` does not have a parent branch (it is a root), base branch for the PR cannot be established."
         with self.assertRaises(MacheteException) as e:
-            machete_client.create_github_pr(head='develop', opt_draft=False, opt_onto=None)
+            machete_client.create_github_pr(head=LocalBranchShortName.of('develop'), opt_draft=False, opt_onto=None)
         if e:
             self.assertEqual(e.exception.parameter, expected_error_message,
                              'Verify that expected error message has appeared when creating PR from root branch.')
@@ -2336,7 +2337,7 @@ class MacheteTester(unittest.TestCase):
             .new_branch("master")
             .commit("Master commit")
             .push()
-            .delete_branch('root')
+            .delete_branch("root")
             .push()
         )
         for branch in ('develop', 'chore/sync_to_docs', 'improve/refactor', 'comments/add_docstrings'):
@@ -2372,7 +2373,7 @@ class MacheteTester(unittest.TestCase):
                         "Added branch `improve/refactor` onto `chore/sync_to_docs`\n"
                         "A local branch `comments/add_docstrings` does not exist, but a remote branch `origin/comments/add_docstrings` exists.\n"
                         "Checking out `comments/add_docstrings` locally...\nAdded branch `comments/add_docstrings` onto `improve/refactor`\n"
-                        "Annotating comments/add_docstrings as `PR #2 (github_user)`\nAnnotating improve/refactor as `PR #1 (github_user)`\n"
+                        "Annotating `comments/add_docstrings` as `PR #2 (github_user)`\nAnnotating `improve/refactor` as `PR #1 (github_user)`\n"
                         "Pull request `#2` checked out at local branch `comments/add_docstrings`\n")
         self.assert_command(
             ['github', 'checkout-prs', '2'],

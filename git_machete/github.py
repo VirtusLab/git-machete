@@ -7,13 +7,13 @@ import re
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 import urllib.request
 from urllib.error import HTTPError
 
 from git_machete.utils import debug, fmt, find_or_none
 from git_machete.exceptions import MacheteException, UnprocessableEntityHTTPError
-from git_machete.git_operations import GitContext
+from git_machete.git_operations import GitContext, LocalBranchShortName
 
 
 GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
@@ -204,7 +204,7 @@ def add_reviewers_to_pull_request(org: str, repo: str, number: int, reviewers: L
     __fire_github_api_request('POST', f'/repos/{org}/{repo}/pulls/{number}/requested_reviewers', token, request_body)
 
 
-def set_base_of_pull_request(org: str, repo: str, number: int, base: str) -> None:
+def set_base_of_pull_request(org: str, repo: str, number: int, base: LocalBranchShortName) -> None:
     token: Optional[str] = __get_github_token()
     request_body: Dict[str, str] = {'base': base}
     __fire_github_api_request('PATCH', f'/repos/{org}/{repo}/pulls/{number}', token, request_body)
@@ -217,7 +217,7 @@ def set_milestone_of_pull_request(org: str, repo: str, number: int, milestone: s
     __fire_github_api_request('PATCH', f'/repos/{org}/{repo}/issues/{number}', token, request_body)
 
 
-def derive_pull_request_by_head(org: str, repo: str, head: str) -> Optional[GitHubPullRequest]:
+def derive_pull_request_by_head(org: str, repo: str, head: LocalBranchShortName) -> Optional[GitHubPullRequest]:
     token: Optional[str] = __get_github_token()
     prs = __fire_github_api_request('GET', f'/repos/{org}/{repo}/pulls?head={org}:{head}', token)
     if len(prs) >= 1:
@@ -262,6 +262,6 @@ def get_pull_request_by_number_or_none(number: int, org: str, repo: str) -> Opti
         return None
 
 
-def checkout_pr_refs(git: GitContext, remote: str, pr_number: int, branch: str) -> None:
+def checkout_pr_refs(git: GitContext, remote: str, pr_number: int, branch: LocalBranchShortName) -> None:
     git.fetch_ref(remote, f'pull/{pr_number}/head:{branch}')
     git.checkout(branch)
