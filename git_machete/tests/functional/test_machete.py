@@ -45,8 +45,19 @@ def mock_fetch_ref(cls: Any, remote: str, ref: str) -> None:
 
 
 def mock_run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
-    completed_process: subprocess.CompletedProcess[bytes] = subprocess.run([cmd] + list(args), stdout=subprocess.PIPE,
-                                                                           stderr=subprocess.PIPE, **kwargs)
+    completed_process: subprocess.CompletedProcess[bytes] = subprocess.run(
+        [cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
+    exit_code: int = completed_process.returncode
+
+    if exit_code != 0:
+        sys.stderr.write(dim(f"<exit code: {exit_code}>\n\n"))
+    return completed_process.returncode
+
+
+def mock_run_cmd_and_forward_stdout(cmd: str, *args: str, **kwargs: Any) -> int:
+    completed_process: subprocess.CompletedProcess[bytes] = subprocess.run(
+        [cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, ** kwargs)
+    sys.stdout.write(completed_process.stdout.decode('utf-8'))
     exit_code: int = completed_process.returncode
     if exit_code != 0:
         sys.stderr.write(dim(f"<exit code: {exit_code}>\n\n"))
@@ -2605,3 +2616,30 @@ class MacheteTester(unittest.TestCase):
             self.launch_command(
                 'slide-out', '-n', 'branch-1', '-d',
                 hash_of_only_commit_on_branch_2b)
+
+    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_stdout)
+    def test_log(self) -> None:
+        self.repo_sandbox.new_branch('root')
+        self.repo_sandbox.commit()
+        roots_only_commit_hash = get_current_commit_hash()
+
+        self.repo_sandbox.new_branch('child')
+        self.repo_sandbox.commit()
+        childs_first_commit_hash = get_current_commit_hash()
+        self.repo_sandbox.commit()
+        childs_second_commit_hash = get_current_commit_hash()
+
+        log_content = self.launch_command('log')
+
+        self.assertIn(
+            childs_first_commit_hash, log_content,
+            msg="Verify that oldest commit from current branch is visible when "
+                "executing `git machete log`.")
+        self.assertIn(
+            childs_second_commit_hash, log_content,
+            msg="Verify that youngest commit from current branch is visible when "
+                "executing `git machete log`.")
+        self.assertNotIn(
+            roots_only_commit_hash, log_content,
+            msg="Verify that commits from parent branch are not visible when "
+                "executing `git machete log`.")
