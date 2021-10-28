@@ -36,7 +36,8 @@ class LocalBranchShortName(AnyBranchName):
         if value:
             if 'refs/heads' in value or 'refs/remotes' in value:
                 raise TypeError(
-                    f'LocalBranchShortName cannot accept refs/heads or refs/remotes. Given value: {value}.')
+                    f'LocalBranchShortName cannot accept refs/heads or refs/remotes. Given value: {value}.\n'
+                    'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
             else:
                 return LocalBranchShortName(value)
         return None
@@ -52,7 +53,8 @@ class LocalBranchFullName(AnyBranchName):
             if 'refs/heads' in value:
                 return LocalBranchFullName(value)
             else:
-                raise TypeError(f"LocalBranchFullName needs to have `refs/heads` prefix before branch name. Given value: {value}")
+                raise TypeError(f'LocalBranchFullName needs to have `refs/heads` prefix before branch name. Given value: {value}.\n'
+                                'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
         return None
 
     @staticmethod
@@ -72,7 +74,8 @@ class RemoteBranchShortName(AnyBranchName):
         if value:
             if 'refs/heads' in value or 'refs/remotes' in value:
                 raise TypeError(
-                    f'RemoteBranchShortName cannot accept refs/heads or refs/remotes. Given value: {value}.')
+                    f'RemoteBranchShortName cannot accept refs/heads or refs/remotes. Given value: {value}.\n'
+                    'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
             else:
                 return RemoteBranchShortName(value)
         return None
@@ -88,7 +91,8 @@ class RemoteBranchFullName(AnyBranchName):
             if 'refs/remotes' in value:
                 return RemoteBranchFullName(value)
             else:
-                raise TypeError(f"RemoteBranchFullName needs to have `refs/remotes` prefix before branch name. Given value: {value}")
+                raise TypeError(f'RemoteBranchFullName needs to have `refs/remotes` prefix before branch name. Given value: {value}.\n'
+                                'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
         return None
 
     @staticmethod
@@ -110,7 +114,8 @@ class FullCommitHash(AnyRevision):
             if len(value) == 40:
                 return FullCommitHash(value)
             else:
-                raise TypeError(f'FullCommitHash requires length of 40. Given value: {value}, has length: {len(value)}.')
+                raise TypeError(f'FullCommitHash requires length of 40. Given value: {value}, has length: {len(value)}.\n'
+                                'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
         return None
 
     def full_name(self) -> "FullCommitHash":
@@ -124,7 +129,8 @@ class ShortCommitHash(AnyRevision):
             if len(value) == 7:
                 return ShortCommitHash(value)
             else:
-                raise TypeError(f'ShortCommitHash requires length of 7. Given value: {value}, has length: {len(value)}.')
+                raise TypeError(f'ShortCommitHash requires length of 7. Given value: {value}, has length: {len(value)}.\n'
+                                'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
         return None
 
     def full_name(self) -> "ShortCommitHash":
