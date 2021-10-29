@@ -1847,6 +1847,8 @@ class MacheteClient:
         remote, (org, repo) = self.__derive_remote_and_github_org_and_repo()
         current_user: Optional[str] = git_machete.github.derive_current_user_login()
         debug('checkout_github_pr()', f'organization is {org}, repository is {repo}')
+        print(f"Fetching {remote}...")
+        self.__git.fetch_remote(remote)
 
         pr = get_pull_request_by_number_or_none(pr_no, org, repo)
         if not pr:
@@ -1861,8 +1863,9 @@ class MacheteClient:
                     remote_to_fetch: str = remote_from_pr
                 else:
                     remote_to_fetch = remote_already_added
-                print(f"Fetching {remote_to_fetch}...")
-                self.__git.fetch_remote(remote_to_fetch)
+                if remote != remote_to_fetch:
+                    print(f"Fetching {remote_to_fetch}...")
+                    self.__git.fetch_remote(remote_to_fetch)
                 if '/'.join([remote_to_fetch, pr.head]) not in self.__git.get_remote_branches():
                     raise MacheteException(f"Could not check out PR #{pr_no} because its head branch `{pr.head}` is already deleted from `{remote_to_fetch}`.")
         else:
