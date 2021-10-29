@@ -2303,7 +2303,8 @@ class MacheteTester(unittest.TestCase):
          )
         os.chdir(self.repo_sandbox.local_path)
 
-        expected_msg = ("Fetching testing...\n"
+        expected_msg = ("Fetching origin...\n"
+                        "Fetching testing...\n"
                         "Warn: Pull request #5 is already closed.\n"
                         "A local branch `bugfix/remove-n-option` does not exist, but a remote branch `testing/bugfix/remove-n-option` exists.\n"
                         "Checking out `bugfix/remove-n-option` locally...\n"
@@ -2376,7 +2377,8 @@ class MacheteTester(unittest.TestCase):
         )
         os.chdir(self.repo_sandbox.local_path)
         self.rewrite_definition_file("master")
-        expected_msg = ("A local branch `chore/sync_to_docs` does not exist, but a remote branch `origin/chore/sync_to_docs` exists.\n"
+        expected_msg = ("Fetching origin...\n"
+                        "A local branch `chore/sync_to_docs` does not exist, but a remote branch `origin/chore/sync_to_docs` exists.\n"
                         "Checking out `chore/sync_to_docs` locally...\n"
                         "Added branch `chore/sync_to_docs` as a new root\n"
                         "A local branch `improve/refactor` does not exist, but a remote branch `origin/improve/refactor` exists.\n"
@@ -2407,7 +2409,8 @@ class MacheteTester(unittest.TestCase):
 
         # Check against closed pull request
         self.repo_sandbox.execute('git branch -D sphinx_export')
-        expected_msg = ("Warn: Pull request #23 is already closed.\n"
+        expected_msg = ("Fetching origin...\n"
+                        "Warn: Pull request #23 is already closed.\n"
                         "A local branch `sphinx_export` does not exist, but a remote branch `origin/sphinx_export` exists.\n"
                         "Checking out `sphinx_export` locally...\n"
                         "Added branch `sphinx_export` onto `comments/add_docstrings`\n"
@@ -2455,7 +2458,8 @@ class MacheteTester(unittest.TestCase):
             .push()
         )
         self.launch_command('discover')
-        expected_msg = ("Warn: Pull request #2 comes from fork and its repository is already deleted. No remote tracking data will be set up for `feature/allow_checkout` branch.\n"
+        expected_msg = ("Fetching origin...\n"
+                        "Warn: Pull request #2 comes from fork and its repository is already deleted. No remote tracking data will be set up for `feature/allow_checkout` branch.\n"
                         "Checking out `feature/allow_checkout` locally...\n"
                         "Warn: Pull request #2 is already closed.\n"
                         "Added branch `feature/allow_checkout` onto `develop`\n"
