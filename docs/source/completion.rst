@@ -98,10 +98,11 @@ Zsh:
 Fish:
 
     * Mac (via Homebrew)
-        ``brew install git machete`` automatically installs fish completion files for ``git machete``.
+        ``brew install git-machete`` automatically installs fish completion files for ``git machete``.
     * Linux
         #. Place the completion script in ``/path/to/fish/completions/`` typically ``~/.config/fish/completions/git-machete.fish``. You may have to create this directory if it doesn't exist.
 
         .. code-block:: shell
 
             sudo curl -L https://raw.githubusercontent.com/VirtusLab/git-machete/develop/completion/git-machete.fish -o ~/.config/fish/completions/git-machete.fish
+            echo "source ~/.config/fish/completions/git-machete.fish >/dev/null" >> ~/.config/fish/config.fish
