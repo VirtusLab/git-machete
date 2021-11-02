@@ -636,7 +636,8 @@ class MacheteClient:
         self.expect_at_least_one_managed_branch()
 
         self.__empty_line_status = True
-
+        handled_branches: List[LocalBranchShortName] = []
+        
         if opt_fetch:
             for remote in self.__git.get_remotes():
                 print(f"Fetching {remote}...")
@@ -703,6 +704,7 @@ class MacheteClient:
                 )
 
             if branch != current_branch and (needs_slide_out or needs_parent_sync or needs_remote_sync):
+                handled_branches.append(branch)
                 self.__print_new_line(False)
                 sys.stdout.write(f"Checking out {bold(branch)}\n")
                 self.__git.checkout(branch)
