@@ -101,9 +101,10 @@ Please look at the section about [installation via Homebrew](../README.md#using-
 
 ### Linux
 
-Place the completion script in `/path/to/fish/completions/` typically (`~/.config/fish/completions/git-machete.fish`). You may have to create this directory if it doesn't exist.
+Place the completion script in `/path/to/fish/completions/` (typically `~/.config/fish/completions/git-machete.fish`). You may have to create this directory if it doesn't exist.
 
 ```shell script
-sudo curl -L https://raw.githubusercontent.com/VirtusLab/git-machete/develop/completion/git-machete.fish -o ~/.config/fish/completions/git-machete.fish
+mkdir -p ~/.config/fish/completions
+curl -L https://raw.githubusercontent.com/VirtusLab/git-machete/develop/completion/git-machete.fish -o ~/.config/fish/completions/git-machete.fish
 echo "source ~/.config/fish/completions/git-machete.fish >/dev/null" >> ~/.config/fish/config.fish
 ```
