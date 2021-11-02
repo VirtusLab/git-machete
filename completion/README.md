@@ -105,6 +105,6 @@ Place the completion script in `/path/to/fish/completions/` (typically `~/.confi
 
 ```shell script
 mkdir -p ~/.config/fish/completions
-curl -L https://raw.githubusercontent.com/VirtusLab/git-machete/develop/completion/git-machete.fish -o ~/.config/fish/completions/git-machete.fish
+curl -L https://raw.githubusercontent.com/VirtusLab/git-machete/develop/completion/git-machete.completion.fish -o ~/.config/fish/completions/git-machete.fish
 echo "source ~/.config/fish/completions/git-machete.fish >/dev/null" >> ~/.config/fish/config.fish
 ```
