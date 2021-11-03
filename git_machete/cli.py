@@ -457,7 +457,7 @@ def set_utils_global_variables(
 
 def get_branch_arg_or_current_branch(
         cli_opts: git_machete.options.CommandLineOptions, git_context: GitContext) -> LocalBranchShortName:
-    return cli_opts.opt_branch or git_context.get_current_branch()
+    return LocalBranchShortName.of(cli_opts.opt_branch) or git_context.get_current_branch()
 
 
 def exit_script(status_code: Optional[int] = None) -> None:
