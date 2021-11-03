@@ -4,7 +4,7 @@
 # > if the user types git-machete, then only git-machete.fish will be loaded, but you can trick
 # > fish into still loading git.fish by adding a complete -C"git " at the top
 # - https://gitter.im/fish-shell/fish-shell?at=6176a4bacd4972068b6a0804
-complete -C "git "
+complete --do-complete="git "
 
 set -l __mcht_help_topics format hooks
 set -l __mcht_commands_long add advance anno delete-unmanaged diff discover edit file fork-point \
