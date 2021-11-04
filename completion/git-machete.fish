@@ -75,7 +75,7 @@ complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand
 complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand_from fork-point; and not __fish_seen_subcommand_from --inferred --unset-override --override-to --override-to-inferred --override-to-parent" -f -l unset-override
 
 # git machete github
-complete -c git -n "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands" -f -a github
+complete -c git -n "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands" -f -a github -d 'Create, retarget and manage GitHub PRs while keeping them reflected in git machete'
 complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand_from github; and not __fish_seen_subcommand_from anno-prs checkout-prs create-pr retarget-pr"        -f -a anno-prs     -d 'Annotates the branches based on their corresponding GitHub PR numbers and authors'
 complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand_from github; and not __fish_seen_subcommand_from anno-prs checkout-prs create-pr retarget-pr"        -x -a checkout-prs -d 'Check out the head branch of the given pull request (specified by number), also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally'
 complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand_from github; and not __fish_seen_subcommand_from anno-prs checkout-prs create-pr retarget-pr"        -f -a create-pr    -d 'Creates a PR for the current branch, using the upstream (parent) branch as the PR base'
@@ -98,7 +98,7 @@ complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand
 complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand_from help" -f -a "(complete -C 'git machete ')"
 
 # git machete is-managed
-complete -c git -n "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands" -f -a is-managed
+complete -c git -n "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands" -f -a is-managed -d 'Check if the current branch is managed by git machete (mostly for scripts)'
 complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand_from is-managed"           -f -a '(__fish_git_local_branches)'
 
 # git machete list
