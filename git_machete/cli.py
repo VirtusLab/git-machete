@@ -360,13 +360,13 @@ def update_cli_opts_using_parsed_args(
         parsed_args: argparse.Namespace) -> None:
     for opt, arg in vars(parsed_args).items():
         if opt == "branch":
-            cli_opts.opt_branch = arg
+            cli_opts.opt_branch = LocalBranchShortName.of(arg)
         elif opt == "checked_out_since":
             cli_opts.opt_checked_out_since = arg
         elif opt == "color":
             cli_opts.opt_color = arg
         elif opt == "down_fork_point":
-            cli_opts.opt_down_fork_point = arg
+            cli_opts.opt_down_fork_point = AnyRevision.of(arg)
         elif opt == "debug":
             cli_opts.opt_debug = True
         elif opt == "draft":
@@ -374,7 +374,7 @@ def update_cli_opts_using_parsed_args(
         elif opt == "fetch":
             cli_opts.opt_fetch = True
         elif opt == "fork_point":
-            cli_opts.opt_fork_point = arg
+            cli_opts.opt_fork_point = AnyRevision.of(arg)
         elif opt == "inferred":
             cli_opts.opt_inferred = True
         elif opt == "list_commits_with_hashes":
@@ -397,7 +397,7 @@ def update_cli_opts_using_parsed_args(
         elif opt == "no_push_untracked":
             cli_opts.opt_push_untracked = False
         elif opt == "onto":
-            cli_opts.opt_onto = arg
+            cli_opts.opt_onto = LocalBranchShortName.of(arg)
         elif opt == "override_to":
             cli_opts.opt_override_to = arg
         elif opt == "override_to_inferred":
@@ -412,7 +412,7 @@ def update_cli_opts_using_parsed_args(
         elif opt == "as_root":
             cli_opts.opt_as_root = True
         elif opt == "roots":
-            cli_opts.opt_roots = arg.split(",")
+            cli_opts.opt_roots = list(map(LocalBranchShortName.of, arg.split(",")))
         elif opt == "return_to":
             cli_opts.opt_return_to = arg
         elif opt == "stat":
@@ -457,7 +457,7 @@ def set_utils_global_variables(
 
 def get_branch_arg_or_current_branch(
         cli_opts: git_machete.options.CommandLineOptions, git_context: GitContext) -> LocalBranchShortName:
-    return LocalBranchShortName.of(cli_opts.opt_branch) or git_context.get_current_branch()
+    return cli_opts.opt_branch or git_context.get_current_branch()
 
 
 def exit_script(status_code: Optional[int] = None) -> None:
