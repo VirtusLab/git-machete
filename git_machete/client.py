@@ -847,7 +847,7 @@ class MacheteClient:
         else:
             msg = f"No successor of {bold(current_branch)} needs to be slid out or synced with upstream branch or remote"
         sys.stdout.write(f"{msg}; nothing left to update\n")
-        if not any_action_suggested and initial_branch != self.managed_branches[0]:
+        if not any_action_suggested and initial_branch not in self.__roots:
             sys.stdout.write(fmt("Tip: `traverse` by default starts from the current branch, "
                                  "use flags (`--starts-from=`, `--whole` or `-w`, `-W`) to change this behavior.\n"
                                  "Further info under `git machete traverse --help`.\n"))

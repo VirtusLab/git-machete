@@ -612,8 +612,8 @@ long_docs: Dict[str, str] = {
                                        [--return-to=WHERE] [--start-from=WHERE] [-w|--whole] [-W] [-y|--yes]</b>
 
         Traverses the branch dependency tree in pre-order (i.e. simply in the order as they occur in the definition file).
-        By default traverse starts from current branch, however this behaviour can be customized using options: --starts-from=, --whole or -w, -W.
-        Command for each branch:
+        By default traverse starts from current branch, however this behaviour can be customized using options: `--starts-from=`, `--whole` or `-w`, `-W`.
+        For each branch, the command:
         * detects if the branch is merged to its parent/upstream
           - by commit equivalency (default), or by strict detection of merge commits (if `--no-detect-squash-merges` passed),
           - if so, asks the user whether to slide out the branch from the dependency tree (typically branches are longer needed after they're merged);

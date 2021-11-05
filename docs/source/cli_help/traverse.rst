@@ -19,8 +19,8 @@ traverse
                          [--return-to=WHERE] [--start-from=WHERE] [-w|--whole] [-W] [-y|--yes]
 
 Traverses the branch dependency tree in pre-order (i.e. simply in the order as they occur in the definition file).
-By default traverse starts from current branch, however this behaviour can be customized using options: --start-from=, --whole or -w, -W.
-Command for each branch:
+By default traverse starts from current branch, however this behaviour can be customized using options: ``--start-from=``, ``--whole`` or ``-w``, ``-W``.
+For each branch, the command:
 
     * detects if the branch is merged to its parent/upstream:
 
