@@ -13,7 +13,7 @@ from git_machete import utils
 from git_machete.client import MacheteClient
 from git_machete.constants import EscapeCodes
 from git_machete.docs import short_docs, long_docs
-from git_machete.exceptions import MacheteException, StopInteraction
+from git_machete.exceptions import MacheteException, StopInteraction, UnprocessableEntityHTTPError
 from git_machete.git_operations import AnyRevision, GitContext, LocalBranchShortName, RemoteBranchShortName
 from git_machete.utils import fmt, underline, excluding, warn
 
@@ -791,6 +791,9 @@ def launch(orig_args: List[str]) -> None:
         sys.stderr.write(f"\n{e}\n")
         exit_script(2)
     except MacheteException as e:
+        sys.stderr.write(f"\n{e}\n")
+        exit_script(1)
+    except UnprocessableEntityHTTPError as e:
         sys.stderr.write(f"\n{e}\n")
         exit_script(1)
     except KeyboardInterrupt:
