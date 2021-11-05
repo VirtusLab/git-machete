@@ -2647,3 +2647,31 @@ class MacheteTester(unittest.TestCase):
             roots_only_commit_hash, log_content,
             msg="Verify that commits from parent branch are not visible when "
                 "executing `git machete log`.")
+
+    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+    def test_add(self) -> None:
+        """
+        Verify behaviour of a 'git machete add' command.
+        """
+        (
+            self.repo_sandbox.new_branch("master")
+                .commit("master commit.")
+                .new_branch("develop")
+                .commit("develop commit.")
+                .new_branch("feature")
+                .commit("feature commit.")
+                .check_out("develop")
+                .commit("New commit on develop")
+        )
+        self.launch_command("discover", "-y")
+        self.repo_sandbox.new_branch("bugfix/feature_fail")
+
+        self.assert_command(['add', '-y', 'bugfix/feature_fail'], 'Adding `bugfix/feature_fail` onto the inferred upstream (parent) branch `develop`\n'
+                                                                  'Added branch `bugfix/feature_fail` onto `develop`\n', strip_indentation=False)
+
+        # test with --onto option
+        self.repo_sandbox.new_branch("chore/remove_indentation")
+
+        self.assert_command(['add', '--onto=feature'],
+                            'Added branch `chore/remove_indentation` onto `feature`\n',
+                            strip_indentation=False)
