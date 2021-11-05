@@ -358,6 +358,16 @@ def create_cli_parser() -> argparse.ArgumentParser:
 def update_cli_opts_using_parsed_args(
         cli_opts: git_machete.options.CommandLineOptions,
         parsed_args: argparse.Namespace) -> None:
+
+    # Warning: In mypy, Arguments that come from untyped functions/variables are silently treated by mypy as Any.
+    # Since argparse is not typed, everything that comes from argparse.Namespace will be taken as Any :(
+    # Even if we add type=LocalBranchShortName into argument parser for branch,
+    # python debugger will see branch as LocalBranchShortName but mypy always will see it as Any,
+    # until you specifically tell mypy what is the exact type by casting (right now it's done this way below, but casting does not solve all of the problems).
+    #
+    # The reasonable solution here would be to use Typed Argument Parser which is a wrapper over argparse with modernised solution for typing.
+    # But it would add external dependency to git-machete, so let's stick to current casting.
+
     for opt, arg in vars(parsed_args).items():
         if opt == "branch":
             cli_opts.opt_branch = LocalBranchShortName.of(arg)
