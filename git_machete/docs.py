@@ -24,7 +24,7 @@ short_docs: Dict[str, str] = {
     "slide-out": "Slide out the current branch and sync its downstream (child) branches with its upstream (parent) branch via rebase or merge",
     "squash": "Squash the unique history of the current branch into a single commit",
     "status": "Display formatted tree of branch dependencies, including info on their sync with upstream branch and with remote",
-    "traverse": "Walk through the tree of branch dependencies and rebase, merge, slide out, push and/or pull each branch one by one",
+    "traverse": "Walk through the tree of branch dependencies and rebase, merge, slide out, push and/or pull each branch one by one. By default starts from current branch",
     "update": "Sync the current branch with its upstream (parent) branch via rebase or merge",
     "version": "Display the version and exit"
 }
@@ -611,7 +611,9 @@ long_docs: Dict[str, str] = {
                                        [--[no-]push] [--[no-]push-untracked]
                                        [--return-to=WHERE] [--start-from=WHERE] [-w|--whole] [-W] [-y|--yes]</b>
 
-        Traverses the branch dependency tree in pre-order (i.e. simply in the order as they occur in the definition file) and for each branch:
+        Traverses the branch dependency tree in pre-order (i.e. simply in the order as they occur in the definition file).
+        By default traverse starts from current branch, however this behaviour can be customized using options: --starts-from=, --whole or -w, -W.
+        Command for each branch:
         * detects if the branch is merged to its parent/upstream
           - by commit equivalency (default), or by strict detection of merge commits (if `--no-detect-squash-merges` passed),
           - if so, asks the user whether to slide out the branch from the dependency tree (typically branches are longer needed after they're merged);

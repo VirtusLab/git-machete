@@ -636,7 +636,7 @@ class MacheteClient:
         self.expect_at_least_one_managed_branch()
 
         self.__empty_line_status = True
-        is_action_done: bool = False
+        any_action_suggested: bool = False
 
         if opt_fetch:
             for remote in self.__git.get_remotes():
@@ -716,7 +716,7 @@ class MacheteClient:
                     opt_no_detect_squash_merges=opt_no_detect_squash_merges)
                 self.__print_new_line(True)
             if needs_slide_out:
-                is_action_done = True
+                any_action_suggested = True
                 self.__print_new_line(False)
                 ans: str = self.ask_if(f"Branch {bold(branch)} is merged into {bold(upstream)}. Slide {bold(branch)} out of the tree of branch dependencies?" + get_pretty_choices('y', 'N', 'q', 'yq'),
                                        f"Branch {bold(branch)} is merged into {bold(upstream)}. Sliding {bold(branch)} out of the tree of branch dependencies...", opt_yes=opt_yes)
@@ -745,7 +745,7 @@ class MacheteClient:
                 # If user answered 'no', we don't try to rebase/merge but still
                 # suggest to sync with remote (if needed; very rare in practice).
             elif needs_parent_sync:
-                is_action_done = True
+                any_action_suggested = True
                 self.__print_new_line(False)
                 if opt_merge:
                     ans = self.ask_if(f"Merge {bold(upstream)} into {bold(branch)}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
@@ -800,7 +800,7 @@ class MacheteClient:
                     return
 
             if needs_remote_sync:
-                is_action_done = True
+                any_action_suggested = True
                 try:
                     if s == SyncToRemoteStatuses.BEHIND_REMOTE:
                         self.__handle_behind_state(current_branch, remote, opt_yes=opt_yes)
@@ -847,8 +847,10 @@ class MacheteClient:
         else:
             msg = f"No successor of {bold(current_branch)} needs to be slid out or synced with upstream branch or remote"
         sys.stdout.write(f"{msg}; nothing left to update\n")
-        if not is_action_done and initial_branch != self.managed_branches[0]:
-            sys.stdout.write(fmt("Tip: `traverse` by default starts from the current branch, use flags (--starts-from=, --whole or -w, -W) to change this behavior.\nFurther info under `git machete traverse --help`.\n"))
+        if not any_action_suggested and initial_branch != self.managed_branches[0]:
+            sys.stdout.write(fmt("Tip: `traverse` by default starts from the current branch, "
+                                 "use flags (`--starts-from=`, `--whole` or `-w`, `-W`) to change this behavior.\n"
+                                 "Further info under `git machete traverse --help`.\n"))
         if opt_return_to == "here" or (
                 opt_return_to == "nearest-remaining" and nearest_remaining_branch == initial_branch):
             print(f"Returned to the initial branch {bold(initial_branch)}")
