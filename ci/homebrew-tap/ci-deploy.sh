@@ -31,7 +31,7 @@ else
   echo "Refraining from push since it's a dry run"
   # install git-machete from local formula with homebrew
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" < /dev/null
-  echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> /root/.profile
-  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+  sudo echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> /root/.profile
+  sudo eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
   brew install brew install ./git-machete.rb
 fi
