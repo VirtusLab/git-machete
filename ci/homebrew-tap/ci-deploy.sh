@@ -29,8 +29,7 @@ if [[ $do_push == true ]]; then
   git push origin master
 else
   echo "Refraining from push since it's a dry run"
-  # install
-  apt-get -y install curl
+  # install git-machete from local formula with homebrew
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" < /dev/null
   echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> /root/.profile
   eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
