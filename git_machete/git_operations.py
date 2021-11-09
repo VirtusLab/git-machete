@@ -164,8 +164,8 @@ class GitContext:
         self.__committer_unix_timestamp_by_revision_cached: Optional[Dict[AnyRevision, int]] = None  # TODO (#110): default dict with 0
         self.__local_branches_cached: Optional[List[LocalBranchShortName]] = None
         self.__remote_branches_cached: Optional[List[RemoteBranchShortName]] = None
-        self.__initial_log_shas_cached: Dict[LocalBranchShortName, List[FullCommitHash]] = {}
-        self.__remaining_log_shas_cached: Dict[LocalBranchShortName, List[FullCommitHash]] = {}
+        self.__initial_log_shas_cached: Dict[FullCommitHash, List[FullCommitHash]] = {}
+        self.__remaining_log_shas_cached: Dict[FullCommitHash, List[FullCommitHash]] = {}
         self.__reflogs_cached: Optional[Dict[AnyBranchName, Optional[List[ReflogEntry]]]] = None
         self.__merge_base_cached: Dict[Tuple[FullCommitHash, FullCommitHash], FullCommitHash] = {}
         self.__contains_equivalent_tree_cached: Dict[Tuple[FullCommitHash, FullCommitHash], bool] = {}
@@ -490,15 +490,15 @@ class GitContext:
     # Since getting the full history of a branch can be an expensive operation for large repositories (compared to all other underlying git operations),
     # there's a simple optimization in place: we first fetch only a couple of first commits in the history,
     # and only fetch the rest if needed.
-    def spoonfeed_log_shas(self, branch: LocalBranchShortName) -> Generator[FullCommitHash, None, None]:
-        if branch not in self.__initial_log_shas_cached:
-            self.__initial_log_shas_cached[branch] = self.__get_log_shas(branch, max_count=MAX_COUNT_FOR_INITIAL_LOG)
-        for sha in self.__initial_log_shas_cached[branch]:
+    def spoonfeed_log_shas(self, branch_full_hash: FullCommitHash) -> Generator[FullCommitHash, None, None]:
+        if branch_full_hash not in self.__initial_log_shas_cached:
+            self.__initial_log_shas_cached[branch_full_hash] = self.__get_log_shas(branch_full_hash, max_count=MAX_COUNT_FOR_INITIAL_LOG)
+        for sha in self.__initial_log_shas_cached[branch_full_hash]:
             yield FullCommitHash.of(sha)
 
-        if branch not in self.__remaining_log_shas_cached:
-            self.__remaining_log_shas_cached[branch] = self.__get_log_shas(branch, max_count=None)[MAX_COUNT_FOR_INITIAL_LOG:]
-        for sha in self.__remaining_log_shas_cached[branch]:
+        if branch_full_hash not in self.__remaining_log_shas_cached:
+            self.__remaining_log_shas_cached[branch_full_hash] = self.__get_log_shas(branch_full_hash, max_count=None)[MAX_COUNT_FOR_INITIAL_LOG:]
+        for sha in self.__remaining_log_shas_cached[branch_full_hash]:
             yield FullCommitHash.of(sha)
 
     def __load_all_reflogs(self) -> None:
@@ -556,8 +556,6 @@ class GitContext:
         self.__committer_unix_timestamp_by_revision_cached = None
         self.__local_branches_cached = None
         self.__remote_branches_cached = None
-        self.__initial_log_shas_cached = {}
-        self.__remaining_log_shas_cached = {}
         self.__reflogs_cached = None
 
     def get_revision_repr(self, revision: AnyRevision) -> str:
