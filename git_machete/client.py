@@ -1483,7 +1483,9 @@ class MacheteClient:
             debug(f"match_log_to_filtered_reflogs({branch})",
                   "branches containing the given SHA in their filtered reflog: \n%s\n" % "\n".join(log_result()))
 
-        for sha in self.__git.spoonfeed_log_shas(branch):
+        branch_full_hash: FullCommitHash = self.__git.get_commit_sha_by_revision(branch)
+
+        for sha in self.__git.spoonfeed_log_shas(branch_full_hash):
             if sha in self.__branch_defs_by_sha_in_reflog:
                 # The entries must be sorted by lb_or_rb to make sure the
                 # upstream inference is deterministic (and does not depend on the
