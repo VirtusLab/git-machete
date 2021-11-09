@@ -98,6 +98,20 @@ jobs:
           name: Run tests against Python 3.10 and git 2.33.1
           command: PYTHON_VERSION=3.10 GIT_VERSION=2.33.1 bash ci/tox/ci-run.sh
 
+  "dry run deploy ci homebrew":
+    executor: ubuntu_executor
+    steps:
+      - checkout
+      - deploy:
+          name: '[Dry run] Deploy to PyPI'
+          # Side effects: does an actual release, but to the test PyPI
+          command: bash ci/pypi/ci-deploy.sh --dry-run
+
+      - deploy:
+          name: '[Dry run] Update Homebrew tap'
+          # Prerequisites: artifacts must be released to test PyPI first
+          command: bash ci/homebrew-tap/ci-deploy.sh --dry-run
+
   "dry run deploy":
     executor: ubuntu_executor
     steps:
@@ -181,6 +195,13 @@ workflows:
       - test against python 3_8 and git 2_25_0 with PEP8 checks
       - test against python 3_9 and git 2_30_1 with coverage report and docs creation
       - test against python 3_10 and git 2_33_1
+      - dry run deploy ci homebrew:
+          filters:
+            branches:
+              only:
+                - "/ci.*/"
+          requires:
+            *mandatory_jobs
       - dry run deploy:
           filters:
             branches:
