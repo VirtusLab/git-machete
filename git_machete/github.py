@@ -147,7 +147,9 @@ def __fire_github_api_request(method: str, path: str, token: Optional[str], requ
             return parsed_response_body
     except HTTPError as err:
         if err.code == http.HTTPStatus.UNPROCESSABLE_ENTITY:
-            raise UnprocessableEntityHTTPError(str(err.reason))
+            error_response = json.loads(err.read().decode())
+            error_reason: str = error_response['errors'][0]['message']
+            raise UnprocessableEntityHTTPError(error_reason)
         elif err.code in (http.HTTPStatus.UNAUTHORIZED, http.HTTPStatus.FORBIDDEN):
             first_line = f'GitHub API returned {err.code} HTTP status with error message: `{err.reason}`\n'
             if token:
