@@ -33,5 +33,5 @@ else
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" < /dev/null
   echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> /home/circleci/.bash_profile
   eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-  brew install brew install ./git-machete.rb
+  brew install ./git-machete.rb
 fi
