@@ -355,6 +355,8 @@ class GitContext:
             return None
 
     def get_commit_sha_by_revision(self, revision: AnyRevision) -> Optional[FullCommitHash]:
+        if self.is_full_sha(revision.full_name()):
+            return FullCommitHash.of(revision)
         if self.__commit_sha_by_revision_cached is None:
             self.__load_branches()
         if revision not in self.__commit_sha_by_revision_cached:
@@ -377,13 +379,6 @@ class GitContext:
     @staticmethod
     def is_full_sha(revision: AnyRevision) -> Optional[Match[str]]:
         return re.match("^[0-9a-f]{40}$", revision)
-
-    # Resolve a revision identifier to a full sha
-    def get_full_sha(self, revision: AnyRevision) -> Optional[FullCommitHash]:
-        if self.is_full_sha(revision.full_name()):
-            return FullCommitHash.of(revision)
-        else:
-            return self.get_commit_sha_by_revision(revision)
 
     def get_committer_unix_timestamp_by_revision(self, revision: AnyBranchName) -> int:
         if self.__committer_unix_timestamp_by_revision_cached is None:
@@ -646,8 +641,8 @@ class GitContext:
             earlier_revision: AnyRevision,
             later_revision: AnyRevision,
     ) -> bool:
-        earlier_sha = self.get_full_sha(earlier_revision)
-        later_sha = self.get_full_sha(later_revision)
+        earlier_sha = self.get_commit_sha_by_revision(earlier_revision)
+        later_sha = self.get_commit_sha_by_revision(later_revision)
         # This if statement is not changing the outcome of the later return, but
         # it enhances the efficiency of the script. If both hashes are the same,
         # there is no point running git merge-base.
@@ -664,8 +659,8 @@ class GitContext:
             earlier_revision: AnyRevision,
             later_revision: AnyRevision,
     ) -> bool:
-        earlier_commit_sha = self.get_full_sha(earlier_revision)
-        later_commit_sha = self.get_full_sha(later_revision)
+        earlier_commit_sha = self.get_commit_sha_by_revision(earlier_revision)
+        later_commit_sha = self.get_commit_sha_by_revision(later_revision)
 
         if earlier_commit_sha == later_commit_sha:
             return True

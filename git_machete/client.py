@@ -1483,7 +1483,7 @@ class MacheteClient:
             debug(f"match_log_to_filtered_reflogs({branch})",
                   "branches containing the given SHA in their filtered reflog: \n%s\n" % "\n".join(log_result()))
 
-        branch_full_hash: FullCommitHash = self.__git.get_full_sha(branch)
+        branch_full_hash: FullCommitHash = self.__git.get_commit_sha_by_revision(branch)
 
         for sha in self.__git.spoonfeed_log_shas(branch_full_hash):
             if sha in self.__branch_defs_by_sha_in_reflog:
