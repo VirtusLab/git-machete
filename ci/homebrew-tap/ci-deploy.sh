@@ -30,10 +30,15 @@ if [[ $do_push == true ]]; then
   git push origin master
 else
   echo "Refraining from push since it's a dry run"
-  sed -i "s/pypi.io/$pypi_host/" git-machete.rb
+  sed -i "s/pypi\.io/$pypi_host/" git-machete.rb
   # install git-machete from local formula with homebrew
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" < /dev/null
-  echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> /home/circleci/.bash_profile
   eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
   brew install ./git-machete.rb
+  if [[ "$version" != "$(git machete --version | cut -d' ' -f4)" ]]; then
+    echo "Something went wrong during brew installation: installed version does not match version from formula."
+    echo "Formula version: $version, installed version: $(git machete --version | cut -d' ' -f4)"
+    exit(1)
+  fi
+  brew remove git-machete
 fi
