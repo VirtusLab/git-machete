@@ -126,8 +126,12 @@ def __get_github_token() -> Optional[str]:
 
 
 def __extract_failure_info_from_422(response: Any) -> str:
+    additional_msg: str = ''
     if response['message'] != 'Validation Failed':
-        return str(response['message'])
+        if 'Reviews may only be requested from collaborators.' in response['message']:
+            additional_msg = "\nThere are some invalid reviewers in .git/info/reviewers file. " \
+                             "Please remove them or all file to create a pull request without reviewers."
+        return str(response['message']) + additional_msg
     ret: List[str] = []
     if response.get('errors'):
         for error in response['errors']:
