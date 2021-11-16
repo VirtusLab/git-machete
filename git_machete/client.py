@@ -1650,13 +1650,12 @@ class MacheteClient:
             index = int(ans) - 1
             if index not in range(len(rems)):
                 raise MacheteException(f"Invalid index: {index + 1}")
-            self.handle_untracked_branch(
-                new_remote=rems[index],
-                branch=branch,
-                is_called_from_traverse=is_called_from_traverse,
-                opt_push_untracked=opt_push_untracked,
-                opt_push_tracked=opt_push_tracked,
-                opt_yes=opt_yes)
+            self.handle_untracked_branch(new_remote=rems[index],
+                                         branch=branch,
+                                         is_called_from_traverse=is_called_from_traverse,
+                                         opt_push_untracked=opt_push_untracked,
+                                         opt_push_tracked=opt_push_tracked,
+                                         opt_yes=opt_yes)
         except ValueError:
             if not is_called_from_traverse:
                 raise MacheteException('Could not establish remote repository, pull request creation interrupted.')
@@ -1667,12 +1666,13 @@ class MacheteClient:
             new_remote: str,
             branch: LocalBranchShortName,
             is_called_from_traverse: bool,
+            is_called_from_create_pr: bool = False,
             opt_push_untracked: bool,
             opt_push_tracked: bool,
             opt_yes: bool
     ) -> None:
         rems: List[str] = self.__git.get_remotes()
-        can_pick_other_remote = len(rems) > 1
+        can_pick_other_remote = len(rems) > 1 and not is_called_from_create_pr
         other_remote_choice = "o[ther-remote]" if can_pick_other_remote else ""
         remote_branch = RemoteBranchShortName.of(f"{new_remote}/{branch}")
         if not self.__git.get_commit_sha_by_revision(remote_branch):
@@ -1994,9 +1994,23 @@ class MacheteClient:
         self.flush_caches()
 
         base: Optional[LocalBranchShortName] = self.up_branch.get(LocalBranchShortName.of(head))
+        if not base:
+            raise MacheteException(f'Could not determine base branch for PR. Branch `{head}` is a root branch.')
         org: str
         repo: str
-        _, (org, repo) = self.__derive_remote_and_github_org_and_repo()
+        remote, (org, repo) = self.__derive_remote_and_github_org_and_repo()
+        print(f"Fetching {remote}...")
+        self.__git.fetch_remote(remote)
+        if '/'.join([remote, base]) not in self.__git.get_remote_branches():
+            warn(f'Base branch for this PR (`{base}`) is not found on remote, adding...')
+            self.handle_untracked_branch(branch=base,
+                                         new_remote=remote,
+                                         is_called_from_traverse=False,
+                                         is_called_from_create_pr=True,
+                                         opt_push_tracked=False,
+                                         opt_push_untracked=True,
+                                         opt_yes=False)
+
         current_user: Optional[str] = git_machete.github.derive_current_user_login()
         debug(f'create_github_pr({head})', f'organization is {org}, repository is {repo}')
         debug(f'create_github_pr({head})', 'current GitHub user is ' + (current_user or '<none>'))
@@ -2084,7 +2098,8 @@ class MacheteClient:
                 opt_yes=opt_yes)
         elif len(rems) == 1:
             self.handle_untracked_branch(
-                new_remote=rems[0], branch=branch,
+                new_remote=rems[0],
+                branch=branch,
                 is_called_from_traverse=is_called_from_traverse,
                 opt_push_untracked=opt_push_untracked,
                 opt_push_tracked=opt_push_tracked,

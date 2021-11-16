@@ -1927,6 +1927,8 @@ class MacheteTester(unittest.TestCase):
     git_api_state_for_test_create_pr = MockGithubAPIState([{'head': {'ref': 'ignore-trailing', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com', 'state': 'open'}],
                                                           issues=[{'number': '4'}, {'number': '5'}, {'number': '6'}])
 
+    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_create_pr` due to `git fetch` executed by `create-pr` subcommand.
+    @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
@@ -2092,6 +2094,47 @@ class MacheteTester(unittest.TestCase):
         if e:
             self.assertEqual(e.exception.parameter, expected_error_message,
                              'Verify that expected error message has appeared when creating PR from root branch.')
+
+    git_api_state_for_test_create_pr_missing_base_branch_on_remote = MockGithubAPIState([{'head': {'ref': 'chore/redundant_checks', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'restrict_access'}, 'number': '18', 'html_url': 'www.github.com', 'state': 'open'}])
+
+    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_create_pr` due to `git fetch` executed by `create-pr` subcommand.
+    @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
+    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+    @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
+    @mock.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
+    @mock.patch('urllib.request.urlopen', MockContextManager)
+    @mock.patch('urllib.request.Request', git_api_state_for_test_create_pr_missing_base_branch_on_remote.new_request())
+    def test_github_create_pr_missing_base_branch_on_remote(self) -> None:
+        (
+            self.repo_sandbox.new_branch("root")
+                .commit("initial commit")
+                .new_branch("develop")
+                .commit("first commit on develop")
+                .push()
+                .new_branch("feature/api_handling")
+                .commit("Introduce GET and POST methods on API")
+                .new_branch("feature/api_exception_handling")
+                .commit("catch exceptions coming from API")
+                .push()
+                .delete_branch("root")
+        )
+
+        self.launch_command('discover')
+
+        expected_msg = ("Fetching origin...\n"
+                        "Warn: Base branch for this PR (`feature/api_handling`) is not found on remote, adding...\n"
+                        "Creating a PR from `feature/api_exception_handling` to `feature/api_handling`... OK, see www.github.com\n")
+        self.assert_command(['github', 'create-pr'], expected_msg, strip_indentation=False)
+        self.assert_command(
+            ['status'],
+            """
+            develop
+            |
+            o-feature/api_handling
+              |
+              o-feature/api_exception_handling *  PR #19
+            """,
+        )
 
     git_api_state_for_test_checkout_prs = MockGithubAPIState([
         {'head': {'ref': 'chore/redundant_checks', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'restrict_access'}, 'number': '18', 'html_url': 'www.github.com', 'state': 'open'},
