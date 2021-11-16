@@ -21,7 +21,7 @@ sha256=$(
   curl -s https://$pypi_host/pypi/git-machete/$version/json \
   | jq --raw-output '.urls | map(select(.packagetype == "sdist")) | .[0].digests.sha256')
 sed -i "s/git-machete-.*\.tar\.gz/git-machete-$version.tar.gz/" git-machete.rb
-sed -i "s/pypi.io/$pypi_host/" git-machete.rb
+sed -i "s/pypi\.io/$pypi_host/" git-machete.rb
 sed -i "s/^  sha256 .*/  sha256 \"$sha256\"/" git-machete.rb
 git add git-machete.rb
 git commit --message "Release $version, CircleCI build: $CIRCLE_BUILD_NUM"
@@ -30,7 +30,6 @@ if [[ $do_push == true ]]; then
   git push origin master
 else
   echo "Refraining from push since it's a dry run"
-  sed -i "s/pypi\.io/$pypi_host/" git-machete.rb
   # install git-machete from local formula with homebrew
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" < /dev/null
   eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
