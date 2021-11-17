@@ -108,7 +108,7 @@ jobs:
           command: bash ci/pypi/ci-deploy.sh --dry-run
 
       - deploy:
-          name: '[Dry run] Update Homebrew tap'
+          name: '[Dry run] Update Homebrew tap with local installation test'
           # Prerequisites: artifacts must be released to test PyPI first
           command: bash ci/homebrew-tap/ci-deploy.sh --dry-run
 
