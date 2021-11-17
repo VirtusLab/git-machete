@@ -125,6 +125,19 @@ def __get_github_token() -> Optional[str]:
             get_token_from_hub())
 
 
+def __extract_failure_info_from_422(response: Any) -> str:
+    if response['message'] != 'Validation Failed':
+        return str(response['message'])
+    ret: List[str] = []
+    if response.get('errors'):
+        for error in response['errors']:
+            if error.get('message'):
+                ret.append(error['message'])
+    if ret:
+        return '\n'.join(ret)
+    return str(response)
+
+
 def __fire_github_api_request(method: str, path: str, token: Optional[str], request_body: Optional[Dict[str, Any]] = None) -> Any:
     headers: Dict[str, str] = {
         'Content-type': 'application/json',
@@ -148,7 +161,7 @@ def __fire_github_api_request(method: str, path: str, token: Optional[str], requ
     except HTTPError as err:
         if err.code == http.HTTPStatus.UNPROCESSABLE_ENTITY:
             error_response = json.loads(err.read().decode())
-            error_reason: str = error_response['errors'][0]['message']
+            error_reason: str = __extract_failure_info_from_422(error_response)
             raise UnprocessableEntityHTTPError(error_reason)
         elif err.code in (http.HTTPStatus.UNAUTHORIZED, http.HTTPStatus.FORBIDDEN):
             first_line = f'GitHub API returned {err.code} HTTP status with error message: `{err.reason}`\n'
