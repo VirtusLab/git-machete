@@ -332,7 +332,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
     traverse_parser.add_argument('--push-untracked', action='store_true')
     traverse_parser.add_argument('--no-push-untracked', action='store_true')
     traverse_parser.add_argument('--return-to')
-    traverse_parser.add_argument('--start_from')
+    traverse_parser.add_argument('--start-from')
     traverse_parser.add_argument('-w', '--whole', action='store_true')
     traverse_parser.add_argument('-W', action='store_true')
     traverse_parser.add_argument('-y', '--yes', action='store_true')
