@@ -427,7 +427,7 @@ def update_cli_opts_using_parsed_args(
             cli_opts.opt_return_to = arg
         elif opt == "stat":
             cli_opts.opt_stat = True
-        elif opt == "start-from":
+        elif opt == "start_from":
             cli_opts.opt_start_from = arg
         elif opt == "sync_github_prs":
             cli_opts.opt_sync_github_prs = True
