@@ -2055,7 +2055,7 @@ class MacheteClient:
             except UnprocessableEntityHTTPError as e:
                 if 'Reviews may only be requested from collaborators.' in e.msg:
                     warn(f"There are some invalid reviewers in .{self.__git.get_git_subpath('info', 'reviewers')} file.\n"
-                         "Pull request will be created without reviewers.")
+                         "Skipping adding reviewers to pull request.")
                 else:
                     raise e
             print(fmt(ok_str))
