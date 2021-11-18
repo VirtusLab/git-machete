@@ -19,7 +19,7 @@ from urllib.error import HTTPError
 from git_machete import cli
 from git_machete.client import MacheteClient
 from git_machete.docs import long_docs
-from git_machete.exceptions import MacheteException, UnprocessableEntityHTTPError
+from git_machete.exceptions import MacheteException
 from git_machete.github import get_parsed_github_remote_url
 from git_machete.git_operations import FullCommitHash, GitContext, LocalBranchShortName
 from git_machete.options import CommandLineOptions
@@ -1951,7 +1951,8 @@ class MacheteTester(unittest.TestCase):
 
     git_api_state_for_test_create_pr = MockGithubAPIState([{'head': {'ref': 'ignore-trailing', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com', 'state': 'open'}],
                                                           issues=[{'number': '4'}, {'number': '5'}, {'number': '6'}])
-    @mock.patch('urllib.error.HTTPError', MockHTTPError) #need to provide read() method, which does not actually reads error from url
+
+    @mock.patch('urllib.error.HTTPError', MockHTTPError)  # need to provide read() method, which does not actually reads error from url
     # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_create_pr` due to `git fetch` executed by `create-pr` subcommand.
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
