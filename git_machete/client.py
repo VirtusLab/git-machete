@@ -12,7 +12,7 @@ from git_machete import utils
 from git_machete.constants import (
     DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, PICK_FIRST_ROOT, PICK_LAST_ROOT,
     EscapeCodes, SyncToRemoteStatuses)
-from git_machete.exceptions import MacheteException, StopInteraction
+from git_machete.exceptions import MacheteException, StopInteraction, UnprocessableEntityHTTPError
 from git_machete.git_operations import AnyBranchName, AnyRevision, FullCommitHash, GitContext, HEAD, LocalBranchShortName, RemoteBranchShortName
 from git_machete.github import (
     add_assignees_to_pull_request, add_reviewers_to_pull_request,
@@ -2048,9 +2048,16 @@ class MacheteClient:
         reviewers: List[str] = utils.get_non_empty_lines(utils.slurp_file_or_empty(reviewers_path))
         if reviewers:
             print(
-                fmt(f'Adding {", ".join(f"`{reviewer}`" for reviewer in reviewers)} as reviewer{"s" if len(reviewers) > 1 else ""} to PR #{pr.number}...'),
+                fmt(f'Adding {", ".join(f"`{reviewer}`" for reviewer in reviewers)} as reviewer{"s" if len(reviewers) > 1 else ""} to PR #{pr.number}...\n'),
                 end='', flush=True)
-            add_reviewers_to_pull_request(org, repo, pr.number, reviewers)
+            try:
+                add_reviewers_to_pull_request(org, repo, pr.number, reviewers)
+            except UnprocessableEntityHTTPError as e:
+                if 'Reviews may only be requested from collaborators.' in e.msg:
+                    warn(f"There are some invalid reviewers in .{self.__git.get_git_subpath('info', 'reviewers')} file.\n"
+                         "Pull request will be created without reviewers.")
+                else:
+                    raise e
             print(fmt(ok_str))
 
         self.__annotations[head] = f'PR #{pr.number}'
