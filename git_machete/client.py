@@ -2008,7 +2008,7 @@ class MacheteClient:
         print(f"Fetching {remote}...")
         self.__git.fetch_remote(remote)
         if '/'.join([remote, base]) not in self.__git.get_remote_branches():
-            warn(f'Base branch for this PR (`{base}`) is not found on remote, adding...')
+            warn(f'Base branch for this PR (`{base}`) is not found on remote, pushing...')
             self.handle_untracked_branch(
                 branch=base,
                 new_remote=remote,

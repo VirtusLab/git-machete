@@ -2122,7 +2122,7 @@ class MacheteTester(unittest.TestCase):
         self.launch_command('discover')
 
         expected_msg = ("Fetching origin...\n"
-                        "Warn: Base branch for this PR (`feature/api_handling`) is not found on remote, adding...\n"
+                        "Warn: Base branch for this PR (`feature/api_handling`) is not found on remote, pushing...\n"
                         "Creating a PR from `feature/api_exception_handling` to `feature/api_handling`... OK, see www.github.com\n")
         self.assert_command(['github', 'create-pr'], expected_msg, strip_indentation=False)
         self.assert_command(
