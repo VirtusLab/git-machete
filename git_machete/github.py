@@ -129,7 +129,8 @@ def __extract_failure_info_from_422(response: Any) -> str:
     additional_msg: str = ''
     if response['message'] != 'Validation Failed':
         if 'Reviews may only be requested from collaborators.' in response['message']:
-            additional_msg = "\nThere are some invalid reviewers in .git/info/reviewers file. " \
+            git: GitContext = GitContext()
+            additional_msg = f"\nThere are some invalid reviewers in .{git.get_git_subpath('info', 'reviewers')} file. " \
                              "Please remove them or remove the entire file to create a pull request without reviewers."
         return str(response['message']) + additional_msg
     ret: List[str] = []
