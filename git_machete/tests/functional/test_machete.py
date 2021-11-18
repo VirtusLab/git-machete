@@ -19,7 +19,7 @@ from urllib.error import HTTPError
 from git_machete import cli
 from git_machete.client import MacheteClient
 from git_machete.docs import long_docs
-from git_machete.exceptions import MacheteException
+from git_machete.exceptions import MacheteException, UnprocessableEntityHTTPError
 from git_machete.github import get_parsed_github_remote_url
 from git_machete.git_operations import FullCommitHash, GitContext, LocalBranchShortName
 from git_machete.options import CommandLineOptions
@@ -174,6 +174,9 @@ class MockGithubAPIRequest:
     def update_pull_request(self) -> "MockGithubAPIResponse":
         pull_no: str = self.find_number(self.parsed_url.path, 'pulls')
         if not pull_no:
+            if self.is_pull_created():
+                return self.make_response_object(HTTPStatus.UNPROCESSABLE_ENTITY, {'message': 'Validation Failed', 'errors': [
+                    {'message': f'A pull request already exists for test_repo:{json.loads(self.json_data)["head"]}.'}]})
             return self.create_pull_request()
         pull: Dict[str, Any] = self.github_api_state.get_pull(pull_no)
         return self.fill_pull_request_data(json.loads(self.json_data), pull)
@@ -221,6 +224,17 @@ class MockGithubAPIRequest:
             self.github_api_state.issues.append(issue)
         return self.make_response_object(HTTPStatus.CREATED, issue)
 
+    def is_pull_created(self) -> bool:
+        deserialized_json_data = json.loads(self.json_data)
+        head: str = deserialized_json_data['head']
+        base: str = deserialized_json_data['base']
+        for pull in self.github_api_state.pulls:
+            pull_head: str = pull['head']['ref']
+            pull_base: str = pull['base']['ref']
+            if (head, base) == (pull_head, pull_base):
+                return True
+        return False
+
     @staticmethod
     def get_index_or_none(entity: Dict[str, Any], base: List[Dict[str, Any]]) -> Optional[int]:
         try:
@@ -245,6 +259,15 @@ class MockGithubAPIRequest:
         return str(max(numbers) + 1)
 
 
+class MockHTTPError(HTTPError):
+    def __init__(self, url: str, code: int, msg: Any, hdrs: Dict[str, str], fp: Any) -> None:
+        super().__init__(url, code, msg, hdrs, fp)
+        self.msg = msg
+
+    def read(self, n: int = 1) -> bytes:
+        return json.dumps(self.msg).encode()
+
+
 class MockContextManager:
     def __init__(self, obj: MockGithubAPIResponse) -> None:
         self.obj = obj
@@ -252,6 +275,8 @@ class MockContextManager:
     def __enter__(self) -> MockGithubAPIResponse:
         if self.obj.status_code == HTTPStatus.NOT_FOUND:
             raise HTTPError(None, 404, 'Not found', None, None)
+        elif self.obj.status_code == HTTPStatus.UNPROCESSABLE_ENTITY:
+            raise MockHTTPError(None, 422, self.obj.response_data, None, None)
         return self.obj
 
     def __exit__(self, *args: Any) -> None:
@@ -1926,7 +1951,7 @@ class MacheteTester(unittest.TestCase):
 
     git_api_state_for_test_create_pr = MockGithubAPIState([{'head': {'ref': 'ignore-trailing', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com', 'state': 'open'}],
                                                           issues=[{'number': '4'}, {'number': '5'}, {'number': '6'}])
-
+    @mock.patch('urllib.error.HTTPError', MockHTTPError) #need to provide read() method, which does not actually reads error from url
     # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_create_pr` due to `git fetch` executed by `create-pr` subcommand.
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
@@ -2062,12 +2087,12 @@ class MacheteTester(unittest.TestCase):
         )
         # check against attempt to create already existing pull request
         machete_client = MacheteClient(git)
-        expected_error_message = "Pull request for branch hotfix/add-trigger is already created under link www.github.com!\nPR details: PR #6 by github_user: hotfix/add-trigger -> master"
+        expected_error_message = "A pull request already exists for test_repo:hotfix/add-trigger."
         machete_client.read_definition_file()
         with self.assertRaises(MacheteException) as e:
             machete_client.create_github_pr(head=LocalBranchShortName.of('hotfix/add-trigger'), opt_draft=False, opt_onto=None)
         if e:
-            self.assertEqual(e.exception.parameter, expected_error_message,
+            self.assertEqual(e.exception.msg, expected_error_message,  # type: ignore
                              'Verify that expected error message has appeared when given pull request to create is already created.')
 
         # check against head branch is ancestor or equal to base branch
