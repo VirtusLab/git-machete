@@ -143,8 +143,14 @@ class FullTreeHash(str):
         return FullTreeHash(value) if value else None
 
 
+class ForkPointOverrideData:
+    def __init__(self, to_hash: FullCommitHash, while_descendant_of_hash: FullCommitHash):
+        self.to_hash: FullCommitHash = to_hash
+        self.while_descendant_of_hash: FullCommitHash = while_descendant_of_hash
+
+
 ReflogEntry = Tuple[FullCommitHash, str]
-ForkPointOverrideData = Tuple[FullCommitHash, FullCommitHash]
+
 
 HEAD = AnyRevision.of("HEAD")
 
@@ -168,8 +174,8 @@ class GitContext:
         self.__initial_log_shas_cached: Dict[FullCommitHash, List[FullCommitHash]] = {}
         self.__remaining_log_shas_cached: Dict[FullCommitHash, List[FullCommitHash]] = {}
         self.__reflogs_cached: Optional[Dict[AnyBranchName, Optional[List[ReflogEntry]]]] = None
-        self.__merge_base_cached: Dict[ForkPointOverrideData, FullCommitHash] = {}
-        self.__contains_equivalent_tree_cached: Dict[ForkPointOverrideData, bool] = {}
+        self.__merge_base_cached: Dict[Tuple[FullCommitHash, FullCommitHash], FullCommitHash] = {}
+        self.__contains_equivalent_tree_cached: Dict[Tuple[FullCommitHash, FullCommitHash], bool] = {}
 
     @staticmethod
     def _run_git(git_cmd: str, *args: str, **kwargs: Dict[str, str]) -> int:

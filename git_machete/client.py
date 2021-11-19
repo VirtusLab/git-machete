@@ -1571,14 +1571,14 @@ class MacheteClient:
                 f"is not an ancestor of commit {self.__git.get_short_commit_sha_by_revision(while_descendant_of)} "
                 f"pointed by {while_descendant_of_key} config")
             return None
-        return to_sha, while_descendant_of_sha
+        return ForkPointOverrideData(to_sha, while_descendant_of_sha)
 
     def __get_overridden_fork_point(self, branch: LocalBranchShortName) -> Optional[FullCommitHash]:
-        override_data = self.__get_fork_point_override_data(branch)
+        override_data: ForkPointOverrideData = self.__get_fork_point_override_data(branch)
         if not override_data:
             return None
 
-        to, while_descendant_of = override_data
+        to, while_descendant_of = override_data.to_hash, override_data.to_hash
         # Note that this check is distinct from the is_ancestor check performed in
         # get_fork_point_override_data.
         # While the latter checks the sanity of fork point override configuration,
