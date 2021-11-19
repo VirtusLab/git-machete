@@ -187,7 +187,6 @@ workflows:
               only:
                 - "develop"
                 - "/hotfix.*/"
-                - "/remove.*/"
           requires:
             *mandatory_jobs
       - deploy from master:
