@@ -32,9 +32,9 @@ jobs:
             npm install --global remark-cli remark-lint-no-dead-urls remark-validate-links
 
             # For the scripts doing `docker-compose pull` to work around https://github.com/docker/compose/issues/7258
-            wget -q https://github.com/mikefarah/yq/releases/download/v4.6.1/yq_linux_amd64
-            sudo mv yq_linux_amd64 /usr/local/bin/yq
-            sudo chmod +x /usr/local/bin/yq
+            # wget -q https://github.com/mikefarah/yq/releases/download/v4.6.1/yq_linux_amd64
+            # sudo mv yq_linux_amd64 /usr/local/bin/yq
+            # sudo chmod +x /usr/local/bin/yq
       - run:
           name: Perform initial checks
           command: |
@@ -187,6 +187,7 @@ workflows:
               only:
                 - "develop"
                 - "/hotfix.*/"
+                - "/remove.*/"
           requires:
             *mandatory_jobs
       - deploy from master:
