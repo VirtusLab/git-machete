@@ -9,9 +9,9 @@ import subprocess
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 import urllib.request
-from urllib.error import HTTPError
+import urllib.error
 
-from git_machete.utils import debug, fmt, find_or_none
+from git_machete.utils import debug, fmt
 from git_machete.exceptions import MacheteException, UnprocessableEntityHTTPError
 from git_machete.git_operations import GitContext, LocalBranchShortName
 
@@ -158,7 +158,7 @@ def __fire_github_api_request(method: str, path: str, token: Optional[str], requ
         with urllib.request.urlopen(http_request) as response:
             parsed_response_body: Any = json.loads(response.read().decode())
             return parsed_response_body
-    except HTTPError as err:
+    except urllib.error.HTTPError as err:
         if err.code == http.HTTPStatus.UNPROCESSABLE_ENTITY:
             error_response = json.loads(err.read().decode())
             error_reason: str = __extract_failure_info_from_422(error_response)
@@ -193,13 +193,8 @@ def create_pull_request(org: str, repo: str, head: str, base: str, title: str, d
         'body': description,
         'draft': draft
     }
-    prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
-    pr_found: Optional[GitHubPullRequest] = find_or_none(lambda pr: pr.base == base and pr.head == head, prs)
-    if not pr_found:
-        pr = __fire_github_api_request('POST', f'/repos/{org}/{repo}/pulls', token, request_body)
-        return __parse_pr_json(pr)
-    else:
-        raise MacheteException(f'Pull request for branch {head} is already created under link {pr_found.html_url}!\nPR details: {pr_found}')
+    pr = __fire_github_api_request('POST', f'/repos/{org}/{repo}/pulls', token, request_body)
+    return __parse_pr_json(pr)
 
 
 def add_assignees_to_pull_request(org: str, repo: str, number: int, assignees: List[str]) -> None:

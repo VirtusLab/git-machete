@@ -21,7 +21,7 @@ class UnprocessableEntityHTTPError(MacheteException):
     or creating a pull request for a branch that already has a PR.
     """
     def __init__(self, msg: str) -> None:
-        self.msg: str = 'UnprocessableEntityHTTPError: ' + msg
+        self.msg: str = msg
 
     def __str__(self) -> str:
         return str(self.msg)
