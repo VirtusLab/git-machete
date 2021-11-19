@@ -13,7 +13,9 @@ from git_machete.constants import (
     DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, PICK_FIRST_ROOT, PICK_LAST_ROOT,
     EscapeCodes, SyncToRemoteStatuses)
 from git_machete.exceptions import MacheteException, StopInteraction, UnprocessableEntityHTTPError
-from git_machete.git_operations import AnyBranchName, AnyRevision, FullCommitHash, GitContext, HEAD, LocalBranchShortName, RemoteBranchShortName
+from git_machete.git_operations import (
+    AnyBranchName, AnyRevision, ForkPointOverrideData,
+    FullCommitHash, GitContext, HEAD, LocalBranchShortName, RemoteBranchShortName)
 from git_machete.github import (
     add_assignees_to_pull_request, add_reviewers_to_pull_request,
     create_pull_request, checkout_pr_refs, derive_pull_request_by_head, derive_pull_requests,
@@ -1538,7 +1540,7 @@ class MacheteClient:
         return (self.__git.get_config_attr_or_none(self.config_key_for_override_fork_point_to(branch)) or
                 self.__git.get_config_attr_or_none(self.config_key_for_override_fork_point_while_descendant_of(branch))) is not None
 
-    def __get_fork_point_override_data(self, branch: LocalBranchShortName) -> Optional[Tuple[FullCommitHash, FullCommitHash]]:
+    def __get_fork_point_override_data(self, branch: LocalBranchShortName) -> Optional[ForkPointOverrideData]:
         to_key = self.config_key_for_override_fork_point_to(branch)
         to = FullCommitHash.of(self.__git.get_config_attr_or_none(to_key) or "")
         while_descendant_of_key = self.config_key_for_override_fork_point_while_descendant_of(branch)
