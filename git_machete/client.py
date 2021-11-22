@@ -1578,7 +1578,7 @@ class MacheteClient:
         if not override_data:
             return None
 
-        to, while_descendant_of = override_data.to_hash, override_data.to_hash
+        to, while_descendant_of = override_data.to_hash, override_data.while_descendant_of_hash
         # Note that this check is distinct from the is_ancestor check performed in
         # get_fork_point_override_data.
         # While the latter checks the sanity of fork point override configuration,
