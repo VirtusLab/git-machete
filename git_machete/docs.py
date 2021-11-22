@@ -606,10 +606,10 @@ long_docs: Dict[str, str] = {
                                             when detecting if a branch is merged into its upstream (parent).
     """,
     "traverse": """
-        <b>Usage: git machete traverse [-F|--fetch] [-l|--list-commits] [-M|--merge]
-                                       [-n|--no-edit-merge|--no-interactive-rebase] [--no-detect-squash-merges]
-                                       [--[no-]push] [--[no-]push-untracked]
-                                       [--return-to=WHERE] [--start-from=WHERE] [-w|--whole] [-W] [-y|--yes]</b>
+        <b>Usage: git machete t[raverse] [-F|--fetch] [-l|--list-commits] [-M|--merge]
+                                         [-n|--no-edit-merge|--no-interactive-rebase] [--no-detect-squash-merges]
+                                         [--[no-]push] [--[no-]push-untracked]
+                                         [--return-to=WHERE] [--start-from=WHERE] [-w|--whole] [-W] [-y|--yes]</b>
 
         Traverses the branch dependency tree in pre-order (i.e. simply in the order as they occur in the definition file).
         By default traverse starts from current branch, however this behaviour can be customized using options: `--starts-from=`, `--whole` or `-w`, `-W`.
