@@ -26,7 +26,8 @@ alias_by_command: Dict[str, str] = {
     "edit": "e",
     "go": "g",
     "log": "l",
-    "status": "s"
+    "status": "s",
+    "traverse": "t"
 }
 
 command_groups: List[Tuple[str, List[str]]] = [
@@ -316,6 +317,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
 
     traverse_parser = subparsers.add_parser(
         'traverse',
+        aliases=['t'],
         argument_default=argparse.SUPPRESS,
         usage=argparse.SUPPRESS,
         add_help=False,
@@ -748,7 +750,7 @@ def launch(orig_args: List[str]) -> None:
                 opt_list_commits=cli_opts.opt_list_commits,
                 opt_list_commits_with_hashes=cli_opts.opt_list_commits_with_hashes,
                 opt_no_detect_squash_merges=cli_opts.opt_no_detect_squash_merges)
-        elif cmd == "traverse":
+        elif cmd in {"traverse", alias_by_command["traverse"]}:
             if cli_opts.opt_start_from not in {"here", "root", "first-root"}:
                 raise MacheteException(
                     "Invalid argument for `--start-from`. "

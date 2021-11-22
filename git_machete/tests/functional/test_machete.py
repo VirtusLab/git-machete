@@ -539,7 +539,7 @@ class MacheteTester(unittest.TestCase):
     def test_traverse_no_push_override(self) -> None:
         self.setup_discover_standard_tree()
 
-        self.launch_command("traverse", "-Wy", "--no-push", "--push")
+        self.launch_command("t", "-Wy", "--no-push", "--push")
         self.assert_command(
             ["status", "-l"],
             """
