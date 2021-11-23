@@ -2367,7 +2367,7 @@ class MacheteTester(unittest.TestCase):
         expected_error_message = f"PR #100 is not found in repository `{org}/{repo}`"
         machete_client.read_definition_file()
         with self.assertRaises(MacheteException) as e:
-            machete_client.checkout_github_prs(100)
+            machete_client.checkout_github_prs([100])
         if e:
             self.assertEqual(e.exception.parameter, expected_error_message,
                              'Verify that expected error message has appeared when given pull request to checkout does not exists.')
@@ -2390,7 +2390,7 @@ class MacheteTester(unittest.TestCase):
         machete_client.read_definition_file()
         expected_error_message = "Could not check out PR #5 because its head branch `bugfix/remove-n-option` is already deleted from `testing`."
         with self.assertRaises(MacheteException) as e:
-            machete_client.checkout_github_prs(5)
+            machete_client.checkout_github_prs([5])
         if e:
             self.assertEqual(e.exception.parameter, expected_error_message,
                              'Verify that expected error message has appeared when given pull request to checkout have already deleted branch from remote.')

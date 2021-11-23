@@ -223,8 +223,11 @@ def create_cli_parser() -> argparse.ArgumentParser:
         parents=[common_args_parser])
     github_parser.add_argument(
         'subcommand', choices=['anno-prs', 'checkout-prs', 'create-pr', 'retarget-pr'])
-    github_parser.add_argument('pr_no', nargs='?')
+    github_parser.add_argument('pr_no', nargs='*', default=[])
+    github_parser.add_argument('--all', action='store_true')
+    github_parser.add_argument('--by')
     github_parser.add_argument('--draft', action='store_true')
+    github_parser.add_argument('--mine', action='store_true')
 
     go_parser = subparsers.add_parser(
         'go',
@@ -613,19 +616,19 @@ def launch(orig_args: List[str]) -> None:
             if 'draft' in parsed_cli and github_subcommand not in {'create-pr'}:
                 raise MacheteException(
                     "'--draft' option is only valid with 'create-pr' subcommand.")
-            if 'pr_no' in parsed_cli and github_subcommand not in {'checkout-prs'}:
-                raise MacheteException(
-                    "'pr_no' argument is only valid with 'checkout-prs' subcommand.")
+            for command in ('--all', '--by', '--mine', 'pr-no'):
+                if command in parsed_cli and github_subcommand not in {'checkout-prs'}:
+                    raise MacheteException(
+                        f"'{command}' argument is only valid with 'checkout-prs' subcommand.")
 
             if github_subcommand == "anno-prs":
                 machete_client.sync_annotations_to_github_prs()
             elif github_subcommand == "checkout-prs":
-                if 'pr_no' not in parsed_cli:
+                if len(parsed_cli_as_dict) > 3 or len(parsed_cli_as_dict) == 2:
                     raise MacheteException(
-                        "Argument to `git machete github checkout-prs` cannot be"
-                        " empty; expected PR number.")
+                        f"'checkout-prs' subcommand can take only one of following options: {', '.join(['--all', '--by', '--mine', 'pr-no'])}")
                 try:
-                    pr_no: int = int(parsed_cli.pr_no)
+                    pr_no: List[int] = list(map(int, parsed_cli.pr_no))
                 except ValueError:
                     raise MacheteException("PR number is not integer value!")
                 machete_client.checkout_github_prs(pr_no)
@@ -816,4 +819,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    #main()
+    launch(['github', 'checkout-prs', '15', '16'])
