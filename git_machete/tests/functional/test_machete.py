@@ -538,8 +538,39 @@ class MacheteTester(unittest.TestCase):
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     def test_traverse_no_push_override(self) -> None:
         self.setup_discover_standard_tree()
+        self.repo_sandbox.check_out("hotfix/add-trigger")
+        self.launch_command("t", "-Wy", "--no-push", "--push", "--start-from=here")
+        self.assert_command(
+            ["status", "-l"],
+            """
+            develop
+            |
+            | Allow ownership links
+            | 1st round of fixes
+            x-allow-ownership-link (ahead of origin)
+            | |
+            | | Build arbitrarily long chains
+            | x-build-chain (untracked)
+            |
+            | Call web service
+            | 1st round of fixes
+            | 2nd round of fixes
+            o-call-ws (ahead of origin)
+              |
+              | Drop unneeded SQL constraints
+              x-drop-constraint (untracked)
 
-        self.launch_command("traverse", "-Wy", "--no-push", "--push")
+            master
+            |
+            | HOTFIX Add the trigger (amended)
+            o-hotfix/add-trigger *
+              |
+              | Ignore trailing data (amended)
+              o-ignore-trailing
+            """,
+        )
+        self.repo_sandbox.check_out("ignore-trailing")
+        self.launch_command("t", "-Wy", "--no-push", "--push")
         self.assert_command(
             ["status", "-l"],
             """

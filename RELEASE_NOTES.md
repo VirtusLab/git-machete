@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.6.0
+
+- added: `t` alias for `traverse` command
+
 ## New in git-machete 3.5.0
 
 - added: new way of acquiring the github token (from `~/.github-token`)

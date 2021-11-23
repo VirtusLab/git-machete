@@ -13,10 +13,10 @@ traverse
 
 .. code-block:: shell
 
-    git machete traverse [-F|--fetch] [-l|--list-commits] [-M|--merge]
-                         [-n|--no-edit-merge|--no-interactive-rebase] [--no-detect-squash-merges]
-                         [--[no-]push] [--[no-]push-untracked]
-                         [--return-to=WHERE] [--start-from=WHERE] [-w|--whole] [-W] [-y|--yes]
+    git machete t[raverse] [-F|--fetch] [-l|--list-commits] [-M|--merge]
+                           [-n|--no-edit-merge|--no-interactive-rebase] [--no-detect-squash-merges]
+                           [--[no-]push] [--[no-]push-untracked]
+                           [--return-to=WHERE] [--start-from=WHERE] [-w|--whole] [-W] [-y|--yes]
 
 Traverses the branch dependency tree in pre-order (i.e. simply in the order as they occur in the definition file).
 By default traverse starts from current branch, however this behaviour can be customized using options: ``--start-from=``, ``--whole`` or ``-w``, ``-W``.
