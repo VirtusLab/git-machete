@@ -2410,7 +2410,8 @@ class MacheteTester(unittest.TestCase):
                         "A local branch `bugfix/remove-n-option` does not exist, but a remote branch `testing/bugfix/remove-n-option` exists.\n"
                         "Checking out `bugfix/remove-n-option` locally...\n"
                         "Added branch `bugfix/remove-n-option` onto `develop`\n"
-                        "Pull request `#5` checked out at local branch `bugfix/remove-n-option`\n")
+                        "Pull request `#5` checked out at local branch `bugfix/remove-n-option`\n"
+                        "Switched to local branch `bugfix/remove-n-option`\n")
 
         self.assert_command(['github', 'checkout-prs', '5'], expected_msg, strip_indentation=False)
 
@@ -2487,8 +2488,9 @@ class MacheteTester(unittest.TestCase):
                         "Added branch `improve/refactor` onto `chore/sync_to_docs`\n"
                         "A local branch `comments/add_docstrings` does not exist, but a remote branch `origin/comments/add_docstrings` exists.\n"
                         "Checking out `comments/add_docstrings` locally...\nAdded branch `comments/add_docstrings` onto `improve/refactor`\n"
+                        "Pull request `#2` checked out at local branch `comments/add_docstrings`\n"
                         "Annotating `comments/add_docstrings` as `PR #2 (github_user)`\nAnnotating `improve/refactor` as `PR #1 (github_user)`\n"
-                        "Pull request `#2` checked out at local branch `comments/add_docstrings`\n")
+                        "Switched to local branch `comments/add_docstrings`\n")
         self.assert_command(
             ['github', 'checkout-prs', '2'],
             expected_msg,
@@ -2515,7 +2517,8 @@ class MacheteTester(unittest.TestCase):
                         "A local branch `sphinx_export` does not exist, but a remote branch `origin/sphinx_export` exists.\n"
                         "Checking out `sphinx_export` locally...\n"
                         "Added branch `sphinx_export` onto `comments/add_docstrings`\n"
-                        "Pull request `#23` checked out at local branch `sphinx_export`\n")
+                        "Pull request `#23` checked out at local branch `sphinx_export`\n"
+                        "Switched to local branch `sphinx_export`\n")
         self.assert_command(
             ['github', 'checkout-prs', '23'],
             expected_msg,
@@ -2564,7 +2567,8 @@ class MacheteTester(unittest.TestCase):
                         "Checking out `feature/allow_checkout` locally...\n"
                         "Warn: Pull request #2 is already closed.\n"
                         "Added branch `feature/allow_checkout` onto `develop`\n"
-                        "Pull request `#2` checked out at local branch `feature/allow_checkout`\n")
+                        "Pull request `#2` checked out at local branch `feature/allow_checkout`\n"
+                        "Switched to local branch `feature/allow_checkout`\n")
         self.assert_command(
             ['github', 'checkout-prs', '2'],
             expected_msg,

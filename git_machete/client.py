@@ -1854,7 +1854,7 @@ class MacheteClient:
                 f"Forkpoint {forkpoint_sha} is not ancestor of or the tip "
                 f"of the {branch} branch.")
 
-    def checkout_github_prs(self, pr_no: Optional[List[int]] = None, *, all_opened_prs: bool = False, my_opened_prs: bool = False, opened_by: str = None) -> None:
+    def checkout_github_prs(self, pr_no: Optional[List[int]], *, all_opened_prs: bool = False, my_opened_prs: bool = False, opened_by: str = None) -> None:
         org: str
         repo: str
         remote: str
@@ -1877,6 +1877,7 @@ class MacheteClient:
         print(f"Fetching {remote}...")
         self.__git.fetch_remote(remote)
 
+        pr: GitHubPullRequest = None
         for pr in prs_numbers:
             if pr.full_repository_name:
                 if '/'.join([remote, pr.head]) not in self.__git.get_remote_branches():
@@ -1918,13 +1919,14 @@ class MacheteClient:
                             opt_onto=reversed_path[index - 1],
                             opt_as_root=False,
                             opt_yes=True)
+            print(fmt(f"Pull request `#{pr.number}` checked out at local branch `{pr.head}`"))
 
         debug('checkout_github_pr()',
               'Current GitHub user is ' + (current_user or '<none>'))
         self.__sync_annotations_to_definition_file(all_open_prs, current_user)
-
-        self.__git.checkout(LocalBranchShortName.of(pr.head))
-        print(fmt(f"Pull request `#{pr.number}` checked out at local branch `{pr.head}`"))
+        if pr:
+            self.__git.checkout(LocalBranchShortName.of(pr.head))
+            print(fmt(f"Switched to local branch `{pr.head}`"))
 
     @staticmethod
     def __get_path_from_pr_chain(current_pr: GitHubPullRequest, all_open_prs: List[GitHubPullRequest]) -> List[LocalBranchShortName]:
