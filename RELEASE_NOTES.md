@@ -3,7 +3,7 @@
 ## New in git-machete 3.6.0
 
 - added: `t` alias for `traverse` command
-- fixed: remove underscore from `--start-from` flag for `traverse` subcommand 
+- fixed: remove underscore from `--start-from` flag for `traverse` subcommand
 
 ## New in git-machete 3.5.0
 
