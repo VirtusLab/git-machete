@@ -126,10 +126,10 @@ class ShortCommitHash(AnyRevision):
     @staticmethod
     def of(value: str) -> Optional["ShortCommitHash"]:
         if value:
-            if len(value) == 7:
+            if len(value) >= 7:
                 return ShortCommitHash(value)
             else:
-                raise TypeError(f'ShortCommitHash requires length of 7. Given value: {value}, has length: {len(value)}.\n'
+                raise TypeError(f'ShortCommitHash requires length greater or equal to 7. Given value: {value}, has length: {len(value)}.\n'
                                 'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
         return None
 
