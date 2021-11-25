@@ -2050,7 +2050,7 @@ class MacheteClient:
         reviewers: List[str] = utils.get_non_empty_lines(utils.slurp_file_or_empty(reviewers_path))
         if reviewers:
             print(
-                fmt(f'Adding {", ".join(f"`{reviewer}`" for reviewer in reviewers)} as reviewer{"s" if len(reviewers) > 1 else ""} to PR #{pr.number}...\n'),
+                fmt(f'Adding {", ".join(f"`{reviewer}`" for reviewer in reviewers)} as reviewer{"s" if len(reviewers) > 1 else ""} to PR #{pr.number}...'),
                 end='', flush=True)
             try:
                 add_reviewers_to_pull_request(org, repo, pr.number, reviewers)
