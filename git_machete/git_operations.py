@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Callable, Dict, Generator, Iterator, List, Match, Optional, Set, Tuple
 
 import os
@@ -254,7 +255,14 @@ class GitContext:
     def __get_git_dir(self) -> str:
         if not self._git_dir:
             try:
-                self._git_dir = self._popen_git("rev-parse", "--git-dir").strip()
+                git_dir: str = self._popen_git("rev-parse", "--git-dir").strip()
+                git_dir_parts = Path(git_dir).parts
+                if len(git_dir_parts) >= 3 and git_dir_parts[-3] == '.git' and git_dir_parts[-2] == 'worktrees':
+                    self._git_dir = os.path.join(*git_dir_parts[:-2])
+                    debug('__get_git_dir', f'git dir pointing to {git_dir} - we are in a worktree; '
+                                           f'using {self._git_dir} as the effective git dir instead')
+                else:
+                    self._git_dir = git_dir
             except MacheteException:
                 raise MacheteException("Not a git repository")
         return self._git_dir

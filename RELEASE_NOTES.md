@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.6.1
+
+- fixed: support for worktrees (reported by @kgadek)
+
 ## New in git-machete 3.6.0
 
 - added: `t` alias for `traverse` command

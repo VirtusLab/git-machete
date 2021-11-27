@@ -168,7 +168,7 @@ long_docs: Dict[str, str] = {
         <b>Usage: git machete discover [-C|--checked-out-since=<date>] [-l|--list-commits] [-r|--roots=<branch1>,<branch2>,...] [-y|--yes]</b>
 
         Discovers and displays tree of branch dependencies using a heuristic based on reflogs and asks whether to overwrite the existing definition file with the new discovered tree.
-        If confirmed with a `y[es]` or `e[dit]` reply, backs up the current definition file (if it exists) as `$GIT_DIR/machete~` and saves the new tree under the usual `$GIT_DIR/machete` path.
+        If confirmed with a `y[es]` or `e[dit]` reply, backs up the current definition file (if it exists) as `machete~` and saves the new tree in the usual `machete` file.
         If the reply was `e[dit]`, additionally an editor is opened (as in `git machete edit`) after saving the new definition file.
 
         Options:
@@ -208,8 +208,13 @@ long_docs: Dict[str, str] = {
     "file": """
         <b>Usage: git machete file</b>
 
-        Outputs the absolute path of the machete definition file. Currently fixed to `<git-directory>/machete`.
-        Note: this won't always be just `<repo-root>/.git/machete` since e.g. submodules and worktrees have their git directories in different location.
+        Outputs the absolute path of the machete definition file.
+        The file is always called `machete` and is located in the git directory of the project.
+
+        Three cases are possible:
+        * if `git machete` is executed from a regular working directory (not a worktree or submodule), this simply resolves to `machete` in .git folder,
+        * if `git machete` is executed from a <b>worktree</b>, this resolves to `machete` in the .git folder of the <b>top-level project</b> (not the worktree's .git folder!),
+        * if `git machete` is executed from a <b>submodule</b>, this resolves to `machete` in the .git folder of the <b>submodule</b> itself (not the top-level project's .git folder!).
     """,
     "fork-point": """
         <b>Usage:

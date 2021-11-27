@@ -456,14 +456,15 @@ class MacheteTester(unittest.TestCase):
         )
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    def test_branch_reappers_in_definition(self) -> None:
+    def test_branch_reappears_in_definition(self) -> None:
         body: str = \
             """master
             \tdevelop
             \t\n
             develop
             """
-        expected_error_msg: str = fmt('.git/machete, line 5: branch `develop` re-appears in the tree definition. Edit the definition file manually with `git machete edit`')
+        expected_error_msg: str = fmt('.git/machete, line 5: branch `develop` re-appears in the tree definition. '
+                                      'Edit the definition file manually with `git machete edit`')
 
         self.repo_sandbox.new_branch("root")
         self.rewrite_definition_file(body)
