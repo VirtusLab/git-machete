@@ -707,7 +707,7 @@ class MacheteClient:
 
             if branch != current_branch and (needs_slide_out or needs_parent_sync or needs_remote_sync):
                 self.__print_new_line(False)
-                sys.stdout.write(f"Checking out {bold(branch)}\n")
+                print(f"Checking out {bold(branch)}\n")
                 self.__git.checkout(branch)
                 current_branch = branch
                 self.__print_new_line(False)
@@ -768,7 +768,7 @@ class MacheteClient:
                         # --no-commit' (which we don't ever invoke).
                         # It's still better, however, to be on the safe side.
                         if self.__git.is_merge_in_progress():
-                            sys.stdout.write("\nMerge in progress; stopping the traversal\n")
+                            print("\nMerge in progress; stopping the traversal\n")
                             return
                     else:
                         self.__git.rebase(
@@ -789,8 +789,7 @@ class MacheteClient:
                         # a subsequent 'git rebase --continue'.
                         rebased_branch = self.__git.get_currently_rebased_branch_or_none()
                         if rebased_branch:  # 'remote_branch' should be equal to 'branch' at this point anyway
-                            sys.stdout.write(
-                                fmt(f"\nRebase of `{rebased_branch}` in progress; stopping the traversal\n"))
+                            print(fmt(f"\nRebase of `{rebased_branch}` in progress; stopping the traversal\n"))
                             return
                     if ans == 'yq':
                         return
@@ -848,11 +847,11 @@ class MacheteClient:
             msg: str = f"Reached branch {bold(current_branch)} which has no successor"
         else:
             msg = f"No successor of {bold(current_branch)} needs to be slid out or synced with upstream branch or remote"
-        sys.stdout.write(f"{msg}; nothing left to update\n")
+        print(f"{msg}; nothing left to update\n")
         if not any_action_suggested and initial_branch not in self.__roots:
-            sys.stdout.write(fmt("Tip: `traverse` by default starts from the current branch, "
-                                 "use flags (`--starts-from=`, `--whole` or `-w`, `-W`) to change this behavior.\n"
-                                 "Further info under `git machete traverse --help`.\n"))
+            print(fmt("Tip: `traverse` by default starts from the current branch, "
+                      "use flags (`--starts-from=`, `--whole` or `-w`, `-W`) to change this behavior.\n"
+                      "Further info under `git machete traverse --help`.\n"))
         if opt_return_to == "here" or (
                 opt_return_to == "nearest-remaining" and nearest_remaining_branch == initial_branch):
             print(f"Returned to the initial branch {bold(initial_branch)}")
@@ -1616,17 +1615,15 @@ class MacheteClient:
         branch_sha = self.__git.get_commit_sha_by_revision(branch)
         self.__git.set_config_attr(while_descendant_of_key, branch_sha)
 
-        sys.stdout.write(
-            fmt(
-                f"Fork point for <b>{branch}</b> is overridden to <b>"
-                f"{self.__git.get_revision_repr(to_revision)}</b>.\n",
-                f"This applies as long as {branch} points to (or is descendant of)"
-                " its current head (commit "
-                f"{self.__git.get_short_commit_sha_by_revision(branch_sha)}).\n\n",
-                f"This information is stored under git config keys:\n  * `{to_key}"
-                f"`\n  * `{while_descendant_of_key}`\n\n",
-                "To unset this override, use:\n  `git machete fork-point "
-                f"--unset-override {branch}`\n"))
+        print(fmt(f"Fork point for <b>{branch}</b> is overridden to <b>"
+                  f"{self.__git.get_revision_repr(to_revision)}</b>.\n",
+                  f"This applies as long as {branch} points to (or is descendant of)"
+                  " its current head (commit "
+                  f"{self.__git.get_short_commit_sha_by_revision(branch_sha)}).\n\n",
+                  f"This information is stored under git config keys:\n  * `{to_key}"
+                  f"`\n  * `{while_descendant_of_key}`\n\n",
+                  "To unset this override, use:\n  `git machete fork-point "
+                  f"--unset-override {branch}`\n"))
 
     def __pick_remote(
             self,
