@@ -2,7 +2,6 @@ from typing import Callable, Dict, Generator, Iterator, List, Match, Optional, S
 
 import os
 import re
-import sys
 
 from git_machete.exceptions import MacheteException
 from git_machete.utils import colored, debug, fmt
@@ -226,10 +225,9 @@ class GitContext:
                     debug("get_default_editor()", f"{editor_repr} is available")
                     if name != "$" + git_machete_editor_var and self.get_config_attr_or_none('advice.macheteEditorSelection') != 'false':
                         sample_alternative = 'nano' if editor.startswith('vi') else 'vi'
-                        sys.stderr.write(
-                            fmt(f"Opening <b>{editor_repr}</b>.\n",
-                                f"To override this choice, use <b>{git_machete_editor_var}</b> env var, e.g. `export {git_machete_editor_var}={sample_alternative}`.\n\n",
-                                "See `git machete help edit` and `git machete edit --debug` for more details.\n\nUse `git config --global advice.macheteEditorSelection false` to suppress this message.\n"))
+                        print(fmt(f"Opening <b>{editor_repr}</b>.\n",
+                                  f"To override this choice, use <b>{git_machete_editor_var}</b> env var, e.g. `export {git_machete_editor_var}={sample_alternative}`.\n\n",
+                                  "See `git machete help edit` and `git machete edit --debug` for more details.\n\nUse `git config --global advice.macheteEditorSelection false` to suppress this message."))
                     return editor
 
         # This case is extremely unlikely on a modern Unix-like system.
@@ -727,10 +725,8 @@ class GitContext:
             advice_ignored_hook = self.get_config_attr_or_none("advice.ignoredHook")
             if advice_ignored_hook != 'false':  # both empty and "true" is okay
                 # The [33m color must be used to keep consistent with how git colors this advice for its built-in hooks.
-                sys.stderr.write(
-                    colored(f"hint: The '{hook_path}' hook was ignored because it's not set as executable.", EscapeCodes.YELLOW) + "\n")
-                sys.stderr.write(
-                    colored("hint: You can disable this warning with `git config advice.ignoredHook false`.", EscapeCodes.YELLOW) + "\n")
+                print(colored(f"hint: The '{hook_path}' hook was ignored because it's not set as executable.", EscapeCodes.YELLOW))
+                print(colored("hint: You can disable this warning with `git config advice.ignoredHook false`.", EscapeCodes.YELLOW))
             return False
         else:
             return True

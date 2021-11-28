@@ -8,7 +8,6 @@ import textwrap
 import time
 import unittest
 import subprocess
-import sys
 from contextlib import redirect_stdout, redirect_stderr
 from http import HTTPStatus
 from typing import Any, Dict, Iterable, List, Optional, Union
@@ -50,7 +49,7 @@ def mock_run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
     exit_code: int = completed_process.returncode
 
     if exit_code != 0:
-        sys.stderr.write(dim(f"<exit code: {exit_code}>\n\n"))
+        print(dim(f"<exit code: {exit_code}>\n"))
     return completed_process.returncode
 
 
@@ -60,7 +59,7 @@ def mock_run_cmd_and_forward_stdout(cmd: str, *args: str, **kwargs: Any) -> int:
     print(completed_process.stdout.decode('utf-8'))
     exit_code: int = completed_process.returncode
     if exit_code != 0:
-        sys.stderr.write(dim(f"<exit code: {exit_code}>\n\n"))
+        print(dim(f"<exit code: {exit_code}>\n"))
     return exit_code
 
 

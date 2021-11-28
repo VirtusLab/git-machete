@@ -156,7 +156,7 @@ def get_pretty_choices(*choices: str) -> str:
 
 def debug(hdr: str, msg: str) -> None:
     if debug_mode:
-        sys.stderr.write(f"{bold(hdr)}: {dim(msg)}\n")
+        print(f"{bold(hdr)}: {dim(msg)}")
 
 
 def run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
@@ -164,9 +164,9 @@ def run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
 
     flat_cmd: str = get_cmd_shell_repr(cmd, *args, **kwargs)
     if debug_mode:
-        sys.stderr.write(bold(f">>> {flat_cmd}") + "\n")
+        print(bold(f">>> {flat_cmd}"))
     elif verbose_mode:
-        sys.stderr.write(flat_cmd + "\n")
+        print(flat_cmd)
 
     exit_code: int = subprocess.call([cmd] + list(args), **kwargs)
 
@@ -176,7 +176,7 @@ def run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
     mark_current_directory_as_possibly_non_existent()
 
     if debug_mode and exit_code != 0:
-        sys.stderr.write(dim(f"<exit code: {exit_code}>\n\n"))
+        print(dim(f"<exit code: {exit_code}>\n"))
     return exit_code
 
 
@@ -205,9 +205,9 @@ def popen_cmd(cmd: str, *args: str, **kwargs: Any) -> Tuple[int, str, str]:
 
     flat_cmd = get_cmd_shell_repr(cmd, *args, **kwargs)
     if debug_mode:
-        sys.stderr.write(bold(f">>> {flat_cmd}") + "\n")
+        print(bold(f">>> {flat_cmd}"))
     elif verbose_mode:
-        sys.stderr.write(flat_cmd + "\n")
+        print(flat_cmd)
 
     process = subprocess.Popen([cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
     stdout_bytes, stderr_bytes = process.communicate()
@@ -217,11 +217,11 @@ def popen_cmd(cmd: str, *args: str, **kwargs: Any) -> Tuple[int, str, str]:
 
     if debug_mode:
         if exit_code != 0:
-            sys.stderr.write(colored(f"<exit code: {exit_code}>\n\n", EscapeCodes.RED))
+            print(colored(f"<exit code: {exit_code}>\n", EscapeCodes.RED))
         if stdout:
-            sys.stderr.write(f"{dim('<stdout>:')}\n{dim(stdout)}\n")
+            print(f"{dim('<stdout>:')}\n{dim(stdout)}")
         if stderr:
-            sys.stderr.write(f"{dim('<stderr>:')}\n{colored(stderr, EscapeCodes.RED)}\n")
+            print(f"{dim('<stderr>:')}\n{colored(stderr, EscapeCodes.RED)}")
 
     return exit_code, stdout, stderr
 
@@ -242,7 +242,7 @@ def get_cmd_shell_repr(cmd: str, *args: str, **kwargs: Dict[str, str]) -> str:
 
 def warn(msg: str, apply_fmt: bool = True) -> None:
     if msg not in displayed_warnings:
-        sys.stderr.write(colored("Warn: ", EscapeCodes.RED) + (fmt(msg) if apply_fmt else msg) + "\n")
+        print(colored("Warn: ", EscapeCodes.RED) + (fmt(msg) if apply_fmt else msg))
         displayed_warnings.add(msg)
 
 
