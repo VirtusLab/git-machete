@@ -459,7 +459,7 @@ class MacheteClient:
             # after removing the outer layer of childless merged branches.
             # This is rare enough, however, that we can pretty much ignore this corner case.
 
-        print(bold("Discovered tree of branch dependencies:"))
+        print(bold("Discovered tree of branch dependencies:\n"))
         self.status(
             warn_on_yellow_edges=False,
             opt_list_commits=opt_list_commits,
@@ -707,7 +707,7 @@ class MacheteClient:
 
             if branch != current_branch and (needs_slide_out or needs_parent_sync or needs_remote_sync):
                 self.__print_new_line(False)
-                print(f"Checking out {bold(branch)}", file=sys.stderr)
+                print(f"Checking out {bold(branch)}", file=sys.stdout)
                 self.__git.checkout(branch)
                 current_branch = branch
                 self.__print_new_line(False)
@@ -768,7 +768,7 @@ class MacheteClient:
                         # --no-commit' (which we don't ever invoke).
                         # It's still better, however, to be on the safe side.
                         if self.__git.is_merge_in_progress():
-                            print("\nMerge in progress; stopping the traversal", file=sys.stderr)
+                            print("\nMerge in progress; stopping the traversal", file=sys.stdout)
                             return
                     else:
                         self.__git.rebase(
@@ -847,11 +847,11 @@ class MacheteClient:
             msg: str = f"Reached branch {bold(current_branch)} which has no successor"
         else:
             msg = f"No successor of {bold(current_branch)} needs to be slid out or synced with upstream branch or remote"
-        print(f"{msg}; nothing left to update", file=sys.stderr)
+        print(f"{msg}; nothing left to update", file=sys.stdout)
         if not any_action_suggested and initial_branch not in self.__roots:
             print(fmt("Tip: `traverse` by default starts from the current branch, "
                       "use flags (`--starts-from=`, `--whole` or `-w`, `-W`) to change this behavior.\n"
-                      "Further info under `git machete traverse --help`."), file=sys.stderr)
+                      "Further info under `git machete traverse --help`."), file=sys.stdout)
         if opt_return_to == "here" or (
                 opt_return_to == "nearest-remaining" and nearest_remaining_branch == initial_branch):
             print(f"Returned to the initial branch {bold(initial_branch)}")
@@ -1284,7 +1284,7 @@ class MacheteClient:
                 "start of range of commits to squash.")
         if len(commits) == 1:
             sha, short_sha, subject = commits[0]
-            print(f"Exactly one commit ({short_sha}) to squash, ignoring.")
+            print(f"Exactly one commit ({short_sha}) to squash, ignoring.\n")
             print("Tip: use `-f` or `--fork-point` to specify where the range of "
                   "commits to squash starts.")
             return
