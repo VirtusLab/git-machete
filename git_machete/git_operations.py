@@ -1,8 +1,8 @@
-import sys
 from typing import Callable, Dict, Generator, Iterator, List, Match, Optional, Set, Tuple
 
 import os
 import re
+import sys
 
 from git_machete.exceptions import MacheteException
 from git_machete.utils import colored, debug, fmt
