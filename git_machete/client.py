@@ -707,7 +707,7 @@ class MacheteClient:
 
             if branch != current_branch and (needs_slide_out or needs_parent_sync or needs_remote_sync):
                 self.__print_new_line(False)
-                print(f"Checking out {bold(branch)}")
+                print(f"Checking out {bold(branch)}", file=sys.stderr)
                 self.__git.checkout(branch)
                 current_branch = branch
                 self.__print_new_line(False)
@@ -768,7 +768,7 @@ class MacheteClient:
                         # --no-commit' (which we don't ever invoke).
                         # It's still better, however, to be on the safe side.
                         if self.__git.is_merge_in_progress():
-                            print("\nMerge in progress; stopping the traversal")
+                            print("\nMerge in progress; stopping the traversal", file=sys.stderr)
                             return
                     else:
                         self.__git.rebase(
@@ -789,7 +789,7 @@ class MacheteClient:
                         # a subsequent 'git rebase --continue'.
                         rebased_branch = self.__git.get_currently_rebased_branch_or_none()
                         if rebased_branch:  # 'remote_branch' should be equal to 'branch' at this point anyway
-                            print(fmt(f"\nRebase of `{rebased_branch}` in progress; stopping the traversal"))
+                            print(fmt(f"\nRebase of `{rebased_branch}` in progress; stopping the traversal"), file=sys.stderr)
                             return
                     if ans == 'yq':
                         return
@@ -847,11 +847,11 @@ class MacheteClient:
             msg: str = f"Reached branch {bold(current_branch)} which has no successor"
         else:
             msg = f"No successor of {bold(current_branch)} needs to be slid out or synced with upstream branch or remote"
-        print(f"{msg}; nothing left to update")
+        print(f"{msg}; nothing left to update", file=sys.stderr)
         if not any_action_suggested and initial_branch not in self.__roots:
             print(fmt("Tip: `traverse` by default starts from the current branch, "
                       "use flags (`--starts-from=`, `--whole` or `-w`, `-W`) to change this behavior.\n"
-                      "Further info under `git machete traverse --help`."))
+                      "Further info under `git machete traverse --help`."), file=sys.stderr)
         if opt_return_to == "here" or (
                 opt_return_to == "nearest-remaining" and nearest_remaining_branch == initial_branch):
             print(f"Returned to the initial branch {bold(initial_branch)}")
@@ -1030,7 +1030,7 @@ class MacheteClient:
                 second_part = "Consider using `git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent <branch>` for each affected branch" \
                               "or reattaching the affected branches under different parent branches"
 
-            print("")
+            print("", file=sys.stderr)
             warn(f"{first_part}.\n\n{second_part}.")
 
     def delete_unmanaged(self, *, opt_yes: bool) -> None:
