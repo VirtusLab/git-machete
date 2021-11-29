@@ -707,7 +707,7 @@ class MacheteClient:
 
             if branch != current_branch and (needs_slide_out or needs_parent_sync or needs_remote_sync):
                 self.__print_new_line(False)
-                print(f"Checking out {bold(branch)}", file=sys.stdout)
+                print(f"Checking out {bold(branch)}")
                 self.__git.checkout(branch)
                 current_branch = branch
                 self.__print_new_line(False)
@@ -768,7 +768,7 @@ class MacheteClient:
                         # --no-commit' (which we don't ever invoke).
                         # It's still better, however, to be on the safe side.
                         if self.__git.is_merge_in_progress():
-                            print("\nMerge in progress; stopping the traversal", file=sys.stdout)
+                            print("\nMerge in progress; stopping the traversal")
                             return
                     else:
                         self.__git.rebase(
@@ -789,7 +789,7 @@ class MacheteClient:
                         # a subsequent 'git rebase --continue'.
                         rebased_branch = self.__git.get_currently_rebased_branch_or_none()
                         if rebased_branch:  # 'remote_branch' should be equal to 'branch' at this point anyway
-                            print(fmt(f"\nRebase of `{rebased_branch}` in progress; stopping the traversal"), file=sys.stdout)
+                            print(fmt(f"\nRebase of `{rebased_branch}` in progress; stopping the traversal"))
                             return
                     if ans == 'yq':
                         return
@@ -847,7 +847,7 @@ class MacheteClient:
             msg: str = f"Reached branch {bold(current_branch)} which has no successor"
         else:
             msg = f"No successor of {bold(current_branch)} needs to be slid out or synced with upstream branch or remote"
-        print(f"{msg}; nothing left to update", file=sys.stdout)
+        print(f"{msg}; nothing left to update")
         if not any_action_suggested and initial_branch not in self.__roots:
             print(fmt("Tip: `traverse` by default starts from the current branch, "
                       "use flags (`--starts-from=`, `--whole` or `-w`, `-W`) to change this behavior.\n"
