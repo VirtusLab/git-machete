@@ -726,8 +726,8 @@ class GitContext:
             advice_ignored_hook = self.get_config_attr_or_none("advice.ignoredHook")
             if advice_ignored_hook != 'false':  # both empty and "true" is okay
                 # The [33m color must be used to keep consistent with how git colors this advice for its built-in hooks.
-                print(colored(f"hint: The '{hook_path}' hook was ignored because it's not set as executable.", EscapeCodes.YELLOW))
-                print(colored("hint: You can disable this warning with `git config advice.ignoredHook false`.", EscapeCodes.YELLOW))
+                print(colored(f"hint: The '{hook_path}' hook was ignored because it's not set as executable.", EscapeCodes.YELLOW), file=sys.stderr)
+                print(colored("hint: You can disable this warning with `git config advice.ignoredHook false`.", EscapeCodes.YELLOW), file=sys.stderr)
             return False
         else:
             return True
