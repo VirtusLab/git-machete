@@ -49,17 +49,17 @@ def mock_run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
     exit_code: int = completed_process.returncode
 
     if exit_code != 0:
-        print(dim(f"<exit code: {exit_code}>\n"))
+        print(dim(f"<exit code: {exit_code}>\n"), file=sys.stderr)
     return completed_process.returncode
 
 
 def mock_run_cmd_and_forward_stdout(cmd: str, *args: str, **kwargs: Any) -> int:
     completed_process: subprocess.CompletedProcess[bytes] = subprocess.run(
         [cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, ** kwargs)
-    print(completed_process.stdout.decode('utf-8'))
+    print(completed_process.stdout.decode('utf-8'), file=sys.stderr)
     exit_code: int = completed_process.returncode
     if exit_code != 0:
-        print(dim(f"<exit code: {exit_code}>\n"))
+        print(dim(f"<exit code: {exit_code}>\n"), file=sys.stderr)
     return exit_code
 
 
