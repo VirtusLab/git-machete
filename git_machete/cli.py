@@ -790,13 +790,13 @@ def launch(orig_args: List[str]) -> None:
 
     except (argparse.ArgumentError, argparse.ArgumentTypeError) as e:
         print(get_short_general_usage())
-        print(f"\n{e}")
+        print(f"\n{e}", file=sys.stderr)
         exit_script(2)
     except MacheteException as e:
-        print(f"\n{e}")
+        print(f"\n{e}", file=sys.stderr)
         exit_script(1)
     except KeyboardInterrupt:
-        print("\nInterrupted by the user")
+        print("\nInterrupted by the user", file=sys.stderr)
         exit_script(1)
     except StopInteraction:
         pass
