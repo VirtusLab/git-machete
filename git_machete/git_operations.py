@@ -227,7 +227,7 @@ class GitContext:
                         sample_alternative = 'nano' if editor.startswith('vi') else 'vi'
                         print(fmt(f"Opening <b>{editor_repr}</b>.\n",
                                   f"To override this choice, use <b>{git_machete_editor_var}</b> env var, e.g. `export {git_machete_editor_var}={sample_alternative}`.\n\n",
-                                  "See `git machete help edit` and `git machete edit --debug` for more details.\n\nUse `git config --global advice.macheteEditorSelection false` to suppress this message."))
+                                  "See `git machete help edit` and `git machete edit --debug` for more details.\n\nUse `git config --global advice.macheteEditorSelection false` to suppress this message."), file=sys.stderr)
                     return editor
 
         # This case is extremely unlikely on a modern Unix-like system.
