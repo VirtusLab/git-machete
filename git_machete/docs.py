@@ -208,7 +208,7 @@ long_docs: Dict[str, str] = {
     "file": """
         <b>Usage: git machete file</b>
 
-        Outputs the absolute path of the machete definition file.
+        Outputs the absolute path of machete definition file.
         The file is always called `machete` and is located in the git directory of the project.
 
         Three cases are possible:
