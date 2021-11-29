@@ -789,7 +789,7 @@ class MacheteClient:
                         # a subsequent 'git rebase --continue'.
                         rebased_branch = self.__git.get_currently_rebased_branch_or_none()
                         if rebased_branch:  # 'remote_branch' should be equal to 'branch' at this point anyway
-                            print(fmt(f"\nRebase of `{rebased_branch}` in progress; stopping the traversal"), file=sys.stderr)
+                            print(fmt(f"\nRebase of `{rebased_branch}` in progress; stopping the traversal"), file=sys.stdout)
                             return
                     if ans == 'yq':
                         return
