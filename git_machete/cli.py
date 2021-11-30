@@ -629,7 +629,7 @@ def launch(orig_args: List[str]) -> None:
                         f"'checkout-prs' subcommand can take only one of following options: {', '.join(['--all', '--by', '--mine', 'pr-no'])}")
                 try:
                     if 'pr-no' in parsed_cli:
-                        pr_no: List[int] = list(map(int, parsed_cli.pr_no))
+                        map(int, parsed_cli.pr_no)
                 except ValueError:
                     raise MacheteException("One of given PR numbers is not integer value!")
                 machete_client.checkout_github_prs(pr_no=parsed_cli.pr_no if 'pr_no' in parsed_cli else [],
@@ -824,5 +824,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    #main()
-    launch(['github', 'checkout-prs', '15', '--mine'])
+    main()
