@@ -168,7 +168,7 @@ long_docs: Dict[str, str] = {
         <b>Usage: git machete discover [-C|--checked-out-since=<date>] [-l|--list-commits] [-r|--roots=<branch1>,<branch2>,...] [-y|--yes]</b>
 
         Discovers and displays tree of branch dependencies using a heuristic based on reflogs and asks whether to overwrite the existing definition file with the new discovered tree.
-        If confirmed with a `y[es]` or `e[dit]` reply, backs up the current definition file (if it exists) as `machete~` and saves the new tree in the usual `machete` file.
+        If confirmed with a `y[es]` or `e[dit]` reply, backs up the current definition file (if it exists) as `$GIT_DIR/machete~` and saves the new tree under the usual `$GIT_DIR/machete` path.
         If the reply was `e[dit]`, additionally an editor is opened (as in `git machete edit`) after saving the new definition file.
 
         Options:
@@ -212,9 +212,9 @@ long_docs: Dict[str, str] = {
         The file is always called `machete` and is located in the git directory of the project.
 
         Three cases are possible:
-        * if `git machete` is executed from a regular working directory (not a worktree or submodule), this simply resolves to `machete` in .git folder,
-        * if `git machete` is executed from a <b>worktree</b>, this resolves to `machete` in the .git folder of the <b>top-level project</b> (not the worktree's .git folder!),
-        * if `git machete` is executed from a <b>submodule</b>, this resolves to `machete` in the .git folder of the <b>submodule</b> itself (not the top-level project's .git folder!).
+        * if `git machete` is executed from a regular working directory (not a worktree or submodule), the file is located under `.git/machete`,
+        * if `git machete` is executed from a <b>worktree</b>, this file is located under `.git/machete` as well (<b>not</b> in the git folder of the worktree under `.git/worktrees/.../machete`),
+        * if `git machete` is executed from a <b>submodule</b>, this file is located in the git folder of the submodule itself under `.git/modules/.../machete`.
     """,
     "fork-point": """
         <b>Usage:
