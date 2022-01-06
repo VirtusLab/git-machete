@@ -166,6 +166,21 @@ jobs:
       #    is triggered automatically via GitHub webhook on https://readthedocs.org/projects/git-machete/builds/,
       # 3) every time a https://github.com/r-ryantm bot runs on NixOS/nixpkgs repository,
       #    Nix git-machete package is updated with the fresh version/package hash according to the data from PyPI.
+
+  "Publish Dockerfile to Docker Hub":
+    working_directory: /git-machete
+    docker:
+      - image: docker:17.05.0-ce-git
+    steps:
+      - checkout
+      - setup_remote_docker
+      - deploy:
+          name: Publish application to docker hub
+          command: |
+            docker login -e $DOCKER_HUB_EMAIL -u $DOCKER_HUB_USER_ID -p $DOCKER_HUB_PWD
+            docker tag git-machete $DOCKER_HUB_USER_ID/dockerapp:latest
+            docker push $DOCKER_HUB_USER_ID/git-machete:latest
+
 workflows:
   version: 2
   build:
@@ -185,6 +200,12 @@ workflows:
           requires:
             *mandatory_jobs
       - deploy from master:
+          filters:
+            branches:
+              only: "master"
+          requires:
+            *mandatory_jobs
+      - Publish Dockerfile to Docker Hub:
           filters:
             branches:
               only: "master"
