@@ -177,9 +177,9 @@ jobs:
       - deploy:
           name: Publish application to docker hub
           command: |
-            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-            docker build -t $DOCKER_USERNAME/git-machete:latest .
-            docker push $DOCKER_USERNAME/git-machete:latest
+            echo $DOCKER_PASSWORD | docker login -u gitmachete --password-stdin
+            docker build -t gitmachete/git-machete:latest .
+            docker push gitmachete/git-machete:latest
 
 workflows:
   version: 2
