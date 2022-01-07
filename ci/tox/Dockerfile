@@ -33,7 +33,7 @@ ARG check_coverage
 ENV CHECK_COVERAGE=${check_coverage}
 
 # Pass build argument to BUILD_DOCS environment variable that is used to
-# determine where to run tox enviornment that builds documentation.
+# determine where to run tox environment that builds documentation.
 ARG build_docs
 ENV BUILD_DOCS=${build_docs}
 

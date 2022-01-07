@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.6.2
+
+- fixed: build process stability
+
 ## New in git-machete 3.6.1
 
 - fixed: support for worktrees (reported by @kgadek)
