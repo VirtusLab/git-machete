@@ -167,7 +167,7 @@ jobs:
       # 3) every time a https://github.com/r-ryantm bot runs on NixOS/nixpkgs repository,
       #    Nix git-machete package is updated with the fresh version/package hash according to the data from PyPI.
 
-  "Publish Dockerfile to Docker Hub":
+  "Publish image to Docker Hub":
     working_directory: /git-machete
     docker:
       - image: docker:17.05.0-ce-git
