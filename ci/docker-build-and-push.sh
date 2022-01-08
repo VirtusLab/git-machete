@@ -21,5 +21,3 @@ docker image inspect "$image_tag" &>/dev/null || {
     docker-compose --ansi never push $image_name || true
   fi
 }
-
-

@@ -27,7 +27,7 @@ sed '/## New in git-machete 2\.12\.7/,$d' RELEASE_NOTES.md | awk \
 # Since we upload over SFTP, we need to whitelist the host first to avoid the prompt.
 ssh-keyscan ppa.launchpad.net > ~/.ssh/known_hosts
 
-# -p flag points to a script that wraps gpg so that we don't get asked for password to the private key on TTY.
+# `-p` flag points to a script that wraps gpg so that we don't get asked for password to the private key on TTY.
 debuild -S -p"$HOME/gpg-sign.sh"
 cat ../python3-git-machete_*.dsc
 cat ../python3-git-machete_*_source.buildinfo
