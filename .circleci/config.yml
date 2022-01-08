@@ -108,25 +108,19 @@ jobs:
           command: bash ci/homebrew-tap/ci-deploy.sh --dry-run
 
       - deploy:
+          name: '[Dry run] Publish image to Docker Hub'
+          # Prerequisites: artifacts must be released to test PyPI first
+          command: bash ci/docker/ci-deploy.sh --dry-run
+
+      - deploy:
           name: '[Dry run] Build & upload deb package to PPA'
           # Side effects: potentially pushes a regenerated Docker image
           command: bash ci/deb-ppa-upload/ci-deploy.sh --dry-run
 
       - deploy:
-          name: '[Dry run] Build .snap for linux distros'
-          # Build snap for current branch of git-machete repository without publishing results to snapstore.
-          # --use-lxd applied to use a LXD container instead of a VM, to work around lack of support for KVM on CircleCI VMs.
-          command: |
-            set -x
-            sudo apt-get update
-            sudo apt-get install -y snapd
-            sudo snap install snapcraft --classic
-            sudo lxd init --minimal
-            snapcraft --use-lxd
-            ! command -v git-machete
-            sudo snap install git-machete_*.snap --dangerous --classic
-            git machete version
-            sudo snap remove git-machete
+          name: '[Dry run] Build snap'
+          # Side effects: none
+          command: bash ci/snap/ci-run-dry-run.sh
 
       - deploy:
           name: '[Dry run] Build rpm package'
@@ -146,6 +140,11 @@ jobs:
           name: 'Update Homebrew tap'
           # Prerequisites: artifacts must be released to PyPI first
           command: bash ci/homebrew-tap/ci-deploy.sh
+
+      - deploy:
+          name: 'Publish image to Docker Hub'
+          # Prerequisites: artifacts must be released to PyPI first
+          command: bash ci/docker/ci-deploy.sh
 
       - deploy:
           name: 'Build & upload deb package to PPA'
@@ -173,20 +172,6 @@ jobs:
       # 3) every time a https://github.com/r-ryantm bot runs on NixOS/nixpkgs repository,
       #    Nix git-machete package is updated with the fresh version/package hash according to the data from PyPI.
 
-  "Publish image to Docker Hub":
-    working_directory: /git-machete
-    docker:
-      - image: docker:17.05.0-ce-git
-    steps:
-      - checkout
-      - setup_remote_docker
-      - deploy:
-          name: Publish application to docker hub
-          command: |
-            echo $DOCKER_PASSWORD | docker login -u $DOCKER_LOGIN --password-stdin
-            docker build -t gitmachete/git-machete:latest .
-            docker push gitmachete/git-machete:latest
-
 workflows:
   version: 2
   build:
@@ -202,17 +187,10 @@ workflows:
             branches:
               only:
                 - "develop"
-                - "bugfix/ci-user-id"
                 - "/hotfix.*/"
           requires:
             *mandatory_jobs
       - deploy from master:
-          filters:
-            branches:
-              only: "master"
-          requires:
-            *mandatory_jobs
-      - Publish image to Docker Hub:
           filters:
             branches:
               only: "master"

@@ -2,6 +2,7 @@
 
 ## New in git-machete 3.6.2
 
+- added: `gitmachete/git-machete` Docker image (contributed by @mohitsaxenaknoldus)
 - fixed: build process stability
 
 ## New in git-machete 3.6.1
