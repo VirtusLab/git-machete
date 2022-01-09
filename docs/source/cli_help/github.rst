@@ -54,3 +54,8 @@ a GitHub API token with ``repo`` scope is required, see https://github.com/setti
 ``retarget-pr``:
 
   Sets the base of the current branch's PR to upstream (parent) branch, as seen by git machete (see ``git machete show up``).
+
+**Environment variables (all subcommands):**
+
+``GITHUB_TOKEN``
+    GitHub API token.

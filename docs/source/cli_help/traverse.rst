@@ -86,4 +86,7 @@ In other words, there is no need to explicitly ask to `continue` as it is the ca
 
 **Environment variables:**
 
-GIT_MACHETE_REBASE_OPTS      Extra options to pass to the underlying ``git rebase`` invocations, space-separated. Example: ``GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete traverse``.
+``GIT_MACHETE_REBASE_OPTS``
+    Extra options to pass to the underlying ``git rebase`` invocations, space-separated.
+
+    Example: ``GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete traverse``.

@@ -30,4 +30,7 @@ If updating by merge, merges the upstream (parent) branch into the current branc
 
 **Environment variables:**
 
-GIT_MACHETE_REBASE_OPTS                 Extra options to pass to the underlying ``git rebase`` invocation, space-separated. Example: ``GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete update``.
+``GIT_MACHETE_REBASE_OPTS``
+    Extra options to pass to the underlying ``git rebase`` invocation, space-separated.
+
+    Example: ``GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete update``.
