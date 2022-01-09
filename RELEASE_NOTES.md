@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.7.0
+
 ## New in git-machete 3.6.2
 
 - added: `gitmachete/git-machete` Docker image (contributed by @mohitsaxenaknoldus)

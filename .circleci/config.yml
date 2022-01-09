@@ -12,9 +12,9 @@ mandatory_jobs: &mandatory_jobs
   - general checks
   - test against python 3_6 and git 1_8_10
   - test against python 3_7 and git 2_7_6
-  - test against python 3_8 and git 2_25_0 with PEP8 checks
-  - test against python 3_9 and git 2_30_1 with coverage report and docs creation
-  - test against python 3_10 and git 2_33_1
+  - test against python 3_8 and git 2_25_0 with PEP8 check
+  - test against python 3_9 and git 2_30_1 with coverage report
+  - test against python 3_10 and git 2_33_1 with building docs
 
 jobs:
   "general checks":
@@ -68,35 +68,41 @@ jobs:
           name: Run tests against Python 3.7 and git 2.7.6
           command: PYTHON_VERSION=3.7 GIT_VERSION=2.7.6  bash ci/tox/ci-run.sh
 
-  "test against python 3_8 and git 2_25_0 with PEP8 checks":
-    executor: ubuntu_executor
-    steps:
-      - checkout
-      - run:
-          name: Run tests against Python 3.8 and git 2.25.0 (check PEP8 correctness)
-          command: PYTHON_VERSION=3.8 GIT_VERSION=2.25.0 PEP8=true bash ci/tox/ci-run.sh
+  # Note that there is no particular reason for the below assignment of PEP8/coverage/docs checks to Python version.
+  # Each of these needs to be run against just one Python version
+  # (since there's very little chance that they pass under one version but fail under another),
+  # so let's spread these checks evenly across versions to reduce CI latency
+  # (when compared to the scenario where all checks are executed under the same Python version).
 
-  "test against python 3_9 and git 2_30_1 with coverage report and docs creation":
+  "test against python 3_8 and git 2_25_0 with PEP8 check":
     executor: ubuntu_executor
     steps:
       - checkout
       - run:
-          name: Run tests against Python 3.9 and git 2.30.1 (with checking coverage and building documentation)
-          command: PYTHON_VERSION=3.9 GIT_VERSION=2.30.1 CHECK_COVERAGE=true BUILD_DOCS=true bash ci/tox/ci-run.sh
+          name: Run tests against Python 3.8 and git 2.25.0 (with PEP8 check)
+          command: PYTHON_VERSION=3.8 GIT_VERSION=2.25.0 CHECK_PEP8=true  bash ci/tox/ci-run.sh
+
+  "test against python 3_9 and git 2_30_1 with coverage report":
+    executor: ubuntu_executor
+    steps:
+      - checkout
+      - run:
+          name: Run tests against Python 3.9 and git 2.30.1 (with coverage report)
+          command: PYTHON_VERSION=3.9 GIT_VERSION=2.30.1 CHECK_COVERAGE=true  bash ci/tox/ci-run.sh
       - store_artifacts:
           path: htmlcov
           destination: coverage
-      - store_artifacts:
-          path: docs/html
-          destination: docs
 
-  "test against python 3_10 and git 2_33_1":
+  "test against python 3_10 and git 2_33_1 with building docs":
     executor: ubuntu_executor
     steps:
       - checkout
       - run:
-          name: Run tests against Python 3.10 and git 2.33.1
-          command: PYTHON_VERSION=3.10 GIT_VERSION=2.33.1 bash ci/tox/ci-run.sh
+          name: Run tests against Python 3.10 and git 2.33.1 (with building docs)
+          command: PYTHON_VERSION=3.10 GIT_VERSION=2.33.1 BUILD_DOCS=true  bash ci/tox/ci-run.sh
+      - store_artifacts:
+          path: docs/html
+          destination: docs
 
   "dry run deploy":
     executor: ubuntu_executor
@@ -184,9 +190,9 @@ workflows:
       - general checks
       - test against python 3_6 and git 1_8_10
       - test against python 3_7 and git 2_7_6
-      - test against python 3_8 and git 2_25_0 with PEP8 checks
-      - test against python 3_9 and git 2_30_1 with coverage report and docs creation
-      - test against python 3_10 and git 2_33_1
+      - test against python 3_8 and git 2_25_0 with PEP8 check
+      - test against python 3_9 and git 2_30_1 with coverage report
+      - test against python 3_10 and git 2_33_1 with building docs
       - dry run deploy:
           filters:
             branches:
