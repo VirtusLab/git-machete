@@ -6,9 +6,9 @@ function error() {
 
   if [[ $# -ge 1 ]]; then
     if [[ -t 1 ]]; then
-      echo -e "${red}>>> $@ <<<${endc}"
+      echo -e "${red}>>> $* <<<${endc}"
     else
-      echo -e ">>> $@ <<<"
+      echo -e ">>> $* <<<"
     fi
   fi
 }

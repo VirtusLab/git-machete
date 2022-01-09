@@ -9,7 +9,7 @@ executors:
       TERM: ansi
 
 mandatory_jobs: &mandatory_jobs
-  - initial checks
+  - general checks
   - test against python 3_6 and git 1_8_10
   - test against python 3_7 and git 2_7_6
   - test against python 3_8 and git 2_25_0 with PEP8 checks
@@ -17,21 +17,25 @@ mandatory_jobs: &mandatory_jobs
   - test against python 3_10 and git 2_33_1
 
 jobs:
-  "initial checks":
+  "general checks":
     executor: ubuntu_executor
     steps:
       - checkout
       - run:
           name: Install dependencies
           command: |
-            # For ensure-completion-scripts-correct.sh
             sudo apt-get update
+
+            # For ensure-completion-scripts-correct.sh
             sudo apt-get install zsh fish
+
+            # For ensure-shell-scripts-pass-shellcheck.sh
+            sudo apt-get install shellcheck
 
             # For ensure-links-correct.sh
             npm install --global remark-cli remark-lint-no-dead-urls remark-validate-links
       - run:
-          name: Perform initial checks
+          name: Perform general checks
           command: |
             # We don't want `less` to open for `git grep` results.
             export GIT_PAGER=cat
@@ -43,6 +47,7 @@ jobs:
             enforce-issue-number-for-todos.sh
             ensure-completion-scripts-correct.sh
             ensure-links-correct.sh
+            ensure-shell-scripts-pass-shellcheck.sh
             ensure-version-bumped.sh
             prohibit-tab-character.sh
             prohibit-trailing-whitespace.sh
@@ -176,7 +181,7 @@ workflows:
   version: 2
   build:
     jobs:
-      - initial checks
+      - general checks
       - test against python 3_6 and git 1_8_10
       - test against python 3_7 and git 2_7_6
       - test against python 3_8 and git 2_25_0 with PEP8 checks

@@ -33,12 +33,12 @@ ARG check_coverage
 ENV CHECK_COVERAGE=${check_coverage}
 
 # Pass build argument to BUILD_DOCS environment variable that is used to
-# determine where to run tox environment that builds documentation.
+# determine whether to run tox environment that builds documentation.
 ARG build_docs
 ENV BUILD_DOCS=${build_docs}
 
 # Pass build argument to PEP8 environment variable that is used to
-# determine where to run tox environment that runs check against PEP8 standard.
+# determine whether to run tox environment that runs check against PEP8 standard.
 ARG pep8
 ENV PEP8=${pep8}
 
