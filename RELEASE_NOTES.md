@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.7.0
 
+- added: extra options can be passed to the underlying `git rebase` via `GIT_MACHETE_REBASE_OPTS` env var (suggested by @kgadek)
+
 ## New in git-machete 3.6.2
 
 - added: `gitmachete/git-machete` Docker image (contributed by @mohitsaxenaknoldus)

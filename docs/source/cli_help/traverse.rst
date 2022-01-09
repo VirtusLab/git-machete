@@ -83,3 +83,7 @@ In other words, there is no need to explicitly ask to `continue` as it is the ca
 -W                           Equivalent to ``--fetch --whole``; useful for even more automated traversal of all branches.
 
 -y, --yes                    Don't ask for any interactive input, including confirmation of rebase/push/pull. Implies ``-n``.
+
+**Environment variables:**
+
+GIT_MACHETE_REBASE_OPTS      Extra options to pass to the underlying ``git rebase`` invocations, space-separated. Example: ``GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete traverse``.

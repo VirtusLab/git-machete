@@ -55,3 +55,7 @@ Note: This command doesn't delete any branches from git, just removes them from 
 --no-edit-merge                                   If updating by merge, skip opening the editor for merge commit message while doing ``git merge`` (i.e. pass ``--no-edit`` flag to underlying ``git merge``). Not allowed if updating by rebase.
 
 --no-interactive-rebase                           If updating by rebase, run ``git rebase`` in non-interactive mode (without ``-i/--interactive`` flag). Not allowed if updating by merge.
+
+**Environment variables:**
+
+GIT_MACHETE_REBASE_OPTS                           Extra options to pass to the underlying ``git rebase`` invocations, space-separated. Example: ``GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete slide-out``.
