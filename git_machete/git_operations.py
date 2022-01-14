@@ -756,13 +756,11 @@ class GitContext:
         def do_rebase() -> None:
             # Let's use `OPTS` suffix for consistency with git's built-in env var `GIT_DIFF_OPTS`
             git_machete_rebase_opts_var = 'GIT_MACHETE_REBASE_OPTS'
-            rebase_opts_str = os.environ.get(git_machete_rebase_opts_var)
-            rebase_opts = filter(None, rebase_opts_str.split(' ')) if rebase_opts_str else []
+            rebase_opts = os.environ.get(git_machete_rebase_opts_var, '').split()
             try:
-                if opt_no_interactive_rebase:
-                    self._run_git("rebase", *rebase_opts, "--onto", onto, fork_revision, branch)
-                else:
-                    self._run_git("rebase", *rebase_opts, "--interactive", "--onto", onto, fork_revision, branch)
+                if not opt_no_interactive_rebase:
+                    rebase_opts.append("--interactive")
+                self._run_git("rebase", *rebase_opts, "--onto", onto, fork_revision, branch)
             finally:
                 # https://public-inbox.org/git/317468c6-40cc-9f26-8ee3-3392c3908efb@talktalk.net/T
                 # In our case, this can happen when git version invoked by git-machete to start the rebase
