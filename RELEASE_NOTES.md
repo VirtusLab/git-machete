@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.7.1
+
+- fixed: build process of Docker images
+
 ## New in git-machete 3.7.0
 
 - added: extra options can be passed to the underlying `git rebase` via `GIT_MACHETE_REBASE_OPTS` env var (suggested by @kgadek)

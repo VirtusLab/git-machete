@@ -1,11 +1,15 @@
 FROM python:3-alpine
-RUN apk update
-RUN apk add git
+SHELL ["/bin/sh", "-e", "-o", "pipefail", "-u", "-x", "-c"]
+RUN apk add --no-cache git
 
-ARG pypi_host
-ARG version
-RUN pip install --index-url=https://$pypi_host/simple/ git-machete==$version
-RUN git machete --version
+COPY . /tmp/input/
+WORKDIR /tmp/input/
+RUN find . | sort
+RUN \
+  export PYTHONDONTWRITEBYTECODE=1; \
+  python setup.py install; \
+  git machete --version; \
+  rm -rf /tmp/input/
 
 WORKDIR /repo
 VOLUME /repo

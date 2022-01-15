@@ -120,7 +120,6 @@ jobs:
 
       - deploy:
           name: '[Dry run] Publish image to Docker Hub'
-          # Prerequisites: artifacts must be released to test PyPI first
           command: bash ci/docker/ci-deploy.sh --dry-run
 
       - deploy:
@@ -130,7 +129,6 @@ jobs:
 
       - deploy:
           name: '[Dry run] Build snap'
-          # Side effects: none
           command: bash ci/snap/ci-run-dry-run.sh
 
       - deploy:
@@ -154,7 +152,6 @@ jobs:
 
       - deploy:
           name: 'Publish image to Docker Hub'
-          # Prerequisites: artifacts must be released to PyPI first
           command: bash ci/docker/ci-deploy.sh
 
       - deploy:
