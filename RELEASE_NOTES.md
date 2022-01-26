@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.7.2
+
+- fixed: package version retrieval outside of git repository
+
 ## New in git-machete 3.7.1
 
 - fixed: build process of Docker images
