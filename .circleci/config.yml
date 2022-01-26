@@ -59,6 +59,8 @@ jobs:
       - run:
           name: Run tests against Python 3.6 and git 1.8.0
           command: PYTHON_VERSION=3.6 GIT_VERSION=1.8.0  bash ci/tox/ci-run.sh # Earliest versions of python/git supported by git-machete
+      - store_artifacts:
+          path: tox.json
       - store_test_results:
           path: tox.json
 
