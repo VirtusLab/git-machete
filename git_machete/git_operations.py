@@ -645,7 +645,7 @@ class GitContext:
             #   then there is exactly one merge-base - the ancestor,
             # * if neither of sha1, sha2 is an ancestor of another,
             #   then none of the (possibly more than one) merge-bases is equal to either of sha1/sha2 anyway.
-            self.__merge_base_cached[sha1, sha2] = FullCommitHash.of(self._popen_git("merge-base", sha1, sha2).rstrip())
+            self.__merge_base_cached[sha1, sha2] = FullCommitHash.of(self._popen_git("merge-base", sha1, sha2, allow_non_zero=True).rstrip())
         return self.__merge_base_cached[sha1, sha2]
 
     # Note: the 'git rev-parse --verify' validation is not performed in case for either of earlier/later
