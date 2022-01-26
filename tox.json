@@ -1,0 +1,665 @@
+{
+  "reportversion": "1",
+  "toxversion": "3.13.2",
+  "platform": "linux",
+  "host": "knoldus-Latitude-3520",
+  "commands": [],
+  "testenvs": {
+    "pep8": {
+      "setup": [
+        {
+          "command": [
+            "/home/knoldus/OS/git-machete/.tox/pep8/bin/python",
+            "-m",
+            "pip",
+            "freeze"
+          ],
+          "output": "/usr/share/python-wheels/html5lib-1.0.1-py2.py3-none-any.whl/html5lib/_trie/_base.py:3: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.\n/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.\nflake8==4.0.1\ngit-machete==3.7.1\nmccabe==0.6.1\npycodestyle==2.8.0\npyflakes==2.4.0\n",
+          "retcode": 0
+        }
+      ],
+      "python": {
+        "executable": "/home/knoldus/OS/git-machete/.tox/pep8/bin/python",
+        "name": "python",
+        "version_info": [
+          3,
+          8,
+          10,
+          "final",
+          0
+        ],
+        "version": "3.8.10 (default, Nov 26 2021, 20:14:08) \n[GCC 9.3.0]",
+        "is_64": true,
+        "sysplatform": "linux"
+      },
+      "installed_packages": [
+        "/usr/share/python-wheels/html5lib-1.0.1-py2.py3-none-any.whl/html5lib/_trie/_base.py:3: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working",
+        "/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.",
+        "/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.",
+        "flake8==4.0.1",
+        "git-machete==3.7.1",
+        "mccabe==0.6.1",
+        "pycodestyle==2.8.0",
+        "pyflakes==2.4.0"
+      ],
+      "test": [
+        {
+          "command": [
+            "/home/knoldus/OS/git-machete/.tox/pep8/bin/flake8"
+          ],
+          "output": "",
+          "retcode": 0
+        }
+      ]
+    },
+    "mypy-py36": {
+      "setup": [
+        {
+          "command": [
+            "setup virtualenv"
+          ],
+          "output": "InterpreterNotFound: python3.6",
+          "retcode": 1
+        }
+      ]
+    },
+    "mypy-py37": {
+      "setup": [
+        {
+          "command": [
+            "setup virtualenv"
+          ],
+          "output": "InterpreterNotFound: python3.7",
+          "retcode": 1
+        }
+      ]
+    },
+    "mypy-py38": {
+      "setup": [
+        {
+          "command": [
+            "/home/knoldus/OS/git-machete/.tox/mypy-py38/bin/python",
+            "-m",
+            "pip",
+            "freeze"
+          ],
+          "output": "/usr/share/python-wheels/html5lib-1.0.1-py2.py3-none-any.whl/html5lib/_trie/_base.py:3: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.\n/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.\nattrs==21.4.0\nautopage==0.5.0\ncliff==3.10.0\ncmd2==2.3.3\nextras==1.0.0\nfixtures==3.0.0\nfuture==0.18.2\ngit-machete==3.7.1\nmypy==0.931\nmypy-extensions==0.4.3\npbr==5.8.0\nprettytable==3.0.0\npyparsing==3.0.7\npyperclip==1.8.2\npython-subunit==1.4.0\nPyYAML==6.0\nsix==1.16.0\nstestr==3.2.1\nstevedore==3.5.0\ntesttools==2.5.0\ntomli==2.0.0\ntyping-extensions==4.0.1\nvoluptuous==0.12.2\nwcwidth==0.2.5\n",
+          "retcode": 0
+        }
+      ],
+      "python": {
+        "executable": "/home/knoldus/OS/git-machete/.tox/mypy-py38/bin/python",
+        "name": "python",
+        "version_info": [
+          3,
+          8,
+          10,
+          "final",
+          0
+        ],
+        "version": "3.8.10 (default, Nov 26 2021, 20:14:08) \n[GCC 9.3.0]",
+        "is_64": true,
+        "sysplatform": "linux"
+      },
+      "installed_packages": [
+        "/usr/share/python-wheels/html5lib-1.0.1-py2.py3-none-any.whl/html5lib/_trie/_base.py:3: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working",
+        "/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.",
+        "/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.",
+        "attrs==21.4.0",
+        "autopage==0.5.0",
+        "cliff==3.10.0",
+        "cmd2==2.3.3",
+        "extras==1.0.0",
+        "fixtures==3.0.0",
+        "future==0.18.2",
+        "git-machete==3.7.1",
+        "mypy==0.931",
+        "mypy-extensions==0.4.3",
+        "pbr==5.8.0",
+        "prettytable==3.0.0",
+        "pyparsing==3.0.7",
+        "pyperclip==1.8.2",
+        "python-subunit==1.4.0",
+        "PyYAML==6.0",
+        "six==1.16.0",
+        "stestr==3.2.1",
+        "stevedore==3.5.0",
+        "testtools==2.5.0",
+        "tomli==2.0.0",
+        "typing-extensions==4.0.1",
+        "voluptuous==0.12.2",
+        "wcwidth==0.2.5"
+      ],
+      "test": [
+        {
+          "command": [
+            "/home/knoldus/OS/git-machete/.tox/mypy-py38/bin/stestr",
+            "run"
+          ],
+          "output": "{1} git_machete.tests.functional.test_machete.MacheteTester.test_branch_reappears_in_definition [0.044596s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_advance_with_no_downstream_branches [0.110114s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_go_first_root_without_downstream [0.172991s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_add [0.224532s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_advance_with_few_possible_downstream_branches_and_yes_option [0.224943s] ... ok\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_advance_with_one_downstream_branch [0.281086s] ... ok\n{1} git_machete.tests.functional.test_machete.MacheteTester.test_checkout_prs_from_fork_with_deleted_repo [0.230604s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_go_first_root_with_downstream [0.412201s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_go_root [0.324681s] ... ok\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_github_create_pr_missing_base_branch_on_remote [0.345116s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_go_next_successor_exists [0.244293s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_retarget_pr [0.231932s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_checkout_prs_freshly_cloned [0.644739s] ... ok\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_go_up [0.161140s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_show_last [0.206044s] ... ok\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_log [0.095163s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_go_down [0.157262s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_show_first [0.251712s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_show_next [0.165611s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_squash_with_invalid_fork_point [0.080798s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_go_last [0.243910s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_show_root [0.196501s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_checkout_prs [1.324489s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_anno_prs [1.581939s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_go_prev_successor_on_another_root_tree [0.138380s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_slide_out_with_down_fork_point_and_multiple_children_of_last_branch [0.139786s] ... ok\nFetching origin...\nCreating a PR from `hotfix/add-trigger` to `master`...{2} git_machete.tests.functional.test_machete.MacheteTester.test_github_create_pr [2.469675s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_slide_out [1.345282s] ... ok\n{2} git_machete.tests.functional.test_machete.MacheteTester.test_go_next_successor_on_another_root_tree [0.228540s] ... ok\nFirst, rewinding head to replay your work on top of it...\nApplying: Third commit on branch-3.\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_slide_out_with_valid_down_fork_point [0.315669s] ... ok\n{1} git_machete.tests.functional.test_machete.MacheteTester.test_discover_traverse_squash [2.649712s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_squash_with_valid_fork_point [0.156705s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_show [1.618523s] ... ok\n{1} git_machete.tests.functional.test_machete.MacheteTester.test_go_prev_successor_exists [0.264380s] ... ok\n{2} git_machete.tests.functional.test_machete.MacheteTester.test_help [0.488582s] ... ok\n{1} git_machete.tests.functional.test_machete.MacheteTester.test_show_down [0.144250s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_squash_merge [1.240980s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_slide_out_with_invalid_down_fork_point [0.214311s] ... ok\n{2} git_machete.tests.functional.test_machete.MacheteTester.test_show_prev [0.213829s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_traverse_no_push_untracked [2.401720s] ... ok\n{1} git_machete.tests.functional.test_machete.MacheteTester.test_update_with_invalid_fork_point [0.169451s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_traverse_no_push [2.292740s] ... ok\n{2} git_machete.tests.functional.test_machete.MacheteTester.test_show_up [0.134344s] ... ok\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_traverse_no_push_override [2.697364s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_update_with_fork_point_not_specified [0.228645s] ... ok\nFetching origin...\nFetching origin...\nFetching testing...\n{2} git_machete.tests.functional.test_machete.MacheteTester.test_update_with_fork_point_specified [0.203344s] ... ok\n/home/knoldus/OS/git-machete/.tox/mypy-py38/lib/python3.8/site-packages/future/standard_library/__init__.py:65: DeprecationWarning: the imp module is deprecated in favour of importlib; see the module's documentation for alternative uses\n  import imp\n\n======\nTotals\n======\nRan: 46 tests in 3.7586 sec.\n - Passed: 46\n - Skipped: 0\n - Expected Fail: 0\n - Unexpected Success: 0\n - Failed: 0\nSum of execute time for each test: 27.7126 sec.\n\n==============\nWorker Balance\n==============\n - Worker 0 (5 tests) => 0:00:03.581410\n - Worker 1 (6 tests) => 0:00:03.504830\n - Worker 2 (6 tests) => 0:00:03.739913\n - Worker 3 (6 tests) => 0:00:03.465461\n - Worker 4 (6 tests) => 0:00:03.518841\n - Worker 5 (7 tests) => 0:00:02.975671\n - Worker 6 (5 tests) => 0:00:03.612304\n - Worker 7 (5 tests) => 0:00:03.327486\n",
+          "retcode": 0
+        }
+      ]
+    },
+    "mypy-py39": {
+      "setup": [
+        {
+          "command": [
+            "/home/knoldus/OS/git-machete/.tox/mypy-py39/bin/python",
+            "-m",
+            "pip",
+            "freeze"
+          ],
+          "output": "/usr/share/python-wheels/html5lib-1.0.1-py2.py3-none-any.whl/html5lib/_trie/_base.py:3: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.\n/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.\nattrs==21.4.0\nautopage==0.5.0\ncliff==3.10.0\ncmd2==2.3.3\nextras==1.0.0\nfixtures==3.0.0\nfuture==0.18.2\ngit-machete==3.7.1\nmypy==0.931\nmypy-extensions==0.4.3\npbr==5.8.0\nprettytable==3.0.0\npyparsing==3.0.7\npyperclip==1.8.2\npython-subunit==1.4.0\nPyYAML==6.0\nsix==1.16.0\nstestr==3.2.1\nstevedore==3.5.0\ntesttools==2.5.0\ntomli==2.0.0\ntyping-extensions==4.0.1\nvoluptuous==0.12.2\nwcwidth==0.2.5\n",
+          "retcode": 0
+        }
+      ],
+      "python": {
+        "executable": "/home/knoldus/OS/git-machete/.tox/mypy-py39/bin/python",
+        "name": "python",
+        "version_info": [
+          3,
+          8,
+          10,
+          "final",
+          0
+        ],
+        "version": "3.8.10 (default, Nov 26 2021, 20:14:08) \n[GCC 9.3.0]",
+        "is_64": true,
+        "sysplatform": "linux"
+      },
+      "installed_packages": [
+        "/usr/share/python-wheels/html5lib-1.0.1-py2.py3-none-any.whl/html5lib/_trie/_base.py:3: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working",
+        "/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.",
+        "/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.",
+        "attrs==21.4.0",
+        "autopage==0.5.0",
+        "cliff==3.10.0",
+        "cmd2==2.3.3",
+        "extras==1.0.0",
+        "fixtures==3.0.0",
+        "future==0.18.2",
+        "git-machete==3.7.1",
+        "mypy==0.931",
+        "mypy-extensions==0.4.3",
+        "pbr==5.8.0",
+        "prettytable==3.0.0",
+        "pyparsing==3.0.7",
+        "pyperclip==1.8.2",
+        "python-subunit==1.4.0",
+        "PyYAML==6.0",
+        "six==1.16.0",
+        "stestr==3.2.1",
+        "stevedore==3.5.0",
+        "testtools==2.5.0",
+        "tomli==2.0.0",
+        "typing-extensions==4.0.1",
+        "voluptuous==0.12.2",
+        "wcwidth==0.2.5"
+      ],
+      "test": [
+        {
+          "command": [
+            "/home/knoldus/OS/git-machete/.tox/mypy-py39/bin/stestr",
+            "run"
+          ],
+          "output": "{2} git_machete.tests.functional.test_machete.MacheteTester.test_branch_reappears_in_definition [0.041745s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_advance_with_no_downstream_branches [0.127904s] ... ok\n{1} git_machete.tests.functional.test_machete.MacheteTester.test_add [0.233780s] ... ok\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_advance_with_few_possible_downstream_branches_and_yes_option [0.243266s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_advance_with_one_downstream_branch [0.289361s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_go_first_root_with_downstream [0.423384s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_github_create_pr_missing_base_branch_on_remote [0.378813s] ... ok\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_go_prev_successor_exists [0.281128s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_go_first_root_without_downstream [0.143048s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_checkout_prs_freshly_cloned [0.645413s] ... ok\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_go_prev_successor_on_another_root_tree [0.164745s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_go_next_successor_exists [0.217913s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_go_next_successor_on_another_root_tree [0.180940s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_go_down [0.161429s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_go_up [0.157831s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_show_first [0.243229s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_slide_out_with_invalid_down_fork_point [0.157329s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_go_last [0.233430s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_show_up [0.100109s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_help [0.338595s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_log [0.086808s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_checkout_prs [1.293206s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_anno_prs [1.642281s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_show_root [0.202772s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_checkout_prs_from_fork_with_deleted_repo [0.174243s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_show_down [0.104341s] ... ok\nFetching origin...\nCreating a PR from `hotfix/add-trigger` to `master`...{2} git_machete.tests.functional.test_machete.MacheteTester.test_github_create_pr [2.583030s] ... ok\n{1} git_machete.tests.functional.test_machete.MacheteTester.test_discover_traverse_squash [2.654435s] ... ok\n{2} git_machete.tests.functional.test_machete.MacheteTester.test_go_root [0.344943s] ... ok\n{1} git_machete.tests.functional.test_machete.MacheteTester.test_show_next [0.228240s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_show [1.637785s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_squash_merge [1.231292s] ... ok\n{2} git_machete.tests.functional.test_machete.MacheteTester.test_retarget_pr [0.300716s] ... ok\n{1} git_machete.tests.functional.test_machete.MacheteTester.test_slide_out_with_down_fork_point_and_multiple_children_of_last_branch [0.229728s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_show_prev [0.221160s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_update_with_fork_point_specified [0.287302s] ... ok\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_traverse_no_push_override [2.774386s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_traverse_no_push [2.408190s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_traverse_no_push_untracked [2.467675s] ... ok\n{2} git_machete.tests.functional.test_machete.MacheteTester.test_show_last [0.277443s] ... ok\nFirst, rewinding head to replay your work on top of it...\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_slide_out [1.782632s] ... ok\nApplying: Third commit on branch-3.\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_update_with_invalid_fork_point [0.151744s] ... ok\n{1} git_machete.tests.functional.test_machete.MacheteTester.test_slide_out_with_valid_down_fork_point [0.295584s] ... ok\n{2} git_machete.tests.functional.test_machete.MacheteTester.test_squash_with_valid_fork_point [0.100128s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_squash_with_invalid_fork_point [0.079382s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_update_with_fork_point_not_specified [0.218900s] ... ok\nFetching origin...\nFetching origin...\nFetching testing...\n/home/knoldus/OS/git-machete/.tox/mypy-py39/lib/python3.8/site-packages/future/standard_library/__init__.py:65: DeprecationWarning: the imp module is deprecated in favour of importlib; see the module's documentation for alternative uses\n  import imp\n\n======\nTotals\n======\nRan: 46 tests in 3.8988 sec.\n - Passed: 46\n - Skipped: 0\n - Expected Fail: 0\n - Unexpected Success: 0\n - Failed: 0\nSum of execute time for each test: 28.5417 sec.\n\n==============\nWorker Balance\n==============\n - Worker 0 (5 tests) => 0:00:03.616670\n - Worker 1 (5 tests) => 0:00:03.643203\n - Worker 2 (6 tests) => 0:00:03.649916\n - Worker 3 (6 tests) => 0:00:03.509851\n - Worker 4 (6 tests) => 0:00:03.500428\n - Worker 5 (7 tests) => 0:00:03.326314\n - Worker 6 (5 tests) => 0:00:03.440680\n - Worker 7 (6 tests) => 0:00:03.867860\n",
+          "retcode": 0
+        }
+      ]
+    },
+    "mypy-py310": {
+      "setup": [
+        {
+          "command": [
+            "/home/knoldus/OS/git-machete/.tox/mypy-py310/bin/python",
+            "-m",
+            "pip",
+            "freeze"
+          ],
+          "output": "/usr/share/python-wheels/html5lib-1.0.1-py2.py3-none-any.whl/html5lib/_trie/_base.py:3: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.\n/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.\nattrs==21.4.0\nautopage==0.5.0\ncliff==3.10.0\ncmd2==2.3.3\nextras==1.0.0\nfixtures==3.0.0\nfuture==0.18.2\ngit-machete==3.7.1\nmypy==0.931\nmypy-extensions==0.4.3\npbr==5.8.0\nprettytable==3.0.0\npyparsing==3.0.7\npyperclip==1.8.2\npython-subunit==1.4.0\nPyYAML==6.0\nsix==1.16.0\nstestr==3.2.1\nstevedore==3.5.0\ntesttools==2.5.0\ntomli==2.0.0\ntyping-extensions==4.0.1\nvoluptuous==0.12.2\nwcwidth==0.2.5\n",
+          "retcode": 0
+        }
+      ],
+      "python": {
+        "executable": "/home/knoldus/OS/git-machete/.tox/mypy-py310/bin/python",
+        "name": "python",
+        "version_info": [
+          3,
+          8,
+          10,
+          "final",
+          0
+        ],
+        "version": "3.8.10 (default, Nov 26 2021, 20:14:08) \n[GCC 9.3.0]",
+        "is_64": true,
+        "sysplatform": "linux"
+      },
+      "installed_packages": [
+        "/usr/share/python-wheels/html5lib-1.0.1-py2.py3-none-any.whl/html5lib/_trie/_base.py:3: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working",
+        "/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.",
+        "/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.",
+        "attrs==21.4.0",
+        "autopage==0.5.0",
+        "cliff==3.10.0",
+        "cmd2==2.3.3",
+        "extras==1.0.0",
+        "fixtures==3.0.0",
+        "future==0.18.2",
+        "git-machete==3.7.1",
+        "mypy==0.931",
+        "mypy-extensions==0.4.3",
+        "pbr==5.8.0",
+        "prettytable==3.0.0",
+        "pyparsing==3.0.7",
+        "pyperclip==1.8.2",
+        "python-subunit==1.4.0",
+        "PyYAML==6.0",
+        "six==1.16.0",
+        "stestr==3.2.1",
+        "stevedore==3.5.0",
+        "testtools==2.5.0",
+        "tomli==2.0.0",
+        "typing-extensions==4.0.1",
+        "voluptuous==0.12.2",
+        "wcwidth==0.2.5"
+      ],
+      "test": [
+        {
+          "command": [
+            "/home/knoldus/OS/git-machete/.tox/mypy-py310/bin/stestr",
+            "run"
+          ],
+          "output": "{7} git_machete.tests.functional.test_machete.MacheteTester.test_branch_reappears_in_definition [0.049730s] ... ok\n{1} git_machete.tests.functional.test_machete.MacheteTester.test_add [0.250305s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_go_down [0.223273s] ... ok\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_checkout_prs_from_fork_with_deleted_repo [0.252367s] ... ok\n{2} git_machete.tests.functional.test_machete.MacheteTester.test_advance_with_few_possible_downstream_branches_and_yes_option [0.258481s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_advance_with_one_downstream_branch [0.291608s] ... ok\n{2} git_machete.tests.functional.test_machete.MacheteTester.test_advance_with_no_downstream_branches [0.135552s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_go_first_root_with_downstream [0.427297s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_go_root [0.341049s] ... ok\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_go_last [0.343977s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_go_prev_successor_exists [0.258063s] ... ok\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_show_down [0.137609s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_show_next [0.184604s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_go_up [0.172021s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_squash_with_valid_fork_point [0.102840s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_checkout_prs_freshly_cloned [0.612916s] ... ok\nFirst, rewinding head to replay your work on top of it...\nApplying: Third commit on branch-3.\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_log [0.103568s] ... ok\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_slide_out_with_valid_down_fork_point [0.255837s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_show_prev [0.169163s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_github_create_pr_missing_base_branch_on_remote [0.276084s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_go_prev_successor_on_another_root_tree [0.139308s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_show_up [0.095513s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_checkout_prs [1.446594s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_anno_prs [1.625102s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_go_first_root_without_downstream [0.102932s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_show_last [0.198847s] ... ok\nFetching origin...\nCreating a PR from `hotfix/add-trigger` to `master`...{1} git_machete.tests.functional.test_machete.MacheteTester.test_discover_traverse_squash [2.670887s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_slide_out [1.540534s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_squash_merge [1.202854s] ... ok\n{2} git_machete.tests.functional.test_machete.MacheteTester.test_github_create_pr [2.707658s] ... ok\n{1} git_machete.tests.functional.test_machete.MacheteTester.test_go_next_successor_on_another_root_tree [0.273876s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_slide_out_with_down_fork_point_and_multiple_children_of_last_branch [0.266780s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_show [1.646753s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_traverse_no_push_untracked [2.465733s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_update_with_fork_point_not_specified [0.324480s] ... ok\n{2} git_machete.tests.functional.test_machete.MacheteTester.test_go_next_successor_exists [0.282980s] ... ok\n{1} git_machete.tests.functional.test_machete.MacheteTester.test_retarget_pr [0.288156s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_traverse_no_push [2.359340s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_update_with_invalid_fork_point [0.188220s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_update_with_fork_point_specified [0.257844s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_show_first [0.318809s] ... ok\n{1} git_machete.tests.functional.test_machete.MacheteTester.test_slide_out_with_invalid_down_fork_point [0.197885s] ... ok\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_traverse_no_push_override [2.777722s] ... ok\n{2} git_machete.tests.functional.test_machete.MacheteTester.test_help [0.416393s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_show_root [0.202850s] ... ok\nFetching origin...\nFetching origin...\nFetching testing...\n{2} git_machete.tests.functional.test_machete.MacheteTester.test_squash_with_invalid_fork_point [0.080229s] ... ok\n/home/knoldus/OS/git-machete/.tox/mypy-py310/lib/python3.8/site-packages/future/standard_library/__init__.py:65: DeprecationWarning: the imp module is deprecated in favour of importlib; see the module's documentation for alternative uses\n  import imp\n\n======\nTotals\n======\nRan: 46 tests in 3.9003 sec.\n - Passed: 46\n - Skipped: 0\n - Expected Fail: 0\n - Unexpected Success: 0\n - Failed: 0\nSum of execute time for each test: 28.9246 sec.\n\n==============\nWorker Balance\n==============\n - Worker 0 (5 tests) => 0:00:03.770129\n - Worker 1 (5 tests) => 0:00:03.682786\n - Worker 2 (6 tests) => 0:00:03.882929\n - Worker 3 (6 tests) => 0:00:03.577472\n - Worker 4 (6 tests) => 0:00:03.491262\n - Worker 5 (7 tests) => 0:00:03.224401\n - Worker 6 (5 tests) => 0:00:03.540736\n - Worker 7 (6 tests) => 0:00:03.769019\n",
+          "retcode": 0
+        }
+      ]
+    },
+    "py36": {
+      "setup": [
+        {
+          "command": [
+            "setup virtualenv"
+          ],
+          "output": "InterpreterNotFound: python3.6",
+          "retcode": 1
+        }
+      ]
+    },
+    "py37": {
+      "setup": [
+        {
+          "command": [
+            "setup virtualenv"
+          ],
+          "output": "InterpreterNotFound: python3.7",
+          "retcode": 1
+        }
+      ]
+    },
+    "py38": {
+      "setup": [
+        {
+          "command": [
+            "/home/knoldus/OS/git-machete/.tox/py38/bin/python",
+            "-m",
+            "pip",
+            "freeze"
+          ],
+          "output": "/usr/share/python-wheels/html5lib-1.0.1-py2.py3-none-any.whl/html5lib/_trie/_base.py:3: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.\n/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.\nattrs==21.4.0\nautopage==0.5.0\ncliff==3.10.0\ncmd2==2.3.3\nextras==1.0.0\nfixtures==3.0.0\nfuture==0.18.2\ngit-machete==3.7.1\nmypy==0.931\nmypy-extensions==0.4.3\npbr==5.8.0\nprettytable==3.0.0\npyparsing==3.0.7\npyperclip==1.8.2\npython-subunit==1.4.0\nPyYAML==6.0\nsix==1.16.0\nstestr==3.2.1\nstevedore==3.5.0\ntesttools==2.5.0\ntomli==2.0.0\ntyping-extensions==4.0.1\nvoluptuous==0.12.2\nwcwidth==0.2.5\n",
+          "retcode": 0
+        }
+      ],
+      "python": {
+        "executable": "/home/knoldus/OS/git-machete/.tox/py38/bin/python",
+        "name": "python",
+        "version_info": [
+          3,
+          8,
+          10,
+          "final",
+          0
+        ],
+        "version": "3.8.10 (default, Nov 26 2021, 20:14:08) \n[GCC 9.3.0]",
+        "is_64": true,
+        "sysplatform": "linux"
+      },
+      "installed_packages": [
+        "/usr/share/python-wheels/html5lib-1.0.1-py2.py3-none-any.whl/html5lib/_trie/_base.py:3: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working",
+        "/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.",
+        "/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.",
+        "attrs==21.4.0",
+        "autopage==0.5.0",
+        "cliff==3.10.0",
+        "cmd2==2.3.3",
+        "extras==1.0.0",
+        "fixtures==3.0.0",
+        "future==0.18.2",
+        "git-machete==3.7.1",
+        "mypy==0.931",
+        "mypy-extensions==0.4.3",
+        "pbr==5.8.0",
+        "prettytable==3.0.0",
+        "pyparsing==3.0.7",
+        "pyperclip==1.8.2",
+        "python-subunit==1.4.0",
+        "PyYAML==6.0",
+        "six==1.16.0",
+        "stestr==3.2.1",
+        "stevedore==3.5.0",
+        "testtools==2.5.0",
+        "tomli==2.0.0",
+        "typing-extensions==4.0.1",
+        "voluptuous==0.12.2",
+        "wcwidth==0.2.5"
+      ],
+      "test": [
+        {
+          "command": [
+            "/home/knoldus/OS/git-machete/.tox/py38/bin/stestr",
+            "run"
+          ],
+          "output": "{7} git_machete.tests.functional.test_machete.MacheteTester.test_branch_reappears_in_definition [0.039794s] ... ok\n{1} git_machete.tests.functional.test_machete.MacheteTester.test_advance_with_no_downstream_branches [0.125147s] ... ok\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_go_first_root_without_downstream [0.187117s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_add [0.223424s] ... ok\n{2} git_machete.tests.functional.test_machete.MacheteTester.test_advance_with_few_possible_downstream_branches_and_yes_option [0.254749s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_checkout_prs_from_fork_with_deleted_repo [0.261249s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_advance_with_one_downstream_branch [0.322711s] ... ok\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_retarget_pr [0.295371s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_go_last [0.364354s] ... ok\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_show_next [0.208959s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_checkout_prs_freshly_cloned [0.694131s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_help [0.465167s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_go_next_successor_exists [0.224114s] ... ok\nFirst, rewinding head to replay your work on top of it...\nApplying: Third commit on branch-3.\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_go_up [0.159070s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_go_first_root_with_downstream [0.303210s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_slide_out_with_valid_down_fork_point [0.239330s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_show_up [0.106543s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_squash_with_valid_fork_point [0.095738s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_checkout_prs [1.488317s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_go_down [0.140641s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_anno_prs [1.616506s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_go_next_successor_on_another_root_tree [0.172945s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_log [0.088192s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_github_create_pr_missing_base_branch_on_remote [0.275341s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_show_prev [0.170796s] ... ok\nFetching origin...\nCreating a PR from `hotfix/add-trigger` to `master`...{5} git_machete.tests.functional.test_machete.MacheteTester.test_show [1.603553s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_show_down [0.180747s] ... ok\n{1} git_machete.tests.functional.test_machete.MacheteTester.test_github_create_pr [2.713204s] ... ok\n{2} git_machete.tests.functional.test_machete.MacheteTester.test_discover_traverse_squash [2.873182s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_show_last [0.324201s] ... ok\n{1} git_machete.tests.functional.test_machete.MacheteTester.test_go_prev_successor_exists [0.310332s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_slide_out_with_down_fork_point_and_multiple_children_of_last_branch [0.229983s] ... ok\n{2} git_machete.tests.functional.test_machete.MacheteTester.test_go_prev_successor_on_another_root_tree [0.231844s] ... ok\n{1} git_machete.tests.functional.test_machete.MacheteTester.test_show_first [0.376354s] ... ok\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_traverse_no_push_override [2.955203s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_traverse_no_push [2.530462s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_update_with_fork_point_not_specified [0.320826s] ... ok\n{2} git_machete.tests.functional.test_machete.MacheteTester.test_go_root [0.376521s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_traverse_no_push_untracked [2.649999s] ... ok\n{1} git_machete.tests.functional.test_machete.MacheteTester.test_slide_out_with_invalid_down_fork_point [0.252219s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_squash_merge [1.532731s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_update_with_invalid_fork_point [0.197416s] ... ok\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_update_with_fork_point_specified [0.282989s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_squash_with_invalid_fork_point [0.091141s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_slide_out [2.007971s] ... ok\nFetching origin...\nFetching origin...\nFetching testing...\n{2} git_machete.tests.functional.test_machete.MacheteTester.test_show_root [0.246274s] ... ok\n/home/knoldus/OS/git-machete/.tox/py38/lib/python3.8/site-packages/future/standard_library/__init__.py:65: DeprecationWarning: the imp module is deprecated in favour of importlib; see the module's documentation for alternative uses\n  import imp\n\n======\nTotals\n======\nRan: 46 tests in 4.0027 sec.\n - Passed: 46\n - Skipped: 0\n - Expected Fail: 0\n - Unexpected Success: 0\n - Failed: 0\nSum of execute time for each test: 30.8101 sec.\n\n==============\nWorker Balance\n==============\n - Worker 0 (5 tests) => 0:00:03.931040\n - Worker 1 (5 tests) => 0:00:03.779820\n - Worker 2 (5 tests) => 0:00:03.984309\n - Worker 3 (6 tests) => 0:00:03.766794\n - Worker 4 (6 tests) => 0:00:03.852471\n - Worker 5 (7 tests) => 0:00:03.658718\n - Worker 6 (6 tests) => 0:00:03.911476\n - Worker 7 (6 tests) => 0:00:03.939427\n",
+          "retcode": 0
+        }
+      ]
+    },
+    "py39": {
+      "setup": [
+        {
+          "command": [
+            "/home/knoldus/OS/git-machete/.tox/py39/bin/python",
+            "-m",
+            "pip",
+            "freeze"
+          ],
+          "output": "/usr/share/python-wheels/html5lib-1.0.1-py2.py3-none-any.whl/html5lib/_trie/_base.py:3: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.\n/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.\nattrs==21.4.0\nautopage==0.5.0\ncliff==3.10.0\ncmd2==2.3.3\nextras==1.0.0\nfixtures==3.0.0\nfuture==0.18.2\ngit-machete==3.7.1\nmypy==0.931\nmypy-extensions==0.4.3\npbr==5.8.0\nprettytable==3.0.0\npyparsing==3.0.7\npyperclip==1.8.2\npython-subunit==1.4.0\nPyYAML==6.0\nsix==1.16.0\nstestr==3.2.1\nstevedore==3.5.0\ntesttools==2.5.0\ntomli==2.0.0\ntyping-extensions==4.0.1\nvoluptuous==0.12.2\nwcwidth==0.2.5\n",
+          "retcode": 0
+        }
+      ],
+      "python": {
+        "executable": "/home/knoldus/OS/git-machete/.tox/py39/bin/python",
+        "name": "python",
+        "version_info": [
+          3,
+          8,
+          10,
+          "final",
+          0
+        ],
+        "version": "3.8.10 (default, Nov 26 2021, 20:14:08) \n[GCC 9.3.0]",
+        "is_64": true,
+        "sysplatform": "linux"
+      },
+      "installed_packages": [
+        "/usr/share/python-wheels/html5lib-1.0.1-py2.py3-none-any.whl/html5lib/_trie/_base.py:3: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working",
+        "/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.",
+        "/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.",
+        "attrs==21.4.0",
+        "autopage==0.5.0",
+        "cliff==3.10.0",
+        "cmd2==2.3.3",
+        "extras==1.0.0",
+        "fixtures==3.0.0",
+        "future==0.18.2",
+        "git-machete==3.7.1",
+        "mypy==0.931",
+        "mypy-extensions==0.4.3",
+        "pbr==5.8.0",
+        "prettytable==3.0.0",
+        "pyparsing==3.0.7",
+        "pyperclip==1.8.2",
+        "python-subunit==1.4.0",
+        "PyYAML==6.0",
+        "six==1.16.0",
+        "stestr==3.2.1",
+        "stevedore==3.5.0",
+        "testtools==2.5.0",
+        "tomli==2.0.0",
+        "typing-extensions==4.0.1",
+        "voluptuous==0.12.2",
+        "wcwidth==0.2.5"
+      ],
+      "test": [
+        {
+          "command": [
+            "/home/knoldus/OS/git-machete/.tox/py39/bin/stestr",
+            "run"
+          ],
+          "output": "{2} git_machete.tests.functional.test_machete.MacheteTester.test_branch_reappears_in_definition [0.047343s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_go_first_root_without_downstream [0.176641s] ... ok\n{1} git_machete.tests.functional.test_machete.MacheteTester.test_add [0.241817s] ... ok\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_advance_with_few_possible_downstream_branches_and_yes_option [0.249549s] ... ok\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_advance_with_no_downstream_branches [0.130256s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_github_create_pr_missing_base_branch_on_remote [0.424994s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_go_prev_successor_exists [0.303870s] ... ok\n{1} git_machete.tests.functional.test_machete.MacheteTester.test_checkout_prs_from_fork_with_deleted_repo [0.256434s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_help [0.488517s] ... ok\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_advance_with_one_downstream_branch [0.264780s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_show_up [0.144097s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_checkout_prs_freshly_cloned [0.689525s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_go_next_successor_exists [0.245584s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_go_root [0.321182s] ... ok\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_show_next [0.208474s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_slide_out_with_invalid_down_fork_point [0.219209s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_go_up [0.197195s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_go_next_successor_on_another_root_tree [0.225108s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_show_root [0.233241s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_retarget_pr [0.221049s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_squash_with_valid_fork_point [0.110024s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_show_first [0.292347s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_anno_prs [1.709087s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_show [1.641788s] ... ok\nFetching origin...\nCreating a PR from `hotfix/add-trigger` to `master`...{2} git_machete.tests.functional.test_machete.MacheteTester.test_github_create_pr [2.817384s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_slide_out [1.804792s] ... ok\n{2} git_machete.tests.functional.test_machete.MacheteTester.test_go_first_root_with_downstream [0.436475s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_traverse_no_push [2.502605s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_checkout_prs [1.714320s] ... ok\n{1} git_machete.tests.functional.test_machete.MacheteTester.test_discover_traverse_squash [2.977046s] ... ok\nFirst, rewinding head to replay your work on top of it...\nApplying: Third commit on branch-3.\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_log [0.138977s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_slide_out_with_valid_down_fork_point [0.375663s] ... ok\n{2} git_machete.tests.functional.test_machete.MacheteTester.test_go_last [0.389052s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_update_with_fork_point_not_specified [0.317583s] ... ok\n{1} git_machete.tests.functional.test_machete.MacheteTester.test_go_down [0.257794s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_squash_with_invalid_fork_point [0.142695s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_show_prev [0.252950s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_traverse_no_push_untracked [2.745059s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_update_with_invalid_fork_point [0.202552s] ... ok\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_traverse_no_push_override [3.060698s] ... ok\n{2} git_machete.tests.functional.test_machete.MacheteTester.test_go_prev_successor_on_another_root_tree [0.234055s] ... ok\n{1} git_machete.tests.functional.test_machete.MacheteTester.test_show_last [0.288634s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_slide_out_with_down_fork_point_and_multiple_children_of_last_branch [0.197378s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_squash_merge [1.508533s] ... ok\n{2} git_machete.tests.functional.test_machete.MacheteTester.test_show_down [0.135769s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_update_with_fork_point_specified [0.205635s] ... ok\nFetching origin...\nFetching origin...\nFetching testing...\n/home/knoldus/OS/git-machete/.tox/py39/lib/python3.8/site-packages/future/standard_library/__init__.py:65: DeprecationWarning: the imp module is deprecated in favour of importlib; see the module's documentation for alternative uses\n  import imp\n\n======\nTotals\n======\nRan: 46 tests in 4.2398 sec.\n - Passed: 46\n - Skipped: 0\n - Expected Fail: 0\n - Unexpected Success: 0\n - Failed: 0\nSum of execute time for each test: 31.7478 sec.\n\n==============\nWorker Balance\n==============\n - Worker 0 (5 tests) => 0:00:03.915235\n - Worker 1 (5 tests) => 0:00:04.023208\n - Worker 2 (6 tests) => 0:00:04.062105\n - Worker 3 (6 tests) => 0:00:03.892273\n - Worker 4 (6 tests) => 0:00:03.876542\n - Worker 5 (7 tests) => 0:00:03.753208\n - Worker 6 (6 tests) => 0:00:04.220186\n - Worker 7 (5 tests) => 0:00:04.019551\n",
+          "retcode": 0
+        }
+      ]
+    },
+    "py310": {
+      "setup": [
+        {
+          "command": [
+            "/home/knoldus/OS/git-machete/.tox/py310/bin/python",
+            "-m",
+            "pip",
+            "freeze"
+          ],
+          "output": "/usr/share/python-wheels/html5lib-1.0.1-py2.py3-none-any.whl/html5lib/_trie/_base.py:3: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.\n/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.\nattrs==21.4.0\nautopage==0.5.0\ncliff==3.10.0\ncmd2==2.3.3\nextras==1.0.0\nfixtures==3.0.0\nfuture==0.18.2\ngit-machete==3.7.1\nmypy==0.931\nmypy-extensions==0.4.3\npbr==5.8.0\nprettytable==3.0.0\npyparsing==3.0.7\npyperclip==1.8.2\npython-subunit==1.4.0\nPyYAML==6.0\nsix==1.16.0\nstestr==3.2.1\nstevedore==3.5.0\ntesttools==2.5.0\ntomli==2.0.0\ntyping-extensions==4.0.1\nvoluptuous==0.12.2\nwcwidth==0.2.5\n",
+          "retcode": 0
+        }
+      ],
+      "python": {
+        "executable": "/home/knoldus/OS/git-machete/.tox/py310/bin/python",
+        "name": "python",
+        "version_info": [
+          3,
+          8,
+          10,
+          "final",
+          0
+        ],
+        "version": "3.8.10 (default, Nov 26 2021, 20:14:08) \n[GCC 9.3.0]",
+        "is_64": true,
+        "sysplatform": "linux"
+      },
+      "installed_packages": [
+        "/usr/share/python-wheels/html5lib-1.0.1-py2.py3-none-any.whl/html5lib/_trie/_base.py:3: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working",
+        "/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.",
+        "/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.",
+        "attrs==21.4.0",
+        "autopage==0.5.0",
+        "cliff==3.10.0",
+        "cmd2==2.3.3",
+        "extras==1.0.0",
+        "fixtures==3.0.0",
+        "future==0.18.2",
+        "git-machete==3.7.1",
+        "mypy==0.931",
+        "mypy-extensions==0.4.3",
+        "pbr==5.8.0",
+        "prettytable==3.0.0",
+        "pyparsing==3.0.7",
+        "pyperclip==1.8.2",
+        "python-subunit==1.4.0",
+        "PyYAML==6.0",
+        "six==1.16.0",
+        "stestr==3.2.1",
+        "stevedore==3.5.0",
+        "testtools==2.5.0",
+        "tomli==2.0.0",
+        "typing-extensions==4.0.1",
+        "voluptuous==0.12.2",
+        "wcwidth==0.2.5"
+      ],
+      "test": [
+        {
+          "command": [
+            "/home/knoldus/OS/git-machete/.tox/py310/bin/stestr",
+            "run"
+          ],
+          "output": "{1} git_machete.tests.functional.test_machete.MacheteTester.test_branch_reappears_in_definition [0.049749s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_add [0.243011s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_advance_with_few_possible_downstream_branches_and_yes_option [0.272899s] ... ok\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_go_next_successor_exists [0.312091s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_advance_with_one_downstream_branch [0.338226s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_advance_with_no_downstream_branches [0.141297s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_go_first_root_with_downstream [0.447791s] ... ok\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_go_prev_successor_exists [0.269957s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_show_prev [0.194492s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_checkout_prs_freshly_cloned [0.711188s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_github_create_pr_missing_base_branch_on_remote [0.323223s] ... ok\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_show_down [0.132610s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_slide_out_with_invalid_down_fork_point [0.192665s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_checkout_prs_from_fork_with_deleted_repo [0.188760s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_show_first [0.291008s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_go_first_root_without_downstream [0.136720s] ... ok\nFirst, rewinding head to replay your work on top of it...\nApplying: Third commit on branch-3.\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_slide_out_with_valid_down_fork_point [0.256614s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_squash_with_invalid_fork_point [0.082551s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_help [0.358913s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_retarget_pr [0.202045s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_checkout_prs [1.404115s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_anno_prs [1.617970s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_go_prev_successor_on_another_root_tree [0.172968s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_log [0.106029s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_slide_out_with_down_fork_point_and_multiple_children_of_last_branch [0.214474s] ... ok\nFetching origin...\nCreating a PR from `hotfix/add-trigger` to `master`...{2} git_machete.tests.functional.test_machete.MacheteTester.test_github_create_pr [2.850882s] ... ok\n{1} git_machete.tests.functional.test_machete.MacheteTester.test_discover_traverse_squash [2.874820s] ... ok\n{1} git_machete.tests.functional.test_machete.MacheteTester.test_go_down [0.225812s] ... ok\n{2} git_machete.tests.functional.test_machete.MacheteTester.test_go_last [0.365642s] ... ok\n{1} git_machete.tests.functional.test_machete.MacheteTester.test_go_next_successor_on_another_root_tree [0.259477s] ... ok\n{2} git_machete.tests.functional.test_machete.MacheteTester.test_go_up [0.215101s] ... ok\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_traverse_no_push_untracked [2.549051s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_slide_out [1.970248s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_squash_merge [1.473775s] ... ok\n{4} git_machete.tests.functional.test_machete.MacheteTester.test_traverse_no_push [2.440279s] ... ok\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_traverse_no_push_override [3.001124s] ... ok\n{2} git_machete.tests.functional.test_machete.MacheteTester.test_show_last [0.301987s] ... ok\n{6} git_machete.tests.functional.test_machete.MacheteTester.test_squash_with_valid_fork_point [0.143188s] ... ok\nFetching origin...\nFetching origin...\nFetching testing...\n{3} git_machete.tests.functional.test_machete.MacheteTester.test_update_with_invalid_fork_point [0.211511s] ... ok\n{1} git_machete.tests.functional.test_machete.MacheteTester.test_go_root [0.388298s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_show [1.777811s] ... ok\n{5} git_machete.tests.functional.test_machete.MacheteTester.test_update_with_fork_point_not_specified [0.317434s] ... ok\n{1} git_machete.tests.functional.test_machete.MacheteTester.test_show_up [0.137642s] ... ok\n{0} git_machete.tests.functional.test_machete.MacheteTester.test_update_with_fork_point_specified [0.252048s] ... ok\n{7} git_machete.tests.functional.test_machete.MacheteTester.test_show_next [0.188414s] ... ok\n{2} git_machete.tests.functional.test_machete.MacheteTester.test_show_root [0.250122s] ... ok\n/home/knoldus/OS/git-machete/.tox/py310/lib/python3.8/site-packages/future/standard_library/__init__.py:65: DeprecationWarning: the imp module is deprecated in favour of importlib; see the module's documentation for alternative uses\n  import imp\n\n======\nTotals\n======\nRan: 46 tests in 3.9985 sec.\n - Passed: 46\n - Skipped: 0\n - Expected Fail: 0\n - Unexpected Success: 0\n - Failed: 0\nSum of execute time for each test: 30.8560 sec.\n\n==============\nWorker Balance\n==============\n - Worker 0 (5 tests) => 0:00:03.969159\n - Worker 1 (6 tests) => 0:00:03.937712\n - Worker 2 (5 tests) => 0:00:03.985785\n - Worker 3 (6 tests) => 0:00:03.760788\n - Worker 4 (6 tests) => 0:00:03.616382\n - Worker 5 (7 tests) => 0:00:03.887192\n - Worker 6 (6 tests) => 0:00:03.748673\n - Worker 7 (5 tests) => 0:00:03.964801\n",
+          "retcode": 0
+        }
+      ]
+    },
+    "coverage": {
+      "setup": [
+        {
+          "command": [
+            "/home/knoldus/OS/git-machete/.tox/coverage/bin/python",
+            "-m",
+            "pip",
+            "freeze"
+          ],
+          "output": "/usr/share/python-wheels/html5lib-1.0.1-py2.py3-none-any.whl/html5lib/_trie/_base.py:3: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.\n/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.\ncoverage==6.2\ngit-machete==3.7.1\n",
+          "retcode": 0
+        }
+      ],
+      "python": {
+        "executable": "/home/knoldus/OS/git-machete/.tox/coverage/bin/python",
+        "name": "python",
+        "version_info": [
+          3,
+          8,
+          10,
+          "final",
+          0
+        ],
+        "version": "3.8.10 (default, Nov 26 2021, 20:14:08) \n[GCC 9.3.0]",
+        "is_64": true,
+        "sysplatform": "linux"
+      },
+      "installed_packages": [
+        "/usr/share/python-wheels/html5lib-1.0.1-py2.py3-none-any.whl/html5lib/_trie/_base.py:3: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working",
+        "/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.",
+        "/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.",
+        "coverage==6.2",
+        "git-machete==3.7.1"
+      ],
+      "test": [
+        {
+          "command": [
+            "/home/knoldus/OS/git-machete/.tox/coverage/bin/coverage",
+            "erase"
+          ],
+          "output": "",
+          "retcode": 0
+        },
+        {
+          "command": [
+            "/home/knoldus/OS/git-machete/.tox/coverage/bin/coverage",
+            "run",
+            "--branch",
+            "--include=git_machete/*",
+            "--omit=git_machete/tests/*",
+            "setup.py",
+            "test"
+          ],
+          "output": "running test\nWARNING: Testing via this command is deprecated and will be removed in a future version. Users looking for a generic test entry point independent of test runner are encouraged to use tox.\nrunning egg_info\nwriting git_machete.egg-info/PKG-INFO\nwriting dependency_links to git_machete.egg-info/dependency_links.txt\nwriting top-level names to git_machete.egg-info/top_level.txt\nreading manifest file 'git_machete.egg-info/SOURCES.txt'\nreading manifest template 'MANIFEST.in'\nwriting manifest file 'git_machete.egg-info/SOURCES.txt'\nrunning build_ext\ntest_add (git_machete.tests.functional.test_machete.MacheteTester)\nVerify behaviour of a 'git machete add' command. ... ok\ntest_advance_with_few_possible_downstream_branches_and_yes_option (git_machete.tests.functional.test_machete.MacheteTester)\nVerify behaviour of a 'git machete advance' command. ... ok\ntest_advance_with_no_downstream_branches (git_machete.tests.functional.test_machete.MacheteTester)\nVerify behaviour of a 'git machete advance' command. ... ok\ntest_advance_with_one_downstream_branch (git_machete.tests.functional.test_machete.MacheteTester)\nVerify behaviour of a 'git machete advance' command. ... ok\ntest_anno_prs (git_machete.tests.functional.test_machete.MacheteTester) ... ok\ntest_branch_reappears_in_definition (git_machete.tests.functional.test_machete.MacheteTester) ... ok\ntest_checkout_prs (git_machete.tests.functional.test_machete.MacheteTester) ... ok\ntest_checkout_prs_freshly_cloned (git_machete.tests.functional.test_machete.MacheteTester) ... ok\ntest_checkout_prs_from_fork_with_deleted_repo (git_machete.tests.functional.test_machete.MacheteTester) ... ok\ntest_discover_traverse_squash (git_machete.tests.functional.test_machete.MacheteTester) ... ok\ntest_github_create_pr (git_machete.tests.functional.test_machete.MacheteTester) ... Fetching origin...\nFetching origin...\nFetching testing...\nFetching origin...\nCreating a PR from `hotfix/add-trigger` to `master`...ok\ntest_github_create_pr_missing_base_branch_on_remote (git_machete.tests.functional.test_machete.MacheteTester) ... ok\ntest_go_down (git_machete.tests.functional.test_machete.MacheteTester)\nVerify behaviour of a 'git machete go down' command. ... ok\ntest_go_first_root_with_downstream (git_machete.tests.functional.test_machete.MacheteTester)\nVerify behaviour of a 'git machete go first' command. ... ok\ntest_go_first_root_without_downstream (git_machete.tests.functional.test_machete.MacheteTester)\nVerify behaviour of a 'git machete go first' command. ... ok\ntest_go_last (git_machete.tests.functional.test_machete.MacheteTester)\nVerify behaviour of a 'git machete go last' command. ... ok\ntest_go_next_successor_exists (git_machete.tests.functional.test_machete.MacheteTester)\nVerify behaviour of a 'git machete go next' command. ... ok\ntest_go_next_successor_on_another_root_tree (git_machete.tests.functional.test_machete.MacheteTester)\nVerify behaviour of a 'git machete go next' command. ... ok\ntest_go_prev_successor_exists (git_machete.tests.functional.test_machete.MacheteTester)\nVerify behaviour of a 'git machete go prev' command. ... ok\ntest_go_prev_successor_on_another_root_tree (git_machete.tests.functional.test_machete.MacheteTester)\nVerify behaviour of a 'git machete go prev' command. ... ok\ntest_go_root (git_machete.tests.functional.test_machete.MacheteTester)\nVerify behaviour of a 'git machete go root' command. ... ok\ntest_go_up (git_machete.tests.functional.test_machete.MacheteTester)\nVerify behaviour of a 'git machete go up' command. ... ok\ntest_help (git_machete.tests.functional.test_machete.MacheteTester) ... ok\ntest_log (git_machete.tests.functional.test_machete.MacheteTester) ... ok\ntest_retarget_pr (git_machete.tests.functional.test_machete.MacheteTester) ... ok\ntest_show (git_machete.tests.functional.test_machete.MacheteTester) ... ok\ntest_show_down (git_machete.tests.functional.test_machete.MacheteTester)\nVerify behaviour of a 'git machete show down' command. ... ok\ntest_show_first (git_machete.tests.functional.test_machete.MacheteTester)\nVerify behaviour of a 'git machete show first' command. ... ok\ntest_show_last (git_machete.tests.functional.test_machete.MacheteTester)\nVerify behaviour of a 'git machete show last' command. ... ok\ntest_show_next (git_machete.tests.functional.test_machete.MacheteTester)\nVerify behaviour of a 'git machete show next' command. ... ok\ntest_show_prev (git_machete.tests.functional.test_machete.MacheteTester)\nVerify behaviour of a 'git machete show prev' command. ... ok\ntest_show_root (git_machete.tests.functional.test_machete.MacheteTester)\nVerify behaviour of a 'git machete show root' command. ... ok\ntest_show_up (git_machete.tests.functional.test_machete.MacheteTester)\nVerify behaviour of a 'git machete show up' command. ... ok\ntest_slide_out (git_machete.tests.functional.test_machete.MacheteTester) ... ok\ntest_slide_out_with_down_fork_point_and_multiple_children_of_last_branch (git_machete.tests.functional.test_machete.MacheteTester) ... ok\ntest_slide_out_with_invalid_down_fork_point (git_machete.tests.functional.test_machete.MacheteTester) ... ok\ntest_slide_out_with_valid_down_fork_point (git_machete.tests.functional.test_machete.MacheteTester) ... First, rewinding head to replay your work on top of it...\nApplying: Third commit on branch-3.\nok\ntest_squash_merge (git_machete.tests.functional.test_machete.MacheteTester) ... ok\ntest_squash_with_invalid_fork_point (git_machete.tests.functional.test_machete.MacheteTester) ... ok\ntest_squash_with_valid_fork_point (git_machete.tests.functional.test_machete.MacheteTester) ... ok\ntest_traverse_no_push (git_machete.tests.functional.test_machete.MacheteTester) ... ok\ntest_traverse_no_push_override (git_machete.tests.functional.test_machete.MacheteTester) ... ok\ntest_traverse_no_push_untracked (git_machete.tests.functional.test_machete.MacheteTester) ... ok\ntest_update_with_fork_point_not_specified (git_machete.tests.functional.test_machete.MacheteTester)\nVerify behaviour of a 'git machete update --no-interactive rebase' command. ... ok\ntest_update_with_fork_point_specified (git_machete.tests.functional.test_machete.MacheteTester)\nVerify behaviour of a 'git machete update --no-interactive rebase -f <commit_hash>' cmd. ... ok\ntest_update_with_invalid_fork_point (git_machete.tests.functional.test_machete.MacheteTester) ... ok\n\n----------------------------------------------------------------------\nRan 46 tests in 27.186s\n\nOK\n",
+          "retcode": 0
+        },
+        {
+          "command": [
+            "/home/knoldus/OS/git-machete/.tox/coverage/bin/coverage",
+            "report"
+          ],
+          "output": "Name                            Stmts   Miss Branch BrPart  Cover\n-----------------------------------------------------------------\ngit_machete/__init__.py             1      0      0      0   100%\ngit_machete/cli.py                448    104    226     47    72%\ngit_machete/client.py            1265    386    717    119    66%\ngit_machete/constants.py           24      0      4      0   100%\ngit_machete/docs.py                 4      0      0      0   100%\ngit_machete/exceptions.py          14      2      6      0    90%\ngit_machete/git_operations.py     598    145    228     42    72%\ngit_machete/github.py             156     36     44     13    72%\ngit_machete/options.py             47      5     12      5    83%\ngit_machete/utils.py              149     37     58     10    70%\n-----------------------------------------------------------------\nTOTAL                            2706    715   1295    236    69%\n",
+          "retcode": 0
+        },
+        {
+          "command": [
+            "/home/knoldus/OS/git-machete/.tox/coverage/bin/coverage",
+            "html"
+          ],
+          "output": "Wrote HTML report to htmlcov/index.html\n",
+          "retcode": 0
+        }
+      ]
+    },
+    "docs": {
+      "setup": [
+        {
+          "command": [
+            "/home/knoldus/OS/git-machete/.tox/docs/bin/python",
+            "setup.py",
+            "--name"
+          ],
+          "output": "git-machete\n",
+          "retcode": 0
+        },
+        {
+          "command": [
+            "/home/knoldus/OS/git-machete/.tox/docs/bin/python",
+            "-c",
+            "import sys;  import json; print(json.dumps(sys.path))"
+          ],
+          "output": "[\"\", \"/usr/lib/python38.zip\", \"/usr/lib/python3.8\", \"/usr/lib/python3.8/lib-dynload\", \"/home/knoldus/OS/git-machete/.tox/docs/lib/python3.8/site-packages\", \"/home/knoldus/OS/git-machete\"]\n",
+          "retcode": 0
+        },
+        {
+          "command": [
+            "/home/knoldus/OS/git-machete/.tox/docs/bin/python",
+            "-m",
+            "pip",
+            "freeze"
+          ],
+          "output": "/usr/share/python-wheels/html5lib-1.0.1-py2.py3-none-any.whl/html5lib/_trie/_base.py:3: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working\n/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.\n/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.\nalabaster==0.7.12\nBabel==2.9.1\ncertifi==2021.10.8\ncharset-normalizer==2.0.10\ndocutils==0.17.1\n-e git+https://github.com/mohitsaxenaknoldus/git-machete.git@5ff909975836d06624b811fa2fb4ea3233109361#egg=git_machete\nidna==3.3\nimagesize==1.3.0\nJinja2==3.0.3\nMarkupSafe==2.0.1\npackaging==21.3\nPygments==2.11.2\npyparsing==3.0.7\npytz==2021.3\nrequests==2.27.1\nsnowballstemmer==2.2.0\nSphinx==4.2.0\nsphinx-rtd-theme==0.5.2\nsphinxcontrib-applehelp==1.0.2\nsphinxcontrib-devhelp==1.0.2\nsphinxcontrib-htmlhelp==2.0.0\nsphinxcontrib-jsmath==1.0.1\nsphinxcontrib-qthelp==1.0.3\nsphinxcontrib-serializinghtml==1.1.5\nurllib3==1.26.8\n",
+          "retcode": 0
+        }
+      ],
+      "python": {
+        "executable": "/home/knoldus/OS/git-machete/.tox/docs/bin/python",
+        "name": "python",
+        "version_info": [
+          3,
+          8,
+          10,
+          "final",
+          0
+        ],
+        "version": "3.8.10 (default, Nov 26 2021, 20:14:08) \n[GCC 9.3.0]",
+        "is_64": true,
+        "sysplatform": "linux"
+      },
+      "installed_packages": [
+        "/usr/share/python-wheels/html5lib-1.0.1-py2.py3-none-any.whl/html5lib/_trie/_base.py:3: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working",
+        "/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.",
+        "/usr/share/python-wheels/toml-0.10.0-py2.py3-none-any.whl/toml/decoder.py:47: DeprecationWarning: invalid escape sequence \\.",
+        "alabaster==0.7.12",
+        "Babel==2.9.1",
+        "certifi==2021.10.8",
+        "charset-normalizer==2.0.10",
+        "docutils==0.17.1",
+        "-e git+https://github.com/mohitsaxenaknoldus/git-machete.git@5ff909975836d06624b811fa2fb4ea3233109361#egg=git_machete",
+        "idna==3.3",
+        "imagesize==1.3.0",
+        "Jinja2==3.0.3",
+        "MarkupSafe==2.0.1",
+        "packaging==21.3",
+        "Pygments==2.11.2",
+        "pyparsing==3.0.7",
+        "pytz==2021.3",
+        "requests==2.27.1",
+        "snowballstemmer==2.2.0",
+        "Sphinx==4.2.0",
+        "sphinx-rtd-theme==0.5.2",
+        "sphinxcontrib-applehelp==1.0.2",
+        "sphinxcontrib-devhelp==1.0.2",
+        "sphinxcontrib-htmlhelp==2.0.0",
+        "sphinxcontrib-jsmath==1.0.1",
+        "sphinxcontrib-qthelp==1.0.3",
+        "sphinxcontrib-serializinghtml==1.1.5",
+        "urllib3==1.26.8"
+      ],
+      "test": [
+        {
+          "command": [
+            "/home/knoldus/OS/git-machete/.tox/docs/bin/sphinx-build",
+            "-b",
+            "html",
+            "docs/source",
+            "docs/html"
+          ],
+          "output": "Running Sphinx v4.2.0\nloading pickled environment... done\nbuilding [mo]: targets for 0 po files that are out of date\nbuilding [html]: targets for 0 source files that are out of date\nupdating environment: 0 added, 0 changed, 0 removed\nlooking for now-outdated files... none found\nno targets are out of date.\nbuild succeeded.\n\nThe HTML pages are in docs/html.\n",
+          "retcode": 0
+        }
+      ]
+    }
+  }
+}
