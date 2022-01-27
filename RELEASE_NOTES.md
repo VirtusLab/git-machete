@@ -1,9 +1,5 @@
 # Release notes
 
-## New in git-machete 3.7.3
-
-- fixed: *args and **kwargs typing
-
 ## New in git-machete 3.7.2
 
 - fixed: package version retrieval outside of git repository
