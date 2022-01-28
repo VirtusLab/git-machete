@@ -3,7 +3,7 @@
 ## New in git-machete 3.7.2
 
 - fixed: package version retrieval outside of git repository
-- fixed: `git merge-base` works for branches that have no common commit
+- fixed: checking whether a branch is merged to parent works for branches that have no common commit
 
 ## New in git-machete 3.7.1
 
