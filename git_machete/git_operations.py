@@ -187,8 +187,9 @@ class GitContext:
 
     @staticmethod
     def _popen_git(git_cmd: str, *args: str, **kwargs: Any) -> str:
+        allow_non_zero = kwargs.pop("allow_non_zero", False)
         exit_code, stdout, stderr = utils.popen_cmd("git", git_cmd, *args, **kwargs)
-        if not kwargs.get("allow_non_zero") and exit_code != 0:
+        if not allow_non_zero and exit_code != 0:
             exit_code_msg: str = fmt(f"`{utils.get_cmd_shell_repr('git', git_cmd, *args, env=kwargs.get('env'))}` returned {exit_code}\n")
             stdout_msg: str = f"\n{utils.bold('stdout')}:\n{utils.dim(stdout)}" if stdout else ""
             stderr_msg: str = f"\n{utils.bold('stderr')}:\n{utils.dim(stderr)}" if stderr else ""
