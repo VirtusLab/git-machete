@@ -635,7 +635,7 @@ class GitContext:
             raise MacheteException("Not currently on any branch")
         return result
 
-    def __get_merge_base(self, sha1: FullCommitHash, sha2: FullCommitHash) -> FullCommitHash:
+    def get_merge_base(self, sha1: FullCommitHash, sha2: FullCommitHash) -> FullCommitHash:
         if sha1 > sha2:
             sha1, sha2 = sha2, sha1
         if not (sha1, sha2) in self.__merge_base_cached:
@@ -667,7 +667,7 @@ class GitContext:
         if earlier_sha == later_sha:
             return True
 
-        return self.__get_merge_base(earlier_sha, later_sha) == earlier_sha
+        return self.get_merge_base(earlier_sha, later_sha) == earlier_sha
 
     # Determine if later_revision, or any ancestors of later_revision that are NOT ancestors of earlier_revision,
     # contain a tree with identical contents to earlier_revision, indicating that
@@ -865,7 +865,7 @@ class GitContext:
                     result[to_branch] = int(match.group(1))
         return result
 
-    def get_commit_information(self, information: str, commit: Optional[AnyRevision] = None) -> str:
+    def get_commit_information(self, commit: AnyRevision, information: str) -> str:
         if information not in GIT_FORMAT_PATTERNS:
             raise MacheteException(
                 f"Retrieving {information} from commit is not supported by project"

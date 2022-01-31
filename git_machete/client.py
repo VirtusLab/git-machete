@@ -1290,11 +1290,11 @@ class MacheteClient:
             return
 
         earliest_sha, earliest_short_sha, earliest_subject = commits[0]
-        earliest_full_body = self.__git.get_commit_information("raw body", FullCommitHash.of(earliest_sha)).strip()
+        earliest_full_body = self.__git.get_commit_information(FullCommitHash.of(earliest_sha), "raw body").strip()
         # %ai for ISO-8601 format; %aE/%aN for respecting .mailmap; see `git rev-list --help`
-        earliest_author_date = self.__git.get_commit_information("author date", FullCommitHash.of(earliest_sha)).strip()
-        earliest_author_email = self.__git.get_commit_information("author email", FullCommitHash.of(earliest_sha)).strip()
-        earliest_author_name = self.__git.get_commit_information("author name", FullCommitHash.of(earliest_sha)).strip()
+        earliest_author_date = self.__git.get_commit_information(FullCommitHash.of(earliest_sha), "author date").strip()
+        earliest_author_email = self.__git.get_commit_information(FullCommitHash.of(earliest_sha), "author email").strip()
+        earliest_author_name = self.__git.get_commit_information(FullCommitHash.of(earliest_sha), "author name").strip()
 
         # Following the convention of `git cherry-pick`, `git commit --amend`, `git rebase` etc.,
         # let's retain the original author (only committer will be overwritten).
@@ -2021,7 +2021,9 @@ class MacheteClient:
         debug(f'create_github_pr({head})', f'organization is {org}, repository is {repo}')
         debug(f'create_github_pr({head})', 'current GitHub user is ' + (current_user or '<none>'))
 
-        title: str = self.__git.get_commit_information("subject").strip()
+        fork_point = self.__git.get_merge_base(self.__git.get_commit_sha_by_revision(head), self.__git.get_commit_sha_by_revision(base))
+        commits: List[Hash_ShortHash_Message] = self.__git.get_commits_between(fork_point, head)
+        _, _, title = commits[0]
         description_path = self.__git.get_git_subpath('info', 'description')
         description: str = utils.slurp_file_or_empty(description_path)
 
