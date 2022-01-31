@@ -1,0 +1,12 @@
+*
+
+!git_machete/
+!git-machete
+!MANIFEST.in
+!README.md
+!requirements.txt
+!setup.py
+
+git_machete/tests/
+**/*.pyc
+**/__pycache__/

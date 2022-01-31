@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e -o pipefail -u
+
 newb() {
   git checkout -b $1
 }

@@ -10,9 +10,10 @@ services:
         - group_id=${GROUP_ID:-0}
         - git_version=${GIT_VERSION:-0.0.0}
         - python_version=${PYTHON_VERSION:-0.0.0}
-        - check_coverage=${CHECK_COVERAGE:-false}
-        - build_docs=${BUILD_DOCS:-false}
-        - pep8=${PEP8:-false}
+    environment:
+      - BUILD_DOCS=${BUILD_DOCS:-false}
+      - CHECK_COVERAGE=${CHECK_COVERAGE:-false}
+      - CHECK_PEP8=${CHECK_PEP8:-false}
     volumes:
       # Host path is relative to current directory, not build-context
       - ../..:/home/ci-user/git-machete

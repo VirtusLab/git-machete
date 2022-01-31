@@ -48,7 +48,8 @@ This tool is [semantically versioned](https://semver.org) with respect to all of
 * command-line interface (commands and their options)
 * format of its specific files (currently just `machete` file within git directory)
 * hooks and their interface
-* output format of plumbing commands (see above for the list).
+* output format of plumbing commands (see above for the list)
+* accepted environment variables
 
 Output format of any non-plumbing command can change in non-backward-compatible manner even between patch-level updates.
 
@@ -99,6 +100,8 @@ Review fixes should be pushed on separate commits for easier viewing on GitHub (
 1. Verify that the latest version is uploaded to [PyPI](https://pypi.org/project/git-machete).
 
 1. Verify that the latest commit in [VirtusLab/homebrew-git-machete](https://github.com/VirtusLab/homebrew-git-machete) tap repo refers to the latest version.
+
+1. Verify that a Docker image for the new version has been pushed to Docker Hub: [gitmachete/git-machete](https://hub.docker.com/r/gitmachete/git-machete/tags).
 
 1. Verify that a build started for [Snap](https://build.snapcraft.io/user/VirtusLab/git-machete).
    If not, check `snapcraft.io` webhook on Github (under Settings > Webhooks) &mdash;

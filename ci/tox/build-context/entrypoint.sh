@@ -7,18 +7,20 @@
 
 set -e -u -x
 
+env | sort | head -3
+
 if [[ $CHECK_COVERAGE = true ]]; then
   TOX_ENV_LIST="mypy-py${PYTHON_VERSION/./},coverage"
 else
   TOX_ENV_LIST="mypy-py${PYTHON_VERSION/./},py${PYTHON_VERSION/./}"
 fi
 
-if [[ $PEP8 = true ]]; then
-  TOX_ENV_LIST="$TOX_ENV_LIST,pep8"
-fi
-
 if [[ $BUILD_DOCS = true ]]; then
   TOX_ENV_LIST="$TOX_ENV_LIST,docs"
+fi
+
+if [[ $CHECK_PEP8 = true ]]; then
+  TOX_ENV_LIST="$TOX_ENV_LIST,pep8"
 fi
 
 tox -e $TOX_ENV_LIST

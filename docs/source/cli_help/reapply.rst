@@ -20,3 +20,10 @@ but there is also dedicated ``squash`` command that achieves the same goal witho
 **Options:**
 
 -f, --fork-point=<fork-point-commit>    Specifies the alternative fork point commit after which the rebased part of history is meant to start.
+
+**Environment variables:**
+
+``GIT_MACHETE_REBASE_OPTS``
+    Extra options to pass to the underlying ``git rebase`` invocation, space-separated.
+
+    Example: ``GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete reapply``.

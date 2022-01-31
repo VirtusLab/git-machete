@@ -1,5 +1,23 @@
 # Release notes
 
+## New in git-machete 3.7.2
+
+- fixed: package version retrieval outside of git repository
+- fixed: checking whether a branch is merged to parent works for branches that have no common commit
+
+## New in git-machete 3.7.1
+
+- fixed: build process of Docker images
+
+## New in git-machete 3.7.0
+
+- added: extra options can be passed to the underlying `git rebase` via `GIT_MACHETE_REBASE_OPTS` env var (suggested by @kgadek)
+
+## New in git-machete 3.6.2
+
+- added: `gitmachete/git-machete` Docker image (contributed by @mohitsaxenaknoldus)
+- fixed: build process stability
+
 ## New in git-machete 3.6.1
 
 - fixed: support for worktrees (reported by @kgadek)

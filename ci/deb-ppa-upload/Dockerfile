@@ -1,4 +1,5 @@
 FROM ubuntu:20.04
+SHELL ["/bin/bash", "-e", "-o", "pipefail", "-u", "-x", "-c"]
 
 # See https://github.com/phusion/baseimage-docker/issues/58 for why DEBIAN_FRONTEND=noninteractive is needed.
 RUN apt-get update \

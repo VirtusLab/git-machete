@@ -1,5 +1,6 @@
 ARG python_version
 FROM python:${python_version}-alpine
+SHELL ["/bin/sh", "-e", "-o", "pipefail", "-u", "-x", "-c"]
 # Required since the earlier versions of git assume the location of python to be /usr/bin/python during the build.
 RUN ln -s /usr/local/bin/python /usr/bin/python
 
@@ -27,27 +28,12 @@ ENV PYTHON_VERSION=${python_version}
 ENV PYTHON=python${python_version}
 RUN apk add --no-cache gcc musl-dev # both packages are required to install mypy
 
-# Pass build argument to CHECK_COVERAGE environment variable that is used to
-# determine tox environment list in 'entrypoint.sh'.
-ARG check_coverage
-ENV CHECK_COVERAGE=${check_coverage}
-
-# Pass build argument to BUILD_DOCS environment variable that is used to
-# determine where to run tox enviornment that builds documentation.
-ARG build_docs
-ENV BUILD_DOCS=${build_docs}
-
-# Pass build argument to PEP8 environment variable that is used to
-# determine where to run tox environment that runs check against PEP8 standard.
-ARG pep8
-ENV PEP8=${pep8}
-
 ARG user_id
 ARG group_id
 RUN set -x \
     && [ ${user_id:-0} -ne 0 ] \
     && [ ${group_id:-0} -ne 0 ] \
-    # sometimes given group_id is already taken and addgroup outputs error, so let's check it's existence first
+    # sometimes the given `group_id` is already taken and `addgroup` raises an error, so let's check its existence first
     && (getent group $group_id || addgroup --gid=${group_id} ci-user) \
     && adduser --uid=${user_id} --ingroup=$(getent group $group_id | cut -d: -f1) --disabled-password ci-user
 USER ci-user

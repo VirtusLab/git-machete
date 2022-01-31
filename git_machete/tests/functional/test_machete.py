@@ -260,7 +260,9 @@ class MockGithubAPIRequest:
 
 
 class MockHTTPError(HTTPError):
-    def __init__(self, url: str, code: int, msg: Any, hdrs: Dict[str, str], fp: Any) -> None:
+    from email.message import Message
+
+    def __init__(self, url: str, code: int, msg: Any, hdrs: Message, fp: Any) -> None:
         super().__init__(url, code, msg, hdrs, fp)
         self.msg = msg
 

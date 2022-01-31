@@ -2,6 +2,6 @@
 
 set -e -o pipefail -u -x
 
-source ci/docker-build-and-push.sh rpm
+source ci/docker-pull-or-build-and-push.sh rpm
 
 docker-compose --ansi never run rpm

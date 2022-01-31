@@ -467,6 +467,10 @@ long_docs: Dict[str, str] = {
 
         <b>Options:</b>
           <b>-f, --fork-point=<fork-point-commit></b>    Specifies the alternative fork point commit after which the rebased part of history is meant to start.
+
+        <b>Environment variables:</b>
+          <b>GIT_MACHETE_REBASE_OPTS</b>                 Extra options to pass to the underlying `git rebase` invocation, space-separated.
+                                                  Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete reapply`.
     """,
     "show": """
         <b>Usage: git machete show <direction> [<branch>]</b>
@@ -533,6 +537,10 @@ long_docs: Dict[str, str] = {
 
           <b>--no-interactive-rebase</b>                           If updating by rebase, run `git rebase` in non-interactive mode (without `-i/--interactive` flag).
                                                             Not allowed if updating by merge.
+
+        <b>Environment variables:</b>
+          <b>GIT_MACHETE_REBASE_OPTS</b>                           Extra options to pass to the underlying `git rebase` invocations, space-separated.
+                                                            Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete slide-out`.
     """,
     "squash": """
         <b>Usage: git machete squash [-f|--fork-point=<fork-point-commit>]</b>
@@ -678,6 +686,10 @@ long_docs: Dict[str, str] = {
           <b>-W</b>                           Equivalent to `--fetch --whole`; useful for even more automated traversal of all branches.
 
           <b>-y, --yes</b>                    Don't ask for any interactive input, including confirmation of rebase/push/pull. Implies `-n`.
+
+        <b>Environment variables:</b>
+          <b>GIT_MACHETE_REBASE_OPTS</b>      Extra options to pass to the underlying `git rebase` invocations, space-separated.
+                                       Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete traverse`.
     """,
     "update": """
         <b>Usage: git machete update [-f|--fork-point=<fork-point-commit>] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase]</b>
@@ -703,6 +715,10 @@ long_docs: Dict[str, str] = {
 
           <b>--no-interactive-rebase</b>                 If updating by rebase, run `git rebase` in non-interactive mode (without `-i/--interactive` flag).
                                                   Not allowed if updating by merge.
+
+        <b>Environment variables:</b>
+          <b>GIT_MACHETE_REBASE_OPTS</b>                 Extra options to pass to the underlying `git rebase` invocation, space-separated.
+                                                  Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete update`.
     """,
     "version": """
         <b>Usage: git machete version</b>
