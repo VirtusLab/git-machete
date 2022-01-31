@@ -303,7 +303,7 @@ long_docs: Dict[str, str] = {
     """,
     "github": """
         <b>Usage: git machete github <subcommand></b>
-        where <subcommand> is one of: `anno-prs`, `checkout-prs`, `create-pr`, `retarget-pr`.
+        where <subcommand> is one of: `anno-prs`, `checkout-prs`, `create-pr`, `retarget-pr`, `fetch-prs`.
 
         Creates, checks out and manages GitHub PRs while keeping them reflected in branch definition file.
 
@@ -344,6 +344,23 @@ long_docs: Dict[str, str] = {
         <b>`retarget-pr`:</b>
 
           Sets the base of the current branch's PR to upstream (parent) branch, as seen by git machete (see `git machete show up`).
+      
+        <b>`fetch-prs <PR-number-1> ... <PR-number-N> [--all] [--mine] [--by]`:</b>
+
+          Check out the head branch of the given pull requests (specified by number),
+          also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally.
+          Once pull request is checked out locally, annotate local branches with corresponding pull request numbers. 
+          (Plural version of the `checkout-prs` subcommand but without switching branches at the end)
+
+          <b>Parameters:</b>
+            <b><PR-number-1> ... <PR-number-N></b>    Pull request numbers to checkout.
+            
+          <b>Options:</b>
+            <b>--all</b>     Checkout all open PRs.
+            <b>--mine</b>    Checkout mine open PRs.
+            <b>--by</b>      Checkout someone's open PRs.
+              <b>Parameters:</b>
+                <b> <Github login></b> Github account name.
     """,
     "go": """
         <b>Usage: git machete g[o] <direction></b>

@@ -1860,7 +1860,7 @@ class MacheteClient:
                             all_opened_prs: bool = False,
                             my_opened_prs: bool = False,
                             opened_by: str = None,
-                            do_checkout_local_branch: bool = False
+                            do_checkout_local_branch: bool = True
                             ) -> None:
         org: str
         repo: str
