@@ -162,7 +162,7 @@ def debug(hdr: str, msg: str) -> None:
 def run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
     chdir_upwards_until_current_directory_exists()
 
-    flat_cmd: str = get_cmd_shell_repr(cmd, *args, **kwargs)
+    flat_cmd: str = get_cmd_shell_repr(cmd, *args, env=kwargs.get('env'))
     if debug_mode:
         print(bold(f">>> {flat_cmd}"), file=sys.stderr)
     elif verbose_mode:
@@ -203,7 +203,7 @@ def chdir_upwards_until_current_directory_exists() -> None:
 def popen_cmd(cmd: str, *args: str, **kwargs: Any) -> Tuple[int, str, str]:
     chdir_upwards_until_current_directory_exists()
 
-    flat_cmd = get_cmd_shell_repr(cmd, *args, **kwargs)
+    flat_cmd = get_cmd_shell_repr(cmd, *args, env=kwargs.get('env'))
     if debug_mode:
         print(bold(f">>> {flat_cmd}"), file=sys.stderr)
     elif verbose_mode:
@@ -226,7 +226,7 @@ def popen_cmd(cmd: str, *args: str, **kwargs: Any) -> Tuple[int, str, str]:
     return exit_code, stdout, stderr
 
 
-def get_cmd_shell_repr(cmd: str, *args: str, **kwargs: Dict[str, str]) -> str:
+def get_cmd_shell_repr(cmd: str, *args: str, env: Optional[Dict[str, str]]) -> str:
     def shell_escape(arg: str) -> str:
         return arg.replace("(", "\\(") \
             .replace(")", "\\)") \
@@ -234,7 +234,7 @@ def get_cmd_shell_repr(cmd: str, *args: str, **kwargs: Dict[str, str]) -> str:
             .replace("\t", "$'\\t'") \
             .replace("\n", "$'\\n'")
 
-    env: Dict[str, str] = kwargs.get("env", {})
+    env = env if env is not None else {}
     # We don't want to include the env vars that are inherited from the environment of git-machete process
     env_repr = [k + "=" + shell_escape(v) for k, v in env.items() if k not in os.environ]
     return " ".join(env_repr + [cmd] + list(map(shell_escape, args)))

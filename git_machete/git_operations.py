@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Callable, Dict, Generator, Iterator, List, Match, Optional, Set, Tuple
+from typing import Any, Callable, Dict, Generator, Iterator, List, Match, Optional, Set, Tuple
 
 import os
 import re
@@ -179,17 +179,18 @@ class GitContext:
         self.__contains_equivalent_tree_cached: Dict[Tuple[FullCommitHash, FullCommitHash], bool] = {}
 
     @staticmethod
-    def _run_git(git_cmd: str, *args: str, **kwargs: Dict[str, str]) -> int:
+    def _run_git(git_cmd: str, *args: str, **kwargs: Any) -> int:
         exit_code = utils.run_cmd("git", git_cmd, *args, **kwargs)
         if not kwargs.get("allow_non_zero") and exit_code != 0:
-            raise MacheteException(f"`{utils.get_cmd_shell_repr('git', git_cmd, *args, **kwargs)}` returned {exit_code}")
+            raise MacheteException(f"`{utils.get_cmd_shell_repr('git', git_cmd, *args, env=kwargs.get('env'))}` returned {exit_code}")
         return exit_code
 
     @staticmethod
-    def _popen_git(git_cmd: str, *args: str, **kwargs: Dict[str, str]) -> str:
+    def _popen_git(git_cmd: str, *args: str, **kwargs: Any) -> str:
+        allow_non_zero = kwargs.pop("allow_non_zero", False)
         exit_code, stdout, stderr = utils.popen_cmd("git", git_cmd, *args, **kwargs)
-        if not kwargs.get("allow_non_zero") and exit_code != 0:
-            exit_code_msg: str = fmt(f"`{utils.get_cmd_shell_repr('git', git_cmd, *args, **kwargs)}` returned {exit_code}\n")
+        if not allow_non_zero and exit_code != 0:
+            exit_code_msg: str = fmt(f"`{utils.get_cmd_shell_repr('git', git_cmd, *args, env=kwargs.get('env'))}` returned {exit_code}\n")
             stdout_msg: str = f"\n{utils.bold('stdout')}:\n{utils.dim(stdout)}" if stdout else ""
             stderr_msg: str = f"\n{utils.bold('stderr')}:\n{utils.dim(stderr)}" if stderr else ""
             # Not applying the formatter to avoid transforming whatever characters might be in the output of the command.
@@ -645,7 +646,10 @@ class GitContext:
             #   then there is exactly one merge-base - the ancestor,
             # * if neither of sha1, sha2 is an ancestor of another,
             #   then none of the (possibly more than one) merge-bases is equal to either of sha1/sha2 anyway.
-            self.__merge_base_cached[sha1, sha2] = FullCommitHash.of(self._popen_git("merge-base", sha1, sha2).rstrip())
+            # In the rare case when sha1, sha2 have no common commits, the flag: allow_non_zero=True
+            # (allows, non zero exit code to be returned by git merge-base command, without raising an exception)
+            # is used and the __get_merge_base function returns None.
+            self.__merge_base_cached[sha1, sha2] = FullCommitHash.of(self._popen_git("merge-base", sha1, sha2, allow_non_zero=True))
         return self.__merge_base_cached[sha1, sha2]
 
     # Note: the 'git rev-parse --verify' validation is not performed in case for either of earlier/later
