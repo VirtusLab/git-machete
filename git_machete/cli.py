@@ -221,34 +221,12 @@ def create_cli_parser() -> argparse.ArgumentParser:
         usage=argparse.SUPPRESS,
         add_help=False,
         parents=[common_args_parser])
-
     github_parser.add_argument('subcommand', choices=['anno-prs', 'checkout-prs', 'create-pr', 'retarget-pr', 'fetch-prs'])
-    # github_parser.add_argument('pr_no', nargs='?')
-
     github_parser.add_argument('pr_no', nargs='*')
     github_parser.add_argument('--all', action='store_true')
     github_parser.add_argument('--by')
     github_parser.add_argument('--draft', action='store_true')
     github_parser.add_argument('--mine', action='store_true')
-
-
-    # group1 = github_parser.add_argument_group('group1', 'group1 description')
-    #
-    # group1.add_argument(
-    #     'subcommand', choices=['anno-prs', 'checkout-prs', 'create-pr', 'retarget-pr', 'fetch-prs'])
-    # group1.add_argument('pr_no', nargs='?')
-    #
-    #
-    # group2 = github_parser.add_argument_group('group2', 'group2 description')
-    # group2.add_argument(
-    #     'subcommand', choices=['fetch-prs'])
-    #
-    # group2.add_argument('pr_no', nargs='*')
-    # group2.add_argument('--all', action='store_true')
-    # group2.add_argument('--by')
-    # group2.add_argument('--draft', action='store_true')
-    # group2.add_argument('--mine', action='store_true')
-
 
     go_parser = subparsers.add_parser(
         'go',
@@ -636,11 +614,11 @@ def launch(orig_args: List[str]) -> None:
 
             if 'draft' in parsed_cli and github_subcommand not in {'create-pr'}:
                 raise MacheteException("'--draft' option is only valid with 'create-pr' subcommand.")
-            for command in ('--all', '--by', '--mine', 'pr-no'):
+            for command in ('all', 'by', 'mine'):
                 if command in parsed_cli and github_subcommand not in {'fetch-prs'}:
-                    raise MacheteException(f"'{command}' argument is only valid with 'checkout-prs' subcommand.")
+                    raise MacheteException(f"'--{command}' argument is only valid with 'fetch-prs' subcommand.")
             if 'pr_no' in parsed_cli and github_subcommand not in {'checkout-prs', 'fetch-prs'}:
-                raise MacheteException("'pr_no' argument is only valid with 'checkout-prs' subcommand.")
+                raise MacheteException("'pr_no' argument is only valid with 'checkout-prs' and `fetch-prs` subcommands.")
 
             if github_subcommand == "anno-prs":
                 machete_client.sync_annotations_to_github_prs()
