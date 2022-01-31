@@ -344,17 +344,17 @@ long_docs: Dict[str, str] = {
         <b>`retarget-pr`:</b>
 
           Sets the base of the current branch's PR to upstream (parent) branch, as seen by git machete (see `git machete show up`).
-      
+
         <b>`fetch-prs <PR-number-1> ... <PR-number-N> [--all] [--mine] [--by]`:</b>
 
           Check out the head branch of the given pull requests (specified by number),
           also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally.
-          Once pull request is checked out locally, annotate local branches with corresponding pull request numbers. 
+          Once pull request is checked out locally, annotate local branches with corresponding pull request numbers.
           (Plural version of the `checkout-prs` subcommand but without switching branches at the end)
 
           <b>Parameters:</b>
             <b><PR-number-1> ... <PR-number-N></b>    Pull request numbers to checkout.
-            
+
           <b>Options:</b>
             <b>--all</b>     Checkout all open PRs.
             <b>--mine</b>    Checkout mine open PRs.
