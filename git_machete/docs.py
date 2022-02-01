@@ -360,8 +360,6 @@ long_docs: Dict[str, str] = {
         <b>`retarget-pr`:</b>
 
           Sets the base of the current branch's PR to upstream (parent) branch, as seen by git machete (see `git machete show up`).
-
-
     """,
     "go": """
         <b>Usage: git machete g[o] <direction></b>
