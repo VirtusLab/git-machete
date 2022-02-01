@@ -48,6 +48,7 @@ jobs:
             ensure-completion-scripts-correct.sh
             ensure-links-correct.sh
             ensure-shell-scripts-pass-shellcheck.sh
+            ensure-release-notes-up-to-date.sh
             ensure-version-bumped.sh
             prohibit-tab-character.sh
             prohibit-trailing-whitespace.sh
