@@ -2021,7 +2021,7 @@ class MacheteClient:
         debug(f'create_github_pr({head})', f'organization is {org}, repository is {repo}')
         debug(f'create_github_pr({head})', 'current GitHub user is ' + (current_user or '<none>'))
 
-        fork_point = self.fork_point(head, True, opt_no_detect_squash_merges=False)
+        fork_point = self.fork_point(head, use_overrides=True, opt_no_detect_squash_merges=False)
         if not fork_point:
             raise MacheteException(f"Could not find a fork-point for branch {head}.")
         commits: List[Hash_ShortHash_Message] = self.__git.get_commits_between(fork_point, head)
