@@ -2725,13 +2725,6 @@ class MacheteTester(unittest.TestCase):
 
         self.assert_command(['github', 'fetch-prs', '3', '12'], expected_msg, strip_indentation=False)
 
-    git_api_state_for_test_checkout_prs_fresh_repo = MockGithubAPIState([
-        {'head': {'ref': 'comments/add_docstrings', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'improve/refactor'}, 'number': '2', 'html_url': 'www.github.com', 'state': 'open'},
-        {'head': {'ref': 'restrict_access', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'allow-ownership-link'}, 'number': '17', 'html_url': 'www.github.com', 'state': 'open'},
-        {'head': {'ref': 'improve/refactor', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'chore/sync_to_docs'}, 'number': '1', 'html_url': 'www.github.com', 'state': 'open'},
-        {'head': {'ref': 'sphinx_export', 'repo': {'full_name': 'testing/checkout_prs', 'html_url': GitRepositorySandbox.second_remote_path}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'comments/add_docstrings'}, 'number': '23', 'html_url': 'www.github.com', 'state': 'closed'}
-    ])
-
     def test_squash_with_valid_fork_point(self) -> None:
         (
             self.repo_sandbox.new_branch('branch-0')
