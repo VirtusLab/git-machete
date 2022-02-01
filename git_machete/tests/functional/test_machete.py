@@ -2584,12 +2584,24 @@ class MacheteTester(unittest.TestCase):
                 "the head branch of given pull request."
         )
 
+    git_api_state_for_test_fetch_prs = MockGithubAPIState([
+        {'head': {'ref': 'chore/redundant_checks', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'restrict_access'}, 'number': '18', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'restrict_access', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'allow-ownership-link'}, 'number': '17', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'allow-ownership-link', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'bugfix/feature'}, 'number': '12', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'bugfix/feature', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'enhance/feature'}, 'number': '6', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'enhance/add_user', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '19', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'testing/add_user', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'bugfix/add_user'}, 'number': '22', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'chore/comments', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'testing/add_user'}, 'number': '24', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'ignore-trailing', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'bugfix/remove-n-option', 'repo': {'full_name': 'testing/checkout_prs', 'html_url': GitRepositorySandbox.second_remote_path}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '5', 'html_url': 'www.github.com', 'state': 'closed'}
+    ])
+
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs` due to `git fetch` executed by `checkout-prs` subcommand.
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('urllib.request.urlopen', MockContextManager)
-    @mock.patch('urllib.request.Request', git_api_state_for_test_checkout_prs.new_request())
+    @mock.patch('urllib.request.Request', git_api_state_for_test_fetch_prs.new_request())
     def test_fetch_prs(self) -> None:
         (
             self.repo_sandbox.new_branch("root")
@@ -2647,7 +2659,7 @@ class MacheteTester(unittest.TestCase):
         self.launch_command('discover')
 
         # broken chain of pull requests (add new root)
-        self.launch_command('github', 'fetch-prs', '18', '24')
+        self.launch_command('github', 'fetch-prs', '6', '24')
         self.assert_command(
             ["status"],
             """
@@ -2664,12 +2676,6 @@ class MacheteTester(unittest.TestCase):
             o-enhance/feature
               |
               o-bugfix/feature  PR #6 (github_user)
-                |
-                o-allow-ownership-link  PR #12 (github_user)
-                  |
-                  o-restrict_access  PR #17 (github_user)
-                    |
-                    o-chore/redundant_checks  PR #18 (github_user)
 
             bugfix/add_user
             |
@@ -2679,61 +2685,45 @@ class MacheteTester(unittest.TestCase):
             """
         )
 
-        # check against wrong pr number
-        machete_client = MacheteClient(git)
-        repo: str
-        org: str
-        (org, repo) = get_parsed_github_remote_url(self.repo_sandbox.remote_path)
-        expected_error_message = f"PR #100 is not found in repository `{org}/{repo}`"
-        machete_client.read_definition_file()
-        with self.assertRaises(MacheteException) as e:
-            machete_client.checkout_github_prs([100])
-        if e:
-            self.assertEqual(e.exception.parameter, expected_error_message,
-                             'Verify that expected error message has appeared when given pull request to checkout does not exists.')
+        self.launch_command('github', 'fetch-prs', '--all')
+        self.assert_command(
+            ["status"],
+            """
+            master
+            |
+            o-hotfix/add-trigger
+              |
+              o-ignore-trailing  PR #3 (github_user)
+                |
+                o-chore/fields
 
-        # Check against closed pull request with head branch deleted from remote
-        with os.popen("mktemp -d") as local_temp_folder:
-            local_path = local_temp_folder.read().strip()
-        self.repo_sandbox.new_repo(GitRepositorySandbox.second_remote_path)
-        (self.repo_sandbox.new_repo(local_path)
-            .execute(f"git remote add origin {GitRepositorySandbox.second_remote_path}")
-            .execute('git config user.email "tester@test.com"')
-            .execute('git config user.name "Tester Test"')
-            .new_branch('main')
-            .commit('initial commit')
-            .push()
-         )
-        os.chdir(self.repo_sandbox.local_path)
+            develop
+            |
+            o-enhance/feature
+            | |
+            | o-bugfix/feature  PR #6 (github_user)
+            |   |
+            |   o-allow-ownership-link  PR #12 (github_user)
+            |     |
+            |     o-restrict_access  PR #17 (github_user)
+            |       |
+            |       o-chore/redundant_checks  PR #18 (github_user)
+            |
+            o-enhance/add_user *  PR #19 (github_user)
 
-        machete_client = MacheteClient(git)
-        machete_client.read_definition_file()
-        expected_error_message = "Could not check out PR #5 because its head branch `bugfix/remove-n-option` is already deleted from `testing`."
-        with self.assertRaises(MacheteException) as e:
-            machete_client.checkout_github_prs([4, 5], do_checkout_local_branch=False)
-        if e:
-            self.assertEqual(e.exception.parameter, expected_error_message,
-                             'Verify that expected error message has appeared when given pull request to checkout have already deleted branch from remote.')
-
-        # Check against pr come from fork
-        os.chdir(local_path)
-        (self.repo_sandbox
-         .new_branch('bugfix/remove-n-option')
-         .commit('first commit')
-         .push()
-         )
-        os.chdir(self.repo_sandbox.local_path)
+            bugfix/add_user
+            |
+            o-testing/add_user  PR #22 (github_user)
+              |
+              o-chore/comments  PR #24 (github_user)
+            """
+        )
 
         expected_msg = ("Fetching origin...\n"
-                        "Fetching testing...\n"
-                        "Warn: Pull request #5 is already closed.\n"
-                        "A local branch `bugfix/remove-n-option` does not exist, but a remote branch `testing/bugfix/remove-n-option` exists.\n"
-                        "Checking out `bugfix/remove-n-option` locally...\n"
-                        "Added branch `bugfix/remove-n-option` onto `develop`\n"
-                        "Pull request `#5` checked out at local branch `bugfix/remove-n-option`\n"
-                        "Switched to local branch `bugfix/remove-n-option`\n")
+                        "Pull request `#3` checked out at local branch `ignore-trailing`\n"
+                        "Pull request `#12` checked out at local branch `allow-ownership-link`\n")
 
-        self.assert_command(['github', 'fetch-prs', '4', '5'], expected_msg, strip_indentation=False)
+        self.assert_command(['github', 'fetch-prs', '3', '12'], expected_msg, strip_indentation=False)
 
     git_api_state_for_test_checkout_prs_fresh_repo = MockGithubAPIState([
         {'head': {'ref': 'comments/add_docstrings', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'improve/refactor'}, 'number': '2', 'html_url': 'www.github.com', 'state': 'open'},
