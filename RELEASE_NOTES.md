@@ -5,6 +5,7 @@
 - fixed: package version retrieval outside of git repository
 - fixed: checking whether a branch is merged to parent works for branches that have no common commit
 - added: CI/CD check ensuring that RELEASE_NOTES are up to date
+- added: fetching multiple PRs at once
 
 ## New in git-machete 3.7.1
 
