@@ -634,7 +634,7 @@ class GitContext:
             raise MacheteException("Not currently on any branch")
         return result
 
-    def get_merge_base(self, sha1: FullCommitHash, sha2: FullCommitHash) -> FullCommitHash:
+    def __get_merge_base(self, sha1: FullCommitHash, sha2: FullCommitHash) -> FullCommitHash:
         if sha1 > sha2:
             sha1, sha2 = sha2, sha1
         if not (sha1, sha2) in self.__merge_base_cached:
@@ -666,7 +666,7 @@ class GitContext:
         if earlier_sha == later_sha:
             return True
 
-        return self.get_merge_base(earlier_sha, later_sha) == earlier_sha
+        return self.__get_merge_base(earlier_sha, later_sha) == earlier_sha
 
     # Determine if later_revision, or any ancestors of later_revision that are NOT ancestors of earlier_revision,
     # contain a tree with identical contents to earlier_revision, indicating that
