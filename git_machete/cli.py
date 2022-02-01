@@ -615,10 +615,10 @@ def launch(orig_args: List[str]) -> None:
             github_subcommand = parsed_cli.subcommand
             machete_client.read_definition_file()
 
-            if 'draft' in parsed_cli and github_subcommand not in {'create-pr'}:
+            if 'draft' in parsed_cli and github_subcommand != 'create-pr':
                 raise MacheteException("'--draft' option is only valid with 'create-pr' subcommand.")
             for command in ('all', 'by', 'mine'):
-                if command in parsed_cli and github_subcommand not in {'fetch-prs'}:
+                if command in parsed_cli and github_subcommand != 'fetch-prs':
                     raise MacheteException(f"'--{command}' argument is only valid with 'fetch-prs' subcommand.")
             if 'pr_no' in parsed_cli and github_subcommand not in {'checkout-prs', 'fetch-prs'}:
                 raise MacheteException("'pr_no' argument is only valid with 'checkout-prs' and `fetch-prs` subcommands.")
