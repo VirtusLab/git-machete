@@ -2584,6 +2584,164 @@ class MacheteTester(unittest.TestCase):
                 "the head branch of given pull request."
         )
 
+    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs` due to `git fetch` executed by `checkout-prs` subcommand.
+    @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
+    @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
+    @mock.patch('urllib.request.urlopen', MockContextManager)
+    @mock.patch('urllib.request.Request', git_api_state_for_test_checkout_prs.new_request())
+    def test_fetch_prs(self) -> None:
+        (
+            self.repo_sandbox.new_branch("root")
+            .commit("initial commit")
+            .new_branch("develop")
+            .commit("first commit")
+            .push()
+            .new_branch("enhance/feature")
+            .commit("introduce feature")
+            .push()
+            .new_branch("bugfix/feature")
+            .commit("bugs removed")
+            .push()
+            .new_branch("allow-ownership-link")
+            .commit("fixes")
+            .push()
+            .new_branch('restrict_access')
+            .commit('authorized users only')
+            .push()
+            .new_branch("chore/redundant_checks")
+            .commit('remove some checks')
+            .push()
+            .check_out("root")
+            .new_branch("master")
+            .commit("Master commit")
+            .push()
+            .new_branch("hotfix/add-trigger")
+            .commit("HOTFIX Add the trigger")
+            .push()
+            .new_branch("ignore-trailing")
+            .commit("Ignore trailing data")
+            .push()
+            .delete_branch("root")
+            .new_branch('chore/fields')
+            .commit("remove outdated fields")
+            .push()
+            .check_out('develop')
+            .new_branch('enhance/add_user')
+            .commit('allow externals to add users')
+            .push()
+            .new_branch('bugfix/add_user')
+            .commit('first round of fixes')
+            .push()
+            .new_branch('testing/add_user')
+            .commit('add test set for add_user feature')
+            .push()
+            .new_branch('chore/comments')
+            .commit('code maintenance')
+            .push()
+            .check_out('master')
+        )
+        for branch in ('chore/redundant_checks', 'restrict_access', 'allow-ownership-link', 'bugfix/feature', 'enhance/add_user', 'testing/add_user', 'chore/comments', 'bugfix/add_user'):
+            self.repo_sandbox.execute(f"git branch -D {branch}")
+
+        self.launch_command('discover')
+
+        # broken chain of pull requests (add new root)
+        self.launch_command('github', 'fetch-prs', '18', '24')
+        self.assert_command(
+            ["status"],
+            """
+            master
+            |
+            o-hotfix/add-trigger
+              |
+              o-ignore-trailing  PR #3 (github_user)
+                |
+                o-chore/fields
+
+            develop
+            |
+            o-enhance/feature
+              |
+              o-bugfix/feature  PR #6 (github_user)
+                |
+                o-allow-ownership-link  PR #12 (github_user)
+                  |
+                  o-restrict_access  PR #17 (github_user)
+                    |
+                    o-chore/redundant_checks  PR #18 (github_user)
+
+            bugfix/add_user
+            |
+            o-testing/add_user  PR #22 (github_user)
+              |
+              o-chore/comments *  PR #24 (github_user)
+            """
+        )
+
+        # check against wrong pr number
+        machete_client = MacheteClient(git)
+        repo: str
+        org: str
+        (org, repo) = get_parsed_github_remote_url(self.repo_sandbox.remote_path)
+        expected_error_message = f"PR #100 is not found in repository `{org}/{repo}`"
+        machete_client.read_definition_file()
+        with self.assertRaises(MacheteException) as e:
+            machete_client.checkout_github_prs([100])
+        if e:
+            self.assertEqual(e.exception.parameter, expected_error_message,
+                             'Verify that expected error message has appeared when given pull request to checkout does not exists.')
+
+        # Check against closed pull request with head branch deleted from remote
+        with os.popen("mktemp -d") as local_temp_folder:
+            local_path = local_temp_folder.read().strip()
+        self.repo_sandbox.new_repo(GitRepositorySandbox.second_remote_path)
+        (self.repo_sandbox.new_repo(local_path)
+            .execute(f"git remote add origin {GitRepositorySandbox.second_remote_path}")
+            .execute('git config user.email "tester@test.com"')
+            .execute('git config user.name "Tester Test"')
+            .new_branch('main')
+            .commit('initial commit')
+            .push()
+         )
+        os.chdir(self.repo_sandbox.local_path)
+
+        machete_client = MacheteClient(git)
+        machete_client.read_definition_file()
+        expected_error_message = "Could not check out PR #5 because its head branch `bugfix/remove-n-option` is already deleted from `testing`."
+        with self.assertRaises(MacheteException) as e:
+            machete_client.checkout_github_prs([4, 5], do_checkout_local_branch=False)
+        if e:
+            self.assertEqual(e.exception.parameter, expected_error_message,
+                             'Verify that expected error message has appeared when given pull request to checkout have already deleted branch from remote.')
+
+        # Check against pr come from fork
+        os.chdir(local_path)
+        (self.repo_sandbox
+         .new_branch('bugfix/remove-n-option')
+         .commit('first commit')
+         .push()
+         )
+        os.chdir(self.repo_sandbox.local_path)
+
+        expected_msg = ("Fetching origin...\n"
+                        "Fetching testing...\n"
+                        "Warn: Pull request #5 is already closed.\n"
+                        "A local branch `bugfix/remove-n-option` does not exist, but a remote branch `testing/bugfix/remove-n-option` exists.\n"
+                        "Checking out `bugfix/remove-n-option` locally...\n"
+                        "Added branch `bugfix/remove-n-option` onto `develop`\n"
+                        "Pull request `#5` checked out at local branch `bugfix/remove-n-option`\n"
+                        "Switched to local branch `bugfix/remove-n-option`\n")
+
+        self.assert_command(['github', 'fetch-prs', '4', '5'], expected_msg, strip_indentation=False)
+
+    git_api_state_for_test_checkout_prs_fresh_repo = MockGithubAPIState([
+        {'head': {'ref': 'comments/add_docstrings', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'improve/refactor'}, 'number': '2', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'restrict_access', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'allow-ownership-link'}, 'number': '17', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'improve/refactor', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'chore/sync_to_docs'}, 'number': '1', 'html_url': 'www.github.com', 'state': 'open'},
+        {'head': {'ref': 'sphinx_export', 'repo': {'full_name': 'testing/checkout_prs', 'html_url': GitRepositorySandbox.second_remote_path}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'comments/add_docstrings'}, 'number': '23', 'html_url': 'www.github.com', 'state': 'closed'}
+    ])
+
     def test_squash_with_valid_fork_point(self) -> None:
         (
             self.repo_sandbox.new_branch('branch-0')
