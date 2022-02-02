@@ -11,7 +11,7 @@ import git_machete.options
 from git_machete import utils
 from git_machete.constants import (
     DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, GitFormatPatterns, PICK_FIRST_ROOT, PICK_LAST_ROOT,
-    EscapeCodes, SyncToRemoteStatuses)
+    EscapeCodes, SyncToRemoteStatuses, GitLogResponse)
 from git_machete.exceptions import MacheteException, StopInteraction, UnprocessableEntityHTTPError
 from git_machete.git_operations import (
     AnyBranchName, AnyRevision, ForkPointOverrideData,
@@ -27,7 +27,6 @@ from git_machete.utils import (
 
 
 BranchDef = Tuple[LocalBranchShortName, str]
-Hash_ShortHash_Message = Tuple[str, str, str]
 
 
 # Allowed parameter values for show/go command
@@ -934,27 +933,27 @@ class MacheteClient:
                 print_line_prefix(branch, f"{utils.get_vertical_bar()} \n")
                 if opt_list_commits:
                     if edge_color[branch] in (EscapeCodes.RED, EscapeCodes.DIM):
-                        commits: List[Hash_ShortHash_Message] = self.__git.get_commits_between(fp_sha(branch), branch.full_name()) if fp_sha(branch) else []
+                        commits: List[GitLogResponse] = self.__git.get_commits_between(fp_sha(branch), branch.full_name()) if fp_sha(branch) else []
                     elif edge_color[branch] == EscapeCodes.YELLOW:
                         commits = self.__git.get_commits_between(self.up_branch[branch].full_name(), branch.full_name())
                     else:  # edge_color == EscapeCodes.GREEN
                         commits = self.__git.get_commits_between(fp_sha(branch), branch.full_name())
 
-                    for sha, short_sha, subject in commits:
-                        if sha == fp_sha(branch):
+                    for commit in commits:
+                        if commit.hash == fp_sha(branch):
                             # fp_branches_cached will already be there thanks to
                             # the above call to 'fp_sha'.
                             fp_branches_formatted: str = " and ".join(
                                 sorted(underline(lb_or_rb) for lb, lb_or_rb in fp_branches_cached[branch]))
                             fp_suffix: str = " %s %s %s seems to be a part of the unique history of %s" % \
                                              (colored(utils.get_right_arrow(), EscapeCodes.RED), colored("fork point ???", EscapeCodes.RED),
-                                              "this commit" if opt_list_commits_with_hashes else f"commit {short_sha}",
+                                              "this commit" if opt_list_commits_with_hashes else f"commit {commit.short_hash}",
                                               fp_branches_formatted)
                         else:
                             fp_suffix = ''
                         print_line_prefix(branch, utils.get_vertical_bar())
                         out.write(" %s%s%s\n" % (
-                                  f"{dim(short_sha)}  " if opt_list_commits_with_hashes else "", dim(subject),
+                                  f"{dim(commit.short_hash)}  " if opt_list_commits_with_hashes else "", dim(commit.subject),
                                   fp_suffix))
                 elbow_ascii_only: Dict[str, str] = {EscapeCodes.DIM: "m-", EscapeCodes.RED: "x-", EscapeCodes.GREEN: "o-", EscapeCodes.YELLOW: "?-"}
                 elbow: str = u"└─" if not utils.ascii_only else elbow_ascii_only[edge_color[branch]]
@@ -1276,25 +1275,24 @@ class MacheteClient:
                     f"The machete-post-slide-out hook exited with {exit_code}, aborting.\n")
 
     def squash(self, *, current_branch: LocalBranchShortName, opt_fork_point: AnyRevision) -> None:
-        commits: List[Hash_ShortHash_Message] = self.__git.get_commits_between(
+        commits: List[GitLogResponse] = self.__git.get_commits_between(
             opt_fork_point, current_branch)
         if not commits:
             raise MacheteException(
                 "No commits to squash. Use `-f` or `--fork-point` to specify the "
                 "start of range of commits to squash.")
         if len(commits) == 1:
-            sha, short_sha, subject = commits[0]
-            print(f"Exactly one commit ({short_sha}) to squash, ignoring.\n")
+            print(f"Exactly one commit ({commits[0].short_hash}) to squash, ignoring.\n")
             print("Tip: use `-f` or `--fork-point` to specify where the range of "
                   "commits to squash starts.")
             return
 
-        earliest_sha, earliest_short_sha, earliest_subject = commits[0]
-        earliest_full_body = self.__git.get_commit_information(FullCommitHash.of(earliest_sha), GitFormatPatterns.RAW_BODY).strip()
+        earliest_commit = commits[0]
+        earliest_full_body = self.__git.get_commit_information(FullCommitHash.of(earliest_commit.hash), GitFormatPatterns.RAW_BODY).strip()
         # %ai for ISO-8601 format; %aE/%aN for respecting .mailmap; see `git rev-list --help`
-        earliest_author_date = self.__git.get_commit_information(FullCommitHash.of(earliest_sha), GitFormatPatterns.AUTHOR_DATE).strip()
-        earliest_author_email = self.__git.get_commit_information(FullCommitHash.of(earliest_sha), GitFormatPatterns.AUTHOR_EMAIL).strip()
-        earliest_author_name = self.__git.get_commit_information(FullCommitHash.of(earliest_sha), GitFormatPatterns.AUTHOR_NAME).strip()
+        earliest_author_date = self.__git.get_commit_information(FullCommitHash.of(earliest_commit.hash), GitFormatPatterns.AUTHOR_DATE).strip()
+        earliest_author_email = self.__git.get_commit_information(FullCommitHash.of(earliest_commit.hash), GitFormatPatterns.AUTHOR_EMAIL).strip()
+        earliest_author_name = self.__git.get_commit_information(FullCommitHash.of(earliest_commit.hash), GitFormatPatterns.AUTHOR_NAME).strip()
 
         # Following the convention of `git cherry-pick`, `git commit --amend`, `git rebase` etc.,
         # let's retain the original author (only committer will be overwritten).
@@ -1315,18 +1313,17 @@ class MacheteClient:
         # so the squashed commit would not even be considered to "belong"
         # (in the FP sense) to the current branch's history.
         self.__git.update_head_ref_to_new_hash_with_reflog_subject(
-            squashed_sha, f"squash: {earliest_subject}")
+            squashed_sha, f"squash: {earliest_commit.subject}")
 
         print(f"Squashed {len(commits)} commits:")
         print()
-        for sha, short_sha, subject in commits:
-            print(f"\t{short_sha} {subject}")
+        for commit in commits:
+            print(f"\t{commit.short_hash} {commit.subject}")
 
-        latest_sha, latest_short_sha, latest_subject = commits[-1]
         print()
         print("To restore the original pre-squash commit, run:")
         print()
-        print(fmt(f"\t`git reset {latest_sha}`"))
+        print(fmt(f"\t`git reset {commits[-1].hash}`"))
 
     def filtered_reflog(self, branch: AnyBranchName) -> List[FullCommitHash]:
         def is_excluded_reflog_subject(sha_: str, gs_: str) -> bool:
@@ -2024,14 +2021,13 @@ class MacheteClient:
         fork_point = self.fork_point(head, use_overrides=True, opt_no_detect_squash_merges=False)
         if not fork_point:
             raise MacheteException(f"Could not find a fork-point for branch {head}.")
-        commits: List[Hash_ShortHash_Message] = self.__git.get_commits_between(fork_point, head)
-        _, _, title = commits[0]
+        commits: List[GitLogResponse] = self.__git.get_commits_between(fork_point, head)
         description_path = self.__git.get_git_subpath('info', 'description')
         description: str = utils.slurp_file_or_empty(description_path)
 
         ok_str = ' <green><b>OK</b></green>'
         print(fmt(f'Creating a {"draft " if opt_draft else ""}PR from `{head}` to `{base}`...'), end='', flush=True)
-        pr: GitHubPullRequest = create_pull_request(org, repo, head=head, base=base, title=title,
+        pr: GitHubPullRequest = create_pull_request(org, repo, head=head, base=base, title=commits[0].subject,
                                                     description=description, draft=opt_draft)
         print(fmt(f'{ok_str}, see <b>{pr.html_url}</b>'))
 

@@ -9,7 +9,7 @@ from git_machete.exceptions import MacheteException
 from git_machete.utils import colored, debug, fmt
 from git_machete import utils
 from git_machete.constants import (
-    GitFormatPatterns, MAX_COUNT_FOR_INITIAL_LOG, EscapeCodes, SyncToRemoteStatuses)
+    GitFormatPatterns, MAX_COUNT_FOR_INITIAL_LOG, EscapeCodes, SyncToRemoteStatuses, GitLogResponse)
 
 
 class AnyRevision(str):
@@ -150,8 +150,6 @@ class ForkPointOverrideData:
 
 
 ReflogEntry = Tuple[FullCommitHash, str]
-
-
 HEAD = AnyRevision.of("HEAD")
 
 
@@ -807,12 +805,11 @@ class GitContext:
     def rebase_onto_ancestor_commit(self, branch: LocalBranchShortName, ancestor_revision: AnyRevision, opt_no_interactive_rebase: bool) -> None:
         self.rebase(ancestor_revision, ancestor_revision, branch, opt_no_interactive_rebase)
 
-    def get_commits_between(self, earliest_exclusive: AnyRevision, latest_inclusive: AnyRevision) -> List[Tuple[str, str, str]]:
+    def get_commits_between(self, earliest_exclusive: AnyRevision, latest_inclusive: AnyRevision) -> List[GitLogResponse]:
         # Reverse the list, since `git log` by default returns the commits from the latest to earliest.
         return list(reversed(list(map(
-            lambda x: tuple(x.split(":", 2)),  # type: ignore
-            utils.get_non_empty_lines(
-                self._popen_git("log", "--format=%H:%h:%s", f"^{earliest_exclusive}", latest_inclusive, "--"))
+            lambda x: GitLogResponse(*x.split(":", 2)),
+            utils.get_non_empty_lines(self._popen_git("log", "--format=%H:%h:%s", f"^{earliest_exclusive}", latest_inclusive, "--"))
         ))))
 
     def get_relation_to_remote_counterpart(self, branch: LocalBranchShortName, remote_branch: RemoteBranchShortName) -> int:
