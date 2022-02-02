@@ -9,8 +9,7 @@ from git_machete.exceptions import MacheteException
 from git_machete.utils import colored, debug, fmt
 from git_machete import utils
 from git_machete.constants import (
-    MAX_COUNT_FOR_INITIAL_LOG, EscapeCodes, SyncToRemoteStatuses,
-    GIT_FORMAT_PATTERNS)
+    GitFormatPatterns, MAX_COUNT_FOR_INITIAL_LOG, EscapeCodes, SyncToRemoteStatuses)
 
 
 class AnyRevision(str):
@@ -865,14 +864,14 @@ class GitContext:
                     result[to_branch] = int(match.group(1))
         return result
 
-    def get_commit_information(self, information: str, commit: Optional[AnyRevision] = None) -> str:
-        if information not in GIT_FORMAT_PATTERNS:
+    def get_commit_information(self, commit: AnyRevision, information: GitFormatPatterns) -> str:
+        if information not in GitFormatPatterns:
             raise MacheteException(
                 f"Retrieving {information} from commit is not supported by project"
                 " git-machete. Currently supported information are: "
-                f"{', '.join(GIT_FORMAT_PATTERNS.keys())}")
+                f"{', '.join(GitFormatPatterns._member_names_)}")
 
-        params = ["log", "-1", f"--format={GIT_FORMAT_PATTERNS[information]}"]
+        params = ["log", "-1", f"--format={information.value}"]
         if commit:
             params.append(commit)
         return self._popen_git(*params)

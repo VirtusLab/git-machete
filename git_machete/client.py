@@ -10,7 +10,7 @@ import git_machete.github
 import git_machete.options
 from git_machete import utils
 from git_machete.constants import (
-    DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, PICK_FIRST_ROOT, PICK_LAST_ROOT,
+    DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, GitFormatPatterns, PICK_FIRST_ROOT, PICK_LAST_ROOT,
     EscapeCodes, SyncToRemoteStatuses)
 from git_machete.exceptions import MacheteException, StopInteraction, UnprocessableEntityHTTPError
 from git_machete.git_operations import (
@@ -1290,11 +1290,11 @@ class MacheteClient:
             return
 
         earliest_sha, earliest_short_sha, earliest_subject = commits[0]
-        earliest_full_body = self.__git.get_commit_information("raw body", FullCommitHash.of(earliest_sha)).strip()
+        earliest_full_body = self.__git.get_commit_information(FullCommitHash.of(earliest_sha), GitFormatPatterns.RAW_BODY).strip()
         # %ai for ISO-8601 format; %aE/%aN for respecting .mailmap; see `git rev-list --help`
-        earliest_author_date = self.__git.get_commit_information("author date", FullCommitHash.of(earliest_sha)).strip()
-        earliest_author_email = self.__git.get_commit_information("author email", FullCommitHash.of(earliest_sha)).strip()
-        earliest_author_name = self.__git.get_commit_information("author name", FullCommitHash.of(earliest_sha)).strip()
+        earliest_author_date = self.__git.get_commit_information(FullCommitHash.of(earliest_sha), GitFormatPatterns.AUTHOR_DATE).strip()
+        earliest_author_email = self.__git.get_commit_information(FullCommitHash.of(earliest_sha), GitFormatPatterns.AUTHOR_EMAIL).strip()
+        earliest_author_name = self.__git.get_commit_information(FullCommitHash.of(earliest_sha), GitFormatPatterns.AUTHOR_NAME).strip()
 
         # Following the convention of `git cherry-pick`, `git commit --amend`, `git rebase` etc.,
         # let's retain the original author (only committer will be overwritten).
@@ -2021,7 +2021,11 @@ class MacheteClient:
         debug(f'create_github_pr({head})', f'organization is {org}, repository is {repo}')
         debug(f'create_github_pr({head})', 'current GitHub user is ' + (current_user or '<none>'))
 
-        title: str = self.__git.get_commit_information("subject").strip()
+        fork_point = self.fork_point(head, use_overrides=True, opt_no_detect_squash_merges=False)
+        if not fork_point:
+            raise MacheteException(f"Could not find a fork-point for branch {head}.")
+        commits: List[Hash_ShortHash_Message] = self.__git.get_commits_between(fork_point, head)
+        _, _, title = commits[0]
         description_path = self.__git.get_git_subpath('info', 'description')
         description: str = utils.slurp_file_or_empty(description_path)
 

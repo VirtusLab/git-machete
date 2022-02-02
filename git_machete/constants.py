@@ -1,4 +1,4 @@
-from enum import IntEnum
+from enum import IntEnum, Enum
 import os
 
 MAX_COUNT_FOR_INITIAL_LOG = 10
@@ -32,10 +32,9 @@ class SyncToRemoteStatuses(IntEnum):
     DIVERGED_FROM_AND_NEWER_THAN_REMOTE = 6
 
 
-GIT_FORMAT_PATTERNS = {
-    "author name": "%aN",
-    "author email": "%aE",
-    "author date": "%ai",
-    "raw body": "%B",
-    "subject": "%s"
-}
+class GitFormatPatterns(Enum):
+    AUTHOR_NAME = "%aN"
+    AUTHOR_EMAIL = "%aE"
+    AUTHOR_DATE = "%ai"
+    RAW_BODY = "%B"
+    SUBJECT = "%s"
