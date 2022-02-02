@@ -559,11 +559,11 @@ class GitContext:
                 # %H - full hash
                 # %gs - reflog subject
                 self.__reflogs_cached[branch] = [
-                    tuple(map(lambda x: GitReflogEntry(hash=FullCommitHash(entry.split(":", 1)[0]),
+                    tuple(lambda x: GitReflogEntry(hash=FullCommitHash(entry.split(":", 1)[0]),
                                                        reflog_subject=entry.split(":", 1)[1])
                               for entry in utils.get_non_empty_lines(  # type: ignore
                         # The trailing '--' is necessary to avoid ambiguity in case there is a file called just exactly like the branch 'branch'.
-                        self._popen_git("reflog", "show", "--format=%H:%gs", branch, "--"))))
+                        self._popen_git("reflog", "show", "--format=%H:%gs", branch, "--")))
                 ]
             return self.__reflogs_cached[branch]
 
