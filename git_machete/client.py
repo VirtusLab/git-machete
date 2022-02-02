@@ -1876,7 +1876,7 @@ class MacheteClient:
                                                                               org=org,
                                                                               repo=repo,
                                                                               all=all_opened_prs,
-                                                                              mine=my_opened_prs,
+                                                                              my=my_opened_prs,
                                                                               by=opened_by,
                                                                               user=current_user)
 
@@ -1949,7 +1949,7 @@ class MacheteClient:
                                   org: str,
                                   repo: str,
                                   all: bool,
-                                  mine: bool,
+                                  my: bool,
                                   by: Optional[str],
                                   user: Optional[str]) -> List[GitHubPullRequest]:
         result: List[GitHubPullRequest] = []

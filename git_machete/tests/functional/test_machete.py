@@ -2209,7 +2209,7 @@ class MacheteTester(unittest.TestCase):
     ])
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs` due to `git fetch` executed by `checkout-prs` subcommand.
+    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs` due to `git fetch` executed by `checkout-pr` subcommand.
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('urllib.request.urlopen', MockContextManager)
@@ -2271,7 +2271,7 @@ class MacheteTester(unittest.TestCase):
         self.launch_command('discover')
 
         # not broken chain of pull requests (root found in dependency tree)
-        self.launch_command('github', 'checkout-prs', '18')
+        self.launch_command('github', 'checkout-pr', '18')
         self.assert_command(
             ["status"],
             """
@@ -2297,7 +2297,7 @@ class MacheteTester(unittest.TestCase):
             """
         )
         # broken chain of pull requests (add new root)
-        self.launch_command('github', 'checkout-prs', '24')
+        self.launch_command('github', 'checkout-pr', '24')
         self.assert_command(
             ["status"],
             """
@@ -2330,7 +2330,7 @@ class MacheteTester(unittest.TestCase):
         )
 
         # broken chain of pull requests (branches already added)
-        self.launch_command('github', 'checkout-prs', '24')
+        self.launch_command('github', 'checkout-pr', '24')
         self.assert_command(
             ["status"],
             """
@@ -2415,7 +2415,7 @@ class MacheteTester(unittest.TestCase):
                         "Pull request `#5` checked out at local branch `bugfix/remove-n-option`\n"
                         "Switched to local branch `bugfix/remove-n-option`\n")
 
-        self.assert_command(['github', 'checkout-prs', '5'], expected_msg, strip_indentation=False)
+        self.assert_command(['github', 'checkout-pr', '5'], expected_msg, strip_indentation=False)
 
     git_api_state_for_test_checkout_prs_fresh_repo = MockGithubAPIState([
         {'head': {'ref': 'comments/add_docstrings', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'improve/refactor'}, 'number': '2', 'html_url': 'www.github.com', 'state': 'open'},
@@ -2425,7 +2425,7 @@ class MacheteTester(unittest.TestCase):
     ])
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs_freshly_cloned` due to `git fetch` executed by `checkout-prs` subcommand.
+    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs_freshly_cloned` due to `git fetch` executed by `checkout-pr` subcommand.
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     @mock.patch('urllib.request.urlopen', MockContextManager)
@@ -2494,7 +2494,7 @@ class MacheteTester(unittest.TestCase):
                         "Annotating `comments/add_docstrings` as `PR #2 (github_user)`\nAnnotating `improve/refactor` as `PR #1 (github_user)`\n"
                         "Switched to local branch `comments/add_docstrings`\n")
         self.assert_command(
-            ['github', 'checkout-prs', '2'],
+            ['github', 'checkout-pr', '2'],
             expected_msg,
             strip_indentation=False
         )
@@ -2522,7 +2522,7 @@ class MacheteTester(unittest.TestCase):
                         "Pull request `#23` checked out at local branch `sphinx_export`\n"
                         "Switched to local branch `sphinx_export`\n")
         self.assert_command(
-            ['github', 'checkout-prs', '23'],
+            ['github', 'checkout-pr', '23'],
             expected_msg,
             strip_indentation=False
         )
@@ -2549,7 +2549,7 @@ class MacheteTester(unittest.TestCase):
 
     @mock.patch('git_machete.git_operations.GitContext.fetch_ref', mock_fetch_ref)  # need to mock fetch_ref due to underlying `git fetch pull/head` calls
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs_from_fork_with_deleted_repo` due to `git fetch` executed by `checkout-prs` subcommand.
+    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs_from_fork_with_deleted_repo` due to `git fetch` executed by `checkout-pr` subcommand.
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     @mock.patch('urllib.request.urlopen', MockContextManager)
@@ -2572,7 +2572,7 @@ class MacheteTester(unittest.TestCase):
                         "Pull request `#2` checked out at local branch `feature/allow_checkout`\n"
                         "Switched to local branch `feature/allow_checkout`\n")
         self.assert_command(
-            ['github', 'checkout-prs', '2'],
+            ['github', 'checkout-pr', '2'],
             expected_msg,
             strip_indentation=False
         )
@@ -2597,7 +2597,7 @@ class MacheteTester(unittest.TestCase):
     ])
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs` due to `git fetch` executed by `checkout-prs` subcommand.
+    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs` due to `git fetch` executed by `checkout-pr` subcommand.
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('urllib.request.urlopen', MockContextManager)

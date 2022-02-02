@@ -8,7 +8,7 @@ github
 
     git machete github <subcommand>
 
-where ``<subcommand>`` is one of: ``anno-prs``, ``checkout-prs``, ``create-pr``, ``retarget-pr``.
+where ``<subcommand>`` is one of: ``anno-prs``, ``checkout-pr``, ``create-pr``, ``fetch-prs``, ``retarget-pr``.
 
 Creates, checks out and manages GitHub PRs while keeping them reflected in branch definition file.
 
@@ -26,7 +26,7 @@ a GitHub API token with ``repo`` scope is required, see https://github.com/setti
   Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
   Equivalent to ``git machete anno --sync-github-prs``.
 
-``checkout-prs``:
+``checkout-pr``:
 
   Check out the head branch of the given pull request (specified by number),
   also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally.
@@ -36,6 +36,14 @@ a GitHub API token with ``repo`` scope is required, see https://github.com/setti
 
     **<PR-number>**
       Pull request number to checkout.
+
+``fetch-prs [--all | --by=<github-login> | --my | <PR-number-1> ... <PR-number-N>]``:
+
+  Check out the head branch of the given pull request (specified by number),
+  also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally.
+  Once pull request is checked out locally, annotate local branches with corresponding pull request numbers.
+  (Plural version of the `checkout-pr` subcommand but without switching branches at the end)
+
 
 ``create-pr [--draft]``:
 

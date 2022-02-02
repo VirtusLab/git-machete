@@ -5,7 +5,9 @@
 - fixed: package version retrieval outside of git repository
 - fixed: checking whether a branch is merged to parent works for branches that have no common commit
 - added: CI/CD check ensuring that RELEASE_NOTES are up to date
-- added: fetching multiple PRs at once
+- added: `--all`, `--mine`, `--by` flags and parameter `<PR-number-1> ... <PR-number-N>` in the new subcommand `fetch-prs` of the `github` 
+  command in order to checkout multiple PRs at once
+- added: renamed `github`s subcommand `checkout-prs` to `checkout-pr`
 
 ## New in git-machete 3.7.1
 

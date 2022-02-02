@@ -7,7 +7,7 @@
 [![PyPI package monthly downloads](https://img.shields.io/pypi/dm/git-machete.svg)](https://pypistats.org/packages/git-machete)
 [![Snap](https://snapcraft.io/git-machete/badge.svg)](https://snapcraft.io/git-machete)
 [![License: MIT](https://img.shields.io/github/license/VirtusLab/git-machete)](https://github.com/VirtusLab/git-machete/blob/master/LICENSE)
-
+        
 <img src="https://raw.githubusercontent.com/VirtusLab/git-machete/develop/graphics/logo_with_name.svg" style="width: 100%; display: block; margin-bottom: 10pt;" />
 <!-- The image is referenced by full URL, corresponding develop branch to ensure it renders correctly on https://pypi.org/project/git-machete/ -->
 
@@ -158,12 +158,17 @@ git machete github anno-prs
 
 Check out the PR into local branch, also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally: <br/>
 ```shell script
-git machete github checkout-prs <PR_number>
+git machete github checkout-pr <PR_number>
 ```
 
 Create the PR, using the upstream (parent) branch from `.git/machete` as the base: <br/>
 ```shell script
 git machete github create-pr [--draft]
+```
+
+Plural version of checkout-pr subcommand: <br/>
+```shell script
+git machete github fetch-prs [ --all | --by=<github-login> | --my | <PR-number-1> ... <PR-number-N>]
 ```
 
 Sets the base of the current branch's PR to its upstream (parent) branch, as seen by git machete: <br/>
