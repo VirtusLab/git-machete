@@ -1,6 +1,5 @@
 from enum import IntEnum, Enum
 import os
-from typing import NamedTuple
 
 MAX_COUNT_FOR_INITIAL_LOG = 10
 DISCOVER_DEFAULT_FRESH_BRANCH_COUNT = 10
@@ -39,9 +38,3 @@ class GitFormatPatterns(Enum):
     AUTHOR_DATE = "%ai"
     RAW_BODY = "%B"
     SUBJECT = "%s"
-
-
-class GitLogResponse(NamedTuple):
-    hash: str
-    short_hash: str
-    subject: str

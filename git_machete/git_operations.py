@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Callable, Dict, Generator, Iterator, List, Match, Optional, Set, Tuple
+from typing import Any, Callable, Dict, Generator, Iterator, List, Match, NamedTuple, Optional, Set, Tuple
 
 import os
 import re
@@ -9,7 +9,7 @@ from git_machete.exceptions import MacheteException
 from git_machete.utils import colored, debug, fmt
 from git_machete import utils
 from git_machete.constants import (
-    GitFormatPatterns, MAX_COUNT_FOR_INITIAL_LOG, EscapeCodes, SyncToRemoteStatuses, GitLogResponse)
+    GitFormatPatterns, MAX_COUNT_FOR_INITIAL_LOG, EscapeCodes, SyncToRemoteStatuses)
 
 
 class AnyRevision(str):
@@ -149,7 +149,22 @@ class ForkPointOverrideData:
         self.while_descendant_of_hash: FullCommitHash = while_descendant_of_hash
 
 
-ReflogEntry = Tuple[FullCommitHash, str]
+class GitLogEntry(NamedTuple):
+    hash: FullCommitHash
+    short_hash: ShortCommitHash
+    subject: str
+
+
+class GitReflogEntry(NamedTuple):
+    hash: FullCommitHash
+    reflog_subject: str
+
+
+class BranchPair(NamedTuple):
+    local_branch: LocalBranchShortName
+    remote_branch: AnyBranchName
+
+
 HEAD = AnyRevision.of("HEAD")
 
 
@@ -171,7 +186,7 @@ class GitContext:
         self.__remote_branches_cached: Optional[List[RemoteBranchShortName]] = None
         self.__initial_log_shas_cached: Dict[FullCommitHash, List[FullCommitHash]] = {}
         self.__remaining_log_shas_cached: Dict[FullCommitHash, List[FullCommitHash]] = {}
-        self.__reflogs_cached: Optional[Dict[AnyBranchName, Optional[List[ReflogEntry]]]] = None
+        self.__reflogs_cached: Optional[Dict[AnyBranchName, Optional[List[GitReflogEntry]]]] = None
         self.__merge_base_cached: Dict[Tuple[FullCommitHash, FullCommitHash], FullCommitHash] = {}
         self.__contains_equivalent_tree_cached: Dict[Tuple[FullCommitHash, FullCommitHash], bool] = {}
 
@@ -528,9 +543,9 @@ class GitContext:
             branch, pos = branch_and_pos
             if branch not in self.__reflogs_cached:
                 self.__reflogs_cached[AnyBranchName.of(branch)] = []
-            self.__reflogs_cached[AnyBranchName.of(branch)] += [(FullCommitHash.of(sha), subject)]
+            self.__reflogs_cached[AnyBranchName.of(branch)] += [GitReflogEntry(hash=FullCommitHash.of(sha), reflog_subject=subject)]
 
-    def get_reflog(self, branch: AnyBranchName) -> List[ReflogEntry]:
+    def get_reflog(self, branch: AnyBranchName) -> List[GitReflogEntry]:
         # git version 2.14.2 fixed a bug that caused fetching reflog of more than
         # one branch at the same time unreliable in certain cases
         if self.get_git_version() >= (2, 14, 2):
@@ -544,9 +559,11 @@ class GitContext:
                 # %H - full hash
                 # %gs - reflog subject
                 self.__reflogs_cached[branch] = [
-                    tuple(entry.split(":", 1)) for entry in utils.get_non_empty_lines(  # type: ignore
+                    tuple(map(lambda x: GitReflogEntry(hash=FullCommitHash(entry.split(":", 1)[0]),
+                                                       reflog_subject=entry.split(":", 1)[1])
+                              for entry in utils.get_non_empty_lines(  # type: ignore
                         # The trailing '--' is necessary to avoid ambiguity in case there is a file called just exactly like the branch 'branch'.
-                        self._popen_git("reflog", "show", "--format=%H:%gs", branch, "--"))
+                        self._popen_git("reflog", "show", "--format=%H:%gs", branch, "--"))))
                 ]
             return self.__reflogs_cached[branch]
 
@@ -805,10 +822,12 @@ class GitContext:
     def rebase_onto_ancestor_commit(self, branch: LocalBranchShortName, ancestor_revision: AnyRevision, opt_no_interactive_rebase: bool) -> None:
         self.rebase(ancestor_revision, ancestor_revision, branch, opt_no_interactive_rebase)
 
-    def get_commits_between(self, earliest_exclusive: AnyRevision, latest_inclusive: AnyRevision) -> List[GitLogResponse]:
+    def get_commits_between(self, earliest_exclusive: AnyRevision, latest_inclusive: AnyRevision) -> List[GitLogEntry]:
         # Reverse the list, since `git log` by default returns the commits from the latest to earliest.
         return list(reversed(list(map(
-            lambda x: GitLogResponse(*x.split(":", 2)),
+            lambda x: GitLogEntry(hash=FullCommitHash(x.split(":", 2)[0]),
+                                  short_hash=ShortCommitHash(x.split(":", 2)[1]),
+                                  subject=x.split(":", 2)[2]),
             utils.get_non_empty_lines(self._popen_git("log", "--format=%H:%h:%s", f"^{earliest_exclusive}", latest_inclusive, "--"))
         ))))
 

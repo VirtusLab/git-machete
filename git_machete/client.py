@@ -11,11 +11,11 @@ import git_machete.options
 from git_machete import utils
 from git_machete.constants import (
     DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, GitFormatPatterns, PICK_FIRST_ROOT, PICK_LAST_ROOT,
-    EscapeCodes, SyncToRemoteStatuses, GitLogResponse)
+    EscapeCodes, SyncToRemoteStatuses)
 from git_machete.exceptions import MacheteException, StopInteraction, UnprocessableEntityHTTPError
 from git_machete.git_operations import (
     AnyBranchName, AnyRevision, ForkPointOverrideData,
-    FullCommitHash, GitContext, HEAD, LocalBranchShortName, RemoteBranchShortName)
+    FullCommitHash, GitContext, GitLogEntry, HEAD, BranchPair, LocalBranchShortName, RemoteBranchShortName)
 from git_machete.github import (
     add_assignees_to_pull_request, add_reviewers_to_pull_request,
     create_pull_request, checkout_pr_refs, derive_pull_request_by_head, derive_pull_requests,
@@ -24,9 +24,6 @@ from git_machete.github import (
 from git_machete.utils import (
     get_pretty_choices, flat_map, excluding, fmt, tupled, warn, debug, bold,
     colored, underline, dim, get_second)
-
-
-BranchDef = Tuple[LocalBranchShortName, str]
 
 
 # Allowed parameter values for show/go command
@@ -47,8 +44,7 @@ class MacheteClient:
         self.__roots: List[LocalBranchShortName] = []
         self.__annotations: Dict[LocalBranchShortName, str] = {}
         self.__empty_line_status: Optional[bool] = None
-        self.__branch_defs_by_sha_in_reflog: Optional[
-            Dict[FullCommitHash, Optional[List[Tuple[LocalBranchShortName, str]]]]] = None
+        self.__branch_defs_by_sha_in_reflog: Optional[Dict[FullCommitHash, Optional[List[BranchPair]]]] = None
 
     @property
     def definition_file_path(self) -> str:
@@ -882,7 +878,7 @@ class MacheteClient:
         out = io.StringIO()
         edge_color: Dict[LocalBranchShortName, str] = {}
         fp_sha_cached: Dict[LocalBranchShortName, Optional[FullCommitHash]] = {}  # TODO (#110): default dict with None
-        fp_branches_cached: Dict[LocalBranchShortName, List[BranchDef]] = {}
+        fp_branches_cached: Dict[LocalBranchShortName, List[BranchPair]] = {}
 
         def fp_sha(branch_: LocalBranchShortName) -> Optional[FullCommitHash]:
             if branch not in fp_sha_cached:
@@ -933,7 +929,7 @@ class MacheteClient:
                 print_line_prefix(branch, f"{utils.get_vertical_bar()} \n")
                 if opt_list_commits:
                     if edge_color[branch] in (EscapeCodes.RED, EscapeCodes.DIM):
-                        commits: List[GitLogResponse] = self.__git.get_commits_between(fp_sha(branch), branch.full_name()) if fp_sha(branch) else []
+                        commits: List[GitLogEntry] = self.__git.get_commits_between(fp_sha(branch), branch.full_name()) if fp_sha(branch) else []
                     elif edge_color[branch] == EscapeCodes.YELLOW:
                         commits = self.__git.get_commits_between(self.up_branch[branch].full_name(), branch.full_name())
                     else:  # edge_color == EscapeCodes.GREEN
@@ -1075,7 +1071,7 @@ class MacheteClient:
                 f"variable or edit {self._definition_file_path} directly.")
         return utils.run_cmd(default_editor_name, self._definition_file_path)
 
-    def __fork_point_and_containing_branch_defs(self, branch: LocalBranchShortName, use_overrides: bool, opt_no_detect_squash_merges: bool) -> Tuple[FullCommitHash, List[BranchDef]]:
+    def __fork_point_and_containing_branch_defs(self, branch: LocalBranchShortName, use_overrides: bool, opt_no_detect_squash_merges: bool) -> Tuple[FullCommitHash, List[BranchPair]]:
         upstream = self.up_branch.get(branch)
 
         if self.__is_merged_to_upstream(
@@ -1275,7 +1271,7 @@ class MacheteClient:
                     f"The machete-post-slide-out hook exited with {exit_code}, aborting.\n")
 
     def squash(self, *, current_branch: LocalBranchShortName, opt_fork_point: AnyRevision) -> None:
-        commits: List[GitLogResponse] = self.__git.get_commits_between(
+        commits: List[GitLogEntry] = self.__git.get_commits_between(
             opt_fork_point, current_branch)
         if not commits:
             raise MacheteException(
@@ -1439,23 +1435,23 @@ class MacheteClient:
         else:
             raise MacheteException(f"Invalid direction: `{param}`; expected: {allowed_directions(allow_current)}")
 
-    def __match_log_to_filtered_reflogs(self, branch: LocalBranchShortName) -> Generator[Tuple[FullCommitHash, List[BranchDef]], None, None]:
+    def __match_log_to_filtered_reflogs(self, branch: LocalBranchShortName) -> Generator[Tuple[FullCommitHash, List[BranchPair]], None, None]:
 
         if branch not in self.__git.get_local_branches():
             raise MacheteException(f"`{branch}` is not a local branch")
 
         if self.__branch_defs_by_sha_in_reflog is None:
-            def generate_entries() -> Generator[Tuple[FullCommitHash, BranchDef], None, None]:
+            def generate_entries() -> Generator[Tuple[FullCommitHash, BranchPair], None, None]:
                 for lb in self.__git.get_local_branches():
                     lb_shas = set()
                     for sha_ in self.filtered_reflog(lb):
                         lb_shas.add(sha_)
-                        yield FullCommitHash.of(sha_), (lb, str(lb))
+                        yield FullCommitHash.of(sha_), BranchPair(lb, lb)
                     remote_branch = self.__git.get_combined_counterpart_for_fetching_of_branch(lb)
                     if remote_branch:
                         for sha_ in self.filtered_reflog(remote_branch):
                             if sha_ not in lb_shas:
-                                yield FullCommitHash.of(sha_), (lb, str(remote_branch))
+                                yield FullCommitHash.of(sha_), BranchPair(lb, remote_branch)
 
             self.__branch_defs_by_sha_in_reflog = {}
             for sha, branch_def in generate_entries():
@@ -1469,7 +1465,7 @@ class MacheteClient:
                     self.__branch_defs_by_sha_in_reflog[sha] = [branch_def]
 
             def log_result() -> Generator[str, None, None]:
-                branch_defs_: List[BranchDef]
+                branch_defs_: List[BranchPair]
                 sha_: FullCommitHash
                 for sha_, branch_defs_ in self.__branch_defs_by_sha_in_reflog.items():
                     def branch_def_to_str(lb: str, lb_or_rb: str) -> str:
@@ -1488,7 +1484,7 @@ class MacheteClient:
                 # The entries must be sorted by lb_or_rb to make sure the
                 # upstream inference is deterministic (and does not depend on the
                 # order in which `generate_entries` iterated through the local branches).
-                branch_defs: List[BranchDef] = self.__branch_defs_by_sha_in_reflog[sha]
+                branch_defs: List[BranchPair] = self.__branch_defs_by_sha_in_reflog[sha]
 
                 def lb_is_not_b(lb: str, lb_or_rb: str) -> bool:
                     return lb != branch
@@ -2021,7 +2017,7 @@ class MacheteClient:
         fork_point = self.fork_point(head, use_overrides=True, opt_no_detect_squash_merges=False)
         if not fork_point:
             raise MacheteException(f"Could not find a fork-point for branch {head}.")
-        commits: List[GitLogResponse] = self.__git.get_commits_between(fork_point, head)
+        commits: List[GitLogEntry] = self.__git.get_commits_between(fork_point, head)
         description_path = self.__git.get_git_subpath('info', 'description')
         description: str = utils.slurp_file_or_empty(description_path)
 
