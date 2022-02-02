@@ -558,13 +558,11 @@ class GitContext:
             if branch not in self.__reflogs_cached:
                 # %H - full hash
                 # %gs - reflog subject
-                self.__reflogs_cached[branch] = [
-                    tuple(lambda x: GitReflogEntry(hash=FullCommitHash(entry.split(":", 1)[0]),
-                                                       reflog_subject=entry.split(":", 1)[1])
-                              for entry in utils.get_non_empty_lines(  # type: ignore
-                        # The trailing '--' is necessary to avoid ambiguity in case there is a file called just exactly like the branch 'branch'.
-                        self._popen_git("reflog", "show", "--format=%H:%gs", branch, "--")))
-                ]
+                self.__reflogs_cached[branch] = list(map(lambda x: GitReflogEntry(hash=FullCommitHash(x[0]), reflog_subject=x[1]),
+                                                         [entry.split(":", 1) for entry in utils.get_non_empty_lines(
+                                                             # The trailing '--' is necessary to avoid ambiguity in case there is a file called just exactly like the branch 'branch'.
+                                                             self._popen_git("reflog", "show", "--format=%H:%gs", branch, "--"))]
+                                                         ))
             return self.__reflogs_cached[branch]
 
     def create_branch(self, branch: LocalBranchShortName, out_of_revision: AnyRevision) -> None:
