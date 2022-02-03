@@ -2536,8 +2536,6 @@ class MacheteTester(unittest.TestCase):
                         "Pull request `#2` checked out at local branch `comments/add_docstrings`\n"
                         "Annotating `comments/add_docstrings` as `PR #2 (github_user)`\nAnnotating `improve/refactor` as `PR #1 (github_user)`\n"
                         "Switched to local branch `comments/add_docstrings`\n")
-        # x = self.launch_command(*['github', 'checkout-prs', '2'])
-        # print(x)
         self.assert_command(
             ['github', 'checkout-prs', '2'],
             expected_msg,
