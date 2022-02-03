@@ -6,7 +6,7 @@
 - fixed: checking whether a branch is merged to parent works for branches that have no common commit
 - added: CI/CD check ensuring that RELEASE_NOTES are up to date
 - fixed: `github create-pr` takes the PR title from the first unique commit
-- added: `--all`, `--mine`, `--by` flags and parameter `<PR-number-1> ... <PR-number-N>` in the new subcommand `fetch-prs` of the `github` 
+- added: `--all`, `--mine`, `--by` flags and parameter `<PR-number-1> ... <PR-number-N>` in the new subcommand `fetch-prs` of the `github`
   command in order to checkout multiple PRs at once
 - added: renamed `github`s subcommand `checkout-prs` to `checkout-pr`
 
