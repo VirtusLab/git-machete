@@ -26,18 +26,27 @@ a GitHub API token with ``repo`` scope is required, see https://github.com/setti
   Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
   Equivalent to ``git machete anno --sync-github-prs``.
 
-``checkout-prs [--all | --by=<github-login> | --my | <PR-number-1> ... <PR-number-N>]``:
+``checkout-prs [--all | --by=<github-login> | --mine | <PR-number-1> ... <PR-number-N>]``:
 
   Check out the head branch of the given pull requests (specified by number),
   also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally.
   Once pull request is checked out locally, annotate local branches with corresponding pull request numbers.
-  If only one PR is given, then switch local branch to its HEAD.
+  If only one PR is given, then switch the local repository's HEAD to its head branch.
+
+  **Options:**
+
+    **--all**    Checkout all open PRs.
+
+    **--by**    Checkout someone's open PRs.
+
+      **Parameters:**
+        <github-login> Github account name.
+
+    **--mine**    Checkout open PRs for the current user associated with the Github token.
 
   **Parameters:**
-
     **<PR-number-1> ... <PR-number-N>**
       Pull request numbers to checkout.
-
 
 ``create-pr [--draft]``:
 
@@ -50,7 +59,7 @@ a GitHub API token with ``repo`` scope is required, see https://github.com/setti
 
   **Options:**
 
-    --draft
+    **--draft**
       Creates the new PR as a draft.
 
 ``retarget-pr``:

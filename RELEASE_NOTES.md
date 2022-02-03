@@ -1,12 +1,16 @@
 # Release notes
 
+
+## New in git-machete 3.8.0
+
+- added: `--all`, `--mine`, `--by` flags and parameter `<PR-number-1> ... <PR-number-N>` to `git machete github checkout-prs`
+
 ## New in git-machete 3.7.2
 
 - fixed: package version retrieval outside of git repository
 - fixed: checking whether a branch is merged to parent works for branches that have no common commit
 - added: CI/CD check ensuring that RELEASE_NOTES are up to date
 - fixed: `github create-pr` takes the PR title from the first unique commit
-- added: `--all`, `--mine`, `--by` flags and parameter `<PR-number-1> ... <PR-number-N>` in the `checkout-prs` subcommand
 
 ## New in git-machete 3.7.1
 
