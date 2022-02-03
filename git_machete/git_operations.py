@@ -162,7 +162,7 @@ class GitReflogEntry(NamedTuple):
 
 class BranchPair(NamedTuple):
     local_branch: LocalBranchShortName
-    remote_branch: AnyBranchName
+    local_or_remote_branch: AnyBranchName
 
 
 HEAD = AnyRevision.of("HEAD")

@@ -44,7 +44,7 @@ class MacheteClient:
         self.__roots: List[LocalBranchShortName] = []
         self.__annotations: Dict[LocalBranchShortName, str] = {}
         self.__empty_line_status: Optional[bool] = None
-        self.__branch_defs_by_sha_in_reflog: Optional[Dict[FullCommitHash, Optional[List[BranchPair]]]] = None
+        self.__branch_pairs_by_sha_in_reflog: Optional[Dict[FullCommitHash, Optional[List[BranchPair]]]] = None
 
     @property
     def definition_file_path(self) -> str:
@@ -885,7 +885,7 @@ class MacheteClient:
                 try:
                     # We're always using fork point overrides, even when status
                     # is launched from discover().
-                    fp_sha_cached[branch_], fp_branches_cached[branch_] = self.__fork_point_and_containing_branch_defs(
+                    fp_sha_cached[branch_], fp_branches_cached[branch_] = self.__fork_point_and_containing_branch_pairs(
                         branch_,
                         use_overrides=True,
                         opt_no_detect_squash_merges=opt_no_detect_squash_merges)
@@ -1071,13 +1071,13 @@ class MacheteClient:
                 f"variable or edit {self._definition_file_path} directly.")
         return utils.run_cmd(default_editor_name, self._definition_file_path)
 
-    def __fork_point_and_containing_branch_defs(self, branch: LocalBranchShortName, use_overrides: bool, opt_no_detect_squash_merges: bool) -> Tuple[FullCommitHash, List[BranchPair]]:
+    def __fork_point_and_containing_branch_pairs(self, branch: LocalBranchShortName, use_overrides: bool, opt_no_detect_squash_merges: bool) -> Tuple[FullCommitHash, List[BranchPair]]:
         upstream = self.up_branch.get(branch)
 
         if self.__is_merged_to_upstream(
                 branch, opt_no_detect_squash_merges=opt_no_detect_squash_merges):
             fp_sha = self.__git.get_commit_sha_by_revision(branch)
-            debug(f"fork_point_and_containing_branch_defs({branch})",
+            debug(f"fork_point_and_containing_branch_pairs({branch})",
                   f"{branch} is merged to {upstream}; skipping inference, using tip of {branch} ({fp_sha}) as fork point")
             return fp_sha, []
 
@@ -1090,28 +1090,28 @@ class MacheteClient:
                     # is NOT a descendant of upstream. In this case it's more
                     # reasonable to assume that upstream (and not overridden_fp_sha)
                     # is the fork point.
-                    debug(f"fork_point_and_containing_branch_defs({branch})",
+                    debug(f"fork_point_and_containing_branch_pairs({branch})",
                           f"{branch} is descendant of its upstream {upstream}, but overridden fork point commit {overridden_fp_sha} is NOT a descendant of {upstream}; falling back to {upstream} as fork point")
                     return self.__git.get_commit_sha_by_revision(upstream), []
                 else:
-                    debug(f"fork_point_and_containing_branch_defs({branch})",
+                    debug(f"fork_point_and_containing_branch_pairs({branch})",
                           f"fork point of {branch} is overridden to {overridden_fp_sha}; skipping inference")
                     return overridden_fp_sha, []
 
         try:
-            fp_sha, containing_branch_defs = next(self.__match_log_to_filtered_reflogs(branch))
+            fp_sha, containing_branch_pairs = next(self.__match_log_to_filtered_reflogs(branch))
         except StopIteration:
             if upstream and self.__git.is_ancestor_or_equal(upstream.full_name(), branch.full_name()):
-                debug(f"fork_point_and_containing_branch_defs({branch})",
+                debug(f"fork_point_and_containing_branch_pairs({branch})",
                       f"cannot find fork point, but {branch} is descendant of its upstream {upstream}; falling back to {upstream} as fork point")
                 return self.__git.get_commit_sha_by_revision(upstream), []
             else:
                 raise MacheteException(f"Cannot find fork point for branch `{branch}`")
         else:
-            debug("fork_point_and_containing_branch_defs({branch})",
+            debug("fork_point_and_containing_branch_pairs({branch})",
                   f"commit {fp_sha} is the most recent point in history of {branch} to occur on "
                   "filtered reflog of any other branch or its remote counterpart "
-                  f"(specifically: {' and '.join(map(utils.get_second, containing_branch_defs))})")
+                  f"(specifically: {' and '.join(map(utils.get_second, containing_branch_pairs))})")
 
             if upstream and self.__git.is_ancestor_or_equal(upstream.full_name(), branch.full_name()) and not self.__git.is_ancestor_or_equal(upstream.full_name(), fp_sha.full_name()):
                 # That happens very rarely in practice (typically current head
@@ -1119,13 +1119,13 @@ class MacheteClient:
                 # of this branch, thus is_ancestor(upstream, branch) should imply
                 # is_ancestor(upstream, FP(branch)), but it's still possible in
                 # case reflog of upstream is incomplete for whatever reason.
-                debug(f"fork_point_and_containing_branch_defs({branch})",
+                debug(f"fork_point_and_containing_branch_pairs({branch})",
                       f"{upstream} is descendant of its upstream {branch}, but inferred fork point commit {fp_sha} is NOT a descendant of {upstream}; falling back to {upstream} as fork point")
                 return self.__git.get_commit_sha_by_revision(upstream), []
             else:
-                debug(f"fork_point_and_containing_branch_defs({branch})",
+                debug(f"fork_point_and_containing_branch_pairs({branch})",
                       f"choosing commit {fp_sha} as fork point")
-                return fp_sha, containing_branch_defs
+                return fp_sha, containing_branch_pairs
 
     def fork_point(
             self,
@@ -1134,7 +1134,7 @@ class MacheteClient:
             *,
             opt_no_detect_squash_merges: bool
     ) -> Optional[FullCommitHash]:
-        sha, containing_branch_defs = self.__fork_point_and_containing_branch_defs(
+        sha, containing_branch_pairs = self.__fork_point_and_containing_branch_pairs(
             branch, use_overrides, opt_no_detect_squash_merges=opt_no_detect_squash_merges)
         return FullCommitHash.of(sha) if sha else None
 
@@ -1440,7 +1440,7 @@ class MacheteClient:
         if branch not in self.__git.get_local_branches():
             raise MacheteException(f"`{branch}` is not a local branch")
 
-        if self.__branch_defs_by_sha_in_reflog is None:
+        if self.__branch_pairs_by_sha_in_reflog is None:
             def generate_entries() -> Generator[Tuple[FullCommitHash, BranchPair], None, None]:
                 for lb in self.__git.get_local_branches():
                     lb_shas = set()
@@ -1453,26 +1453,26 @@ class MacheteClient:
                             if sha_ not in lb_shas:
                                 yield FullCommitHash.of(sha_), BranchPair(lb, remote_branch)
 
-            self.__branch_defs_by_sha_in_reflog = {}
-            for sha, branch_def in generate_entries():
-                if sha in self.__branch_defs_by_sha_in_reflog:
+            self.__branch_pairs_by_sha_in_reflog = {}
+            for sha, branch_pair in generate_entries():
+                if sha in self.__branch_pairs_by_sha_in_reflog:
                     # The practice shows that it's rather unlikely for a given
                     # commit to appear on filtered reflogs of two unrelated branches
                     # ("unrelated" as in, not a local branch and its remote
                     # counterpart) but we need to handle this case anyway.
-                    self.__branch_defs_by_sha_in_reflog[sha] += [branch_def]
+                    self.__branch_pairs_by_sha_in_reflog[sha] += [branch_pair]
                 else:
-                    self.__branch_defs_by_sha_in_reflog[sha] = [branch_def]
+                    self.__branch_pairs_by_sha_in_reflog[sha] = [branch_pair]
 
             def log_result() -> Generator[str, None, None]:
-                branch_defs_: List[BranchPair]
+                branch_pairs_: List[BranchPair]
                 sha_: FullCommitHash
-                for sha_, branch_defs_ in self.__branch_defs_by_sha_in_reflog.items():
-                    def branch_def_to_str(lb: str, lb_or_rb: str) -> str:
+                for sha_, branch_pairs_ in self.__branch_pairs_by_sha_in_reflog.items():
+                    def branch_pair_to_str(lb: str, lb_or_rb: str) -> str:
                         return lb if lb == lb_or_rb else f"{lb_or_rb} (remote counterpart of {lb})"
 
-                    joined_branch_defs = ", ".join(map(tupled(branch_def_to_str), branch_defs_))
-                    yield dim(f"{sha_} => {joined_branch_defs}")
+                    joined_branch_pairs = ", ".join(map(tupled(branch_pair_to_str), branch_pairs_))
+                    yield dim(f"{sha_} => {joined_branch_pairs}")
 
             debug(f"match_log_to_filtered_reflogs({branch})",
                   "branches containing the given SHA in their filtered reflog: \n%s\n" % "\n".join(log_result()))
@@ -1480,33 +1480,33 @@ class MacheteClient:
         branch_full_hash: FullCommitHash = self.__git.get_commit_sha_by_revision(branch)
 
         for sha in self.__git.spoonfeed_log_shas(branch_full_hash):
-            if sha in self.__branch_defs_by_sha_in_reflog:
+            if sha in self.__branch_pairs_by_sha_in_reflog:
                 # The entries must be sorted by lb_or_rb to make sure the
                 # upstream inference is deterministic (and does not depend on the
                 # order in which `generate_entries` iterated through the local branches).
-                branch_defs: List[BranchPair] = self.__branch_defs_by_sha_in_reflog[sha]
+                branch_pairs: List[BranchPair] = self.__branch_pairs_by_sha_in_reflog[sha]
 
                 def lb_is_not_b(lb: str, lb_or_rb: str) -> bool:
                     return lb != branch
 
-                containing_branch_defs = sorted(filter(tupled(lb_is_not_b), branch_defs), key=get_second)
-                if containing_branch_defs:
+                containing_branch_pairs = sorted(filter(tupled(lb_is_not_b), branch_pairs), key=get_second)
+                if containing_branch_pairs:
                     debug(f"match_log_to_filtered_reflogs({branch})",
-                          f"commit {sha} found in filtered reflog of {' and '.join(map(get_second, branch_defs))}")
-                    yield sha, containing_branch_defs
+                          f"commit {sha} found in filtered reflog of {' and '.join(map(get_second, branch_pairs))}")
+                    yield sha, containing_branch_pairs
                 else:
                     debug(f"match_log_to_filtered_reflogs({branch})",
-                          f"commit {sha} found only in filtered reflog of {' and '.join(map(get_second, branch_defs))}; ignoring")
+                          f"commit {sha} found only in filtered reflog of {' and '.join(map(get_second, branch_pairs))}; ignoring")
             else:
                 debug(f"match_log_to_filtered_reflogs({branch})",
                       f"commit {sha} not found in any filtered reflog")
 
     def __infer_upstream(self, branch: LocalBranchShortName, condition: Callable[[LocalBranchShortName], bool] = lambda upstream: True, reject_reason_message: str = "") -> Optional[LocalBranchShortName]:
-        for sha, containing_branch_defs in self.__match_log_to_filtered_reflogs(branch):
+        for sha, containing_branch_pairs in self.__match_log_to_filtered_reflogs(branch):
             debug(f"infer_upstream({branch})",
-                  f"commit {sha} found in filtered reflog of {' and '.join(map(get_second, containing_branch_defs))}")
+                  f"commit {sha} found in filtered reflog of {' and '.join(map(get_second, containing_branch_pairs))}")
 
-            for candidate, original_matched_branch in containing_branch_defs:
+            for candidate, original_matched_branch in containing_branch_pairs:
                 if candidate != original_matched_branch:
                     debug(f"infer_upstream({branch})",
                           f"upstream candidate is {candidate}, which is the local counterpart of {original_matched_branch}")
@@ -1835,7 +1835,7 @@ class MacheteClient:
         return choices[index]
 
     def flush_caches(self) -> None:
-        self.__branch_defs_by_sha_in_reflog = None
+        self.__branch_pairs_by_sha_in_reflog = None
         self.__git.flush_caches()
 
     def check_that_forkpoint_is_ancestor_or_equal_to_tip_of_branch(
