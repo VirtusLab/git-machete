@@ -156,19 +156,14 @@ Annotate the branches with GitHub PR numbers: <br/>
 git machete github anno-prs
 ```
 
-Check out the PR into local branch, also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally: <br/>
+Check out the PRs into local branches, also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally: <br/>
 ```shell script
-git machete github checkout-pr <PR_number>
+git machete github checkout-prs [--all | --by=<github-login> | --my | <PR-number-1> ... <PR-number-N>]
 ```
 
 Create the PR, using the upstream (parent) branch from `.git/machete` as the base: <br/>
 ```shell script
 git machete github create-pr [--draft]
-```
-
-Plural version of checkout-pr subcommand: <br/>
-```shell script
-git machete github fetch-prs [ --all | --by=<github-login> | --my | <PR-number-1> ... <PR-number-N>]
 ```
 
 Sets the base of the current branch's PR to its upstream (parent) branch, as seen by git machete: <br/>

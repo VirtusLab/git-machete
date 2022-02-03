@@ -1859,8 +1859,7 @@ class MacheteClient:
                             *,
                             all_opened_prs: bool = False,
                             my_opened_prs: bool = False,
-                            opened_by: str = None,
-                            do_checkout_local_branch: bool = True
+                            opened_by: str = None
                             ) -> None:
         org: str
         repo: str
@@ -1931,7 +1930,7 @@ class MacheteClient:
         debug('checkout_github_pr()',
               'Current GitHub user is ' + (current_user or '<none>'))
         self.__sync_annotations_to_definition_file(all_open_prs, current_user)
-        if pr and do_checkout_local_branch:
+        if pr and len(prs_numbers) == 1:
             self.__git.checkout(LocalBranchShortName.of(pr.head))
             print(fmt(f"Switched to local branch `{pr.head}`"))
 

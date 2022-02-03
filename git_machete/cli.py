@@ -221,7 +221,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
         usage=argparse.SUPPRESS,
         add_help=False,
         parents=[common_args_parser])
-    github_parser.add_argument('subcommand', choices=['anno-prs', 'checkout-pr', 'create-pr', 'retarget-pr', 'fetch-prs'])
+    github_parser.add_argument('subcommand', choices=['anno-prs', 'checkout-prs', 'create-pr', 'retarget-pr'])
     github_parser.add_argument('pr_no', nargs='*')
     github_parser.add_argument('--all', action='store_true')
     github_parser.add_argument('--by')
@@ -617,24 +617,25 @@ def launch(orig_args: List[str]) -> None:
 
             if 'draft' in parsed_cli and github_subcommand != 'create-pr':
                 raise MacheteException("'--draft' option is only valid with 'create-pr' subcommand.")
-            for command in ('all', 'by', 'my'):
-                if command in parsed_cli and github_subcommand != 'fetch-prs':
-                    raise MacheteException(f"'--{command}' argument is only valid with 'fetch-prs' subcommand.")
-            if 'pr_no' in parsed_cli and github_subcommand not in {'checkout-pr', 'fetch-prs'}:
-                raise MacheteException("'pr_no' argument is only valid with 'checkout-pr' and `fetch-prs` subcommands.")
+            for command in ('all', 'by', 'my', 'pr_no'):
+                if command in parsed_cli and github_subcommand != 'checkout-prs':
+                    raise MacheteException(f"'--{command}' argument is only valid with 'checkout-prs' subcommand.")
 
             if github_subcommand == "anno-prs":
                 machete_client.sync_annotations_to_github_prs()
-            elif github_subcommand == "checkout-pr":
-                if 'pr_no' not in parsed_cli:
-                    raise MacheteException("Argument to `git machete github checkout-pr` cannot be empty; expected PR number.")
-                elif len(parsed_cli.pr_no) > 1:
-                    raise MacheteException("`git machete github checkout-pr` accepts only one PR number.")
+            elif github_subcommand == "checkout-prs":
+                if len(parsed_cli_as_dict) > 3 or len(parsed_cli_as_dict) == 2:
+                    raise MacheteException(
+                        f"'checkout-prs' subcommand can take only one of following options: {', '.join(['--all', '--by', '--my', 'pr-no'])}")
                 try:
-                    pr_no: int = int(parsed_cli.pr_no[0])
+                    if 'pr-no' in parsed_cli:
+                        map(int, parsed_cli.pr_no)
                 except ValueError:
-                    raise MacheteException("PR number is not integer value!")
-                machete_client.checkout_github_prs([pr_no])
+                    raise MacheteException("One of given PR numbers is not integer value!")
+                machete_client.checkout_github_prs(pr_no=parsed_cli.pr_no if 'pr_no' in parsed_cli else [],
+                                                   all_opened_prs=parsed_cli.all if 'all' in parsed_cli else False,
+                                                   my_opened_prs=parsed_cli.my if 'my' in parsed_cli else False,
+                                                   opened_by=parsed_cli.by if 'by' in parsed_cli else None)
             elif github_subcommand == "create-pr":
                 current_branch = git.get_current_branch()
                 machete_client.create_github_pr(
@@ -645,20 +646,6 @@ def launch(orig_args: List[str]) -> None:
                 current_branch = git.get_current_branch()
                 machete_client.expect_in_managed_branches(current_branch)
                 machete_client.retarget_github_pr(current_branch)
-            elif github_subcommand == "fetch-prs":
-                if len(parsed_cli_as_dict) > 3 or len(parsed_cli_as_dict) == 2:
-                    raise MacheteException(
-                        f"'fetch-prs' subcommand can take only one of following options: {', '.join(['--all', '--by', '--my', 'pr-no'])}")
-                try:
-                    if 'pr-no' in parsed_cli:
-                        map(int, parsed_cli.pr_no)
-                except ValueError:
-                    raise MacheteException("One of given PR numbers is not integer value!")
-                machete_client.checkout_github_prs(pr_no=parsed_cli.pr_no if 'pr_no' in parsed_cli else [],
-                                                   all_opened_prs=parsed_cli.all if 'all' in parsed_cli else False,
-                                                   my_opened_prs=parsed_cli.my if 'my' in parsed_cli else False,
-                                                   opened_by=parsed_cli.by if 'by' in parsed_cli else None,
-                                                   do_checkout_local_branch=False)
         elif cmd == "is-managed":
             machete_client.read_definition_file()
             branch = get_branch_arg_or_current_branch(cli_opts, git)

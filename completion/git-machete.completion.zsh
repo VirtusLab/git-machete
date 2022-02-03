@@ -217,7 +217,7 @@ __git_machete_github_subcommands() {
   local github_subcommands
   github_subcommands=(
     'anno-prs:annotate the branches based on their corresponding GitHub PR numbers and authors'
-    'checkout-prs:check out the given pull request locally'
+    'checkout-prs:check out the given pull requests locally'
     'create-pr:create a PR for the current branch, using the upstream (parent) branch as the PR base'
     'retarget-pr:set the base of the current branch PR to upstream (parent) branch'
   )

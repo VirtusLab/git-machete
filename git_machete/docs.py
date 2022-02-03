@@ -303,7 +303,7 @@ long_docs: Dict[str, str] = {
     """,
     "github": """
         <b>Usage: git machete github <subcommand></b>
-        where <subcommand> is one of: `anno-prs`, `checkout-pr`, `create-pr`, `fetch-prs`, `retarget-pr`.
+        where <subcommand> is one of: `anno-prs`, `checkout-prs`, `create-pr`, `retarget-pr`.
 
         Creates, checks out and manages GitHub PRs while keeping them reflected in branch definition file.
 
@@ -320,14 +320,21 @@ long_docs: Dict[str, str] = {
           Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
           Equivalent to `git machete anno --sync-github-prs`.
 
-        <b>`checkout-pr <PR-number>`:</b>
+        <b>`checkout-prs [--all | --by=<github-login> | --my | <PR-number-1> ... <PR-number-N>]`:</b>
 
-          Check out the head branch of the given pull request (specified by number),
+          Check out the head branch of the given pull requests (specified by number),
           also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally.
           Once pull request is checked out locally, annotate local branches with corresponding pull request numbers.
+          If only one PR is given, then switch local branch to its HEAD.
 
+          <b>Options:</b>
+            <b>--all</b>     Checkout all open PRs.
+            <b>--by</b>      Checkout someone's open PRs.
+              <b>Parameters:</b>
+                <b>github-login></b> Github account name.
+            <b>--my</b>    Checkout open PRs for the current user associated with the Github token.
           <b>Parameters:</b>
-            <b><PR-number></b>    Pull request number to checkout.
+            <b><PR-number-1> ... <PR-number-N></b>    Pull request numbers to checkout.
 
         <b>`create-pr [--draft]`:</b>
 
@@ -340,22 +347,6 @@ long_docs: Dict[str, str] = {
 
           <b>Options:</b>
             <b>--draft</b>    Creates the new PR as a draft.
-
-        <b>`fetch-prs [--all | --by=<github-login> | --my | <PR-number-1> ... <PR-number-N>]`:</b>
-
-          Check out the head branch of the given pull requests (specified by number),
-          also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally.
-          Once pull request is checked out locally, annotate local branches with corresponding pull request numbers.
-          (Plural version of the `checkout-pr` subcommand but without switching branches at the end)
-
-          <b>Options:</b>
-            <b>--all</b>     Checkout all open PRs.
-            <b>--by</b>      Checkout someone's open PRs.
-              <b>Parameters:</b>
-                <b>github-login></b> Github account name.
-            <b>--my</b>    Checkout open PRs for the current user associated with the Github token.
-          <b>Parameters:</b>
-            <b><PR-number-1> ... <PR-number-N></b>    Pull request numbers to checkout.
 
         <b>`retarget-pr`:</b>
 

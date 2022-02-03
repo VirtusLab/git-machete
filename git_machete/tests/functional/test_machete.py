@@ -2209,7 +2209,7 @@ class MacheteTester(unittest.TestCase):
     ])
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs` due to `git fetch` executed by `checkout-pr` subcommand.
+    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs` due to `git fetch` executed by `checkout-prs` subcommand.
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('urllib.request.urlopen', MockContextManager)
@@ -2271,7 +2271,7 @@ class MacheteTester(unittest.TestCase):
         self.launch_command('discover')
 
         # not broken chain of pull requests (root found in dependency tree)
-        self.launch_command('github', 'checkout-pr', '18')
+        self.launch_command('github', 'checkout-prs', '18')
         self.assert_command(
             ["status"],
             """
@@ -2297,7 +2297,7 @@ class MacheteTester(unittest.TestCase):
             """
         )
         # broken chain of pull requests (add new root)
-        self.launch_command('github', 'checkout-pr', '24')
+        self.launch_command('github', 'checkout-prs', '24')
         self.assert_command(
             ["status"],
             """
@@ -2330,7 +2330,7 @@ class MacheteTester(unittest.TestCase):
         )
 
         # broken chain of pull requests (branches already added)
-        self.launch_command('github', 'checkout-pr', '24')
+        self.launch_command('github', 'checkout-prs', '24')
         self.assert_command(
             ["status"],
             """
@@ -2361,6 +2361,42 @@ class MacheteTester(unittest.TestCase):
               o-chore/comments *  PR #24 (github_user)
             """
         )
+
+        # all PRs
+        self.launch_command('github', 'checkout-prs', '--all')
+        self.assert_command(
+            ["status"],
+            """
+            master
+            |
+            o-hotfix/add-trigger
+              |
+              o-ignore-trailing  PR #3 (github_user)
+                |
+                o-chore/fields
+
+            develop
+            |
+            o-enhance/feature
+            | |
+            | o-bugfix/feature  PR #6 (github_user)
+            |   |
+            |   o-allow-ownership-link  PR #12 (github_user)
+            |     |
+            |     o-restrict_access  PR #17 (github_user)
+            |       |
+            |       o-chore/redundant_checks  PR #18 (github_user)
+            |
+            o-enhance/add_user *  PR #19 (github_user)
+
+            bugfix/add_user
+            |
+            o-testing/add_user  PR #22 (github_user)
+              |
+              o-chore/comments  PR #24 (github_user)
+            """
+        )
+
         # check against wrong pr number
         machete_client = MacheteClient(git)
         repo: str
@@ -2415,7 +2451,14 @@ class MacheteTester(unittest.TestCase):
                         "Pull request `#5` checked out at local branch `bugfix/remove-n-option`\n"
                         "Switched to local branch `bugfix/remove-n-option`\n")
 
-        self.assert_command(['github', 'checkout-pr', '5'], expected_msg, strip_indentation=False)
+        self.assert_command(['github', 'checkout-prs', '5'], expected_msg, strip_indentation=False)
+
+        # Check against multiple PRs
+        expected_msg = ("Fetching origin...\n"
+                        "Pull request `#3` checked out at local branch `ignore-trailing`\n"
+                        "Pull request `#12` checked out at local branch `allow-ownership-link`\n")
+
+        self.assert_command(['github', 'checkout-prs', '3', '12'], expected_msg, strip_indentation=False)
 
     git_api_state_for_test_checkout_prs_fresh_repo = MockGithubAPIState([
         {'head': {'ref': 'comments/add_docstrings', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'improve/refactor'}, 'number': '2', 'html_url': 'www.github.com', 'state': 'open'},
@@ -2425,7 +2468,7 @@ class MacheteTester(unittest.TestCase):
     ])
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs_freshly_cloned` due to `git fetch` executed by `checkout-pr` subcommand.
+    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs_freshly_cloned` due to `git fetch` executed by `checkout-prs` subcommand.
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     @mock.patch('urllib.request.urlopen', MockContextManager)
@@ -2493,8 +2536,10 @@ class MacheteTester(unittest.TestCase):
                         "Pull request `#2` checked out at local branch `comments/add_docstrings`\n"
                         "Annotating `comments/add_docstrings` as `PR #2 (github_user)`\nAnnotating `improve/refactor` as `PR #1 (github_user)`\n"
                         "Switched to local branch `comments/add_docstrings`\n")
+        # x = self.launch_command(*['github', 'checkout-prs', '2'])
+        # print(x)
         self.assert_command(
-            ['github', 'checkout-pr', '2'],
+            ['github', 'checkout-prs', '2'],
             expected_msg,
             strip_indentation=False
         )
@@ -2522,7 +2567,7 @@ class MacheteTester(unittest.TestCase):
                         "Pull request `#23` checked out at local branch `sphinx_export`\n"
                         "Switched to local branch `sphinx_export`\n")
         self.assert_command(
-            ['github', 'checkout-pr', '23'],
+            ['github', 'checkout-prs', '23'],
             expected_msg,
             strip_indentation=False
         )
@@ -2549,7 +2594,7 @@ class MacheteTester(unittest.TestCase):
 
     @mock.patch('git_machete.git_operations.GitContext.fetch_ref', mock_fetch_ref)  # need to mock fetch_ref due to underlying `git fetch pull/head` calls
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs_from_fork_with_deleted_repo` due to `git fetch` executed by `checkout-pr` subcommand.
+    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs_from_fork_with_deleted_repo` due to `git fetch` executed by `checkout-prs` subcommand.
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     @mock.patch('urllib.request.urlopen', MockContextManager)
@@ -2572,7 +2617,7 @@ class MacheteTester(unittest.TestCase):
                         "Pull request `#2` checked out at local branch `feature/allow_checkout`\n"
                         "Switched to local branch `feature/allow_checkout`\n")
         self.assert_command(
-            ['github', 'checkout-pr', '2'],
+            ['github', 'checkout-prs', '2'],
             expected_msg,
             strip_indentation=False
         )
@@ -2583,147 +2628,6 @@ class MacheteTester(unittest.TestCase):
             msg="Verify that 'git machete github checkout prs' performs 'git checkout' to "
                 "the head branch of given pull request."
         )
-
-    git_api_state_for_test_fetch_prs = MockGithubAPIState([
-        {'head': {'ref': 'chore/redundant_checks', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'restrict_access'}, 'number': '18', 'html_url': 'www.github.com', 'state': 'open'},
-        {'head': {'ref': 'restrict_access', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'allow-ownership-link'}, 'number': '17', 'html_url': 'www.github.com', 'state': 'open'},
-        {'head': {'ref': 'allow-ownership-link', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'bugfix/feature'}, 'number': '12', 'html_url': 'www.github.com', 'state': 'open'},
-        {'head': {'ref': 'bugfix/feature', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'enhance/feature'}, 'number': '6', 'html_url': 'www.github.com', 'state': 'open'},
-        {'head': {'ref': 'enhance/add_user', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '19', 'html_url': 'www.github.com', 'state': 'open'},
-        {'head': {'ref': 'testing/add_user', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'bugfix/add_user'}, 'number': '22', 'html_url': 'www.github.com', 'state': 'open'},
-        {'head': {'ref': 'chore/comments', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'testing/add_user'}, 'number': '24', 'html_url': 'www.github.com', 'state': 'open'},
-        {'head': {'ref': 'ignore-trailing', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com', 'state': 'open'},
-        {'head': {'ref': 'bugfix/remove-n-option', 'repo': {'full_name': 'testing/checkout_prs', 'html_url': GitRepositorySandbox.second_remote_path}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '5', 'html_url': 'www.github.com', 'state': 'closed'}
-    ])
-
-    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs` due to `git fetch` executed by `checkout-pr` subcommand.
-    @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
-    @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
-    @mock.patch('urllib.request.urlopen', MockContextManager)
-    @mock.patch('urllib.request.Request', git_api_state_for_test_fetch_prs.new_request())
-    def test_fetch_prs(self) -> None:
-        (
-            self.repo_sandbox.new_branch("root")
-            .commit("initial commit")
-            .new_branch("develop")
-            .commit("first commit")
-            .push()
-            .new_branch("enhance/feature")
-            .commit("introduce feature")
-            .push()
-            .new_branch("bugfix/feature")
-            .commit("bugs removed")
-            .push()
-            .new_branch("allow-ownership-link")
-            .commit("fixes")
-            .push()
-            .new_branch('restrict_access')
-            .commit('authorized users only')
-            .push()
-            .new_branch("chore/redundant_checks")
-            .commit('remove some checks')
-            .push()
-            .check_out("root")
-            .new_branch("master")
-            .commit("Master commit")
-            .push()
-            .new_branch("hotfix/add-trigger")
-            .commit("HOTFIX Add the trigger")
-            .push()
-            .new_branch("ignore-trailing")
-            .commit("Ignore trailing data")
-            .push()
-            .delete_branch("root")
-            .new_branch('chore/fields')
-            .commit("remove outdated fields")
-            .push()
-            .check_out('develop')
-            .new_branch('enhance/add_user')
-            .commit('allow externals to add users')
-            .push()
-            .new_branch('bugfix/add_user')
-            .commit('first round of fixes')
-            .push()
-            .new_branch('testing/add_user')
-            .commit('add test set for add_user feature')
-            .push()
-            .new_branch('chore/comments')
-            .commit('code maintenance')
-            .push()
-            .check_out('master')
-        )
-        for branch in ('chore/redundant_checks', 'restrict_access', 'allow-ownership-link', 'bugfix/feature', 'enhance/add_user', 'testing/add_user', 'chore/comments', 'bugfix/add_user'):
-            self.repo_sandbox.execute(f"git branch -D {branch}")
-
-        self.launch_command('discover')
-
-        # broken chain of pull requests (add new root)
-        self.launch_command('github', 'fetch-prs', '6', '24')
-        self.assert_command(
-            ["status"],
-            """
-            master
-            |
-            o-hotfix/add-trigger
-              |
-              o-ignore-trailing  PR #3 (github_user)
-                |
-                o-chore/fields
-
-            develop
-            |
-            o-enhance/feature
-              |
-              o-bugfix/feature  PR #6 (github_user)
-
-            bugfix/add_user
-            |
-            o-testing/add_user  PR #22 (github_user)
-              |
-              o-chore/comments *  PR #24 (github_user)
-            """
-        )
-
-        self.launch_command('github', 'fetch-prs', '--all')
-        self.assert_command(
-            ["status"],
-            """
-            master
-            |
-            o-hotfix/add-trigger
-              |
-              o-ignore-trailing  PR #3 (github_user)
-                |
-                o-chore/fields
-
-            develop
-            |
-            o-enhance/feature
-            | |
-            | o-bugfix/feature  PR #6 (github_user)
-            |   |
-            |   o-allow-ownership-link  PR #12 (github_user)
-            |     |
-            |     o-restrict_access  PR #17 (github_user)
-            |       |
-            |       o-chore/redundant_checks  PR #18 (github_user)
-            |
-            o-enhance/add_user *  PR #19 (github_user)
-
-            bugfix/add_user
-            |
-            o-testing/add_user  PR #22 (github_user)
-              |
-              o-chore/comments  PR #24 (github_user)
-            """
-        )
-
-        expected_msg = ("Fetching origin...\n"
-                        "Pull request `#3` checked out at local branch `ignore-trailing`\n"
-                        "Pull request `#12` checked out at local branch `allow-ownership-link`\n")
-
-        self.assert_command(['github', 'fetch-prs', '3', '12'], expected_msg, strip_indentation=False)
 
     def test_squash_with_valid_fork_point(self) -> None:
         (
