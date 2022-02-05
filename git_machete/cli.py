@@ -472,7 +472,7 @@ def get_branch_arg_or_current_branch(
     return cli_opts.opt_branch or git_context.get_current_branch()
 
 
-def exit_script(status_code: Optional[int] = None) -> None:
+def exit_script(status_code: Optional[int] = None, error: Optional[Exception] = None) -> None:
     # Single point of exit is useful, because we can mock this method in tests
     # and verify that actual errors like MacheteException are raised with
     # appropriate messages. Otherwise it's not possible, because SystemError
@@ -480,6 +480,8 @@ def exit_script(status_code: Optional[int] = None) -> None:
     # there are some additional points of exit from the script in client.py
     # method MacheteClient.pick() there are left on purpose since removing them
     # would enforce significant refactor.
+    if error:
+        print(f"{error}", file=sys.stderr)
     sys.exit(status_code)
 
 
@@ -790,11 +792,9 @@ def launch(orig_args: List[str]) -> None:
 
     except (argparse.ArgumentError, argparse.ArgumentTypeError) as e:
         print(get_short_general_usage())
-        print(f"\n{e}", file=sys.stderr)
-        exit_script(2)
+        exit_script(2, e)
     except MacheteException as e:
-        print(f"\n{e}", file=sys.stderr)
-        exit_script(1)
+        exit_script(1, e)
     except KeyboardInterrupt:
         print("\nInterrupted by the user", file=sys.stderr)
         exit_script(1)

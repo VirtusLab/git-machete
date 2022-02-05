@@ -13,6 +13,7 @@ RUN set -x \
     && cd git-$git_version/ \
     && make configure \
     && ./configure \
+    && sed -i 's/#warning .*//' /usr/include/sys/poll.h  `# to reduce amount of spam warnings in logs` \
     && make \
     && make install \
     && cd .. \

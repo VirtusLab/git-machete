@@ -17,13 +17,12 @@ from urllib.parse import urlparse, ParseResult, parse_qs
 from urllib.error import HTTPError
 
 from git_machete import cli
-from git_machete.client import MacheteClient
 from git_machete.docs import long_docs
 from git_machete.exceptions import MacheteException
 from git_machete.github import get_parsed_github_remote_url
 from git_machete.git_operations import FullCommitHash, GitContext, LocalBranchShortName
 from git_machete.options import CommandLineOptions
-from git_machete.utils import dim, fmt
+from git_machete.utils import dim
 
 
 cli_opts: CommandLineOptions = CommandLineOptions()
@@ -36,6 +35,13 @@ def get_current_commit_hash() -> FullCommitHash:
     """Returns hash of a commit of the current branch head."""
     with os.popen("git rev-parse HEAD") as git_call:
         return FullCommitHash.of(git_call.read().strip())
+
+
+def mock_exit_script(status_code: Optional[int] = None, error: Optional[Exception] = None) -> None:
+    if error:
+        raise error
+    else:
+        sys.exit(status_code)
 
 
 def mock_fetch_ref(cls: Any, remote: str, ref: str) -> None:
@@ -457,6 +463,7 @@ class MacheteTester(unittest.TestCase):
             """,
         )
 
+    @mock.patch('git_machete.cli.exit_script', mock_exit_script)
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     def test_branch_reappears_in_definition(self) -> None:
         body: str = \
@@ -465,18 +472,18 @@ class MacheteTester(unittest.TestCase):
             \t\n
             develop
             """
-        expected_error_msg: str = fmt('.git/machete, line 5: branch `develop` re-appears in the tree definition. '
-                                      'Edit the definition file manually with `git machete edit`')
 
         self.repo_sandbox.new_branch("root")
         self.rewrite_definition_file(body)
 
-        machete_client = MacheteClient(git)  # Only to workaround sys.exit while calling launch(['status'])
-        try:
-            machete_client.read_definition_file()
-        except MacheteException as e:
-            if e.parameter != expected_error_msg:
-                self.fail(f'Actual Exception message: {e} \nis not equal to expected message: {expected_error_msg}')
+        expected_error_message: str = '.git/machete, line 5: branch `develop` re-appears in the tree definition. ' \
+                                      'Edit the definition file manually with `git machete edit`'
+
+        with self.assertRaises(MacheteException) as e:
+            self.launch_command('status')
+        if e:
+            self.assertEqual(e.exception.parameter, expected_error_message,
+                             'Verify that expected error message has appeared a branch re-appears in tree definition.')
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     def test_show(self) -> None:
@@ -1986,14 +1993,15 @@ class MacheteTester(unittest.TestCase):
     git_api_state_for_test_create_pr = MockGithubAPIState([{'head': {'ref': 'ignore-trailing', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com', 'state': 'open'}],
                                                           issues=[{'number': '4'}, {'number': '5'}, {'number': '6'}])
 
-    @mock.patch('urllib.error.HTTPError', MockHTTPError)  # need to provide read() method, which does not actually reads error from url
+    @mock.patch('git_machete.cli.exit_script', mock_exit_script)
+    @mock.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
     # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_create_pr` due to `git fetch` executed by `create-pr` subcommand.
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
-    @mock.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
-    @mock.patch('urllib.request.urlopen', MockContextManager)
+    @mock.patch('urllib.error.HTTPError', MockHTTPError)  # need to provide read() method, which does not actually reads error from url
     @mock.patch('urllib.request.Request', git_api_state_for_test_create_pr.new_request())
+    @mock.patch('urllib.request.urlopen', MockContextManager)
     def test_github_create_pr(self) -> None:
         (
             self.repo_sandbox.new_branch("root")
@@ -2120,12 +2128,9 @@ class MacheteTester(unittest.TestCase):
               x-drop-constraint (untracked)
             """,
         )
-        # check against attempt to create already existing pull request
-        machete_client = MacheteClient(git)
         expected_error_message = "A pull request already exists for test_repo:hotfix/add-trigger."
-        machete_client.read_definition_file()
         with self.assertRaises(MacheteException) as e:
-            machete_client.create_github_pr(head=LocalBranchShortName.of('hotfix/add-trigger'), opt_draft=False, opt_onto=None)
+            self.launch_command("github", "create-pr")
         if e:
             self.assertEqual(e.exception.msg, expected_error_message,  # type: ignore
                              'Verify that expected error message has appeared when given pull request to create is already created.')
@@ -2138,11 +2143,9 @@ class MacheteTester(unittest.TestCase):
         )
         self.launch_command('discover')
 
-        machete_client = MacheteClient(git)
-        machete_client.read_definition_file()
         expected_error_message = "All commits in `testing/endpoints` branch are already included in `develop` branch.\nCannot create pull request."
         with self.assertRaises(MacheteException) as e:
-            machete_client.create_github_pr(head=LocalBranchShortName.of('testing/endpoints'), opt_draft=False, opt_onto=None)
+            self.launch_command("github", "create-pr")
         if e:
             self.assertEqual(e.exception.parameter, expected_error_message,
                              'Verify that expected error message has appeared when head branch is equal or ancestor of base branch.')
@@ -2150,7 +2153,7 @@ class MacheteTester(unittest.TestCase):
         self.repo_sandbox.check_out('develop')
         expected_error_message = "Branch `develop` does not have a parent branch (it is a root), base branch for the PR cannot be established."
         with self.assertRaises(MacheteException) as e:
-            machete_client.create_github_pr(head=LocalBranchShortName.of('develop'), opt_draft=False, opt_onto=None)
+            self.launch_command("github", "create-pr")
         if e:
             self.assertEqual(e.exception.parameter, expected_error_message,
                              'Verify that expected error message has appeared when creating PR from root branch.')
@@ -2208,6 +2211,7 @@ class MacheteTester(unittest.TestCase):
         {'head': {'ref': 'bugfix/remove-n-option', 'repo': {'full_name': 'testing/checkout_prs', 'html_url': GitRepositorySandbox.second_remote_path}}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '5', 'html_url': 'www.github.com', 'state': 'closed'}
     ])
 
+    @mock.patch('git_machete.cli.exit_script', mock_exit_script)
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs` due to `git fetch` executed by `checkout-prs` subcommand.
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
@@ -2361,15 +2365,14 @@ class MacheteTester(unittest.TestCase):
               o-chore/comments *  PR #24 (github_user)
             """
         )
+
         # check against wrong pr number
-        machete_client = MacheteClient(git)
         repo: str
         org: str
         (org, repo) = get_parsed_github_remote_url(self.repo_sandbox.remote_path)
         expected_error_message = f"PR #100 is not found in repository `{org}/{repo}`"
-        machete_client.read_definition_file()
         with self.assertRaises(MacheteException) as e:
-            machete_client.checkout_github_prs(100)
+            self.launch_command('github', 'checkout-prs', '100')
         if e:
             self.assertEqual(e.exception.parameter, expected_error_message,
                              'Verify that expected error message has appeared when given pull request to checkout does not exists.')
@@ -2388,11 +2391,9 @@ class MacheteTester(unittest.TestCase):
          )
         os.chdir(self.repo_sandbox.local_path)
 
-        machete_client = MacheteClient(git)
-        machete_client.read_definition_file()
         expected_error_message = "Could not check out PR #5 because its head branch `bugfix/remove-n-option` is already deleted from `testing`."
         with self.assertRaises(MacheteException) as e:
-            machete_client.checkout_github_prs(5)
+            self.launch_command('github', 'checkout-prs', '5')
         if e:
             self.assertEqual(e.exception.parameter, expected_error_message,
                              'Verify that expected error message has appeared when given pull request to checkout have already deleted branch from remote.')
