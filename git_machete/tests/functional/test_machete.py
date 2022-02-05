@@ -2650,6 +2650,7 @@ class MacheteTester(unittest.TestCase):
             # First exception MacheteException is raised, followed by SystemExit.
             self.launch_command('update', '-f', branch_1a_hash)
 
+    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_stdout)
     def test_slide_out_with_valid_down_fork_point(self) -> None:
         (
             self.repo_sandbox.new_branch('branch-0')
