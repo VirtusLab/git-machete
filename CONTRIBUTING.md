@@ -133,6 +133,9 @@ Review fixes should be pushed on separate commits for easier viewing on GitHub (
    Verify that [version-bump PRs to NixOS/nixpkgs](https://github.com/NixOS/nixpkgs/pulls?q=is%3Apr+git-machete),
    are regularly opened so that Nix package is kept up to date with git-machete releases.
 
+   If no package-update PR has been opened for a longer time, it's probably due to the failure of Nix package build.
+   Check [r-ryantm build system](https://r.ryantm.com/log/updatescript/git-machete/) for recent build logs.
+
 1. Thanks to the courtesy of [Ila&iuml; Deutel](https://github.com/ilai-deutel),
    a [git-machete package](https://aur.archlinux.org/packages/git-machete) is hosted in Arch User Repository (AUR).
    If the release introduces significant changes/critical bugfixes, please [flag the package as out of date](https://aur.archlinux.org/pkgbase/git-machete/flag).

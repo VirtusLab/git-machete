@@ -31,10 +31,14 @@ git: GitContext = GitContext()
 FAKE_GITHUB_REMOTE_PATTERNS = ['(.*)/(.*)']
 
 
+def popen(command: str) -> str:
+    with os.popen(command) as process:
+        return process.read().strip()
+
+
 def get_current_commit_hash() -> FullCommitHash:
     """Returns hash of a commit of the current branch head."""
-    with os.popen("git rev-parse HEAD") as git_call:
-        return FullCommitHash.of(git_call.read().strip())
+    return FullCommitHash.of(popen("git rev-parse HEAD"))
 
 
 def mock_exit_script(status_code: Optional[int] = None, error: Optional[BaseException] = None) -> None:
@@ -192,7 +196,7 @@ class MockGithubAPIRequest:
                 'user': {'login': 'github_user'},
                 'html_url': 'www.github.com',
                 'state': 'open',
-                'head': {'ref': "", 'repo': {'full_name': 'testing:checkout_prs', 'html_url': os.popen("mktemp -d").read().strip()}},
+                'head': {'ref': "", 'repo': {'full_name': 'testing:checkout_prs', 'html_url': popen("mktemp -d")}},
                 'base': {'ref': ""}}
         return self.fill_pull_request_data(json.loads(self.json_data), pull)
 
@@ -292,14 +296,11 @@ class MockContextManager:
 
 
 class GitRepositorySandbox:
-    with os.popen("mktemp -d") as local_temp_folder:
-        second_remote_path = local_temp_folder.read().strip()
+    second_remote_path = popen("mktemp -d")
 
     def __init__(self) -> None:
-        with os.popen("mktemp -d") as temp_remote_folder:
-            self.remote_path = temp_remote_folder.read().strip()
-        with os.popen("mktemp -d") as temp_local_folder:
-            self.local_path = temp_local_folder.read().strip()
+        self.remote_path = popen("mktemp -d")
+        self.local_path = popen("mktemp -d")
 
     def execute(self, command: str) -> "GitRepositorySandbox":
         subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)
@@ -335,8 +336,7 @@ class GitRepositorySandbox:
         return self
 
     def push(self) -> "GitRepositorySandbox":
-        with os.popen("git symbolic-ref -q --short HEAD") as git_call:
-            branch = git_call.read()
+        branch = popen("git symbolic-ref -q --short HEAD")
         self.execute(f"git push -u origin {branch}")
         return self
 
@@ -1801,9 +1801,9 @@ class MacheteTester(unittest.TestCase):
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     def test_update_with_fork_point_not_specified(self) -> None:
-        """Verify behaviour of a 'git machete update --no-interactive rebase' command.
+        """Verify behaviour of a 'git machete update --no-interactive-rebase' command.
 
-        Verify that 'git machete update --no-interactive rebase' performs
+        Verify that 'git machete update --no-interactive-rebase' performs
         'git rebase' to the parent branch of the current branch.
 
         """
@@ -1827,15 +1827,15 @@ class MacheteTester(unittest.TestCase):
         self.assertEqual(
             parents_new_commit_hash,
             new_forkpoint_hash,
-            msg="Verify that 'git machete update --no-interactive rebase' perform"
+            msg="Verify that 'git machete update --no-interactive-rebase' perform"
                 "'git rebase' to the parent branch of the current branch."
         )
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     def test_update_with_fork_point_specified(self) -> None:
-        """Verify behaviour of a 'git machete update --no-interactive rebase -f <commit_hash>' cmd.
+        """Verify behaviour of a 'git machete update --no-interactive-rebase -f <commit_hash>' cmd.
 
-        Verify that 'git machete update --no-interactive rebase -f <commit_hash>'
+        Verify that 'git machete update --no-interactive-rebase -f <commit_hash>'
         performs 'git rebase' to the upstream branch and drops the commits until
         (included) fork point specified by the option '-f'.
 
@@ -1862,20 +1862,19 @@ class MacheteTester(unittest.TestCase):
         self.launch_command(
             "update", "--no-interactive-rebase", "-f", branch_second_commit_hash)
         new_forkpoint_hash = self.launch_command("fork-point").strip()
-        with os.popen('git log -10 --oneline') as git_call:
-            branch_history = git_call.read()
+        branch_history = popen('git log -10 --oneline')
 
         self.assertEqual(
             roots_second_commit_hash,
             new_forkpoint_hash,
-            msg="Verify that 'git machete update --no-interactive rebase -f "
+            msg="Verify that 'git machete update --no-interactive-rebase -f "
                 "<commit_hash>' performs 'git rebase' to the upstream branch."
         )
 
         self.assertNotIn(
             branchs_first_commit_msg,
             branch_history,
-            msg="Verify that 'git machete update --no-interactive rebase -f "
+            msg="Verify that 'git machete update --no-interactive-rebase -f "
                 "<commit_hash>' drops the commits until (included) fork point "
                 "specified by the option '-f' from the current branch."
         )
@@ -1883,7 +1882,7 @@ class MacheteTester(unittest.TestCase):
         self.assertNotIn(
             branchs_second_commit_msg,
             branch_history,
-            msg="Verify that 'git machete update --no-interactive rebase -f "
+            msg="Verify that 'git machete update --no-interactive-rebase -f "
                 "<commit_hash>' drops the commits until (included) fork point "
                 "specified by the option '-f' from the current branch."
         )
@@ -2378,8 +2377,7 @@ class MacheteTester(unittest.TestCase):
                              'Verify that expected error message has appeared when given pull request to checkout does not exists.')
 
         # Check against closed pull request with head branch deleted from remote
-        with os.popen("mktemp -d") as local_temp_folder:
-            local_path = local_temp_folder.read().strip()
+        local_path = popen("mktemp -d")
         self.repo_sandbox.new_repo(GitRepositorySandbox.second_remote_path)
         (self.repo_sandbox.new_repo(local_path)
             .execute(f"git remote add origin {GitRepositorySandbox.second_remote_path}")
@@ -2458,8 +2456,7 @@ class MacheteTester(unittest.TestCase):
         )
         for branch in ('develop', 'chore/sync_to_docs', 'improve/refactor', 'comments/add_docstrings'):
             self.repo_sandbox.execute(f"git branch -D {branch}")
-        with os.popen("mktemp -d") as local_temp_folder:
-            local_path = local_temp_folder.read().strip()
+        local_path = popen("mktemp -d")
         os.chdir(local_path)
         self.repo_sandbox.execute(f'git clone {self.repo_sandbox.remote_path}')
         os.chdir(os.path.join(local_path, os.listdir()[0]))
@@ -2467,8 +2464,7 @@ class MacheteTester(unittest.TestCase):
         for branch in ('develop', 'chore/sync_to_docs', 'improve/refactor', 'comments/add_docstrings'):
             self.repo_sandbox.execute(f"git branch -D -r origin/{branch}")
 
-        with os.popen("mktemp -d") as local_temp_folder:
-            local_path = local_temp_folder.read().strip()
+        local_path = popen("mktemp -d")
         self.repo_sandbox.new_repo(GitRepositorySandbox.second_remote_path)
         (
             self.repo_sandbox.new_repo(local_path)
@@ -2596,14 +2592,13 @@ class MacheteTester(unittest.TestCase):
 
         self.launch_command('squash', '-f', fork_point)
 
-        current_branch_log = os.popen('git log -3 --format=%s').read()
-
         expected_branch_log = (
             "Third commit.\n"
             "Second commit.\n"
-            "First commit.\n"
+            "First commit."
         )
 
+        current_branch_log = popen('git log -3 --format=%s')
         self.assertEqual(
             current_branch_log,
             expected_branch_log,

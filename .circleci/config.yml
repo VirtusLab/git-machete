@@ -8,14 +8,6 @@ executors:
       # Needed to avoid warning: https://superuser.com/questions/575844/warning-terminal-is-not-fully-functional
       TERM: ansi
 
-mandatory_jobs: &mandatory_jobs
-  - general checks
-  - test against python 3_6 and git 1_8_10
-  - test against python 3_7 and git 2_7_6
-  - test against python 3_8 and git 2_25_0 with PEP8 check
-  - test against python 3_9 and git 2_30_1 with coverage report
-  - test against python 3_10 and git 2_33_1 with building docs
-
 jobs:
   "general checks":
     executor: ubuntu_executor
@@ -119,6 +111,7 @@ jobs:
     executor: ubuntu_executor
     steps:
       - checkout
+
       - deploy:
           name: '[Dry run] Deploy to PyPI'
           # Side effects: does an actual release, but to the test PyPI
@@ -139,6 +132,12 @@ jobs:
           command: bash ci/deb-ppa-upload/ci-deploy.sh --dry-run
 
       - deploy:
+          name: '[Dry run] Build Nix package'
+          # Side effects: potentially pushes a regenerated Docker image
+          # Other than that, it just builds the package without publishing anything; there's no special dry-run mode
+          command: bash ci/nixpkgs-build/ci-run.sh
+
+      - deploy:
           name: '[Dry run] Build snap'
           command: bash ci/snap/ci-run-dry-run.sh
 
@@ -152,6 +151,7 @@ jobs:
     executor: ubuntu_executor
     steps:
       - checkout
+
       - deploy:
           name: 'Deploy to PyPI'
           command: bash ci/pypi/ci-deploy.sh
@@ -190,6 +190,14 @@ jobs:
       #    is triggered automatically via GitHub webhook on https://readthedocs.org/projects/git-machete/builds/,
       # 3) every time a https://github.com/r-ryantm bot runs on NixOS/nixpkgs repository,
       #    Nix git-machete package is updated with the fresh version/package hash according to the data from PyPI.
+
+mandatory_jobs: &mandatory_jobs
+  - general checks
+  - test against python 3_6 and git 1_8_10
+  - test against python 3_7 and git 2_7_6
+  - test against python 3_8 and git 2_25_0 with PEP8 check
+  - test against python 3_9 and git 2_30_1 with coverage report
+  - test against python 3_10 and git 2_33_1 with building docs
 
 workflows:
   version: 2
