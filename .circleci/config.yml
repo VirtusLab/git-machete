@@ -47,8 +47,8 @@ jobs:
             enforce-issue-number-for-todos.sh
             ensure-completion-scripts-correct.sh
             ensure-links-correct.sh
-            ensure-shell-scripts-pass-shellcheck.sh
             ensure-release-notes-up-to-date.sh
+            ensure-shell-scripts-pass-shellcheck.sh
             ensure-version-bumped.sh
             prohibit-tab-character.sh
             prohibit-trailing-whitespace.sh
@@ -60,6 +60,8 @@ jobs:
       - run:
           name: Run tests against Python 3.6 and git 1.8.0
           command: PYTHON_VERSION=3.6 GIT_VERSION=1.8.0  bash ci/tox/ci-run.sh # Earliest versions of python/git supported by git-machete
+      - store_test_results:
+          path: test-results/
 
   "test against python 3_7 and git 2_7_6":
     executor: ubuntu_executor
@@ -68,6 +70,8 @@ jobs:
       - run:
           name: Run tests against Python 3.7 and git 2.7.6
           command: PYTHON_VERSION=3.7 GIT_VERSION=2.7.6  bash ci/tox/ci-run.sh
+      - store_test_results:
+          path: test-results/
 
   # Note that there is no particular reason for the below assignment of PEP8/coverage/docs checks to Python version.
   # Each of these needs to be run against just one Python version
@@ -82,6 +86,8 @@ jobs:
       - run:
           name: Run tests against Python 3.8 and git 2.25.0 (with PEP8 check)
           command: PYTHON_VERSION=3.8 GIT_VERSION=2.25.0 CHECK_PEP8=true  bash ci/tox/ci-run.sh
+      - store_test_results:
+          path: test-results/
 
   "test against python 3_9 and git 2_30_1 with coverage report":
     executor: ubuntu_executor
@@ -90,8 +96,10 @@ jobs:
       - run:
           name: Run tests against Python 3.9 and git 2.30.1 (with coverage report)
           command: PYTHON_VERSION=3.9 GIT_VERSION=2.30.1 CHECK_COVERAGE=true  bash ci/tox/ci-run.sh
+      - store_test_results:
+          path: test-results/
       - store_artifacts:
-          path: htmlcov
+          path: htmlcov/
           destination: coverage
 
   "test against python 3_10 and git 2_33_1 with building docs":
@@ -101,8 +109,10 @@ jobs:
       - run:
           name: Run tests against Python 3.10 and git 2.33.1 (with building docs)
           command: PYTHON_VERSION=3.10 GIT_VERSION=2.33.1 BUILD_DOCS=true  bash ci/tox/ci-run.sh
+      - store_test_results:
+          path: test-results/
       - store_artifacts:
-          path: docs/html
+          path: docs/html/
           destination: docs
 
   "dry run deploy":

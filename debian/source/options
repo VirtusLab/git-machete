@@ -27,7 +27,6 @@ tar-ignore = *.pyc
 tar-ignore = .python-version
 tar-ignore = RELEASE_NOTES.md
 tar-ignore = snap
-tar-ignore = .stestr
 tar-ignore = .stestr.conf
 tar-ignore = *.swp
 tar-ignore = tests
