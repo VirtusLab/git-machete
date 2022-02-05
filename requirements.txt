@@ -1,0 +1,3 @@
+# Keeping the list of dependencies empty
+# to make sure that installation via different package managers is as smooth as possible.
+# Yes, that's far from ideal... but https://xkcd.com/1987/ :/
