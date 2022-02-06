@@ -31,7 +31,6 @@ tar-ignore = .remarkrc.yml
 tar-ignore = .remarkrc_master.yml
 tar-ignore = RELEASE_NOTES.md
 tar-ignore = snap
-tar-ignore = .stestr.conf
 tar-ignore = *.swp
 tar-ignore = test-results
 tar-ignore = tests
