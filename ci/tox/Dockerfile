@@ -41,8 +41,8 @@ RUN apk add --no-cache gcc musl-dev # both packages are required to install mypy
 ENV USER_NAME=${id -un}
 RUN echo ${USER_NAME}
 RUN $PYTHON -m pip install --user tox
-ENV PATH=$PATH:/home/ci-user/.local/bin/
-COPY --chown=ci-user:ci-user entrypoint.sh /home/ci-user/
+ENV PATH=$PATH:/home/ci_user/.local/bin/
+COPY --chown=ci_user:ci_user entrypoint.sh /home/ci_user/
 RUN chmod +x ~/entrypoint.sh
-CMD ["/home/ci-user/entrypoint.sh"]
-WORKDIR /home/ci-user/git-machete
+CMD ["/home/ci_user/entrypoint.sh"]
+WORKDIR /home/ci_user/git-machete

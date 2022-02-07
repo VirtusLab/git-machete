@@ -11,8 +11,8 @@ USER_ID=3000
 export USER_ID
 GROUP_ID=3000
 export GROUP_ID
-sudo groupadd -g "$USER_ID" ci-user
-sudo useradd ci-user -u "$USER_ID" -g "$GROUP_ID" -s /bin/bash
+sudo groupadd -g "$USER_ID" ci_user
+sudo useradd ci_user -u "$USER_ID" -g "$GROUP_ID" -s /bin/bash
 
 function retry() {
   attempts=$1

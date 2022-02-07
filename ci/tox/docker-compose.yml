@@ -15,7 +15,7 @@ services:
       - CHECK_PEP8=${CHECK_PEP8:-false}
     volumes:
       # Host path is relative to current directory, not build-context
-      - ../..:/home/ci-user/git-machete
+      - ../..:/home/ci_user/git-machete
       - /etc/group:/etc/group:ro
       - /etc/passwd:/etc/passwd:ro
       - /etc/shadow:/etc/shadow:ro
