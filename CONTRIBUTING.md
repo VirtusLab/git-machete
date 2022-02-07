@@ -98,6 +98,7 @@ Review fixes should be pushed on separate commits for easier viewing on GitHub (
 
 1. Merge develop into master and push to remote repository using console:
 
+         git pull origin develop master
          git checkout master
          git merge --no-ff develop
          git push origin master
