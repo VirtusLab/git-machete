@@ -2196,7 +2196,7 @@ class MacheteTester(unittest.TestCase):
             """,
         )
 
-    git_api_state_for_test_checkout_prs = MockGithubAPIState([
+    git_api_state_for_test_github_checkout_prs = MockGithubAPIState([
         {'head': {'ref': 'chore/redundant_checks', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'restrict_access'}, 'number': '18', 'html_url': 'www.github.com', 'state': 'open'},
         {'head': {'ref': 'restrict_access', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'allow-ownership-link'}, 'number': '17', 'html_url': 'www.github.com', 'state': 'open'},
         {'head': {'ref': 'allow-ownership-link', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'bugfix/feature'}, 'number': '12', 'html_url': 'www.github.com', 'state': 'open'},
@@ -2209,12 +2209,12 @@ class MacheteTester(unittest.TestCase):
     ])
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs` due to `git fetch` executed by `checkout-prs` subcommand.
+    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_checkout_prs` due to `git fetch` executed by `checkout-prs` subcommand.
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('urllib.request.urlopen', MockContextManager)
-    @mock.patch('urllib.request.Request', git_api_state_for_test_checkout_prs.new_request())
-    def test_checkout_prs(self) -> None:
+    @mock.patch('urllib.request.Request', git_api_state_for_test_github_checkout_prs.new_request())
+    def test_github_checkout_prs(self) -> None:
         (
             self.repo_sandbox.new_branch("root")
             .commit("initial commit")
@@ -2460,7 +2460,7 @@ class MacheteTester(unittest.TestCase):
 
         self.assert_command(['github', 'checkout-prs', '3', '12'], expected_msg, strip_indentation=False)
 
-    git_api_state_for_test_checkout_prs_fresh_repo = MockGithubAPIState([
+    git_api_state_for_test_github_checkout_prs_fresh_repo = MockGithubAPIState([
         {'head': {'ref': 'comments/add_docstrings', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'improve/refactor'}, 'number': '2', 'html_url': 'www.github.com', 'state': 'open'},
         {'head': {'ref': 'restrict_access', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'allow-ownership-link'}, 'number': '17', 'html_url': 'www.github.com', 'state': 'open'},
         {'head': {'ref': 'improve/refactor', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'chore/sync_to_docs'}, 'number': '1', 'html_url': 'www.github.com', 'state': 'open'},
@@ -2468,12 +2468,12 @@ class MacheteTester(unittest.TestCase):
     ])
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs_freshly_cloned` due to `git fetch` executed by `checkout-prs` subcommand.
+    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_checkout_prs_freshly_cloned` due to `git fetch` executed by `checkout-prs` subcommand.
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     @mock.patch('urllib.request.urlopen', MockContextManager)
-    @mock.patch('urllib.request.Request', git_api_state_for_test_checkout_prs_fresh_repo.new_request())
-    def test_checkout_prs_freshly_cloned(self) -> None:
+    @mock.patch('urllib.request.Request', git_api_state_for_test_github_checkout_prs_fresh_repo.new_request())
+    def test_github_checkout_prs_freshly_cloned(self) -> None:
         (
             self.repo_sandbox.new_branch("root")
             .commit("initial commit")
@@ -2584,7 +2584,7 @@ class MacheteTester(unittest.TestCase):
             """
         )
 
-    git_api_state_for_test_checkout_prs_from_fork_with_deleted_repo = MockGithubAPIState([
+    git_api_state_for_test_github_checkout_prs_from_fork_with_deleted_repo = MockGithubAPIState([
         {'head': {'ref': 'feature/allow_checkout', 'repo': None}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '2', 'html_url': 'www.github.com', 'state': 'closed'},
         {'head': {'ref': 'bugfix/allow_checkout', 'repo': mock_repository_info}, 'user': {'login': 'github_user'},
          'base': {'ref': 'develop'}, 'number': '3', 'html_url': 'www.github.com', 'state': 'open'}
@@ -2592,12 +2592,12 @@ class MacheteTester(unittest.TestCase):
 
     @mock.patch('git_machete.git_operations.GitContext.fetch_ref', mock_fetch_ref)  # need to mock fetch_ref due to underlying `git fetch pull/head` calls
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_checkout_prs_from_fork_with_deleted_repo` due to `git fetch` executed by `checkout-prs` subcommand.
+    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_checkout_prs_from_fork_with_deleted_repo` due to `git fetch` executed by `checkout-prs` subcommand.
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     @mock.patch('urllib.request.urlopen', MockContextManager)
-    @mock.patch('urllib.request.Request', git_api_state_for_test_checkout_prs_from_fork_with_deleted_repo.new_request())
-    def test_checkout_prs_from_fork_with_deleted_repo(self) -> None:
+    @mock.patch('urllib.request.Request', git_api_state_for_test_github_checkout_prs_from_fork_with_deleted_repo.new_request())
+    def test_github_checkout_prs_from_fork_with_deleted_repo(self) -> None:
         (
             self.repo_sandbox.new_branch("root")
             .commit('initial master commit')
