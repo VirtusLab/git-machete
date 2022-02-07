@@ -89,6 +89,7 @@ As in the first point, if the PR author accepts the suggested comment without an
 
 Review fixes should be pushed on separate commits for easier viewing on GitHub (unlike in e.g. Gerrit's amend-based flow).
 
+
 ## Release TODO list
 
 1. Create release PR from `develop` into `master`.
