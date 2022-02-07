@@ -14,7 +14,7 @@ docs/html/
 htmlcov/
 *.pyc
 .python-version
-.stestr/
+test-results/
 .tox/
 venv/
 

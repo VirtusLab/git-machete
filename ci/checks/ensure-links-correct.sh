@@ -4,9 +4,9 @@ set -e -o pipefail -u
 
 # Downtime of the linked websites shouldn't block a release.
 if [[ ${CIRCLE_BRANCH-} != master ]]; then
-  extra_options='--use=lint-no-dead-urls'
+  extra_options='--rc-path=.remarkrc.yml'
 else
-  extra_options=''
+  extra_options='--rc-path=.remarkrc_master.yml'
 fi
 
-remark --use=validate-links $extra_options --ignore-path=.gitignore  --frail .
+remark $extra_options --ignore-path=.gitignore  --frail .
