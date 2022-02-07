@@ -37,7 +37,7 @@ def get_current_commit_hash() -> FullCommitHash:
         return FullCommitHash.of(git_call.read().strip())
 
 
-def mock_exit_script(status_code: Optional[int] = None, error: Optional[Exception] = None) -> None:
+def mock_exit_script(status_code: Optional[int] = None, error: Optional[BaseException] = None) -> None:
     if error:
         raise error
     else:

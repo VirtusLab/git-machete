@@ -472,7 +472,7 @@ def get_branch_arg_or_current_branch(
     return cli_opts.opt_branch or git_context.get_current_branch()
 
 
-def exit_script(status_code: Optional[int] = None, error: Optional[Exception] = None) -> None:
+def exit_script(status_code: Optional[int] = None, error: Optional[BaseException] = None) -> None:
     # Single point of exit is useful, because we can mock this method in tests
     # and verify that actual errors like MacheteException are raised with
     # appropriate messages. Otherwise it's not possible, because SystemError
