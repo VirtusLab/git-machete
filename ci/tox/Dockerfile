@@ -39,9 +39,10 @@ RUN apk add --no-cache gcc musl-dev # both packages are required to install mypy
 #     && adduser --uid=${user_id} --ingroup=$(getent group $group_id | cut -d: -f1) --disabled-password ci-user
 # USER ci-user
 #ENV USER_NAME=${id -un}
+RUN echo `id -un`
+RUN echo `id -a`
 RUN echo "DEBUG ME: GROUP_ID:${GROUP_ID} USER_ID:${USER_ID} id:$(id -un)"
 RUN cat /etc/passwd
-RUN echo `id -un`
 RUN $PYTHON -m pip install --user tox
 ENV PATH=$PATH:/home/ci_user/.local/bin/
 COPY --chown=ci_user:ci_user entrypoint.sh /home/ci_user/

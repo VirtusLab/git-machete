@@ -36,7 +36,7 @@ sudo useradd ci_user -u "$USER_ID" -g "$GROUP_ID" -s /bin/bash
 
 # A very unpleasant workaround for https://github.com/docker/compose/issues/7258
 # (since v1.25.1, `docker-compose pull` is NOT failing when it can't fetch the image).
-image_tag=$(docker-compose --ansi never config | yq eval ".services.$image_name.image" -)
+image_tag=$(docker-compose --ansi never -e USER_ID -e GROUP_ID config | yq eval ".services.$image_name.image" -)
 docker image inspect "$image_tag" &>/dev/null || {
   docker-compose --ansi never build $image_name
   # In builds coming from forks, secret vars are unavailable for security reasons; hence, we have to skip pushing the newly built image.
