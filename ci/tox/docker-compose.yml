@@ -16,3 +16,8 @@ services:
     volumes:
       # Host path is relative to current directory, not build-context
       - ../..:/home/ci-user/git-machete
+      - /etc/group:/etc/group:ro
+      - /etc/passwd:/etc/passwd:ro
+      - /etc/shadow:/etc/shadow:ro
+  - tty: true
+    command: tail -f /dev/null
