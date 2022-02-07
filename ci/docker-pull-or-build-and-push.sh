@@ -9,6 +9,7 @@ cd ci/$image_name/
 
 USER_ID=$(id -u)
 export USER_ID
+
 GROUP_ID=$(id -g)
 export GROUP_ID
 
