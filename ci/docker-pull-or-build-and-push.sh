@@ -7,6 +7,9 @@ DIRECTORY_HASH=$(git rev-parse HEAD:ci/$image_name)
 export DIRECTORY_HASH
 cd ci/$image_name/
 
+export USER_ID=$(id -u)
+export GROUP_ID=$(id -g)
+
 function retry() {
   attempts=$1
   interval=10
