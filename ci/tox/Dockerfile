@@ -40,8 +40,10 @@ RUN apk add --no-cache gcc musl-dev # both packages are required to install mypy
 # USER ci-user
 #ENV USER_NAME=${id -un}
 RUN echo `id -un`
-RUN echo `id -a`
-RUN echo "DEBUG ME: GROUP_ID:${GROUP_ID} USER_ID:${USER_ID} id:$(id -un)"
+RUN echo `id -gn`
+RUN echo `id -u`
+RUN echo `id -g`
+#RUN echo "DEBUG ME: GROUP_ID:${GROUP_ID} USER_ID:${USER_ID} id:$(id -un)"
 RUN cat /etc/passwd
 RUN $PYTHON -m pip install --user tox
 ENV PATH=$PATH:/home/ci_user/.local/bin/
