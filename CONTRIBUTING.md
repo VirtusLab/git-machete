@@ -89,10 +89,17 @@ As in the first point, if the PR author accepts the suggested comment without an
 
 Review fixes should be pushed on separate commits for easier viewing on GitHub (unlike in e.g. Gerrit's amend-based flow).
 
-
 ## Release TODO list
 
-1. Merge the changes from `develop` to `master` and push `master`.
+1. Create release PR from `develop` into `master`.
+
+1. Verify that all checks have passed.
+
+1. Merge develop into master and push to remote repository using console:
+
+         git checkout master
+         git merge --no-ff develop
+         git push origin master
 
 1. Verify that the release has been created on [Github](https://github.com/VirtusLab/git-machete/releases)
    and that a `git-machete-<VERSION>-1.noarch.rpm` file is present under the Assets.
