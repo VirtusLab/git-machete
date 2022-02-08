@@ -32,7 +32,7 @@ export USER_ID
 GROUP_ID=3000
 export GROUP_ID
 sudo groupadd -g "$USER_ID" ci_user
-sudo useradd ci_user -u "$USER_ID" -g "$GROUP_ID" -s /bin/bash
+sudo useradd ci_user -u "$USER_ID" -g "$GROUP_ID" -m -s /bin/bash
 
 # A very unpleasant workaround for https://github.com/docker/compose/issues/7258
 # (since v1.25.1, `docker-compose pull` is NOT failing when it can't fetch the image).

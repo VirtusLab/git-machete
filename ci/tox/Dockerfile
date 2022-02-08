@@ -48,6 +48,7 @@ RUN cat /etc/passwd
 RUN $PYTHON -m pip install --user tox
 ENV PATH=$PATH:/home/root/.local/bin/
 COPY --chown=root:root entrypoint.sh /home/root/
-RUN chmod +x ~/entrypoint.sh
+RUN echo `pwd`
+RUN chmod +x /home/root/entrypoint.sh
 CMD ["/home/root/entrypoint.sh"]
 WORKDIR /home/root/git-machete
