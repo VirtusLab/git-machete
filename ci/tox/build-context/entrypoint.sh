@@ -27,3 +27,4 @@ tox -e $TOX_ENV_LIST
 
 $PYTHON setup.py install --user
 git machete --version
+ls -al

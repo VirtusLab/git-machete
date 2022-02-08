@@ -46,8 +46,8 @@ RUN echo `id -g`
 #RUN echo "DEBUG ME: GROUP_ID:${GROUP_ID} USER_ID:${USER_ID} id:$(id -un)"
 RUN cat /etc/passwd
 RUN $PYTHON -m pip install --user tox
-ENV PATH=$PATH:/home/ci_user/.local/bin/
-COPY --chown=ci_user:ci_user entrypoint.sh /home/ci_user/
+ENV PATH=$PATH:/home/root/.local/bin/
+COPY --chown=root:root entrypoint.sh /home/root/
 RUN chmod +x ~/entrypoint.sh
-CMD ["/home/ci_user/entrypoint.sh"]
-WORKDIR /home/ci_user/git-machete
+CMD ["/home/root/entrypoint.sh"]
+WORKDIR /home/root/git-machete
