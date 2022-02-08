@@ -1,12 +1,13 @@
 # git-machete
 
-[![Join the chat at https://gitter.im/VirtusLab/git-machete](https://badges.gitter.im/VirtusLab/git-machete.svg)](https://gitter.im/VirtusLab/git-machete)
-[![CircleCI](https://circleci.com/gh/VirtusLab/git-machete/tree/master.svg?style=shield)](https://app.circleci.com/pipelines/github/VirtusLab/git-machete?branch=master)
 [![Read the Docs](https://readthedocs.org/projects/git-machete/badge/?version=latest)](https://git-machete.readthedocs.io/en/stable)
 [![PyPI package](https://img.shields.io/pypi/v/git-machete.svg)](https://pypi.org/project/git-machete)
-[![PyPI package monthly downloads](https://img.shields.io/pypi/dm/git-machete.svg)](https://pypistats.org/packages/git-machete)
+[![PyPI package monthly downloads](https://img.shields.io/pypi/dm/git-machete.svg?label=pypi%20downloads)](https://pypistats.org/packages/git-machete)
 [![Snap](https://snapcraft.io/git-machete/badge.svg)](https://snapcraft.io/git-machete)
+[![AUR package (Arch Linux)](https://repology.org/badge/version-for-repo/aur/git-machete.svg)](https://aur.archlinux.org/packages/git-machete)
+[![nixpkgs unstable package](https://repology.org/badge/version-for-repo/nix_unstable/git-machete.svg?header=nixpkgs)](https://repology.org/project/git-machete/versions)
 [![License: MIT](https://img.shields.io/github/license/VirtusLab/git-machete)](https://github.com/VirtusLab/git-machete/blob/master/LICENSE)
+[![CircleCI](https://circleci.com/gh/VirtusLab/git-machete/tree/master.svg?style=shield)](https://app.circleci.com/pipelines/github/VirtusLab/git-machete?branch=master)
 
 <img src="https://raw.githubusercontent.com/VirtusLab/git-machete/develop/graphics/logo_with_name.svg" style="width: 100%; display: block; margin-bottom: 10pt;" />
 <!-- The image is referenced by full URL, corresponding develop branch to ensure it renders correctly on https://pypi.org/project/git-machete/ -->
@@ -89,6 +90,10 @@ On macOS and most Linux distributions, you can install via [Nix](https://nixos.o
 nix-channel --add https://nixos.org/channels/nixos-unstable unstable  # if you haven't set up any channels yet
 nix-env -i git-machete
 ```
+
+**Note:** since `nixos-21.05`, `git-machete` is included in the stable channels as well.
+The latest released version, however, is generally available in the unstable channel.
+Stable channels may lag behind; see [repology](https://repology.org/project/git-machete/versions) for the current channel-package mapping.
 
 ### Using pip with sudo (system-wide install)
 
