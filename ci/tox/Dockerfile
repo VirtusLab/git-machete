@@ -48,18 +48,18 @@ RUN apk add --no-cache gcc musl-dev # both packages are required to install mypy
 #RUN groupadd --gid $USER_GID $USERNAME \
 #    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME
 
-RUN echo `id -a`
-RUN echo `id -un`
-RUN echo `id -gn`
-RUN echo `id -u`
-RUN echo `id -g`
+#RUN echo `id -a`
+#RUN echo `id -un`
+#RUN echo `id -gn`
+#RUN echo `id -u`
+#RUN echo `id -g`
 
 #RUN echo "DEBUG ME: GROUP_ID:${GROUP_ID} USER_ID:${USER_ID} id:$(id -un)"
 #RUN cat /etc/passwd
 RUN $PYTHON -m pip install --user tox
-ENV PATH=$PATH:/home/ci_user/.local/bin/
-COPY --chown=ci_user:ci_user entrypoint.sh /home/ci_user/
+ENV PATH=$PATH:/home/root/.local/bin/
+COPY --chown=root:root entrypoint.sh /home/root/
 RUN echo `pwd`
-RUN chmod +x /home/ci_user/entrypoint.sh
+RUN chmod +x /home/root/entrypoint.sh
 CMD ["/home/root/entrypoint.sh"]
-WORKDIR /home/ci_user/git-machete
+WORKDIR /home/root/git-machete

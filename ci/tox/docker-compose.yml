@@ -3,7 +3,7 @@ services:
   tox:
     image: gitmachete/ci-tox:git${GIT_VERSION}-python${PYTHON_VERSION}-${DIRECTORY_HASH:-unspecified}
 #    user: "${USER_ID?}:${GROUP_ID?}"
-    user: ci_user
+#    user: ci_user
 #    working_dir: $HOME
 #    stdin_open: true
     build:
