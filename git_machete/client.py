@@ -1876,7 +1876,7 @@ class MacheteClient:
             raise MacheteException(
                 "Could not determine current user name, please check your token.")
         all_open_prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
-        prs_numbers: List[GitHubPullRequest] = self.__get_valid_pull_requests(pr_no,
+        pr_numbers: List[GitHubPullRequest] = self.__get_valid_pull_requests(pr_no,
                                                                               all_opened_prs_from_github=all_open_prs,
                                                                               org=org,
                                                                               repo=repo,
@@ -1891,7 +1891,7 @@ class MacheteClient:
         self.__git.fetch_remote(remote)
 
         pr: Optional[GitHubPullRequest] = None
-        for pr in prs_numbers:
+        for pr in reversed(pr_numbers):
             if pr.full_repository_name:
                 if '/'.join([remote, pr.head]) not in self.__git.get_remote_branches():
                     remote_already_added: Optional[str] = self.__get_added_remote_name_or_none(pr.repository_url)
@@ -1941,7 +1941,7 @@ class MacheteClient:
         debug('checkout_github_pr()',
               'Current GitHub user is ' + (current_user or '<none>'))
         self.__sync_annotations_to_definition_file(all_open_prs, current_user, verbose=verbose)
-        if pr and len(prs_numbers) == 1:
+        if pr and len(pr_numbers) == 1:
             self.__git.checkout(LocalBranchShortName.of(pr.head))
             if verbose:
                 print(fmt(f"Switched to local branch `{pr.head}`"))
