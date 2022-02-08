@@ -42,7 +42,7 @@ RUN apk add --no-cache gcc musl-dev # both packages are required to install mypy
 #ENV USER_NAME=${id -un}
 
 ARG USERNAME=ci_user
-ARG USER_UID=1000
+ARG USER_UID=3000
 ARG USER_GID=$USER_UID
 
 RUN groupmod --gid $USER_GID $USERNAME \
