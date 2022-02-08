@@ -20,7 +20,7 @@ services:
 #      - UID={UID}
     volumes:
       # Host path is relative to current directory, not build-context
-      - ../..:/home/ci_user/git-machete
+      - ../..:/home/root/git-machete
 #      - /etc/group:/etc/group:ro
 #      - /etc/passwd:/etc/passwd:ro
 #      - /etc/shadow:/etc/shadow:ro
