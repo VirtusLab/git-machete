@@ -1,3 +1,4 @@
+USER 2000:2000
 ARG python_version
 FROM python:${python_version}-alpine
 SHELL ["/bin/sh", "-e", "-o", "pipefail", "-u", "-x", "-c"]
@@ -39,12 +40,13 @@ RUN apk add --no-cache gcc musl-dev # both packages are required to install mypy
 #     && adduser --uid=${user_id} --ingroup=$(getent group $group_id | cut -d: -f1) --disabled-password ci-user
 # USER ci-user
 #ENV USER_NAME=${id -un}
+RUN echo `id -a`
 RUN echo `id -un`
 RUN echo `id -gn`
 RUN echo `id -u`
 RUN echo `id -g`
 #RUN echo "DEBUG ME: GROUP_ID:${GROUP_ID} USER_ID:${USER_ID} id:$(id -un)"
-RUN cat /etc/passwd
+#RUN cat /etc/passwd
 RUN $PYTHON -m pip install --user tox
 ENV PATH=$PATH:/home/root/.local/bin/
 COPY --chown=root:root entrypoint.sh /home/root/

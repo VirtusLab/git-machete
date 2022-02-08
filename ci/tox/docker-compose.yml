@@ -2,9 +2,9 @@ version: '3'
 services:
   tox:
     image: gitmachete/ci-tox:git${GIT_VERSION}-python${PYTHON_VERSION}-${DIRECTORY_HASH:-unspecified}
-    user: ${USER_ID}:${GROUP_ID}
-    working_dir: $HOME
-    stdin_open: true
+#    user: ${UID}:${GID}
+#    working_dir: $HOME
+#    stdin_open: true
     build:
       context: build-context
       dockerfile: ../Dockerfile # relative to build-context
@@ -15,13 +15,13 @@ services:
       - BUILD_DOCS=${BUILD_DOCS:-false}
       - CHECK_COVERAGE=${CHECK_COVERAGE:-false}
       - CHECK_PEP8=${CHECK_PEP8:-false}
-      - GROUP_ID={GROUP_ID}
-      - USER_ID={USER_ID}
+#      - GID={GID}
+#      - UID={UID}
     volumes:
       # Host path is relative to current directory, not build-context
       - ../..:/home/ci_user/git-machete
-      - /etc/group:/etc/group:ro
-      - /etc/passwd:/etc/passwd:ro
-      - /etc/shadow:/etc/shadow:ro
-    tty: true
-    command: tail -f /dev/null
+#      - /etc/group:/etc/group:ro
+#      - /etc/passwd:/etc/passwd:ro
+#      - /etc/shadow:/etc/shadow:ro
+#    tty: true
+#    command: tail -f /dev/null
