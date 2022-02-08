@@ -21,10 +21,12 @@ function retry() {
   done
 }
 
-sudo UID=3000
-export UID
-sudo GID=3000
-export GID
+#sudo UID=3000
+#export UID
+#sudo GID=3000
+#export GID
+
+export DOCKER_USER="3000:3000"
 
 # If image is not found by pull, build the image and push it to the Docker Hub.
 
