@@ -2440,20 +2440,13 @@ class MacheteTester(unittest.TestCase):
          )
         os.chdir(self.repo_sandbox.local_path)
 
-        expected_msg = ("Fetching origin...\n"
-                        "Fetching testing...\n"
-                        "Warn: Pull request #5 is already closed.\n"
-                        "A local branch `bugfix/remove-n-option` does not exist, but a remote branch `testing/bugfix/remove-n-option` exists.\n"
-                        "Checking out `bugfix/remove-n-option` locally...\n"
-                        "Added branch `bugfix/remove-n-option` onto `develop`\n"
-                        "Pull request `#5` checked out at local branch `bugfix/remove-n-option`\n"
-                        "Switched to local branch `bugfix/remove-n-option`\n")
+        expected_msg = ("Warn: Pull request #5 is already closed.\n"
+                        "Pull request `#5` checked out at local branch `bugfix/remove-n-option`\n")
 
         self.assert_command(['github', 'checkout-prs', '5'], expected_msg, strip_indentation=False)
 
         # Check against multiple PRs
-        expected_msg = ("Fetching origin...\n"
-                        "Pull request `#3` checked out at local branch `ignore-trailing`\n"
+        expected_msg = ("Pull request `#3` checked out at local branch `ignore-trailing`\n"
                         "Pull request `#12` checked out at local branch `allow-ownership-link`\n")
 
         self.assert_command(['github', 'checkout-prs', '3', '12'], expected_msg, strip_indentation=False)
@@ -2520,18 +2513,7 @@ class MacheteTester(unittest.TestCase):
         )
         os.chdir(self.repo_sandbox.local_path)
         self.rewrite_definition_file("master")
-        expected_msg = ("Fetching origin...\n"
-                        "A local branch `chore/sync_to_docs` does not exist, but a remote branch `origin/chore/sync_to_docs` exists.\n"
-                        "Checking out `chore/sync_to_docs` locally...\n"
-                        "Added branch `chore/sync_to_docs` as a new root\n"
-                        "A local branch `improve/refactor` does not exist, but a remote branch `origin/improve/refactor` exists.\n"
-                        "Checking out `improve/refactor` locally...\n"
-                        "Added branch `improve/refactor` onto `chore/sync_to_docs`\n"
-                        "A local branch `comments/add_docstrings` does not exist, but a remote branch `origin/comments/add_docstrings` exists.\n"
-                        "Checking out `comments/add_docstrings` locally...\nAdded branch `comments/add_docstrings` onto `improve/refactor`\n"
-                        "Pull request `#2` checked out at local branch `comments/add_docstrings`\n"
-                        "Annotating `comments/add_docstrings` as `PR #2 (github_user)`\nAnnotating `improve/refactor` as `PR #1 (github_user)`\n"
-                        "Switched to local branch `comments/add_docstrings`\n")
+        expected_msg = "Pull request `#2` checked out at local branch `comments/add_docstrings`\n"
         self.assert_command(
             ['github', 'checkout-prs', '2'],
             expected_msg,
@@ -2553,13 +2535,9 @@ class MacheteTester(unittest.TestCase):
 
         # Check against closed pull request
         self.repo_sandbox.execute('git branch -D sphinx_export')
-        expected_msg = ("Fetching origin...\n"
-                        "Warn: Pull request #23 is already closed.\n"
-                        "A local branch `sphinx_export` does not exist, but a remote branch `origin/sphinx_export` exists.\n"
-                        "Checking out `sphinx_export` locally...\n"
-                        "Added branch `sphinx_export` onto `comments/add_docstrings`\n"
-                        "Pull request `#23` checked out at local branch `sphinx_export`\n"
-                        "Switched to local branch `sphinx_export`\n")
+        expected_msg = ("Warn: Pull request #23 is already closed.\n"
+                        "Pull request `#23` checked out at local branch `sphinx_export`\n")
+
         self.assert_command(
             ['github', 'checkout-prs', '23'],
             expected_msg,
@@ -2603,13 +2581,9 @@ class MacheteTester(unittest.TestCase):
             .push()
         )
         self.launch_command('discover')
-        expected_msg = ("Fetching origin...\n"
-                        "Warn: Pull request #2 comes from fork and its repository is already deleted. No remote tracking data will be set up for `feature/allow_checkout` branch.\n"
-                        "Checking out `feature/allow_checkout` locally...\n"
+        expected_msg = ("Warn: Pull request #2 comes from fork and its repository is already deleted. No remote tracking data will be set up for `feature/allow_checkout` branch.\n"
                         "Warn: Pull request #2 is already closed.\n"
-                        "Added branch `feature/allow_checkout` onto `develop`\n"
-                        "Pull request `#2` checked out at local branch `feature/allow_checkout`\n"
-                        "Switched to local branch `feature/allow_checkout`\n")
+                        "Pull request `#2` checked out at local branch `feature/allow_checkout`\n")
         self.assert_command(
             ['github', 'checkout-prs', '2'],
             expected_msg,

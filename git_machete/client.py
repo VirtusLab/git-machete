@@ -209,7 +209,14 @@ class MacheteClient:
         with open(self._definition_file_path, "w") as file:
             file.write("\n".join(self.render_tree()) + "\n")
 
-    def add(self, *, branch: LocalBranchShortName, opt_onto: Optional[LocalBranchShortName], opt_as_root: bool, opt_yes: bool) -> None:
+    def add(self,
+            *,
+            branch: LocalBranchShortName,
+            opt_onto: Optional[LocalBranchShortName],
+            opt_as_root: bool,
+            opt_yes: bool,
+            verbose: bool = True
+            ) -> None:
         if branch in self.managed_branches:
             raise MacheteException(
                 f"Branch `{branch}` already exists in the tree of branch dependencies")
@@ -225,7 +232,7 @@ class MacheteClient:
                     f"branch `{remote_branch}` exists.\n")
                 msg = common_line + f"Check out `{branch}` locally?" + get_pretty_choices('y', 'N')
                 opt_yes_msg = common_line + f"Checking out `{branch}` locally..."
-                if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes) in ('y', 'yes'):
+                if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
                     self.__git.create_branch(branch, remote_branch.full_name())
                 else:
                     return
@@ -238,7 +245,7 @@ class MacheteClient:
                        f"of {out_of_str})?" + get_pretty_choices('y', 'N'))
                 opt_yes_msg = (f"A local branch `{branch}` does not exist. "
                                f"Creating out of {out_of_str}")
-                if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes) in ('y', 'yes'):
+                if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
                     # If `--onto` hasn't been explicitly specified, let's try to
                     # assess if the current branch would be a good `onto`.
                     if self.__roots and not opt_onto:
@@ -251,7 +258,8 @@ class MacheteClient:
 
         if opt_as_root or not self.__roots:
             self.__roots += [branch]
-            print(fmt(f"Added branch `{branch}` as a new root"))
+            if verbose:
+                print(fmt(f"Added branch `{branch}` as a new root"))
         else:
             if not opt_onto:
                 upstream = self.__infer_upstream(
@@ -270,7 +278,7 @@ class MacheteClient:
                            f"branch `{upstream}`?" + get_pretty_choices('y', 'N'))
                     opt_yes_msg = (f"Adding `{branch}` onto the inferred upstream"
                                    f" (parent) branch `{upstream}`")
-                    if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes) in ('y', 'yes'):
+                    if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
                         opt_onto = upstream
                     else:
                         return
@@ -280,7 +288,8 @@ class MacheteClient:
                 self.__down_branches[opt_onto].append(branch)
             else:
                 self.__down_branches[opt_onto] = [branch]
-            print(fmt(f"Added branch `{branch}` onto `{opt_onto}`"))
+            if verbose:
+                print(fmt(f"Added branch `{branch}` onto `{opt_onto}`"))
 
         self.managed_branches += [branch]
         self.save_definition_file()
@@ -1393,7 +1402,7 @@ class MacheteClient:
         all_prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
         self.__sync_annotations_to_definition_file(all_prs, current_user)
 
-    def __sync_annotations_to_definition_file(self, prs: List[GitHubPullRequest], current_user: Optional[str] = None) -> None:
+    def __sync_annotations_to_definition_file(self, prs: List[GitHubPullRequest], current_user: Optional[str] = None, verbose: bool = True) -> None:
         for pr in prs:
             if LocalBranchShortName.of(pr.head) in self.managed_branches:
                 debug('sync_annotations_to_definition_file()',
@@ -1407,7 +1416,8 @@ class MacheteClient:
                          f'than in machete file (`{upstream or "<none, is a root>"}`)')
                     anno += f" WRONG PR BASE or MACHETE PARENT? PR has '{pr.base}'"
                 if self.__annotations.get(LocalBranchShortName.of(pr.head)) != anno:
-                    print(fmt(f'Annotating `{pr.head}` as `{anno}`'))
+                    if verbose:
+                        print(fmt(f'Annotating `{pr.head}` as `{anno}`'))
                     self.__annotations[LocalBranchShortName.of(pr.head)] = anno
             else:
                 debug('sync_annotations_to_definition_file()',
@@ -1810,12 +1820,14 @@ class MacheteClient:
             opt_yes_msg: Optional[str],
             opt_yes: bool,
             override_answer: Optional[str] = None,
-            apply_fmt: bool = True
+            apply_fmt: bool = True,
+            verbose: bool = True
     ) -> str:
         if override_answer:
             return override_answer
         if opt_yes and opt_yes_msg:
-            print(fmt(opt_yes_msg) if apply_fmt else opt_yes_msg)
+            if verbose:
+                print(fmt(opt_yes_msg) if apply_fmt else opt_yes_msg)
             return 'y'
         return input(fmt(msg) if apply_fmt else msg).lower()
 
@@ -1853,7 +1865,7 @@ class MacheteClient:
                             all_opened_prs: bool = False,
                             my_opened_prs: bool = False,
                             opened_by: str = None,
-                            verbose: bool = True
+                            verbose: bool = False
                             ) -> None:
         org: str
         repo: str
@@ -1915,18 +1927,20 @@ class MacheteClient:
                             branch=branch,
                             opt_as_root=True,
                             opt_onto=None,
-                            opt_yes=True)
+                            opt_yes=True,
+                            verbose=verbose)
                     else:
                         self.add(
                             branch=branch,
                             opt_onto=reversed_path[index - 1],
                             opt_as_root=False,
-                            opt_yes=True)
+                            opt_yes=True,
+                            verbose=verbose)
             print(fmt(f"Pull request `#{pr.number}` checked out at local branch `{pr.head}`"))
 
         debug('checkout_github_pr()',
               'Current GitHub user is ' + (current_user or '<none>'))
-        self.__sync_annotations_to_definition_file(all_open_prs, current_user)
+        self.__sync_annotations_to_definition_file(all_open_prs, current_user, verbose=verbose)
         if pr and len(prs_numbers) == 1:
             self.__git.checkout(LocalBranchShortName.of(pr.head))
             if verbose:

@@ -333,6 +333,7 @@ long_docs: Dict[str, str] = {
               <b>Parameters:</b>
                 <b>github-login></b> Github account name.
             <b>--mine</b>    Checkout open PRs for the current user associated with the Github token.
+
           <b>Parameters:</b>
             <b><PR-number-1> ... <PR-number-N></b>    Pull request numbers to checkout.
 
