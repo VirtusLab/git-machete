@@ -1877,13 +1877,13 @@ class MacheteClient:
                 "Could not determine current user name, please check your token.")
         all_open_prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
         pr_numbers: List[GitHubPullRequest] = self.__get_valid_pull_requests(pr_no,
-                                                                              all_opened_prs_from_github=all_open_prs,
-                                                                              org=org,
-                                                                              repo=repo,
-                                                                              all=all_opened_prs,
-                                                                              my=my_opened_prs,
-                                                                              by=opened_by,
-                                                                              user=current_user)
+                                                                             all_opened_prs_from_github=all_open_prs,
+                                                                             org=org,
+                                                                             repo=repo,
+                                                                             all=all_opened_prs,
+                                                                             my=my_opened_prs,
+                                                                             by=opened_by,
+                                                                             user=current_user)
 
         debug('checkout_github_pr()', f'organization is {org}, repository is {repo}')
         if verbose:
@@ -1891,7 +1891,7 @@ class MacheteClient:
         self.__git.fetch_remote(remote)
 
         pr: Optional[GitHubPullRequest] = None
-        for pr in reversed(pr_numbers):
+        for pr in sorted(pr_numbers, key=lambda x: x.number):
             if pr.full_repository_name:
                 if '/'.join([remote, pr.head]) not in self.__git.get_remote_branches():
                     remote_already_added: Optional[str] = self.__get_added_remote_name_or_none(pr.repository_url)
