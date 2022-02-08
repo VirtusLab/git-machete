@@ -4,11 +4,6 @@ SHELL ["/bin/sh", "-e", "-o", "pipefail", "-u", "-x", "-c"]
 # Required since the earlier versions of git assume the location of python to be /usr/bin/python during the build.
 RUN ln -s /usr/local/bin/python /usr/bin/python
 
-RUN echo `id -a`
-RUN echo `id -un`
-RUN echo `id -gn`
-RUN echo `id -u`
-RUN echo `id -g`
 
 ARG git_version
 RUN set -x \
@@ -46,12 +41,26 @@ RUN apk add --no-cache gcc musl-dev # both packages are required to install mypy
 # USER ci-user
 #ENV USER_NAME=${id -un}
 
+ARG USERNAME=ci_user
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+
+RUN groupmod --gid $USER_GID $USERNAME \
+    && usermod --uid $USER_UID --gid $USER_GID $USERNAME \
+    && chown -R $USER_UID:$USER_GID /home/$USERNAME
+
+RUN echo `id -a`
+RUN echo `id -un`
+RUN echo `id -gn`
+RUN echo `id -u`
+RUN echo `id -g`
+
 #RUN echo "DEBUG ME: GROUP_ID:${GROUP_ID} USER_ID:${USER_ID} id:$(id -un)"
 #RUN cat /etc/passwd
 RUN $PYTHON -m pip install --user tox
-ENV PATH=$PATH:/home/root/.local/bin/
-COPY --chown=root:root entrypoint.sh /home/root/
+ENV PATH=$PATH:/home/ci_user/.local/bin/
+COPY --chown=ci_user:ci_user entrypoint.sh /home/ci_user/
 RUN echo `pwd`
-RUN chmod +x /home/root/entrypoint.sh
+RUN chmod +x /home/ci_user/entrypoint.sh
 CMD ["/home/root/entrypoint.sh"]
-WORKDIR /home/root/git-machete
+WORKDIR /home/ci_user/git-machete
