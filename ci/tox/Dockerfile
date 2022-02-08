@@ -45,9 +45,8 @@ ARG USERNAME=ci_user
 ARG USER_UID=3000
 ARG USER_GID=$USER_UID
 
-RUN groupmod --gid $USER_GID $USERNAME \
-    && usermod --uid $USER_UID --gid $USER_GID $USERNAME \
-    && chown -R $USER_UID:$USER_GID /home/$USERNAME
+RUN groupadd --gid $USER_GID $USERNAME \
+    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME
 
 RUN echo `id -a`
 RUN echo `id -un`
