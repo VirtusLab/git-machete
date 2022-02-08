@@ -1981,7 +1981,7 @@ class MacheteClient:
                             raise MacheteException(f"PR #{pr_no} is not found in repository `{org}/{repo}`")
             if not result:
                 raise MacheteException(
-                    f"Given PRs: {', '.join(map(str, prs_list))},  are not found in repository `{org}/{repo}`")
+                    f"Given PRs: {', '.join(map(str, prs_list))} are not found in repository `{org}/{repo}`")
             return result
         if all:
             if not all_opened_prs_from_github:
@@ -1991,12 +1991,12 @@ class MacheteClient:
             result = [pr for pr in all_opened_prs_from_github if pr.user == user]
             if not result:
                 raise MacheteException(
-                    f"Current user {user} does not have any opened pull request in repository `{org}/{repo}`")
+                    f"Current user {user} has no open pull request in repository `{org}/{repo}`")
             return result
         elif by:
             result = [pr for pr in all_opened_prs_from_github if pr.user == by]
             if not result:
-                raise MacheteException(f"User {by} does not have any opened pull request in repository `{org}/{repo}`")
+                raise MacheteException(f"User {by} has no open pull request in repository `{org}/{repo}`")
             return result
         return []
 

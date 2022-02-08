@@ -222,7 +222,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
         add_help=False,
         parents=[common_args_parser])
     github_parser.add_argument('subcommand', choices=['anno-prs', 'checkout-prs', 'create-pr', 'retarget-pr'])
-    github_parser.add_argument('pr_no', nargs='*')
+    github_parser.add_argument('pr_no', nargs='*', type=int)
     github_parser.add_argument('--all', action='store_true')
     github_parser.add_argument('--by')
     github_parser.add_argument('--draft', action='store_true')
@@ -631,11 +631,6 @@ def launch(orig_args: List[str]) -> None:
                 if len(parsed_cli_as_dict) > 3 or len(parsed_cli_as_dict) == 2:
                     raise MacheteException(
                         f"'checkout-prs' subcommand can take only one of following options: {', '.join(['--all', '--by', '--mine', 'pr-no'])}")
-                try:
-                    if 'pr-no' in parsed_cli:
-                        map(int, parsed_cli.pr_no)
-                except ValueError:
-                    raise MacheteException("One of given PR numbers is not integer value!")
                 machete_client.checkout_github_prs(pr_no=parsed_cli.pr_no if 'pr_no' in parsed_cli else [],
                                                    all_opened_prs=parsed_cli.all if 'all' in parsed_cli else False,
                                                    my_opened_prs=parsed_cli.mine if 'mine' in parsed_cli else False,
