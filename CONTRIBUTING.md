@@ -102,7 +102,6 @@ Review fixes should be pushed on separate commits for easier viewing on GitHub (
          git pull origin develop
          git checkout master
          git pull origin master
-         git checkout master
          git merge --no-ff develop
          git push origin master
 
