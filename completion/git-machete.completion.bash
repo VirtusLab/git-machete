@@ -45,7 +45,7 @@ _git_machete() {
         delete-unmanaged) __gitcomp "$common_opts $delete_unmanaged_opts" ;;
         discover) __gitcomp "$common_opts $discover_opts" ;;
         fork-point) __gitcomp "$common_opts $fork_point_opts" ;;
-        github)
+        github) # TODO (#393): Add support in zsh and bash completion for options of `git machete github checkout-prs`
           if [[ ${COMP_WORDS[3]} == "create-pr" ]]; then
             __gitcomp "$common_opts $github_create_pr_opts"
           else

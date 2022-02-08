@@ -619,9 +619,11 @@ def launch(orig_args: List[str]) -> None:
 
             if 'draft' in parsed_cli and github_subcommand != 'create-pr':
                 raise MacheteException("'--draft' option is only valid with 'create-pr' subcommand.")
-            for command in ('all', 'by', 'mine', 'pr_no'):
+            for command in ('all', 'by', 'mine'):
                 if command in parsed_cli and github_subcommand != 'checkout-prs':
                     raise MacheteException(f"'--{command}' argument is only valid with 'checkout-prs' subcommand.")
+            if 'pr_no' in parsed_cli and github_subcommand != 'checkout-prs':
+                raise MacheteException("'pr_no' option is only valid with 'checkout-prs' subcommand.")
 
             if github_subcommand == "anno-prs":
                 machete_client.sync_annotations_to_github_prs()
@@ -637,7 +639,8 @@ def launch(orig_args: List[str]) -> None:
                 machete_client.checkout_github_prs(pr_no=parsed_cli.pr_no if 'pr_no' in parsed_cli else [],
                                                    all_opened_prs=parsed_cli.all if 'all' in parsed_cli else False,
                                                    my_opened_prs=parsed_cli.mine if 'mine' in parsed_cli else False,
-                                                   opened_by=parsed_cli.by if 'by' in parsed_cli else None)
+                                                   opened_by=parsed_cli.by if 'by' in parsed_cli else None,
+                                                   verbose=False)
             elif github_subcommand == "create-pr":
                 current_branch = git.get_current_branch()
                 machete_client.create_github_pr(

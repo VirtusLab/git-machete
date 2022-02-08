@@ -1852,7 +1852,8 @@ class MacheteClient:
                             *,
                             all_opened_prs: bool = False,
                             my_opened_prs: bool = False,
-                            opened_by: str = None
+                            opened_by: str = None,
+                            verbose: bool = True
                             ) -> None:
         org: str
         repo: str
@@ -1873,7 +1874,8 @@ class MacheteClient:
                                                                               user=current_user)
 
         debug('checkout_github_pr()', f'organization is {org}, repository is {repo}')
-        print(f"Fetching {remote}...")
+        if verbose:
+            print(f"Fetching {remote}...")
         self.__git.fetch_remote(remote)
 
         pr: Optional[GitHubPullRequest] = None
@@ -1889,13 +1891,15 @@ class MacheteClient:
                     else:
                         remote_to_fetch = remote_already_added
                     if remote != remote_to_fetch:
-                        print(f"Fetching {remote_to_fetch}...")
+                        if verbose:
+                            print(f"Fetching {remote_to_fetch}...")
                         self.__git.fetch_remote(remote_to_fetch)
                     if '/'.join([remote_to_fetch, pr.head]) not in self.__git.get_remote_branches():
                         raise MacheteException(f"Could not check out PR #{pr.number} because its head branch `{pr.head}` is already deleted from `{remote_to_fetch}`.")
             else:
                 warn(f'Pull request #{pr.number} comes from fork and its repository is already deleted. No remote tracking data will be set up for `{pr.head}` branch.')
-                print(fmt(f"Checking out `{pr.head}` locally..."))
+                if verbose:
+                    print(fmt(f"Checking out `{pr.head}` locally..."))
                 checkout_pr_refs(self.__git, remote, pr.number, LocalBranchShortName.of(pr.head))
                 self.flush_caches()
             if pr.state == 'closed':
@@ -1925,7 +1929,8 @@ class MacheteClient:
         self.__sync_annotations_to_definition_file(all_open_prs, current_user)
         if pr and len(prs_numbers) == 1:
             self.__git.checkout(LocalBranchShortName.of(pr.head))
-            print(fmt(f"Switched to local branch `{pr.head}`"))
+            if verbose:
+                print(fmt(f"Switched to local branch `{pr.head}`"))
 
     @staticmethod
     def __get_path_from_pr_chain(current_pr: GitHubPullRequest, all_open_prs: List[GitHubPullRequest]) -> List[LocalBranchShortName]:

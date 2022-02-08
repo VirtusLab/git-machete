@@ -37,7 +37,7 @@ a GitHub API token with ``repo`` scope is required, see https://github.com/setti
 
     **--all**    Checkout all open PRs.
 
-    **--by**    Checkout someone's open PRs.
+    **--by**    Checkout open PRs authored by the given Github user.
 
       **Parameters:**
         <github-login> Github account name.
