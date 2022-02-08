@@ -21,18 +21,12 @@ function retry() {
   done
 }
 
-#sudo UID=3000
-#export UID
-#sudo GID=3000
-#export GID
-
-export DOCKER_USER="3000:3000"
 
 # If image is not found by pull, build the image and push it to the Docker Hub.
 
 # Let's retry pulling the image in case of a spurious failure
 # (`error pulling image configuration: Get "https://docker-images-prod.s3.dualstack.us-east-1.amazonaws.com/...": dial tcp ...:443: i/o timeout`)
-retry 3 GID="3000" UID="3000" docker-compose --ansi never pull $image_name
+retry 3 docker-compose --ansi never pull $image_name
 
 USER_ID=3000
 export USER_ID

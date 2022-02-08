@@ -41,12 +41,12 @@ RUN apk add --no-cache gcc musl-dev # both packages are required to install mypy
 # USER ci-user
 #ENV USER_NAME=${id -un}
 
-ARG USERNAME=ci_user
-ARG USER_UID=3000
-ARG USER_GID=$USER_UID
-
-RUN groupadd --gid $USER_GID $USERNAME \
-    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME
+#ARG USERNAME=ci_user
+#ARG USER_UID=3000
+#ARG USER_GID=$USER_UID
+#
+#RUN groupadd --gid $USER_GID $USERNAME \
+#    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME
 
 RUN echo `id -a`
 RUN echo `id -un`
