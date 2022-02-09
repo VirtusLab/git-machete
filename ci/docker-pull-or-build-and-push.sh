@@ -7,8 +7,10 @@ DIRECTORY_HASH=$(git rev-parse HEAD:ci/$image_name)
 export DIRECTORY_HASH
 cd ci/$image_name/
 
+su -
 usermod -u 3000 circleci
 groupmod -g 3000 circleci
+su - circleci
 
 function retry() {
   attempts=$1
