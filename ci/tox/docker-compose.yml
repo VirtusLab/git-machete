@@ -5,7 +5,6 @@ services:
     build:
       context: build-context
       dockerfile: ../Dockerfile # relative to build-context
-      target: ${TARGET:-CIRCLE_CI}
       args:
         - user_id=${USER_ID:-0}
         - group_id=${GROUP_ID:-0}
@@ -17,4 +16,4 @@ services:
       - CHECK_PEP8=${CHECK_PEP8:-false}
     volumes:
       # Host path is relative to current directory, not build-context
-      - ../..:/home/${MOUNT_POINT:-root}/git-machete
+      - ../..:/home/root/git-machete
