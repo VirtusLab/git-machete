@@ -631,7 +631,7 @@ def launch(orig_args: List[str]) -> None:
                 if len(parsed_cli_as_dict) > 3 or len(parsed_cli_as_dict) == 2:
                     raise MacheteException(
                         f"'checkout-prs' subcommand can take only one of following options: {', '.join(['--all', '--by', '--mine', 'pr-no'])}")
-                machete_client.checkout_github_prs(pr_no=parsed_cli.pr_no if 'pr_no' in parsed_cli else [],
+                machete_client.checkout_github_prs(pr_nos=parsed_cli.pr_no if 'pr_no' in parsed_cli else [],
                                                    all_opened_prs=parsed_cli.all if 'all' in parsed_cli else False,
                                                    my_opened_prs=parsed_cli.mine if 'mine' in parsed_cli else False,
                                                    opened_by=parsed_cli.by if 'by' in parsed_cli else None)

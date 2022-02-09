@@ -1860,7 +1860,7 @@ class MacheteClient:
                 f"of the {branch} branch.")
 
     def checkout_github_prs(self,
-                            pr_no: Optional[List[int]],
+                            pr_nos: Optional[List[int]],
                             *,
                             all_opened_prs: bool = False,
                             my_opened_prs: bool = False,
@@ -1876,7 +1876,7 @@ class MacheteClient:
             raise MacheteException(
                 "Could not determine current user name, please check your token.")
         all_open_prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
-        valid_prs: List[GitHubPullRequest] = self.__get_valid_pull_requests(pr_no,
+        valid_prs: List[GitHubPullRequest] = self.__get_valid_pull_requests(pr_nos,
                                                                             all_opened_prs_from_github=all_open_prs,
                                                                             org=org,
                                                                             repo=repo,
