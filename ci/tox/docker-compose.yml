@@ -17,4 +17,4 @@ services:
       - CHECK_PEP8=${CHECK_PEP8:-false}
     volumes:
       # Host path is relative to current directory, not build-context
-      - ../..:${MOUNT_POINT:-root}/git-machete
+      - ../..:/${MOUNT_POINT:-root}/git-machete
