@@ -7,8 +7,8 @@ DIRECTORY_HASH=$(git rev-parse HEAD:ci/$image_name)
 export DIRECTORY_HASH
 cd ci/$image_name/
 
-export USER_ID=3000
-export GROUP_ID=3000
+export USER_ID=3001
+export GROUP_ID=3001
 sudo groupadd -g $USER_ID docker_user
 sudo useradd docker_user -u $USER_ID -g $GROUP_ID -s /bin/bash
 
