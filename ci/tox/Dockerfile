@@ -37,6 +37,6 @@ RUN apk add --no-cache gcc musl-dev # both packages are required to install mypy
 RUN $PYTHON -m pip install --user tox
 ENV PATH=$PATH:/root/.local/bin/
 COPY entrypoint.sh /root/
-RUN chmod +x ~/entrypoint.sh
-CMD ["/entrypoint.sh"]
+RUN chmod +x /root/entrypoint.sh
+CMD ["/root/entrypoint.sh"]
 WORKDIR /root/git-machete
