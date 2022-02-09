@@ -11,8 +11,11 @@ export USER_ID=3000
 export GROUP_ID=3000
 sudo groupadd -g $GROUP_ID docker_user
 sudo useradd docker_user -u $USER_ID -g $GROUP_ID -m -s /bin/bash
-sudo su - docker_user
 whoami
+echo `id -un`
+echo `id -gn`
+echo `id -u`
+echo `id -g`
 
 function retry() {
   attempts=$1
