@@ -1,5 +1,5 @@
 ARG python_version
-FROM python:${python_version}-alpine
+FROM python:${python_version}-alpine as builder
 SHELL ["/bin/sh", "-e", "-o", "pipefail", "-u", "-x", "-c"]
 # Required since the earlier versions of git assume the location of python to be /usr/bin/python during the build.
 RUN ln -s /usr/local/bin/python /usr/bin/python
@@ -29,6 +29,7 @@ ENV PYTHON_VERSION=${python_version}
 ENV PYTHON=python${python_version}
 RUN apk add --no-cache gcc musl-dev # both packages are required to install mypy
 
+FROM builder AS LOCAL
 ARG user_id
 ARG group_id
 RUN set -x \
@@ -44,3 +45,10 @@ COPY --chown=ci-user:ci-user entrypoint.sh /home/ci-user/
 RUN chmod +x ~/entrypoint.sh
 CMD ["/home/ci-user/entrypoint.sh"]
 WORKDIR /home/ci-user/git-machete
+
+FROM builder AS CIRCLE_CI
+RUN $PYTHON -m pip install tox
+COPY entrypoint.sh /root/
+RUN chmod +x /root/entrypoint.sh
+CMD ["/root/entrypoint.sh"]
+WORKDIR /root/git-machete
