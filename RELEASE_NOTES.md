@@ -6,6 +6,7 @@
 - fixed: checking whether a branch is merged to parent works for branches that have no common commit
 - added: CI/CD check ensuring that RELEASE_NOTES are up to date
 - fixed: `github create-pr` takes the PR title from the first unique commit
+- fixed: problems with access to volume shared b/w VM and container
 
 ## New in git-machete 3.7.1
 
