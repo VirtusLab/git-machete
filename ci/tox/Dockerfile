@@ -33,7 +33,6 @@ ENV PYTHON_VERSION=${python_version}
 ENV PYTHON=python${python_version}
 RUN apk add --no-cache gcc musl-dev # both packages are required to install mypy
 
-
 RUN $PYTHON -m pip install --user tox
 ENV PATH=$PATH:/root/.local/bin/
 COPY entrypoint.sh /root/

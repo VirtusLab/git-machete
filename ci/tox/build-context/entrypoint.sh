@@ -23,6 +23,7 @@ if [[ $CHECK_PEP8 = true ]]; then
   TOX_ENV_LIST="$TOX_ENV_LIST,pep8"
 fi
 
+ls -al
 tox -e $TOX_ENV_LIST
 
 $PYTHON setup.py install --user
