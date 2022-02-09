@@ -10,7 +10,7 @@ cd ci/$image_name/
 export USER_ID=3000
 export GROUP_ID=3000
 sudo groupadd -g $USER_ID docker_user
-sudo useradd docker_user -u $USER_ID -g $GROUP_ID -s /bin/bash
+sudo useradd docker_user -u $USER_ID -g $GROUP_ID -m -s /bin/bash
 
 function retry() {
   attempts=$1
