@@ -1936,7 +1936,7 @@ class MacheteClient:
                             opt_as_root=False,
                             opt_yes=True,
                             verbose=verbose)
-            print(fmt(f"Pull request `#{pr.number}` checked out at local branch `{pr.head}`"))
+                    print(fmt(f"Pull request `#{pr.number}` checked out at local branch `{pr.head}`"))
 
         debug('checkout_github_pr()',
               'Current GitHub user is ' + (current_user or '<none>'))
