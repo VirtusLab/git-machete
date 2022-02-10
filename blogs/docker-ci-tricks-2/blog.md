@@ -221,7 +221,7 @@ until the next `FROM` - defining a new stage.
 
 We can select which stage to build using docker-compose's `target` argument. \
 e.g. when the `TARGET=local` and `MOUNT_POINT=/home/ci-user`, 
-the `circle_ci` stage is skipped and `local` stage gets build (and each stage it builds upon, which in this case is `base`)
+the `circle_ci` stage is skipped and `local` stage gets build (and each stage it depends upon, which in this case is `base`)
 
 ### Run locally as a non-root user
 The trick is to create a new user with the same user and group ID as your user on the local machine.
