@@ -12,5 +12,5 @@ check_var PYTHON_VERSION
 set -x
 export TARGET=LOCAL
 export MOUNT_POINT=home/ci-user
-COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose build --build-arg user_id="$(id -u)" --build-arg group_id="$(id -g)" tox
-COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose run tox
+docker-compose build --build-arg user_id="$(id -u)" --build-arg group_id="$(id -g)" tox
+docker-compose run tox
