@@ -6,7 +6,7 @@ RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y debhelper devscripts fakeroot dh-python gawk python3-all python3-paramiko python3-setuptools \
     && rm -rfv /var/lib/apt/lists/*
 
-FROM base AS CIRCLE_CI
+FROM base AS circle_ci
 RUN install -d -m 0700 ~/.gnupg/ ~/.gnupg/private-keys-v1.d/ ~/.ssh/
 
 COPY dput.cf /etc/
@@ -20,7 +20,7 @@ RUN chmod +x /root/entrypoint.sh
 CMD ["/root/entrypoint.sh"]
 WORKDIR /root/git-machete
 
-FROM base AS LOCAL
+FROM base AS local
 ARG user_id
 ARG group_id
 RUN set -x \

@@ -4,13 +4,13 @@ SHELL ["/bin/bash", "-e", "-o", "pipefail", "-u", "-x", "-c"]
 RUN dnf install -y python3-pip rpm-build
 RUN ln -s /usr/bin/python3 /usr/local/bin/python
 
-FROM base AS CIRCLE_CI
+FROM base AS circle_ci
 COPY entrypoint.sh /root/
 RUN chmod +x /root/entrypoint.sh
 CMD ["/root/entrypoint.sh"]
 WORKDIR /root/git-machete
 
-FROM base AS LOCAL
+FROM base AS local
 ARG user_id
 ARG group_id
 RUN set -x \
