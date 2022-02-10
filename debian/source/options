@@ -32,3 +32,7 @@ tar-ignore = *.swp
 tar-ignore = tests
 tar-ignore = .tox
 tar-ignore = tox.ini
+tar-ignore = .mypy_cache
+tar-ignore = .remarkrc.yml
+tar-ignore = .remarkrc_master.ym
+tar-ignore = .dockerignore
