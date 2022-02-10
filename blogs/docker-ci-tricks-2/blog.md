@@ -147,7 +147,7 @@ docker-compose run tox
 
 The difference is just additional sanity checks like whether variables are defined (`check_var`) and whether there are any uncommitted changes (part of responsibilities of `export_directory_hash`).
 Also, we don't attempt to push the freshly-built image to the Docker Hub since we can rely on a local build cache instead.
-We also export `TARGET` and `MOUNT_POINT` environment variables to be used to decide which dockerfile's stage to build.
+We also export `TARGET` and `MOUNT_POINT` environment variables to be used to decide which stage of Dockerfile to build.
 
 Our entire setup assumes that the git-machete directory from the host is mounted as a volume inside the Docker container
 (as described in detail in [part 1](https://medium.com/virtuslab/nifty-docker-tricks-for-your-ci-vol-1-c4a36d2192ea)).
