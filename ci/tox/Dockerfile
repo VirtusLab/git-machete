@@ -53,4 +53,3 @@ COPY --chown=ci-user:ci-user entrypoint.sh /home/ci-user/
 RUN chmod +x ~/entrypoint.sh
 CMD ["/home/ci-user/entrypoint.sh"]
 WORKDIR /home/ci-user/git-machete
-

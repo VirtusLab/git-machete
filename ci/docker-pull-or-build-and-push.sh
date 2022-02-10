@@ -21,7 +21,6 @@ function retry() {
   done
 }
 
-
 # If image is not found by pull, build the image and push it to the Docker Hub.
 
 # Let's retry pulling the image in case of a spurious failure
