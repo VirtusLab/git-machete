@@ -160,7 +160,7 @@ will belong to root.
 
 If only Docker had an option to run commands as a non-root user...
 
-Let's take a look at [ci/tox/docker-compose.yml](https://github.com/VirtusLab/git-machete/blob/master/ci/tox/docker-compose.yml) again, 
+Let's take a look at [ci/tox/docker-compose.yml](https://github.com/VirtusLab/git-machete/blob/master/ci/tox/docker-compose.yml) again,
 especially at the `target` and `volumes` sections that are defined by the `TARGET` and `MOUNT_POINT` environment variables.
 ```yaml
 version: '3'
@@ -217,10 +217,10 @@ WORKDIR /home/ci-user/git-machete
 
 In order to be able to use **non-root user** for local runs and **root user** for the CI/CD runs on CircleCI's host machines,
 we used multi-stage builds. Single Dockerfile stage is defined with `FROM` <base_stage_being_build_upon> `AS` <name_of_the_new_stage> and executes each statement
-until the next `FROM` - defining a new stage. 
+until the next `FROM` - defining a new stage.
 
 We can select which stage to build using docker-compose's `target` argument. \
-e.g. when the `TARGET=local` and `MOUNT_POINT=/home/ci-user`, 
+e.g. when the `TARGET=local` and `MOUNT_POINT=/home/ci-user`,
 the `circle_ci` stage is skipped and `local` stage gets build (and each stage it depends upon, which in this case is `base`)
 
 ### Run locally as a non-root user
