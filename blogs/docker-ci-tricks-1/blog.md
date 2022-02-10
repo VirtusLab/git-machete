@@ -109,6 +109,7 @@ services:
     build:
       context: build-context
       dockerfile: ../Dockerfile # relative to build-context
+      target: ${TARGET:-CIRCLE_CI}
       args:
         - user_id=${USER_ID:-0}
         - group_id=${GROUP_ID:-0}
@@ -117,10 +118,11 @@ services:
         - check_coverage=${CHECK_COVERAGE:-false}
     volumes:
       # Host path is relative to current directory, not build-context
-      - ../..:/home/ci-user/git-machete
+      - ../..:/${MOUNT_POINT:-root}/git-machete
 ```
 
-We'll return to the `image:` section and explain the origin of `DIRECTORY_HASH` later.
+We'll return to the `image:` section and explain the origin of `DIRECTORY_HASH` later, as well as `target:` and `volumes:` sections
+and define `TARGET` and `MOUNT_POINT` environment variables.
 
 As the `volumes:` section shows, the entire codebase of git-machete is mounted under /home/ci-user/git-machete/ inside the container.
 The variables `PYTHON_VERSION` and `GIT_VERSION`, which correspond to `python_version` and `git_version` build args,
