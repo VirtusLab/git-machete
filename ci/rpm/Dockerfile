@@ -17,7 +17,7 @@ RUN set -x \
     && [ ${user_id:-0} -ne 0 ] \
     && [ ${group_id:-0} -ne 0 ] \
     # sometimes the given `group_id` is already taken and `addgroup` raises an error, so let's check its existence first
-    && (getent group $group_id || addgroup --gid=${group_id} ci-user) \
+    && (getent group $group_id || groupadd --gid=${group_id} ci-user) \
     && useradd -l -u ${user_id} -g $group_id ci-user \
     && install -d -m 0755 -o ci-user -g $group_id /home/ci-user
 USER ci-user
