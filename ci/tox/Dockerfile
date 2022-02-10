@@ -31,6 +31,7 @@ RUN apk add --no-cache gcc musl-dev # both packages are required to install mypy
 
 FROM base AS CIRCLE_CI
 RUN $PYTHON -m pip install tox
+ENV PATH=$PATH:/root/.local/bin/
 COPY entrypoint.sh /root/
 RUN chmod +x /root/entrypoint.sh
 CMD ["/root/entrypoint.sh"]
