@@ -109,7 +109,7 @@ services:
     build:
       context: build-context
       dockerfile: ../Dockerfile # relative to build-context
-      target: ${TARGET:-CIRCLE_CI}
+      target: ${TARGET:-circle_ci}
       args:
         - user_id=${USER_ID:-0}
         - group_id=${GROUP_ID:-0}
@@ -118,7 +118,7 @@ services:
         - check_coverage=${CHECK_COVERAGE:-false}
     volumes:
       # Host path is relative to current directory, not build-context
-      - ../..:/${MOUNT_POINT:-root}/git-machete
+      - ../..:${MOUNT_POINT:-/root}/git-machete
 ```
 
 We'll return to the `image:` section and explain the origin of `DIRECTORY_HASH` later, as well as `target:` section

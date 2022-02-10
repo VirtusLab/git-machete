@@ -138,8 +138,8 @@ check_var GIT_VERSION
 check_var PYTHON_VERSION
 
 set -x
-export TARGET=LOCAL
-export MOUNT_POINT=home/ci-user
+export TARGET=local
+export MOUNT_POINT=/home/ci-user
 docker-compose build --build-arg user_id="$(id -u)" --build-arg group_id="$(id -g)" tox
 docker-compose run tox
 
@@ -170,7 +170,7 @@ services:
     build:
       context: build-context
       dockerfile: ../Dockerfile # relative to build-context
-      target: ${TARGET:-CIRCLE_CI}
+      target: ${TARGET:-circle_ci}
       args:
         - user_id=${USER_ID:-0}
         - group_id=${GROUP_ID:-0}
@@ -179,7 +179,7 @@ services:
         - check_coverage=${CHECK_COVERAGE:-false}
     volumes:
       # Host path is relative to current directory, not build-context
-      - ../..:/${MOUNT_POINT:-root}/git-machete
+      - ../..:${MOUNT_POINT:-/root}/git-machete
 ```
 
 as well as at [ci/tox/Dockerfile](https://github.com/VirtusLab/git-machete/blob/develop/ci/tox/Dockerfile), this time at the bottom part:
@@ -188,7 +188,7 @@ ARG python_version
 FROM python:${python_version}-alpine as base
 # ... git & python setup - skipped ...
 
-FROM base AS CIRCLE_CI
+FROM base AS circle_ci
 RUN $PYTHON -m pip install tox
 ENV PATH=$PATH:/root/.local/bin/
 COPY entrypoint.sh /root/
@@ -196,7 +196,7 @@ RUN chmod +x /root/entrypoint.sh
 CMD ["/root/entrypoint.sh"]
 WORKDIR /root/git-machete
 
-FROM base AS LOCAL
+FROM base AS local
 ARG user_id
 ARG group_id
 RUN set -x \
@@ -215,13 +215,13 @@ WORKDIR /home/ci-user/git-machete
 
 ```
 
-In order to be able to build docker for local runs as non-root user and for the CI/CD runs on CircleCi's host machines as root user,
+In order to be able to build Docker for local runs as non-root user and for the CI/CD runs on CircleCi's host machines as root user,
 we used multi-stage builds. Single dockerfile stage is defined with `FROM` <base_stage_being_build_upon> `AS` <name_of_the_new_stage> and executes each statement
 until the next `FROM` - defining a new stage. 
 
 We can select which stage to build using docker-compose's `target` argument. \
-e.g. when the `TARGET=LOCAL` and `MOUNT_POINT=home/ci-user`, 
-the `CIRCLE_CI` stage is skipped and `LOCAL` stage gets build (and each stage it builds upon, which in this case is `base`)
+e.g. when the `TARGET=local` and `MOUNT_POINT=/home/ci-user`, 
+the `circle_ci` stage is skipped and `local` stage gets build (and each stage it builds upon, which in this case is `base`)
 
 ### Run locally as a non-root user
 The trick is to create a new user with the same user and group ID as your user on the local machine.
@@ -229,7 +229,7 @@ This is accomplished by
 `docker-compose build --build-arg user_id="$(id -u)" --build-arg group_id="$(id -g)" tox`
 in `ci/tox/local-run.sh`.
 
-We switch from docker's default `root` to the newly-created user by calling `USER ci-user`.
+We switch from default `root` to the newly-created user by calling `USER ci-user`.
 
 Using rather unusual syntax (Unix-style `--something` options are rarely passed directly to a Dockerfile instruction), we need to specify `--chown` flag for `COPY`.
 Otherwise, the files would end up owned by `root:root`.
