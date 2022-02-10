@@ -29,6 +29,13 @@ ENV PYTHON_VERSION=${python_version}
 ENV PYTHON=python${python_version}
 RUN apk add --no-cache gcc musl-dev # both packages are required to install mypy
 
+FROM base AS CIRCLE_CI
+RUN $PYTHON -m pip install tox
+COPY entrypoint.sh /root/
+RUN chmod +x /root/entrypoint.sh
+CMD ["/root/entrypoint.sh"]
+WORKDIR /root/git-machete
+
 FROM base AS LOCAL
 ARG user_id
 ARG group_id
@@ -46,9 +53,3 @@ RUN chmod +x ~/entrypoint.sh
 CMD ["/home/ci-user/entrypoint.sh"]
 WORKDIR /home/ci-user/git-machete
 
-FROM base AS CIRCLE_CI
-RUN $PYTHON -m pip install tox
-COPY entrypoint.sh /root/
-RUN chmod +x /root/entrypoint.sh
-CMD ["/root/entrypoint.sh"]
-WORKDIR /root/git-machete
