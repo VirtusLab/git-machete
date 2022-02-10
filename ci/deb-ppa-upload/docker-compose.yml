@@ -5,12 +5,13 @@ services:
     build:
       context: build-context
       dockerfile: ../Dockerfile # relative to build-context
+      target: ${TARGET:-circle_ci}
       args:
         - user_id=${USER_ID:-0}
         - group_id=${GROUP_ID:-0}
     volumes:
       # Host path is relative to current directory, not build-context
-      - ./../..:/home/ci-user/git-machete
+      - ./../..:${MOUNT_POINT:-/root}/git-machete
     environment:
       - DO_DPUT
       - TARGET_DISTRO_NAME
