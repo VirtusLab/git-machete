@@ -1,4 +1,4 @@
-FROM fedora:31 as base
+FROM fedora:35 as base
 SHELL ["/bin/bash", "-e", "-o", "pipefail", "-u", "-x", "-c"]
 
 RUN dnf install -y python3-pip rpm-build
