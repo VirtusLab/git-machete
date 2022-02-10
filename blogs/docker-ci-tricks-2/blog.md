@@ -215,7 +215,7 @@ WORKDIR /home/ci-user/git-machete
 
 ```
 
-In order to be able to build Docker for local runs as non-root user and for the CI/CD runs on CircleCi's host machines as root user,
+In order to be able to use **non-root user** for local runs and **root user** for the CI/CD runs on CircleCI's host machines,
 we used multi-stage builds. Single dockerfile stage is defined with `FROM` <base_stage_being_build_upon> `AS` <name_of_the_new_stage> and executes each statement
 until the next `FROM` - defining a new stage. 
 
