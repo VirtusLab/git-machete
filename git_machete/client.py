@@ -1891,6 +1891,7 @@ class MacheteClient:
         self.__git.fetch_remote(remote)
 
         pr: Optional[GitHubPullRequest] = None
+        checked_out_prs: List[GitHubPullRequest] = []
         for pr in sorted(valid_prs, key=lambda x: x.number):
             if pr.full_repository_name:
                 if '/'.join([remote, pr.head]) not in self.__git.get_remote_branches():
@@ -1936,7 +1937,9 @@ class MacheteClient:
                             opt_as_root=False,
                             opt_yes=True,
                             verbose=verbose)
-                    print(fmt(f"Pull request `#{pr.number}` checked out at local branch `{pr.head}`"))
+                    if pr not in checked_out_prs:
+                        print(fmt(f"Pull request `#{pr.number}` checked out at local branch `{pr.head}`"))
+                        checked_out_prs.append(pr)
 
         debug('checkout_github_pr()',
               'Current GitHub user is ' + (current_user or '<none>'))

@@ -2446,8 +2446,7 @@ class MacheteTester(unittest.TestCase):
         self.assert_command(['github', 'checkout-prs', '5'], expected_msg, strip_indentation=False)
 
         # Check against multiple PRs
-        expected_msg = ("Pull request `#3` checked out at local branch `ignore-trailing`\n"
-                        "Pull request `#12` checked out at local branch `allow-ownership-link`\n")
+        expected_msg = ''
 
         self.assert_command(['github', 'checkout-prs', '3', '12'], expected_msg, strip_indentation=False)
 
