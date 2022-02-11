@@ -82,7 +82,7 @@ def mock_ask_if(*args: str, **kwargs: Any) -> str:
     return 'y'
 
 
-def mock__get_github_token():
+def mock__get_github_token() -> Optional[str]:
     return None
 
 
