@@ -109,6 +109,7 @@ services:
     build:
       context: build-context
       dockerfile: ../Dockerfile # relative to build-context
+      target: ${TARGET:-circle_ci}
       args:
         - user_id=${USER_ID:-0}
         - group_id=${GROUP_ID:-0}
@@ -117,12 +118,13 @@ services:
         - check_coverage=${CHECK_COVERAGE:-false}
     volumes:
       # Host path is relative to current directory, not build-context
-      - ../..:/home/ci-user/git-machete
+      - ../..:${MOUNT_POINT:-/root}/git-machete
 ```
 
-We'll return to the `image:` section and explain the origin of `DIRECTORY_HASH` later.
+We'll return to the `image:` section and explain the origin of `DIRECTORY_HASH` later, as well as `target:` section
+and define `TARGET` and `MOUNT_POINT` environment variables.
 
-As the `volumes:` section shows, the entire codebase of git-machete is mounted under /home/ci-user/git-machete/ inside the container.
+As the `volumes:` section shows, the entire codebase of git-machete is mounted under /home/ci-user/git-machete/ (/root/git-machete/ on CircleCi) inside the container.
 The variables `PYTHON_VERSION` and `GIT_VERSION`, which correspond to `python_version` and `git_version` build args,
 are provided by CircleCI based on the configuration in [.circleci/config.yml](https://github.com/VirtusLab/git-machete/blob/master/.circleci/config.yml). Below there is a snippet of this configuration with definition of a one CircleCI `job` named `tests_py38`. In its second step job runs bash command `ci/tox/ci-run.sh` with environment variables `PYTHON_VERSION=3.8` and `GIT_VERSION=2.25.0` (for more information about passing running bash script with environment variables see [link](https://virtuslab.github.io/tips/#shell/passing-environment-vars)):
 
