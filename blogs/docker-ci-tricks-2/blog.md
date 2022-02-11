@@ -138,6 +138,8 @@ check_var GIT_VERSION
 check_var PYTHON_VERSION
 
 set -x
+export TARGET=local
+export MOUNT_POINT=/home/ci-user
 docker-compose build --build-arg user_id="$(id -u)" --build-arg group_id="$(id -g)" tox
 docker-compose run tox
 
@@ -145,6 +147,7 @@ docker-compose run tox
 
 The difference is just additional sanity checks like whether variables are defined (`check_var`) and whether there are any uncommitted changes (part of responsibilities of `export_directory_hash`).
 Also, we don't attempt to push the freshly-built image to the Docker Hub since we can rely on a local build cache instead.
+We also export `TARGET` and `MOUNT_POINT` environment variables to be used to decide which stage of Dockerfile to build.
 
 Our entire setup assumes that the git-machete directory from the host is mounted as a volume inside the Docker container
 (as described in detail in [part 1](https://medium.com/virtuslab/nifty-docker-tricks-for-your-ci-vol-1-c4a36d2192ea)).
@@ -157,16 +160,49 @@ will belong to root.
 
 If only Docker had an option to run commands as a non-root user...
 
-Let's take a look at [ci/tox/Dockerfile](https://github.com/VirtusLab/git-machete/blob/develop/ci/tox/Dockerfile) again, this time at the bottom part:
+Let's take a look at [ci/tox/docker-compose.yml](https://github.com/VirtusLab/git-machete/blob/master/ci/tox/docker-compose.yml) again,
+especially at the `target` and `volumes` sections that are defined by the `TARGET` and `MOUNT_POINT` environment variables.
+```yaml
+version: '3'
+services:
+  tox:
+    image: gitmachete/ci-tox:git${GIT_VERSION}-python${PYTHON_VERSION}-${DIRECTORY_HASH:-unspecified}
+    build:
+      context: build-context
+      dockerfile: ../Dockerfile # relative to build-context
+      target: ${TARGET:-circle_ci}
+      args:
+        - user_id=${USER_ID:-0}
+        - group_id=${GROUP_ID:-0}
+        - git_version=${GIT_VERSION:-0.0.0}
+        - python_version=${PYTHON_VERSION:-0.0.0}
+        - check_coverage=${CHECK_COVERAGE:-false}
+    volumes:
+      # Host path is relative to current directory, not build-context
+      - ../..:${MOUNT_POINT:-/root}/git-machete
+```
+
+as well as at [ci/tox/Dockerfile](https://github.com/VirtusLab/git-machete/blob/develop/ci/tox/Dockerfile), this time at the bottom part:
 ```dockerfile
+ARG python_version
+FROM python:${python_version}-alpine as base
 # ... git & python setup - skipped ...
 
+FROM base AS circle_ci
+RUN $PYTHON -m pip install tox
+ENV PATH=$PATH:/root/.local/bin/
+COPY entrypoint.sh /root/
+RUN chmod +x /root/entrypoint.sh
+CMD ["/root/entrypoint.sh"]
+WORKDIR /root/git-machete
+
+FROM base AS local
 ARG user_id
 ARG group_id
 RUN set -x \
     && [ ${user_id:-0} -ne 0 ] \
     && [ ${group_id:-0} -ne 0 ] \
-    # sometimes given group_id is already taken and addgroup outputs error, so let's check it's existence first
+    # sometimes the given `group_id` is already taken and `addgroup` raises an error, so let's check its existence first
     && (getent group $group_id || addgroup --gid=${group_id} ci-user) \
     && adduser --uid=${user_id} --ingroup=$(getent group $group_id | cut -d: -f1) --disabled-password ci-user
 USER ci-user
@@ -179,14 +215,21 @@ WORKDIR /home/ci-user/git-machete
 
 ```
 
-The trick is to create a new user with the same user and group ID as your user on the host.
+In order to be able to use **non-root user** for local runs and **root user** for the CI/CD runs on CircleCI's host machines,
+we used multi-stage builds. Single Dockerfile stage is defined with `FROM` <base_stage_being_build_upon> `AS` <name_of_the_new_stage> and executes each statement
+until the next `FROM` - defining a new stage.
+
+We can select which stage to build using docker-compose's `target` argument. \
+e.g. when the `TARGET=local` and `MOUNT_POINT=/home/ci-user`,
+the `circle_ci` stage is skipped and `local` stage gets build (and each stage it depends upon, which in this case is `base`)
+
+### Run locally as a non-root user
+The trick is to create a new user with the same user and group ID as your user on the local machine.
 This is accomplished by
 `docker-compose build --build-arg user_id="$(id -u)" --build-arg group_id="$(id -g)" tox`
 in `ci/tox/local-run.sh`.
-If you use any modern Linux distribution and have just one non-root user on your machine, they're both likely equal to 1000 (see `UID_MIN` and `GID_MIN` in `/etc/login.defs`);
-on CircleCI VMs they both turn out to be 2000.
 
-We switch from `root` to the newly-created user by calling `USER ci-user`.
+We switch from default `root` to the newly-created user by calling `USER ci-user`.
 
 Using rather unusual syntax (Unix-style `--something` options are rarely passed directly to a Dockerfile instruction), we need to specify `--chown` flag for `COPY`.
 Otherwise, the files would end up owned by `root:root`.

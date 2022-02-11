@@ -5,7 +5,6 @@
 [![PyPI package monthly downloads](https://img.shields.io/pypi/dm/git-machete.svg?label=pypi%20downloads)](https://pypistats.org/packages/git-machete)
 [![Snap](https://snapcraft.io/git-machete/badge.svg)](https://snapcraft.io/git-machete)
 [![AUR package (Arch Linux)](https://repology.org/badge/version-for-repo/aur/git-machete.svg)](https://aur.archlinux.org/packages/git-machete)
-[![nixpkgs unstable package](https://repology.org/badge/version-for-repo/nix_unstable/git-machete.svg?header=nixpkgs)](https://repology.org/project/git-machete/versions)
 [![License: MIT](https://img.shields.io/github/license/VirtusLab/git-machete)](https://github.com/VirtusLab/git-machete/blob/master/LICENSE)
 [![CircleCI](https://circleci.com/gh/VirtusLab/git-machete/tree/master.svg?style=shield)](https://app.circleci.com/pipelines/github/VirtusLab/git-machete?branch=master)
 
