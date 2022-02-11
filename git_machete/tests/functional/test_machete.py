@@ -82,6 +82,10 @@ def mock_ask_if(*args: str, **kwargs: Any) -> str:
     return 'y'
 
 
+def mock__get_github_token():
+    return None
+
+
 class FakeCommandLineOptions(CommandLineOptions):
     def __init__(self) -> None:
         super().__init__()
@@ -2161,6 +2165,7 @@ class MacheteTester(unittest.TestCase):
 
     # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_create_pr` due to `git fetch` executed by `create-pr` subcommand.
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
+    @mock.patch('git_machete.github.__get_github_token', mock__get_github_token)
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
