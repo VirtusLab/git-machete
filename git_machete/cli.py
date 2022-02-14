@@ -156,6 +156,10 @@ def create_cli_parser() -> argparse.ArgumentParser:
     anno_parser.add_argument(
         '-H', '--sync-github-prs', action='store_true', default=argparse.SUPPRESS)
 
+    clean_parser = subparsers.add_parser(
+        'clean', usage=argparse.SUPPRESS, add_help=False, parents=[common_args_parser])
+    clean_parser.add_argument('-c', '--checkout', action='store_true', default=argparse.SUPPRESS)
+
     delete_unmanaged_parser = subparsers.add_parser(
         'delete-unmanaged',
         usage=argparse.SUPPRESS,
@@ -554,6 +558,11 @@ def launch(orig_args: List[str]) -> None:
                     machete_client.annotate(branch, parsed_cli.annotation_text)
                 else:
                     machete_client.print_annotation(branch)
+        elif cmd == "clean":
+            print('delete git branches unmanaged by git machete')
+            print('remove untracked branches from git and git machete')
+            if 'checkout' in parsed_cli:
+                print('checkout (annotate) open PRs associated with the user')
         elif cmd == "delete-unmanaged":
             machete_client.read_definition_file()
             machete_client.delete_unmanaged(opt_yes=cli_opts.opt_yes)
