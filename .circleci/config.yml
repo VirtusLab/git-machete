@@ -139,7 +139,7 @@ jobs:
 
       - deploy:
           name: '[Dry run] Build snap'
-          command: bash ci/snap/ci-run-dry-run.sh
+          command: bash ci/snap/ci-run.sh
 
       - deploy:
           name: '[Dry run] Build rpm package'

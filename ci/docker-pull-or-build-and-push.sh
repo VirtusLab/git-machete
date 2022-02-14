@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e -o pipefail -u -x
+set -e -o pipefail -u
 image_name=$1
 
 DIRECTORY_HASH=$(git rev-parse HEAD:ci/$image_name)
