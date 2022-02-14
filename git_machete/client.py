@@ -209,7 +209,14 @@ class MacheteClient:
         with open(self._definition_file_path, "w") as file:
             file.write("\n".join(self.render_tree()) + "\n")
 
-    def add(self, *, branch: LocalBranchShortName, opt_onto: Optional[LocalBranchShortName], opt_as_root: bool, opt_yes: bool) -> None:
+    def add(self,
+            *,
+            branch: LocalBranchShortName,
+            opt_onto: Optional[LocalBranchShortName],
+            opt_as_root: bool,
+            opt_yes: bool,
+            verbose: bool = True
+            ) -> None:
         if branch in self.managed_branches:
             raise MacheteException(
                 f"Branch `{branch}` already exists in the tree of branch dependencies")
@@ -225,7 +232,7 @@ class MacheteClient:
                     f"branch `{remote_branch}` exists.\n")
                 msg = common_line + f"Check out `{branch}` locally?" + get_pretty_choices('y', 'N')
                 opt_yes_msg = common_line + f"Checking out `{branch}` locally..."
-                if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes) in ('y', 'yes'):
+                if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
                     self.__git.create_branch(branch, remote_branch.full_name())
                 else:
                     return
@@ -238,7 +245,7 @@ class MacheteClient:
                        f"of {out_of_str})?" + get_pretty_choices('y', 'N'))
                 opt_yes_msg = (f"A local branch `{branch}` does not exist. "
                                f"Creating out of {out_of_str}")
-                if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes) in ('y', 'yes'):
+                if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
                     # If `--onto` hasn't been explicitly specified, let's try to
                     # assess if the current branch would be a good `onto`.
                     if self.__roots and not opt_onto:
@@ -251,7 +258,8 @@ class MacheteClient:
 
         if opt_as_root or not self.__roots:
             self.__roots += [branch]
-            print(fmt(f"Added branch `{branch}` as a new root"))
+            if verbose:
+                print(fmt(f"Added branch `{branch}` as a new root"))
         else:
             if not opt_onto:
                 upstream = self.__infer_upstream(
@@ -270,7 +278,7 @@ class MacheteClient:
                            f"branch `{upstream}`?" + get_pretty_choices('y', 'N'))
                     opt_yes_msg = (f"Adding `{branch}` onto the inferred upstream"
                                    f" (parent) branch `{upstream}`")
-                    if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes) in ('y', 'yes'):
+                    if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
                         opt_onto = upstream
                     else:
                         return
@@ -280,7 +288,8 @@ class MacheteClient:
                 self.__down_branches[opt_onto].append(branch)
             else:
                 self.__down_branches[opt_onto] = [branch]
-            print(fmt(f"Added branch `{branch}` onto `{opt_onto}`"))
+            if verbose:
+                print(fmt(f"Added branch `{branch}` onto `{opt_onto}`"))
 
         self.managed_branches += [branch]
         self.save_definition_file()
@@ -1406,7 +1415,7 @@ class MacheteClient:
         all_prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
         self.__sync_annotations_to_definition_file(all_prs, current_user)
 
-    def __sync_annotations_to_definition_file(self, prs: List[GitHubPullRequest], current_user: Optional[str] = None) -> None:
+    def __sync_annotations_to_definition_file(self, prs: List[GitHubPullRequest], current_user: Optional[str] = None, verbose: bool = True) -> None:
         for pr in prs:
             if LocalBranchShortName.of(pr.head) in self.managed_branches:
                 debug('sync_annotations_to_definition_file()',
@@ -1420,7 +1429,8 @@ class MacheteClient:
                          f'than in machete file (`{upstream or "<none, is a root>"}`)')
                     anno += f" WRONG PR BASE or MACHETE PARENT? PR has '{pr.base}'"
                 if self.__annotations.get(LocalBranchShortName.of(pr.head)) != anno:
-                    print(fmt(f'Annotating `{pr.head}` as `{anno}`'))
+                    if verbose:
+                        print(fmt(f'Annotating `{pr.head}` as `{anno}`'))
                     self.__annotations[LocalBranchShortName.of(pr.head)] = anno
             else:
                 debug('sync_annotations_to_definition_file()',
@@ -1823,12 +1833,14 @@ class MacheteClient:
             opt_yes_msg: Optional[str],
             opt_yes: bool,
             override_answer: Optional[str] = None,
-            apply_fmt: bool = True
+            apply_fmt: bool = True,
+            verbose: bool = True
     ) -> str:
         if override_answer:
             return override_answer
         if opt_yes and opt_yes_msg:
-            print(fmt(opt_yes_msg) if apply_fmt else opt_yes_msg)
+            if verbose:
+                print(fmt(opt_yes_msg) if apply_fmt else opt_yes_msg)
             return 'y'
         return input(fmt(msg) if apply_fmt else msg).lower()
 
@@ -1860,68 +1872,95 @@ class MacheteClient:
                 f"Forkpoint {forkpoint_sha} is not ancestor of or the tip "
                 f"of the {branch} branch.")
 
-    def checkout_github_prs(self, pr_no: int) -> None:
+    def checkout_github_prs(self,
+                            pr_nos: Optional[List[int]],
+                            *,
+                            all_opened_prs: bool = False,
+                            my_opened_prs: bool = False,
+                            opened_by: str = None,
+                            verbose: bool = False
+                            ) -> None:
         org: str
         repo: str
         remote: str
         remote, (org, repo) = self.__derive_remote_and_github_org_and_repo()
         current_user: Optional[str] = git_machete.github.derive_current_user_login()
+        if not current_user and my_opened_prs:
+            raise MacheteException(
+                "Could not determine current user name, please check your token.")
+        all_open_prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
+        valid_prs: List[GitHubPullRequest] = self.__get_valid_pull_requests(pr_nos,
+                                                                            all_opened_prs_from_github=all_open_prs,
+                                                                            org=org,
+                                                                            repo=repo,
+                                                                            all=all_opened_prs,
+                                                                            my=my_opened_prs,
+                                                                            by=opened_by,
+                                                                            user=current_user)
+
         debug('checkout_github_pr()', f'organization is {org}, repository is {repo}')
-        print(f"Fetching {remote}...")
+        if verbose:
+            print(f"Fetching {remote}...")
         self.__git.fetch_remote(remote)
 
-        pr = get_pull_request_by_number_or_none(pr_no, org, repo)
-        if not pr:
-            raise MacheteException(f"PR #{pr_no} is not found in repository `{org}/{repo}`")
-        if pr.full_repository_name:
-            if '/'.join([remote, pr.head]) not in self.__git.get_remote_branches():
-                remote_already_added: Optional[str] = self.__get_added_remote_name_or_none(pr.repository_url)
-                if not remote_already_added:
-                    remote_from_pr: str = pr.full_repository_name.split('/')[0]
-                    if remote_from_pr not in self.__git.get_remotes():
-                        self.__git.add_remote(remote_from_pr, pr.repository_url)
-                    remote_to_fetch: str = remote_from_pr
-                else:
-                    remote_to_fetch = remote_already_added
-                if remote != remote_to_fetch:
-                    print(f"Fetching {remote_to_fetch}...")
-                    self.__git.fetch_remote(remote_to_fetch)
-                if '/'.join([remote_to_fetch, pr.head]) not in self.__git.get_remote_branches():
-                    raise MacheteException(f"Could not check out PR #{pr_no} because its head branch `{pr.head}` is already deleted from `{remote_to_fetch}`.")
-        else:
-            warn(f'Pull request #{pr_no} comes from fork and its repository is already deleted. No remote tracking data will be set up for `{pr.head}` branch.')
-            print(fmt(f"Checking out `{pr.head}` locally..."))
-            checkout_pr_refs(self.__git, remote, pr_no, LocalBranchShortName.of(pr.head))
-            self.flush_caches()
-        if pr.state == 'closed':
-            warn(f'Pull request #{pr_no} is already closed.')
-        debug('checkout_github_pr()', f'found {pr}')
+        pr: Optional[GitHubPullRequest] = None
+        checked_out_prs: List[GitHubPullRequest] = []
+        for pr in sorted(valid_prs, key=lambda x: x.number):
+            if pr.full_repository_name:
+                if '/'.join([remote, pr.head]) not in self.__git.get_remote_branches():
+                    remote_already_added: Optional[str] = self.__get_added_remote_name_or_none(pr.repository_url)
+                    if not remote_already_added:
+                        remote_from_pr: str = pr.full_repository_name.split('/')[0]
+                        if remote_from_pr not in self.__git.get_remotes():
+                            self.__git.add_remote(remote_from_pr, pr.repository_url)
+                        remote_to_fetch: str = remote_from_pr
+                    else:
+                        remote_to_fetch = remote_already_added
+                    if remote != remote_to_fetch:
+                        if verbose:
+                            print(f"Fetching {remote_to_fetch}...")
+                        self.__git.fetch_remote(remote_to_fetch)
+                    if '/'.join([remote_to_fetch, pr.head]) not in self.__git.get_remote_branches():
+                        raise MacheteException(f"Could not check out PR #{pr.number} because its head branch `{pr.head}` is already deleted from `{remote_to_fetch}`.")
+            else:
+                warn(f'Pull request #{pr.number} comes from fork and its repository is already deleted. No remote tracking data will be set up for `{pr.head}` branch.')
+                if verbose:
+                    print(fmt(f"Checking out `{pr.head}` locally..."))
+                checkout_pr_refs(self.__git, remote, pr.number, LocalBranchShortName.of(pr.head))
+                self.flush_caches()
+            if pr.state == 'closed':
+                warn(f'Pull request #{pr.number} is already closed.')
+            debug('checkout_github_pr()', f'found {pr}')
 
-        all_open_prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
-
-        path: List[LocalBranchShortName] = self.__get_path_from_pr_chain(pr, all_open_prs)
-        reversed_path: List[LocalBranchShortName] = path[::-1]  # need to add from root downwards
-        for index, branch in enumerate(reversed_path):
-            if branch not in self.managed_branches:
-                if index == 0:
-                    self.add(
-                        branch=branch,
-                        opt_as_root=True,
-                        opt_onto=None,
-                        opt_yes=True)
-                else:
-                    self.add(
-                        branch=branch,
-                        opt_onto=reversed_path[index - 1],
-                        opt_as_root=False,
-                        opt_yes=True)
+            path: List[LocalBranchShortName] = self.__get_path_from_pr_chain(pr, all_open_prs)
+            reversed_path: List[LocalBranchShortName] = path[::-1]  # need to add from root downwards
+            for index, branch in enumerate(reversed_path):
+                if branch not in self.managed_branches:
+                    if index == 0:
+                        self.add(
+                            branch=branch,
+                            opt_as_root=True,
+                            opt_onto=None,
+                            opt_yes=True,
+                            verbose=verbose)
+                    else:
+                        self.add(
+                            branch=branch,
+                            opt_onto=reversed_path[index - 1],
+                            opt_as_root=False,
+                            opt_yes=True,
+                            verbose=verbose)
+                    if pr not in checked_out_prs:
+                        print(fmt(f"Pull request `#{pr.number}` checked out at local branch `{pr.head}`"))
+                        checked_out_prs.append(pr)
 
         debug('checkout_github_pr()',
               'Current GitHub user is ' + (current_user or '<none>'))
-        self.__sync_annotations_to_definition_file(all_open_prs, current_user)
-
-        self.__git.checkout(LocalBranchShortName.of(pr.head))
-        print(fmt(f"Pull request `#{pr.number}` checked out at local branch `{pr.head}`"))
+        self.__sync_annotations_to_definition_file(all_open_prs, current_user, verbose=verbose)
+        if pr and len(valid_prs) == 1:
+            self.__git.checkout(LocalBranchShortName.of(pr.head))
+            if verbose:
+                print(fmt(f"Switched to local branch `{pr.head}`"))
 
     @staticmethod
     def __get_path_from_pr_chain(current_pr: GitHubPullRequest, all_open_prs: List[GitHubPullRequest]) -> List[LocalBranchShortName]:
@@ -1930,6 +1969,52 @@ class MacheteClient:
             path.append(LocalBranchShortName.of(current_pr.base))
             current_pr = utils.find_or_none(lambda x: x.head == current_pr.base, all_open_prs)
         return path
+
+    @staticmethod
+    def __get_valid_pull_requests(prs_list: Optional[List[int]],
+                                  all_opened_prs_from_github: List[GitHubPullRequest],
+                                  org: str,
+                                  repo: str,
+                                  all: bool,
+                                  my: bool,
+                                  by: Optional[str],
+                                  user: Optional[str]) -> List[GitHubPullRequest]:
+        result: List[GitHubPullRequest] = []
+        if prs_list:
+            for pr_no in prs_list:
+                _pr: Optional[GitHubPullRequest] = utils.find_or_none(lambda x: x.number == pr_no,
+                                                                      all_opened_prs_from_github)
+                if _pr:
+                    result.append(_pr)
+                else:
+                    pr_from_github = get_pull_request_by_number_or_none(pr_no, org, repo)
+                    if pr_from_github:
+                        result.append(pr_from_github)
+                    else:
+                        if len(prs_list) > 1:
+                            warn(f"PR #{pr_no} is not found in repository `{org}/{repo}`, skipping.")
+                        else:
+                            raise MacheteException(f"PR #{pr_no} is not found in repository `{org}/{repo}`")
+            if not result:
+                raise MacheteException(
+                    f"Given PRs: {', '.join(map(str, prs_list))} are not found in repository `{org}/{repo}`")
+            return result
+        if all:
+            if not all_opened_prs_from_github:
+                raise MacheteException(f"Currently there is not any pull request opened in repository `{org}/{repo}`")
+            return all_opened_prs_from_github
+        elif my and user:
+            result = [pr for pr in all_opened_prs_from_github if pr.user == user]
+            if not result:
+                raise MacheteException(
+                    f"Current user {user} has no open pull request in repository `{org}/{repo}`")
+            return result
+        elif by:
+            result = [pr for pr in all_opened_prs_from_github if pr.user == by]
+            if not result:
+                raise MacheteException(f"User {by} has no open pull request in repository `{org}/{repo}`")
+            return result
+        return []
 
     def __get_added_remote_name_or_none(self, remote_url: str) -> Optional[str]:
         """

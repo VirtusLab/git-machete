@@ -320,14 +320,22 @@ long_docs: Dict[str, str] = {
           Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
           Equivalent to `git machete anno --sync-github-prs`.
 
-        <b>`checkout-prs <PR-number>`:</b>
+        <b>`checkout-prs [--all | --by=<github-login> | --mine | <PR-number-1> ... <PR-number-N>]`:</b>
 
-          Check out the head branch of the given pull request (specified by number),
+          Check out the head branch of the given pull requests (specified by number),
           also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally.
-          Once pull request is checked out locally, annotate local branches with corresponding pull request numbers.
+          Once the specified pull requests are checked out locally, annotate local branches with corresponding pull request numbers.
+          If only one PR is given, then switch the local repository's HEAD to its head branch.
+
+          <b>Options:</b>
+            <b>--all</b>     Checkout all open PRs.
+            <b>--by</b>      Checkout open PRs authored by the given Github user.
+              <b>Parameters:</b>
+                <b><github-login></b> Github account name.
+            <b>--mine</b>    Checkout open PRs for the current user associated with the Github token.
 
           <b>Parameters:</b>
-            <b><PR-number></b>    Pull request number to checkout.
+            <b><PR-number-1> ... <PR-number-N></b>    Pull request numbers to checkout.
 
         <b>`create-pr [--draft]`:</b>
 

@@ -225,10 +225,12 @@ def create_cli_parser() -> argparse.ArgumentParser:
         usage=argparse.SUPPRESS,
         add_help=False,
         parents=[common_args_parser])
-    github_parser.add_argument(
-        'subcommand', choices=['anno-prs', 'checkout-prs', 'create-pr', 'retarget-pr'])
-    github_parser.add_argument('pr_no', nargs='?')
+    github_parser.add_argument('subcommand', choices=['anno-prs', 'checkout-prs', 'create-pr', 'retarget-pr'])
+    github_parser.add_argument('pr_no', nargs='*', type=int)
+    github_parser.add_argument('--all', action='store_true')
+    github_parser.add_argument('--by')
     github_parser.add_argument('--draft', action='store_true')
+    github_parser.add_argument('--mine', action='store_true')
 
     go_parser = subparsers.add_parser(
         'go',
@@ -631,25 +633,24 @@ def launch(orig_args: List[str]) -> None:
             github_subcommand = parsed_cli.subcommand
             machete_client.read_definition_file()
 
-            if 'draft' in parsed_cli and github_subcommand not in {'create-pr'}:
-                raise MacheteException(
-                    "'--draft' option is only valid with 'create-pr' subcommand.")
-            if 'pr_no' in parsed_cli and github_subcommand not in {'checkout-prs'}:
-                raise MacheteException(
-                    "'pr_no' argument is only valid with 'checkout-prs' subcommand.")
+            if 'draft' in parsed_cli and github_subcommand != 'create-pr':
+                raise MacheteException("'--draft' option is only valid with 'create-pr' subcommand.")
+            for command in ('all', 'by', 'mine'):
+                if command in parsed_cli and github_subcommand != 'checkout-prs':
+                    raise MacheteException(f"'--{command}' argument is only valid with 'checkout-prs' subcommand.")
+            if 'pr_no' in parsed_cli and github_subcommand != 'checkout-prs':
+                raise MacheteException("'pr_no' option is only valid with 'checkout-prs' subcommand.")
 
             if github_subcommand == "anno-prs":
                 machete_client.sync_annotations_to_github_prs()
             elif github_subcommand == "checkout-prs":
-                if 'pr_no' not in parsed_cli:
+                if len(parsed_cli_as_dict) > 3 or len(parsed_cli_as_dict) == 2:
                     raise MacheteException(
-                        "Argument to `git machete github checkout-prs` cannot be"
-                        " empty; expected PR number.")
-                try:
-                    pr_no: int = int(parsed_cli.pr_no)
-                except ValueError:
-                    raise MacheteException("PR number is not integer value!")
-                machete_client.checkout_github_prs(pr_no)
+                        f"'checkout-prs' subcommand can take only one of following options: {', '.join(['--all', '--by', '--mine', 'pr-no'])}")
+                machete_client.checkout_github_prs(pr_nos=parsed_cli.pr_no if 'pr_no' in parsed_cli else [],
+                                                   all_opened_prs=parsed_cli.all if 'all' in parsed_cli else False,
+                                                   my_opened_prs=parsed_cli.mine if 'mine' in parsed_cli else False,
+                                                   opened_by=parsed_cli.by if 'by' in parsed_cli else None)
             elif github_subcommand == "create-pr":
                 current_branch = git.get_current_branch()
                 machete_client.create_github_pr(
