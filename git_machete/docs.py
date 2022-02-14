@@ -324,7 +324,7 @@ long_docs: Dict[str, str] = {
 
           Check out the head branch of the given pull requests (specified by number),
           also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally.
-          Once pull request is checked out locally, annotate local branches with corresponding pull request numbers.
+          Once the specified pull requests are checked out locally, annotate local branches with corresponding pull request numbers.
           If only one PR is given, then switch the local repository's HEAD to its head branch.
 
           <b>Options:</b>
