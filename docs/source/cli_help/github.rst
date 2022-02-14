@@ -35,17 +35,17 @@ a GitHub API token with ``repo`` scope is required, see https://github.com/setti
 
   **Options:**
 
-    **--all**    Checkout all open PRs.
+    ``--all``    Checkout all open PRs.
 
-    **--by**    Checkout open PRs authored by the given Github user.
+    ``--by``    Checkout open PRs authored by the given Github user.
 
       **Parameters:**
-        <github-login> Github account name.
+        ``<github-login>`` Github account name.
 
-    **--mine**    Checkout open PRs for the current user associated with the Github token.
+    ``--mine``    Checkout open PRs for the current user associated with the Github token.
 
   **Parameters:**
-    **<PR-number-1> ... <PR-number-N>**
+    ``<PR-number-1> ... <PR-number-N>``
       Pull request numbers to checkout.
 
 ``create-pr [--draft]``:
@@ -59,7 +59,7 @@ a GitHub API token with ``repo`` scope is required, see https://github.com/setti
 
   **Options:**
 
-    **--draft**
+    ``--draft``
       Creates the new PR as a draft.
 
 ``retarget-pr``:
