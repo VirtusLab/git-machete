@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e -o pipefail -u -x
+set -e -o pipefail -u
 
 if [[ ${1-} == "--dry-run" || ${CIRCLE_BRANCH-} != "master" ]]; then
   do_push=false
@@ -15,6 +15,7 @@ version=$(grep '__version__ = ' git_machete/__init__.py | cut -d\' -f2)
 git clone https://${GITHUB_TOKEN}@github.com/VirtusLab/homebrew-git-machete.git ../homebrew-git-machete
 cd ../homebrew-git-machete/
 
+set -x
 git config user.email "gitmachete@virtuslab.com"
 git config user.name "Git Machete Release Bot"
 sha256=$(

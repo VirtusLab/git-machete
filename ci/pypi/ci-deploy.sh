@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e -o pipefail -u -x
+set -e -o pipefail -u
 
 if [[ ${1-} == "--dry-run" || ${CIRCLE_BRANCH-} != "master" ]]; then
   repository=testpypi
@@ -16,6 +16,7 @@ username = __token__
 password = $token
 EOF
 
+set -x
 pip3 install twine wheel
 python3 setup.py sdist
 python3 setup.py bdist_wheel
