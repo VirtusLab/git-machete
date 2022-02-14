@@ -220,18 +220,18 @@ __git_machete_github_subcommands ()
 	typeset -A opt_args
 
   _arguments -C \
-  ':command:->command' \
-  '*::options:->options'
+    ':command:->command' \
+    '*::options:->options'
 
 	case $state in
 		(command)
 
 			local -a github_subcommands
 			github_subcommands=(
-        'anno-prs:annotate the branches based on their corresponding GitHub PR numbers and authors'
-        'checkout-prs:check out the given pull requests locally'
-        'create-pr:create a PR for the current branch, using the upstream (parent) branch as the PR base'
-        'retarget-pr:set the base of the current branch PR to upstream (parent) branch'
+      'anno-prs:annotate the branches based on their corresponding GitHub PR numbers and authors'
+      'checkout-prs:check out the given pull requests locally'
+      'create-pr:create a PR for the current branch, using the upstream (parent) branch as the PR base'
+      'retarget-pr:set the base of the current branch PR to upstream (parent) branch'
       )
 			_describe -t commands 'subcommand' github_subcommands
 		;;
