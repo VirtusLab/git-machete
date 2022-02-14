@@ -223,33 +223,33 @@ __git_machete_github_subcommands ()
     ':command:->command' \
     '*::options:->options'
 
-	case $state in
-		(command)
+  case $state in
+    (command)
 
-			local -a github_subcommands
-			github_subcommands=(
-      'anno-prs:annotate the branches based on their corresponding GitHub PR numbers and authors'
-      'checkout-prs:check out the given pull requests locally'
-      'create-pr:create a PR for the current branch, using the upstream (parent) branch as the PR base'
-      'retarget-pr:set the base of the current branch PR to upstream (parent) branch'
+      local -a github_subcommands
+      github_subcommands=(
+        'anno-prs:annotate the branches based on their corresponding GitHub PR numbers and authors'
+        'checkout-prs:check out the given pull requests locally'
+        'create-pr:create a PR for the current branch, using the upstream (parent) branch as the PR base'
+        'retarget-pr:set the base of the current branch PR to upstream (parent) branch'
       )
-			_describe -t commands 'subcommand' github_subcommands
-		;;
+      _describe -t commands 'subcommand' github_subcommands
+      ;;
 
-		(options)
-			case $line[1] in
+    (options)
+      case $line[1] in
 
         (create-pr)
           _arguments '(--draft)'--draft'[Creates the new PR as draft]'
-          ;;
+        ;;
 
         (checkout-prs)
           _arguments \
             '(--all)'--all'[Checkout all open PRs.]' \
             '(--by)'--by'[Checkout open PRs authored by the given Github user]' \
             '(--mine)'--mine'[Checkout open PRs for the current user associated with the Github token.]'
-          ;;
-			esac
+        ;;
+      esac
 		;;
 	esac
 }
