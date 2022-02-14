@@ -563,8 +563,15 @@ def launch(orig_args: List[str]) -> None:
                 else:
                     machete_client.print_annotation(branch)
         elif cmd == "clean":
+            machete_client.read_definition_file()
+            print('remove untracked branches from git machete')
+            machete_client.remove_untracked_branches(opt_merge=cli_opts.opt_merge,
+                                                     opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
+                                                     opt_no_edit_merge=cli_opts.opt_no_edit_merge)
+
             print('delete git branches unmanaged by git machete')
-            print('remove untracked branches from git and git machete')
+            machete_client.delete_unmanaged(opt_yes=True)
+
             if 'checkout' in parsed_cli:
                 print('checkout (annotate) open PRs associated with the user')
         elif cmd == "delete-unmanaged":

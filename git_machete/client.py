@@ -512,6 +512,19 @@ class MacheteClient:
                 forkpoint_sha=opt_down_fork_point,
                 branch=children_of_the_last_branch_to_slide_out[0])
 
+        self._slide_out_branches_from_git_machete(branches_to_slide_out=branches_to_slide_out,
+                                                  opt_merge=opt_merge,
+                                                  opt_no_interactive_rebase=opt_no_interactive_rebase,
+                                                  opt_no_edit_merge=opt_no_edit_merge,
+                                                  opt_down_fork_point=opt_down_fork_point)
+
+    def _slide_out_branches_from_git_machete(self,
+                                             branches_to_slide_out: List[LocalBranchShortName],
+                                             opt_merge: bool,
+                                             opt_no_interactive_rebase: bool,
+                                             opt_no_edit_merge: bool,
+                                             opt_down_fork_point: Optional[AnyRevision] = None
+                                             ) -> None:
         # Verify that all "interior" slide-out branches have a single downstream
         # pointing to the next slide-out
         for bu, bd in zip(branches_to_slide_out[:-1], branches_to_slide_out[1:]):
@@ -2330,3 +2343,20 @@ class MacheteClient:
             if ans in ('y', 'yes'):
                 return
             raise MacheteException('Pull request creation interrupted.')
+
+    def remove_untracked_branches(self,
+                                  opt_merge: bool,
+                                  opt_no_interactive_rebase: bool,
+                                  opt_no_edit_merge: bool) -> None:
+        untracked_branches: List[LocalBranchShortName] = []
+        for managed_branch in self.managed_branches:
+            s, _ = self.__git.get_strict_remote_sync_status(managed_branch)
+            if s == SyncToRemoteStatuses.UNTRACKED:
+                untracked_branches.append(managed_branch)
+
+        self._slide_out_branches_from_git_machete(branches_to_slide_out=untracked_branches,
+                                                  opt_merge=opt_merge,
+                                                  opt_no_interactive_rebase=opt_no_interactive_rebase,
+                                                  opt_no_edit_merge=opt_no_edit_merge)
+
+        self.managed_branches = excluding(self.managed_branches, untracked_branches)
