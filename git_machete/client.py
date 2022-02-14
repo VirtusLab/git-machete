@@ -2354,9 +2354,10 @@ class MacheteClient:
             if s == SyncToRemoteStatuses.UNTRACKED:
                 untracked_branches.append(managed_branch)
 
-        self._slide_out_branches_from_git_machete(branches_to_slide_out=untracked_branches,
-                                                  opt_merge=opt_merge,
-                                                  opt_no_interactive_rebase=opt_no_interactive_rebase,
-                                                  opt_no_edit_merge=opt_no_edit_merge)
+        if untracked_branches:
+            self._slide_out_branches_from_git_machete(branches_to_slide_out=untracked_branches,
+                                                      opt_merge=opt_merge,
+                                                      opt_no_interactive_rebase=opt_no_interactive_rebase,
+                                                      opt_no_edit_merge=opt_no_edit_merge)
 
-        self.managed_branches = excluding(self.managed_branches, untracked_branches)
+            self.managed_branches = excluding(self.managed_branches, untracked_branches)
