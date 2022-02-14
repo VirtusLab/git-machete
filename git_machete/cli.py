@@ -572,6 +572,8 @@ def launch(orig_args: List[str]) -> None:
 
             if 'checkout' in parsed_cli:
                 print('checkout (annotate) open PRs associated with the user')
+                machete_client.checkout_github_prs(pr_nos=[],
+                                                   my_opened_prs=True)
         elif cmd == "delete-unmanaged":
             machete_client.read_definition_file()
             machete_client.delete_unmanaged(opt_yes=cli_opts.opt_yes)
