@@ -65,7 +65,7 @@ _git-machete() {
           _arguments '1:: :__git_machete_directions_go' && ret=0
           ;;
         (github)
-          __git_machete_github
+          __git_machete_github_subcommands
           ;;
         (help)
           _arguments '1:: :__git_machete_help_topics' && ret=0
@@ -214,7 +214,7 @@ __git_machete_directions_show() {
 }
 
 
-__git_machete_github ()
+__git_machete_github_subcommands ()
 {
 	local curcontext="$curcontext" state line
 	typeset -A opt_args
