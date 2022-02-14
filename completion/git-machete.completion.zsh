@@ -65,7 +65,18 @@ _git-machete() {
           _arguments '1:: :__git_machete_directions_go' && ret=0
           ;;
         (github)
-          _arguments '1:: :__git_machete_github_subcommands' && ret=0
+          case ${line[2]} in
+            (create-pr)
+              _arguments '(--draft)'--draft'[Creates the new PR as draft]' && ret=0
+              ;;
+            (*)
+              _arguments \
+                '(--all)'--all'[Checkout all open PRs.]' \
+                '(--by)'--by'[Checkout open PRs authored by the given Github user]' \
+                '(--mine)'--mine'[Checkout open PRs for the current user associated with the Github token.]' \
+                && ret=0
+              ;;
+          esac
           ;;
         (help)
           _arguments '1:: :__git_machete_help_topics' && ret=0
