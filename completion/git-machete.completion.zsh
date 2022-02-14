@@ -216,8 +216,8 @@ __git_machete_directions_show() {
 
 __git_machete_github_subcommands ()
 {
-	local curcontext="$curcontext" state line
-	typeset -A opt_args
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
 
   _arguments -C \
     ':command:->command' \
@@ -250,8 +250,8 @@ __git_machete_github_subcommands ()
             '(--mine)'--mine'[Checkout open PRs for the current user associated with the Github token.]'
         ;;
       esac
-		;;
-	esac
+    ;;
+  esac
 }
 
 __git_machete_categories() {
