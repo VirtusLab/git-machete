@@ -36,7 +36,7 @@ command_groups: List[Tuple[str, List[str]]] = [
     ("Build, display and modify the tree of branch dependencies",
      ["add", "anno", "discover", "edit", "status"]),
     ("List, check out and delete branches",
-     ["delete-unmanaged", "go", "is-managed", "list", "show"]),
+     ["clean", "delete-unmanaged", "go", "is-managed", "list", "show"]),
     ("Determine changes specific to the given branch",
      ["diff", "fork-point", "log"]),
     ("Update git history in accordance with the tree of branch dependencies",
@@ -156,8 +156,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
     anno_parser.add_argument(
         '-H', '--sync-github-prs', action='store_true', default=argparse.SUPPRESS)
 
-    clean_parser = subparsers.add_parser(
-        'clean', usage=argparse.SUPPRESS, add_help=False, parents=[common_args_parser])
+    clean_parser = subparsers.add_parser('clean', usage=argparse.SUPPRESS, add_help=False, parents=[common_args_parser])
     clean_parser.add_argument('-c', '--checkout-my-github-prs', action='store_true', default=argparse.SUPPRESS)
 
     delete_unmanaged_parser = subparsers.add_parser(

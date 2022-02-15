@@ -5,6 +5,7 @@ short_docs: Dict[str, str] = {
     "add": "Add a branch to the tree of branch dependencies",
     "advance": "Fast-forward merge one of children to the current branch and then slide out this child",
     "anno": "Manage custom annotations",
+    "clean": 'Delete untracked and unmanaged branches also checkout user\' open PRs',
     "delete-unmanaged": "Delete local branches that are not present in the definition file",
     "diff": "Diff current working directory or a given branch against its computed fork point",
     "discover": "Automatically discover tree of branch dependencies",
@@ -145,18 +146,18 @@ long_docs: Dict[str, str] = {
           git machete clean [-c|--checkout-my-github-prs]
 
         If invoked without any flag, deletes untracked and unmanaged branches.
-        
+
         If invoked with ``-c`` or ``--checkout-my-github-prs``, checkouts your open PRs into local branches.
-        
+
         To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR, even in case of public repositories),
         a GitHub API token with ``repo`` scope is required, see https://github.com/settings/tokens. This will be resolved from the first of:
-        
+
             1. ``GITHUB_TOKEN`` env var,
             2. current auth token from the ``gh`` GitHub CLI,
             3. current auth token from the ``hub`` GitHub CLI.
-        
+
         **Options:**
-        
+
         ``-c, --checkout-my-github-prs``    Checkout your open PRs into local branches.
     """,
     "delete-unmanaged": """
@@ -371,7 +372,7 @@ long_docs: Dict[str, str] = {
         <b>`retarget-pr`:</b>
 
           Sets the base of the current branch's PR to upstream (parent) branch, as seen by git machete (see `git machete show up`).
-          
+
         <b>`sync`:</b>
 
           Synchronizes with the remote repository: removes untracked and unmanaged branches also checkouts your open PRs.
