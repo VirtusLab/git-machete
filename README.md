@@ -180,7 +180,7 @@ Sets the base of the current branch's PR to its upstream (parent) branch, as see
 git machete github retarget-pr
 ```
 
-Synchronize with the remote repository: remove untracked and unmanaged branches and checkout your open PRs: <br/>
+Synchronize with the remote repository: delete untracked and unmanaged branches and checkout your open PRs: <br/>
 ```shell script
 git machete github sync
 ```
