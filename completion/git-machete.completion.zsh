@@ -226,7 +226,7 @@ __git_machete_github_subcommands() {
     'checkout-prs:check out the given pull requests locally' # TODO (#393): Add support in zsh and bash completion for options of `git machete github checkout-prs`
     'create-pr:create a PR for the current branch, using the upstream (parent) branch as the PR base'
     'retarget-pr:set the base of the current branch PR to upstream (parent) branch'
-    'sync:synchronize with the remote repository: remove untracked branches and checkout open PRs for the current user associated with the Github token'
+    'sync:synchronize with the remote repository: delete untracked and unmanaged branches and checkout open PRs for the current user associated with the Github token'
   )
   _describe -t github_subcommands 'subcommand' github_subcommands "$@"
 }
