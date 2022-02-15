@@ -482,17 +482,16 @@ class MacheteClient:
             self.save_definition_file()
             self.edit()
 
-    def slide_out(
-            self,
-            *,
-            branches_to_slide_out: List[LocalBranchShortName],
-            opt_down_fork_point: Optional[AnyRevision],
-            opt_yes: bool,
-            opt_merge: bool,
-            opt_no_interactive_rebase: bool,
-            opt_no_edit_merge: bool,
-            delete_branches: bool = False
-            ) -> None:
+    def slide_out(self,
+                  *,
+                  branches_to_slide_out: List[LocalBranchShortName],
+                  opt_down_fork_point: Optional[AnyRevision],
+                  opt_yes: bool,
+                  opt_merge: bool,
+                  opt_no_interactive_rebase: bool,
+                  opt_no_edit_merge: bool,
+                  delete_branches: bool = False
+                  ) -> None:
         # Verify that all branches exist, are managed, and have an upstream.
         for branch in branches_to_slide_out:
             self.expect_in_managed_branches(branch)
