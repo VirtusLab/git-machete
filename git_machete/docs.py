@@ -140,6 +140,25 @@ long_docs: Dict[str, str] = {
           <b>-b, --branch=<branch></b>      Branch to set the annotation for.
           <b>-H, --sync-github-prs</b>      Annotate with GitHub PR numbers and authors where applicable.
     """,
+    "clean": """
+        <b>Usage:
+          git machete clean [-c|--checkout-my-github-prs]
+
+        If invoked without any flag, deletes untracked and unmanaged branches.
+        
+        If invoked with ``-c`` or ``--checkout-my-github-prs``, checkouts your open PRs into local branches.
+        
+        To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR, even in case of public repositories),
+        a GitHub API token with ``repo`` scope is required, see https://github.com/settings/tokens. This will be resolved from the first of:
+        
+            1. ``GITHUB_TOKEN`` env var,
+            2. current auth token from the ``gh`` GitHub CLI,
+            3. current auth token from the ``hub`` GitHub CLI.
+        
+        **Options:**
+        
+        ``-c, --checkout-my-github-prs``    Checkout your open PRs into local branches.
+    """,
     "delete-unmanaged": """
         <b>Usage: git machete delete-unmanaged [-y|--yes]</b>
 
@@ -303,7 +322,7 @@ long_docs: Dict[str, str] = {
     """,
     "github": """
         <b>Usage: git machete github <subcommand></b>
-        where <subcommand> is one of: `anno-prs`, `checkout-prs`, `create-pr`, `retarget-pr`.
+        where <subcommand> is one of: `anno-prs`, `checkout-prs`, `create-pr`, `retarget-pr`, `sync`.
 
         Creates, checks out and manages GitHub PRs while keeping them reflected in branch definition file.
 
@@ -352,6 +371,10 @@ long_docs: Dict[str, str] = {
         <b>`retarget-pr`:</b>
 
           Sets the base of the current branch's PR to upstream (parent) branch, as seen by git machete (see `git machete show up`).
+          
+        <b>`sync`:</b>
+
+          Synchronizes with the remote repository: removes untracked and unmanaged branches also checkouts your open PRs.
     """,
     "go": """
         <b>Usage: git machete g[o] <direction></b>
@@ -497,7 +520,7 @@ long_docs: Dict[str, str] = {
         * `up`:      the direct parent/upstream branch of the given branch.
     """,
     "slide-out": """
-        <b>Usage: git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] [<branch> [<branch> [<branch> ...]]]</b>
+        <b>Usage: git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [--delete] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] [<branch> [<branch> [<branch> ...]]]</b>
 
         Removes the given branch (or multiple branches) from the branch tree definition. If no branch has been specified current branch is assumed as the only branch.
         Then synchronizes the downstream (child) branches of the last specified branch on the top of the upstream (parent) branch of the first specified branch.
@@ -535,6 +558,8 @@ long_docs: Dict[str, str] = {
                                                             `git machete fork-point` overrides for downstream branches are recommended over use of this option.
                                                             See also doc for `--fork-point` option in `git machete help reapply` and `git machete help update`.
                                                             Not allowed if updating by merge.
+
+          <b>--delete</b>                                          Delete branches from git.
 
           <b>-M, --merge</b>                                       Update the downstream branch by merge rather than by rebase.
 

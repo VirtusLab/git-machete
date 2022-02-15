@@ -34,6 +34,12 @@ _git-machete() {
             '(-H --sync-github-prs)'{-H,--sync-github-prs}'[Annotate with GitHub PR numbers and authors where applicable]' \
           && ret=0
           ;;
+        (clean)
+          _arguments \
+            '(--checkout-my-github-prs)'--checkout-my-github-prs'[Checkout your open PRs into local branches]' \
+            '(-y --yes)'{-y,--yes}'[Do not ask for confirmation]' \
+          && ret=0
+          ;;
         (d|diff)
           _arguments \
             '1:: :__git_branch_names' \
@@ -220,6 +226,7 @@ __git_machete_github_subcommands() {
     'checkout-prs:check out the given pull requests locally' # TODO (#393): Add support in zsh and bash completion for options of `git machete github checkout-prs`
     'create-pr:create a PR for the current branch, using the upstream (parent) branch as the PR base'
     'retarget-pr:set the base of the current branch PR to upstream (parent) branch'
+    'sync:synchronize with the remote repository: remove untracked branches and checkout open PRs for the current user associated with the Github token'
   )
   _describe -t github_subcommands 'subcommand' github_subcommands "$@"
 }

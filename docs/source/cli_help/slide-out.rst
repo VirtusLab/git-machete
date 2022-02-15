@@ -6,7 +6,7 @@ slide-out
 
 .. code-block:: shell
 
-    git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] [<branch> [<branch> [<branch> ...]]]
+    git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [--delete] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] [<branch> [<branch> [<branch> ...]]]
 
 Removes the given branch (or multiple branches) from the branch tree definition.  If no branch has been specified current branch is assumed as the only branch.
 Then synchronizes the downstream (child) branches of the last specified branch on the top of the upstream (parent) branch of the first specified branch.
@@ -47,6 +47,8 @@ Note: This command doesn't delete any branches from git, just removes them from 
 **Options:**
 
 -d, --down-fork-point=<down-fork-point-commit>    If updating by rebase, specifies the alternative fork point for downstream branches for the operation. ``git machete fork-point`` overrides for downstream branches are recommended over use of this option. See also doc for ``--fork-point`` option in ``git machete help reapply`` and ``git machete help update``. Not allowed if updating by merge.
+
+--delete                                          Delete the branches.
 
 -M, --merge                                       Update the downstream branch by merge rather than by rebase.
 

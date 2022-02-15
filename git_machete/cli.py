@@ -158,7 +158,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
 
     clean_parser = subparsers.add_parser(
         'clean', usage=argparse.SUPPRESS, add_help=False, parents=[common_args_parser])
-    clean_parser.add_argument('-c', '--checkout', action='store_true', default=argparse.SUPPRESS)
+    clean_parser.add_argument('-c', '--checkout-my-github-prs', action='store_true', default=argparse.SUPPRESS)
 
     delete_unmanaged_parser = subparsers.add_parser(
         'delete-unmanaged',
@@ -225,7 +225,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
         usage=argparse.SUPPRESS,
         add_help=False,
         parents=[common_args_parser])
-    github_parser.add_argument('subcommand', choices=['anno-prs', 'checkout-prs', 'create-pr', 'retarget-pr'])
+    github_parser.add_argument('subcommand', choices=['anno-prs', 'checkout-prs', 'create-pr', 'retarget-pr', 'sync'])
     github_parser.add_argument('pr_no', nargs='*', type=int)
     github_parser.add_argument('--all', action='store_true')
     github_parser.add_argument('--by')
@@ -300,6 +300,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
         parents=[common_args_parser])
     slide_out_parser.add_argument('branches', nargs='*')
     slide_out_parser.add_argument('-d', '--down-fork-point')
+    slide_out_parser.add_argument('--delete', action='store_true')
     slide_out_parser.add_argument('-M', '--merge', action='store_true')
     slide_out_parser.add_argument('-n', action='store_true')
     slide_out_parser.add_argument('--no-edit-merge', action='store_true')
@@ -562,16 +563,12 @@ def launch(orig_args: List[str]) -> None:
                     machete_client.print_annotation(branch)
         elif cmd == "clean":
             machete_client.read_definition_file()
-            print('remove untracked branches from git machete')
-            machete_client.remove_untracked_branches(opt_merge=cli_opts.opt_merge,
-                                                     opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
-                                                     opt_no_edit_merge=cli_opts.opt_no_edit_merge)
-
-            print('delete git branches unmanaged by git machete')
-            machete_client.delete_unmanaged(opt_yes=True)
-
-            if 'checkout' in parsed_cli:
-                print('checkout (annotate) open PRs associated with the user')
+            machete_client.delete_untracked(opt_yes=cli_opts.opt_yes,
+                                            opt_merge=cli_opts.opt_merge,
+                                            opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
+                                            opt_no_edit_merge=cli_opts.opt_no_edit_merge)
+            machete_client.delete_unmanaged(opt_yes=cli_opts.opt_yes)
+            if '--checkout-my-github-prs' in parsed_cli:
                 machete_client.checkout_github_prs(pr_nos=[],
                                                    my_opened_prs=True)
         elif cmd == "delete-unmanaged":
@@ -663,6 +660,14 @@ def launch(orig_args: List[str]) -> None:
                 current_branch = git.get_current_branch()
                 machete_client.expect_in_managed_branches(current_branch)
                 machete_client.retarget_github_pr(current_branch)
+            elif github_subcommand == "sync":
+                machete_client.delete_untracked(opt_yes=cli_opts.opt_yes,
+                                                opt_merge=cli_opts.opt_merge,
+                                                opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
+                                                opt_no_edit_merge=cli_opts.opt_no_edit_merge)
+                machete_client.delete_unmanaged(opt_yes=cli_opts.opt_yes)
+                machete_client.checkout_github_prs(pr_nos=[],
+                                                   my_opened_prs=True)
         elif cmd == "is-managed":
             machete_client.read_definition_file()
             branch = get_branch_arg_or_current_branch(cli_opts, git)
@@ -750,9 +755,11 @@ def launch(orig_args: List[str]) -> None:
             machete_client.slide_out(
                 branches_to_slide_out=list(map(LocalBranchShortName.of, branches)),
                 opt_down_fork_point=cli_opts.opt_down_fork_point,
+                opt_yes=cli_opts.opt_yes,
                 opt_merge=cli_opts.opt_merge,
                 opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
-                opt_no_edit_merge=cli_opts.opt_no_edit_merge)
+                opt_no_edit_merge=cli_opts.opt_no_edit_merge,
+                delete_branches=parsed_cli.delete if 'delete' in parsed_cli else False)
         elif cmd == "squash":
             machete_client.read_definition_file()
             git.expect_no_operation_in_progress()
