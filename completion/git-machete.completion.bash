@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 _git_machete() {
-  local cmds="add advance anno d delete-unmanaged diff discover e edit file fork-point g github go help is-managed l list log reapply s show slide-out squash status traverse update version"
+  local cmds="add advance anno clean d delete-unmanaged diff discover e edit file fork-point g github go help is-managed l list log reapply s show slide-out squash status traverse update version"
   local help_topics="$cmds format hooks"
 
   local categories="addable managed slidable slidable-after unmanaged with-overridden-fork-point"
@@ -42,8 +42,8 @@ _git_machete() {
         add) __gitcomp "$common_opts $add_opts" ;;
         advance) __gitcomp "$common_opts $advance_opts" ;;
         anno) __gitcomp "$common_opts $anno_opts" ;;
-        d|diff) __gitcomp "$common_opts $diff_opts" ;;
         clean) __gitcomp "$common_opts $clean_opts" ;;
+        d|diff) __gitcomp "$common_opts $diff_opts" ;;
         delete-unmanaged) __gitcomp "$common_opts $delete_unmanaged_opts" ;;
         discover) __gitcomp "$common_opts $discover_opts" ;;
         fork-point) __gitcomp "$common_opts $fork_point_opts" ;;

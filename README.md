@@ -151,19 +151,9 @@ Put each branch one by one in sync with its parent and remote tracking branch.
 git machete advance
 ```
 
-### Synchronize with the remote repository, delete untracked and unmanaged branches, checkout your open PRs into local branches
-```shell script
-git machete clean --checkout-my-github-prs
-```
-
 Useful for merging the child branch to the current branch in a linear fashion (without creating a merge commit).
 
 ### GitHub integration
-
-Annotate the branches with GitHub PR numbers: <br/>
-```shell script
-git machete github anno-prs
-```
 
 Check out the given PRs into local branches, also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally as well: <br/>
 ```shell script
@@ -173,11 +163,6 @@ git machete github checkout-prs [--all | --by=<github-login> | --mine | <PR-numb
 Create the PR, using the upstream (parent) branch from `.git/machete` as the base: <br/>
 ```shell script
 git machete github create-pr [--draft]
-```
-
-Sets the base of the current branch's PR to its upstream (parent) branch, as seen by git machete: <br/>
-```shell script
-git machete github retarget-pr
 ```
 
 Synchronize with the remote repository: delete untracked and unmanaged branches and checkout your open PRs: <br/>
