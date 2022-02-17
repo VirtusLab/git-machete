@@ -377,7 +377,7 @@ long_docs: Dict[str, str] = {
 
         <b>`sync`:</b>
 
-          Synchronizes with the remote repository: removes untracked and unmanaged branches also checks out your open PRs.
+          Synchronizes with the remote repository: removes untracked and unmanaged branches and also checks out your open PRs.
     """,
     "go": """
         <b>Usage: git machete g[o] <direction></b>
