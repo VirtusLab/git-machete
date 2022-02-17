@@ -569,7 +569,7 @@ def launch(orig_args: List[str]) -> None:
                                             opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
                                             opt_no_edit_merge=cli_opts.opt_no_edit_merge)
             machete_client.delete_unmanaged(opt_yes=cli_opts.opt_yes)
-            if '--checkout-my-github-prs' in parsed_cli:
+            if 'checkout_my_github_prs' in parsed_cli:
                 machete_client.checkout_github_prs(pr_nos=[],
                                                    my_opened_prs=True)
         elif cmd == "delete-unmanaged":
