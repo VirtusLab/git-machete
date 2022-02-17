@@ -22,6 +22,7 @@ _git_machete() {
   local discover_opts="-C --checked-out-since= -l --list-commits -r --roots= -y --yes"
   local fork_point_opts="--inferred --override-to= --override-to-inferred --override-to-parent --unset-override"
   local github_create_pr_opts="--draft"
+  local github_checkout_prs_opts="--all --by= --mine"
   local reapply_opts="-f --fork-point="
   local slide_out_opts="-d --down-fork-point= --delete -M --merge -n --no-edit-merge --no-interactive-rebase"
   local squash_opts="-f --fork-point="
@@ -50,6 +51,8 @@ _git_machete() {
         github) # TODO (#393): Add support in zsh and bash completion for options of `git machete github checkout-prs`
           if [[ ${COMP_WORDS[3]} == "create-pr" ]]; then
             __gitcomp "$common_opts $github_create_pr_opts"
+          elif [[ ${COMP_WORDS[3]} == "checkout-prs" ]]; then
+            __gitcomp "$common_opts $github_checkout_prs_opts"
           else
             __gitcomp "$common_opts"
           fi ;;
@@ -100,6 +103,8 @@ _git_machete() {
                   __gitcomp "$github_subcommands"
                 elif [[ ${COMP_WORDS[3]} == "create-pr" ]]; then
                   __gitcomp "$common_opts $github_create_pr_opts"
+                elif [[ ${COMP_WORDS[3]} == "checkout-prs" ]]; then
+                  __gitcomp "$common_opts $github_checkout_prs_opts"
                 else
                   COMPREPLY=('')
                 fi ;;
