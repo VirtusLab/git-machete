@@ -2810,3 +2810,40 @@ class MacheteTester(unittest.TestCase):
         self.assert_command(['add', '--onto=feature'],
                             'Added branch `chore/remove_indentation` onto `feature`\n',
                             strip_indentation=False)
+
+    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)
+    def test_clean(self) -> None:
+        (
+            self.repo_sandbox.new_branch('master')
+                .commit()
+                .push()
+                .new_branch('o-bar')
+                .commit()
+                .new_branch('o-bar2')
+                .commit()
+                .push()
+                .check_out("master")
+                .new_branch('o-foo')
+                .commit()
+                .new_branch('o-foo2')
+                .commit()
+                .push()
+                .check_out("master")
+                .new_branch('o-moo')
+                .commit()
+                .new_branch('o-moo2')
+                .commit()
+        )
+        self.launch_command('discover', '-y')
+        self.launch_command('clean', '-y')
+
+        expected_status_output = (
+            """
+            master *
+            |
+            o-o-bar2 (diverged from origin)
+            |
+            o-o-foo2 (diverged from origin)
+            """
+        )
+        self.assert_command(['status'], expected_status_output)

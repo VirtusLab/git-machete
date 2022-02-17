@@ -490,7 +490,7 @@ class MacheteClient:
                   opt_merge: bool,
                   opt_no_interactive_rebase: bool,
                   opt_no_edit_merge: bool,
-                  delete_branches: bool = False
+                  delete_git_branches: bool = False
                   ) -> None:
         # Verify that all branches exist, are managed, and have an upstream.
         for branch in branches_to_slide_out:
@@ -513,25 +513,7 @@ class MacheteClient:
                 forkpoint_sha=opt_down_fork_point,
                 branch=children_of_the_last_branch_to_slide_out[0])
 
-        self._slide_out_branches_from_git_machete(branches_to_slide_out=branches_to_slide_out,
-                                                  opt_yes=opt_yes,
-                                                  opt_merge=opt_merge,
-                                                  opt_no_interactive_rebase=opt_no_interactive_rebase,
-                                                  opt_no_edit_merge=opt_no_edit_merge,
-                                                  opt_down_fork_point=opt_down_fork_point,
-                                                  delete_branches=delete_branches)
-
-    def _slide_out_branches_from_git_machete(self,
-                                             branches_to_slide_out: List[LocalBranchShortName],
-                                             opt_yes: bool,
-                                             opt_merge: bool,
-                                             opt_no_interactive_rebase: bool,
-                                             opt_no_edit_merge: bool,
-                                             opt_down_fork_point: Optional[AnyRevision] = None,
-                                             delete_branches: Optional[bool] = False
-                                             ) -> None:
-        # Verify that all "interior" slide-out branches have a single downstream
-        # pointing to the next slide-out
+        # Verify that all "interior" slide-out branches have a single downstream pointing to the next slide-out
         for bu, bd in zip(branches_to_slide_out[:-1], branches_to_slide_out[1:]):
             dbs = self.__down_branches.get(bu)
             if not dbs or len(dbs) == 0:
@@ -546,6 +528,23 @@ class MacheteClient:
             if self.up_branch[bd] != bu:
                 raise MacheteException(f"`{bu}` is not upstream of `{bd}`, cannot slide out")
 
+        self._modify_tree(branches_to_slide_out=branches_to_slide_out,
+                          opt_yes=opt_yes,
+                          opt_merge=opt_merge,
+                          opt_no_interactive_rebase=opt_no_interactive_rebase,
+                          opt_no_edit_merge=opt_no_edit_merge,
+                          opt_down_fork_point=opt_down_fork_point,
+                          delete_git_branches=delete_git_branches)
+
+    def _modify_tree(self,
+                     branches_to_slide_out: List[LocalBranchShortName],
+                     opt_yes: bool,
+                     opt_merge: bool,
+                     opt_no_interactive_rebase: bool,
+                     opt_no_edit_merge: bool,
+                     opt_down_fork_point: Optional[AnyRevision] = None,
+                     delete_git_branches: Optional[bool] = False
+                     ) -> None:
         # Get new branches
         new_upstream = self.up_branch[branches_to_slide_out[0]]
         new_downstreams = self.__down_branches.get(branches_to_slide_out[-1], [])
@@ -554,6 +553,7 @@ class MacheteClient:
         for branch in branches_to_slide_out:
             self.up_branch[branch] = None
             self.__down_branches[branch] = None
+            self.managed_branches.remove(branch)
         self.__down_branches[new_upstream] = [
             branch for branch in self.__down_branches[new_upstream]
             if branch != branches_to_slide_out[0]]
@@ -583,7 +583,7 @@ class MacheteClient:
                     new_downstream,
                     opt_no_interactive_rebase)
 
-        if delete_branches:
+        if delete_git_branches:
             self._delete_branches(branches_to_delete=branches_to_slide_out, opt_yes=opt_yes)
 
     def advance(self, *, branch: LocalBranchShortName, opt_yes: bool) -> None:
@@ -2360,17 +2360,12 @@ class MacheteClient:
                          opt_merge: bool,
                          opt_no_interactive_rebase: bool,
                          opt_no_edit_merge: bool) -> None:
-        untracked_branches: List[LocalBranchShortName] = []
-        for managed_branch in self.managed_branches:
+        for managed_branch in self.managed_branches.copy():
             status, _ = self.__git.get_strict_remote_sync_status(managed_branch)
             if status == SyncToRemoteStatuses.UNTRACKED:
-                untracked_branches.append(managed_branch)
-
-        if untracked_branches:
-            self._slide_out_branches_from_git_machete(branches_to_slide_out=untracked_branches,
-                                                      opt_yes=opt_yes,
-                                                      opt_merge=opt_merge,
-                                                      opt_no_interactive_rebase=opt_no_interactive_rebase,
-                                                      opt_no_edit_merge=opt_no_edit_merge,
-                                                      delete_branches=True)
-            self.managed_branches = excluding(self.managed_branches, untracked_branches)
+                self._modify_tree(branches_to_slide_out=[managed_branch],
+                                  opt_yes=opt_yes,
+                                  opt_merge=opt_merge,
+                                  opt_no_interactive_rebase=opt_no_interactive_rebase,
+                                  opt_no_edit_merge=opt_no_edit_merge,
+                                  delete_git_branches=True)

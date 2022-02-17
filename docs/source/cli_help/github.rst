@@ -68,7 +68,7 @@ a GitHub API token with ``repo`` scope is required, see https://github.com/setti
 
 ``sync``:
 
-  Synchronizes with the remote repository: removes untracked and unmanaged branches also checks out open PRs for the current user associated with the Github token,
+  Synchronizes with the remote repository: removes untracked and unmanaged branches and also checks out open PRs for the current user associated with the Github token,
   also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally as well.
 
 **Environment variables (all subcommands):**

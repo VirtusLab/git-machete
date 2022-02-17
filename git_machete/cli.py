@@ -158,6 +158,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
 
     clean_parser = subparsers.add_parser('clean', usage=argparse.SUPPRESS, add_help=False, parents=[common_args_parser])
     clean_parser.add_argument('-c', '--checkout-my-github-prs', action='store_true', default=argparse.SUPPRESS)
+    clean_parser.add_argument('-y', '--yes', action='store_true')
 
     delete_unmanaged_parser = subparsers.add_parser(
         'delete-unmanaged',
@@ -761,7 +762,7 @@ def launch(orig_args: List[str]) -> None:
                 opt_merge=cli_opts.opt_merge,
                 opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
                 opt_no_edit_merge=cli_opts.opt_no_edit_merge,
-                delete_branches=parsed_cli.delete if 'delete' in parsed_cli else False)
+                delete_git_branches=parsed_cli.delete if 'delete' in parsed_cli else False)
         elif cmd == "squash":
             machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out_flag)
             git.expect_no_operation_in_progress()
