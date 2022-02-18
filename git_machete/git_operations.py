@@ -733,11 +733,17 @@ class GitContext:
         return matching_remote_branches[0] if len(matching_remote_branches) == 1 else None
 
     def get_merged_local_branches(self) -> List[LocalBranchShortName]:
-        return list(map(
-            lambda branch: LocalBranchFullName.of(branch).to_short_name(),
-            utils.get_non_empty_lines(
-                self._popen_git("for-each-ref", "--format=%(refname)", "--merged", "HEAD", "refs/heads"))
-        ))
+        if self.get_git_version() >= (2, 7, 6):  # earliest version of git to support 'for-each-ref --merged'
+            return list(
+                map(lambda branch: LocalBranchFullName.of(branch).to_short_name(),
+                    utils.get_non_empty_lines(
+                        self._popen_git("for-each-ref", "--format=%(refname)", "--merged", "HEAD", "refs/heads"))))
+        else:
+            return list(
+                filter(lambda branch: self.is_ancestor_or_equal(branch, self.get_current_branch_or_none()),
+                       map(lambda branch: LocalBranchFullName.of(branch).to_short_name(),
+                           utils.get_non_empty_lines(
+                               self._popen_git("for-each-ref", "--format=%(refname)", "refs/heads")))))
 
     def get_hook_path(self, hook_name: str) -> str:
         hook_dir: str = self.get_config_attr_or_none("core.hooksPath") or self.get_git_subpath("hooks")
