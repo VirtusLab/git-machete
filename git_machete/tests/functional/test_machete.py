@@ -2446,7 +2446,8 @@ class MacheteTester(unittest.TestCase):
         os.chdir(self.repo_sandbox.local_path)
 
         expected_msg = ("Warn: Pull request #5 is already closed.\n"
-                        "Pull request `#5` checked out at local branch `bugfix/remove-n-option`\n")
+                        "Pull request `#5` checked out at local branch `bugfix/remove-n-option`\n"
+                        "Switched to local branch `bugfix/remove-n-option`\n")
 
         self.assert_command(['github', 'checkout-prs', '5'], expected_msg, strip_indentation=False)
 
@@ -2517,7 +2518,8 @@ class MacheteTester(unittest.TestCase):
         )
         os.chdir(self.repo_sandbox.local_path)
         self.rewrite_definition_file("master")
-        expected_msg = "Pull request `#2` checked out at local branch `comments/add_docstrings`\n"
+        expected_msg = ("Pull request `#2` checked out at local branch `comments/add_docstrings`\n"
+                        "Switched to local branch `comments/add_docstrings`\n")
         self.assert_command(
             ['github', 'checkout-prs', '2'],
             expected_msg,
@@ -2540,7 +2542,8 @@ class MacheteTester(unittest.TestCase):
         # Check against closed pull request
         self.repo_sandbox.execute('git branch -D sphinx_export')
         expected_msg = ("Warn: Pull request #23 is already closed.\n"
-                        "Pull request `#23` checked out at local branch `sphinx_export`\n")
+                        "Pull request `#23` checked out at local branch `sphinx_export`\n"
+                        "Switched to local branch `sphinx_export`\n")
 
         self.assert_command(
             ['github', 'checkout-prs', '23'],
@@ -2587,7 +2590,8 @@ class MacheteTester(unittest.TestCase):
         self.launch_command('discover')
         expected_msg = ("Warn: Pull request #2 comes from fork and its repository is already deleted. No remote tracking data will be set up for `feature/allow_checkout` branch.\n"
                         "Warn: Pull request #2 is already closed.\n"
-                        "Pull request `#2` checked out at local branch `feature/allow_checkout`\n")
+                        "Pull request `#2` checked out at local branch `feature/allow_checkout`\n"
+                        "Switched to local branch `feature/allow_checkout`\n")
         self.assert_command(
             ['github', 'checkout-prs', '2'],
             expected_msg,
