@@ -2408,7 +2408,7 @@ class MacheteClient:
                 msg = common_line + f"Check out `{branch}` locally?" + get_pretty_choices('y', 'N')
                 opt_yes_msg = common_line + f"Checking out `{branch}` locally..."
                 if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
-                    self.__git.create_and_switch_head_to_branch(branch, remote_branch.full_name())
+                    self.__git.create_branch(branch, remote_branch.full_name())
                 else:
                     return
                 # Not dealing with `onto` here. If it hasn't been explicitly
@@ -2427,7 +2427,7 @@ class MacheteClient:
                         current_branch = self.__git.get_current_branch_or_none()
                         if current_branch and current_branch in self.managed_branches:
                             opt_onto = current_branch
-                    self.__git.create_and_switch_head_to_branch(branch, out_of)
+                    self.__git.create_branch(branch, out_of)
                 else:
                     return
 
