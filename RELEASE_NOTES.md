@@ -5,6 +5,7 @@
 
 - added: `--all`, `--mine`, `--by` flags and parameter `<PR-number-1> ... <PR-number-N>` to `git machete github checkout-prs`
 - added: command `git machete clean` with `--checkout-my-github-prs` flag and its equivalent `git machete github sync`
+- added: `--delete` flag to `git machete slide-out` command for deleting slid-out branches from git
 
 ## New in git-machete 3.7.2
 
