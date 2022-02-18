@@ -1865,7 +1865,7 @@ class MacheteClient:
                             all_opened_prs: bool = False,
                             my_opened_prs: bool = False,
                             opened_by: str = None,
-                            verbose: bool = False
+                            verbose: bool = True
                             ) -> None:
         org: str
         repo: str
