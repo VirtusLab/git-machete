@@ -2847,3 +2847,13 @@ class MacheteTester(unittest.TestCase):
             """
         )
         self.assert_command(['status'], expected_status_output)
+
+def suite():
+    suite = unittest.TestSuite()
+    suite.addTest(MacheteTester('test_clean'))
+    return suite
+
+
+if __name__ == '__main__':
+    runner = unittest.TextTestRunner()
+    runner.run(suite())

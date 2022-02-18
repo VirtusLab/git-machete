@@ -148,7 +148,7 @@ long_docs: Dict[str, str] = {
 
         If invoked without any flag, deletes untracked and unmanaged branches.
 
-        If invoked with ``-c`` or ``--checkout-my-github-prs``, checkouts your open PRs into local branches.
+        If invoked with ``-c`` or ``--checkout-my-github-prs``, checks out your open PRs into local branches.
 
         To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR, even in case of public repositories),
         a GitHub API token with ``repo`` scope is required, see https://github.com/settings/tokens. This will be resolved from the first of:
