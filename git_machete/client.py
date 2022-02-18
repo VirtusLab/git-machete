@@ -1966,9 +1966,9 @@ class MacheteClient:
               'Current GitHub user is ' + (current_user or '<none>'))
         self.__sync_annotations_to_definition_file(all_open_prs, current_user, verbose=verbose)
         if pr and len(checked_out_prs) == 1:
-            self.__git.checkout(LocalBranchShortName.of(pr.head))
+            self.__git.checkout(LocalBranchShortName.of(checked_out_prs[0].head))
             if verbose:
-                print(fmt(f"Switched to local branch `{pr.head}`"))
+                print(fmt(f"Switched to local branch `{checked_out_prs[0].head}`"))
 
     @staticmethod
     def __get_path_from_pr_chain(current_pr: GitHubPullRequest, all_open_prs: List[GitHubPullRequest]) -> List[LocalBranchShortName]:
