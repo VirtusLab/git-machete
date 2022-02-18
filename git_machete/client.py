@@ -1913,7 +1913,7 @@ class MacheteClient:
                 warn(f'Pull request #{pr.number} comes from fork and its repository is already deleted. No remote tracking data will be set up for `{pr.head}` branch.')
                 if verbose:
                     print(fmt(f"Checking out `{pr.head}` locally..."))
-                checkout_pr_refs(self.__git, remote, pr.number, LocalBranchShortName.of(pr.head))
+                # checkout_pr_refs(self.__git, remote, pr.number, LocalBranchShortName.of(pr.head))
                 self.flush_caches()
             if pr.state == 'closed':
                 warn(f'Pull request #{pr.number} is already closed.')
