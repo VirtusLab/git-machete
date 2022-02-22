@@ -41,8 +41,9 @@ complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand
 complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand_from anno; and not __fish_seen_subcommand_from --sync-github-prs -H" -f -l sync-github-prs -s H                                  -d 'Annotate with GitHub PR numbers and authors where applicable'
 
 # git machete clean
-complete -c git -n "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands"                                           -f                         -a clean                          -d 'Synchronize with the remote repository: delete untracked and unmanaged branches'
-complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand_from clean; and not __fish_seen_subcommand_from --checkout-my-github-prs -c" -f -l checkout-my-github-prs -s c                    -d 'Checkout open PRs for the current user associated with the Github token -A'
+complete -c git -n "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands"                                                     -f -a clean                          -d 'Synchronize with the remote repository: delete untracked and unmanaged branches'
+complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand_from clean; and not __fish_seen_subcommand_from --checkout-my-github-prs -c"   -f -l checkout-my-github-prs -s c    -d 'Checkout open PRs for the current user associated with the Github token'
+complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand_from clean; and not __fish_seen_subcommand_from --yes -y"                      -f -l yes -s y                       -d 'Don\'t ask for confirmation'
 
 
 # git machete delete-unmanaged
