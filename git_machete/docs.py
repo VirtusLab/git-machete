@@ -5,7 +5,7 @@ short_docs: Dict[str, str] = {
     "add": "Add a branch to the tree of branch dependencies",
     "advance": "Fast-forward merge one of children to the current branch and then slide out this child",
     "anno": "Manage custom annotations",
-    "clean": 'Delete untracked and unmanaged branches also checkout user\' open PRs',
+    "clean": 'Delete untracked and unmanaged branches and also check out user\'s open GitHub PRs',
     "delete-unmanaged": "Delete local branches that are not present in the definition file",
     "diff": "Diff current working directory or a given branch against its computed fork point",
     "discover": "Automatically discover tree of branch dependencies",
