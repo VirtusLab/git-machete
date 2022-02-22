@@ -1,4 +1,5 @@
 import datetime
+import inspect
 import io
 import itertools
 import os
@@ -215,6 +216,8 @@ class MacheteClient:
             opt_onto: Optional[LocalBranchShortName],
             opt_as_root: bool,
             opt_yes: bool,
+            verbose: bool = True,
+            switch_head_to_branch: bool = True
             ) -> None:
         if branch in self.managed_branches:
             raise MacheteException(
@@ -231,8 +234,11 @@ class MacheteClient:
                     f"branch `{remote_branch}` exists.\n")
                 msg = common_line + f"Check out `{branch}` locally?" + get_pretty_choices('y', 'N')
                 opt_yes_msg = common_line + f"Checking out `{branch}` locally..."
-                if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes) in ('y', 'yes'):
-                    self.__git.create_and_switch_head_to_branch(branch, remote_branch.full_name())
+                if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
+                    if switch_head_to_branch:
+                        self.__git.create_and_switch_head_to_branch(branch, remote_branch.full_name())
+                    else:
+                        self.__git.create_branch(branch, remote_branch.full_name())
                 else:
                     return
                 # Not dealing with `onto` here. If it hasn't been explicitly
@@ -244,20 +250,24 @@ class MacheteClient:
                        f"of {out_of_str})?" + get_pretty_choices('y', 'N'))
                 opt_yes_msg = (f"A local branch `{branch}` does not exist. "
                                f"Creating out of {out_of_str}")
-                if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes) in ('y', 'yes'):
+                if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
                     # If `--onto` hasn't been explicitly specified, let's try to
                     # assess if the current branch would be a good `onto`.
                     if self.__roots and not opt_onto:
                         current_branch = self.__git.get_current_branch_or_none()
                         if current_branch and current_branch in self.managed_branches:
                             opt_onto = current_branch
-                    self.__git.create_and_switch_head_to_branch(branch, out_of)
+                    if switch_head_to_branch:
+                        self.__git.create_and_switch_head_to_branch(branch, out_of)
+                    else:
+                        self.__git.create_branch(branch, out_of)
                 else:
                     return
 
         if opt_as_root or not self.__roots:
             self.__roots += [branch]
-            print(fmt(f"Added branch `{branch}` as a new root"))
+            if verbose:
+                print(fmt(f"Added branch `{branch}` as a new root"))
         else:
             if not opt_onto:
                 upstream = self.__infer_upstream(
@@ -276,7 +286,7 @@ class MacheteClient:
                            f"branch `{upstream}`?" + get_pretty_choices('y', 'N'))
                     opt_yes_msg = (f"Adding `{branch}` onto the inferred upstream"
                                    f" (parent) branch `{upstream}`")
-                    if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes) in ('y', 'yes'):
+                    if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
                         opt_onto = upstream
                     else:
                         return
@@ -286,7 +296,8 @@ class MacheteClient:
                 self.__down_branches[opt_onto].append(branch)
             else:
                 self.__down_branches[opt_onto] = [branch]
-            print(fmt(f"Added branch `{branch}` onto `{opt_onto}`"))
+            if verbose:
+                print(fmt(f"Added branch `{branch}` onto `{opt_onto}`"))
 
         self.managed_branches += [branch]
         self.save_definition_file()
@@ -1896,6 +1907,7 @@ class MacheteClient:
         if not current_user and my_opened_prs:
             raise MacheteException(
                 "Could not determine current user name, please check your token.")
+        current_function_name: str = f'{inspect.stack()[0].function}()'
         all_open_prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
         valid_prs: List[GitHubPullRequest] = self.__get_valid_pull_requests(pr_nos,
                                                                             all_opened_prs_from_github=all_open_prs,
@@ -1906,7 +1918,7 @@ class MacheteClient:
                                                                             by=opened_by,
                                                                             user=current_user)
 
-        debug('checkout_github_pr()', f'organization is {org}, repository is {repo}')
+        debug(current_function_name, f'organization is {org}, repository is {repo}')
         if verbose:
             print(f"Fetching {remote}...")
         self.__git.fetch_remote(remote)
@@ -1938,36 +1950,39 @@ class MacheteClient:
                 self.flush_caches()
             if pr.state == 'closed':
                 warn(f'Pull request #{pr.number} is already closed.')
-            debug('checkout_github_pr()', f'found {pr}')
+            debug(current_function_name, f'found {pr}')
 
             path: List[LocalBranchShortName] = self.__get_path_from_pr_chain(pr, all_open_prs)
             reversed_path: List[LocalBranchShortName] = path[::-1]  # need to add from root downwards
             for index, branch in enumerate(reversed_path):
                 if branch not in self.managed_branches:
                     if index == 0:
-                        self.__add_branch(
+                        self.add(
                             branch=branch,
                             opt_as_root=True,
                             opt_onto=None,
                             opt_yes=True,
-                            verbose=verbose)
+                            verbose=verbose,
+                            switch_head_to_branch=False)
                     else:
-                        self.__add_branch(
+                        self.add(
                             branch=branch,
                             opt_onto=reversed_path[index - 1],
                             opt_as_root=False,
                             opt_yes=True,
-                            verbose=verbose)
+                            verbose=verbose,
+                            switch_head_to_branch=False)
                     if pr not in checked_out_prs:
                         print(fmt(f"Pull request `#{pr.number}` checked out at local branch `{pr.head}`"))
                         checked_out_prs.append(pr)
 
-        debug('checkout_github_pr()',
+        debug(current_function_name,
               'Current GitHub user is ' + (current_user or '<none>'))
         self.__sync_annotations_to_definition_file(all_open_prs, current_user, verbose=verbose)
         if pr and len(checked_out_prs) == 1:
             self.__git.checkout(LocalBranchShortName.of(checked_out_prs[0].head))
             print(fmt(f"Switched to local branch `{checked_out_prs[0].head}`"))
+            pass
 
     @staticmethod
     def __get_path_from_pr_chain(current_pr: GitHubPullRequest, all_open_prs: List[GitHubPullRequest]) -> List[LocalBranchShortName]:
@@ -2382,91 +2397,6 @@ class MacheteClient:
             if ans in ('y', 'yes'):
                 return
             raise MacheteException('Pull request creation interrupted.')
-
-    def __add_branch(self,
-                     *,
-                     branch: LocalBranchShortName,
-                     opt_onto: Optional[LocalBranchShortName],
-                     opt_as_root: bool,
-                     opt_yes: bool,
-                     verbose: bool = True
-                     ) -> None:
-        if branch in self.managed_branches:
-            raise MacheteException(
-                f"Branch `{branch}` already exists in the tree of branch dependencies")
-
-        if opt_onto:
-            self.expect_in_managed_branches(opt_onto)
-
-        if branch not in self.__git.get_local_branches():
-            remote_branch: Optional[RemoteBranchShortName] = self.__git.get_sole_remote_branch(branch)
-            if remote_branch:
-                common_line = (
-                    f"A local branch `{branch}` does not exist, but a remote "
-                    f"branch `{remote_branch}` exists.\n")
-                msg = common_line + f"Check out `{branch}` locally?" + get_pretty_choices('y', 'N')
-                opt_yes_msg = common_line + f"Checking out `{branch}` locally..."
-                if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
-                    self.__git.create_branch(branch, remote_branch.full_name())
-                else:
-                    return
-                # Not dealing with `onto` here. If it hasn't been explicitly
-                # specified via `--onto`, we'll try to infer it now.
-            else:
-                out_of = LocalBranchShortName.of(opt_onto).full_name() if opt_onto else HEAD
-                out_of_str = f"`{opt_onto}`" if opt_onto else "the current HEAD"
-                msg = (f"A local branch `{branch}` does not exist. Create (out "
-                       f"of {out_of_str})?" + get_pretty_choices('y', 'N'))
-                opt_yes_msg = (f"A local branch `{branch}` does not exist. "
-                               f"Creating out of {out_of_str}")
-                if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
-                    # If `--onto` hasn't been explicitly specified, let's try to
-                    # assess if the current branch would be a good `onto`.
-                    if self.__roots and not opt_onto:
-                        current_branch = self.__git.get_current_branch_or_none()
-                        if current_branch and current_branch in self.managed_branches:
-                            opt_onto = current_branch
-                    self.__git.create_branch(branch, out_of)
-                else:
-                    return
-
-        if opt_as_root or not self.__roots:
-            self.__roots += [branch]
-            if verbose:
-                print(fmt(f"Added branch `{branch}` as a new root"))
-        else:
-            if not opt_onto:
-                upstream = self.__infer_upstream(
-                    branch,
-                    condition=lambda x: x in self.managed_branches,
-                    reject_reason_message="this candidate is not a managed branch")
-                if not upstream:
-                    raise MacheteException(
-                        f"Could not automatically infer upstream (parent) branch for `{branch}`.\n"
-                        "You can either:\n"
-                        "1) specify the desired upstream branch with `--onto` or\n"
-                        f"2) pass `--as-root` to attach `{branch}` as a new root or\n"
-                        "3) edit the definition file manually with `git machete edit`")
-                else:
-                    msg = (f"Add `{branch}` onto the inferred upstream (parent) "
-                           f"branch `{upstream}`?" + get_pretty_choices('y', 'N'))
-                    opt_yes_msg = (f"Adding `{branch}` onto the inferred upstream"
-                                   f" (parent) branch `{upstream}`")
-                    if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
-                        opt_onto = upstream
-                    else:
-                        return
-
-            self.up_branch[branch] = opt_onto
-            if opt_onto in self.__down_branches:
-                self.__down_branches[opt_onto].append(branch)
-            else:
-                self.__down_branches[opt_onto] = [branch]
-            if verbose:
-                print(fmt(f"Added branch `{branch}` onto `{opt_onto}`"))
-
-        self.managed_branches += [branch]
-        self.save_definition_file()
 
     def delete_untracked(self,
                          opt_yes: bool,

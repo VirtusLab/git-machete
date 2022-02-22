@@ -2776,7 +2776,6 @@ class MacheteTester(unittest.TestCase):
             msg="Verify that commits from parent branch are not visible when "
                 "executing `git machete log`.")
 
-    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     def test_add(self) -> None:
         """
         Verify behaviour of a 'git machete add' command.
@@ -2803,6 +2802,14 @@ class MacheteTester(unittest.TestCase):
         self.assert_command(['add', '--onto=feature'],
                             'Added branch `chore/remove_indentation` onto `feature`\n',
                             strip_indentation=False)
+
+        self.assert_command(['add', '-y', '--onto=develop', 'bugfix/checkout_branch'],
+                            'A local branch `bugfix/checkout_branch` does not exist. Creating out of `develop`\n'
+                            'Added branch `bugfix/checkout_branch` onto `develop`\n', strip_indentation=False)
+
+        self.assertEqual('bugfix/checkout_branch',
+                         self.launch_command("show", "current").strip(),
+                         msg="Verify that 'git machete add' switches head to the newly added branch.")
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)
     def test_clean(self) -> None:
