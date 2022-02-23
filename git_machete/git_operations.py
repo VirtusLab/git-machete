@@ -1,3 +1,4 @@
+import inspect
 from pathlib import Path
 from typing import Any, Callable, Dict, Generator, Iterator, List, Match, NamedTuple, Optional, Set, Tuple
 
@@ -272,8 +273,8 @@ class GitContext:
                 git_dir_parts = Path(git_dir).parts
                 if len(git_dir_parts) >= 3 and git_dir_parts[-3] == '.git' and git_dir_parts[-2] == 'worktrees':
                     self._git_dir = os.path.join(*git_dir_parts[:-2])
-                    debug('__get_git_dir', f'git dir pointing to {git_dir} - we are in a worktree; '
-                                           f'using {self._git_dir} as the effective git dir instead')
+                    debug(f"{inspect.stack()[0].function}()", f'git dir pointing to {git_dir} - we are in a worktree; '
+                                                              f'using {self._git_dir} as the effective git dir instead')
                 else:
                     self._git_dir = git_dir
             except MacheteException:

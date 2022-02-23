@@ -1,4 +1,5 @@
 import datetime
+import inspect
 import io
 import itertools
 import os
@@ -1396,7 +1397,7 @@ class MacheteClient:
                     f'Multiple non-origin remotes correspond to GitHub in this repository: '
                     f'{", ".join(org_name_for_github_remote.keys())}, aborting')
         current_user: Optional[str] = git_machete.github.derive_current_user_login()
-        debug('sync_annotations_to_github_prs()',
+        debug(f"{inspect.stack()[0].function}()",
               'Current GitHub user is ' + (current_user or '<none>'))
         pr: GitHubPullRequest
         all_prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
@@ -1405,7 +1406,7 @@ class MacheteClient:
     def __sync_annotations_to_definition_file(self, prs: List[GitHubPullRequest], current_user: Optional[str] = None, verbose: bool = True) -> None:
         for pr in prs:
             if LocalBranchShortName.of(pr.head) in self.managed_branches:
-                debug('sync_annotations_to_definition_file()',
+                debug(f"{inspect.stack()[0].function}()",
                       f'{pr} corresponds to a managed branch')
                 anno: str = f'PR #{pr.number}'
                 if pr.user != current_user:
@@ -1420,7 +1421,7 @@ class MacheteClient:
                         print(fmt(f'Annotating `{pr.head}` as `{anno}`'))
                     self.__annotations[LocalBranchShortName.of(pr.head)] = anno
             else:
-                debug('sync_annotations_to_definition_file()',
+                debug(f"{inspect.stack()[0].function}()",
                       f'{pr} does NOT correspond to a managed branch')
         self.save_definition_file()
 
@@ -1885,7 +1886,7 @@ class MacheteClient:
                                                                             by=opened_by,
                                                                             user=current_user)
 
-        debug('checkout_github_pr()', f'organization is {org}, repository is {repo}')
+        debug(f"{inspect.stack()[0].function}()", f'organization is {org}, repository is {repo}')
         if verbose:
             print(f"Fetching {remote}...")
         self.__git.fetch_remote(remote)
@@ -1917,7 +1918,7 @@ class MacheteClient:
                 self.flush_caches()
             if pr.state == 'closed':
                 warn(f'Pull request #{pr.number} is already closed.')
-            debug('checkout_github_pr()', f'found {pr}')
+            debug(f"{inspect.stack()[0].function}()", f'found {pr}')
 
             path: List[LocalBranchShortName] = self.__get_path_from_pr_chain(pr, all_open_prs)
             reversed_path: List[LocalBranchShortName] = path[::-1]  # need to add from root downwards
@@ -1941,7 +1942,7 @@ class MacheteClient:
                         print(fmt(f"Pull request `#{pr.number}` checked out at local branch `{pr.head}`"))
                         checked_out_prs.append(pr)
 
-        debug('checkout_github_pr()',
+        debug(f"{inspect.stack()[0].function}()",
               'Current GitHub user is ' + (current_user or '<none>'))
         self.__sync_annotations_to_definition_file(all_open_prs, current_user, verbose=verbose)
         if pr and len(valid_prs) == 1:
