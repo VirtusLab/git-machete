@@ -1901,9 +1901,7 @@ class MacheteClient:
                         if verbose:
                             print(f"Fetching {remote_to_fetch}...")
                         self.__git.fetch_remote(remote_to_fetch)
-                    x = self.__git.get_remote_branches()
                     if '/'.join([remote_to_fetch, pr.head]) not in self.__git.get_remote_branches():
-                        c = '/'.join([remote_to_fetch, pr.head])
                         raise MacheteException(f"Could not check out PR #{pr.number} because its head branch `{pr.head}` is already deleted from `{remote_to_fetch}`.")
             else:
                 warn(f'Pull request #{pr.number} comes from fork and its repository is already deleted. No remote tracking data will be set up for `{pr.head}` branch.')
