@@ -1,4 +1,4 @@
-
+import inspect
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, TypeVar
 
 import os
@@ -87,7 +87,7 @@ def find_executable(executable: str) -> Optional[str]:
     for p in paths:
         f = os.path.join(p, executable)
         if os.path.isfile(f) and is_executable(f):
-            debug(f"find_executable({executable})", f"found {executable} at {f}")
+            debug(f"{inspect.stack()[0].function}({executable})", f"found {executable} at {f}")
             return f
     return None
 
@@ -195,7 +195,7 @@ def chdir_upwards_until_current_directory_exists() -> None:
                 # it doesn't propagate to the parent process (which is typically a shell).
                 os.chdir(os.path.pardir)
                 current_directory = get_current_directory_or_none()
-            debug("chdir_upwards_until_current_directory_exists()",
+            debug(f"{inspect.stack()[0].function}()",
                   f"current directory did not exist, chdired up into {current_directory}")
         current_directory_confirmed_to_exist = True
 

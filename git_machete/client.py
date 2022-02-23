@@ -415,7 +415,7 @@ class MacheteClient:
                     "cycle in the resulting graph or the candidate is a stale branch"))
             if upstream:
                 debug(
-                    "discover_tree()",
+                    f"{inspect.stack()[0].function}()",
                     (f"inferred upstream of {branch} is {upstream}, attaching "
                      f"{branch} as a child of {upstream}\n")
                 )
@@ -427,7 +427,7 @@ class MacheteClient:
                     self.__down_branches[upstream] = [branch]
             else:
                 debug(
-                    "discover_tree()",
+                    f"{inspect.stack()[0].function}()",
                     f"inferred no upstream for {branch}, attaching {branch} as a new root\n")
                 self.__roots += [branch]
 
@@ -442,7 +442,7 @@ class MacheteClient:
                         opt_no_detect_squash_merges=False
                 ):
                     debug(
-                        "discover_tree()",
+                        f"{inspect.stack()[0].function}()",
                         (f"inferred upstream of {branch} is {upstream}, but "
                          f"{branch} is merged to {upstream}; skipping {branch}"
                          f" from discovered tree\n")
@@ -1001,14 +1001,14 @@ class MacheteClient:
 
             hook_output = ""
             if hook_executable:
-                debug("status()", f"running machete-status-branch hook ({hook_path}) for branch {branch}")
+                debug(f"{inspect.stack()[0].function}()", f"running machete-status-branch hook ({hook_path}) for branch {branch}")
                 hook_env = dict(os.environ, ASCII_ONLY=str(utils.ascii_only).lower())
                 status_code, stdout, stderr = utils.popen_cmd(hook_path, branch, cwd=self.__git.get_root_dir(), env=hook_env)
                 if status_code == 0:
                     if not stdout.isspace():
                         hook_output = f"  {stdout.rstrip()}"
                 else:
-                    debug("status()",
+                    debug(f"{inspect.stack()[0].function}()",
                           f"machete-status-branch hook ({hook_path}) for branch {branch} returned {status_code}; stdout: '{stdout}'; stderr: '{stderr}'")
 
             out.write(current + anno + sync_status + hook_output + "\n")
@@ -1087,7 +1087,7 @@ class MacheteClient:
         if self.__is_merged_to_upstream(
                 branch, opt_no_detect_squash_merges=opt_no_detect_squash_merges):
             fp_sha = self.__git.get_commit_sha_by_revision(branch)
-            debug(f"fork_point_and_containing_branch_pairs({branch})",
+            debug(f"{inspect.stack()[0].function}({branch})",
                   f"{branch} is merged to {upstream}; skipping inference, using tip of {branch} ({fp_sha}) as fork point")
             return fp_sha, []
 
@@ -1100,11 +1100,11 @@ class MacheteClient:
                     # is NOT a descendant of upstream. In this case it's more
                     # reasonable to assume that upstream (and not overridden_fp_sha)
                     # is the fork point.
-                    debug(f"fork_point_and_containing_branch_pairs({branch})",
+                    debug(f"{inspect.stack()[0].function}({branch})",
                           f"{branch} is descendant of its upstream {upstream}, but overridden fork point commit {overridden_fp_sha} is NOT a descendant of {upstream}; falling back to {upstream} as fork point")
                     return self.__git.get_commit_sha_by_revision(upstream), []
                 else:
-                    debug(f"fork_point_and_containing_branch_pairs({branch})",
+                    debug(f"{inspect.stack()[0].function}({branch})",
                           f"fork point of {branch} is overridden to {overridden_fp_sha}; skipping inference")
                     return overridden_fp_sha, []
 
@@ -1112,13 +1112,13 @@ class MacheteClient:
             fp_sha, containing_branch_pairs = next(self.__match_log_to_filtered_reflogs(branch))
         except StopIteration:
             if upstream and self.__git.is_ancestor_or_equal(upstream.full_name(), branch.full_name()):
-                debug(f"fork_point_and_containing_branch_pairs({branch})",
+                debug(f"{inspect.stack()[0].function}({branch})",
                       f"cannot find fork point, but {branch} is descendant of its upstream {upstream}; falling back to {upstream} as fork point")
                 return self.__git.get_commit_sha_by_revision(upstream), []
             else:
                 raise MacheteException(f"Cannot find fork point for branch `{branch}`")
         else:
-            debug("fork_point_and_containing_branch_pairs({branch})",
+            debug(f"{inspect.stack()[0].function}({branch})",
                   f"commit {fp_sha} is the most recent point in history of {branch} to occur on "
                   "filtered reflog of any other branch or its remote counterpart "
                   f"(specifically: {' and '.join(map(utils.get_second, containing_branch_pairs))})")
@@ -1129,11 +1129,11 @@ class MacheteClient:
                 # of this branch, thus is_ancestor(upstream, branch) should imply
                 # is_ancestor(upstream, FP(branch)), but it's still possible in
                 # case reflog of upstream is incomplete for whatever reason.
-                debug(f"fork_point_and_containing_branch_pairs({branch})",
+                debug(f"{inspect.stack()[0].function}({branch})",
                       f"{upstream} is descendant of its upstream {branch}, but inferred fork point commit {fp_sha} is NOT a descendant of {upstream}; falling back to {upstream} as fork point")
                 return self.__git.get_commit_sha_by_revision(upstream), []
             else:
-                debug(f"fork_point_and_containing_branch_pairs({branch})",
+                debug(f"{inspect.stack()[0].function}({branch})",
                       f"choosing commit {fp_sha} as fork point")
                 return fp_sha, containing_branch_pairs
 
@@ -1271,7 +1271,7 @@ class MacheteClient:
                                   new_downstreams: List[LocalBranchShortName]) -> None:
         hook_path = self.__git.get_hook_path("machete-post-slide-out")
         if self.__git.check_hook_executable(hook_path):
-            debug(f"run_post_slide_out_hook({new_upstream}, {slid_out_branch}, {new_downstreams})",
+            debug(f"{inspect.stack()[0].function}({new_upstream}, {slid_out_branch}, {new_downstreams})",
                   f"running machete-post-slide-out hook ({hook_path})")
             new_downstreams_strings: List[str] = [str(db) for db in new_downstreams]
             exit_code = utils.run_cmd(hook_path, new_upstream, slid_out_branch, *new_downstreams_strings,
@@ -1345,7 +1345,7 @@ class MacheteClient:
                            )
             if is_excluded:
                 debug(
-                    (f"filtered_reflog({branch.full_name()}) -> is_excluded_reflog_subject({sha_},"
+                    (f"{inspect.stack()[1].function}({branch.full_name()}) -> {inspect.stack()[0].function}({sha_},"
                      f" <<<{gs_}>>>)"),
                     "skipping reflog entry")
             return is_excluded
@@ -1357,13 +1357,13 @@ class MacheteClient:
         earliest_sha, earliest_gs = branch_reflog[-1]  # Note that the reflog is returned from latest to earliest entries.
         shas_to_exclude = set()
         if earliest_gs.startswith("branch: Created from"):
-            debug(f"filtered_reflog({branch.full_name()})",
+            debug(f"{inspect.stack()[0].function}({branch.full_name()})",
                   f"skipping any reflog entry with the hash equal to the hash of the earliest (branch creation) entry: {earliest_sha}")
             shas_to_exclude.add(earliest_sha)
 
         result = [sha for (sha, gs) in branch_reflog if
                   sha not in shas_to_exclude and not is_excluded_reflog_subject(sha, gs)]
-        debug(f"filtered_reflog({branch.full_name()})",
+        debug(f"{inspect.stack()[0].function}({branch.full_name()})",
               "computed filtered reflog (= reflog without branch creation "
               "and branch reset events irrelevant for fork point/upstream inference): %s\n" % (", ".join(result) or "<empty>"))
         return result
@@ -1485,7 +1485,7 @@ class MacheteClient:
                     joined_branch_pairs = ", ".join(map(tupled(branch_pair_to_str), branch_pairs_))
                     yield dim(f"{sha_} => {joined_branch_pairs}")
 
-            debug(f"match_log_to_filtered_reflogs({branch})",
+            debug(f"{inspect.stack()[0].function}({branch})",
                   "branches containing the given SHA in their filtered reflog: \n%s\n" % "\n".join(log_result()))
 
         branch_full_hash: FullCommitHash = self.__git.get_commit_sha_by_revision(branch)
@@ -1502,31 +1502,31 @@ class MacheteClient:
 
                 containing_branch_pairs = sorted(filter(tupled(lb_is_not_b), branch_pairs), key=get_second)
                 if containing_branch_pairs:
-                    debug(f"match_log_to_filtered_reflogs({branch})",
+                    debug(f"{inspect.stack()[0].function}({branch})",
                           f"commit {sha} found in filtered reflog of {' and '.join(map(get_second, branch_pairs))}")
                     yield sha, containing_branch_pairs
                 else:
-                    debug(f"match_log_to_filtered_reflogs({branch})",
+                    debug(f"{inspect.stack()[0].function}({branch})",
                           f"commit {sha} found only in filtered reflog of {' and '.join(map(get_second, branch_pairs))}; ignoring")
             else:
-                debug(f"match_log_to_filtered_reflogs({branch})",
+                debug(f"{inspect.stack()[0].function}({branch})",
                       f"commit {sha} not found in any filtered reflog")
 
     def __infer_upstream(self, branch: LocalBranchShortName, condition: Callable[[LocalBranchShortName], bool] = lambda upstream: True, reject_reason_message: str = "") -> Optional[LocalBranchShortName]:
         for sha, containing_branch_pairs in self.__match_log_to_filtered_reflogs(branch):
-            debug(f"infer_upstream({branch})",
+            debug(f"{inspect.stack()[0].function}({branch})",
                   f"commit {sha} found in filtered reflog of {' and '.join(map(get_second, containing_branch_pairs))}")
 
             for candidate, original_matched_branch in containing_branch_pairs:
                 if candidate != original_matched_branch:
-                    debug(f"infer_upstream({branch})",
+                    debug(f"{inspect.stack()[0].function}({branch})",
                           f"upstream candidate is {candidate}, which is the local counterpart of {original_matched_branch}")
 
                 if condition(candidate):
-                    debug(f"infer_upstream({branch})", f"upstream candidate {candidate} accepted")
+                    debug(f"{inspect.stack()[0].function}({branch})", f"upstream candidate {candidate} accepted")
                     return candidate
                 else:
-                    debug(f"infer_upstream({branch})",
+                    debug(f"{inspect.stack()[0].function}({branch})",
                           f"upstream candidate {candidate} rejected ({reject_reason_message})")
         return None
 
@@ -1594,7 +1594,7 @@ class MacheteClient:
                 "Consider running:\n",
                 f"  `git machete fork-point --unset-override {branch}`\n"))
             return None
-        debug(f"get_overridden_fork_point({branch})",
+        debug(f"{inspect.stack()[0].function}({branch})",
               f"since branch {branch} is descendant of while_descendant_of={while_descendant_of}, fork point of {branch} is overridden to {to}")
         return to
 
@@ -2025,12 +2025,12 @@ class MacheteClient:
         repo: str
         _, (org, repo) = self.__derive_remote_and_github_org_and_repo()
 
-        debug(f'retarget_github_pr({head})', f'organization is {org}, repository is {repo}')
+        debug(f"{inspect.stack()[0].function}({head})", f'organization is {org}, repository is {repo}')
 
         pr: Optional[GitHubPullRequest] = derive_pull_request_by_head(org, repo, head)
         if not pr:
             raise MacheteException(f'No PR is opened in `{org}/{repo}` for branch `{head}`')
-        debug(f'retarget_github_pr({head})', f'found {pr}')
+        debug(f"{inspect.stack()[0].function}({head})", f'found {pr}')
 
         new_base: Optional[LocalBranchShortName] = self.up_branch.get(LocalBranchShortName.of(head))
         if not new_base:
@@ -2097,8 +2097,8 @@ class MacheteClient:
                 opt_yes=False)
 
         current_user: Optional[str] = git_machete.github.derive_current_user_login()
-        debug(f'create_github_pr({head})', f'organization is {org}, repository is {repo}')
-        debug(f'create_github_pr({head})', 'current GitHub user is ' + (current_user or '<none>'))
+        debug(f"{inspect.stack()[0].function}({head})", f'organization is {org}, repository is {repo}')
+        debug(f"{inspect.stack()[0].function}({head})", 'current GitHub user is ' + (current_user or '<none>'))
 
         fork_point = self.fork_point(head, use_overrides=True, opt_no_detect_squash_merges=False)
         if not fork_point:

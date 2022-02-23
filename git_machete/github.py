@@ -1,6 +1,7 @@
 
 # Deliberately NOT using much more convenient `requests` to avoid external dependencies
 import http
+import inspect
 import json
 import os
 import re
@@ -151,7 +152,7 @@ def __fire_github_api_request(method: str, path: str, token: Optional[str], requ
     url = host + path
     json_body: Optional[str] = json.dumps(request_body) if request_body else None
     http_request = urllib.request.Request(url, headers=headers, data=json_body.encode() if json_body else None, method=method.upper())
-    debug(f'__fire_github_api_request({method}, {path}, ..., ...)',
+    debug(f"{inspect.stack()[0].function}({method}, {path}, ..., ...)",
           f'firing a {method} request to {url} with {"a" if token else "no"} bearer token and request body {json_body or "<none>"}')
 
     try:
