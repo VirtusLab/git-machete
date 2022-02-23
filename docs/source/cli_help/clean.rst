@@ -11,6 +11,7 @@ clean
 If invoked without any flag, deletes untracked and unmanaged branches.
 
 If invoked with ``-c`` or ``--checkout-my-github-prs``, also checks out your open PRs into local branches.
+Equivalent of ``git machete github sync``
 
 .. include:: github_api_access.rst
 

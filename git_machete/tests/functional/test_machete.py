@@ -54,6 +54,10 @@ def mock_fetch_ref(cls: Any, remote: str, ref: str) -> None:
     git.checkout(branch)
 
 
+def fake_get_github_token() -> Optional[str]:
+    return 'token'
+
+
 def mock_run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
     completed_process: subprocess.CompletedProcess[bytes] = subprocess.run(
         [cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
@@ -2611,6 +2615,58 @@ class MacheteTester(unittest.TestCase):
             msg="Verify that 'git machete github checkout prs' performs 'git checkout' to "
                 "the head branch of given pull request."
         )
+
+    git_api_state_for_test_github_sync = MockGithubAPIState([
+        {'head': {'ref': 'snickers', 'repo': mock_repository_info}, 'user': {'login': 'other_user'},
+         'base': {'ref': 'master'}, 'number': '7', 'html_url': 'www.github.com', 'state': 'open'}
+    ])
+
+    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)
+    @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
+    @mock.patch('git_machete.github.__get_github_token', fake_get_github_token)
+    @mock.patch('urllib.request.urlopen', MockContextManager)
+    @mock.patch('urllib.request.Request', git_api_state_for_test_github_sync.new_request())
+    def test_github_sync(self) -> None:
+        (
+            self.repo_sandbox
+                .new_branch('master')
+                .commit()
+                .push()
+                .new_branch('bar')
+                .commit()
+                .new_branch('bar2')
+                .commit()
+                .push()
+                .check_out("master")
+                .new_branch('foo')
+                .commit()
+                .new_branch('foo2')
+                .commit()
+                .push()
+                .check_out("master")
+                .new_branch('moo')
+                .commit()
+                .new_branch('moo2')
+                .commit()
+                .check_out("master")
+                .new_branch('snickers')
+                .push()
+        )
+        self.launch_command('discover', '-y')
+        self.launch_command('github', 'sync', '-y')
+
+        expected_status_output = (
+            """
+            master
+            |
+            o-snickers *  PR #7
+            |
+            o-bar2 (diverged from origin)
+            |
+            o-foo2 (diverged from origin)
+            """
+        )
+        self.assert_command(['status'], expected_status_output)
 
     def test_squash_with_valid_fork_point(self) -> None:
         (

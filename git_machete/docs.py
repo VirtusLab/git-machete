@@ -148,7 +148,8 @@ long_docs: Dict[str, str] = {
 
         If invoked without any flag, deletes untracked and unmanaged branches.
 
-        If invoked with ``-c`` or ``--checkout-my-github-prs``, checks out your open PRs into local branches.
+        If invoked with ``-c`` or ``--checkout-my-github-prs``, also checks out your open PRs into local branches. 
+        Equivalent of ``git machete github sync``
 
         To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR, even in case of public repositories),
         a GitHub API token with ``repo`` scope is required, see https://github.com/settings/tokens. This will be resolved from the first of:
@@ -378,6 +379,7 @@ long_docs: Dict[str, str] = {
         <b>`sync`:</b>
 
           Synchronizes with the remote repository: removes untracked and unmanaged branches and also checks out your open PRs.
+          Equivalent of ``git machete clean --checkout-my-github-prs``
     """,
     "go": """
         <b>Usage: git machete g[o] <direction></b>

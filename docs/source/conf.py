@@ -46,7 +46,8 @@ exclude_patterns = [
     'cli.rst',
     'completion.rst',
     'description.rst',
-    'learning_materials.rst'
+    'learning_materials.rst',
+    'github_api_access.rst'
 ]
 
 

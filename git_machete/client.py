@@ -490,7 +490,7 @@ class MacheteClient:
                   opt_merge: bool,
                   opt_no_interactive_rebase: bool,
                   opt_no_edit_merge: bool,
-                  delete_git_branches: bool = False
+                  opt_delete: bool = False
                   ) -> None:
         # Verify that all branches exist, are managed, and have an upstream.
         for branch in branches_to_slide_out:
@@ -528,23 +528,23 @@ class MacheteClient:
             if self.up_branch[bd] != bu:
                 raise MacheteException(f"`{bu}` is not upstream of `{bd}`, cannot slide out")
 
-        self._modify_tree(branches_to_slide_out=branches_to_slide_out,
-                          opt_yes=opt_yes,
-                          opt_merge=opt_merge,
-                          opt_no_interactive_rebase=opt_no_interactive_rebase,
-                          opt_no_edit_merge=opt_no_edit_merge,
-                          opt_down_fork_point=opt_down_fork_point,
-                          delete_git_branches=delete_git_branches)
+        self._slide_out_branch(branches_to_slide_out=branches_to_slide_out,
+                               opt_yes=opt_yes,
+                               opt_merge=opt_merge,
+                               opt_no_interactive_rebase=opt_no_interactive_rebase,
+                               opt_no_edit_merge=opt_no_edit_merge,
+                               opt_down_fork_point=opt_down_fork_point,
+                               opt_delete=opt_delete)
 
-    def _modify_tree(self,
-                     branches_to_slide_out: List[LocalBranchShortName],
-                     opt_yes: bool,
-                     opt_merge: bool,
-                     opt_no_interactive_rebase: bool,
-                     opt_no_edit_merge: bool,
-                     opt_down_fork_point: Optional[AnyRevision] = None,
-                     delete_git_branches: Optional[bool] = False
-                     ) -> None:
+    def _slide_out_branch(self,
+                          branches_to_slide_out: List[LocalBranchShortName],
+                          opt_yes: bool,
+                          opt_merge: bool,
+                          opt_no_interactive_rebase: bool,
+                          opt_no_edit_merge: bool,
+                          opt_down_fork_point: Optional[AnyRevision] = None,
+                          opt_delete: Optional[bool] = False
+                          ) -> None:
         # Get new branches
         new_upstream = self.up_branch[branches_to_slide_out[0]]
         new_downstreams = self.__down_branches.get(branches_to_slide_out[-1], [])
@@ -583,7 +583,7 @@ class MacheteClient:
                     new_downstream,
                     opt_no_interactive_rebase)
 
-        if delete_git_branches:
+        if opt_delete:
             self._delete_branches(branches_to_delete=branches_to_slide_out, opt_yes=opt_yes)
 
     def advance(self, *, branch: LocalBranchShortName, opt_yes: bool) -> None:
@@ -1901,7 +1901,9 @@ class MacheteClient:
                         if verbose:
                             print(f"Fetching {remote_to_fetch}...")
                         self.__git.fetch_remote(remote_to_fetch)
+                    x = self.__git.get_remote_branches()
                     if '/'.join([remote_to_fetch, pr.head]) not in self.__git.get_remote_branches():
+                        c = '/'.join([remote_to_fetch, pr.head])
                         raise MacheteException(f"Could not check out PR #{pr.number} because its head branch `{pr.head}` is already deleted from `{remote_to_fetch}`.")
             else:
                 warn(f'Pull request #{pr.number} comes from fork and its repository is already deleted. No remote tracking data will be set up for `{pr.head}` branch.')
@@ -2363,9 +2365,9 @@ class MacheteClient:
         for managed_branch in self.managed_branches.copy():
             status, _ = self.__git.get_strict_remote_sync_status(managed_branch)
             if status == SyncToRemoteStatuses.UNTRACKED:
-                self._modify_tree(branches_to_slide_out=[managed_branch],
-                                  opt_yes=opt_yes,
-                                  opt_merge=opt_merge,
-                                  opt_no_interactive_rebase=opt_no_interactive_rebase,
-                                  opt_no_edit_merge=opt_no_edit_merge,
-                                  delete_git_branches=True)
+                self._slide_out_branch(branches_to_slide_out=[managed_branch],
+                                       opt_yes=opt_yes,
+                                       opt_merge=opt_merge,
+                                       opt_no_interactive_rebase=opt_no_interactive_rebase,
+                                       opt_no_edit_merge=opt_no_edit_merge,
+                                       opt_delete=True)

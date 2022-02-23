@@ -231,6 +231,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
     github_parser.add_argument('--by')
     github_parser.add_argument('--draft', action='store_true')
     github_parser.add_argument('--mine', action='store_true')
+    github_parser.add_argument('-y', '--yes', action='store_true')
 
     go_parser = subparsers.add_parser(
         'go',
@@ -384,6 +385,8 @@ def update_cli_opts_using_parsed_args(
             cli_opts.opt_checked_out_since = arg
         elif opt == "color":
             cli_opts.opt_color = arg
+        elif opt == "delete":
+            cli_opts.opt_delete = True
         elif opt == "down_fork_point":
             cli_opts.opt_down_fork_point = AnyRevision.of(arg)
         elif opt == "debug":
@@ -762,7 +765,7 @@ def launch(orig_args: List[str]) -> None:
                 opt_merge=cli_opts.opt_merge,
                 opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
                 opt_no_edit_merge=cli_opts.opt_no_edit_merge,
-                delete_git_branches=parsed_cli.delete if 'delete' in parsed_cli else False)
+                opt_delete=cli_opts.opt_delete)
         elif cmd == "squash":
             machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out_flag)
             git.expect_no_operation_in_progress()
