@@ -87,7 +87,7 @@ def find_executable(executable: str) -> Optional[str]:
     for p in paths:
         f = os.path.join(p, executable)
         if os.path.isfile(f) and is_executable(f):
-            debug(f"{inspect.stack()[0].function}({executable})", f"found {executable} at {f}")
+            debug(f"found {executable} at {f}")
             return f
     return None
 
@@ -154,9 +154,15 @@ def get_pretty_choices(*choices: str) -> str:
     return f" ({', '.join(map_truthy_only(format_choice, choices))}) "
 
 
-def debug(hdr: str, msg: str) -> None:
+def debug(msg: Optional[str] = None) -> None:
     if debug_mode:
-        print(f"{bold(hdr)}: {dim(msg)}", file=sys.stderr)
+        function_name = bold(inspect.stack()[1].function)
+        args, _, _, values = inspect.getargvalues(inspect.stack()[1].frame)
+        function_args = bold(f"({', '.join([arg+'='+str(values[arg]) if arg != 'self' else 'self' for arg in args])})")
+        if msg is None:
+            print(f"{function_name}{function_args}", file=sys.stderr)
+        else:
+            print(f"{function_name}{function_args}: {dim(msg)}", file=sys.stderr)
 
 
 def run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
@@ -195,8 +201,7 @@ def chdir_upwards_until_current_directory_exists() -> None:
                 # it doesn't propagate to the parent process (which is typically a shell).
                 os.chdir(os.path.pardir)
                 current_directory = get_current_directory_or_none()
-            debug(f"{inspect.stack()[0].function}()",
-                  f"current directory did not exist, chdired up into {current_directory}")
+            debug(f"current directory did not exist, chdired up into {current_directory}")
         current_directory_confirmed_to_exist = True
 
 
