@@ -227,17 +227,17 @@ class GitContext:
         for name, fun in proposed_editor_funs:
             editor = fun()
             if not editor:
-                debug("get_default_editor()", f"'{name}' is undefined")
+                debug(f"'{name}' is undefined")
             else:
                 editor_repr = f"'{name}'{(' (' + editor + ')') if editor != name else ''}"
                 if not utils.find_executable(editor):
-                    debug("get_default_editor()", f"{editor_repr} is not available")
+                    debug(f"{editor_repr} is not available")
                     if name == "$" + git_machete_editor_var:
                         # In this specific case, when GIT_MACHETE_EDITOR is defined but doesn't point to a valid executable,
                         # it's more reasonable/less confusing to raise an error and exit without opening anything.
                         raise MacheteException(f"<b>{editor_repr}</b> is not available")
                 else:
-                    debug("get_default_editor()", f"{editor_repr} is available")
+                    debug(f"{editor_repr} is available")
                     if name != "$" + git_machete_editor_var and self.get_config_attr_or_none('advice.macheteEditorSelection') != 'false':
                         sample_alternative = 'nano' if editor.startswith('vi') else 'vi'
                         print(fmt(f"Opening <b>{editor_repr}</b>.\n",
@@ -272,8 +272,8 @@ class GitContext:
                 git_dir_parts = Path(git_dir).parts
                 if len(git_dir_parts) >= 3 and git_dir_parts[-3] == '.git' and git_dir_parts[-2] == 'worktrees':
                     self._git_dir = os.path.join(*git_dir_parts[:-2])
-                    debug('__get_git_dir', f'git dir pointing to {git_dir} - we are in a worktree; '
-                                           f'using {self._git_dir} as the effective git dir instead')
+                    debug(f'git dir pointing to {git_dir} - we are in a worktree; '
+                          f'using {self._git_dir} as the effective git dir instead')
                 else:
                     self._git_dir = git_dir
             except MacheteException:
@@ -698,10 +698,7 @@ class GitContext:
         if (earlier_commit_sha, later_commit_sha) in self.__contains_equivalent_tree_cached:
             return self.__contains_equivalent_tree_cached[earlier_commit_sha, later_commit_sha]
 
-        debug(
-            "contains_equivalent_tree",
-            f"earlier_revision={earlier_revision} later_revision={later_revision}",
-        )
+        debug()
 
         earlier_tree_sha = self.get_tree_sha_by_commit_sha(earlier_commit_sha)
 
@@ -807,7 +804,7 @@ class GitContext:
 
         hook_path = self.get_hook_path("machete-pre-rebase")
         if self.check_hook_executable(hook_path):
-            debug(f"rebase({onto}, {fork_revision}, {branch})", f"running machete-pre-rebase hook ({hook_path})")
+            debug(f"running machete-pre-rebase hook ({hook_path})")
             exit_code = utils.run_cmd(hook_path, onto, fork_revision, branch, cwd=self.get_root_dir())
             if exit_code == 0:
                 do_rebase()
