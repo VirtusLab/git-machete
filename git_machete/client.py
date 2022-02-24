@@ -2355,17 +2355,13 @@ class MacheteClient:
                 return
             raise MacheteException('Pull request creation interrupted.')
 
-    def delete_untracked(self,
-                         opt_yes: bool,
-                         opt_merge: bool,
-                         opt_no_interactive_rebase: bool,
-                         opt_no_edit_merge: bool) -> None:
+    def delete_untracked(self, opt_yes: bool) -> None:
         for managed_branch in self.managed_branches.copy():
             status, _ = self.__git.get_strict_remote_sync_status(managed_branch)
             if status == SyncToRemoteStatuses.UNTRACKED:
                 self._slide_out_branch(branches_to_slide_out=[managed_branch],
                                        opt_yes=opt_yes,
-                                       opt_merge=opt_merge,
-                                       opt_no_interactive_rebase=opt_no_interactive_rebase,
-                                       opt_no_edit_merge=opt_no_edit_merge,
+                                       opt_merge=False,
+                                       opt_no_interactive_rebase=True,
+                                       opt_no_edit_merge=False,
                                        opt_delete=True)

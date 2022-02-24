@@ -54,7 +54,7 @@ def mock_fetch_ref(cls: Any, remote: str, ref: str) -> None:
     git.checkout(branch)
 
 
-def fake_get_github_token() -> Optional[str]:
+def mock__get_github_token_fake() -> Optional[str]:
     return 'token'
 
 
@@ -2622,8 +2622,10 @@ class MacheteTester(unittest.TestCase):
     ])
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)
+    @mock.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
+    @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
-    @mock.patch('git_machete.github.__get_github_token', fake_get_github_token)
+    @mock.patch('git_machete.github.__get_github_token', mock__get_github_token_fake)
     @mock.patch('urllib.request.urlopen', MockContextManager)
     @mock.patch('urllib.request.Request', git_api_state_for_test_github_sync.new_request())
     def test_github_sync(self) -> None:
@@ -2653,7 +2655,11 @@ class MacheteTester(unittest.TestCase):
                 .push()
         )
         self.launch_command('discover', '-y')
-        self.launch_command('github', 'sync', '-y')
+        self.repo_sandbox\
+            .check_out("master")\
+            .new_branch('mars')\
+            .commit()
+        self.launch_command('github', 'sync')
 
         expected_status_output = (
             """
@@ -2667,6 +2673,11 @@ class MacheteTester(unittest.TestCase):
             """
         )
         self.assert_command(['status'], expected_status_output)
+
+        with self.assertRaises(
+                subprocess.CalledProcessError,
+                msg="Verify that 'git checkout mars' raises an error when branch mars is no longer present in git."):
+            self.repo_sandbox.check_out("mars")
 
     def test_squash_with_valid_fork_point(self) -> None:
         (
@@ -2867,6 +2878,7 @@ class MacheteTester(unittest.TestCase):
                             'Added branch `chore/remove_indentation` onto `feature`\n',
                             strip_indentation=False)
 
+    @mock.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)
     def test_clean(self) -> None:
         (
@@ -2890,8 +2902,12 @@ class MacheteTester(unittest.TestCase):
                 .new_branch('moo2')
                 .commit()
         )
-        self.launch_command('discover', '-y')
-        self.launch_command('clean', '-y')
+        self.launch_command('discover')
+        self.repo_sandbox\
+            .check_out("master")\
+            .new_branch('mars')\
+            .commit()
+        self.launch_command('clean')
 
         expected_status_output = (
             """
@@ -2903,3 +2919,8 @@ class MacheteTester(unittest.TestCase):
             """
         )
         self.assert_command(['status'], expected_status_output)
+
+        with self.assertRaises(
+                subprocess.CalledProcessError,
+                msg="Verify that 'git checkout mars' raises an error when branch mars is no longer present in git."):
+            self.repo_sandbox.check_out("mars")

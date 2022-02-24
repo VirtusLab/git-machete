@@ -231,7 +231,6 @@ def create_cli_parser() -> argparse.ArgumentParser:
     github_parser.add_argument('--by')
     github_parser.add_argument('--draft', action='store_true')
     github_parser.add_argument('--mine', action='store_true')
-    github_parser.add_argument('-y', '--yes', action='store_true')
 
     go_parser = subparsers.add_parser(
         'go',
@@ -568,10 +567,7 @@ def launch(orig_args: List[str]) -> None:
                     machete_client.print_annotation(branch)
         elif cmd == "clean":
             machete_client.read_definition_file()
-            machete_client.delete_untracked(opt_yes=cli_opts.opt_yes,
-                                            opt_merge=cli_opts.opt_merge,
-                                            opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
-                                            opt_no_edit_merge=cli_opts.opt_no_edit_merge)
+            machete_client.delete_untracked(opt_yes=cli_opts.opt_yes)
             machete_client.delete_unmanaged(opt_yes=cli_opts.opt_yes)
             if 'checkout_my_github_prs' in parsed_cli:
                 machete_client.checkout_github_prs(pr_nos=[],
@@ -666,10 +662,7 @@ def launch(orig_args: List[str]) -> None:
                 machete_client.expect_in_managed_branches(current_branch)
                 machete_client.retarget_github_pr(current_branch)
             elif github_subcommand == "sync":
-                machete_client.delete_untracked(opt_yes=cli_opts.opt_yes,
-                                                opt_merge=cli_opts.opt_merge,
-                                                opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
-                                                opt_no_edit_merge=cli_opts.opt_no_edit_merge)
+                machete_client.delete_untracked(opt_yes=cli_opts.opt_yes)
                 machete_client.delete_unmanaged(opt_yes=cli_opts.opt_yes)
                 machete_client.checkout_github_prs(pr_nos=[],
                                                    my_opened_prs=True)
