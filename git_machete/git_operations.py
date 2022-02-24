@@ -1,4 +1,3 @@
-import inspect
 from pathlib import Path
 from typing import Any, Callable, Dict, Generator, Iterator, List, Match, NamedTuple, Optional, Set, Tuple
 

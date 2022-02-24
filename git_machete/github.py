@@ -1,7 +1,6 @@
 
 # Deliberately NOT using much more convenient `requests` to avoid external dependencies
 import http
-import inspect
 import json
 import os
 import re
