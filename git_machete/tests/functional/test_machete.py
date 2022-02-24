@@ -2638,13 +2638,12 @@ class MacheteTester(unittest.TestCase):
                 .commit()
                 .new_branch('bar2')
                 .commit()
-                .push()
                 .check_out("master")
                 .new_branch('foo')
                 .commit()
+                .push()
                 .new_branch('foo2')
                 .commit()
-                .push()
                 .check_out("master")
                 .new_branch('moo')
                 .commit()
@@ -2658,18 +2657,21 @@ class MacheteTester(unittest.TestCase):
         self.repo_sandbox\
             .check_out("master")\
             .new_branch('mars')\
-            .commit()
+            .commit()\
+            .check_out("master")
         self.launch_command('github', 'sync')
 
         expected_status_output = (
             """
             master
             |
+            o-bar (untracked)
+            |
+            o-foo
+            |
+            o-moo (untracked)
+            |
             o-snickers *  PR #7
-            |
-            o-bar2 (diverged from origin)
-            |
-            o-foo2 (diverged from origin)
             """
         )
         self.assert_command(['status'], expected_status_output)
@@ -2889,13 +2891,12 @@ class MacheteTester(unittest.TestCase):
                 .commit()
                 .new_branch('bar2')
                 .commit()
-                .push()
                 .check_out("master")
                 .new_branch('foo')
                 .commit()
+                .push()
                 .new_branch('foo2')
                 .commit()
-                .push()
                 .check_out("master")
                 .new_branch('moo')
                 .commit()
@@ -2906,16 +2907,19 @@ class MacheteTester(unittest.TestCase):
         self.repo_sandbox\
             .check_out("master")\
             .new_branch('mars')\
-            .commit()
+            .commit()\
+            .check_out("master")
         self.launch_command('clean')
 
         expected_status_output = (
             """
             master *
             |
-            o-bar2 (diverged from origin)
+            o-bar (untracked)
             |
-            o-foo2 (diverged from origin)
+            o-foo
+            |
+            o-moo (untracked)
             """
         )
         self.assert_command(['status'], expected_status_output)

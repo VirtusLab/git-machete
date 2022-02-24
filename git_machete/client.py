@@ -528,23 +528,6 @@ class MacheteClient:
             if self.up_branch[bd] != bu:
                 raise MacheteException(f"`{bu}` is not upstream of `{bd}`, cannot slide out")
 
-        self._slide_out_branch(branches_to_slide_out=branches_to_slide_out,
-                               opt_yes=opt_yes,
-                               opt_merge=opt_merge,
-                               opt_no_interactive_rebase=opt_no_interactive_rebase,
-                               opt_no_edit_merge=opt_no_edit_merge,
-                               opt_down_fork_point=opt_down_fork_point,
-                               opt_delete=opt_delete)
-
-    def _slide_out_branch(self,
-                          branches_to_slide_out: List[LocalBranchShortName],
-                          opt_yes: bool,
-                          opt_merge: bool,
-                          opt_no_interactive_rebase: bool,
-                          opt_no_edit_merge: bool,
-                          opt_down_fork_point: Optional[AnyRevision] = None,
-                          opt_delete: Optional[bool] = False
-                          ) -> None:
         # Get new branches
         new_upstream = self.up_branch[branches_to_slide_out[0]]
         new_downstreams = self.__down_branches.get(branches_to_slide_out[-1], [])
@@ -2356,12 +2339,14 @@ class MacheteClient:
             raise MacheteException('Pull request creation interrupted.')
 
     def delete_untracked(self, opt_yes: bool) -> None:
+        branches_to_delete: List[LocalBranchShortName] = []
         for managed_branch in self.managed_branches.copy():
             status, _ = self.__git.get_strict_remote_sync_status(managed_branch)
             if status == SyncToRemoteStatuses.UNTRACKED:
-                self._slide_out_branch(branches_to_slide_out=[managed_branch],
-                                       opt_yes=opt_yes,
-                                       opt_merge=False,
-                                       opt_no_interactive_rebase=True,
-                                       opt_no_edit_merge=False,
-                                       opt_delete=True)
+                if managed_branch not in self.__down_branches:
+                    branches_to_delete.append(managed_branch)
+                    self.managed_branches.remove(managed_branch)
+                    self.up_branch[managed_branch] = None
+
+        self._delete_branches(branches_to_delete=branches_to_delete, opt_yes=opt_yes)
+        self.save_definition_file()
