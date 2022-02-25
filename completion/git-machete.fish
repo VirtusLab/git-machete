@@ -41,7 +41,7 @@ complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand
 complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand_from anno; and not __fish_seen_subcommand_from --sync-github-prs -H" -f -l sync-github-prs -s H                                  -d 'Annotate with GitHub PR numbers and authors where applicable'
 
 # git machete clean
-complete -c git -n "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands"                                                     -f -a clean                          -d 'Synchronize with the remote repository: delete untracked and unmanaged branches'
+complete -c git -n "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands"                                                     -f -a clean                          -d 'Synchronize with the remote repository: delete untracked and unmanaged branches with no downstream branch'
 complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand_from clean; and not __fish_seen_subcommand_from --checkout-my-github-prs -c"   -f -l checkout-my-github-prs -s c    -d 'Checkout open PRs for the current user associated with the Github token'
 complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand_from clean; and not __fish_seen_subcommand_from --yes -y"                      -f -l yes -s y                       -d 'Don\'t ask for confirmation'
 
@@ -90,7 +90,7 @@ complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand
 complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand_from github; and not __fish_seen_subcommand_from anno-prs checkout-prs create-pr retarget-pr sync"        -f -a create-pr    -d 'Creates a PR for the current branch, using the upstream (parent) branch as the PR base'
 complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand_from github; and __fish_seen_subcommand_from create-pr; and not __fish_seen_subcommand_from --draft" -f -l draft        -d 'Creates the new PR as a draft'
 complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand_from github; and not __fish_seen_subcommand_from anno-prs checkout-prs create-pr retarget-pr sync"        -f -a retarget-pr  -d 'Sets the base of the current branch\'s PR to upstream (parent) branch, as seen by git machete (see git machete show up)'
-complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand_from github; and not __fish_seen_subcommand_from anno-prs checkout-prs create-pr retarget-pr sync"        -f -a sync  -d 'Synchronize with the remote repository: delete untracked and unmanaged branches and checkout open PRs for the current user associated with the Github token'
+complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand_from github; and not __fish_seen_subcommand_from anno-prs checkout-prs create-pr retarget-pr sync"        -f -a sync  -d 'Synchronize with the remote repository: delete untracked and unmanaged branches with no downstream branch and also checkout open PRs for the current user associated with the Github token'
 
 # git machete go
 complete -c git -n "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands" -f -a go -d 'Check out the branch relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument'
