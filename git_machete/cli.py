@@ -663,7 +663,7 @@ def launch(orig_args: List[str]) -> None:
                 machete_client.retarget_github_pr(current_branch)
             elif github_subcommand == "sync":
                 machete_client.delete_untracked(opt_yes=cli_opts.opt_yes)
-                machete_client.delete_unmanaged(opt_yes=cli_opts.opt_yes)
+                machete_client.delete_unmanaged(opt_yes=False)
                 machete_client.checkout_github_prs(pr_nos=[],
                                                    my_opened_prs=True)
         elif cmd == "is-managed":
