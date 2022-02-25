@@ -754,7 +754,6 @@ def launch(orig_args: List[str]) -> None:
             machete_client.slide_out(
                 branches_to_slide_out=list(map(LocalBranchShortName.of, branches)),
                 opt_down_fork_point=cli_opts.opt_down_fork_point,
-                opt_yes=cli_opts.opt_yes,
                 opt_merge=cli_opts.opt_merge,
                 opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
                 opt_no_edit_merge=cli_opts.opt_no_edit_merge,

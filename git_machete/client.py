@@ -486,7 +486,6 @@ class MacheteClient:
                   *,
                   branches_to_slide_out: List[LocalBranchShortName],
                   opt_down_fork_point: Optional[AnyRevision],
-                  opt_yes: bool,
                   opt_merge: bool,
                   opt_no_interactive_rebase: bool,
                   opt_no_edit_merge: bool,
@@ -567,7 +566,7 @@ class MacheteClient:
                     opt_no_interactive_rebase)
 
         if opt_delete:
-            self._delete_branches(branches_to_delete=branches_to_slide_out, opt_yes=opt_yes)
+            self._delete_branches(branches_to_delete=branches_to_slide_out, opt_yes=False)
 
     def advance(self, *, branch: LocalBranchShortName, opt_yes: bool) -> None:
         if not self.__down_branches.get(branch):
