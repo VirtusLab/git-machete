@@ -647,6 +647,13 @@ class GitContext:
             raise MacheteException("Not currently on any branch")
         return result
 
+    def get_head(self) -> AnyRevision:
+        try:
+            raw = self._popen_git("show-ref", "--hash", "--quiet", "HEAD").strip()
+            return AnyRevision.of(raw)
+        except MacheteException:
+            return None
+
     def __get_merge_base(self, sha1: FullCommitHash, sha2: FullCommitHash) -> FullCommitHash:
         if sha1 > sha2:
             sha1, sha2 = sha2, sha1
@@ -737,7 +744,7 @@ class GitContext:
                         self._popen_git("for-each-ref", "--format=%(refname)", "--merged", "HEAD", "refs/heads"))))
         else:
             return list(
-                filter(lambda branch: self.is_ancestor_or_equal(branch, self.get_current_branch_or_none()),
+                filter(lambda branch: self.is_ancestor_or_equal(branch, self.get_commit_sha_by_revision(AnyRevision.of('HEAD'))),
                        map(lambda branch: LocalBranchFullName.of(branch).to_short_name(),
                            utils.get_non_empty_lines(
                                self._popen_git("for-each-ref", "--format=%(refname)", "refs/heads")))))
