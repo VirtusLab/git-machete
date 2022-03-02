@@ -616,7 +616,7 @@ def launch(orig_args: List[str]) -> None:
                 git.checkout(dest)
         elif cmd == "github":
             github_subcommand = parsed_cli.subcommand
-            machete_client.read_definition_file()
+            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out(cmd))
 
             if 'draft' in parsed_cli and github_subcommand != 'create-pr':
                 raise MacheteException("'--draft' option is only valid with 'create-pr' subcommand.")
@@ -695,7 +695,7 @@ def launch(orig_args: List[str]) -> None:
             branch = get_branch_arg_or_current_branch(cli_opts, git)
             machete_client.log(branch)
         elif cmd == "reapply":
-            machete_client.read_definition_file()
+            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out(cmd))
             git.expect_no_operation_in_progress()
             current_branch = git.get_current_branch()
             if "fork_point" in parsed_cli:
@@ -717,7 +717,8 @@ def launch(orig_args: List[str]) -> None:
                         '`show current` with a <branch> argument does not make sense')
                 print(branch)
             else:
-                machete_client.read_definition_file(verify_branches=False)
+                machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out(cmd),
+                                                    verify_branches=False)
                 print(
                     '\n'.join(machete_client.parse_direction(
                         direction,
