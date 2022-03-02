@@ -82,13 +82,12 @@ class MacheteClient:
             f"machete discover` or `git machete edit`, or edit"
             f" {self._definition_file_path} manually.")
 
-    def read_definition_file(self, verify_branches: bool = True, cmd: str = None) -> None:
+    def read_definition_file(self, perform_interactive_slide_out: bool, verify_branches: bool = True) -> None:
         with open(self._definition_file_path) as file:
             lines: List[str] = [line.rstrip() for line in file.readlines()]
 
         at_depth = {}
         last_depth = -1
-        high_lvl_cmds = {'traverse', 'status', 'discover'}
         hint = "Edit the definition file manually with `git machete edit`"
 
         invalid_branches: List[LocalBranchShortName] = []
@@ -145,7 +144,7 @@ class MacheteClient:
         if not invalid_branches:
             return
 
-        if cmd in high_lvl_cmds:
+        if perform_interactive_slide_out:
             if len(invalid_branches) == 1:
                 ans: str = self.ask_if(
                     f"Skipping `{invalid_branches[0]}` " +
@@ -158,6 +157,8 @@ class MacheteClient:
                     " which are not local branches (perhaps they have been deleted?).\n"
                     "Slide them out from the definition file?" + get_pretty_choices("y", "e[dit]", "N"),
                     opt_yes_msg=None, opt_yes=False)
+        else:
+            ans = 'y'
 
         def recursive_slide_out_invalid_branches(branch_: LocalBranchShortName) -> List[LocalBranchShortName]:
             new_down_branches = flat_map(
