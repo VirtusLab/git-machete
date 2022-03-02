@@ -48,7 +48,7 @@ Note: This command doesn't delete any branches from git, just removes them from 
 
 -d, --down-fork-point=<down-fork-point-commit>    If updating by rebase, specifies the alternative fork point for downstream branches for the operation. ``git machete fork-point`` overrides for downstream branches are recommended over use of this option. See also doc for ``--fork-point`` option in ``git machete help reapply`` and ``git machete help update``. Not allowed if updating by merge.
 
---delete                                          Delete the branches.
+--delete                                          Delete the slid-out branches.
 
 -M, --merge                                       Update the downstream branch by merge rather than by rebase.
 

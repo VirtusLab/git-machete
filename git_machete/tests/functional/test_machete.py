@@ -54,10 +54,6 @@ def mock_fetch_ref(cls: Any, remote: str, ref: str) -> None:
     git.checkout(branch)
 
 
-def mock__get_github_token_fake() -> Optional[str]:
-    return 'token'
-
-
 def mock_run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
     completed_process: subprocess.CompletedProcess[bytes] = subprocess.run(
         [cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
@@ -89,6 +85,9 @@ def mock_ask_if(*args: str, **kwargs: Any) -> str:
 def mock__get_github_token() -> Optional[str]:
     return None
 
+
+def mock__get_github_token_fake() -> Optional[str]:
+    return 'token'
 
 class FakeCommandLineOptions(CommandLineOptions):
     def __init__(self) -> None:
