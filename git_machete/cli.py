@@ -569,6 +569,7 @@ def launch(orig_args: List[str]) -> None:
             machete_client.read_definition_file()
             machete_client.delete_untracked(opt_yes=cli_opts.opt_yes)
             machete_client.delete_unmanaged(opt_yes=cli_opts.opt_yes)
+            machete_client.delete_unmanaged(opt_yes=cli_opts.opt_yes)
             if 'checkout_my_github_prs' in parsed_cli:
                 machete_client.checkout_github_prs(pr_nos=[],
                                                    my_opened_prs=True)
@@ -752,12 +753,12 @@ def launch(orig_args: List[str]) -> None:
             git.expect_no_operation_in_progress()
             branches = parsed_cli_as_dict.get('branches', [git.get_current_branch()])
             machete_client.slide_out(
-                branches_to_slide_out=list(map(LocalBranchShortName.of, branches)),
+                branches_to_slid_out=list(map(LocalBranchShortName.of, branches)),
+                opt_delete=cli_opts.opt_delete,
                 opt_down_fork_point=cli_opts.opt_down_fork_point,
                 opt_merge=cli_opts.opt_merge,
                 opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
-                opt_no_edit_merge=cli_opts.opt_no_edit_merge,
-                opt_delete=cli_opts.opt_delete)
+                opt_no_edit_merge=cli_opts.opt_no_edit_merge)
         elif cmd == "squash":
             machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out_flag)
             git.expect_no_operation_in_progress()

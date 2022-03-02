@@ -89,6 +89,7 @@ def mock__get_github_token() -> Optional[str]:
 def mock__get_github_token_fake() -> Optional[str]:
     return 'token'
 
+
 class FakeCommandLineOptions(CommandLineOptions):
     def __init__(self) -> None:
         super().__init__()

@@ -5,7 +5,7 @@ short_docs: Dict[str, str] = {
     "add": "Add a branch to the tree of branch dependencies",
     "advance": "Fast-forward merge one of children to the current branch and then slide out this child",
     "anno": "Manage custom annotations",
-    "clean": 'Delete untracked and unmanaged branches with no downstream branch and also check out user\'s open GitHub PRs',
+    "clean": "Delete untracked and unmanaged branches with no downstream branch and also check out user's open GitHub PRs",
     "delete-unmanaged": "Delete local branches that are not present in the definition file",
     "diff": "Diff current working directory or a given branch against its computed fork point",
     "discover": "Automatically discover tree of branch dependencies",
@@ -144,9 +144,10 @@ long_docs: Dict[str, str] = {
     """,
     "clean": """
         <b>Usage:
-          git machete clean [-c|--checkout-my-github-prs]
+          git machete clean [-c|--checkout-my-github-prs] [-y|--yes]
 
-        If invoked without any flag, deletes untracked and unmanaged branches.
+        If invoked without any flag, deletes untracked managed branches with no downstream branch and unmanaged branches.
+        No branch will be deleted unless explicitly confirmed by the user (or unless `-y/--yes` option is passed).
 
         If invoked with ``-c`` or ``--checkout-my-github-prs``, also checks out your open PRs into local branches.
         Equivalent of ``git machete github sync``.
@@ -160,8 +161,8 @@ long_docs: Dict[str, str] = {
             4. current auth token from the ``hub`` GitHub CLI.
 
         **Options:**
-
-        ``-c, --checkout-my-github-prs``    Checkout your open PRs into local branches.
+          <b>--c, --checkout-my-github-prs</b>     Checkout your open PRs into local branches.
+          <b>-y, --yes</b>                         Don't ask for confirmation when deleting branches from git.
     """,
     "delete-unmanaged": """
         <b>Usage: git machete delete-unmanaged [-y|--yes]</b>
@@ -564,7 +565,7 @@ long_docs: Dict[str, str] = {
                                                             See also doc for `--fork-point` option in `git machete help reapply` and `git machete help update`.
                                                             Not allowed if updating by merge.
 
-          <b>--delete</b>                                          Delete branches from git.
+          <b>--delete</b>                                          Delete slid-out branches from git.
 
           <b>-M, --merge</b>                                       Update the downstream branch by merge rather than by rebase.
 
