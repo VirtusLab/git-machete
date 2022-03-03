@@ -11,6 +11,7 @@ with open(path.join(this_directory, 'README.md')) as f:
 setup(
     name='git-machete2',
     version=__version__,
+    summary='git-machete is a versatile tool for organizing your git repo',
     description='Probably the sharpest git repository organizer & rebase/merge workflow automation tool you\'ve ever seen',
     long_description=long_description,
     long_description_content_type='text/markdown',

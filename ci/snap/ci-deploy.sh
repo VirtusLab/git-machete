@@ -22,6 +22,5 @@ else
   echo "MASTER"
   echo "$SNAPCRAFT_LOGIN_CREDENTIALS_CONTENTS_BASE64" | base64 -d > ~/.snapcraft.login
   snapcraft login --with ~/.snapcraft.login
-#  snapcraft upload --release=stable *.snap
-#  snapcraft push *.snap --release edge
+  snapcraft upload --release=stable *.snap
 fi
