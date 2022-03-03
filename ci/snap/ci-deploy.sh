@@ -17,10 +17,11 @@ if [[ ${1-} == "--dry-run" || ${CIRCLE_BRANCH-} != "master" ]]; then
   echo "MASTER"
   echo "$SNAPCRAFT_LOGIN_CREDENTIALS_CONTENTS_BASE64" | base64 -d > ~/.snapcraft.login
   snapcraft login --with ~/.snapcraft.login
-  snapcraft status test-offlineimap-amalota
+  snapcraft status git-machete
 else
   echo "MASTER"
   echo "$SNAPCRAFT_LOGIN_CREDENTIALS_CONTENTS_BASE64" | base64 -d > ~/.snapcraft.login
   snapcraft login --with ~/.snapcraft.login
 #  snapcraft upload --release=stable *.snap
+#  snapcraft push *.snap --release edge
 fi
