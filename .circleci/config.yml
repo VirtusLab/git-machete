@@ -219,12 +219,15 @@ workflows:
             branches:
               only:
                 - "develop"
+                - "build/snap"
                 - "/hotfix.*/"
           requires:
             *mandatory_jobs
       - deploy from master:
           filters:
             branches:
-              only: "master"
+              only:
+                - "master"
+#                - "build/snap"
           requires:
             *mandatory_jobs
