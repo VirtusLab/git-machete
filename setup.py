@@ -9,9 +9,8 @@ with open(path.join(this_directory, 'README.md')) as f:
     long_description = f.read()
 
 setup(
-    name='git-machete2',
+    name='git-machete',
     version=__version__,
-    summary='git-machete is a versatile tool for organizing your git repo',
     description='Probably the sharpest git repository organizer & rebase/merge workflow automation tool you\'ve ever seen',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -20,8 +19,8 @@ setup(
     url='https://github.com/VirtusLab/git-machete',
     license='MIT',
     keywords='git',
-    packages=['git_machete2'],
-    scripts=['git-machete2'],
+    packages=['git_machete'],
+    scripts=['git-machete'],
     python_requires='>=3.6, <4',
     classifiers=[
         'Programming Language :: Python',
