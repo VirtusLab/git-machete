@@ -20,8 +20,8 @@ setup(
     url='https://github.com/VirtusLab/git-machete',
     license='MIT',
     keywords='git',
-    packages=['git_machete'],
-    scripts=['git-machete'],
+    packages=['git_machete2'],
+    scripts=['git-machete2'],
     python_requires='>=3.6, <4',
     classifiers=[
         'Programming Language :: Python',
