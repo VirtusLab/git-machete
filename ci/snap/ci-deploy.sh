@@ -14,6 +14,12 @@ if [[ ${1-} == "--dry-run" || ${CIRCLE_BRANCH-} != "master" ]]; then
   sudo snap install git-machete_*.snap --dangerous --classic
   git machete version
   sudo snap remove git-machete
+  echo "MASTER"
+  echo "$SNAPCRAFT_LOGIN_CREDENTIALS_CONTENTS_BASE64" | base64 -d > ~/.snapcraft.login
+  snapcraft login --with ~/.snapcraft.login
 else
   echo "MASTER"
+  echo "$SNAPCRAFT_LOGIN_CREDENTIALS_CONTENTS_BASE64" | base64 -d > ~/.snapcraft.login
+  snapcraft login --with ~/.snapcraft.login
+#  snapcraft upload --release=stable *.snap
 fi
