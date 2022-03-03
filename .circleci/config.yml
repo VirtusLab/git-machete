@@ -140,7 +140,7 @@ jobs:
 
       - run:
           name: '[Dry run] Build snap'
-          command: bash ci/snap/ci-run.sh
+          command: bash ci/snap/ci-deploy.sh --dry-run
 
       - run:
           name: '[Dry run] Build rpm package'
@@ -169,6 +169,10 @@ jobs:
       - run:
           name: 'Build & upload deb package to PPA'
           command: bash ci/deb-ppa-upload/ci-deploy.sh
+
+      - run:
+          name: 'Publish snap to the stable channel'
+          command: bash ci/snap/ci-deploy.sh
 
       - run:
           name: 'Build rpm package'
