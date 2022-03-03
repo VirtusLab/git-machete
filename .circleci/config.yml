@@ -113,40 +113,40 @@ jobs:
     steps:
       - checkout
 
-      - run:
-          name: '[Dry run] Deploy to PyPI'
-          # Side effects: does an actual release, but to the test PyPI
-          command: bash ci/pypi/ci-deploy.sh --dry-run
-
-      - run:
-          name: '[Dry run] Update Homebrew tap with local installation test'
-          # Prerequisites: artifacts must be released to test PyPI first
-          command: bash ci/homebrew-tap/ci-deploy.sh --dry-run
-
-      - run:
-          name: '[Dry run] Publish image to Docker Hub'
-          command: bash ci/docker/ci-deploy.sh --dry-run
-
-      - run:
-          name: '[Dry run] Build & upload deb package to PPA'
-          # Side effects: potentially pushes a regenerated Docker image
-          command: bash ci/deb-ppa-upload/ci-deploy.sh --dry-run
-
-      - run:
-          name: '[Dry run] Build Nix package'
-          # Side effects: potentially pushes a regenerated Docker image
-          # Other than that, it just builds the package without publishing anything; there's no special dry-run mode
-          command: bash ci/nixpkgs-build/ci-run.sh
+#      - run:
+#          name: '[Dry run] Deploy to PyPI'
+#          # Side effects: does an actual release, but to the test PyPI
+#          command: bash ci/pypi/ci-deploy.sh --dry-run
+#
+#      - run:
+#          name: '[Dry run] Update Homebrew tap with local installation test'
+#          # Prerequisites: artifacts must be released to test PyPI first
+#          command: bash ci/homebrew-tap/ci-deploy.sh --dry-run
+#
+#      - run:
+#          name: '[Dry run] Publish image to Docker Hub'
+#          command: bash ci/docker/ci-deploy.sh --dry-run
+#
+#      - run:
+#          name: '[Dry run] Build & upload deb package to PPA'
+#          # Side effects: potentially pushes a regenerated Docker image
+#          command: bash ci/deb-ppa-upload/ci-deploy.sh --dry-run
+#
+#      - run:
+#          name: '[Dry run] Build Nix package'
+#          # Side effects: potentially pushes a regenerated Docker image
+#          # Other than that, it just builds the package without publishing anything; there's no special dry-run mode
+#          command: bash ci/nixpkgs-build/ci-run.sh
 
       - run:
           name: '[Dry run] Build snap'
           command: bash ci/snap/ci-deploy.sh --dry-run
 
-      - run:
-          name: '[Dry run] Build rpm package'
-          # Side effects: potentially pushes a regenerated Docker image
-          # Other than that, it just builds the package without publishing anything; there's no special dry-run mode
-          command: bash ci/rpm/ci-run.sh
+#      - run:
+#          name: '[Dry run] Build rpm package'
+#          # Side effects: potentially pushes a regenerated Docker image
+#          # Other than that, it just builds the package without publishing anything; there's no special dry-run mode
+#          command: bash ci/rpm/ci-run.sh
 
   "deploy from master":
     executor: ubuntu_executor
@@ -221,8 +221,8 @@ workflows:
                 - "develop"
                 - "build/snap"
                 - "/hotfix.*/"
-          requires:
-            *mandatory_jobs
+#          requires:
+#            *mandatory_jobs
       - deploy from master:
           filters:
             branches:
