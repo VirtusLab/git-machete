@@ -9,7 +9,7 @@ with open(path.join(this_directory, 'README.md')) as f:
     long_description = f.read()
 
 setup(
-    name='git-machete2',
+    name='git-machete',
     version=__version__,
     description='Probably the sharpest git repository organizer & rebase/merge workflow automation tool you\'ve ever seen',
     long_description=long_description,
