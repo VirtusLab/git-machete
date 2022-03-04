@@ -5,12 +5,13 @@ set -e -o pipefail -u
 sudo apt-get update
 sudo apt-get install -y snapd
 sudo snap install review-tools
-sudo snap install multipass --classic
-sudo snap install snapcraft --classic
+#sudo snap install multipass --classic
+sudo snap install snapcraft --edge --classic
 #sudo lxd init --minimal
 # `--use-lxd` applied to use a LXD container instead of a VM, to work around lack of support for KVM on CircleCI VMs.
 #snapcraft --use-lxd
-snapcraft
+#snapcraft
+docker run -v $(pwd):$(pwd) -t ubuntu:xenial sh -c "apt update -qq && apt install snapcraft -y && cd $(pwd) && snapcraft"
 
 if [[ ${1-} == "--dry-run" || ${CIRCLE_BRANCH-} != "master" ]]; then
 #  ! command -v git-machete
