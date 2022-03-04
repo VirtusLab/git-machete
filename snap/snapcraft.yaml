@@ -11,7 +11,7 @@ grade: stable
 confinement: strict
 icon: graphics/logo.png
 license: MIT
-base: core20
+base: core18
 architectures:
   # See https://forum.snapcraft.io/t/how-can-i-publish-a-snap-that-can-provide-binaries-for-all-the-supported-architectures/8556/4
   # on why not just `build-on: [ amd64, i386 ]`.
