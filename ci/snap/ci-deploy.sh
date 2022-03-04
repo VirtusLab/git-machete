@@ -17,10 +17,10 @@ snapcraft --use-lxd
 #docker run -v $(pwd):$(pwd) -t ubuntu:xenial sh -c "apt update -qq && apt install snapcraft -y && cd $(pwd) && snapcraft"
 
 if [[ ${1-} == "--dry-run" || ${CIRCLE_BRANCH-} != "master" ]]; then
-  ! command -v git-machete
+  ! command -v git-machete3
   sudo snap install git-machete*.snap --dangerous --classic
-  git machete version
-  sudo snap remove git-machete
+  git machete3 version
+  sudo snap remove git-machete3
   echo "MASTER"
   echo "$SNAPCRAFT_LOGIN_CREDENTIALS_CONTENTS_BASE64" base64 -d > ~/.snapcraft.login
   snapcraft login --with ~/.snapcraft.login
