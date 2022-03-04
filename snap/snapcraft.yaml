@@ -23,9 +23,7 @@ apps:
 parts:
   git-machete2:
     plugin: python
-    source-branch: build/snap
-    source: https://github.com/VirtusLab/git-machete.git
-    source-type: git
+    source: .
     # We're setting the version via scriptlet rather than using `version: git`
     # since only pushing commits to master (and not pushing tags) triggers Snapcraft builds.
     override-build: |

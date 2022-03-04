@@ -10,7 +10,8 @@ sudo lxd init --minimal
 # `--use-lxd` applied to use a LXD container instead of a VM, to work around lack of support for KVM on CircleCI VMs.
 snapcraft --use-lxd
 
-if [[ ${1-} == "--dry-run" || ${CIRCLE_BRANCH-} != "master" ]]; then
+#if [[ ${1-} == "--dry-run" || ${CIRCLE_BRANCH-} != "master" ]]; then
+if [[ ${1-} == "--dry-run"]; then
   echo "DEVELOP"
   ! command -v git-machete2
   sudo snap install git-machete*.snap --dangerous --classic
