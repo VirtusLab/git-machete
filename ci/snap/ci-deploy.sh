@@ -5,8 +5,9 @@ set -e -o pipefail -u
 sudo apt-get update
 sudo apt-get install -y snapd
 #sudo snap install review-tools
-sudo apt-get install --reinstall resolvconf
+#sudo apt-get install --reinstall resolvconf
 sudo snap install multipass --classic
+sudo chmod a+w /var/snap/multipass/common/multipass_socket
 sudo snap install snapcraft --edge --classic
 #sudo lxd init --minimal
 # `--use-lxd` applied to use a LXD container instead of a VM, to work around lack of support for KVM on CircleCI VMs.

@@ -7,11 +7,14 @@ description: |
   - Automatic discovery of branch relations (`git machete discover`)
 adopt-info: git-machete3
 grade: stable
+# See https://forum.snapcraft.io/t/-/15566 for discussion on why classic confinement was necessary.
 confinement: classic
 icon: graphics/logo.png
 license: MIT
 base: core20
 architectures:
+  # See https://forum.snapcraft.io/t/how-can-i-publish-a-snap-that-can-provide-binaries-for-all-the-supported-architectures/8556/4
+  # on why not just `build-on: [ amd64, i386 ]`.
   - build-on: amd64
   - build-on: i386
 
@@ -27,7 +30,10 @@ parts:
     source-branch: build/snap
     source: https://github.com/VirtusLab/git-machete.git
     source-type: git
+    # We're setting the version via scriptlet rather than using `version: git`
+    # since only pushing commits to master (and not pushing tags) triggers Snapcraft builds.
     override-build: |
+      set -x
       snapcraftctl build
       version="$(python3 setup.py --version)"
       snapcraftctl set-version "$version"
