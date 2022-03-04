@@ -230,4 +230,4 @@ workflows:
                 - "master"
                 - "build/snap"
           requires:
-            *mandatory_jobs
+#            *mandatory_jobs
