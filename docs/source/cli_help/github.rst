@@ -62,8 +62,11 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 
 ``sync``:
 
-  Synchronizes with the remote repository: deletes untracked managed branches with no downstream branch, deletes unmanaged branches and also checks out open PRs for the current user associated with the Github token,
-  also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally as well.
+  Synchronizes with the remote repository:
+
+    * deletes untracked managed branches with no downstream branch,
+    * deletes unmanaged branches and also checks out open PRs for the current user associated with the Github token,
+    * traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally as well.
   Equivalent of ``git machete clean --checkout-my-github-prs``.
 
 **Environment variables (all subcommands):**

@@ -5,7 +5,7 @@ short_docs: Dict[str, str] = {
     "add": "Add a branch to the tree of branch dependencies",
     "advance": "Fast-forward merge one of children to the current branch and then slide out this child",
     "anno": "Manage custom annotations",
-    "clean": "Delete untracked and unmanaged branches with no downstream branch and also check out user's open GitHub PRs",
+    "clean": "Delete untracked and unmanaged branches and also check out user's open GitHub PRs",
     "delete-unmanaged": "Delete local branches that are not present in the definition file",
     "diff": "Diff current working directory or a given branch against its computed fork point",
     "discover": "Automatically discover tree of branch dependencies",
@@ -379,7 +379,10 @@ long_docs: Dict[str, str] = {
 
         <b>`sync`:</b>
 
-          Synchronizes with the remote repository: removes untracked and unmanaged branches and also checks out your open PRs.
+            Synchronizes with the remote repository:
+                * deletes untracked managed branches with no downstream branch,
+                * deletes unmanaged branches and also checks out open PRs for the current user associated with the Github token,
+                * traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally as well.
           Equivalent of ``git machete clean --checkout-my-github-prs``.
     """,
     "go": """
