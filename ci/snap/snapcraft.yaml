@@ -7,10 +7,13 @@ description: |
   - Automatic discovery of branch relations (`git machete discover`)
 adopt-info: git-machete3
 grade: stable
-confinement: strict
+confinement: classic
+icon: graphics/logo.png
+license: MIT
 base: core20
 architectures:
-  - build-on: [i386, amd64]
+  - build-on: amd64
+  - build-on: i386
 
 apps:
   git-machete3:
@@ -20,6 +23,7 @@ apps:
 parts:
   git-machete3:
     plugin: python
+    python-version: python3
     source-branch: build/snap
     source: https://github.com/VirtusLab/git-machete.git
     source-type: git
