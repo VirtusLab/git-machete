@@ -11,7 +11,7 @@ sudo lxd init --minimal
 snapcraft --use-lxd
 
 #if [[ ${1-} == "--dry-run" || ${CIRCLE_BRANCH-} != "master" ]]; then
-if [[ ${1-} == "--dry-run"]; then
+if [[ ${1-} == "--dry-run" ]]; then
   echo "DEVELOP"
   ! command -v git-machete2
   sudo snap install git-machete*.snap --dangerous --classic
