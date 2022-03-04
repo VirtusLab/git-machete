@@ -260,5 +260,5 @@ def slurp_file_or_empty(path: str) -> str:
 
 
 def perform_interactive_slide_out(cmd: str) -> bool:
-    high_level_commands = {'traverse', 'status'}
-    return sys.stdout.isatty() and cmd in high_level_commands
+    interactive_slide_out_safe_commands = {'traverse', 'status'}
+    return sys.stdout.isatty() and cmd in interactive_slide_out_safe_commands

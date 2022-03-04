@@ -531,8 +531,9 @@ def launch(orig_args: List[str]) -> None:
                     f"{machete_client.definition_file_path} is a directory "
                     "rather than a regular file, aborting")
 
+        perform_interactive_slide_out_flag = perform_interactive_slide_out(cmd)
         if cmd == "add":
-            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out(cmd))
+            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out_flag)
             branch = get_branch_arg_or_current_branch(cli_opts, git)
             machete_client.add(
                 branch=branch,
@@ -540,13 +541,13 @@ def launch(orig_args: List[str]) -> None:
                 opt_as_root=cli_opts.opt_as_root,
                 opt_yes=cli_opts.opt_yes)
         elif cmd == "advance":
-            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out(cmd))
+            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out_flag)
             git.expect_no_operation_in_progress()
             current_branch = git.get_current_branch()
             machete_client.expect_in_managed_branches(current_branch)
             machete_client.advance(branch=current_branch, opt_yes=cli_opts.opt_yes)
         elif cmd == "anno":
-            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out(cmd),
+            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out_flag,
                                                 verify_branches=False)
             if cli_opts.opt_sync_github_prs:
                 machete_client.sync_annotations_to_github_prs()
@@ -558,10 +559,10 @@ def launch(orig_args: List[str]) -> None:
                 else:
                     machete_client.print_annotation(branch)
         elif cmd == "delete-unmanaged":
-            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out(cmd))
+            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out_flag)
             machete_client.delete_unmanaged(opt_yes=cli_opts.opt_yes)
         elif cmd in {"diff", alias_by_command["diff"]}:
-            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out(cmd))
+            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out_flag)
             machete_client.diff(branch=parsed_cli.branch, opt_stat=cli_opts.opt_stat)  # passing None if not specified
         elif cmd == "discover":
             # No need to read definition file.
@@ -577,7 +578,7 @@ def launch(orig_args: List[str]) -> None:
             # No need to read definition file.
             print(os.path.abspath(machete_client.definition_file_path))
         elif cmd == "fork-point":
-            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out(cmd))
+            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out_flag)
             branch = get_branch_arg_or_current_branch(cli_opts, git)
             if cli_opts.opt_inferred:
                 print(machete_client.fork_point(
@@ -607,7 +608,7 @@ def launch(orig_args: List[str]) -> None:
                     use_overrides=True,
                     opt_no_detect_squash_merges=cli_opts.opt_no_detect_squash_merges))
         elif cmd in {"go", alias_by_command["go"]}:
-            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out(cmd))
+            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out_flag)
             git.expect_no_operation_in_progress()
             current_branch = git.get_current_branch()
             dest = machete_client.parse_direction(
@@ -616,7 +617,7 @@ def launch(orig_args: List[str]) -> None:
                 git.checkout(dest)
         elif cmd == "github":
             github_subcommand = parsed_cli.subcommand
-            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out(cmd))
+            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out_flag)
 
             if 'draft' in parsed_cli and github_subcommand != 'create-pr':
                 raise MacheteException("'--draft' option is only valid with 'create-pr' subcommand.")
@@ -647,7 +648,7 @@ def launch(orig_args: List[str]) -> None:
                 machete_client.expect_in_managed_branches(current_branch)
                 machete_client.retarget_github_pr(current_branch)
         elif cmd == "is-managed":
-            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out(cmd))
+            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out_flag)
             branch = get_branch_arg_or_current_branch(cli_opts, git)
             if branch is None or branch not in machete_client.managed_branches:
                 exit_script(1)
@@ -660,7 +661,7 @@ def launch(orig_args: List[str]) -> None:
                 raise MacheteException(
                     f"`git machete list {category}` does not expect extra arguments")
 
-            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out(cmd))
+            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out_flag)
             res = []
             if category == "addable":
                 def strip_remote_name(remote_branch: RemoteBranchShortName) -> LocalBranchShortName:
@@ -691,11 +692,11 @@ def launch(orig_args: List[str]) -> None:
             if res:
                 print("\n".join(res))
         elif cmd in {"log", alias_by_command["log"]}:
-            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out(cmd))
+            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out_flag)
             branch = get_branch_arg_or_current_branch(cli_opts, git)
             machete_client.log(branch)
         elif cmd == "reapply":
-            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out(cmd))
+            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out_flag)
             git.expect_no_operation_in_progress()
             current_branch = git.get_current_branch()
             if "fork_point" in parsed_cli:
@@ -717,7 +718,7 @@ def launch(orig_args: List[str]) -> None:
                         '`show current` with a <branch> argument does not make sense')
                 print(branch)
             else:
-                machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out(cmd),
+                machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out_flag,
                                                     verify_branches=False)
                 print(
                     '\n'.join(machete_client.parse_direction(
@@ -728,7 +729,7 @@ def launch(orig_args: List[str]) -> None:
                     ))
                 )
         elif cmd == "slide-out":
-            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out(cmd))
+            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out_flag)
             git.expect_no_operation_in_progress()
             branches = parsed_cli_as_dict.get('branches', [git.get_current_branch()])
             machete_client.slide_out(
@@ -738,7 +739,7 @@ def launch(orig_args: List[str]) -> None:
                 opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
                 opt_no_edit_merge=cli_opts.opt_no_edit_merge)
         elif cmd == "squash":
-            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out(cmd))
+            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out_flag)
             git.expect_no_operation_in_progress()
             current_branch = git.get_current_branch()
             if "fork_point" in parsed_cli:
@@ -751,7 +752,7 @@ def launch(orig_args: List[str]) -> None:
                     use_overrides=True,
                     opt_no_detect_squash_merges=cli_opts.opt_no_detect_squash_merges))
         elif cmd in {"status", alias_by_command["status"]}:
-            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out(cmd))
+            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out_flag)
             machete_client.expect_at_least_one_managed_branch()
             machete_client.status(
                 warn_on_yellow_edges=True,
@@ -767,7 +768,7 @@ def launch(orig_args: List[str]) -> None:
                 raise MacheteException(
                     "Invalid argument for `--return-to`. "
                     "Valid arguments: `here|nearest-remaining|stay`.")
-            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out(cmd))
+            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out_flag)
             git.expect_no_operation_in_progress()
             machete_client.traverse(
                 opt_fetch=cli_opts.opt_fetch,
@@ -782,7 +783,7 @@ def launch(orig_args: List[str]) -> None:
                 opt_start_from=cli_opts.opt_start_from,
                 opt_yes=cli_opts.opt_yes)
         elif cmd == "update":
-            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out(cmd))
+            machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out_flag)
             git.expect_no_operation_in_progress()
             if "fork_point" in parsed_cli:
                 machete_client.check_that_forkpoint_is_ancestor_or_equal_to_tip_of_branch(
