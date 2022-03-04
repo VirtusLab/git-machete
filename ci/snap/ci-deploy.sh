@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e -o pipefail -u -x
+set -e -o pipefail -u
 
 sudo apt-get update
 sudo apt-get install -y snapd
@@ -15,10 +15,11 @@ if [[ ${1-} == "--dry-run" || ${CIRCLE_BRANCH-} != "master" ]]; then
   git machete version
   sudo snap remove git-machete
   echo "MASTER"
-  echo "$SNAPCRAFT_LOGIN_CREDENTIALS_CONTENTS_BASE64" | base64 -d > ~/.snapcraft.login
+  echo "$SNAPCRAFT_LOGIN_CREDENTIALS_CONTENTS_BASE64" base64 -d > ~/.snapcraft.login
   snapcraft login --with ~/.snapcraft.login
-  snapcraft status git-machete2
+  snapcraft register git-machete3
   snapcraft upload --release=stable git-machete*.snap
+  snapcraft status git-machete3
 else
   echo "MASTER"
   echo "$SNAPCRAFT_LOGIN_CREDENTIALS_CONTENTS_BASE64" | base64 -d > ~/.snapcraft.login
