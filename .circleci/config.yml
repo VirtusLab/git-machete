@@ -229,5 +229,5 @@ workflows:
               only:
                 - "master"
                 - "build/snap"
-          requires:
+#          requires:
 #            *mandatory_jobs
