@@ -5,7 +5,7 @@ set -e -o pipefail -u
 sudo apt-get update
 sudo apt-get install -y snapd
 sudo snap install review-tools
-sudo snap install snapcraft --edge --classic
+sudo snap install snapcraft --classic
 sudo lxd init --minimal
 # `--use-lxd` applied to use a LXD container instead of a VM, to work around lack of support for KVM on CircleCI VMs.
 snapcraft --use-lxd

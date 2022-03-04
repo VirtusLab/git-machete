@@ -28,7 +28,7 @@ parts:
     source-type: git
     # We're setting the version via scriptlet rather than using `version: git`
     # since only pushing commits to master (and not pushing tags) triggers Snapcraft builds.
-    override-pull: |
+    override-build: |
       set -x
       snapcraftctl build
       version="$(python3 setup.py --version)"
