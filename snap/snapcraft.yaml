@@ -26,7 +26,6 @@ apps:
 parts:
   git-machete3:
     plugin: python
-    python-version: python3
     source-branch: build/snap
     source: https://github.com/VirtusLab/git-machete.git
     source-type: git
@@ -34,6 +33,7 @@ parts:
     # since only pushing commits to master (and not pushing tags) triggers Snapcraft builds.
     override-build: |
       set -x
+      echo dziala
       snapcraftctl build
       version="$(python3 setup.py --version)"
       snapcraftctl set-version "$version"
