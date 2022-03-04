@@ -24,6 +24,6 @@ parts:
     source: https://github.com/VirtusLab/git-machete.git
     source-type: git
     override-build: |
-          snapcraftctl build
-          version="$(python3 setup.py --version)"
-          snapcraftctl set-version "$version"
+      snapcraftctl build
+      version="$(python3 setup.py --version)"
+      snapcraftctl set-version "$version"
