@@ -5,7 +5,7 @@ set -e -o pipefail -u
 sudo apt-get update
 sudo apt-get install -y snapd
 sudo snap install review-tools
-sudo snap install snapcraft --classic
+sudo snap install snapcraft --classic -y
 #sudo lxd init --minimal
 # `--use-lxd` applied to use a LXD container instead of a VM, to work around lack of support for KVM on CircleCI VMs.
 #snapcraft --use-lxd
@@ -20,6 +20,7 @@ if [[ ${1-} == "--dry-run" || ${CIRCLE_BRANCH-} != "master" ]]; then
   echo "$SNAPCRAFT_LOGIN_CREDENTIALS_CONTENTS_BASE64" base64 -d > ~/.snapcraft.login
   snapcraft login --with ~/.snapcraft.login
 #  snapcraft register git-machete3 --yes
+  snapcraft push git-machete*.snap
   snapcraft upload --release=edge git-machete*.snap
   snapcraft status git-machete3
 else
