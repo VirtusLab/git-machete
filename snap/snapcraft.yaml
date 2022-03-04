@@ -8,15 +8,15 @@ description: |
 adopt-info: git-machete3
 grade: stable
 # See https://forum.snapcraft.io/t/-/15566 for discussion on why classic confinement was necessary.
-confinement: classic
+confinement: strict
 icon: graphics/logo.png
 license: MIT
 base: core20
 architectures:
   # See https://forum.snapcraft.io/t/how-can-i-publish-a-snap-that-can-provide-binaries-for-all-the-supported-architectures/8556/4
   # on why not just `build-on: [ amd64, i386 ]`.
-  - build-on: amd64
   - build-on: i386
+  - build-on: amd64
 
 apps:
   git-machete3:
