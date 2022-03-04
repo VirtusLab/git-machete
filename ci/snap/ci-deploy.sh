@@ -6,14 +6,14 @@ sudo apt-get update
 sudo apt-get install -y snapd
 #sudo snap install review-tools
 #sudo apt-get install --reinstall resolvconf
-sudo snap install multipass --classic
-sudo snap restart multipass.multipassd
-sudo chmod a+w /var/snap/multipass/common/multipass_socket
+#sudo snap install multipass --classic
+#sudo snap restart multipass.multipassd
+#sudo chmod a+w /var/snap/multipass/common/multipass_socket
 sudo snap install snapcraft --edge --classic
-#sudo lxd init --minimal
+sudo lxd init --minimal
 # `--use-lxd` applied to use a LXD container instead of a VM, to work around lack of support for KVM on CircleCI VMs.
-#snapcraft --use-lxd
-snapcraft
+snapcraft --use-lxd
+#snapcraft
 #docker run -v $(pwd):$(pwd) -t ubuntu:xenial sh -c "apt update -qq && apt install snapcraft -y && cd $(pwd) && snapcraft"
 
 if [[ ${1-} == "--dry-run" || ${CIRCLE_BRANCH-} != "master" ]]; then
