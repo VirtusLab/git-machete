@@ -15,7 +15,7 @@ from git_machete.constants import EscapeCodes
 from git_machete.docs import short_docs, long_docs
 from git_machete.exceptions import MacheteException, StopInteraction
 from git_machete.git_operations import AnyRevision, GitContext, LocalBranchShortName, RemoteBranchShortName
-from git_machete.utils import fmt, perform_interactive_slide_out, underline, excluding, warn
+from git_machete.utils import fmt, underline, excluding, warn
 
 T = TypeVar('T')
 
@@ -538,7 +538,7 @@ def launch(orig_args: List[str]) -> None:
                     f"{machete_client.definition_file_path} is a directory "
                     "rather than a regular file, aborting")
 
-        perform_interactive_slide_out_flag = perform_interactive_slide_out(cmd)
+        perform_interactive_slide_out_flag = machete_client.should_perform_interactive_slide_out(cmd)
         if cmd == "add":
             machete_client.read_definition_file(perform_interactive_slide_out=perform_interactive_slide_out_flag)
             branch = get_branch_arg_or_current_branch(cli_opts, git)

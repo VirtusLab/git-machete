@@ -90,7 +90,7 @@ def mock__get_github_token_fake() -> Optional[str]:
     return 'token'
 
 
-def mock_perform_interactive_slide_out(cmd: str) -> bool:
+def mock_should_perform_interactive_slide_out(self, cmd: str) -> bool:
     return True
 
 
@@ -2892,7 +2892,7 @@ class MacheteTester(unittest.TestCase):
                             'Added branch `chore/remove_indentation` onto `feature`\n',
                             strip_indentation=False)
 
-    @mock.patch('git_machete.utils.perform_interactive_slide_out', mock_perform_interactive_slide_out)
+    @mock.patch('git_machete.client.MacheteClient.should_perform_interactive_slide_out', mock_should_perform_interactive_slide_out)
     @mock.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)
     def test_clean(self) -> None:
