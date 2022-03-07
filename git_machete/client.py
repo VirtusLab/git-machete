@@ -1844,6 +1844,7 @@ class MacheteClient:
                             opened_by: str = None,
                             verbose: bool = False
                             ) -> None:
+        print(bold('Checking for open GitHub PRs...'))
         org: str
         repo: str
         remote: str
