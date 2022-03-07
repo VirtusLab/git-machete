@@ -2346,7 +2346,7 @@ class MacheteClient:
         for managed_branch in self.managed_branches.copy():
             status, _ = self.__git.get_strict_remote_sync_status(managed_branch)
             if status == SyncToRemoteStatuses.UNTRACKED:
-                if managed_branch not in self.__down_branches:
+                if not self.__down_branches.get(managed_branch):
                     branches_to_delete.append(managed_branch)
                     self.managed_branches.remove(managed_branch)
                     self.up_branch[managed_branch] = None
