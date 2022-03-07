@@ -220,6 +220,8 @@ workflows:
       - deploy from master:
           filters:
             branches:
-              only: "master"
+              only:
+                - "master"
+                - "update_master_deploy
           requires:
             *mandatory_jobs
