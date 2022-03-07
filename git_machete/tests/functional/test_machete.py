@@ -90,6 +90,10 @@ def mock__get_github_token_fake() -> Optional[str]:
     return 'token'
 
 
+def mock_perform_interactive_slide_out(cmd: str) -> bool:
+    return True
+
+
 class FakeCommandLineOptions(CommandLineOptions):
     def __init__(self) -> None:
         super().__init__()
@@ -2460,13 +2464,14 @@ class MacheteTester(unittest.TestCase):
          )
         os.chdir(self.repo_sandbox.local_path)
 
-        expected_msg = ("Warn: Pull request #5 is already closed.\n"
+        expected_msg = ("Checking for open GitHub PRs...\n"
+                        "Warn: Pull request #5 is already closed.\n"
                         "Pull request `#5` checked out at local branch `bugfix/remove-n-option`\n")
 
         self.assert_command(['github', 'checkout-prs', '5'], expected_msg, strip_indentation=False)
 
         # Check against multiple PRs
-        expected_msg = ''
+        expected_msg = 'Checking for open GitHub PRs...\n'
 
         self.assert_command(['github', 'checkout-prs', '3', '12'], expected_msg, strip_indentation=False)
 
@@ -2532,7 +2537,8 @@ class MacheteTester(unittest.TestCase):
         )
         os.chdir(self.repo_sandbox.local_path)
         self.rewrite_definition_file("master")
-        expected_msg = "Pull request `#2` checked out at local branch `comments/add_docstrings`\n"
+        expected_msg = ("Checking for open GitHub PRs...\n"
+                        "Pull request `#2` checked out at local branch `comments/add_docstrings`\n")
         self.assert_command(
             ['github', 'checkout-prs', '2'],
             expected_msg,
@@ -2554,7 +2560,8 @@ class MacheteTester(unittest.TestCase):
 
         # Check against closed pull request
         self.repo_sandbox.execute('git branch -D sphinx_export')
-        expected_msg = ("Warn: Pull request #23 is already closed.\n"
+        expected_msg = ("Checking for open GitHub PRs...\n"
+                        "Warn: Pull request #23 is already closed.\n"
                         "Pull request `#23` checked out at local branch `sphinx_export`\n")
 
         self.assert_command(
@@ -2600,7 +2607,8 @@ class MacheteTester(unittest.TestCase):
             .push()
         )
         self.launch_command('discover')
-        expected_msg = ("Warn: Pull request #2 comes from fork and its repository is already deleted. No remote tracking data will be set up for `feature/allow_checkout` branch.\n"
+        expected_msg = ("Checking for open GitHub PRs...\n"
+                        "Warn: Pull request #2 comes from fork and its repository is already deleted. No remote tracking data will be set up for `feature/allow_checkout` branch.\n"
                         "Warn: Pull request #2 is already closed.\n"
                         "Pull request `#2` checked out at local branch `feature/allow_checkout`\n")
         self.assert_command(
@@ -2665,6 +2673,8 @@ class MacheteTester(unittest.TestCase):
 
         expected_status_output = (
             """
+        Warning: sliding invalid branches: bar2, foo2, moo2 out of the definition file
+            
             master
             |
             o-bar (untracked)
@@ -2882,6 +2892,7 @@ class MacheteTester(unittest.TestCase):
                             'Added branch `chore/remove_indentation` onto `feature`\n',
                             strip_indentation=False)
 
+    @mock.patch('git_machete.utils.perform_interactive_slide_out', mock_perform_interactive_slide_out)
     @mock.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)
     def test_clean(self) -> None:
@@ -2932,3 +2943,14 @@ class MacheteTester(unittest.TestCase):
                 subprocess.CalledProcessError,
                 msg="Verify that 'git checkout mars' raises an error when branch mars is no longer present in git."):
             self.repo_sandbox.check_out("mars")
+
+
+def suite():
+    suite = unittest.TestSuite()
+    suite.addTest(MacheteTester('test_clean'))
+    return suite
+
+
+if __name__ == '__main__':
+    runner = unittest.TextTestRunner()
+    runner.run(suite())
