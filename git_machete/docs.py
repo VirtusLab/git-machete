@@ -146,11 +146,13 @@ long_docs: Dict[str, str] = {
         <b>Usage:
           git machete clean [-c|--checkout-my-github-prs] [-y|--yes]
 
-        If invoked without any flag, deletes untracked managed branches with no downstream branch and unmanaged branches.
-        No branch will be deleted unless explicitly confirmed by the user (or unless `-y/--yes` option is passed).
-
-        If invoked with ``-c`` or ``--checkout-my-github-prs``, also checks out your open PRs into local branches.
-        Equivalent of ``git machete github sync``.
+        Synchronizes with the remote repository:
+            1. deletes unmanaged branches,
+            2. if invoked with ``-c`` or ``--checkout-my-github-prs``, checks out open PRs for the current user associated with the Github token and also traverses the chain of pull requests upwards, adding branches one by one to git-machete and checks them out locally as well,
+            3. deletes untracked managed branches that have no downstream branch.
+        
+        No branch will be deleted unless explicitly confirmed by the user (or unless ``-y/--yes`` option is passed).
+        Equivalent of ``git machete github sync`` if invoked with ``-c`` or ``--checkout-my-github-prs``.
 
         To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR, even in case of public repositories),
         a GitHub API token with ``repo`` scope is required, see https://github.com/settings/tokens. This will be resolved from the first of:
@@ -380,9 +382,9 @@ long_docs: Dict[str, str] = {
         <b>`sync`:</b>
 
             Synchronizes with the remote repository:
-                * deletes unmanaged branches and also checks out open PRs for the current user associated with the Github token,
-                * traverses the chain of pull requests upwards, adding branches one by one to git-machete and checks them out locally as well,
-                * deletes untracked managed branches that have no downstream branch.
+                1. deletes unmanaged branches,
+                2. checks out open PRs for the current user associated with the Github token and also traverses the chain of pull requests upwards, adding branches one by one to git-machete and checks them out locally as well,
+                3. deletes untracked managed branches that have no downstream branch.
           Equivalent of ``git machete clean --checkout-my-github-prs``.
     """,
     "go": """
