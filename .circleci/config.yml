@@ -113,87 +113,85 @@ jobs:
     steps:
       - checkout
 
-#      - run:
-#          name: '[Dry run] Deploy to PyPI'
-#          # Side effects: does an actual release, but to the test PyPI
-#          command: bash ci/pypi/ci-deploy.sh --dry-run
-#
-#      - run:
-#          name: '[Dry run] Update Homebrew tap with local installation test'
-#          # Prerequisites: artifacts must be released to test PyPI first
-#          command: bash ci/homebrew-tap/ci-deploy.sh --dry-run
-#
-#      - run:
-#          name: '[Dry run] Publish image to Docker Hub'
-#          command: bash ci/docker/ci-deploy.sh --dry-run
-#
-#      - run:
-#          name: '[Dry run] Build & upload deb package to PPA'
-#          # Side effects: potentially pushes a regenerated Docker image
-#          command: bash ci/deb-ppa-upload/ci-deploy.sh --dry-run
-#
-#      - run:
-#          name: '[Dry run] Build Nix package'
-#          # Side effects: potentially pushes a regenerated Docker image
-#          # Other than that, it just builds the package without publishing anything; there's no special dry-run mode
-#          command: bash ci/nixpkgs-build/ci-run.sh
+      - run:
+          name: '[Dry run] Deploy to PyPI'
+          # Side effects: does an actual release, but to the test PyPI
+          command: bash ci/pypi/ci-deploy.sh --dry-run
+
+      - run:
+          name: '[Dry run] Update Homebrew tap with local installation test'
+          # Prerequisites: artifacts must be released to test PyPI first
+          command: bash ci/homebrew-tap/ci-deploy.sh --dry-run
+
+      - run:
+          name: '[Dry run] Publish image to Docker Hub'
+          command: bash ci/docker/ci-deploy.sh --dry-run
+
+      - run:
+          name: '[Dry run] Build & upload deb package to PPA'
+          # Side effects: potentially pushes a regenerated Docker image
+          command: bash ci/deb-ppa-upload/ci-deploy.sh --dry-run
+
+      - run:
+          name: '[Dry run] Build Nix package'
+          # Side effects: potentially pushes a regenerated Docker image
+          # Other than that, it just builds the package without publishing anything; there's no special dry-run mode
+          command: bash ci/nixpkgs-build/ci-run.sh
 
       - run:
           name: '[Dry run] Build snap'
           command: bash ci/snap/ci-deploy.sh --dry-run
 
-#      - run:
-#          name: '[Dry run] Build rpm package'
-#          # Side effects: potentially pushes a regenerated Docker image
-#          # Other than that, it just builds the package without publishing anything; there's no special dry-run mode
-#          command: bash ci/rpm/ci-run.sh
+      - run:
+          name: '[Dry run] Build rpm package'
+          # Side effects: potentially pushes a regenerated Docker image
+          # Other than that, it just builds the package without publishing anything; there's no special dry-run mode
+          command: bash ci/rpm/ci-run.sh
 
   "deploy from master":
     executor: ubuntu_executor
     steps:
       - checkout
 
-#      - run:
-#          name: 'Deploy to PyPI'
-#          command: bash ci/pypi/ci-deploy.sh
-#
-#      - run:
-#          name: 'Update Homebrew tap'
-#          # Prerequisites: artifacts must be released to PyPI first
-#          command: bash ci/homebrew-tap/ci-deploy.sh
-#
-#      - run:
-#          name: 'Publish image to Docker Hub'
-#          command: bash ci/docker/ci-deploy.sh
-#
-#      - run:
-#          name: 'Build & upload deb package to PPA'
-#          command: bash ci/deb-ppa-upload/ci-deploy.sh
+      - run:
+          name: 'Deploy to PyPI'
+          command: bash ci/pypi/ci-deploy.sh
+
+      - run:
+          name: 'Update Homebrew tap'
+          # Prerequisites: artifacts must be released to PyPI first
+          command: bash ci/homebrew-tap/ci-deploy.sh
+
+      - run:
+          name: 'Publish image to Docker Hub'
+          command: bash ci/docker/ci-deploy.sh
+
+      - run:
+          name: 'Build & upload deb package to PPA'
+          command: bash ci/deb-ppa-upload/ci-deploy.sh
 
       - run:
           name: 'Publish snap to the stable channel'
           command: bash ci/snap/ci-deploy.sh
 
-#      - run:
-#          name: 'Build rpm package'
-#          command: bash ci/rpm/ci-run.sh
+      - run:
+          name: 'Build rpm package'
+          command: bash ci/rpm/ci-run.sh
 
       # Let's do this at the very end to avoid opening a GH release (and notifying the watchers)
       # in case anything goes wrong in the previous steps.
-#      - run:
-#          name: 'Create GitHub release'
-#          # Prerequisites: RPM package must be in dist/
-#          command: |
-#            sudo apt-get update
-#            sudo apt-get install hub
-#            bash ci/github-releases/ci-deploy.sh
+      - run:
+          name: 'Create GitHub release'
+          # Prerequisites: RPM package must be in dist/
+          command: |
+            sudo apt-get update
+            sudo apt-get install hub
+            bash ci/github-releases/ci-deploy.sh
 
       # Note: there are also releases happening outside of our CI:
-      # 1) every time a commit is pushed to `master`, a Snap build for `edge` channel
-      #    is triggered automatically via GitHub webhook on https://build.snapcraft.io/user/VirtusLab/git-machete,
-      # 2) every time a commit is pushed to `develop` or `master`, a build for docs (`latest` or `stable` version, respectively)
+      # 1) every time a commit is pushed to `develop` or `master`, a build for docs (`latest` or `stable` version, respectively)
       #    is triggered automatically via GitHub webhook on https://readthedocs.org/projects/git-machete/builds/,
-      # 3) every time a https://github.com/r-ryantm bot runs on NixOS/nixpkgs repository,
+      # 2) every time a https://github.com/r-ryantm bot runs on NixOS/nixpkgs repository,
       #    Nix git-machete package is updated with the fresh version/package hash according to the data from PyPI.
 
 mandatory_jobs: &mandatory_jobs
@@ -219,15 +217,15 @@ workflows:
             branches:
               only:
                 - "develop"
-                - "build/snap"
+                - "build/snap" #NOTE: TO BE REMOVED
                 - "/hotfix.*/"
-#          requires:
-#            *mandatory_jobs
+          requires:
+            *mandatory_jobs
       - deploy from master:
           filters:
             branches:
               only:
                 - "master"
-                - "build/snap"
-#          requires:
-#            *mandatory_jobs
+                - "build/snap" #NOTE: TO BE REMOVED
+          requires:
+            *mandatory_jobs
