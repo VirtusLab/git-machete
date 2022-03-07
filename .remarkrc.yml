@@ -2,5 +2,6 @@
 plugins:
   validate-links:
   lint-no-dead-urls:
-    skipUrlPatterns: ['https://pypistats.org/packages/git-machete', 'https://github.com/r-ryantm']
+    skipUrlPatterns: ['https://pypistats.org/packages/git-machete',
+                      'https://github.com/r-ryantm']
     gotOptions.timeout: 60000
