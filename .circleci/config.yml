@@ -222,6 +222,6 @@ workflows:
             branches:
               only:
                 - "master"
-                - "update_master_deploy
+                - "update_master_deploy"
           requires:
             *mandatory_jobs
