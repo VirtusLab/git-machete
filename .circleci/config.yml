@@ -223,5 +223,5 @@ workflows:
               only:
                 - "master"
                 - "update_master_deploy"
-          requires:
-            *mandatory_jobs
+#          requires:
+#            *mandatory_jobs
