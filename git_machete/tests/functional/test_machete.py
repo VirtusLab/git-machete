@@ -2629,6 +2629,7 @@ class MacheteTester(unittest.TestCase):
          'base': {'ref': 'master'}, 'number': '7', 'html_url': 'www.github.com', 'state': 'open'}
     ])
 
+    @mock.patch('git_machete.client.MacheteClient.should_perform_interactive_slide_out', mock_should_perform_interactive_slide_out)
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)
     @mock.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
@@ -2673,8 +2674,6 @@ class MacheteTester(unittest.TestCase):
 
         expected_status_output = (
             """
-        Warning: sliding invalid branches: bar2, foo2, moo2 out of the definition file
-            
             master
             |
             o-bar (untracked)
@@ -2943,14 +2942,3 @@ class MacheteTester(unittest.TestCase):
                 subprocess.CalledProcessError,
                 msg="Verify that 'git checkout mars' raises an error when branch mars is no longer present in git."):
             self.repo_sandbox.check_out("mars")
-
-
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(MacheteTester('test_clean'))
-    return suite
-
-
-if __name__ == '__main__':
-    runner = unittest.TextTestRunner()
-    runner.run(suite())
