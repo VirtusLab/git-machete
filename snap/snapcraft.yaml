@@ -1,14 +1,14 @@
-name: git-machete2
+name: git-machete
 summary: git-machete is a versatile tool for organizing your git repo
 description: |
   git machete is a versatile tool for organizing your git repo, including features like:
   - Neat, customizable `git machete status` that shows what branches are in sync with their parent branch/remote tracking branch and which of them need to be rebased/merged/pulled/pushed
   - Semi-automatic `git machete traverse` through the branches that helps you effortlessly rebase/merge and push/pull the branches you care for
   - Automatic discovery of branch relations (`git machete discover`)
-adopt-info: git-machete2
+adopt-info: git-machete
 grade: stable
 # See https://forum.snapcraft.io/t/-/15566 for discussion on why classic confinement was necessary.
-confinement: strict
+confinement: classic
 icon: graphics/logo.png
 license: MIT
 base: core18
@@ -16,12 +16,12 @@ architectures:
   - build-on: [i386, amd64]
 
 apps:
-  git-machete2:
+  git-machete:
     command: bin/git-machete
     plugs: [home, network, network-bind, removable-media]
 
 parts:
-  git-machete2:
+  git-machete:
     plugin: python
     source: .
     # We're setting the version via scriptlet rather than using `version: git`

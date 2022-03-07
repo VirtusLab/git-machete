@@ -13,14 +13,14 @@ snapcraft --use-lxd
 #if [[ ${1-} == "--dry-run" || ${CIRCLE_BRANCH-} != "master" ]]; then
 if [[ ${1-} == "--dry-run" ]]; then
   echo "DEVELOP"
-  ! command -v git-machete2
+  ! command -v git-machete
   sudo snap install git-machete*.snap --dangerous --classic
-  git machete2 version
-  sudo snap remove git-machete2
+  git machete version
+  sudo snap remove git-machete
 else
   echo "MASTER"
   echo "$SNAPCRAFT_LOGIN_CREDENTIALS_CONTENTS_BASE64" base64 -d > ~/.snapcraft.login
   snapcraft login --with ~/.snapcraft.login
-  snapcraft upload --release=stable git-machete*.snap
-  snapcraft status git-machete2
+  snapcraft upload --release=edge git-machete*.snap
+  snapcraft status git-machete
 fi
