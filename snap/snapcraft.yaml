@@ -18,7 +18,6 @@ architectures:
 apps:
   git-machete:
     command: bin/git-machete
-    plugs: [home, network, network-bind, removable-media]
 
 parts:
   git-machete:
