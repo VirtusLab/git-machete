@@ -150,7 +150,7 @@ long_docs: Dict[str, str] = {
             1. deletes unmanaged branches,
             2. if invoked with ``-c`` or ``--checkout-my-github-prs``, checks out open PRs for the current user associated with the Github token and also traverses the chain of pull requests upwards, adding branches one by one to git-machete and checks them out locally as well,
             3. deletes untracked managed branches that have no downstream branch.
-        
+
         No branch will be deleted unless explicitly confirmed by the user (or unless ``-y/--yes`` option is passed).
         Equivalent of ``git machete github sync`` if invoked with ``-c`` or ``--checkout-my-github-prs``.
 

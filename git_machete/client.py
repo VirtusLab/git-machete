@@ -2354,6 +2354,7 @@ class MacheteClient:
         self._delete_branches(branches_to_delete=branches_to_delete, opt_yes=opt_yes)
         self.save_definition_file()
 
-    def should_perform_interactive_slide_out(self, cmd: str) -> bool:
+    @staticmethod
+    def should_perform_interactive_slide_out(cmd: str) -> bool:
         interactive_slide_out_safe_commands = {'traverse', 'status'}
         return sys.stdout.isatty() and cmd in interactive_slide_out_safe_commands

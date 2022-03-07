@@ -90,7 +90,7 @@ def mock__get_github_token_fake() -> Optional[str]:
     return 'token'
 
 
-def mock_should_perform_interactive_slide_out(self, cmd: str) -> bool:
+def mock_should_perform_interactive_slide_out(cmd: str) -> bool:
     return True
 
 
