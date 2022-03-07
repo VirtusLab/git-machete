@@ -382,7 +382,7 @@ long_docs: Dict[str, str] = {
             Synchronizes with the remote repository:
                 * deletes untracked managed branches with no downstream branch,
                 * deletes unmanaged branches and also checks out open PRs for the current user associated with the Github token,
-                * traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally as well.
+                * traverses the chain of pull requests upwards, adding branches one by one to git-machete and checks them out locally as well.
           Equivalent of ``git machete clean --checkout-my-github-prs``.
     """,
     "go": """
