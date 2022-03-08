@@ -1957,19 +1957,19 @@ class MacheteClient:
             return result
         if all:
             if not all_opened_prs_from_github:
-                warn(f"Currently there is not any pull request opened in repository `{org}/{repo}`")
+                warn(f"Currently there are no pull requests opened in repository `{org}/{repo}`")
                 return []
             return all_opened_prs_from_github
         elif my and user:
             result = [pr for pr in all_opened_prs_from_github if pr.user == user]
             if not result:
-                warn(f"Current user {user} has no open pull request in repository `{org}/{repo}`")
+                warn(f"Current user `{user}` has no open pull request in repository `{org}/{repo}`")
                 return []
             return result
         elif by:
             result = [pr for pr in all_opened_prs_from_github if pr.user == by]
             if not result:
-                warn(f"User {by} has no open pull request in repository `{org}/{repo}`")
+                warn(f"User `{by}` has no open pull request in repository `{org}/{repo}`")
                 return []
             return result
         return []
