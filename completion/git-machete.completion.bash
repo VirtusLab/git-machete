@@ -16,7 +16,7 @@ _git_machete() {
   local add_opts="-o --onto= -R --as-root -y --yes"
   local advance_opts="-y --yes"
   local anno_opts="-b --branch= -H --sync-github-prs"
-  local clean_opts="--checkout-my-github-prs -y --yes"
+  local clean_opts="-H --checkout-my-github-prs -y --yes"
   local delete_unmanaged_opts="-y --yes"
   local diff_opts="-s --stat"
   local discover_opts="-C --checked-out-since= -l --list-commits -r --roots= -y --yes"

@@ -157,7 +157,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
         '-H', '--sync-github-prs', action='store_true', default=argparse.SUPPRESS)
 
     clean_parser = subparsers.add_parser('clean', usage=argparse.SUPPRESS, add_help=False, parents=[common_args_parser])
-    clean_parser.add_argument('-c', '--checkout-my-github-prs', action='store_true', default=argparse.SUPPRESS)
+    clean_parser.add_argument('-H', '--checkout-my-github-prs', action='store_true', default=argparse.SUPPRESS)
     clean_parser.add_argument('-y', '--yes', action='store_true', default=argparse.SUPPRESS)
 
     delete_unmanaged_parser = subparsers.add_parser(

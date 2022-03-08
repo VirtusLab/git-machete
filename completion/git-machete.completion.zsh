@@ -36,7 +36,7 @@ _git-machete() {
           ;;
         (clean)
           _arguments \
-            '(--checkout-my-github-prs)'--checkout-my-github-prs'[Checkout your open PRs into local branches]' \
+            '(-H --checkout-my-github-prs)'{-H,--checkout-my-github-prs}'[Checkout your open PRs into local branches]' \
             '(-y --yes)'{-y,--yes}'[Do not ask for confirmation when deleting unmanaged or untracked branches]' \
           && ret=0
           ;;

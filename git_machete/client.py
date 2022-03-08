@@ -1851,8 +1851,7 @@ class MacheteClient:
         remote, (org, repo) = self.__derive_remote_and_github_org_and_repo()
         current_user: Optional[str] = git_machete.github.derive_current_user_login()
         if not current_user and my_opened_prs:
-            raise MacheteException(
-                "Could not determine current user name, please check your token.")
+            warn("Could not determine current user name, please check your token.")
         all_open_prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
         valid_prs: List[GitHubPullRequest] = self.__get_valid_pull_requests(pr_nos,
                                                                             all_opened_prs_from_github=all_open_prs,
