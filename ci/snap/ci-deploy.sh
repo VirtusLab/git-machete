@@ -19,7 +19,7 @@ if [[ ${1-} == "--dry-run" ]]; then
   sudo snap remove git-machete
 else
   echo "MASTER"
-  echo "$SNAPCRAFT_LOGIN_CREDENTIALS_CONTENTS_BASE64" base64 -d > ~/.snapcraft.login
+  echo "$SNAPCRAFT_LOGIN_CREDENTIALS_CONTENTS_BASE64" | base64 -d > ~/.snapcraft.login
   snapcraft login --with ~/.snapcraft.login
   snapcraft upload --release=edge git-machete*.snap #NOTE: TO BE CHANGED FROM edge TO stable
   snapcraft status git-machete
