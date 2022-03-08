@@ -63,9 +63,9 @@ Output format of any non-plumbing command can change in non-backward-compatible 
 ## FAQ's about Pull Requests
 **What is the proper base for pull request?**
 
-Please set the base of pull request to `develop` branch. Current branch protection rules on github only allow to merge `develop` or `hotfix` branches into `master`.
+Please set the base of pull request to `develop` branch. Current branch protection rules on GitHub only allow to merge `develop` or `hotfix` branches into `master`.
 
-**Who closes Github comments? Author of changes, reviewer or initiator of the conversation?**
+**Who closes GitHub comments? Author of changes, reviewer or initiator of the conversation?**
 
 It makes sense to close comment:
 
@@ -75,7 +75,7 @@ It makes sense to close comment:
 **Do you make squash before develop?**
 
 Any technique is okay as long as there are [NO unnecessary merge commits](https://slides.com/plipski/git-machete#/8).
-`Squash and merge` from Github is okay, fast-forward made from console or via `git machete advance` & `git push` is ok too.
+`Squash and merge` from GitHub is okay, fast-forward made from console or via `git machete advance` & `git push` is ok too.
 
 **Is there any commit message convention?**
 
@@ -105,7 +105,7 @@ Review fixes should be pushed on separate commits for easier viewing on GitHub (
          git merge --no-ff develop
          git push origin master
 
-1. Verify that the release has been created on [Github](https://github.com/VirtusLab/git-machete/releases)
+1. Verify that the release has been created on [GitHub](https://github.com/VirtusLab/git-machete/releases)
    and that a `git-machete-<VERSION>-1.noarch.rpm` file is present under the Assets.
 
 1. Verify that the latest version is uploaded to [PyPI](https://pypi.org/project/git-machete).
@@ -115,7 +115,7 @@ Review fixes should be pushed on separate commits for easier viewing on GitHub (
 1. Verify that a Docker image for the new version has been pushed to Docker Hub: [gitmachete/git-machete](https://hub.docker.com/r/gitmachete/git-machete/tags).
 
 1. Verify that a build started for [Snap](https://build.snapcraft.io/user/VirtusLab/git-machete).
-   If not, check `snapcraft.io` webhook on Github (under Settings > Webhooks) &mdash;
+   If not, check `snapcraft.io` webhook on GitHub (under Settings > Webhooks) &mdash;
    sometimes the Snap Store's build system responds with 500 status for no clear reason, in such case `Redeliver` the call.
 
    Once the build is ready, install the `latest/edge` revision locally (`sudo snap install --edge --classic git-machete`)
@@ -125,7 +125,7 @@ Review fixes should be pushed on separate commits for easier viewing on GitHub (
    from [Snapcraft web dashboard](https://snapcraft.io/git-machete/releases) or via CLI.
 
 1. Verify that a build started for [docs at Read the Docs](https://readthedocs.org/projects/git-machete/builds/).
-   If not, check `readthedocs.org` webhook on Github (under Settings > Webhooks).
+   If not, check `readthedocs.org` webhook on GitHub (under Settings > Webhooks).
 
    Once the build is ready, verify the [doc contents](https://git-machete.readthedocs.io/en/stable).
 
