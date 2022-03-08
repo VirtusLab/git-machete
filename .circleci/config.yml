@@ -216,6 +216,7 @@ workflows:
               only:
                 - "develop"
                 - "/hotfix.*/"
+                - "code_quality/version_extraction
           requires:
             *mandatory_jobs
       - deploy from master:

@@ -2,7 +2,7 @@
 
 set -e -o pipefail -u
 
-current_version=$(grep '__version__ = ' git_machete/__init__.py | cut -d\' -f2)
+current_version=$(python3 setup.py --version)
 release_notes_version=$(egrep -o '(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)' RELEASE_NOTES.md --max-count 1)
 
 if [[ $current_version != "$release_notes_version" ]]; then

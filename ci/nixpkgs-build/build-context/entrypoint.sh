@@ -5,7 +5,7 @@ set -e -o pipefail -u -x
 git clone --depth=1 https://github.com/NixOS/nixpkgs.git .
 
 source_hash=$(nix-prefetch-url --unpack https://github.com/VirtusLab/git-machete/archive/$GIT_REVISION.tar.gz)
-version=$(curl https://raw.githubusercontent.com/VirtusLab/git-machete/$GIT_REVISION/git_machete/__init__.py | cut -d\' -f2)
+version=$(curl https://raw.githubusercontent.com/VirtusLab/git-machete/$GIT_REVISION/git_machete/__init__.py | cut -d\' -f2) #NOTE: NOT SURE HOW THIS CAN BE DONE
 sed -i -f- $EXPRESSION_PATH <<EOF
   s/version = ".*"/version = "$version"/
   s/rev = \".*\"/rev = \"$GIT_REVISION\"/
