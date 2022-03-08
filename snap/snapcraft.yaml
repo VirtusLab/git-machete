@@ -1,5 +1,5 @@
 name: git-machete
-adopt-info: git-machete # just for adopting `version`
+adopt-info: git-machete  # just for adopting `version`
 summary: git-machete is a versatile tool for organizing your git repo
 description: |
   git machete is a versatile tool for organizing your git repo, including features like:
