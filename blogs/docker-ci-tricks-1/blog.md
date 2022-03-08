@@ -21,7 +21,7 @@ and [docker-compose](https://docs.docker.com/compose/).
 
 ## High-level overview of the setup
 
-Let's start with the project layout (also available [on Github](https://github.com/VirtusLab/git-machete)):
+Let's start with the project layout (also available [on GitHub](https://github.com/VirtusLab/git-machete)):
 
 ![project layout](project-layout.png)
 

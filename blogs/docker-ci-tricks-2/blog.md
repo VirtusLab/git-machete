@@ -259,4 +259,4 @@ More details on the git-machete tool itself can be found in the usage guide:
 [part 1 (basic usage)](https://medium.com/virtuslab/make-your-way-through-the-git-rebase-jungle-with-git-machete-e2ed4dbacd02)
 and [part 2 (advanced features)](https://medium.com/virtuslab/git-machete-strikes-again-traverse-the-git-rebase-jungle-even-faster-with-v2-0-f43ebaf8abb0).
 
-Contributions (and stars on [Github](https://github.com/VirtusLab/git-machete)) are more than welcome!
+Contributions (and stars on [GitHub](https://github.com/VirtusLab/git-machete)) are more than welcome!
