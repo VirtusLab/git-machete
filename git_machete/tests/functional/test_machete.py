@@ -2220,6 +2220,7 @@ class MacheteTester(unittest.TestCase):
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+    @mock.patch('git_machete.github.__get_github_token', mock__get_github_token)
     @mock.patch('urllib.request.Request', git_api_state_for_test_checkout_prs.new_request())
     @mock.patch('urllib.request.urlopen', MockContextManager)
     def test_github_checkout_prs(self) -> None:
@@ -2409,8 +2410,23 @@ class MacheteTester(unittest.TestCase):
         repo: str
         org: str
         (org, repo) = get_parsed_github_remote_url(self.repo_sandbox.remote_path)
-        expected_msg = f"Warn: PR #100 is not found in repository `{org}/{repo}`\n"
-        self.assert_command(['github', 'checkout-prs', '100'], expected_msg, strip_indentation=False)
+        expected_error_message = f"PR #100 is not found in repository `{org}/{repo}`"
+        with self.assertRaises(MacheteException) as e:
+            self.launch_command('github', 'checkout-prs', '100')
+        if e:
+            self.assertEqual(e.exception.parameter, expected_error_message,
+                             'Verify that expected error message has appeared when given pull request to checkout does not exists.')
+
+        expected_error_message = f"PR #100 is not found in repository `{org}/{repo}`, skipping."
+        with self.assertRaises(MacheteException) as e:
+            self.launch_command('github', 'checkout-prs', '100', '19')
+        if e:
+            self.assertEqual(e.exception.parameter, expected_error_message,
+                             'Verify that expected error message has appeared when one of the given pull requests to checkout does not exists.')
+
+        # check against user with no open pull requests
+        expected_msg = f"Warn: User tester has no open pull request in repository `{org}/{repo}`\n"
+        self.assert_command(['github', 'checkout-prs', '--by', 'tester'], expected_msg, strip_indentation=False)
 
         # Check against closed pull request with head branch deleted from remote
         local_path = popen("mktemp -d")
@@ -2795,3 +2811,14 @@ class MacheteTester(unittest.TestCase):
         self.assert_command(['add', '--onto=feature'],
                             'Added branch `chore/remove_indentation` onto `feature`\n',
                             strip_indentation=False)
+
+
+def suite():
+    suite = unittest.TestSuite()
+    suite.addTest(MacheteTester('test_github_checkout_prs'))
+    return suite
+
+
+if __name__ == '__main__':
+    runner = unittest.TextTestRunner()
+    runner.run(suite())
