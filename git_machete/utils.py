@@ -257,3 +257,8 @@ def slurp_file_or_empty(path: str) -> str:
             return file.read()
     except IOError:
         return ''
+
+
+def perform_interactive_slide_out(cmd: str) -> bool:
+    interactive_slide_out_safe_commands = {'traverse', 'status'}
+    return sys.stdout.isatty() and cmd in interactive_slide_out_safe_commands
