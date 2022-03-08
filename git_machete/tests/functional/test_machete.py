@@ -2409,12 +2409,8 @@ class MacheteTester(unittest.TestCase):
         repo: str
         org: str
         (org, repo) = get_parsed_github_remote_url(self.repo_sandbox.remote_path)
-        expected_error_message = f"PR #100 is not found in repository `{org}/{repo}`"
-        with self.assertRaises(MacheteException) as e:
-            self.launch_command('github', 'checkout-prs', '100')
-        if e:
-            self.assertEqual(e.exception.parameter, expected_error_message,
-                             'Verify that expected error message has appeared when given pull request to checkout does not exists.')
+        expected_msg = f"Warn: PR #100 is not found in repository `{org}/{repo}`\n"
+        self.assert_command(['github', 'checkout-prs', '100'], expected_msg, strip_indentation=False)
 
         # Check against closed pull request with head branch deleted from remote
         local_path = popen("mktemp -d")
