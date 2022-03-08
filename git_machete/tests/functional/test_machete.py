@@ -2811,14 +2811,3 @@ class MacheteTester(unittest.TestCase):
         self.assert_command(['add', '--onto=feature'],
                             'Added branch `chore/remove_indentation` onto `feature`\n',
                             strip_indentation=False)
-
-
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(MacheteTester('test_github_checkout_prs'))
-    return suite
-
-
-if __name__ == '__main__':
-    runner = unittest.TextTestRunner()
-    runner.run(suite())
