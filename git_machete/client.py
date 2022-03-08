@@ -1963,6 +1963,7 @@ class MacheteClient:
             result = [pr for pr in all_opened_prs_from_github if pr.user == user]
             if not result:
                 print(f"Current user {user} has no open pull request in repository `{org}/{repo}`")
+                sys.exit(0)
             return result
         elif by:
             result = [pr for pr in all_opened_prs_from_github if pr.user == by]
