@@ -2425,7 +2425,7 @@ class MacheteTester(unittest.TestCase):
                              'Verify that expected error message has appeared when one of the given pull requests to checkout does not exists.')
 
         # check against user with no open pull requests
-        expected_msg = f"Warn: User tester has no open pull request in repository `{org}/{repo}`\n"
+        expected_msg = f"Warn: User `tester` has no open pull request in repository `{org}/{repo}`\n"
         self.assert_command(['github', 'checkout-prs', '--by', 'tester'], expected_msg, strip_indentation=False)
 
         # Check against closed pull request with head branch deleted from remote
