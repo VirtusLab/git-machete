@@ -217,7 +217,6 @@ workflows:
             branches:
               only:
                 - "develop"
-                - "build/snap" #NOTE: TO BE REMOVED
                 - "/hotfix.*/"
           requires:
             *mandatory_jobs
