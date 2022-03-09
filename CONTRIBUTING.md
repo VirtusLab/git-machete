@@ -114,15 +114,10 @@ Review fixes should be pushed on separate commits for easier viewing on GitHub (
 
 1. Verify that a Docker image for the new version has been pushed to Docker Hub: [gitmachete/git-machete](https://hub.docker.com/r/gitmachete/git-machete/tags).
 
-1. Verify that a build started for [Snap](https://build.snapcraft.io/user/VirtusLab/git-machete).
-   If not, check `snapcraft.io` webhook on GitHub (under Settings > Webhooks) &mdash;
-   sometimes the Snap Store's build system responds with 500 status for no clear reason, in such case `Redeliver` the call.
+1. Verify that a newly released version is present in latest/stable channel in [Snap](https://snapcraft.io/git-machete/releases).
 
-   Once the build is ready, install the `latest/edge` revision locally (`sudo snap install --edge --classic git-machete`)
+   Install the `stable` revision locally (`sudo snap install --classic git-machete`)
    and verify that it works correctly, esp. if it comes to push/pull via ssh/https and editor (`git machete edit` and interactive rebases).
-
-   Then, perform a release from `latest/edge` to `latest/stable` for both `i386` and `amd64`
-   from [Snapcraft web dashboard](https://snapcraft.io/git-machete/releases) or via CLI.
 
 1. Verify that a build started for [docs at Read the Docs](https://readthedocs.org/projects/git-machete/builds/).
    If not, check `readthedocs.org` webhook on GitHub (under Settings > Webhooks).
