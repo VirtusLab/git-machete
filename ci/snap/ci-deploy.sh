@@ -18,6 +18,6 @@ if [[ ${1-} == "--dry-run" || ${CIRCLE_BRANCH-} != "master" ]]; then
 else
   echo "$SNAPCRAFT_LOGIN_CREDENTIALS_CONTENTS_BASE64" | base64 -d > ~/.snapcraft.login
   snapcraft login --with ~/.snapcraft.login
-  snapcraft upload --release=edge git-machete*.snap #NOTE: TO BE CHANGED FROM edge TO stable
+  snapcraft upload --release=stable git-machete*.snap
   snapcraft status git-machete
 fi
