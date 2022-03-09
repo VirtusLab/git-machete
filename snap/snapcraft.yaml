@@ -9,7 +9,10 @@ description: |
 # This software is unlikely to be used outside of desktop machines.
 # Let's limit the number of target architectures to reduce the build times.
 architectures:
-  - build-on: [ amd64, i386 ]
+  # See https://forum.snapcraft.io/t/how-can-i-publish-a-snap-that-can-provide-binaries-for-all-the-supported-architectures/8556/4
+  # on why not just `build-on: [ amd64, i386 ]`.
+  - build-on: amd64
+  - build-on: i386
 base: core18
 # See https://forum.snapcraft.io/t/-/15566 for discussion on why classic confinement was necessary.
 confinement: classic

@@ -114,7 +114,7 @@ Review fixes should be pushed on separate commits for easier viewing on GitHub (
 
 1. Verify that a Docker image for the new version has been pushed to Docker Hub: [gitmachete/git-machete](https://hub.docker.com/r/gitmachete/git-machete/tags).
 
-1. Verify that a newly released version is present in latest/stable channel in [Snap](https://snapcraft.io/git-machete/releases).
+1. Verify that a newly released version is present in `latest/stable` channel in [Snap](https://snapcraft.io/git-machete/releases).
 
    Install the `stable` revision locally (`sudo snap install --classic git-machete`)
    and verify that it works correctly, esp. if it comes to push/pull via ssh/https and editor (`git machete edit` and interactive rebases).
