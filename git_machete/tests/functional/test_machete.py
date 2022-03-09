@@ -2417,12 +2417,11 @@ class MacheteTester(unittest.TestCase):
             self.assertEqual(e.exception.parameter, expected_error_message,
                              'Verify that expected error message has appeared when given pull request to checkout does not exists.')
 
-        expected_error_message = f"PR #100 is not found in repository `{org}/{repo}`, skipping."
         with self.assertRaises(MacheteException) as e:
-            self.launch_command('github', 'checkout-prs', '100', '19')
+            self.launch_command('github', 'checkout-prs', '19', '100')
         if e:
             self.assertEqual(e.exception.parameter, expected_error_message,
-                             'Verify that expected error message has appeared when one of the given pull requests to checkout does not exists.')
+                 'Verify that expected error message has appeared when one of the given pull requests to checkout does not exists.')
 
         # check against user with no open pull requests
         expected_msg = f"Warn: User `tester` has no open pull request in repository `{org}/{repo}`\n"

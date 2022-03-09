@@ -1947,10 +1947,7 @@ class MacheteClient:
                     if pr_from_github:
                         result.append(pr_from_github)
                     else:
-                        if len(prs_list) > 1:
-                            raise MacheteException(f"PR #{pr_no} is not found in repository `{org}/{repo}`, skipping.")
-                        else:
-                            raise MacheteException(f"PR #{pr_no} is not found in repository `{org}/{repo}`")
+                        raise MacheteException(f"PR #{pr_no} is not found in repository `{org}/{repo}`")
             if not result:
                 raise MacheteException(
                     f"Given PRs: {', '.join(map(str, prs_list))} are not found in repository `{org}/{repo}`")
