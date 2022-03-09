@@ -16,4 +16,4 @@ function ansi_esc {
 dim=$(ansi_esc '\033[2m')
 endc=$(ansi_esc '\033[0m')
 
-echo -ne "${dim}v$(git grep "__version__ = " "$1" -- git_machete/__init__.py | cut -d\' -f2 || echo '???')${endc}" #NOTE: NOT SURE WHATS HAPPENING HERE AND HOW THIS CAN BE CHANGED
+echo -ne "${dim}v$(git grep "__version__ = " "$1" -- git_machete/__init__.py | cut -d\' -f2 || echo '???')${endc}"
