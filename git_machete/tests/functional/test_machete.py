@@ -2421,7 +2421,7 @@ class MacheteTester(unittest.TestCase):
             self.launch_command('github', 'checkout-prs', '19', '100')
         if e:
             self.assertEqual(e.exception.parameter, expected_error_message,
-                 'Verify that expected error message has appeared when one of the given pull requests to checkout does not exists.')
+                             'Verify that expected error message has appeared when one of the given pull requests to checkout does not exists.')
 
         # check against user with no open pull requests
         expected_msg = f"Warn: User `tester` has no open pull request in repository `{org}/{repo}`\n"
