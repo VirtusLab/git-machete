@@ -1842,7 +1842,8 @@ class MacheteClient:
                             all_opened_prs: bool = False,
                             my_opened_prs: bool = False,
                             opened_by: str = None,
-                            verbose: bool = False
+                            verbose: bool = False,
+                            called_function: bool = True
                             ) -> None:
         print(bold('Checking for open GitHub PRs...'))
         org: str
@@ -1851,7 +1852,11 @@ class MacheteClient:
         remote, (org, repo) = self.__derive_remote_and_github_org_and_repo()
         current_user: Optional[str] = git_machete.github.derive_current_user_login()
         if not current_user and my_opened_prs:
-            warn("Could not determine current user name, please check your token.")
+            if called_function:
+                warn("Could not determine current user name, please check your token.")
+                return
+            else:
+                raise MacheteException("Could not determine current user name, please check your token.")
         all_open_prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
         valid_prs: List[GitHubPullRequest] = self.__get_valid_pull_requests(pr_nos,
                                                                             all_opened_prs_from_github=all_open_prs,
@@ -1920,7 +1925,7 @@ class MacheteClient:
 
         debug('Current GitHub user is ' + (current_user or '<none>'))
         self.__sync_annotations_to_definition_file(all_open_prs, current_user, verbose=verbose)
-        if pr and len(valid_prs) == 1:
+        if pr and len(checked_out_prs) == 1:
             self.__git.checkout(LocalBranchShortName.of(pr.head))
             if verbose:
                 print(fmt(f"Switched to local branch `{pr.head}`"))

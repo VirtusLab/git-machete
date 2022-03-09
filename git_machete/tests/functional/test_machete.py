@@ -2404,13 +2404,13 @@ class MacheteTester(unittest.TestCase):
             |       |
             |       o-chore/redundant_checks  PR #18 (github_user)
             |
-            o-enhance/add_user *  PR #19 (github_user)
+            o-enhance/add_user  PR #19 (github_user)
 
             bugfix/add_user
             |
             o-testing/add_user  PR #22 (github_user)
               |
-              o-chore/comments  PR #24 (github_user)
+              o-chore/comments *  PR #24 (github_user)
             """
         )
 
@@ -2674,7 +2674,7 @@ class MacheteTester(unittest.TestCase):
 
         expected_status_output = (
             """
-            master
+            master *
             |
             o-bar (untracked)
             |
@@ -2682,7 +2682,7 @@ class MacheteTester(unittest.TestCase):
             |
             o-moo (untracked)
             |
-            o-snickers *  PR #7
+            o-snickers  PR #7
             """
         )
         self.assert_command(['status'], expected_status_output)
