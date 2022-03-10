@@ -3,10 +3,9 @@
 set -e -o pipefail -u
 
 source ci/local-run-commons.sh deb-ppa-upload
-check_env gpg-ssh.env
 export_directory_hash deb-ppa-upload
 cd "$(git rev-parse --show-toplevel)"/ci/deb-ppa-upload/
-
+check_env gpg-ssh.env
 
 set -x
 export TARGET=local
