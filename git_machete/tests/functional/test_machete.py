@@ -2404,13 +2404,13 @@ class MacheteTester(unittest.TestCase):
             |       |
             |       o-chore/redundant_checks  PR #18 (github_user)
             |
-            o-enhance/add_user  PR #19 (github_user)
+            o-enhance/add_user *  PR #19 (github_user)
 
             bugfix/add_user
             |
             o-testing/add_user  PR #22 (github_user)
               |
-              o-chore/comments *  PR #24 (github_user)
+              o-chore/comments  PR #24 (github_user)
             """
         )
 
