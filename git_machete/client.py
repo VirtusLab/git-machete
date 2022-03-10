@@ -1860,13 +1860,13 @@ class MacheteClient:
                 raise MacheteException("Could not determine current user name, please check your token.")
         all_open_prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
         applicable_prs: List[GitHubPullRequest] = self.__get_applicable_pull_requests(pr_nos,
-                                                                                 all_opened_prs_from_github=all_open_prs,
-                                                                                 org=org,
-                                                                                 repo=repo,
-                                                                                 all=all_opened_prs,
-                                                                                 my=my_opened_prs,
-                                                                                 by=opened_by,
-                                                                                 user=current_user)
+                                                                                      all_opened_prs_from_github=all_open_prs,
+                                                                                      org=org,
+                                                                                      repo=repo,
+                                                                                      all=all_opened_prs,
+                                                                                      my=my_opened_prs,
+                                                                                      by=opened_by,
+                                                                                      user=current_user)
 
         debug(f'organization is {org}, repository is {repo}')
         if verbose:
