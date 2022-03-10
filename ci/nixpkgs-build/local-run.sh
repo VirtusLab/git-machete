@@ -2,10 +2,10 @@
 
 set -e -o pipefail -u
 
-cd "$(git rev-parse --show-toplevel)"/ci/nixpkgs-build/
 
-source ../local-run-commons.sh nixpkgs-build
+source ci/local-run-commons.sh nixpkgs-build
 export_directory_hash nixpkgs-build
+cd "$(git rev-parse --show-toplevel)"/ci/nixpkgs-build/
 
 git_revision=$(git rev-parse "@{upstream}")
 
