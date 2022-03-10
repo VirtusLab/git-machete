@@ -17,9 +17,9 @@ from git_machete.git_operations import (
     AnyBranchName, AnyRevision, ForkPointOverrideData,
     FullCommitHash, GitContext, GitLogEntry, HEAD, BranchPair, LocalBranchShortName, RemoteBranchShortName)
 from git_machete.github import (
-    GITHUB_TOKEN_ENV_VAR, add_assignees_to_pull_request, add_reviewers_to_pull_request,
+    add_assignees_to_pull_request, add_reviewers_to_pull_request,
     create_pull_request, checkout_pr_refs, derive_pull_request_by_head, derive_pull_requests,
-    get_parsed_github_remote_url, get_pull_request_by_number_or_none, GitHubPullRequest,
+    get_parsed_github_remote_url, get_pull_request_by_number_or_none, GitHubPullRequest, GITHUB_TOKEN_ENV_VAR,
     is_github_remote_url, set_base_of_pull_request, set_milestone_of_pull_request)
 from git_machete.utils import (
     get_pretty_choices, flat_map, excluding, fmt, tupled, warn, debug, bold,
