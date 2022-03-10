@@ -1852,12 +1852,12 @@ class MacheteClient:
         remote, (org, repo) = self.__derive_remote_and_github_org_and_repo()
         current_user: Optional[str] = git_machete.github.derive_current_user_login()
         if not current_user and my_opened_prs:
+            msg = f"Could not determine current user name, please check your {GITHUB_TOKEN_ENV_VAR} environment variable."
             if fail_on_missing_current_user_for_my_opened_prs:
-                # TODO (#468): Display a more verbose message when GITHUB_TOKEN env variable is missing
-                warn("Could not determine current user name, please check your token.")
+                warn(msg)
                 return
             else:
-                raise MacheteException("Could not determine current user name, please check your token.")
+                raise MacheteException(msg)
         all_open_prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
         applicable_prs: List[GitHubPullRequest] = self.__get_applicable_pull_requests(pr_nos,
                                                                                       all_opened_prs_from_github=all_open_prs,
