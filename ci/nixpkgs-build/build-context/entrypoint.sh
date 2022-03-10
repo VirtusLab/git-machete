@@ -10,9 +10,6 @@ sed -i -f- $EXPRESSION_PATH <<EOF
   s/version = ".*"/version = "$version"/
   s/rev = \".*\"/rev = \"$GIT_REVISION\"/
   s/sha256 = ".*"/sha256 = "$source_hash"/
-  /git init/d
-  s/stestr run/pytest/
-  s/stestr/pytest/
 EOF
 cat $EXPRESSION_PATH
 

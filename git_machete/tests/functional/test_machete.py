@@ -2220,6 +2220,7 @@ class MacheteTester(unittest.TestCase):
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+    @mock.patch('git_machete.github.__get_github_token', mock__get_github_token)
     @mock.patch('urllib.request.Request', git_api_state_for_test_checkout_prs.new_request())
     @mock.patch('urllib.request.urlopen', MockContextManager)
     def test_github_checkout_prs(self) -> None:
@@ -2415,6 +2416,16 @@ class MacheteTester(unittest.TestCase):
         if e:
             self.assertEqual(e.exception.parameter, expected_error_message,
                              'Verify that expected error message has appeared when given pull request to checkout does not exists.')
+
+        with self.assertRaises(MacheteException) as e:
+            self.launch_command('github', 'checkout-prs', '19', '100')
+        if e:
+            self.assertEqual(e.exception.parameter, expected_error_message,
+                             'Verify that expected error message has appeared when one of the given pull requests to checkout does not exists.')
+
+        # check against user with no open pull requests
+        expected_msg = f"Warn: User `tester` has no open pull request in repository `{org}/{repo}`\n"
+        self.assert_command(['github', 'checkout-prs', '--by', 'tester'], expected_msg, strip_indentation=False)
 
         # Check against closed pull request with head branch deleted from remote
         local_path = popen("mktemp -d")
