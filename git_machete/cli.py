@@ -651,7 +651,7 @@ def launch(orig_args: List[str]) -> None:
                                                    all_opened_prs=parsed_cli.all if 'all' in parsed_cli else False,
                                                    my_opened_prs=parsed_cli.mine if 'mine' in parsed_cli else False,
                                                    opened_by=parsed_cli.by if 'by' in parsed_cli else None,
-                                                   called_function=False)
+                                                   fail_on_missing_current_user_for_my_opened_prs=False)
             elif github_subcommand == "create-pr":
                 current_branch = git.get_current_branch()
                 machete_client.create_github_pr(

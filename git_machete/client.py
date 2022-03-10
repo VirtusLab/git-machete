@@ -1843,7 +1843,7 @@ class MacheteClient:
                             my_opened_prs: bool = False,
                             opened_by: str = None,
                             verbose: bool = False,
-                            called_function: bool = True
+                            fail_on_missing_current_user_for_my_opened_prs: bool = True
                             ) -> None:
         print(bold('Checking for open GitHub PRs...'))
         org: str
@@ -1852,20 +1852,21 @@ class MacheteClient:
         remote, (org, repo) = self.__derive_remote_and_github_org_and_repo()
         current_user: Optional[str] = git_machete.github.derive_current_user_login()
         if not current_user and my_opened_prs:
-            if called_function:
+            if fail_on_missing_current_user_for_my_opened_prs:
+                # TODO (#468): Display a more verbose message when GITHUB_TOKEN env variable is missing
                 warn("Could not determine current user name, please check your token.")
                 return
             else:
                 raise MacheteException("Could not determine current user name, please check your token.")
         all_open_prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
-        valid_prs: List[GitHubPullRequest] = self.__get_valid_pull_requests(pr_nos,
-                                                                            all_opened_prs_from_github=all_open_prs,
-                                                                            org=org,
-                                                                            repo=repo,
-                                                                            all=all_opened_prs,
-                                                                            my=my_opened_prs,
-                                                                            by=opened_by,
-                                                                            user=current_user)
+        applicable_prs: List[GitHubPullRequest] = self.__get_applicable_pull_requests(pr_nos,
+                                                                                 all_opened_prs_from_github=all_open_prs,
+                                                                                 org=org,
+                                                                                 repo=repo,
+                                                                                 all=all_opened_prs,
+                                                                                 my=my_opened_prs,
+                                                                                 by=opened_by,
+                                                                                 user=current_user)
 
         debug(f'organization is {org}, repository is {repo}')
         if verbose:
@@ -1874,7 +1875,7 @@ class MacheteClient:
 
         pr: Optional[GitHubPullRequest] = None
         checked_out_prs: List[GitHubPullRequest] = []
-        for pr in sorted(valid_prs, key=lambda x: x.number):
+        for pr in sorted(applicable_prs, key=lambda x: x.number):
             if pr.full_repository_name:
                 if '/'.join([remote, pr.head]) not in self.__git.get_remote_branches():
                     remote_already_added: Optional[str] = self.__get_added_remote_name_or_none(pr.repository_url)
@@ -1925,7 +1926,7 @@ class MacheteClient:
 
         debug('Current GitHub user is ' + (current_user or '<none>'))
         self.__sync_annotations_to_definition_file(all_open_prs, current_user, verbose=verbose)
-        if pr and len(checked_out_prs) == 1:
+        if pr and len(applicable_prs) == 1 and len(checked_out_prs) == 1:
             self.__git.checkout(LocalBranchShortName.of(pr.head))
             if verbose:
                 print(fmt(f"Switched to local branch `{pr.head}`"))
@@ -1939,14 +1940,14 @@ class MacheteClient:
         return path
 
     @staticmethod
-    def __get_valid_pull_requests(prs_list: Optional[List[int]],
-                                  all_opened_prs_from_github: List[GitHubPullRequest],
-                                  org: str,
-                                  repo: str,
-                                  all: bool,
-                                  my: bool,
-                                  by: Optional[str],
-                                  user: Optional[str]) -> List[GitHubPullRequest]:
+    def __get_applicable_pull_requests(prs_list: Optional[List[int]],
+                                       all_opened_prs_from_github: List[GitHubPullRequest],
+                                       org: str,
+                                       repo: str,
+                                       all: bool,
+                                       my: bool,
+                                       by: Optional[str],
+                                       user: Optional[str]) -> List[GitHubPullRequest]:
         result: List[GitHubPullRequest] = []
         if prs_list:
             for pr_no in prs_list:
