@@ -3,7 +3,7 @@ from git_machete.constants import DISCOVER_DEFAULT_FRESH_BRANCH_COUNT
 
 short_docs: Dict[str, str] = {
     "add": "Add a branch to the tree of branch dependencies",
-    "advance": "Fast-forward merge one of children to the current branch and then slide out this child",
+    "advance": "Fast-forward merge one of children to the current branch, push it and then slide out the child",
     "anno": "Manage custom annotations",
     "clean": "Delete untracked and unmanaged branches and also optionally check out user's open GitHub PRs",
     "delete-unmanaged": "Delete local branches that are not present in the definition file",
@@ -58,10 +58,10 @@ long_docs: Dict[str, str] = {
     "advance": """
         <b>Usage: git machete advance [-y|--yes]</b>
 
-        Fast forwards (as in `git merge --ff-only`) the current branch `C` to match its downstream `D`,
-        and subsequently slides out `D`. Both steps require manual confirmation unless `-y`/`--yes` is provided.
+        Fast forwards (as in `git merge --ff-only`) the current branch `C` to match its downstream `D`, pushes ``C``
+        and subsequently slides out `D`. All three steps require manual confirmation unless `-y`/`--yes` is provided.
 
-        The downstream `C` is selected according to the following criteria:
+        The downstream `D` is selected according to the following criteria:
         * if `C` has exactly one downstream branch `d` whose tip is a descendant of `C`, and whose fork point is equal to `C` or is overridden
           (basically: there's a green edge between `C` and `d`), then `d` is selected as `D`,
         * if `C` has no downstream branches connected with a green edge to `C`, then `advance` fails,

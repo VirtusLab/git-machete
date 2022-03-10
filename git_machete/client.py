@@ -606,8 +606,17 @@ class MacheteClient:
             else:
                 return
 
-        ans = self.ask_if(f"\nBranch {bold(down_branch)} is now merged into {bold(branch)}. Slide {bold(down_branch)} out of the tree of branch dependencies?" + get_pretty_choices('y', 'N'),
-                          f"\nBranch {bold(down_branch)} is now merged into {bold(branch)}. Sliding {bold(down_branch)} out of the tree of branch dependencies...", opt_yes=opt_yes)
+        remote = self.__git.get_strict_remote_for_fetching_of_branch(branch)
+        ans = self.ask_if(f"\nBranch {bold(branch)} is now fast-forwarded to match {bold(down_branch)}. Push {bold(branch)} to {bold(remote)}?" + get_pretty_choices('y', 'N'),
+                          f"\nBranch {bold(branch)} is now fast-forwarded to match {bold(down_branch)}. Pushing {bold(branch)} to {bold(remote)}...", opt_yes=opt_yes)
+        if ans in ('y', 'yes'):
+            self.__git.push(remote, branch)
+            branch_pushed_or_fast_forwarded_msg = f"\nBranch {bold(branch)} is now pushed to {bold(remote)}."
+        else:
+            branch_pushed_or_fast_forwarded_msg = f"\nBranch {bold(branch)} is now fast-forwarded to match {bold(down_branch)}."
+
+        ans = self.ask_if(f"{branch_pushed_or_fast_forwarded_msg} Slide {bold(down_branch)} out of the tree of branch dependencies?" + get_pretty_choices('y', 'N'),
+                          f"{branch_pushed_or_fast_forwarded_msg} Sliding {bold(down_branch)} out of the tree of branch dependencies...", opt_yes=opt_yes)
         if ans in ('y', 'yes'):
             dds = self.__down_branches.get(LocalBranchShortName.of(down_branch), [])
             for dd in dds:

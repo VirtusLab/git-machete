@@ -85,6 +85,10 @@ def mock__get_github_token() -> Optional[str]:
     return None
 
 
+def mock_push(remote: str, branch: LocalBranchShortName, force_with_lease: bool = False) -> None:
+    pass
+
+
 def mock__get_github_token_fake() -> Optional[str]:
     return 'token'
 
@@ -1744,6 +1748,7 @@ class MacheteTester(unittest.TestCase):
             self.launch_command("advance")
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+    @mock.patch('git_machete.git_operations.GitContext.push', mock_push)
     def test_advance_with_one_downstream_branch(self) -> None:
         """Verify behaviour of a 'git machete advance' command.
 
