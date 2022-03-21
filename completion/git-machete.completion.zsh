@@ -23,9 +23,9 @@ _git-machete() {
             '(-y --yes)'{-y,--yes}'[Do not ask for confirmation whether to create the branch or whether to add onto the inferred upstream]' \
           && ret=0
           ;;
-        (advance|delete-unmanaged)
+        (advance)
           _arguments \
-            '(-y --yes)'{-y,--yes}'[Do not ask for confirmation when deleting unmanaged branches]' \
+            '(-y --yes)'{-y,--yes}'[Do not ask for confirmation]' \
           && ret=0
           ;;
         (anno)
@@ -38,6 +38,11 @@ _git-machete() {
           _arguments \
             '(-H --checkout-my-github-prs)'{-H,--checkout-my-github-prs}'[Checkout your open PRs into local branches]' \
             '(-y --yes)'{-y,--yes}'[Do not ask for confirmation when deleting unmanaged or untracked branches]' \
+          && ret=0
+          ;;
+        (delete-unmanaged)
+          _arguments \
+            '(-y --yes)'{-y,--yes}'[Do not ask for confirmation when deleting unmanaged branches]' \
           && ret=0
           ;;
         (d|diff)
