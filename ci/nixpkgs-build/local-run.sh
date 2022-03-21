@@ -2,7 +2,7 @@
 
 set -e -o pipefail -u
 
-source ci/local-run-commons.sh nixpkgs-build
+source "$(git rev-parse --show-toplevel)"/ci/local-run-commons.sh nixpkgs-build
 export_directory_hash nixpkgs-build
 cd "$(git rev-parse --show-toplevel)"/ci/nixpkgs-build/
 
