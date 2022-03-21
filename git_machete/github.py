@@ -165,12 +165,13 @@ def __fire_github_api_request(method: str, path: str, token: Optional[str], requ
         elif err.code in (http.HTTPStatus.UNAUTHORIZED, http.HTTPStatus.FORBIDDEN):
             first_line = f'GitHub API returned {err.code} HTTP status with error message: `{err.reason}`\n'
             if token:
-                raise MacheteException(first_line + f'Make sure that the token provided in `gh auth status` or `~/.config/hub`'
-                                                    f' or <b>{GITHUB_TOKEN_ENV_VAR}</b> is valid and allows for access to `{method.upper()}` https://{host}{path}`.')
+                raise MacheteException(first_line + f'Make sure that the GitHub API token provided by one of the: '
+                                                    f'{get_github_token_access_possibilities()}is valid and allows for access to '
+                                                    f'`{method.upper()}` https://{host}{path}`.')
             else:
                 raise MacheteException(
                     first_line + f'You might not have the required permissions for this repository. '
-                                 f'Provide a GitHub API token with `repo` access via <b>{GITHUB_TOKEN_ENV_VAR}</b> env var or `gh` or `hub`.\n'
+                                 f'Provide a GitHub API token with `repo` access via one of the: {get_github_token_access_possibilities()}'
                                  'Visit `https://github.com/settings/tokens` to generate a new one.')
         elif err.code == http.HTTPStatus.NOT_FOUND:
             raise MacheteException(
@@ -274,3 +275,10 @@ def get_pull_request_by_number_or_none(number: int, org: str, repo: str) -> Opti
 def checkout_pr_refs(git: GitContext, remote: str, pr_number: int, branch: LocalBranchShortName) -> None:
     git.fetch_ref(remote, f'pull/{pr_number}/head:{branch}')
     git.checkout(branch)
+
+
+def get_github_token_access_possibilities() -> str:
+    return (f'\n\t1. `{GITHUB_TOKEN_ENV_VAR}` environment variable.\n'
+            '\t2. Content of the `~/.github-token` file.\n'
+            '\t3. Current auth token from the `gh` GitHub CLI.\n'
+            '\t4. Current auth token from the `hub` GitHub CLI.\n')
