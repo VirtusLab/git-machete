@@ -4,6 +4,7 @@
 ## New in git-machete 3.8.0
 
 - added: `--all`, `--mine`, `--by` flags and parameter `<PR-number-1> ... <PR-number-N>` to `git machete github checkout-prs`
+- fixed: cherry-pick/merge/rebase/revert is detected on a per-worktree basis
 
 ## New in git-machete 3.7.2
 
