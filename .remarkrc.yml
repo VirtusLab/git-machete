@@ -1,10 +1,8 @@
----
 plugins:
   validate-links:
   lint-no-dead-urls:
-    skipUrlPatterns: [
-      '/https:\/\/img\.shields\.io/',
-      'https://github.com/r-ryantm',
-      'https://pypistats.org/packages/git-machete'
-    ]
-    gotOptions.timeout: 60000
+    skipUrlPatterns:
+      - https://github.com/r-ryantm
+      - https://img.shields.io
+      - https://pypistats.org/packages/git-machete
+    gotOptions.timeout: 10000 # ms

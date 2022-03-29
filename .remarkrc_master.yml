@@ -1,3 +1,2 @@
----
 plugins:
-  validate-links:
+  validate-links: {}
