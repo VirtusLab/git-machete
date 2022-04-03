@@ -436,7 +436,7 @@ class MacheteClient:
                 upstream = self.up_branch[branch]
                 if self.is_merged_to(
                         branch=branch,
-                        target=upstream,
+                        upstream=upstream,
                         opt_no_detect_squash_merges=False
                 ):
                     debug(f"inferred upstream of {branch} is {upstream}, but "
@@ -907,7 +907,7 @@ class MacheteClient:
             upstream = self.up_branch[branch]
             if self.is_merged_to(
                     branch=branch,
-                    target=upstream,
+                    upstream=upstream,
                     opt_no_detect_squash_merges=opt_no_detect_squash_merges):
                 edge_color[branch] = EscapeCodes.DIM
             elif not self.__git.is_ancestor_or_equal(upstream.full_name(), branch.full_name()):
@@ -1775,11 +1775,11 @@ class MacheteClient:
         elif ans in ('q', 'quit'):
             raise StopInteraction
 
-    def is_merged_to(self, branch: LocalBranchShortName, target: AnyBranchName, *, opt_no_detect_squash_merges: bool) -> bool:
-        if self.__git.is_ancestor_or_equal(branch.full_name(), target.full_name()):
-            # If branch is ancestor of or equal to the target, we need to distinguish between the
-            # case of branch being "recently" created from the target and the case of
-            # branch being fast-forward-merged to the target.
+    def is_merged_to(self, branch: LocalBranchShortName, upstream: AnyBranchName, *, opt_no_detect_squash_merges: bool) -> bool:
+        if self.__git.is_ancestor_or_equal(branch.full_name(), upstream.full_name()):
+            # If branch is ancestor of or equal to the upstream, we need to distinguish between the
+            # case of branch being "recently" created from the upstream and the case of
+            # branch being fast-forward-merged to the upstream.
             # The applied heuristics is to check if the filtered reflog of the branch
             # (reflog stripped of trivial events like branch creation, reset etc.)
             # is non-empty.
@@ -1788,9 +1788,9 @@ class MacheteClient:
             return False
         else:
             # In the default mode.
-            # If there is a commit in target with an identical tree state to branch,
-            # then branch may be squash or rebase merged into target.
-            return self.__git.does_contain_equivalent_tree(branch, target)
+            # If a commit with an identical tree state to branch is reachable from upstream,
+            # then branch may have been squashed or rebase-merged into upstream.
+            return self.__git.is_equivalent_tree_reachable(branch, upstream)
 
     @staticmethod
     def ask_if(

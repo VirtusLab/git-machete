@@ -1,5 +1,6 @@
 # Release notes
 
+## New in git-machete 3.9.0
 
 ## New in git-machete 3.8.0
 
