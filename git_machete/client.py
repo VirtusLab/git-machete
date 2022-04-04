@@ -36,7 +36,7 @@ class MacheteClient:
 
     def __init__(self, git: GitContext) -> None:
         self.__git: GitContext = git
-        self._definition_file_path: str = self.__git.get_git_subpath("machete")
+        self._definition_file_path: str = self.__git.get_main_git_subpath("machete")
         self._managed_branches: List[LocalBranchShortName] = []
         self._up_branch: Dict[LocalBranchShortName, Optional[LocalBranchShortName]] = {}  # TODO (#110): default dict with None
         self.__down_branches: Dict[LocalBranchShortName, Optional[List[LocalBranchShortName]]] = {}  # TODO (#110): default dict with []
@@ -2084,7 +2084,7 @@ class MacheteClient:
         if not fork_point:
             raise MacheteException(f"Could not find a fork-point for branch {head}.")
         commits: List[GitLogEntry] = self.__git.get_commits_between(fork_point, head)
-        description_path = self.__git.get_git_subpath('info', 'description')
+        description_path = self.__git.get_main_git_subpath('info', 'description')
         description: str = utils.slurp_file_or_empty(description_path)
 
         ok_str = ' <green><b>OK</b></green>'
@@ -2093,7 +2093,7 @@ class MacheteClient:
                                                     description=description, draft=opt_draft)
         print(fmt(f'{ok_str}, see <b>{pr.html_url}</b>'))
 
-        milestone_path: str = self.__git.get_git_subpath('info', 'milestone')
+        milestone_path: str = self.__git.get_main_git_subpath('info', 'milestone')
         milestone: str = utils.slurp_file_or_empty(milestone_path).strip()
         if milestone:
             print(fmt(f'Setting milestone of PR #{pr.number} to {milestone}...'), end='', flush=True)
@@ -2105,7 +2105,7 @@ class MacheteClient:
             add_assignees_to_pull_request(org, repo, pr.number, [current_user])
             print(fmt(ok_str))
 
-        reviewers_path = self.__git.get_git_subpath('info', 'reviewers')
+        reviewers_path = self.__git.get_main_git_subpath('info', 'reviewers')
         reviewers: List[str] = utils.get_non_empty_lines(utils.slurp_file_or_empty(reviewers_path))
         if reviewers:
             print(
@@ -2115,7 +2115,7 @@ class MacheteClient:
                 add_reviewers_to_pull_request(org, repo, pr.number, reviewers)
             except UnprocessableEntityHTTPError as e:
                 if 'Reviews may only be requested from collaborators.' in e.msg:
-                    warn(f"There are some invalid reviewers in {self.__git.get_git_subpath('info', 'reviewers')} file.\n"
+                    warn(f"There are some invalid reviewers in {self.__git.get_main_git_subpath('info', 'reviewers')} file.\n"
                          "Skipping adding reviewers to pull request.")
                 else:
                     raise e

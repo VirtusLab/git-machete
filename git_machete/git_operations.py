@@ -173,7 +173,8 @@ class GitContext:
     def __init__(self) -> None:
         self._git_version: Optional[Tuple[int, ...]] = None
         self._root_dir: Optional[str] = None
-        self._git_dir: Optional[str] = None
+        self._main_git_dir: Optional[str] = None
+        self._worktree_git_dir: Optional[str] = None
         self.__fetch_done_for: Set[str] = set()
         self.__config_cached: Optional[Dict[str, str]] = None
         self.__remotes_cached: Optional[List[str]] = None
@@ -265,23 +266,34 @@ class GitContext:
                 raise MacheteException("Not a git repository")
         return self._root_dir
 
-    def __get_git_dir(self) -> str:
-        if not self._git_dir:
+    def __get_worktree_git_dir(self) -> str:
+        if not self._worktree_git_dir:
+            try:
+                self._worktree_git_dir = self._popen_git("rev-parse", "--git-dir").strip()
+            except MacheteException:
+                raise MacheteException("Not a git repository")
+        return self._worktree_git_dir
+
+    def __get_main_git_dir(self) -> str:
+        if not self._main_git_dir:
             try:
                 git_dir: str = self._popen_git("rev-parse", "--git-dir").strip()
                 git_dir_parts = Path(git_dir).parts
                 if len(git_dir_parts) >= 3 and git_dir_parts[-3] == '.git' and git_dir_parts[-2] == 'worktrees':
-                    self._git_dir = os.path.join(*git_dir_parts[:-2])
+                    self._main_git_dir = os.path.join(*git_dir_parts[:-2])
                     debug(f'git dir pointing to {git_dir} - we are in a worktree; '
-                          f'using {self._git_dir} as the effective git dir instead')
+                          f'using {self._main_git_dir} as the effective git dir instead')
                 else:
-                    self._git_dir = git_dir
+                    self._main_git_dir = git_dir
             except MacheteException:
                 raise MacheteException("Not a git repository")
-        return self._git_dir
+        return self._main_git_dir
 
-    def get_git_subpath(self, *fragments: str) -> str:
-        return os.path.join(self.__get_git_dir(), *fragments)
+    def get_worktree_git_subpath(self, *fragments: str) -> str:
+        return os.path.join(self.__get_worktree_git_dir(), *fragments)
+
+    def get_main_git_subpath(self, *fragments: str) -> str:
+        return os.path.join(self.__get_main_git_dir(), *fragments)
 
     def get_git_timespec_parsed_to_unix_timestamp(self, date: str) -> int:
         try:
@@ -441,18 +453,21 @@ class GitContext:
         # Since many people don't use '--set-upstream' flag of 'push' or 'branch', we try to infer the remote if the tracking data is missing.
         return self.get_strict_counterpart_for_fetching_of_branch(branch) or self.__get_inferred_counterpart_for_fetching_of_branch(branch)
 
+    # Note that rebase/cherry-pick/merge/revert all happen on per-worktree basis,
+    # so we need to check .git/worktrees/<worktree>/<file> rather than .git/<file>
+
     def is_am_in_progress(self) -> bool:
         # As of git 2.24.1, this is how 'cmd_rebase()' in builtin/rebase.c checks whether am is in progress.
-        return os.path.isfile(self.get_git_subpath("rebase-apply", "applying"))
+        return os.path.isfile(self.get_worktree_git_subpath("rebase-apply", "applying"))
 
     def is_cherry_pick_in_progress(self) -> bool:
-        return os.path.isfile(self.get_git_subpath("CHERRY_PICK_HEAD"))
+        return os.path.isfile(self.get_worktree_git_subpath("CHERRY_PICK_HEAD"))
 
     def is_merge_in_progress(self) -> bool:
-        return os.path.isfile(self.get_git_subpath("MERGE_HEAD"))
+        return os.path.isfile(self.get_worktree_git_subpath("MERGE_HEAD"))
 
     def is_revert_in_progress(self) -> bool:
-        return os.path.isfile(self.get_git_subpath("REVERT_HEAD"))
+        return os.path.isfile(self.get_worktree_git_subpath("REVERT_HEAD"))
 
     def checkout(self, branch: LocalBranchShortName) -> None:
         self._run_git("checkout", "--quiet", branch, "--")
@@ -597,12 +612,12 @@ class GitContext:
 
         # .git/rebase-merge directory exists during cherry-pick-powered rebases,
         # e.g. all interactive ones and the ones where '--strategy=' or '--keep-empty' option has been passed
-        rebase_merge_head_name_file = self.get_git_subpath("rebase-merge", "head-name")
+        rebase_merge_head_name_file = self.get_worktree_git_subpath("rebase-merge", "head-name")
         if os.path.isfile(rebase_merge_head_name_file):
             head_name_file = rebase_merge_head_name_file
 
         # .git/rebase-apply directory exists during the remaining, i.e. am-powered rebases, but also during am sessions.
-        rebase_apply_head_name_file = self.get_git_subpath("rebase-apply", "head-name")
+        rebase_apply_head_name_file = self.get_worktree_git_subpath("rebase-apply", "head-name")
         # Most likely .git/rebase-apply/head-name can't exist during am sessions, but it's better to be safe.
         if not self.is_am_in_progress() and os.path.isfile(rebase_apply_head_name_file):
             head_name_file = rebase_apply_head_name_file
@@ -743,7 +758,7 @@ class GitContext:
                                self._popen_git("for-each-ref", "--format=%(refname)", "refs/heads")))))
 
     def get_hook_path(self, hook_name: str) -> str:
-        hook_dir: str = self.get_config_attr_or_none("core.hooksPath") or self.get_git_subpath("hooks")
+        hook_dir: str = self.get_config_attr_or_none("core.hooksPath") or self.get_main_git_subpath("hooks")
         return os.path.join(hook_dir, hook_name)
 
     def check_hook_executable(self, hook_path: str) -> bool:
@@ -792,7 +807,7 @@ class GitContext:
 
                 # No need to fix <git-dir>/rebase-apply/author-script,
                 # only <git-dir>/rebase-merge/author-script (i.e. interactive rebases, for the most part) is affected.
-                author_script = self.get_git_subpath("rebase-merge", "author-script")
+                author_script = self.get_worktree_git_subpath("rebase-merge", "author-script")
                 if os.path.isfile(author_script):
                     faulty_line_regex = re.compile("[A-Z0-9_]+='[^']*")
 

@@ -388,7 +388,7 @@ class MacheteTester(unittest.TestCase):
 
     @staticmethod
     def rewrite_definition_file(new_body: str) -> None:
-        definition_file_path = git.get_git_subpath("machete")
+        definition_file_path = git.get_main_git_subpath("machete")
         with open(os.path.join(os.getcwd(), definition_file_path), 'w') as def_file:
             def_file.writelines(new_body)
 

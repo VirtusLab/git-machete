@@ -409,6 +409,7 @@ long_docs: Dict[str, str] = {
     """,
     "hooks": """
         As with the standard git hooks, git-machete looks for its own specific hooks in `$GIT_DIR/hooks/*` (or `$(git config core.hooksPath)/*`, if set).
+        All hooks are executed from the top-level folder of the repository (or top-level folder of worktree/submodule, if applicable).
 
         Note: `hooks` is not a command as such, just a help topic (there is no `git machete hooks` command).
 
