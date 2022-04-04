@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.9.0
 
+- fixed: `fork-point` no longer specially treats branches merged to its parent
+
 ## New in git-machete 3.8.0
 
 - added: `--all`, `--mine`, `--by` flags and parameter `<PR-number-1> ... <PR-number-N>` to `git machete github checkout-prs`

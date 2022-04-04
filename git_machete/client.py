@@ -936,11 +936,14 @@ class MacheteClient:
             if branch in self.up_branch:
                 print_line_prefix(branch, f"{utils.get_vertical_bar()} \n")
                 if opt_list_commits:
-                    if edge_color[branch] in (EscapeCodes.RED, EscapeCodes.DIM):
-                        commits: List[GitLogEntry] = self.__git.get_commits_between(fp_sha(branch), branch.full_name()) if fp_sha(branch) else []
+                    if not fp_sha(branch):
+                        # Rare case, but can happen e.g. due to reflog expiry.
+                        commits: List[GitLogEntry] = []
+                    elif edge_color[branch] == EscapeCodes.DIM:
+                        commits = []
                     elif edge_color[branch] == EscapeCodes.YELLOW:
                         commits = self.__git.get_commits_between(self.up_branch[branch].full_name(), branch.full_name())
-                    else:  # edge_color == EscapeCodes.GREEN
+                    else:  # (EscapeCodes.RED, EscapeCodes.GREEN):
                         commits = self.__git.get_commits_between(fp_sha(branch), branch.full_name())
 
                     for commit in commits:
@@ -1084,12 +1087,6 @@ class MacheteClient:
 
     def __fork_point_and_containing_branch_pairs(self, branch: LocalBranchShortName, use_overrides: bool, opt_no_detect_squash_merges: bool) -> Tuple[FullCommitHash, List[BranchPair]]:
         upstream = self.up_branch.get(branch)
-
-        if self.__is_merged_to_upstream(
-                branch, opt_no_detect_squash_merges=opt_no_detect_squash_merges):
-            fp_sha = self.__git.get_commit_sha_by_revision(branch)
-            debug(f"{branch} is merged to {upstream}; skipping inference, using tip of {branch} ({fp_sha}) as fork point")
-            return fp_sha, []
 
         if use_overrides:
             overridden_fp_sha = self.__get_overridden_fork_point(branch)
