@@ -1855,7 +1855,6 @@ class MacheteClient:
             msg = ("Could not determine current user name, please check that the GitHub API token provided by one of the: "
                    f"{get_github_token_possible_providers()}is valid.")
             if fail_on_missing_current_user_for_my_opened_prs:
-                raise MacheteException(msg)
                 warn(msg)
                 return
             else:
