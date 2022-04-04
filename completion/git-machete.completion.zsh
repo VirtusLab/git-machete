@@ -159,6 +159,7 @@ __git_machete_cmds=(
   'add:Add a branch to the tree of branch dependencies'
   'advance:Fast-forward the current branch to match one of its downstreams and subsequently slide out this downstream'
   'anno:Manage custom annotations'
+  'clean:Synchronize with the remote repository: checkout open PRs, delete untracked and unmanaged branches'
   'delete-unmanaged:Delete local branches that are not present in the definition file'
   {diff,d}':Diff current working directory or a given branch against its fork point'
   'discover:Automatically discover tree of branch dependencies'
