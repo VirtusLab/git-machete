@@ -19,7 +19,7 @@ from git_machete.git_operations import (
 from git_machete.github import (
     add_assignees_to_pull_request, add_reviewers_to_pull_request,
     create_pull_request, checkout_pr_refs, derive_pull_request_by_head, derive_pull_requests,
-    get_parsed_github_remote_url, get_pull_request_by_number_or_none, GitHubPullRequest,
+    get_github_token_possible_providers, get_parsed_github_remote_url, get_pull_request_by_number_or_none, GitHubPullRequest,
     is_github_remote_url, set_base_of_pull_request, set_milestone_of_pull_request)
 from git_machete.utils import (
     get_pretty_choices, flat_map, excluding, fmt, tupled, warn, debug, bold,
@@ -1852,12 +1852,13 @@ class MacheteClient:
         remote, (org, repo) = self.__derive_remote_and_github_org_and_repo()
         current_user: Optional[str] = git_machete.github.derive_current_user_login()
         if not current_user and my_opened_prs:
+            msg = ("Could not determine current user name, please check that the GitHub API token provided by one of the: "
+                   f"{get_github_token_possible_providers()}is valid.")
             if fail_on_missing_current_user_for_my_opened_prs:
-                # TODO (#468): Display a more verbose message when GITHUB_TOKEN env variable is missing
-                warn("Could not determine current user name, please check your token.")
+                warn(msg)
                 return
             else:
-                raise MacheteException("Could not determine current user name, please check your token.")
+                raise MacheteException(msg)
         all_open_prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
         applicable_prs: List[GitHubPullRequest] = self.__get_applicable_pull_requests(pr_nos,
                                                                                       all_opened_prs_from_github=all_open_prs,
