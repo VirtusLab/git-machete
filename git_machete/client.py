@@ -508,7 +508,7 @@ class MacheteClient:
                     "Last branch to slide out can't have more than one child branch "
                     "if option `--down-fork-point` is passed.")
 
-            self.check_that_forkpoint_is_ancestor_or_equal_to_tip_of_branch(
+            self.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
                 forkpoint_sha=opt_down_fork_point,
                 branch=children_of_the_last_branch_to_slide_out[0])
 
@@ -1827,7 +1827,7 @@ class MacheteClient:
         self.__branch_pairs_by_sha_in_reflog = None
         self.__git.flush_caches()
 
-    def check_that_forkpoint_is_ancestor_or_equal_to_tip_of_branch(
+    def check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
             self, forkpoint_sha: AnyRevision, branch: AnyBranchName) -> None:
         if not self.__git.is_ancestor_or_equal(
                 earlier_revision=forkpoint_sha.full_name(),
