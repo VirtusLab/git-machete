@@ -31,12 +31,12 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 
     ``--all``    Checkout all open PRs.
 
-    ``--by``    Checkout open PRs authored by the given Github user.
+    ``--by``    Checkout open PRs authored by the given GitHub user.
 
       **Parameters:**
-        ``<github-login>`` Github account name.
+        ``<github-login>`` GitHub account name.
 
-    ``--mine``    Checkout open PRs for the current user associated with the Github token.
+    ``--mine``    Checkout open PRs for the current user associated with the GitHub token.
 
   **Parameters:**
     ``<PR-number-1> ... <PR-number-N>``
@@ -64,7 +64,7 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 
   Synchronizes with the remote repository:
 
-    1. checks out open PRs for the current user associated with the Github token and also traverses the chain of pull requests upwards, adding branches one by one to git-machete and checks them out locally as well,
+    1. checks out open PRs for the current user associated with the GitHub token and also traverses the chain of pull requests upwards, adding branches one by one to git-machete and checks them out locally as well,
     2. deletes unmanaged branches,
     3. deletes untracked managed branches that have no downstream branch.
 

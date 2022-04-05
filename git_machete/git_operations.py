@@ -908,7 +908,7 @@ class GitContext:
             params.append(commit)
         return self._popen_git(*params)
 
-    def display_branch_history_from_forkpoint(self, branch: LocalBranchFullName, fork_point: FullCommitHash) -> int:
+    def display_branch_history_from_fork_point(self, branch: LocalBranchFullName, fork_point: FullCommitHash) -> int:
         return self._run_git("log", f"^{fork_point}", branch)
 
     def commit_tree_with_given_parent_and_message_and_env(

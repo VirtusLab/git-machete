@@ -83,7 +83,7 @@ Nothing special, as long as they look neat in the sense that they are written in
 
 **How do you know that the comment has been approved?**
 
-As in the first point, if the PR author accepts the suggested comment without any additional comments, simply `Resolve` on Github will suffice. There is no need to reply things like "Accepted", "Done", etc as it just spams the reviewer's email.
+As in the first point, if the PR author accepts the suggested comment without any additional comments, simply `Resolve` on GitHub will suffice. There is no need to reply things like "Accepted", "Done", etc as it just spams the reviewer's email.
 
 **Can I resolve all comments in a single commit or each comment in an individual commit?**
 

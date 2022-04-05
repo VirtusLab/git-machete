@@ -509,7 +509,7 @@ class MacheteClient:
                     "if option `--down-fork-point` is passed.")
 
             self.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
-                forkpoint_sha=opt_down_fork_point,
+                fork_point_sha=opt_down_fork_point,
                 branch=children_of_the_last_branch_to_slide_out[0])
 
         # Verify that all "interior" slide-out branches have a single downstream pointing to the next slide-out
@@ -1151,8 +1151,8 @@ class MacheteClient:
             format_with_stat=opt_stat)
 
     def log(self, branch: LocalBranchShortName) -> None:
-        forkpoint = self.fork_point(branch, use_overrides=True, opt_no_detect_squash_merges=False)
-        self.__git.display_branch_history_from_forkpoint(branch.full_name(), forkpoint)
+        fork_point = self.fork_point(branch, use_overrides=True, opt_no_detect_squash_merges=False)
+        self.__git.display_branch_history_from_fork_point(branch.full_name(), fork_point)
 
     def down(self, branch: LocalBranchShortName, pick_mode: bool) -> List[LocalBranchShortName]:
         self.expect_in_managed_branches(branch)
@@ -1828,12 +1828,12 @@ class MacheteClient:
         self.__git.flush_caches()
 
     def check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
-            self, forkpoint_sha: AnyRevision, branch: AnyBranchName) -> None:
+            self, fork_point_sha: AnyRevision, branch: AnyBranchName) -> None:
         if not self.__git.is_ancestor_or_equal(
-                earlier_revision=forkpoint_sha.full_name(),
+                earlier_revision=fork_point_sha.full_name(),
                 later_revision=branch.full_name()):
             raise MacheteException(
-                f"Forkpoint {forkpoint_sha} is not ancestor of or the tip "
+                f"Forkpoint {fork_point_sha} is not ancestor of or the tip "
                 f"of the {branch} branch.")
 
     def checkout_github_prs(self,

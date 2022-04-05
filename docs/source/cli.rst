@@ -12,7 +12,7 @@ git machete commands and help topics:
 * :ref:`add`              -- Add a branch to the tree of branch dependencies.
 * :ref:`advance`          -- Fast-forward merge one of children to the current branch and then slide out this child
 * :ref:`anno`             -- Manage custom annotations
-* :ref:`clean`            -- Delete untracked managed branches with no downstream branch, delete unmanaged branches and also checkout open PRs for the current user associated with the Github token
+* :ref:`clean`            -- Delete untracked managed branches with no downstream branch, delete unmanaged branches and also checkout open PRs for the current user associated with the GitHub token
 * :ref:`delete-unmanaged` -- Delete local branches that are not present in the definition file
 * :ref:`diff`             -- Diff current working directory or a given branch against its computed fork point
 * :ref:`discover`         -- Automatically discover tree of branch dependencies
