@@ -165,7 +165,7 @@ Create the PR, using the upstream (parent) branch from `.git/machete` as the bas
 git machete github create-pr [--draft]
 ```
 
-Synchronize with the remote repository: delete untracked managed branches with no downstream branch, delete unmanaged branches and also checkout your open PRs: <br/>
+Synchronize with the remote repository: checkout your open PRs, delete unmanaged branches and also delete untracked managed branches with no downstream branch: <br/>
 ```shell script
 git machete github sync
 ```
