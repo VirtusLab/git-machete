@@ -155,11 +155,6 @@ Useful for merging the child branch to the current branch in a linear fashion (w
 
 ### GitHub integration
 
-Annotate the branches with GitHub PR numbers: <br/>
-```shell script
-git machete github anno-prs
-```
-
 Check out the given PRs into local branches, also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally as well: <br/>
 ```shell script
 git machete github checkout-prs [--all | --by=<github-login> | --mine | <PR-number-1> ... <PR-number-N>]
@@ -170,9 +165,9 @@ Create the PR, using the upstream (parent) branch from `.git/machete` as the bas
 git machete github create-pr [--draft]
 ```
 
-Sets the base of the current branch's PR to its upstream (parent) branch, as seen by git machete: <br/>
+Synchronize with the remote repository: checkout your open PRs, delete unmanaged branches and also delete untracked managed branches with no downstream branch: <br/>
 ```shell script
-git machete github retarget-pr
+git machete github sync
 ```
 
 **Note**: for private repositories, a GitHub API token with `repo` access is required.

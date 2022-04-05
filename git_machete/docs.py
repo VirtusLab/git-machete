@@ -5,6 +5,7 @@ short_docs: Dict[str, str] = {
     "add": "Add a branch to the tree of branch dependencies",
     "advance": "Fast-forward merge one of children to the current branch and then slide out this child",
     "anno": "Manage custom annotations",
+    "clean": "Delete untracked and unmanaged branches and also check out user's open GitHub PRs",
     "delete-unmanaged": "Delete local branches that are not present in the definition file",
     "diff": "Diff current working directory or a given branch against its computed fork point",
     "discover": "Automatically discover tree of branch dependencies",
@@ -128,8 +129,9 @@ long_docs: Dict[str, str] = {
         To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR, even in case of public repositories),
         a GitHub API token with `repo` scope is required, see `https://github.com/settings/tokens`. This will be resolved from the first of:
         1. `GITHUB_TOKEN` env var,
-        2. current auth token from the `gh` GitHub CLI,
-        3. current auth token from the `hub` GitHub CLI.
+        2. content of the ``.github-token`` file in the home directory (``~``),
+        3. current auth token from the `gh` GitHub CLI,
+        4. current auth token from the `hub` GitHub CLI.
 
         In any other case, sets the annotation for the given/current branch to the given argument.
         If multiple arguments are passed to the command, they are concatenated with a single space.
@@ -139,6 +141,30 @@ long_docs: Dict[str, str] = {
         <b>Options:</b>
           <b>-b, --branch=<branch></b>      Branch to set the annotation for.
           <b>-H, --sync-github-prs</b>      Annotate with GitHub PR numbers and authors where applicable.
+    """,
+    "clean": """
+        <b>Usage:
+          git machete clean [-c|--checkout-my-github-prs] [-y|--yes]
+
+        Synchronizes with the remote repository:
+            1. if invoked with ``-H`` or ``--checkout-my-github-prs``, checks out open PRs for the current user associated with the Github token and also traverses the chain of pull requests upwards, adding branches one by one to git-machete and checks them out locally as well,
+            2. deletes unmanaged branches,
+            3. deletes untracked managed branches that have no downstream branch.
+
+        No branch will be deleted unless explicitly confirmed by the user (or unless ``-y/--yes`` option is passed).
+        Equivalent of ``git machete github sync`` if invoked with ``-H`` or ``--checkout-my-github-prs``.
+
+        To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR, even in case of public repositories),
+        a GitHub API token with ``repo`` scope is required, see https://github.com/settings/tokens. This will be resolved from the first of:
+
+            1. ``GITHUB_TOKEN`` env var,
+            2. content of the ``.github-token`` file in the home directory (``~``),
+            3. current auth token from the ``gh`` GitHub CLI,
+            4. current auth token from the ``hub`` GitHub CLI.
+
+        **Options:**
+          <b>--c, --checkout-my-github-prs</b>     Checkout your open PRs into local branches.
+          <b>-y, --yes</b>                         Don't ask for confirmation when deleting branches from git.
     """,
     "delete-unmanaged": """
         <b>Usage: git machete delete-unmanaged [-y|--yes]</b>
@@ -303,7 +329,7 @@ long_docs: Dict[str, str] = {
     """,
     "github": """
         <b>Usage: git machete github <subcommand></b>
-        where <subcommand> is one of: `anno-prs`, `checkout-prs`, `create-pr`, `retarget-pr`.
+        where <subcommand> is one of: `anno-prs`, `checkout-prs`, `create-pr`, `retarget-pr`, `sync`.
 
         Creates, checks out and manages GitHub PRs while keeping them reflected in branch definition file.
 
@@ -352,6 +378,14 @@ long_docs: Dict[str, str] = {
         <b>`retarget-pr`:</b>
 
           Sets the base of the current branch's PR to upstream (parent) branch, as seen by git machete (see `git machete show up`).
+
+        <b>`sync`:</b>
+
+            Synchronizes with the remote repository:
+                1. checks out open PRs for the current user associated with the Github token and also traverses the chain of pull requests upwards, adding branches one by one to git-machete and checks them out locally as well,
+                2. deletes unmanaged branches,
+                3. deletes untracked managed branches that have no downstream branch.
+          Equivalent of ``git machete clean --checkout-my-github-prs``.
     """,
     "go": """
         <b>Usage: git machete g[o] <direction></b>
@@ -498,7 +532,7 @@ long_docs: Dict[str, str] = {
         * `up`:      the direct parent/upstream branch of the given branch.
     """,
     "slide-out": """
-        <b>Usage: git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] [<branch> [<branch> [<branch> ...]]]</b>
+        <b>Usage: git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [--delete] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] [<branch> [<branch> [<branch> ...]]]</b>
 
         Removes the given branch (or multiple branches) from the branch tree definition. If no branch has been specified current branch is assumed as the only branch.
         Then synchronizes the downstream (child) branches of the last specified branch on the top of the upstream (parent) branch of the first specified branch.
@@ -536,6 +570,8 @@ long_docs: Dict[str, str] = {
                                                             `git machete fork-point` overrides for downstream branches are recommended over use of this option.
                                                             See also doc for `--fork-point` option in `git machete help reapply` and `git machete help update`.
                                                             Not allowed if updating by merge.
+
+          <b>--delete</b>                                          Delete slid-out branches from git.
 
           <b>-M, --merge</b>                                       Update the downstream branch by merge rather than by rebase.
 

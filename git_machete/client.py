@@ -19,7 +19,7 @@ from git_machete.git_operations import (
 from git_machete.github import (
     add_assignees_to_pull_request, add_reviewers_to_pull_request,
     create_pull_request, checkout_pr_refs, derive_pull_request_by_head, derive_pull_requests,
-    get_parsed_github_remote_url, get_pull_request_by_number_or_none, GitHubPullRequest,
+    get_github_token_possible_providers, get_parsed_github_remote_url, get_pull_request_by_number_or_none, GitHubPullRequest,
     is_github_remote_url, set_base_of_pull_request, set_milestone_of_pull_request)
 from git_machete.utils import (
     get_pretty_choices, flat_map, excluding, fmt, tupled, warn, debug, bold,
@@ -482,15 +482,15 @@ class MacheteClient:
             self.save_definition_file()
             self.edit()
 
-    def slide_out(
-            self,
-            *,
-            branches_to_slide_out: List[LocalBranchShortName],
-            opt_down_fork_point: Optional[AnyRevision],
-            opt_merge: bool,
-            opt_no_interactive_rebase: bool,
-            opt_no_edit_merge: bool
-    ) -> None:
+    def slide_out(self,
+                  *,
+                  branches_to_slide_out: List[LocalBranchShortName],
+                  opt_delete: bool,
+                  opt_down_fork_point: Optional[AnyRevision],
+                  opt_merge: bool,
+                  opt_no_interactive_rebase: bool,
+                  opt_no_edit_merge: bool
+                  ) -> None:
         # Verify that all branches exist, are managed, and have an upstream.
         for branch in branches_to_slide_out:
             self.expect_in_managed_branches(branch)
@@ -512,8 +512,7 @@ class MacheteClient:
                 forkpoint_sha=opt_down_fork_point,
                 branch=children_of_the_last_branch_to_slide_out[0])
 
-        # Verify that all "interior" slide-out branches have a single downstream
-        # pointing to the next slide-out
+        # Verify that all "interior" slide-out branches have a single downstream pointing to the next slide-out
         for bu, bd in zip(branches_to_slide_out[:-1], branches_to_slide_out[1:]):
             dbs = self.__down_branches.get(bu)
             if not dbs or len(dbs) == 0:
@@ -536,6 +535,7 @@ class MacheteClient:
         for branch in branches_to_slide_out:
             self.up_branch[branch] = None
             self.__down_branches[branch] = None
+            self.managed_branches.remove(branch)
         self.__down_branches[new_upstream] = [
             branch for branch in self.__down_branches[new_upstream]
             if branch != branches_to_slide_out[0]]
@@ -564,6 +564,9 @@ class MacheteClient:
                         new_downstream, use_overrides=True, opt_no_detect_squash_merges=False),
                     new_downstream,
                     opt_no_interactive_rebase)
+
+        if opt_delete:
+            self._delete_branches(branches_to_delete=branches_to_slide_out, opt_yes=False)
 
     def advance(self, *, branch: LocalBranchShortName, opt_yes: bool) -> None:
         if not self.__down_branches.get(branch):
@@ -1032,7 +1035,11 @@ class MacheteClient:
             warn(f"{first_part}.\n\n{second_part}.")
 
     def delete_unmanaged(self, *, opt_yes: bool) -> None:
+        print(bold('Checking for unmanaged branches...'))
         branches_to_delete = excluding(self.__git.get_local_branches(), self.managed_branches)
+        self._delete_branches(branches_to_delete=branches_to_delete, opt_yes=opt_yes)
+
+    def _delete_branches(self, branches_to_delete: List[LocalBranchShortName], opt_yes: bool) -> None:
         current_branch = self.__git.get_current_branch_or_none()
         if current_branch and current_branch in branches_to_delete:
             branches_to_delete = excluding(branches_to_delete, [current_branch])
@@ -1835,25 +1842,32 @@ class MacheteClient:
                             all_opened_prs: bool = False,
                             my_opened_prs: bool = False,
                             opened_by: str = None,
-                            verbose: bool = False
+                            verbose: bool = False,
+                            fail_on_missing_current_user_for_my_opened_prs: bool = True
                             ) -> None:
+        print(bold('Checking for open GitHub PRs...'))
         org: str
         repo: str
         remote: str
         remote, (org, repo) = self.__derive_remote_and_github_org_and_repo()
         current_user: Optional[str] = git_machete.github.derive_current_user_login()
         if not current_user and my_opened_prs:
-            raise MacheteException(
-                "Could not determine current user name, please check your token.")
+            msg = ("Could not determine current user name, please check that the GitHub API token provided by one of the: "
+                   f"{get_github_token_possible_providers()}is valid.")
+            if fail_on_missing_current_user_for_my_opened_prs:
+                warn(msg)
+                return
+            else:
+                raise MacheteException(msg)
         all_open_prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
-        valid_prs: List[GitHubPullRequest] = self.__get_valid_pull_requests(pr_nos,
-                                                                            all_opened_prs_from_github=all_open_prs,
-                                                                            org=org,
-                                                                            repo=repo,
-                                                                            all=all_opened_prs,
-                                                                            my=my_opened_prs,
-                                                                            by=opened_by,
-                                                                            user=current_user)
+        applicable_prs: List[GitHubPullRequest] = self.__get_applicable_pull_requests(pr_nos,
+                                                                                      all_opened_prs_from_github=all_open_prs,
+                                                                                      org=org,
+                                                                                      repo=repo,
+                                                                                      all=all_opened_prs,
+                                                                                      my=my_opened_prs,
+                                                                                      by=opened_by,
+                                                                                      user=current_user)
 
         debug(f'organization is {org}, repository is {repo}')
         if verbose:
@@ -1862,7 +1876,7 @@ class MacheteClient:
 
         pr: Optional[GitHubPullRequest] = None
         checked_out_prs: List[GitHubPullRequest] = []
-        for pr in sorted(valid_prs, key=lambda x: x.number):
+        for pr in sorted(applicable_prs, key=lambda x: x.number):
             if pr.full_repository_name:
                 if '/'.join([remote, pr.head]) not in self.__git.get_remote_branches():
                     remote_already_added: Optional[str] = self.__get_added_remote_name_or_none(pr.repository_url)
@@ -1913,7 +1927,7 @@ class MacheteClient:
 
         debug('Current GitHub user is ' + (current_user or '<none>'))
         self.__sync_annotations_to_definition_file(all_open_prs, current_user, verbose=verbose)
-        if pr and len(valid_prs) == 1:
+        if pr and len(applicable_prs) == 1 and len(checked_out_prs) == 1:
             self.__git.checkout(LocalBranchShortName.of(pr.head))
             if verbose:
                 print(fmt(f"Switched to local branch `{pr.head}`"))
@@ -1927,14 +1941,14 @@ class MacheteClient:
         return path
 
     @staticmethod
-    def __get_valid_pull_requests(prs_list: Optional[List[int]],
-                                  all_opened_prs_from_github: List[GitHubPullRequest],
-                                  org: str,
-                                  repo: str,
-                                  all: bool,
-                                  my: bool,
-                                  by: Optional[str],
-                                  user: Optional[str]) -> List[GitHubPullRequest]:
+    def __get_applicable_pull_requests(prs_list: Optional[List[int]],
+                                       all_opened_prs_from_github: List[GitHubPullRequest],
+                                       org: str,
+                                       repo: str,
+                                       all: bool,
+                                       my: bool,
+                                       by: Optional[str],
+                                       user: Optional[str]) -> List[GitHubPullRequest]:
         result: List[GitHubPullRequest] = []
         if prs_list:
             for pr_no in prs_list:
@@ -2330,3 +2344,23 @@ class MacheteClient:
             if ans in ('y', 'yes'):
                 return
             raise MacheteException('Pull request creation interrupted.')
+
+    def delete_untracked(self, opt_yes: bool) -> None:
+        print(bold('Checking for untracked managed branches with no downstream...'))
+        branches_to_delete: List[LocalBranchShortName] = []
+        # TODO (#453): Consider switching to immutable collections for keeping the state (managed_branches etc.).
+        for managed_branch in self.managed_branches.copy():
+            status, _ = self.__git.get_strict_remote_sync_status(managed_branch)
+            if status == SyncToRemoteStatuses.UNTRACKED:
+                if not self.__down_branches.get(managed_branch):
+                    branches_to_delete.append(managed_branch)
+                    self.managed_branches.remove(managed_branch)
+                    self.up_branch[managed_branch] = None
+
+        self._delete_branches(branches_to_delete=branches_to_delete, opt_yes=opt_yes)
+        self.save_definition_file()
+
+    @staticmethod
+    def should_perform_interactive_slide_out(cmd: str) -> bool:
+        interactive_slide_out_safe_commands = {'traverse', 'status'}
+        return sys.stdout.isatty() and cmd in interactive_slide_out_safe_commands

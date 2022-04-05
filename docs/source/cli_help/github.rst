@@ -12,13 +12,7 @@ where ``<subcommand>`` is one of: ``anno-prs``, ``checkout-prs``, ``create-pr``,
 
 Creates, checks out and manages GitHub PRs while keeping them reflected in branch definition file.
 
-To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR, even in case of public repositories),
-a GitHub API token with ``repo`` scope is required, see https://github.com/settings/tokens. This will be resolved from the first of:
-
-    1. ``GITHUB_TOKEN`` env var,
-    2. content of the ``.github-token`` file in the home directory (``~``),
-    3. current auth token from the ``gh`` GitHub CLI,
-    4. current auth token from the ``hub`` GitHub CLI.
+.. include:: github_api_access.rst
 
 ``anno-prs``:
 
@@ -65,6 +59,16 @@ a GitHub API token with ``repo`` scope is required, see https://github.com/setti
 ``retarget-pr``:
 
   Sets the base of the current branch's PR to upstream (parent) branch, as seen by git machete (see ``git machete show up``).
+
+``sync``:
+
+  Synchronizes with the remote repository:
+
+    1. checks out open PRs for the current user associated with the Github token and also traverses the chain of pull requests upwards, adding branches one by one to git-machete and checks them out locally as well,
+    2. deletes unmanaged branches,
+    3. deletes untracked managed branches that have no downstream branch.
+
+  Equivalent of ``git machete clean --checkout-my-github-prs``.
 
 **Environment variables (all subcommands):**
 

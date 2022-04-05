@@ -86,6 +86,14 @@ def mock__get_github_token() -> Optional[str]:
     return None
 
 
+def mock__get_github_token_fake() -> Optional[str]:
+    return 'token'
+
+
+def mock_should_perform_interactive_slide_out(cmd: str) -> bool:
+    return True
+
+
 class FakeCommandLineOptions(CommandLineOptions):
     def __init__(self) -> None:
         super().__init__()
@@ -2424,7 +2432,8 @@ class MacheteTester(unittest.TestCase):
                              'Verify that expected error message has appeared when one of the given pull requests to checkout does not exists.')
 
         # check against user with no open pull requests
-        expected_msg = f"Warn: User `tester` has no open pull request in repository `{org}/{repo}`\n"
+        expected_msg = ("Checking for open GitHub PRs...\n"
+                        f"Warn: User `tester` has no open pull request in repository `{org}/{repo}`\n")
         self.assert_command(['github', 'checkout-prs', '--by', 'tester'], expected_msg, strip_indentation=False)
 
         # Check against closed pull request with head branch deleted from remote
@@ -2456,13 +2465,14 @@ class MacheteTester(unittest.TestCase):
          )
         os.chdir(self.repo_sandbox.local_path)
 
-        expected_msg = ("Warn: Pull request #5 is already closed.\n"
+        expected_msg = ("Checking for open GitHub PRs...\n"
+                        "Warn: Pull request #5 is already closed.\n"
                         "Pull request `#5` checked out at local branch `bugfix/remove-n-option`\n")
 
         self.assert_command(['github', 'checkout-prs', '5'], expected_msg, strip_indentation=False)
 
         # Check against multiple PRs
-        expected_msg = ''
+        expected_msg = 'Checking for open GitHub PRs...\n'
 
         self.assert_command(['github', 'checkout-prs', '3', '12'], expected_msg, strip_indentation=False)
 
@@ -2528,7 +2538,8 @@ class MacheteTester(unittest.TestCase):
         )
         os.chdir(self.repo_sandbox.local_path)
         self.rewrite_definition_file("master")
-        expected_msg = "Pull request `#2` checked out at local branch `comments/add_docstrings`\n"
+        expected_msg = ("Checking for open GitHub PRs...\n"
+                        "Pull request `#2` checked out at local branch `comments/add_docstrings`\n")
         self.assert_command(
             ['github', 'checkout-prs', '2'],
             expected_msg,
@@ -2550,7 +2561,8 @@ class MacheteTester(unittest.TestCase):
 
         # Check against closed pull request
         self.repo_sandbox.execute('git branch -D sphinx_export')
-        expected_msg = ("Warn: Pull request #23 is already closed.\n"
+        expected_msg = ("Checking for open GitHub PRs...\n"
+                        "Warn: Pull request #23 is already closed.\n"
                         "Pull request `#23` checked out at local branch `sphinx_export`\n")
 
         self.assert_command(
@@ -2596,7 +2608,8 @@ class MacheteTester(unittest.TestCase):
             .push()
         )
         self.launch_command('discover')
-        expected_msg = ("Warn: Pull request #2 comes from fork and its repository is already deleted. No remote tracking data will be set up for `feature/allow_checkout` branch.\n"
+        expected_msg = ("Checking for open GitHub PRs...\n"
+                        "Warn: Pull request #2 comes from fork and its repository is already deleted. No remote tracking data will be set up for `feature/allow_checkout` branch.\n"
                         "Warn: Pull request #2 is already closed.\n"
                         "Pull request `#2` checked out at local branch `feature/allow_checkout`\n")
         self.assert_command(
@@ -2611,6 +2624,74 @@ class MacheteTester(unittest.TestCase):
             msg="Verify that 'git machete github checkout prs' performs 'git checkout' to "
                 "the head branch of given pull request."
         )
+
+    git_api_state_for_test_github_sync = MockGithubAPIState([
+        {'head': {'ref': 'snickers', 'repo': mock_repository_info}, 'user': {'login': 'other_user'},
+         'base': {'ref': 'master'}, 'number': '7', 'html_url': 'www.github.com', 'state': 'open'}
+    ])
+
+    @mock.patch('git_machete.client.MacheteClient.should_perform_interactive_slide_out', mock_should_perform_interactive_slide_out)
+    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)
+    @mock.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
+    @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
+    @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
+    @mock.patch('git_machete.github.__get_github_token', mock__get_github_token_fake)
+    @mock.patch('urllib.request.urlopen', MockContextManager)
+    @mock.patch('urllib.request.Request', git_api_state_for_test_github_sync.new_request())
+    def test_github_sync(self) -> None:
+        (
+            self.repo_sandbox
+                .new_branch('master')
+                .commit()
+                .push()
+                .new_branch('bar')
+                .commit()
+                .new_branch('bar2')
+                .commit()
+                .check_out("master")
+                .new_branch('foo')
+                .commit()
+                .push()
+                .new_branch('foo2')
+                .commit()
+                .check_out("master")
+                .new_branch('moo')
+                .commit()
+                .new_branch('moo2')
+                .commit()
+                .check_out("master")
+                .new_branch('snickers')
+                .push()
+        )
+        self.launch_command('discover', '-y')
+        (
+            self.repo_sandbox
+                .check_out("master")
+                .new_branch('mars')
+                .commit()
+                .check_out("master")
+        )
+        self.launch_command('github', 'sync')
+
+        expected_status_output = (
+            """
+            master *
+            |
+            o-bar (untracked)
+            |
+            o-foo
+            |
+            o-moo (untracked)
+            |
+            o-snickers  PR #7
+            """
+        )
+        self.assert_command(['status'], expected_status_output)
+
+        with self.assertRaises(
+                subprocess.CalledProcessError,
+                msg="Verify that 'git checkout mars' raises an error when branch mars is no longer present in git."):
+            self.repo_sandbox.check_out("mars")
 
     def test_squash_with_valid_fork_point(self) -> None:
         (
@@ -2810,3 +2891,55 @@ class MacheteTester(unittest.TestCase):
         self.assert_command(['add', '--onto=feature'],
                             'Added branch `chore/remove_indentation` onto `feature`\n',
                             strip_indentation=False)
+
+    @mock.patch('git_machete.client.MacheteClient.should_perform_interactive_slide_out', mock_should_perform_interactive_slide_out)
+    @mock.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
+    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)
+    def test_clean(self) -> None:
+        (
+            self.repo_sandbox.new_branch('master')
+                .commit()
+                .push()
+                .new_branch('bar')
+                .commit()
+                .new_branch('bar2')
+                .commit()
+                .check_out("master")
+                .new_branch('foo')
+                .commit()
+                .push()
+                .new_branch('foo2')
+                .commit()
+                .check_out("master")
+                .new_branch('moo')
+                .commit()
+                .new_branch('moo2')
+                .commit()
+        )
+        self.launch_command('discover')
+        (
+            self.repo_sandbox
+                .check_out("master")
+                .new_branch('mars')
+                .commit()
+                .check_out("master")
+        )
+        self.launch_command('clean')
+
+        expected_status_output = (
+            """
+            master *
+            |
+            o-bar (untracked)
+            |
+            o-foo
+            |
+            o-moo (untracked)
+            """
+        )
+        self.assert_command(['status'], expected_status_output)
+
+        with self.assertRaises(
+                subprocess.CalledProcessError,
+                msg="Verify that 'git checkout mars' raises an error when branch mars is no longer present in git."):
+            self.repo_sandbox.check_out("mars")

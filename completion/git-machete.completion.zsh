@@ -23,7 +23,7 @@ _git-machete() {
             '(-y --yes)'{-y,--yes}'[Do not ask for confirmation whether to create the branch or whether to add onto the inferred upstream]' \
           && ret=0
           ;;
-        (advance|delete-unmanaged)
+        (advance)
           _arguments \
             '(-y --yes)'{-y,--yes}'[Do not ask for confirmation]' \
           && ret=0
@@ -32,6 +32,17 @@ _git-machete() {
           _arguments \
             '(-b --branch)'{-b,--branch=}'[Branch to set the annotation for]: :__git_machete_list_managed' \
             '(-H --sync-github-prs)'{-H,--sync-github-prs}'[Annotate with GitHub PR numbers and authors where applicable]' \
+          && ret=0
+          ;;
+        (clean)
+          _arguments \
+            '(-H --checkout-my-github-prs)'{-H,--checkout-my-github-prs}'[Checkout your open PRs into local branches]' \
+            '(-y --yes)'{-y,--yes}'[Do not ask for confirmation when deleting unmanaged or untracked branches]' \
+          && ret=0
+          ;;
+        (delete-unmanaged)
+          _arguments \
+            '(-y --yes)'{-y,--yes}'[Do not ask for confirmation when deleting unmanaged branches]' \
           && ret=0
           ;;
         (d|diff)
@@ -91,6 +102,7 @@ _git-machete() {
             # TODO (#113): suggest further branches based on the previous specified branch (like in Bash completion script)
             '*:: :__git_machete_list_slidable' \
             '(-d --down-fork-point)'{-d,--down-fork-point=}'[If updating by rebase, specify fork point commit after which the rebased part of history of the downstream branch is meant to start]: :__git_references' \
+            '(--delete)'--delete'[Delete slid-out branches]' \
             '(-M --merge)'{-M,--merge}'[Update by merge rather than by rebase]' \
             '(-n)'-n'[If updating by rebase, equivalent to --no-interactive-rebase. If updating by merge, equivalent to --no-edit-merge]' \
             '(--no-edit-merge)'--no-edit-merge'[If updating by merge, pass --no-edit flag to underlying git merge]' \
@@ -147,6 +159,7 @@ __git_machete_cmds=(
   'add:Add a branch to the tree of branch dependencies'
   'advance:Fast-forward the current branch to match one of its downstreams and subsequently slide out this downstream'
   'anno:Manage custom annotations'
+  'clean:Delete untracked and unmanaged branches and optionally check out open GitHub PRs'
   'delete-unmanaged:Delete local branches that are not present in the definition file'
   {diff,d}':Diff current working directory or a given branch against its fork point'
   'discover:Automatically discover tree of branch dependencies'
@@ -232,6 +245,7 @@ __git_machete_github_subcommands ()
         'checkout-prs:check out the given pull requests locally'
         'create-pr:create a PR for the current branch, using the upstream (parent) branch as the PR base'
         'retarget-pr:set the base of the current branch PR to upstream (parent) branch'
+        'sync:synchronize with the remote repository: checkout open PRs for the current user associated with the Github token, delete unmanaged branches and also delete untracked managed branches with no downstream branch'
       )
       _describe -t commands 'subcommand' github_subcommands
       ;;
