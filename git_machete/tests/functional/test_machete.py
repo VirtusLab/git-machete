@@ -50,7 +50,7 @@ def mock_exit_script(status_code: Optional[int] = None, error: Optional[BaseExce
 
 def mock_fetch_ref(cls: Any, remote: str, ref: str) -> None:
     branch: LocalBranchShortName = LocalBranchShortName.of(ref[ref.index(':') + 1:])
-    git.create_branch(branch, get_current_commit_hash())
+    git.create_branch(branch, get_current_commit_hash(), switch_branch=False)
     git.checkout(branch)
 
 
