@@ -159,7 +159,7 @@ __git_machete_cmds=(
   'add:Add a branch to the tree of branch dependencies'
   'advance:Fast-forward the current branch to match one of its downstreams and subsequently slide out this downstream'
   'anno:Manage custom annotations'
-  "clean:Delete untracked and unmanaged branches and also check out user's open GitHub PRs"
+  'clean:Delete untracked and unmanaged branches and optionally check out open GitHub PRs'
   'delete-unmanaged:Delete local branches that are not present in the definition file'
   {diff,d}':Diff current working directory or a given branch against its fork point'
   'discover:Automatically discover tree of branch dependencies'
@@ -245,7 +245,7 @@ __git_machete_github_subcommands ()
         'checkout-prs:check out the given pull requests locally'
         'create-pr:create a PR for the current branch, using the upstream (parent) branch as the PR base'
         'retarget-pr:set the base of the current branch PR to upstream (parent) branch'
-        'sync:synchronize with the remote repository: delete untracked managed branches with no downstream branch, delete unmanaged branches and also checkout open PRs for the current user associated with the Github token'
+        'sync:synchronize with the remote repository: checkout open PRs for the current user associated with the Github token, delete unmanaged branches and also delete untracked managed branches with no downstream branch'
       )
       _describe -t commands 'subcommand' github_subcommands
       ;;
