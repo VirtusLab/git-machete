@@ -220,7 +220,7 @@ class MacheteClient:
             opt_as_root: bool,
             opt_yes: bool,
             verbose: bool = True,
-            switch_branch: bool = True
+            switch_head_if_new_branch: bool = True
             ) -> None:
         if branch in self.managed_branches:
             raise MacheteException(
@@ -238,7 +238,7 @@ class MacheteClient:
                 msg = common_line + f"Check out `{branch}` locally?" + get_pretty_choices('y', 'N')
                 opt_yes_msg = common_line + f"Checking out `{branch}` locally..."
                 if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
-                    self.__git.create_branch(branch, remote_branch.full_name(), switch_branch=switch_branch)
+                    self.__git.create_branch(branch, remote_branch.full_name(), switch_head=switch_head_if_new_branch)
                 else:
                     return
                 # Not dealing with `onto` here. If it hasn't been explicitly
@@ -257,7 +257,7 @@ class MacheteClient:
                         current_branch = self.__git.get_current_branch_or_none()
                         if current_branch and current_branch in self.managed_branches:
                             opt_onto = current_branch
-                    self.__git.create_branch(branch, out_of, switch_branch=switch_branch)
+                    self.__git.create_branch(branch, out_of, switch_head=switch_head_if_new_branch)
                 else:
                     return
 
@@ -1915,7 +1915,7 @@ class MacheteClient:
                             opt_onto=None,
                             opt_yes=True,
                             verbose=verbose,
-                            switch_branch=False)
+                            switch_head_if_new_branch=False)
                     else:
                         self.add(
                             branch=branch,
@@ -1923,7 +1923,7 @@ class MacheteClient:
                             opt_as_root=False,
                             opt_yes=True,
                             verbose=verbose,
-                            switch_branch=False)
+                            switch_head_if_new_branch=False)
                     if pr not in checked_out_prs:
                         print(fmt(f"Pull request `#{pr.number}` checked out at local branch `{pr.head}`"))
                         checked_out_prs.append(pr)
