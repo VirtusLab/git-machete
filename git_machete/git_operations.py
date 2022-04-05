@@ -583,7 +583,7 @@ class GitContext:
     def create_branch(self, branch: LocalBranchShortName, out_of_revision: AnyRevision, switch_branch: bool) -> None:
         self._run_git("branch", branch, out_of_revision)
         if switch_branch:
-            self._run_git("switch", branch)
+            self._run_git("checkout", branch)
         self.flush_caches()  # the repository state has changed because of a successful branch creation, let's defensively flush all the caches
 
     def flush_caches(self) -> None:
