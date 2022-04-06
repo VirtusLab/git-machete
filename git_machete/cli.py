@@ -644,6 +644,7 @@ def launch(orig_args: List[str]) -> None:
             if github_subcommand == "anno-prs":
                 machete_client.sync_annotations_to_github_prs()
             elif github_subcommand == "checkout-prs":
+
                 if len(parsed_cli_as_dict) > 3 or len(parsed_cli_as_dict) == 2:
                     raise MacheteException(
                         f"'checkout-prs' subcommand can take only one of following options: {', '.join(['--all', '--by', '--mine', 'pr-no'])}")
