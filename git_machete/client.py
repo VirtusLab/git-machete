@@ -219,8 +219,8 @@ class MacheteClient:
             opt_onto: Optional[LocalBranchShortName],
             opt_as_root: bool,
             opt_yes: bool,
-            verbose: bool = True,
-            switch_head_if_new_branch: bool = True
+            verbose: bool,
+            switch_head_if_new_branch: bool
             ) -> None:
         if branch in self.managed_branches:
             raise MacheteException(
@@ -2269,7 +2269,12 @@ class MacheteClient:
 
         current_branch = self.__git.get_current_branch()
         if current_branch not in self.managed_branches:
-            self.add(branch=current_branch, opt_onto=opt_onto, opt_as_root=False, opt_yes=opt_yes)
+            self.add(branch=current_branch,
+                     opt_onto=opt_onto,
+                     opt_as_root=False,
+                     opt_yes=opt_yes,
+                     verbose=True,
+                     switch_head_if_new_branch=True)
             if current_branch not in self.managed_branches:
                 raise MacheteException(
                     "Command `github create-pr` can NOT be executed on the branch"
