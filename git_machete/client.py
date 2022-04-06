@@ -1833,7 +1833,7 @@ class MacheteClient:
                 earlier_revision=fork_point_sha.full_name(),
                 later_revision=branch.full_name()):
             raise MacheteException(
-                f"Forkpoint {fork_point_sha} is not ancestor of or the tip "
+                f"Fork point {fork_point_sha} is not ancestor of or the tip "
                 f"of the {branch} branch.")
 
     def checkout_github_prs(self,

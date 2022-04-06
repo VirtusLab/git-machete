@@ -1,8 +1,10 @@
+#!/usr/bin/env bash
+
 set -e -o pipefail -u
 
 self_dir=$(cd "$(dirname "$0")" &>/dev/null; pwd -P)
 source "$self_dir"/utils.sh
 
-if git grep -wqe forkpoint -- README.md RELEASE_NOTES.md CONTRIBUTING.md git_machete docs completion; then
-  die "Please use 'fork point' or 'fork_point' instead of 'forkpoint'."
+if git grep -we forkpoint -we Forkpoint -- :^ci/checks/ensure-consistent-style-for-fork-point.sh; then
+  die "Please use 'fork point' or 'Fork point' or 'fork_point' instead of 'forkpoint' or 'Forkpoint'."
 fi
