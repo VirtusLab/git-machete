@@ -50,8 +50,7 @@ def mock_exit_script(status_code: Optional[int] = None, error: Optional[BaseExce
 
 def mock_fetch_ref(cls: Any, remote: str, ref: str) -> None:
     branch: LocalBranchShortName = LocalBranchShortName.of(ref[ref.index(':') + 1:])
-    git.create_branch(branch, get_current_commit_hash())
-    git.checkout(branch)
+    git.create_branch(branch, get_current_commit_hash(), switch_head=True)
 
 
 def mock_run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
@@ -2404,13 +2403,13 @@ class MacheteTester(unittest.TestCase):
             |       |
             |       o-chore/redundant_checks  PR #18 (github_user)
             |
-            o-enhance/add_user *  PR #19 (github_user)
+            o-enhance/add_user  PR #19 (github_user)
 
             bugfix/add_user
             |
             o-testing/add_user  PR #22 (github_user)
               |
-              o-chore/comments  PR #24 (github_user)
+              o-chore/comments *  PR #24 (github_user)
             """
         )
 

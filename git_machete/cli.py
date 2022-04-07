@@ -546,7 +546,9 @@ def launch(orig_args: List[str]) -> None:
                 branch=branch,
                 opt_onto=cli_opts.opt_onto,
                 opt_as_root=cli_opts.opt_as_root,
-                opt_yes=cli_opts.opt_yes)
+                opt_yes=cli_opts.opt_yes,
+                verbose=True,
+                switch_head_if_new_branch=True)
         elif cmd == "advance":
             machete_client.read_definition_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             git.expect_no_operation_in_progress()
