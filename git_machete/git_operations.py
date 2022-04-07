@@ -580,8 +580,10 @@ class GitContext:
                                                          ))
             return self.__reflogs_cached[branch]
 
-    def create_branch(self, branch: LocalBranchShortName, out_of_revision: AnyRevision) -> None:
-        self._run_git("checkout", "-b", branch, out_of_revision)
+    def create_branch(self, branch: LocalBranchShortName, out_of_revision: AnyRevision, switch_head: bool) -> None:
+        self._run_git("branch", branch, out_of_revision)
+        if switch_head:
+            self._run_git("checkout", branch)
         self.flush_caches()  # the repository state has changed because of a successful branch creation, let's defensively flush all the caches
 
     def flush_caches(self) -> None:

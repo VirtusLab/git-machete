@@ -219,7 +219,8 @@ class MacheteClient:
             opt_onto: Optional[LocalBranchShortName],
             opt_as_root: bool,
             opt_yes: bool,
-            verbose: bool = True
+            verbose: bool,
+            switch_head_if_new_branch: bool
             ) -> None:
         if branch in self.managed_branches:
             raise MacheteException(
@@ -237,7 +238,7 @@ class MacheteClient:
                 msg = common_line + f"Check out `{branch}` locally?" + get_pretty_choices('y', 'N')
                 opt_yes_msg = common_line + f"Checking out `{branch}` locally..."
                 if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
-                    self.__git.create_branch(branch, remote_branch.full_name())
+                    self.__git.create_branch(branch, remote_branch.full_name(), switch_head=switch_head_if_new_branch)
                 else:
                     return
                 # Not dealing with `onto` here. If it hasn't been explicitly
@@ -256,7 +257,7 @@ class MacheteClient:
                         current_branch = self.__git.get_current_branch_or_none()
                         if current_branch and current_branch in self.managed_branches:
                             opt_onto = current_branch
-                    self.__git.create_branch(branch, out_of)
+                    self.__git.create_branch(branch, out_of, switch_head=switch_head_if_new_branch)
                 else:
                     return
 
@@ -1913,21 +1914,23 @@ class MacheteClient:
                             opt_as_root=True,
                             opt_onto=None,
                             opt_yes=True,
-                            verbose=verbose)
+                            verbose=verbose,
+                            switch_head_if_new_branch=False)
                     else:
                         self.add(
                             branch=branch,
                             opt_onto=reversed_path[index - 1],
                             opt_as_root=False,
                             opt_yes=True,
-                            verbose=verbose)
+                            verbose=verbose,
+                            switch_head_if_new_branch=False)
                     if pr not in checked_out_prs:
                         print(fmt(f"Pull request `#{pr.number}` checked out at local branch `{pr.head}`"))
                         checked_out_prs.append(pr)
 
         debug('Current GitHub user is ' + (current_user or '<none>'))
         self.__sync_annotations_to_definition_file(all_open_prs, current_user, verbose=verbose)
-        if pr and len(applicable_prs) == 1 and len(checked_out_prs) == 1:
+        if pr and len(checked_out_prs) == 1:
             self.__git.checkout(LocalBranchShortName.of(pr.head))
             if verbose:
                 print(fmt(f"Switched to local branch `{pr.head}`"))
@@ -2266,7 +2269,12 @@ class MacheteClient:
 
         current_branch = self.__git.get_current_branch()
         if current_branch not in self.managed_branches:
-            self.add(branch=current_branch, opt_onto=opt_onto, opt_as_root=False, opt_yes=opt_yes)
+            self.add(branch=current_branch,
+                     opt_onto=opt_onto,
+                     opt_as_root=False,
+                     opt_yes=opt_yes,
+                     verbose=True,
+                     switch_head_if_new_branch=True)
             if current_branch not in self.managed_branches:
                 raise MacheteException(
                     "Command `github create-pr` can NOT be executed on the branch"
