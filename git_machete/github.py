@@ -258,7 +258,7 @@ def get_parsed_github_remote_url(url: str) -> Optional[OrganizationRepository]:
     for pattern in GITHUB_REMOTE_PATTERNS:
         match = re.match(pattern, url)
         if match:
-            OrganizationRepository(organization=match.group(1), repository=match.group(2))
+            return OrganizationRepository(organization=match.group(1), repository=match.group(2))
     return None
 
 
