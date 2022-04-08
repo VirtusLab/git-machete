@@ -186,7 +186,7 @@ jobs:
 #          command: |
 #            sudo apt-get update
 #            sudo apt-get install hub
-            bash ci/github-releases/ci-deploy.sh
+#            bash ci/github-releases/ci-deploy.sh
 
       # Note: there are also releases happening outside of our CI:
       # 1) every time a commit is pushed to `develop` or `master`, a build for docs (`latest` or `stable` version, respectively)
@@ -226,5 +226,5 @@ workflows:
               only:
                 - "master"
                 - 'test_snapcraft'
-          requires:
-            *mandatory_jobs
+#          requires:
+#            *mandatory_jobs
