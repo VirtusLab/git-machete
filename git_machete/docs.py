@@ -5,7 +5,7 @@ short_docs: Dict[str, str] = {
     "add": "Add a branch to the tree of branch dependencies",
     "advance": "Fast-forward merge one of children to the current branch and then slide out this child",
     "anno": "Manage custom annotations",
-    "clean": "Delete untracked and unmanaged branches and also check out user's open GitHub PRs",
+    "clean": "Delete untracked and unmanaged branches and also optionally check out user's open GitHub PRs",
     "delete-unmanaged": "Delete local branches that are not present in the definition file",
     "diff": "Diff current working directory or a given branch against its computed fork point",
     "discover": "Automatically discover tree of branch dependencies",
@@ -348,7 +348,7 @@ long_docs: Dict[str, str] = {
 
         <b>`checkout-prs [--all | --by=<github-login> | --mine | <PR-number-1> ... <PR-number-N>]`:</b>
 
-          Check out the head branch of the given pull requests (specified by number),
+          Check out the head branch of the given pull requests (specified by numbers or by a flag),
           also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally.
           Once the specified pull requests are checked out locally, annotate local branches with corresponding pull request numbers.
           If only one PR has been checked out, then switch the local repository's HEAD to its head branch.
