@@ -14,7 +14,7 @@ architectures:
 base: core18
 # See https://forum.snapcraft.io/t/-/15566 for discussion on why classic confinement was necessary.
 confinement: classic
-grade: edge
+grade: stable
 icon: graphics/logo.png
 license: MIT
 
