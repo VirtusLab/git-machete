@@ -1363,8 +1363,13 @@ class MacheteClient:
         if not url_for_remote:
             raise MacheteException(fmt('No remotes defined for this repository (see `git remote`)'))
 
-        optional_org_name_for_github_remote: Dict[str, Optional[Tuple[str, str]]] = {
-            remote: get_parsed_github_remote_url(url) for remote, url in url_for_remote.items()}
+        optional_org_name_for_github_remote: Dict[str, Optional[Tuple[str, str]]] = {}
+        for remote, url in url_for_remote.items():
+            try:
+                optional_org_name_for_github_remote[remote] = self.__git.get_organization_and_repository_name_of_remote(remote)
+            except:
+                optional_org_name_for_github_remote[remote] = get_parsed_github_remote_url(url)
+
         org_name_for_github_remote: Dict[str, Tuple[str, str]] = {remote: org_name for remote, org_name in
                                                                   optional_org_name_for_github_remote.items() if
                                                                   org_name}

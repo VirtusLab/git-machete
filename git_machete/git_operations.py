@@ -337,6 +337,10 @@ class GitContext:
     def get_url_of_remote(self, remote: str) -> str:
         return self._popen_git("config", "--get", f"remote.{remote}.url").strip()  # 'git remote get-url' method has only been added in git v2.5.1
 
+    def get_organization_and_repository_name_of_remote(self, remote: str) -> Tuple[str, str]:
+        return self._popen_git("config", "--get", f"machete.github.{remote}.organization").strip(), \
+               self._popen_git("config", "--get", f"machete.github.{remote}.repository").strip()
+
     def fetch_remote(self, remote: str) -> None:
         if remote not in self.__fetch_done_for:
             self._run_git("fetch", remote, "--prune")  # --prune added to remove remote branches that are already deleted from remote
