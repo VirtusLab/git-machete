@@ -1367,7 +1367,7 @@ class MacheteClient:
         for remote, url in url_for_remote.items():
             try:
                 optional_org_name_for_github_remote[remote] = self.__git.get_organization_and_repository_name_of_remote(remote)
-            except:
+            except MacheteException:
                 optional_org_name_for_github_remote[remote] = get_parsed_github_remote_url(url)
 
         org_name_for_github_remote: Dict[str, Tuple[str, str]] = {remote: org_name for remote, org_name in

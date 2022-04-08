@@ -338,8 +338,12 @@ class GitContext:
         return self._popen_git("config", "--get", f"remote.{remote}.url").strip()  # 'git remote get-url' method has only been added in git v2.5.1
 
     def get_organization_and_repository_name_of_remote(self, remote: str) -> Tuple[str, str]:
-        return self._popen_git("config", "--get", f"machete.github.{remote}.organization").strip(), \
-               self._popen_git("config", "--get", f"machete.github.{remote}.repository").strip()
+        org = self.get_config_attr_or_none(f"machete.github.{remote}.organization")
+        repo = self.get_config_attr_or_none(f"machete.github.{remote}.repository")
+        if org and repo:
+            return org.strip(), repo.strip()
+        else:
+            raise MacheteException(f'Organization and repository name is unset for {remote}')
 
     def fetch_remote(self, remote: str) -> None:
         if remote not in self.__fetch_done_for:
