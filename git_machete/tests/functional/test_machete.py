@@ -100,14 +100,14 @@ class FakeCommandLineOptions(CommandLineOptions):
         self.opt_yes: bool = True
 
 
-class MockGithubAPIState:
+class MockGitHubAPIState:
     def __init__(self, pulls: List[Dict[str, Any]], issues: List[Dict[str, Any]] = None) -> None:
         self.pulls: List[Dict[str, Any]] = pulls
         self.user: Dict[str, str] = {'login': 'other_user', 'type': 'User', 'company': 'VirtusLab'}  # login must be different from the one used in pull requests, otherwise pull request author will not be annotated
         self.issues: List[Dict[str, Any]] = issues or []
 
-    def new_request(self) -> "MockGithubAPIRequest":
-        return MockGithubAPIRequest(self)
+    def new_request(self) -> "MockGitHubAPIRequest":
+        return MockGitHubAPIRequest(self)
 
     def get_issue(self, issue_no: str) -> Optional[Dict[str, Any]]:
         for issue in self.issues:
@@ -122,7 +122,7 @@ class MockGithubAPIState:
         return None
 
 
-class MockGithubAPIResponse:
+class MockGitHubAPIResponse:
     def __init__(self, status_code: int, response_data: Union[List[Dict[str, Any]], Dict[str, Any]]) -> None:
         self.response_data: Union[List[Dict[str, Any]], Dict[str, Any]] = response_data
         self.status_code: int = status_code
@@ -131,11 +131,11 @@ class MockGithubAPIResponse:
         return json.dumps(self.response_data).encode()
 
 
-class MockGithubAPIRequest:
-    def __init__(self, github_api_state: MockGithubAPIState) -> None:
-        self.github_api_state: MockGithubAPIState = github_api_state
+class MockGitHubAPIRequest:
+    def __init__(self, github_api_state: MockGitHubAPIState) -> None:
+        self.github_api_state: MockGitHubAPIState = github_api_state
 
-    def __call__(self, url: str, headers: Dict[str, str] = None, data: Union[str, bytes, None] = None, method: str = '') -> "MockGithubAPIResponse":
+    def __call__(self, url: str, headers: Dict[str, str] = None, data: Union[str, bytes, None] = None, method: str = '') -> "MockGitHubAPIResponse":
         self.parsed_url: ParseResult = urlparse(url, allow_fragments=True)
         self.parsed_query: Dict[str, List[str]] = parse_qs(self.parsed_url.query)
         self.json_data: Union[str, bytes] = data
@@ -143,7 +143,7 @@ class MockGithubAPIRequest:
         self.headers: Dict[str, str] = headers
         return self.handle_method(method)
 
-    def handle_method(self, method: str) -> "MockGithubAPIResponse":
+    def handle_method(self, method: str) -> "MockGitHubAPIResponse":
         if method == "GET":
             return self.handle_get()
         elif method == "PATCH":
@@ -153,7 +153,7 @@ class MockGithubAPIRequest:
         else:
             return self.make_response_object(HTTPStatus.METHOD_NOT_ALLOWED, [])
 
-    def handle_get(self) -> "MockGithubAPIResponse":
+    def handle_get(self) -> "MockGitHubAPIResponse":
         if 'pulls' in self.parsed_url.path:
             full_head_name: Optional[List[str]] = self.parsed_query.get('head')
             number: Optional[str] = self.find_number(self.parsed_url.path, 'pulls')
@@ -175,7 +175,7 @@ class MockGithubAPIRequest:
         else:
             return self.make_response_object(HTTPStatus.NOT_FOUND, [])
 
-    def handle_patch(self) -> "MockGithubAPIResponse":
+    def handle_patch(self) -> "MockGitHubAPIResponse":
         if 'issues' in self.parsed_url.path:
             return self.update_issue()
         elif 'pulls' in self.parsed_url.path:
@@ -183,7 +183,7 @@ class MockGithubAPIRequest:
         else:
             return self.make_response_object(HTTPStatus.NOT_FOUND, [])
 
-    def handle_post(self) -> "MockGithubAPIResponse":
+    def handle_post(self) -> "MockGitHubAPIResponse":
         assert not self.parsed_query
         if 'issues' in self.parsed_url.path:
             return self.update_issue()
@@ -192,7 +192,7 @@ class MockGithubAPIRequest:
         else:
             return self.make_response_object(HTTPStatus.NOT_FOUND, [])
 
-    def update_pull_request(self) -> "MockGithubAPIResponse":
+    def update_pull_request(self) -> "MockGitHubAPIResponse":
         pull_no: str = self.find_number(self.parsed_url.path, 'pulls')
         if not pull_no:
             if self.is_pull_created():
@@ -202,7 +202,7 @@ class MockGithubAPIRequest:
         pull: Dict[str, Any] = self.github_api_state.get_pull(pull_no)
         return self.fill_pull_request_data(json.loads(self.json_data), pull)
 
-    def create_pull_request(self) -> "MockGithubAPIResponse":
+    def create_pull_request(self) -> "MockGitHubAPIResponse":
         pull = {'number': self.get_next_free_number(self.github_api_state.pulls),
                 'user': {'login': 'github_user'},
                 'html_url': 'www.github.com',
@@ -211,7 +211,7 @@ class MockGithubAPIRequest:
                 'base': {'ref': ""}}
         return self.fill_pull_request_data(json.loads(self.json_data), pull)
 
-    def fill_pull_request_data(self, data: Dict[str, Any], pull: Dict[str, Any]) -> "MockGithubAPIResponse":
+    def fill_pull_request_data(self, data: Dict[str, Any], pull: Dict[str, Any]) -> "MockGitHubAPIResponse":
         index = self.get_index_or_none(pull, self.github_api_state.issues)
         for key in data.keys():
             if key in ('base', 'head'):
@@ -224,18 +224,18 @@ class MockGithubAPIRequest:
             self.github_api_state.pulls.append(pull)
         return self.make_response_object(HTTPStatus.CREATED, pull)
 
-    def update_issue(self) -> "MockGithubAPIResponse":
+    def update_issue(self) -> "MockGitHubAPIResponse":
         issue_no: str = self.find_number(self.parsed_url.path, 'issues')
         if not issue_no:
             return self.create_issue()
         issue: Dict[str, Any] = self.github_api_state.get_issue(issue_no)
         return self.fill_issue_data(json.loads(self.json_data), issue)
 
-    def create_issue(self) -> "MockGithubAPIResponse":
+    def create_issue(self) -> "MockGitHubAPIResponse":
         issue = {'number': self.get_next_free_number(self.github_api_state.issues)}
         return self.fill_issue_data(json.loads(self.json_data), issue)
 
-    def fill_issue_data(self, data: Dict[str, Any], issue: Dict[str, Any]) -> "MockGithubAPIResponse":
+    def fill_issue_data(self, data: Dict[str, Any], issue: Dict[str, Any]) -> "MockGitHubAPIResponse":
         index = self.get_index_or_none(issue, self.github_api_state.issues)
         for key in data.keys():
             issue[key] = data[key]
@@ -264,8 +264,8 @@ class MockGithubAPIRequest:
             return None
 
     @staticmethod
-    def make_response_object(status_code: int, response_data: Union[List[Dict[str, Any]], Dict[str, Any]]) -> "MockGithubAPIResponse":
-        return MockGithubAPIResponse(status_code, response_data)
+    def make_response_object(status_code: int, response_data: Union[List[Dict[str, Any]], Dict[str, Any]]) -> "MockGitHubAPIResponse":
+        return MockGitHubAPIResponse(status_code, response_data)
 
     @staticmethod
     def find_number(url: str, entity: str) -> Optional[str]:
@@ -292,10 +292,10 @@ class MockHTTPError(HTTPError):
 
 
 class MockContextManager:
-    def __init__(self, obj: MockGithubAPIResponse) -> None:
+    def __init__(self, obj: MockGitHubAPIResponse) -> None:
         self.obj = obj
 
-    def __enter__(self) -> MockGithubAPIResponse:
+    def __enter__(self) -> MockGitHubAPIResponse:
         if self.obj.status_code == HTTPStatus.NOT_FOUND:
             raise HTTPError(None, 404, 'Not found', None, None)
         elif self.obj.status_code == HTTPStatus.UNPROCESSABLE_ENTITY:
@@ -1833,11 +1833,11 @@ class MacheteTester(unittest.TestCase):
         parents_new_commit_hash = get_current_commit_hash()
         self.repo_sandbox.check_out("level-1-branch")
         self.launch_command("update", "--no-interactive-rebase")
-        new_forkpoint_hash = self.launch_command("fork-point").strip()
+        new_fork_point_hash = self.launch_command("fork-point").strip()
 
         self.assertEqual(
             parents_new_commit_hash,
-            new_forkpoint_hash,
+            new_fork_point_hash,
             msg="Verify that 'git machete update --no-interactive-rebase' perform"
                 "'git rebase' to the parent branch of the current branch."
         )
@@ -1872,12 +1872,12 @@ class MacheteTester(unittest.TestCase):
 
         self.launch_command(
             "update", "--no-interactive-rebase", "-f", branch_second_commit_hash)
-        new_forkpoint_hash = self.launch_command("fork-point").strip()
+        new_fork_point_hash = self.launch_command("fork-point").strip()
         branch_history = popen('git log -10 --oneline')
 
         self.assertEqual(
             roots_second_commit_hash,
-            new_forkpoint_hash,
+            new_fork_point_hash,
             msg="Verify that 'git machete update --no-interactive-rebase -f "
                 "<commit_hash>' performs 'git rebase' to the upstream branch."
         )
@@ -1898,7 +1898,7 @@ class MacheteTester(unittest.TestCase):
                 "specified by the option '-f' from the current branch."
         )
 
-    git_api_state_for_test_retarget_pr = MockGithubAPIState(
+    git_api_state_for_test_retarget_pr = MockGitHubAPIState(
         [{'head': {'ref': 'feature', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'root'}, 'number': '15',
           'html_url': 'www.github.com', 'state': 'open'}])
 
@@ -1926,7 +1926,7 @@ class MacheteTester(unittest.TestCase):
         self.assert_command(['github', 'retarget-pr'], 'The base branch of PR #15 has been switched to `branch-1`\n', strip_indentation=False)
         self.assert_command(['github', 'retarget-pr'], 'The base branch of PR #15 is already `branch-1`\n', strip_indentation=False)
 
-    git_api_state_for_test_anno_prs = MockGithubAPIState([
+    git_api_state_for_test_anno_prs = MockGitHubAPIState([
         {'head': {'ref': 'ignore-trailing', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com', 'state': 'open'},
         {'head': {'ref': 'allow-ownership-link', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '7', 'html_url': 'www.github.com', 'state': 'open'},
         {'head': {'ref': 'call-ws', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '31', 'html_url': 'www.github.com', 'state': 'open'}
@@ -2000,7 +2000,7 @@ class MacheteTester(unittest.TestCase):
             """,
         )
 
-    git_api_state_for_test_create_pr = MockGithubAPIState([{'head': {'ref': 'ignore-trailing', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com', 'state': 'open'}],
+    git_api_state_for_test_create_pr = MockGitHubAPIState([{'head': {'ref': 'ignore-trailing', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'hotfix/add-trigger'}, 'number': '3', 'html_url': 'www.github.com', 'state': 'open'}],
                                                           issues=[{'number': '4'}, {'number': '5'}, {'number': '6'}])
 
     @mock.patch('git_machete.cli.exit_script', mock_exit_script)
@@ -2168,7 +2168,7 @@ class MacheteTester(unittest.TestCase):
             self.assertEqual(e.exception.parameter, expected_error_message,
                              'Verify that expected error message has appeared when creating PR from root branch.')
 
-    git_api_state_for_test_create_pr_missing_base_branch_on_remote = MockGithubAPIState([{'head': {'ref': 'chore/redundant_checks', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'restrict_access'}, 'number': '18', 'html_url': 'www.github.com', 'state': 'open'}])
+    git_api_state_for_test_create_pr_missing_base_branch_on_remote = MockGitHubAPIState([{'head': {'ref': 'chore/redundant_checks', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'restrict_access'}, 'number': '18', 'html_url': 'www.github.com', 'state': 'open'}])
 
     # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_create_pr` due to `git fetch` executed by `create-pr` subcommand.
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
@@ -2210,7 +2210,7 @@ class MacheteTester(unittest.TestCase):
             """,
         )
 
-    git_api_state_for_test_checkout_prs = MockGithubAPIState([
+    git_api_state_for_test_checkout_prs = MockGitHubAPIState([
         {'head': {'ref': 'chore/redundant_checks', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'restrict_access'}, 'number': '18', 'html_url': 'www.github.com', 'state': 'open'},
         {'head': {'ref': 'restrict_access', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'allow-ownership-link'}, 'number': '17', 'html_url': 'www.github.com', 'state': 'open'},
         {'head': {'ref': 'allow-ownership-link', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'bugfix/feature'}, 'number': '12', 'html_url': 'www.github.com', 'state': 'open'},
@@ -2475,7 +2475,7 @@ class MacheteTester(unittest.TestCase):
 
         self.assert_command(['github', 'checkout-prs', '3', '12'], expected_msg, strip_indentation=False)
 
-    git_api_state_for_test_github_checkout_prs_fresh_repo = MockGithubAPIState([
+    git_api_state_for_test_github_checkout_prs_fresh_repo = MockGitHubAPIState([
         {'head': {'ref': 'comments/add_docstrings', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'improve/refactor'}, 'number': '2', 'html_url': 'www.github.com', 'state': 'open'},
         {'head': {'ref': 'restrict_access', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'allow-ownership-link'}, 'number': '17', 'html_url': 'www.github.com', 'state': 'open'},
         {'head': {'ref': 'improve/refactor', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'chore/sync_to_docs'}, 'number': '1', 'html_url': 'www.github.com', 'state': 'open'},
@@ -2584,7 +2584,7 @@ class MacheteTester(unittest.TestCase):
             """
         )
 
-    git_api_state_for_test_github_checkout_prs_from_fork_with_deleted_repo = MockGithubAPIState([
+    git_api_state_for_test_github_checkout_prs_from_fork_with_deleted_repo = MockGitHubAPIState([
         {'head': {'ref': 'feature/allow_checkout', 'repo': None}, 'user': {'login': 'github_user'}, 'base': {'ref': 'develop'}, 'number': '2', 'html_url': 'www.github.com', 'state': 'closed'},
         {'head': {'ref': 'bugfix/allow_checkout', 'repo': mock_repository_info}, 'user': {'login': 'github_user'},
          'base': {'ref': 'develop'}, 'number': '3', 'html_url': 'www.github.com', 'state': 'open'}
@@ -2624,7 +2624,7 @@ class MacheteTester(unittest.TestCase):
                 "the head branch of given pull request."
         )
 
-    git_api_state_for_test_github_sync = MockGithubAPIState([
+    git_api_state_for_test_github_sync = MockGitHubAPIState([
         {'head': {'ref': 'snickers', 'repo': mock_repository_info}, 'user': {'login': 'other_user'},
          'base': {'ref': 'master'}, 'number': '7', 'html_url': 'www.github.com', 'state': 'open'}
     ])

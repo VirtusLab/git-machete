@@ -245,7 +245,7 @@ __git_machete_github_subcommands ()
         'checkout-prs:check out the given pull requests locally'
         'create-pr:create a PR for the current branch, using the upstream (parent) branch as the PR base'
         'retarget-pr:set the base of the current branch PR to upstream (parent) branch'
-        'sync:synchronize with the remote repository: checkout open PRs for the current user associated with the Github token, delete unmanaged branches and also delete untracked managed branches with no downstream branch'
+        'sync:synchronize with the remote repository: checkout open PRs for the current user associated with the GitHub token, delete unmanaged branches and also delete untracked managed branches with no downstream branch'
       )
       _describe -t commands 'subcommand' github_subcommands
       ;;
@@ -260,8 +260,8 @@ __git_machete_github_subcommands ()
         (checkout-prs)
           _arguments \
             '(--all)'--all'[Checkout all open PRs.]' \
-            '(--by)'--by'[Checkout open PRs authored by the given Github user]' \
-            '(--mine)'--mine'[Checkout open PRs for the current user associated with the Github token.]'
+            '(--by)'--by'[Checkout open PRs authored by the given GitHub user]' \
+            '(--mine)'--mine'[Checkout open PRs for the current user associated with the GitHub token.]'
         ;;
       esac
     ;;

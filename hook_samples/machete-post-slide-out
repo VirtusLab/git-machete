@@ -3,7 +3,7 @@
 # machete-post-slide-out hook is invoked by 'git machete slide-out' and 'git machete traverse' after a branch
 # (or possibly multiple branches, in case of 'slide-out') of are slid out.
 
-# This sample retargets all GitHub PRs (using 'hub' CLI and Github API - authorizing with the token from ~/.config/hub)
+# This sample retargets all GitHub PRs (using 'hub' CLI and GitHub API - authorizing with the token from ~/.config/hub)
 # whose current base is the slid-out branch, so that the new upstream becomes their new base.
 
 # Note: since around May 2020, GitHub automatically retargets a PR Z->Y to Z->X once any PR Y->X (for some X) is merged.

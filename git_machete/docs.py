@@ -147,7 +147,7 @@ long_docs: Dict[str, str] = {
           git machete clean [-c|--checkout-my-github-prs] [-y|--yes]
 
         Synchronizes with the remote repository:
-            1. if invoked with ``-H`` or ``--checkout-my-github-prs``, checks out open PRs for the current user associated with the Github token and also traverses the chain of pull requests upwards, adding branches one by one to git-machete and checks them out locally as well,
+            1. if invoked with ``-H`` or ``--checkout-my-github-prs``, checks out open PRs for the current user associated with the GitHub token and also traverses the chain of pull requests upwards, adding branches one by one to git-machete and checks them out locally as well,
             2. deletes unmanaged branches,
             3. deletes untracked managed branches that have no downstream branch.
 
@@ -355,10 +355,10 @@ long_docs: Dict[str, str] = {
 
           <b>Options:</b>
             <b>--all</b>     Checkout all open PRs.
-            <b>--by</b>      Checkout open PRs authored by the given Github user.
+            <b>--by</b>      Checkout open PRs authored by the given GitHub user.
               <b>Parameters:</b>
-                <b><github-login></b> Github account name.
-            <b>--mine</b>    Checkout open PRs for the current user associated with the Github token.
+                <b><github-login></b> GitHub account name.
+            <b>--mine</b>    Checkout open PRs for the current user associated with the GitHub token.
 
           <b>Parameters:</b>
             <b><PR-number-1> ... <PR-number-N></b>    Pull request numbers to checkout.
@@ -382,7 +382,7 @@ long_docs: Dict[str, str] = {
         <b>`sync`:</b>
 
             Synchronizes with the remote repository:
-                1. checks out open PRs for the current user associated with the Github token and also traverses the chain of pull requests upwards, adding branches one by one to git-machete and checks them out locally as well,
+                1. checks out open PRs for the current user associated with the GitHub token and also traverses the chain of pull requests upwards, adding branches one by one to git-machete and checks them out locally as well,
                 2. deletes unmanaged branches,
                 3. deletes untracked managed branches that have no downstream branch.
           Equivalent of ``git machete clean --checkout-my-github-prs``.

@@ -722,8 +722,8 @@ def launch(orig_args: List[str]) -> None:
             git.expect_no_operation_in_progress()
             current_branch = git.get_current_branch()
             if "fork_point" in parsed_cli:
-                machete_client.check_that_forkpoint_is_ancestor_or_equal_to_tip_of_branch(
-                    forkpoint_sha=cli_opts.opt_fork_point, branch=current_branch)
+                machete_client.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
+                    fork_point_sha=cli_opts.opt_fork_point, branch=current_branch)
             git.rebase_onto_ancestor_commit(
                 current_branch,
                 cli_opts.opt_fork_point or machete_client.fork_point(
@@ -766,8 +766,8 @@ def launch(orig_args: List[str]) -> None:
             git.expect_no_operation_in_progress()
             current_branch = git.get_current_branch()
             if "fork_point" in parsed_cli:
-                machete_client.check_that_forkpoint_is_ancestor_or_equal_to_tip_of_branch(
-                    forkpoint_sha=cli_opts.opt_fork_point, branch=current_branch)
+                machete_client.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
+                    fork_point_sha=cli_opts.opt_fork_point, branch=current_branch)
             machete_client.squash(
                 current_branch=current_branch,
                 opt_fork_point=cli_opts.opt_fork_point or machete_client.fork_point(
@@ -809,8 +809,8 @@ def launch(orig_args: List[str]) -> None:
             machete_client.read_definition_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             git.expect_no_operation_in_progress()
             if "fork_point" in parsed_cli:
-                machete_client.check_that_forkpoint_is_ancestor_or_equal_to_tip_of_branch(
-                    forkpoint_sha=cli_opts.opt_fork_point, branch=git.get_current_branch())
+                machete_client.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
+                    fork_point_sha=cli_opts.opt_fork_point, branch=git.get_current_branch())
             machete_client.update(
                 opt_merge=cli_opts.opt_merge,
                 opt_no_edit_merge=cli_opts.opt_no_edit_merge,

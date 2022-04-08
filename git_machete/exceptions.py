@@ -15,7 +15,7 @@ class StopInteraction(Exception):
 
 
 class UnprocessableEntityHTTPError(MacheteException):
-    """This exception is raised when Github API returns HTTP status code 422 - Unprocessable Entity.
+    """This exception is raised when GitHub API returns HTTP status code 422 - Unprocessable Entity.
     Such a situation occurs when trying to do something not allowed by GitHub,
     e.g. assigning someone from outside organization as a reviewer
     or creating a pull request for a branch that already has a PR.
