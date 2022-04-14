@@ -46,7 +46,7 @@ Apart from simply ASCII-formatting the definition file, this also:
 
     * optionally lists commits introduced on each branch if ``-l/--list-commits`` or ``-L/--list-commits-with-hashes`` is supplied.
 
-The currently checked-out branch is underlined.
+The currently checked-out branch is underlined (or shown in blue on terminals that don't support underline).
 
 In case of :yellow:`yellow edge`, use ``-l`` or ``-L`` flag to show the exact location of the inferred fork point
 (which indicates e.g. what range of commits is going to be rebased when the branch is updated).

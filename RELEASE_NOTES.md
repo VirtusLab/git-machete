@@ -4,6 +4,7 @@
 
 - added: `advance` command now also pushes the branch after the merge
 - fixed: `fork-point` no longer specially treats branches merged to its parent
+- fixed: color scheme on 8-color terminals
 
 ## New in git-machete 3.8.0
 

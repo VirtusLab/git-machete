@@ -6,10 +6,10 @@ import re
 import sys
 
 from git_machete.exceptions import MacheteException
-from git_machete.utils import colored, debug, fmt
+from git_machete.utils import colored, debug, fmt, AnsiEscapeCodes
 from git_machete import utils
 from git_machete.constants import (
-    GitFormatPatterns, MAX_COUNT_FOR_INITIAL_LOG, EscapeCodes, SyncToRemoteStatuses)
+    GitFormatPatterns, MAX_COUNT_FOR_INITIAL_LOG, SyncToRemoteStatuses)
 
 
 class AnyRevision(str):
@@ -769,8 +769,8 @@ class GitContext:
             advice_ignored_hook = self.get_config_attr_or_none("advice.ignoredHook")
             if advice_ignored_hook != 'false':  # both empty and "true" is okay
                 # The [33m color must be used to keep consistent with how git colors this advice for its built-in hooks.
-                print(colored(f"hint: The '{hook_path}' hook was ignored because it's not set as executable.", EscapeCodes.YELLOW), file=sys.stderr)
-                print(colored("hint: You can disable this warning with `git config advice.ignoredHook false`.", EscapeCodes.YELLOW), file=sys.stderr)
+                print(colored(f"hint: The '{hook_path}' hook was ignored because it's not set as executable.", AnsiEscapeCodes.YELLOW), file=sys.stderr)
+                print(colored("hint: You can disable this warning with `git config advice.ignoredHook false`.", AnsiEscapeCodes.YELLOW), file=sys.stderr)
             return False
         else:
             return True

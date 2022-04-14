@@ -6,8 +6,6 @@ import sys
 import re
 import subprocess
 
-from git_machete.constants import EscapeCodes
-
 T = TypeVar('T')
 # To avoid displaying the same warning multiple times during a single run.
 displayed_warnings: Set[str] = set()
@@ -92,68 +90,6 @@ def find_executable(executable: str) -> Optional[str]:
     return None
 
 
-def bold(s: str) -> str:
-    return s if ascii_only or not s else EscapeCodes.BOLD + s + EscapeCodes.ENDC
-
-
-def dim(s: str) -> str:
-    return s if ascii_only or not s else EscapeCodes.DIM + s + EscapeCodes.ENDC
-
-
-def underline(s: str, star_if_ascii_only: bool = False) -> str:
-    if s and not ascii_only:
-        return EscapeCodes.UNDERLINE + s + EscapeCodes.ENDC
-    elif s and star_if_ascii_only:
-        return s + " *"
-    else:
-        return s
-
-
-def colored(s: str, color: str) -> str:
-    return s if ascii_only or not s else color + s + EscapeCodes.ENDC
-
-
-fmt_transformations: List[Callable[[str], str]] = [
-    lambda x: re.sub('<b>(.*?)</b>', bold(r"\1"), x, flags=re.DOTALL),
-    lambda x: re.sub('<u>(.*?)</u>', underline(r"\1"), x, flags=re.DOTALL),
-    lambda x: re.sub('<dim>(.*?)</dim>', dim(r"\1"), x, flags=re.DOTALL),
-    lambda x: re.sub('<red>(.*?)</red>', colored(r"\1", EscapeCodes.RED), x, flags=re.DOTALL),
-    lambda x: re.sub('<yellow>(.*?)</yellow>', colored(r"\1", EscapeCodes.YELLOW), x, flags=re.DOTALL),
-    lambda x: re.sub('<green>(.*?)</green>', colored(r"\1", EscapeCodes.GREEN), x, flags=re.DOTALL),
-    lambda x: re.sub('`(.*?)`', r"`\1`" if ascii_only else EscapeCodes.UNDERLINE + r"\1" + EscapeCodes.ENDC, x),
-]
-
-
-def fmt(*parts: str) -> str:
-    result = ''.join(parts)
-    for f in fmt_transformations:
-        result = f(result)
-    return result
-
-
-def get_vertical_bar() -> str:
-    return "|" if ascii_only else u"│"
-
-
-def get_right_arrow() -> str:
-    return "->" if ascii_only else u"➔"
-
-
-def get_pretty_choices(*choices: str) -> str:
-    def format_choice(c: str) -> str:
-        if not c:
-            return ''
-        elif c.lower() == 'y':
-            return colored(c, EscapeCodes.GREEN)
-        elif c.lower() == 'yq':
-            return colored(c[0], EscapeCodes.GREEN) + colored(c[1], EscapeCodes.RED)
-        elif c.lower() in ('n', 'q'):
-            return colored(c, EscapeCodes.RED)
-        else:
-            return colored(c, EscapeCodes.ORANGE)
-    return f" ({', '.join(map_truthy_only(format_choice, choices))}) "
-
-
 def debug(msg: Optional[str] = None) -> None:
     if debug_mode:
         function_name = bold(inspect.stack()[1].function)
@@ -222,11 +158,11 @@ def popen_cmd(cmd: str, *args: str, **kwargs: Any) -> Tuple[int, str, str]:
 
     if debug_mode:
         if exit_code != 0:
-            print(colored(f"<exit code: {exit_code}>\n", EscapeCodes.RED), file=sys.stderr)
+            print(colored(f"<exit code: {exit_code}>\n", AnsiEscapeCodes.RED), file=sys.stderr)
         if stdout:
             print(f"{dim('<stdout>:')}\n{dim(stdout)}", file=sys.stderr)
         if stderr:
-            print(f"{dim('<stderr>:')}\n{colored(stderr, EscapeCodes.RED)}", file=sys.stderr)
+            print(f"{dim('<stderr>:')}\n{colored(stderr, AnsiEscapeCodes.RED)}", file=sys.stderr)
 
     return exit_code, stdout, stderr
 
@@ -247,7 +183,7 @@ def get_cmd_shell_repr(cmd: str, *args: str, env: Optional[Dict[str, str]]) -> s
 
 def warn(msg: str, apply_fmt: bool = True) -> None:
     if msg not in displayed_warnings:
-        print(colored("Warn: ", EscapeCodes.RED) + (fmt(msg) if apply_fmt else msg), file=sys.stderr)
+        print(colored("Warn: ", AnsiEscapeCodes.RED) + (fmt(msg) if apply_fmt else msg), file=sys.stderr)
         displayed_warnings.add(msg)
 
 
@@ -257,3 +193,93 @@ def slurp_file_or_empty(path: str) -> str:
             return file.read()
     except IOError:
         return ''
+
+
+class AnsiEscapeCodes:
+    try:
+        stdout = popen_cmd('tput', 'colors')[1]
+        __number_of_supported_colors = int(stdout)
+    except FileNotFoundError:
+        # If we cannot retrieve the number of supported colors, let's defensively assume it's low.
+        __number_of_supported_colors = 8
+    except ValueError:
+        __number_of_supported_colors = 8
+
+    # `GIT_MACHETE_DIM_AS_GRAY` remains undocumented as for now,
+    # was just needed for animated gifs to render correctly (`[2m`-style dimmed text was invisible)
+    __dim_as_gray = os.environ.get('GIT_MACHETE_DIM_AS_GRAY') == 'true'
+    __is_full_fledged_terminal = __number_of_supported_colors >= 256
+
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    DIM = '\033[38;2;128;128;128m' if __dim_as_gray else '\033[2m'
+    # Let's fall back to cyan on 8-color terminals
+    UNDERLINE = '\033[4m' if __is_full_fledged_terminal else '\033[36m'
+    GREEN = '\033[32m'
+    YELLOW = '\033[33m'
+    # Let's fall back to yellow on 8-color terminals
+    ORANGE = '\033[00;38;5;208m' if __is_full_fledged_terminal else '\033[33m'
+    # Let's fall back to dark red (which might be similar to yellow :/) on 8-color terminals
+    RED = '\033[91m' if __is_full_fledged_terminal else '\033[31m'
+
+
+def bold(s: str) -> str:
+    return s if ascii_only or not s else AnsiEscapeCodes.BOLD + s + AnsiEscapeCodes.ENDC
+
+
+def dim(s: str) -> str:
+    return s if ascii_only or not s else AnsiEscapeCodes.DIM + s + AnsiEscapeCodes.ENDC
+
+
+def underline(s: str, star_if_ascii_only: bool = False) -> str:
+    if s and not ascii_only:
+        return AnsiEscapeCodes.UNDERLINE + s + AnsiEscapeCodes.ENDC
+    elif s and star_if_ascii_only:
+        return s + " *"
+    else:
+        return s
+
+
+def colored(s: str, color: str) -> str:
+    return s if ascii_only or not s else color + s + AnsiEscapeCodes.ENDC
+
+
+fmt_transformations: List[Callable[[str], str]] = [
+    lambda x: re.sub('<b>(.*?)</b>', bold(r"\1"), x, flags=re.DOTALL),
+    lambda x: re.sub('<u>(.*?)</u>', underline(r"\1"), x, flags=re.DOTALL),
+    lambda x: re.sub('<dim>(.*?)</dim>', dim(r"\1"), x, flags=re.DOTALL),
+    lambda x: re.sub('<red>(.*?)</red>', colored(r"\1", AnsiEscapeCodes.RED), x, flags=re.DOTALL),
+    lambda x: re.sub('<yellow>(.*?)</yellow>', colored(r"\1", AnsiEscapeCodes.YELLOW), x, flags=re.DOTALL),
+    lambda x: re.sub('<green>(.*?)</green>', colored(r"\1", AnsiEscapeCodes.GREEN), x, flags=re.DOTALL),
+    lambda x: re.sub('`(.*?)`', r"`\1`" if ascii_only else AnsiEscapeCodes.UNDERLINE + r"\1" + AnsiEscapeCodes.ENDC, x),
+]
+
+
+def fmt(*parts: str) -> str:
+    result = ''.join(parts)
+    for f in fmt_transformations:
+        result = f(result)
+    return result
+
+
+def get_vertical_bar() -> str:
+    return "|" if ascii_only else u"│"
+
+
+def get_right_arrow() -> str:
+    return "->" if ascii_only else u"➔"
+
+
+def get_pretty_choices(*choices: str) -> str:
+    def format_choice(c: str) -> str:
+        if not c:
+            return ''
+        elif c.lower() == 'y':
+            return colored(c, AnsiEscapeCodes.GREEN)
+        elif c.lower() == 'yq':
+            return colored(c[0], AnsiEscapeCodes.GREEN) + colored(c[1], AnsiEscapeCodes.RED)
+        elif c.lower() in ('n', 'q'):
+            return colored(c, AnsiEscapeCodes.RED)
+        else:
+            return colored(c, AnsiEscapeCodes.ORANGE)
+    return f" ({', '.join(map_truthy_only(format_choice, choices))}) "

@@ -11,11 +11,10 @@ import git_machete.options
 from git_machete import __version__
 from git_machete import utils
 from git_machete.client import MacheteClient
-from git_machete.constants import EscapeCodes
 from git_machete.docs import short_docs, long_docs
 from git_machete.exceptions import MacheteException, StopInteraction
 from git_machete.git_operations import AnyRevision, GitContext, LocalBranchShortName, RemoteBranchShortName
-from git_machete.utils import fmt, underline, excluding, warn
+from git_machete.utils import fmt, underline, excluding, warn, AnsiEscapeCodes
 
 T = TypeVar('T')
 
@@ -64,7 +63,7 @@ def get_help_description(command: str = None) -> str:
                 alias = f", {alias_by_command[cm]}" if cm in alias_by_command else ""
                 usage_str += ("    %s%-18s%s%s" % (
                     # bold(...) can't be used here due to the %-18s format specifier
-                    EscapeCodes.BOLD, cm + alias, EscapeCodes.ENDC, short_docs[cm]))
+                    AnsiEscapeCodes.BOLD, cm + alias, AnsiEscapeCodes.ENDC, short_docs[cm]))
                 usage_str += '\n'
             usage_str += '\n'
         usage_str += fmt(textwrap.dedent("""
