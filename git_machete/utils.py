@@ -1,6 +1,5 @@
 import inspect
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, \
-    TypeVar, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, TypeVar
 
 import os
 import sys
