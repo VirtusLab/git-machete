@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import sys
 
 # Check for correct python version
@@ -14,6 +15,11 @@ def validate_python_version():  # type: ignore
 
 
 validate_python_version()  # type: ignore
+
+# Fix for terminal colors on windows
+# See https://stackoverflow.com/questions/12492810/python-how-can-i-make-the-ansi-escape-codes-to-work-also-in-windows
+if os.name == "nt":
+  os.system("")
 
 from git_machete import cli
 cli.main()

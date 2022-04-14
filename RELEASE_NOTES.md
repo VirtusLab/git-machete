@@ -1,5 +1,8 @@
 # Release notes
 
+## New in git-machete 3.8.1
+
+- fixed: color scheme on Windows
 
 ## New in git-machete 3.8.0
 
