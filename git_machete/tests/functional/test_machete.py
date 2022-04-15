@@ -4,26 +4,26 @@ import os
 import random
 import re
 import string
+import subprocess
 import sys
 import textwrap
 import time
 import unittest
-import subprocess
-from contextlib import redirect_stdout, redirect_stderr
+from contextlib import redirect_stderr, redirect_stdout
 from http import HTTPStatus
 from typing import Any, Dict, Iterable, List, Optional, Union
 from unittest import mock
-from urllib.parse import urlparse, ParseResult, parse_qs
 from urllib.error import HTTPError
+from urllib.parse import ParseResult, parse_qs, urlparse
 
 from git_machete import cli
 from git_machete.docs import long_docs
 from git_machete.exceptions import MacheteException
+from git_machete.git_operations import (FullCommitHash, GitContext,
+                                        LocalBranchShortName)
 from git_machete.github import get_parsed_github_remote_url
-from git_machete.git_operations import FullCommitHash, GitContext, LocalBranchShortName
 from git_machete.options import CommandLineOptions
 from git_machete.utils import dim
-
 
 cli_opts: CommandLineOptions = CommandLineOptions()
 git: GitContext = GitContext()
