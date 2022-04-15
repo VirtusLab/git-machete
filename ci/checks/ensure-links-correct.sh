@@ -6,7 +6,7 @@ set -e -o pipefail -u
 if [[ ${CIRCLE_BRANCH-} != master ]]; then
   rc_path=.remarkrc.yml
 else
-  rc_path=.remarkrc_master.yml
+  rc_path=.remarkrc-allow-dead-urls.yml
 fi
 
 remark --frail --ignore-path=.gitignore --rc-path=$rc_path .
