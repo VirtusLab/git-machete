@@ -1,6 +1,7 @@
 plugins:
   lint-no-dead-urls:
-    skipUrlPatterns: []
+    skipUrlPatterns:
+      - https://github.com/r-ryantm
     gotOptions:
       timeout:
         request: 20000 # ms
