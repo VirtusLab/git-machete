@@ -2,7 +2,6 @@ plugins:
   lint-no-dead-urls:
     skipUrlPatterns: []
     gotOptions:
-      concurrency: 4
       timeout:
         request: 20000 # ms
   validate-links: {}
