@@ -19,7 +19,15 @@ validate_python_version()  # type: ignore
 # Fix for terminal colors on windows
 # See https://stackoverflow.com/questions/12492810/python-how-can-i-make-the-ansi-escape-codes-to-work-also-in-windows
 if os.name == "nt":
+  print('os.system("")')
   os.system("")
+  print('os.system("color")')
+  os.system("color")
+
+  from ctypes import windll
+  k = windll.kernel32
+  print('SetConsoleMode')
+  k.SetConsoleMode(k.GetStdHandle(-11), 7)
 
 from git_machete import cli
 cli.main()
