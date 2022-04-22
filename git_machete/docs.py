@@ -631,7 +631,7 @@ long_docs: Dict[str, str] = {
 
         * optionally lists commits introduced on each branch if `-l`/`--list-commits` or `-L`/`--list-commits-with-hashes` is supplied.
 
-        The currently checked-out branch is underlined.
+        Name of the currently checked-out branch is underlined (or shown in blue on terminals that don't support underline).
 
         In case of yellow edge, use `-l` flag to show the exact location of the inferred fork point
         (which indicates e.g. what range of commits is going to be rebased when the branch is updated).
