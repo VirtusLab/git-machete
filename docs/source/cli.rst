@@ -20,7 +20,7 @@ git machete commands and help topics:
 * :ref:`file`             -- Display the location of the definition file
 * :ref:`fork-point`       -- Display or override fork point for a branch
 * :ref:`format`           -- Display docs for the format of the definition file
-* :ref:`github`           -- Create, retarget and manage GitHub PRs while keeping them reflected in git machete
+* :ref:`github`           -- Create, check out and manage GitHub PRs while keeping them reflected in git machete
 * :ref:`go`               -- Check out the branch relative to the position of the current branch, accepts down/first/last/next/root/prev/up <annotation text>
 * :ref:`help`             -- Display this overview, or detailed help for a specified command
 * :ref:`hooks`            -- Display docs for the extra hooks added by git machete
