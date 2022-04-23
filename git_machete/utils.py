@@ -199,16 +199,15 @@ class AnsiEscapeCodes:
     try:
         stdout = popen_cmd('tput', 'colors')[1]
         __number_of_supported_colors = int(stdout)
-    except FileNotFoundError:
+    except Exception:
         # If we cannot retrieve the number of supported colors, let's defensively assume it's low.
         __number_of_supported_colors = 8
-    except ValueError:
-        __number_of_supported_colors = 8
+    __is_full_fledged_terminal = __number_of_supported_colors >= 256
 
     # `GIT_MACHETE_DIM_AS_GRAY` remains undocumented as for now,
-    # was just needed for animated gifs to render correctly (`[2m`-style dimmed text was invisible)
+    # is just needed for animated gifs to render correctly
+    # (`[2m`-style dimmed text is invisible in asciicinema renders).
     __dim_as_gray = os.environ.get('GIT_MACHETE_DIM_AS_GRAY') == 'true'
-    __is_full_fledged_terminal = __number_of_supported_colors >= 256
 
     ENDC = '\033[0m'
     BOLD = '\033[1m'

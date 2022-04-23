@@ -62,7 +62,7 @@ With ``--color=always``, git machete always emits colors and with ``--color=auto
 
     <branch0>
     |
-    o-<branch1> *   # green (in sync with parent; asterisks for the current branch)
+    o-<branch1> *   # green (in sync with parent; asterisk for the current branch)
     | |
     | x-<branch2>   # red (not in sync with parent)
     |   |
