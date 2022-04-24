@@ -8,6 +8,9 @@ executors:
       # Needed to avoid warning: https://superuser.com/questions/575844/warning-terminal-is-not-fully-functional
       TERM: ansi
 
+orbs:
+  codecov: codecov/codecov@3.2.2
+
 jobs:
   "general checks":
     executor: ubuntu_executor
@@ -15,6 +18,7 @@ jobs:
       - checkout
       - run:
           name: Install dependencies
+          # language=sh
           command: |
             sudo apt-get update
 
@@ -28,6 +32,7 @@ jobs:
             npm install --global remark-cli remark-lint-no-dead-urls remark-validate-links
       - run:
           name: Perform general checks
+          # language=sh
           command: |
             # We don't want `less` to open for `git grep` results.
             export GIT_PAGER=cat
@@ -43,10 +48,12 @@ jobs:
             ensure-shell-scripts-pass-shellcheck.sh
             ensure-version-bumped.sh
             prohibit-deploy-step-in-circleci.sh
+            prohibit-double-backticks-in-py.sh
+            prohibit-single-backtick-in-rst.sh
             prohibit-tab-character.sh
             prohibit-trailing-whitespace.sh
 
-  "test against python 3_6 and git 1_8_10":
+  "python 3_6 git 1_8_10":
     executor: ubuntu_executor
     steps:
       - checkout
@@ -56,7 +63,7 @@ jobs:
       - store_test_results:
           path: test-results/
 
-  "test against python 3_7 and git 2_7_6":
+  "python 3_7 git 2_7_6":
     executor: ubuntu_executor
     steps:
       - checkout
@@ -72,7 +79,7 @@ jobs:
   # so let's spread these checks evenly across versions to reduce CI latency
   # (when compared to the scenario where all checks are executed under the same Python version).
 
-  "test against python 3_8 and git 2_25_0 with PEP8 check":
+  "pep8 and python 3_8 git 2_25_0":
     executor: ubuntu_executor
     steps:
       - checkout
@@ -82,7 +89,7 @@ jobs:
       - store_test_results:
           path: test-results/
 
-  "test against python 3_9 and git 2_30_1 with coverage report":
+  "coverage and python 3_9 git 2_30_1":
     executor: ubuntu_executor
     steps:
       - checkout
@@ -91,11 +98,10 @@ jobs:
           command: PYTHON_VERSION=3.9 GIT_VERSION=2.30.1 CHECK_COVERAGE=true  bash ci/tox/ci-run.sh
       - store_test_results:
           path: test-results/
-      - store_artifacts:
-          path: htmlcov/
-          destination: coverage
+      - codecov/upload:
+          file: coverage.xml
 
-  "test against python 3_10 and git 2_33_1 with building docs":
+  "sphinx docs and python 3_10 git 2_33_1":
     executor: ubuntu_executor
     steps:
       - checkout
@@ -183,6 +189,7 @@ jobs:
       - run:
           name: 'Create GitHub release'
           # Prerequisites: RPM package must be in dist/
+          # language=sh
           command: |
             sudo apt-get update
             sudo apt-get install hub
@@ -196,22 +203,22 @@ jobs:
 
 mandatory_jobs: &mandatory_jobs
   - general checks
-  - test against python 3_6 and git 1_8_10
-  - test against python 3_7 and git 2_7_6
-  - test against python 3_8 and git 2_25_0 with PEP8 check
-  - test against python 3_9 and git 2_30_1 with coverage report
-  - test against python 3_10 and git 2_33_1 with building docs
+  - python 3_6 git 1_8_10
+  - python 3_7 git 2_7_6
+  - pep8 and python 3_8 git 2_25_0
+  - coverage and python 3_9 git 2_30_1
+  - sphinx docs and python 3_10 git 2_33_1
 
 workflows:
   version: 2
   build:
     jobs:
       - general checks
-      - test against python 3_6 and git 1_8_10
-      - test against python 3_7 and git 2_7_6
-      - test against python 3_8 and git 2_25_0 with PEP8 check
-      - test against python 3_9 and git 2_30_1 with coverage report
-      - test against python 3_10 and git 2_33_1 with building docs
+      - python 3_6 git 1_8_10
+      - python 3_7 git 2_7_6
+      - pep8 and python 3_8 git 2_25_0
+      - coverage and python 3_9 git 2_30_1
+      - sphinx docs and python 3_10 git 2_33_1
       - dry run deploy:
           filters:
             branches:

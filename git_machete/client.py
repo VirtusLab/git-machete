@@ -11,7 +11,7 @@ import git_machete.options
 from git_machete import utils
 from git_machete.constants import (
     DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, GitFormatPatterns, PICK_FIRST_ROOT, PICK_LAST_ROOT,
-    EscapeCodes, SyncToRemoteStatuses)
+    SyncToRemoteStatuses)
 from git_machete.exceptions import MacheteException, StopInteraction, UnprocessableEntityHTTPError
 from git_machete.git_operations import (
     AnyBranchName, AnyRevision, ForkPointOverrideData,
@@ -23,7 +23,7 @@ from git_machete.github import (
     is_github_remote_url, set_base_of_pull_request, set_milestone_of_pull_request)
 from git_machete.utils import (
     get_pretty_choices, flat_map, excluding, fmt, tupled, warn, debug, bold,
-    colored, underline, dim, get_second)
+    colored, underline, dim, get_second, AnsiEscapeCodes)
 
 
 # Allowed parameter values for show/go command
@@ -918,13 +918,13 @@ class MacheteClient:
                     branch=branch,
                     upstream=upstream,
                     opt_no_detect_squash_merges=opt_no_detect_squash_merges):
-                edge_color[branch] = EscapeCodes.DIM
+                edge_color[branch] = AnsiEscapeCodes.DIM
             elif not self.__git.is_ancestor_or_equal(upstream.full_name(), branch.full_name()):
-                edge_color[branch] = EscapeCodes.RED
+                edge_color[branch] = AnsiEscapeCodes.RED
             elif self.__get_overridden_fork_point(branch) or self.__git.get_commit_sha_by_revision(upstream) == fp_sha(branch):
-                edge_color[branch] = EscapeCodes.GREEN
+                edge_color[branch] = AnsiEscapeCodes.GREEN
             else:
-                edge_color[branch] = EscapeCodes.YELLOW
+                edge_color[branch] = AnsiEscapeCodes.YELLOW
 
         currently_rebased_branch = self.__git.get_currently_rebased_branch_or_none()
         currently_checked_out_branch = self.__git.get_currently_checked_out_branch_or_none()
@@ -948,11 +948,11 @@ class MacheteClient:
                     if not fp_sha(branch):
                         # Rare case, but can happen e.g. due to reflog expiry.
                         commits: List[GitLogEntry] = []
-                    elif edge_color[branch] == EscapeCodes.DIM:
+                    elif edge_color[branch] == AnsiEscapeCodes.DIM:
                         commits = []
-                    elif edge_color[branch] == EscapeCodes.YELLOW:
+                    elif edge_color[branch] == AnsiEscapeCodes.YELLOW:
                         commits = self.__git.get_commits_between(self.up_branch[branch].full_name(), branch.full_name())
-                    else:  # (EscapeCodes.RED, EscapeCodes.GREEN):
+                    else:  # (AnsiEscapeCodes.RED, AnsiEscapeCodes.GREEN):
                         commits = self.__git.get_commits_between(fp_sha(branch), branch.full_name())
 
                     for commit in commits:
@@ -962,7 +962,7 @@ class MacheteClient:
                             fp_branches_formatted: str = " and ".join(
                                 sorted(underline(lb_or_rb) for lb, lb_or_rb in fp_branches_cached[branch]))
                             fp_suffix: str = " %s %s %s seems to be a part of the unique history of %s" % \
-                                             (colored(utils.get_right_arrow(), EscapeCodes.RED), colored("fork point ???", EscapeCodes.RED),
+                                             (colored(utils.get_right_arrow(), AnsiEscapeCodes.RED), colored("fork point ???", AnsiEscapeCodes.RED),
                                               "this commit" if opt_list_commits_with_hashes else f"commit {commit.short_hash}",
                                               fp_branches_formatted)
                         else:
@@ -971,7 +971,7 @@ class MacheteClient:
                         out.write(" %s%s%s\n" % (
                                   f"{dim(commit.short_hash)}  " if opt_list_commits_with_hashes else "", dim(commit.subject),
                                   fp_suffix))
-                elbow_ascii_only: Dict[str, str] = {EscapeCodes.DIM: "m-", EscapeCodes.RED: "x-", EscapeCodes.GREEN: "o-", EscapeCodes.YELLOW: "?-"}
+                elbow_ascii_only: Dict[str, str] = {AnsiEscapeCodes.DIM: "m-", AnsiEscapeCodes.RED: "x-", AnsiEscapeCodes.GREEN: "o-", AnsiEscapeCodes.YELLOW: "?-"}
                 elbow: str = u"└─" if not utils.ascii_only else elbow_ascii_only[edge_color[branch]]
                 print_line_prefix(branch, elbow)
             else:
@@ -992,7 +992,7 @@ class MacheteClient:
                     prefix = "REVERTING "
                 else:
                     prefix = ""
-                current = "%s%s" % (bold(colored(prefix, EscapeCodes.RED)), bold(underline(branch, star_if_ascii_only=True)))
+                current = "%s%s" % (bold(colored(prefix, AnsiEscapeCodes.RED)), bold(underline(branch, star_if_ascii_only=True)))
             else:
                 current = bold(branch)
 
@@ -1001,12 +1001,12 @@ class MacheteClient:
             s, remote = self.__git.get_combined_remote_sync_status(branch)
             sync_status = {
                 SyncToRemoteStatuses.NO_REMOTES: "",
-                SyncToRemoteStatuses.UNTRACKED: colored(" (untracked)", EscapeCodes.ORANGE),
+                SyncToRemoteStatuses.UNTRACKED: colored(" (untracked)", AnsiEscapeCodes.ORANGE),
                 SyncToRemoteStatuses.IN_SYNC_WITH_REMOTE: "",
-                SyncToRemoteStatuses.BEHIND_REMOTE: colored(f" (behind {remote})", EscapeCodes.RED),
-                SyncToRemoteStatuses.AHEAD_OF_REMOTE: colored(f" (ahead of {remote})", EscapeCodes.RED),
-                SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: colored(f" (diverged from & older than {remote})", EscapeCodes.RED),
-                SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: colored(f" (diverged from {remote})", EscapeCodes.RED)
+                SyncToRemoteStatuses.BEHIND_REMOTE: colored(f" (behind {remote})", AnsiEscapeCodes.RED),
+                SyncToRemoteStatuses.AHEAD_OF_REMOTE: colored(f" (ahead of {remote})", AnsiEscapeCodes.RED),
+                SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: colored(f" (diverged from & older than {remote})", AnsiEscapeCodes.RED),
+                SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: colored(f" (diverged from {remote})", AnsiEscapeCodes.RED)
             }[SyncToRemoteStatuses(s)]
 
             hook_output = ""
@@ -1025,7 +1025,7 @@ class MacheteClient:
         sys.stdout.write(out.getvalue())
         out.close()
 
-        yellow_edge_branches = [k for k, v in edge_color.items() if v == EscapeCodes.YELLOW]
+        yellow_edge_branches = [k for k, v in edge_color.items() if v == AnsiEscapeCodes.YELLOW]
         if yellow_edge_branches and warn_on_yellow_edges:
             if len(yellow_edge_branches) == 1:
                 first_part = f"yellow edge indicates that fork point for `{yellow_edge_branches[0]}` is probably incorrectly inferred,\n" \

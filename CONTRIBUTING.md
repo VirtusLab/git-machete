@@ -1,5 +1,22 @@
 # Contributing
 
+## PyCharm setup
+
+Make sure the following bundled plugins are enabled:
+* Docker
+* Markdown
+* Ini
+* IntelliLang (for language injections, e.g. Markdown/shell scripts in YAML)
+* ReStructuredText
+* Shell script
+* YAML
+
+Optionally, you can also install the following non-bundled plugins from Marketplace:
+* [AWK Support](https://plugins.jetbrains.com/plugin/17037-awk-support)
+* [.ignore](https://plugins.jetbrains.com/plugin/7495--ignore)
+* [NixIDEA](https://plugins.jetbrains.com/plugin/8607-nixidea)
+
+
 ## Run tests locally
 
 To develop that project and run tests locally, it is needed to have Python installed with `tox`.

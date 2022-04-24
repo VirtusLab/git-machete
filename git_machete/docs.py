@@ -13,7 +13,7 @@ short_docs: Dict[str, str] = {
     "file": "Display the location of the definition file",
     "fork-point": "Display or override fork point for a branch",
     "format": "Display docs for the format of the definition file",
-    "github": "Create, retarget and manage GitHub PRs while keeping them reflected in git machete",
+    "github": "Create, check out and manage GitHub PRs while keeping them reflected in git machete",
     "go": "Check out the branch relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument",
     "help": "Display this overview, or detailed help for a specified command",
     "hooks": "Display docs for the extra hooks added by git machete",
@@ -58,14 +58,14 @@ long_docs: Dict[str, str] = {
     "advance": """
         <b>Usage: git machete advance [-y|--yes]</b>
 
-        Fast forwards (as in `git merge --ff-only`) the current branch `C` to match its downstream `D`, pushes ``C``
+        Fast forwards (as in `git merge --ff-only`) the current branch `C` to match its downstream `D`, pushes `C`
         and subsequently slides out `D`. All three steps require manual confirmation unless `-y`/`--yes` is provided.
 
         The downstream `D` is selected according to the following criteria:
         * if `C` has exactly one downstream branch `d` whose tip is a descendant of `C`, and whose fork point is equal to `C` or is overridden
-          (basically: there's a green edge between `C` and `d`), then `d` is selected as `D`,
-        * if `C` has no downstream branches connected with a green edge to `C`, then `advance` fails,
-        * if `C` has more than one downstream branch connected with a green edge to `C`,
+          (basically: there's a <b><green>green edge</green></b> between `C` and `d`), then `d` is selected as `D`,
+        * if `C` has no downstream branches connected with a <b><green>green edge</green></b> to `C`, then `advance` fails,
+        * if `C` has more than one downstream branch connected with a <b><green>green edge</green></b> to `C`,
           then user is asked to pick the branch to fast-forward merge into (similarly to what happens in `git machete go down`).
           If `--yes` is specified, then `advance` fails.
 
@@ -129,7 +129,7 @@ long_docs: Dict[str, str] = {
         To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR, even in case of public repositories),
         a GitHub API token with `repo` scope is required, see `https://github.com/settings/tokens`. This will be resolved from the first of:
         1. `GITHUB_TOKEN` env var,
-        2. content of the ``.github-token`` file in the home directory (``~``),
+        2. content of the `.github-token` file in the home directory (`~`),
         3. current auth token from the `gh` GitHub CLI,
         4. current auth token from the `hub` GitHub CLI.
 
@@ -147,20 +147,20 @@ long_docs: Dict[str, str] = {
           git machete clean [-c|--checkout-my-github-prs] [-y|--yes]
 
         Synchronizes with the remote repository:
-            1. if invoked with ``-H`` or ``--checkout-my-github-prs``, checks out open PRs for the current user associated with the GitHub token and also traverses the chain of pull requests upwards, adding branches one by one to git-machete and checks them out locally as well,
+            1. if invoked with `-H` or `--checkout-my-github-prs`, checks out open PRs for the current user associated with the GitHub token and also traverses the chain of pull requests upwards, adding branches one by one to git-machete and checks them out locally as well,
             2. deletes unmanaged branches,
             3. deletes untracked managed branches that have no downstream branch.
 
-        No branch will be deleted unless explicitly confirmed by the user (or unless ``-y/--yes`` option is passed).
-        Equivalent of ``git machete github sync`` if invoked with ``-H`` or ``--checkout-my-github-prs``.
+        No branch will be deleted unless explicitly confirmed by the user (or unless `-y/--yes` option is passed).
+        Equivalent of `git machete github sync` if invoked with `-H` or `--checkout-my-github-prs`.
 
         To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR, even in case of public repositories),
-        a GitHub API token with ``repo`` scope is required, see https://github.com/settings/tokens. This will be resolved from the first of:
+        a GitHub API token with `repo` scope is required, see https://github.com/settings/tokens. This will be resolved from the first of:
 
-            1. ``GITHUB_TOKEN`` env var,
-            2. content of the ``.github-token`` file in the home directory (``~``),
-            3. current auth token from the ``gh`` GitHub CLI,
-            4. current auth token from the ``hub`` GitHub CLI.
+            1. `GITHUB_TOKEN` env var,
+            2. content of the `.github-token` file in the home directory (`~`),
+            3. current auth token from the `gh` GitHub CLI,
+            4. current auth token from the `hub` GitHub CLI.
 
         **Options:**
           <b>--c, --checkout-my-github-prs</b>     Checkout your open PRs into local branches.
@@ -291,13 +291,13 @@ long_docs: Dict[str, str] = {
         If there is a fork point override for <branch>, this is identical to the what the output of `git machete fork-point` would be if the override was NOT present.
 
         With `--override-to-inferred` option, overrides fork point of the <branch> to the commit that `git machete fork-point` infers to be the fork point of <branch>.
-        Note: this piece of information is also displayed by `git machete status --list-commits` in case a yellow edge occurs.
+        Note: this piece of information is also displayed by `git machete status --list-commits` in case a <b><yellow>yellow edge</yellow></b> occurs.
 
         With `--unset-override`, the fork point override for <branch> is unset.
         This is simply done by removing the corresponding `machete.overrideForkPoint.<branch>.*` config entries.
 
 
-        <b>Note:</b> if an overridden fork point applies to a branch `B`, then it's considered to be <green>connected with a green edge</green> to its upstream (parent) `U`,
+        <b>Note:</b> if an overridden fork point applies to a branch `B`, then it's considered to be connected with a <b><green>green edge</green></b> to its upstream (parent) `U`,
         even if the overridden fork point of `B` is NOT equal to the commit pointed by `U`.
     """,
     "format": """
@@ -385,7 +385,7 @@ long_docs: Dict[str, str] = {
                 1. checks out open PRs for the current user associated with the GitHub token and also traverses the chain of pull requests upwards, adding branches one by one to git-machete and checks them out locally as well,
                 2. deletes unmanaged branches,
                 3. deletes untracked managed branches that have no downstream branch.
-          Equivalent of ``git machete clean --checkout-my-github-prs``.
+          Equivalent of `git machete clean --checkout-my-github-prs`.
     """,
     "go": """
         <b>Usage: git machete g[o] <direction></b>
@@ -631,7 +631,7 @@ long_docs: Dict[str, str] = {
 
         * optionally lists commits introduced on each branch if `-l`/`--list-commits` or `-L`/`--list-commits-with-hashes` is supplied.
 
-        The currently checked-out branch is underlined.
+        Name of the currently checked-out branch is underlined (or shown in blue on terminals that don't support underline).
 
         In case of yellow edge, use `-l` flag to show the exact location of the inferred fork point
         (which indicates e.g. what range of commits is going to be rebased when the branch is updated).
@@ -641,17 +641,17 @@ long_docs: Dict[str, str] = {
 
         Using colors can be disabled with a `--color` flag set to `never`.
         With `--color=always`, git machete always emits colors and with `--color=auto`, it emits colors only when standard output is connected to a terminal.
-        `--color=auto` is the default. When colors are disabled, relation between branches is represented in the following way:
+        `--color=auto` is the default. When colors are disabled, relation between branches is represented in the following way (not including the hash-comments):
         <dim>
           <branch0>
           |
-          o-<branch1> # green (in sync with parent)
+          o-<branch1> *   # green (in sync with parent; asterisk for the current branch)
           | |
-          | x-<branch2> # red (not in sync with parent)
+          | x-<branch2>   # red (not in sync with parent)
           |   |
           |   ?-<branch3> # yellow (in sync with parent, but parent is not the fork point)
           |
-          m-<branch4> # grey (merged to parent)
+          m-<branch4>     # grey (merged to parent)
         </dim>
         <b>Options:</b>
           <b>--color=WHEN</b>                      Colorize the output; WHEN can be `always`, `auto` (default; i.e. only if stdout is a terminal), or `never`.
@@ -669,13 +669,15 @@ long_docs: Dict[str, str] = {
                                          [--[no-]push] [--[no-]push-untracked]
                                          [--return-to=WHERE] [--start-from=WHERE] [-w|--whole] [-W] [-y|--yes]</b>
 
-        Traverses the branch dependency tree in pre-order (i.e. simply in the order as they occur in the definition file).
-        By default traverse starts from current branch, however this behaviour can be customized using options: `--starts-from=`, `--whole` or `-w`, `-W`.
+        Traverses the branch tree in pre-order (i.e. simply in the order as they occur in the definition file).
+        By default `traverse` starts from the current branch.
+        This behaviour can, however, be customized using options: `--start-from=`, `--whole` or `-w`, `-W`.
+
         For each branch, the command:
-        * detects if the branch is merged to its parent/upstream
+        * detects if the branch is merged (<b><dim>grey</dim></b> edge) to its parent (aka upstream)
           - by commit equivalency (default), or by strict detection of merge commits (if `--no-detect-squash-merges` passed),
-          - if so, asks the user whether to slide out the branch from the dependency tree (typically branches are longer needed after they're merged);
-        * otherwise, if the branch is not in "green" sync with its parent/upstream (see help for `status`):
+          - if so, asks the user whether to slide out the branch from the dependency tree (typically branches are no longer needed after they're merged);
+        * otherwise, if the branch has a <b><red>red</red></b> or <b><yellow>yellow</yellow></b> edge to its parent/upstream (see `status`):
           - asks the user whether to rebase (default) or merge (if `--merge` passed) the branch onto into its upstream branch - equivalent to `git machete update` with no `--fork-point` option passed;
 
         * if the branch is not tracked on a remote, is ahead of its remote counterpart, or diverged from the counterpart & has newer head commit than the counterpart:
@@ -688,8 +690,10 @@ long_docs: Dict[str, str] = {
         * and finally, if any of the above operations has been successfully completed:
           - prints the updated `status`.
 
-        Note that even if the traverse flow is stopped (typically due to merge/rebase conflicts), running `git machete traverse` after the merge/rebase is finished will pick up the walk where it stopped.
-        In other words, there is no need to explicitly ask to "continue" as it is the case with e.g. `git rebase`.
+        If the traverse flow is stopped (typically due to merge/rebase conflicts), just run `git machete traverse` after the merge/rebase is finished.
+        It will pick up the walk from the current branch (unless `--start-from=` or `-w` etc. is passed).
+        Unlike with e.g. `git rebase`, there is no special `--continue` flag, as `traverse` is stateless
+        (doesn't keep a state of its own like `git rebase` does in `.git/rebase-apply/`).
 
         <b>Options:</b>
           <b>-F, --fetch</b>                  Fetch the remotes of all managed branches at the beginning of traversal (no `git pull` involved, only `git fetch`).

@@ -1,6 +1,7 @@
 name: git-machete
 adopt-info: git-machete  # just for adopting `version`
 summary: git-machete is a versatile tool for organizing your git repo
+# language=markdown
 description: |
   git machete is a versatile tool for organizing your git repo, including features like:
   - Neat, customizable `git machete status` that shows what branches are in sync with their parent branch/remote tracking branch and which of them need to be rebased/merged/pulled/pushed
@@ -23,6 +24,7 @@ parts:
     source: .
     # We're setting the version via scriptlet rather than using `version: git`
     # since only pushing commits to master (and not pushing tags) triggers Snapcraft builds.
+    # language=sh
     override-build: |
       set -x
       snapcraftctl build
