@@ -8,7 +8,6 @@ import subprocess
 import sys
 import textwrap
 import time
-import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from http import HTTPStatus
 from typing import Any, Dict, Iterable, List, Optional, Union
@@ -373,7 +372,7 @@ class GitRepositorySandbox:
         return self
 
 
-class MacheteTester(unittest.TestCase):
+class TestMachete:
     mock_repository_info: Dict[str, str] = {'full_name': 'testing/checkout_prs',
                                             'html_url': 'https://github.com/tester/repo_sandbox.git'}
 
@@ -399,7 +398,7 @@ class MacheteTester(unittest.TestCase):
     def assert_command(self, cmds: Iterable[str], expected_result: str, strip_indentation: bool = True) -> None:
         assert self.launch_command(*cmds) == (self.adapt(expected_result) if strip_indentation else expected_result)
 
-    def setUp(self) -> None:
+    def setup_method(self) -> None:
         # Status diffs can be quite large, default to ~256 lines of diff context
         # https://docs.python.org/3/library/unittest.html#unittest.TestCase.maxDiff
         self.maxDiff = 80 * 256
