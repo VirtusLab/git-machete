@@ -374,7 +374,7 @@ class GitRepositorySandbox:
 
 class MacheteTester(unittest.TestCase):
     mock_repository_info: Dict[str, str] = {'full_name': 'testing/checkout_prs',
-                                            'html_url': 'https://github.com/tester/repo_sandobx.git'}
+                                            'html_url': 'https://github.com/tester/repo_sandbox.git'}
 
     @staticmethod
     def adapt(s: str) -> str:

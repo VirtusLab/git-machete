@@ -12,21 +12,6 @@ orbs:
   codecov: codecov/codecov@3.2.2
 
 jobs:
-
-  # Upload coverage report to Codecov
-  codecov:
-    docker:
-      - image: cimg/python:3.10.2
-    steps:
-      - checkout
-      - run:
-          name: Install requirements
-          command: pip install pytest-cov
-      - run:
-          name: Run tests and collect coverage
-          command: pytest --cov git_machete
-      - codecov/upload
-
   "general checks":
     executor: ubuntu_executor
     steps:
@@ -113,9 +98,8 @@ jobs:
           command: PYTHON_VERSION=3.9 GIT_VERSION=2.30.1 CHECK_COVERAGE=true  bash ci/tox/ci-run.sh
       - store_test_results:
           path: test-results/
-      - store_artifacts:
-          path: htmlcov/
-          destination: coverage
+      - codecov/upload:
+          file: coverage.xml
 
   "sphinx docs and python 3_10 git 2_33_1":
     executor: ubuntu_executor
@@ -229,7 +213,6 @@ workflows:
   version: 2
   build:
     jobs:
-      - codecov
       - general checks
       - python 3_6 git 1_8_10
       - python 3_7 git 2_7_6
