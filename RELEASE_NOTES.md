@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.9.1
+
 ## New in git-machete 3.9.0
 
 - added: `advance` command now also pushes the branch after the merge
