@@ -8,7 +8,25 @@ executors:
       # Needed to avoid warning: https://superuser.com/questions/575844/warning-terminal-is-not-fully-functional
       TERM: ansi
 
+orbs:
+  codecov: codecov/codecov@3.2.2
+
 jobs:
+
+  # Upload coverage report to Codecov
+  codecov:
+    docker:
+      - image: cimg/python:3.10.2
+    steps:
+      - checkout
+      - run:
+          name: Install requirements
+          command: pip install pytest-cov
+      - run:
+          name: Run tests and collect coverage
+          command: pytest --cov git_machete
+      - codecov/upload
+
   "general checks":
     executor: ubuntu_executor
     steps:
@@ -211,6 +229,7 @@ workflows:
   version: 2
   build:
     jobs:
+      - codecov
       - general checks
       - python 3_6 git 1_8_10
       - python 3_7 git 2_7_6
