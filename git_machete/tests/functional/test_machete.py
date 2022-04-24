@@ -16,7 +16,7 @@ from unittest import mock
 from urllib.error import HTTPError
 from urllib.parse import ParseResult, parse_qs, urlparse
 
-import pytest
+import pytest  # type: ignore
 from git_machete import cli
 from git_machete.docs import long_docs
 from git_machete.exceptions import MacheteException
@@ -1048,14 +1048,14 @@ class MacheteTester(unittest.TestCase):
         assert 'level-0-branch' == \
             self.launch_command("show", "current").strip(), \
             "Verify that 'git machete go up' performs 'git checkout' to " \
-                "the parent/upstream branch of the current branch."
+            "the parent/upstream branch of the current branch."
         # check short command behaviour
         self.repo_sandbox.check_out("level-1-branch")
         self.launch_command("g", "u")
         assert 'level-0-branch' == \
             self.launch_command("show", "current").strip(), \
             "Verify that 'git machete g u' performs 'git checkout' to " \
-                "the parent/upstream branch of the current branch."
+            "the parent/upstream branch of the current branch."
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     def test_go_down(self) -> None:
@@ -1079,7 +1079,7 @@ class MacheteTester(unittest.TestCase):
         assert 'level-1-branch' == \
             self.launch_command("show", "current").strip(), \
             "Verify that 'git machete go down' performs 'git checkout' to " \
-                "the child/downstream branch of the current branch."
+            "the child/downstream branch of the current branch."
         # check short command behaviour
         self.repo_sandbox.check_out("level-0-branch")
         self.launch_command("g", "d")
@@ -1087,7 +1087,7 @@ class MacheteTester(unittest.TestCase):
         assert 'level-1-branch' == \
             self.launch_command("show", "current").strip(), \
             "Verify that 'git machete g d' performs 'git checkout' to " \
-                "the child/downstream branch of the current branch."
+            "the child/downstream branch of the current branch."
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     def test_go_first_root_with_downstream(self) -> None:
@@ -1126,8 +1126,8 @@ class MacheteTester(unittest.TestCase):
         assert 'level-1a-branch' == \
             self.launch_command("show", "current").strip(), \
             "Verify that 'git machete go first' performs 'git checkout' to" \
-                "the first downstream branch of a root branch if root branch " \
-                "has any downstream branches."
+            "the first downstream branch of a root branch if root branch " \
+            "has any downstream branches."
 
         # check short command behaviour
         self.repo_sandbox.check_out("level-3b-branch")
@@ -1136,7 +1136,7 @@ class MacheteTester(unittest.TestCase):
         assert 'level-1a-branch' == \
             self.launch_command("show", "current").strip(), \
             "Verify that 'git machete g d' performs 'git checkout' to " \
-                "the child/downstream branch of the current branch."
+            "the child/downstream branch of the current branch."
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     def test_go_first_root_without_downstream(self) -> None:
@@ -1157,7 +1157,7 @@ class MacheteTester(unittest.TestCase):
         assert 'level-0-branch' == \
             self.launch_command("show", "current").strip(), \
             "Verify that 'git machete go first' set current branch to root" \
-                "if root branch has no downstream."
+            "if root branch has no downstream."
 
         # check short command behaviour
         self.launch_command("g", "f")
@@ -1165,7 +1165,7 @@ class MacheteTester(unittest.TestCase):
         assert 'level-0-branch' == \
             self.launch_command("show", "current").strip(), \
             "Verify that 'git machete g f' set current branch to root" \
-                "if root branch has no downstream."
+            "if root branch has no downstream."
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     def test_go_last(self) -> None:
@@ -1200,8 +1200,8 @@ class MacheteTester(unittest.TestCase):
         assert 'level-1b-branch' == \
             self.launch_command("show", "current").strip(), \
             "Verify that 'git machete go last' performs 'git checkout' to" \
-                "the last downstream branch of a root branch if root branch " \
-                "has any downstream branches."
+            "the last downstream branch of a root branch if root branch " \
+            "has any downstream branches."
 
         # check short command behaviour
         self.repo_sandbox.check_out("level-1a-branch")
@@ -1210,8 +1210,8 @@ class MacheteTester(unittest.TestCase):
         assert 'level-1b-branch' == \
             self.launch_command("show", "current").strip(), \
             "Verify that 'git machete g l' performs 'git checkout' to" \
-                "the last downstream branch of a root branch if root branch " \
-                "has any downstream branches."
+            "the last downstream branch of a root branch if root branch " \
+            "has any downstream branches."
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     def test_go_next_successor_exists(self) -> None:
@@ -1241,8 +1241,8 @@ class MacheteTester(unittest.TestCase):
         assert 'level-1b-branch' == \
             self.launch_command("show", "current").strip(), \
             "Verify that 'git machete go next' performs 'git checkout' to" \
-                "the next downstream branch right after the current one in the" \
-                "config file if successor branch exists."
+            "the next downstream branch right after the current one in the" \
+            "config file if successor branch exists."
         # check short command behaviour
         self.repo_sandbox.check_out("level-2a-branch")
         self.launch_command("g", "n")
@@ -1250,8 +1250,8 @@ class MacheteTester(unittest.TestCase):
         assert 'level-1b-branch' == \
             self.launch_command("show", "current").strip(), \
             "Verify that 'git machete g n' performs 'git checkout' to" \
-                "the next downstream branch right after the current one in the" \
-                "config file if successor branch exists."
+            "the next downstream branch right after the current one in the" \
+            "config file if successor branch exists."
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     def test_go_next_successor_on_another_root_tree(self) -> None:
@@ -1277,7 +1277,7 @@ class MacheteTester(unittest.TestCase):
         assert 'x-additional-root' == \
             self.launch_command("show", "current").strip(), \
             "Verify that 'git machete go next' can checkout to branch that doesn't" \
-                "share root with the current branch."
+            "share root with the current branch."
 
         # check short command behaviour
         self.repo_sandbox.check_out("level-1-branch")
@@ -1285,7 +1285,7 @@ class MacheteTester(unittest.TestCase):
         assert 'x-additional-root' == \
             self.launch_command("show", "current").strip(), \
             "Verify that 'git machete g n' can checkout to branch that doesn't" \
-                "share root with the current branch."
+            "share root with the current branch."
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     def test_go_prev_successor_exists(self) -> None:
@@ -1314,8 +1314,8 @@ class MacheteTester(unittest.TestCase):
         assert 'level-2a-branch' == \
             self.launch_command("show", "current").strip(), \
             "Verify that 'git machete go prev' performs 'git checkout' to" \
-                "the branch right before the current one in the config file" \
-                "when predecessor branch exists within the root tree."
+            "the branch right before the current one in the config file" \
+            "when predecessor branch exists within the root tree."
         # check short command behaviour
         self.repo_sandbox.check_out("level-1b-branch")
         self.launch_command("g", "p")
@@ -1323,8 +1323,8 @@ class MacheteTester(unittest.TestCase):
         assert 'level-2a-branch' == \
             self.launch_command("show", "current").strip(), \
             "Verify that 'git machete g p' performs 'git checkout' to" \
-                "the branch right before the current one in the config file" \
-                "when predecessor branch exists within the root tree."
+            "the branch right before the current one in the config file" \
+            "when predecessor branch exists within the root tree."
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     def test_go_prev_successor_on_another_root_tree(self) -> None:
@@ -1348,7 +1348,7 @@ class MacheteTester(unittest.TestCase):
         assert 'a-additional-root' == \
             self.launch_command("show", "current").strip(), \
             "Verify that 'git machete go prev' can checkout to branch that doesn't" \
-                "share root with the current branch."
+            "share root with the current branch."
 
         # check short command behaviour
         self.repo_sandbox.check_out("level-0-branch")
@@ -1356,7 +1356,7 @@ class MacheteTester(unittest.TestCase):
         assert 'a-additional-root' == \
             self.launch_command("show", "current").strip(), \
             "Verify that 'git machete g p' can checkout to branch that doesn't" \
-                "share root with the current branch."
+            "share root with the current branch."
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     def test_go_root(self) -> None:
@@ -1389,14 +1389,14 @@ class MacheteTester(unittest.TestCase):
         assert 'level-0-branch' == \
             self.launch_command("show", "current").strip(), \
             "Verify that 'git machete go root' performs 'git checkout' to" \
-                "the root of the current branch."
+            "the root of the current branch."
         # check short command behaviour
         self.repo_sandbox.check_out("level-2a-branch")
         self.launch_command("g", "r")
         assert 'level-0-branch' == \
             self.launch_command("show", "current").strip(), \
             "Verify that 'git machete g r' performs 'git checkout' to" \
-                "the root of the current branch."
+            "the root of the current branch."
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     def test_show_up(self) -> None:
@@ -1418,12 +1418,12 @@ class MacheteTester(unittest.TestCase):
         assert 'level-0-branch' == \
             self.launch_command("show", "up").strip(), \
             "Verify that 'git machete show up' displays name of a parent/upstream" \
-                "branch one above current one."
+            "branch one above current one."
         # check short command behaviour
         assert 'level-0-branch' == \
             self.launch_command("show", "u").strip(), \
             "Verify that 'git machete show u' displays name of a parent/upstream" \
-                "branch one above current one."
+            "branch one above current one."
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     def test_show_down(self) -> None:
@@ -1445,12 +1445,12 @@ class MacheteTester(unittest.TestCase):
         assert 'level-1-branch' == \
             self.launch_command("show", "down").strip(), \
             "Verify that 'git machete show down' displays name of " \
-                "a child/downstream branch one below current one."
+            "a child/downstream branch one below current one."
         # check short command behaviour
         assert 'level-1-branch' == \
             self.launch_command("show", "d").strip(), \
             "Verify that 'git machete show d' displays name of " \
-                "a child/downstream branch one below current one."
+            "a child/downstream branch one below current one."
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     def test_show_first(self) -> None:
@@ -1487,14 +1487,14 @@ class MacheteTester(unittest.TestCase):
         assert 'level-1a-branch' == \
             self.launch_command("show", "first").strip(), \
             "Verify that 'git machete show first' displays name of the first downstream" \
-                "branch of a root branch of the current branch in the config file if root" \
-                "branch has any downstream branches."
+            "branch of a root branch of the current branch in the config file if root" \
+            "branch has any downstream branches."
         # check short command behaviour
         assert 'level-1a-branch' == \
             self.launch_command("show", "f").strip(), \
             "Verify that 'git machete show f' displays name of the first downstream" \
-                "branch of a root branch of the current branch in the config file if root" \
-                "branch has any downstream branches."
+            "branch of a root branch of the current branch in the config file if root" \
+            "branch has any downstream branches."
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     def test_show_last(self) -> None:
@@ -1527,14 +1527,14 @@ class MacheteTester(unittest.TestCase):
         assert 'level-1b-branch' == \
             self.launch_command("show", "last").strip(), \
             "Verify that 'git machete show last' displays name of the last downstream" \
-                "branch of a root branch of the current branch in the config file if root" \
-                "branch has any downstream branches."
+            "branch of a root branch of the current branch in the config file if root" \
+            "branch has any downstream branches."
         # check short command behaviour
         assert 'level-1b-branch' == \
             self.launch_command("show", "l").strip(), \
             "Verify that 'git machete show l' displays name of the last downstream" \
-                "branch of a root branch of the current branch in the config file if root" \
-                "branch has any downstream branches."
+            "branch of a root branch of the current branch in the config file if root" \
+            "branch has any downstream branches."
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     def test_show_next(self) -> None:
@@ -1562,14 +1562,14 @@ class MacheteTester(unittest.TestCase):
         assert 'level-1b-branch' == \
             self.launch_command("show", "next").strip(), \
             "Verify that 'git machete show next' displays name of " \
-                "a branch right after the current one in the config file" \
-                "when successor branch exists within the root tree."
+            "a branch right after the current one in the config file" \
+            "when successor branch exists within the root tree."
         # check short command behaviour
         assert 'level-1b-branch' == \
             self.launch_command("show", "n").strip(), \
             "Verify that 'git machete show n' displays name of " \
-                "a branch right after the current one in the config file" \
-                "when successor branch exists within the root tree."
+            "a branch right after the current one in the config file" \
+            "when successor branch exists within the root tree."
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     def test_show_prev(self) -> None:
@@ -1596,14 +1596,14 @@ class MacheteTester(unittest.TestCase):
         assert 'level-2a-branch' == \
             self.launch_command("show", "prev").strip(), \
             "Verify that 'git machete show prev' displays name of" \
-                "a branch right before the current one in the config file" \
-                "when predecessor branch exists within the root tree."
+            "a branch right before the current one in the config file" \
+            "when predecessor branch exists within the root tree."
         # check short command behaviour
         assert 'level-2a-branch' == \
             self.launch_command("show", "p").strip(), \
             "Verify that 'git machete show p' displays name of" \
-                "a branch right before the current one in the config file" \
-                "when predecessor branch exists within the root tree."
+            "a branch right before the current one in the config file" \
+            "when predecessor branch exists within the root tree."
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     def test_show_root(self) -> None:
@@ -1634,12 +1634,12 @@ class MacheteTester(unittest.TestCase):
         assert 'level-0-branch' == \
             self.launch_command("show", "root").strip(), \
             "Verify that 'git machete show root' displays name of the root of" \
-                "the current branch."
+            "the current branch."
         # check short command behaviour
         assert 'level-0-branch' == \
             self.launch_command("show", "r").strip(), \
             "Verify that 'git machete show r' displays name of the root of" \
-                "the current branch."
+            "the current branch."
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     def test_advance_with_no_downstream_branches(self) -> None:
@@ -1689,13 +1689,13 @@ class MacheteTester(unittest.TestCase):
         assert level_1_commit_hash == \
             root_top_commit_hash, \
             "Verify that when there is only one, rebased downstream branch of a" \
-                "current branch 'git machete advance' merges commits from that branch" \
-                "and slides out child branches of the downstream branch."
+            "current branch 'git machete advance' merges commits from that branch" \
+            "and slides out child branches of the downstream branch."
         assert "level-1-branch" not in \
             self.launch_command("status"), \
             "Verify that branch to which advance was performed is removed " \
-                "from the git-machete tree and the structure of the git machete " \
-                "tree is updated."
+            "from the git-machete tree and the structure of the git machete " \
+            "tree is updated."
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     def test_advance_with_few_possible_downstream_branches_and_yes_option(self) -> None:
@@ -1748,7 +1748,7 @@ class MacheteTester(unittest.TestCase):
         assert parents_new_commit_hash == \
             new_fork_point_hash, \
             "Verify that 'git machete update --no-interactive-rebase' perform" \
-                "'git rebase' to the parent branch of the current branch."
+            "'git rebase' to the parent branch of the current branch."
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     def test_update_with_fork_point_specified(self) -> None:
@@ -1786,19 +1786,19 @@ class MacheteTester(unittest.TestCase):
         assert roots_second_commit_hash == \
             new_fork_point_hash, \
             "Verify that 'git machete update --no-interactive-rebase -f " \
-                "<commit_hash>' performs 'git rebase' to the upstream branch."
+            "<commit_hash>' performs 'git rebase' to the upstream branch."
 
         assert branchs_first_commit_msg not in \
             branch_history, \
             "Verify that 'git machete update --no-interactive-rebase -f " \
-                "<commit_hash>' drops the commits until (included) fork point " \
-                "specified by the option '-f' from the current branch."
+            "<commit_hash>' drops the commits until (included) fork point " \
+            "specified by the option '-f' from the current branch."
 
         assert branchs_second_commit_msg not in \
             branch_history, \
             "Verify that 'git machete update --no-interactive-rebase -f " \
-                "<commit_hash>' drops the commits until (included) fork point " \
-                "specified by the option '-f' from the current branch."
+            "<commit_hash>' drops the commits until (included) fork point " \
+            "specified by the option '-f' from the current branch."
 
     git_api_state_for_test_retarget_pr = MockGitHubAPIState(
         [{'head': {'ref': 'feature', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'root'}, 'number': '15',
@@ -2321,13 +2321,13 @@ class MacheteTester(unittest.TestCase):
             self.launch_command('github', 'checkout-prs', '100')
         if e:
             assert e.value.parameter == expected_error_message, \
-                             'Verify that expected error message has appeared when given pull request to checkout does not exists.'
+                'Verify that expected error message has appeared when given pull request to checkout does not exists.'
 
         with pytest.raises(MacheteException) as e:
             self.launch_command('github', 'checkout-prs', '19', '100')
         if e:
             assert e.value.parameter == expected_error_message, \
-                             'Verify that expected error message has appeared when one of the given pull requests to checkout does not exists.'
+                'Verify that expected error message has appeared when one of the given pull requests to checkout does not exists.'
 
         # check against user with no open pull requests
         expected_msg = ("Checking for open GitHub PRs...\n"
@@ -2352,7 +2352,7 @@ class MacheteTester(unittest.TestCase):
             self.launch_command('github', 'checkout-prs', '5')
         if e:
             assert e.value.parameter == expected_error_message, \
-                             'Verify that expected error message has appeared when given pull request to checkout have already deleted branch from remote.'
+                'Verify that expected error message has appeared when given pull request to checkout have already deleted branch from remote.'
 
         # Check against pr come from fork
         os.chdir(local_path)
@@ -2519,7 +2519,7 @@ class MacheteTester(unittest.TestCase):
         assert 'feature/allow_checkout' == \
             self.launch_command("show", "current").strip(), \
             "Verify that 'git machete github checkout prs' performs 'git checkout' to " \
-                "the head branch of given pull request."
+            "the head branch of given pull request."
 
     git_api_state_for_test_github_sync = MockGitHubAPIState([
         {'head': {'ref': 'snickers', 'repo': mock_repository_info}, 'user': {'login': 'other_user'},
@@ -2612,7 +2612,7 @@ class MacheteTester(unittest.TestCase):
         assert current_branch_log == \
             expected_branch_log, \
             ("Verify that `git machete squash -f <fork-point>` squashes commit"
-                 " from one succeeding the fork-point until tip of the branch.")
+                " from one succeeding the fork-point until tip of the branch.")
 
     def test_squash_with_invalid_fork_point(self) -> None:
         (
@@ -2745,13 +2745,13 @@ class MacheteTester(unittest.TestCase):
 
         assert childs_first_commit_hash in log_content, \
             "Verify that oldest commit from current branch is visible when " \
-                "executing `git machete log`."
+            "executing `git machete log`."
         assert childs_second_commit_hash in log_content, \
             "Verify that youngest commit from current branch is visible when " \
-                "executing `git machete log`."
+            "executing `git machete log`."
         assert roots_only_commit_hash not in log_content, \
             "Verify that commits from parent branch are not visible when " \
-                "executing `git machete log`."
+            "executing `git machete log`."
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     def test_add(self) -> None:
