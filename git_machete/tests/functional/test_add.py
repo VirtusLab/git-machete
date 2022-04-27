@@ -60,12 +60,18 @@ class TestMachete:
         self.launch_command("discover", "-y")
         self.repo_sandbox.new_branch("bugfix/feature_fail")
 
-        self.assert_command(['add', '-y', 'bugfix/feature_fail'], 'Adding `bugfix/feature_fail` onto the inferred upstream (parent) branch `develop`\n'
-                                                                  'Added branch `bugfix/feature_fail` onto `develop`\n', strip_indentation=False)
+        self.assert_command(
+            ['add', '-y', 'bugfix/feature_fail'],
+            'Adding `bugfix/feature_fail` onto the inferred upstream (parent) branch `develop`\n'
+            'Added branch `bugfix/feature_fail` onto `develop`\n',
+            strip_indentation=False
+        )
 
         # test with --onto option
         self.repo_sandbox.new_branch("chore/remove_indentation")
 
-        self.assert_command(['add', '--onto=feature'],
-                            'Added branch `chore/remove_indentation` onto `feature`\n',
-                            strip_indentation=False)
+        self.assert_command(
+            ['add', '--onto=feature'],
+            'Added branch `chore/remove_indentation` onto `feature`\n',
+            strip_indentation=False
+        )
