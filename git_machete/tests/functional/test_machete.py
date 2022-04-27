@@ -1418,86 +1418,6 @@ class TestMachete:
         with pytest.raises(SystemExit):
             self.launch_command("advance", '-y')
 
-    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    def test_update_with_fork_point_not_specified(self) -> None:
-        """Verify behaviour of a 'git machete update --no-interactive-rebase' command.
-
-        Verify that 'git machete update --no-interactive-rebase' performs
-        'git rebase' to the parent branch of the current branch.
-
-        """
-        (
-            self.repo_sandbox.new_branch("level-0-branch")
-            .commit("Basic commit.")
-            .new_branch("level-1-branch")
-            .commit("Only level-1 commit.")
-            .new_branch("level-2-branch")
-            .commit("Only level-2 commit.")
-            .check_out("level-0-branch")
-            .commit("New commit on level-0-branch")
-        )
-        self.launch_command("discover", "-y")
-
-        parents_new_commit_hash = get_current_commit_hash()
-        self.repo_sandbox.check_out("level-1-branch")
-        self.launch_command("update", "--no-interactive-rebase")
-        new_fork_point_hash = self.launch_command("fork-point").strip()
-
-        assert parents_new_commit_hash == \
-            new_fork_point_hash, \
-            "Verify that 'git machete update --no-interactive-rebase' perform" \
-            "'git rebase' to the parent branch of the current branch."
-
-    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    def test_update_with_fork_point_specified(self) -> None:
-        """Verify behaviour of a 'git machete update --no-interactive-rebase -f <commit_hash>' cmd.
-
-        Verify that 'git machete update --no-interactive-rebase -f <commit_hash>'
-        performs 'git rebase' to the upstream branch and drops the commits until
-        (included) fork point specified by the option '-f'.
-
-        """
-        branchs_first_commit_msg = "First commit on branch."
-        branchs_second_commit_msg = "Second commit on branch."
-        (
-            self.repo_sandbox.new_branch("root")
-            .commit("First commit on root.")
-            .new_branch("branch-1")
-            .commit(branchs_first_commit_msg)
-            .commit(branchs_second_commit_msg)
-        )
-        branch_second_commit_hash = get_current_commit_hash()
-        (
-            self.repo_sandbox.commit("Third commit on branch.")
-            .check_out("root")
-            .commit("Second commit on root.")
-        )
-        roots_second_commit_hash = get_current_commit_hash()
-        self.repo_sandbox.check_out("branch-1")
-        self.launch_command("discover", "-y")
-
-        self.launch_command(
-            "update", "--no-interactive-rebase", "-f", branch_second_commit_hash)
-        new_fork_point_hash = self.launch_command("fork-point").strip()
-        branch_history = popen('git log -10 --oneline')
-
-        assert roots_second_commit_hash == \
-            new_fork_point_hash, \
-            "Verify that 'git machete update --no-interactive-rebase -f " \
-            "<commit_hash>' performs 'git rebase' to the upstream branch."
-
-        assert branchs_first_commit_msg not in \
-            branch_history, \
-            "Verify that 'git machete update --no-interactive-rebase -f " \
-            "<commit_hash>' drops the commits until (included) fork point " \
-            "specified by the option '-f' from the current branch."
-
-        assert branchs_second_commit_msg not in \
-            branch_history, \
-            "Verify that 'git machete update --no-interactive-rebase -f " \
-            "<commit_hash>' drops the commits until (included) fork point " \
-            "specified by the option '-f' from the current branch."
-
     git_api_state_for_test_retarget_pr = MockGitHubAPIState(
         [{'head': {'ref': 'feature', 'repo': mock_repository_info}, 'user': {'login': 'github_user'}, 'base': {'ref': 'root'}, 'number': '15',
           'html_url': 'www.github.com', 'state': 'open'}])
@@ -2330,26 +2250,6 @@ class TestMachete:
         with pytest.raises(SystemExit):
             # First exception MacheteException is raised, followed by SystemExit.
             self.launch_command('squash', '-f', fork_point_to_branch_1a)
-
-    def test_update_with_invalid_fork_point(self) -> None:
-        (
-            self.repo_sandbox.new_branch('branch-0')
-                .commit("Commit on branch-0.")
-                .new_branch("branch-1a")
-                .commit("Commit on branch-1a.")
-        )
-        branch_1a_hash = get_current_commit_hash()
-        (
-            self.repo_sandbox.check_out('branch-0')
-                .new_branch("branch-1b")
-                .commit("Commit on branch-1b.")
-        )
-
-        self.launch_command('discover', '-y')
-
-        with pytest.raises(SystemExit):
-            # First exception MacheteException is raised, followed by SystemExit.
-            self.launch_command('update', '-f', branch_1a_hash)
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_stdout)
     def test_slide_out_with_valid_down_fork_point(self) -> None:
