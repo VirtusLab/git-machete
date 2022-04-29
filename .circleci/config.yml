@@ -37,7 +37,7 @@ jobs:
             # We don't want `less` to open for `git grep` results.
             export GIT_PAGER=cat
 
-            PATH=./ci/checks:$PATH
+            PATH=$(pwd)/ci/checks:$PATH
             set -x
             enforce-correct-shebangs.sh
             enforce-indent-two-spaces-outside-python.sh
@@ -50,6 +50,7 @@ jobs:
             prohibit-deploy-step-in-circleci.sh
             prohibit-double-backticks-in-py.sh
             prohibit-single-backtick-in-rst.sh
+            prohibit-strings-split-without-delimiter.sh
             prohibit-tab-character.sh
             prohibit-trailing-whitespace.sh
 
