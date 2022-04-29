@@ -1,3 +1,4 @@
+import io
 import json
 import os
 import random
@@ -5,12 +6,15 @@ import re
 import string
 import subprocess
 import sys
+import textwrap
 import time
+from contextlib import redirect_stderr, redirect_stdout
 from http import HTTPStatus
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Iterable, List, Optional, Union
 from urllib.error import HTTPError
 from urllib.parse import ParseResult, parse_qs, urlparse
 
+from git_machete import cli
 from git_machete.git_operations import FullCommitHash, GitContext
 from git_machete.options import CommandLineOptions
 from git_machete.utils import dim
@@ -313,3 +317,20 @@ class MockContextManager:
 
     def __exit__(self, *args: Any) -> None:
         pass
+
+
+def adapt(s: str) -> str:
+    return textwrap.indent(textwrap.dedent(re.sub(r"\|\n", "| \n", s[1:])), "  ")
+
+
+def launch_command(*args: str) -> str:
+    with io.StringIO() as out:
+        with redirect_stdout(out):
+            with redirect_stderr(out):
+                cli.launch(list(args))
+                git.flush_caches()
+        return out.getvalue()
+
+
+def assert_command(cmds: Iterable[str], expected_result: str, strip_indentation: bool = True) -> None:
+    assert launch_command(*cmds) == (adapt(expected_result) if strip_indentation else expected_result)
