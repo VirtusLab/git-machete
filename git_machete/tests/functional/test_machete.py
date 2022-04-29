@@ -10,7 +10,6 @@ from unittest import mock
 
 import pytest  # type: ignore
 from git_machete import cli
-from git_machete.docs import long_docs
 from git_machete.exceptions import MacheteException
 from git_machete.git_operations import LocalBranchShortName
 from git_machete.github import get_parsed_github_remote_url
@@ -707,23 +706,6 @@ class TestMachete:
             o-develop *
             """,
         )
-
-    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    def test_help(self) -> None:
-        expected_exit_code = None
-
-        with pytest.raises(SystemExit) as e:
-            self.launch_command("help")
-        assert expected_exit_code == e.value.code, "Verify that `git machete help` causes SystemExit with " f"{expected_exit_code} exit code."
-
-        for command in long_docs:
-            with pytest.raises(SystemExit) as e:
-                self.launch_command("help", command)
-            assert expected_exit_code == e.value.code, f"Verify that `git machete help {command}` causes SystemExit" f" with {expected_exit_code} exit code."
-
-            with pytest.raises(SystemExit) as e:
-                self.launch_command(command, "--help")
-            assert expected_exit_code == e.value.code, f"Verify that `git machete {command} --help` causes " f"SystemExit with {expected_exit_code} exit code."
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     def test_go_up(self) -> None:
@@ -2326,77 +2308,3 @@ class TestMachete:
             self.launch_command(
                 'slide-out', '-n', 'branch-1', '-d',
                 hash_of_only_commit_on_branch_2b)
-
-    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_stdout)
-    def test_log(self) -> None:
-        self.repo_sandbox.new_branch('root')
-        self.repo_sandbox.commit()
-        roots_only_commit_hash = get_current_commit_hash()
-
-        self.repo_sandbox.new_branch('child')
-        self.repo_sandbox.commit()
-        childs_first_commit_hash = get_current_commit_hash()
-        self.repo_sandbox.commit()
-        childs_second_commit_hash = get_current_commit_hash()
-
-        log_content = self.launch_command('log')
-
-        assert childs_first_commit_hash in log_content, \
-            "Verify that oldest commit from current branch is visible when " \
-            "executing `git machete log`."
-        assert childs_second_commit_hash in log_content, \
-            "Verify that youngest commit from current branch is visible when " \
-            "executing `git machete log`."
-        assert roots_only_commit_hash not in log_content, \
-            "Verify that commits from parent branch are not visible when " \
-            "executing `git machete log`."
-
-    @mock.patch('git_machete.client.MacheteClient.should_perform_interactive_slide_out', mock_should_perform_interactive_slide_out)
-    @mock.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
-    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)
-    def test_clean(self) -> None:
-        (
-            self.repo_sandbox.new_branch('master')
-                .commit()
-                .push()
-                .new_branch('bar')
-                .commit()
-                .new_branch('bar2')
-                .commit()
-                .check_out("master")
-                .new_branch('foo')
-                .commit()
-                .push()
-                .new_branch('foo2')
-                .commit()
-                .check_out("master")
-                .new_branch('moo')
-                .commit()
-                .new_branch('moo2')
-                .commit()
-        )
-        self.launch_command('discover')
-        (
-            self.repo_sandbox
-                .check_out("master")
-                .new_branch('mars')
-                .commit()
-                .check_out("master")
-        )
-        self.launch_command('clean')
-
-        expected_status_output = (
-            """
-            master *
-            |
-            o-bar (untracked)
-            |
-            o-foo
-            |
-            o-moo (untracked)
-            """
-        )
-        self.assert_command(['status'], expected_status_output)
-
-        with pytest.raises(subprocess.CalledProcessError):
-            self.repo_sandbox.check_out("mars")
