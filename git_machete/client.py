@@ -872,6 +872,7 @@ class MacheteClient:
                 f"The initial branch {bold(initial_branch)} has been slid out. "
                 f"Returned to nearest remaining managed branch {bold(nearest_remaining_branch)}")
 
+    # TODO (#509): tidy up this method
     def status(
             self,
             *,
@@ -934,14 +935,14 @@ class MacheteClient:
 
         def print_line_prefix(branch_: LocalBranchShortName, suffix: str) -> None:
             out.write("  ")
-            for p in accumulated_path[:-1]:
-                if not p:
+            for sibling in next_sibling_of_ancestor[:-1]:
+                if not sibling:
                     out.write("  ")
                 else:
-                    out.write(colored(f"{utils.get_vertical_bar()} ", edge_color[p]))
+                    out.write(colored(f"{utils.get_vertical_bar()} ", edge_color[sibling]))
             out.write(colored(suffix, edge_color[branch_]))
 
-        for branch, accumulated_path in dfs_res:
+        for branch, next_sibling_of_ancestor in dfs_res:
             if branch in self.up_branch:
                 print_line_prefix(branch, f"{utils.get_vertical_bar()} \n")
                 if opt_list_commits:
@@ -971,8 +972,23 @@ class MacheteClient:
                         out.write(" %s%s%s\n" % (
                                   f"{dim(commit.short_hash)}  " if opt_list_commits_with_hashes else "", dim(commit.subject),
                                   fp_suffix))
-                elbow_ascii_only: Dict[str, str] = {AnsiEscapeCodes.DIM: "m-", AnsiEscapeCodes.RED: "x-", AnsiEscapeCodes.GREEN: "o-", AnsiEscapeCodes.YELLOW: "?-"}
-                elbow: str = u"└─" if not utils.ascii_only else elbow_ascii_only[edge_color[branch]]
+
+                elbow: str
+                if utils.ascii_only:
+                    elbow_ascii_only: Dict[str, str] = {
+                        AnsiEscapeCodes.DIM: "m-",
+                        AnsiEscapeCodes.RED: "x-",
+                        AnsiEscapeCodes.GREEN: "o-",
+                        AnsiEscapeCodes.YELLOW: "?-"}
+                    elbow = elbow_ascii_only[edge_color[branch]]
+                else:
+                    # Note that using the "├─"-style elbow has been considered as well:
+                    #   elbow = u"├─" if next_sibling_of_ancestor[-1] else u"└─"
+                    # but the three-legged elbow it looks pretty bad when the upward and rightward leg
+                    # have a different color than the downward leg.
+                    # It's better to always use a two-legged elbow,
+                    # at the expense of a little gap to the elbow below (if such is present).
+                    elbow = u"└─"
                 print_line_prefix(branch, elbow)
             else:
                 if branch != dfs_res[0][0]:
