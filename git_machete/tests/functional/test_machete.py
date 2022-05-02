@@ -1,7 +1,6 @@
 import os
 import sys
-from typing import Optional
-from unittest import mock
+from typing import Any, Optional
 
 import pytest  # type: ignore
 from git_machete.exceptions import MacheteException
@@ -102,9 +101,10 @@ class TestMachete:
             """,
         )
 
-    @mock.patch('git_machete.cli.exit_script', mock_exit_script)
-    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    def test_branch_reappears_in_definition(self) -> None:
+    def test_branch_reappears_in_definition(self, mocker: Any) -> None:
+        mocker.patch('git_machete.cli.exit_script', mock_exit_script)
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+
         body: str = \
             """master
             \tdevelop
@@ -123,8 +123,8 @@ class TestMachete:
         if e:
             assert e.value.parameter == expected_error_message, 'Verify that expected error message has appeared a branch re-appears in tree definition.'
 
-    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    def test_traverse_no_push(self) -> None:
+    def test_traverse_no_push(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
         self.setup_discover_standard_tree()
 
         launch_command("traverse", "-Wy", "--no-push")
@@ -158,8 +158,8 @@ class TestMachete:
             """,
         )
 
-    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    def test_traverse_no_push_override(self) -> None:
+    def test_traverse_no_push_override(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
         self.setup_discover_standard_tree()
         self.repo_sandbox.check_out("hotfix/add-trigger")
         launch_command("t", "-Wy", "--no-push", "--push", "--start-from=here")
@@ -224,8 +224,8 @@ class TestMachete:
             """,
         )
 
-    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    def test_traverse_no_push_untracked(self) -> None:
+    def test_traverse_no_push_untracked(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
         self.setup_discover_standard_tree()
 
         launch_command("traverse", "-Wy", "--no-push-untracked")
@@ -259,8 +259,8 @@ class TestMachete:
             """,
         )
 
-    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    def test_discover_traverse_squash(self) -> None:
+    def test_discover_traverse_squash(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
         self.setup_discover_standard_tree()
 
         launch_command("traverse", "-Wy")
@@ -326,8 +326,9 @@ class TestMachete:
             """,
         )
 
-    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    def test_go_up(self) -> None:
+    def test_go_up(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+
         """Verify behaviour of a 'git machete go up' command.
 
         Verify that 'git machete go up' performs 'git checkout' to the
@@ -356,8 +357,9 @@ class TestMachete:
             "Verify that 'git machete g u' performs 'git checkout' to " \
             "the parent/upstream branch of the current branch."
 
-    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    def test_go_down(self) -> None:
+    def test_go_down(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+
         """Verify behaviour of a 'git machete go down' command.
 
         Verify that 'git machete go down' performs 'git checkout' to the
@@ -388,8 +390,8 @@ class TestMachete:
             "Verify that 'git machete g d' performs 'git checkout' to " \
             "the child/downstream branch of the current branch."
 
-    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    def test_go_first_root_with_downstream(self) -> None:
+    def test_go_first_root_with_downstream(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
         """Verify behaviour of a 'git machete go first' command.
 
         Verify that 'git machete go first' performs 'git checkout' to
@@ -437,8 +439,8 @@ class TestMachete:
             "Verify that 'git machete g d' performs 'git checkout' to " \
             "the child/downstream branch of the current branch."
 
-    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    def test_go_first_root_without_downstream(self) -> None:
+    def test_go_first_root_without_downstream(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
         """Verify behaviour of a 'git machete go first' command.
 
         Verify that 'git machete go first' set current branch to root
@@ -466,8 +468,8 @@ class TestMachete:
             "Verify that 'git machete g f' set current branch to root" \
             "if root branch has no downstream."
 
-    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    def test_go_last(self) -> None:
+    def test_go_last(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
         """Verify behaviour of a 'git machete go last' command.
 
         Verify that 'git machete go last' performs 'git checkout' to
@@ -512,8 +514,9 @@ class TestMachete:
             "the last downstream branch of a root branch if root branch " \
             "has any downstream branches."
 
-    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    def test_go_next_successor_exists(self) -> None:
+    def test_go_next_successor_exists(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+
         """Verify behaviour of a 'git machete go next' command.
 
         Verify that 'git machete go next' performs 'git checkout' to
@@ -552,8 +555,8 @@ class TestMachete:
             "the next downstream branch right after the current one in the" \
             "config file if successor branch exists."
 
-    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    def test_go_next_successor_on_another_root_tree(self) -> None:
+    def test_go_next_successor_on_another_root_tree(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
         """Verify behaviour of a 'git machete go next' command.
 
         Verify that 'git machete go next' can checkout to branch that doesn't
@@ -586,8 +589,9 @@ class TestMachete:
             "Verify that 'git machete g n' can checkout to branch that doesn't" \
             "share root with the current branch."
 
-    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    def test_go_prev_successor_exists(self) -> None:
+    def test_go_prev_successor_exists(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+
         """Verify behaviour of a 'git machete go prev' command.
 
         Verify that 'git machete go prev' performs 'git checkout' to
@@ -625,8 +629,8 @@ class TestMachete:
             "the branch right before the current one in the config file" \
             "when predecessor branch exists within the root tree."
 
-    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    def test_go_prev_successor_on_another_root_tree(self) -> None:
+    def test_go_prev_successor_on_another_root_tree(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
         """Verify behaviour of a 'git machete go prev' command.
 
         Verify that 'git machete go prev' raises an error when predecessor
@@ -657,8 +661,9 @@ class TestMachete:
             "Verify that 'git machete g p' can checkout to branch that doesn't" \
             "share root with the current branch."
 
-    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    def test_go_root(self) -> None:
+    def test_go_root(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+
         """Verify behaviour of a 'git machete go root' command.
 
         Verify that 'git machete go root' performs 'git checkout' to
