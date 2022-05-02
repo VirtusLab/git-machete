@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.9.1
 
+- fixed: better rendering of edge junctions in `status`
+
 ## New in git-machete 3.9.0
 
 - added: `advance` command now also pushes the branch after the merge

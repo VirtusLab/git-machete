@@ -881,7 +881,7 @@ class MacheteClient:
             opt_list_commits_with_hashes: bool,
             opt_no_detect_squash_merges: bool
     ) -> None:
-        dfs_res = []
+        dfs_res: List[Tuple[LocalBranchShortName, List[Optional[LocalBranchShortName]]]] = []
 
         def prefix_dfs(u_: LocalBranchShortName, accumulated_path_: List[Optional[LocalBranchShortName]]) -> None:
             dfs_res.append((u_, accumulated_path_))
@@ -913,6 +913,7 @@ class MacheteClient:
 
         # Edge colors need to be precomputed
         # in order to render the leading parts of lines properly.
+        branch: LocalBranchShortName
         for branch in self.up_branch:
             upstream = self.up_branch[branch]
             if self.is_merged_to(
@@ -942,6 +943,7 @@ class MacheteClient:
                     out.write(colored(f"{utils.get_vertical_bar()} ", edge_color[sibling]))
             out.write(colored(suffix, edge_color[branch_]))
 
+        next_sibling_of_ancestor: List[Optional[LocalBranchShortName]]
         for branch, next_sibling_of_ancestor in dfs_res:
             if branch in self.up_branch:
                 print_line_prefix(branch, f"{utils.get_vertical_bar()} \n")
@@ -973,23 +975,26 @@ class MacheteClient:
                                   f"{dim(commit.short_hash)}  " if opt_list_commits_with_hashes else "", dim(commit.subject),
                                   fp_suffix))
 
-                elbow: str
+                junction: str
                 if utils.ascii_only:
-                    elbow_ascii_only: Dict[str, str] = {
+                    junction_ascii_only: Dict[str, str] = {
                         AnsiEscapeCodes.DIM: "m-",
                         AnsiEscapeCodes.RED: "x-",
                         AnsiEscapeCodes.GREEN: "o-",
                         AnsiEscapeCodes.YELLOW: "?-"}
-                    elbow = elbow_ascii_only[edge_color[branch]]
+                    junction = junction_ascii_only[edge_color[branch]]
                 else:
-                    # Note that using the "├─"-style elbow has been considered as well:
-                    #   elbow = u"├─" if next_sibling_of_ancestor[-1] else u"└─"
-                    # but the three-legged elbow it looks pretty bad when the upward and rightward leg
-                    # have a different color than the downward leg.
-                    # It's better to always use a two-legged elbow,
-                    # at the expense of a little gap to the elbow below (if such is present).
-                    elbow = u"└─"
-                print_line_prefix(branch, elbow)
+                    next_sibling_of_branch: Optional[LocalBranchShortName] = next_sibling_of_ancestor[-1]
+                    if next_sibling_of_branch and edge_color[next_sibling_of_branch] == edge_color[branch]:
+                        junction = u"├─"
+                    else:
+                        # The three-legged turnstile looks pretty bad when the upward and rightward leg
+                        # have a different color than the downward leg.
+                        # It's better to use a two-legged elbow
+                        # in case `edge_color[next_sibling_of_branch] != edge_color[branch]`,
+                        # at the expense of a little gap to the elbow/turnstile below.
+                        junction = u"└─"
+                print_line_prefix(branch, junction)
             else:
                 if branch != dfs_res[0][0]:
                     out.write("\n")
