@@ -334,3 +334,9 @@ def launch_command(*args: str) -> str:
 
 def assert_command(cmds: Iterable[str], expected_result: str, strip_indentation: bool = True) -> None:
     assert launch_command(*cmds) == (adapt(expected_result) if strip_indentation else expected_result)
+
+
+def rewrite_definition_file(new_body: str) -> None:
+    definition_file_path = git.get_main_git_subpath("machete")
+    with open(os.path.join(os.getcwd(), definition_file_path), 'w') as def_file:
+        def_file.writelines(new_body)

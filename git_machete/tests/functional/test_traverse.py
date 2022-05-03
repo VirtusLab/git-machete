@@ -1,28 +1,11 @@
-import os
-import sys
-from typing import Any, Optional
+from typing import Any
 
-import pytest  # type: ignore
-from git_machete.exceptions import MacheteException
 from git_machete.tests.functional.commons import (GitRepositorySandbox,
-                                                  assert_command, git,
+                                                  assert_command,
                                                   launch_command, mock_run_cmd)
 
 
-def mock_exit_script(status_code: Optional[int] = None, error: Optional[BaseException] = None) -> None:
-    if error:
-        raise error
-    else:
-        sys.exit(status_code)
-
-
 class TestMachete:
-
-    @staticmethod
-    def rewrite_definition_file(new_body: str) -> None:
-        definition_file_path = git.get_main_git_subpath("machete")
-        with open(os.path.join(os.getcwd(), definition_file_path), 'w') as def_file:
-            def_file.writelines(new_body)
 
     def setup_method(self) -> None:
 
@@ -100,28 +83,6 @@ class TestMachete:
               o-ignore-trailing * (diverged from & older than origin)
             """,
         )
-
-    def test_branch_reappears_in_definition(self, mocker: Any) -> None:
-        mocker.patch('git_machete.cli.exit_script', mock_exit_script)
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-
-        body: str = \
-            """master
-            \tdevelop
-            \t\n
-            develop
-            """
-
-        self.repo_sandbox.new_branch("root")
-        self.rewrite_definition_file(body)
-
-        expected_error_message: str = '.git/machete, line 5: branch `develop` re-appears in the tree definition. ' \
-                                      'Edit the definition file manually with `git machete edit`'
-
-        with pytest.raises(MacheteException) as e:
-            launch_command('status')
-        if e:
-            assert e.value.parameter == expected_error_message, 'Verify that expected error message has appeared a branch re-appears in tree definition.'
 
     def test_traverse_no_push(self, mocker: Any) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
