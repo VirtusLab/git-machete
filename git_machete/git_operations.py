@@ -10,7 +10,7 @@ from git_machete.utils import colored, debug, fmt, AnsiEscapeCodes
 from git_machete import utils
 from git_machete.constants import (
     GitFormatPatterns, MAX_COUNT_FOR_INITIAL_LOG, SyncToRemoteStatuses)
-from github import RemoteAndOrganizationAndRepository
+from git_machete.github import RemoteAndOrganizationAndRepository
 
 
 class AnyRevision(str):
