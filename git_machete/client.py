@@ -15,12 +15,12 @@ from git_machete.constants import (
 from git_machete.exceptions import MacheteException, StopInteraction, UnprocessableEntityHTTPError
 from git_machete.git_operations import (
     AnyBranchName, AnyRevision, ForkPointOverrideData,
-    FullCommitHash, GitContext, GitLogEntry, HEAD, BranchPair, LocalBranchShortName, RemoteAndOrganizationAndRepository, RemoteBranchShortName)
+    FullCommitHash, GitContext, GitLogEntry, HEAD, BranchPair, LocalBranchShortName, RemoteBranchShortName)
 from git_machete.github import (
     add_assignees_to_pull_request, add_reviewers_to_pull_request,
     create_pull_request, checkout_pr_refs, derive_pull_request_by_head, derive_pull_requests,
     get_github_token_possible_providers, get_parsed_github_remote_url, get_pull_request_by_number_or_none, GitHubPullRequest,
-    is_github_remote_url, set_base_of_pull_request, set_milestone_of_pull_request)
+    is_github_remote_url, RemoteAndOrganizationAndRepository, set_base_of_pull_request, set_milestone_of_pull_request)
 from git_machete.utils import (
     get_pretty_choices, flat_map, excluding, fmt, tupled, warn, debug, bold,
     colored, underline, dim, get_second, AnsiEscapeCodes)
@@ -1383,6 +1383,11 @@ class MacheteClient:
               "and branch reset events irrelevant for fork point/upstream inference): %s\n" % (", ".join(result) or "<empty>"))
         return result
 
+    def get_remote_name_and_organization_and_repository_name_of_remote(self) -> 'RemoteAndOrganizationAndRepository':
+        return RemoteAndOrganizationAndRepository(remote=self.__git.get_config_attr_or_none(f"machete.github.remote"),
+                                                  organization=self.__git.get_config_attr_or_none(f"machete.github.organization"),
+                                                  repository=self.__git.get_config_attr_or_none(f"machete.github.repository"))
+
     def sync_annotations_to_github_prs(self) -> None:
 
         url_for_remote: Dict[str, str] = {remote: self.__git.get_url_of_remote(remote) for remote in
@@ -1393,7 +1398,7 @@ class MacheteClient:
         remote: str
         org: str
         repo: str
-        remote, org, repo = self.__git.get_remote_name_and_organization_and_repository_name_of_remote()
+        remote, org, repo = self.get_remote_name_and_organization_and_repository_name_of_remote()
         if not(remote and org and repo):
             optional_org_name_for_github_remote: Dict[str, Optional[RemoteAndOrganizationAndRepository]] = {
                 remote: get_parsed_github_remote_url(url, remote) for remote, url in url_for_remote.items()}

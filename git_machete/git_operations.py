@@ -165,12 +165,6 @@ class BranchPair(NamedTuple):
     local_or_remote_branch: AnyBranchName
 
 
-class RemoteAndOrganizationAndRepository(NamedTuple):
-    organization: str
-    repository: str
-    remote: str
-
-
 HEAD = AnyRevision.of("HEAD")
 
 
@@ -343,11 +337,6 @@ class GitContext:
 
     def get_url_of_remote(self, remote: str) -> str:
         return self.get_config_attr_or_none(f"remote.{remote}.url")  # 'git remote get-url' method has only been added in git v2.5.1
-
-    def get_remote_name_and_organization_and_repository_name_of_remote(self) -> 'RemoteAndOrganizationAndRepository':
-        return RemoteAndOrganizationAndRepository(remote=self.get_config_attr_or_none(f"machete.github.remote"),
-                                                  organization=self.get_config_attr_or_none(f"machete.github.organization"),
-                                                  repository=self.get_config_attr_or_none(f"machete.github.repository"))
 
     def fetch_remote(self, remote: str) -> None:
         if remote not in self.__fetch_done_for:

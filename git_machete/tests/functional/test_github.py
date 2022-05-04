@@ -738,7 +738,7 @@ class TestMachete:
         # check against wrong pr number
         repo: str
         org: str
-        org, repo, _ = get_parsed_github_remote_url(self.repo_sandbox.remote_path, remote='origin')
+        _, org, repo = get_parsed_github_remote_url(self.repo_sandbox.remote_path, remote='origin')
         expected_error_message = f"PR #100 is not found in repository `{org}/{repo}`"
         with pytest.raises(MacheteException) as e:
             self.launch_command('github', 'checkout-prs', '100')
