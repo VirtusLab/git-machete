@@ -15,12 +15,12 @@ from git_machete.constants import (
 from git_machete.exceptions import MacheteException, StopInteraction, UnprocessableEntityHTTPError
 from git_machete.git_operations import (
     AnyBranchName, AnyRevision, ForkPointOverrideData,
-    FullCommitHash, GitContext, GitLogEntry, HEAD, BranchPair, LocalBranchShortName, RemoteBranchShortName)
+    FullCommitHash, GitContext, GitLogEntry, HEAD, BranchPair, LocalBranchShortName, RemoteAndOrganizationAndRepository, RemoteBranchShortName)
 from git_machete.github import (
     add_assignees_to_pull_request, add_reviewers_to_pull_request,
     create_pull_request, checkout_pr_refs, derive_pull_request_by_head, derive_pull_requests,
     get_github_token_possible_providers, get_parsed_github_remote_url, get_pull_request_by_number_or_none, GitHubPullRequest,
-    is_github_remote_url, RemoteAndOrganizationAndRepository, set_base_of_pull_request, set_milestone_of_pull_request)
+    is_github_remote_url, set_base_of_pull_request, set_milestone_of_pull_request)
 from git_machete.utils import (
     get_pretty_choices, flat_map, excluding, fmt, tupled, warn, debug, bold,
     colored, underline, dim, get_second, AnsiEscapeCodes)
@@ -1395,20 +1395,20 @@ class MacheteClient:
         repo: str
         remote, org, repo = self.__git.get_remote_name_and_organization_and_repository_name_of_remote()
         if not(remote and org and repo):
-            optional_org_name_for_github_remote: Dict[str, Optional[Tuple[str, str]]] = {
+            optional_org_name_for_github_remote: Dict[str, Optional[RemoteAndOrganizationAndRepository]] = {
                 remote: get_parsed_github_remote_url(url, remote) for remote, url in url_for_remote.items()}
-            org_name_for_github_remote: Dict[str, Tuple[str, str]] = {remote: org_name for remote, org_name in
-                                                                      optional_org_name_for_github_remote.items() if
-                                                                      org_name}
+            org_name_for_github_remote: Dict[str, RemoteAndOrganizationAndRepository] = {remote: org_name for remote, org_name in
+                                                                                         optional_org_name_for_github_remote.items() if
+                                                                                         org_name}
             if not org_name_for_github_remote:
                 raise MacheteException(
                     fmt('Remotes are defined for this repository, but none of them '
                         'corresponds to GitHub (see `git remote -v` for details)'))
             if len(org_name_for_github_remote) == 1:
-                org, repo = list(org_name_for_github_remote.values())[0]
+                _, org, repo = list(org_name_for_github_remote.values())[0]
             elif len(org_name_for_github_remote) > 1:
                 if 'origin' in org_name_for_github_remote:
-                    org, repo = org_name_for_github_remote['origin']
+                    _, org, repo = org_name_for_github_remote['origin']
                 else:
                     raise MacheteException(
                         f'Multiple non-origin remotes correspond to GitHub in this repository: '

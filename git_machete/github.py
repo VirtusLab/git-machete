@@ -13,7 +13,7 @@ import urllib.error
 
 from git_machete.utils import debug, fmt
 from git_machete.exceptions import MacheteException, UnprocessableEntityHTTPError
-from git_machete.git_operations import GitContext, LocalBranchShortName
+from git_machete.git_operations import GitContext, LocalBranchShortName, RemoteAndOrganizationAndRepository
 
 GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
 # GitHub Enterprise deployments use alternate domains.
@@ -24,12 +24,6 @@ GITHUB_REMOTE_PATTERNS = [
     "^https://github\\.com/(.*)/(.*)\\.git$",
     "^git@github\\.com:(.*)/(.*)\\.git$",
 ]
-
-
-class RemoteAndOrganizationAndRepository(NamedTuple):
-    organization: str
-    repository: str
-    remote: str
 
 
 class GitHubPullRequest(object):
