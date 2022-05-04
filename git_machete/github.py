@@ -13,7 +13,7 @@ import urllib.error
 
 from git_machete.utils import debug, fmt
 from git_machete.exceptions import MacheteException, UnprocessableEntityHTTPError
-from git_machete.git_operations import GitContext, LocalBranchShortName, OrganizationRepository
+from git_machete.git_operations import GitContext, LocalBranchShortName, OrganizationAndRepository
 
 GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
 # GitHub Enterprise deployments use alternate domains.
@@ -253,12 +253,12 @@ def is_github_remote_url(url: str) -> bool:
     return any((re.match(pattern, url) for pattern in GITHUB_REMOTE_PATTERNS))
 
 
-def get_parsed_github_remote_url(url: str) -> Optional[OrganizationRepository]:
+def get_parsed_github_remote_url(url: str) -> Optional[OrganizationAndRepository]:
 
     for pattern in GITHUB_REMOTE_PATTERNS:
         match = re.match(pattern, url)
         if match:
-            return OrganizationRepository(organization=match.group(1), repository=match.group(2))
+            return OrganizationAndRepository(organization=match.group(1), repository=match.group(2))
     return None
 
 
