@@ -10,6 +10,7 @@ from git_machete.utils import colored, debug, fmt, AnsiEscapeCodes
 from git_machete import utils
 from git_machete.constants import (
     GitFormatPatterns, MAX_COUNT_FOR_INITIAL_LOG, SyncToRemoteStatuses)
+from github import RemoteAndOrganizationAndRepository
 
 
 class AnyRevision(str):
@@ -163,11 +164,6 @@ class GitReflogEntry(NamedTuple):
 class BranchPair(NamedTuple):
     local_branch: LocalBranchShortName
     local_or_remote_branch: AnyBranchName
-
-
-class OrganizationAndRepository(NamedTuple):
-    organization: str
-    repository: str
 
 
 HEAD = AnyRevision.of("HEAD")
@@ -343,9 +339,10 @@ class GitContext:
     def get_url_of_remote(self, remote: str) -> str:
         return self.get_config_attr_or_none(f"remote.{remote}.url")  # 'git remote get-url' method has only been added in git v2.5.1
 
-    def get_organization_and_repository_name_of_remote(self, remote: str) -> OrganizationAndRepository:
-        return OrganizationAndRepository(organization=self.get_config_attr_or_none(f"machete.github.{remote}.organization"),
-                                      repository=self.get_config_attr_or_none(f"machete.github.{remote}.repository"))
+    def get_remote_name_and_organization_and_repository_name_of_remote(self) -> RemoteAndOrganizationAndRepository:
+        return RemoteAndOrganizationAndRepository(remote=self.get_config_attr_or_none(f"machete.github.remote"),
+                                                  organization=self.get_config_attr_or_none(f"machete.github.organization"),
+                                                  repository=self.get_config_attr_or_none(f"machete.github.repository"))
 
     def fetch_remote(self, remote: str) -> None:
         if remote not in self.__fetch_done_for:
