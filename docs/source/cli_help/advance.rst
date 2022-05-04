@@ -14,17 +14,15 @@ advance
 
     git machete advance [-y|--yes]
 
-Fast forwards (as in ``git merge --ff-only``) the current branch ``C`` to match its downstream ``D``,
-and subsequently slides out ``D``. Both steps require manual confirmation unless ``-y/--yes`` is provided.
+Fast forwards (as in ``git merge --ff-only``) the current branch ``C`` to match its downstream ``D``, pushes ``C``
+and subsequently slides out ``D``. All three steps require manual confirmation unless ``-y/--yes`` is provided.
 
-The downstream ``C`` is selected according to the following criteria:
+The downstream ``D`` is selected according to the following criteria:
 
     * if ``C`` has exactly one downstream (child) branch ``d`` connected with a :green:`green edge` (see :ref:`status` for definition) to ``C`` or is overridden, then ``d`` is selected as ``D``,
     * if ``C`` has no downstream branches connected with a :green:`green edge` to ``C``, then ``advance`` fails,
     * if ``C`` has more than one downstream branch connected with a :green:`green edge` to ``C``,
-      then user is asked to pick the branch to fast-forward merge into (similarly to what happens in ``git machete go down``).
-
-If ``--yes`` is specified, then ``advance`` fails.
+      then user is asked to pick the branch to fast-forward merge into (similarly to what happens in ``git machete go down``). If ``--yes`` is specified, then ``advance`` fails.
 
 As an example, if ``git machete status --color=never --list-commits`` is as follows:
 

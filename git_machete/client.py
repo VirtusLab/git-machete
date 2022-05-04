@@ -11,7 +11,7 @@ import git_machete.options
 from git_machete import utils
 from git_machete.constants import (
     DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, GitFormatPatterns, PICK_FIRST_ROOT, PICK_LAST_ROOT,
-    EscapeCodes, SyncToRemoteStatuses)
+    SyncToRemoteStatuses)
 from git_machete.exceptions import MacheteException, StopInteraction, UnprocessableEntityHTTPError
 from git_machete.git_operations import (
     AnyBranchName, AnyRevision, ForkPointOverrideData,
@@ -23,7 +23,7 @@ from git_machete.github import (
     is_github_remote_url, set_base_of_pull_request, set_milestone_of_pull_request)
 from git_machete.utils import (
     get_pretty_choices, flat_map, excluding, fmt, tupled, warn, debug, bold,
-    colored, underline, dim, get_second)
+    colored, underline, dim, get_second, AnsiEscapeCodes)
 
 
 # Allowed parameter values for show/go command
@@ -436,7 +436,7 @@ class MacheteClient:
                 upstream = self.up_branch[branch]
                 if self.is_merged_to(
                         branch=branch,
-                        target=upstream,
+                        upstream=upstream,
                         opt_no_detect_squash_merges=False
                 ):
                     debug(f"inferred upstream of {branch} is {upstream}, but "
@@ -606,8 +606,17 @@ class MacheteClient:
             else:
                 return
 
-        ans = self.ask_if(f"\nBranch {bold(down_branch)} is now merged into {bold(branch)}. Slide {bold(down_branch)} out of the tree of branch dependencies?" + get_pretty_choices('y', 'N'),
-                          f"\nBranch {bold(down_branch)} is now merged into {bold(branch)}. Sliding {bold(down_branch)} out of the tree of branch dependencies...", opt_yes=opt_yes)
+        remote = self.__git.get_strict_remote_for_fetching_of_branch(branch)
+        ans = self.ask_if(f"\nBranch {bold(branch)} is now fast-forwarded to match {bold(down_branch)}. Push {bold(branch)} to {bold(remote)}?" + get_pretty_choices('y', 'N'),
+                          f"\nBranch {bold(branch)} is now fast-forwarded to match {bold(down_branch)}. Pushing {bold(branch)} to {bold(remote)}...", opt_yes=opt_yes)
+        if ans in ('y', 'yes'):
+            self.__git.push(remote, branch)
+            branch_pushed_or_fast_forwarded_msg = f"\nBranch {bold(branch)} is now pushed to {bold(remote)}."
+        else:
+            branch_pushed_or_fast_forwarded_msg = f"\nBranch {bold(branch)} is now fast-forwarded to match {bold(down_branch)}."
+
+        ans = self.ask_if(f"{branch_pushed_or_fast_forwarded_msg} Slide {bold(down_branch)} out of the tree of branch dependencies?" + get_pretty_choices('y', 'N'),
+                          f"{branch_pushed_or_fast_forwarded_msg} Sliding {bold(down_branch)} out of the tree of branch dependencies...", opt_yes=opt_yes)
         if ans in ('y', 'yes'):
             dds = self.__down_branches.get(LocalBranchShortName.of(down_branch), [])
             for dd in dds:
@@ -863,6 +872,7 @@ class MacheteClient:
                 f"The initial branch {bold(initial_branch)} has been slid out. "
                 f"Returned to nearest remaining managed branch {bold(nearest_remaining_branch)}")
 
+    # TODO (#509): tidy up this method
     def status(
             self,
             *,
@@ -871,7 +881,7 @@ class MacheteClient:
             opt_list_commits_with_hashes: bool,
             opt_no_detect_squash_merges: bool
     ) -> None:
-        dfs_res = []
+        dfs_res: List[Tuple[LocalBranchShortName, List[Optional[LocalBranchShortName]]]] = []
 
         def prefix_dfs(u_: LocalBranchShortName, accumulated_path_: List[Optional[LocalBranchShortName]]) -> None:
             dfs_res.append((u_, accumulated_path_))
@@ -903,19 +913,20 @@ class MacheteClient:
 
         # Edge colors need to be precomputed
         # in order to render the leading parts of lines properly.
+        branch: LocalBranchShortName
         for branch in self.up_branch:
             upstream = self.up_branch[branch]
             if self.is_merged_to(
                     branch=branch,
-                    target=upstream,
+                    upstream=upstream,
                     opt_no_detect_squash_merges=opt_no_detect_squash_merges):
-                edge_color[branch] = EscapeCodes.DIM
+                edge_color[branch] = AnsiEscapeCodes.DIM
             elif not self.__git.is_ancestor_or_equal(upstream.full_name(), branch.full_name()):
-                edge_color[branch] = EscapeCodes.RED
+                edge_color[branch] = AnsiEscapeCodes.RED
             elif self.__get_overridden_fork_point(branch) or self.__git.get_commit_sha_by_revision(upstream) == fp_sha(branch):
-                edge_color[branch] = EscapeCodes.GREEN
+                edge_color[branch] = AnsiEscapeCodes.GREEN
             else:
-                edge_color[branch] = EscapeCodes.YELLOW
+                edge_color[branch] = AnsiEscapeCodes.YELLOW
 
         currently_rebased_branch = self.__git.get_currently_rebased_branch_or_none()
         currently_checked_out_branch = self.__git.get_currently_checked_out_branch_or_none()
@@ -925,22 +936,26 @@ class MacheteClient:
 
         def print_line_prefix(branch_: LocalBranchShortName, suffix: str) -> None:
             out.write("  ")
-            for p in accumulated_path[:-1]:
-                if not p:
+            for sibling in next_sibling_of_ancestor[:-1]:
+                if not sibling:
                     out.write("  ")
                 else:
-                    out.write(colored(f"{utils.get_vertical_bar()} ", edge_color[p]))
+                    out.write(colored(f"{utils.get_vertical_bar()} ", edge_color[sibling]))
             out.write(colored(suffix, edge_color[branch_]))
 
-        for branch, accumulated_path in dfs_res:
+        next_sibling_of_ancestor: List[Optional[LocalBranchShortName]]
+        for branch, next_sibling_of_ancestor in dfs_res:
             if branch in self.up_branch:
                 print_line_prefix(branch, f"{utils.get_vertical_bar()} \n")
                 if opt_list_commits:
-                    if edge_color[branch] in (EscapeCodes.RED, EscapeCodes.DIM):
-                        commits: List[GitLogEntry] = self.__git.get_commits_between(fp_sha(branch), branch.full_name()) if fp_sha(branch) else []
-                    elif edge_color[branch] == EscapeCodes.YELLOW:
+                    if not fp_sha(branch):
+                        # Rare case, but can happen e.g. due to reflog expiry.
+                        commits: List[GitLogEntry] = []
+                    elif edge_color[branch] == AnsiEscapeCodes.DIM:
+                        commits = []
+                    elif edge_color[branch] == AnsiEscapeCodes.YELLOW:
                         commits = self.__git.get_commits_between(self.up_branch[branch].full_name(), branch.full_name())
-                    else:  # edge_color == EscapeCodes.GREEN
+                    else:  # (AnsiEscapeCodes.RED, AnsiEscapeCodes.GREEN):
                         commits = self.__git.get_commits_between(fp_sha(branch), branch.full_name())
 
                     for commit in commits:
@@ -950,7 +965,7 @@ class MacheteClient:
                             fp_branches_formatted: str = " and ".join(
                                 sorted(underline(lb_or_rb) for lb, lb_or_rb in fp_branches_cached[branch]))
                             fp_suffix: str = " %s %s %s seems to be a part of the unique history of %s" % \
-                                             (colored(utils.get_right_arrow(), EscapeCodes.RED), colored("fork point ???", EscapeCodes.RED),
+                                             (colored(utils.get_right_arrow(), AnsiEscapeCodes.RED), colored("fork point ???", AnsiEscapeCodes.RED),
                                               "this commit" if opt_list_commits_with_hashes else f"commit {commit.short_hash}",
                                               fp_branches_formatted)
                         else:
@@ -959,9 +974,27 @@ class MacheteClient:
                         out.write(" %s%s%s\n" % (
                                   f"{dim(commit.short_hash)}  " if opt_list_commits_with_hashes else "", dim(commit.subject),
                                   fp_suffix))
-                elbow_ascii_only: Dict[str, str] = {EscapeCodes.DIM: "m-", EscapeCodes.RED: "x-", EscapeCodes.GREEN: "o-", EscapeCodes.YELLOW: "?-"}
-                elbow: str = u"└─" if not utils.ascii_only else elbow_ascii_only[edge_color[branch]]
-                print_line_prefix(branch, elbow)
+
+                junction: str
+                if utils.ascii_only:
+                    junction_ascii_only: Dict[str, str] = {
+                        AnsiEscapeCodes.DIM: "m-",
+                        AnsiEscapeCodes.RED: "x-",
+                        AnsiEscapeCodes.GREEN: "o-",
+                        AnsiEscapeCodes.YELLOW: "?-"}
+                    junction = junction_ascii_only[edge_color[branch]]
+                else:
+                    next_sibling_of_branch: Optional[LocalBranchShortName] = next_sibling_of_ancestor[-1]
+                    if next_sibling_of_branch and edge_color[next_sibling_of_branch] == edge_color[branch]:
+                        junction = u"├─"
+                    else:
+                        # The three-legged turnstile looks pretty bad when the upward and rightward leg
+                        # have a different color than the downward leg.
+                        # It's better to use a two-legged elbow
+                        # in case `edge_color[next_sibling_of_branch] != edge_color[branch]`,
+                        # at the expense of a little gap to the elbow/turnstile below.
+                        junction = u"└─"
+                print_line_prefix(branch, junction)
             else:
                 if branch != dfs_res[0][0]:
                     out.write("\n")
@@ -980,7 +1013,7 @@ class MacheteClient:
                     prefix = "REVERTING "
                 else:
                     prefix = ""
-                current = "%s%s" % (bold(colored(prefix, EscapeCodes.RED)), bold(underline(branch, star_if_ascii_only=True)))
+                current = "%s%s" % (bold(colored(prefix, AnsiEscapeCodes.RED)), bold(underline(branch, star_if_ascii_only=True)))
             else:
                 current = bold(branch)
 
@@ -989,12 +1022,12 @@ class MacheteClient:
             s, remote = self.__git.get_combined_remote_sync_status(branch)
             sync_status = {
                 SyncToRemoteStatuses.NO_REMOTES: "",
-                SyncToRemoteStatuses.UNTRACKED: colored(" (untracked)", EscapeCodes.ORANGE),
+                SyncToRemoteStatuses.UNTRACKED: colored(" (untracked)", AnsiEscapeCodes.ORANGE),
                 SyncToRemoteStatuses.IN_SYNC_WITH_REMOTE: "",
-                SyncToRemoteStatuses.BEHIND_REMOTE: colored(f" (behind {remote})", EscapeCodes.RED),
-                SyncToRemoteStatuses.AHEAD_OF_REMOTE: colored(f" (ahead of {remote})", EscapeCodes.RED),
-                SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: colored(f" (diverged from & older than {remote})", EscapeCodes.RED),
-                SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: colored(f" (diverged from {remote})", EscapeCodes.RED)
+                SyncToRemoteStatuses.BEHIND_REMOTE: colored(f" (behind {remote})", AnsiEscapeCodes.RED),
+                SyncToRemoteStatuses.AHEAD_OF_REMOTE: colored(f" (ahead of {remote})", AnsiEscapeCodes.RED),
+                SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: colored(f" (diverged from & older than {remote})", AnsiEscapeCodes.RED),
+                SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: colored(f" (diverged from {remote})", AnsiEscapeCodes.RED)
             }[SyncToRemoteStatuses(s)]
 
             hook_output = ""
@@ -1013,23 +1046,23 @@ class MacheteClient:
         sys.stdout.write(out.getvalue())
         out.close()
 
-        yellow_edge_branches = [k for k, v in edge_color.items() if v == EscapeCodes.YELLOW]
+        yellow_edge_branches = [k for k, v in edge_color.items() if v == AnsiEscapeCodes.YELLOW]
         if yellow_edge_branches and warn_on_yellow_edges:
             if len(yellow_edge_branches) == 1:
                 first_part = f"yellow edge indicates that fork point for `{yellow_edge_branches[0]}` is probably incorrectly inferred,\n" \
                              f"or that some extra branch should be between `{self.up_branch[LocalBranchShortName.of(yellow_edge_branches[0])]}` and `{yellow_edge_branches[0]}`"
             else:
                 affected_branches = ", ".join(map(lambda x: f"`{x}`", yellow_edge_branches))
-                first_part = f"yellow edges indicate that fork points for {affected_branches} are probably incorrectly inferred" \
+                first_part = f"yellow edges indicate that fork points for {affected_branches} are probably incorrectly inferred,\n" \
                              f"or that some extra branch should be added between each of these branches and its parent"
 
             if not opt_list_commits:
                 second_part = "Run `git machete status --list-commits` or `git machete status --list-commits-with-hashes` to see more details"
             elif len(yellow_edge_branches) == 1:
-                second_part = f"Consider using `git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent {yellow_edge_branches[0]}`\n" \
+                second_part = f"Consider using `git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent {yellow_edge_branches[0]}`,\n" \
                               f"or reattaching `{yellow_edge_branches[0]}` under a different parent branch"
             else:
-                second_part = "Consider using `git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent <branch>` for each affected branch" \
+                second_part = "Consider using `git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent <branch>` for each affected branch,\n" \
                               "or reattaching the affected branches under different parent branches"
 
             print("", file=sys.stderr)
@@ -1084,12 +1117,6 @@ class MacheteClient:
 
     def __fork_point_and_containing_branch_pairs(self, branch: LocalBranchShortName, use_overrides: bool, opt_no_detect_squash_merges: bool) -> Tuple[FullCommitHash, List[BranchPair]]:
         upstream = self.up_branch.get(branch)
-
-        if self.__is_merged_to_upstream(
-                branch, opt_no_detect_squash_merges=opt_no_detect_squash_merges):
-            fp_sha = self.__git.get_commit_sha_by_revision(branch)
-            debug(f"{branch} is merged to {upstream}; skipping inference, using tip of {branch} ({fp_sha}) as fork point")
-            return fp_sha, []
 
         if use_overrides:
             overridden_fp_sha = self.__get_overridden_fork_point(branch)
@@ -1781,11 +1808,11 @@ class MacheteClient:
         elif ans in ('q', 'quit'):
             raise StopInteraction
 
-    def is_merged_to(self, branch: LocalBranchShortName, target: AnyBranchName, *, opt_no_detect_squash_merges: bool) -> bool:
-        if self.__git.is_ancestor_or_equal(branch.full_name(), target.full_name()):
-            # If branch is ancestor of or equal to the target, we need to distinguish between the
-            # case of branch being "recently" created from the target and the case of
-            # branch being fast-forward-merged to the target.
+    def is_merged_to(self, branch: LocalBranchShortName, upstream: AnyBranchName, *, opt_no_detect_squash_merges: bool) -> bool:
+        if self.__git.is_ancestor_or_equal(branch.full_name(), upstream.full_name()):
+            # If branch is ancestor of or equal to the upstream, we need to distinguish between the
+            # case of branch being "recently" created from the upstream and the case of
+            # branch being fast-forward-merged to the upstream.
             # The applied heuristics is to check if the filtered reflog of the branch
             # (reflog stripped of trivial events like branch creation, reset etc.)
             # is non-empty.
@@ -1794,9 +1821,9 @@ class MacheteClient:
             return False
         else:
             # In the default mode.
-            # If there is a commit in target with an identical tree state to branch,
-            # then branch may be squash or rebase merged into target.
-            return self.__git.does_contain_equivalent_tree(branch, target)
+            # If a commit with an identical tree state to branch is reachable from upstream,
+            # then branch may have been squashed or rebase-merged into upstream.
+            return self.__git.is_equivalent_tree_reachable(branch, upstream)
 
     @staticmethod
     def ask_if(

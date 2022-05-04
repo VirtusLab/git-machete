@@ -46,7 +46,7 @@ Apart from simply ASCII-formatting the definition file, this also:
 
     * optionally lists commits introduced on each branch if ``-l/--list-commits`` or ``-L/--list-commits-with-hashes`` is supplied.
 
-The currently checked-out branch is underlined.
+Name of the currently checked-out branch is underlined (or shown in blue on terminals that don't support underline).
 
 In case of :yellow:`yellow edge`, use ``-l`` or ``-L`` flag to show the exact location of the inferred fork point
 (which indicates e.g. what range of commits is going to be rebased when the branch is updated).
@@ -56,19 +56,19 @@ The inferred fork point can be always overridden manually, see :ref:`fork-point`
 
 Using colors can be disabled with a ``--color`` flag set to ``never``.
 With ``--color=always``, git machete always emits colors and with ``--color=auto``, it emits colors only when standard output is connected to a terminal.
-``--color=auto`` is the default. When colors are disabled, relation between branches is represented in the following way:
+``--color=auto`` is the default. When colors are disabled, relation between branches is represented in the following way (not including the hash-comments):
 
 .. code-block::
 
     <branch0>
     |
-    o-<branch1>  # green (in sync with parent)
+    o-<branch1> *   # green (in sync with parent; asterisk for the current branch)
     | |
-    | x-<branch2> # red (not in sync with parent)
+    | x-<branch2>   # red (not in sync with parent)
     |   |
     |   ?-<branch3> # yellow (in sync with parent, but parent is not the fork point)
     |
-    m-<branch4> # grey (merged to parent)
+    m-<branch4>     # grey (merged to parent)
 
 **Options:**
 
@@ -78,4 +78,4 @@ With ``--color=always``, git machete always emits colors and with ``--color=auto
 
 -L, --list-commits-with-hashes    Additionally list the short hashes and messages of commits introduced on each branch.
 
---no-detect-squash-merges         Only consider `strict` (fast-forward or 2-parent) merges, rather than rebase/squash merges, when detecting if a branch is merged into its upstream (parent).
+--no-detect-squash-merges         Only consider *strict* (fast-forward or 2-parent) merges, rather than rebase/squash merges, when detecting if a branch is merged into its upstream (parent).

@@ -12,7 +12,7 @@ git machete commands and help topics:
 * :ref:`add`              -- Add a branch to the tree of branch dependencies.
 * :ref:`advance`          -- Fast-forward merge one of children to the current branch and then slide out this child
 * :ref:`anno`             -- Manage custom annotations
-* :ref:`clean`            -- Delete untracked managed branches with no downstream branch, delete unmanaged branches and also checkout open PRs for the current user associated with the GitHub token
+* :ref:`clean`            -- Delete untracked and unmanaged branches and also optionally check out user's open GitHub PRs
 * :ref:`delete-unmanaged` -- Delete local branches that are not present in the definition file
 * :ref:`diff`             -- Diff current working directory or a given branch against its computed fork point
 * :ref:`discover`         -- Automatically discover tree of branch dependencies
@@ -20,7 +20,7 @@ git machete commands and help topics:
 * :ref:`file`             -- Display the location of the definition file
 * :ref:`fork-point`       -- Display or override fork point for a branch
 * :ref:`format`           -- Display docs for the format of the definition file
-* :ref:`github`           -- Create, retarget and manage GitHub PRs while keeping them reflected in git machete
+* :ref:`github`           -- Create, check out and manage GitHub PRs while keeping them reflected in git machete
 * :ref:`go`               -- Check out the branch relative to the position of the current branch, accepts down/first/last/next/root/prev/up <annotation text>
 * :ref:`help`             -- Display this overview, or detailed help for a specified command
 * :ref:`hooks`            -- Display docs for the extra hooks added by git machete

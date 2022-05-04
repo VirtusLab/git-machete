@@ -6,10 +6,10 @@ import re
 import sys
 
 from git_machete.exceptions import MacheteException
-from git_machete.utils import colored, debug, fmt
+from git_machete.utils import colored, debug, fmt, AnsiEscapeCodes
 from git_machete import utils
 from git_machete.constants import (
-    GitFormatPatterns, MAX_COUNT_FOR_INITIAL_LOG, EscapeCodes, SyncToRemoteStatuses)
+    GitFormatPatterns, MAX_COUNT_FOR_INITIAL_LOG, SyncToRemoteStatuses)
 
 
 class AnyRevision(str):
@@ -194,7 +194,7 @@ class GitContext:
         self.__remaining_log_shas_cached: Dict[FullCommitHash, List[FullCommitHash]] = {}
         self.__reflogs_cached: Optional[Dict[AnyBranchName, Optional[List[GitReflogEntry]]]] = None
         self.__merge_base_cached: Dict[Tuple[FullCommitHash, FullCommitHash], FullCommitHash] = {}
-        self.__contains_equivalent_tree_cached: Dict[Tuple[FullCommitHash, FullCommitHash], bool] = {}
+        self.__is_equivalent_tree_reachable_cached: Dict[Tuple[FullCommitHash, FullCommitHash], bool] = {}
 
     @staticmethod
     def _run_git(git_cmd: str, *args: str, **kwargs: Any) -> int:
@@ -707,40 +707,39 @@ class GitContext:
 
         return self.__get_merge_base(earlier_sha, later_sha) == earlier_sha
 
-    # Determine if later_revision, or any ancestors of later_revision that are NOT ancestors of earlier_revision,
-    # contain a tree with identical contents to earlier_revision, indicating that
-    # later_revision contains a rebase or squash merge of earlier_revision.
-    def does_contain_equivalent_tree(
+    # Determine if reachable_from, or any ancestors of reachable_from that are NOT ancestors of equivalent_to,
+    # contain a tree with identical contents to equivalent_to, indicating that
+    # reachable_from contains a rebase or squash merge of equivalent_to.
+    def is_equivalent_tree_reachable(
             self,
-            earlier_revision: AnyRevision,
-            later_revision: AnyRevision,
+            equivalent_to: AnyRevision,
+            reachable_from: AnyRevision,
     ) -> bool:
-        earlier_commit_sha = self.get_commit_sha_by_revision(earlier_revision)
-        later_commit_sha = self.get_commit_sha_by_revision(later_revision)
+        equivalent_to_commit_sha = self.get_commit_sha_by_revision(equivalent_to)
+        reachable_from_commit_sha = self.get_commit_sha_by_revision(reachable_from)
 
-        if earlier_commit_sha == later_commit_sha:
+        if equivalent_to_commit_sha == reachable_from_commit_sha:
             return True
 
-        if (earlier_commit_sha, later_commit_sha) in self.__contains_equivalent_tree_cached:
-            return self.__contains_equivalent_tree_cached[earlier_commit_sha, later_commit_sha]
+        if (equivalent_to_commit_sha, reachable_from_commit_sha) in self.__is_equivalent_tree_reachable_cached:
+            return self.__is_equivalent_tree_reachable_cached[equivalent_to_commit_sha, reachable_from_commit_sha]
 
-        debug()
+        earlier_tree_sha = self.get_tree_sha_by_commit_sha(equivalent_to_commit_sha)
 
-        earlier_tree_sha = self.get_tree_sha_by_commit_sha(earlier_commit_sha)
-
-        # `git log later_commit_sha ^earlier_commit_sha`
-        # shows all commits reachable from later_commit_sha but NOT from earlier_commit_sha
+        # `git log ^equivalent_to_commit_sha reachable_from_commit_sha`
+        # shows all commits reachable from reachable_from_commit_sha but NOT from equivalent_to_commit_sha
         intermediate_tree_shas = utils.get_non_empty_lines(
             self._popen_git(
                 "log",
                 "--format=%T",  # full commit's tree hash
-                "^" + earlier_commit_sha,
-                later_commit_sha
+                "^" + equivalent_to_commit_sha,
+                reachable_from_commit_sha
             )
         )
 
         result = earlier_tree_sha in intermediate_tree_shas
-        self.__contains_equivalent_tree_cached[earlier_commit_sha, later_commit_sha] = result
+        debug(f"result = {result}")
+        self.__is_equivalent_tree_reachable_cached[equivalent_to_commit_sha, reachable_from_commit_sha] = result
         return result
 
     def get_sole_remote_branch(self, branch: LocalBranchShortName) -> Optional[RemoteBranchShortName]:
@@ -779,8 +778,8 @@ class GitContext:
             advice_ignored_hook = self.get_config_attr_or_none("advice.ignoredHook")
             if advice_ignored_hook != 'false':  # both empty and "true" is okay
                 # The [33m color must be used to keep consistent with how git colors this advice for its built-in hooks.
-                print(colored(f"hint: The '{hook_path}' hook was ignored because it's not set as executable.", EscapeCodes.YELLOW), file=sys.stderr)
-                print(colored("hint: You can disable this warning with `git config advice.ignoredHook false`.", EscapeCodes.YELLOW), file=sys.stderr)
+                print(colored(f"hint: The '{hook_path}' hook was ignored because it's not set as executable.", AnsiEscapeCodes.YELLOW), file=sys.stderr)
+                print(colored("hint: You can disable this warning with `git config advice.ignoredHook false`.", AnsiEscapeCodes.YELLOW), file=sys.stderr)
             return False
         else:
             return True
