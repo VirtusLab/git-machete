@@ -1,17 +1,18 @@
 from typing import Any
 
-import pytest  # type: ignore
+import pytest
+
 from git_machete.git_operations import LocalBranchShortName
-from git_machete.tests.functional.commons import (GitRepositorySandbox,
-                                                  get_current_commit_hash,
-                                                  launch_command, mock_run_cmd)
+
+from .mockers import (GitRepositorySandbox, get_current_commit_hash,
+                      launch_command, mock_run_cmd)
 
 
 def mock_push(remote: str, branch: LocalBranchShortName, force_with_lease: bool = False) -> None:
     pass
 
 
-class TestMachete:
+class TestAdvance:
 
     def setup_method(self) -> None:
 
@@ -28,14 +29,15 @@ class TestMachete:
         )
 
     def test_advance_with_no_downstream_branches(self, mocker: Any) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-
         """Verify behaviour of a 'git machete advance' command.
 
         Verify that 'git machete advance' raises an error when current branch
         has no downstream branches.
 
         """
+
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+
         (
             self.repo_sandbox.new_branch("root")
             .commit()
@@ -56,6 +58,7 @@ class TestMachete:
         """
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
         mocker.patch('git_machete.git_operations.GitContext.push', mock_push)
+
         (
             self.repo_sandbox.new_branch("root")
             .commit()

@@ -1,11 +1,10 @@
 from typing import Any
 
-from git_machete.tests.functional.commons import (GitRepositorySandbox,
-                                                  assert_command,
-                                                  launch_command, mock_run_cmd)
+from .mockers import (GitRepositorySandbox, assert_command, launch_command,
+                      mock_run_cmd)
 
 
-class TestMachete:
+class TestTraverse:
 
     def setup_method(self) -> None:
 
