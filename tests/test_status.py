@@ -8,7 +8,7 @@ from .mockers import (GitRepositorySandbox, launch_command, mock_exit_script,
                       mock_run_cmd, rewrite_definition_file)
 
 
-class TestMachete:
+class TestStatus:
 
     def setup_method(self) -> None:
 

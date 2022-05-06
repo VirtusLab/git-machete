@@ -44,7 +44,7 @@ def mock__get_github_token_fake() -> Optional[str]:
     return 'token'
 
 
-class TestMachete:
+class TestGithub:
     mock_repository_info: Dict[str, str] = {'full_name': 'testing/checkout_prs',
                                             'html_url': 'https://github.com/tester/repo_sandbox.git'}
 
