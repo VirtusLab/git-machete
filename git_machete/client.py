@@ -1165,9 +1165,9 @@ class MacheteClient:
             *,
             opt_no_detect_squash_merges: bool
     ) -> Optional[FullCommitHash]:
-        sha, containing_branch_pairs = self.__fork_point_and_containing_branch_pairs(
+        hash, containing_branch_pairs = self.__fork_point_and_containing_branch_pairs(
             branch, use_overrides, opt_no_detect_squash_merges=opt_no_detect_squash_merges)
-        return FullCommitHash.of(sha) if sha else None
+        return FullCommitHash.of(hash) if hash else None
 
     def diff(self, *, branch: Optional[LocalBranchShortName], opt_stat: bool) -> None:
         fp: FullCommitHash = self.fork_point(
@@ -1377,8 +1377,8 @@ class MacheteClient:
             debug(f"skipping any reflog entry with the hash equal to the hash of the earliest (branch creation) entry: {earliest_sha}")
             shas_to_exclude.add(earliest_sha)
 
-        result = [sha for (sha, gs) in branch_reflog if
-                  sha not in shas_to_exclude and not is_excluded_reflog_subject(sha, gs)]
+        result = [hash for (hash, gs) in branch_reflog if
+                  hash not in shas_to_exclude and not is_excluded_reflog_subject(hash, gs)]
         debug("computed filtered reflog (= reflog without branch creation "
               "and branch reset events irrelevant for fork point/upstream inference): %s\n" % (", ".join(result) or "<empty>"))
         return result
@@ -1477,15 +1477,15 @@ class MacheteClient:
                                 yield FullCommitHash.of(sha_), BranchPair(lb, remote_branch)
 
             self.__branch_pairs_by_sha_in_reflog = {}
-            for sha, branch_pair in generate_entries():
-                if sha in self.__branch_pairs_by_sha_in_reflog:
+            for hash, branch_pair in generate_entries():
+                if hash in self.__branch_pairs_by_sha_in_reflog:
                     # The practice shows that it's rather unlikely for a given
                     # commit to appear on filtered reflogs of two unrelated branches
                     # ("unrelated" as in, not a local branch and its remote
                     # counterpart) but we need to handle this case anyway.
-                    self.__branch_pairs_by_sha_in_reflog[sha] += [branch_pair]
+                    self.__branch_pairs_by_sha_in_reflog[hash] += [branch_pair]
                 else:
-                    self.__branch_pairs_by_sha_in_reflog[sha] = [branch_pair]
+                    self.__branch_pairs_by_sha_in_reflog[hash] = [branch_pair]
 
             def log_result() -> Generator[str, None, None]:
                 branch_pairs_: List[BranchPair]
@@ -1497,32 +1497,32 @@ class MacheteClient:
                     joined_branch_pairs = ", ".join(map(tupled(branch_pair_to_str), branch_pairs_))
                     yield dim(f"{sha_} => {joined_branch_pairs}")
 
-            debug("branches containing the given SHA in their filtered reflog: \n%s\n" % "\n".join(log_result()))
+            debug("branches containing the given hash in their filtered reflog: \n%s\n" % "\n".join(log_result()))
 
         branch_full_hash: FullCommitHash = self.__git.get_commit_sha_by_revision(branch)
 
-        for sha in self.__git.spoonfeed_log_shas(branch_full_hash):
-            if sha in self.__branch_pairs_by_sha_in_reflog:
+        for hash in self.__git.spoonfeed_log_shas(branch_full_hash):
+            if hash in self.__branch_pairs_by_sha_in_reflog:
                 # The entries must be sorted by lb_or_rb to make sure the
                 # upstream inference is deterministic (and does not depend on the
                 # order in which `generate_entries` iterated through the local branches).
-                branch_pairs: List[BranchPair] = self.__branch_pairs_by_sha_in_reflog[sha]
+                branch_pairs: List[BranchPair] = self.__branch_pairs_by_sha_in_reflog[hash]
 
                 def lb_is_not_b(lb: str, lb_or_rb: str) -> bool:
                     return lb != branch
 
                 containing_branch_pairs = sorted(filter(tupled(lb_is_not_b), branch_pairs), key=get_second)
                 if containing_branch_pairs:
-                    debug(f"commit {sha} found in filtered reflog of {' and '.join(map(get_second, branch_pairs))}")
-                    yield sha, containing_branch_pairs
+                    debug(f"commit {hash} found in filtered reflog of {' and '.join(map(get_second, branch_pairs))}")
+                    yield hash, containing_branch_pairs
                 else:
-                    debug(f"commit {sha} found only in filtered reflog of {' and '.join(map(get_second, branch_pairs))}; ignoring")
+                    debug(f"commit {hash} found only in filtered reflog of {' and '.join(map(get_second, branch_pairs))}; ignoring")
             else:
-                debug(f"commit {sha} not found in any filtered reflog")
+                debug(f"commit {hash} not found in any filtered reflog")
 
     def __infer_upstream(self, branch: LocalBranchShortName, condition: Callable[[LocalBranchShortName], bool] = lambda upstream: True, reject_reason_message: str = "") -> Optional[LocalBranchShortName]:
-        for sha, containing_branch_pairs in self.__match_log_to_filtered_reflogs(branch):
-            debug(f"commit {sha} found in filtered reflog of {' and '.join(map(get_second, containing_branch_pairs))}")
+        for hash, containing_branch_pairs in self.__match_log_to_filtered_reflogs(branch):
+            debug(f"commit {hash} found in filtered reflog of {' and '.join(map(get_second, containing_branch_pairs))}")
 
             for candidate, original_matched_branch in containing_branch_pairs:
                 if candidate != original_matched_branch:

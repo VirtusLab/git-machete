@@ -530,13 +530,13 @@ class GitContext:
     def spoonfeed_log_shas(self, branch_full_hash: FullCommitHash) -> Generator[FullCommitHash, None, None]:
         if branch_full_hash not in self.__initial_log_shas_cached:
             self.__initial_log_shas_cached[branch_full_hash] = self.__get_log_shas(branch_full_hash, max_count=MAX_COUNT_FOR_INITIAL_LOG)
-        for sha in self.__initial_log_shas_cached[branch_full_hash]:
-            yield FullCommitHash.of(sha)
+        for hash in self.__initial_log_shas_cached[branch_full_hash]:
+            yield FullCommitHash.of(hash)
 
         if branch_full_hash not in self.__remaining_log_shas_cached:
             self.__remaining_log_shas_cached[branch_full_hash] = self.__get_log_shas(branch_full_hash, max_count=None)[MAX_COUNT_FOR_INITIAL_LOG:]
-        for sha in self.__remaining_log_shas_cached[branch_full_hash]:
-            yield FullCommitHash.of(sha)
+        for hash in self.__remaining_log_shas_cached[branch_full_hash]:
+            yield FullCommitHash.of(hash)
 
     def __load_all_reflogs(self) -> None:
         # %gd - reflog selector (refname@{num})
@@ -551,14 +551,14 @@ class GitContext:
             values = entry.split("\t")
             if len(values) != 3:  # invalid, shouldn't happen
                 continue
-            selector, sha, subject = values
+            selector, hash, subject = values
             branch_and_pos = selector.split("@")
             if len(branch_and_pos) != 2:  # invalid, shouldn't happen
                 continue
             branch, pos = branch_and_pos
             if branch not in self.__reflogs_cached:
                 self.__reflogs_cached[AnyBranchName.of(branch)] = []
-            self.__reflogs_cached[AnyBranchName.of(branch)] += [GitReflogEntry(hash=FullCommitHash.of(sha), reflog_subject=subject)]
+            self.__reflogs_cached[AnyBranchName.of(branch)] += [GitReflogEntry(hash=FullCommitHash.of(hash), reflog_subject=subject)]
 
     def get_reflog(self, branch: AnyBranchName) -> List[GitReflogEntry]:
         # git version 2.14.2 fixed a bug that caused fetching reflog of more than
