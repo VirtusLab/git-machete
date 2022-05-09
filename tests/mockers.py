@@ -10,18 +10,16 @@ import textwrap
 import time
 from contextlib import redirect_stderr, redirect_stdout
 from http import HTTPStatus
+from tempfile import mkdtemp
 from typing import Any, Dict, Iterable, List, Optional, Union
 from urllib.error import HTTPError
 from urllib.parse import ParseResult, parse_qs, urlparse
 
 from git_machete import cli
 from git_machete.git_operations import FullCommitHash, GitContext
-from git_machete.options import CommandLineOptions
 from git_machete.utils import dim
 
 git: GitContext = GitContext()
-
-FAKE_GITHUB_REMOTE_PATTERNS = ['(.*)/(.*)']
 
 
 def popen(command: str) -> str:
@@ -45,11 +43,11 @@ def mock_run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
 
 
 class GitRepositorySandbox:
-    second_remote_path = popen("mktemp -d")
+    second_remote_path = mkdtemp()
 
     def __init__(self) -> None:
-        self.remote_path = popen("mktemp -d")
-        self.local_path = popen("mktemp -d")
+        self.remote_path = mkdtemp()
+        self.local_path = mkdtemp()
 
     def execute(self, command: str) -> "GitRepositorySandbox":
         subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)
@@ -137,13 +135,6 @@ class MockGitHubAPIResponse:
         return json.dumps(self.response_data).encode()
 
 
-class FakeCommandLineOptions(CommandLineOptions):
-    def __init__(self) -> None:
-        super().__init__()
-        self.opt_no_interactive_rebase: bool = True
-        self.opt_yes: bool = True
-
-
 class MockGitHubAPIRequest:
     def __init__(self, github_api_state: MockGitHubAPIState) -> None:
         self.github_api_state: MockGitHubAPIState = github_api_state
@@ -220,7 +211,7 @@ class MockGitHubAPIRequest:
                 'user': {'login': 'github_user'},
                 'html_url': 'www.github.com',
                 'state': 'open',
-                'head': {'ref': "", 'repo': {'full_name': 'testing:checkout_prs', 'html_url': popen("mktemp -d")}},
+                'head': {'ref': "", 'repo': {'full_name': 'testing:checkout_prs', 'html_url': mkdtemp()}},
                 'base': {'ref': ""}}
         return self.fill_pull_request_data(json.loads(self.json_data), pull)
 
@@ -340,3 +331,28 @@ def rewrite_definition_file(new_body: str) -> None:
     definition_file_path = git.get_main_git_subpath("machete")
     with open(os.path.join(os.getcwd(), definition_file_path), 'w') as def_file:
         def_file.writelines(new_body)
+
+
+def mock_run_cmd_and_forward_stdout(cmd: str, *args: str, **kwargs: Any) -> int:
+    completed_process: subprocess.CompletedProcess[bytes] = subprocess.run(
+        [cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, ** kwargs)
+    print(completed_process.stdout.decode('utf-8'))
+    exit_code: int = completed_process.returncode
+    if exit_code != 0:
+        print(dim(f"<exit code: {exit_code}>\n"), file=sys.stderr)
+    return exit_code
+
+
+def mock_ask_if(*args: str, **kwargs: Any) -> str:
+    return 'y'
+
+
+def mock_should_perform_interactive_slide_out(cmd: str) -> bool:
+    return True
+
+
+def mock_exit_script(status_code: Optional[int] = None, error: Optional[BaseException] = None) -> None:
+    if error:
+        raise error
+    else:
+        sys.exit(status_code)

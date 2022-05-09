@@ -1,32 +1,10 @@
-import io
-import re
-import textwrap
-from contextlib import redirect_stderr, redirect_stdout
-from typing import Iterable
-from unittest import mock
+from typing import Any
 
-from git_machete import cli
-from git_machete.tests.functional.commons import (GitRepositorySandbox, git,
-                                                  mock_run_cmd)
+from .mockers import (GitRepositorySandbox, assert_command, launch_command,
+                      mock_run_cmd)
 
 
-class TestMachete:
-
-    @staticmethod
-    def adapt(s: str) -> str:
-        return textwrap.indent(textwrap.dedent(re.sub(r"\|\n", "| \n", s[1:])), "  ")
-
-    @staticmethod
-    def launch_command(*args: str) -> str:
-        with io.StringIO() as out:
-            with redirect_stdout(out):
-                with redirect_stderr(out):
-                    cli.launch(list(args))
-                    git.flush_caches()
-            return out.getvalue()
-
-    def assert_command(self, cmds: Iterable[str], expected_result: str, strip_indentation: bool = True) -> None:
-        assert self.launch_command(*cmds) == (self.adapt(expected_result) if strip_indentation else expected_result)
+class TestAdd:
 
     def setup_method(self) -> None:
 
@@ -42,11 +20,12 @@ class TestMachete:
             .execute('git config user.name "Tester Test"')
         )
 
-    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    def test_add(self) -> None:
+    def test_add(self, mocker: Any) -> None:
         """
         Verify behaviour of a 'git machete add' command.
         """
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+
         (
             self.repo_sandbox.new_branch("master")
                 .commit("master commit.")
@@ -57,10 +36,11 @@ class TestMachete:
                 .check_out("develop")
                 .commit("New commit on develop")
         )
-        self.launch_command("discover", "-y")
+        launch_command("discover", "-y")
+
         self.repo_sandbox.new_branch("bugfix/feature_fail")
 
-        self.assert_command(
+        assert_command(
             ['add', '-y', 'bugfix/feature_fail'],
             'Adding `bugfix/feature_fail` onto the inferred upstream (parent) branch `develop`\n'
             'Added branch `bugfix/feature_fail` onto `develop`\n',
@@ -70,7 +50,7 @@ class TestMachete:
         # test with --onto option
         self.repo_sandbox.new_branch("chore/remove_indentation")
 
-        self.assert_command(
+        assert_command(
             ['add', '--onto=feature'],
             'Added branch `chore/remove_indentation` onto `feature`\n',
             strip_indentation=False
