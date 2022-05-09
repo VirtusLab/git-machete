@@ -952,9 +952,9 @@ class TestGithub:
 
         assert 'feature/allow_checkout' == \
             launch_command("show", "current").strip(), \
-            "Verify that 'git machete github checkout prs' performs 'git checkout' to " \
-            "the head branch of given pull request."
-
+            ("Verify that 'git machete github checkout prs' performs 'git checkout' to "
+             "the head branch of given pull request."
+             )
     git_api_state_for_test_github_sync = MockGitHubAPIState(
         [
             {

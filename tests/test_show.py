@@ -112,12 +112,14 @@ class TestShow:
 
         assert 'level-0-branch' == \
             launch_command("show", "up").strip(), \
-            "Verify that 'git machete show up' displays name of a parent/upstream" \
-            "branch one above current one."        # check short command behaviour
+            ("Verify that 'git machete show up' displays name of a parent/upstream"
+                "branch one above current one."
+             )            # check short command behaviour
         assert 'level-0-branch' == \
             launch_command("show", "u").strip(), \
-            "Verify that 'git machete show u' displays name of a parent/upstream" \
-            "branch one above current one."
+            ("Verify that 'git machete show u' displays name of a parent/upstream"
+             "branch one above current one."
+             )
 
     def test_show_down(self, mocker: Any) -> None:
         """Verify behaviour of a 'git machete show down' command.
@@ -139,12 +141,14 @@ class TestShow:
 
         assert 'level-1-branch' == \
             launch_command("show", "down").strip(), \
-            "Verify that 'git machete show down' displays name of " \
-            "a child/downstream branch one below current one."        # check short command behaviour
+            ("Verify that 'git machete show down' displays name of "
+                "a child/downstream branch one below current one."
+             )            # check short command behaviour
         assert 'level-1-branch' == \
             launch_command("show", "d").strip(), \
-            "Verify that 'git machete show d' displays name of " \
-            "a child/downstream branch one below current one."
+            ("Verify that 'git machete show d' displays name of "
+             "a child/downstream branch one below current one."
+             )
 
     def test_show_first(self, mocker: Any) -> None:
         """Verify behaviour of a 'git machete show first' command.
@@ -181,14 +185,16 @@ class TestShow:
 
         assert 'level-1a-branch' == \
             launch_command("show", "first").strip(), \
-            "Verify that 'git machete show first' displays name of the first downstream" \
-            "branch of a root branch of the current branch in the config file if root" \
-            "branch has any downstream branches."
+            ("Verify that 'git machete show first' displays name of the first downstream"
+             "branch of a root branch of the current branch in the config file if root"
+             "branch has any downstream branches."
+             )
         assert 'level-1a-branch' == \
             launch_command("show", "f").strip(), \
-            "Verify that 'git machete show f' displays name of the first downstream" \
-            "branch of a root branch of the current branch in the config file if root" \
-            "branch has any downstream branches."
+            ("Verify that 'git machete show f' displays name of the first downstream"
+             "branch of a root branch of the current branch in the config file if root"
+             "branch has any downstream branches."
+             )
 
     def test_show_last(self, mocker: Any) -> None:
         """Verify behaviour of a 'git machete show last' command.
@@ -221,14 +227,16 @@ class TestShow:
 
         assert 'level-1b-branch' == \
             launch_command("show", "last").strip(), \
-            "Verify that 'git machete show last' displays name of the last downstream" \
-            "branch of a root branch of the current branch in the config file if root" \
-            "branch has any downstream branches."
+            ("Verify that 'git machete show last' displays name of the last downstream"
+             "branch of a root branch of the current branch in the config file if root"
+             "branch has any downstream branches."
+             )
         assert 'level-1b-branch' == \
             launch_command("show", "l").strip(), \
-            "Verify that 'git machete show l' displays name of the last downstream" \
-            "branch of a root branch of the current branch in the config file if root" \
-            "branch has any downstream branches."
+            ("Verify that 'git machete show l' displays name of the last downstream"
+             "branch of a root branch of the current branch in the config file if root"
+             "branch has any downstream branches."
+             )
 
     def test_show_next(self, mocker: Any) -> None:
         """Verify behaviour of a 'git machete show next' command.
@@ -256,14 +264,16 @@ class TestShow:
 
         assert 'level-1b-branch' == \
             launch_command("show", "next").strip(), \
-            "Verify that 'git machete show next' displays name of " \
-            "a branch right after the current one in the config file" \
-            "when successor branch exists within the root tree."
+            ("Verify that 'git machete show next' displays name of "
+             "a branch right after the current one in the config file"
+             "when successor branch exists within the root tree."
+             )
         assert 'level-1b-branch' == \
             launch_command("show", "n").strip(), \
-            "Verify that 'git machete show n' displays name of " \
-            "a branch right after the current one in the config file" \
-            "when successor branch exists within the root tree."
+            ("Verify that 'git machete show n' displays name of "
+             "a branch right after the current one in the config file"
+             "when successor branch exists within the root tree."
+             )
 
     def test_show_prev(self, mocker: Any) -> None:
         """Verify behaviour of a 'git machete show prev' command.
@@ -290,14 +300,16 @@ class TestShow:
 
         assert 'level-2a-branch' == \
             launch_command("show", "prev").strip(), \
-            "Verify that 'git machete show prev' displays name of" \
-            "a branch right before the current one in the config file" \
-            "when predecessor branch exists within the root tree."
+            ("Verify that 'git machete show prev' displays name of"
+             "a branch right before the current one in the config file"
+             "when predecessor branch exists within the root tree."
+             )
         assert 'level-2a-branch' == \
             launch_command("show", "p").strip(), \
-            "Verify that 'git machete show p' displays name of" \
-            "a branch right before the current one in the config file" \
-            "when predecessor branch exists within the root tree."
+            ("Verify that 'git machete show p' displays name of"
+             "a branch right before the current one in the config file"
+             "when predecessor branch exists within the root tree."
+             )
 
     def test_show_root(self, mocker: Any) -> None:
         """Verify behaviour of a 'git machete show root' command.
@@ -328,9 +340,11 @@ class TestShow:
 
         assert 'level-0-branch' == \
             launch_command("show", "root").strip(), \
-            "Verify that 'git machete show root' displays name of the root of" \
-            "the current branch."
+            ("Verify that 'git machete show root' displays name of the root of"
+             "the current branch."
+             )
         assert 'level-0-branch' == \
             launch_command("show", "r").strip(), \
-            "Verify that 'git machete show r' displays name of the root of" \
-            "the current branch."
+            ("Verify that 'git machete show r' displays name of the root of"
+             "the current branch."
+             )

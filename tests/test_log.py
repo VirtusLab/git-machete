@@ -37,11 +37,14 @@ class TestLog:
         log_content = launch_command('log')
 
         assert childs_first_commit_hash in log_content, \
-            "Verify that oldest commit from current branch is visible when " \
-            "executing `git machete log`."
+            ("Verify that oldest commit from current branch is visible when "
+             "executing `git machete log`."
+             )
         assert childs_second_commit_hash in log_content, \
-            "Verify that youngest commit from current branch is visible when " \
-            "executing `git machete log`."
+            ("Verify that youngest commit from current branch is visible when "
+             "executing `git machete log`."
+             )
         assert roots_only_commit_hash not in log_content, \
-            "Verify that commits from parent branch are not visible when " \
-            "executing `git machete log`."
+            ("Verify that commits from parent branch are not visible when "
+             "executing `git machete log`."
+             )

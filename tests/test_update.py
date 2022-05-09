@@ -50,8 +50,9 @@ class TestUpdate:
 
         assert parents_new_commit_hash == \
             new_fork_point_hash, \
-            "Verify that 'git machete update --no-interactive-rebase' perform" \
-            "'git rebase' to the parent branch of the current branch."
+            ("Verify that 'git machete update --no-interactive-rebase' perform"
+             "'git rebase' to the parent branch of the current branch."
+             )
 
     def test_update_with_fork_point_specified(self, mocker: Any) -> None:
         """Verify behaviour of a 'git machete update --no-interactive-rebase -f <commit_hash>' cmd.
@@ -89,18 +90,21 @@ class TestUpdate:
 
         assert roots_second_commit_hash == \
             new_fork_point_hash, \
-            "Verify that 'git machete update --no-interactive-rebase -f " \
-            "<commit_hash>' performs 'git rebase' to the upstream branch."
+            ("Verify that 'git machete update --no-interactive-rebase -f "
+             "<commit_hash>' performs 'git rebase' to the upstream branch."
+             )
         assert branchs_first_commit_msg not in \
             branch_history, \
-            "Verify that 'git machete update --no-interactive-rebase -f " \
-            "<commit_hash>' drops the commits until (included) fork point " \
-            "specified by the option '-f' from the current branch."
+            ("Verify that 'git machete update --no-interactive-rebase -f "
+             "<commit_hash>' drops the commits until (included) fork point "
+             "specified by the option '-f' from the current branch."
+             )
         assert branchs_second_commit_msg not in \
             branch_history, \
-            "Verify that 'git machete update --no-interactive-rebase -f " \
-            "<commit_hash>' drops the commits until (included) fork point " \
-            "specified by the option '-f' from the current branch."
+            ("Verify that 'git machete update --no-interactive-rebase -f "
+             "<commit_hash>' drops the commits until (included) fork point "
+             "specified by the option '-f' from the current branch."
+             )
 
     def test_update_with_invalid_fork_point(self, mocker: Any) -> None:
         (
