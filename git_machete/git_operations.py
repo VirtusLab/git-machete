@@ -312,8 +312,7 @@ class GitContext:
 
     def get_config_attr_or_none(self, key: str) -> Optional[str]:
         self.__ensure_config_loaded()
-        value = self.__config_cached.get(key.lower())
-        return value.strip() if value else value
+        return self.__config_cached.get(key.lower())
 
     def set_config_attr(self, key: str, value: str) -> None:
         self._run_git("config", "--", key, value)
@@ -336,7 +335,7 @@ class GitContext:
         return self.__remotes_cached
 
     def get_url_of_remote(self, remote: str) -> str:
-        return self.get_config_attr_or_none(f"remote.{remote}.url")  # 'git remote get-url' method has only been added in git v2.5.1
+        return self.get_config_attr_or_none(f"remote.{remote}.url").strip()  # 'git remote get-url' method has only been added in git v2.5.1
 
     def fetch_remote(self, remote: str) -> None:
         if remote not in self.__fetch_done_for:
@@ -433,7 +432,8 @@ class GitContext:
         return None
 
     def get_strict_remote_for_fetching_of_branch(self, branch: LocalBranchShortName) -> Optional[str]:
-        return self.get_config_attr_or_none(f"branch.{branch}.remote")
+        remote = self.get_config_attr_or_none(f"branch.{branch}.remote")
+        return remote.rstrip() if remote else None
 
     def get_combined_remote_for_fetching_of_branch(self, branch: LocalBranchShortName) -> Optional[str]:
         return self.get_strict_remote_for_fetching_of_branch(branch) or self.get_inferred_remote_for_fetching_of_branch(branch)

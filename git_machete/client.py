@@ -1384,9 +1384,9 @@ class MacheteClient:
         return result
 
     def get_remote_name_and_organization_and_repository_name_of_remote(self) -> 'RemoteAndOrganizationAndRepository':
-        return RemoteAndOrganizationAndRepository(remote=self.__git.get_config_attr_or_none(f"machete.github.remote"),
-                                                  organization=self.__git.get_config_attr_or_none(f"machete.github.organization"),
-                                                  repository=self.__git.get_config_attr_or_none(f"machete.github.repository"))
+        return RemoteAndOrganizationAndRepository(remote=self.__git.get_config_attr_or_none("machete.github.remote"),
+                                                  organization=self.__git.get_config_attr_or_none("machete.github.organization"),
+                                                  repository=self.__git.get_config_attr_or_none("machete.github.repository"))
 
     def sync_annotations_to_github_prs(self) -> None:
 

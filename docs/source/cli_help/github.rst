@@ -20,6 +20,8 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
   Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
   Equivalent to ``git machete anno --sync-github-prs``.
 
+.. include:: github_config_keys.rst
+
 ``checkout-prs [--all | --by=<github-login> | --mine | <PR-number-1> ... <PR-number-N>]``:
 
   Check out the head branch of the given pull requests (specified by numbers or by a flag),
