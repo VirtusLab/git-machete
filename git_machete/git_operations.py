@@ -939,7 +939,7 @@ class GitContext:
         return self._run_git("update-ref", "HEAD", hash, "-m", reflog_subject)
 
     def get_indent_len_before_branch_name(self) -> int:
-        indent_len_before_branch_name = self.get_config_attr_or_none('machete.indent.len')
+        indent_len_before_branch_name = self.get_config_attr_or_none('machete.status.branch.indent.len')
         if indent_len_before_branch_name:
             return int(indent_len_before_branch_name)
         else:
