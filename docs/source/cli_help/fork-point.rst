@@ -23,7 +23,7 @@ Note: in all three forms, if no <branch> is specified, the currently checked out
 The branch in question does not need to occur in the definition file.
 
 
-Without any option, displays full HASH of the fork point commit for the <branch>.
+Without any option, displays full hash of the fork point commit for the <branch>.
 Fork point of the given <branch> is the commit at which the history of the <branch> diverges from history of any other branch.
 
 Fork point is assumed by many ``git machete`` commands as the place where the unique history of the <branch> starts.
