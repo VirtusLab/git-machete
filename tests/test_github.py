@@ -1,33 +1,30 @@
-import io
 import os
-import re
 import subprocess
-import sys
-import textwrap
-from contextlib import redirect_stderr, redirect_stdout
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Optional
 from unittest import mock
 
-import pytest  # type: ignore
-from git_machete import cli
+import pytest
+
 from git_machete.exceptions import MacheteException
 from git_machete.git_operations import LocalBranchShortName
 from git_machete.github import get_parsed_github_remote_url
-from git_machete.tests.functional.commons import (FAKE_GITHUB_REMOTE_PATTERNS,
-                                                  FakeCommandLineOptions,
-                                                  GitRepositorySandbox,
-                                                  MockContextManager,
-                                                  MockGitHubAPIState,
-                                                  MockHTTPError,
-                                                  get_current_commit_hash, git,
-                                                  mock_run_cmd, popen)
+from git_machete.options import CommandLineOptions
+
+from .mockers import (GitRepositorySandbox, MockContextManager,
+                      MockGitHubAPIState, MockHTTPError, assert_command,
+                      get_current_commit_hash, git, launch_command,
+                      mock_ask_if, mock_exit_script, mock_run_cmd,
+                      mock_should_perform_interactive_slide_out,
+                      rewrite_definition_file)
+
+FAKE_GITHUB_REMOTE_PATTERNS = ['(.*)/(.*)']
 
 
-def mock_exit_script(status_code: Optional[int] = None, error: Optional[BaseException] = None) -> None:
-    if error:
-        raise error
-    else:
-        sys.exit(status_code)
+class FakeCommandLineOptions(CommandLineOptions):
+    def __init__(self) -> None:
+        super().__init__()
+        self.opt_no_interactive_rebase: bool = True
+        self.opt_yes: bool = True
 
 
 def mock_fetch_ref(cls: Any, remote: str, ref: str) -> None:
@@ -39,10 +36,6 @@ def mock_derive_current_user_login() -> str:
     return "very_complex_user_token"
 
 
-def mock_ask_if(*args: str, **kwargs: Any) -> str:
-    return 'y'
-
-
 def mock__get_github_token() -> Optional[str]:
     return None
 
@@ -51,35 +44,9 @@ def mock__get_github_token_fake() -> Optional[str]:
     return 'token'
 
 
-def mock_should_perform_interactive_slide_out(cmd: str) -> bool:
-    return True
-
-
-class TestMachete:
+class TestGithub:
     mock_repository_info: Dict[str, str] = {'full_name': 'testing/checkout_prs',
                                             'html_url': 'https://github.com/tester/repo_sandbox.git'}
-
-    @staticmethod
-    def adapt(s: str) -> str:
-        return textwrap.indent(textwrap.dedent(re.sub(r"\|\n", "| \n", s[1:])), "  ")
-
-    @staticmethod
-    def launch_command(*args: str) -> str:
-        with io.StringIO() as out:
-            with redirect_stdout(out):
-                with redirect_stderr(out):
-                    cli.launch(list(args))
-                    git.flush_caches()
-            return out.getvalue()
-
-    @staticmethod
-    def rewrite_definition_file(new_body: str) -> None:
-        definition_file_path = git.get_main_git_subpath("machete")
-        with open(os.path.join(os.getcwd(), definition_file_path), 'w') as def_file:
-            def_file.writelines(new_body)
-
-    def assert_command(self, cmds: Iterable[str], expected_result: str, strip_indentation: bool = True) -> None:
-        assert self.launch_command(*cmds) == (self.adapt(expected_result) if strip_indentation else expected_result)
 
     def setup_method(self) -> None:
 
@@ -126,13 +93,13 @@ class TestMachete:
                 .add_remote('new_origin', 'https://github.com/user/repo.git')
         )
 
-        self.launch_command("discover", "-y")
-        self.assert_command(
+        launch_command("discover", "-y")
+        assert_command(
             ['github', 'retarget-pr'],
             'The base branch of PR #15 has been switched to `branch-1`\n',
             strip_indentation=False
         )
-        self.assert_command(
+        assert_command(
             ['github', 'retarget-pr'],
             'The base branch of PR #15 is already `branch-1`\n',
             strip_indentation=False
@@ -212,9 +179,9 @@ class TestMachete:
                 .delete_branch("root")
                 .add_remote('new_origin', 'https://github.com/user/repo.git')
         )
-        self.launch_command("discover", "-y")
-        self.launch_command('github', 'anno-prs')
-        self.assert_command(
+        launch_command("discover", "-y")
+        launch_command('github', 'anno-prs')
+        assert_command(
             ["status"],
             """
             master
@@ -307,10 +274,10 @@ class TestMachete:
                 .add_remote('new_origin', 'https://github.com/user/repo.git')
         )
 
-        self.launch_command("discover")
-        self.launch_command("github", "create-pr")
+        launch_command("discover")
+        launch_command("github", "create-pr")
         # ahead of origin state, push is advised and accepted
-        self.assert_command(
+        assert_command(
             ['status'],
             """
             master
@@ -334,8 +301,8 @@ class TestMachete:
         )
         self.repo_sandbox.check_out('chore/fields')
         #  untracked state (can only create pr when branch is pushed)
-        self.launch_command("github", "create-pr", "--draft")
-        self.assert_command(
+        launch_command("github", "create-pr", "--draft")
+        assert_command(
             ['status'],
             """
             master
@@ -365,8 +332,8 @@ class TestMachete:
         )
 
         # diverged from and newer than origin
-        self.launch_command("github", "create-pr")
-        self.assert_command(
+        launch_command("github", "create-pr")
+        assert_command(
             ['status'],
             """
             master
@@ -390,7 +357,7 @@ class TestMachete:
         )
         expected_error_message = "A pull request already exists for test_repo:hotfix/add-trigger."
         with pytest.raises(MacheteException) as e:
-            self.launch_command("github", "create-pr")
+            launch_command("github", "create-pr")
         if e:
             assert e.value.args[0] == expected_error_message, 'Verify that expected error message has appeared when given pull request to create is already created.'
 
@@ -400,18 +367,18 @@ class TestMachete:
             .new_branch('testing/endpoints')
             .push()
         )
-        self.launch_command('discover')
+        launch_command('discover')
 
         expected_error_message = "All commits in `testing/endpoints` branch are already included in `develop` branch.\nCannot create pull request."
         with pytest.raises(MacheteException) as e:
-            self.launch_command("github", "create-pr")
+            launch_command("github", "create-pr")
         if e:
             assert e.value.parameter == expected_error_message, 'Verify that expected error message has appeared when head branch is equal or ancestor of base branch.'
 
         self.repo_sandbox.check_out('develop')
         expected_error_message = "Branch `develop` does not have a parent branch (it is a root), base branch for the PR cannot be established."
         with pytest.raises(MacheteException) as e:
-            self.launch_command("github", "create-pr")
+            launch_command("github", "create-pr")
         if e:
             assert e.value.parameter == expected_error_message, 'Verify that expected error message has appeared when creating PR from root branch.'
 
@@ -451,13 +418,13 @@ class TestMachete:
                 .delete_branch("root")
         )
 
-        self.launch_command('discover')
+        launch_command('discover')
 
         expected_msg = ("Fetching origin...\n"
                         "Warn: Base branch for this PR (`feature/api_handling`) is not found on remote, pushing...\n"
                         "Creating a PR from `feature/api_exception_handling` to `feature/api_handling`... OK, see www.github.com\n")
-        self.assert_command(['github', 'create-pr'], expected_msg, strip_indentation=False)
-        self.assert_command(
+        assert_command(['github', 'create-pr'], expected_msg, strip_indentation=False)
+        assert_command(
             ['status'],
             """
             develop
@@ -552,7 +519,7 @@ class TestMachete:
     @mock.patch('git_machete.github.__get_github_token', mock__get_github_token)
     @mock.patch('urllib.request.Request', git_api_state_for_test_checkout_prs.new_request())
     @mock.patch('urllib.request.urlopen', MockContextManager)
-    def test_github_checkout_prs(self) -> None:
+    def test_github_checkout_prs(self, tmp_path: Any) -> None:
         (
             self.repo_sandbox.new_branch("root")
             .commit("initial commit")
@@ -606,11 +573,11 @@ class TestMachete:
         for branch in ('chore/redundant_checks', 'restrict_access', 'allow-ownership-link', 'bugfix/feature', 'enhance/add_user', 'testing/add_user', 'chore/comments', 'bugfix/add_user'):
             self.repo_sandbox.execute(f"git branch -D {branch}")
 
-        self.launch_command('discover')
+        launch_command('discover')
 
         # not broken chain of pull requests (root found in dependency tree)
-        self.launch_command('github', 'checkout-prs', '18')
-        self.assert_command(
+        launch_command('github', 'checkout-prs', '18')
+        assert_command(
             ["status"],
             """
             master
@@ -635,8 +602,8 @@ class TestMachete:
             """
         )
         # broken chain of pull requests (add new root)
-        self.launch_command('github', 'checkout-prs', '24')
-        self.assert_command(
+        launch_command('github', 'checkout-prs', '24')
+        assert_command(
             ["status"],
             """
             master
@@ -668,8 +635,8 @@ class TestMachete:
         )
 
         # broken chain of pull requests (branches already added)
-        self.launch_command('github', 'checkout-prs', '24')
-        self.assert_command(
+        launch_command('github', 'checkout-prs', '24')
+        assert_command(
             ["status"],
             """
             master
@@ -701,8 +668,8 @@ class TestMachete:
         )
 
         # all PRs
-        self.launch_command('github', 'checkout-prs', '--all')
-        self.assert_command(
+        launch_command('github', 'checkout-prs', '--all')
+        assert_command(
             ["status"],
             """
             master
@@ -741,13 +708,13 @@ class TestMachete:
         _, org, repo = get_parsed_github_remote_url(self.repo_sandbox.remote_path, remote='origin')
         expected_error_message = f"PR #100 is not found in repository `{org}/{repo}`"
         with pytest.raises(MacheteException) as e:
-            self.launch_command('github', 'checkout-prs', '100')
+            launch_command('github', 'checkout-prs', '100')
         if e:
             assert e.value.parameter == expected_error_message, \
                 'Verify that expected error message has appeared when given pull request to checkout does not exists.'
 
         with pytest.raises(MacheteException) as e:
-            self.launch_command('github', 'checkout-prs', '19', '100')
+            launch_command('github', 'checkout-prs', '19', '100')
         if e:
             assert e.value.parameter == expected_error_message, \
                 'Verify that expected error message has appeared when one of the given pull requests to checkout does not exists.'
@@ -755,10 +722,10 @@ class TestMachete:
         # check against user with no open pull requests
         expected_msg = ("Checking for open GitHub PRs...\n"
                         f"Warn: User `tester` has no open pull request in repository `{org}/{repo}`\n")
-        self.assert_command(['github', 'checkout-prs', '--by', 'tester'], expected_msg, strip_indentation=False)
+        assert_command(['github', 'checkout-prs', '--by', 'tester'], expected_msg, strip_indentation=False)
 
         # Check against closed pull request with head branch deleted from remote
-        local_path = popen("mktemp -d")
+        local_path = tmp_path
         self.repo_sandbox.new_repo(GitRepositorySandbox.second_remote_path)
         (self.repo_sandbox.new_repo(local_path)
             .execute(f"git remote add origin {GitRepositorySandbox.second_remote_path}")
@@ -772,7 +739,7 @@ class TestMachete:
 
         expected_error_message = "Could not check out PR #5 because its head branch `bugfix/remove-n-option` is already deleted from `testing`."
         with pytest.raises(MacheteException) as e:
-            self.launch_command('github', 'checkout-prs', '5')
+            launch_command('github', 'checkout-prs', '5')
         if e:
             assert e.value.parameter == expected_error_message, \
                 'Verify that expected error message has appeared when given pull request to checkout have already deleted branch from remote.'
@@ -790,12 +757,12 @@ class TestMachete:
                         "Warn: Pull request #5 is already closed.\n"
                         "Pull request `#5` checked out at local branch `bugfix/remove-n-option`\n")
 
-        self.assert_command(['github', 'checkout-prs', '5'], expected_msg, strip_indentation=False)
+        assert_command(['github', 'checkout-prs', '5'], expected_msg, strip_indentation=False)
 
         # Check against multiple PRs
         expected_msg = 'Checking for open GitHub PRs...\n'
 
-        self.assert_command(['github', 'checkout-prs', '3', '12'], expected_msg, strip_indentation=False)
+        assert_command(['github', 'checkout-prs', '3', '12'], expected_msg, strip_indentation=False)
 
     git_api_state_for_test_github_checkout_prs_fresh_repo = MockGitHubAPIState(
         [
@@ -840,7 +807,7 @@ class TestMachete:
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     @mock.patch('urllib.request.urlopen', MockContextManager)
     @mock.patch('urllib.request.Request', git_api_state_for_test_github_checkout_prs_fresh_repo.new_request())
-    def test_github_checkout_prs_freshly_cloned(self) -> None:
+    def test_github_checkout_prs_freshly_cloned(self, tmp_path: Any) -> None:
         (
             self.repo_sandbox.new_branch("root")
             .commit("initial commit")
@@ -868,7 +835,7 @@ class TestMachete:
         )
         for branch in ('develop', 'chore/sync_to_docs', 'improve/refactor', 'comments/add_docstrings'):
             self.repo_sandbox.execute(f"git branch -D {branch}")
-        local_path = popen("mktemp -d")
+        local_path = tmp_path
         os.chdir(local_path)
         self.repo_sandbox.execute(f'git clone {self.repo_sandbox.remote_path}')
         os.chdir(os.path.join(local_path, os.listdir()[0]))
@@ -876,7 +843,7 @@ class TestMachete:
         for branch in ('develop', 'chore/sync_to_docs', 'improve/refactor', 'comments/add_docstrings'):
             self.repo_sandbox.execute(f"git branch -D -r origin/{branch}")
 
-        local_path = popen("mktemp -d")
+        local_path = tmp_path
         self.repo_sandbox.new_repo(GitRepositorySandbox.second_remote_path)
         (
             self.repo_sandbox.new_repo(local_path)
@@ -888,16 +855,16 @@ class TestMachete:
             .push()
         )
         os.chdir(self.repo_sandbox.local_path)
-        self.rewrite_definition_file("master")
+        rewrite_definition_file("master")
         expected_msg = ("Checking for open GitHub PRs...\n"
                         "Pull request `#2` checked out at local branch `comments/add_docstrings`\n")
-        self.assert_command(
+        assert_command(
             ['github', 'checkout-prs', '2'],
             expected_msg,
             strip_indentation=False
         )
 
-        self.assert_command(
+        assert_command(
             ["status"],
             """
             master
@@ -916,12 +883,12 @@ class TestMachete:
                         "Warn: Pull request #23 is already closed.\n"
                         "Pull request `#23` checked out at local branch `sphinx_export`\n")
 
-        self.assert_command(
+        assert_command(
             ['github', 'checkout-prs', '23'],
             expected_msg,
             strip_indentation=False
         )
-        self.assert_command(
+        assert_command(
             ["status"],
             """
             master
@@ -972,22 +939,22 @@ class TestMachete:
             .commit('initial develop commit')
             .push()
         )
-        self.launch_command('discover')
+        launch_command('discover')
         expected_msg = ("Checking for open GitHub PRs...\n"
                         "Warn: Pull request #2 comes from fork and its repository is already deleted. No remote tracking data will be set up for `feature/allow_checkout` branch.\n"
                         "Warn: Pull request #2 is already closed.\n"
                         "Pull request `#2` checked out at local branch `feature/allow_checkout`\n")
-        self.assert_command(
+        assert_command(
             ['github', 'checkout-prs', '2'],
             expected_msg,
             strip_indentation=False
         )
 
         assert 'feature/allow_checkout' == \
-            self.launch_command("show", "current").strip(), \
-            "Verify that 'git machete github checkout prs' performs 'git checkout' to " \
-            "the head branch of given pull request."
-
+            launch_command("show", "current").strip(), \
+            ("Verify that 'git machete github checkout prs' performs 'git checkout' to "
+             "the head branch of given pull request."
+             )
     git_api_state_for_test_github_sync = MockGitHubAPIState(
         [
             {
@@ -1034,7 +1001,7 @@ class TestMachete:
                 .new_branch('snickers')
                 .push()
         )
-        self.launch_command('discover', '-y')
+        launch_command('discover', '-y')
         (
             self.repo_sandbox
                 .check_out("master")
@@ -1042,7 +1009,7 @@ class TestMachete:
                 .commit()
                 .check_out("master")
         )
-        self.launch_command('github', 'sync')
+        launch_command('github', 'sync')
 
         expected_status_output = (
             """
@@ -1057,7 +1024,7 @@ class TestMachete:
             o-snickers  PR #7
             """
         )
-        self.assert_command(['status'], expected_status_output)
+        assert_command(['status'], expected_status_output)
 
         with pytest.raises(subprocess.CalledProcessError):
             self.repo_sandbox.check_out("mars")

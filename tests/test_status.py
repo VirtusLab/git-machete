@@ -1,21 +1,14 @@
-import sys
-from typing import Any, Optional
+from typing import Any
 
-import pytest  # type: ignore
+import pytest
+
 from git_machete.exceptions import MacheteException
-from git_machete.tests.functional.commons import (GitRepositorySandbox,
-                                                  launch_command, mock_run_cmd,
-                                                  rewrite_definition_file)
+
+from .mockers import (GitRepositorySandbox, launch_command, mock_exit_script,
+                      mock_run_cmd, rewrite_definition_file)
 
 
-def mock_exit_script(status_code: Optional[int] = None, error: Optional[BaseException] = None) -> None:
-    if error:
-        raise error
-    else:
-        sys.exit(status_code)
-
-
-class TestMachete:
+class TestStatus:
 
     def setup_method(self) -> None:
 

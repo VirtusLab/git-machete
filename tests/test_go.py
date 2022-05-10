@@ -1,10 +1,9 @@
 from typing import Any
 
-from git_machete.tests.functional.commons import (GitRepositorySandbox,
-                                                  launch_command, mock_run_cmd)
+from .mockers import GitRepositorySandbox, launch_command, mock_run_cmd
 
 
-class TestMachete:
+class TestGo:
 
     def setup_method(self) -> None:
 
@@ -21,14 +20,14 @@ class TestMachete:
         )
 
     def test_go_up(self, mocker: Any) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-
         """Verify behaviour of a 'git machete go up' command.
 
         Verify that 'git machete go up' performs 'git checkout' to the
         parent/upstream branch of the current branch.
 
         """
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+
         (
             self.repo_sandbox.new_branch("level-0-branch")
             .commit()
@@ -36,30 +35,32 @@ class TestMachete:
             .commit()
         )
         launch_command("discover", "-y")
-
         launch_command("go", "up")
 
         assert 'level-0-branch' == \
             launch_command("show", "current").strip(), \
-            "Verify that 'git machete go up' performs 'git checkout' to " \
-            "the parent/upstream branch of the current branch."
+            ("Verify that 'git machete go up' performs 'git checkout' to "
+             "the parent/upstream branch of the current branch."
+             )
         # check short command behaviour
         self.repo_sandbox.check_out("level-1-branch")
         launch_command("g", "u")
+
         assert 'level-0-branch' == \
             launch_command("show", "current").strip(), \
-            "Verify that 'git machete g u' performs 'git checkout' to " \
-            "the parent/upstream branch of the current branch."
+            ("Verify that 'git machete g u' performs 'git checkout' to "
+             "the parent/upstream branch of the current branch."
+             )
 
     def test_go_down(self, mocker: Any) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-
         """Verify behaviour of a 'git machete go down' command.
 
         Verify that 'git machete go down' performs 'git checkout' to the
         child/downstream branch of the current branch.
 
         """
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+
         (
             self.repo_sandbox.new_branch("level-0-branch")
             .commit()
@@ -68,24 +69,24 @@ class TestMachete:
             .check_out("level-0-branch")
         )
         launch_command("discover", "-y")
-
         launch_command("go", "down")
 
         assert 'level-1-branch' == \
             launch_command("show", "current").strip(), \
-            "Verify that 'git machete go down' performs 'git checkout' to " \
-            "the child/downstream branch of the current branch."
+            ("Verify that 'git machete go down' performs 'git checkout' to "
+             "the child/downstream branch of the current branch."
+             )
         # check short command behaviour
         self.repo_sandbox.check_out("level-0-branch")
         launch_command("g", "d")
 
         assert 'level-1-branch' == \
             launch_command("show", "current").strip(), \
-            "Verify that 'git machete g d' performs 'git checkout' to " \
-            "the child/downstream branch of the current branch."
+            ("Verify that 'git machete g d' performs 'git checkout' to "
+             "the child/downstream branch of the current branch."
+             )
 
     def test_go_first_root_with_downstream(self, mocker: Any) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
         """Verify behaviour of a 'git machete go first' command.
 
         Verify that 'git machete go first' performs 'git checkout' to
@@ -93,6 +94,8 @@ class TestMachete:
         if root branch has any downstream branches.
 
         """
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+
         (
             self.repo_sandbox.new_branch("level-0-branch")
             .commit()
@@ -115,55 +118,55 @@ class TestMachete:
             .check_out("level-3b-branch")
         )
         launch_command("discover", "-y")
-
         launch_command("go", "first")
 
         assert 'level-1a-branch' == \
             launch_command("show", "current").strip(), \
-            "Verify that 'git machete go first' performs 'git checkout' to" \
-            "the first downstream branch of a root branch if root branch " \
-            "has any downstream branches."
-
+            ("Verify that 'git machete go first' performs 'git checkout' to"
+             "the first downstream branch of a root branch if root branch "
+             "has any downstream branches."
+             )
         # check short command behaviour
         self.repo_sandbox.check_out("level-3b-branch")
         launch_command("g", "f")
 
         assert 'level-1a-branch' == \
             launch_command("show", "current").strip(), \
-            "Verify that 'git machete g d' performs 'git checkout' to " \
-            "the child/downstream branch of the current branch."
+            ("Verify that 'git machete g d' performs 'git checkout' to "
+             "the child/downstream branch of the current branch."
+             )
 
     def test_go_first_root_without_downstream(self, mocker: Any) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
         """Verify behaviour of a 'git machete go first' command.
 
         Verify that 'git machete go first' set current branch to root
         if root branch has no downstream.
 
         """
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+
         (
             self.repo_sandbox.new_branch("level-0-branch")
             .commit()
         )
         launch_command("discover", "-y")
-
         launch_command("go", "first")
 
         assert 'level-0-branch' == \
             launch_command("show", "current").strip(), \
-            "Verify that 'git machete go first' set current branch to root" \
-            "if root branch has no downstream."
-
+            ("Verify that 'git machete go first' set current branch to root"
+             "if root branch has no downstream."
+             )
         # check short command behaviour
         launch_command("g", "f")
 
         assert 'level-0-branch' == \
             launch_command("show", "current").strip(), \
-            "Verify that 'git machete g f' set current branch to root" \
-            "if root branch has no downstream."
+            ("Verify that 'git machete g f' set current branch to root"
+             "if root branch has no downstream."
+             )
 
     def test_go_last(self, mocker: Any) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
         """Verify behaviour of a 'git machete go last' command.
 
         Verify that 'git machete go last' performs 'git checkout' to
@@ -171,6 +174,8 @@ class TestMachete:
         has any downstream branches.
 
         """
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+
         (
             self.repo_sandbox.new_branch("level-0-branch")
             .commit()
@@ -189,28 +194,26 @@ class TestMachete:
             .check_out("level-1a-branch")
         )
         launch_command("discover", "-y")
-
         launch_command("go", "last")
 
         assert 'level-1b-branch' == \
             launch_command("show", "current").strip(), \
-            "Verify that 'git machete go last' performs 'git checkout' to" \
-            "the last downstream branch of a root branch if root branch " \
-            "has any downstream branches."
-
+            ("Verify that 'git machete go last' performs 'git checkout' to"
+             "the last downstream branch of a root branch if root branch "
+             "has any downstream branches."
+             )
         # check short command behaviour
         self.repo_sandbox.check_out("level-1a-branch")
         launch_command("g", "l")
 
         assert 'level-1b-branch' == \
             launch_command("show", "current").strip(), \
-            "Verify that 'git machete g l' performs 'git checkout' to" \
-            "the last downstream branch of a root branch if root branch " \
-            "has any downstream branches."
+            ("Verify that 'git machete g l' performs 'git checkout' to"
+             "the last downstream branch of a root branch if root branch "
+             "has any downstream branches."
+             )
 
     def test_go_next_successor_exists(self, mocker: Any) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-
         """Verify behaviour of a 'git machete go next' command.
 
         Verify that 'git machete go next' performs 'git checkout' to
@@ -218,6 +221,8 @@ class TestMachete:
         when successor branch exists within the root tree.
 
         """
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+
         (
             self.repo_sandbox.new_branch("level-0-branch")
             .commit()
@@ -231,32 +236,34 @@ class TestMachete:
             .check_out("level-2a-branch")
         )
         launch_command("discover", "-y")
-
         launch_command("go", "next")
 
         assert 'level-1b-branch' == \
             launch_command("show", "current").strip(), \
-            "Verify that 'git machete go next' performs 'git checkout' to" \
-            "the next downstream branch right after the current one in the" \
-            "config file if successor branch exists."
+            ("Verify that 'git machete go next' performs 'git checkout' to"
+             "the next downstream branch right after the current one in the"
+             "config file if successor branch exists."
+             )
         # check short command behaviour
         self.repo_sandbox.check_out("level-2a-branch")
         launch_command("g", "n")
 
         assert 'level-1b-branch' == \
             launch_command("show", "current").strip(), \
-            "Verify that 'git machete g n' performs 'git checkout' to" \
-            "the next downstream branch right after the current one in the" \
-            "config file if successor branch exists."
+            ("Verify that 'git machete g n' performs 'git checkout' to"
+             "the next downstream branch right after the current one in the"
+             "config file if successor branch exists."
+             )
 
     def test_go_next_successor_on_another_root_tree(self, mocker: Any) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
         """Verify behaviour of a 'git machete go next' command.
 
         Verify that 'git machete go next' can checkout to branch that doesn't
         share root with the current branch.
 
         """
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+
         (
             self.repo_sandbox.new_branch("level-0-branch")
             .commit()
@@ -268,24 +275,24 @@ class TestMachete:
             .check_out("level-1-branch")
         )
         launch_command("discover", "-y")
-
         launch_command("go", "next")
+
         assert 'x-additional-root' == \
             launch_command("show", "current").strip(), \
-            "Verify that 'git machete go next' can checkout to branch that doesn't" \
-            "share root with the current branch."
-
+            ("Verify that 'git machete go next' can checkout to branch that doesn't"
+             "share root with the current branch."
+             )
         # check short command behaviour
         self.repo_sandbox.check_out("level-1-branch")
         launch_command("g", "n")
+
         assert 'x-additional-root' == \
             launch_command("show", "current").strip(), \
-            "Verify that 'git machete g n' can checkout to branch that doesn't" \
-            "share root with the current branch."
+            ("Verify that 'git machete g n' can checkout to branch that doesn't"
+             "share root with the current branch."
+             )
 
     def test_go_prev_successor_exists(self, mocker: Any) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-
         """Verify behaviour of a 'git machete go prev' command.
 
         Verify that 'git machete go prev' performs 'git checkout' to
@@ -293,6 +300,8 @@ class TestMachete:
         when predecessor branch exists within the root tree.
 
         """
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+
         (
             self.repo_sandbox.new_branch("level-0-branch")
             .commit()
@@ -305,32 +314,34 @@ class TestMachete:
             .commit()
         )
         launch_command("discover", "-y")
-
         launch_command("go", "prev")
 
         assert 'level-2a-branch' == \
             launch_command("show", "current").strip(), \
-            "Verify that 'git machete go prev' performs 'git checkout' to" \
-            "the branch right before the current one in the config file" \
-            "when predecessor branch exists within the root tree."
+            ("Verify that 'git machete go prev' performs 'git checkout' to"
+             "the branch right before the current one in the config file"
+             "when predecessor branch exists within the root tree."
+             )
         # check short command behaviour
         self.repo_sandbox.check_out("level-1b-branch")
         launch_command("g", "p")
 
         assert 'level-2a-branch' == \
             launch_command("show", "current").strip(), \
-            "Verify that 'git machete g p' performs 'git checkout' to" \
-            "the branch right before the current one in the config file" \
-            "when predecessor branch exists within the root tree."
+            ("Verify that 'git machete g p' performs 'git checkout' to"
+             "the branch right before the current one in the config file"
+             "when predecessor branch exists within the root tree."
+             )
 
     def test_go_prev_successor_on_another_root_tree(self, mocker: Any) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
         """Verify behaviour of a 'git machete go prev' command.
 
         Verify that 'git machete go prev' raises an error when predecessor
         branch doesn't exist.
 
         """
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+
         (
             self.repo_sandbox.new_branch("level-0-branch")
             .commit()
@@ -340,30 +351,32 @@ class TestMachete:
             .check_out("level-0-branch")
         )
         launch_command("discover", "-y")
-
         launch_command("go", "prev")
+
         assert 'a-additional-root' == \
             launch_command("show", "current").strip(), \
-            "Verify that 'git machete go prev' can checkout to branch that doesn't" \
-            "share root with the current branch."
-
+            ("Verify that 'git machete go prev' can checkout to branch that doesn't"
+             "share root with the current branch."
+             )
         # check short command behaviour
         self.repo_sandbox.check_out("level-0-branch")
         launch_command("g", "p")
+
         assert 'a-additional-root' == \
             launch_command("show", "current").strip(), \
-            "Verify that 'git machete g p' can checkout to branch that doesn't" \
-            "share root with the current branch."
+            ("Verify that 'git machete g p' can checkout to branch that doesn't"
+             "share root with the current branch."
+             )
 
     def test_go_root(self, mocker: Any) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-
         """Verify behaviour of a 'git machete go root' command.
 
         Verify that 'git machete go root' performs 'git checkout' to
         the root of the current branch.
 
         """
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+
         (
             self.repo_sandbox.new_branch("level-0-branch")
             .commit()
@@ -381,17 +394,19 @@ class TestMachete:
             .check_out("level-2a-branch")
         )
         launch_command("discover", "-y")
-
         launch_command("go", "root")
 
         assert 'level-0-branch' == \
             launch_command("show", "current").strip(), \
-            "Verify that 'git machete go root' performs 'git checkout' to" \
-            "the root of the current branch."
+            ("Verify that 'git machete go root' performs 'git checkout' to"
+             "the root of the current branch."
+             )
         # check short command behaviour
         self.repo_sandbox.check_out("level-2a-branch")
         launch_command("g", "r")
+
         assert 'level-0-branch' == \
             launch_command("show", "current").strip(), \
-            "Verify that 'git machete g r' performs 'git checkout' to" \
-            "the root of the current branch."
+            ("Verify that 'git machete g r' performs 'git checkout' to"
+             "the root of the current branch."
+             )

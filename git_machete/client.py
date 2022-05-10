@@ -862,7 +862,7 @@ class MacheteClient:
         print(f"{msg}; nothing left to update")
         if not any_action_suggested and initial_branch not in self.__roots:
             print(fmt("Tip: `traverse` by default starts from the current branch, "
-                      "use flags (`--starts-from=`, `--whole` or `-w`, `-W`) to change this behavior.\n"
+                      "use flags (`--start-from=`, `--whole` or `-w`, `-W`) to change this behavior.\n"
                       "Further info under `git machete traverse --help`."))
         if opt_return_to == "here" or (
                 opt_return_to == "nearest-remaining" and nearest_remaining_branch == initial_branch):
