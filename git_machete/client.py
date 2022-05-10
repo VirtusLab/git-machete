@@ -933,13 +933,15 @@ class MacheteClient:
         hook_path = self.__git.get_hook_path("machete-status-branch")
         hook_executable = self.__git.check_hook_executable(hook_path)
 
+        indent_before_branch_name = ' ' * self.__git.get_indent_len_before_branch_name()
+
         def print_line_prefix(branch_: LocalBranchShortName, suffix: str) -> None:
-            out.write("   ")
+            out.write("  " + indent_before_branch_name)
             for sibling in next_sibling_of_ancestor[:-1]:
                 if not sibling:
-                    out.write("   ")
+                    out.write("  " + indent_before_branch_name)
                 else:
-                    out.write(colored(f"{utils.get_vertical_bar()}  ", edge_color[sibling]))
+                    out.write(colored(f"{utils.get_vertical_bar()} " + indent_before_branch_name, edge_color[sibling]))
             out.write(colored(suffix, edge_color[branch_]))
 
         for branch, next_sibling_of_ancestor in dfs_res:
@@ -989,11 +991,11 @@ class MacheteClient:
                     # It's better to always use a two-legged elbow,
                     # at the expense of a little gap to the elbow below (if such is present).
                     elbow = u"└─"
-                print_line_prefix(branch, elbow + " ")
+                print_line_prefix(branch, elbow + indent_before_branch_name)
             else:
                 if branch != dfs_res[0][0]:
                     out.write("\n")
-                out.write("   ")
+                out.write("  " + indent_before_branch_name)
 
             if branch in (currently_checked_out_branch, currently_rebased_branch):  # i.e. if branch is the current branch (checked out or being rebased)
                 if branch == currently_rebased_branch:
