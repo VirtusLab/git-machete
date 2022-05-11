@@ -2,8 +2,8 @@
 
  .. note::
 
-        git-machete will try to infer the GitHub repository to fire GitHub API requests against from `git remote` data.
-        To override this default behavior and point to the target repository explicitly, you need to set 3 additional, local git config keys:
+    git-machete will try to infer the GitHub repository to fire GitHub API requests against ``git remote`` data.
+    To override this default behavior and point to the target repository explicitly, you need to set 3 additional, local git config keys:
 
         1. Remote name ``machete.github.remote``
         2. Organization name ``machete.github.organization``

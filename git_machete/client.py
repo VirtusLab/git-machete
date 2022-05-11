@@ -1383,41 +1383,8 @@ class MacheteClient:
               "and branch reset events irrelevant for fork point/upstream inference): %s\n" % (", ".join(result) or "<empty>"))
         return result
 
-    def get_remote_name_and_organization_and_repository_name_of_remote(self) -> 'RemoteAndOrganizationAndRepository':
-        return RemoteAndOrganizationAndRepository(remote=self.__git.get_config_attr_or_none("machete.github.remote"),
-                                                  organization=self.__git.get_config_attr_or_none("machete.github.organization"),
-                                                  repository=self.__git.get_config_attr_or_none("machete.github.repository"))
-
     def sync_annotations_to_github_prs(self) -> None:
-
-        url_for_remote: Dict[str, str] = {remote: self.__git.get_url_of_remote(remote) for remote in
-                                          self.__git.get_remotes()}
-        if not url_for_remote:
-            raise MacheteException(fmt('No remotes defined for this repository (see `git remote`)'))
-
-        remote: str
-        org: str
-        repo: str
-        remote, org, repo = self.get_remote_name_and_organization_and_repository_name_of_remote()
-        if not(remote and org and repo):
-            optional_org_name_for_github_remote: Dict[str, Optional[RemoteAndOrganizationAndRepository]] = {
-                remote: get_parsed_github_remote_url(url, remote) for remote, url in url_for_remote.items()}
-            org_name_for_github_remote: Dict[str, RemoteAndOrganizationAndRepository] = {remote: org_name for remote, org_name in
-                                                                                         optional_org_name_for_github_remote.items() if
-                                                                                         org_name}
-            if not org_name_for_github_remote:
-                raise MacheteException(
-                    fmt('Remotes are defined for this repository, but none of them '
-                        'corresponds to GitHub (see `git remote -v` for details)'))
-            if len(org_name_for_github_remote) == 1:
-                _, org, repo = list(org_name_for_github_remote.values())[0]
-            elif len(org_name_for_github_remote) > 1:
-                if 'origin' in org_name_for_github_remote:
-                    _, org, repo = org_name_for_github_remote['origin']
-                else:
-                    raise MacheteException(
-                        f'Multiple non-origin remotes correspond to GitHub in this repository: '
-                        f'{", ".join(org_name_for_github_remote.keys())}, aborting')
+        remote, org, repo = self.__derive_remote_and_github_org_and_repo()
         current_user: Optional[str] = git_machete.github.derive_current_user_login()
         debug('Current GitHub user is ' + (current_user or '<none>'))
         pr: GitHubPullRequest
@@ -2065,6 +2032,10 @@ class MacheteClient:
             print(fmt(f'The base branch of PR #{pr.number} is already `{new_base}`'))
 
     def __derive_remote_and_github_org_and_repo(self) -> RemoteAndOrganizationAndRepository:
+        remote_and_organization_and_repository_for_custom_url = self.__get_remote_and_organization_and_repository_name_for_custom_url()
+        if all(remote_and_organization_and_repository_for_custom_url):
+            return remote_and_organization_and_repository_for_custom_url
+
         url_for_remote: Dict[str, str] = {
             remote: self.__git.get_url_of_remote(remote) for remote in self.__git.get_remotes()
         }
@@ -2088,6 +2059,11 @@ class MacheteClient:
         raise MacheteException(
             f'Multiple non-origin remotes correspond to GitHub in this repository: '
             f'{", ".join(remote_and_github_org_and_repo.keys())}, aborting')
+
+    def __get_remote_and_organization_and_repository_name_for_custom_url(self) -> RemoteAndOrganizationAndRepository:
+        return RemoteAndOrganizationAndRepository(remote=self.__git.get_config_attr_or_none("machete.github.remote"),
+                                                  organization=self.__git.get_config_attr_or_none("machete.github.organization"),
+                                                  repository=self.__git.get_config_attr_or_none("machete.github.repository"))
 
     def create_github_pr(
             self, *, head: LocalBranchShortName, opt_draft: bool, opt_onto: Optional[LocalBranchShortName]) -> None:
