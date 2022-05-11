@@ -42,16 +42,16 @@ github_api_access = '''To allow GitHub API access for private repositories (and 
 
 github_config_keys = '''git-machete will try to infer the GitHub repository to fire GitHub API requests against `git remote` data.
         To override this default behavior and point to the target repository explicitly, you need to set 3 additional, local git config keys:
-    
+
             1. Remote name `machete.github.remote`
             2. Organization name `machete.github.organization`
             3. Repository name `machete.github.repository`
-    
+
         You can do it in 2 ways:
-    
+
             1. Set each key separately with `git config machete.github.<key_name> "<key_value>"`
             2. Edit config file with `git config --edit` and add the keys like its suggested below
-    
+
                 [machete "github"]
                     organization = <organization_name>
                     repository = <repo_name>
@@ -153,7 +153,7 @@ long_docs: Dict[str, str] = {
 
         If invoked with `-H` or `--sync-github-prs`, annotates the branches based on their corresponding GitHub PR numbers and authors.
         Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
-        
+
         {github_api_access}
         {github_config_keys}
 
@@ -351,7 +351,7 @@ long_docs: Dict[str, str] = {
         where <subcommand> is one of: `anno-prs`, `checkout-prs`, `create-pr`, `retarget-pr`, `sync`.
 
         Creates, checks out and manages GitHub PRs while keeping them reflected in branch definition file.
-        
+
         {github_api_access}
         {github_config_keys}
 
