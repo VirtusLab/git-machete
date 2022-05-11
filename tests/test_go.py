@@ -122,7 +122,7 @@ class TestGo:
 
         assert 'level-1a-branch' == \
             launch_command("show", "current").strip(), \
-            ("Verify that 'git machete go first' performs 'git checkout' to"
+            ("Verify that 'git machete go first' performs 'git checkout' to "
              "the first downstream branch of a root branch if root branch "
              "has any downstream branches."
              )
@@ -154,7 +154,7 @@ class TestGo:
 
         assert 'level-0-branch' == \
             launch_command("show", "current").strip(), \
-            ("Verify that 'git machete go first' set current branch to root"
+            ("Verify that 'git machete go first' set current branch to root "
              "if root branch has no downstream."
              )
         # check short command behaviour
@@ -162,7 +162,7 @@ class TestGo:
 
         assert 'level-0-branch' == \
             launch_command("show", "current").strip(), \
-            ("Verify that 'git machete g f' set current branch to root"
+            ("Verify that 'git machete g f' set current branch to root "
              "if root branch has no downstream."
              )
 
@@ -198,7 +198,7 @@ class TestGo:
 
         assert 'level-1b-branch' == \
             launch_command("show", "current").strip(), \
-            ("Verify that 'git machete go last' performs 'git checkout' to"
+            ("Verify that 'git machete go last' performs 'git checkout' to "
              "the last downstream branch of a root branch if root branch "
              "has any downstream branches."
              )
@@ -208,7 +208,7 @@ class TestGo:
 
         assert 'level-1b-branch' == \
             launch_command("show", "current").strip(), \
-            ("Verify that 'git machete g l' performs 'git checkout' to"
+            ("Verify that 'git machete g l' performs 'git checkout' to "
              "the last downstream branch of a root branch if root branch "
              "has any downstream branches."
              )
@@ -240,8 +240,8 @@ class TestGo:
 
         assert 'level-1b-branch' == \
             launch_command("show", "current").strip(), \
-            ("Verify that 'git machete go next' performs 'git checkout' to"
-             "the next downstream branch right after the current one in the"
+            ("Verify that 'git machete go next' performs 'git checkout' to "
+             "the next downstream branch right after the current one in the "
              "config file if successor branch exists."
              )
         # check short command behaviour
@@ -250,8 +250,8 @@ class TestGo:
 
         assert 'level-1b-branch' == \
             launch_command("show", "current").strip(), \
-            ("Verify that 'git machete g n' performs 'git checkout' to"
-             "the next downstream branch right after the current one in the"
+            ("Verify that 'git machete g n' performs 'git checkout' to "
+             "the next downstream branch right after the current one in the "
              "config file if successor branch exists."
              )
 
@@ -279,7 +279,7 @@ class TestGo:
 
         assert 'x-additional-root' == \
             launch_command("show", "current").strip(), \
-            ("Verify that 'git machete go next' can checkout to branch that doesn't"
+            ("Verify that 'git machete go next' can checkout to branch that doesn't "
              "share root with the current branch."
              )
         # check short command behaviour
@@ -288,7 +288,7 @@ class TestGo:
 
         assert 'x-additional-root' == \
             launch_command("show", "current").strip(), \
-            ("Verify that 'git machete g n' can checkout to branch that doesn't"
+            ("Verify that 'git machete g n' can checkout to branch that doesn't "
              "share root with the current branch."
              )
 
@@ -318,8 +318,8 @@ class TestGo:
 
         assert 'level-2a-branch' == \
             launch_command("show", "current").strip(), \
-            ("Verify that 'git machete go prev' performs 'git checkout' to"
-             "the branch right before the current one in the config file"
+            ("Verify that 'git machete go prev' performs 'git checkout' to "
+             "the branch right before the current one in the config file "
              "when predecessor branch exists within the root tree."
              )
         # check short command behaviour
@@ -328,8 +328,8 @@ class TestGo:
 
         assert 'level-2a-branch' == \
             launch_command("show", "current").strip(), \
-            ("Verify that 'git machete g p' performs 'git checkout' to"
-             "the branch right before the current one in the config file"
+            ("Verify that 'git machete g p' performs 'git checkout' to "
+             "the branch right before the current one in the config file "
              "when predecessor branch exists within the root tree."
              )
 
@@ -355,7 +355,7 @@ class TestGo:
 
         assert 'a-additional-root' == \
             launch_command("show", "current").strip(), \
-            ("Verify that 'git machete go prev' can checkout to branch that doesn't"
+            ("Verify that 'git machete go prev' can checkout to branch that doesn't "
              "share root with the current branch."
              )
         # check short command behaviour
@@ -364,7 +364,7 @@ class TestGo:
 
         assert 'a-additional-root' == \
             launch_command("show", "current").strip(), \
-            ("Verify that 'git machete g p' can checkout to branch that doesn't"
+            ("Verify that 'git machete g p' can checkout to branch that doesn't "
              "share root with the current branch."
              )
 
@@ -398,7 +398,7 @@ class TestGo:
 
         assert 'level-0-branch' == \
             launch_command("show", "current").strip(), \
-            ("Verify that 'git machete go root' performs 'git checkout' to"
+            ("Verify that 'git machete go root' performs 'git checkout' to "
              "the root of the current branch."
              )
         # check short command behaviour
@@ -407,6 +407,6 @@ class TestGo:
 
         assert 'level-0-branch' == \
             launch_command("show", "current").strip(), \
-            ("Verify that 'git machete g r' performs 'git checkout' to"
+            ("Verify that 'git machete g r' performs 'git checkout' to "
              "the root of the current branch."
              )
