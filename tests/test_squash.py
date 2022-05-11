@@ -1,36 +1,13 @@
-import io
-import re
-import textwrap
-from contextlib import redirect_stderr, redirect_stdout
-from typing import Dict, Iterable
-from unittest import mock
+from typing import Any
 
-import pytest  # type: ignore
-from git_machete import cli
-from git_machete.tests.functional.commons import (GitRepositorySandbox,
-                                                  get_current_commit_hash, git,
-                                                  mock_run_cmd, popen)
+import pytest
+
+from .mockers import (GitRepositorySandbox, assert_command,
+                      get_current_commit_hash, launch_command, mock_run_cmd,
+                      popen)
 
 
-class TestMachete:
-    mock_repository_info: Dict[str, str] = {'full_name': 'testing/checkout_prs',
-                                            'html_url': 'https://github.com/tester/repo_sandbox.git'}
-
-    @staticmethod
-    def adapt(s: str) -> str:
-        return textwrap.indent(textwrap.dedent(re.sub(r"\|\n", "| \n", s[1:])), "  ")
-
-    @staticmethod
-    def launch_command(*args: str) -> str:
-        with io.StringIO() as out:
-            with redirect_stdout(out):
-                with redirect_stderr(out):
-                    cli.launch(list(args))
-                    git.flush_caches()
-            return out.getvalue()
-
-    def assert_command(self, cmds: Iterable[str], expected_result: str, strip_indentation: bool = True) -> None:
-        assert self.launch_command(*cmds) == (self.adapt(expected_result) if strip_indentation else expected_result)
+class TestSquash:
 
     def setup_method(self) -> None:
 
@@ -46,8 +23,9 @@ class TestMachete:
             .execute('git config user.name "Tester Test"')
         )
 
-    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    def test_squash_merge(self) -> None:
+    def test_squash_merge(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+
         (
             self.repo_sandbox.new_branch("root")
             .commit("root")
@@ -65,9 +43,9 @@ class TestMachete:
             .push()
         )
 
-        self.launch_command("discover", "-y", "--roots=root")
+        launch_command("discover", "-y", "--roots=root")
 
-        self.assert_command(
+        assert_command(
             ["status", "-l"],
             """
             root
@@ -94,7 +72,7 @@ class TestMachete:
         )
 
         # in default mode, feature is detected as "m" (merged) into develop
-        self.assert_command(
+        assert_command(
             ["status", "-l"],
             """
             root
@@ -112,7 +90,7 @@ class TestMachete:
         )
 
         # but under --no-detect-squash-merges, feature is detected as "x" (behind) develop
-        self.assert_command(
+        assert_command(
             ["status", "-l", "--no-detect-squash-merges"],
             """
             root
@@ -132,8 +110,8 @@ class TestMachete:
         )
 
         # traverse then slides out the branch
-        self.launch_command("traverse", "-w", "-y")
-        self.assert_command(
+        launch_command("traverse", "-w", "-y")
+        assert_command(
             ["status", "-l"],
             """
             root
@@ -160,7 +138,7 @@ class TestMachete:
         )
 
         # status before fetch will show develop as out of date
-        self.assert_command(
+        assert_command(
             ["status", "-l"],
             """
             root
@@ -176,9 +154,9 @@ class TestMachete:
         )
 
         # fetch-traverse will fetch upstream squash, detect, and slide out the child branch
-        self.launch_command("traverse", "-W", "-y")
+        launch_command("traverse", "-W", "-y")
 
-        self.assert_command(
+        assert_command(
             ["status", "-l"],
             """
             root
@@ -203,7 +181,7 @@ class TestMachete:
                 .commit("Fourth commit.")
         )
 
-        self.launch_command('squash', '-f', fork_point)
+        launch_command('squash', '-f', fork_point)
 
         expected_branch_log = (
             "Third commit.\n"
@@ -234,4 +212,4 @@ class TestMachete:
 
         with pytest.raises(SystemExit):
             # First exception MacheteException is raised, followed by SystemExit.
-            self.launch_command('squash', '-f', fork_point_to_branch_1a)
+            launch_command('squash', '-f', fork_point_to_branch_1a)
