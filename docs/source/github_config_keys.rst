@@ -11,7 +11,7 @@
 
     You can do it in 2 ways:
 
-        1. Set each key separately with ``machete.github.<key_name> "<key_value>"``
+        1. Set each key separately with ``git config machete.github.<key_name> "<key_value>"``
         2. Edit config file with ``git config --edit`` and add the keys like its suggested below
 
             .. code-block:: shell
