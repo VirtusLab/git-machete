@@ -271,7 +271,7 @@ long_docs: Dict[str, str] = {
         The branch in question does not need to occur in the definition file.
 
 
-        Without any option, displays full SHA of the fork point commit for the <branch>.
+        Without any option, displays full hash of the fork point commit for the <branch>.
         Fork point of the given <branch> is the commit at which the history of the <branch> diverges from history of any other branch.
 
         Fork point is assumed by many `git machete` commands as the place where the unique history of the <branch> starts.
