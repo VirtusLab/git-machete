@@ -44,4 +44,5 @@ class TestStatus:
         with pytest.raises(MacheteException) as e:
             launch_command('status')
         if e:
-            assert e.value.parameter == expected_error_message, 'Verify that expected error message has appeared a branch re-appears in tree definition.'
+            assert e.value.parameter == expected_error_message, \
+                'Verify that expected error message has appeared if a branch re-appears in tree definition.'
