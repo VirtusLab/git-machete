@@ -30,6 +30,8 @@ jobs:
 
             # For ensure-links-correct.sh
             npm install --global remark-cli remark-lint-no-dead-urls remark-validate-links
+            
+            exit 1
       - run:
           name: Perform general checks
           # language=sh
