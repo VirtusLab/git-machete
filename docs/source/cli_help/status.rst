@@ -80,4 +80,6 @@ With ``--color=always``, git machete always emits colors and with ``--color=auto
 
 --no-detect-squash-merges         Only consider *strict* (fast-forward or 2-parent) merges, rather than rebase/squash merges, when detecting if a branch is merged into its upstream (parent).
 
-.. include:: status_indent.rst
+ .. note::
+
+    You can add additional space after ``└─`` and before branch name by setting git config key ``machete.status.extraSpaceBeforeBranchName``.

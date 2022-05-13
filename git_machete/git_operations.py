@@ -314,6 +314,10 @@ class GitContext:
         self.__ensure_config_loaded()
         return self.__config_cached.get(key.lower())
 
+    def get_boolean_config_attr(self, key: str) -> bool:
+        self.__ensure_config_loaded()
+        return self.__config_cached.get(key.lower()) == 'true'
+
     def set_config_attr(self, key: str, value: str) -> None:
         self._run_git("config", "--", key, value)
         self.__ensure_config_loaded()
@@ -937,10 +941,3 @@ class GitContext:
     def update_head_ref_to_new_hash_with_reflog_subject(self, hash: FullCommitHash, reflog_subject: str) -> int:
         self.flush_caches()
         return self._run_git("update-ref", "HEAD", hash, "-m", reflog_subject)
-
-    def get_indent_len_before_branch_name(self) -> int:
-        indent_len_before_branch_name = self.get_config_attr_or_none('machete.status.branch.indent.len')
-        if indent_len_before_branch_name:
-            return int(indent_len_before_branch_name)
-        else:
-            return 0
