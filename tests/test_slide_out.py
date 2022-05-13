@@ -7,7 +7,7 @@ from .mockers import (GitRepositorySandbox, assert_command,
                       mock_run_cmd_and_forward_stdout)
 
 
-class TestSlideout:
+class TestSlideOut:
 
     def setup_method(self, mocker: Any) -> None:
 
