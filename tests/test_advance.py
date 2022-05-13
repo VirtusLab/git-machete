@@ -78,8 +78,8 @@ class TestAdvance:
 
         assert level_1_commit_hash == \
             root_top_commit_hash, \
-            ("Verify that when there is only one, rebased downstream branch of a"
-             "current branch 'git machete advance' merges commits from that branch"
+            ("Verify that when there is only one, rebased downstream branch of a "
+             "current branch 'git machete advance' merges commits from that branch "
              "and slides out child branches of the downstream branch."
              )
         assert "level-1-branch" not in \

@@ -69,8 +69,8 @@ class MacheteClient:
     def expect_in_managed_branches(self, branch: LocalBranchShortName) -> None:
         if branch not in self.managed_branches:
             raise MacheteException(
-                f"Branch `{branch}` not found in the tree of branch dependencies."
-                f"\nUse `git machete add {branch}` or `git machete edit`")
+                f"Branch `{branch}` not found in the tree of branch dependencies.\n"
+                f"Use `git machete add {branch}` or `git machete edit`")
 
     def expect_at_least_one_managed_branch(self) -> None:
         if not self.__roots:
@@ -1597,13 +1597,14 @@ class MacheteClient:
         branch_hash = self.__git.get_commit_hash_by_revision(branch)
         self.__git.set_config_attr(while_descendant_of_key, branch_hash)
 
-        print(fmt(f"Fork point for <b>{branch}</b> is overridden to <b>"
-                  f"{self.__git.get_revision_repr(to_revision)}</b>.\n",
+        print(fmt(f"Fork point for <b>{branch}</b> is overridden to "
+                  f"<b>{self.__git.get_revision_repr(to_revision)}</b>.\n",
                   f"This applies as long as {branch} points to (or is descendant of)"
                   " its current head (commit "
                   f"{self.__git.get_short_commit_hash_by_revision(branch_hash)}).\n\n",
-                  f"This information is stored under git config keys:\n  * `{to_key}"
-                  f"`\n  * `{while_descendant_of_key}`\n\n",
+                  f"This information is stored under git config keys:\n"
+                  f"  * `{to_key}`\n"
+                  f"  * `{while_descendant_of_key}`\n\n",
                   "To unset this override, use:\n  `git machete fork-point "
                   f"--unset-override {branch}`"))
 

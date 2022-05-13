@@ -50,7 +50,7 @@ class TestUpdate:
 
         assert parents_new_commit_hash == \
             new_fork_point_hash, \
-            ("Verify that 'git machete update --no-interactive-rebase' perform"
+            ("Verify that 'git machete update --no-interactive-rebase' perform "
              "'git rebase' to the parent branch of the current branch."
              )
 
