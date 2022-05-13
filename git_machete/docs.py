@@ -1,3 +1,4 @@
+import textwrap
 from typing import Dict
 from git_machete.constants import DISCOVER_DEFAULT_FRESH_BRANCH_COUNT
 
@@ -31,32 +32,27 @@ short_docs: Dict[str, str] = {
 }
 
 github_api_access = '''To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR,
-        even in case of public repositories), a GitHub API token with `repo` scope is required, see https://github.com/settings/tokens.
-        This will be resolved from the first of:
+even in case of public repositories), a GitHub API token with `repo` scope is required, see https://github.com/settings/tokens.
+This will be resolved from the first of:
+    1. `GITHUB_TOKEN` env var,
+    2. content of the `.github-token` file in the home directory (`~`),
+    3. current auth token from the `gh` GitHub CLI,
+    4. current auth token from the `hub` GitHub CLI.'''
 
-            1. `GITHUB_TOKEN` env var,
-            2. content of the `.github-token` file in the home directory (`~`),
-            3. current auth token from the `gh` GitHub CLI,
-            4. current auth token from the `hub` GitHub CLI.
-'''
+github_config_keys = '''<b>git-machete</b> will try to infer GitHub API server URL from `git remote`.
+You can override this by setting the following git config keys:
+    Remote name
+        E.g. `machete.github.remote` = `origin`
+    Organization name
+        E.g. `machete.github.organization` = `VirtusLab`
+    Repository name
+        E.g. `machete.github.repository` = `git-machete`
 
-github_config_keys = '''git-machete will use `git remote` data to infer the GitHub repository to fire GitHub API requests against.
-        To override this default behavior and point to the target repository explicitly, you need to set 3 additional, local git config keys:
-
-            1. Remote name `machete.github.remote`
-            2. Organization name `machete.github.organization`
-            3. Repository name `machete.github.repository`
-
-        You can do it in 2 ways:
-
-            1. Set each key separately with `git config machete.github.<key_name> "<key_value>"`
-            2. Edit config file with `git config --edit` and add the keys like its suggested below
-
-                [machete "github"]
-                    organization = <organization_name>
-                    repository = <repo_name>
-                    remote = <remote_name>
-'''
+To do this, run `git config --local --edit` and add the following section:
+    [machete "github"]
+        organization = <organization_name>
+        repository = <repo_name>
+        remote = <remote_name>'''
 
 long_docs: Dict[str, str] = {
     "add": """
@@ -154,8 +150,9 @@ long_docs: Dict[str, str] = {
         If invoked with `-H` or `--sync-github-prs`, annotates the branches based on their corresponding GitHub PR numbers and authors.
         Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
 
-        {github_api_access}
-        {github_config_keys}
+{textwrap.indent(github_api_access, "        ")}
+
+{textwrap.indent(github_config_keys, "        ")}
 
         In any other case, sets the annotation for the given/current branch to the given argument.
         If multiple arguments are passed to the command, they are concatenated with a single space.
@@ -178,8 +175,9 @@ long_docs: Dict[str, str] = {
         No branch will be deleted unless explicitly confirmed by the user (or unless `-y/--yes` option is passed).
         Equivalent of `git machete github sync` if invoked with `-H` or `--checkout-my-github-prs`.
 
-        {github_api_access}
-        {github_config_keys}
+{textwrap.indent(github_api_access, "        ")}
+
+{textwrap.indent(github_config_keys, "        ")}
 
         **Options:**
           <b>--c, --checkout-my-github-prs</b>     Checkout your open PRs into local branches.
@@ -352,8 +350,9 @@ long_docs: Dict[str, str] = {
 
         Creates, checks out and manages GitHub PRs while keeping them reflected in branch definition file.
 
-        {github_api_access}
-        {github_config_keys}
+{textwrap.indent(github_api_access, "        ")}
+
+{textwrap.indent(github_config_keys, "        ")}
 
         <b>`anno-prs`:</b>
 

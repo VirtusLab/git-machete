@@ -103,7 +103,7 @@ class GitRepositorySandbox:
         self.execute(f'git remote add {remote} {url}')
         return self
 
-    def add_git_config_key(self, key: str, value: str):
+    def add_git_config_key(self, key: str, value: str) -> "GitRepositorySandbox":
         self.execute(f'git config {key} {value}')
         return self
 

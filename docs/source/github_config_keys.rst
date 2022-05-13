@@ -2,21 +2,22 @@
 
  .. note::
 
-    git-machete will use ``git remote`` data to infer the GitHub repository to fire GitHub API requests against.
-    To override this default behavior and point to the target repository explicitly, you need to set 3 additional, local git config keys:
+    **git-machete** will try to infer GitHub API server URL from ``git remote``.
+    You can override this by setting the following git config keys:
+        Remote name
+            E.g. ``machete.github.remote`` = ``origin``
 
-        1. Remote name ``machete.github.remote``
-        2. Organization name ``machete.github.organization``
-        3. Repository name ``machete.github.repository``
+        Organization name
+            E.g. ``machete.github.organization`` = ``VirtusLab``
 
-    You can do it in 2 ways:
+        Repository name
+            E.g. ``machete.github.repository`` = ``git-machete``
 
-        1. Set each key separately with ``git config machete.github.<key_name> "<key_value>"``
-        2. Edit config file with ``git config --edit`` and add the keys like its suggested below
+    To do this, run ``git config --local --edit`` and add the following section:
 
-            .. code-block:: shell
+    .. code-block:: ini
 
-                [machete "github"]
-                    organization = <organization_name>
-                    repository = <repo_name>
-                    remote = <remote_name>
+        [machete "github"]
+            organization = <organization_name>
+            repository = <repo_name>
+            remote = <remote_name>
