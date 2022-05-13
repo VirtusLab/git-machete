@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.9.2
+
+- added: `git machete github *` subcommands now work with custom GitHub URL
+
 ## New in git-machete 3.9.1
 
 - fixed: better rendering of edge junctions in `status`
