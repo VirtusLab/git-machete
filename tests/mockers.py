@@ -103,6 +103,10 @@ class GitRepositorySandbox:
         self.execute(f'git remote add {remote} {url}')
         return self
 
+    def add_git_config_key(self, key: str, value: str):
+        self.execute(f'git config {key} {value}')
+        return self
+
 
 class MockGitHubAPIState:
     def __init__(self, pulls: List[Dict[str, Any]], issues: List[Dict[str, Any]] = None) -> None:

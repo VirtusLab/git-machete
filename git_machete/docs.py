@@ -38,9 +38,9 @@ github_api_access = '''To allow GitHub API access for private repositories (and 
             2. content of the `.github-token` file in the home directory (`~`),
             3. current auth token from the `gh` GitHub CLI,
             4. current auth token from the `hub` GitHub CLI.
-    '''
+'''
 
-github_config_keys = '''git-machete will try to infer the GitHub repository to fire GitHub API requests against `git remote` data.
+github_config_keys = '''git-machete will use `git remote` data to infer the GitHub repository to fire GitHub API requests against.
         To override this default behavior and point to the target repository explicitly, you need to set 3 additional, local git config keys:
 
             1. Remote name `machete.github.remote`

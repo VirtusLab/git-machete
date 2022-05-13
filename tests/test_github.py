@@ -202,6 +202,36 @@ class TestGithub:
             """,
         )
 
+        # Test anno-prs using custom remote URL provided by git config keys
+        (
+            self.repo_sandbox.add_git_config_key('machete.github.remote', 'custom_origin')
+                .add_git_config_key('machete.github.organization', 'custom_user')
+                .add_git_config_key('machete.github.repository', 'custom_repo')
+        )
+
+        launch_command("discover", "-y")
+        launch_command('github', 'anno-prs')
+        assert_command(
+            ["status"],
+            """
+            master
+            |
+            o-hotfix/add-trigger (diverged from origin)
+              |
+              o-ignore-trailing *  PR #3 (github_user) (diverged from & older than origin)
+
+            develop
+            |
+            x-allow-ownership-link  PR #7 (github_user) (ahead of origin)
+            | |
+            | x-build-chain (untracked)
+            |
+            o-call-ws  PR #31 (github_user) (ahead of origin)
+              |
+              x-drop-constraint (untracked)
+            """,
+        )
+
     git_api_state_for_test_create_pr = MockGitHubAPIState(
         [
             {

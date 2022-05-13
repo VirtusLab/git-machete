@@ -2048,7 +2048,8 @@ class MacheteClient:
         if not remote_and_github_org_and_repo:
             raise MacheteException(
                 fmt('Remotes are defined for this repository, but none of them '
-                    'corresponds to GitHub (see `git remote -v` for details). It is possible that you are using custom GitHub URL, '
+                    'corresponds to GitHub (see `git remote -v` for details). \n'
+                    'It is possible that you are using custom GitHub URL, '
                     'if that is the case, you can provide repository information explicitly, via these 3 git config keys: '
                     'machete.github.{remote,organization,repository}\n'))
 
@@ -2060,7 +2061,7 @@ class MacheteClient:
 
         raise MacheteException(
             f'Multiple non-origin remotes correspond to GitHub in this repository: '
-            f'{", ".join(remote_and_github_org_and_repo.keys())}, aborting.'
+            f'{", ".join(remote_and_github_org_and_repo.keys())}, aborting. \n'
             f' You can also select the repository by providing these 3 git config keys: '
             'machete.github.{remote,organization,repository}\n')
 
