@@ -934,7 +934,7 @@ class MacheteClient:
         hook_path = self.__git.get_hook_path("machete-status-branch")
         hook_executable = self.__git.check_hook_executable(hook_path)
 
-        indent_before_branch_name = ' ' if self.__git.get_boolean_config_attr('machete.status.extraSpaceBeforeBranchName') else ''
+        maybe_space_before_branch_name = ' ' if self.__git.get_boolean_config_attr('machete.status.extraSpaceBeforeBranchName') else ''
 
         def print_line_prefix(branch_: LocalBranchShortName, suffix: str) -> None:
             out.write("  " + indent_before_branch_name)
