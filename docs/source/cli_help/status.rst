@@ -58,7 +58,7 @@ Using colors can be disabled with a ``--color`` flag set to ``never``.
 With ``--color=always``, git machete always emits colors and with ``--color=auto``, it emits colors only when standard output is connected to a terminal.
 ``--color=auto`` is the default. When colors are disabled, relation between branches is represented in the following way (not including the hash-comments):
 
-.. code-block::
+.. code-block:: git
 
     <branch0>
     |
@@ -82,4 +82,26 @@ With ``--color=always``, git machete always emits colors and with ``--color=auto
 
  .. note::
 
-    You can add additional space after ``└─`` and before branch name by setting git config key ``machete.status.extraSpaceBeforeBranchName``.
+    To make it easier to select branch name from the ``status's`` output on certain terminals (E.g. Alacritty), you can add additional
+    space between ``└─`` and ``branch name`` by setting git config key ``machete.status.extraSpaceBeforeBranchName`` = ``true``.
+
+    E.g.
+        default:
+
+        .. code-block:: git
+
+          develop
+          │
+          ├─feature_branch1
+          │
+          └─feature_branch2
+
+        with extra space:
+
+        .. code-block:: git
+
+           develop
+           │
+           ├─ feature_branch1
+           │
+           └─ feature_branch2
