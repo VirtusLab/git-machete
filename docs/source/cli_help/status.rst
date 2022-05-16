@@ -82,8 +82,9 @@ With ``--color=always``, git machete always emits colors and with ``--color=auto
 
  .. note::
 
-    To make it easier to select branch name from the ``status's`` output on certain terminals (E.g. Alacritty), you can add additional
-    space between ``└─`` and ``branch name`` by setting git config key ``machete.status.extraSpaceBeforeBranchName`` = ``true``.
+    To make it easier to select branch name from the ``status`` output on certain terminals
+    (e.g. Alacritty https://github.com/alacritty/alacritty), you can add an extra
+    space between ``└─`` and ``branch name`` by setting ``git config machete.status.extraSpaceBeforeBranchName true``.
 
     E.g.
         default:
