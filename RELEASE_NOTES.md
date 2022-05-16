@@ -1,6 +1,6 @@
 # Release notes
 
-## New in git-machete 3.9.2
+## New in git-machete 3.10.0
 
 - added: `git machete github *` subcommands now work with custom GitHub URL
 

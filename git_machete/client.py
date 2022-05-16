@@ -2063,7 +2063,7 @@ class MacheteClient:
         raise MacheteException(
             f'Multiple non-origin remotes correspond to GitHub in this repository: '
             f'{", ".join(remote_and_github_org_and_repo.keys())}, aborting. \n'
-            f' You can also select the repository by providing these 3 git config keys: '
+            f'You can also select the repository by providing these 3 git config keys: '
             'machete.github.{remote,organization,repository}\n')
 
     def __get_remote_and_organization_and_repository_name_for_custom_url(self) -> RemoteAndOrganizationAndRepository:

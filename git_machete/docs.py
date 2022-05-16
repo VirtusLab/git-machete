@@ -150,9 +150,9 @@ long_docs: Dict[str, str] = {
         If invoked with `-H` or `--sync-github-prs`, annotates the branches based on their corresponding GitHub PR numbers and authors.
         Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
 
-{textwrap.indent(github_api_access, "        ")}
+{textwrap.indent(github_api_access, "          ")}
 
-{textwrap.indent(github_config_keys, "        ")}
+{textwrap.indent(github_config_keys, "          ")}
 
         In any other case, sets the annotation for the given/current branch to the given argument.
         If multiple arguments are passed to the command, they are concatenated with a single space.
@@ -164,8 +164,7 @@ long_docs: Dict[str, str] = {
           <b>-H, --sync-github-prs</b>      Annotate with GitHub PR numbers and authors where applicable.
     """,
     "clean": f"""
-        <b>Usage:
-          git machete clean [-c|--checkout-my-github-prs] [-y|--yes]
+        <b>Usage: git machete clean [-c|--checkout-my-github-prs] [-y|--yes]</b>
 
         Synchronizes with the remote repository:
             1. if invoked with `-H` or `--checkout-my-github-prs`, checks out open PRs for the current user associated with the GitHub token and also traverses the chain of pull requests upwards, adding branches one by one to git-machete and checks them out locally as well,
@@ -175,9 +174,9 @@ long_docs: Dict[str, str] = {
         No branch will be deleted unless explicitly confirmed by the user (or unless `-y/--yes` option is passed).
         Equivalent of `git machete github sync` if invoked with `-H` or `--checkout-my-github-prs`.
 
-{textwrap.indent(github_api_access, "        ")}
+{textwrap.indent(github_api_access, "          ")}
 
-{textwrap.indent(github_config_keys, "        ")}
+{textwrap.indent(github_config_keys, "          ")}
 
         **Options:**
           <b>--c, --checkout-my-github-prs</b>     Checkout your open PRs into local branches.
@@ -350,9 +349,10 @@ long_docs: Dict[str, str] = {
 
         Creates, checks out and manages GitHub PRs while keeping them reflected in branch definition file.
 
-{textwrap.indent(github_api_access, "        ")}
+{textwrap.indent(github_api_access, "          ")}
 
-{textwrap.indent(github_config_keys, "        ")}
+{textwrap.indent(github_config_keys, "          ")}
+
 
         <b>`anno-prs`:</b>
 
