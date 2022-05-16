@@ -26,6 +26,12 @@ Use `.tox/venv/bin/python` as a reference `python` interpreter in your IDE.
 
 To run tests, execute `tox`.
 
+It's also possible to execute tests graphically in pycharm (right-clicking on the test file
+or clicking the green triangle on the left of the test case name), which can be very useful when debugging a single test case.
+To do so, make sure that following libraries are installed (preferably via pip):
+* pytest
+* pytest-mock
+* pytest-xdist
 
 ## Generate sandbox repositories
 
