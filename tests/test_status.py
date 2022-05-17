@@ -68,9 +68,9 @@ class TestStatus:
 
         expected_status_output = (
 """   master
-   | 
+   |
    o- bar
-      | 
+      |
       o- foo *
 """
         )
@@ -80,9 +80,9 @@ class TestStatus:
 
         expected_status_output = (
 """  master
- | 
+ |
  o-bar
-   | 
+   |
    o-foo *
 """
         )
