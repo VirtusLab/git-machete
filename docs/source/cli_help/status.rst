@@ -96,7 +96,7 @@ With ``--color=always``, git machete always emits colors and with ``--color=auto
       │
       └─feature_branch2
 
-    With the `extraSpaceBeforeBranchName` option set:
+    With the ``extraSpaceBeforeBranchName`` option set:
 
     .. code-block:: git
 
