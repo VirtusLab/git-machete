@@ -68,11 +68,11 @@ class TestStatus:
 
         expected_status_output = (
 """   master
-   |
+   | 
    o- bar
-      |
+      | 
       o- foo *
-"""
+"""  # noqa: E122, W291
         )
         assert_command(['status'], expected_status_output, strip_indentation=False)
 
@@ -84,6 +84,6 @@ class TestStatus:
  o-bar
    |
    o-foo *
-"""
+"""  # noqa: E122
         )
         assert_command(['status'], expected_status_output)
