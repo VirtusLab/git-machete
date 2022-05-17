@@ -86,23 +86,22 @@ With ``--color=always``, git machete always emits colors and with ``--color=auto
     (e.g. Alacritty https://github.com/alacritty/alacritty), you can add an extra
     space between ``└─`` and ``branch name`` by setting ``git config machete.status.extraSpaceBeforeBranchName true``.
 
-    E.g.
-        default:
+    For example, by default it's:
 
-        .. code-block:: git
+    .. code-block:: git
 
-          develop
-          │
-          ├─feature_branch1
-          │
-          └─feature_branch2
+      develop
+      │
+      ├─feature_branch1
+      │
+      └─feature_branch2
 
-        with extra space:
+    With the `extraSpaceBeforeBranchName` option set:
 
-        .. code-block:: git
+    .. code-block:: git
 
-           develop
-           │
-           ├─ feature_branch1
-           │
-           └─ feature_branch2
+       develop
+       │
+       ├─ feature_branch1
+       │
+       └─ feature_branch2

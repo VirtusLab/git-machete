@@ -58,6 +58,7 @@ class TestStatus:
                 .push()
                 .new_branch('bar')
                 .commit()
+                .push()
                 .new_branch('foo')
                 .commit()
                 .push()
@@ -66,12 +67,23 @@ class TestStatus:
         launch_command('discover', '-y')
 
         expected_status_output = (
-            """
-            master *
-            |
-            o-bar (untracked)
-              |
-              o-foo (untracked)
-            """
+"""   master
+   | 
+   o- bar
+      | 
+      o- foo *
+"""
+        )
+        assert_command(['status'], expected_status_output, strip_indentation=False)
+
+        self.repo_sandbox.add_git_config_key('machete.status.extraSpaceBeforeBranchName', 'false')
+
+        expected_status_output = (
+"""  master
+ | 
+ o-bar
+   | 
+   o-foo *
+"""
         )
         assert_command(['status'], expected_status_output)

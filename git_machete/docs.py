@@ -663,23 +663,23 @@ long_docs: Dict[str, str] = {
           <b>--no-detect-squash-merges</b>         Only consider "strict" (fast-forward or 2-parent) merges, rather than rebase/squash merges,
                                             when detecting if a branch is merged into its upstream (parent).
 
+        <b>Config keys:</b>
         To make it easier to select branch name from the `status` output on certain terminals (e.g. Alacritty), you can add an extra
         space between └─ and branch name by setting `git config machete.status.extraSpaceBeforeBranchName true`.
 
-        E.g.
-            default:
-              develop
-              │
-              ├─feature_branch1
-              │
-              └─feature_branch2
+        For example, by default it's:
+            develop
+            │
+            ├─feature_branch1
+            │
+            └─feature_branch2
 
-            with extra space:
-               develop
-               │
-               ├─ feature_branch1
-               │
-               └─ feature_branch2
+        With the `extraSpaceBeforeBranchName` option set:
+            develop
+            │
+            ├─ feature_branch1
+            │
+            └─ feature_branch2
     """,
     "traverse": """
         <b>Usage: git machete t[raverse] [-F|--fetch] [-l|--list-commits] [-M|--merge]
