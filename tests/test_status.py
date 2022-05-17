@@ -68,13 +68,13 @@ class TestStatus:
 
         expected_status_output = (
 """   master
-   | 
+   |
    o- bar
-      | 
+      |
       o- foo *
-"""  # noqa: E122, W291
+"""  # noqa: E122
         )
-        assert_command(['status'], expected_status_output, strip_indentation=False)
+        assert_command(['status'], expected_status_output.replace('|', '| ', 2), strip_indentation=False)
 
         self.repo_sandbox.add_git_config_key('machete.status.extraSpaceBeforeBranchName', 'false')
 
