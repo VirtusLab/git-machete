@@ -578,7 +578,7 @@ def launch(orig_args: List[str]) -> None:
             machete_client.delete_unmanaged(opt_yes=cli_opts.opt_yes)
         elif cmd in {"diff", alias_by_command["diff"]}:
             machete_client.read_definition_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
-            machete_client.diff(branch=parsed_cli.branch, opt_stat=cli_opts.opt_stat)  # passing None if not specified
+            machete_client.diff(branch=LocalBranchShortName(parsed_cli.branch), opt_stat=cli_opts.opt_stat)  # passing None if not specified
         elif cmd == "discover":
             # No need to read definition file.
             machete_client.discover_tree(
