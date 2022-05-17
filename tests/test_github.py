@@ -204,7 +204,9 @@ class TestGithub:
 
         # Test anno-prs using custom remote URL provided by git config keys
         (
-            self.repo_sandbox.add_git_config_key('machete.github.remote', 'custom_origin')
+            self.repo_sandbox
+                .remove_remote('new_origin')
+                .add_git_config_key('machete.github.remote', 'custom_origin')
                 .add_git_config_key('machete.github.organization', 'custom_user')
                 .add_git_config_key('machete.github.repository', 'custom_repo')
         )

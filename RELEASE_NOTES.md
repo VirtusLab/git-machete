@@ -2,7 +2,8 @@
 
 ## New in git-machete 3.10.0
 
-- added: `git machete github *` subcommands now work with custom GitHub URL
+- added: 3 git config keys `machete.github.{remote,organization,repository}` that enables `git machete github *` subcommands to work 
+  with custom GitHub URLs
 
 ## New in git-machete 3.9.1
 

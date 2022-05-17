@@ -2,7 +2,7 @@
 
  .. note::
 
-    **git-machete** will try to infer GitHub API server URL from ``git remote``.
+    GitHub API server URL will be inferred from ``git remote``.
     You can override this by setting the following git config keys:
         Remote name
             E.g. ``machete.github.remote`` = ``origin``

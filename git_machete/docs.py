@@ -39,7 +39,7 @@ This will be resolved from the first of:
     3. current auth token from the `gh` GitHub CLI,
     4. current auth token from the `hub` GitHub CLI.'''
 
-github_config_keys = '''<b>git-machete</b> will try to infer GitHub API server URL from `git remote`.
+github_config_keys = '''GitHub API server URL will be inferred from `git remote`.
 You can override this by setting the following git config keys:
     Remote name
         E.g. `machete.github.remote` = `origin`
