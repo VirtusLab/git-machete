@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.10.0
 
+- added: boolean git config key `machete.status.extraSpaceBeforeBranchName` that enables configurable rendering of `status` command
+
 ## New in git-machete 3.9.1
 
 - fixed: better rendering of edge junctions in `status`

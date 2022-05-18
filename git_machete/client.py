@@ -934,13 +934,15 @@ class MacheteClient:
         hook_path = self.__git.get_hook_path("machete-status-branch")
         hook_executable = self.__git.check_hook_executable(hook_path)
 
+        maybe_space_before_branch_name = ' ' if self.__git.get_boolean_config_attr('machete.status.extraSpaceBeforeBranchName') else ''
+
         def print_line_prefix(branch_: LocalBranchShortName, suffix: str) -> None:
-            out.write("  ")
+            out.write("  " + maybe_space_before_branch_name)
             for sibling in next_sibling_of_ancestor[:-1]:
                 if not sibling:
-                    out.write("  ")
+                    out.write("  " + maybe_space_before_branch_name)
                 else:
-                    out.write(colored(f"{utils.get_vertical_bar()} ", edge_color[sibling]))
+                    out.write(colored(f"{utils.get_vertical_bar()} " + maybe_space_before_branch_name, edge_color[sibling]))
             out.write(colored(suffix, edge_color[branch_]))
 
         next_sibling_of_ancestor: List[Optional[LocalBranchShortName]]
@@ -994,11 +996,11 @@ class MacheteClient:
                         # in case `edge_color[next_sibling_of_branch] != edge_color[branch]`,
                         # at the expense of a little gap to the elbow/turnstile below.
                         junction = u"└─"
-                print_line_prefix(branch, junction)
+                print_line_prefix(branch, junction + maybe_space_before_branch_name)
             else:
                 if branch != dfs_res[0][0]:
                     out.write("\n")
-                out.write("  ")
+                out.write("  " + maybe_space_before_branch_name)
 
             if branch in (currently_checked_out_branch, currently_rebased_branch):  # i.e. if branch is the current branch (checked out or being rebased)
                 if branch == currently_rebased_branch:
