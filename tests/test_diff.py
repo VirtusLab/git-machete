@@ -1,10 +1,11 @@
 import io
+import os
 import sys
+import textwrap
 from typing import Any
 
-import cli
-from .mockers import (GitRepositorySandbox, assert_command, launch_command,
-                      mock_run_cmd)
+from .mockers import (adapt, GitRepositorySandbox, assert_command, launch_command,
+                      launch_command1, mock_run_cmd, mock_run_cmd_and_forward_stdout)
 
 
 class TestDiff:
@@ -27,7 +28,7 @@ class TestDiff:
         """
         Verify behaviour of a 'git machete diff' command.
         """
-
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_stdout)  # to hide git outputs in tests
         (
             self.repo_sandbox.new_branch("master")
                 .add_file_with_content_and_commit(message='master commit1')
@@ -36,6 +37,10 @@ class TestDiff:
                 .add_file_with_content_and_commit(file_name='develop_file_name.txt', file_content='Develop content', message='develop commit')
                 .push()
         )
+
+        # Test `git machete diff` without providing branch name
+        # assert_command(["diff"], '')
+
         expected_status_output = (
             """
             diff --git a/develop_file_name.txt b/develop_file_name.txt
@@ -47,21 +52,53 @@ class TestDiff:
             +Develop content
             """
         )
-
-        print('launch')
-        launch_command('diff', 'develop')
-        old_stdout = sys.stdout
-        new_stdout = io.StringIO()
-        sys.stdout = new_stdout
-
-        print('xd')
-        print(launch_command('diff', 'develop'))
-        cli.launch(['diff', 'develop'])
-        print('xd')
-
-        output = new_stdout.getvalue()
-
-        sys.stdout = old_stdout
-        print(output)
         print()
-        assert_command(["diff", "develop"], expected_status_output)
+
+        x = launch_command('diff', 'develop')
+        print()
+
+        # self.repo_sandbox.execute('git machete version > boo.txt')
+        # with open('boo.txt', 'r') as f:
+        #     git_diff_output = ''.join(f.readlines())
+        #     print(git_diff_output)
+        # self.repo_sandbox.execute('git machete diff develop > foo.txt')
+        # with open('foo.txt', 'r') as f:
+        #     git_diff_output = ''.join(f.readlines())
+        # assert textwrap.dedent(expected_status_output.replace('\n', '', 1)) == git_diff_output
+
+        # launch_command('diff', 'develop', '>', 'foo.txt')
+        # with open('foo.txt', 'r') as f:
+        #     x = ''.join(f.readlines())
+        #     print('file content:\n', x)
+
+
+        print('-')
+        print('-')
+        # with open('test.txt', 'w+') as f:
+        #     print(launch_command('diff', 'develop'), file=f)
+        #     # f.write('\ntest\ntest2\n')
+        #
+        # with open('test.txt', 'r') as f:
+        #     x = f.readlines()
+        #     print('file content:\n', x)
+
+        # print('launch:', launch_command('diff', 'develop'))
+        # launch_command('diff', 'develop')
+
+        # old_stdout = sys.stdout
+        # new_stdout = io.StringIO()
+        # sys.stdout = new_stdout
+        #
+        # print()
+        # print('xd')
+        # print(launch_command('diff', 'develop'))
+        # print('xd')
+        #
+        # output = new_stdout.getvalue()
+        #
+        # sys.stdout = old_stdout
+        # print()
+        # print('OUTPUT')
+        # print(output)
+        # print()
+        # assert_command(["diff", "develop"], expected_status_output)
