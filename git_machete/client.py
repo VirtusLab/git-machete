@@ -2050,9 +2050,9 @@ class MacheteClient:
             raise MacheteException(
                 fmt('Remotes are defined for this repository, but none of them '
                     'corresponds to GitHub (see `git remote -v` for details). \n'
-                    'It is possible that you are using custom GitHub URL, '
-                    'if that is the case, you can provide repository information explicitly, via these 3 git config keys: '
-                    'machete.github.{remote,organization,repository}\n'))
+                    'It is possible that you are using custom GitHub URL.\n'
+                    'If that is the case, you can provide repository information explicitly, via these 3 git config keys: '
+                    '`machete.github.{remote,organization,repository}`\n'))
 
         if len(remote_and_github_org_and_repo) == 1:
             return remote_and_github_org_and_repo[list(remote_and_github_org_and_repo.keys())[0]]
@@ -2063,8 +2063,8 @@ class MacheteClient:
         raise MacheteException(
             f'Multiple non-origin remotes correspond to GitHub in this repository: '
             f'{", ".join(remote_and_github_org_and_repo.keys())}, aborting. \n'
-            f'You can also select the repository by providing these 3 git config keys: '
-            'machete.github.{remote,organization,repository}\n')
+            f'You can also select the repository by providing 3 git config keys: '
+            '`machete.github.{remote,organization,repository}`\n')
 
     def __get_remote_and_organization_and_repository_name_for_custom_url(self) -> RemoteAndOrganizationAndRepository:
         return RemoteAndOrganizationAndRepository(remote=self.__git.get_config_attr_or_none("machete.github.remote"),
