@@ -4,7 +4,7 @@ import pytest
 
 from git_machete.exceptions import MacheteException
 
-from .mockers import (GitRepositorySandbox, launch_command, mock_exit_script,
+from .mockers import (assert_command, GitRepositorySandbox, launch_command, mock_exit_script,
                       mock_run_cmd, rewrite_definition_file)
 
 
@@ -46,3 +46,44 @@ class TestStatus:
         if e:
             assert e.value.parameter == expected_error_message, \
                 'Verify that expected error message has appeared if a branch re-appears in tree definition.'
+
+    def test_extra_space_before_branch_name(self, mocker: Any) -> None:
+        mocker.patch('git_machete.cli.exit_script', mock_exit_script)
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+
+        (
+            self.repo_sandbox
+                .new_branch('master')
+                .commit()
+                .push()
+                .new_branch('bar')
+                .commit()
+                .push()
+                .new_branch('foo')
+                .commit()
+                .push()
+                .add_git_config_key('machete.status.extraSpaceBeforeBranchName', 'true')
+        )
+        launch_command('discover', '-y')
+
+        expected_status_output = (
+"""   master
+   |
+   o- bar
+      |
+      o- foo *
+"""  # noqa: E122
+        )
+        assert_command(['status'], expected_status_output.replace('|', '| ', 2), strip_indentation=False)
+
+        self.repo_sandbox.add_git_config_key('machete.status.extraSpaceBeforeBranchName', 'false')
+
+        expected_status_output = (
+"""  master
+ |
+ o-bar
+   |
+   o-foo *
+"""  # noqa: E122
+        )
+        assert_command(['status'], expected_status_output)

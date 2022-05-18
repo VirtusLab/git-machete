@@ -314,6 +314,10 @@ class GitContext:
         self.__ensure_config_loaded()
         return self.__config_cached.get(key.lower())
 
+    def get_boolean_config_attr(self, key: str) -> bool:
+        self.__ensure_config_loaded()
+        return self.__config_cached.get(key.lower()) == 'true'
+
     def set_config_attr(self, key: str, value: str) -> None:
         self._run_git("config", "--", key, value)
         self.__ensure_config_loaded()
