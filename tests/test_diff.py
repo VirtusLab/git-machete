@@ -51,6 +51,7 @@ index 0000000..a3bd4e5
 @@ -0,0 +1 @@
 +Develop content
 
-"""
+"""  # noqa: E122
         )
+
         assert_command(["diff", "develop"], expected_status_output, strip_indentation=False)
