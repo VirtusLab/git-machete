@@ -7,14 +7,13 @@ import re
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, NamedTuple, Optional
 import urllib.request
 import urllib.error
 
 from git_machete.utils import debug, fmt
 from git_machete.exceptions import MacheteException, UnprocessableEntityHTTPError
 from git_machete.git_operations import GitContext, LocalBranchShortName
-
 
 GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
 # GitHub Enterprise deployments use alternate domains.
@@ -40,6 +39,12 @@ class GitHubPullRequest(object):
 
     def __repr__(self) -> str:
         return f"PR #{self.number} by {self.user}: {self.head} -> {self.base}"
+
+
+class RemoteAndOrganizationAndRepository(NamedTuple):
+    remote: str
+    organization: str
+    repository: str
 
 
 def __parse_pr_json(pr_json: Any) -> GitHubPullRequest:
@@ -254,12 +259,14 @@ def is_github_remote_url(url: str) -> bool:
     return any((re.match(pattern, url) for pattern in GITHUB_REMOTE_PATTERNS))
 
 
-def get_parsed_github_remote_url(url: str) -> Optional[Tuple[str, str]]:
+def get_parsed_github_remote_url(url: str, remote: str) -> Optional[RemoteAndOrganizationAndRepository]:
 
     for pattern in GITHUB_REMOTE_PATTERNS:
         match = re.match(pattern, url)
         if match:
-            return match.group(1), match.group(2)
+            return RemoteAndOrganizationAndRepository(remote=remote,
+                                                      organization=match.group(1),
+                                                      repository=match.group(2))
     return None
 
 

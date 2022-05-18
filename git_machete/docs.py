@@ -1,3 +1,4 @@
+import textwrap
 from typing import Dict
 from git_machete.constants import DISCOVER_DEFAULT_FRESH_BRANCH_COUNT
 
@@ -29,6 +30,29 @@ short_docs: Dict[str, str] = {
     "update": "Sync the current branch with its upstream (parent) branch via rebase or merge",
     "version": "Display the version and exit"
 }
+
+github_api_access = '''To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR,
+even in case of public repositories), a GitHub API token with `repo` scope is required, see https://github.com/settings/tokens.
+This will be resolved from the first of:
+    1. `GITHUB_TOKEN` env var,
+    2. content of the `.github-token` file in the home directory (`~`),
+    3. current auth token from the `gh` GitHub CLI,
+    4. current auth token from the `hub` GitHub CLI.'''
+
+github_config_keys = '''GitHub API server URL will be inferred from `git remote`.
+You can override this by setting the following git config keys:
+    Remote name
+        E.g. `machete.github.remote` = `origin`
+    Organization name
+        E.g. `machete.github.organization` = `VirtusLab`
+    Repository name
+        E.g. `machete.github.repository` = `git-machete`
+
+To do this, run `git config --local --edit` and add the following section:
+    [machete "github"]
+        organization = <organization_name>
+        repository = <repo_name>
+        remote = <remote_name>'''
 
 long_docs: Dict[str, str] = {
     "add": """
@@ -112,7 +136,7 @@ long_docs: Dict[str, str] = {
           <b>-y, --yes</b>         Don't ask for confirmation whether to fast-forward the current branch or whether to slide-out the downstream.
                             Fails if the current branch has more than one green-edge downstream branch.
     """,
-    "anno": """
+    "anno": f"""
         <b>Usage:
           git machete anno [-b|--branch=<branch>] [<annotation text>]
           git machete anno -H|--sync-github-prs</b>
@@ -126,12 +150,9 @@ long_docs: Dict[str, str] = {
         If invoked with `-H` or `--sync-github-prs`, annotates the branches based on their corresponding GitHub PR numbers and authors.
         Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
 
-        To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR, even in case of public repositories),
-        a GitHub API token with `repo` scope is required, see `https://github.com/settings/tokens`. This will be resolved from the first of:
-        1. `GITHUB_TOKEN` env var,
-        2. content of the `.github-token` file in the home directory (`~`),
-        3. current auth token from the `gh` GitHub CLI,
-        4. current auth token from the `hub` GitHub CLI.
+{textwrap.indent(github_api_access, "          ")}
+
+{textwrap.indent(github_config_keys, "          ")}
 
         In any other case, sets the annotation for the given/current branch to the given argument.
         If multiple arguments are passed to the command, they are concatenated with a single space.
@@ -142,9 +163,8 @@ long_docs: Dict[str, str] = {
           <b>-b, --branch=<branch></b>      Branch to set the annotation for.
           <b>-H, --sync-github-prs</b>      Annotate with GitHub PR numbers and authors where applicable.
     """,
-    "clean": """
-        <b>Usage:
-          git machete clean [-c|--checkout-my-github-prs] [-y|--yes]
+    "clean": f"""
+        <b>Usage: git machete clean [-c|--checkout-my-github-prs] [-y|--yes]</b>
 
         Synchronizes with the remote repository:
             1. if invoked with `-H` or `--checkout-my-github-prs`, checks out open PRs for the current user associated with the GitHub token and also traverses the chain of pull requests upwards, adding branches one by one to git-machete and checks them out locally as well,
@@ -154,13 +174,9 @@ long_docs: Dict[str, str] = {
         No branch will be deleted unless explicitly confirmed by the user (or unless `-y/--yes` option is passed).
         Equivalent of `git machete github sync` if invoked with `-H` or `--checkout-my-github-prs`.
 
-        To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR, even in case of public repositories),
-        a GitHub API token with `repo` scope is required, see https://github.com/settings/tokens. This will be resolved from the first of:
+{textwrap.indent(github_api_access, "          ")}
 
-            1. `GITHUB_TOKEN` env var,
-            2. content of the `.github-token` file in the home directory (`~`),
-            3. current auth token from the `gh` GitHub CLI,
-            4. current auth token from the `hub` GitHub CLI.
+{textwrap.indent(github_config_keys, "          ")}
 
         **Options:**
           <b>--c, --checkout-my-github-prs</b>     Checkout your open PRs into local branches.
@@ -327,18 +343,16 @@ long_docs: Dict[str, str] = {
         Tabs or any number of spaces can be used as indentation.
         It's only important to be consistent wrt. the sequence of characters used for indentation between all lines.
     """,
-    "github": """
+    "github": f"""
         <b>Usage: git machete github <subcommand></b>
         where <subcommand> is one of: `anno-prs`, `checkout-prs`, `create-pr`, `retarget-pr`, `sync`.
 
         Creates, checks out and manages GitHub PRs while keeping them reflected in branch definition file.
 
-        To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR, even in case of public repositories),
-        a GitHub API token with `repo` scope is required, see `https://github.com/settings/tokens`. This will be resolved from the first of:
-        1. `GITHUB_TOKEN` env var,
-        2. content of the .github-token file in the home directory (`~`),
-        3. current auth token from the `gh` GitHub CLI,
-        4. current auth token from the `hub` GitHub CLI.
+{textwrap.indent(github_api_access, "          ")}
+
+{textwrap.indent(github_config_keys, "          ")}
+
 
         <b>`anno-prs`:</b>
 

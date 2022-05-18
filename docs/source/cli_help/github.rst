@@ -13,12 +13,14 @@ where ``<subcommand>`` is one of: ``anno-prs``, ``checkout-prs``, ``create-pr``,
 Creates, checks out and manages GitHub PRs while keeping them reflected in branch definition file.
 
 .. include:: github_api_access.rst
+.. include:: github_config_keys.rst
 
 ``anno-prs``:
 
   Annotates the branches based on their corresponding GitHub PR numbers and authors.
   Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
   Equivalent to ``git machete anno --sync-github-prs``.
+
 
 ``checkout-prs [--all | --by=<github-login> | --mine | <PR-number-1> ... <PR-number-N>]``:
 
