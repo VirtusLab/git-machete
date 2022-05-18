@@ -1,5 +1,8 @@
+import io
+import sys
 from typing import Any
 
+import cli
 from .mockers import (GitRepositorySandbox, assert_command, launch_command,
                       mock_run_cmd)
 
@@ -22,22 +25,43 @@ class TestDiff:
 
     def test_diff(self, mocker: Any) -> None:
         """
-        Verify behaviour of a 'git machete add' command.
+        Verify behaviour of a 'git machete diff' command.
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
 
         (
             self.repo_sandbox.new_branch("master")
-                .commit()
+                .add_file_with_content_and_commit(message='master commit1')
+                .push()
                 .new_branch("develop")
-                .commit()
+                .add_file_with_content_and_commit(file_name='develop_file_name.txt', file_content='Develop content', message='develop commit')
+                .push()
         )
-        launch_command("discover", "-y")
-        launch_command("diff", "develop")
+        expected_status_output = (
+            """
+            diff --git a/develop_file_name.txt b/develop_file_name.txt
+            new file mode 100644
+            index 0000000..a3bd4e5
+            --- /dev/null
+            +++ b/develop_file_name.txt
+            @@ -0,0 +1 @@
+            +Develop content
+            """
+        )
 
-        # assert_command(
-        #     ['add', '-y', 'bugfix/feature_fail'],
-        #     'Adding `bugfix/feature_fail` onto the inferred upstream (parent) branch `develop`\n'
-        #     'Added branch `bugfix/feature_fail` onto `develop`\n',
-        #     strip_indentation=False
-        # )
+        print('launch')
+        launch_command('diff', 'develop')
+        old_stdout = sys.stdout
+        new_stdout = io.StringIO()
+        sys.stdout = new_stdout
+
+        print('xd')
+        print(launch_command('diff', 'develop'))
+        cli.launch(['diff', 'develop'])
+        print('xd')
+
+        output = new_stdout.getvalue()
+
+        sys.stdout = old_stdout
+        print(output)
+        print()
+        assert_command(["diff", "develop"], expected_status_output)

@@ -78,6 +78,12 @@ class GitRepositorySandbox:
         self.execute(f'git commit -m "{message}"')
         return self
 
+    def add_file_with_content_and_commit(self, file_name: str = 'file_name.txt', file_content: str = 'Some file content', message: str = "Some commit message.") -> "GitRepositorySandbox":
+        self.execute(f"echo {file_content} > {file_name}")
+        self.execute(f"git add {file_name}")
+        self.execute(f'git commit -m "{message}"')
+        return self
+
     def commit_amend(self, message: str) -> "GitRepositorySandbox":
         self.execute(f'git commit --amend -m "{message}"')
         return self
@@ -322,8 +328,21 @@ def launch_command(*args: str) -> str:
                 git.flush_caches()
         return out.getvalue()
 
+def launch_command1(*args: str) -> str:
+    cli.launch(list(args))
+    git.flush_caches()
+
 
 def assert_command(cmds: Iterable[str], expected_result: str, strip_indentation: bool = True) -> None:
+    # print('OUTPUT')
+    # print(launch_command(*cmds))
+    # print()
+    # x = launch_command(*cmds)
+    # y = (adapt(expected_result) if strip_indentation else expected_result)
+    # print('x')
+    # print(str(x))
+    # print('y')
+    # print(y)
     assert launch_command(*cmds) == (adapt(expected_result) if strip_indentation else expected_result)
 
 
