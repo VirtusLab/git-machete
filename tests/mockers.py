@@ -341,15 +341,6 @@ def launch_command1(*args: str) -> str:
 
 
 def assert_command(cmds: Iterable[str], expected_result: str, strip_indentation: bool = True) -> None:
-    # print('OUTPUT')
-    # print(launch_command(*cmds))
-    # print()
-    # x = launch_command(*cmds)
-    # y = (adapt(expected_result) if strip_indentation else expected_result)
-    # print('x')
-    # print(str(x))
-    # print('y')
-    # print(y)
     assert launch_command(*cmds) == (adapt(expected_result) if strip_indentation else expected_result)
 
 
