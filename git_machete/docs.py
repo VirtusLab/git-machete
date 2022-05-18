@@ -674,7 +674,7 @@ long_docs: Dict[str, str] = {
             │
             └─feature_branch2
 
-        With the `extraSpaceBeforeBranchName` option set:
+        With `machete.status.extraSpaceBeforeBranchName` config set to `true`:
             develop
             │
             ├─ feature_branch1
