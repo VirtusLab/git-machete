@@ -1,6 +1,6 @@
 # Release notes
 
-## New in git-machete 3.10.0
+## New in git-machete 3.10.1
 
 ## New in git-machete 3.10.0
 
