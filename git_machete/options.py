@@ -1,14 +1,14 @@
 from typing import Optional, List
 
 from git_machete.exceptions import MacheteException
-from git_machete.git_operations import AnyRevision, LocalBranchShortName
+from git_machete.git_operations import AnyBranchName, AnyRevision, LocalBranchShortName
 
 
 class CommandLineOptions:
 
     def __init__(self) -> None:
         self.opt_as_root: bool = False
-        self.opt_branch: Optional[LocalBranchShortName] = None
+        self.opt_branch: Optional[AnyBranchName] = None
         self.opt_checked_out_since: Optional[str] = None
         self.opt_color: str = "auto"
         self.opt_debug: bool = False

@@ -329,17 +329,6 @@ def launch_command(*args: str) -> str:
         return out.getvalue()
 
 
-def launch_command1(*args: str) -> str:
-    old_stdout = sys.stdout
-    new_stdout = io.StringIO()
-    sys.stdout = new_stdout
-    cli.launch(list(args))
-    git.flush_caches()
-    output = new_stdout.getvalue()
-    sys.stdout = old_stdout
-    return output
-
-
 def assert_command(cmds: Iterable[str], expected_result: str, strip_indentation: bool = True) -> None:
     assert launch_command(*cmds) == (adapt(expected_result) if strip_indentation else expected_result)
 

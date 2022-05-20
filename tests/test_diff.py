@@ -1,11 +1,6 @@
-import io
-import os
-import sys
-import textwrap
 from typing import Any
 
-from .mockers import (adapt, GitRepositorySandbox, assert_command, launch_command,
-                      launch_command1, mock_run_cmd, mock_run_cmd_and_forward_stdout)
+from .mockers import (GitRepositorySandbox, assert_command, mock_run_cmd_and_forward_stdout)
 
 
 class TestDiff:
@@ -36,11 +31,7 @@ class TestDiff:
                 .new_branch("develop")
                 .add_file_with_content_and_commit(file_name='develop_file_name.txt', file_content='Develop content', message='develop commit')
                 .push()
-                .check_out('develop')
         )
-
-        # Test `git machete diff` without providing branch name
-        assert_command(["diff"], '')
 
         expected_status_output = (
 """diff --git a/develop_file_name.txt b/develop_file_name.txt
@@ -54,4 +45,9 @@ index 0000000..a3bd4e5
 """  # noqa: E122
         )
 
+        # Test `git machete diff` without providing the branch name
+        assert_command(["diff"], expected_status_output, strip_indentation=False)
+
         assert_command(["diff", "develop"], expected_status_output, strip_indentation=False)
+
+        assert_command(["diff", "refs/heads/develop"], expected_status_output, strip_indentation=False)

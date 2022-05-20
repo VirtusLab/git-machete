@@ -1,7 +1,6 @@
 from typing import Any
 
-from .mockers import (GitRepositorySandbox, get_current_commit_hash,
-                      launch_command, mock_run_cmd_and_forward_stdout)
+from .mockers import (GitRepositorySandbox, get_current_commit_hash, launch_command, mock_run_cmd_and_forward_stdout)
 
 
 class TestLog:
@@ -34,17 +33,19 @@ class TestLog:
         self.repo_sandbox.commit()
         childs_second_commit_hash = get_current_commit_hash()
 
-        log_content = launch_command('log')
+        log_content_no_branch_name = launch_command('log')
+        log_content_short_branch_name = launch_command('log', 'child')
+        log_content_full_branch_name = launch_command('log', 'refs/heads/child')
 
-        assert childs_first_commit_hash in log_content, \
+        assert childs_first_commit_hash in log_content_short_branch_name and log_content_no_branch_name and log_content_full_branch_name, \
             ("Verify that oldest commit from current branch is visible when "
              "executing `git machete log`."
              )
-        assert childs_second_commit_hash in log_content, \
+        assert childs_second_commit_hash in log_content_short_branch_name and log_content_no_branch_name and log_content_full_branch_name, \
             ("Verify that youngest commit from current branch is visible when "
              "executing `git machete log`."
              )
-        assert roots_only_commit_hash not in log_content, \
+        assert roots_only_commit_hash not in log_content_short_branch_name and log_content_no_branch_name and log_content_full_branch_name, \
             ("Verify that commits from parent branch are not visible when "
              "executing `git machete log`."
              )
