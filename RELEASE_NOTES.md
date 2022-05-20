@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.10.0
 
+## New in git-machete 3.10.0
+
 - added: boolean git config key `machete.status.extraSpaceBeforeBranchName` that enable configurable rendering of `status` command
 - added: 3 git config keys `machete.github.{remote,organization,repository}` that enable `git machete github *` subcommands to work with custom GitHub URLs
 
