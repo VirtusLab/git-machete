@@ -44,4 +44,3 @@ class TestIsManaged:
 
         with pytest.raises(SystemExit):
             launch_command('is-managed', 'random_branch_name')
-

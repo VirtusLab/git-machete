@@ -42,7 +42,7 @@ class TestAnno:
             master (untracked)
 
             develop *  Custom annotation for `develop` branch (untracked)
-            | 
+            |
             x-feature (untracked)
             """,
         )
@@ -54,7 +54,7 @@ class TestAnno:
             master (untracked)
 
             develop *  Custom annotation for `develop` branch (untracked)
-            | 
+            |
             x-feature  Custom annotation for `feature` branch (untracked)
             """,
         )
@@ -66,7 +66,7 @@ class TestAnno:
             master (untracked)
 
             develop *  Custom annotation for `develop` branch (untracked)
-            | 
+            |
             x-feature  Custom annotation for `feature` branch (untracked)
             """,
         )
