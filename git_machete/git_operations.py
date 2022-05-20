@@ -314,6 +314,10 @@ class GitContext:
         self.__ensure_config_loaded()
         return self.__config_cached.get(key.lower())
 
+    def get_boolean_config_attr(self, key: str) -> bool:
+        self.__ensure_config_loaded()
+        return self.__config_cached.get(key.lower()) == 'true'
+
     def set_config_attr(self, key: str, value: str) -> None:
         self._run_git("config", "--", key, value)
         self.__ensure_config_loaded()
@@ -335,7 +339,7 @@ class GitContext:
         return self.__remotes_cached
 
     def get_url_of_remote(self, remote: str) -> str:
-        return self._popen_git("config", "--get", f"remote.{remote}.url").strip()  # 'git remote get-url' method has only been added in git v2.5.1
+        return self.get_config_attr_or_none(f"remote.{remote}.url").strip()  # 'git remote get-url' method has only been added in git v2.5.1
 
     def fetch_remote(self, remote: str) -> None:
         if remote not in self.__fetch_done_for:

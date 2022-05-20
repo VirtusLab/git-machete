@@ -20,7 +20,7 @@ from git_machete.github import (
     add_assignees_to_pull_request, add_reviewers_to_pull_request,
     create_pull_request, checkout_pr_refs, derive_pull_request_by_head, derive_pull_requests,
     get_github_token_possible_providers, get_parsed_github_remote_url, get_pull_request_by_number_or_none, GitHubPullRequest,
-    is_github_remote_url, set_base_of_pull_request, set_milestone_of_pull_request)
+    is_github_remote_url, RemoteAndOrganizationAndRepository, set_base_of_pull_request, set_milestone_of_pull_request)
 from git_machete.utils import (
     get_pretty_choices, flat_map, excluding, fmt, tupled, warn, debug, bold,
     colored, underline, dim, get_second, AnsiEscapeCodes)
@@ -934,13 +934,15 @@ class MacheteClient:
         hook_path = self.__git.get_hook_path("machete-status-branch")
         hook_executable = self.__git.check_hook_executable(hook_path)
 
+        maybe_space_before_branch_name = ' ' if self.__git.get_boolean_config_attr('machete.status.extraSpaceBeforeBranchName') else ''
+
         def print_line_prefix(branch_: LocalBranchShortName, suffix: str) -> None:
-            out.write("  ")
+            out.write("  " + maybe_space_before_branch_name)
             for sibling in next_sibling_of_ancestor[:-1]:
                 if not sibling:
-                    out.write("  ")
+                    out.write("  " + maybe_space_before_branch_name)
                 else:
-                    out.write(colored(f"{utils.get_vertical_bar()} ", edge_color[sibling]))
+                    out.write(colored(f"{utils.get_vertical_bar()} " + maybe_space_before_branch_name, edge_color[sibling]))
             out.write(colored(suffix, edge_color[branch_]))
 
         next_sibling_of_ancestor: List[Optional[LocalBranchShortName]]
@@ -994,11 +996,11 @@ class MacheteClient:
                         # in case `edge_color[next_sibling_of_branch] != edge_color[branch]`,
                         # at the expense of a little gap to the elbow/turnstile below.
                         junction = u"└─"
-                print_line_prefix(branch, junction)
+                print_line_prefix(branch, junction + maybe_space_before_branch_name)
             else:
                 if branch != dfs_res[0][0]:
                     out.write("\n")
-                out.write("  ")
+                out.write("  " + maybe_space_before_branch_name)
 
             if branch in (currently_checked_out_branch, currently_rebased_branch):  # i.e. if branch is the current branch (checked out or being rebased)
                 if branch == currently_rebased_branch:
@@ -1384,33 +1386,7 @@ class MacheteClient:
         return result
 
     def sync_annotations_to_github_prs(self) -> None:
-
-        url_for_remote: Dict[str, str] = {remote: self.__git.get_url_of_remote(remote) for remote in
-                                          self.__git.get_remotes()}
-        if not url_for_remote:
-            raise MacheteException(fmt('No remotes defined for this repository (see `git remote`)'))
-
-        optional_org_name_for_github_remote: Dict[str, Optional[Tuple[str, str]]] = {
-            remote: get_parsed_github_remote_url(url) for remote, url in url_for_remote.items()}
-        org_name_for_github_remote: Dict[str, Tuple[str, str]] = {remote: org_name for remote, org_name in
-                                                                  optional_org_name_for_github_remote.items() if
-                                                                  org_name}
-        if not org_name_for_github_remote:
-            raise MacheteException(
-                fmt('Remotes are defined for this repository, but none of them '
-                    'corresponds to GitHub (see `git remote -v` for details)'))
-
-        org: str = ''
-        repo: str = ''
-        if len(org_name_for_github_remote) == 1:
-            org, repo = list(org_name_for_github_remote.values())[0]
-        elif len(org_name_for_github_remote) > 1:
-            if 'origin' in org_name_for_github_remote:
-                org, repo = org_name_for_github_remote['origin']
-            else:
-                raise MacheteException(
-                    f'Multiple non-origin remotes correspond to GitHub in this repository: '
-                    f'{", ".join(org_name_for_github_remote.keys())}, aborting')
+        remote, org, repo = self.__derive_remote_and_github_org_and_repo()
         current_user: Optional[str] = git_machete.github.derive_current_user_login()
         debug('Current GitHub user is ' + (current_user or '<none>'))
         pr: GitHubPullRequest
@@ -1878,7 +1854,7 @@ class MacheteClient:
         org: str
         repo: str
         remote: str
-        remote, (org, repo) = self.__derive_remote_and_github_org_and_repo()
+        remote, org, repo = self.__derive_remote_and_github_org_and_repo()
         current_user: Optional[str] = git_machete.github.derive_current_user_login()
         if not current_user and my_opened_prs:
             msg = ("Could not determine current user name, please check that the GitHub API token provided by one of the: "
@@ -2028,14 +2004,14 @@ class MacheteClient:
         for remote, url in url_for_remote.items():
             url = url if url.endswith('.git') else url + '.git'
             remote_url = remote_url if remote_url.endswith('.git') else remote_url + '.git'
-            if is_github_remote_url(url) and get_parsed_github_remote_url(url) == get_parsed_github_remote_url(remote_url):
+            if is_github_remote_url(url) and get_parsed_github_remote_url(url, remote) == get_parsed_github_remote_url(remote_url, remote):
                 return remote
         return None
 
     def retarget_github_pr(self, head: LocalBranchShortName) -> None:
         org: str
         repo: str
-        _, (org, repo) = self.__derive_remote_and_github_org_and_repo()
+        _, org, repo = self.__derive_remote_and_github_org_and_repo()
 
         debug(f'organization is {org}, repository is {repo}')
 
@@ -2058,30 +2034,44 @@ class MacheteClient:
         else:
             print(fmt(f'The base branch of PR #{pr.number} is already `{new_base}`'))
 
-    def __derive_remote_and_github_org_and_repo(self) -> Tuple[str, Tuple[str, str]]:
+    def __derive_remote_and_github_org_and_repo(self) -> RemoteAndOrganizationAndRepository:
+        remote_and_organization_and_repository_for_custom_url = self.__get_remote_and_organization_and_repository_name_for_custom_url()
+        if all(remote_and_organization_and_repository_for_custom_url):
+            return remote_and_organization_and_repository_for_custom_url
+
         url_for_remote: Dict[str, str] = {
             remote: self.__git.get_url_of_remote(remote) for remote in self.__git.get_remotes()
         }
         if not url_for_remote:
             raise MacheteException(fmt('No remotes defined for this repository (see `git remote`)'))
 
-        org_and_repo_for_github_remote: Dict[str, Tuple[str, str]] = {
-            remote: get_parsed_github_remote_url(url) for remote, url in url_for_remote.items() if is_github_remote_url(url)
+        remote_and_github_org_and_repo: Dict[str, RemoteAndOrganizationAndRepository] = {
+            remote: get_parsed_github_remote_url(url, remote) for remote, url in url_for_remote.items() if is_github_remote_url(url)
         }
-        if not org_and_repo_for_github_remote:
+        if not remote_and_github_org_and_repo:
             raise MacheteException(
                 fmt('Remotes are defined for this repository, but none of them '
-                    'corresponds to GitHub (see `git remote -v` for details)\n'))
+                    'corresponds to GitHub (see `git remote -v` for details). \n'
+                    'It is possible that you are using custom GitHub URL.\n'
+                    'If that is the case, you can provide repository information explicitly, via these 3 git config keys: '
+                    '`machete.github.{remote,organization,repository}`\n'))
 
-        if len(org_and_repo_for_github_remote) == 1:
-            return list(org_and_repo_for_github_remote.items())[0]
+        if len(remote_and_github_org_and_repo) == 1:
+            return remote_and_github_org_and_repo[list(remote_and_github_org_and_repo.keys())[0]]
 
-        if 'origin' in org_and_repo_for_github_remote:
-            return 'origin', org_and_repo_for_github_remote['origin']
+        if 'origin' in remote_and_github_org_and_repo:
+            return remote_and_github_org_and_repo['origin']
 
         raise MacheteException(
             f'Multiple non-origin remotes correspond to GitHub in this repository: '
-            f'{", ".join(org_and_repo_for_github_remote.keys())}, aborting')
+            f'{", ".join(remote_and_github_org_and_repo.keys())}, aborting. \n'
+            f'You can also select the repository by providing 3 git config keys: '
+            '`machete.github.{remote,organization,repository}`\n')
+
+    def __get_remote_and_organization_and_repository_name_for_custom_url(self) -> RemoteAndOrganizationAndRepository:
+        return RemoteAndOrganizationAndRepository(remote=self.__git.get_config_attr_or_none("machete.github.remote"),
+                                                  organization=self.__git.get_config_attr_or_none("machete.github.organization"),
+                                                  repository=self.__git.get_config_attr_or_none("machete.github.repository"))
 
     def create_github_pr(
             self, *, head: LocalBranchShortName, opt_draft: bool, opt_onto: Optional[LocalBranchShortName]) -> None:
@@ -2094,7 +2084,7 @@ class MacheteClient:
             raise MacheteException(f'Could not determine base branch for PR. Branch `{head}` is a root branch.')
         org: str
         repo: str
-        remote, (org, repo) = self.__derive_remote_and_github_org_and_repo()
+        remote, org, repo = self.__derive_remote_and_github_org_and_repo()
         print(f"Fetching {remote}...")
         self.__git.fetch_remote(remote)
         if '/'.join([remote, base]) not in self.__git.get_remote_branches():

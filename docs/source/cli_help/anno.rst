@@ -23,6 +23,7 @@ If invoked with ``-H`` or ``--sync-github-prs``, annotates the branches based on
 Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
 
 .. include:: github_api_access.rst
+.. include:: github_config_keys.rst
 
 In any other case, sets the annotation for the given/current branch to the given <annotation text>.
 If multiple <annotation text>'s are passed to the command, they are concatenated with a single space.
