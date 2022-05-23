@@ -23,7 +23,7 @@ class TestAdd:
         """
         Verify behaviour of a 'git machete add' command.
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        # mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
 
         (
             self.repo_sandbox.new_branch("master")
@@ -39,7 +39,7 @@ class TestAdd:
 
         self.repo_sandbox.new_branch("bugfix/feature_fail")
 
-        # Test `git machete diff` without providing the branch name
+        # Test `git machete add` without providing the branch name
         assert_command(
             ['add', '-y'],
             'Adding `bugfix/feature_fail` onto the inferred upstream (parent) branch `develop`\n'

@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.10.1
 
+- added: `git machete {diff, log, add, anno, fork-point, is-managed, show}` commands now support both short (`develop`) and full (`refs/heads/develop`) branch names
+
 ## New in git-machete 3.10.0
 
 - added: boolean git config key `machete.status.extraSpaceBeforeBranchName` that enable configurable rendering of `status` command

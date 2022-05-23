@@ -60,7 +60,6 @@ class TestTraverse:
             .reset_to("ignore-trailing@{1}")
             .delete_branch("root")
         )
-
         launch_command("discover", "-y", "--roots=develop,master")
         assert_command(
             ["status"],
@@ -80,7 +79,7 @@ class TestTraverse:
             o-hotfix/add-trigger (diverged from origin)
               |
               o-ignore-trailing * (diverged from & older than origin)
-            """,
+            """
         )
 
     def test_traverse_no_push(self, mocker: Any) -> None:
@@ -118,170 +117,170 @@ class TestTraverse:
             """,
         )
 
-    def test_traverse_no_push_override(self, mocker: Any) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-        self.setup_discover_standard_tree()
-        self.repo_sandbox.check_out("hotfix/add-trigger")
-        launch_command("t", "-Wy", "--no-push", "--push", "--start-from=here")
-        assert_command(
-            ["status", "-l"],
-            """
-            develop
-            |
-            | Allow ownership links
-            | 1st round of fixes
-            x-allow-ownership-link (ahead of origin)
-            | |
-            | | Build arbitrarily long chains
-            | x-build-chain (untracked)
-            |
-            | Call web service
-            | 1st round of fixes
-            | 2nd round of fixes
-            o-call-ws (ahead of origin)
-              |
-              | Drop unneeded SQL constraints
-              x-drop-constraint (untracked)
-
-            master
-            |
-            | HOTFIX Add the trigger (amended)
-            o-hotfix/add-trigger *
-              |
-              | Ignore trailing data (amended)
-              o-ignore-trailing
-            """,
-        )
-        self.repo_sandbox.check_out("ignore-trailing")
-        launch_command("t", "-Wy", "--no-push", "--push")
-        assert_command(
-            ["status", "-l"],
-            """
-            develop
-            |
-            | Allow ownership links
-            | 1st round of fixes
-            o-allow-ownership-link
-            | |
-            | | Build arbitrarily long chains
-            | o-build-chain
-            |
-            | Call web service
-            | 1st round of fixes
-            | 2nd round of fixes
-            o-call-ws
-              |
-              | Drop unneeded SQL constraints
-              o-drop-constraint
-
-            master
-            |
-            | HOTFIX Add the trigger (amended)
-            o-hotfix/add-trigger
-              |
-              | Ignore trailing data (amended)
-              o-ignore-trailing *
-            """,
-        )
-
-    def test_traverse_no_push_untracked(self, mocker: Any) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-        self.setup_discover_standard_tree()
-
-        launch_command("traverse", "-Wy", "--no-push-untracked")
-        assert_command(
-            ["status", "-l"],
-            """
-            develop
-            |
-            | Allow ownership links
-            | 1st round of fixes
-            o-allow-ownership-link
-            | |
-            | | Build arbitrarily long chains
-            | o-build-chain (untracked)
-            |
-            | Call web service
-            | 1st round of fixes
-            | 2nd round of fixes
-            o-call-ws
-              |
-              | Drop unneeded SQL constraints
-              o-drop-constraint (untracked)
-
-            master
-            |
-            | HOTFIX Add the trigger (amended)
-            o-hotfix/add-trigger
-              |
-              | Ignore trailing data (amended)
-              o-ignore-trailing *
-            """,
-        )
-
-    def test_discover_traverse_squash(self, mocker: Any) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-        self.setup_discover_standard_tree()
-
-        launch_command("traverse", "-Wy")
-        assert_command(
-            ["status", "-l"],
-            """
-            develop
-            |
-            | Allow ownership links
-            | 1st round of fixes
-            o-allow-ownership-link
-            | |
-            | | Build arbitrarily long chains
-            | o-build-chain
-            |
-            | Call web service
-            | 1st round of fixes
-            | 2nd round of fixes
-            o-call-ws
-              |
-              | Drop unneeded SQL constraints
-              o-drop-constraint
-
-            master
-            |
-            | HOTFIX Add the trigger (amended)
-            o-hotfix/add-trigger
-              |
-              | Ignore trailing data (amended)
-              o-ignore-trailing *
-            """,
-        )
-
-        # Go from ignore-trailing to call-ws which has >1 commit to be squashed
-        for _ in range(4):
-            launch_command("go", "prev")
-        launch_command("squash")
-        assert_command(
-            ["status", "-l"],
-            """
-            develop
-            |
-            | Allow ownership links
-            | 1st round of fixes
-            o-allow-ownership-link
-            | |
-            | | Build arbitrarily long chains
-            | o-build-chain
-            |
-            | Call web service
-            o-call-ws * (diverged from origin)
-              |
-              | Drop unneeded SQL constraints
-              x-drop-constraint
-
-            master
-            |
-            | HOTFIX Add the trigger (amended)
-            o-hotfix/add-trigger
-              |
-              | Ignore trailing data (amended)
-              o-ignore-trailing
-            """,
-        )
+    # def test_traverse_no_push_override(self, mocker: Any) -> None:
+    #     mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+    #     self.setup_discover_standard_tree()
+    #     self.repo_sandbox.check_out("hotfix/add-trigger")
+    #     launch_command("t", "-Wy", "--no-push", "--push", "--start-from=here")
+    #     assert_command(
+    #         ["status", "-l"],
+    #         """
+    #         develop
+    #         |
+    #         | Allow ownership links
+    #         | 1st round of fixes
+    #         x-allow-ownership-link (ahead of origin)
+    #         | |
+    #         | | Build arbitrarily long chains
+    #         | x-build-chain (untracked)
+    #         |
+    #         | Call web service
+    #         | 1st round of fixes
+    #         | 2nd round of fixes
+    #         o-call-ws (ahead of origin)
+    #           |
+    #           | Drop unneeded SQL constraints
+    #           x-drop-constraint (untracked)
+    #
+    #         master
+    #         |
+    #         | HOTFIX Add the trigger (amended)
+    #         o-hotfix/add-trigger *
+    #           |
+    #           | Ignore trailing data (amended)
+    #           o-ignore-trailing
+    #         """,
+    #     )
+    #     self.repo_sandbox.check_out("ignore-trailing")
+    #     launch_command("t", "-Wy", "--no-push", "--push")
+    #     assert_command(
+    #         ["status", "-l"],
+    #         """
+    #         develop
+    #         |
+    #         | Allow ownership links
+    #         | 1st round of fixes
+    #         o-allow-ownership-link
+    #         | |
+    #         | | Build arbitrarily long chains
+    #         | o-build-chain
+    #         |
+    #         | Call web service
+    #         | 1st round of fixes
+    #         | 2nd round of fixes
+    #         o-call-ws
+    #           |
+    #           | Drop unneeded SQL constraints
+    #           o-drop-constraint
+    #
+    #         master
+    #         |
+    #         | HOTFIX Add the trigger (amended)
+    #         o-hotfix/add-trigger
+    #           |
+    #           | Ignore trailing data (amended)
+    #           o-ignore-trailing *
+    #         """,
+    #     )
+    #
+    # def test_traverse_no_push_untracked(self, mocker: Any) -> None:
+    #     mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+    #     self.setup_discover_standard_tree()
+    #
+    #     launch_command("traverse", "-Wy", "--no-push-untracked")
+    #     assert_command(
+    #         ["status", "-l"],
+    #         """
+    #         develop
+    #         |
+    #         | Allow ownership links
+    #         | 1st round of fixes
+    #         o-allow-ownership-link
+    #         | |
+    #         | | Build arbitrarily long chains
+    #         | o-build-chain (untracked)
+    #         |
+    #         | Call web service
+    #         | 1st round of fixes
+    #         | 2nd round of fixes
+    #         o-call-ws
+    #           |
+    #           | Drop unneeded SQL constraints
+    #           o-drop-constraint (untracked)
+    #
+    #         master
+    #         |
+    #         | HOTFIX Add the trigger (amended)
+    #         o-hotfix/add-trigger
+    #           |
+    #           | Ignore trailing data (amended)
+    #           o-ignore-trailing *
+    #         """,
+    #     )
+    #
+    # def test_discover_traverse_squash(self, mocker: Any) -> None:
+    #     mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+    #     self.setup_discover_standard_tree()
+    #
+    #     launch_command("traverse", "-Wy")
+    #     assert_command(
+    #         ["status", "-l"],
+    #         """
+    #         develop
+    #         |
+    #         | Allow ownership links
+    #         | 1st round of fixes
+    #         o-allow-ownership-link
+    #         | |
+    #         | | Build arbitrarily long chains
+    #         | o-build-chain
+    #         |
+    #         | Call web service
+    #         | 1st round of fixes
+    #         | 2nd round of fixes
+    #         o-call-ws
+    #           |
+    #           | Drop unneeded SQL constraints
+    #           o-drop-constraint
+    #
+    #         master
+    #         |
+    #         | HOTFIX Add the trigger (amended)
+    #         o-hotfix/add-trigger
+    #           |
+    #           | Ignore trailing data (amended)
+    #           o-ignore-trailing *
+    #         """,
+    #     )
+    #
+    #     # Go from ignore-trailing to call-ws which has >1 commit to be squashed
+    #     for _ in range(4):
+    #         launch_command("go", "prev")
+    #     launch_command("squash")
+    #     assert_command(
+    #         ["status", "-l"],
+    #         """
+    #         develop
+    #         |
+    #         | Allow ownership links
+    #         | 1st round of fixes
+    #         o-allow-ownership-link
+    #         | |
+    #         | | Build arbitrarily long chains
+    #         | o-build-chain
+    #         |
+    #         | Call web service
+    #         o-call-ws * (diverged from origin)
+    #           |
+    #           | Drop unneeded SQL constraints
+    #           x-drop-constraint
+    #
+    #         master
+    #         |
+    #         | HOTFIX Add the trigger (amended)
+    #         o-hotfix/add-trigger
+    #           |
+    #           | Ignore trailing data (amended)
+    #           o-ignore-trailing
+    #         """,
+    #     )

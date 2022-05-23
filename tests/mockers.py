@@ -78,8 +78,8 @@ class GitRepositorySandbox:
         self.execute(f'git commit -m "{message}"')
         return self
 
-    def add_file_with_content_and_commit(self, file_name: str = 'file_name.txt', file_content: str = 'Some file content', message: str = "Some commit message.") -> "GitRepositorySandbox":
-        self.execute(f"echo {file_content} > {file_name}")
+    def add_file_with_content_and_commit(self, file_name: str = 'file_name.txt', file_content: str = 'Some file content\n', message: str = "Some commit message.") -> "GitRepositorySandbox":
+        self.write_to_file(file_name=file_name, file_content=file_content)
         self.execute(f"git add {file_name}")
         self.execute(f'git commit -m "{message}"')
         return self
@@ -116,6 +116,10 @@ class GitRepositorySandbox:
     def add_git_config_key(self, key: str, value: str) -> "GitRepositorySandbox":
         self.execute(f'git config {key} {value}')
         return self
+
+    def write_to_file(self, file_name: str, file_content: str):
+        with open(file_name, 'w') as f:
+            f.write(file_content)
 
 
 class MockGitHubAPIState:

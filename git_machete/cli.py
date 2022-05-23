@@ -477,8 +477,7 @@ def set_utils_global_variables(
 
 def get_local_branch_short_name_from_arg_or_current_branch(
         branch_from_arg: Optional[AnyBranchName], git_context: GitContext) -> LocalBranchShortName:
-    return LocalBranchShortName.of(branch_from_arg.replace('refs/heads/', '')) if branch_from_arg else None or git_context.get_current_branch()
-
+    return LocalBranchShortName.of(branch_from_arg.replace('refs/heads/', '')) if branch_from_arg else git_context.get_current_branch()
 
 def exit_script(status_code: Optional[int] = None, error: Optional[BaseException] = None) -> None:
     # Single point of exit is useful, because we can mock this method in tests

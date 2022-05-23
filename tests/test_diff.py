@@ -29,7 +29,7 @@ class TestDiff:
                 .add_file_with_content_and_commit(message='master commit1')
                 .push()
                 .new_branch("develop")
-                .add_file_with_content_and_commit(file_name='develop_file_name.txt', file_content='Develop content', message='develop commit')
+                .add_file_with_content_and_commit(file_name='develop_file_name.txt', file_content='Develop content\n', message='develop commit')
                 .push()
         )
 
@@ -44,7 +44,6 @@ index 0000000..a3bd4e5
 
 """  # noqa: E122
         )
-
         # Test `git machete diff` without providing the branch name
         assert_command(["diff"], expected_status_output, strip_indentation=False)
 

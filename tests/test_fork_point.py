@@ -25,21 +25,22 @@ class TestForkPoint:
         """
         fixed_committer_and_author_date = 'Mon 20 Aug 2018 20:19:19 +0200'
         os.environ['GIT_COMMITTER_DATE'] = fixed_committer_and_author_date
+        os.environ['GIT_AUTHOR_DATE'] = fixed_committer_and_author_date
         (
             self.repo_sandbox.new_branch("master")
                 .add_file_with_content_and_commit(message="master commit.")
-                .execute(f'git commit --amend --no-edit --date "{fixed_committer_and_author_date}"')  # change commit author date
                 .new_branch("develop")
                 .add_file_with_content_and_commit(file_content='develop content', message="develop commit.")
-                .execute(f'git commit --amend --no-edit --date "{fixed_committer_and_author_date}"')  # change commit author date
                 .new_branch("feature")
                 .commit('feature commit.')
         )
         launch_command('discover', '-y')
 
         # Test `git machete fork-point` without providing the branch name
-        assert_command(["fork-point"], "2df2fb0e464ce06a8cc1020ed95a732df8362798\n", strip_indentation=False)
+        # hash 67007ed30def3b9b658380b895a9f62b525286e0 corresponds to the commit on develop branch
+        assert_command(["fork-point"], "67007ed30def3b9b658380b895a9f62b525286e0\n", strip_indentation=False)
 
+        # hash 515319fa0ab47f372f6159bcc8ac27b43ee8a0ed corresponds to the commit on master branch
         assert_command(["fork-point", 'develop'], "515319fa0ab47f372f6159bcc8ac27b43ee8a0ed\n", strip_indentation=False)
 
         assert_command(["fork-point", 'refs/heads/develop'], "515319fa0ab47f372f6159bcc8ac27b43ee8a0ed\n", strip_indentation=False)
