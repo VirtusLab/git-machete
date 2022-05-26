@@ -150,28 +150,6 @@ class TestShow:
         )
 
         launch_command("discover", "-y", "--roots=develop,master")
-        expected_result = """ Discovered tree of branch dependencies:
-
-  develop
-  |
-  x-allow-ownership-link (ahead of origin)
-  | |
-  | x-build-chain (untracked)
-  |
-  o-call-ws (ahead of origin)
-    |
-    x-drop-constraint (untracked)
-
-  master
-  |
-  o-hotfix/add-trigger (diverged from origin)
-    |
-    o-ignore-trailing * (diverged from & older than origin)
- Saving the above tree to .git/machete... 
- The existing definition file will be backed up as .git/machete~
-            """
-        print('cmd:\n', launch_command('discover', '-y', '--roots=develop,master'))
-        print('excpected:\n', adapt(expected_result))
         assert_command(
             ["status"],
             """
