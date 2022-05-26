@@ -33,19 +33,17 @@ class TestLog:
         self.repo_sandbox.commit()
         childs_second_commit_hash = get_current_commit_hash()
 
-        log_content_no_branch_name = launch_command('log')
-        log_content_short_branch_name = launch_command('log', 'child')
-        log_content_full_branch_name = launch_command('log', 'refs/heads/child')
+        log_contents = [launch_command('log'), launch_command('log', 'child'), launch_command('log', 'refs/heads/child')]
 
-        assert childs_first_commit_hash in log_content_short_branch_name and log_content_no_branch_name and log_content_full_branch_name, \
+        assert all(childs_first_commit_hash in log_content for log_content in log_contents), \
             ("Verify that oldest commit from current branch is visible when "
              "executing `git machete log`."
              )
-        assert childs_second_commit_hash in log_content_short_branch_name and log_content_no_branch_name and log_content_full_branch_name, \
+        assert all(childs_second_commit_hash in log_content for log_content in log_contents), \
             ("Verify that youngest commit from current branch is visible when "
              "executing `git machete log`."
              )
-        assert roots_only_commit_hash not in log_content_short_branch_name and log_content_no_branch_name and log_content_full_branch_name, \
+        assert all(roots_only_commit_hash not in log_content for log_content in log_contents), \
             ("Verify that commits from parent branch are not visible when "
              "executing `git machete log`."
              )
