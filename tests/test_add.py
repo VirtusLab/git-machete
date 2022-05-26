@@ -1,7 +1,6 @@
 from typing import Any
 
-from .mockers import (GitRepositorySandbox, assert_command, launch_command,
-                      mock_run_cmd)
+from .mockers import (GitRepositorySandbox, assert_command, launch_command, mock_run_cmd)
 
 
 class TestAdd:
@@ -40,10 +39,29 @@ class TestAdd:
 
         self.repo_sandbox.new_branch("bugfix/feature_fail")
 
+        # Test `git machete add` without providing the branch name
         assert_command(
-            ['add', '-y', 'bugfix/feature_fail'],
+            ['add', '-y'],
             'Adding `bugfix/feature_fail` onto the inferred upstream (parent) branch `develop`\n'
             'Added branch `bugfix/feature_fail` onto `develop`\n',
+            strip_indentation=False
+        )
+
+        self.repo_sandbox.check_out('develop')
+        self.repo_sandbox.new_branch("bugfix/some_feature")
+        assert_command(
+            ['add', '-y', 'bugfix/some_feature'],
+            'Adding `bugfix/some_feature` onto the inferred upstream (parent) branch `develop`\n'
+            'Added branch `bugfix/some_feature` onto `develop`\n',
+            strip_indentation=False
+        )
+
+        self.repo_sandbox.check_out('develop')
+        self.repo_sandbox.new_branch("bugfix/another_feature")
+        assert_command(
+            ['add', '-y', 'refs/heads/bugfix/another_feature'],
+            'Adding `bugfix/another_feature` onto the inferred upstream (parent) branch `develop`\n'
+            'Added branch `bugfix/another_feature` onto `develop`\n',
             strip_indentation=False
         )
 

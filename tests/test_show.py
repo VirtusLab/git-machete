@@ -1,7 +1,6 @@
 from typing import Any
 
-from .mockers import (GitRepositorySandbox, assert_command, launch_command,
-                      mock_run_cmd)
+from .mockers import (GitRepositorySandbox, assert_command, launch_command, mock_run_cmd)
 
 
 class TestShow:
@@ -80,7 +79,7 @@ class TestShow:
             o-hotfix/add-trigger (diverged from origin)
               |
               o-ignore-trailing * (diverged from & older than origin)
-            """,
+            """
         )
 
     def test_show(self, mocker: Any) -> None:
@@ -90,6 +89,7 @@ class TestShow:
 
         assert launch_command("show", "up").strip() == "hotfix/add-trigger"
         assert launch_command("show", "up", "call-ws").strip() == "develop"
+        assert launch_command("show", "up", "refs/heads/call-ws").strip() == "develop"
         assert launch_command("show", "current").strip() == "ignore-trailing"
 
     def test_show_up(self, mocker: Any) -> None:

@@ -27,21 +27,6 @@ def popen(command: str) -> str:
         return process.read().strip()
 
 
-def get_current_commit_hash() -> FullCommitHash:
-    """Returns hash of a commit of the current branch head."""
-    return FullCommitHash.of(popen("git rev-parse HEAD"))
-
-
-def mock_run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
-    completed_process: subprocess.CompletedProcess[bytes] = subprocess.run(
-        [cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
-    exit_code: int = completed_process.returncode
-
-    if exit_code != 0:
-        print(dim(f"<exit code: {exit_code}>\n"), file=sys.stderr)
-    return completed_process.returncode
-
-
 class GitRepositorySandbox:
     second_remote_path = mkdtemp()
 
@@ -78,6 +63,12 @@ class GitRepositorySandbox:
         self.execute(f'git commit -m "{message}"')
         return self
 
+    def add_file_with_content_and_commit(self, file_name: str = 'file_name.txt', file_content: str = 'Some file content\n', message: str = "Some commit message.") -> "GitRepositorySandbox":
+        self.write_to_file(file_name=file_name, file_content=file_content)
+        self.execute(f"git add {file_name}")
+        self.execute(f'git commit -m "{message}"')
+        return self
+
     def commit_amend(self, message: str) -> "GitRepositorySandbox":
         self.execute(f'git commit --amend -m "{message}"')
         return self
@@ -109,6 +100,11 @@ class GitRepositorySandbox:
 
     def add_git_config_key(self, key: str, value: str) -> "GitRepositorySandbox":
         self.execute(f'git config {key} {value}')
+        return self
+
+    def write_to_file(self, file_name: str, file_content: str) -> "GitRepositorySandbox":
+        with open(file_name, 'w') as f:
+            f.write(file_content)
         return self
 
 
@@ -339,6 +335,21 @@ def rewrite_definition_file(new_body: str) -> None:
     definition_file_path = git.get_main_git_subpath("machete")
     with open(os.path.join(os.getcwd(), definition_file_path), 'w') as def_file:
         def_file.writelines(new_body)
+
+
+def get_current_commit_hash() -> FullCommitHash:
+    """Returns hash of a commit of the current branch head."""
+    return FullCommitHash.of(popen("git rev-parse HEAD"))
+
+
+def mock_run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
+    completed_process: subprocess.CompletedProcess[bytes] = subprocess.run(
+        [cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
+    exit_code: int = completed_process.returncode
+
+    if exit_code != 0:
+        print(dim(f"<exit code: {exit_code}>\n"), file=sys.stderr)
+    return completed_process.returncode
 
 
 def mock_run_cmd_and_forward_stdout(cmd: str, *args: str, **kwargs: Any) -> int:

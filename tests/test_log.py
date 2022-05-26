@@ -1,7 +1,6 @@
 from typing import Any
 
-from .mockers import (GitRepositorySandbox, get_current_commit_hash,
-                      launch_command, mock_run_cmd_and_forward_stdout)
+from .mockers import (GitRepositorySandbox, get_current_commit_hash, launch_command, mock_run_cmd_and_forward_stdout)
 
 
 class TestLog:
@@ -34,17 +33,17 @@ class TestLog:
         self.repo_sandbox.commit()
         childs_second_commit_hash = get_current_commit_hash()
 
-        log_content = launch_command('log')
+        log_contents = [launch_command('log'), launch_command('log', 'child'), launch_command('log', 'refs/heads/child')]
 
-        assert childs_first_commit_hash in log_content, \
+        assert all(childs_first_commit_hash in log_content for log_content in log_contents), \
             ("Verify that oldest commit from current branch is visible when "
              "executing `git machete log`."
              )
-        assert childs_second_commit_hash in log_content, \
+        assert all(childs_second_commit_hash in log_content for log_content in log_contents), \
             ("Verify that youngest commit from current branch is visible when "
              "executing `git machete log`."
              )
-        assert roots_only_commit_hash not in log_content, \
+        assert all(roots_only_commit_hash not in log_content for log_content in log_contents), \
             ("Verify that commits from parent branch are not visible when "
              "executing `git machete log`."
              )

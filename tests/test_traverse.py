@@ -80,7 +80,7 @@ class TestTraverse:
             o-hotfix/add-trigger (diverged from origin)
               |
               o-ignore-trailing * (diverged from & older than origin)
-            """,
+            """
         )
 
     def test_traverse_no_push(self, mocker: Any) -> None:

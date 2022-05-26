@@ -13,7 +13,7 @@ from git_machete import utils
 from git_machete.client import MacheteClient
 from git_machete.docs import short_docs, long_docs
 from git_machete.exceptions import MacheteException, StopInteraction
-from git_machete.git_operations import AnyRevision, GitContext, LocalBranchShortName, RemoteBranchShortName
+from git_machete.git_operations import AnyBranchName, AnyRevision, GitContext, LocalBranchShortName, RemoteBranchShortName
 from git_machete.utils import fmt, underline, excluding, warn, AnsiEscapeCodes
 
 T = TypeVar('T')
@@ -378,7 +378,7 @@ def update_cli_opts_using_parsed_args(
 
     for opt, arg in vars(parsed_args).items():
         if opt == "branch":
-            cli_opts.opt_branch = LocalBranchShortName.of(arg)
+            cli_opts.opt_branch = AnyBranchName.of(arg)
         elif opt == "checked_out_since":
             cli_opts.opt_checked_out_since = arg
         elif opt == "color":
@@ -475,9 +475,9 @@ def set_utils_global_variables(
     utils.verbose_mode = cli_opts.opt_verbose
 
 
-def get_branch_arg_or_current_branch(
-        cli_opts: git_machete.options.CommandLineOptions, git_context: GitContext) -> LocalBranchShortName:
-    return cli_opts.opt_branch or git_context.get_current_branch()
+def get_local_branch_short_name_from_arg_or_current_branch(
+        branch_from_arg: Optional[AnyBranchName], git_context: GitContext) -> LocalBranchShortName:
+    return LocalBranchShortName.of(branch_from_arg.replace('refs/heads/', '')) if branch_from_arg else git_context.get_current_branch()
 
 
 def exit_script(status_code: Optional[int] = None, error: Optional[BaseException] = None) -> None:
@@ -540,7 +540,7 @@ def launch(orig_args: List[str]) -> None:
         should_perform_interactive_slide_out = MacheteClient.should_perform_interactive_slide_out(cmd)
         if cmd == "add":
             machete_client.read_definition_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
-            branch = get_branch_arg_or_current_branch(cli_opts, git)
+            branch = get_local_branch_short_name_from_arg_or_current_branch(cli_opts.opt_branch, git)
             machete_client.add(
                 branch=branch,
                 opt_onto=cli_opts.opt_onto,
@@ -560,7 +560,7 @@ def launch(orig_args: List[str]) -> None:
             if cli_opts.opt_sync_github_prs:
                 machete_client.sync_annotations_to_github_prs()
             else:
-                branch = cli_opts.opt_branch or git.get_current_branch()
+                branch = get_local_branch_short_name_from_arg_or_current_branch(cli_opts.opt_branch, git)
                 machete_client.expect_in_managed_branches(branch)
                 if parsed_cli.annotation_text:
                     machete_client.annotate(branch, parsed_cli.annotation_text)
@@ -578,7 +578,8 @@ def launch(orig_args: List[str]) -> None:
             machete_client.delete_unmanaged(opt_yes=cli_opts.opt_yes)
         elif cmd in {"diff", alias_by_command["diff"]}:
             machete_client.read_definition_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
-            machete_client.diff(branch=parsed_cli.branch, opt_stat=cli_opts.opt_stat)  # passing None if not specified
+            machete_client.diff(branch=get_local_branch_short_name_from_arg_or_current_branch(cli_opts.opt_branch, git),
+                                opt_stat=cli_opts.opt_stat)  # passing None if not specified
         elif cmd == "discover":
             # No need to read definition file.
             machete_client.discover_tree(
@@ -594,7 +595,7 @@ def launch(orig_args: List[str]) -> None:
             print(os.path.abspath(machete_client.definition_file_path))
         elif cmd == "fork-point":
             machete_client.read_definition_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
-            branch = get_branch_arg_or_current_branch(cli_opts, git)
+            branch = get_local_branch_short_name_from_arg_or_current_branch(cli_opts.opt_branch, git)
             if cli_opts.opt_inferred:
                 print(machete_client.fork_point(
                     branch=branch,
@@ -670,7 +671,7 @@ def launch(orig_args: List[str]) -> None:
                 machete_client.delete_untracked(opt_yes=cli_opts.opt_yes)
         elif cmd == "is-managed":
             machete_client.read_definition_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
-            branch = get_branch_arg_or_current_branch(cli_opts, git)
+            branch = get_local_branch_short_name_from_arg_or_current_branch(cli_opts.opt_branch, git)
             if branch is None or branch not in machete_client.managed_branches:
                 exit_script(1)
         elif cmd == "list":
@@ -714,7 +715,7 @@ def launch(orig_args: List[str]) -> None:
                 print("\n".join(res))
         elif cmd in {"log", alias_by_command["log"]}:
             machete_client.read_definition_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
-            branch = get_branch_arg_or_current_branch(cli_opts, git)
+            branch = get_local_branch_short_name_from_arg_or_current_branch(cli_opts.opt_branch, git)
             machete_client.log(branch)
         elif cmd == "reapply":
             machete_client.read_definition_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
@@ -732,7 +733,7 @@ def launch(orig_args: List[str]) -> None:
                 cli_opts.opt_no_interactive_rebase)
         elif cmd == "show":
             direction = parsed_cli.direction
-            branch = get_branch_arg_or_current_branch(cli_opts, git)
+            branch = get_local_branch_short_name_from_arg_or_current_branch(cli_opts.opt_branch, git)
             if direction == "current":
                 if 'branch' in parsed_cli:
                     raise MacheteException(

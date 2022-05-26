@@ -1,5 +1,10 @@
 # Release notes
 
+## New in git-machete 3.10.1
+
+- fixed: `git machete diff` doesn't crash when supplied with the short branch name (`develop`)
+- fixed: `git machete {log, add, anno, fork-point, is-managed, show}` doesn't crash when supplied with the full branch name (`refs/heads/develop`)
+
 ## New in git-machete 3.10.0
 
 - added: boolean git config key `machete.status.extraSpaceBeforeBranchName` that enable configurable rendering of `status` command
