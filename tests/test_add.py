@@ -23,7 +23,7 @@ class TestAdd:
         """
         Verify behaviour of a 'git machete add' command.
         """
-        # mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
 
         (
             self.repo_sandbox.new_branch("master")

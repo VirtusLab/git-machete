@@ -27,21 +27,6 @@ def popen(command: str) -> str:
         return process.read().strip()
 
 
-def get_current_commit_hash() -> FullCommitHash:
-    """Returns hash of a commit of the current branch head."""
-    return FullCommitHash.of(popen("git rev-parse HEAD"))
-
-
-def mock_run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
-    completed_process: subprocess.CompletedProcess[bytes] = subprocess.run(
-        [cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
-    exit_code: int = completed_process.returncode
-
-    if exit_code != 0:
-        print(dim(f"<exit code: {exit_code}>\n"), file=sys.stderr)
-    return completed_process.returncode
-
-
 class GitRepositorySandbox:
     second_remote_path = mkdtemp()
 
@@ -117,10 +102,10 @@ class GitRepositorySandbox:
         self.execute(f'git config {key} {value}')
         return self
 
-    def write_to_file(self, file_name: str, file_content: str):
+    def write_to_file(self, file_name: str, file_content: str) -> "GitRepositorySandbox":
         with open(file_name, 'w') as f:
             f.write(file_content)
-
+        return self
 
 class MockGitHubAPIState:
     def __init__(self, pulls: List[Dict[str, Any]], issues: List[Dict[str, Any]] = None) -> None:
@@ -349,6 +334,21 @@ def rewrite_definition_file(new_body: str) -> None:
     definition_file_path = git.get_main_git_subpath("machete")
     with open(os.path.join(os.getcwd(), definition_file_path), 'w') as def_file:
         def_file.writelines(new_body)
+
+
+def get_current_commit_hash() -> FullCommitHash:
+    """Returns hash of a commit of the current branch head."""
+    return FullCommitHash.of(popen("git rev-parse HEAD"))
+
+
+def mock_run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
+    completed_process: subprocess.CompletedProcess[bytes] = subprocess.run(
+        [cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
+    exit_code: int = completed_process.returncode
+
+    if exit_code != 0:
+        print(dim(f"<exit code: {exit_code}>\n"), file=sys.stderr)
+    return completed_process.returncode
 
 
 def mock_run_cmd_and_forward_stdout(cmd: str, *args: str, **kwargs: Any) -> int:

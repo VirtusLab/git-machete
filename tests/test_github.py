@@ -199,7 +199,7 @@ class TestGithub:
             o-call-ws  PR #31 (github_user) (ahead of origin)
               |
               x-drop-constraint (untracked)
-            """,
+            """
         )
 
         # Test anno-prs using custom remote URL provided by git config keys
