@@ -26,17 +26,19 @@ class TestForkPoint:
         fixed_committer_and_author_date = 'Mon 20 Aug 2018 20:19:19 +0200'
         os.environ['GIT_COMMITTER_DATE'] = fixed_committer_and_author_date
         os.environ['GIT_AUTHOR_DATE'] = fixed_committer_and_author_date
-        (
-            self.repo_sandbox.new_branch("master")
-                .add_file_with_content_and_commit(message="master commit.")
-                .new_branch("develop")
-                .add_file_with_content_and_commit(file_content='develop content', message="develop commit.")
-                .new_branch("feature")
-                .commit('feature commit.')
-        )
-        # Clean-up environment variables
-        os.environ.pop('GIT_COMMITTER_DATE', None)
-        os.environ.pop('GIT_AUTHOR_DATE', None)
+        try:
+            (
+                self.repo_sandbox.new_branch("master")
+                    .add_file_with_content_and_commit(message="master commit.")
+                    .new_branch("develop")
+                    .add_file_with_content_and_commit(file_content='develop content', message="develop commit.")
+                    .new_branch("feature")
+                    .commit('feature commit.')
+            )
+        finally:
+            # Clean-up environment variables
+            os.environ.pop('GIT_COMMITTER_DATE', None)
+            os.environ.pop('GIT_AUTHOR_DATE', None)
 
         launch_command('discover', '-y')
 
