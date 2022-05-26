@@ -107,6 +107,7 @@ class GitRepositorySandbox:
             f.write(file_content)
         return self
 
+
 class MockGitHubAPIState:
     def __init__(self, pulls: List[Dict[str, Any]], issues: List[Dict[str, Any]] = None) -> None:
         self.pulls: List[Dict[str, Any]] = pulls

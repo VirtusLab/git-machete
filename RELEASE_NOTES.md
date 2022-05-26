@@ -2,7 +2,8 @@
 
 ## New in git-machete 3.10.1
 
-- added: `git machete {diff, log, add, anno, fork-point, is-managed, show}` commands now support both short (`develop`) and full (`refs/heads/develop`) branch names
+- fixed: `git machete diff` doesn't crash when supplied with the short branch name (`develop`)
+- fixed: `git machete {log, add, anno, fork-point, is-managed, show}` doesn't crash when supplied with the full branch name (`refs/heads/develop`)
 
 ## New in git-machete 3.10.0
 

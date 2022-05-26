@@ -34,6 +34,10 @@ class TestForkPoint:
                 .new_branch("feature")
                 .commit('feature commit.')
         )
+        # Clean-up environment variables
+        os.environ.pop('GIT_COMMITTER_DATE', None)
+        os.environ.pop('GIT_AUTHOR_DATE', None)
+
         launch_command('discover', '-y')
 
         # Test `git machete fork-point` without providing the branch name
