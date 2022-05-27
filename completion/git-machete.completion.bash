@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+__gitcomp_empty ()
+{
+	COMPREPLY=('')
+}
+
 _git_machete() {
   local cmds="add advance anno clean d delete-unmanaged diff discover e edit file fork-point g github go help is-managed l list log reapply s show slide-out squash status traverse update version"
   local help_topics="$cmds format hooks"
@@ -32,7 +37,7 @@ _git_machete() {
 
   case $cur in
     --branch=*|--onto=*) __gitcomp_nl "$(git machete list managed 2>/dev/null)" "" "${cur##--*=}" ;;
-    --checked-out-since=*|--by=*) __gitcomp "" ;;
+    --checked-out-since=*|--by=*) __gitcomp_empty "" "${cur##--*=}";;
     --color=*) __gitcomp "$opt_color_args" "" "${cur##--color=}" ;;
     --down-fork-point=*|--fork-point=*|--override-to=*) __gitcomp "$(__git_refs)" "" "${cur##--*=}" ;;
     --return-to=*) __gitcomp "$opt_return_to_args" "" "${cur##--return-to=}" ;;
