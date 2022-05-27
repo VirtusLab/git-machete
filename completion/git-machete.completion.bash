@@ -2,7 +2,7 @@
 
 __gitcomp_empty ()
 {
-	COMPREPLY=('')
+  COMPREPLY=('')
 }
 
 _git_machete() {
