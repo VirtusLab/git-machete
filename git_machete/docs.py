@@ -1,5 +1,5 @@
 import textwrap
-from typing import Dict
+from typing import Dict, List
 from git_machete.constants import DISCOVER_DEFAULT_FRESH_BRANCH_COUNT
 
 short_docs: Dict[str, str] = {
@@ -31,6 +31,8 @@ short_docs: Dict[str, str] = {
     "update": "Sync the current branch with its upstream (parent) branch via rebase or merge",
     "version": "Display the version and exit"
 }
+
+help_topics: List[str] = ['config']
 
 github_api_access = '''To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR,
 even in case of public repositories), a GitHub API token with `repo` scope is required, see https://github.com/settings/tokens.

@@ -2,7 +2,7 @@ from typing import Any
 
 import pytest
 
-from git_machete.docs import long_docs
+from git_machete.docs import long_docs, help_topics
 
 from .mockers import GitRepositorySandbox, launch_command, mock_run_cmd
 
@@ -42,8 +42,9 @@ class TestHelp:
                 f"Verify that `git machete help {command}` causes SystemExit" \
                 f" with {expected_exit_code} exit code."
 
-            with pytest.raises(SystemExit) as e:
-                launch_command(command, "--help")
-            assert expected_exit_code == e.value.code, \
-                f"Verify that `git machete {command} --help` causes " \
-                f"SystemExit with {expected_exit_code} exit code."
+            if command not in help_topics:
+                with pytest.raises(SystemExit) as e:
+                    launch_command(command, "--help")
+                assert expected_exit_code == e.value.code, \
+                    f"Verify that `git machete {command} --help` causes " \
+                    f"SystemExit with {expected_exit_code} exit code."
