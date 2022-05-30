@@ -94,7 +94,21 @@ def debug(msg: Optional[str] = None) -> None:
     if debug_mode:
         function_name = bold(inspect.stack()[1].function)
         args, _, _, values = inspect.getargvalues(inspect.stack()[1].frame)
-        function_args = bold(f"({', '.join([arg+'='+str(values[arg]) if arg != 'self' else 'self' for arg in args])})")
+
+        redact_arg_by_name = ['token']
+        for arg in redact_arg_by_name:
+            values[arg] = '***'
+
+        redact_arg_by_value = ['ghp_']
+        for arg, value in values.items():
+            if value and isinstance(value, str):
+                if any(value.startswith(arg_) for arg_ in redact_arg_by_value):
+                    values[arg] = '***'
+
+        excluded_args = {'self'}
+        allowed_args = [arg for arg in args if arg not in excluded_args]
+        function_args = bold(f"({', '.join([arg+'='+str(values[arg]) for arg in allowed_args])})")
+
         if msg is None:
             print(f"{function_name}{function_args}", file=sys.stderr)
         else:
