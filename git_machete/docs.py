@@ -205,31 +205,31 @@ long_docs: Dict[str, str] = {
     "config": f"""
         <b>Config keys: </b>
         - `machete.github.(remote,organization,repository)`:
-        
+
           When executing `git machete github <subcommand>` command, {textwrap.indent(github_config_keys, "          ").strip()}
-            
+
         - `machete.overrideForkPoint.<branch>.(to,whileDescendantOf)`
-        
+
           Executing `git machete fork-point --override-to=<revision> [<branch>]`, sets up a fork point override for <branch>.
           The override data is stored under `machete.overrideForkPoint.<branch>.to` and `machete.overrideForkPoint.<branch>.whileDescendantOf` git config keys.
 
         - `machete.status.extraSpaceBeforeBranchName`
-        
+
           {textwrap.indent(status_extraSpaceBeforeBranchName_config_key, "          ").strip()}
-        
+
         - `machete.worktree.useTopLevelMacheteFile`
-        
+
           # to-do
-          
+
         <b>Environment variables: </b>
-        
+
         - `GIT_MACHETE_REBASE_OPTS`
-        
+
           Used to pass extra options to the underlying `git rebase` invocation (called by the executed command, such as: `reapply`, `slide-out`, `traverse`, `update`
           Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete update`
-        
+
         - `GITHUB_TOKEN`
-        
+
           Used to store GitHub API token.
     """,
     "delete-unmanaged": """
