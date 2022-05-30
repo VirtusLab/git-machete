@@ -219,7 +219,7 @@ long_docs: Dict[str, str] = {
         
         - `machete.worktree.useTopLevelMacheteFile`
         
-          # TODO
+          # to-do
           
         <b>Environment variables: </b>
         
