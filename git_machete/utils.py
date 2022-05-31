@@ -95,7 +95,7 @@ def debug(msg: Optional[str] = None) -> None:
         function_name = bold(inspect.stack()[1].function)
         args, _, _, values = inspect.getargvalues(inspect.stack()[1].frame)
 
-        redact_arg_by_name = ['token']
+        redact_arg_by_name = ['access_token', 'password', 'secret', 'token']
         for arg in redact_arg_by_name:
             values[arg] = '***'
 
