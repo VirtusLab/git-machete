@@ -19,6 +19,23 @@ from git_machete import cli
 from git_machete.git_operations import FullCommitHash, GitContext
 from git_machete.utils import dim
 
+"""
+Usage: mockers.py
+
+This module provides mocking classes and functions used to create pytest based tests.
+
+Tips on when and why to use mocking functions:
+1. `mock_run_cmd()`
+    * used to mock `utils.run_cmd` in order to redirect command's stdout and stderr out of sys.stdout
+    * used to hide git command outputs so it's easier to assert correctness of the `git machete` command output
+    * used in tests of these git machete commands: `add`, `advance`, `clean`, `github`, `go`, `help`, 'show`, `slide-out`, `traverse`, `update`
+
+2. `mock_run_cmd_and_forward_stdout()`
+    * used to mock `utils.run_cmd` in order to capture command's stdout and stderr
+    * used to capture git command outputs that would otherwise be lost, once the process that launched them finishes
+    * used in tests of these git machete commands: `diff`, `log`, `slide-out`
+"""
+
 git: GitContext = GitContext()
 
 
@@ -343,6 +360,7 @@ def get_current_commit_hash() -> FullCommitHash:
 
 
 def mock_run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
+    """Execute command in the new subprocess but redirect the stdout and stderr together to the PIPE's stdout"""
     completed_process: subprocess.CompletedProcess[bytes] = subprocess.run(
         [cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
     exit_code: int = completed_process.returncode
@@ -353,6 +371,15 @@ def mock_run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
 
 
 def mock_run_cmd_and_forward_stdout(cmd: str, *args: str, **kwargs: Any) -> int:
+    """Execute command in the new subprocess but capture together process's stdout and stderr and load it into sys.stdout via
+    `print(completed_process.stdout.decode('utf-8'))`. This sys.stdout is later being redirected via the `redirect_stdout` in
+    `launch_command()` and gets returned by this function. Below is shown the chain of function calls that presents this mechanism:
+    1. `launch_command()` gets executed in the test case and evokes `cli.launch()`.
+    2. `cli.launch()` executes `utils.run_cmd()` but `utils.run_cmd()` is being mocked by `mock_run_cmd_and_forward_stdout()`
+    so the command's stdout and stderr is loaded into sys.stdout.
+    3. After command execution we go back through `cli.launch()`(2) to `launch_command()`(1) which redirects just updated sys.stdout
+    into variable and returns it.
+    """
     completed_process: subprocess.CompletedProcess[bytes] = subprocess.run(
         [cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, ** kwargs)
     print(completed_process.stdout.decode('utf-8'))
