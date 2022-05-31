@@ -107,14 +107,14 @@ def debug(msg: Optional[str] = None) -> None:
 
         excluded_args = {'self'}
         allowed_args = [arg for arg in args if arg not in excluded_args]
-        args_and_values = [arg + '=' + str(values[arg]) for arg in allowed_args]
-        args_and_values = ', '.join(args_and_values)
-        args_and_values = bold(f'({args_and_values})')
+        args_and_values_list = [arg + '=' + str(values[arg]) for arg in allowed_args]
+        args_and_values_str = ', '.join(args_and_values_list)
+        args_and_values_bold_str = bold(f'({args_and_values_str})')
 
         if msg is None:
-            print(f"{function_name}{args_and_values}", file=sys.stderr)
+            print(f"{function_name}{args_and_values_bold_str}", file=sys.stderr)
         else:
-            print(f"{function_name}{args_and_values}: {dim(msg)}", file=sys.stderr)
+            print(f"{function_name}{args_and_values_bold_str}: {dim(msg)}", file=sys.stderr)
 
 
 def run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
