@@ -1,5 +1,5 @@
 import textwrap
-from typing import Dict, List
+from typing import Dict
 from git_machete.constants import DISCOVER_DEFAULT_FRESH_BRANCH_COUNT
 
 short_docs: Dict[str, str] = {
