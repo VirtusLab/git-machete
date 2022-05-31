@@ -95,18 +95,15 @@ def debug(msg: Optional[str] = None) -> None:
         function_name = bold(inspect.stack()[1].function)
         args, _, _, values = inspect.getargvalues(inspect.stack()[1].frame)
 
-        args_to_be_redacted_by_name = {'access_token', 'password', 'secret', 'token'}
-        for arg in args_to_be_redacted_by_name:
-            if arg in values.keys():
-                values[arg] = '***'
-
-        args_to_be_redacted_by_value = ['ghp_', 'gho_', 'ghu_', 'ghs_', 'ghr_']  # https://github.blog/2021-04-05-behind-githubs-new-authentication-token-formats/
+        args_to_be_redacted = {'access_token', 'password', 'secret', 'token'}
+        # https://github.blog/2021-04-05-behind-githubs-new-authentication-token-formats/
+        values_to_be_redacted = ['ghp_', 'gho_', 'ghu_', 'ghs_', 'ghr_']
         for arg, value in values.items():
-            if any(arg_ in str(value) for arg_ in args_to_be_redacted_by_value):
+            if arg in args_to_be_redacted or any(value_ in str(value) for value_ in values_to_be_redacted):
                 values[arg] = '***'
 
         excluded_args = {'self'}
-        allowed_args = [arg for arg in args if arg not in excluded_args]
+        allowed_args = excluding(args, excluded_args)
         args_and_values_list = [arg + '=' + str(values[arg]) for arg in allowed_args]
         args_and_values_str = ', '.join(args_and_values_list)
         args_and_values_bold_str = bold(f'({args_and_values_str})')
