@@ -94,11 +94,24 @@ def debug(msg: Optional[str] = None) -> None:
     if debug_mode:
         function_name = bold(inspect.stack()[1].function)
         args, _, _, values = inspect.getargvalues(inspect.stack()[1].frame)
-        function_args = bold(f"({', '.join([arg+'='+str(values[arg]) if arg != 'self' else 'self' for arg in args])})")
+
+        args_to_be_redacted = {'access_token', 'password', 'secret', 'token'}
+        # https://github.blog/2021-04-05-behind-githubs-new-authentication-token-formats/
+        values_to_be_redacted = ['ghp_', 'gho_', 'ghu_', 'ghs_', 'ghr_']
+        for arg, value in values.items():
+            if arg in args_to_be_redacted or any(value_ in str(value) for value_ in values_to_be_redacted):
+                values[arg] = '***'
+
+        excluded_args = {'self'}
+        allowed_args = excluding(args, excluded_args)
+        args_and_values_list = [arg + '=' + str(values[arg]) for arg in allowed_args]
+        args_and_values_str = ', '.join(args_and_values_list)
+        args_and_values_bold_str = bold(f'({args_and_values_str})')
+
         if msg is None:
-            print(f"{function_name}{function_args}", file=sys.stderr)
+            print(f"{function_name}{args_and_values_bold_str}", file=sys.stderr)
         else:
-            print(f"{function_name}{function_args}: {dim(msg)}", file=sys.stderr)
+            print(f"{function_name}{args_and_values_bold_str}: {dim(msg)}", file=sys.stderr)
 
 
 def run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
