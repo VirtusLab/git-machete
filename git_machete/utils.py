@@ -95,15 +95,14 @@ def debug(msg: Optional[str] = None) -> None:
         function_name = bold(inspect.stack()[1].function)
         args, _, _, values = inspect.getargvalues(inspect.stack()[1].frame)
 
-        redact_arg_by_name = ['access_token', 'password', 'secret', 'token']
+        redact_arg_by_name = {'access_token', 'password', 'secret', 'token'}
         for arg in redact_arg_by_name:
             values[arg] = '***'
 
-        redact_arg_by_value = ['ghp_']
+        redact_arg_by_value = ['ghp_', 'gho_', 'ghu_', 'ghs_', 'ghr_']
         for arg, value in values.items():
-            if value and isinstance(value, str):
-                if any(value.startswith(arg_) for arg_ in redact_arg_by_value):
-                    values[arg] = '***'
+            if any(arg_ in str(value) for arg_ in redact_arg_by_value):
+                values[arg] = '***'
 
         excluded_args = {'self'}
         allowed_args = [arg for arg in args if arg not in excluded_args]
