@@ -36,7 +36,7 @@ _git_machete() {
 
   case $cur in
     --branch=*|--onto=*) __gitcomp_nl "$(git machete list managed 2>/dev/null)" "" "${cur##--*=}" ;;
-    --checked-out-since=*|--by=*) __gitcomp_empty "" "${cur##--*=}";;
+    --by=*|--checked-out-since=*) __gitcomp_empty "" "${cur##--*=}";;
     --color=*) __gitcomp "$opt_color_args" "" "${cur##--color=}" ;;
     --down-fork-point=*|--fork-point=*|--override-to=*) __gitcomp "$(__git_refs)" "" "${cur##--*=}" ;;
     --return-to=*) __gitcomp "$opt_return_to_args" "" "${cur##--return-to=}" ;;
