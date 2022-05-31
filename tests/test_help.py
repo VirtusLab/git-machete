@@ -27,7 +27,7 @@ class TestHelp:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
 
         expected_exit_code = None
-        help_topics: List[str] = ['config']
+        help_topics: List[str] = ['config', 'format', 'hooks']
 
         with pytest.raises(SystemExit) as e:
             launch_command("help")
