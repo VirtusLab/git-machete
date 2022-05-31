@@ -32,8 +32,6 @@ short_docs: Dict[str, str] = {
     "version": "Display the version and exit"
 }
 
-help_topics: List[str] = ['config']
-
 github_api_access = '''To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR,
 even in case of public repositories), a GitHub API token with `repo` scope is required, see https://github.com/settings/tokens.
 This will be resolved from the first of:
@@ -226,11 +224,15 @@ long_docs: Dict[str, str] = {
         - `GIT_MACHETE_REBASE_OPTS`
 
           Used to pass extra options to the underlying `git rebase` invocation (called by the executed command, such as: `reapply`, `slide-out`, `traverse`, `update`
-          Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete update`
+          Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete update`.
 
         - `GITHUB_TOKEN`
 
           Used to store GitHub API token.
+          
+        - `GIT_MACHETE_EDITOR`
+        
+          Used to store editor name with witch you edit the definition file manually via `git machete e[dit]`.
     """,
     "delete-unmanaged": """
         <b>Usage: git machete delete-unmanaged [-y|--yes]</b>

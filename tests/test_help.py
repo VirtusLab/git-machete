@@ -1,8 +1,8 @@
-from typing import Any
+from typing import Any, List
 
 import pytest
 
-from git_machete.docs import long_docs, help_topics
+from git_machete.docs import long_docs
 
 from .mockers import GitRepositorySandbox, launch_command, mock_run_cmd
 
@@ -27,6 +27,7 @@ class TestHelp:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
 
         expected_exit_code = None
+        help_topics: List[str] = ['config']
 
         with pytest.raises(SystemExit) as e:
             launch_command("help")
