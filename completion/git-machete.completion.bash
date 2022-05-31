@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-__gitcomp_empty ()
-{
+__gitcomp_empty() {
   COMPREPLY=('')
 }
 
