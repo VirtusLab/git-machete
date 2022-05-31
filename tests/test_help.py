@@ -49,3 +49,6 @@ class TestHelp:
                 assert expected_exit_code == e.value.code, \
                     f"Verify that `git machete {command} --help` causes " \
                     f"SystemExit with {expected_exit_code} exit code."
+            else:
+                with pytest.raises(SystemExit) as e:
+                    launch_command(command, "--help")
