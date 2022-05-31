@@ -17,7 +17,7 @@ If the bash completion doesn't work:
         && . $(brew --prefix)/etc/bash_completion.d/git-completion.bash
       [ -f "$(brew --prefix)/etc/bash_completion.d/git-machete.completion.bash" ] 
         && . $(brew --prefix)/etc/bash_completion.d/git-machete.completion.bash
-  }
+    }
 ```
 
 
