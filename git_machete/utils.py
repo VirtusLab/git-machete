@@ -95,23 +95,26 @@ def debug(msg: Optional[str] = None) -> None:
         function_name = bold(inspect.stack()[1].function)
         args, _, _, values = inspect.getargvalues(inspect.stack()[1].frame)
 
-        redact_arg_by_name = {'access_token', 'password', 'secret', 'token'}
-        for arg in redact_arg_by_name:
-            values[arg] = '***'
+        args_to_be_redacted_by_name = {'access_token', 'password', 'secret', 'token'}
+        for arg in args_to_be_redacted_by_name:
+            if arg in values.keys():
+                values[arg] = '***'
 
-        redact_arg_by_value = ['ghp_', 'gho_', 'ghu_', 'ghs_', 'ghr_']
+        args_to_be_redacted_by_value = ['ghp_', 'gho_', 'ghu_', 'ghs_', 'ghr_']  # https://github.blog/2021-04-05-behind-githubs-new-authentication-token-formats/
         for arg, value in values.items():
-            if any(arg_ in str(value) for arg_ in redact_arg_by_value):
+            if any(arg_ in str(value) for arg_ in args_to_be_redacted_by_value):
                 values[arg] = '***'
 
         excluded_args = {'self'}
         allowed_args = [arg for arg in args if arg not in excluded_args]
-        function_args = bold(f"({', '.join([arg+'='+str(values[arg]) for arg in allowed_args])})")
+        args_and_values = [arg + '=' + str(values[arg]) for arg in allowed_args]
+        args_and_values = ', '.join(args_and_values)
+        args_and_values = bold(f'({args_and_values})')
 
         if msg is None:
-            print(f"{function_name}{function_args}", file=sys.stderr)
+            print(f"{function_name}{args_and_values}", file=sys.stderr)
         else:
-            print(f"{function_name}{function_args}: {dim(msg)}", file=sys.stderr)
+            print(f"{function_name}{args_and_values}: {dim(msg)}", file=sys.stderr)
 
 
 def run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
