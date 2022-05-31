@@ -221,6 +221,10 @@ long_docs: Dict[str, str] = {
 
         <b>Environment variables: </b>
 
+        - `GIT_MACHETE_EDITOR`
+
+          Used to store editor name with which you edit the definition file manually via `git machete e[dit]`.
+
         - `GIT_MACHETE_REBASE_OPTS`
 
           Used to pass extra options to the underlying `git rebase` invocation (called by the executed command, such as: `reapply`, `slide-out`, `traverse`, `update`
@@ -229,10 +233,6 @@ long_docs: Dict[str, str] = {
         - `GITHUB_TOKEN`
 
           Used to store GitHub API token.
-          
-        - `GIT_MACHETE_EDITOR`
-        
-          Used to store editor name with witch you edit the definition file manually via `git machete e[dit]`.
     """,
     "delete-unmanaged": """
         <b>Usage: git machete delete-unmanaged [-y|--yes]</b>

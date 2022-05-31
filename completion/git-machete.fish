@@ -6,7 +6,7 @@
 # - https://gitter.im/fish-shell/fish-shell?at=6176a4bacd4972068b6a0804
 complete --do-complete="git "
 
-set -l __mcht_help_topics format hooks config
+set -l __mcht_help_topics config format hooks
 set -l __mcht_commands_long add advance anno delete-unmanaged diff discover edit file fork-point \
   github go help is-managed list log reapply show slide-out squash status traverse update version
 set -l __mcht_commands_short d e g l s

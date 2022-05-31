@@ -190,9 +190,9 @@ __git_machete_help_topics() {
   local topics
   set -A topics ${__git_machete_cmds}
   topics+=(
+    'config:Docs for the configuration keys and environment variables'
     'format:Format of the .git/machete definition file'
     'hooks:Display docs for the extra hooks added by git machete'
-    'config:Docs for the configuration keys and environment variables'
   )
   _describe -t topics 'git machete help topic' topics "$@"
 }
