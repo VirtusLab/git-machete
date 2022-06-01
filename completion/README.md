@@ -6,6 +6,20 @@ Make sure you have bash completion installed (with `brew install bash-completion
 
 `brew install git-machete` automatically installs bash completion files for `git machete`.
 
+If the bash completion doesn't work:
+1. Install git bash completions with `brew install git bash-completion`
+2. Add the below code to `~/.bash_profile` and reload the shell
+```shell script
+[ -f /usr/local/etc/bash_completion ] && . /usr/local/etc/bash_completion \
+  || # if not found in /usr/local/etc, try the brew --prefix location
+    {
+      [ -f "$(brew --prefix)/etc/bash_completion.d/git-completion.bash" ] \
+        && . $(brew --prefix)/etc/bash_completion.d/git-completion.bash
+      [ -f "$(brew --prefix)/etc/bash_completion.d/git-machete.completion.bash" ] \
+        && . $(brew --prefix)/etc/bash_completion.d/git-machete.completion.bash
+    }
+```
+
 
 ### Linux
 
