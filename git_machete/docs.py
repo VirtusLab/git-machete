@@ -58,7 +58,7 @@ To do this, run `git config --local --edit` and add the following section:
 status_extraSpaceBeforeBranchName_config_key = '''To make it easier to select branch name from the `git machete status` output on certain terminals (e.g. Alacritty), you can add an extra
 space between └─ and branch name by setting `git config machete.status.extraSpaceBeforeBranchName true`.
 
-For example, by default it's:
+For example, by default the status is displayed as:
     develop
     │
     ├─feature_branch1
@@ -202,13 +202,13 @@ long_docs: Dict[str, str] = {
     """,
     "config": f"""
         <b>Config keys: </b>
-        - `machete.github.(remote,organization,repository)`:
+        - `machete.github.{{remote,organization,repository}}`:
 
           When executing `git machete github <subcommand>` command, {textwrap.indent(github_config_keys, "          ").strip()}
 
-        - `machete.overrideForkPoint.<branch>.(to,whileDescendantOf)`
+        - `machete.overrideForkPoint.<branch>.{{to,whileDescendantOf}}`
 
-          Executing `git machete fork-point --override-to=<revision> [<branch>]`, sets up a fork point override for <branch>.
+          Executing `git machete fork-point --override-to=<revision> [<branch>]` sets up a fork point override for <branch>.
           The override data is stored under `machete.overrideForkPoint.<branch>.to` and `machete.overrideForkPoint.<branch>.whileDescendantOf` git config keys.
 
         - `machete.status.extraSpaceBeforeBranchName`
@@ -217,22 +217,22 @@ long_docs: Dict[str, str] = {
 
         - `machete.worktree.useTopLevelMacheteFile`
 
-          # to-do
+            # TODO (#517): per-worktree machete option
 
         <b>Environment variables: </b>
 
         - `GIT_MACHETE_EDITOR`
 
-          Used to store editor name with which you edit the definition file manually via `git machete e[dit]`.
+          Name of the editor used by `git machete e[dit]`, example: `vim` or `nano`.
 
         - `GIT_MACHETE_REBASE_OPTS`
 
-          Used to pass extra options to the underlying `git rebase` invocation (called by the executed command, such as: `reapply`, `slide-out`, `traverse`, `update`
+          Used to pass extra options to the underlying `git rebase` invocation (called by the executed command, such as: `reapply`, `slide-out`, `traverse`, `update`)
           Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete update`.
 
         - `GITHUB_TOKEN`
 
-          Used to store GitHub API token.
+          Used to store GitHub API token. Used by commands such as: `anno`, `clean`, `github`.
     """,
     "delete-unmanaged": """
         <b>Usage: git machete delete-unmanaged [-y|--yes]</b>
