@@ -180,7 +180,7 @@ def __fire_github_api_request(method: str, path: str, token: Optional[str], requ
                                  'Visit `https://github.com/settings/tokens` to generate a new one.')
         elif err.code == http.HTTPStatus.NOT_FOUND:
             raise MacheteException(
-                f'`{method} {url}` request ended up in 404 response from GitHub. A valid GitHub API token is required.'
+                f'`{method} {url}` request ended up in 404 response from GitHub. A valid GitHub API token is required.\n'
                 f'Provide a GitHub API token with `repo` access via one of the: {get_github_token_possible_providers()} '
                 'Visit `https://github.com/settings/tokens` to generate a new one.')  # TODO (#164): make dedicated exception here
         else:
