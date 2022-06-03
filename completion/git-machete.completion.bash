@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 
-__gitcomp_empty() {
-  COMPREPLY=('')
-}
-
 _git_machete() {
   local cmds="add advance anno clean d delete-unmanaged diff discover e edit file fork-point g github go help is-managed l list log reapply s show slide-out squash status traverse update version"
   local help_topics="$cmds format hooks"
@@ -36,7 +32,7 @@ _git_machete() {
 
   case $cur in
     --branch=*|--onto=*) __gitcomp_nl "$(git machete list managed 2>/dev/null)" "" "${cur##--*=}" ;;
-    --by=*|--checked-out-since=*) __gitcomp_empty;;
+    --by=*|--checked-out-since=*) COMPREPLY=('');;
     --color=*) __gitcomp "$opt_color_args" "" "${cur##--color=}" ;;
     --down-fork-point=*|--fork-point=*|--override-to=*) __gitcomp "$(__git_refs)" "" "${cur##--*=}" ;;
     --return-to=*) __gitcomp "$opt_return_to_args" "" "${cur##--return-to=}" ;;
@@ -79,7 +75,7 @@ _git_machete() {
         local prev=${COMP_WORDS[COMP_CWORD-1]}
         case $prev in
           -b|--branch|-o|--onto) __gitcomp_nl "$(git machete list managed 2>/dev/null)" ;;
-          -C|--checked-out-since) __gitcomp "" ;;
+          --by=*|-C|--checked-out-since=*) COMPREPLY=('');;
           --color) __gitcomp "$opt_color_args" ;;
           -d|--down-fork-point|-f|--fork-point|--override-to) __gitcomp "$(__git_refs)" ;;
           # TODO (#25): We don't complete --help since it's going to be captured by git anyway
