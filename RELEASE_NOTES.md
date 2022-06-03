@@ -2,7 +2,7 @@
 
 ## New in git-machete 3.11.0
 
-- added: boolean git config key `machete.worktree.useTopLevelMacheteFile` that enable you to have per-worktree machete definition file
+- added: boolean git config key `machete.worktree.useTopLevelMacheteFile` that enables per-worktree machete definition file (as opposed to a single central `.git/machete` file for all worktrees)
 
 ## New in git-machete 3.10.1
 
