@@ -22,7 +22,8 @@ GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
 GITHUB_DOMAIN = "github.com"
 GITHUB_REMOTE_PATTERNS = [
     "^https://github\\.com/(.*)/(.*)\\.git$",
-    "^(?:ssh:\\/\\/)?git@github\\.com(?:\\/|:)(.*)/(.*)\\.git$"
+    "^git@github\\.com:(.*)/(.*)\\.git$",
+    "^ssh://git@github\\.com/(.*)/(.*)\\.git$"
 ]
 
 
