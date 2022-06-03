@@ -36,7 +36,7 @@ class MacheteClient:
 
     def __init__(self, git: GitContext) -> None:
         self.__git: GitContext = git
-        self._definition_file_path: str = self.__git.get_main_git_subpath("machete")
+        self._definition_file_path: str = self.__git.get_git_machete_definition_file_path()
         self._managed_branches: List[LocalBranchShortName] = []
         self._up_branch: Dict[LocalBranchShortName, Optional[LocalBranchShortName]] = {}  # TODO (#110): default dict with None
         self.__down_branches: Dict[LocalBranchShortName, Optional[List[LocalBranchShortName]]] = {}  # TODO (#110): default dict with []
