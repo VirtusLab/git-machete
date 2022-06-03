@@ -279,7 +279,8 @@ class GitContext:
             try:
                 git_dir: str = self._popen_git("rev-parse", "--git-dir").strip()
                 git_dir_parts = Path(git_dir).parts
-                if len(git_dir_parts) >= 3 and git_dir_parts[-3] == '.git' and git_dir_parts[-2] == 'worktrees':
+                if len(git_dir_parts) >= 3 and git_dir_parts[-3] == '.git' and git_dir_parts[-2] == 'worktrees' \
+                   and self.get_boolean_config_attr(key='machete.worktree.useTopLevelMacheteFile'):
                     self._main_git_dir = os.path.join(*git_dir_parts[:-2])
                     debug(f'git dir pointing to {git_dir} - we are in a worktree; '
                           f'using {self._main_git_dir} as the effective git dir instead')

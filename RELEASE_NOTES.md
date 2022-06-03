@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.11.0
+
 ## New in git-machete 3.10.1
 
 - fixed: `git machete diff` doesn't crash when supplied with the short branch name (`develop`)
