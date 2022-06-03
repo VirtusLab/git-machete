@@ -2,6 +2,7 @@
 
 ## New in git-machete 3.10.1
 
+- added: support GitHub remote URL in the form of `ssh://git@github.com/USERNAME/REPOSITORY.git`
 - fixed: `git machete diff` doesn't crash when supplied with the short branch name (`develop`)
 - fixed: `git machete {log, add, anno, fork-point, is-managed, show}` doesn't crash when supplied with the full branch name (`refs/heads/develop`)
 
