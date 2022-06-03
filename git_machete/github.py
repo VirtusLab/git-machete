@@ -23,6 +23,7 @@ GITHUB_DOMAIN = "github.com"
 GITHUB_REMOTE_PATTERNS = [
     "^https://github\\.com/(.*)/(.*)\\.git$",
     "^git@github\\.com:(.*)/(.*)\\.git$",
+    "^ssh://git@github\\.com/(.*)/(.*)\\.git$"
 ]
 
 
