@@ -139,11 +139,11 @@ def __get_github_token_and_provider() -> Optional[GithubTokenAndTokenProvider]:
             get_token_from_hub())
 
 
-def __get_github_token():
+def __get_github_token() -> Optional[str]:
     return __get_github_token_and_provider().token if __get_github_token_and_provider() else None
 
 
-def __get_github_token_provider():
+def __get_github_token_provider() -> Optional[str]:
     return __get_github_token_and_provider().token_provider if __get_github_token_and_provider() else None
 
 
