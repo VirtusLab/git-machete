@@ -881,14 +881,14 @@ class MacheteClient:
             opt_list_commits_with_hashes: bool,
             opt_no_detect_squash_merges: bool
     ) -> None:
-        dfs_res: List[Tuple[LocalBranchShortName, List[Optional[LocalBranchShortName]]]] = []
+        next_sibling_of_ancestor_by_branch: List[Tuple[LocalBranchShortName, List[Optional[LocalBranchShortName]]]] = []
 
         def prefix_dfs(u_: LocalBranchShortName, accumulated_path_: List[Optional[LocalBranchShortName]]) -> None:
-            dfs_res.append((u_, accumulated_path_))
-            if self.__down_branches.get(u_):
-                for (v, nv) in zip(self.__down_branches[u_][:-1], self.__down_branches[u_][1:]):
+            next_sibling_of_ancestor_by_branch.append((u_, accumulated_path_))
+            children_of_u = self.__down_branches.get(u_)
+            if children_of_u:
+                for (v, nv) in zip(children_of_u, children_of_u[1:] + [None]):
                     prefix_dfs(v, accumulated_path_ + [nv])
-                prefix_dfs(self.__down_branches[u_][-1], accumulated_path_ + [None])
 
         for upstream in self.__roots:
             prefix_dfs(upstream, accumulated_path_=[])
@@ -946,7 +946,7 @@ class MacheteClient:
             out.write(colored(suffix, edge_color[branch_]))
 
         next_sibling_of_ancestor: List[Optional[LocalBranchShortName]]
-        for branch, next_sibling_of_ancestor in dfs_res:
+        for branch, next_sibling_of_ancestor in next_sibling_of_ancestor_by_branch:
             if branch in self.up_branch:
                 print_line_prefix(branch, f"{utils.get_vertical_bar()} \n")
                 if opt_list_commits:
@@ -998,7 +998,7 @@ class MacheteClient:
                         junction = u"└─"
                 print_line_prefix(branch, junction + maybe_space_before_branch_name)
             else:
-                if branch != dfs_res[0][0]:
+                if branch != self.__roots[0]:
                     out.write("\n")
                 out.write("  " + maybe_space_before_branch_name)
 
