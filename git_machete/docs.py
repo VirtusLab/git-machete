@@ -217,7 +217,9 @@ long_docs: Dict[str, str] = {
 
         - `machete.worktree.useTopLevelMacheteFile`
 
-            # TODO (#517): per-worktree machete option
+          The default value of this key is `true`, which means that the path to machete definition file will be `.git/machete` 
+          for both regular directory and worktree. If you want the worktree to have its own machete definition file (located under
+          `.git/worktrees/.../machete`), set `git config machete.worktree.useTopLevelMacheteFile false`.
 
         <b>Environment variables: </b>
 
