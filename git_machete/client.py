@@ -1934,7 +1934,7 @@ class MacheteClient:
 
         debug('Current GitHub user is ' + (current_user or '<none>'))
         self.__sync_annotations_to_definition_file(all_open_prs, current_user, verbose=verbose)
-        if pr and len(checked_out_prs) == 1:
+        if pr and len(applicable_prs) == 1:
             self.__git.checkout(LocalBranchShortName.of(pr.head))
             if verbose:
                 print(fmt(f"Switched to local branch `{pr.head}`"))
