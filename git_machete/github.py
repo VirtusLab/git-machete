@@ -191,8 +191,8 @@ def __fire_github_api_request(method: str, path: str, token: Optional[str], requ
                                                     f'is valid and allows for access to `{method.upper()}` `https://{host}{path}`.')
             else:
                 raise MacheteException(
-                    first_line + f'You might not have the required permissions for this repository. '
-                                 f'Provide a GitHub API token with `repo` access via one of the: {get_github_token_possible_providers()} '
+                    first_line + f'You might not have the required permissions for this repository.\n'
+                                 f'Provide a GitHub API token with `repo` access via {__get_github_token_provider()}\n'
                                  'Visit `https://github.com/settings/tokens` to generate a new one.')
         elif err.code == http.HTTPStatus.NOT_FOUND:
             raise MacheteException(
