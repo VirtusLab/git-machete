@@ -1045,7 +1045,7 @@ class TestGithub:
 
         expected_status_output = (
             """
-            master *
+            master
             |
             o-bar (untracked)
             |
@@ -1053,7 +1053,7 @@ class TestGithub:
             |
             o-moo (untracked)
             |
-            o-snickers  PR #7
+            o-snickers *  PR #7
             """
         )
         assert_command(['status'], expected_status_output)
