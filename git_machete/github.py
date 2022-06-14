@@ -140,11 +140,13 @@ def __get_github_token_and_provider() -> Optional[GithubTokenAndTokenProvider]:
 
 
 def __get_github_token() -> Optional[str]:
-    return __get_github_token_and_provider().token if __get_github_token_and_provider() else None
+    github_token_and_provider = __get_github_token_and_provider()
+    return github_token_and_provider.token if github_token_and_provider else None
 
 
 def __get_github_token_provider() -> Optional[str]:
-    return __get_github_token_and_provider().token_provider if __get_github_token_and_provider() else None
+    github_token_and_provider = __get_github_token_and_provider()
+    return github_token_and_provider.token_provider if github_token_and_provider else None
 
 
 def __extract_failure_info_from_422(response: Any) -> str:
