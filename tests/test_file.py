@@ -44,11 +44,12 @@ class TestFile:
 
         # check git machete definition file path when inside worktree
         self.repo_sandbox.add_git_config_key('machete.worktree.useTopLevelMacheteFile', 'false')
-        self.repo_sandbox.execute("git worktree add test_worktree -b new_feature")
+        self.repo_sandbox.execute("git worktree add -b new_feature test_worktree")
         os.chdir('test_worktree')
         definition_file_full_path = launch_command("file")
         definition_file_path = Path(definition_file_full_path).parts
         definition_file_path_relative_to_git_dir = '/'.join(definition_file_path[-4:]).rstrip('\n')
         assert definition_file_path_relative_to_git_dir == '.git/worktrees/test_worktree/machete'
         os.chdir('..')
-        self.repo_sandbox.execute("git worktree remove test_worktree")
+        self.repo_sandbox.execute("rm -rf test_worktree")
+        self.repo_sandbox.execute("git worktree prune")
