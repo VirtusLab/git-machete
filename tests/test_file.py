@@ -25,7 +25,6 @@ class TestFile:
         """
         Verify behaviour of a 'git machete file' command.
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
 
         (
             self.repo_sandbox.new_branch("master")
@@ -36,14 +35,14 @@ class TestFile:
                 .commit("feature commit.")
         )
 
-        # check git machete definition file path when inside normal directory
+        # check git machete definition file path when inside a normal directory
         definition_file_full_path = launch_command("file")
         definition_file_path = Path(definition_file_full_path).parts
         definition_file_path_relative_to_git_dir = '/'.join(definition_file_path[-2:]).rstrip('\n')
         assert definition_file_path_relative_to_git_dir == '.git/machete'
 
-        # check git machete definition file path when inside worktree
-        if GitContext().get_git_version() >= (2, 5):  # git worktree command was introduced in git version 2.5
+        # check git machete definition file path when inside a worktree
+        if GitContext().get_git_version() >= (2, 5):  # `git worktree` command was introduced in git version 2.5
             self.repo_sandbox.add_git_config_key('machete.worktree.useTopLevelMacheteFile', 'false')
             self.repo_sandbox.execute("git worktree add -f -b new_feature test_worktree develop")
             os.chdir('test_worktree')
