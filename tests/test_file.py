@@ -43,8 +43,7 @@ class TestFile:
         assert definition_file_path_relative_to_git_dir == '.git/machete'
 
         # check git machete definition file path when inside worktree
-        if GitContext().get_git_version() >= (2, 5):
-            self.repo_sandbox.execute("rm -rf test_worktree")
+        if GitContext().get_git_version() >= (2, 5):  # git worktree command was introduced in git version 2.5
             self.repo_sandbox.add_git_config_key('machete.worktree.useTopLevelMacheteFile', 'false')
             self.repo_sandbox.execute("git worktree add -f -b new_feature test_worktree develop")
             os.chdir('test_worktree')
