@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from typing import Any
 
+from git_operations import GitContext
 from .mockers import (GitRepositorySandbox, launch_command, mock_run_cmd)
 
 
@@ -43,14 +44,15 @@ class TestFile:
         assert definition_file_path_relative_to_git_dir == '.git/machete'
 
         # check git machete definition file path when inside worktree
-        self.repo_sandbox.execute("rm -rf test_worktree")
-        self.repo_sandbox.add_git_config_key('machete.worktree.useTopLevelMacheteFile', 'false')
-        self.repo_sandbox.execute("git worktree add -f -b new_feature test_worktree develop")
-        os.chdir('test_worktree')
-        definition_file_full_path = launch_command("file")
-        definition_file_path = Path(definition_file_full_path).parts
-        definition_file_path_relative_to_git_dir = '/'.join(definition_file_path[-4:]).rstrip('\n')
-        assert definition_file_path_relative_to_git_dir == '.git/worktrees/test_worktree/machete'
-        os.chdir('..')
-        self.repo_sandbox.execute("rm -rf test_worktree")
-        self.repo_sandbox.execute("git worktree prune")
+        if GitContext().get_git_version() >= (2, 5):
+            self.repo_sandbox.execute("rm -rf test_worktree")
+            self.repo_sandbox.add_git_config_key('machete.worktree.useTopLevelMacheteFile', 'false')
+            self.repo_sandbox.execute("git worktree add -f -b new_feature test_worktree develop")
+            os.chdir('test_worktree')
+            definition_file_full_path = launch_command("file")
+            definition_file_path = Path(definition_file_full_path).parts
+            definition_file_path_relative_to_git_dir = '/'.join(definition_file_path[-4:]).rstrip('\n')
+            assert definition_file_path_relative_to_git_dir == '.git/worktrees/test_worktree/machete'
+            os.chdir('..')
+            self.repo_sandbox.execute("rm -rf test_worktree")
+            self.repo_sandbox.execute("git worktree prune")
