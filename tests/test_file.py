@@ -2,8 +2,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-from git_operations import GitContext
-from .mockers import (GitRepositorySandbox, launch_command, mock_run_cmd)
+from .mockers import (GitRepositorySandbox, launch_command, mock_run_cmd, GitContext)
 
 
 class TestFile:
@@ -53,6 +52,3 @@ class TestFile:
             definition_file_path = Path(definition_file_full_path).parts
             definition_file_path_relative_to_git_dir = '/'.join(definition_file_path[-4:]).rstrip('\n')
             assert definition_file_path_relative_to_git_dir == '.git/worktrees/test_worktree/machete'
-            os.chdir('..')
-            self.repo_sandbox.execute("rm -rf test_worktree")
-            self.repo_sandbox.execute("git worktree prune")
