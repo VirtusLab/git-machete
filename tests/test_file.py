@@ -1,7 +1,8 @@
+import os
+from pathlib import Path
 from typing import Any
 
-from utils import popen_cmd
-from .mockers import (GitRepositorySandbox, assert_command, launch_command, mock_run_cmd)
+from .mockers import (GitRepositorySandbox, launch_command, mock_run_cmd)
 
 
 class TestFile:
@@ -34,42 +35,18 @@ class TestFile:
                 .new_branch("feature")
                 .commit("feature commit.")
         )
-        # launch_command("discover", "-y")
-        #
-        # # sprawdzam dal normalnego folderu
-        # x = launch_command("file")
-        # print()
 
-        # sprawdzam dla worktree
+        # check git machete definition file path when inside normal directory
+        definition_file_full_path = launch_command("file")
+        definition_file_path = Path(definition_file_full_path).parts
+        definition_file_path_relative_to_git_dir = '/'.join(definition_file_path[-2:]).rstrip('\n')
+        assert definition_file_path_relative_to_git_dir == '.git/machete'
+
+        # check git machete definition file path when inside worktree
         self.repo_sandbox.add_git_config_key('machete.worktree.useTopLevelMacheteFile', 'false')
-
-        # self.repo_sandbox.execute('rm -rf ../test')
-        # self.repo_sandbox.execute('rm -rf test')
-
-        self.repo_sandbox.execute(f"git worktree add test -b new_feature")
-
-        self.repo_sandbox.execute('echo "xd" > test/xd.txt')
-        _, result02, _ = popen_cmd('pwd')
-        _, result03, _ = popen_cmd('ls', '-al')
-        _, result00, _ = popen_cmd('cd', 'test')
-        _, branches, _ = popen_cmd('git', 'branch')
-        _, branches, _ = popen_cmd('git', 'checkout', 'new_feature')
-
-        # launch_command("discover", "-y")
-
-        _, result01, _ = popen_cmd('ls', '-al', '.git')
-        _, result04, _ = popen_cmd('ls', '-al', 'test')
-        _, result0, _ = popen_cmd('ls', '-al', '.git/worktrees/test')
-        _, result, _ = popen_cmd('git', 'worktree', 'list')
-        _, result1, _ = popen_cmd('pwd')
-        y_3 = self.repo_sandbox.execute('git worktree list')
-
-        definition_file_path = launch_command("file")
-
-        print()
-
-        assert_command(
-            ['add', '--onto=feature'],
-            'Added branch `chore/remove_indentation` onto `feature`\n',
-            strip_indentation=False
-        )
+        self.repo_sandbox.execute(f"git worktree add test_worktree -b new_feature")
+        os.chdir('test_worktree')
+        definition_file_full_path = launch_command("file")
+        definition_file_path = Path(definition_file_full_path).parts
+        definition_file_path_relative_to_git_dir = '/'.join(definition_file_path[-4:]).rstrip('\n')
+        assert definition_file_path_relative_to_git_dir == '.git/worktrees/test_worktree/machete'
