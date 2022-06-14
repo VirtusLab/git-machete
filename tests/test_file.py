@@ -1,5 +1,6 @@
 from typing import Any
 
+from utils import popen_cmd
 from .mockers import (GitRepositorySandbox, assert_command, launch_command, mock_run_cmd)
 
 
@@ -23,7 +24,7 @@ class TestFile:
         """
         Verify behaviour of a 'git machete file' command.
         """
-        # mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
 
         (
             self.repo_sandbox.new_branch("master")
@@ -33,23 +34,39 @@ class TestFile:
                 .new_branch("feature")
                 .commit("feature commit.")
         )
-        launch_command("discover", "-y")
-
-        # sprawdzam dal normanego folderu
-        x = launch_command("file")
-        print()
+        # launch_command("discover", "-y")
+        #
+        # # sprawdzam dal normalnego folderu
+        # x = launch_command("file")
+        # print()
 
         # sprawdzam dla worktree
+        self.repo_sandbox.add_git_config_key('machete.worktree.useTopLevelMacheteFile', 'false')
+
+        # self.repo_sandbox.execute('rm -rf ../test')
+        # self.repo_sandbox.execute('rm -rf test')
+
         self.repo_sandbox.execute(f"git worktree add test -b new_feature")
-        # ustawienie klucza machete.worktree.useTopLevelMacheteFile na false
-        launch_command("discover", "-y")
-        y_1 = self.repo_sandbox.execute('pwd')
-        self.repo_sandbox.execute('cd ../test')
-        y_2 = self.repo_sandbox.execute('pwd')
-        x_2 = launch_command("file")
+
+        self.repo_sandbox.execute('echo "xd" > test/xd.txt')
+        _, result02, _ = popen_cmd('pwd')
+        _, result03, _ = popen_cmd('ls', '-al')
+        _, result00, _ = popen_cmd('cd', 'test')
+        _, branches, _ = popen_cmd('git', 'branch')
+        _, branches, _ = popen_cmd('git', 'checkout', 'new_feature')
+
+        # launch_command("discover", "-y")
+
+        _, result01, _ = popen_cmd('ls', '-al', '.git')
+        _, result04, _ = popen_cmd('ls', '-al', 'test')
+        _, result0, _ = popen_cmd('ls', '-al', '.git/worktrees/test')
+        _, result, _ = popen_cmd('git', 'worktree', 'list')
+        _, result1, _ = popen_cmd('pwd')
+        y_3 = self.repo_sandbox.execute('git worktree list')
+
+        definition_file_path = launch_command("file")
+
         print()
-
-
 
         assert_command(
             ['add', '--onto=feature'],
