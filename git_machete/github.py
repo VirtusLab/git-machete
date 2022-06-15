@@ -196,7 +196,7 @@ def __fire_github_api_request(method: str, path: str, token: Optional[str], requ
             else:
                 raise MacheteException(
                     first_line + f'You might not have the required permissions for this repository.\n'
-                                 f'Provide a GitHub API token with `repo` access via {__get_github_token_provider()}\n'
+                                 f'Provide a GitHub API token with `repo` access via {__get_github_token_provider()}.\n'
                                  'Visit `https://github.com/settings/tokens` to generate a new one.\n'
                                  'You can also use a different token provider, available providers can be found '
                                  'when running `git machete help github`')
