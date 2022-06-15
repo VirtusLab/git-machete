@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.11.0
+
+- added: when GitHub token is invalid/expired, provide information which token provider has been used
+
 ## New in git-machete 3.10.1
 
 - added: support GitHub remote URL in the form of `ssh://git@github.com/USERNAME/REPOSITORY.git`

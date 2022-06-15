@@ -59,9 +59,13 @@ def __parse_pr_json(pr_json: Any) -> GitHubPullRequest:
                              repository_url=pr_json['head']['repo']['html_url'] if pr_json['head']['repo'] else None)
 
 
-def __get_github_token() -> Optional[str]:
-    def get_token_from_gh() -> Optional[str]:
+class GithubTokenAndTokenProvider(NamedTuple):
+    token: str
+    token_provider: str
 
+
+def __get_github_token_and_provider() -> Optional[GithubTokenAndTokenProvider]:
+    def get_token_from_gh() -> Optional[GithubTokenAndTokenProvider]:
         # Abort without error if `gh` isn't available
         gh = shutil.which('gh')
         if not gh:
@@ -90,11 +94,11 @@ def __get_github_token() -> Optional[str]:
 
         match = re.search(r"Token: (\w+)", result)
         if match:
-            return match.groups()[0]
-
+            return GithubTokenAndTokenProvider(token=match.groups()[0],
+                                               token_provider='current auth token from the `gh` GitHub CLI')
         return None
 
-    def get_token_from_hub() -> Optional[str]:
+    def get_token_from_hub() -> Optional[GithubTokenAndTokenProvider]:
         home_path: str = str(Path.home())
         config_hub_path: str = os.path.join(home_path, ".config", "hub")
         if os.path.isfile(config_hub_path):
@@ -108,27 +112,41 @@ def __get_github_token() -> Optional[str]:
                 #   protocol: {protocol}
                 match = re.search(r"oauth_token: (\w+)", config_hub_content)
                 if match:
-                    return match.groups()[0]
-
+                    return GithubTokenAndTokenProvider(token=match.groups()[0],
+                                                       token_provider='current auth token from the `hub` GitHub CLI')
         return None
 
-    def get_token_from_env() -> Optional[str]:
-        return os.environ.get(GITHUB_TOKEN_ENV_VAR)
+    def get_token_from_env() -> Optional[GithubTokenAndTokenProvider]:
+        github_token = os.environ.get(GITHUB_TOKEN_ENV_VAR)
+        if github_token:
+            return GithubTokenAndTokenProvider(token=github_token,
+                                               token_provider=f'`{GITHUB_TOKEN_ENV_VAR}` environment variable')
+        return None
 
-    def get_token_from_file_in_home_directory() -> Optional[str]:
+    def get_token_from_file_in_home_directory() -> Optional[GithubTokenAndTokenProvider]:
         required_file_name = '.github-token'
         file_full_path = os.path.expanduser(f'~/{required_file_name}')
 
         if os.path.isfile(file_full_path):
             with open(file_full_path) as file:
-                return file.read().strip()
-
+                return GithubTokenAndTokenProvider(token=file.read().strip(),
+                                                   token_provider='content of the `~/.github-token` file')
         return None
 
     return (get_token_from_env() or
             get_token_from_file_in_home_directory() or
             get_token_from_gh() or
             get_token_from_hub())
+
+
+def __get_github_token() -> Optional[str]:
+    github_token_and_provider = __get_github_token_and_provider()
+    return github_token_and_provider.token if github_token_and_provider else None
+
+
+def __get_github_token_provider() -> Optional[str]:
+    github_token_and_provider = __get_github_token_and_provider()
+    return github_token_and_provider.token_provider if github_token_and_provider else None
 
 
 def __extract_failure_info_from_422(response: Any) -> str:
@@ -171,14 +189,17 @@ def __fire_github_api_request(method: str, path: str, token: Optional[str], requ
         elif err.code in (http.HTTPStatus.UNAUTHORIZED, http.HTTPStatus.FORBIDDEN):
             first_line = f'GitHub API returned {err.code} HTTP status with error message: `{err.reason}`\n'
             if token:
-                raise MacheteException(first_line + f'Make sure that the GitHub API token provided by one of the: '
-                                                    f'{get_github_token_possible_providers()}is valid and allows for access to '
-                                                    f'`{method.upper()}` `https://{host}{path}`.')
+                raise MacheteException(first_line + f'Make sure that the GitHub API token provided by the {__get_github_token_provider()} '
+                                                    f'is valid and allows for access to `{method.upper()}` `https://{host}{path}`.\n'
+                                                    'You can also use a different token provider, available providers can be found '
+                                                    'when running `git machete help github`')
             else:
                 raise MacheteException(
-                    first_line + f'You might not have the required permissions for this repository. '
-                                 f'Provide a GitHub API token with `repo` access via one of the: {get_github_token_possible_providers()} '
-                                 'Visit `https://github.com/settings/tokens` to generate a new one.')
+                    first_line + f'You might not have the required permissions for this repository.\n'
+                                 f'Provide a GitHub API token with `repo` access via {__get_github_token_provider()}.\n'
+                                 'Visit `https://github.com/settings/tokens` to generate a new one.\n'
+                                 'You can also use a different token provider, available providers can be found '
+                                 'when running `git machete help github`')
         elif err.code == http.HTTPStatus.NOT_FOUND:
             raise MacheteException(
                 f'`{method} {url}` request ended up in 404 response from GitHub. A valid GitHub API token is required.\n'
