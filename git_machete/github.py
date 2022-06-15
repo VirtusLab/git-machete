@@ -190,12 +190,16 @@ def __fire_github_api_request(method: str, path: str, token: Optional[str], requ
             first_line = f'GitHub API returned {err.code} HTTP status with error message: `{err.reason}`\n'
             if token:
                 raise MacheteException(first_line + f'Make sure that the GitHub API token provided by the {__get_github_token_provider()} '
-                                                    f'is valid and allows for access to `{method.upper()}` `https://{host}{path}`.')
+                                                    f'is valid and allows for access to `{method.upper()}` `https://{host}{path}`.'
+                                                    'You can also use a different token provider, available providers can be found '
+                                                    'when running `git machete help github`')
             else:
                 raise MacheteException(
                     first_line + f'You might not have the required permissions for this repository.\n'
                                  f'Provide a GitHub API token with `repo` access via {__get_github_token_provider()}\n'
-                                 'Visit `https://github.com/settings/tokens` to generate a new one.')
+                                 'Visit `https://github.com/settings/tokens` to generate a new one.'
+                                 'You can also use a different token provider, available providers can be found '
+                                 'when running `git machete help github`\n')
         elif err.code == http.HTTPStatus.NOT_FOUND:
             raise MacheteException(
                 f'`{method} {url}` request ended up in 404 response from GitHub. A valid GitHub API token is required.\n'
