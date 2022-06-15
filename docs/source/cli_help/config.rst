@@ -11,7 +11,7 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
     * ``machete.github.{remote,organization,repository}``:
 
         When executing ``git machete github <subcommand>`` command, GitHub API server URL will be inferred from ``git remote``.
-        You can override this by setting the following git config keys:
+        You can override this by setting the following local git config keys:
             Remote name
                 E.g. ``machete.github.remote`` = ``origin``
 

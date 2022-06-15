@@ -203,7 +203,7 @@ long_docs: Dict[str, str] = {
     """,
     "config": f"""
         <b>Config keys: </b>
-        
+
         - `machete.github.{{remote,organization,repository}}`:
 
           When executing `git machete github <subcommand>` command, {textwrap.indent(github_config_keys, "          ").strip()}
