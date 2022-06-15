@@ -3,6 +3,7 @@
 ## New in git-machete 3.11.0
 
 - added: `git machete help config` help topic and sphinx documentation page for config keys and environment variables
+- added: when GitHub token is invalid/expired, provide information which token provider has been used
 
 ## New in git-machete 3.10.1
 
