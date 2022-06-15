@@ -295,6 +295,10 @@ class GitContext:
     def get_main_git_subpath(self, *fragments: str) -> str:
         return os.path.join(self.__get_main_git_dir(), *fragments)
 
+    def get_git_machete_definition_file_path(self) -> str:
+        use_top_level_machete_file = self.get_boolean_config_attr(key='machete.worktree.useTopLevelMacheteFile')
+        return os.path.join(self.__get_main_git_dir() if use_top_level_machete_file else self.__get_worktree_git_dir(), 'machete')
+
     def get_git_timespec_parsed_to_unix_timestamp(self, date: str) -> int:
         try:
             return int(self._popen_git("rev-parse", "--since=" + date).replace("--max-age=", "").strip())
