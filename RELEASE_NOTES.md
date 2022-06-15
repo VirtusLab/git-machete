@@ -3,6 +3,7 @@
 ## New in git-machete 3.11.0
 
 - added: boolean git config key `machete.worktree.useTopLevelMacheteFile` that enables per-worktree machete definition file (as opposed to a single central `.git/machete` file for all worktrees)
+- added: when GitHub token is invalid/expired, provide information which token provider has been used
 
 ## New in git-machete 3.10.1
 
