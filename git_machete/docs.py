@@ -55,7 +55,8 @@ To do this, run `git config --local --edit` and add the following section:
         repository = <repo_name>
         remote = <remote_name>'''
 
-status_extraSpaceBeforeBranchName_config_key = '''To make it easier to select branch name from the `git machete status` output on certain terminals (e.g. Alacritty), you can add an extra
+status_extraSpaceBeforeBranchName_config_key = '''The default value of this key is `false` but in order to make it easier to select branch
+name from the `git machete status` output on certain terminals (e.g. Alacritty), you can add an extra
 space between └─ and branch name by setting `git config machete.status.extraSpaceBeforeBranchName true`.
 
 For example, by default the status is displayed as:
