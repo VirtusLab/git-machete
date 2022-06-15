@@ -67,6 +67,7 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
         for both regular directory and worktree. If you want the worktree to have its own machete definition file (located under
         ``.git/worktrees/.../machete``), set ``git config machete.worktree.useTopLevelMacheteFile false``.
 
+
 **Environment variables:**
 
     * ``GIT_MACHETE_EDITOR``

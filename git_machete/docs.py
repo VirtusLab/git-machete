@@ -41,7 +41,7 @@ This will be resolved from the first of:
     4. current auth token from the `hub` GitHub CLI.'''
 
 github_config_keys = '''GitHub API server URL will be inferred from `git remote`.
-You can override this by setting the following git config keys:
+You can override this by setting the following local git config keys:
     Remote name
         E.g. `machete.github.remote` = `origin`
     Organization name
@@ -203,6 +203,7 @@ long_docs: Dict[str, str] = {
     """,
     "config": f"""
         <b>Config keys: </b>
+        
         - `machete.github.{{remote,organization,repository}}`:
 
           When executing `git machete github <subcommand>` command, {textwrap.indent(github_config_keys, "          ").strip()}
@@ -221,6 +222,7 @@ long_docs: Dict[str, str] = {
           The default value of this key is `true`, which means that the path to machete definition file will be `.git/machete`
           for both regular directory and worktree. If you want the worktree to have its own machete definition file (located under
           `.git/worktrees/.../machete`), set `git config machete.worktree.useTopLevelMacheteFile false`.
+
 
         <b>Environment variables: </b>
 
