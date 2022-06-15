@@ -1,6 +1,6 @@
 # Release notes
 
-## New in git-machete 3.10.1
+## New in git-machete 3.11.0
 
 - added: when GitHub token is invalid/expired, provide information which token provider has been used
 
