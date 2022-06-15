@@ -2,7 +2,8 @@
 
 ## New in git-machete 3.11.2
 
-- fixed: `git machete` now correctly infers remote for fetching of branch when the branch is found in more than one remote
+- fixed: `git machete` now correctly infers remote for fetching of branch when the branch is associated with more than one remote
+- fixed: `git machete github retarget-pr` now takes branch tracking data into account when finding out where (in what GitHub organization/repository) to create a PR
 
 ## New in git-machete 3.11.1
 

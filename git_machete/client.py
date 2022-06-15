@@ -2010,9 +2010,12 @@ class MacheteClient:
         return None
 
     def retarget_github_pr(self, head: LocalBranchShortName) -> None:
+        for remote in self.__git.get_remotes():
+            self.__git.fetch_remote(remote)
+
         org: str
         repo: str
-        _, org, repo = self.__derive_remote_and_github_org_and_repo()
+        _, org, repo = self.__derive_remote_and_github_org_and_repo(branch_used_for_tracking_data=head)
 
         debug(f'organization is {org}, repository is {repo}')
 
@@ -2035,7 +2038,7 @@ class MacheteClient:
         else:
             print(fmt(f'The base branch of PR #{pr.number} is already `{new_base}`'))
 
-    def __derive_remote_and_github_org_and_repo(self) -> RemoteAndOrganizationAndRepository:
+    def __derive_remote_and_github_org_and_repo(self, branch_used_for_tracking_data: LocalBranchShortName = None) -> RemoteAndOrganizationAndRepository:
         remote_and_organization_and_repository_for_custom_url = self.__get_remote_and_organization_and_repository_name_for_custom_url()
         if all(remote_and_organization_and_repository_for_custom_url):
             return remote_and_organization_and_repository_for_custom_url
@@ -2049,6 +2052,7 @@ class MacheteClient:
         remote_and_github_org_and_repo: Dict[str, RemoteAndOrganizationAndRepository] = {
             remote: get_parsed_github_remote_url(url, remote) for remote, url in url_for_remote.items() if is_github_remote_url(url)
         }
+
         if not remote_and_github_org_and_repo:
             raise MacheteException(
                 fmt('Remotes are defined for this repository, but none of them '
@@ -2056,6 +2060,12 @@ class MacheteClient:
                     'It is possible that you are using custom GitHub URL.\n'
                     'If that is the case, you can provide repository information explicitly, via these 3 git config keys: '
                     '`machete.github.{remote,organization,repository}`\n'))
+
+        if len(remote_and_github_org_and_repo) > 1 and branch_used_for_tracking_data is not None:
+            remote_for_fetching_of_branch = self.__git.get_inferred_remote_for_fetching_of_branch(branch=branch_used_for_tracking_data,
+                                                                                                  remotes=list(remote_and_github_org_and_repo.keys()))
+            if remote_for_fetching_of_branch is not None:
+                return remote_and_github_org_and_repo[remote_for_fetching_of_branch]
 
         if len(remote_and_github_org_and_repo) == 1:
             return remote_and_github_org_and_repo[list(remote_and_github_org_and_repo.keys())[0]]
@@ -2065,7 +2075,7 @@ class MacheteClient:
 
         raise MacheteException(
             f'Multiple non-origin remotes correspond to GitHub in this repository: '
-            f'{", ".join(remote_and_github_org_and_repo.keys())}, aborting. \n'
+            f'{", ".join(remote_and_github_org_and_repo.keys())} -> aborting. \n'
             f'You can also select the repository by providing 3 git config keys: '
             '`machete.github.{remote,organization,repository}`\n')
 
