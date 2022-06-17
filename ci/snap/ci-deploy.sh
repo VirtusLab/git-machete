@@ -2,6 +2,7 @@
 
 set -e -o pipefail -u -x
 
+export COLUMNS=1
 sudo apt-get update
 sudo apt-get install -y snapd
 sudo snap install review-tools
