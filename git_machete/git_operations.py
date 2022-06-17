@@ -319,7 +319,7 @@ class GitContext:
         self.__ensure_config_loaded()
         return self.__config_cached.get(key.lower())
 
-    def get_boolean_config_attr(self, key: str, default_value: bool = True) -> bool:
+    def get_boolean_config_attr(self, key: str, default_value: bool) -> bool:
         self.__ensure_config_loaded()
         if self.__config_cached.get(key.lower()) is not None:
             return self.__config_cached.get(key.lower()) == 'true'
