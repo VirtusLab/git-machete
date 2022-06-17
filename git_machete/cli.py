@@ -31,7 +31,7 @@ alias_by_command: Dict[str, str] = {
 
 command_groups: List[Tuple[str, List[str]]] = [
     ("General topics",
-     ["file", "format", "help", "hooks", "version"]),
+     ["config", "file", "format", "help", "hooks", "version"]),
     ("Build, display and modify the tree of branch dependencies",
      ["add", "anno", "discover", "edit", "status"]),
     ("List, check out and delete branches",
@@ -215,9 +215,6 @@ def create_cli_parser() -> argparse.ArgumentParser:
     fork_point_exclusive_optional_args.add_argument('--override-to-parent', action='store_true')
     fork_point_exclusive_optional_args.add_argument('--unset-override', action='store_true')
 
-    subparsers.add_parser(
-        'format', add_help=False, usage=argparse.SUPPRESS, parents=[common_args_parser])
-
     github_parser = subparsers.add_parser(
         'github',
         argument_default=argparse.SUPPRESS,
@@ -246,12 +243,6 @@ def create_cli_parser() -> argparse.ArgumentParser:
     help_parser = subparsers.add_parser(
         'help', add_help=False, usage=argparse.SUPPRESS, parents=[common_args_parser])
     help_parser.add_argument('topic_or_cmd', nargs='?', choices=list(short_docs.keys()))
-
-    subparsers.add_parser(
-        'hooks',
-        usage=argparse.SUPPRESS,
-        add_help=False,
-        parents=[common_args_parser])
 
     is_managed_parser = subparsers.add_parser(
         'is-managed',

@@ -7,6 +7,7 @@ short_docs: Dict[str, str] = {
     "advance": "Fast-forward merge one of children to the current branch, push it and then slide out the child",
     "anno": "Manage custom annotations",
     "clean": "Delete untracked and unmanaged branches and also optionally check out user's open GitHub PRs",
+    "config": "Display docs for the git machete configuration keys and environment variables",
     "delete-unmanaged": "Delete local branches that are not present in the definition file",
     "diff": "Diff current working directory or a given branch against its computed fork point",
     "discover": "Automatically discover tree of branch dependencies",
@@ -40,7 +41,7 @@ This will be resolved from the first of:
     4. current auth token from the `hub` GitHub CLI.'''
 
 github_config_keys = '''GitHub API server URL will be inferred from `git remote`.
-You can override this by setting the following git config keys:
+You can override this by setting the following local git config keys:
     Remote name
         E.g. `machete.github.remote` = `origin`
     Organization name
@@ -53,6 +54,24 @@ To do this, run `git config --local --edit` and add the following section:
         organization = <organization_name>
         repository = <repo_name>
         remote = <remote_name>'''
+
+status_extraSpaceBeforeBranchName_config_key = '''The default value of this key is `false` but in order to make it easier to select branch
+name from the `git machete status` output on certain terminals (e.g. Alacritty), you can add an extra
+space between └─ and branch name by setting `git config machete.status.extraSpaceBeforeBranchName true`.
+
+For example, by default the status is displayed as:
+    develop
+    │
+    ├─feature_branch1
+    │
+    └─feature_branch2
+
+With `machete.status.extraSpaceBeforeBranchName` config set to `true`:
+    develop
+    │
+    ├─ feature_branch1
+    │
+    └─ feature_branch2'''
 
 long_docs: Dict[str, str] = {
     "add": """
@@ -181,6 +200,44 @@ long_docs: Dict[str, str] = {
         **Options:**
           <b>--c, --checkout-my-github-prs</b>     Checkout your open PRs into local branches.
           <b>-y, --yes</b>                         Don't ask for confirmation when deleting branches from git.
+    """,
+    "config": f"""
+        <b>Config keys: </b>
+
+        - `machete.github.{{remote,organization,repository}}`:
+
+          When executing `git machete github <subcommand>` command, {textwrap.indent(github_config_keys, "          ").strip()}
+
+        - `machete.overrideForkPoint.<branch>.{{to,whileDescendantOf}}`
+
+          Executing `git machete fork-point --override-to=<revision> [<branch>]` sets up a fork point override for <branch>.
+          The override data is stored under `machete.overrideForkPoint.<branch>.to` and `machete.overrideForkPoint.<branch>.whileDescendantOf` git config keys.
+
+        - `machete.status.extraSpaceBeforeBranchName`
+
+          {textwrap.indent(status_extraSpaceBeforeBranchName_config_key, "          ").strip()}
+
+        - `machete.worktree.useTopLevelMacheteFile`
+
+          The default value of this key is `true`, which means that the path to machete definition file will be `.git/machete`
+          for both regular directory and worktree. If you want the worktree to have its own machete definition file (located under
+          `.git/worktrees/.../machete`), set `git config machete.worktree.useTopLevelMacheteFile false`.
+
+
+        <b>Environment variables: </b>
+
+        - `GIT_MACHETE_EDITOR`
+
+          Name of the editor used by `git machete e[dit]`, example: `vim` or `nano`.
+
+        - `GIT_MACHETE_REBASE_OPTS`
+
+          Used to pass extra options to the underlying `git rebase` invocation (called by the executed command, such as: `reapply`, `slide-out`, `traverse`, `update`)
+          Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete update`.
+
+        - `GITHUB_TOKEN`
+
+          Used to store GitHub API token. Used by commands such as: `anno`, `clean`, `github`.
     """,
     "delete-unmanaged": """
         <b>Usage: git machete delete-unmanaged [-y|--yes]</b>
@@ -618,7 +675,7 @@ long_docs: Dict[str, str] = {
         <b>Options:</b>
           <b>-f, --fork-point=<fork-point-commit></b>    Specifies the alternative fork point commit after which the squashed part of history is meant to start.
     """,
-    "status": """
+    "status": f"""
         <b>Usage: git machete s[tatus] [--color=WHEN] [-l|--list-commits] [-L|--list-commits-with-hashes] [--no-detect-squash-merges]</b>
 
         Displays a tree-shaped status of the branches listed in the definition file.
@@ -680,22 +737,7 @@ long_docs: Dict[str, str] = {
                                             when detecting if a branch is merged into its upstream (parent).
 
         <b>Config keys:</b>
-        To make it easier to select branch name from the `status` output on certain terminals (e.g. Alacritty), you can add an extra
-        space between └─ and branch name by setting `git config machete.status.extraSpaceBeforeBranchName true`.
-
-        For example, by default it's:
-            develop
-            │
-            ├─feature_branch1
-            │
-            └─feature_branch2
-
-        With `machete.status.extraSpaceBeforeBranchName` config set to `true`:
-            develop
-            │
-            ├─ feature_branch1
-            │
-            └─ feature_branch2
+{textwrap.indent(status_extraSpaceBeforeBranchName_config_key, "          ")}
     """,
     "traverse": """
         <b>Usage: git machete t[raverse] [-F|--fetch] [-l|--list-commits] [-M|--merge]

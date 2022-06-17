@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, List
 
 import pytest
 
@@ -27,6 +27,8 @@ class TestHelp:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
 
         expected_exit_code = None
+        expected_exit_code_when_failed = 2
+        help_topics: List[str] = ['config', 'format', 'hooks']
 
         with pytest.raises(SystemExit) as e:
             launch_command("help")
@@ -42,8 +44,15 @@ class TestHelp:
                 f"Verify that `git machete help {command}` causes SystemExit" \
                 f" with {expected_exit_code} exit code."
 
-            with pytest.raises(SystemExit) as e:
-                launch_command(command, "--help")
-            assert expected_exit_code == e.value.code, \
-                f"Verify that `git machete {command} --help` causes " \
-                f"SystemExit with {expected_exit_code} exit code."
+            if command not in help_topics:
+                with pytest.raises(SystemExit) as e:
+                    launch_command(command, "--help")
+                assert expected_exit_code == e.value.code, \
+                    f"Verify that `git machete {command} --help` causes " \
+                    f"SystemExit with {expected_exit_code} exit code."
+            else:
+                with pytest.raises(SystemExit) as e:
+                    launch_command(command, "--help")
+                assert expected_exit_code_when_failed == e.value.code, \
+                    f"Verify that `git machete {command} --help` causes " \
+                    f"SystemExit with {expected_exit_code} exit code."
