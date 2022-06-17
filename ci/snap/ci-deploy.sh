@@ -2,6 +2,12 @@
 
 set -e -o pipefail -u
 
+# By default, CircleCi VM's terminal width and height equals 0 which causes `craft_cli/messages.py`, line 279 to exit with `ZeroDivisionError`.
+# The terminal width in `craft_cli/messages.py` is being retrieved by `shutil.get_terminal_size()` using `COLUMNS` env var on line 1365
+# from `https://github.com/python/cpython/blob/3.10/Lib/shutil.py`, which can be easily fixed by setting `COLUMNS` env var value to some positive number.
+# Reference to the issue: https://github.com/canonical/craft-cli/issues/85
+export COLUMNS=1
+
 sudo apt-get update
 sudo apt-get install -y snapd
 sudo snap install review-tools
