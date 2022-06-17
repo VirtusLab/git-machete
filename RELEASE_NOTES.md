@@ -3,7 +3,7 @@
 ## New in git-machete 3.11.0
 
 - added: `git machete help config` help topic and sphinx documentation page for config keys and environment variables
-- added: boolean git config key `machete.worktree.useTopLevelMacheteFile` that enables per-worktree machete definition file (as opposed to a single central `.git/machete` file for all worktrees)
+- added: boolean git config key `machete.worktree.useTopLevelMacheteFile` for switching the machete file location for worktrees: a single central `.git/machete` for all worktrees (as up to 3.10) or a per-worktree `.git/worktrees/.../machete`
 - added: when GitHub token is invalid/expired, provide information which token provider has been used
 
 ## New in git-machete 3.10.1
