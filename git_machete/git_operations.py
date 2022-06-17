@@ -296,7 +296,8 @@ class GitContext:
         return os.path.join(self.__get_main_git_dir(), *fragments)
 
     def get_git_machete_definition_file_path(self) -> str:
-        use_top_level_machete_file = self.get_boolean_config_attr(key='machete.worktree.useTopLevelMacheteFile')
+        use_top_level_machete_file = self.get_boolean_config_attr(key='machete.worktree.useTopLevelMacheteFile',
+                                                                  default_value=True)
         return os.path.join(self.__get_main_git_dir() if use_top_level_machete_file else self.__get_worktree_git_dir(), 'machete')
 
     def get_git_timespec_parsed_to_unix_timestamp(self, date: str) -> int:
@@ -318,9 +319,11 @@ class GitContext:
         self.__ensure_config_loaded()
         return self.__config_cached.get(key.lower())
 
-    def get_boolean_config_attr(self, key: str) -> bool:
+    def get_boolean_config_attr(self, key: str, default_value: bool = True) -> bool:
         self.__ensure_config_loaded()
-        return self.__config_cached.get(key.lower()) == 'true'
+        if self.__config_cached.get(key.lower()) is not None:
+            return self.__config_cached.get(key.lower()) == 'true'
+        return default_value
 
     def set_config_attr(self, key: str, value: str) -> None:
         self._run_git("config", "--", key, value)
