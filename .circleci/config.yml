@@ -197,11 +197,11 @@ jobs:
             sudo apt-get install hub
             bash ci/github-releases/ci-deploy.sh
 
-#       Note: there are also releases happening outside of our CI:
-#       1) every time a commit is pushed to `develop` or `master`, a build for docs (`latest` or `stable` version, respectively)
-#          is triggered automatically via GitHub webhook on https://readthedocs.org/projects/git-machete/builds/,
-#       2) every time a https://github.com/r-ryantm bot runs on NixOS/nixpkgs repository,
-#          Nix git-machete package is updated with the fresh version/package hash according to the data from PyPI.
+      # Note: there are also releases happening outside of our CI:
+      # 1) every time a commit is pushed to `develop` or `master`, a build for docs (`latest` or `stable` version, respectively)
+      #    is triggered automatically via GitHub webhook on https://readthedocs.org/projects/git-machete/builds/,
+      # 2) every time a https://github.com/r-ryantm bot runs on NixOS/nixpkgs repository,
+      #    Nix git-machete package is updated with the fresh version/package hash according to the data from PyPI.
 
 mandatory_jobs: &mandatory_jobs
   - general checks
