@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.11.1
 
+- fixed: release to Snap Store
+
 ## New in git-machete 3.11.0
 
 - added: `git machete help config` help topic and sphinx documentation page for config keys and environment variables
