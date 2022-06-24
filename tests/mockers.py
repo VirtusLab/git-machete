@@ -55,10 +55,13 @@ class GitRepositorySandbox:
         subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)
         return self
 
-    def new_repo(self, *args: str) -> "GitRepositorySandbox":
+    def new_repo(self, *args: str, switch_dir_to_new_repo: bool = True) -> "GitRepositorySandbox":
+        previous_dir = os.getcwd()
         os.chdir(args[0])
         opts = args[1:]
         self.execute(f"git init {' '.join(opts)}")
+        if not switch_dir_to_new_repo:
+            os.chdir(previous_dir)
         return self
 
     def new_branch(self, branch_name: str) -> "GitRepositorySandbox":
