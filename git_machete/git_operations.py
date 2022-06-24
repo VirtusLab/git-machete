@@ -435,18 +435,27 @@ class GitContext:
             self.__load_branches()
         return self.__committer_unix_timestamp_by_revision_cached.get(revision.full_name(), 0)
 
-    def get_inferred_remote_for_fetching_of_branch(self, branch: LocalBranchShortName) -> Optional[str]:
-        # Since many people don't use '--set-upstream' flag of 'push', we try to infer the remote instead.
-        for remote in self.get_remotes():
-            if f"{remote}/{branch}" in self.get_remote_branches():
-                return remote
-        return None
+    def __get_remotes_associated_with_branch(self, branch: LocalBranchShortName, remotes: Optional[List[str]] = None) -> List[str]:
+        remotes = self.get_remotes() if remotes is None else remotes
+        remote_branches = self.get_remote_branches()
+        return [remote for remote in remotes if f'{remote}/{branch}' in remote_branches]
+
+    def get_inferred_remote_for_fetching_of_branch(self, branch: LocalBranchShortName, remotes: Optional[List[str]] = None) -> Optional[str]:
+        remotes_associated_with_branch: List[str] = self.__get_remotes_associated_with_branch(branch=branch, remotes=remotes)
+        if len(remotes_associated_with_branch) > 1 or len(remotes_associated_with_branch) == 0:
+            debug(f'Can\'t infer remote for fetching of branch.\n'
+                  f'There are {len(remotes_associated_with_branch)} remotes: {",".join(remotes_associated_with_branch)} '
+                  f'associated with {branch} branch.')
+            return None
+        else:
+            return remotes_associated_with_branch[0]
 
     def get_strict_remote_for_fetching_of_branch(self, branch: LocalBranchShortName) -> Optional[str]:
         remote = self.get_config_attr_or_none(f"branch.{branch}.remote")
         return remote.rstrip() if remote else None
 
     def get_combined_remote_for_fetching_of_branch(self, branch: LocalBranchShortName) -> Optional[str]:
+        # Since many people don't use '--set-upstream' flag of 'push', we try to infer the remote instead if the tracking data is missing.
         return self.get_strict_remote_for_fetching_of_branch(branch) or self.get_inferred_remote_for_fetching_of_branch(branch)
 
     def __get_inferred_counterpart_for_fetching_of_branch(self, branch: LocalBranchShortName) -> Optional[RemoteBranchShortName]:
