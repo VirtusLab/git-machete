@@ -2063,8 +2063,8 @@ class MacheteClient:
 
         if len(remote_and_github_org_and_repo) > 1 and branch_used_for_tracking_data is not None:
             remote_for_fetching_of_branch = self.__git.get_combined_remote_for_fetching_of_branch(
-                                                            branch=branch_used_for_tracking_data,
-                                                            remotes=list(remote_and_github_org_and_repo.keys()))
+                branch=branch_used_for_tracking_data,
+                remotes=list(remote_and_github_org_and_repo.keys()))
             if remote_for_fetching_of_branch is not None:
                 return remote_and_github_org_and_repo[remote_for_fetching_of_branch]
 
