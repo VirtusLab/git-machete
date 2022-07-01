@@ -441,14 +441,14 @@ class GitContext:
         return [remote for remote in remotes if f'{remote}/{branch}' in remote_branches]
 
     def get_inferred_remote_for_fetching_of_branch(self, branch: LocalBranchShortName, remotes: Optional[List[str]] = None) -> Optional[str]:
-        remotes_associated_with_branch: List[str] = self.__get_remotes_associated_with_branch(branch=branch, remotes=remotes)
-        if len(remotes_associated_with_branch) > 1 or len(remotes_associated_with_branch) == 0:
+        remotes_containing_branch: List[str] = self.__get_remotes_containing_branch(branch=branch, remotes=remotes)
+        if len(remotes_containing_branch) > 1 or len(remotes_containing_branch) == 0:
             debug(f'Can\'t infer remote for fetching of branch.\n'
-                  f'There are {len(remotes_associated_with_branch)} remotes: {",".join(remotes_associated_with_branch)} '
+                  f'There are {len(remotes_containing_branch)} remotes: {",".join(remotes_containing_branch)} '
                   f'associated with {branch} branch.')
             return None
         else:
-            return remotes_associated_with_branch[0]
+            return remotes_containing_branch[0]
 
     def get_strict_remote_for_fetching_of_branch(self, branch: LocalBranchShortName) -> Optional[str]:
         remote = self.get_config_attr_or_none(f"branch.{branch}.remote")
