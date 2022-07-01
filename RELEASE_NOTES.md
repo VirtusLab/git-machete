@@ -2,7 +2,7 @@
 
 ## New in git-machete 3.11.2
 
-- fixed: `git machete` now correctly infers remote for fetching of branch when the branch is associated with more than one remote
+- fixed: `git machete` now correctly infers remote for fetching of branch when the branch is found in more than one remote
 
 ## New in git-machete 3.11.1
 
