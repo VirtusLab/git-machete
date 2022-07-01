@@ -86,6 +86,12 @@ class TestGithub:
                 'user': {'login': 'github_user'},
                 'base': {'ref': 'root'}, 'number': '35',
                 'html_url': 'www.github.com', 'state': 'open'
+            },
+            {
+                'head': {'ref': 'feature_4', 'repo': mock_repository_info},
+                'user': {'login': 'github_user'},
+                'base': {'ref': 'root'}, 'number': '45',
+                'html_url': 'www.github.com', 'state': 'open'
             }
         ]
     )
@@ -134,12 +140,12 @@ class TestGithub:
 
         origin_1_remote_path = mkdtemp()
         origin_2_remote_path = mkdtemp()
-        self.repo_sandbox.new_repo(origin_1_remote_path, "--bare")
-        self.repo_sandbox.new_repo(origin_2_remote_path, "--bare")
+        self.repo_sandbox.new_repo(origin_1_remote_path)
+        self.repo_sandbox.new_repo(origin_2_remote_path)
 
         os.chdir(self.repo_sandbox.local_path)
 
-        # branch feature present in all of the remotes
+        # branch feature present in all of the remotes, no branch tracking data
         (
             self.repo_sandbox.remove_remote(remote='origin')
                 .new_branch("root")
@@ -155,8 +161,8 @@ class TestGithub:
                 .push(remote='origin_2')
                 .new_branch('feature')
                 .commit('introduce feature')
-                .push(remote='origin_1')
-                .push(remote='origin_2')
+                .push(remote='origin_1', set_upstream=False)
+                .push(remote='origin_2', set_upstream=False)
         )
 
         launch_command("discover", "-y")
@@ -170,7 +176,7 @@ class TestGithub:
             assert e.value.args[0] == expected_error_message, \
                 'Verify that expected error message has appeared when given pull request to create is already created.'
 
-        # branch feature_2 present in none of the remotes
+        # branch feature_2 is not present in any of the remotes
         (
             self.repo_sandbox.check_out('feature')
                 .new_branch('feature_2')
@@ -184,10 +190,10 @@ class TestGithub:
             assert e.value.args[0] == expected_error_message, \
                 'Verify that expected error message has appeared when given pull request to create is already created.'
 
-        # branch feature_2 present in only one remote: origin_1
+        # branch feature_2 present in only one remote: origin_1 and there is no tracking data available -> infer the remote
         (
             self.repo_sandbox.check_out('feature_2')
-                .push(remote='origin_1')
+                .push(remote='origin_1', set_upstream=False)
         )
 
         assert_command(
@@ -196,18 +202,33 @@ class TestGithub:
             strip_indentation=False
         )
 
-        # branch feature_3 present in only one remote: origin_2
+        # branch feature_3 present in only one remote: origin_1 and has tracking data
         (
             self.repo_sandbox.check_out('feature_2')
                 .new_branch('feature_3')
                 .commit('introduce feature 3')
-                .push(remote='origin_2')
+                .push(remote='origin_1')
         )
 
         launch_command("discover", "-y")
         assert_command(
             ['github', 'retarget-pr'],
             'The base branch of PR #35 has been switched to `feature_2`\n',
+            strip_indentation=False
+        )
+
+        # branch feature_4 present in only one remote: origin_2
+        (
+            self.repo_sandbox.check_out('feature_2')
+                .new_branch('feature_4')
+                .commit('introduce feature 4')
+                .push(remote='origin_2')
+        )
+
+        launch_command("discover", "-y")
+        assert_command(
+            ['github', 'retarget-pr'],
+            'The base branch of PR #45 has been switched to `feature_2`\n',
             strip_indentation=False
         )
 
