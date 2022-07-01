@@ -435,7 +435,7 @@ class GitContext:
             self.__load_branches()
         return self.__committer_unix_timestamp_by_revision_cached.get(revision.full_name(), 0)
 
-    def __get_remotes_associated_with_branch(self, branch: LocalBranchShortName, remotes: Optional[List[str]] = None) -> List[str]:
+    def __get_remotes_containing_branch(self, branch: LocalBranchShortName, remotes: Optional[List[str]] = None) -> List[str]:
         remotes = remotes if remotes else self.get_remotes()
         remote_branches = self.get_remote_branches()
         return [remote for remote in remotes if f'{remote}/{branch}' in remote_branches]
