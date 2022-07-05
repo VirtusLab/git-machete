@@ -2010,9 +2010,6 @@ class MacheteClient:
         return None
 
     def retarget_github_pr(self, head: LocalBranchShortName) -> None:
-        for remote in self.__git.get_remotes():
-            self.__git.fetch_remote(remote)
-
         org: str
         repo: str
         _, org, repo = self.__derive_remote_and_github_org_and_repo(branch_used_for_tracking_data=head)

@@ -45,10 +45,6 @@ def mock__get_github_token_fake() -> Optional[str]:
     return 'token'
 
 
-def mock_fetch_remote(self: Any, remote: str) -> None:
-    pass
-
-
 class TestGithub:
     mock_repository_info: Dict[str, str] = {'full_name': 'testing/checkout_prs',
                                             'html_url': 'https://github.com/tester/repo_sandbox.git'}
@@ -76,6 +72,12 @@ class TestGithub:
                 'html_url': 'www.github.com', 'state': 'open'
             },
             {
+                'head': {'ref': 'feature_1', 'repo': mock_repository_info},
+                'user': {'login': 'github_user'},
+                'base': {'ref': 'root'}, 'number': '20',
+                'html_url': 'www.github.com', 'state': 'open'
+            },
+            {
                 'head': {'ref': 'feature_2', 'repo': mock_repository_info},
                 'user': {'login': 'github_user'},
                 'base': {'ref': 'root'}, 'number': '25',
@@ -97,7 +99,6 @@ class TestGithub:
     )
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    @mock.patch('git_machete.git_operations.GitContext.fetch_remote', mock_fetch_remote)
     @mock.patch('urllib.request.Request', git_api_state_for_test_retarget_pr.new_request())
     @mock.patch('urllib.request.urlopen', MockContextManager)
     def test_github_retarget_pr(self) -> None:
@@ -145,7 +146,7 @@ class TestGithub:
 
         os.chdir(self.repo_sandbox.local_path)
 
-        # branch feature present in all of the remotes, no branch tracking data
+        # branch feature present in each of the remotes, no branch tracking data
         (
             self.repo_sandbox.remove_remote(remote='origin')
                 .new_branch("root")
@@ -175,6 +176,22 @@ class TestGithub:
         if e:
             assert e.value.args[0] == expected_error_message, \
                 'Verify that expected error message has appeared when given pull request to create is already created.'
+
+        # branch feature_1 present in each of the remotes, tracking data present
+        (
+            self.repo_sandbox.check_out('feature')
+                .new_branch('feature_1')
+                .commit('introduce feature 1')
+                .push(remote='origin_1')
+                .push(remote='origin_2')
+        )
+
+        launch_command("discover", "-y")
+        assert_command(
+            ['github', 'retarget-pr'],
+            'The base branch of PR #20 has been switched to `feature`\n',
+            strip_indentation=False
+        )
 
         # branch feature_2 is not present in any of the remotes
         (
@@ -217,7 +234,7 @@ class TestGithub:
             strip_indentation=False
         )
 
-        # branch feature_4 present in only one remote: origin_2
+        # branch feature_4 present in only one remote: origin_2 and has tracking data
         (
             self.repo_sandbox.check_out('feature_2')
                 .new_branch('feature_4')
