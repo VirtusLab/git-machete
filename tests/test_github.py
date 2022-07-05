@@ -45,10 +45,6 @@ def mock__get_github_token_fake() -> Optional[str]:
     return 'token'
 
 
-def mock_fetch_remote(self: Any, remote: str) -> None:
-    pass
-
-
 def mock_input(msg: str) -> str:
     print(msg)
     return '1'
@@ -634,7 +630,7 @@ class TestGithub:
 
         os.chdir(self.repo_sandbox.local_path)
 
-        # branch feature present in each remote
+        # branch feature present in each of the remotes, no branch tracking data
         (
             self.repo_sandbox.remove_remote(remote='origin')
                 .new_branch("root")
@@ -649,8 +645,8 @@ class TestGithub:
                 .push(remote='origin_2')
                 .new_branch('feature')
                 .commit('introduce feature')
-                .push(remote='origin_1')
-                .push(remote='origin_2')
+                .push(remote='origin_1', set_upstream=False)
+                .push(remote='origin_2', set_upstream=False)
         )
 
         launch_command("discover", "-y")
@@ -663,6 +659,26 @@ class TestGithub:
         if e:
             assert e.value.args[0] == expected_error_message, \
                 'Verify that expected error message has appeared when given pull request to create is already created.'
+
+        # branch feature_1 present in each of the remotes, tracking data present
+        (
+            self.repo_sandbox.check_out('feature')
+                .new_branch('feature_1')
+                .commit('introduce feature 1')
+                .push(remote='origin_1')
+                .push(remote='origin_2')
+        )
+
+        expected_result = """Added branch `feature_1` onto `feature`
+        Fetching origin_1...
+        Creating a PR from `feature_1` to `feature`... -> OK, see www.github.com
+        Adding `other_user` as assignee to PR #16... -> OK
+        """
+        assert_command(
+            ['github', 'create-pr'],
+            expected_result,
+            strip_indentation=False
+        )
 
         # branch feature_2 not present in any of the remotes, remote origin_1 picked manually vai mock_input()
         (
@@ -686,7 +702,7 @@ Select number 1..2 to specify the destination remote repository, or 'q' to quit 
 
 Fetching origin_1...
 Creating a PR from `feature_2` to `feature`... -> OK, see www.github.com
-Adding `other_user` as assignee to PR #16... -> OK
+Adding `other_user` as assignee to PR #17... -> OK
 """
 
         launch_command("discover", "-y")
@@ -708,7 +724,7 @@ Adding `other_user` as assignee to PR #16... -> OK
         expected_result = """Added branch `feature_3` onto `feature_2`
 Fetching origin_1...
 Creating a PR from `feature_3` to `feature_2`... -> OK, see www.github.com
-Adding `other_user` as assignee to PR #17... -> OK
+Adding `other_user` as assignee to PR #18... -> OK
 """
         key_1 = self.repo_sandbox.get_git_config_key(f'branch.feature_3.remote')
         assert_command(
@@ -729,7 +745,7 @@ Adding `other_user` as assignee to PR #17... -> OK
 Fetching origin_2...
 Warn: Base branch for this PR (`feature_3`) is not found on remote, pushing...
 Creating a PR from `feature_4` to `feature_3`... -> OK, see www.github.com
-Adding `other_user` as assignee to PR #18... -> OK
+Adding `other_user` as assignee to PR #19... -> OK
 """
 
         key_2 = self.repo_sandbox.get_git_config_key(f'branch.feature_4.remote')

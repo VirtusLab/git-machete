@@ -2089,9 +2089,6 @@ class MacheteClient:
             opt_draft: bool,
             opt_onto: Optional[LocalBranchShortName]
     ) -> None:
-        for remote in self.__git.get_remotes():
-            self.__git.fetch_remote(remote)
-
         # first make sure that head branch is synced with remote
         self.__sync_before_creating_pr(opt_onto=opt_onto, opt_yes=False)
         self.flush_caches()
