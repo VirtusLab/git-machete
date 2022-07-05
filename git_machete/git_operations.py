@@ -445,7 +445,7 @@ class GitContext:
         if len(remotes_containing_branch) > 1 or len(remotes_containing_branch) == 0:
             debug(f'Can\'t infer remote for fetching of branch.\n'
                   f'There are {len(remotes_containing_branch)} remotes: {",".join(remotes_containing_branch)} '
-                  f'associated with {branch} branch.')
+                  f'containing branch '{branch}'.')
             return None
         else:
             return remotes_containing_branch[0]
