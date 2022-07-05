@@ -609,6 +609,7 @@ class TestGithub:
             {'number': '17'},
             {'number': '18'},
             {'number': '19'},
+            {'number': '20'},
         ]
     )
 
@@ -630,7 +631,7 @@ class TestGithub:
 
         os.chdir(self.repo_sandbox.local_path)
 
-        # branch feature present in each of the remotes, no branch tracking data
+        # branch feature present in each of the remotes, no branch tracking data, remote origin_1 picked manually via mock_input()
         (
             self.repo_sandbox.remove_remote(remote='origin')
                 .new_branch("root")
@@ -650,16 +651,27 @@ class TestGithub:
         )
 
         launch_command("discover", "-y")
-        expected_error_message = (
-            "Multiple non-origin remotes correspond to GitHub in this repository: origin_1, origin_2 -> aborting. \n"
-            "You can also select the repository by providing 3 git config keys: `machete.github.{remote,organization,repository}`\n"
-        )
-        with pytest.raises(MacheteException) as e:
-            launch_command("github", "create-pr")
-        if e:
-            assert e.value.args[0] == expected_error_message, \
-                'Verify that expected error message has appeared when given pull request to create is already created.'
+        expected_result = """Branch `feature` is untracked and there's no `origin` repository.
+[1] origin_1
+[2] origin_2
+Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request: 
+Branch feature is untracked, but its remote counterpart candidate origin_1/feature already exists and both branches point to the same commit.
 
+  root
+  | 
+  o-branch-1
+    | 
+    o-feature *
+
+Fetching origin_1...
+Creating a PR from `feature` to `branch-1`... -> OK, see www.github.com
+Adding `other_user` as assignee to PR #16... -> OK
+"""
+        assert_command(
+            ['github', 'create-pr'],
+            expected_result,
+            strip_indentation=False
+        )
         # branch feature_1 present in each of the remotes, tracking data present
         (
             self.repo_sandbox.check_out('feature')
@@ -670,24 +682,25 @@ class TestGithub:
         )
 
         expected_result = """Added branch `feature_1` onto `feature`
-        Fetching origin_1...
-        Creating a PR from `feature_1` to `feature`... -> OK, see www.github.com
-        Adding `other_user` as assignee to PR #16... -> OK
-        """
+Fetching origin_2...
+Creating a PR from `feature_1` to `feature`... -> OK, see www.github.com
+Adding `other_user` as assignee to PR #17... -> OK
+"""
         assert_command(
             ['github', 'create-pr'],
             expected_result,
             strip_indentation=False
         )
 
-        # branch feature_2 not present in any of the remotes, remote origin_1 picked manually vai mock_input()
+        # branch feature_2 not present in any of the remotes, remote origin_1 picked manually via mock_input()
         (
             self.repo_sandbox.check_out('feature')
                 .new_branch('feature_2')
                 .commit('introduce feature 2')
         )
 
-        expected_result = """Branch `feature_2` is untracked and there's no `origin` repository.
+        expected_result = """Added branch `feature_2` onto `feature`
+Branch `feature_2` is untracked and there's no `origin` repository.
 [1] origin_1
 [2] origin_2
 Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request: 
@@ -696,17 +709,16 @@ Select number 1..2 to specify the destination remote repository, or 'q' to quit 
   | 
   o-branch-1
     | 
-    o-feature
+    o-feature  PR #16
+      | 
+      o-feature_1  PR #17
       | 
       o-feature_2 *
 
 Fetching origin_1...
 Creating a PR from `feature_2` to `feature`... -> OK, see www.github.com
-Adding `other_user` as assignee to PR #17... -> OK
+Adding `other_user` as assignee to PR #18... -> OK
 """
-
-        launch_command("discover", "-y")
-        key = self.repo_sandbox.get_git_config_key(f'branch.feature.remote')
         assert_command(
             ['github', 'create-pr'],
             expected_result,
@@ -724,9 +736,8 @@ Adding `other_user` as assignee to PR #17... -> OK
         expected_result = """Added branch `feature_3` onto `feature_2`
 Fetching origin_1...
 Creating a PR from `feature_3` to `feature_2`... -> OK, see www.github.com
-Adding `other_user` as assignee to PR #18... -> OK
+Adding `other_user` as assignee to PR #19... -> OK
 """
-        key_1 = self.repo_sandbox.get_git_config_key(f'branch.feature_3.remote')
         assert_command(
             ['github', 'create-pr'],
             expected_result,
@@ -745,10 +756,9 @@ Adding `other_user` as assignee to PR #18... -> OK
 Fetching origin_2...
 Warn: Base branch for this PR (`feature_3`) is not found on remote, pushing...
 Creating a PR from `feature_4` to `feature_3`... -> OK, see www.github.com
-Adding `other_user` as assignee to PR #19... -> OK
+Adding `other_user` as assignee to PR #20... -> OK
 """
 
-        key_2 = self.repo_sandbox.get_git_config_key(f'branch.feature_4.remote')
         assert_command(
             ['github', 'create-pr'],
             expected_result,
