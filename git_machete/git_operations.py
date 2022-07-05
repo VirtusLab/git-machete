@@ -463,7 +463,7 @@ class GitContext:
         if len(remotes_containing_branch) > 1 or len(remotes_containing_branch) == 0:
             debug(f'Can\'t infer local branch\'s remote counterpart for fetching of branch.\n'
                   f'There are {len(remotes_containing_branch)} remotes: {",".join(remotes_containing_branch)} '
-                  f'associated with {branch} branch.')
+                  f'containing branch {branch}.')
             return None
         else:
             return RemoteBranchShortName.of(f"{remotes_containing_branch[0]}/{branch}")
