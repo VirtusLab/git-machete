@@ -88,12 +88,6 @@ class TestGithub:
                 'user': {'login': 'github_user'},
                 'base': {'ref': 'root'}, 'number': '35',
                 'html_url': 'www.github.com', 'state': 'open'
-            },
-            {
-                'head': {'ref': 'feature_4', 'repo': mock_repository_info},
-                'user': {'login': 'github_user'},
-                'base': {'ref': 'root'}, 'number': '45',
-                'html_url': 'www.github.com', 'state': 'open'
             }
         ]
     )
@@ -146,7 +140,7 @@ class TestGithub:
 
         os.chdir(self.repo_sandbox.local_path)
 
-        # branch feature present in each of the remotes, no branch tracking data
+        # branch feature present in each remote, no branch tracking data
         (
             self.repo_sandbox.remove_remote(remote='origin')
                 .new_branch("root")
@@ -177,7 +171,7 @@ class TestGithub:
             assert e.value.args[0] == expected_error_message, \
                 'Verify that expected error message has appeared when given pull request to create is already created.'
 
-        # branch feature_1 present in each of the remotes, tracking data present
+        # branch feature_1 present in each remote, tracking data present
         (
             self.repo_sandbox.check_out('feature')
                 .new_branch('feature_1')
@@ -231,21 +225,6 @@ class TestGithub:
         assert_command(
             ['github', 'retarget-pr'],
             'The base branch of PR #35 has been switched to `feature_2`\n',
-            strip_indentation=False
-        )
-
-        # branch feature_4 present in only one remote: origin_2 and has tracking data
-        (
-            self.repo_sandbox.check_out('feature_2')
-                .new_branch('feature_4')
-                .commit('introduce feature 4')
-                .push(remote='origin_2')
-        )
-
-        launch_command("discover", "-y")
-        assert_command(
-            ['github', 'retarget-pr'],
-            'The base branch of PR #45 has been switched to `feature_2`\n',
             strip_indentation=False
         )
 
