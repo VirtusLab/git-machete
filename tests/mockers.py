@@ -55,9 +55,6 @@ class GitRepositorySandbox:
         subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)
         return self
 
-    def execute_with_output(self, command: str) -> "GitRepositorySandbox":
-        return subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True).decode('utf-8')
-
     def new_repo(self, *args: str) -> "GitRepositorySandbox":
         os.chdir(args[0])
         opts = args[1:]
@@ -121,9 +118,6 @@ class GitRepositorySandbox:
     def add_git_config_key(self, key: str, value: str) -> "GitRepositorySandbox":
         self.execute(f'git config {key} {value}')
         return self
-
-    def get_git_config_key(self, key: str) -> "GitRepositorySandbox":
-        return self.execute_with_output(f'git config --get {key}')
 
     def write_to_file(self, file_name: str, file_content: str) -> "GitRepositorySandbox":
         with open(file_name, 'w') as f:
