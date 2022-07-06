@@ -1,5 +1,6 @@
 import os
 import subprocess
+from tempfile import mkdtemp
 from typing import Any, Dict, Optional
 from unittest import mock
 
@@ -69,6 +70,24 @@ class TestGithub:
                 'user': {'login': 'github_user'},
                 'base': {'ref': 'root'}, 'number': '15',
                 'html_url': 'www.github.com', 'state': 'open'
+            },
+            {
+                'head': {'ref': 'feature_1', 'repo': mock_repository_info},
+                'user': {'login': 'github_user'},
+                'base': {'ref': 'root'}, 'number': '20',
+                'html_url': 'www.github.com', 'state': 'open'
+            },
+            {
+                'head': {'ref': 'feature_2', 'repo': mock_repository_info},
+                'user': {'login': 'github_user'},
+                'base': {'ref': 'root'}, 'number': '25',
+                'html_url': 'www.github.com', 'state': 'open'
+            },
+            {
+                'head': {'ref': 'feature_3', 'repo': mock_repository_info},
+                'user': {'login': 'github_user'},
+                'base': {'ref': 'root'}, 'number': '35',
+                'html_url': 'www.github.com', 'state': 'open'
             }
         ]
     )
@@ -102,6 +121,110 @@ class TestGithub:
         assert_command(
             ['github', 'retarget-pr'],
             'The base branch of PR #15 is already `branch-1`\n',
+            strip_indentation=False
+        )
+
+    @mock.patch('git_machete.cli.exit_script', mock_exit_script)
+    @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
+    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+    @mock.patch('urllib.request.Request', git_api_state_for_test_retarget_pr.new_request())
+    @mock.patch('urllib.request.urlopen', MockContextManager)
+    def test_github_retarget_pr_multiple_non_origin_remotes(self) -> None:
+        branchs_first_commit_msg = "First commit on branch."
+        branchs_second_commit_msg = "Second commit on branch."
+
+        origin_1_remote_path = mkdtemp()
+        origin_2_remote_path = mkdtemp()
+        self.repo_sandbox.new_repo(origin_1_remote_path)
+        self.repo_sandbox.new_repo(origin_2_remote_path)
+
+        os.chdir(self.repo_sandbox.local_path)
+
+        # branch feature present in each remote, no branch tracking data
+        (
+            self.repo_sandbox.remove_remote(remote='origin')
+                .new_branch("root")
+                .add_remote('origin_1', origin_1_remote_path)
+                .add_remote('origin_2', origin_2_remote_path)
+                .commit("First commit on root.")
+                .push(remote='origin_1')
+                .push(remote='origin_2')
+                .new_branch("branch-1")
+                .commit(branchs_first_commit_msg)
+                .commit(branchs_second_commit_msg)
+                .push(remote='origin_1')
+                .push(remote='origin_2')
+                .new_branch('feature')
+                .commit('introduce feature')
+                .push(remote='origin_1', set_upstream=False)
+                .push(remote='origin_2', set_upstream=False)
+        )
+
+        launch_command("discover", "-y")
+        expected_error_message = (
+            "Multiple non-origin remotes correspond to GitHub in this repository: origin_1, origin_2 -> aborting. \n"
+            "You can also select the repository by providing 3 git config keys: `machete.github.{remote,organization,repository}`\n"
+        )
+        with pytest.raises(MacheteException) as e:
+            launch_command("github", "retarget-pr")
+        if e:
+            assert e.value.args[0] == expected_error_message, \
+                'Verify that expected error message has appeared when given pull request to create is already created.'
+
+        # branch feature_1 present in each remote, tracking data present
+        (
+            self.repo_sandbox.check_out('feature')
+                .new_branch('feature_1')
+                .commit('introduce feature 1')
+                .push(remote='origin_1')
+                .push(remote='origin_2')
+        )
+
+        launch_command("discover", "-y")
+        assert_command(
+            ['github', 'retarget-pr'],
+            'The base branch of PR #20 has been switched to `feature`\n',
+            strip_indentation=False
+        )
+
+        # branch feature_2 is not present in any of the remotes
+        (
+            self.repo_sandbox.check_out('feature')
+                .new_branch('feature_2')
+                .commit('introduce feature 2')
+        )
+
+        launch_command("discover", "-y")
+        with pytest.raises(MacheteException) as e:
+            launch_command("github", "retarget-pr")
+        if e:
+            assert e.value.args[0] == expected_error_message, \
+                'Verify that expected error message has appeared when given pull request to create is already created.'
+
+        # branch feature_2 present in only one remote: origin_1 and there is no tracking data available -> infer the remote
+        (
+            self.repo_sandbox.check_out('feature_2')
+                .push(remote='origin_1', set_upstream=False)
+        )
+
+        assert_command(
+            ['github', 'retarget-pr'],
+            'The base branch of PR #25 has been switched to `feature`\n',
+            strip_indentation=False
+        )
+
+        # branch feature_3 present in only one remote: origin_1 and has tracking data
+        (
+            self.repo_sandbox.check_out('feature_2')
+                .new_branch('feature_3')
+                .commit('introduce feature 3')
+                .push(remote='origin_1')
+        )
+
+        launch_command("discover", "-y")
+        assert_command(
+            ['github', 'retarget-pr'],
+            'The base branch of PR #35 has been switched to `feature_2`\n',
             strip_indentation=False
         )
 

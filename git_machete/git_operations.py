@@ -454,9 +454,9 @@ class GitContext:
         remote = self.get_config_attr_or_none(f"branch.{branch}.remote")
         return remote.rstrip() if remote else None
 
-    def get_combined_remote_for_fetching_of_branch(self, branch: LocalBranchShortName) -> Optional[str]:
+    def get_combined_remote_for_fetching_of_branch(self, branch: LocalBranchShortName, remotes: Optional[List[str]] = None) -> Optional[str]:
         # Since many people don't use '--set-upstream' flag of 'push', we try to infer the remote instead if the tracking data is missing.
-        return self.get_strict_remote_for_fetching_of_branch(branch) or self.get_inferred_remote_for_fetching_of_branch(branch)
+        return self.get_strict_remote_for_fetching_of_branch(branch) or self.get_inferred_remote_for_fetching_of_branch(branch, remotes)
 
     def __get_inferred_counterpart_for_fetching_of_branch(self, branch: LocalBranchShortName) -> Optional[RemoteBranchShortName]:
         for remote in self.get_remotes():
