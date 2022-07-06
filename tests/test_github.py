@@ -45,6 +45,11 @@ def mock__get_github_token_fake() -> Optional[str]:
     return 'token'
 
 
+def mock_input(msg: str) -> str:
+    print(msg)
+    return '1'
+
+
 class TestGithub:
     mock_repository_info: Dict[str, str] = {'full_name': 'testing/checkout_prs',
                                             'html_url': 'https://github.com/tester/repo_sandbox.git'}
@@ -588,6 +593,186 @@ class TestGithub:
               |
               o-feature/api_exception_handling *  PR #19
             """,
+        )
+
+    git_api_state_for_test_github_create_pr_with_multiple_non_origin_remotes = MockGitHubAPIState(
+        [
+            {
+                'head': {'ref': 'branch-1', 'repo': mock_repository_info},
+                'user': {'login': 'github_user'},
+                'base': {'ref': 'root'}, 'number': '15',
+                'html_url': 'www.github.com', 'state': 'open'
+            }
+        ],
+        issues=[
+            {'number': '16'},
+            {'number': '17'},
+            {'number': '18'},
+            {'number': '19'},
+            {'number': '20'},
+        ]
+    )
+
+    @mock.patch('git_machete.cli.exit_script', mock_exit_script)
+    @mock.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
+    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_create_pr` due to `git fetch` executed by `create-pr` subcommand.
+    @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
+    @mock.patch('git_machete.github.__get_github_token', mock__get_github_token)
+    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+    @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
+    @mock.patch('urllib.error.HTTPError', MockHTTPError)  # need to provide read() method, which does not actually reads error from url
+    @mock.patch('urllib.request.Request', git_api_state_for_test_github_create_pr_with_multiple_non_origin_remotes.new_request())
+    @mock.patch('urllib.request.urlopen', MockContextManager)
+    @mock.patch('builtins.input', mock_input)
+    def test_github_create_pr_with_multiple_non_origin_remotes(self) -> None:
+        origin_1_remote_path = mkdtemp()
+        origin_2_remote_path = mkdtemp()
+        self.repo_sandbox.new_repo(origin_1_remote_path, "--bare")
+        self.repo_sandbox.new_repo(origin_2_remote_path, "--bare")
+
+        os.chdir(self.repo_sandbox.local_path)
+
+        # branch feature present in each of the remotes, no branch tracking data, remote origin_1 picked manually via mock_input()
+        (
+            self.repo_sandbox.remove_remote(remote='origin')
+                .new_branch("root")
+                .add_remote('origin_1', origin_1_remote_path)
+                .add_remote('origin_2', origin_2_remote_path)
+                .commit("First commit on root.")
+                .push(remote='origin_1')
+                .push(remote='origin_2')
+                .new_branch("branch-1")
+                .commit('First commit on branch-1.')
+                .push(remote='origin_1')
+                .push(remote='origin_2')
+                .new_branch('feature')
+                .commit('introduce feature')
+                .push(remote='origin_1', set_upstream=False)
+                .push(remote='origin_2', set_upstream=False)
+        )
+
+        launch_command("discover", "-y")
+        expected_result = """Branch `feature` is untracked and there's no `origin` repository.
+[1] origin_1
+[2] origin_2
+Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request: 
+Branch feature is untracked, but its remote counterpart candidate origin_1/feature already exists and both branches point to the same commit.
+
+  root
+  | 
+  o-branch-1
+    | 
+    o-feature *
+
+Fetching origin_1...
+Creating a PR from `feature` to `branch-1`... -> OK, see www.github.com
+"""  # noqa: W291
+        assert_command(
+            ['github', 'create-pr'],
+            expected_result,
+            strip_indentation=False
+        )
+        # branch feature_1 present in each of the remotes, tracking data present
+        (
+            self.repo_sandbox.check_out('feature')
+                .new_branch('feature_1')
+                .commit('introduce feature 1')
+                .push(remote='origin_1')
+                .push(remote='origin_2')
+        )
+
+        expected_result = """Added branch `feature_1` onto `feature`
+Fetching origin_2...
+Creating a PR from `feature_1` to `feature`... -> OK, see www.github.com
+"""
+        assert_command(
+            ['github', 'create-pr'],
+            expected_result,
+            strip_indentation=False
+        )
+
+        # branch feature_2 not present in any of the remotes, remote origin_1 picked manually via mock_input()
+        (
+            self.repo_sandbox.check_out('feature')
+                .new_branch('feature_2')
+                .commit('introduce feature 2')
+        )
+
+        expected_result = """Added branch `feature_2` onto `feature`
+Branch `feature_2` is untracked and there's no `origin` repository.
+[1] origin_1
+[2] origin_2
+Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request: 
+
+  root
+  | 
+  o-branch-1
+    | 
+    o-feature  PR #16
+      | 
+      o-feature_1  PR #17
+      | 
+      o-feature_2 *
+
+Fetching origin_1...
+Creating a PR from `feature_2` to `feature`... -> OK, see www.github.com
+"""  # noqa: W291
+        assert_command(
+            ['github', 'create-pr'],
+            expected_result,
+            strip_indentation=False
+        )
+
+        # branch feature_2 present in only one remote: origin_1, no tracking data
+        (
+            self.repo_sandbox.check_out('feature_2')
+                .new_branch('feature_3')
+                .commit('introduce feature 3')
+                .push(remote='origin_1', set_upstream=False)
+        )
+
+        expected_result = """Added branch `feature_3` onto `feature_2`
+Branch feature_3 is untracked, but its remote counterpart candidate origin_1/feature_3 already exists and both branches point to the same commit.
+
+  root
+  | 
+  o-branch-1
+    | 
+    o-feature  PR #16
+      | 
+      o-feature_1  PR #17
+      | 
+      o-feature_2  PR #18
+        | 
+        o-feature_3 *
+
+Fetching origin_1...
+Creating a PR from `feature_3` to `feature_2`... -> OK, see www.github.com
+"""  # noqa: W291
+        assert_command(
+            ['github', 'create-pr'],
+            expected_result,
+            strip_indentation=False
+        )
+
+        # branch feature_3 present in only one remote: origin_2, tracking data present
+        (
+            self.repo_sandbox.check_out('feature_3')
+                .new_branch('feature_4')
+                .commit('introduce feature 4')
+                .push(remote='origin_2')
+        )
+
+        expected_result = """Added branch `feature_4` onto `feature_3`
+Fetching origin_2...
+Warn: Base branch for this PR (`feature_3`) is not found on remote, pushing...
+Creating a PR from `feature_4` to `feature_3`... -> OK, see www.github.com
+"""
+
+        assert_command(
+            ['github', 'create-pr'],
+            expected_result,
+            strip_indentation=False
         )
 
     git_api_state_for_test_checkout_prs = MockGitHubAPIState(

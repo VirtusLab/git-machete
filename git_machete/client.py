@@ -2083,7 +2083,12 @@ class MacheteClient:
                                                   repository=self.__git.get_config_attr_or_none("machete.github.repository"))
 
     def create_github_pr(
-            self, *, head: LocalBranchShortName, opt_draft: bool, opt_onto: Optional[LocalBranchShortName]) -> None:
+            self,
+            *,
+            head: LocalBranchShortName,
+            opt_draft: bool,
+            opt_onto: Optional[LocalBranchShortName]
+    ) -> None:
         # first make sure that head branch is synced with remote
         self.__sync_before_creating_pr(opt_onto=opt_onto, opt_yes=False)
         self.flush_caches()
@@ -2093,7 +2098,7 @@ class MacheteClient:
             raise MacheteException(f'Could not determine base branch for PR. Branch `{head}` is a root branch.')
         org: str
         repo: str
-        remote, org, repo = self.__derive_remote_and_github_org_and_repo()
+        remote, org, repo = self.__derive_remote_and_github_org_and_repo(branch_used_for_tracking_data=head)
         print(f"Fetching {remote}...")
         self.__git.fetch_remote(remote)
         if '/'.join([remote, base]) not in self.__git.get_remote_branches():
