@@ -723,25 +723,39 @@ Creating a PR from `feature_2` to `feature`... -> OK, see www.github.com
             strip_indentation=False
         )
 
-        # branch feature_2 present in only one remote: origin_1
+        # branch feature_2 present in only one remote: origin_1, no tracking data
         (
             self.repo_sandbox.check_out('feature_2')
                 .new_branch('feature_3')
                 .commit('introduce feature 3')
-                .push(remote='origin_1')
+                .push(remote='origin_1', set_upstream=False)
         )
 
         expected_result = """Added branch `feature_3` onto `feature_2`
+Branch feature_3 is untracked, but its remote counterpart candidate origin_1/feature_3 already exists and both branches point to the same commit.
+
+  root
+  |
+  o-branch-1
+    |
+    o-feature  PR #16
+      |
+      o-feature_1  PR #17
+      |
+      o-feature_2  PR #18
+        |
+        o-feature_3 *
+
 Fetching origin_1...
 Creating a PR from `feature_3` to `feature_2`... -> OK, see www.github.com
 """
         assert_command(
             ['github', 'create-pr'],
-            expected_result,
+            expected_result.replace('|', '| '),
             strip_indentation=False
         )
 
-        # branch feature_3 present in only one remote: origin_2
+        # branch feature_3 present in only one remote: origin_2, tracking data present
         (
             self.repo_sandbox.check_out('feature_3')
                 .new_branch('feature_4')
