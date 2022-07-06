@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.11.2
+
 ## New in git-machete 3.11.1
 
 - fixed: release to Snap Store
