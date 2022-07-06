@@ -748,7 +748,7 @@ Branch feature_3 is untracked, but its remote counterpart candidate origin_1/fea
 
 Fetching origin_1...
 Creating a PR from `feature_3` to `feature_2`... -> OK, see www.github.com
-"""
+"""  # noqa: W291
         assert_command(
             ['github', 'create-pr'],
             expected_result,
