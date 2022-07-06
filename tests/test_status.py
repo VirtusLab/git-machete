@@ -276,6 +276,6 @@ class TestStatus:
       o-snickers
         | 
         o-mars *
-"""  # noqa: E122
+"""  # noqa: E122, W291
         )
         assert_command(['status'], expected_status_output, strip_indentation=False)
