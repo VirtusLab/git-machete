@@ -459,10 +459,14 @@ class GitContext:
         return self.get_strict_remote_for_fetching_of_branch(branch) or self.get_inferred_remote_for_fetching_of_branch(branch, remotes)
 
     def __get_inferred_counterpart_for_fetching_of_branch(self, branch: LocalBranchShortName) -> Optional[RemoteBranchShortName]:
-        for remote in self.get_remotes():
-            if f"{remote}/{branch}" in self.get_remote_branches():
-                return RemoteBranchShortName.of(f"{remote}/{branch}")
-        return None
+        remotes_containing_branch: List[str] = self.__get_remotes_containing_branch(branch)
+        if len(remotes_containing_branch) > 1 or len(remotes_containing_branch) == 0:
+            debug(f'Can\'t infer local branch\'s remote counterpart for fetching of branch.\n'
+                  f'There are {len(remotes_containing_branch)} remotes: {", ".join(remotes_containing_branch)} '
+                  f'containing branch {branch}.')
+            return None
+        else:
+            return RemoteBranchShortName.of(f"{remotes_containing_branch[0]}/{branch}")
 
     def get_strict_counterpart_for_fetching_of_branch(self, branch: LocalBranchShortName) -> Optional[RemoteBranchShortName]:
         if self.__counterparts_for_fetching_cached is None:
