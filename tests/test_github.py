@@ -655,13 +655,13 @@ class TestGithub:
         expected_result = """Branch `feature` is untracked and there's no `origin` repository.
 [1] origin_1
 [2] origin_2
-Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request: 
+Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request:
 Branch feature is untracked, but its remote counterpart candidate origin_1/feature already exists and both branches point to the same commit.
 
   root
-  | 
+  |
   o-branch-1
-    | 
+    |
     o-feature *
 
 Fetching origin_1...
@@ -669,7 +669,7 @@ Creating a PR from `feature` to `branch-1`... -> OK, see www.github.com
 """
         assert_command(
             ['github', 'create-pr'],
-            expected_result,
+            expected_result.replace('|', '| '),
             strip_indentation=False
         )
         # branch feature_1 present in each of the remotes, tracking data present
@@ -702,16 +702,16 @@ Creating a PR from `feature_1` to `feature`... -> OK, see www.github.com
 Branch `feature_2` is untracked and there's no `origin` repository.
 [1] origin_1
 [2] origin_2
-Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request: 
+Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request:
 
   root
-  | 
+  |
   o-branch-1
-    | 
+    |
     o-feature  PR #16
-      | 
+      |
       o-feature_1  PR #17
-      | 
+      |
       o-feature_2 *
 
 Fetching origin_1...
@@ -719,7 +719,7 @@ Creating a PR from `feature_2` to `feature`... -> OK, see www.github.com
 """
         assert_command(
             ['github', 'create-pr'],
-            expected_result,
+            expected_result.replace('|', '| '),
             strip_indentation=False
         )
 
