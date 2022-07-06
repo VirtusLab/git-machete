@@ -617,6 +617,7 @@ class TestGithub:
     @mock.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
     # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_create_pr` due to `git fetch` executed by `create-pr` subcommand.
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
+    @mock.patch('git_machete.github.__get_github_token', mock__get_github_token)
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('urllib.error.HTTPError', MockHTTPError)  # need to provide read() method, which does not actually reads error from url
@@ -665,15 +666,12 @@ Branch feature is untracked, but its remote counterpart candidate origin_1/featu
 
 Fetching origin_1...
 Creating a PR from `feature` to `branch-1`... -> OK, see www.github.com
-Adding `other_user` as assignee to PR #16... -> OK
 """
-        x = launch_command('github', 'create-pr')
-        print(x)
-        # assert_command(
-        #     ['github', 'create-pr'],
-        #     expected_result,
-        #     strip_indentation=False
-        # )
+        assert_command(
+            ['github', 'create-pr'],
+            expected_result,
+            strip_indentation=False
+        )
         # branch feature_1 present in each of the remotes, tracking data present
         (
             self.repo_sandbox.check_out('feature')
@@ -686,7 +684,6 @@ Adding `other_user` as assignee to PR #16... -> OK
         expected_result = """Added branch `feature_1` onto `feature`
 Fetching origin_2...
 Creating a PR from `feature_1` to `feature`... -> OK, see www.github.com
-Adding `other_user` as assignee to PR #17... -> OK
 """
         assert_command(
             ['github', 'create-pr'],
@@ -719,7 +716,6 @@ Select number 1..2 to specify the destination remote repository, or 'q' to quit 
 
 Fetching origin_1...
 Creating a PR from `feature_2` to `feature`... -> OK, see www.github.com
-Adding `other_user` as assignee to PR #18... -> OK
 """
         assert_command(
             ['github', 'create-pr'],
@@ -738,7 +734,6 @@ Adding `other_user` as assignee to PR #18... -> OK
         expected_result = """Added branch `feature_3` onto `feature_2`
 Fetching origin_1...
 Creating a PR from `feature_3` to `feature_2`... -> OK, see www.github.com
-Adding `other_user` as assignee to PR #19... -> OK
 """
         assert_command(
             ['github', 'create-pr'],
@@ -758,7 +753,6 @@ Adding `other_user` as assignee to PR #19... -> OK
 Fetching origin_2...
 Warn: Base branch for this PR (`feature_3`) is not found on remote, pushing...
 Creating a PR from `feature_4` to `feature_3`... -> OK, see www.github.com
-Adding `other_user` as assignee to PR #20... -> OK
 """
 
         assert_command(
