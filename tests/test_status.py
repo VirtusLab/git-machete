@@ -240,9 +240,7 @@ class TestStatus:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
 
         origin_1_remote_path = mkdtemp()
-        origin_2_remote_path = mkdtemp()
         self.repo_sandbox.new_repo(origin_1_remote_path)
-        self.repo_sandbox.new_repo(origin_2_remote_path)
 
         os.chdir(self.repo_sandbox.local_path)
 
