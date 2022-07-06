@@ -90,9 +90,9 @@ class GitRepositorySandbox:
         self.execute(f'git commit --amend -m "{message}"')
         return self
 
-    def push(self) -> "GitRepositorySandbox":
+    def push(self, remote: str = 'origin', set_upstream: bool = True) -> "GitRepositorySandbox":
         branch = popen("git symbolic-ref -q --short HEAD")
-        self.execute(f"git push -u origin {branch}")
+        self.execute(f"git push {'--set-upstream' if set_upstream else ''} {remote} {branch}")
         return self
 
     def sleep(self, seconds: int) -> "GitRepositorySandbox":
