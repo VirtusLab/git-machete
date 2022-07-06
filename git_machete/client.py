@@ -1627,7 +1627,7 @@ class MacheteClient:
               "repository, or 'n' to skip this branch, or " \
               "'q' to quit the traverse: " if is_called_from_traverse \
               else f"Select number 1..{len(rems)} to specify the destination remote " \
-                   "repository, or 'q' to quit creating pull request:"
+                   "repository, or 'q' to quit creating pull request: "
 
         ans = input(msg).lower()
         if ans in ('q', 'quit'):
