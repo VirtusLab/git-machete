@@ -1,3 +1,5 @@
+import os
+from tempfile import mkdtemp
 from typing import Any
 
 import pytest
@@ -232,3 +234,50 @@ class TestStatus:
             o-develop *
             """,
         )
+
+    def test_inferring_counterpart_for_fetching_of_branch(self, mocker: Any) -> None:
+        mocker.patch('git_machete.cli.exit_script', mock_exit_script)
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+
+        origin_1_remote_path = mkdtemp()
+        origin_2_remote_path = mkdtemp()
+        self.repo_sandbox.new_repo(origin_1_remote_path)
+        self.repo_sandbox.new_repo(origin_2_remote_path)
+
+        os.chdir(self.repo_sandbox.local_path)
+
+        (
+            self.repo_sandbox
+                .add_remote('origin_1', origin_1_remote_path)
+                .new_branch('master')
+                .commit()
+                .push()
+                .new_branch('bar')
+                .commit()
+                .push()
+                .new_branch('foo')
+                .commit()
+                .push(set_upstream=False)
+                .push(remote='origin_1', set_upstream=False)
+                .new_branch('snickers')
+                .commit()
+                .push(remote='origin_1', set_upstream=False)
+                .new_branch('mars')
+                .commit()
+                .push()
+                .push(remote='origin_1')
+        )
+        launch_command('discover', '-y')
+        expected_status_output = (
+"""  master
+  | 
+  o-bar
+    | 
+    o-foo (untracked)
+      | 
+      o-snickers
+        | 
+        o-mars *
+"""  # noqa: E122
+        )
+        assert_command(['status'], expected_status_output, strip_indentation=False)
