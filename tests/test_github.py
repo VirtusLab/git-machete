@@ -140,10 +140,8 @@ class TestGithub:
 
         origin_1_remote_path = mkdtemp()
         origin_2_remote_path = mkdtemp()
-        self.repo_sandbox.new_repo(origin_1_remote_path)
-        self.repo_sandbox.new_repo(origin_2_remote_path)
-
-        os.chdir(self.repo_sandbox.local_path)
+        self.repo_sandbox.new_repo(origin_1_remote_path, switch_dir_to_new_repo=False)
+        self.repo_sandbox.new_repo(origin_2_remote_path, switch_dir_to_new_repo=False)
 
         # branch feature present in each remote, no branch tracking data
         (
@@ -627,10 +625,8 @@ class TestGithub:
     def test_github_create_pr_with_multiple_non_origin_remotes(self) -> None:
         origin_1_remote_path = mkdtemp()
         origin_2_remote_path = mkdtemp()
-        self.repo_sandbox.new_repo(origin_1_remote_path, "--bare")
-        self.repo_sandbox.new_repo(origin_2_remote_path, "--bare")
-
-        os.chdir(self.repo_sandbox.local_path)
+        self.repo_sandbox.new_repo(origin_1_remote_path, "--bare", switch_dir_to_new_repo=False)
+        self.repo_sandbox.new_repo(origin_2_remote_path, "--bare", switch_dir_to_new_repo=False)
 
         # branch feature present in each of the remotes, no branch tracking data, remote origin_1 picked manually via mock_input()
         (
