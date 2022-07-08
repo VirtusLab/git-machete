@@ -69,24 +69,26 @@ class TestStatus:
         launch_command('discover', '-y')
 
         expected_status_output = (
-"""   master
-   | 
-   o- bar
-      | 
-      o- foo *
-"""  # noqa: E122, W291
+            """
+            master
+            |
+            o- bar
+               |
+               o- foo *
+            """
         )
-        assert_command(['status'], expected_status_output, strip_indentation=False)
+        assert_command(['status'], expected_status_output, indent='   ')
 
         self.repo_sandbox.add_git_config_key('machete.status.extraSpaceBeforeBranchName', 'false')
 
         expected_status_output = (
-"""  master
- |
- o-bar
-   |
-   o-foo *
-"""  # noqa: E122
+            """
+            master
+            |
+            o-bar
+              |
+              o-foo *
+            """
         )
         assert_command(['status'], expected_status_output)
 
@@ -268,14 +270,14 @@ class TestStatus:
         launch_command('discover', '-y')
         expected_status_output = (
 """  master
-  | 
+  |
   o-bar
-    | 
+    |
     o-foo (untracked)
-      | 
+      |
       o-snickers
-        | 
+        |
         o-mars *
-"""  # noqa: E122, W291
+"""  # noqa: E122
         )
         assert_command(['status'], expected_status_output, strip_indentation=False)
