@@ -2058,18 +2058,18 @@ class MacheteClient:
                     'If that is the case, you can provide repository information explicitly, via these 3 git config keys: '
                     '`machete.github.{remote,organization,repository}`\n'))
 
+        if len(remote_and_github_org_and_repo) == 1:
+            return remote_and_github_org_and_repo[list(remote_and_github_org_and_repo.keys())[0]]
+
+        if 'origin' in remote_and_github_org_and_repo:
+            return remote_and_github_org_and_repo['origin']
+
         if len(remote_and_github_org_and_repo) > 1 and branch_used_for_tracking_data is not None:
             remote_for_fetching_of_branch = self.__git.get_combined_remote_for_fetching_of_branch(
                 branch=branch_used_for_tracking_data,
                 remotes=list(remote_and_github_org_and_repo.keys()))
             if remote_for_fetching_of_branch is not None:
                 return remote_and_github_org_and_repo[remote_for_fetching_of_branch]
-
-        if len(remote_and_github_org_and_repo) == 1:
-            return remote_and_github_org_and_repo[list(remote_and_github_org_and_repo.keys())[0]]
-
-        if 'origin' in remote_and_github_org_and_repo:
-            return remote_and_github_org_and_repo['origin']
 
         raise MacheteException(
             f'Multiple non-origin remotes correspond to GitHub in this repository: '

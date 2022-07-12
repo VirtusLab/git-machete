@@ -775,6 +775,25 @@ class TestGithub:
             indent=''
         )
 
+        # branch feature_3 present in only one remote: origin_2 with tracking data, origin remote present - takes priority
+        (
+            self.repo_sandbox.add_remote('origin', self.repo_sandbox.remote_path)
+                .check_out('feature_3')
+                .new_branch('feature_5')
+                .commit('introduce feature 5')
+                .push(remote='origin_2')
+        )
+
+        expected_result = """Added branch `feature_5` onto `feature_3`
+        Fetching origin...
+        Creating a PR from `feature_5` to `feature_3`... -> OK, see www.github.com
+        """
+
+        assert_command(
+            ['github', 'create-pr'],
+            expected_result
+        )
+
     git_api_state_for_test_checkout_prs = MockGitHubAPIState(
         [
             {
