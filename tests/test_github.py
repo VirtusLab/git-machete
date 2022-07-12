@@ -580,7 +580,7 @@ class TestGithub:
 
         expected_msg = ("Fetching origin...\n"
                         "Warn: Base branch for this PR (`feature/api_handling`) is not found on remote, pushing...\n"
-                        "Creating a PR from `feature/api_exception_handling` to `feature/api_handling`... -> OK, see www.github.com\n")
+                        "Creating a PR from `feature/api_exception_handling` to `feature/api_handling`... OK, see www.github.com\n")
         assert_command(['github', 'create-pr'], expected_msg, strip_indentation=False)
         assert_command(
             ['status'],
@@ -696,12 +696,11 @@ class TestGithub:
                 .commit('introduce feature 2')
         )
 
-        expected_result = """
-        Added branch `feature_2` onto `feature`
-        Branch `feature_2` is untracked and there's no `origin` repository.
-        [1] origin_1
-        [2] origin_2
-        Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request: 
+        expected_result = """Added branch `feature_2` onto `feature`
+Branch `feature_2` is untracked and there's no `origin` repository.
+[1] origin_1
+[2] origin_2
+Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request: 
 
           root
           |
@@ -713,9 +712,9 @@ class TestGithub:
               |
               o-feature_2 *
 
-        Fetching origin_1...
-        Creating a PR from `feature_2` to `feature`... -> OK, see www.github.com
-        """  # noqa: W291
+Fetching origin_1...
+Creating a PR from `feature_2` to `feature`... -> OK, see www.github.com
+"""  # noqa: W291
         assert_command(
             ['github', 'create-pr'],
             expected_result,
@@ -766,7 +765,7 @@ class TestGithub:
         expected_result = """Added branch `feature_4` onto `feature_3`
 Fetching origin_2...
 Warn: Base branch for this PR (`feature_3`) is not found on remote, pushing...
-Creating a PR from `feature_4` to `feature_3`... -> OK, see www.github.com
+Creating a PR from `feature_4` to `feature_3`... OK, see www.github.com
 """
 
         assert_command(
