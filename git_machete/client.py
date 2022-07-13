@@ -883,17 +883,17 @@ class MacheteClient:
             opt_list_commits_with_hashes: bool,
             opt_no_detect_squash_merges: bool
     ) -> None:
-        next_sibling_of_ancestor_by_branch: List[Tuple[LocalBranchShortName, List[Optional[LocalBranchShortName]]]] = []
+        next_sibling_of_ancestor_by_branch: Dict[LocalBranchShortName, List[Optional[LocalBranchShortName]]] = {}
 
         def prefix_dfs(upstream_: LocalBranchShortName, accumulated_path_: List[Optional[LocalBranchShortName]]) -> None:
-            next_sibling_of_ancestor_by_branch.append((upstream_, accumulated_path_))
+            next_sibling_of_ancestor_by_branch[upstream_] = accumulated_path_
             children_of_upstream = self.__down_branches.get(upstream_)
             if children_of_upstream:
                 for (v, nv) in zip(children_of_upstream, children_of_upstream[1:] + [None]):
                     prefix_dfs(v, accumulated_path_ + [nv])
 
-        for upstream in self.__roots:
-            prefix_dfs(upstream, accumulated_path_=[])
+        for up_branch in self.__roots:
+            prefix_dfs(up_branch, accumulated_path_=[])
 
         out = io.StringIO()
         edge_color: Dict[LocalBranchShortName, str] = {}
@@ -917,15 +917,15 @@ class MacheteClient:
         # in order to render the leading parts of lines properly.
         branch: LocalBranchShortName
         for branch in self.up_branch:
-            upstream = self.up_branch[branch]
+            up_branch = self.up_branch[branch]
             if self.is_merged_to(
                     branch=branch,
-                    upstream=upstream,
+                    upstream=up_branch,
                     opt_no_detect_squash_merges=opt_no_detect_squash_merges):
                 edge_color[branch] = AnsiEscapeCodes.DIM
-            elif not self.__git.is_ancestor_or_equal(upstream.full_name(), branch.full_name()):
+            elif not self.__git.is_ancestor_or_equal(up_branch.full_name(), branch.full_name()):
                 edge_color[branch] = AnsiEscapeCodes.RED
-            elif self.__get_overridden_fork_point(branch) or self.__git.get_commit_hash_by_revision(upstream) == fp_hash(branch):
+            elif self.__get_overridden_fork_point(branch) or self.__git.get_commit_hash_by_revision(up_branch) == fp_hash(branch):
                 edge_color[branch] = AnsiEscapeCodes.GREEN
             else:
                 edge_color[branch] = AnsiEscapeCodes.YELLOW
@@ -941,15 +941,14 @@ class MacheteClient:
 
         def print_line_prefix(branch_: LocalBranchShortName, suffix: str) -> None:
             out.write("  " + maybe_space_before_branch_name)
-            for sibling in next_sibling_of_ancestor[:-1]:
+            for sibling in next_sibling_of_ancestor_by_branch[branch][:-1]:
                 if not sibling:
                     out.write("  " + maybe_space_before_branch_name)
                 else:
                     out.write(colored(f"{utils.get_vertical_bar()} " + maybe_space_before_branch_name, edge_color[sibling]))
             out.write(colored(suffix, edge_color[branch_]))
 
-        next_sibling_of_ancestor: List[Optional[LocalBranchShortName]]
-        for branch, next_sibling_of_ancestor in next_sibling_of_ancestor_by_branch:
+        for branch in self.managed_branches:
             if branch in self.up_branch:
                 print_line_prefix(branch, f"{utils.get_vertical_bar()}\n")
                 if opt_list_commits:
@@ -989,7 +988,7 @@ class MacheteClient:
                         AnsiEscapeCodes.YELLOW: "?-"}
                     junction = junction_ascii_only[edge_color[branch]]
                 else:
-                    next_sibling_of_branch: Optional[LocalBranchShortName] = next_sibling_of_ancestor[-1]
+                    next_sibling_of_branch: Optional[LocalBranchShortName] = next_sibling_of_ancestor_by_branch[branch][-1]
                     if next_sibling_of_branch and edge_color[next_sibling_of_branch] == edge_color[branch]:
                         junction = u"├─"
                     else:
