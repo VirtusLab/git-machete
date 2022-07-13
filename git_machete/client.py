@@ -941,7 +941,7 @@ class MacheteClient:
 
         def print_line_prefix(branch_: LocalBranchShortName, suffix: str) -> None:
             out.write("  " + maybe_space_before_branch_name)
-            for sibling in next_sibling_of_ancestor_by_branch[branch][:-1]:
+            for sibling in next_sibling_of_ancestor[:-1]:
                 if not sibling:
                     out.write("  " + maybe_space_before_branch_name)
                 else:
@@ -949,6 +949,7 @@ class MacheteClient:
             out.write(colored(suffix, edge_color[branch_]))
 
         for branch in self.managed_branches:
+            next_sibling_of_ancestor = next_sibling_of_ancestor_by_branch[branch]
             if branch in self.up_branch:
                 print_line_prefix(branch, f"{utils.get_vertical_bar()}\n")
                 if opt_list_commits:
