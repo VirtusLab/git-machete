@@ -949,7 +949,7 @@ class MacheteClient:
         next_sibling_of_ancestor: List[Optional[LocalBranchShortName]]
         for branch, next_sibling_of_ancestor in next_sibling_of_ancestor_by_branch:
             if branch in self.up_branch:
-                print_line_prefix(branch, f"{utils.get_vertical_bar()} \n")
+                print_line_prefix(branch, f"{utils.get_vertical_bar()}\n")
                 if opt_list_commits:
                     if not fp_hash(branch):
                         # Rare case, but can happen e.g. due to reflog expiry.

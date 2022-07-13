@@ -648,25 +648,26 @@ class TestGithub:
         )
 
         launch_command("discover", "-y")
-        expected_result = """Branch `feature` is untracked and there's no `origin` repository.
-[1] origin_1
-[2] origin_2
-Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request: 
-Branch feature is untracked, but its remote counterpart candidate origin_1/feature already exists and both branches point to the same commit.
+        expected_result = """
+        Branch `feature` is untracked and there's no `origin` repository.
+        [1] origin_1
+        [2] origin_2
+        Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request: 
+        Branch feature is untracked, but its remote counterpart candidate origin_1/feature already exists and both branches point to the same commit.
 
-  root
-  | 
-  o-branch-1
-    | 
-    o-feature *
+          root
+          |
+          o-branch-1
+            |
+            o-feature *
 
-Fetching origin_1...
-Creating a PR from `feature` to `branch-1`... -> OK, see www.github.com
-"""  # noqa: W291
+        Fetching origin_1...
+        Creating a PR from `feature` to `branch-1`... -> OK, see www.github.com
+        """  # noqa: W291
         assert_command(
             ['github', 'create-pr'],
             expected_result,
-            strip_indentation=False
+            indent=''
         )
         # branch feature_1 present in each of the remotes, tracking data present
         (
@@ -677,14 +678,15 @@ Creating a PR from `feature` to `branch-1`... -> OK, see www.github.com
                 .push(remote='origin_2')
         )
 
-        expected_result = """Added branch `feature_1` onto `feature`
-Fetching origin_2...
-Creating a PR from `feature_1` to `feature`... -> OK, see www.github.com
-"""
+        expected_result = """
+        Added branch `feature_1` onto `feature`
+        Fetching origin_2...
+        Creating a PR from `feature_1` to `feature`... -> OK, see www.github.com
+        """
         assert_command(
             ['github', 'create-pr'],
             expected_result,
-            strip_indentation=False
+            indent=''
         )
 
         # branch feature_2 not present in any of the remotes, remote origin_1 picked manually via mock_input()
@@ -694,29 +696,30 @@ Creating a PR from `feature_1` to `feature`... -> OK, see www.github.com
                 .commit('introduce feature 2')
         )
 
-        expected_result = """Added branch `feature_2` onto `feature`
-Branch `feature_2` is untracked and there's no `origin` repository.
-[1] origin_1
-[2] origin_2
-Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request: 
+        expected_result = """
+        Added branch `feature_2` onto `feature`
+        Branch `feature_2` is untracked and there's no `origin` repository.
+        [1] origin_1
+        [2] origin_2
+        Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request: 
 
-  root
-  | 
-  o-branch-1
-    | 
-    o-feature  PR #16
-      | 
-      o-feature_1  PR #17
-      | 
-      o-feature_2 *
+          root
+          |
+          o-branch-1
+            |
+            o-feature  PR #16
+              |
+              o-feature_1  PR #17
+              |
+              o-feature_2 *
 
-Fetching origin_1...
-Creating a PR from `feature_2` to `feature`... -> OK, see www.github.com
-"""  # noqa: W291
+        Fetching origin_1...
+        Creating a PR from `feature_2` to `feature`... -> OK, see www.github.com
+        """  # noqa: W291
         assert_command(
             ['github', 'create-pr'],
             expected_result,
-            strip_indentation=False
+            indent=''
         )
 
         # branch feature_2 present in only one remote: origin_1, no tracking data
@@ -727,28 +730,29 @@ Creating a PR from `feature_2` to `feature`... -> OK, see www.github.com
                 .push(remote='origin_1', set_upstream=False)
         )
 
-        expected_result = """Added branch `feature_3` onto `feature_2`
-Branch feature_3 is untracked, but its remote counterpart candidate origin_1/feature_3 already exists and both branches point to the same commit.
+        expected_result = """
+        Added branch `feature_3` onto `feature_2`
+        Branch feature_3 is untracked, but its remote counterpart candidate origin_1/feature_3 already exists and both branches point to the same commit.
 
-  root
-  | 
-  o-branch-1
-    | 
-    o-feature  PR #16
-      | 
-      o-feature_1  PR #17
-      | 
-      o-feature_2  PR #18
-        | 
-        o-feature_3 *
+          root
+          |
+          o-branch-1
+            |
+            o-feature  PR #16
+              |
+              o-feature_1  PR #17
+              |
+              o-feature_2  PR #18
+                |
+                o-feature_3 *
 
-Fetching origin_1...
-Creating a PR from `feature_3` to `feature_2`... -> OK, see www.github.com
-"""  # noqa: W291
+        Fetching origin_1...
+        Creating a PR from `feature_3` to `feature_2`... -> OK, see www.github.com
+        """
         assert_command(
             ['github', 'create-pr'],
             expected_result,
-            strip_indentation=False
+            indent=''
         )
 
         # branch feature_3 present in only one remote: origin_2, tracking data present
