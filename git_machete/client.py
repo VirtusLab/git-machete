@@ -22,7 +22,7 @@ from git_machete.github import (
     get_github_token_possible_providers, get_parsed_github_remote_url, get_pull_request_by_number_or_none, GitHubPullRequest,
     is_github_remote_url, RemoteAndOrganizationAndRepository, set_base_of_pull_request, set_milestone_of_pull_request)
 from git_machete.utils import (
-    get_pretty_choices, flat_map, excluding, fmt, tupled, warn, debug, bold,
+    Color, get_pretty_choices, flat_map, excluding, fmt, tupled, warn, debug, bold,
     colored, underline, dim, get_second, AnsiEscapeCodes)
 
 
@@ -895,7 +895,7 @@ class MacheteClient:
             prefix_dfs(up_branch, accumulated_path_=[])
 
         out = io.StringIO()
-        edge_color: Dict[LocalBranchShortName, str] = {}
+        edge_color: Dict[LocalBranchShortName, Color] = {}
         fp_hash_cached: Dict[LocalBranchShortName, Optional[FullCommitHash]] = {}  # TODO (#110): default dict with None
         fp_branches_cached: Dict[LocalBranchShortName, List[BranchPair]] = {}
 
@@ -921,13 +921,13 @@ class MacheteClient:
                     branch=branch,
                     upstream=up_branch,
                     opt_no_detect_squash_merges=opt_no_detect_squash_merges):
-                edge_color[branch] = AnsiEscapeCodes.DIM
+                edge_color[branch] = Color.DIM
             elif not self.__git.is_ancestor_or_equal(up_branch.full_name(), branch.full_name()):
-                edge_color[branch] = AnsiEscapeCodes.RED
+                edge_color[branch] = Color.RED
             elif self.__get_overridden_fork_point(branch) or self.__git.get_commit_hash_by_revision(up_branch) == fp_hash(branch):
-                edge_color[branch] = AnsiEscapeCodes.GREEN
+                edge_color[branch] = Color.GREEN
             else:
-                edge_color[branch] = AnsiEscapeCodes.YELLOW
+                edge_color[branch] = Color.YELLOW
 
         currently_rebased_branch = self.__git.get_currently_rebased_branch_or_none()
         currently_checked_out_branch = self.__git.get_currently_checked_out_branch_or_none()
@@ -944,8 +944,8 @@ class MacheteClient:
                 if not sibling:
                     out.write("  " + maybe_space_before_branch_name)
                 else:
-                    out.write(colored(f"{utils.get_vertical_bar()} " + maybe_space_before_branch_name, edge_color[sibling]))
-            out.write(colored(suffix, edge_color[branch_]))
+                    out.write(colored(f"{utils.get_vertical_bar()} " + maybe_space_before_branch_name, edge_color[sibling].value))
+            out.write(colored(suffix, edge_color[branch_].value))
 
         next_sibling_of_ancestor: List[Optional[LocalBranchShortName]]
         for branch, next_sibling_of_ancestor in next_sibling_of_ancestor_by_branch.items():
@@ -955,9 +955,9 @@ class MacheteClient:
                     if not fp_hash(branch):
                         # Rare case, but can happen e.g. due to reflog expiry.
                         commits: List[GitLogEntry] = []
-                    elif edge_color[branch] == AnsiEscapeCodes.DIM:
+                    elif edge_color[branch] == Color.DIM:
                         commits = []
-                    elif edge_color[branch] == AnsiEscapeCodes.YELLOW:
+                    elif edge_color[branch] == Color.YELLOW:
                         commits = self.__git.get_commits_between(self.up_branch[branch].full_name(), branch.full_name())
                     else:  # (AnsiEscapeCodes.RED, AnsiEscapeCodes.GREEN):
                         commits = self.__git.get_commits_between(fp_hash(branch), branch.full_name())
@@ -981,11 +981,11 @@ class MacheteClient:
 
                 junction: str
                 if utils.ascii_only:
-                    junction_ascii_only: Dict[str, str] = {
-                        AnsiEscapeCodes.DIM: "m-",
-                        AnsiEscapeCodes.RED: "x-",
-                        AnsiEscapeCodes.GREEN: "o-",
-                        AnsiEscapeCodes.YELLOW: "?-"}
+                    junction_ascii_only: Dict[Color, str] = {
+                        Color.DIM: "m-",
+                        Color.RED: "x-",
+                        Color.GREEN: "o-",
+                        Color.YELLOW: "?-"}
                     junction = junction_ascii_only[edge_color[branch]]
                 else:
                     next_sibling_of_branch: Optional[LocalBranchShortName] = next_sibling_of_ancestor[-1]

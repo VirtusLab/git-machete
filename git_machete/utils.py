@@ -1,4 +1,5 @@
 import inspect
+from enum import Enum
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, TypeVar
 
 import os
@@ -295,3 +296,12 @@ def get_pretty_choices(*choices: str) -> str:
         else:
             return colored(c, AnsiEscapeCodes.ORANGE)
     return f" ({', '.join(map_truthy_only(format_choice, choices))}) "
+
+
+class Color(Enum):
+    DIM = AnsiEscapeCodes.DIM
+    UNDERLINE = AnsiEscapeCodes.UNDERLINE
+    GREEN = AnsiEscapeCodes.GREEN
+    YELLOW = AnsiEscapeCodes.YELLOW
+    ORANGE = AnsiEscapeCodes.ORANGE
+    RED = AnsiEscapeCodes.RED
