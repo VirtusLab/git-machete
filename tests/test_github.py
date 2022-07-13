@@ -663,7 +663,7 @@ class TestGithub:
 
         Fetching origin_1...
         Creating a PR from `feature` to `branch-1`... OK, see www.github.com
-        """
+        """  # noqa: W291
         assert_command(
             ['github', 'create-pr'],
             expected_result,
@@ -715,7 +715,7 @@ class TestGithub:
 
         Fetching origin_1...
         Creating a PR from `feature_2` to `feature`... OK, see www.github.com
-        """
+        """  # noqa: W291
         assert_command(
             ['github', 'create-pr'],
             expected_result,
