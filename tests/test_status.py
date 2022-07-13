@@ -180,7 +180,6 @@ class TestStatus:
 
         # traverse then slide out the feature branch
         launch_command("traverse", "-w", "-y")
-        x = launch_command('status', '-l')
 
         assert_command(
             ["status", "-l"],

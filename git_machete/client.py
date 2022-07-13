@@ -536,7 +536,6 @@ class MacheteClient:
         for branch in branches_to_slide_out:
             self.up_branch[branch] = None
             self.__down_branches[branch] = None
-            self.managed_branches.remove(branch)
         self.__down_branches[new_upstream] = [
             branch for branch in self.__down_branches[new_upstream]
             if branch != branches_to_slide_out[0]]
@@ -874,7 +873,6 @@ class MacheteClient:
                 f"The initial branch {bold(initial_branch)} has been slid out. "
                 f"Returned to nearest remaining managed branch {bold(nearest_remaining_branch)}")
 
-    # TODO (#509): tidy up this method
     def status(
             self,
             *,
@@ -948,8 +946,8 @@ class MacheteClient:
                     out.write(colored(f"{utils.get_vertical_bar()} " + maybe_space_before_branch_name, edge_color[sibling]))
             out.write(colored(suffix, edge_color[branch_]))
 
-        for branch in self.managed_branches:
-            next_sibling_of_ancestor = next_sibling_of_ancestor_by_branch[branch]
+        next_sibling_of_ancestor: List[Optional[LocalBranchShortName]]
+        for branch, next_sibling_of_ancestor in next_sibling_of_ancestor_by_branch.items():
             if branch in self.up_branch:
                 print_line_prefix(branch, f"{utils.get_vertical_bar()}\n")
                 if opt_list_commits:
@@ -989,7 +987,7 @@ class MacheteClient:
                         AnsiEscapeCodes.YELLOW: "?-"}
                     junction = junction_ascii_only[edge_color[branch]]
                 else:
-                    next_sibling_of_branch: Optional[LocalBranchShortName] = next_sibling_of_ancestor_by_branch[branch][-1]
+                    next_sibling_of_branch: Optional[LocalBranchShortName] = next_sibling_of_ancestor[-1]
                     if next_sibling_of_branch and edge_color[next_sibling_of_branch] == edge_color[branch]:
                         junction = u"├─"
                     else:
