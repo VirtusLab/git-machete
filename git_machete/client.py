@@ -536,6 +536,7 @@ class MacheteClient:
         for branch in branches_to_slide_out:
             self.up_branch[branch] = None
             self.__down_branches[branch] = None
+            self.managed_branches.remove(branch)
         self.__down_branches[new_upstream] = [
             branch for branch in self.__down_branches[new_upstream]
             if branch != branches_to_slide_out[0]]
