@@ -580,7 +580,7 @@ class TestGithub:
 
         expected_msg = ("Fetching origin...\n"
                         "Warn: Base branch for this PR (`feature/api_handling`) is not found on remote, pushing...\n"
-                        "Creating a PR from `feature/api_exception_handling` to `feature/api_handling`... -> OK, see www.github.com\n")
+                        "Creating a PR from `feature/api_exception_handling` to `feature/api_handling`... OK, see www.github.com\n")
         assert_command(['github', 'create-pr'], expected_msg, strip_indentation=False)
         assert_command(
             ['status'],
@@ -662,7 +662,7 @@ class TestGithub:
             o-feature *
 
         Fetching origin_1...
-        Creating a PR from `feature` to `branch-1`... -> OK, see www.github.com
+        Creating a PR from `feature` to `branch-1`... OK, see www.github.com
         """  # noqa: W291
         assert_command(
             ['github', 'create-pr'],
@@ -681,7 +681,7 @@ class TestGithub:
         expected_result = """
         Added branch `feature_1` onto `feature`
         Fetching origin_2...
-        Creating a PR from `feature_1` to `feature`... -> OK, see www.github.com
+        Creating a PR from `feature_1` to `feature`... OK, see www.github.com
         """
         assert_command(
             ['github', 'create-pr'],
@@ -714,7 +714,7 @@ class TestGithub:
               o-feature_2 *
 
         Fetching origin_1...
-        Creating a PR from `feature_2` to `feature`... -> OK, see www.github.com
+        Creating a PR from `feature_2` to `feature`... OK, see www.github.com
         """  # noqa: W291
         assert_command(
             ['github', 'create-pr'],
@@ -747,7 +747,7 @@ class TestGithub:
                 o-feature_3 *
 
         Fetching origin_1...
-        Creating a PR from `feature_3` to `feature_2`... -> OK, see www.github.com
+        Creating a PR from `feature_3` to `feature_2`... OK, see www.github.com
         """
         assert_command(
             ['github', 'create-pr'],
@@ -763,16 +763,16 @@ class TestGithub:
                 .push(remote='origin_2')
         )
 
-        expected_result = """Added branch `feature_4` onto `feature_3`
-Fetching origin_2...
-Warn: Base branch for this PR (`feature_3`) is not found on remote, pushing...
-Creating a PR from `feature_4` to `feature_3`... -> OK, see www.github.com
-"""
-
+        expected_result = """
+        Added branch `feature_4` onto `feature_3`
+        Fetching origin_2...
+        Warn: Base branch for this PR (`feature_3`) is not found on remote, pushing...
+        Creating a PR from `feature_4` to `feature_3`... OK, see www.github.com
+        """
         assert_command(
             ['github', 'create-pr'],
             expected_result,
-            strip_indentation=False
+            indent=''
         )
 
     git_api_state_for_test_checkout_prs = MockGitHubAPIState(
