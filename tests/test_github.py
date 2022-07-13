@@ -784,15 +784,15 @@ class TestGithub:
                 .push(remote='origin_2')
         )
 
-        expected_result = """Added branch `feature_5` onto `feature_3`
-Fetching origin...
-Creating a PR from `feature_5` to `feature_3`... -> OK, see www.github.com
-"""
-
+        expected_result = """
+        Added branch `feature_5` onto `feature_3`
+        Fetching origin...
+        Creating a PR from `feature_5` to `feature_3`... OK, see www.github.com
+        """
         assert_command(
             ['github', 'create-pr'],
             expected_result,
-            strip_indentation=False
+            indent=''
         )
 
     git_api_state_for_test_checkout_prs = MockGitHubAPIState(
