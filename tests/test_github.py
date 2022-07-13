@@ -662,8 +662,8 @@ class TestGithub:
             o-feature *
 
         Fetching origin_1...
-        Creating a PR from `feature` to `branch-1`... -> OK, see www.github.com
-        """  # noqa: W291
+        Creating a PR from `feature` to `branch-1`... OK, see www.github.com
+        """
         assert_command(
             ['github', 'create-pr'],
             expected_result,
@@ -681,7 +681,7 @@ class TestGithub:
         expected_result = """
         Added branch `feature_1` onto `feature`
         Fetching origin_2...
-        Creating a PR from `feature_1` to `feature`... -> OK, see www.github.com
+        Creating a PR from `feature_1` to `feature`... OK, see www.github.com
         """
         assert_command(
             ['github', 'create-pr'],
@@ -696,11 +696,12 @@ class TestGithub:
                 .commit('introduce feature 2')
         )
 
-        expected_result = """Added branch `feature_2` onto `feature`
-Branch `feature_2` is untracked and there's no `origin` repository.
-[1] origin_1
-[2] origin_2
-Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request: 
+        expected_result = """
+        Added branch `feature_2` onto `feature`
+        Branch `feature_2` is untracked and there's no `origin` repository.
+        [1] origin_1
+        [2] origin_2
+        Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request: 
 
           root
           |
@@ -712,9 +713,9 @@ Select number 1..2 to specify the destination remote repository, or 'q' to quit 
               |
               o-feature_2 *
 
-Fetching origin_1...
-Creating a PR from `feature_2` to `feature`... -> OK, see www.github.com
-"""  # noqa: W291
+        Fetching origin_1...
+        Creating a PR from `feature_2` to `feature`... OK, see www.github.com
+        """
         assert_command(
             ['github', 'create-pr'],
             expected_result,
@@ -746,7 +747,7 @@ Creating a PR from `feature_2` to `feature`... -> OK, see www.github.com
                 o-feature_3 *
 
         Fetching origin_1...
-        Creating a PR from `feature_3` to `feature_2`... -> OK, see www.github.com
+        Creating a PR from `feature_3` to `feature_2`... OK, see www.github.com
         """
         assert_command(
             ['github', 'create-pr'],
@@ -762,16 +763,16 @@ Creating a PR from `feature_2` to `feature`... -> OK, see www.github.com
                 .push(remote='origin_2')
         )
 
-        expected_result = """Added branch `feature_4` onto `feature_3`
-Fetching origin_2...
-Warn: Base branch for this PR (`feature_3`) is not found on remote, pushing...
-Creating a PR from `feature_4` to `feature_3`... OK, see www.github.com
-"""
-
+        expected_result = """
+        Added branch `feature_4` onto `feature_3`
+        Fetching origin_2...
+        Warn: Base branch for this PR (`feature_3`) is not found on remote, pushing...
+        Creating a PR from `feature_4` to `feature_3`... OK, see www.github.com
+        """
         assert_command(
             ['github', 'create-pr'],
             expected_result,
-            strip_indentation=False
+            indent=''
         )
 
     git_api_state_for_test_checkout_prs = MockGitHubAPIState(
