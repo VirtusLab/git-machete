@@ -680,7 +680,7 @@ class MacheteClient:
             self.expect_in_managed_branches(current_branch)
 
         branch: LocalBranchShortName
-        for branch in itertools.dropwhile(lambda x: x != current_branch, self.managed_branches):
+        for branch in itertools.dropwhile(lambda x: x != current_branch, self.managed_branches.copy()):
             upstream = self.up_branch.get(branch)
 
             needs_slide_out: bool = self.__is_merged_to_upstream(
@@ -747,6 +747,8 @@ class MacheteClient:
                         self.__down_branches[upstream])
                     if branch in self.__annotations:
                         del self.__annotations[branch]
+                    if branch in self.managed_branches:
+                        self.managed_branches.remove(branch)
                     self.save_definition_file()
                     self.__run_post_slide_out_hook(upstream, branch, self.__down_branches.get(branch) or [])
                     if ans == 'yq':
