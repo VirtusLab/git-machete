@@ -269,15 +269,16 @@ class TestStatus:
         )
         launch_command('discover', '-y')
         expected_status_output = (
-"""  master
-  |
-  o-bar
-    |
-    o-foo (untracked)
-      |
-      o-snickers
-        |
-        o-mars *
-"""  # noqa: E122
+            """
+            master
+            |
+            o-bar
+              |
+              o-foo (untracked)
+                |
+                o-snickers
+                  |
+                  o-mars *
+            """
         )
-        assert_command(['status'], expected_status_output, strip_indentation=False)
+        assert_command(['status'], expected_status_output)
