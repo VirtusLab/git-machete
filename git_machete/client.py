@@ -747,8 +747,6 @@ class MacheteClient:
                         self.__down_branches[upstream])
                     if branch in self.__annotations:
                         del self.__annotations[branch]
-                    if branch in self.managed_branches:
-                        self.managed_branches.remove(branch)
                     self.save_definition_file()
                     self.__run_post_slide_out_hook(upstream, branch, self.__down_branches.get(branch) or [])
                     if ans == 'yq':
