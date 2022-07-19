@@ -890,8 +890,8 @@ class MacheteClient:
                 for (v, nv) in zip(children_of_upstream, children_of_upstream[1:] + [None]):
                     prefix_dfs(v, accumulated_path_ + [nv])
 
-        for up_branch in self.__roots:
-            prefix_dfs(up_branch, accumulated_path_=[])
+        for root in self.__roots:
+            prefix_dfs(root, accumulated_path_=[])
 
         out = io.StringIO()
         edge_color: Dict[LocalBranchShortName, Color] = {}
@@ -915,15 +915,15 @@ class MacheteClient:
         # in order to render the leading parts of lines properly.
         branch: LocalBranchShortName
         for branch in self.up_branch:
-            up_branch = self.up_branch[branch]
+            parent_branch = self.up_branch[branch]
             if self.is_merged_to(
                     branch=branch,
-                    upstream=up_branch,
+                    upstream=parent_branch,
                     opt_no_detect_squash_merges=opt_no_detect_squash_merges):
                 edge_color[branch] = Color.DIM
-            elif not self.__git.is_ancestor_or_equal(up_branch.full_name(), branch.full_name()):
+            elif not self.__git.is_ancestor_or_equal(parent_branch.full_name(), branch.full_name()):
                 edge_color[branch] = Color.RED
-            elif self.__get_overridden_fork_point(branch) or self.__git.get_commit_hash_by_revision(up_branch) == fp_hash(branch):
+            elif self.__get_overridden_fork_point(branch) or self.__git.get_commit_hash_by_revision(parent_branch) == fp_hash(branch):
                 edge_color[branch] = Color.GREEN
             else:
                 edge_color[branch] = Color.YELLOW
