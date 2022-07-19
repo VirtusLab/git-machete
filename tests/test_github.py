@@ -666,7 +666,8 @@ class TestGithub:
         """  # noqa: W291
         assert_command(
             ['github', 'create-pr'],
-            expected_result
+            expected_result,
+            indent=''
         )
         # branch feature_1 present in each of the remotes, tracking data present
         (
@@ -684,7 +685,8 @@ class TestGithub:
         """
         assert_command(
             ['github', 'create-pr'],
-            expected_result
+            expected_result,
+            indent=''
         )
 
         # branch feature_2 not present in any of the remotes, remote origin_1 picked manually via mock_input()
@@ -716,7 +718,8 @@ class TestGithub:
         """  # noqa: W291
         assert_command(
             ['github', 'create-pr'],
-            expected_result
+            expected_result,
+            indent=''
         )
 
         # branch feature_2 present in only one remote: origin_1, no tracking data
@@ -748,7 +751,8 @@ class TestGithub:
         """
         assert_command(
             ['github', 'create-pr'],
-            expected_result
+            expected_result,
+            indent=''
         )
 
         # branch feature_3 present in only one remote: origin_2, tracking data present
@@ -767,7 +771,8 @@ class TestGithub:
         """
         assert_command(
             ['github', 'create-pr'],
-            expected_result
+            expected_result,
+            indent=''
         )
 
         # branch feature_3 present in only one remote: origin_2 with tracking data, origin remote present - takes priority
@@ -786,7 +791,8 @@ class TestGithub:
         """
         assert_command(
             ['github', 'create-pr'],
-            expected_result
+            expected_result,
+            indent=''
         )
 
     git_api_state_for_test_checkout_prs = MockGitHubAPIState(

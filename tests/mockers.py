@@ -334,7 +334,7 @@ class MockContextManager:
         pass
 
 
-def adapt(s: str, indent: str = '') -> str:
+def adapt(s: str, indent: str) -> str:
     return textwrap.indent(textwrap.dedent(s[1:]), indent)
 
 
@@ -349,6 +349,7 @@ def launch_command(*args: str) -> str:
 
 def assert_command(cmds: Iterable[str], expected_result: str, strip_indentation: bool = True, indent: str = '  ') -> None:
     expected_result = adapt(expected_result, indent) if strip_indentation else expected_result
+
     assert launch_command(*cmds) == expected_result
 
 
