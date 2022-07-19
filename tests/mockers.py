@@ -384,7 +384,7 @@ def mock_run_cmd_and_forward_stdout(cmd: str, *args: str, **kwargs: Any) -> int:
     3. After command execution we go back through `cli.launch()`(2) to `launch_command()`(1) which redirects just updated sys.stdout
     into variable and returns it.
     """
-    completed_process: subprocess.CompletedProcess[bytes] = subprocess.run(x
+    completed_process: subprocess.CompletedProcess[bytes] = subprocess.run(
         [cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, ** kwargs)
     print(completed_process.stdout.decode('utf-8'))
     exit_code: int = completed_process.returncode
