@@ -334,7 +334,7 @@ class MockContextManager:
         pass
 
 
-def adapt(s: str, indent: str) -> str:
+def adapt(s: str, indent: str = '') -> str:
     return textwrap.indent(textwrap.dedent(s[1:]), indent)
 
 
