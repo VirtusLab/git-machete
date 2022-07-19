@@ -192,7 +192,7 @@ class TestStatus:
               |
               | child_1
               | child_2
-              x-child *
+              o-child *
             """,
         )
 
@@ -219,7 +219,7 @@ class TestStatus:
               |
               | child_1
               | child_2
-              x-child *
+              o-child *
             """,
         )
 

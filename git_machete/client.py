@@ -5,6 +5,7 @@ import os
 import shutil
 import sys
 from typing import Callable, Dict, Generator, List, Optional, Tuple
+from collections import OrderedDict
 
 import git_machete.github
 import git_machete.options
@@ -880,7 +881,7 @@ class MacheteClient:
             opt_list_commits_with_hashes: bool,
             opt_no_detect_squash_merges: bool
     ) -> None:
-        next_sibling_of_ancestor_by_branch: Dict[LocalBranchShortName, List[Optional[LocalBranchShortName]]] = {}
+        next_sibling_of_ancestor_by_branch: OrderedDict[LocalBranchShortName, List[Optional[LocalBranchShortName]]] = OrderedDict()
 
         def prefix_dfs(upstream_: LocalBranchShortName, accumulated_path_: List[Optional[LocalBranchShortName]]) -> None:
             next_sibling_of_ancestor_by_branch[upstream_] = accumulated_path_
