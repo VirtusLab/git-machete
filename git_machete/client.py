@@ -884,11 +884,11 @@ class MacheteClient:
     ) -> None:
         next_sibling_of_ancestor_by_branch: OrderedDict[LocalBranchShortName, List[Optional[LocalBranchShortName]]] = OrderedDict()
 
-        def prefix_dfs(upstream_: LocalBranchShortName, accumulated_path_: List[Optional[LocalBranchShortName]]) -> None:
-            next_sibling_of_ancestor_by_branch[upstream_] = accumulated_path_
-            children_of_upstream = self.__down_branches.get(upstream_)
-            if children_of_upstream:
-                for (v, nv) in zip(children_of_upstream, children_of_upstream[1:] + [None]):
+        def prefix_dfs(parent: LocalBranchShortName, accumulated_path_: List[Optional[LocalBranchShortName]]) -> None:
+            next_sibling_of_ancestor_by_branch[parent] = accumulated_path_
+            children = self.__down_branches.get(parent)
+            if children:
+                for (v, nv) in zip(children, children[1:] + [None]):
                     prefix_dfs(v, accumulated_path_ + [nv])
 
         for root in self.__roots:
