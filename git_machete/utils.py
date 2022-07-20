@@ -312,7 +312,7 @@ sync_to_parent_status_to_edge_color_map: Dict[SyncToParentStatus, str] = {
     SyncToParentStatus.OutOfSync: AnsiEscapeCodes.RED
 }
 
-junction_ascii_only: Dict[SyncToParentStatus, str] = {
+sync_to_parent_status_to_junction_ascii_only_map: Dict[SyncToParentStatus, str] = {
     SyncToParentStatus.MergedToParent: "m-",
     SyncToParentStatus.OutOfSync: "x-",
     SyncToParentStatus.InSync: "o-",

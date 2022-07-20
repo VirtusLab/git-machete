@@ -23,7 +23,7 @@ from git_machete.github import (
     get_github_token_possible_providers, get_parsed_github_remote_url, get_pull_request_by_number_or_none, GitHubPullRequest,
     is_github_remote_url, RemoteAndOrganizationAndRepository, set_base_of_pull_request, set_milestone_of_pull_request)
 from git_machete.utils import (
-    AnsiEscapeCodes, junction_ascii_only, SyncToParentStatus, get_pretty_choices, flat_map, excluding, fmt,
+    AnsiEscapeCodes, sync_to_parent_status_to_junction_ascii_only_map, SyncToParentStatus, get_pretty_choices, flat_map, excluding, fmt,
     sync_to_parent_status_to_edge_color_map, tupled, warn, debug, bold,
     colored, underline, dim, get_second)
 
@@ -983,7 +983,7 @@ class MacheteClient:
 
                 junction: str
                 if utils.ascii_only:
-                    junction = junction_ascii_only[sync_to_parent_status[branch]]
+                    junction = sync_to_parent_status_to_junction_ascii_only_map[sync_to_parent_status[branch]]
                 else:
                     next_sibling_of_branch: Optional[LocalBranchShortName] = next_sibling_of_ancestor[-1]
                     if next_sibling_of_branch and sync_to_parent_status[next_sibling_of_branch] == sync_to_parent_status[branch]:
