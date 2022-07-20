@@ -298,22 +298,23 @@ def get_pretty_choices(*choices: str) -> str:
     return f" ({', '.join(map_truthy_only(format_choice, choices))}) "
 
 
-class EdgeColor(Enum):
-    DIM = auto()
-    UNDERLINE = auto()
-    GREEN = auto()
-    YELLOW = auto()
-    ORANGE = auto()
-    RED = auto()
+class SyncToParentStatus(Enum):
+    InSync = auto()
+    MergedToParent = auto()
+    InSyncButForkPointOff = auto()
+    OutOfSync = auto()
 
 
-def to_ansi_escape_code(edge_color: EdgeColor) -> str:
-    edge_color_to_ansi_scape_code = {
-        EdgeColor.DIM: AnsiEscapeCodes.DIM,
-        EdgeColor.UNDERLINE: AnsiEscapeCodes.UNDERLINE,
-        EdgeColor.GREEN: AnsiEscapeCodes.GREEN,
-        EdgeColor.YELLOW: AnsiEscapeCodes.YELLOW,
-        EdgeColor.ORANGE: AnsiEscapeCodes.ORANGE,
-        EdgeColor.RED: AnsiEscapeCodes.RED
-    }
-    return edge_color_to_ansi_scape_code[edge_color]
+sync_to_parent_status_to_edge_color_map: Dict[SyncToParentStatus, str] = {
+    SyncToParentStatus.MergedToParent: AnsiEscapeCodes.DIM,
+    SyncToParentStatus.InSync: AnsiEscapeCodes.GREEN,
+    SyncToParentStatus.InSyncButForkPointOff: AnsiEscapeCodes.YELLOW,
+    SyncToParentStatus.OutOfSync: AnsiEscapeCodes.RED
+}
+
+junction_ascii_only: Dict[SyncToParentStatus, str] = {
+    SyncToParentStatus.MergedToParent: "m-",
+    SyncToParentStatus.OutOfSync: "x-",
+    SyncToParentStatus.InSync: "o-",
+    SyncToParentStatus.InSyncButForkPointOff: "?-"
+}
