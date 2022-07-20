@@ -1,5 +1,5 @@
 import inspect
-from enum import Enum
+from enum import auto, Enum
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, TypeVar
 
 import os
@@ -298,10 +298,22 @@ def get_pretty_choices(*choices: str) -> str:
     return f" ({', '.join(map_truthy_only(format_choice, choices))}) "
 
 
-class Color(Enum):
-    DIM = AnsiEscapeCodes.DIM
-    UNDERLINE = AnsiEscapeCodes.UNDERLINE
-    GREEN = AnsiEscapeCodes.GREEN
-    YELLOW = AnsiEscapeCodes.YELLOW
-    ORANGE = AnsiEscapeCodes.ORANGE
-    RED = AnsiEscapeCodes.RED
+class EdgeColor(Enum):
+    DIM = auto()
+    UNDERLINE = auto()
+    GREEN = auto()
+    YELLOW = auto()
+    ORANGE = auto()
+    RED = auto()
+
+
+def to_ansi_escape_code(edge_color: EdgeColor) -> str:
+    edge_color_to_ansi_scape_code = {
+        EdgeColor.DIM: AnsiEscapeCodes.DIM,
+        EdgeColor.UNDERLINE: AnsiEscapeCodes.UNDERLINE,
+        EdgeColor.GREEN: AnsiEscapeCodes.GREEN,
+        EdgeColor.YELLOW: AnsiEscapeCodes.YELLOW,
+        EdgeColor.ORANGE: AnsiEscapeCodes.ORANGE,
+        EdgeColor.RED: AnsiEscapeCodes.RED
+    }
+    return edge_color_to_ansi_scape_code[edge_color]

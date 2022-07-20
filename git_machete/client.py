@@ -23,8 +23,8 @@ from git_machete.github import (
     get_github_token_possible_providers, get_parsed_github_remote_url, get_pull_request_by_number_or_none, GitHubPullRequest,
     is_github_remote_url, RemoteAndOrganizationAndRepository, set_base_of_pull_request, set_milestone_of_pull_request)
 from git_machete.utils import (
-    Color, get_pretty_choices, flat_map, excluding, fmt, tupled, warn, debug, bold,
-    colored, underline, dim, get_second, AnsiEscapeCodes)
+    EdgeColor, get_pretty_choices, flat_map, excluding, fmt, to_ansi_escape_code, tupled, warn, debug, bold,
+    colored, underline, dim, get_second)
 
 
 # Allowed parameter values for show/go command
@@ -894,7 +894,7 @@ class MacheteClient:
             prefix_dfs(root, accumulated_path_=[])
 
         out = io.StringIO()
-        edge_color: Dict[LocalBranchShortName, Color] = {}
+        edge_color: Dict[LocalBranchShortName, EdgeColor] = {}
         fp_hash_cached: Dict[LocalBranchShortName, Optional[FullCommitHash]] = {}  # TODO (#110): default dict with None
         fp_branches_cached: Dict[LocalBranchShortName, List[BranchPair]] = {}
 
@@ -920,13 +920,13 @@ class MacheteClient:
                     branch=branch,
                     upstream=parent_branch,
                     opt_no_detect_squash_merges=opt_no_detect_squash_merges):
-                edge_color[branch] = Color.DIM
+                edge_color[branch] = EdgeColor.DIM
             elif not self.__git.is_ancestor_or_equal(parent_branch.full_name(), branch.full_name()):
-                edge_color[branch] = Color.RED
+                edge_color[branch] = EdgeColor.RED
             elif self.__get_overridden_fork_point(branch) or self.__git.get_commit_hash_by_revision(parent_branch) == fp_hash(branch):
-                edge_color[branch] = Color.GREEN
+                edge_color[branch] = EdgeColor.GREEN
             else:
-                edge_color[branch] = Color.YELLOW
+                edge_color[branch] = EdgeColor.YELLOW
 
         currently_rebased_branch = self.__git.get_currently_rebased_branch_or_none()
         currently_checked_out_branch = self.__git.get_currently_checked_out_branch_or_none()
@@ -943,8 +943,8 @@ class MacheteClient:
                 if not sibling:
                     out.write("  " + maybe_space_before_branch_name)
                 else:
-                    out.write(colored(f"{utils.get_vertical_bar()} " + maybe_space_before_branch_name, edge_color[sibling].value))
-            out.write(colored(suffix, edge_color[branch_].value))
+                    out.write(colored(f"{utils.get_vertical_bar()} " + maybe_space_before_branch_name, to_ansi_escape_code(edge_color[sibling])))
+            out.write(colored(suffix, to_ansi_escape_code(edge_color[branch_])))
 
         next_sibling_of_ancestor: List[Optional[LocalBranchShortName]]
         for branch, next_sibling_of_ancestor in next_sibling_of_ancestor_by_branch.items():
@@ -954,11 +954,11 @@ class MacheteClient:
                     if not fp_hash(branch):
                         # Rare case, but can happen e.g. due to reflog expiry.
                         commits: List[GitLogEntry] = []
-                    elif edge_color[branch] == Color.DIM:
+                    elif edge_color[branch] == EdgeColor.DIM:
                         commits = []
-                    elif edge_color[branch] == Color.YELLOW:
+                    elif edge_color[branch] == EdgeColor.YELLOW:
                         commits = self.__git.get_commits_between(self.up_branch[branch].full_name(), branch.full_name())
-                    else:  # (AnsiEscapeCodes.RED, AnsiEscapeCodes.GREEN):
+                    else:  # (EdgeColor.RED, EdgeColor.GREEN):
                         commits = self.__git.get_commits_between(fp_hash(branch), branch.full_name())
 
                     for commit in commits:
@@ -968,7 +968,8 @@ class MacheteClient:
                             fp_branches_formatted: str = " and ".join(
                                 sorted(underline(lb_or_rb) for lb, lb_or_rb in fp_branches_cached[branch]))
                             fp_suffix: str = " %s %s %s seems to be a part of the unique history of %s" % \
-                                             (colored(utils.get_right_arrow(), AnsiEscapeCodes.RED), colored("fork point ???", AnsiEscapeCodes.RED),
+                                             (colored(utils.get_right_arrow(), to_ansi_escape_code(EdgeColor.RED)),
+                                              colored("fork point ???", to_ansi_escape_code(EdgeColor.RED)),
                                               "this commit" if opt_list_commits_with_hashes else f"commit {commit.short_hash}",
                                               fp_branches_formatted)
                         else:
@@ -980,11 +981,11 @@ class MacheteClient:
 
                 junction: str
                 if utils.ascii_only:
-                    junction_ascii_only: Dict[Color, str] = {
-                        Color.DIM: "m-",
-                        Color.RED: "x-",
-                        Color.GREEN: "o-",
-                        Color.YELLOW: "?-"}
+                    junction_ascii_only: Dict[EdgeColor, str] = {
+                        EdgeColor.DIM: "m-",
+                        EdgeColor.RED: "x-",
+                        EdgeColor.GREEN: "o-",
+                        EdgeColor.YELLOW: "?-"}
                     junction = junction_ascii_only[edge_color[branch]]
                 else:
                     next_sibling_of_branch: Optional[LocalBranchShortName] = next_sibling_of_ancestor[-1]
@@ -1016,7 +1017,8 @@ class MacheteClient:
                     prefix = "REVERTING "
                 else:
                     prefix = ""
-                current = "%s%s" % (bold(colored(prefix, AnsiEscapeCodes.RED)), bold(underline(branch, star_if_ascii_only=True)))
+                current = "%s%s" % (bold(colored(prefix, to_ansi_escape_code(EdgeColor.RED))),
+                                    bold(underline(branch, star_if_ascii_only=True)))
             else:
                 current = bold(branch)
 
@@ -1025,12 +1027,14 @@ class MacheteClient:
             s, remote = self.__git.get_combined_remote_sync_status(branch)
             sync_status = {
                 SyncToRemoteStatuses.NO_REMOTES: "",
-                SyncToRemoteStatuses.UNTRACKED: colored(" (untracked)", AnsiEscapeCodes.ORANGE),
+                SyncToRemoteStatuses.UNTRACKED: colored(" (untracked)", to_ansi_escape_code(EdgeColor.ORANGE)),
                 SyncToRemoteStatuses.IN_SYNC_WITH_REMOTE: "",
-                SyncToRemoteStatuses.BEHIND_REMOTE: colored(f" (behind {remote})", AnsiEscapeCodes.RED),
-                SyncToRemoteStatuses.AHEAD_OF_REMOTE: colored(f" (ahead of {remote})", AnsiEscapeCodes.RED),
-                SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: colored(f" (diverged from & older than {remote})", AnsiEscapeCodes.RED),
-                SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: colored(f" (diverged from {remote})", AnsiEscapeCodes.RED)
+                SyncToRemoteStatuses.BEHIND_REMOTE: colored(f" (behind {remote})", to_ansi_escape_code(EdgeColor.RED)),
+                SyncToRemoteStatuses.AHEAD_OF_REMOTE: colored(f" (ahead of {remote})", to_ansi_escape_code(EdgeColor.RED)),
+                SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: colored(f" (diverged from & older than {remote})",
+                                                                                  to_ansi_escape_code(EdgeColor.RED)),
+                SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: colored(f" (diverged from {remote})",
+                                                                                  to_ansi_escape_code(EdgeColor.RED))
             }[SyncToRemoteStatuses(s)]
 
             hook_output = ""
@@ -1049,7 +1053,7 @@ class MacheteClient:
         sys.stdout.write(out.getvalue())
         out.close()
 
-        yellow_edge_branches = [k for k, v in edge_color.items() if v == AnsiEscapeCodes.YELLOW]
+        yellow_edge_branches = [k for k, v in edge_color.items() if v == EdgeColor.YELLOW]
         if yellow_edge_branches and warn_on_yellow_edges:
             if len(yellow_edge_branches) == 1:
                 first_part = f"yellow edge indicates that fork point for `{yellow_edge_branches[0]}` is probably incorrectly inferred,\n" \
