@@ -1,4 +1,5 @@
 import inspect
+from enum import auto, Enum
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, TypeVar
 
 import os
@@ -295,3 +296,25 @@ def get_pretty_choices(*choices: str) -> str:
         else:
             return colored(c, AnsiEscapeCodes.ORANGE)
     return f" ({', '.join(map_truthy_only(format_choice, choices))}) "
+
+
+class SyncToParentStatus(Enum):
+    InSync = auto()
+    MergedToParent = auto()
+    InSyncButForkPointOff = auto()
+    OutOfSync = auto()
+
+
+sync_to_parent_status_to_edge_color_map: Dict[SyncToParentStatus, str] = {
+    SyncToParentStatus.MergedToParent: AnsiEscapeCodes.DIM,
+    SyncToParentStatus.InSync: AnsiEscapeCodes.GREEN,
+    SyncToParentStatus.InSyncButForkPointOff: AnsiEscapeCodes.YELLOW,
+    SyncToParentStatus.OutOfSync: AnsiEscapeCodes.RED
+}
+
+sync_to_parent_status_to_junction_ascii_only_map: Dict[SyncToParentStatus, str] = {
+    SyncToParentStatus.MergedToParent: "m-",
+    SyncToParentStatus.InSync: "o-",
+    SyncToParentStatus.InSyncButForkPointOff: "?-",
+    SyncToParentStatus.OutOfSync: "x-"
+}

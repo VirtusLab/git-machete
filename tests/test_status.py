@@ -178,8 +178,9 @@ class TestStatus:
             """,
         )
 
-        # traverse then slides out the branch
+        # traverse then slide out the feature branch
         launch_command("traverse", "-w", "-y")
+
         assert_command(
             ["status", "-l"],
             """
@@ -195,7 +196,7 @@ class TestStatus:
             """,
         )
 
-        # simulate an upstream squash-merge of the feature branch
+        # simulate an upstream squash-merge of the child branch
         (
             self.repo_sandbox.check_out("develop")
             .new_branch("upstream_squash")

@@ -5,6 +5,7 @@ import os
 import shutil
 import sys
 from typing import Callable, Dict, Generator, List, Optional, Tuple
+from collections import OrderedDict
 
 import git_machete.github
 import git_machete.options
@@ -22,8 +23,9 @@ from git_machete.github import (
     get_github_token_possible_providers, get_parsed_github_remote_url, get_pull_request_by_number_or_none, GitHubPullRequest,
     is_github_remote_url, RemoteAndOrganizationAndRepository, set_base_of_pull_request, set_milestone_of_pull_request)
 from git_machete.utils import (
-    get_pretty_choices, flat_map, excluding, fmt, tupled, warn, debug, bold,
-    colored, underline, dim, get_second, AnsiEscapeCodes)
+    AnsiEscapeCodes, sync_to_parent_status_to_junction_ascii_only_map, SyncToParentStatus, get_pretty_choices, flat_map, excluding, fmt,
+    sync_to_parent_status_to_edge_color_map, tupled, warn, debug, bold,
+    colored, underline, dim, get_second)
 
 
 # Allowed parameter values for show/go command
@@ -461,7 +463,7 @@ class MacheteClient:
 
         print(bold("Discovered tree of branch dependencies:\n"))
         self.status(
-            warn_on_yellow_edges=False,
+            warn_when_branch_in_sync_but_fork_point_off=False,
             opt_list_commits=opt_list_commits,
             opt_list_commits_with_hashes=False,
             opt_no_detect_squash_merges=False)
@@ -724,7 +726,7 @@ class MacheteClient:
                 current_branch = branch
                 self.__print_new_line(False)
                 self.status(
-                    warn_on_yellow_edges=True,
+                    warn_when_branch_in_sync_but_fork_point_off=True,
                     opt_list_commits=opt_list_commits,
                     opt_list_commits_with_hashes=False,
                     opt_no_detect_squash_merges=opt_no_detect_squash_merges)
@@ -747,8 +749,6 @@ class MacheteClient:
                         self.__down_branches[upstream])
                     if branch in self.__annotations:
                         del self.__annotations[branch]
-                    if branch in self.managed_branches:
-                        self.managed_branches.remove(branch)
                     self.save_definition_file()
                     self.__run_post_slide_out_hook(upstream, branch, self.__down_branches.get(branch) or [])
                     if ans == 'yq':
@@ -852,7 +852,7 @@ class MacheteClient:
 
         self.__print_new_line(False)
         self.status(
-            warn_on_yellow_edges=True,
+            warn_when_branch_in_sync_but_fork_point_off=True,
             opt_list_commits=opt_list_commits,
             opt_list_commits_with_hashes=False,
             opt_no_detect_squash_merges=opt_no_detect_squash_merges)
@@ -874,61 +874,60 @@ class MacheteClient:
                 f"The initial branch {bold(initial_branch)} has been slid out. "
                 f"Returned to nearest remaining managed branch {bold(nearest_remaining_branch)}")
 
-    # TODO (#509): tidy up this method
     def status(
             self,
             *,
-            warn_on_yellow_edges: bool,
+            warn_when_branch_in_sync_but_fork_point_off: bool,
             opt_list_commits: bool,
             opt_list_commits_with_hashes: bool,
             opt_no_detect_squash_merges: bool
     ) -> None:
-        next_sibling_of_ancestor_by_branch: List[Tuple[LocalBranchShortName, List[Optional[LocalBranchShortName]]]] = []
+        next_sibling_of_ancestor_by_branch: OrderedDict[LocalBranchShortName, List[Optional[LocalBranchShortName]]] = OrderedDict()
 
-        def prefix_dfs(u_: LocalBranchShortName, accumulated_path_: List[Optional[LocalBranchShortName]]) -> None:
-            next_sibling_of_ancestor_by_branch.append((u_, accumulated_path_))
-            children_of_u = self.__down_branches.get(u_)
-            if children_of_u:
-                for (v, nv) in zip(children_of_u, children_of_u[1:] + [None]):
+        def prefix_dfs(parent: LocalBranchShortName, accumulated_path_: List[Optional[LocalBranchShortName]]) -> None:
+            next_sibling_of_ancestor_by_branch[parent] = accumulated_path_
+            children = self.__down_branches.get(parent)
+            if children:
+                for (v, nv) in zip(children, children[1:] + [None]):
                     prefix_dfs(v, accumulated_path_ + [nv])
 
-        for upstream in self.__roots:
-            prefix_dfs(upstream, accumulated_path_=[])
+        for root in self.__roots:
+            prefix_dfs(root, accumulated_path_=[])
 
         out = io.StringIO()
-        edge_color: Dict[LocalBranchShortName, str] = {}
-        fp_hash_cached: Dict[LocalBranchShortName, Optional[FullCommitHash]] = {}  # TODO (#110): default dict with None
-        fp_branches_cached: Dict[LocalBranchShortName, List[BranchPair]] = {}
+        sync_to_parent_status: Dict[LocalBranchShortName, SyncToParentStatus] = {}
+        fork_point_hash_cached: Dict[LocalBranchShortName, Optional[FullCommitHash]] = {}  # TODO (#110): default dict with None
+        fork_point_branches_cached: Dict[LocalBranchShortName, List[BranchPair]] = {}
 
-        def fp_hash(branch_: LocalBranchShortName) -> Optional[FullCommitHash]:
-            if branch not in fp_hash_cached:
+        def fork_point_hash(branch_: LocalBranchShortName) -> Optional[FullCommitHash]:
+            if branch not in fork_point_hash_cached:
                 try:
                     # We're always using fork point overrides, even when status
                     # is launched from discover().
-                    fp_hash_cached[branch_], fp_branches_cached[branch_] = self.__fork_point_and_containing_branch_pairs(
+                    fork_point_hash_cached[branch_], fork_point_branches_cached[branch_] = self.__fork_point_and_containing_branch_pairs(
                         branch_,
                         use_overrides=True,
                         opt_no_detect_squash_merges=opt_no_detect_squash_merges)
                 except MacheteException:
-                    fp_hash_cached[branch_], fp_branches_cached[branch_] = None, []
-            return fp_hash_cached[branch_]
+                    fork_point_hash_cached[branch_], fork_point_branches_cached[branch_] = None, []
+            return fork_point_hash_cached[branch_]
 
         # Edge colors need to be precomputed
         # in order to render the leading parts of lines properly.
         branch: LocalBranchShortName
         for branch in self.up_branch:
-            upstream = self.up_branch[branch]
+            parent_branch = self.up_branch[branch]
             if self.is_merged_to(
                     branch=branch,
-                    upstream=upstream,
+                    upstream=parent_branch,
                     opt_no_detect_squash_merges=opt_no_detect_squash_merges):
-                edge_color[branch] = AnsiEscapeCodes.DIM
-            elif not self.__git.is_ancestor_or_equal(upstream.full_name(), branch.full_name()):
-                edge_color[branch] = AnsiEscapeCodes.RED
-            elif self.__get_overridden_fork_point(branch) or self.__git.get_commit_hash_by_revision(upstream) == fp_hash(branch):
-                edge_color[branch] = AnsiEscapeCodes.GREEN
+                sync_to_parent_status[branch] = SyncToParentStatus.MergedToParent
+            elif not self.__git.is_ancestor_or_equal(parent_branch.full_name(), branch.full_name()):
+                sync_to_parent_status[branch] = SyncToParentStatus.OutOfSync
+            elif self.__get_overridden_fork_point(branch) or self.__git.get_commit_hash_by_revision(parent_branch) == fork_point_hash(branch):
+                sync_to_parent_status[branch] = SyncToParentStatus.InSync
             else:
-                edge_color[branch] = AnsiEscapeCodes.YELLOW
+                sync_to_parent_status[branch] = SyncToParentStatus.InSyncButForkPointOff
 
         currently_rebased_branch = self.__git.get_currently_rebased_branch_or_none()
         currently_checked_out_branch = self.__git.get_currently_checked_out_branch_or_none()
@@ -945,32 +944,34 @@ class MacheteClient:
                 if not sibling:
                     out.write("  " + maybe_space_before_branch_name)
                 else:
-                    out.write(colored(f"{utils.get_vertical_bar()} " + maybe_space_before_branch_name, edge_color[sibling]))
-            out.write(colored(suffix, edge_color[branch_]))
+                    out.write(colored(f"{utils.get_vertical_bar()} " + maybe_space_before_branch_name,
+                                      sync_to_parent_status_to_edge_color_map[sync_to_parent_status[sibling]]))
+            out.write(colored(suffix, sync_to_parent_status_to_edge_color_map[sync_to_parent_status[branch_]]))
 
         next_sibling_of_ancestor: List[Optional[LocalBranchShortName]]
-        for branch, next_sibling_of_ancestor in next_sibling_of_ancestor_by_branch:
+        for branch, next_sibling_of_ancestor in next_sibling_of_ancestor_by_branch.items():
             if branch in self.up_branch:
                 print_line_prefix(branch, f"{utils.get_vertical_bar()}\n")
                 if opt_list_commits:
-                    if not fp_hash(branch):
+                    if not fork_point_hash(branch):
                         # Rare case, but can happen e.g. due to reflog expiry.
                         commits: List[GitLogEntry] = []
-                    elif edge_color[branch] == AnsiEscapeCodes.DIM:
+                    elif sync_to_parent_status[branch] == SyncToParentStatus.MergedToParent:
                         commits = []
-                    elif edge_color[branch] == AnsiEscapeCodes.YELLOW:
+                    elif sync_to_parent_status[branch] == SyncToParentStatus.InSyncButForkPointOff:
                         commits = self.__git.get_commits_between(self.up_branch[branch].full_name(), branch.full_name())
-                    else:  # (AnsiEscapeCodes.RED, AnsiEscapeCodes.GREEN):
-                        commits = self.__git.get_commits_between(fp_hash(branch), branch.full_name())
+                    else:  # (SyncToParentStatus.OutOfSync, SyncToParentStatus.InSync):
+                        commits = self.__git.get_commits_between(fork_point_hash(branch), branch.full_name())
 
                     for commit in commits:
-                        if commit.hash == fp_hash(branch):
-                            # fp_branches_cached will already be there thanks to
-                            # the above call to 'fp_hash'.
+                        if commit.hash == fork_point_hash(branch):
+                            # fork_point_branches_cached will already be there thanks to
+                            # the above call to 'fork_point_hash'.
                             fp_branches_formatted: str = " and ".join(
-                                sorted(underline(lb_or_rb) for lb, lb_or_rb in fp_branches_cached[branch]))
+                                sorted(underline(lb_or_rb) for lb, lb_or_rb in fork_point_branches_cached[branch]))
                             fp_suffix: str = " %s %s %s seems to be a part of the unique history of %s" % \
-                                             (colored(utils.get_right_arrow(), AnsiEscapeCodes.RED), colored("fork point ???", AnsiEscapeCodes.RED),
+                                             (colored(utils.get_right_arrow(), AnsiEscapeCodes.RED),
+                                              colored("fork point ???", AnsiEscapeCodes.RED),
                                               "this commit" if opt_list_commits_with_hashes else f"commit {commit.short_hash}",
                                               fp_branches_formatted)
                         else:
@@ -982,21 +983,16 @@ class MacheteClient:
 
                 junction: str
                 if utils.ascii_only:
-                    junction_ascii_only: Dict[str, str] = {
-                        AnsiEscapeCodes.DIM: "m-",
-                        AnsiEscapeCodes.RED: "x-",
-                        AnsiEscapeCodes.GREEN: "o-",
-                        AnsiEscapeCodes.YELLOW: "?-"}
-                    junction = junction_ascii_only[edge_color[branch]]
+                    junction = sync_to_parent_status_to_junction_ascii_only_map[sync_to_parent_status[branch]]
                 else:
                     next_sibling_of_branch: Optional[LocalBranchShortName] = next_sibling_of_ancestor[-1]
-                    if next_sibling_of_branch and edge_color[next_sibling_of_branch] == edge_color[branch]:
+                    if next_sibling_of_branch and sync_to_parent_status[next_sibling_of_branch] == sync_to_parent_status[branch]:
                         junction = u"├─"
                     else:
                         # The three-legged turnstile looks pretty bad when the upward and rightward leg
                         # have a different color than the downward leg.
                         # It's better to use a two-legged elbow
-                        # in case `edge_color[next_sibling_of_branch] != edge_color[branch]`,
+                        # in case `sync_to_parent_status[next_sibling_of_branch] != sync_to_parent_status[branch]`,
                         # at the expense of a little gap to the elbow/turnstile below.
                         junction = u"└─"
                 print_line_prefix(branch, junction + maybe_space_before_branch_name)
@@ -1051,24 +1047,27 @@ class MacheteClient:
         sys.stdout.write(out.getvalue())
         out.close()
 
-        yellow_edge_branches = [k for k, v in edge_color.items() if v == AnsiEscapeCodes.YELLOW]
-        if yellow_edge_branches and warn_on_yellow_edges:
-            if len(yellow_edge_branches) == 1:
-                first_part = f"yellow edge indicates that fork point for `{yellow_edge_branches[0]}` is probably incorrectly inferred,\n" \
-                             f"or that some extra branch should be between `{self.up_branch[LocalBranchShortName.of(yellow_edge_branches[0])]}` and `{yellow_edge_branches[0]}`"
+        branches_in_sync_but_fork_point_off = [k for k, v in sync_to_parent_status.items() if v == SyncToParentStatus.InSyncButForkPointOff]
+        if branches_in_sync_but_fork_point_off and warn_when_branch_in_sync_but_fork_point_off:
+            if len(branches_in_sync_but_fork_point_off) == 1:
+                first_part = f"yellow edge indicates that fork point for `{branches_in_sync_but_fork_point_off[0]}` " \
+                             f"is probably incorrectly inferred,\n or that some extra branch should be between " \
+                             f"`{self.up_branch[LocalBranchShortName.of(branches_in_sync_but_fork_point_off[0])]}` and " \
+                             f"`{branches_in_sync_but_fork_point_off[0]}`"
             else:
-                affected_branches = ", ".join(map(lambda x: f"`{x}`", yellow_edge_branches))
+                affected_branches = ", ".join(map(lambda x: f"`{x}`", branches_in_sync_but_fork_point_off))
                 first_part = f"yellow edges indicate that fork points for {affected_branches} are probably incorrectly inferred,\n" \
                              f"or that some extra branch should be added between each of these branches and its parent"
 
             if not opt_list_commits:
                 second_part = "Run `git machete status --list-commits` or `git machete status --list-commits-with-hashes` to see more details"
-            elif len(yellow_edge_branches) == 1:
-                second_part = f"Consider using `git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent {yellow_edge_branches[0]}`,\n" \
-                              f"or reattaching `{yellow_edge_branches[0]}` under a different parent branch"
+            elif len(branches_in_sync_but_fork_point_off) == 1:
+                second_part = f"Consider using `git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent" \
+                              f" {branches_in_sync_but_fork_point_off[0]}`,\nor reattaching `{branches_in_sync_but_fork_point_off[0]}` " \
+                              f"under a different parent branch"
             else:
-                second_part = "Consider using `git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent <branch>` for each affected branch,\n" \
-                              "or reattaching the affected branches under different parent branches"
+                second_part = "Consider using `git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent " \
+                              "<branch>` for each affected branch,\nor reattaching the affected branches under different parent branches"
 
             print("", file=sys.stderr)
             warn(f"{first_part}.\n\n{second_part}.")
@@ -2360,7 +2359,7 @@ class MacheteClient:
 
             self.__print_new_line(False)
             self.status(
-                warn_on_yellow_edges=True,
+                warn_when_branch_in_sync_but_fork_point_off=True,
                 opt_list_commits=False,
                 opt_list_commits_with_hashes=False,
                 opt_no_detect_squash_merges=False)
