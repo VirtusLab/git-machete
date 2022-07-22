@@ -9,7 +9,6 @@ from .mockers import (GitRepositorySandbox, get_current_commit_hash,
 class TestUpdate:
 
     def setup_method(self) -> None:
-
         self.repo_sandbox = GitRepositorySandbox()
 
         (
@@ -48,8 +47,7 @@ class TestUpdate:
         launch_command("update", "--no-interactive-rebase")
         new_fork_point_hash = launch_command("fork-point").strip()
 
-        assert parents_new_commit_hash == \
-            new_fork_point_hash, \
+        assert parents_new_commit_hash == new_fork_point_hash, \
             ("Verify that 'git machete update --no-interactive-rebase' perform "
              "'git rebase' to the parent branch of the current branch."
              )
@@ -88,19 +86,16 @@ class TestUpdate:
         new_fork_point_hash = launch_command("fork-point").strip()
         branch_history = popen('git log -10 --oneline')
 
-        assert roots_second_commit_hash == \
-            new_fork_point_hash, \
+        assert roots_second_commit_hash == new_fork_point_hash, \
             ("Verify that 'git machete update --no-interactive-rebase -f "
              "<commit_hash>' performs 'git rebase' to the upstream branch."
              )
-        assert branchs_first_commit_msg not in \
-            branch_history, \
+        assert branchs_first_commit_msg not in branch_history, \
             ("Verify that 'git machete update --no-interactive-rebase -f "
              "<commit_hash>' drops the commits until (included) fork point "
              "specified by the option '-f' from the current branch."
              )
-        assert branchs_second_commit_msg not in \
-            branch_history, \
+        assert branchs_second_commit_msg not in branch_history, \
             ("Verify that 'git machete update --no-interactive-rebase -f "
              "<commit_hash>' drops the commits until (included) fork point "
              "specified by the option '-f' from the current branch."

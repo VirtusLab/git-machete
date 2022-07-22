@@ -13,7 +13,6 @@ from .mockers import (assert_command, GitRepositorySandbox, launch_command, mock
 class TestStatus:
 
     def setup_method(self) -> None:
-
         self.repo_sandbox = GitRepositorySandbox()
 
         (

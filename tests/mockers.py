@@ -28,7 +28,8 @@ Tips on when and why to use mocking functions:
 1. `mock_run_cmd()`
     * used to mock `utils.run_cmd` in order to redirect command's stdout and stderr out of sys.stdout
     * used to hide git command outputs so it's easier to assert correctness of the `git machete` command output
-    * used in tests of these git machete commands: `add`, `advance`, `clean`, `github`, `go`, `help`, 'show`, `slide-out`, `traverse`, `update`
+    * used in tests of these git machete commands:
+        `add`, `advance`, `clean`, `github`, `go`, `help`, 'show`, `slide-out`, `traverse`, `update`
 
 2. `mock_run_cmd_and_forward_stdout()`
     * used to mock `utils.run_cmd` in order to capture command's stdout and stderr
@@ -83,7 +84,8 @@ class GitRepositorySandbox:
         self.execute(f'git commit -m "{message}"')
         return self
 
-    def add_file_with_content_and_commit(self, file_name: str = 'file_name.txt', file_content: str = 'Some file content\n', message: str = "Some commit message.") -> "GitRepositorySandbox":
+    def add_file_with_content_and_commit(self, file_name: str = 'file_name.txt', file_content: str = 'Some file content\n',
+                                         message: str = "Some commit message.") -> "GitRepositorySandbox":
         self.write_to_file(file_name=file_name, file_content=file_content)
         self.execute(f"git add {file_name}")
         self.execute(f'git commit -m "{message}"')
@@ -131,7 +133,8 @@ class GitRepositorySandbox:
 class MockGitHubAPIState:
     def __init__(self, pulls: List[Dict[str, Any]], issues: List[Dict[str, Any]] = None) -> None:
         self.pulls: List[Dict[str, Any]] = pulls
-        self.user: Dict[str, str] = {'login': 'other_user', 'type': 'User', 'company': 'VirtusLab'}  # login must be different from the one used in pull requests, otherwise pull request author will not be annotated
+        self.user: Dict[str, str] = {'login': 'other_user', 'type': 'User', 'company': 'VirtusLab'}
+        # login must be different from the one used in pull requests, otherwise pull request author will not be annotated
         self.issues: List[Dict[str, Any]] = issues or []
 
     def new_request(self) -> "MockGitHubAPIRequest":
@@ -163,7 +166,8 @@ class MockGitHubAPIRequest:
     def __init__(self, github_api_state: MockGitHubAPIState) -> None:
         self.github_api_state: MockGitHubAPIState = github_api_state
 
-    def __call__(self, url: str, headers: Dict[str, str] = None, data: Union[str, bytes, None] = None, method: str = '') -> "MockGitHubAPIResponse":
+    def __call__(self, url: str, headers: Dict[str, str] = None, data: Union[str, bytes, None] = None,
+                 method: str = '') -> "MockGitHubAPIResponse":
         self.parsed_url: ParseResult = urlparse(url, allow_fragments=True)
         self.parsed_query: Dict[str, List[str]] = parse_qs(self.parsed_url.query)
         self.json_data: Union[str, bytes] = data
@@ -385,7 +389,7 @@ def mock_run_cmd_and_forward_stdout(cmd: str, *args: str, **kwargs: Any) -> int:
     into variable and returns it.
     """
     completed_process: subprocess.CompletedProcess[bytes] = subprocess.run(
-        [cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, ** kwargs)
+        [cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
     print(completed_process.stdout.decode('utf-8'))
     exit_code: int = completed_process.returncode
     if exit_code != 0:

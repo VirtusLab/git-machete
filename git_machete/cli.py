@@ -114,7 +114,6 @@ class MacheteHelpAction(argparse.Action):
 
 
 def create_cli_parser() -> argparse.ArgumentParser:
-
     common_args_parser = argparse.ArgumentParser(
         prog='git machete', argument_default=argparse.SUPPRESS, add_help=False)
     common_args_parser.add_argument('--debug', action='store_true')
@@ -357,14 +356,15 @@ def create_cli_parser() -> argparse.ArgumentParser:
 def update_cli_opts_using_parsed_args(
         cli_opts: git_machete.options.CommandLineOptions,
         parsed_args: argparse.Namespace) -> None:
-
     # Warning: In mypy, Arguments that come from untyped functions/variables are silently treated by mypy as Any.
     # Since argparse is not typed, everything that comes from argparse.Namespace will be taken as Any :(
     # Even if we add type=LocalBranchShortName into argument parser for branch,
     # python debugger will see branch as LocalBranchShortName but mypy always will see it as Any,
-    # until you specifically tell mypy what is the exact type by casting (right now it's done this way below, but casting does not solve all of the problems).
+    # until you specifically tell mypy what is the exact type by casting (right now it's done this way below, but casting does not solve all
+    # of the problems).
     #
-    # The reasonable solution here would be to use Typed Argument Parser which is a wrapper over argparse with modernised solution for typing.
+    # The reasonable solution here would be to use Typed Argument Parser
+    # which is a wrapper over argparse with modernised solution for typing.
     # But it would add external dependency to git-machete, so let's stick to current casting.
 
     for opt, arg in vars(parsed_args).items():
@@ -457,11 +457,7 @@ def update_cli_opts_using_parsed_args(
 def set_utils_global_variables(
         cli_opts: git_machete.options.CommandLineOptions) -> None:
     if cli_opts.opt_color:
-        utils.ascii_only = (
-            cli_opts.opt_color == "never" or (
-                cli_opts.opt_color == "auto" and
-                not sys.stdout.isatty())
-        )
+        utils.ascii_only = (cli_opts.opt_color == "never" or (cli_opts.opt_color == "auto" and not sys.stdout.isatty()))
     utils.debug_mode = cli_opts.opt_debug
     utils.verbose_mode = cli_opts.opt_verbose
 
@@ -618,8 +614,8 @@ def launch(orig_args: List[str]) -> None:
             machete_client.read_definition_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             git.expect_no_operation_in_progress()
             current_branch = git.get_current_branch()
-            dest = machete_client.parse_direction(
-                parsed_cli.direction, current_branch, allow_current=False, down_pick_mode=True)[0]  # with down_pick_mode=True there is only one element in list allowed
+            dest = machete_client.parse_direction(parsed_cli.direction, current_branch, allow_current=False, down_pick_mode=True)[0]
+            # with down_pick_mode=True there is only one element in list allowed
             if dest != current_branch:
                 git.checkout(dest)
         elif cmd == "github":
@@ -638,8 +634,8 @@ def launch(orig_args: List[str]) -> None:
                 machete_client.sync_annotations_to_github_prs()
             elif github_subcommand == "checkout-prs":
                 if len(set(parsed_cli_as_dict.keys()).intersection({'all', 'by', 'mine', 'pr_no'})) != 1:
-                    raise MacheteException(
-                        f"'checkout-prs' subcommand must take only one of the following options: {', '.join(['--all', '--by', '--mine', 'pr-no'])}")
+                    raise MacheteException(f"'checkout-prs' subcommand must take only one of the following options: "
+                                           f"{', '.join(['--all', '--by', '--mine', 'pr-no'])}")
                 machete_client.checkout_github_prs(pr_nos=parsed_cli.pr_no if 'pr_no' in parsed_cli else [],
                                                    all_opened_prs=parsed_cli.all if 'all' in parsed_cli else False,
                                                    my_opened_prs=parsed_cli.mine if 'mine' in parsed_cli else False,
@@ -684,7 +680,8 @@ def launch(orig_args: List[str]) -> None:
                     lambda _branch: LocalBranchShortName.of(git.get_combined_counterpart_for_fetching_of_branch(_branch)),
                     git.get_local_branches())
                 qualifying_remote_branches: List[RemoteBranchShortName] = excluding(git.get_remote_branches(),
-                                                                                    {RemoteBranchShortName.of(b) for b in remote_counterparts_of_local_branches})
+                                                                                    {RemoteBranchShortName.of(b) for b in
+                                                                                     remote_counterparts_of_local_branches})
                 res = excluding(git.get_local_branches(), machete_client.managed_branches) + list(
                     map(strip_remote_name, qualifying_remote_branches))
             elif category == "managed":

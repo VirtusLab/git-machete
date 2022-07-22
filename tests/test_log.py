@@ -6,7 +6,6 @@ from .mockers import (GitRepositorySandbox, get_current_commit_hash, launch_comm
 class TestLog:
 
     def setup_method(self) -> None:
-
         self.repo_sandbox = GitRepositorySandbox()
 
         (
@@ -20,7 +19,6 @@ class TestLog:
         )
 
     def test_log(self, mocker: Any) -> None:
-
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_stdout)
 
         self.repo_sandbox.new_branch('root')

@@ -15,7 +15,6 @@ def mock_push(remote: str, branch: LocalBranchShortName, force_with_lease: bool 
 class TestAdvance:
 
     def setup_method(self) -> None:
-
         self.repo_sandbox = GitRepositorySandbox()
 
         (
@@ -40,7 +39,7 @@ class TestAdvance:
 
         (
             self.repo_sandbox.new_branch("root")
-            .commit()
+                .commit()
         )
         launch_command("discover", "-y")
 
@@ -76,14 +75,12 @@ class TestAdvance:
 
         root_top_commit_hash = get_current_commit_hash()
 
-        assert level_1_commit_hash == \
-            root_top_commit_hash, \
+        assert level_1_commit_hash == root_top_commit_hash, \
             ("Verify that when there is only one, rebased downstream branch of a "
              "current branch 'git machete advance' merges commits from that branch "
              "and slides out child branches of the downstream branch."
              )
-        assert "level-1-branch" not in \
-            launch_command("status"), \
+        assert "level-1-branch" not in launch_command("status"), \
             ("Verify that branch to which advance was performed is removed "
              "from the git-machete tree and the structure of the git machete "
              "tree is updated."

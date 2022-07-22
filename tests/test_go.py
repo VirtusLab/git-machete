@@ -6,7 +6,6 @@ from .mockers import GitRepositorySandbox, launch_command, mock_run_cmd
 class TestGo:
 
     def setup_method(self) -> None:
-
         self.repo_sandbox = GitRepositorySandbox()
 
         (
@@ -37,8 +36,7 @@ class TestGo:
         launch_command("discover", "-y")
         launch_command("go", "up")
 
-        assert 'level-0-branch' == \
-            launch_command("show", "current").strip(), \
+        assert 'level-0-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete go up' performs 'git checkout' to "
              "the parent/upstream branch of the current branch."
              )
@@ -46,8 +44,7 @@ class TestGo:
         self.repo_sandbox.check_out("level-1-branch")
         launch_command("g", "u")
 
-        assert 'level-0-branch' == \
-            launch_command("show", "current").strip(), \
+        assert 'level-0-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete g u' performs 'git checkout' to "
              "the parent/upstream branch of the current branch."
              )
@@ -71,8 +68,7 @@ class TestGo:
         launch_command("discover", "-y")
         launch_command("go", "down")
 
-        assert 'level-1-branch' == \
-            launch_command("show", "current").strip(), \
+        assert 'level-1-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete go down' performs 'git checkout' to "
              "the child/downstream branch of the current branch."
              )
@@ -80,8 +76,7 @@ class TestGo:
         self.repo_sandbox.check_out("level-0-branch")
         launch_command("g", "d")
 
-        assert 'level-1-branch' == \
-            launch_command("show", "current").strip(), \
+        assert 'level-1-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete g d' performs 'git checkout' to "
              "the child/downstream branch of the current branch."
              )
@@ -120,8 +115,7 @@ class TestGo:
         launch_command("discover", "-y")
         launch_command("go", "first")
 
-        assert 'level-1a-branch' == \
-            launch_command("show", "current").strip(), \
+        assert 'level-1a-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete go first' performs 'git checkout' to "
              "the first downstream branch of a root branch if root branch "
              "has any downstream branches."
@@ -130,8 +124,7 @@ class TestGo:
         self.repo_sandbox.check_out("level-3b-branch")
         launch_command("g", "f")
 
-        assert 'level-1a-branch' == \
-            launch_command("show", "current").strip(), \
+        assert 'level-1a-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete g d' performs 'git checkout' to "
              "the child/downstream branch of the current branch."
              )
@@ -152,16 +145,14 @@ class TestGo:
         launch_command("discover", "-y")
         launch_command("go", "first")
 
-        assert 'level-0-branch' == \
-            launch_command("show", "current").strip(), \
+        assert 'level-0-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete go first' set current branch to root "
              "if root branch has no downstream."
              )
         # check short command behaviour
         launch_command("g", "f")
 
-        assert 'level-0-branch' == \
-            launch_command("show", "current").strip(), \
+        assert 'level-0-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete g f' set current branch to root "
              "if root branch has no downstream."
              )
@@ -196,8 +187,7 @@ class TestGo:
         launch_command("discover", "-y")
         launch_command("go", "last")
 
-        assert 'level-1b-branch' == \
-            launch_command("show", "current").strip(), \
+        assert 'level-1b-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete go last' performs 'git checkout' to "
              "the last downstream branch of a root branch if root branch "
              "has any downstream branches."
@@ -206,8 +196,7 @@ class TestGo:
         self.repo_sandbox.check_out("level-1a-branch")
         launch_command("g", "l")
 
-        assert 'level-1b-branch' == \
-            launch_command("show", "current").strip(), \
+        assert 'level-1b-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete g l' performs 'git checkout' to "
              "the last downstream branch of a root branch if root branch "
              "has any downstream branches."
@@ -238,8 +227,7 @@ class TestGo:
         launch_command("discover", "-y")
         launch_command("go", "next")
 
-        assert 'level-1b-branch' == \
-            launch_command("show", "current").strip(), \
+        assert 'level-1b-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete go next' performs 'git checkout' to "
              "the next downstream branch right after the current one in the "
              "config file if successor branch exists."
@@ -248,8 +236,7 @@ class TestGo:
         self.repo_sandbox.check_out("level-2a-branch")
         launch_command("g", "n")
 
-        assert 'level-1b-branch' == \
-            launch_command("show", "current").strip(), \
+        assert 'level-1b-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete g n' performs 'git checkout' to "
              "the next downstream branch right after the current one in the "
              "config file if successor branch exists."
@@ -277,8 +264,7 @@ class TestGo:
         launch_command("discover", "-y")
         launch_command("go", "next")
 
-        assert 'x-additional-root' == \
-            launch_command("show", "current").strip(), \
+        assert 'x-additional-root' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete go next' can checkout to branch that doesn't "
              "share root with the current branch."
              )
@@ -286,8 +272,7 @@ class TestGo:
         self.repo_sandbox.check_out("level-1-branch")
         launch_command("g", "n")
 
-        assert 'x-additional-root' == \
-            launch_command("show", "current").strip(), \
+        assert 'x-additional-root' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete g n' can checkout to branch that doesn't "
              "share root with the current branch."
              )
@@ -316,8 +301,7 @@ class TestGo:
         launch_command("discover", "-y")
         launch_command("go", "prev")
 
-        assert 'level-2a-branch' == \
-            launch_command("show", "current").strip(), \
+        assert 'level-2a-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete go prev' performs 'git checkout' to "
              "the branch right before the current one in the config file "
              "when predecessor branch exists within the root tree."
@@ -326,8 +310,7 @@ class TestGo:
         self.repo_sandbox.check_out("level-1b-branch")
         launch_command("g", "p")
 
-        assert 'level-2a-branch' == \
-            launch_command("show", "current").strip(), \
+        assert 'level-2a-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete g p' performs 'git checkout' to "
              "the branch right before the current one in the config file "
              "when predecessor branch exists within the root tree."
@@ -353,8 +336,7 @@ class TestGo:
         launch_command("discover", "-y")
         launch_command("go", "prev")
 
-        assert 'a-additional-root' == \
-            launch_command("show", "current").strip(), \
+        assert 'a-additional-root' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete go prev' can checkout to branch that doesn't "
              "share root with the current branch."
              )
@@ -362,8 +344,7 @@ class TestGo:
         self.repo_sandbox.check_out("level-0-branch")
         launch_command("g", "p")
 
-        assert 'a-additional-root' == \
-            launch_command("show", "current").strip(), \
+        assert 'a-additional-root' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete g p' can checkout to branch that doesn't "
              "share root with the current branch."
              )
@@ -396,8 +377,7 @@ class TestGo:
         launch_command("discover", "-y")
         launch_command("go", "root")
 
-        assert 'level-0-branch' == \
-            launch_command("show", "current").strip(), \
+        assert 'level-0-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete go root' performs 'git checkout' to "
              "the root of the current branch."
              )
@@ -405,8 +385,7 @@ class TestGo:
         self.repo_sandbox.check_out("level-2a-branch")
         launch_command("g", "r")
 
-        assert 'level-0-branch' == \
-            launch_command("show", "current").strip(), \
+        assert 'level-0-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete g r' performs 'git checkout' to "
              "the root of the current branch."
              )

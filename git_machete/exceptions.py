@@ -20,6 +20,7 @@ class UnprocessableEntityHTTPError(MacheteException):
     e.g. assigning someone from outside organization as a reviewer
     or creating a pull request for a branch that already has a PR.
     """
+
     def __init__(self, msg: str) -> None:
         self.msg: str = msg
 

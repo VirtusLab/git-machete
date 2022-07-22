@@ -178,10 +178,13 @@ class GitContext:
         self.__fetch_done_for: Set[str] = set()
         self.__config_cached: Optional[Dict[str, str]] = None
         self.__remotes_cached: Optional[List[str]] = None
-        self.__counterparts_for_fetching_cached: Optional[Dict[LocalBranchShortName, Optional[RemoteBranchShortName]]] = None  # TODO (#110): default dict with None
+        self.__counterparts_for_fetching_cached: Optional[
+            Dict[LocalBranchShortName, Optional[RemoteBranchShortName]]] = None  # TODO (#110): default dict with None
         self.__short_commit_hash_by_revision_cached: Dict[AnyRevision, ShortCommitHash] = {}
-        self.__tree_hash_by_commit_hash_cached: Optional[Dict[FullCommitHash, Optional[FullTreeHash]]] = None  # TODO (#110): default dict with None
-        self.__commit_hash_by_revision_cached: Optional[Dict[AnyRevision, Optional[FullCommitHash]]] = None  # TODO (#110): default dict with None
+        self.__tree_hash_by_commit_hash_cached: Optional[
+            Dict[FullCommitHash, Optional[FullTreeHash]]] = None  # TODO (#110): default dict with None
+        self.__commit_hash_by_revision_cached: Optional[
+            Dict[AnyRevision, Optional[FullCommitHash]]] = None  # TODO (#110): default dict with None
         self.__committer_unix_timestamp_by_revision_cached: Optional[Dict[AnyRevision, int]] = None  # TODO (#110): default dict with 0
         self.__local_branches_cached: Optional[List[LocalBranchShortName]] = None
         self.__remote_branches_cached: Optional[List[RemoteBranchShortName]] = None
@@ -242,8 +245,11 @@ class GitContext:
                     if name != "$" + git_machete_editor_var and self.get_config_attr_or_none('advice.macheteEditorSelection') != 'false':
                         sample_alternative = 'nano' if editor.startswith('vi') else 'vi'
                         print(fmt(f"Opening <b>{editor_repr}</b>.\n",
-                                  f"To override this choice, use <b>{git_machete_editor_var}</b> env var, e.g. `export {git_machete_editor_var}={sample_alternative}`.\n\n",
-                                  "See `git machete help edit` and `git machete edit --debug` for more details.\n\nUse `git config --global advice.macheteEditorSelection false` to suppress this message."), file=sys.stderr)
+                                  f"To override this choice, use <b>{git_machete_editor_var}</b> env var, e.g. `export "
+                                  f"{git_machete_editor_var}={sample_alternative}`.\n\n",
+                                  "See `git machete help edit` and `git machete edit --debug` for more details.\n\n"
+                                  "Use `git config --global advice.macheteEditorSelection false` to suppress this message."),
+                              file=sys.stderr)
                     return editor
 
         # This case is extremely unlikely on a modern Unix-like system.
@@ -440,7 +446,10 @@ class GitContext:
         remote_branches = self.get_remote_branches()
         return [remote for remote in remotes if f'{remote}/{branch}' in remote_branches]
 
-    def get_inferred_remote_for_fetching_of_branch(self, branch: LocalBranchShortName, remotes: Optional[List[str]] = None) -> Optional[str]:
+    def get_inferred_remote_for_fetching_of_branch(self,
+                                                   branch: LocalBranchShortName,
+                                                   remotes: Optional[List[str]] = None
+                                                   ) -> Optional[str]:
         remotes_containing_branch: List[str] = self.__get_remotes_containing_branch(branch=branch, remotes=remotes)
         if len(remotes_containing_branch) > 1 or len(remotes_containing_branch) == 0:
             debug(f'Can\'t infer remote for fetching of branch.\n'
@@ -454,7 +463,10 @@ class GitContext:
         remote = self.get_config_attr_or_none(f"branch.{branch}.remote")
         return remote.rstrip() if remote else None
 
-    def get_combined_remote_for_fetching_of_branch(self, branch: LocalBranchShortName, remotes: Optional[List[str]] = None) -> Optional[str]:
+    def get_combined_remote_for_fetching_of_branch(self,
+                                                   branch: LocalBranchShortName,
+                                                   remotes: Optional[List[str]] = None
+                                                   ) -> Optional[str]:
         # Since many people don't use '--set-upstream' flag of 'push', we try to infer the remote instead if the tracking data is missing.
         return self.get_strict_remote_for_fetching_of_branch(branch) or self.get_inferred_remote_for_fetching_of_branch(branch, remotes)
 
@@ -474,7 +486,8 @@ class GitContext:
         return self.__counterparts_for_fetching_cached.get(branch)
 
     def get_combined_counterpart_for_fetching_of_branch(self, branch: LocalBranchShortName) -> Optional[RemoteBranchShortName]:
-        # Since many people don't use '--set-upstream' flag of 'push' or 'branch', we try to infer the remote if the tracking data is missing.
+        # Since many people don't use '--set-upstream' flag of 'push' or 'branch',
+        # we try to infer the remote if the tracking data is missing.
         return self.get_strict_counterpart_for_fetching_of_branch(branch) or self.__get_inferred_counterpart_for_fetching_of_branch(branch)
 
     # Note that rebase/cherry-pick/merge/revert all happen on per-worktree basis,
@@ -516,7 +529,8 @@ class GitContext:
         self.__tree_hash_by_commit_hash_cached = {}
 
         # Using 'committerdate:raw' instead of 'committerdate:unix' since the latter isn't supported by some older versions of git.
-        raw_remote = utils.get_non_empty_lines(self._popen_git("for-each-ref", "--format=%(refname)\t%(objectname)\t%(tree)\t%(committerdate:raw)", "refs/remotes"))
+        raw_remote = utils.get_non_empty_lines(
+            self._popen_git("for-each-ref", "--format=%(refname)\t%(objectname)\t%(tree)\t%(committerdate:raw)", "refs/remotes"))
         for line in raw_remote:
             values = line.split("\t")
             if len(values) != 4:
@@ -526,9 +540,11 @@ class GitContext:
             self.__remote_branches_cached += [b_stripped_remote]
             self.__commit_hash_by_revision_cached[RemoteBranchFullName.of(branch)] = FullCommitHash.of(commit_hash)
             self.__tree_hash_by_commit_hash_cached[FullCommitHash.of(commit_hash)] = FullTreeHash.of(tree_hash)
-            self.__committer_unix_timestamp_by_revision_cached[RemoteBranchFullName.of(branch)] = int(committer_unix_timestamp_and_time_zone.split(' ')[0])
+            self.__committer_unix_timestamp_by_revision_cached[RemoteBranchFullName.of(branch)] = int(
+                committer_unix_timestamp_and_time_zone.split(' ')[0])
 
-        raw_local = utils.get_non_empty_lines(self._popen_git("for-each-ref", "--format=%(refname)\t%(objectname)\t%(tree)\t%(committerdate:raw)\t%(upstream)", "refs/heads"))
+        raw_local = utils.get_non_empty_lines(
+            self._popen_git("for-each-ref", "--format=%(refname)\t%(objectname)\t%(tree)\t%(committerdate:raw)\t%(upstream)", "refs/heads"))
 
         for line in raw_local:
             values = line.split("\t")
@@ -536,11 +552,13 @@ class GitContext:
                 continue  # invalid, shouldn't happen
             branch, commit_hash, tree_hash, committer_unix_timestamp_and_time_zone, fetch_counterpart = values
             b_stripped_local = LocalBranchFullName.of(branch).to_short_name()
-            fetch_counterpart_stripped = RemoteBranchFullName.of(fetch_counterpart).to_short_name() if fetch_counterpart else None  # fetch_counterpart might be empty
+            fetch_counterpart_stripped = RemoteBranchFullName.of(
+                fetch_counterpart).to_short_name() if fetch_counterpart else None  # fetch_counterpart might be empty
             self.__local_branches_cached += [b_stripped_local]
             self.__commit_hash_by_revision_cached[LocalBranchFullName.of(branch)] = FullCommitHash.of(commit_hash)
             self.__tree_hash_by_commit_hash_cached[FullCommitHash.of(commit_hash)] = FullTreeHash.of(tree_hash)
-            self.__committer_unix_timestamp_by_revision_cached[LocalBranchFullName.of(branch)] = int(committer_unix_timestamp_and_time_zone.split(' ')[0])
+            self.__committer_unix_timestamp_by_revision_cached[LocalBranchFullName.of(branch)] = int(
+                committer_unix_timestamp_and_time_zone.split(' ')[0])
             if fetch_counterpart_stripped in self.__remote_branches_cached:
                 self.__counterparts_for_fetching_cached[b_stripped_local] = fetch_counterpart_stripped
 
@@ -548,17 +566,19 @@ class GitContext:
         opts = ([f"--max-count={str(max_count)}"] if max_count else []) + ["--format=%H", revision.full_name()]
         return list(map(FullCommitHash.of, utils.get_non_empty_lines(self._popen_git("log", *opts))))
 
-    # Since getting the full history of a branch can be an expensive operation for large repositories (compared to all other underlying git operations),
-    # there's a simple optimization in place: we first fetch only a couple of first commits in the history,
-    # and only fetch the rest if needed.
+    # Since getting the full history of a branch can be an expensive operation for large repositories
+    # (compared to all other underlying git operations), there's a simple optimization in place:
+    # we first fetch only a couple of first commits in the history, and only fetch the rest if needed.
     def spoonfeed_log_hashes(self, branch_full_hash: FullCommitHash) -> Generator[FullCommitHash, None, None]:
         if branch_full_hash not in self.__initial_log_hashes_cached:
-            self.__initial_log_hashes_cached[branch_full_hash] = self.__get_log_hashes(branch_full_hash, max_count=MAX_COUNT_FOR_INITIAL_LOG)
+            self.__initial_log_hashes_cached[branch_full_hash] = self.__get_log_hashes(branch_full_hash,
+                                                                                       max_count=MAX_COUNT_FOR_INITIAL_LOG)
         for hash in self.__initial_log_hashes_cached[branch_full_hash]:
             yield FullCommitHash.of(hash)
 
         if branch_full_hash not in self.__remaining_log_hashes_cached:
-            self.__remaining_log_hashes_cached[branch_full_hash] = self.__get_log_hashes(branch_full_hash, max_count=None)[MAX_COUNT_FOR_INITIAL_LOG:]
+            self.__remaining_log_hashes_cached[branch_full_hash] = self.__get_log_hashes(branch_full_hash,
+                                                                                         max_count=None)[MAX_COUNT_FOR_INITIAL_LOG:]
         for hash in self.__remaining_log_hashes_cached[branch_full_hash]:
             yield FullCommitHash.of(hash)
 
@@ -566,8 +586,11 @@ class GitContext:
         # %gd - reflog selector (refname@{num})
         # %H - full hash
         # %gs - reflog subject
-        all_branches = [str(branch.full_name()) for branch in self.get_local_branches()] + \
-                       [str(self.get_combined_counterpart_for_fetching_of_branch(branch).full_name()) for branch in self.get_local_branches() if self.get_combined_counterpart_for_fetching_of_branch(branch)]  # str here to match _popen_git() input type
+        local_branches = [str(branch.full_name()) for branch in self.get_local_branches()]  # str here to match _popen_git() input type
+        counterpart_branches = [str(self.get_combined_counterpart_for_fetching_of_branch(branch).full_name()) for branch in
+                                self.get_local_branches() if self.get_combined_counterpart_for_fetching_of_branch(branch)]
+        all_branches = local_branches + counterpart_branches
+
         # The trailing '--' is necessary to avoid ambiguity in case there is a file called just exactly like one of the branches.
         entries = utils.get_non_empty_lines(self._popen_git("reflog", "show", "--format=%gD\t%H\t%gs", *(all_branches + ["--"])))
         self.__reflogs_cached = {}
@@ -599,7 +622,8 @@ class GitContext:
                 # %gs - reflog subject
                 self.__reflogs_cached[branch] = list(map(lambda x: GitReflogEntry(hash=FullCommitHash(x[0]), reflog_subject=x[1]),
                                                          [entry.split(":", 1) for entry in utils.get_non_empty_lines(
-                                                             # The trailing '--' is necessary to avoid ambiguity in case there is a file called just exactly like the branch 'branch'.
+                                                             # The trailing '--' is necessary to avoid ambiguity in case there is a file
+                                                             # called just exactly like the branch 'branch'.
                                                              self._popen_git("reflog", "show", "--format=%H:%gs", branch, "--"))]
                                                          ))
             return self.__reflogs_cached[branch]
@@ -608,7 +632,8 @@ class GitContext:
         self._run_git("branch", branch, out_of_revision)
         if switch_head:
             self._run_git("checkout", branch)
-        self.flush_caches()  # the repository state has changed because of a successful branch creation, let's defensively flush all the caches
+        self.flush_caches()  # the repository state has changed because of a successful branch creation,
+        # let's defensively flush all the caches
 
     def flush_caches(self) -> None:
         self.__config_cached = None
@@ -793,13 +818,18 @@ class GitContext:
             advice_ignored_hook = self.get_config_attr_or_none("advice.ignoredHook")
             if advice_ignored_hook != 'false':  # both empty and "true" is okay
                 # The [33m color must be used to keep consistent with how git colors this advice for its built-in hooks.
-                print(colored(f"hint: The '{hook_path}' hook was ignored because it's not set as executable.", AnsiEscapeCodes.YELLOW), file=sys.stderr)
-                print(colored("hint: You can disable this warning with `git config advice.ignoredHook false`.", AnsiEscapeCodes.YELLOW), file=sys.stderr)
+                print(colored(f"hint: The '{hook_path}' hook was ignored because it's not set as executable.", AnsiEscapeCodes.YELLOW),
+                      file=sys.stderr)
+                print(colored("hint: You can disable this warning with `git config advice.ignoredHook false`.", AnsiEscapeCodes.YELLOW),
+                      file=sys.stderr)
             return False
         else:
             return True
 
-    def merge(self, branch: LocalBranchShortName, into: LocalBranchShortName, opt_no_edit_merge: bool) -> None:  # refs/heads/ prefix is assumed for 'branch'
+    def merge(self, branch: LocalBranchShortName,
+              into: LocalBranchShortName,
+              opt_no_edit_merge: bool
+              ) -> None:
         extra_params = ["--no-edit"] if opt_no_edit_merge else ["--edit"]
         # We need to specify the message explicitly to avoid 'refs/heads/' prefix getting into the message...
         commit_message = f"Merge branch '{branch}' into {into}"
@@ -860,7 +890,11 @@ class GitContext:
         else:
             do_rebase()
 
-    def rebase_onto_ancestor_commit(self, branch: LocalBranchShortName, ancestor_revision: AnyRevision, opt_no_interactive_rebase: bool) -> None:
+    def rebase_onto_ancestor_commit(self,
+                                    branch: LocalBranchShortName,
+                                    ancestor_revision: AnyRevision,
+                                    opt_no_interactive_rebase: bool
+                                    ) -> None:
         self.rebase(ancestor_revision, ancestor_revision, branch, opt_no_interactive_rebase)
 
     def get_commits_between(self, earliest_exclusive: AnyRevision, latest_inclusive: AnyRevision) -> List[GitLogEntry]:
@@ -882,7 +916,8 @@ class GitContext:
         else:
             b_t = self.get_committer_unix_timestamp_by_revision(branch)
             rb_t = self.get_committer_unix_timestamp_by_revision(remote_branch)
-            return SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE if b_t < rb_t else SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE
+            return SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE if b_t < rb_t else \
+                SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE
 
     def get_strict_remote_sync_status(self, branch: LocalBranchShortName) -> Tuple[int, Optional[str]]:
         if not self.get_remotes():

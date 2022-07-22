@@ -6,7 +6,6 @@ from .mockers import (GitRepositorySandbox, launch_command)
 class TestIsManaged:
 
     def setup_method(self) -> None:
-
         self.repo_sandbox = GitRepositorySandbox()
 
         (

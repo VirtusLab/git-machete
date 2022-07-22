@@ -10,7 +10,6 @@ from .mockers import (GitRepositorySandbox, assert_command,
 class TestSlideOut:
 
     def setup_method(self, mocker: Any) -> None:
-
         self.repo_sandbox = GitRepositorySandbox()
 
         (
