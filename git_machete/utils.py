@@ -314,7 +314,7 @@ sync_to_parent_status_to_edge_color_map: Dict[SyncToParentStatus, str] = {
 
 sync_to_parent_status_to_junction_ascii_only_map: Dict[SyncToParentStatus, str] = {
     SyncToParentStatus.MergedToParent: "m-",
-    SyncToParentStatus.OutOfSync: "x-",
     SyncToParentStatus.InSync: "o-",
-    SyncToParentStatus.InSyncButForkPointOff: "?-"
+    SyncToParentStatus.InSyncButForkPointOff: "?-",
+    SyncToParentStatus.OutOfSync: "x-"
 }

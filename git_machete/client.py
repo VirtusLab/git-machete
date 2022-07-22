@@ -463,7 +463,7 @@ class MacheteClient:
 
         print(bold("Discovered tree of branch dependencies:\n"))
         self.status(
-            warn_on_yellow_edges=False,
+            warn_when_branch_in_sync_but_fork_point_off=False,
             opt_list_commits=opt_list_commits,
             opt_list_commits_with_hashes=False,
             opt_no_detect_squash_merges=False)
@@ -726,7 +726,7 @@ class MacheteClient:
                 current_branch = branch
                 self.__print_new_line(False)
                 self.status(
-                    warn_on_yellow_edges=True,
+                    warn_when_branch_in_sync_but_fork_point_off=True,
                     opt_list_commits=opt_list_commits,
                     opt_list_commits_with_hashes=False,
                     opt_no_detect_squash_merges=opt_no_detect_squash_merges)
@@ -852,7 +852,7 @@ class MacheteClient:
 
         self.__print_new_line(False)
         self.status(
-            warn_on_yellow_edges=True,
+            warn_when_branch_in_sync_but_fork_point_off=True,
             opt_list_commits=opt_list_commits,
             opt_list_commits_with_hashes=False,
             opt_no_detect_squash_merges=opt_no_detect_squash_merges)
@@ -877,7 +877,7 @@ class MacheteClient:
     def status(
             self,
             *,
-            warn_on_yellow_edges: bool,
+            warn_when_branch_in_sync_but_fork_point_off: bool,
             opt_list_commits: bool,
             opt_list_commits_with_hashes: bool,
             opt_no_detect_squash_merges: bool
@@ -1047,24 +1047,27 @@ class MacheteClient:
         sys.stdout.write(out.getvalue())
         out.close()
 
-        yellow_edge_branches = [k for k, v in sync_to_parent_status.items() if v == SyncToParentStatus.InSyncButForkPointOff]
-        if yellow_edge_branches and warn_on_yellow_edges:
-            if len(yellow_edge_branches) == 1:
-                first_part = f"yellow edge indicates that fork point for `{yellow_edge_branches[0]}` is probably incorrectly inferred,\n" \
-                             f"or that some extra branch should be between `{self.up_branch[LocalBranchShortName.of(yellow_edge_branches[0])]}` and `{yellow_edge_branches[0]}`"
+        branches_in_sync_but_fork_point_off = [k for k, v in sync_to_parent_status.items() if v == SyncToParentStatus.InSyncButForkPointOff]
+        if branches_in_sync_but_fork_point_off and warn_when_branch_in_sync_but_fork_point_off:
+            if len(branches_in_sync_but_fork_point_off) == 1:
+                first_part = f"yellow edge indicates that fork point for `{branches_in_sync_but_fork_point_off[0]}` " \
+                             f"is probably incorrectly inferred,\n or that some extra branch should be between " \
+                             f"`{self.up_branch[LocalBranchShortName.of(branches_in_sync_but_fork_point_off[0])]}` and " \
+                             f"`{branches_in_sync_but_fork_point_off[0]}`"
             else:
-                affected_branches = ", ".join(map(lambda x: f"`{x}`", yellow_edge_branches))
+                affected_branches = ", ".join(map(lambda x: f"`{x}`", branches_in_sync_but_fork_point_off))
                 first_part = f"yellow edges indicate that fork points for {affected_branches} are probably incorrectly inferred,\n" \
                              f"or that some extra branch should be added between each of these branches and its parent"
 
             if not opt_list_commits:
                 second_part = "Run `git machete status --list-commits` or `git machete status --list-commits-with-hashes` to see more details"
-            elif len(yellow_edge_branches) == 1:
-                second_part = f"Consider using `git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent {yellow_edge_branches[0]}`,\n" \
-                              f"or reattaching `{yellow_edge_branches[0]}` under a different parent branch"
+            elif len(branches_in_sync_but_fork_point_off) == 1:
+                second_part = f"Consider using `git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent" \
+                              f" {branches_in_sync_but_fork_point_off[0]}`,\nor reattaching `{branches_in_sync_but_fork_point_off[0]}` " \
+                              f"under a different parent branch"
             else:
-                second_part = "Consider using `git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent <branch>` for each affected branch,\n" \
-                              "or reattaching the affected branches under different parent branches"
+                second_part = "Consider using `git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent " \
+                              "<branch>` for each affected branch,\nor reattaching the affected branches under different parent branches"
 
             print("", file=sys.stderr)
             warn(f"{first_part}.\n\n{second_part}.")
@@ -2356,7 +2359,7 @@ class MacheteClient:
 
             self.__print_new_line(False)
             self.status(
-                warn_on_yellow_edges=True,
+                warn_when_branch_in_sync_but_fork_point_off=True,
                 opt_list_commits=False,
                 opt_list_commits_with_hashes=False,
                 opt_no_detect_squash_merges=False)
