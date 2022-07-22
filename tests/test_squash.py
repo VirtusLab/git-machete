@@ -7,7 +7,6 @@ from .mockers import (GitRepositorySandbox, get_current_commit_hash,
 class TestSquash:
 
     def setup_method(self) -> None:
-
         self.repo_sandbox = GitRepositorySandbox()
 
         (
@@ -42,10 +41,9 @@ class TestSquash:
         )
 
         current_branch_log = popen('git log -3 --format=%s')
-        assert current_branch_log == \
-            expected_branch_log, \
+        assert current_branch_log == expected_branch_log, \
             ("Verify that `git machete squash -f <fork-point>` squashes commit"
-                " from one succeeding the fork-point until tip of the branch.")
+             " from one succeeding the fork-point until tip of the branch.")
 
     def test_squash_with_invalid_fork_point(self) -> None:
         (

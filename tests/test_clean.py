@@ -11,7 +11,6 @@ from .mockers import (GitRepositorySandbox, assert_command, launch_command,
 class TestClean:
 
     def setup_method(self) -> None:
-
         self.repo_sandbox = GitRepositorySandbox()
 
         (

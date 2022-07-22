@@ -457,11 +457,7 @@ def update_cli_opts_using_parsed_args(
 def set_utils_global_variables(
         cli_opts: git_machete.options.CommandLineOptions) -> None:
     if cli_opts.opt_color:
-        utils.ascii_only = (
-                cli_opts.opt_color == "never" or (
-                cli_opts.opt_color == "auto" and
-                not sys.stdout.isatty())
-        )
+        utils.ascii_only = (cli_opts.opt_color == "never" or (cli_opts.opt_color == "auto" and not sys.stdout.isatty()))
     utils.debug_mode = cli_opts.opt_debug
     utils.verbose_mode = cli_opts.opt_verbose
 
@@ -618,9 +614,8 @@ def launch(orig_args: List[str]) -> None:
             machete_client.read_definition_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             git.expect_no_operation_in_progress()
             current_branch = git.get_current_branch()
-            dest = machete_client.parse_direction(
-                parsed_cli.direction, current_branch, allow_current=False, down_pick_mode=True)[
-                0]  # with down_pick_mode=True there is only one element in list allowed
+            dest = machete_client.parse_direction(parsed_cli.direction, current_branch, allow_current=False, down_pick_mode=True)[0]
+            # with down_pick_mode=True there is only one element in list allowed
             if dest != current_branch:
                 git.checkout(dest)
         elif cmd == "github":

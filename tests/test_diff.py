@@ -6,7 +6,6 @@ from .mockers import (GitRepositorySandbox, assert_command, mock_run_cmd_and_for
 class TestDiff:
 
     def setup_method(self) -> None:
-
         self.repo_sandbox = GitRepositorySandbox()
 
         (
@@ -29,24 +28,26 @@ class TestDiff:
                 .add_file_with_content_and_commit(message='master commit1')
                 .push()
                 .new_branch("develop")
-                .add_file_with_content_and_commit(file_name='develop_file_name.txt', file_content='Develop content\n', message='develop commit')
+                .add_file_with_content_and_commit(file_name='develop_file_name.txt',
+                                                  file_content='Develop content\n',
+                                                  message='develop commit')
                 .push()
         )
 
-        expected_status_output = (
-"""diff --git a/develop_file_name.txt b/develop_file_name.txt
-new file mode 100644
-index 0000000..a3bd4e5
---- /dev/null
-+++ b/develop_file_name.txt
-@@ -0,0 +1 @@
-+Develop content
+        expected_status_output = """
+        diff --git a/develop_file_name.txt b/develop_file_name.txt
+        new file mode 100644
+        index 0000000..a3bd4e5
+        --- /dev/null
+        +++ b/develop_file_name.txt
+        @@ -0,0 +1 @@
+        +Develop content
 
-"""  # noqa: E122
-        )
+        """
+
         # Test `git machete diff` without providing the branch name
-        assert_command(["diff"], expected_status_output, strip_indentation=False)
+        assert_command(["diff"], expected_status_output, indent='')
 
-        assert_command(["diff", "develop"], expected_status_output, strip_indentation=False)
+        assert_command(["diff", "develop"], expected_status_output, indent='')
 
-        assert_command(["diff", "refs/heads/develop"], expected_status_output, strip_indentation=False)
+        assert_command(["diff", "refs/heads/develop"], expected_status_output, indent='')

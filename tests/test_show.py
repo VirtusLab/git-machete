@@ -6,7 +6,6 @@ from .mockers import (GitRepositorySandbox, assert_command, launch_command, mock
 class TestShow:
 
     def setup_method(self) -> None:
-
         self.repo_sandbox = GitRepositorySandbox()
 
         (
@@ -110,13 +109,11 @@ class TestShow:
         )
         launch_command("discover", "-y")
 
-        assert 'level-0-branch' == \
-            launch_command("show", "up").strip(), \
+        assert 'level-0-branch' == launch_command("show", "up").strip(), \
             ("Verify that 'git machete show up' displays name of a parent/upstream "
-                "branch one above current one."
-             )            # check short command behaviour
-        assert 'level-0-branch' == \
-            launch_command("show", "u").strip(), \
+             "branch one above current one."
+             )  # check short command behaviour
+        assert 'level-0-branch' == launch_command("show", "u").strip(), \
             ("Verify that 'git machete show u' displays name of a parent/upstream "
              "branch one above current one."
              )
@@ -139,13 +136,11 @@ class TestShow:
         )
         launch_command("discover", "-y")
 
-        assert 'level-1-branch' == \
-            launch_command("show", "down").strip(), \
+        assert 'level-1-branch' == launch_command("show", "down").strip(), \
             ("Verify that 'git machete show down' displays name of "
-                "a child/downstream branch one below current one."
-             )            # check short command behaviour
-        assert 'level-1-branch' == \
-            launch_command("show", "d").strip(), \
+             "a child/downstream branch one below current one."
+             )  # check short command behaviour
+        assert 'level-1-branch' == launch_command("show", "d").strip(), \
             ("Verify that 'git machete show d' displays name of "
              "a child/downstream branch one below current one."
              )
@@ -183,14 +178,12 @@ class TestShow:
         )
         launch_command("discover", "-y")
 
-        assert 'level-1a-branch' == \
-            launch_command("show", "first").strip(), \
+        assert 'level-1a-branch' == launch_command("show", "first").strip(), \
             ("Verify that 'git machete show first' displays name of the first downstream "
              "branch of a root branch of the current branch in the config file if root "
              "branch has any downstream branches."
              )
-        assert 'level-1a-branch' == \
-            launch_command("show", "f").strip(), \
+        assert 'level-1a-branch' == launch_command("show", "f").strip(), \
             ("Verify that 'git machete show f' displays name of the first downstream "
              "branch of a root branch of the current branch in the config file if root "
              "branch has any downstream branches."
@@ -225,14 +218,12 @@ class TestShow:
         )
         launch_command("discover", "-y")
 
-        assert 'level-1b-branch' == \
-            launch_command("show", "last").strip(), \
+        assert 'level-1b-branch' == launch_command("show", "last").strip(), \
             ("Verify that 'git machete show last' displays name of the last downstream "
              "branch of a root branch of the current branch in the config file if root "
              "branch has any downstream branches."
              )
-        assert 'level-1b-branch' == \
-            launch_command("show", "l").strip(), \
+        assert 'level-1b-branch' == launch_command("show", "l").strip(), \
             ("Verify that 'git machete show l' displays name of the last downstream "
              "branch of a root branch of the current branch in the config file if root "
              "branch has any downstream branches."
@@ -262,14 +253,12 @@ class TestShow:
         )
         launch_command("discover", "-y")
 
-        assert 'level-1b-branch' == \
-            launch_command("show", "next").strip(), \
+        assert 'level-1b-branch' == launch_command("show", "next").strip(), \
             ("Verify that 'git machete show next' displays name of "
              "a branch right after the current one in the config file "
              "when successor branch exists within the root tree."
              )
-        assert 'level-1b-branch' == \
-            launch_command("show", "n").strip(), \
+        assert 'level-1b-branch' == launch_command("show", "n").strip(), \
             ("Verify that 'git machete show n' displays name of "
              "a branch right after the current one in the config file "
              "when successor branch exists within the root tree."
@@ -298,14 +287,12 @@ class TestShow:
         )
         launch_command("discover", "-y")
 
-        assert 'level-2a-branch' == \
-            launch_command("show", "prev").strip(), \
+        assert 'level-2a-branch' == launch_command("show", "prev").strip(), \
             ("Verify that 'git machete show prev' displays name of "
              "a branch right before the current one in the config file "
              "when predecessor branch exists within the root tree."
              )
-        assert 'level-2a-branch' == \
-            launch_command("show", "p").strip(), \
+        assert 'level-2a-branch' == launch_command("show", "p").strip(), \
             ("Verify that 'git machete show p' displays name of "
              "a branch right before the current one in the config file "
              "when predecessor branch exists within the root tree."
@@ -338,13 +325,11 @@ class TestShow:
         )
         launch_command("discover", "-y")
 
-        assert 'level-0-branch' == \
-            launch_command("show", "root").strip(), \
+        assert 'level-0-branch' == launch_command("show", "root").strip(), \
             ("Verify that 'git machete show root' displays name of the root of "
              "the current branch."
              )
-        assert 'level-0-branch' == \
-            launch_command("show", "r").strip(), \
+        assert 'level-0-branch' == launch_command("show", "r").strip(), \
             ("Verify that 'git machete show r' displays name of the root of "
              "the current branch."
              )

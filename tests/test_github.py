@@ -485,8 +485,8 @@ class TestGithub:
 
         (
             self.repo_sandbox.check_out('hotfix/add-trigger')
-            .commit('trigger released')
-            .commit('minor changes applied')
+                .commit('trigger released')
+                .commit('minor changes applied')
         )
 
         # diverged from and newer than origin
@@ -517,28 +517,33 @@ class TestGithub:
         with pytest.raises(MacheteException) as e:
             launch_command("github", "create-pr")
         if e:
-            assert e.value.args[0] == expected_error_message, 'Verify that expected error message has appeared when given pull request to create is already created.'
+            assert e.value.args[0] == expected_error_message, \
+                'Verify that expected error message has appeared when given pull request to create is already created.'
 
         # check against head branch is ancestor or equal to base branch
         (
             self.repo_sandbox.check_out('develop')
-            .new_branch('testing/endpoints')
-            .push()
+                .new_branch('testing/endpoints')
+                .push()
         )
         launch_command('discover')
 
-        expected_error_message = "All commits in `testing/endpoints` branch are already included in `develop` branch.\nCannot create pull request."
+        expected_error_message = "All commits in `testing/endpoints` branch are already included in `develop` branch.\n" \
+                                 "Cannot create pull request."
         with pytest.raises(MacheteException) as e:
             launch_command("github", "create-pr")
         if e:
-            assert e.value.parameter == expected_error_message, 'Verify that expected error message has appeared when head branch is equal or ancestor of base branch.'
+            assert e.value.parameter == expected_error_message, \
+                'Verify that expected error message has appeared when head branch is equal or ancestor of base branch.'
 
         self.repo_sandbox.check_out('develop')
-        expected_error_message = "Branch `develop` does not have a parent branch (it is a root), base branch for the PR cannot be established."
+        expected_error_message = "Branch `develop` does not have a parent branch (it is a root), " \
+                                 "base branch for the PR cannot be established."
         with pytest.raises(MacheteException) as e:
             launch_command("github", "create-pr")
         if e:
-            assert e.value.parameter == expected_error_message, 'Verify that expected error message has appeared when creating PR from root branch.'
+            assert e.value.parameter == expected_error_message, \
+                'Verify that expected error message has appeared when creating PR from root branch.'
 
     git_api_state_for_test_create_pr_missing_base_branch_on_remote = MockGitHubAPIState(
         [
@@ -663,7 +668,7 @@ class TestGithub:
 
         Fetching origin_1...
         Creating a PR from `feature` to `branch-1`... OK, see www.github.com
-        """  # noqa: W291
+        """  # noqa: W291, E501
         assert_command(
             ['github', 'create-pr'],
             expected_result,
@@ -748,7 +753,7 @@ class TestGithub:
 
         Fetching origin_1...
         Creating a PR from `feature_3` to `feature_2`... OK, see www.github.com
-        """
+        """  # noqa: E501
         assert_command(
             ['github', 'create-pr'],
             expected_result,
@@ -861,7 +866,8 @@ class TestGithub:
                 'state': 'open'
             },
             {
-                'head': {'ref': 'bugfix/remove-n-option', 'repo': {'full_name': 'testing/checkout_prs', 'html_url': GitRepositorySandbox.second_remote_path}},
+                'head': {'ref': 'bugfix/remove-n-option',
+                         'repo': {'full_name': 'testing/checkout_prs', 'html_url': GitRepositorySandbox.second_remote_path}},
                 'user': {'login': 'github_user'},
                 'base': {'ref': 'develop'},
                 'number': '5',
@@ -872,7 +878,8 @@ class TestGithub:
     )
 
     @mock.patch('git_machete.cli.exit_script', mock_exit_script)
-    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_checkout_prs` due to `git fetch` executed by `checkout-prs` subcommand.
+    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_checkout_prs`
+    # due to `git fetch` executed by `checkout-prs` subcommand.
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
@@ -930,7 +937,8 @@ class TestGithub:
             .push()
             .check_out('master')
         )
-        for branch in ('chore/redundant_checks', 'restrict_access', 'allow-ownership-link', 'bugfix/feature', 'enhance/add_user', 'testing/add_user', 'chore/comments', 'bugfix/add_user'):
+        for branch in ('chore/redundant_checks', 'restrict_access', 'allow-ownership-link', 'bugfix/feature', 'enhance/add_user',
+                       'testing/add_user', 'chore/comments', 'bugfix/add_user'):
             self.repo_sandbox.execute(f"git branch -D {branch}")
 
         launch_command('discover')
@@ -1097,12 +1105,14 @@ class TestGithub:
          )
         os.chdir(self.repo_sandbox.local_path)
 
-        expected_error_message = "Could not check out PR #5 because its head branch `bugfix/remove-n-option` is already deleted from `testing`."
+        expected_error_message = "Could not check out PR #5 because its head branch `bugfix/remove-n-option` " \
+                                 "is already deleted from `testing`."
         with pytest.raises(MacheteException) as e:
             launch_command('github', 'checkout-prs', '5')
         if e:
             assert e.value.parameter == expected_error_message, \
-                'Verify that expected error message has appeared when given pull request to checkout have already deleted branch from remote.'
+                'Verify that expected error message has appeared when given pull request to checkout ' \
+                'have already deleted branch from remote.'
 
         # Check against pr come from fork
         os.chdir(local_path)
@@ -1151,7 +1161,8 @@ class TestGithub:
                 'state': 'open'
             },
             {
-                'head': {'ref': 'sphinx_export', 'repo': {'full_name': 'testing/checkout_prs', 'html_url': GitRepositorySandbox.second_remote_path}},
+                'head': {'ref': 'sphinx_export',
+                         'repo': {'full_name': 'testing/checkout_prs', 'html_url': GitRepositorySandbox.second_remote_path}},
                 'user': {'login': 'github_user'},
                 'base': {'ref': 'comments/add_docstrings'},
                 'number': '23',
@@ -1162,7 +1173,8 @@ class TestGithub:
     )
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_checkout_prs_freshly_cloned` due to `git fetch` executed by `checkout-prs` subcommand.
+    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_checkout_prs_freshly_cloned`
+    # due to `git fetch` executed by `checkout-prs` subcommand.
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
     @mock.patch('urllib.request.urlopen', MockContextManager)
@@ -1283,11 +1295,13 @@ class TestGithub:
         ]
     )
 
-    @mock.patch('git_machete.git_operations.GitContext.fetch_ref', mock_fetch_ref)  # need to mock fetch_ref due to underlying `git fetch pull/head` calls
+    @mock.patch('git_machete.git_operations.GitContext.fetch_ref', mock_fetch_ref)
+    # need to mock fetch_ref due to underlying `git fetch pull/head` calls
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_checkout_prs_from_fork_with_deleted_repo` due to `git fetch` executed by `checkout-prs` subcommand.
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
+    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_checkout_prs_from_fork_with_deleted_repo`
+    # due to `git fetch` executed by `checkout-prs` subcommand.
     @mock.patch('urllib.request.urlopen', MockContextManager)
     @mock.patch('urllib.request.Request', git_api_state_for_test_github_checkout_prs_from_fork_with_deleted_repo.new_request())
     def test_github_checkout_prs_from_fork_with_deleted_repo(self) -> None:
@@ -1301,7 +1315,8 @@ class TestGithub:
         )
         launch_command('discover')
         expected_msg = ("Checking for open GitHub PRs...\n"
-                        "Warn: Pull request #2 comes from fork and its repository is already deleted. No remote tracking data will be set up for `feature/allow_checkout` branch.\n"
+                        "Warn: Pull request #2 comes from fork and its repository is already deleted. "
+                        "No remote tracking data will be set up for `feature/allow_checkout` branch.\n"
                         "Warn: Pull request #2 is already closed.\n"
                         "Pull request `#2` checked out at local branch `feature/allow_checkout`\n")
         assert_command(
@@ -1310,11 +1325,11 @@ class TestGithub:
             strip_indentation=False
         )
 
-        assert 'feature/allow_checkout' == \
-            launch_command("show", "current").strip(), \
+        assert 'feature/allow_checkout' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete github checkout prs' performs 'git checkout' to "
              "the head branch of given pull request."
              )
+
     git_api_state_for_test_github_sync = MockGitHubAPIState(
         [
             {

@@ -321,22 +321,18 @@ class MacheteClient:
         if opt_merge:
             with_branch = self.up(
                 current_branch,
-                prompt_if_inferred_msg=(
-                        "Branch `%s` not found in the tree of branch dependencies. "
-                        "Merge with the inferred upstream `%s`?" + get_pretty_choices('y', 'N')),
-                prompt_if_inferred_yes_opt_msg=(
-                    "Branch `%s` not found in the tree of branch dependencies. "
-                    "Merging with the inferred upstream `%s`..."))
+                prompt_if_inferred_msg=("Branch `%s` not found in the tree of branch dependencies. "
+                                        "Merge with the inferred upstream `%s`?" + get_pretty_choices('y', 'N')),
+                prompt_if_inferred_yes_opt_msg=("Branch `%s` not found in the tree of branch dependencies. "
+                                                "Merging with the inferred upstream `%s`..."))
             self.__git.merge(with_branch, current_branch, opt_no_edit_merge)
         else:
             onto_branch = self.up(
                 current_branch,
-                prompt_if_inferred_msg=(
-                        "Branch `%s` not found in the tree of branch dependencies. "
-                        "Rebase onto the inferred upstream `%s`?" + get_pretty_choices('y', 'N')),
-                prompt_if_inferred_yes_opt_msg=(
-                    "Branch `%s` not found in the tree of branch dependencies. "
-                    "Rebasing onto the inferred upstream `%s`..."))
+                prompt_if_inferred_msg=("Branch `%s` not found in the tree of branch dependencies. "
+                                        "Rebase onto the inferred upstream `%s`?" + get_pretty_choices('y', 'N')),
+                prompt_if_inferred_yes_opt_msg=("Branch `%s` not found in the tree of branch dependencies. "
+                                                "Rebasing onto the inferred upstream `%s`..."))
             self.__git.rebase(
                 LocalBranchShortName.of(onto_branch).full_name(),
                 opt_fork_point or self.fork_point(
@@ -415,12 +411,9 @@ class MacheteClient:
         for branch in excluding(non_root_fixed_branches, stale_non_root_fixed_branches):
             upstream = self.__infer_upstream(
                 branch,
-                condition=lambda candidate: (
-                        get_root_of(candidate) != branch and
-                        candidate not in stale_non_root_fixed_branches),
-                reject_reason_message=(
-                    "choosing this candidate would form a "
-                    "cycle in the resulting graph or the candidate is a stale branch"))
+                condition=lambda candidate: (get_root_of(candidate) != branch and candidate not in stale_non_root_fixed_branches),
+                reject_reason_message=("choosing this candidate would form a "
+                                       "cycle in the resulting graph or the candidate is a stale branch"))
             if upstream:
                 debug(f"inferred upstream of {branch} is {upstream}, attaching {branch} as a child of {upstream}\n")
                 self.up_branch[branch] = upstream
@@ -583,9 +576,8 @@ class MacheteClient:
                 not self.__is_merged_to_upstream(bd, opt_no_detect_squash_merges=False) and
                 self.__git.is_ancestor_or_equal(branch.full_name(), bd.full_name()) and
                 (self.__get_overridden_fork_point(bd) or
-                 self.__git.get_commit_hash_by_revision(branch) == self.fork_point(bd,
-                                                                                   use_overrides=False,
-                                                                                   opt_no_detect_squash_merges=False)))
+                 self.__git.get_commit_hash_by_revision(branch) ==
+                 self.fork_point(bd, use_overrides=False, opt_no_detect_squash_merges=False)))
 
         candidate_downstreams = list(filter(connected_with_green_edge, self.__down_branches[branch]))
         if not candidate_downstreams:
@@ -1181,9 +1173,9 @@ class MacheteClient:
                   "filtered reflog of any other branch or its remote counterpart "
                   f"(specifically: {' and '.join(map(utils.get_second, containing_branch_pairs))})")
 
-            if upstream and self.__git.is_ancestor_or_equal(upstream.full_name(),
-                                                            branch.full_name()) and not self.__git.is_ancestor_or_equal(
-                    upstream.full_name(), fp_hash.full_name()):
+            if upstream and \
+                    self.__git.is_ancestor_or_equal(upstream.full_name(), branch.full_name()) and \
+                    not self.__git.is_ancestor_or_equal(upstream.full_name(), fp_hash.full_name()):
                 # That happens very rarely in practice (typically current head
                 # of any branch, including upstream, should occur on the reflog
                 # of this branch, thus is_ancestor(upstream, branch) should imply
@@ -1625,10 +1617,10 @@ class MacheteClient:
         # branch currently points.
         if not self.__git.is_ancestor_or_equal(while_descendant_of.full_name(), branch.full_name()):
             warn(fmt(
-                f"since branch <b>{branch}</b> is no longer a descendant of commit {self.__git.get_short_commit_hash_by_revision(while_descendant_of)}, ",
+                f"since branch <b>{branch}</b> is no longer a descendant of commit "
+                f"{self.__git.get_short_commit_hash_by_revision(while_descendant_of)}, ",
                 f"the fork point override to commit {self.__git.get_short_commit_hash_by_revision(to)} no longer applies.\n",
-                "Consider running:\n",
-                f"  `git machete fork-point --unset-override {branch}`\n"))
+                "Consider running:\n  `git machete fork-point --unset-override {branch}`\n"))
             return None
         debug(f"since branch {branch} is descendant of while_descendant_of={while_descendant_of}, "
               f"fork point of {branch} is overridden to {to}")
@@ -1767,15 +1759,20 @@ class MacheteClient:
 
         message: str = {
             SyncToRemoteStatuses.IN_SYNC_WITH_REMOTE:
-                f"Branch {bold(branch)} is untracked, but its remote counterpart candidate {bold(remote_branch)} already exists and both branches point to the same commit.",
+                f"Branch {bold(branch)} is untracked, but its remote counterpart candidate {bold(remote_branch)} "
+                f"already exists and both branches point to the same commit.",
             SyncToRemoteStatuses.BEHIND_REMOTE:
-                f"Branch {bold(branch)} is untracked, but its remote counterpart candidate {bold(remote_branch)} already exists and is ahead of {bold(branch)}.",
+                f"Branch {bold(branch)} is untracked, but its remote counterpart candidate {bold(remote_branch)} "
+                f"already exists and is ahead of {bold(branch)}.",
             SyncToRemoteStatuses.AHEAD_OF_REMOTE:
-                f"Branch {bold(branch)} is untracked, but its remote counterpart candidate {bold(remote_branch)} already exists and is behind {bold(branch)}.",
+                f"Branch {bold(branch)} is untracked, but its remote counterpart candidate {bold(remote_branch)} "
+                f"already exists and is behind {bold(branch)}.",
             SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
-                f"Branch {bold(branch)} is untracked, it diverged from its remote counterpart candidate {bold(remote_branch)}, and has {bold('older')} commits than {bold(remote_branch)}.",
+                f"Branch {bold(branch)} is untracked, it diverged from its remote counterpart candidate {bold(remote_branch)}, "
+                f"and has {bold('older')} commits than {bold(remote_branch)}.",
             SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
-                f"Branch {bold(branch)} is untracked, it diverged from its remote counterpart candidate {bold(remote_branch)}, and has {bold('newer')} commits than {bold(remote_branch)}."
+                f"Branch {bold(branch)} is untracked, it diverged from its remote counterpart candidate {bold(remote_branch)}, "
+                f"and has {bold('newer')} commits than {bold(remote_branch)}."
         }[SyncToRemoteStatuses(relation)]
 
         ask_message, ask_opt_yes_message = {
@@ -2209,7 +2206,8 @@ class MacheteClient:
         reviewers: List[str] = utils.get_non_empty_lines(utils.slurp_file_or_empty(reviewers_path))
         if reviewers:
             print(
-                fmt(f'Adding {", ".join(f"`{reviewer}`" for reviewer in reviewers)} as reviewer{"s" if len(reviewers) > 1 else ""} to PR #{pr.number}...'),
+                fmt(f'Adding {", ".join(f"`{reviewer}`" for reviewer in reviewers)} '
+                    f'as reviewer{"s" if len(reviewers) > 1 else ""} to PR #{pr.number}...'),
                 end='', flush=True)
             try:
                 add_reviewers_to_pull_request(org, repo, pr.number, reviewers)
@@ -2330,9 +2328,10 @@ class MacheteClient:
         self.__print_new_line(False)
         remote_branch = self.__git.get_strict_counterpart_for_fetching_of_branch(branch)
         ans = self.ask_if(
-            f"Branch {bold(branch)} diverged from (and has older commits than) its remote counterpart {bold(remote_branch)}.\nReset branch {bold(branch)} to the commit pointed by {bold(remote_branch)}?" + get_pretty_choices(
-                'y', 'N', 'q', 'yq'),
-            f"Branch {bold(branch)} diverged from (and has older commits than) its remote counterpart {bold(remote_branch)}.\nResetting branch {bold(branch)} to the commit pointed by {bold(remote_branch)}...",
+            f"Branch {bold(branch)} diverged from (and has older commits than) its remote counterpart {bold(remote_branch)}.\n"
+            f"Reset branch {bold(branch)} to the commit pointed by {bold(remote_branch)}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
+            f"Branch {bold(branch)} diverged from (and has older commits than) its remote counterpart {bold(remote_branch)}.\n"
+            f"Resetting branch {bold(branch)} to the commit pointed by {bold(remote_branch)}...",
             opt_yes=opt_yes)
         if ans in ('y', 'yes', 'yq'):
             self.__git.reset_keep(remote_branch)
@@ -2347,7 +2346,8 @@ class MacheteClient:
         ans = self.ask_if(
             f"Branch {bold(branch)} is behind its remote counterpart {bold(remote_branch)}.\n"
             f"Pull {bold(branch)} (fast-forward only) from {bold(remote)}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
-            f"Branch {bold(branch)} is behind its remote counterpart {bold(remote_branch)}.\nPulling {bold(branch)} (fast-forward only) from {bold(remote)}...",
+            f"Branch {bold(branch)} is behind its remote counterpart {bold(remote_branch)}.\n"
+            f"Pulling {bold(branch)} (fast-forward only) from {bold(remote)}...",
             opt_yes=opt_yes)
         if ans in ('y', 'yes', 'yq'):
             self.__git.pull_ff_only(remote, remote_branch)

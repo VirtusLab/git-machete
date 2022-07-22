@@ -8,7 +8,6 @@ from .mockers import (GitRepositorySandbox, launch_command, GitContext)
 class TestFile:
 
     def setup_method(self) -> None:
-
         self.repo_sandbox = GitRepositorySandbox()
 
         (
@@ -51,7 +50,8 @@ class TestFile:
             definition_file_path_relative_to_git_dir = '/'.join(definition_file_path[-2:]).rstrip('\n')
             assert definition_file_path_relative_to_git_dir == '.git/machete'
 
-            # check git machete definition file path when inside a worktree but with the `machete.worktree.useTopLevelMacheteFile` key set to `False`
+            # check git machete definition file path when inside a worktree
+            # but with the `machete.worktree.useTopLevelMacheteFile` key set to `False`
             self.repo_sandbox.add_git_config_key('machete.worktree.useTopLevelMacheteFile', 'false')
             self.repo_sandbox.execute("git worktree add -f -b mars_feature mars_worktree develop")
             os.chdir('mars_worktree')

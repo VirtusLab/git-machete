@@ -446,8 +446,10 @@ class GitContext:
         remote_branches = self.get_remote_branches()
         return [remote for remote in remotes if f'{remote}/{branch}' in remote_branches]
 
-    def get_inferred_remote_for_fetching_of_branch(self, branch: LocalBranchShortName, remotes: Optional[List[str]] = None) -> Optional[
-        str]:
+    def get_inferred_remote_for_fetching_of_branch(self,
+                                                   branch: LocalBranchShortName,
+                                                   remotes: Optional[List[str]] = None
+                                                   ) -> Optional[str]:
         remotes_containing_branch: List[str] = self.__get_remotes_containing_branch(branch=branch, remotes=remotes)
         if len(remotes_containing_branch) > 1 or len(remotes_containing_branch) == 0:
             debug(f'Can\'t infer remote for fetching of branch.\n'
@@ -564,9 +566,9 @@ class GitContext:
         opts = ([f"--max-count={str(max_count)}"] if max_count else []) + ["--format=%H", revision.full_name()]
         return list(map(FullCommitHash.of, utils.get_non_empty_lines(self._popen_git("log", *opts))))
 
-    # Since getting the full history of a branch can be an expensive operation for large repositories (compared to all other underlying git operations),
-    # there's a simple optimization in place: we first fetch only a couple of first commits in the history,
-    # and only fetch the rest if needed.
+    # Since getting the full history of a branch can be an expensive operation for large repositories
+    # (compared to all other underlying git operations), there's a simple optimization in place:
+    # we first fetch only a couple of first commits in the history, and only fetch the rest if needed.
     def spoonfeed_log_hashes(self, branch_full_hash: FullCommitHash) -> Generator[FullCommitHash, None, None]:
         if branch_full_hash not in self.__initial_log_hashes_cached:
             self.__initial_log_hashes_cached[branch_full_hash] = self.__get_log_hashes(branch_full_hash,
@@ -584,10 +586,11 @@ class GitContext:
         # %gd - reflog selector (refname@{num})
         # %H - full hash
         # %gs - reflog subject
-        all_branches = [str(branch.full_name()) for branch in self.get_local_branches()] + \
-                       [str(self.get_combined_counterpart_for_fetching_of_branch(branch).full_name()) for branch in
-                        self.get_local_branches() if
-                        self.get_combined_counterpart_for_fetching_of_branch(branch)]  # str here to match _popen_git() input type
+        local_branches = [str(branch.full_name()) for branch in self.get_local_branches()]  # str here to match _popen_git() input type
+        counterpart_branches = [str(self.get_combined_counterpart_for_fetching_of_branch(branch).full_name()) for branch in
+                                self.get_local_branches() if self.get_combined_counterpart_for_fetching_of_branch(branch)]
+        all_branches = local_branches + counterpart_branches
+
         # The trailing '--' is necessary to avoid ambiguity in case there is a file called just exactly like one of the branches.
         entries = utils.get_non_empty_lines(self._popen_git("reflog", "show", "--format=%gD\t%H\t%gs", *(all_branches + ["--"])))
         self.__reflogs_cached = {}
@@ -815,11 +818,9 @@ class GitContext:
             advice_ignored_hook = self.get_config_attr_or_none("advice.ignoredHook")
             if advice_ignored_hook != 'false':  # both empty and "true" is okay
                 # The [33m color must be used to keep consistent with how git colors this advice for its built-in hooks.
-                print(colored(f"hint: The '{hook_path}' hook was ignored because it's not set as executable.",
-                              AnsiEscapeCodes.YELLOW),
+                print(colored(f"hint: The '{hook_path}' hook was ignored because it's not set as executable.", AnsiEscapeCodes.YELLOW),
                       file=sys.stderr)
-                print(colored("hint: You can disable this warning with `git config advice.ignoredHook false`.",
-                              AnsiEscapeCodes.YELLOW),
+                print(colored("hint: You can disable this warning with `git config advice.ignoredHook false`.", AnsiEscapeCodes.YELLOW),
                       file=sys.stderr)
             return False
         else:
@@ -828,7 +829,7 @@ class GitContext:
     def merge(self, branch: LocalBranchShortName,
               into: LocalBranchShortName,
               opt_no_edit_merge: bool
-              ) -> None:  # refs/heads/ prefix is assumed for 'branch'
+              ) -> None:
         extra_params = ["--no-edit"] if opt_no_edit_merge else ["--edit"]
         # We need to specify the message explicitly to avoid 'refs/heads/' prefix getting into the message...
         commit_message = f"Merge branch '{branch}' into {into}"
@@ -915,7 +916,8 @@ class GitContext:
         else:
             b_t = self.get_committer_unix_timestamp_by_revision(branch)
             rb_t = self.get_committer_unix_timestamp_by_revision(remote_branch)
-            return SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE if b_t < rb_t else SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE
+            return SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE if b_t < rb_t else \
+                SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE
 
     def get_strict_remote_sync_status(self, branch: LocalBranchShortName) -> Tuple[int, Optional[str]]:
         if not self.get_remotes():

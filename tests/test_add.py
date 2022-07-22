@@ -6,7 +6,6 @@ from .mockers import (GitRepositorySandbox, assert_command, launch_command, mock
 class TestAdd:
 
     def setup_method(self) -> None:
-
         self.repo_sandbox = GitRepositorySandbox()
 
         (
