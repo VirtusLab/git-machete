@@ -295,6 +295,7 @@ def get_pretty_choices(*choices: str) -> str:
             return colored(c, AnsiEscapeCodes.RED)
         else:
             return colored(c, AnsiEscapeCodes.ORANGE)
+
     return f" ({', '.join(map_truthy_only(format_choice, choices))}) "
 
 

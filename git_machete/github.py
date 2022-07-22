@@ -1,4 +1,3 @@
-
 # Deliberately NOT using much more convenient `requests` to avoid external dependencies
 import http
 import json
@@ -28,7 +27,16 @@ GITHUB_REMOTE_PATTERNS = [
 
 
 class GitHubPullRequest(object):
-    def __init__(self, number: int, user: str, base: str, head: str, html_url: str, state: str, full_repository_name: str, repository_url: str) -> None:
+    def __init__(self,
+                 number: int,
+                 user: str,
+                 base: str,
+                 head: str,
+                 html_url: str,
+                 state: str,
+                 full_repository_name: str,
+                 repository_url: str
+                 ) -> None:
         self.number: int = number
         self.user: str = user
         self.base: str = base
@@ -207,7 +215,8 @@ def __fire_github_api_request(method: str, path: str, token: Optional[str], requ
                 'Visit `https://github.com/settings/tokens` to generate a new one.')  # TODO (#164): make dedicated exception here
         else:
             first_line = fmt(f'GitHub API returned {err.code} HTTP status with error message: `{err.reason}`\n')
-            raise MacheteException(first_line + "Please open an issue regarding this topic under link: https://github.com/VirtusLab/git-machete/issues/new")
+            raise MacheteException(
+                first_line + "Please open an issue regarding this topic under link: https://github.com/VirtusLab/git-machete/issues/new")
     except OSError as e:
         raise MacheteException(f'Could not connect to {host}: {e}')
 
@@ -283,7 +292,6 @@ def is_github_remote_url(url: str) -> bool:
 
 
 def get_parsed_github_remote_url(url: str, remote: str) -> Optional[RemoteAndOrganizationAndRepository]:
-
     for pattern in GITHUB_REMOTE_PATTERNS:
         match = re.match(pattern, url)
         if match:
