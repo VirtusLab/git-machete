@@ -769,7 +769,7 @@ def launch(orig_args: List[str]) -> None:
             machete_client.read_definition_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             machete_client.expect_at_least_one_managed_branch()
             machete_client.status(
-                warn_on_yellow_edges=True,
+                warn_when_branch_in_sync_but_fork_point_off=True,
                 opt_list_commits=cli_opts.opt_list_commits,
                 opt_list_commits_with_hashes=cli_opts.opt_list_commits_with_hashes,
                 opt_no_detect_squash_merges=cli_opts.opt_no_detect_squash_merges)
