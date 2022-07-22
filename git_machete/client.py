@@ -896,21 +896,21 @@ class MacheteClient:
 
         out = io.StringIO()
         sync_to_parent_status: Dict[LocalBranchShortName, SyncToParentStatus] = {}
-        fp_hash_cached: Dict[LocalBranchShortName, Optional[FullCommitHash]] = {}  # TODO (#110): default dict with None
-        fp_branches_cached: Dict[LocalBranchShortName, List[BranchPair]] = {}
+        fork_point_hash_cached: Dict[LocalBranchShortName, Optional[FullCommitHash]] = {}  # TODO (#110): default dict with None
+        fork_point_branches_cached: Dict[LocalBranchShortName, List[BranchPair]] = {}
 
-        def fp_hash(branch_: LocalBranchShortName) -> Optional[FullCommitHash]:
-            if branch not in fp_hash_cached:
+        def fork_point_hash(branch_: LocalBranchShortName) -> Optional[FullCommitHash]:
+            if branch not in fork_point_hash_cached:
                 try:
                     # We're always using fork point overrides, even when status
                     # is launched from discover().
-                    fp_hash_cached[branch_], fp_branches_cached[branch_] = self.__fork_point_and_containing_branch_pairs(
+                    fork_point_hash_cached[branch_], fork_point_branches_cached[branch_] = self.__fork_point_and_containing_branch_pairs(
                         branch_,
                         use_overrides=True,
                         opt_no_detect_squash_merges=opt_no_detect_squash_merges)
                 except MacheteException:
-                    fp_hash_cached[branch_], fp_branches_cached[branch_] = None, []
-            return fp_hash_cached[branch_]
+                    fork_point_hash_cached[branch_], fork_point_branches_cached[branch_] = None, []
+            return fork_point_hash_cached[branch_]
 
         # Edge colors need to be precomputed
         # in order to render the leading parts of lines properly.
@@ -924,7 +924,7 @@ class MacheteClient:
                 sync_to_parent_status[branch] = SyncToParentStatus.MergedToParent
             elif not self.__git.is_ancestor_or_equal(parent_branch.full_name(), branch.full_name()):
                 sync_to_parent_status[branch] = SyncToParentStatus.OutOfSync
-            elif self.__get_overridden_fork_point(branch) or self.__git.get_commit_hash_by_revision(parent_branch) == fp_hash(branch):
+            elif self.__get_overridden_fork_point(branch) or self.__git.get_commit_hash_by_revision(parent_branch) == fork_point_hash(branch):
                 sync_to_parent_status[branch] = SyncToParentStatus.InSync
             else:
                 sync_to_parent_status[branch] = SyncToParentStatus.InSyncButForkPointOff
@@ -953,22 +953,22 @@ class MacheteClient:
             if branch in self.up_branch:
                 print_line_prefix(branch, f"{utils.get_vertical_bar()}\n")
                 if opt_list_commits:
-                    if not fp_hash(branch):
+                    if not fork_point_hash(branch):
                         # Rare case, but can happen e.g. due to reflog expiry.
                         commits: List[GitLogEntry] = []
                     elif sync_to_parent_status[branch] == SyncToParentStatus.MergedToParent:
                         commits = []
                     elif sync_to_parent_status[branch] == SyncToParentStatus.InSyncButForkPointOff:
                         commits = self.__git.get_commits_between(self.up_branch[branch].full_name(), branch.full_name())
-                    else:  # (SyncToParentStatus., OutOfSyncSyncToParentStatus.InSync):
-                        commits = self.__git.get_commits_between(fp_hash(branch), branch.full_name())
+                    else:  # (SyncToParentStatus.OutOfSync, SyncToParentStatus.InSync):
+                        commits = self.__git.get_commits_between(fork_point_hash(branch), branch.full_name())
 
                     for commit in commits:
-                        if commit.hash == fp_hash(branch):
-                            # fp_branches_cached will already be there thanks to
-                            # the above call to 'fp_hash'.
+                        if commit.hash == fork_point_hash(branch):
+                            # fork_point_branches_cached will already be there thanks to
+                            # the above call to 'fork_point_hash'.
                             fp_branches_formatted: str = " and ".join(
-                                sorted(underline(lb_or_rb) for lb, lb_or_rb in fp_branches_cached[branch]))
+                                sorted(underline(lb_or_rb) for lb, lb_or_rb in fork_point_branches_cached[branch]))
                             fp_suffix: str = " %s %s %s seems to be a part of the unique history of %s" % \
                                              (colored(utils.get_right_arrow(), AnsiEscapeCodes.RED),
                                               colored("fork point ???", AnsiEscapeCodes.RED),
