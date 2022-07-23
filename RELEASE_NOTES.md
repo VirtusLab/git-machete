@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.11.3
 
+- added: support GitHub remote URL in the form of `https://USERNAME@github.com/ORGANIZATION/REPOSITORY.git`
+
 ## New in git-machete 3.11.2
 
 - fixed: `git machete` now correctly infers remote for fetching of branch when the branch is associated with more than one remote

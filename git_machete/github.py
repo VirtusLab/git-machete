@@ -20,9 +20,10 @@ GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
 # and use alternate remote domains to provide enterprise support.
 GITHUB_DOMAIN = "github.com"
 GITHUB_REMOTE_PATTERNS = [
-    "^https://github\\.com/(.*)/(.*)\\.git$",
-    "^git@github\\.com:(.*)/(.*)\\.git$",
-    "^ssh://git@github\\.com/(.*)/(.*)\\.git$"
+    r"^https://.*@github\.com/(.*)/(.*)\.git$",
+    r"^https://github\.com/(.*)/(.*)\.git$",
+    r"^git@github\.com:(.*)/(.*)\.git$",
+    r"^ssh://git@github\.com/(.*)/(.*)\.git$"
 ]
 
 
