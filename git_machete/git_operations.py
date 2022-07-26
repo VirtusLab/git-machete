@@ -34,7 +34,7 @@ class LocalBranchShortName(AnyBranchName):
     @staticmethod
     def of(value: str) -> Optional["LocalBranchShortName"]:
         if value:
-            if 'refs/heads' in value or 'refs/remotes' in value:
+            if value.startswith('refs/heads/') or value.startswith('refs/remotes/'):
                 raise TypeError(
                     f'LocalBranchShortName cannot accept refs/heads or refs/remotes. Given value: {value}.\n'
                     'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
@@ -50,7 +50,7 @@ class LocalBranchFullName(AnyBranchName):
     @staticmethod
     def of(value: str) -> Optional["LocalBranchFullName"]:
         if value:
-            if 'refs/heads' in value:
+            if value.startswith('refs/heads/'):
                 return LocalBranchFullName(value)
             else:
                 raise TypeError(f'LocalBranchFullName needs to have `refs/heads` prefix before branch name. Given value: {value}.\n'
@@ -72,7 +72,7 @@ class RemoteBranchShortName(AnyBranchName):
     @staticmethod
     def of(value: str) -> Optional["RemoteBranchShortName"]:
         if value:
-            if 'refs/heads' in value or 'refs/remotes' in value:
+            if value.startswith('refs/heads/') or value.startswith('refs/remotes/'):
                 raise TypeError(
                     f'RemoteBranchShortName cannot accept refs/heads or refs/remotes. Given value: {value}.\n'
                     'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
@@ -88,12 +88,16 @@ class RemoteBranchFullName(AnyBranchName):
     @staticmethod
     def of(value: str) -> Optional["RemoteBranchFullName"]:
         if value:
-            if 'refs/remotes' in value:
+            if value.startswith('refs/remotes/'):
                 return RemoteBranchFullName(value)
             else:
                 raise TypeError(f'RemoteBranchFullName needs to have `refs/remotes` prefix before branch name. Given value: {value}.\n'
                                 'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
         return None
+
+    @staticmethod
+    def is_valid(value: str) -> bool:
+        return value is not None and value.startswith('refs/remotes/')
 
     @staticmethod
     def from_short_name(value: RemoteBranchShortName) -> Optional["RemoteBranchFullName"]:
@@ -552,8 +556,12 @@ class GitContext:
                 continue  # invalid, shouldn't happen
             branch, commit_hash, tree_hash, committer_unix_timestamp_and_time_zone, fetch_counterpart = values
             b_stripped_local = LocalBranchFullName.of(branch).to_short_name()
-            fetch_counterpart_stripped = RemoteBranchFullName.of(
-                fetch_counterpart).to_short_name() if fetch_counterpart else None  # fetch_counterpart might be empty
+            # fetch_counterpart might be empty, or might even point to a local branch
+            # (in case `branch.BRANCH.remote` config is set to `.`).
+            if RemoteBranchFullName.is_valid(fetch_counterpart):
+                fetch_counterpart_stripped = RemoteBranchFullName.of(fetch_counterpart).to_short_name()
+            else:
+                fetch_counterpart_stripped = None
             self.__local_branches_cached += [b_stripped_local]
             self.__commit_hash_by_revision_cached[LocalBranchFullName.of(branch)] = FullCommitHash.of(commit_hash)
             self.__tree_hash_by_commit_hash_cached[FullCommitHash.of(commit_hash)] = FullTreeHash.of(tree_hash)
