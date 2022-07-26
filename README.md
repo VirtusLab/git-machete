@@ -10,8 +10,8 @@
 [![CircleCI](https://circleci.com/gh/VirtusLab/git-machete/tree/master.svg?style=shield)](https://app.circleci.com/pipelines/github/VirtusLab/git-machete?branch=master)
 [![codecov](https://codecov.io/gh/VirtusLab/git-machete/branch/master/graph/badge.svg)](https://codecov.io/gh/VirtusLab/git-machete)
 
+[//]: # (The image is referenced by its full URL to ensure it renders correctly on https://pypi.org/project/git-machete/)
 <img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/graphics/logo_with_name.svg" style="width: 100%; display: block; margin-bottom: 10pt;" />
-<!-- The image is referenced by its full URL to ensure it renders correctly on https://pypi.org/project/git-machete/ -->
 
 💪 git-machete is a robust tool that **simplifies your git workflows**.<br/>
 
@@ -27,11 +27,11 @@ even when **multiple branches** are present in the repository
 
 🚜 `git machete traverse` semi-automatically traverses the branches, helping you effortlessly rebase, merge, push and pull.
 
+[//]: # (The image is referenced by its full URL to ensure it renders correctly on https://pypi.org/project/git-machete/)
 <p align="center">
     <img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/graphics/discover-status-traverse.gif"
          alt="git machete discover, status and traverse" />
 </p>
-<!-- The image is referenced by its full URL to ensure it renders correctly on https://pypi.org/project/git-machete/ -->
 
 🔌 See also [VirtusLab/git-machete-intellij-plugin](https://github.com/VirtusLab/git-machete-intellij-plugin#git-machete-intellij-plugin) &mdash;
 a port into a plugin for the IntelliJ Platform products, including PyCharm, WebStorm etc.
@@ -154,7 +154,7 @@ git machete traverse --fetch --start-from=first-root
 
 Put each branch one by one in sync with its parent and remote tracking branch.
 
-### Fast-forward current branch to match a child branch
+### Fast-forward merge a child branch into the current branch
 ```shell script
 git machete advance
 ```
@@ -173,17 +173,66 @@ Create the PR, using the upstream (parent) branch from `.git/machete` as the bas
 git machete github create-pr [--draft]
 ```
 
-Synchronize with the remote repository: checkout your open PRs, delete unmanaged branches and also delete untracked managed branches with no downstream branch: <br/>
-```shell script
-git machete github sync
-```
-
 **Note**: for private repositories, a GitHub API token with `repo` access is required.
 This will be resolved from the first of:
 1. The `GITHUB_TOKEN` env var.
-2. The content of the .github-token file in the home directory (`~`). This file has to be manually created by the user.
+2. The content of the `.github-token` file in the home directory (`~`). This file has to be manually created by the user.
 3. The auth token from the current [`gh`](https://cli.github.com/) configuration.
 4. The auth token from the current [`hub`](https://github.com/github/hub) configuration.
+
+<br/>
+
+
+## FAQ
+
+#### I've run `git machete discover`... but the branch layout I see in `.git/machete` doesn't exactly match what I expected. Am I doing something wrong?
+
+[//]: # (For how to find Medium header anchors, see https://www.freecodecamp.org/news/how-to-link-to-a-specific-paragraph-in-your-medium-article-2018-table-of-contents-method-e66595fea549/)
+No! It's all right, `discover` is based on an (imperfect)
+[heuristic](https://medium.com/virtuslab/git-machete-strikes-again-traverse-the-git-rebase-jungle-even-faster-with-v2-0-f43ebaf8abb0#0544)
+which usually yields branch layout close to what the user expected...
+but it still might differ in details (like, branches discovered to be children of `main`/`develop` instead of each other).
+
+Just run [`git machete edit`](https://git-machete.readthedocs.io/en/stable/#edit) to fix the layout manually.
+If you're working on JetBrains IDEs, you can use [git-machete IntelliJ plugin](https://github.com/VirtusLab/git-machete-intellij-plugin#git-machete-intellij-plugin)
+for features like branch name completion when editing `.git/machete` file.
+
+Also, consider [`git machete github checkout-prs`](#github-integration) instead of `git machete discover` if you already have GitHub PRs opened.
+
+<br/>
+
+#### Can I use `git merge` for dealing with stacked PRs?
+
+Generally, there's a [trilemma](https://en.wikipedia.org/wiki/Trilemma) (_choose at most two out of three_):
+1. stacked PRs
+2. rebase/squash (generally: rewriting git history)
+3. merge commits (i.e. commits [with 2+ parents](https://slides.com/plipski/git-internals#/7))
+
+While git-machete supports merging parent branch (like `main`) to update a branch
+([`git machete traverse --merge`](https://git-machete.readthedocs.io/en/stable/#traverse)),
+it works poorly with stacked PRs.
+You might end up with a very tangled history very quickly, and a non-trivial sequence of `git cherry-pick`s might be needed to restore order.
+
+We recommend choosing only (1.) and (2.) from the trilemma, i.e. stacking PRs and using squash/rebase,
+and **not** using `git merge` (other than for [backporting hotfixes](https://slides.com/plipski/git-machete/#/11)).
+
+<br/>
+
+#### Sometimes when I run `update` or `traverse`, too many commits are taken into the rebase... how to fix that?
+
+Contrary to the popular misconception, git doesn't have a notion of ["commits belonging to a branch"](https://slides.com/plipski/git-internals#/41).
+A branch is just a movable pointer to a commit.
+This makes it hard in general case to determine the range of commits that form the "unique history" of the given branch.
+There's an entire algorithm in git-machete for determining the
+[_fork point_](https://medium.com/virtuslab/make-your-way-through-the-git-rebase-jungle-with-git-machete-e2ed4dbacd02#1ac9)
+of the branch (i.e. the place after which the unique history of the branch starts).
+
+One thing that you can do to help fork-point algorithm in its job, is to **not** delete local branches instantly after they're merged or discarded.
+They (or specifically, their [reflogs](https://virtuslab.github.io/tips/#git/git-reflog)) will be still useful for a while
+to determine fork points for other branches (and thus, the range of commits taken into rebase).
+
+Also, you can always override fork point for a branch explicitly
+with [`git machete fork-point --override-to...`](https://git-machete.readthedocs.io/#fork-point) flags.
 
 <br/>
 
@@ -192,21 +241,28 @@ This will be resolved from the first of:
 Find the docs at [Read the Docs](https://git-machete.readthedocs.io/).
 You can also check `git machete help` and `git machete help <command>`.
 
-Take a look at
+For the excellent overview for the reasons to use small & stacked PRs,
+see [Ben Congdon](https://github.com/bcongdon)'s [blog post](https://benjamincongdon.me/blog/2022/07/17/In-Praise-of-Stacked-PRs/).
+
+Take a look at git-machete
 [reference blog post](https://medium.com/virtuslab/make-your-way-through-the-git-rebase-jungle-with-git-machete-e2ed4dbacd02)
 for a guide on how to use the tool.
 
 The more advanced features like automated traversal, upstream inference and tree discovery are described in the
 [second part of the series](https://medium.com/virtuslab/git-machete-strikes-again-traverse-the-git-rebase-jungle-even-faster-with-v2-0-f43ebaf8abb0).
 
+<br/>
+
 
 ## Git compatibility
 
 git-machete (since version 2.13.0) is compatible with git >= 1.8.0.
 
+<br/>
+
 
 ## Contributions
 
 Contributions are welcome! See [contributing guidelines](CONTRIBUTING.md) for details.
-Help would be especially appreciated with Python code style and refactoring &mdash;
+Help would be especially appreciated with Python code style, refactoring and tests &mdash;
 so far more focus has been put on features, documentation and automating the distribution.
