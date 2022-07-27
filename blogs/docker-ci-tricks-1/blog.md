@@ -8,7 +8,7 @@ We'll take a closer look at the CI process for an open source tool, [git machete
 Having started as a simple tool for rebase automation, it has now grown into a full-fledged Git repository organizer.
 It even acquired its own logo, stylized as the original Git logo with extra forks, slashed in half.
 
-![git-machete](../../graphics/logo.png)
+![git-machete](../../graphics/logo/png/256x256.png)
 
 The purpose of the git-machete's CI is to ensure that its basic functions work correctly under
 a wide array of Git and Python versions that the users might have on their machines.
