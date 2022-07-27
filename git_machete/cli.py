@@ -14,7 +14,7 @@ from git_machete.client import MacheteClient
 from git_machete.docs import short_docs, long_docs
 from git_machete.exceptions import MacheteException, StopInteraction
 from git_machete.git_operations import AnyBranchName, AnyRevision, GitContext, LocalBranchShortName, RemoteBranchShortName
-from git_machete.utils import fmt, underline, excluding, warn, AnsiEscapeCodes
+from git_machete.utils import bold, fmt, underline, excluding, warn
 
 T = TypeVar('T')
 
@@ -61,9 +61,7 @@ def get_help_description(command: str = None) -> str:
             usage_str += underline(hdr) + '\n\n'
             for cm in cmds:
                 alias = f", {alias_by_command[cm]}" if cm in alias_by_command else ""
-                usage_str += ("    %s%-18s%s%s" % (
-                    # bold(...) can't be used here due to the %-18s format specifier
-                    AnsiEscapeCodes.BOLD, cm + alias, AnsiEscapeCodes.ENDC, short_docs[cm]))
+                usage_str += f'    {bold(cm + alias) : <{18 if utils.ascii_only else 26}}{short_docs[cm]}'
                 usage_str += '\n'
             usage_str += '\n'
         usage_str += fmt(textwrap.dedent("""
@@ -481,10 +479,6 @@ def exit_script(status_code: Optional[int] = None, error: Optional[BaseException
 
 
 def launch(orig_args: List[str]) -> None:
-    if not orig_args:
-        print(get_help_description())
-        exit_script(2)
-
     cli_opts = git_machete.options.CommandLineOptions()
     git = GitContext()
 
@@ -496,6 +490,10 @@ def launch(orig_args: List[str]) -> None:
         update_cli_opts_using_parsed_args(cli_opts, parsed_cli)
         cli_opts.validate()
         set_utils_global_variables(cli_opts)
+
+        if not orig_args:
+            print(get_help_description())
+            exit_script(2)
 
         cmd = parsed_cli.command
 
