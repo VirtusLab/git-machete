@@ -27,7 +27,7 @@ Note that the above editor selection only applies for editing the definition fil
 but not for any other actions that may be indirectly triggered by git machete, including editing of rebase TODO list, commit messages etc.
 
 The definition file can be always accessed and edited directly under the path returned by ``git machete file``
-(which is ``.git/machete``, unless worktrees or submodules are involved).
+(usually ``.git/machete``, unless worktrees or submodules are involved).
 
 **Environment variables:**
 
