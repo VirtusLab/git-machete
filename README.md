@@ -191,7 +191,7 @@ This will be resolved from the first of:
 No! It's all right, `discover` is based on an (imperfect)
 [heuristic](https://medium.com/virtuslab/git-machete-strikes-again-traverse-the-git-rebase-jungle-even-faster-with-v2-0-f43ebaf8abb0#0544)
 which usually yields branch layout close to what the user would expect.
-It still might not be perfect and — for example — declare branches to be children of `main`/`develop` instead of themselves.
+It still might not be perfect and &mdash; for example &mdash; declare branches to be children of `main`/`develop` instead of each other.
 
 Just run [`git machete edit`](https://git-machete.readthedocs.io/en/stable/#edit) to fix the layout manually.
 If you're working on JetBrains IDEs, you can use [git-machete IntelliJ plugin](https://github.com/VirtusLab/git-machete-intellij-plugin#git-machete-intellij-plugin)
