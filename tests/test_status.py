@@ -282,3 +282,28 @@ class TestStatus:
             """
         )
         assert_command(['status'], expected_status_output)
+
+    def test_status_when_child_branch_is_pushed_immediately_after_creation(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+
+        (
+            self.repo_sandbox.new_branch("master")
+            .commit("master")
+            .push()
+            .new_branch("foo")
+            .commit("foo")
+            .new_branch("bar")
+            .push()
+            .commit("bar")
+        )
+        launch_command('discover', '-y')
+        expected_status_output = (
+            """
+            master
+            |
+            o-foo (untracked)
+              |
+              o-bar * (ahead of origin)
+            """
+        )
+        assert_command(['status'], expected_status_output)

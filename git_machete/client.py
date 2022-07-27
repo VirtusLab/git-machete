@@ -1395,8 +1395,11 @@ class MacheteClient:
                            # The rare case of a no-op rebase, the exact wording
                            # likely depends on git version
                            gs_ == f"rebase finished: {branch.full_name()} onto {hash_}" or
-                           gs_ == f"rebase -i (finish): {branch.full_name()} onto {hash_}"
-                           )
+                           gs_ == f"rebase -i (finish): {branch.full_name()} onto {hash_}" or
+                           # For remote branches, let's NOT include the pushes,
+                           # as a branch can be pushed directly after being created,
+                           # which might lead to fork point being inferred too *late* in the history
+                           gs_ == "update by push")
             if is_excluded:
                 debug("skipping reflog entry")
             return is_excluded

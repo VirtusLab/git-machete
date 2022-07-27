@@ -3,6 +3,7 @@
 ## New in git-machete 3.11.4
 
 - fixed: git-machete crashing when a local branch uses another local branch as its remote tracking branch (`git config branch.BRANCH.remote` set to `.`)
+- fixed: fork point incorrectly inferred when a branch has been pushed immediately after being created
 
 ## New in git-machete 3.11.3
 
