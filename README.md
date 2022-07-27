@@ -213,8 +213,7 @@ While git-machete supports merging parent branch (like `main`) to update a branc
 it works poorly with stacked PRs.
 You might end up with a very tangled history very quickly, and a non-trivial sequence of `git cherry-pick`s might be needed to restore order.
 
-We recommend choosing only (1.) and (2.) from the trilemma, i.e. stacking PRs and using squash/rebase,
-and **not** using `git merge` (other than for [backporting hotfixes](https://slides.com/plipski/git-machete/#/11)).
+We recommend using `git squash/rebase` over `git merge` with stacked PRs, although you should still use `git merge` for [backporting hotfixes](https://slides.com/plipski/git-machete/#/11)).
 
 <br/>
 
