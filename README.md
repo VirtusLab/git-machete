@@ -232,7 +232,7 @@ They (or specifically, their [reflogs](https://virtuslab.github.io/tips/#git/git
 to determine fork points for other branches (and thus, the range of commits taken into rebase).
 
 Also, you can always override fork point for a branch explicitly
-with [`git machete fork-point --override-to...`](https://git-machete.readthedocs.io/#fork-point) flags.
+with [`git machete fork-point --override-to...`](https://git-machete.readthedocs.io/#fork-point) command.
 
 <br/>
 
