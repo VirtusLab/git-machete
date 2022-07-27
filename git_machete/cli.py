@@ -61,7 +61,7 @@ def get_help_description(command: str = None) -> str:
             usage_str += underline(hdr) + '\n\n'
             for cm in cmds:
                 alias = f", {alias_by_command[cm]}" if cm in alias_by_command else ""
-                usage_str += f'    {bold(cm + alias) : <18}{short_docs[cm]}'
+                usage_str += f'    {bold(cm + alias) : <{18 if utils.ascii_only else 26}}{short_docs[cm]}'
                 usage_str += '\n'
             usage_str += '\n'
         usage_str += fmt(textwrap.dedent("""
