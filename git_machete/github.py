@@ -329,10 +329,10 @@ def checkout_pr_refs(git: GitContext, remote: str, pr_number: int, branch: Local
     git.checkout(branch)
 
 
-def get_repo_and_org_names_by_id(repo_id):
+def get_repo_and_org_names_by_id(repo_id: str) -> str:
     token: Optional[str] = __get_github_token()
     repo = __fire_github_api_request('GET', f'/repositories/{repo_id}', token)
-    return repo['full_name']
+    return str(repo['full_name'])
 
 
 def get_github_token_possible_providers() -> str:
