@@ -177,5 +177,5 @@ Review fixes should be pushed on separate commits for easier viewing on GitHub (
 
    If not, please apply changes on Medium to keep consistency.
    Since Medium does not offer conversion directly from Markdown, copy the formatted blog text from a GitHub and paste it into the Medium rich text editor.
-
-   Once the changes are applied, make sure that the `<p>`/`<h1>` ids referenced in links from README did not change (or are updated accordingly).
+   Once the changes are applied, make sure that the `<p>`/`<h1>` ids referenced from links
+   in [README](README.md#reference) did not change (or are updated accordingly).
