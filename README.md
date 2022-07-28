@@ -204,7 +204,7 @@ Also, consider [`git machete github checkout-prs`](#github-integration) instead 
 #### Can I use `git merge` for dealing with stacked PRs?
 
 Generally, there's a [trilemma](https://en.wikipedia.org/wiki/Trilemma) (_choose at most two out of three_):
-1. stacked PRs
+1. stacked PRs (e.g. PR \#1: `develop <- foo` and PR \#2: `foo <- bar`)
 2. rebase/squash (generally: rewriting git history)
 3. merge commits (i.e. commits [with 2+ parents](https://slides.com/plipski/git-internals#/7))
 
