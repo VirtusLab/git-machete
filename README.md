@@ -195,7 +195,7 @@ It still might not be perfect and &mdash; for example &mdash; declare branches t
 
 Just run [`git machete edit`](https://git-machete.readthedocs.io/en/stable/#edit) to fix the layout manually.
 If you're working on JetBrains IDEs, you can use [git-machete IntelliJ plugin](https://github.com/VirtusLab/git-machete-intellij-plugin#git-machete-intellij-plugin)
-for features like branch name completion when editing `.git/machete` file.
+to have branch name completion when editing `.git/machete` file.
 
 Also, consider [`git machete github checkout-prs`](#github-integration) instead of `git machete discover` if you already have GitHub PRs opened.
 
