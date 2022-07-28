@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional
 import urllib.request
 import urllib.error
-import urllib.parse
 
 from git_machete.utils import debug, fmt
 from git_machete.exceptions import MacheteException, UnprocessableEntityHTTPError
