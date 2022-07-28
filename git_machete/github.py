@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional
 import urllib.request
 import urllib.error
+import urllib.parse
 
 from git_machete.utils import debug, fmt
 from git_machete.exceptions import MacheteException, UnprocessableEntityHTTPError
@@ -214,6 +215,18 @@ def __fire_github_api_request(method: str, path: str, token: Optional[str], requ
                 f'`{method} {url}` request ended up in 404 response from GitHub. A valid GitHub API token is required.\n'
                 f'Provide a GitHub API token with `repo` access via one of the: {get_github_token_possible_providers()} '
                 'Visit `https://github.com/settings/tokens` to generate a new one.')  # TODO (#164): make dedicated exception here
+        elif err.code == http.HTTPStatus.TEMPORARY_REDIRECT:
+            current_repo_and_org = get_repo_and_org_names_by_id(err.headers['Location'].split('/')[4])
+            new_path = f'/repos/{current_repo_and_org}/{"/".join(path.split("/")[4:])}'
+            print(fmt(f'<dim>\nGitHub API returned {err.code} HTTP status with error message: `{err.reason}. '
+                      'It looks like the organization or repository name got changed recently and is outdated.\n'
+                      'Inferring current organization or repository... '
+                      f'New organization is `{current_repo_and_org.split("/")[0]}` '
+                      f'and new repository is `{current_repo_and_org.split("/")[1]}`.\n'
+                      'You can update your remote repository via: `git remote set-url <repository_name> <new_repository_url>`</dim>'),
+                  end='',
+                  flush=True)
+            return __fire_github_api_request(method=method, path=new_path, token=token, request_body=request_body)
         else:
             first_line = fmt(f'GitHub API returned {err.code} HTTP status with error message: `{err.reason}`\n')
             raise MacheteException(
@@ -314,6 +327,12 @@ def get_pull_request_by_number_or_none(number: int, org: str, repo: str) -> Opti
 def checkout_pr_refs(git: GitContext, remote: str, pr_number: int, branch: LocalBranchShortName) -> None:
     git.fetch_ref(remote, f'pull/{pr_number}/head:{branch}')
     git.checkout(branch)
+
+
+def get_repo_and_org_names_by_id(repo_id):
+    token: Optional[str] = __get_github_token()
+    repo = __fire_github_api_request('GET', f'/repositories/{repo_id}', token)
+    return repo['full_name']
 
 
 def get_github_token_possible_providers() -> str:
