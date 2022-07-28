@@ -219,7 +219,7 @@ We recommend using `git squash/rebase` over `git merge` with stacked PRs, althou
 
 #### Sometimes when I run `update` or `traverse`, too many commits are taken into the rebase... how to fix that?
 
-Contrary to the popular misconception, git doesn't have a notion of ["commits belonging to a branch"](https://slides.com/plipski/git-internals#/41).
+Contrary to the popular misconception, git doesn't have a notion of ["commits belonging to a branch"](https://git-scm.com/book/en/v2/Git-Branching-Branches-in-a-Nutshell).
 A branch is just a movable pointer to a commit.
 This makes it hard in general case to determine the range of commits that form the "unique history" of the given branch.
 There's an entire algorithm in git-machete for determining the
