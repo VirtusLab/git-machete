@@ -216,13 +216,15 @@ def __fire_github_api_request(method: str, path: str, token: Optional[str], requ
                 'Visit `https://github.com/settings/tokens` to generate a new one.')  # TODO (#164): make dedicated exception here
         elif err.code == http.HTTPStatus.TEMPORARY_REDIRECT:
             current_repo_and_org = get_repo_and_org_names_by_id(err.headers['Location'].split('/')[4])
-            new_path = f'/repos/{current_repo_and_org}/{"/".join(path.split("/")[4:])}'
+            pulls_or_issues_api_suffix = "/".join(path.split("/")[4:])
+            new_path = f'/repos/{current_repo_and_org}/{pulls_or_issues_api_suffix}'
+            # example when creating new PR, new_path='/repos/new_org_name/new_repo_name/pulls'
             print(fmt(f'<yellow>\nGitHub API returned {err.code} HTTP status with error message: {err.reason}. '
                       'It looks like the organization or repository name got changed recently and is outdated.\n'
                       'Inferring current organization or repository... '
                       f'New organization = {current_repo_and_org.split("/")[0]}, '
                       f'new repository = {current_repo_and_org.split("/")[1]}.\n'
-                      'You can update your remote repository via: `git remote set-url <repository_name> <new_repository_url>`. </yellow>'),
+                      'You can update your remote repository via: `git remote set-url <remote_name> <new_repository_url>`. </yellow>'),
                   end='',
                   flush=True)
             return __fire_github_api_request(method=method, path=new_path, token=token, request_body=request_body)
