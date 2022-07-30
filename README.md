@@ -136,7 +136,7 @@ git machete discover
 ```
 
 See and possibly edit the suggested layout of branches.
-Branch layout is always kept as a `.git/machete` text file.
+Branch layout is always kept as a `.git/machete` text file, which can be edited directly or via `git machete edit`.
 
 ### See the current repository state
 ```shell script
@@ -203,30 +203,33 @@ Also, consider [`git machete github checkout-prs`](#github-integration) instead 
 
 #### Can I use `git merge` for dealing with stacked PRs?
 
-Generally, there's a [trilemma](https://en.wikipedia.org/wiki/Trilemma) (_choose at most two out of three_):
-1. stacked PRs (e.g. PR \#1: `develop <- foo` and PR \#2: `foo <- bar`)
-2. rebase/squash (generally: rewriting git history)
-3. merge commits (i.e. commits [with 2+ parents](https://slides.com/plipski/git-internals#/7))
+There are two commonly used ways to put a branch back in sync with its base (parent) branch:
+1. rebase the branch onto its base branch
+2. merge the base branch into the branch
 
-While git-machete supports merging parent branch (like `main`) to update a branch
+While git-machete supports merging base branch (like `main`) to update the branch
 ([`git machete traverse --merge`](https://git-machete.readthedocs.io/en/stable/#traverse)),
-it works poorly with stacked PRs.
+this approach **works poorly with stacked PRs**.
 You might end up with a very tangled history very quickly, and a non-trivial sequence of `git cherry-pick`s might be needed to restore order.
 
-We recommend using `git squash/rebase` over `git merge` with stacked PRs, although you should still use `git merge` for [backporting hotfixes](https://slides.com/plipski/git-machete/#/11)).
+That is why we recommend using rebase over merge for stacked PRs.
+However, we still recommend using merge for the narrow case of [backporting hotfixes](https://slides.com/plipski/git-machete/#/11)).
 
 <br/>
 
 #### Sometimes when I run `update` or `traverse`, too many commits are taken into the rebase... how to fix that?
 
-Contrary to the popular misconception, git doesn't have a notion of ["commits belonging to a branch"](https://git-scm.com/book/en/v2/Git-Branching-Branches-in-a-Nutshell).
-A branch is just a movable pointer to a commit.
+Contrary to the popular misconception, git doesn't have a notion of
+["commits belonging to a branch"](https://git-scm.com/book/en/v2/Git-Branching-Branches-in-a-Nutshell).
+A branch is just a movable reference to a commit.
+
 This makes it hard in general case to determine the range of commits that form the "unique history" of the given branch.
 There's an entire algorithm in git-machete for determining the
 [_fork point_](https://medium.com/virtuslab/make-your-way-through-the-git-rebase-jungle-with-git-machete-e2ed4dbacd02#1ac9)
 of the branch (i.e. the place after which the unique history of the branch starts).
 
-One thing that you can do to help fork-point algorithm in its job, is to **not** delete local branches instantly after they're merged or discarded.
+One thing that you can do to help fork-point algorithm in its job,
+is to **not delete** local branches instantly after they're merged or discarded.
 They (or specifically, their [reflogs](https://virtuslab.github.io/tips/#git/git-reflog)) will be still useful for a while
 to determine fork points for other branches (and thus, the range of commits taken into rebase).
 
