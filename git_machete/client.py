@@ -1046,7 +1046,8 @@ class MacheteClient:
                 status_code, stdout, stderr = utils.popen_cmd(hook_path, branch, cwd=self.__git.get_root_dir(), env=hook_env)
                 if status_code == 0:
                     if not stdout.isspace():
-                        hook_output = f"  {stdout.rstrip()}"
+                        # Replace all newlines with spaces, in case the hook prints out more than one line
+                        hook_output = "  " + stdout.replace('\n', ' ').rstrip()
                 else:
                     debug("machete-status-branch hook ({hook_path}) for branch {branch} "
                           "returned {status_code}; stdout: '{stdout}'; stderr: '{stderr}'")

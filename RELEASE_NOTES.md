@@ -4,6 +4,8 @@
 
 - fixed: git-machete crashing when a local branch uses another local branch as its remote tracking branch (`git config branch.BRANCH.remote` set to `.`)
 - fixed: fork point incorrectly inferred when a branch has been pushed immediately after being created
+- fixed: output of `help` no longer includes ANSI escape codes when stdout is not a terminal
+- fixed: all newlines are skipped from the output of `machete-status-branch` hook to avoid messing up the rendered status
 
 ## New in git-machete 3.11.3
 
