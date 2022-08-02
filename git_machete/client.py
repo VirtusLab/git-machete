@@ -1049,8 +1049,8 @@ class MacheteClient:
                         # Replace all newlines with spaces, in case the hook prints out more than one line
                         hook_output = "  " + stdout.replace('\n', ' ').rstrip()
                 else:
-                    debug("machete-status-branch hook ({hook_path}) for branch {branch} "
-                          "returned {status_code}; stdout: '{stdout}'; stderr: '{stderr}'")
+                    debug(f"machete-status-branch hook ({hook_path}) for branch {branch} "
+                          f"returned {status_code}; stdout: '{stdout}'; stderr: '{stderr}'")
 
             out.write(current + anno + sync_status + hook_output + "\n")
 
@@ -1170,7 +1170,7 @@ class MacheteClient:
             else:
                 raise MacheteException(f"Cannot find fork point for branch `{branch}`")
         else:
-            debug("commit {fp_hash} is the most recent point in history of {branch} to occur on "
+            debug(f"commit {fp_hash} is the most recent point in history of {branch} to occur on "
                   "filtered reflog of any other branch or its remote counterpart "
                   f"(specifically: {' and '.join(map(utils.get_second, containing_branch_pairs))})")
 
@@ -1324,7 +1324,7 @@ class MacheteClient:
                                   new_downstreams: List[LocalBranchShortName]) -> None:
         hook_path = self.__git.get_hook_path("machete-post-slide-out")
         if self.__git.check_hook_executable(hook_path):
-            debug("running machete-post-slide-out hook ({hook_path})")
+            debug(f"running machete-post-slide-out hook ({hook_path})")
             new_downstreams_strings: List[str] = [str(db) for db in new_downstreams]
             exit_code = utils.run_cmd(hook_path, new_upstream, slid_out_branch, *new_downstreams_strings,
                                       cwd=self.__git.get_root_dir())
@@ -1624,7 +1624,7 @@ class MacheteClient:
                 f"since branch <b>{branch}</b> is no longer a descendant of commit "
                 f"{self.__git.get_short_commit_hash_by_revision(while_descendant_of)}, ",
                 f"the fork point override to commit {self.__git.get_short_commit_hash_by_revision(to)} no longer applies.\n",
-                "Consider running:\n  `git machete fork-point --unset-override {branch}`\n"))
+                f"Consider running:\n  `git machete fork-point --unset-override {branch}`\n"))
             return None
         debug(f"since branch {branch} is descendant of while_descendant_of={while_descendant_of}, "
               f"fork point of {branch} is overridden to {to}")
@@ -2178,7 +2178,7 @@ class MacheteClient:
                 opt_yes=False)
 
         current_user: Optional[str] = git_machete.github.derive_current_user_login()
-        debug('organization is {org}, repository is {repo}')
+        debug(f'organization is {org}, repository is {repo}')
         debug('current GitHub user is ' + (current_user or '<none>'))
 
         fork_point = self.fork_point(head, use_overrides=True, opt_no_detect_squash_merges=False)
