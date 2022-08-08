@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.11.5
+
 ## New in git-machete 3.11.4
 
 - fixed: git-machete crashing when a local branch uses another local branch as its remote tracking branch (`git config branch.BRANCH.remote` set to `.`)
