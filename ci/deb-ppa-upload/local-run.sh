@@ -13,3 +13,4 @@ export MOUNT_POINT=/home/ci-user
 docker-compose build --build-arg user_id="$(id -u)" --build-arg group_id="$(id -g)" deb-ppa-upload
 docker-compose run -e TARGET_DISTRO_NAME=bionic -e TARGET_DISTRO_NUMBER=18.04 -e DO_DPUT=false deb-ppa-upload
 docker-compose run -e TARGET_DISTRO_NAME=focal  -e TARGET_DISTRO_NUMBER=20.04 -e DO_DPUT=false deb-ppa-upload
+docker-compose run -e TARGET_DISTRO_NAME=jammy  -e TARGET_DISTRO_NUMBER=22.04 -e DO_DPUT=false deb-ppa-upload

@@ -1,5 +1,10 @@
 # Release notes
 
+## New in git-machete 3.11.6
+
+- added: package for Ubuntu 22.04 LTS
+- fixed: spurious failures in the build of Debian packages
+
 ## New in git-machete 3.11.5
 
 - fixed: `git machete edit` accepts arguments (and not only executable path/name) in the editor pointed by git config or environment variable

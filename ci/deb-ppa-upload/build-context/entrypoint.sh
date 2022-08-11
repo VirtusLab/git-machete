@@ -25,7 +25,21 @@ sed '/## New in git-machete 2\.12\.7/,$d' RELEASE_NOTES.md | awk \
   -f ~/release-notes-to-changelog.awk > debian/changelog
 
 # Since we upload over SFTP, we need to whitelist the host first to avoid the prompt.
-ssh-keyscan ppa.launchpad.net > ~/.ssh/known_hosts
+# Let's retry ssh-keyscan to protect again rare spurious failures.
+attempts=3
+i=1
+while true; do
+  if ssh-keyscan ppa.launchpad.net > ~/.ssh/known_hosts; then
+    break
+  elif (( i < attempts )); then
+    echo "Retrying ssh-keyscan..."
+    i=$((i + 1))
+    sleep 5
+  else
+    echo "ssh-keyscan did not succeed despite $attempts attempts"
+    exit 1
+  fi
+done
 
 # `-p` flag points to a script that wraps gpg so that we don't get asked for password to the private key on TTY.
 debuild -S -p"$HOME/gpg-sign.sh"
