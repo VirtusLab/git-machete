@@ -1126,12 +1126,15 @@ class MacheteClient:
             print("No branches to delete")
 
     def edit(self) -> int:
-        default_editor_name: Optional[str] = self.__git.get_default_editor()
-        if default_editor_name is None:
+        default_editor_with_args: List[str] = self.__git.get_default_editor_with_args()
+        if not default_editor_with_args:
             raise MacheteException(
                 f"Cannot determine editor. Set `GIT_MACHETE_EDITOR` environment "
                 f"variable or edit {self._definition_file_path} directly.")
-        return utils.run_cmd(default_editor_name, self._definition_file_path)
+
+        command = default_editor_with_args[0]
+        args = default_editor_with_args[1:] + [self._definition_file_path]
+        return utils.run_cmd(command, *args)
 
     def __fork_point_and_containing_branch_pairs(self,
                                                  branch: LocalBranchShortName,

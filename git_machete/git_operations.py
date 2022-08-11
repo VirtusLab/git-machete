@@ -3,6 +3,7 @@ from typing import Any, Callable, Dict, Generator, Iterator, List, Match, NamedT
 
 import os
 import re
+import shlex
 import sys
 
 from git_machete.exceptions import MacheteException
@@ -217,7 +218,7 @@ class GitContext:
             raise MacheteException(exit_code_msg + stdout_msg + stderr_msg, apply_fmt=False)
         return stdout
 
-    def get_default_editor(self) -> Optional[str]:
+    def get_default_editor_with_args(self) -> List[str]:
         # Based on the git's own algorithm for identifying the editor.
         # '$GIT_MACHETE_EDITOR', 'editor' (to please Debian-based systems) and 'nano' have been added.
         git_machete_editor_var = "GIT_MACHETE_EDITOR"
@@ -237,27 +238,33 @@ class GitContext:
             if not editor:
                 debug(f"'{name}' is undefined")
             else:
-                editor_repr = f"'{name}'{(' (' + editor + ')') if editor != name else ''}"
-                if not utils.find_executable(editor):
-                    debug(f"{editor_repr} is not available")
+                editor_parsed = shlex.split(editor)
+                if not editor_parsed:
+                    debug(f"'{name}' shlexes into an empty list")
+                    continue
+                editor_command = editor_parsed[0]
+                editor_repr = "'" + name + "'" + ((' (' + editor + ')') if editor_command != name else '')
+
+                if not utils.find_executable(editor_command):
+                    debug(f"'{editor_command}' executable ('{name}') not found")
                     if name == "$" + git_machete_editor_var:
                         # In this specific case, when GIT_MACHETE_EDITOR is defined but doesn't point to a valid executable,
                         # it's more reasonable/less confusing to raise an error and exit without opening anything.
                         raise MacheteException(f"<b>{editor_repr}</b> is not available")
                 else:
-                    debug(f"{editor_repr} is available")
+                    debug(f"'{editor_command}' executable ('{name}') found")
                     if name != "$" + git_machete_editor_var and self.get_config_attr_or_none('advice.macheteEditorSelection') != 'false':
-                        sample_alternative = 'nano' if editor.startswith('vi') else 'vi'
+                        sample_alternative = 'nano' if editor_command.startswith('vi') else 'vi'
                         print(fmt(f"Opening <b>{editor_repr}</b>.\n",
                                   f"To override this choice, use <b>{git_machete_editor_var}</b> env var, e.g. `export "
                                   f"{git_machete_editor_var}={sample_alternative}`.\n\n",
                                   "See `git machete help edit` and `git machete edit --debug` for more details.\n\n"
                                   "Use `git config --global advice.macheteEditorSelection false` to suppress this message."),
                               file=sys.stderr)
-                    return editor
+                    return editor_parsed
 
         # This case is extremely unlikely on a modern Unix-like system.
-        return None
+        return []
 
     def get_git_version(self) -> Tuple[int, ...]:
         if not self._git_version:
