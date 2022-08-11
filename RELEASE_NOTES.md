@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.11.5
 
+- fixed: `git machete edit` accepts arguments (and not only executable path/name) in the editor pointed by git config or environment variable
+
 ## New in git-machete 3.11.4
 
 - fixed: git-machete crashing when a local branch uses another local branch as its remote tracking branch (`git config branch.BRANCH.remote` set to `.`)
