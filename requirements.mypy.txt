@@ -1,3 +1,2 @@
 mypy==0.971
-pytest==7.0.1; python_version=="3.6"
-pytest==7.1.2; python_version>="3.7"
+pytest==7.1.2

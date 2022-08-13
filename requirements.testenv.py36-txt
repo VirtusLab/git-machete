@@ -1,0 +1,5 @@
+# Deliberately using a non-standard file extension so that the GitHub dependabot doesn't try to update this file.
+# Version marks like `python_version=="3.6"` aren't supported by GitHub dependabot.
+pytest==7.0.1
+pytest-mock==3.6.1
+pytest-xdist==2.4.0
