@@ -76,7 +76,8 @@ jobs:
       - store_test_results:
           path: test-results/
 
-  # Note that there is no particular reason for the below assignment of PEP8/coverage/docs checks to Python version.
+  # Note that there is no particular reason for the below assignment of PEP8/coverage/docs checks to Python version
+  # (other than Python 3.6 being EOLed and hence not supporting the versions of packages used for the checks).
   # Each of these needs to be run against just one Python version
   # (since there's very little chance that they pass under one version but fail under another),
   # so let's spread these checks evenly across versions to reduce CI latency
