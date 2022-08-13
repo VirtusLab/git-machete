@@ -6,7 +6,7 @@ updates:
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
-      interval: weekly
-      day: saturday
-      time: "12:45"
-      timezone: Europe/Warsaw
+      interval: daily
+    reviewers:
+      - PawelLipski
+    target-branch: develop
