@@ -15,6 +15,7 @@ Optionally, you can also install the following non-bundled plugins from Marketpl
 * [AWK Support](https://plugins.jetbrains.com/plugin/17037-awk-support)
 * [.ignore](https://plugins.jetbrains.com/plugin/7495--ignore)
 * [NixIDEA](https://plugins.jetbrains.com/plugin/8607-nixidea)
+* [Requirements](https://plugins.jetbrains.com/plugin/10837-requirements/)
 
 
 ## Run tests locally

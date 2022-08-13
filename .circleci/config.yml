@@ -55,13 +55,14 @@ jobs:
             prohibit-tab-character.sh
             prohibit-trailing-whitespace.sh
 
+  # Earliest versions of python/git supported by git-machete
   "python 3_6 git 1_8_10":
     executor: ubuntu_executor
     steps:
       - checkout
       - run:
           name: Run tests against Python 3.6 and git 1.8.0
-          command: PYTHON_VERSION=3.6 GIT_VERSION=1.8.0  bash ci/tox/ci-run.sh # Earliest versions of python/git supported by git-machete
+          command: PYTHON_VERSION=3.6 GIT_VERSION=1.8.0  bash ci/tox/ci-run.sh
       - store_test_results:
           path: test-results/
 
