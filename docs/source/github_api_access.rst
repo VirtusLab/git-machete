@@ -1,5 +1,3 @@
-.. _github_api_access:
-
  .. note::
 
     To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR, even in case of public repositories),

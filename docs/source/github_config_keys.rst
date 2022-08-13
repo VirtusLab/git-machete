@@ -1,9 +1,8 @@
-.. _github_config_keys:
-
  .. note::
 
     GitHub API server URL will be inferred from ``git remote``.
     You can override this by setting the following git config keys:
+
         Remote name
             E.g. ``machete.github.remote`` = ``origin``
 

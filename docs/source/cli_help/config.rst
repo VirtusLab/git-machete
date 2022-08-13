@@ -1,7 +1,7 @@
 .. _config:
 
 config
------
+------
 Documentation about available ``git machete`` config keys and environment variables that change the command's default behavior.
 
 Note: ``config`` is not a command as such, just a help topic (there is no ``git machete config`` command).
@@ -12,6 +12,7 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 
         When executing ``git machete github <subcommand>`` command, GitHub API server URL will be inferred from ``git remote``.
         You can override this by setting the following local git config keys:
+
             Remote name
                 E.g. ``machete.github.remote`` = ``origin``
 

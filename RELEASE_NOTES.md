@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.12.0
+
 ## New in git-machete 3.11.6
 
 - added: package for Ubuntu 22.04 LTS
