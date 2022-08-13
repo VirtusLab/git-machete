@@ -29,10 +29,8 @@ To run tests, execute `tox`.
 
 It's also possible to execute tests graphically in pycharm (right-clicking on the test file
 or clicking the green triangle on the left of the test case name), which can be very useful when debugging a single test case.
-To do so, make sure that following libraries are installed (preferably via pip):
-* pytest
-* pytest-mock
-* pytest-xdist
+To do so, make sure that the libraries listed in [requirements.testenv.txt](requirements.testenv.txt) are installed (e.g. via `pip install -r...`).
+
 
 ## Generate sandbox repositories
 
