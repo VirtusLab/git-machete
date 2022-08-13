@@ -1,5 +1,5 @@
 coverage==6.4.3
-pytest==7.0.1; python_version=="3.6"
+pytest==7.1.2; python_version=="3.6"
 pytest==7.1.2; python_version>="3.7"
 pytest-mock==3.6.1; python_version=="3.6"
 pytest-mock==3.7.0; python_version>="3.7"
