@@ -197,7 +197,7 @@ def get_cmd_shell_repr(cmd: str, *args: str, env: Optional[Dict[str, str]]) -> s
 
 def warn(msg: str, apply_fmt: bool = True, end: str = '\n') -> None:
     if msg not in displayed_warnings:
-        print(colored("\nWarn: ", AnsiEscapeCodes.ORANGE) + (fmt(msg) if apply_fmt else msg), file=sys.stderr, end=end)
+        print(colored("Warn: ", AnsiEscapeCodes.ORANGE) + (fmt(msg) if apply_fmt else msg), file=sys.stderr, end=end)
         displayed_warnings.add(msg)
 
 
