@@ -1,6 +1,6 @@
 from typing import Any
 
-from .mockers import (GitRepositorySandbox, assert_command, launch_command, mock_run_cmd)
+from .mockers import (GitRepositorySandbox, assert_command, launch_command, mock_run_cmd, rewrite_definition_file)
 
 
 class TestList:
@@ -44,13 +44,24 @@ class TestList:
         )
         launch_command("discover", "-y")
 
+        # content of the machete definition file:
+        """
+        master
+        develop
+            feature_0
+                feature_0_0
+                    feature_0_0_0
+                feature_0_1
+            feature_1
+        """
+
         (
             self.repo_sandbox.check_out("develop")
                              .new_branch("feature_2")
                              .commit("feature_2 commit.")
         )
 
-        expected_msg = """
+        expected_output = """
         master
         develop
         feature_0
@@ -61,20 +72,20 @@ class TestList:
         """
         assert_command(
             ['list', 'managed'],
-            expected_msg,
+            expected_output,
             indent=''
         )
 
-        expected_msg = """
+        expected_output = """
         feature_2
         """
         assert_command(
             ['list', 'addable'],
-            expected_msg,
+            expected_output,
             indent=''
         )
 
-        expected_msg = """
+        expected_output = """
         master
         feature_0_0_0
         feature_0_1
@@ -82,11 +93,11 @@ class TestList:
         """
         assert_command(
             ['list', 'childless'],
-            expected_msg,
+            expected_output,
             indent=''
         )
 
-        expected_msg = """
+        expected_output = """
         feature_0
         feature_0_0
         feature_0_0_0
@@ -95,36 +106,36 @@ class TestList:
         """
         assert_command(
             ['list', 'slidable'],
-            expected_msg,
+            expected_output,
             indent=''
         )
 
-        expected_msg = """
+        expected_output = """
         feature_0_0_0
         """
         assert_command(
             ['list', 'slidable-after', 'feature_0_0'],
-            expected_msg,
+            expected_output,
             indent=''
         )
 
-        expected_msg = """
+        expected_output = """
         feature_2
         """
         assert_command(
             ['list', 'unmanaged'],
-            expected_msg,
+            expected_output,
             indent=''
         )
 
         self.repo_sandbox.check_out("feature_1")
         launch_command('fork-point', '--override-to-inferred')
 
-        expected_msg = """
+        expected_output = """
         feature_1
         """
         assert_command(
             ['list', 'with-overridden-fork-point'],
-            expected_msg,
+            expected_output,
             indent=''
         )

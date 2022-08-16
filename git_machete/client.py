@@ -69,8 +69,8 @@ class MacheteClient:
         self._up_branch = val
 
     def get_childless_branches(self):
-        parent_branches = self.__down_branches.keys()
-        return [branch for branch in self.managed_branches if branch not in parent_branches]
+        parent_branches = [parent_branch for parent_branch, child_branches in self.__down_branches.items() if len(child_branches) > 0]
+        return excluding(self.managed_branches, parent_branches)
 
     def expect_in_managed_branches(self, branch: LocalBranchShortName) -> None:
         if branch not in self.managed_branches:

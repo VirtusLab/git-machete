@@ -274,6 +274,7 @@ __git_machete_categories() {
   # TODO (#115): complete slidable-after's argument
   categories=(
     'addable:all branches (local or remote) than can be added to the definition file'
+    'childless:all branches that do not possess child branches'
     'managed:all branches that appear in the definition file'
     'slidable:all managed branches that have exactly one upstream and one downstream (i.e. the ones that can be slid out with slide-out command)'
     'slidable-after:the downstream branch of the given branch, if it exists and is its only downstream (i.e. the one that can be slid out immediately following <branch>)'
