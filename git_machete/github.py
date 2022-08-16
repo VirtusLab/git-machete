@@ -229,12 +229,14 @@ def __fire_github_api_request(method: str, path: str, token: Optional[str], requ
             pulls_or_issues_api_suffix = "/".join(path.split("/")[4:])
             new_path = f'/repos/{current_repo_and_org}/{pulls_or_issues_api_suffix}'
             # for example when creating a new PR, new_path='/repos/new_org_name/new_repo_name/pulls'
+            print()
             warn(f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`. \n'
                  'It looks like the organization or repository name got changed recently and is outdated.\n'
                  'Inferring current organization or repository... '
                  f'New organization = `{current_repo_and_org.split("/")[0]}`, '
                  f'new repository = `{current_repo_and_org.split("/")[1]}`.\n'
-                 'You can update your remote repository via: `git remote set-url <remote_name> <new_repository_url>`.')
+                 'You can update your remote repository via: `git remote set-url <remote_name> <new_repository_url>`.',
+                 end='')
             return __fire_github_api_request(method=method, path=new_path, token=token, request_body=request_body)
         else:
             first_line = fmt(f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`\n')
