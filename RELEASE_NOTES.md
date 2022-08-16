@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.12.0
 
+- added: subcommand `git machete list childless`
+
 ## New in git-machete 3.11.6
 
 - added: package for Ubuntu 22.04 LTS

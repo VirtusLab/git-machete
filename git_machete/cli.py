@@ -683,7 +683,7 @@ def launch(orig_args: List[str]) -> None:
                 res = excluding(git.get_local_branches(), machete_client.managed_branches) + list(
                     map(strip_remote_name, qualifying_remote_branches))
             elif category == "childless":
-                res = machete_client.managed_branches
+                res = machete_client.get_childless_branches()
             elif category == "managed":
                 res = machete_client.managed_branches
             elif category == "slidable":
