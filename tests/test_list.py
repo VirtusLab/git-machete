@@ -1,6 +1,6 @@
 from typing import Any
 
-from .mockers import (GitRepositorySandbox, assert_command, launch_command, mock_run_cmd, rewrite_definition_file)
+from .mockers import (GitRepositorySandbox, assert_command, launch_command, mock_run_cmd)
 
 
 class TestList:
