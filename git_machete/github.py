@@ -10,7 +10,7 @@ from typing import Any, Dict, List, NamedTuple, Optional
 import urllib.request
 import urllib.error
 
-from git_machete.utils import debug, fmt
+from git_machete.utils import debug, fmt, warn
 from git_machete.exceptions import MacheteException, UnprocessableEntityHTTPError
 from git_machete.git_operations import GitContext, LocalBranchShortName
 
@@ -196,7 +196,7 @@ def __fire_github_api_request(method: str, path: str, token: Optional[str], requ
             error_reason: str = __extract_failure_info_from_422(error_response)
             raise UnprocessableEntityHTTPError(error_reason)
         elif err.code in (http.HTTPStatus.UNAUTHORIZED, http.HTTPStatus.FORBIDDEN):
-            first_line = f'GitHub API returned {err.code} HTTP status with error message: `{err.reason}`\n'
+            first_line = f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`\n'
             if token:
                 raise MacheteException(first_line + f'Make sure that the GitHub API token provided by the {__get_github_token_provider()} '
                                                     f'is valid and allows for access to `{method.upper()}` `https://{host}{path}`.\n'
@@ -215,23 +215,29 @@ def __fire_github_api_request(method: str, path: str, token: Optional[str], requ
                 f'Provide a GitHub API token with `repo` access via one of the: {get_github_token_possible_providers()} '
                 'Visit `https://github.com/settings/tokens` to generate a new one.')  # TODO (#164): make dedicated exception here
         elif err.code == http.HTTPStatus.TEMPORARY_REDIRECT:
-            current_repo_and_org = get_repo_and_org_names_by_id(err.headers['Location'].split('/')[4])
-            # err.headers is a case-insensitive dict of class Message with the `__getitem__` function implemented in
+            if err.headers['Location'] is not None:
+                if len(err.headers['Location'].split('/')) >= 5:
+                    current_repo_and_org = get_repo_and_org_names_by_id(err.headers['Location'].split('/')[4])
+            else:
+                first_line = fmt(f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`\n')
+                raise MacheteException(
+                    first_line + 'It looks like the organization or repository name got changed recently and is outdated.\n'
+                    'Inferring current organization or repository... -> Cannot infer current organization or repository\n'
+                    'Update your remote repository manually via: `git remote set-url <remote_name> <new_repository_url>`.')
+            # err.headers is a case-insensitive dict of class Message with the `__getitem__` and `get` functions implemented in
             # https://github.com/python/cpython/blob/3.10/Lib/email/message.py
             pulls_or_issues_api_suffix = "/".join(path.split("/")[4:])
             new_path = f'/repos/{current_repo_and_org}/{pulls_or_issues_api_suffix}'
             # for example when creating a new PR, new_path='/repos/new_org_name/new_repo_name/pulls'
-            print(fmt(f'<yellow>\nGitHub API returned {err.code} HTTP status with error message: {err.reason}. '
-                      'It looks like the organization or repository name got changed recently and is outdated.\n'
-                      'Inferring current organization or repository... '
-                      f'New organization = {current_repo_and_org.split("/")[0]}, '
-                      f'new repository = {current_repo_and_org.split("/")[1]}.\n'
-                      'You can update your remote repository via: `git remote set-url <remote_name> <new_repository_url>`. </yellow>'),
-                  end='',
-                  flush=True)
+            warn(f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`. \n'
+                 'It looks like the organization or repository name got changed recently and is outdated.\n'
+                 'Inferring current organization or repository... '
+                 f'New organization = `{current_repo_and_org.split("/")[0]}`, '
+                 f'new repository = `{current_repo_and_org.split("/")[1]}`.\n'
+                 'You can update your remote repository via: `git remote set-url <remote_name> <new_repository_url>`.')
             return __fire_github_api_request(method=method, path=new_path, token=token, request_body=request_body)
         else:
-            first_line = fmt(f'GitHub API returned {err.code} HTTP status with error message: `{err.reason}`\n')
+            first_line = fmt(f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`\n')
             raise MacheteException(
                 first_line + "Please open an issue regarding this topic under link: https://github.com/VirtusLab/git-machete/issues/new")
     except OSError as e:
