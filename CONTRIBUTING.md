@@ -135,7 +135,7 @@ Review fixes should be pushed on separate commits for easier viewing on GitHub (
 1. Verify that the latest version is uploaded to [PyPI](https://pypi.org/project/git-machete).
 
 1. Verify that the latest version is uploaded to [Anaconda](https://anaconda.org/conda-forge/git-machete).
-   There also exists https://github.com/conda-forge/git-machete-feedstock repository which is responsible for keeping the package up-to-date
+   There also exists [conda-forge/git-machete-feedstock](https://github.com/conda-forge/git-machete-feedstock) repository which is responsible for keeping the package up-to-date
    based on PyPI's release, which is done automatically by a bot. Instruction on how to be a maintainer and other helpful tips are in:
    https://conda-forge.org/docs/maintainer/adding_pkgs.html#recipe-maintainer.
 
