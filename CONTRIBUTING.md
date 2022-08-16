@@ -133,6 +133,11 @@ Review fixes should be pushed on separate commits for easier viewing on GitHub (
    and that a `git-machete-<VERSION>-1.noarch.rpm` file is present under the Assets.
 
 1. Verify that the latest version is uploaded to [PyPI](https://pypi.org/project/git-machete).
+   
+1. Verify that the latest version is uploaded to [Anaconda](https://anaconda.org/conda-forge/git-machete). 
+   There also exists https://github.com/conda-forge/git-machete-feedstock repository which is responsible for keeping the package up-to-date
+   based on PyPI's release, which is done automatically by a bot. Instruction on how to be a maintainer and other helpful tips are in:
+   https://conda-forge.org/docs/maintainer/adding_pkgs.html#recipe-maintainer.
 
 1. Verify that the latest commit in [VirtusLab/homebrew-git-machete](https://github.com/VirtusLab/homebrew-git-machete) tap repo refers to the latest version.
 
