@@ -68,7 +68,7 @@ class MacheteClient:
     def up_branch(self, val: Dict[LocalBranchShortName, Optional[LocalBranchShortName]]) -> None:
         self._up_branch = val
 
-    def get_childless_branches(self) -> List[str]:
+    def get_childless_branches(self) -> List[LocalBranchShortName]:
         parent_branches = [parent_branch for parent_branch, child_branches in self.__down_branches.items() if len(child_branches) > 0]
         return excluding(self.managed_branches, parent_branches)
 
