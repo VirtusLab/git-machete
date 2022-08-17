@@ -554,6 +554,7 @@ long_docs: Dict[str, str] = {
 
         Lists all branches that fall into one of the specified categories:
         * `addable`: all branches (local or remote) than can be added to the definition file,
+        * `childless`: all branches that do not possess child branches,
         * `managed`: all branches that appear in the definition file,
         * `slidable`: all managed branches that have an upstream and can be slid out with `slide-out` command
         * `slidable-after <branch>`: the downstream branch of the <branch>, if it exists and is the only downstream of <branch> (i.e. the one that can be slid out immediately following <branch>),

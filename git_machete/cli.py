@@ -253,7 +253,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
     list_parser.add_argument(
         'category',
         choices=[
-            'addable', 'managed', 'slidable', 'slidable-after', 'unmanaged',
+            'addable', 'childless', 'managed', 'slidable', 'slidable-after', 'unmanaged',
             'with-overridden-fork-point']
     )
     list_parser.add_argument('branch', nargs='?', default=argparse.SUPPRESS)
@@ -682,6 +682,8 @@ def launch(orig_args: List[str]) -> None:
                                                                                      remote_counterparts_of_local_branches})
                 res = excluding(git.get_local_branches(), machete_client.managed_branches) + list(
                     map(strip_remote_name, qualifying_remote_branches))
+            elif category == "childless":
+                res = machete_client.get_childless_branches()
             elif category == "managed":
                 res = machete_client.managed_branches
             elif category == "slidable":
