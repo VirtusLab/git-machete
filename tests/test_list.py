@@ -1,6 +1,7 @@
+from textwrap import dedent
 from typing import Any
 
-from .mockers import (GitRepositorySandbox, assert_command, launch_command, mock_run_cmd)
+from .mockers import (GitRepositorySandbox, assert_command, launch_command, mock_run_cmd, rewrite_definition_file)
 
 
 class TestList:
@@ -42,18 +43,19 @@ class TestList:
                 .new_branch("feature_1")
                 .commit("feature_1 commit.")
         )
-        launch_command("discover", "-y")
 
-        # content of the machete definition file:
-        """
-        master
-        develop
-            feature_0
+        body: str = \
+            """
+            master
+            develop
+              feature_0
                 feature_0_0
-                    feature_0_0_0
+                  feature_0_0_0
                 feature_0_1
-            feature_1
-        """
+              feature_1
+            """
+        body = dedent(body)
+        rewrite_definition_file(body)
 
         (
             self.repo_sandbox.check_out("develop")
