@@ -11,7 +11,8 @@ import git_machete.options
 from git_machete import __version__
 from git_machete import utils
 from git_machete.client import MacheteClient
-from git_machete.docs import short_docs, long_docs
+from git_machete.Long_docs import long_docs
+from git_machete.short_docs import short_docs
 from git_machete.exceptions import MacheteException, StopInteraction
 from git_machete.git_operations import AnyBranchName, AnyRevision, GitContext, LocalBranchShortName, RemoteBranchShortName
 from git_machete.utils import bold, fmt, underline, excluding, warn

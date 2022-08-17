@@ -2,7 +2,7 @@ from typing import Any, List
 
 import pytest
 
-from git_machete.docs import long_docs
+from git_machete.long_docs import long_docs
 
 from .mockers import GitRepositorySandbox, launch_command, mock_run_cmd
 
