@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.12.1
+
 ## New in git-machete 3.12.0
 
 - added: subcommand `git machete list childless`
