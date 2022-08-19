@@ -15,14 +15,7 @@ from bs4 import BeautifulSoup
 from git_machete.utils import AnsiEscapeCodes
 from docutils import core
 
-
-# - colors
-# - include
 # - status_extraSpaceBeforeBranchName_config_key
-# - kolory i inne rzeczy przed **YSAGE
-# - ``xd`` jest zamykane czasem w złym miejscu
-# ``machete-pre-rebase <new-base> <fork-point-hash> <branch-being-rebased>`` ->
-# `machete-post-slide-out` <new-upstream><lowest-slid-out-branch>[<new-downstreams>...]
 
 def rst2html(input_string: str, source_path: str = None, destination_path: str = None,
              input_encoding: str = 'unicode', doctitle: bool = True,
