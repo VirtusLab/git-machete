@@ -161,7 +161,7 @@ if __name__ == '__main__':
 
 # if __name__ == '__main__':
 #     from git_machete.long_docs import long_docs
-#     from git_machete.old_docs import long_docs
+#     from git_machete.docs import long_docs
 #
 #     for k, v in long_docs.items():
 #         print(k)
