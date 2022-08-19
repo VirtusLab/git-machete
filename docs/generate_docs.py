@@ -65,8 +65,8 @@ def html2txt(html: str):
 
         elif html_element.name in ['kbd']:
             text += '\n   '
-        elif html_element.name in ['td']:
-            text += '   '  # not sure if its possible to even them out
+        # elif html_element.name in ['td']:
+        #     text += '   '  # not sure if its possible to even them out
         elif html_element.name in ['p']:
             if 'class' in html_element.attrs:
                 if ' '.join(html_element.attrs['class']) == 'first':
@@ -138,8 +138,8 @@ if __name__ == '__main__':
     path = 'source/cli_help'
     commands_and_file_paths = {f.split('.')[0]: join(path, f) for f in sorted(listdir(path)) if isfile(join(path, f))}
 
-    # cmd = 'traverse'
-    # commands_and_file_paths = {cmd: f'source/cli_help/{cmd}.rst'}
+    cmd = 'traverse'
+    commands_and_file_paths = {cmd: f'source/cli_help/{cmd}.rst'}
     for command, file in commands_and_file_paths.items():
         with open(file, 'r') as f:
             rst = f.read()
@@ -148,8 +148,7 @@ if __name__ == '__main__':
         rst = resolve_includes(rst)
         html = rst2html(rst)['body']
         # print(html)
-        # print()
-        # print()
+        # print('\n\n\n)
         plain_text = html2txt(html)
         plain_text = skip_prefix_new_lines(plain_text)
         # print(plain_text)
