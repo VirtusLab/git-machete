@@ -138,8 +138,8 @@ if __name__ == '__main__':
     path = 'source/cli_help'
     commands_and_file_paths = {f.split('.')[0]: join(path, f) for f in sorted(listdir(path)) if isfile(join(path, f))}
 
-    cmd = 'traverse'
-    commands_and_file_paths = {cmd: f'source/cli_help/{cmd}.rst'}
+    # cmd = 'traverse'
+    # commands_and_file_paths = {cmd: f'source/cli_help/{cmd}.rst'}
     for command, file in commands_and_file_paths.items():
         with open(file, 'r') as f:
             rst = f.read()
