@@ -105,7 +105,7 @@ jobs:
       - codecov/upload:
           file: coverage.xml
 
-  "sphinx docs and python 3_10 git 2_33_1":
+  "sphinx and command line docs and python 3_10 git 2_33_1":
     executor: ubuntu_executor
     steps:
       - checkout
