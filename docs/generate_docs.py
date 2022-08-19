@@ -118,10 +118,10 @@ def skip_or_replace_unparseable_directives(rst: str) -> str:
     return rst
 
 
-def resolve_includes(rst: str) -> str:
+def resolve_includes(rst: str, docs_source_path: str) -> str:
     matches = re.findall(r'\.\. include:: (.*)', rst)
     for match in matches:
-        with open(f'source/{match}', 'r') as handle:
+        with open(f'{docs_source_path}/{match}', 'r') as handle:
             include_text = handle.read()
         rst = rst.replace(f'.. include:: {match}', include_text)
     return rst
@@ -133,9 +133,10 @@ def skip_prefix_new_lines(txt: str) -> str:
 
 
 if __name__ == '__main__':
-    output_docs_path = '../git_machete/long_docs.py'
+    output_docs_path = 'git_machete/long_docs.py'
+    docs_source_path = 'docs/source'
     output_text = 'from typing import Dict\n\nlong_docs: Dict[str, str] = {\n'
-    path = 'source/cli_help'
+    path = docs_source_path + '/cli_help'
     commands_and_file_paths = {f.split('.')[0]: join(path, f) for f in sorted(listdir(path)) if isfile(join(path, f))}
 
     # cmd = 'traverse'
@@ -145,7 +146,7 @@ if __name__ == '__main__':
             rst = f.read()
 
         rst = skip_or_replace_unparseable_directives(rst)
-        rst = resolve_includes(rst)
+        rst = resolve_includes(rst=rst, docs_source_path=docs_source_path)
         html = rst2html(rst)['body']
         # print(html)
         # print('\n\n\n)
