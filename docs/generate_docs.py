@@ -1,22 +1,19 @@
-
-
-# def parse_rst(file: str):
-#     with open(file)
-
+import os
 import re
+import sys
 from textwrap import indent
 
-import docutils.nodes
-import docutils.parsers.rst
-import docutils.utils
-import docutils.frontend
-
+from os import listdir
+from os.path import isfile, join
 from bs4 import BeautifulSoup
 
+# import os
+# print(os.getcwd())
+# sys.path.append('../../git_machete')
+# print(sys.path)
 
-from utils import AnsiEscapeCodes
-
-from docutils import core, io
+from git_machete.utils import AnsiEscapeCodes
+from docutils import core
 
 
 # TODO
@@ -24,33 +21,13 @@ from docutils import core, io
 # - include
 # - status_extraSpaceBeforeBranchName_config_key
 # - kolory i inne rzeczy przed **YSAGE
+# - ``xd`` jest zamykane czasem w złym miejscu
+# ``machete-pre-rebase <new-base> <fork-point-hash> <branch-being-rebased>`` ->
+# `machete-post-slide-out` <new-upstream><lowest-slid-out-branch>[<new-downstreams>...]
 
-def html_parts(input_string, source_path=None, destination_path=None,
-               input_encoding='unicode', doctitle=True,
-               initial_header_level=1):
-    """
-    Given an input string, returns a dictionary of HTML document parts.
-
-    Dictionary keys are the names of parts, and values are Unicode strings;
-    encoding is up to the client.
-
-    Parameters:
-
-    - `input_string`: A multi-line text string; required.
-    - `source_path`: Path to the source file or object.  Optional, but useful
-      for diagnostic output (system messages).
-    - `destination_path`: Path to the file or object which will receive the
-      output; optional.  Used for determining relative paths (stylesheets,
-      source links, etc.).
-    - `input_encoding`: The encoding of `input_string`.  If it is an encoded
-      8-bit string, provide the correct encoding.  If it is a Unicode string,
-      use "unicode", the default.
-    - `doctitle`: Disable the promotion of a lone top-level section title to
-      document title (and subsequent section title to document subtitle
-      promotion); enabled by default.
-    - `initial_header_level`: The initial level for header elements (e.g. 1
-      for "<h1>").
-    """
+def rst2html(input_string: str, source_path: str = None, destination_path: str = None,
+             input_encoding: str = 'unicode', doctitle: bool = True,
+             initial_header_level: int = 1):
     overrides = {'input_encoding': input_encoding,
                  'doctitle_xform': doctitle,
                  'initial_header_level': initial_header_level}
@@ -61,24 +38,29 @@ def html_parts(input_string, source_path=None, destination_path=None,
     return parts
 
 
-def parse_html(html):
+def html2txt(html: str):
+    html_elements = BeautifulSoup(html, features="html.parser")
+    for data in html_elements(['style']):
+        data.decompose()
 
+    for literal in html_elements.select('tt'):
+        cite = html_elements.new_tag('cite')
+        cite.string = ' `' + literal.text + '` '
+        literal.replace_with(cite)
 
-    elem = BeautifulSoup(html, features="html.parser")
-    text = ''
+    text: str = ''
     prev_tag = None
-    for e in elem.descendants:
-        if isinstance(e, str):
-            new_text = e.strip()
+
+    for html_element in html_elements.descendants:
+        if isinstance(html_element, str):
+            new_text = html_element.strip()
             if prev_tag == 'code':
-                new_text = indent(e.strip(), '  ')
+                new_text = indent(html_element.strip(), '  ')
 
             text += new_text
 
             if prev_tag == 'strong':
                 text += '</b>'
-            elif prev_tag == 'tt':
-                text += '` '
             elif prev_tag == 'cite':
                 text += ' '
             elif prev_tag == 'code':
@@ -88,101 +70,108 @@ def parse_html(html):
 
             prev_tag = None
 
-        elif e.name in ['kbd']:
+        elif html_element.name in ['kbd']:
             text += '\n\t'
-        elif e.name in ['td']:
+        elif html_element.name in ['td']:
             text += '\t'  # not sure if its possible to even them out
-        elif e.name in ['p']:
-            text += '\n\n'
-        elif e.name in ['dt']:
+        elif html_element.name in ['p']:
+            if 'class' in html_element.attrs:
+                if ' '.join(html_element.attrs['class']) == 'first':
+                    text += ' '
+                else:
+                    text += '\n\n'
+            else:
+                text += '\n\n'
+        elif html_element.name in ['dt']:
             text += '\n\t'
-        elif e.name in ['dd']:
+        elif html_element.name in ['dd']:
             text += '\n\t\t'
-        elif e.name == 'li':
-            text += '\n\t* '
-        elif e.name == 'strong':
+        elif html_element.name == 'li':
+            if html_element.parent.parent.name == 'li':  # deal with nested lists
+                text += '\n\t\t- '
+            else:
+                text += '\n\n\t* '
+        elif html_element.name == 'strong':
             prev_tag = 'strong'
             text += '<b>'
-        elif e.name == 'pre':
-            if ' '.join(e.attrs['class']) == 'code shell literal-block':
+        elif html_element.name == 'pre':
+            if ' '.join(html_element.attrs['class']) == 'code shell literal-block':
                 text += ' '
-            elif ' '.join(e.attrs['class']) == 'code literal-block':
+            elif ' '.join(html_element.attrs['class']) == 'code literal-block':
                 text += '\n<dim>\n'
                 prev_tag = 'code'
-        elif e.name == 'cite':
+        elif html_element.name == 'cite':
             text += ' '
             prev_tag = 'cite'
-        elif e.name == 'tt':
-            text += ' `'
-            prev_tag = 'tt'
-        elif e.name == 'span':
-            if ' '.join(e.attrs['class']) == 'green':
+        elif html_element.name == 'span':
+            if ' '.join(html_element.attrs['class']) == 'green':
                 text += ' ' + AnsiEscapeCodes.GREEN
                 prev_tag = 'color'
-            if ' '.join(e.attrs['class']) == 'yellow':
+            if ' '.join(html_element.attrs['class']) == 'yellow':
                 text += ' ' + AnsiEscapeCodes.YELLOW
                 prev_tag = 'color'
-            if ' '.join(e.attrs['class']) == 'red':
+            if ' '.join(html_element.attrs['class']) == 'red':
                 text += ' ' + AnsiEscapeCodes.RED
                 prev_tag = 'color'
-            if ' '.join(e.attrs['class']) == 'grey':
+            if ' '.join(html_element.attrs['class']) == 'grey':
                 text += ' ' + AnsiEscapeCodes.DIM
                 prev_tag = 'color'
     return text
 
 
+def skip_or_replace_unparseable_directives(rst: str) -> str:
+    rst = rst.replace(':ref:', '')\
+             .replace('.. code-block:: ini', '.. code-block::')
+    return rst
+
+
+def resolve_includes(rst: str) -> str:
+    matches = re.findall(r'\.\. include:: (.*)', rst)
+    for match in matches:
+        with open(f'source/{match}', 'r') as handle:
+            include_text = handle.read()
+        rst = rst.replace(f'.. include:: {match}', include_text)
+    return rst
+
+
+def skip_prefix_new_lines(txt: str) -> str:
+    txt = re.sub(r'\A[\n]+', '', txt)
+    return txt
+
+
 if __name__ == '__main__':
-    from os import listdir
-    from os.path import isfile, join
-
     output_docs_path = '../git_machete/long_docs.py'
-    with open(output_docs_path, 'w') as f:
-        f.write('from typing import Dict\n\n')
-        f.write('long_docs: Dict[str, str] = {\n')
-
+    output_text = 'from typing import Dict\n\nlong_docs: Dict[str, str] = {\n'
     path = 'source/cli_help'
     commands_and_file_paths = {f.split('.')[0]: join(path, f) for f in sorted(listdir(path)) if isfile(join(path, f))}
 
     # TODO REMOVE LATER
-    # cmd = 'github'
+    # cmd = 'traverse'
     # commands_and_file_paths = {cmd: f'source/cli_help/{cmd}.rst'}
     for command, file in commands_and_file_paths.items():
         with open(file, 'r') as f:
-            text = f.read()
+            rst = f.read()
 
-        # skip ref
-        text = text.replace(':ref:', '')
-
-        # inlcudes
-        matches = re.findall(r'\.\. include:: (.*)', text)
-        for match in matches:
-            with open(f'source/{match}', 'r') as handle:
-                include_text = handle.read()
-            text = text.replace(f'.. include:: {match}', include_text)
-
-        parts = html_parts(text)
-        html = parts['body']
-        print(html)
-        print()
+        rst = skip_or_replace_unparseable_directives(rst)
+        rst = resolve_includes(rst)
+        html = rst2html(rst)['body']
+        # print(html)
         # print()
-
-        output_text = parse_html(html)
-        # print(output_text)
         # print()
+        plain_text = html2txt(html)
+        plain_text = skip_prefix_new_lines(plain_text)
+        # print(plain_text)
+        output_text += f'\t"{command}": """\n' + indent(plain_text, '\t\t') + '\n\t""",\n'
 
-        with open(output_docs_path, 'a') as f:
-            f.write(f'\t"{command}": """')
-            f.write(indent(output_text, '\t\t'))
-            f.write('\t""",\n')
-
-    with open(output_docs_path, 'a') as f:
-        f.write('}\n')
+    with open(output_docs_path, 'w') as f:
+        f.write(output_text + '}\n')
 
 
-if __name__ == '__main__':
-    from git_machete.long_docs import long_docs
-
-    for k, v in long_docs.items():
-        print(k)
-        print(v)
-        print()
+# if __name__ == '__main__':
+#     from git_machete.long_docs import long_docs
+#     from git_machete.old_docs import long_docs
+#
+#     for k, v in long_docs.items():
+#         print(k)
+#         print(v)
+#         print()
