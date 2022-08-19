@@ -16,7 +16,6 @@ from git_machete.utils import AnsiEscapeCodes
 from docutils import core
 
 
-# TODO
 # - colors
 # - include
 # - status_extraSpaceBeforeBranchName_config_key
@@ -145,7 +144,6 @@ if __name__ == '__main__':
     path = 'source/cli_help'
     commands_and_file_paths = {f.split('.')[0]: join(path, f) for f in sorted(listdir(path)) if isfile(join(path, f))}
 
-    # TODO REMOVE LATER
     # cmd = 'traverse'
     # commands_and_file_paths = {cmd: f'source/cli_help/{cmd}.rst'}
     for command, file in commands_and_file_paths.items():
