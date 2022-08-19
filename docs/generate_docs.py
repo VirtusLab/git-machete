@@ -83,7 +83,7 @@ def html2txt(html: str):
             if html_element.parent.parent.name == 'li':  # deal with nested lists
                 text += '\n      - '
             else:
-                text += '\n\n\t* '
+                text += '\n\n   * '
         elif html_element.name == 'strong':
             prev_tag = 'strong'
             text += '<b>'
@@ -153,7 +153,7 @@ if __name__ == '__main__':
         plain_text = html2txt(html)
         plain_text = skip_prefix_new_lines(plain_text)
         # print(plain_text)
-        output_text += f'   "{command}": """\n' + indent(plain_text, '      ') + '\n   """,\n'
+        output_text += f'    "{command}": """\n' + indent(plain_text, '        ') + '\n   """,\n'
 
     with open(output_docs_path, 'w') as f:
         f.write(output_text + '}\n')
