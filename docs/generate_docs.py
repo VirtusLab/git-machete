@@ -17,6 +17,7 @@ from docutils import core
 
 # - status_extraSpaceBeforeBranchName_config_key
 
+
 def rst2html(input_string: str, source_path: str = None, destination_path: str = None,
              input_encoding: str = 'unicode', doctitle: bool = True,
              initial_header_level: int = 1):
@@ -63,9 +64,9 @@ def html2txt(html: str):
             prev_tag = None
 
         elif html_element.name in ['kbd']:
-            text += '\n\t'
+            text += '\n   '
         elif html_element.name in ['td']:
-            text += '\t'  # not sure if its possible to even them out
+            text += '   '  # not sure if its possible to even them out
         elif html_element.name in ['p']:
             if 'class' in html_element.attrs:
                 if ' '.join(html_element.attrs['class']) == 'first':
@@ -75,12 +76,12 @@ def html2txt(html: str):
             else:
                 text += '\n\n'
         elif html_element.name in ['dt']:
-            text += '\n\t'
+            text += '\n   '
         elif html_element.name in ['dd']:
-            text += '\n\t\t'
+            text += '\n      '
         elif html_element.name == 'li':
             if html_element.parent.parent.name == 'li':  # deal with nested lists
-                text += '\n\t\t- '
+                text += '\n      - '
             else:
                 text += '\n\n\t* '
         elif html_element.name == 'strong':
@@ -152,7 +153,7 @@ if __name__ == '__main__':
         plain_text = html2txt(html)
         plain_text = skip_prefix_new_lines(plain_text)
         # print(plain_text)
-        output_text += f'\t"{command}": """\n' + indent(plain_text, '\t\t') + '\n\t""",\n'
+        output_text += f'   "{command}": """\n' + indent(plain_text, '      ') + '\n   """,\n'
 
     with open(output_docs_path, 'w') as f:
         f.write(output_text + '}\n')
