@@ -2,7 +2,7 @@
 
 set -e -o pipefail -u
 
-if grep -r '^#!/usr/bin/env python2\?$' .; then
+if git grep -E '^#!/usr/bin/env python(2)?$' .; then
   echo "Ambiguous python shebang, please declare shebangs that point to python3:  #!/usr/bin/env python3"
   exit 1
 fi

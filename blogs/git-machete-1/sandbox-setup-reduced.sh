@@ -34,4 +34,3 @@ git checkout adjust-reads-prec
   cmt 1st round of fixes
 
 git branch -d root
-

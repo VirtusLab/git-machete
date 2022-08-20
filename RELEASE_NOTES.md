@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.12.1
+
+- fixed: removed redundant files from Ubuntu package
+
 ## New in git-machete 3.12.0
 
 - added: subcommand `git machete list childless`
@@ -587,4 +591,3 @@
 ## New in git-machete 1.0.1
 
 - fixed: some `git machete` subcommands crashing when run during an ongoing merge or rebase
-

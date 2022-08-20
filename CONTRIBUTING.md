@@ -4,11 +4,12 @@
 
 Make sure the following bundled plugins are enabled:
 * Docker
+* Git
 * Markdown
 * Ini
 * IntelliLang (for language injections, e.g. Markdown/shell scripts in YAML)
 * ReStructuredText
-* Shell script
+* Shell Script (also: agree to enable Shellcheck when asked)
 * YAML
 
 Optionally, you can also install the following non-bundled plugins from Marketplace:
@@ -16,6 +17,17 @@ Optionally, you can also install the following non-bundled plugins from Marketpl
 * [.ignore](https://plugins.jetbrains.com/plugin/7495--ignore)
 * [NixIDEA](https://plugins.jetbrains.com/plugin/8607-nixidea)
 * [Requirements](https://plugins.jetbrains.com/plugin/10837-requirements/)
+
+
+## Git setup
+
+From the main project folder, run the following commands:
+
+```shell
+ln -s ../../hook_samples/machete-status-branch .git/hooks/machete-status-branch
+ln -s ../../hook_samples/post-commit .git/hooks/post-commit
+ln -s ../../ci/checks/run-all-checks.sh .git/hooks/pre-commit
+```
 
 
 ## Run tests locally
@@ -27,16 +39,14 @@ Use `.tox/venv/bin/python` as a reference `python` interpreter in your IDE.
 
 To run tests, execute `tox`.
 
-It's also possible to execute tests graphically in pycharm (right-clicking on the test file
+It's also possible to execute tests graphically in PyCharm (right-clicking on the test file
 or clicking the green triangle on the left of the test case name), which can be very useful when debugging a single test case.
-To do so, make sure that following libraries are installed (preferably via pip):
-* pytest
-* pytest-mock
-* pytest-xdist
+To do so, make sure that the libraries from [requirements.testenv.txt](requirements.testenv.txt) are installed in the current venv.
+
 
 ## Generate sandbox repositories
 
-Run `docs/setup-sandbox` script to set up a test repo under `~/machete-sandbox` with a remote in `~/machete-sandbox-remote`.
+Run [`graphics/setup-sandbox`](graphics/setup-sandbox) script to set up a test repo under `~/machete-sandbox` with a remote in `~/machete-sandbox-remote`.
 
 
 ## Command properties/classification
@@ -75,7 +85,7 @@ This tool is [semantically versioned](https://semver.org) with respect to all of
 * output format of plumbing commands (see above for the list)
 * accepted environment variables
 
-Output format of any non-plumbing command can change in non-backward-compatible manner even between patch-level updates.
+Output format of any [non-plumbing command](#command-propertiesclassification) can change in a non-backward-compatible manner even between patch-level updates.
 
 
 ## CI Docker setup reference
@@ -84,32 +94,38 @@ Output format of any non-plumbing command can change in non-backward-compatible 
 * [Nifty Docker tricks for your CI (vol. 2)](https://medium.com/virtuslab/nifty-docker-tricks-for-your-ci-vol-2-c5191a67f1a4)
 
 
-## FAQ's about Pull Requests
-**What is the proper base for pull request?**
+## FAQ about Pull Requests
 
-Please set the base of pull request to `develop` branch. Current branch protection rules on GitHub only allow to merge `develop` or `hotfix` branches into `master`.
+#### What is the proper base for pull request?
 
-**Who closes GitHub comments? Author of changes, reviewer or initiator of the conversation?**
+Please set the base of pull request to `develop` branch.
+Current branch protection rules on GitHub only allow to merge `develop` or `hotfix/*` branches into `master`.
+
+#### Who closes GitHub comments? Author of changes, reviewer or initiator of the conversation?
 
 It makes sense to close comment:
 
-1) If the comment was trivial and was addressed as suggested by the reviewer, then it is enough for the PR author to simply `Resolve` the thread and that's it
-2) If the comment was not trivial and/or for some reason the PR author believes that the comment should not be addressed as suggested by the reviewer, then it is best to leave the thread open after replying; then the reviewer can press `Resolve` once they have decided that the matter is cleared.
+1) If the comment was trivial and was addressed as suggested by the reviewer,
+   then it is enough for the PR author to simply `Resolve` the thread and that's it.
+2) If the comment was not trivial and/or for some reason the PR author believes that the comment should not be addressed as suggested by the reviewer,
+   then it is best to leave the thread open after replying; then the reviewer can press `Resolve` once they have decided that the matter is cleared.
 
-**Do you make squash before develop?**
+#### Do you make squash before develop?
 
 Any technique is okay as long as there are [NO unnecessary merge commits](https://slides.com/plipski/git-machete#/8).
-`Squash and merge` from GitHub is okay, fast-forward made from console or via `git machete advance` & `git push` is ok too.
+`Squash and merge` from GitHub is okay, fast-forward made from console or via `git machete advance` is okay too.
 
-**Is there any commit message convention?**
+#### Is there any commit message convention?
 
-Nothing special, as long as they look neat in the sense that they are written in imperative form and describe what actually happened on a given commit.
+Nothing special, as long as they look neat in the sense that they are written in the [imperative form](https://cbea.ms/git-commit/#imperative)
+and describe what actually happened on a given commit.
 
-**How do you know that the comment has been approved?**
+#### How do you know that the comment has been approved?
 
-As in the first point, if the PR author accepts the suggested comment without any additional comments, simply `Resolve` on GitHub will suffice. There is no need to reply things like "Accepted", "Done", etc as it just spams the reviewer's email.
+As in the first point, if the PR author accepts the suggested comment without any additional comments, simply `Resolve` on GitHub will suffice.
+There is no need to reply things like "Accepted", "Done", etc. as it just spams the reviewer's mailbox.
 
-**Can I resolve all comments in a single commit or each comment in an individual commit?**
+#### Can I resolve all comments in a single commit or each comment in an individual commit?
 
 Review fixes should be pushed on separate commits for easier viewing on GitHub (unlike in e.g. Gerrit's amend-based flow).
 
@@ -120,7 +136,7 @@ Review fixes should be pushed on separate commits for easier viewing on GitHub (
 
 1. Verify that all checks have passed.
 
-1. Merge develop into master and push to remote repository using console:
+1. Merge develop into master and push to remote repository using console (**not** using GitHub Merge Button):
 
          git checkout develop
          git pull origin develop
@@ -135,9 +151,10 @@ Review fixes should be pushed on separate commits for easier viewing on GitHub (
 1. Verify that the latest version is uploaded to [PyPI](https://pypi.org/project/git-machete).
 
 1. Verify that the latest version is uploaded to [Anaconda](https://anaconda.org/conda-forge/git-machete).
-   There also exists [conda-forge/git-machete-feedstock](https://github.com/conda-forge/git-machete-feedstock) repository which is
-   responsible for keeping the package up-to-date based on PyPI's release, which is done automatically by a bot.
-   Instruction on how to be a maintainer and other helpful tips are in:
+   Thanks to the courtesy of [@asford (Alex Ford)](https://github.com/asford),
+   there exists [conda-forge/git-machete-feedstock](https://github.com/conda-forge/git-machete-feedstock) repository.
+   A bot is responsible for keeping the package up-to-date based on PyPI's release.
+   Instruction on how to be a maintainer and other helpful tips can be found in
    [conda-forge recipe maintainer docs](https://conda-forge.org/docs/maintainer/adding_pkgs.html#recipe-maintainer).
 
 1. Verify that the latest commit in [VirtusLab/homebrew-git-machete](https://github.com/VirtusLab/homebrew-git-machete) tap repo refers to the latest version.
