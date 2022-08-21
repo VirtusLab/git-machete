@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 
-{ [[ -f setup.py ]] && grep -q "name='git-machete'" setup.py; } || {
-  echo "Error: the repository should be mounted as a volume under $(pwd)"
-  exit 1
-}
+set -e -o pipefail -u
 
-set -x
-
-python setup.py bdist_rpm
+if [[ ${GID-} && ${UID-} ]]; then
+  if ! getent group "$GID" &>/dev/null; then
+    groupadd --gid="$GID" docker
+  fi
+  useradd --create-home --gid="$GID" --no-log-init --uid="$UID" docker
+  sudo --preserve-env --set-home --user=docker bash -c "$*"
+else
+  bash -c "$@"
+fi

@@ -21,7 +21,7 @@ function docker_compose_pull_or_build_and_push() {
   image_name=$1
   DIRECTORY_HASH=$(git rev-parse HEAD:ci/$image_name)
   export DIRECTORY_HASH
-  cd ci/$image_name/
+  cd "$(git rev-parse --show-toplevel)/ci/$image_name/"
 
   # Let's retry pulling the image in case of a spurious failure
   # (`error pulling image configuration: Get "https://docker-images-prod.s3.dualstack.us-east-1.amazonaws.com/...": dial tcp ...:443: i/o timeout`)
