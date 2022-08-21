@@ -7,6 +7,5 @@
 !requirements.txt
 !setup.py
 
-git_machete/tests/
 **/*.pyc
 **/__pycache__/

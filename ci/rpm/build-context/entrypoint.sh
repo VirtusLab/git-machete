@@ -7,6 +7,7 @@ if [[ ${GID-} && ${UID-} ]]; then
     groupadd --gid="$GID" docker
   fi
   useradd --create-home --gid="$GID" --no-log-init --uid="$UID" docker
+
   sudo --preserve-env --set-home --user=docker bash -c "$*"
 else
   bash -c "$@"

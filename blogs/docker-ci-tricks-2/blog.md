@@ -67,7 +67,7 @@ source ci/docker-pull-or-build-and-push.sh tox
 
 # ... skipped ...
 ```
-There is no definition of a `DIRECTORY_HASH` in here, but there is an execution of a [ci/docker-pull-or-build-and-push.sh](https://github.com/VirtusLab/git-machete/blob/develop/ci/docker-pull-or-build-and-push.sh) with `tox` argument in which we can see the definition:
+There is no definition of a `DIRECTORY_HASH` in here, but there is an execution of a `ci/docker-pull-or-build-and-push.sh` with `tox` argument in which we can see the definition:
 
 ```shell script
 # ... skipped ...
