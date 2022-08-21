@@ -2,6 +2,7 @@
 
 set -e -o pipefail -u -x
 
-source ci/docker-pull-or-build-and-push.sh tox
+source "$(git rev-parse --show-toplevel)"/ci/ci-run-commons.sh
 
-docker-compose --ansi never run tox
+docker_compose_pull_or_build_and_push tox
+docker-compose --ansi=never run tox

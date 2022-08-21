@@ -1,29 +1,17 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
-{ [ -f setup.py ] && grep -q "name='git-machete'" setup.py; } || {
-  echo "Error: the repository should be mounted as a volume under $(pwd)"
-  exit 1
-}
+set -e -o pipefail -u
 
-set -e -u -x
+if [[ ${GID-} && ${UID-} ]]; then
+  if ! getent group "$GID" &>/dev/null; then
+    addgroup --gid="$GID" docker
+  fi
+  # `adduser` doesn't accept a numeric GID, we need to extract & provide group name
+  # (might not be `docker` if the group existed already in the image).
+  group_name=$(getent group "$GID" | cut -d: -f1)
+  adduser --disabled-password --ingroup="$group_name" --uid="$UID" docker
 
-env | sort | head -3
-
-if [[ $CHECK_COVERAGE = true ]]; then
-  TOX_ENV_LIST="mypy-py${PYTHON_VERSION/./},coverage"
+  sudo --preserve-env --set-home --user=docker bash -c "$*"
 else
-  TOX_ENV_LIST="mypy-py${PYTHON_VERSION/./},py${PYTHON_VERSION/./}"
+  bash -c "$@"
 fi
-
-if [[ $BUILD_DOCS = true ]]; then
-  TOX_ENV_LIST="$TOX_ENV_LIST,docs"
-fi
-
-if [[ $CHECK_PEP8 = true ]]; then
-  TOX_ENV_LIST="$TOX_ENV_LIST,pep8"
-fi
-
-tox -e $TOX_ENV_LIST
-
-$PYTHON setup.py install --user
-git machete --version
