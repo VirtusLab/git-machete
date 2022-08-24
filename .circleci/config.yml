@@ -48,6 +48,7 @@ jobs:
             ensure-release-notes-up-to-date.sh
             ensure-shell-scripts-pass-shellcheck.sh
             ensure-version-bumped.sh
+            ensure-docs-up-to-date.sh
             prohibit-deploy-step-in-circleci.sh
             prohibit-double-backticks-in-py.sh
             prohibit-single-backtick-in-rst.sh
@@ -105,7 +106,7 @@ jobs:
       - codecov/upload:
           file: coverage.xml
 
-  "sphinx and command line docs and python 3_10 git 2_33_1":
+  "docs and python 3_10 git 2_33_1":
     executor: ubuntu_executor
     steps:
       - checkout
@@ -211,7 +212,7 @@ mandatory_jobs: &mandatory_jobs
   - python 3_7 git 2_7_6
   - pep8 and python 3_8 git 2_25_0
   - coverage and python 3_9 git 2_30_1
-  - sphinx and command line docs and python 3_10 git 2_33_1
+  - docs and python 3_10 git 2_33_1
 
 workflows:
   version: 2
@@ -222,7 +223,7 @@ workflows:
       - python 3_7 git 2_7_6
       - pep8 and python 3_8 git 2_25_0
       - coverage and python 3_9 git 2_30_1
-      - sphinx and command line docs and python 3_10 git 2_33_1
+      - docs and python 3_10 git 2_33_1
       - dry run deploy:
           filters:
             branches:
