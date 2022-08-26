@@ -17,6 +17,3 @@ if [[ $current_docs != "$generated_docs" ]]; then
 fi
 
 cd $previous_pwd || return
-
-
-#diff  <(echo $(cat git_machete/docs.py)) <(echo $(python docs/generate_docs.py))
