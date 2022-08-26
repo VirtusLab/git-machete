@@ -23,38 +23,17 @@ jobs:
           command: |
             sudo apt-get update
 
-            # For ensure-completion-scripts-correct.sh
+            # For enforce-completion-scripts-correct.sh
             sudo apt-get install zsh fish
 
-            # For ensure-shell-scripts-pass-shellcheck.sh
+            # For enforce-shell-scripts-pass-shellcheck.sh
             sudo apt-get install shellcheck
 
-            # For ensure-links-correct.sh
+            # For enforce-links-correct.sh
             npm install --global remark-cli remark-lint-no-dead-urls remark-validate-links
       - run:
           name: Perform general checks
-          # language=sh
-          command: |
-            # We don't want `less` to open for `git grep` results.
-            export GIT_PAGER=cat
-
-            PATH=$(pwd)/ci/checks:$PATH
-            set -x
-            enforce-correct-shebangs.sh
-            enforce-indent-two-spaces-outside-python.sh
-            enforce-issue-number-for-todos.sh
-            ensure-completion-scripts-correct.sh
-            ensure-links-correct.sh
-            ensure-release-notes-up-to-date.sh
-            ensure-shell-scripts-pass-shellcheck.sh
-            ensure-version-bumped.sh
-            ensure-docs-up-to-date.sh
-            prohibit-deploy-step-in-circleci.sh
-            prohibit-double-backticks-in-py.sh
-            prohibit-single-backtick-in-rst.sh
-            prohibit-strings-split-without-delimiter.sh
-            prohibit-tab-character.sh
-            prohibit-trailing-whitespace.sh
+          command: ci/checks/run-all-checks.sh
 
   # Earliest versions of python/git supported by git-machete
   "python 3_6 git 1_8_10":

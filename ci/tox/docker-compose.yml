@@ -5,10 +5,7 @@ services:
     build:
       context: build-context
       dockerfile: ../Dockerfile # relative to build-context
-      target: ${TARGET:-circle_ci}
       args:
-        - user_id=${USER_ID:-0}
-        - group_id=${GROUP_ID:-0}
         - git_version=${GIT_VERSION:-0.0.0}
         - python_version=${PYTHON_VERSION:-0.0.0}
     environment:
@@ -17,4 +14,4 @@ services:
       - CHECK_PEP8=${CHECK_PEP8:-false}
     volumes:
       # Host path is relative to current directory, not build-context
-      - ../..:${MOUNT_POINT:-/root}/git-machete
+      - ../..:/git-machete

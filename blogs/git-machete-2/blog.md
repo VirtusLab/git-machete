@@ -190,4 +190,3 @@ $ git machete traverse
 
 Assuming you're sticking to rebase flow (in particular, you never merge upstream branch like `master` into your topic branches but instead rebase topic branches onto `master`),
 those few git-machete cuts should magically sort out your repository... whatever kind of jungle you might have had before.
-

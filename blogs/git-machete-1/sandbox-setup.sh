@@ -12,7 +12,6 @@ cmt() {
   touch $f
   git add $f
   git commit -m "$*"
-
 }
 
 
@@ -82,4 +81,3 @@ echo
 git machete status $1
 echo
 echo
-

@@ -2,12 +2,11 @@
 
 set -e -o pipefail -u
 
-source ../local-run-commons.sh rpm
+source "$(git rev-parse --show-toplevel)"/ci/local-run-commons.sh rpm
+
 export_directory_hash rpm
 cd "$(git rev-parse --show-toplevel)"/ci/rpm/
 
 set -x
-export TARGET=local
-export MOUNT_POINT=/home/ci-user
-docker-compose build --build-arg user_id="$(id -u)" --build-arg group_id="$(id -g)" rpm
-docker-compose run rpm
+docker-compose build rpm
+docker-compose run -e GID="$(id -g)" -e UID="$(id -u)" rpm

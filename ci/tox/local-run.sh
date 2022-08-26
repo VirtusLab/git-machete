@@ -10,7 +10,5 @@ check_var GIT_VERSION
 check_var PYTHON_VERSION
 
 set -x
-export TARGET=local
-export MOUNT_POINT=/home/ci-user
-docker-compose build --build-arg user_id="$(id -u)" --build-arg group_id="$(id -g)" tox
-docker-compose run tox
+docker-compose build tox
+docker-compose run -e GID="$(id -g)" -e UID="$(id -u)" tox

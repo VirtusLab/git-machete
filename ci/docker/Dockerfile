@@ -6,10 +6,10 @@ COPY . /tmp/input/
 WORKDIR /tmp/input/
 RUN find . | sort
 RUN \
-  export PYTHONDONTWRITEBYTECODE=1; \
-  python setup.py install; \
-  git machete --version; \
-  rm -rf /tmp/input/
+    export PYTHONDONTWRITEBYTECODE=1; \
+    python setup.py install; \
+    git machete --version; \
+    rm -rf /tmp/input/
 
 WORKDIR /repo
 VOLUME /repo

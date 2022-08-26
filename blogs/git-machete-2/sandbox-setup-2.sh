@@ -81,4 +81,3 @@ echo
 git machete status $1
 echo
 echo
-

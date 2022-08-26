@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e -o pipefail -u
+
 newb() {
   git checkout -b $1
 }
@@ -79,4 +81,3 @@ echo
 git machete status $1
 echo
 echo
-
