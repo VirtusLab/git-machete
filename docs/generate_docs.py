@@ -24,36 +24,76 @@ def rst2html(input_string: str, source_path: str = None, destination_path: str =
 
 def html2txt(html: str):
     html_elements = BeautifulSoup(html, features="html.parser")
-    for data in html_elements(['style']):
-        data.decompose()
+    # html_elements.replace(u'\xa0', ' ')
 
-    for literal in html_elements.select('tt'):
-        cite = html_elements.new_tag('cite')
-        cite.string = '`' + literal.text + '`'
-        literal.replace_with(cite)
+    for tag in html_elements.select('style'):
+        tag.decompose()
 
-    for literal in html_elements.select('span'):
-        if ' '.join(literal.attrs['class']) == 'option':
-            cite = html_elements.new_tag('strong')
-            cite.string = literal.text
-            literal.replace_with(cite)
+    for tag in html_elements.select('td'):
+        if tag.text == u'\xa0':
+            tag.decompose()
+        else:
+            if 'class' not in tag.attrs:
+                new_tag = html_elements.new_tag('td')
+                new_tag.string = '\n      ' + tag.text
+                tag.replace_with(new_tag)
 
-    text: str = ''
+    for tag in html_elements.select('tt'):
+        new_tag = html_elements.new_tag('cite')
+        new_tag.string = '`' + tag.text + '`'
+        tag.replace_with(new_tag)
+
+    for tag in html_elements.select('span'):
+        if ' '.join(tag.attrs['class']) == 'option':
+            new_tag = html_elements.new_tag('strong')
+            new_tag.string = tag.text
+            tag.replace_with(new_tag)
+
+    for tag in html_elements.select('strong'):
+        new_tag = html_elements.new_tag('strong')
+        new_tag.string = '<b>' + tag.text + '</b>'
+        tag.replace_with(new_tag)
+
+    for tag in html_elements.select('kbd'):
+        new_tag = html_elements.new_tag('kbd')
+        new_tag.string = '\n   ' + tag.text.strip()
+        tag.replace_with(new_tag)
+
+    for tag in html_elements.select('dt'):
+        new_tag = html_elements.new_tag('dt')
+        new_tag.string = '   ' + tag.text.strip()
+        tag.replace_with(new_tag)
+
+    for tag in html_elements.select('pre'):
+        if ' '.join(tag.attrs['class']) == 'code shell literal-block':
+            new_tag = html_elements.new_tag('pre', attrs={"class": "code shell literal-block"})
+            new_tag.string = '<b>' + indent(tag.text, '  ') + '</b>'
+            tag.replace_with(new_tag)
+        elif 'literal-block' in ''.join(tag.attrs['class']):
+            new_tag = html_elements.new_tag('pre', attrs={"class": "code literal-block"})
+            new_tag.string = '\n<dim>' + indent(tag.text, '  ') + '</dim>'
+            tag.replace_with(new_tag)
+
+    for tag in html_elements.select('span'):
+        new_tag = None
+        if ' '.join(tag.attrs['class']) == 'green':
+            new_tag = html_elements.new_tag('span', attrs={"class": "green"})
+            new_tag.string = AnsiEscapeCodes.GREEN + tag.text + AnsiEscapeCodes.ENDC
+        elif ' '.join(tag.attrs['class']) == 'yellow':
+            new_tag = html_elements.new_tag('span', attrs={"class": "yellow"})
+            new_tag.string = AnsiEscapeCodes.YELLOW + tag.text + AnsiEscapeCodes.ENDC
+        elif ' '.join(tag.attrs['class']) == 'red':
+            new_tag = html_elements.new_tag('span', attrs={"class": "red"})
+            new_tag.string = AnsiEscapeCodes.RED + tag.text + AnsiEscapeCodes.ENDC
+        elif ' '.join(tag.attrs['class']) == 'gray':
+            new_tag = html_elements.new_tag('span', attrs={"class": "gray"})
+            new_tag.string = AnsiEscapeCodes.DIM + tag.text + AnsiEscapeCodes.ENDC
+        if new_tag:
+            tag.replace_with(new_tag)
+
     prev_tag = None
-    prev_html_element = None
-    parent = None
-
-    # print(html_elements)
-
+    text: str = ''
     for html_element in html_elements.descendants:
-        # inside_code = False
-        # if prev_html_element:
-        #     parent = get_parent_until_document(prev_html_element)
-        # if parent:
-        #     if parent.name == 'pre':
-        #         if ' '.join(parent.attrs['class']) == 'code shell literal-block':
-        #             inside_code = True
-
         if isinstance(html_element, str):
             # if len(html_element) > 1:
             #     if '\n\n' in html_element:
@@ -83,50 +123,59 @@ def html2txt(html: str):
             # else:
             #     new_text = html_element
 
-            new_text = html_element.replace('\n', '')
-
-            if prev_tag == 'code':
-                new_text = indent(html_element, '  ')
-            if prev_tag == 'code_shell':
+            if html_element != '\n':
                 new_text = html_element
+            else:
+                new_text = html_element.replace('\n', '')
+
+            # if prev_tag == 'code':
+            #     new_text = indent(html_element, '  ')
+            # if prev_tag == 'code_shell':
+            #     new_text = html_element
 
             text += new_text
 
+            # if prev_tag == 'kbd':
+            #     text += '\n'
+
+            prev_tag = None
             # append at the end of the tag's value
-            if prev_tag == 'strong':
-                text += '</b>'
-                prev_tag = None
+            # if prev_tag == 'strong':
+            #     text += '</b>'
+            #     prev_tag = None
         #     elif prev_tag == 'cite':
         #         text += ''
-            elif prev_tag == 'code':
-                text += '</dim>'
-                prev_tag = None
-            elif prev_tag == 'color':
-                text += AnsiEscapeCodes.ENDC + ' '
-                prev_tag = None
+        #     elif prev_tag == 'code':
+        #         text += '</dim>'
+        #         prev_tag = None
+
 
         # append at the beginning of the tag's value
-        elif html_element.name in ['kbd']:
-            text += '\n   '
-        elif html_element.name in ['td']:
-            text += '   '  # not sure if its possible to even them out
+        # elif html_element.name in ['kbd']:
+        #     text += '\n   '
+        #     prev_tag = 'kbd'
+        # elif html_element.name in ['td']:
+        #     text += '   '  # not sure if its possible to even them out
         elif html_element.name in ['p']:
             if 'class' in html_element.attrs:
                 if ' '.join(html_element.attrs['class']) == 'first':
                     text += ' '
                 else:
-                    text += '\n\n'
+                    text += '\n'
             else:
                 text += '\n\n'
+        # elif html_element.name in ['dl']:
+        #     text += '\n'
         elif html_element.name in ['dt']:
-            text += '\n   '
+            text += '\n'
+            # text += '\n   '
         elif html_element.name in ['dd']:
             text += '\n      '
         elif html_element.name == 'li':
             if html_element.parent.parent.name == 'li':  # deal with nested lists
-                text += '\n      - '
+                text += '\n   - '
             else:
-                text += '\n\n   * '
+                text += '\n* '
 
         # # another approach
         # elif html_element.name in ['kbd']:
@@ -166,54 +215,28 @@ def html2txt(html: str):
         #     prev_tag = 'ol'
 
 
-        elif html_element.name == 'strong':
-            prev_tag = 'strong'
-            text += '<b>'
-        elif html_element.name == 'pre':
-            if ' '.join(html_element.attrs['class']) == 'code shell literal-block':
-                text += ' '
-                prev_tag = 'code_shell'
-            elif ' '.join(html_element.attrs['class']) == 'code literal-block':
-                text += '\n<dim>'
-                prev_tag = 'code'
-            elif ' '.join(html_element.attrs['class']) == 'code last literal-block':
-                text += '\n<dim>'
-                prev_tag = 'code'
-        elif html_element.name == 'cite':
-            text += ''
-            prev_tag = 'cite'
-        elif html_element.name == 'div':
-            if ' '.join(html_element.attrs['class']) == 'admonition note':
-                prev_tag = 'note'
-        elif html_element.name == 'span':
-            if ' '.join(html_element.attrs['class']) == 'green':
-                text += ' ' + AnsiEscapeCodes.GREEN
-                prev_tag = 'color'
-            if ' '.join(html_element.attrs['class']) == 'yellow':
-                text += ' ' + AnsiEscapeCodes.YELLOW
-                prev_tag = 'color'
-            if ' '.join(html_element.attrs['class']) == 'red':
-                text += ' ' + AnsiEscapeCodes.RED
-                prev_tag = 'color'
-            if ' '.join(html_element.attrs['class']) == 'grey':
-                text += ' ' + AnsiEscapeCodes.DIM
-                prev_tag = 'color'
-        else:
-            prev_tag = None
-        prev_html_element = html_element
+        # elif html_element.name == 'strong':
+        #     prev_tag = 'strong'
+        #     text += '<b>'
+        # elif html_element.name == 'pre':
+        #     if 'literal-block' in ' '.join(html_element.attrs['class']):
+        #         if 'shell' in ' '.join(html_element.attrs['class']):
+        #             text += ' '
+        #             prev_tag = 'code_shell'
+                # else:
+                #     text += '\n<dim>'
+                #     prev_tag = 'code'
+        # elif html_element.name == 'cite':
+        #     text += ''
+        #     prev_tag = 'cite'
+        # elif html_element.name == 'div':
+        #     if ' '.join(html_element.attrs['class']) == 'admonition note':
+        #         prev_tag = 'note'
     return text
 
 
-def get_parent_until_document(element):
-    if element.parent.name == '[document]':
-        return element
-    else:
-        get_parent_until_document(element.parent)
-
-
 def skip_or_replace_unparseable_directives(rst: str) -> str:
-    rst = rst.replace(':ref:', '')\
-             .replace('.. code-block:: ini', '.. code-block::')
+    rst = rst.replace(':ref:', '')
     return rst
 
 
@@ -238,19 +261,28 @@ def skip_holes(txt: str) -> str:
     return txt
 
 
+# def random_character_fixes(txt: str) -> str:
+#     txt = txt.replace('---', '-')
+#     return txt
+
+
 if __name__ == '__main__':
     output_docs_path = 'git_machete/docs.py'
     docs_source_path = 'docs/source'
     short_docs_path = 'git_machete/short_docs.py'
     with open(short_docs_path, 'r') as f:
         short_docs = f.read()
-    output_text = short_docs + '\n\nlong_docs: Dict[str, str] = {\n'
+    warning_text = '# ---------------------------------------------------------------------------------------------------------\n' \
+                   '# Warning: This file is NOT supposed to be edited directly, ' \
+                   'but instead regenerated via tox -e docs\n' \
+                   '# ---------------------------------------------------------------------------------------------------------\n\n'
+    output_text = warning_text + short_docs + '\n\nlong_docs: Dict[str, str] = {\n'
     path = docs_source_path + '/cli_help'
     commands_and_file_paths = {f.split('.')[0]: join(path, f) for f in sorted(listdir(path)) if isfile(join(path, f))}
 
-    # run generation for single command
-    # cmd = 'version'
-    # commands_and_file_paths = {cmd: f'docs/source/cli_help/{cmd}.rst'}
+    # # NOTE: run generation for single command
+    cmd = 'config'
+    commands_and_file_paths = {cmd: f'docs/source/cli_help/{cmd}.rst'}
     for command, file in commands_and_file_paths.items():
         with open(file, 'r') as f:
             rst = f.read()
@@ -264,6 +296,7 @@ if __name__ == '__main__':
         # plain_text = plain_text.replace(20*' ', '\n'+20*' ')
         plain_text = skip_holes(plain_text)
         plain_text = skip_prefix_new_lines(plain_text)
+        # plain_text = random_character_fixes(plain_text)
         # print(plain_text)
         output_text += f'    "{command}": """\n' + indent(plain_text, '        ') + '\n   """,\n'
 
@@ -272,6 +305,11 @@ if __name__ == '__main__':
         f.write(output_text)
 
     print(output_text)
+
+#   TO REVIEW / FIX:
+#   - github
+
+
 # if __name__ == '__main__':
 #     from git_machete.long_docs import long_docs
 #     from git_machete.docs import long_docs

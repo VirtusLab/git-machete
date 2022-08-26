@@ -11,25 +11,8 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
     * ``machete.github.{remote,organization,repository}``:
 
         When executing ``git machete github <subcommand>`` command, GitHub API server URL will be inferred from ``git remote``.
-        You can override this by setting the following local git config keys:
 
-            Remote name
-                E.g. ``machete.github.remote`` = ``origin``
-
-            Organization name
-                E.g. ``machete.github.organization`` = ``VirtusLab``
-
-            Repository name
-                E.g. ``machete.github.repository`` = ``git-machete``
-
-        To do this, run ``git config --local --edit`` and add the following section:
-
-        .. code-block:: ini
-
-            [machete "github"]
-                organization = <organization_name>
-                repository = <repo_name>
-                remote = <remote_name>
+.. include:: github_config_keys.rst
 
     * ``machete.overrideForkPoint.<branch>.{to,whileDescendantOf}``
 
@@ -71,15 +54,12 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 
 **Environment variables:**
 
-    * ``GIT_MACHETE_EDITOR``
+``GIT_MACHETE_EDITOR``
+    Name of the editor used by ``git machete e[dit]``, example: ``vim`` or ``nano``.
 
-        Name of the editor used by ``git machete e[dit]``, example: ``vim`` or ``nano``.
+``GIT_MACHETE_REBASE_OPTS``
+    Used to pass extra options to the underlying ``git rebase`` invocation (called by the executed command, such as: ``reapply``, ``slide-out``, ``traverse``, ``update``)
+    Example: ``GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete update``.
 
-    * ``GIT_MACHETE_REBASE_OPTS``
-
-        Used to pass extra options to the underlying ``git rebase`` invocation (called by the executed command, such as: ``reapply``, ``slide-out``, ``traverse``, ``update``)
-        Example: ``GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete update``.
-
-    * ``GITHUB_TOKEN``
-
-        Used to store GitHub API token. Used by commands such as: ``anno``, ``clean``, ``github``.
+``GITHUB_TOKEN``
+    Used to store GitHub API token. Used by commands such as: ``anno``, ``clean``, ``github``.
