@@ -12,7 +12,7 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 
         When executing ``git machete github <subcommand>`` command, GitHub API server URL will be inferred from ``git remote``.
 
-.. include:: github_config_keys.rst
+        .. include:: github_config_keys.rst
 
     * ``machete.overrideForkPoint.<branch>.{to,whileDescendantOf}``
 

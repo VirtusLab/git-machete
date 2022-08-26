@@ -1,5 +1,5 @@
 import re
-from textwrap import indent
+from textwrap import dedent, indent
 from os import listdir
 from os.path import isfile, join
 from bs4 import BeautifulSoup
@@ -44,10 +44,11 @@ def html2txt(html: str):
         tag.replace_with(new_tag)
 
     for tag in html_elements.select('span'):
-        if ' '.join(tag.attrs['class']) == 'option':
-            new_tag = html_elements.new_tag('strong')
-            new_tag.string = tag.text
-            tag.replace_with(new_tag)
+        if 'class' in tag.attrs:
+            if ' '.join(tag.attrs['class']) == 'option':
+                new_tag = html_elements.new_tag('strong')
+                new_tag.string = tag.text
+                tag.replace_with(new_tag)
 
     for tag in html_elements.select('strong'):
         new_tag = html_elements.new_tag('strong')
@@ -64,34 +65,43 @@ def html2txt(html: str):
         new_tag.string = '   ' + tag.text.strip()
         tag.replace_with(new_tag)
 
+    # for tag in html_elements.select('div'):
+    #     if 'class' in tag.attrs:
+    #         if 'admonition note' in ' '.join(tag.attrs['class']):
+    #             new_tag = html_elements.new_tag('div')
+    #             # new_tag.string = '\n' + indent(tag.text, '   ')
+    #             new_tag.string = '\n' + tag.text
+    #             tag.replace_with(new_tag)
+
     for tag in html_elements.select('pre'):
-        if ' '.join(tag.attrs['class']) == 'code shell literal-block':
-            new_tag = html_elements.new_tag('pre', attrs={"class": "code shell literal-block"})
-            new_tag.string = '<b>' + indent(tag.text, '  ') + '</b>'
-            tag.replace_with(new_tag)
-        elif 'literal-block' in ''.join(tag.attrs['class']):
-            new_tag = html_elements.new_tag('pre', attrs={"class": "code literal-block"})
-            new_tag.string = '\n<dim>' + indent(tag.text, '  ') + '</dim>'
-            tag.replace_with(new_tag)
+        if 'class' in tag.attrs:
+            if ' '.join(tag.attrs['class']) == 'code shell literal-block':
+                new_tag = html_elements.new_tag('pre', attrs={"class": "code shell literal-block"})
+                new_tag.string = '<b>' + indent(tag.text, '  ') + '</b>'
+                tag.replace_with(new_tag)
+            elif 'literal-block' in ' '.join(tag.attrs['class']):
+                new_tag = html_elements.new_tag('pre', attrs={"class": "code literal-block"})
+                new_tag.string = '\n<dim>' + indent(tag.text, '  ') + '</dim>'
+                tag.replace_with(new_tag)
 
     for tag in html_elements.select('span'):
         new_tag = None
-        if ' '.join(tag.attrs['class']) == 'green':
-            new_tag = html_elements.new_tag('span', attrs={"class": "green"})
-            new_tag.string = AnsiEscapeCodes.GREEN + tag.text + AnsiEscapeCodes.ENDC
-        elif ' '.join(tag.attrs['class']) == 'yellow':
-            new_tag = html_elements.new_tag('span', attrs={"class": "yellow"})
-            new_tag.string = AnsiEscapeCodes.YELLOW + tag.text + AnsiEscapeCodes.ENDC
-        elif ' '.join(tag.attrs['class']) == 'red':
-            new_tag = html_elements.new_tag('span', attrs={"class": "red"})
-            new_tag.string = AnsiEscapeCodes.RED + tag.text + AnsiEscapeCodes.ENDC
-        elif ' '.join(tag.attrs['class']) == 'gray':
-            new_tag = html_elements.new_tag('span', attrs={"class": "gray"})
-            new_tag.string = AnsiEscapeCodes.DIM + tag.text + AnsiEscapeCodes.ENDC
-        if new_tag:
-            tag.replace_with(new_tag)
+        if 'class' in tag.attrs:
+            if ' '.join(tag.attrs['class']) == 'green':
+                new_tag = html_elements.new_tag('span', attrs={"class": "green"})
+                new_tag.string = AnsiEscapeCodes.GREEN + tag.text + AnsiEscapeCodes.ENDC
+            elif ' '.join(tag.attrs['class']) == 'yellow':
+                new_tag = html_elements.new_tag('span', attrs={"class": "yellow"})
+                new_tag.string = AnsiEscapeCodes.YELLOW + tag.text + AnsiEscapeCodes.ENDC
+            elif ' '.join(tag.attrs['class']) == 'red':
+                new_tag = html_elements.new_tag('span', attrs={"class": "red"})
+                new_tag.string = AnsiEscapeCodes.RED + tag.text + AnsiEscapeCodes.ENDC
+            elif ' '.join(tag.attrs['class']) == 'gray':
+                new_tag = html_elements.new_tag('span', attrs={"class": "gray"})
+                new_tag.string = AnsiEscapeCodes.DIM + tag.text + AnsiEscapeCodes.ENDC
+            if new_tag:
+                tag.replace_with(new_tag)
 
-    prev_tag = None
     text: str = ''
     for html_element in html_elements.descendants:
         if isinstance(html_element, str):
@@ -138,7 +148,7 @@ def html2txt(html: str):
             # if prev_tag == 'kbd':
             #     text += '\n'
 
-            prev_tag = None
+            # prev_tag = None
             # append at the end of the tag's value
             # if prev_tag == 'strong':
             #     text += '</b>'
@@ -148,7 +158,6 @@ def html2txt(html: str):
         #     elif prev_tag == 'code':
         #         text += '</dim>'
         #         prev_tag = None
-
 
         # append at the beginning of the tag's value
         # elif html_element.name in ['kbd']:
@@ -214,7 +223,6 @@ def html2txt(html: str):
         # elif html_element.name == 'ol':
         #     prev_tag = 'ol'
 
-
         # elif html_element.name == 'strong':
         #     prev_tag = 'strong'
         #     text += '<b>'
@@ -241,11 +249,11 @@ def skip_or_replace_unparseable_directives(rst: str) -> str:
 
 
 def resolve_includes(rst: str, docs_source_path: str) -> str:
-    matches = re.findall(r'\.\. include:: (.*)', rst)
-    for match in matches:
+    matches = re.findall(r'(.*)\.\. include:: (.*)', rst)
+    for indent_, match in matches:
         with open(f'{docs_source_path}/{match}', 'r') as handle:
             include_text = handle.read()
-        rst = rst.replace(f'.. include:: {match}', include_text)
+        rst = rst.replace(f'{indent_}.. include:: {match}', indent(dedent(include_text), indent_))
     return rst
 
 
@@ -267,6 +275,7 @@ def skip_holes(txt: str) -> str:
 
 
 if __name__ == '__main__':
+    verbose = False
     output_docs_path = 'git_machete/docs.py'
     docs_source_path = 'docs/source'
     short_docs_path = 'git_machete/short_docs.py'
@@ -281,16 +290,19 @@ if __name__ == '__main__':
     commands_and_file_paths = {f.split('.')[0]: join(path, f) for f in sorted(listdir(path)) if isfile(join(path, f))}
 
     # # NOTE: run generation for single command
-    cmd = 'config'
-    commands_and_file_paths = {cmd: f'docs/source/cli_help/{cmd}.rst'}
+    # cmd = 'anno'
+    # commands_and_file_paths = {cmd: f'docs/source/cli_help/{cmd}.rst'}
     for command, file in commands_and_file_paths.items():
         with open(file, 'r') as f:
             rst = f.read()
 
         rst = skip_or_replace_unparseable_directives(rst)
         rst = resolve_includes(rst=rst, docs_source_path=docs_source_path)
+        if verbose:
+            print(rst)
         html = rst2html(rst)['body']
-        print(html)
+        if verbose:
+            print(html)
         # print('\n\n\n)
         plain_text = html2txt(html)
         # plain_text = plain_text.replace(20*' ', '\n'+20*' ')
@@ -304,7 +316,8 @@ if __name__ == '__main__':
     with open(output_docs_path, 'w') as f:
         f.write(output_text)
 
-    print(output_text)
+    if verbose:
+        print(output_text)
 
 #   TO REVIEW / FIX:
 #   - github
