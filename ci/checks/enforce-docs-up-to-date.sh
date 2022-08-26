@@ -6,6 +6,7 @@ pip install pygments
 pip install ../../
 
 pwd
+ls
 previous_pwd=$(pwd)
 cd ../../
 
