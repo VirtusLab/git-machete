@@ -3,12 +3,12 @@
 pip install bs4
 pip install docutils
 pip install pygments
-pip install ../../
+#pip install ../../
 
 pwd
 ls
 previous_pwd=$(pwd)
-cd ../../
+#cd ../../
 
 current_docs=$(cat git_machete/docs.py)
 generated_docs=$(python docs/generate_docs.py)
