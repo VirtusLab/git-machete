@@ -25,7 +25,6 @@ def rst2html(input_string: str, source_path: str = None, destination_path: str =
 
 def html2txt(html: str):
     html_elements = BeautifulSoup(html, features="html.parser")
-    # html_elements.replace(u'\xa0', ' ')
 
     for tag in html_elements.select('style'):
         tag.decompose()
@@ -262,7 +261,9 @@ def skip_prefix_new_lines(txt: str) -> str:
     txt = re.sub(r'\A[\n]+', '', txt)
     return txt
 
-# TO DO - refactor
+# TO DO - refactor skip_holes()
+
+
 def skip_holes(txt: str) -> str:
     txt = txt.replace(5 * '\n', '\n\n')\
         .replace(4 * '\n', '\n\n')\
