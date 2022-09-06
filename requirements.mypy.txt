@@ -1,2 +1,2 @@
 mypy==0.971
-pytest==7.1.2
+pytest==7.1.3
