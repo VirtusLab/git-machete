@@ -814,7 +814,7 @@ long_docs: Dict[str, str] = {
 
         Apart from simply ASCII-formatting the definition file, this also:
         * colors the edges between upstream (parent) and downstream (children) branches:
-           - [91mred edge[0m means that the downstream branch tip is not a direct descendant of the upstream branch tip,
+           - [31mred edge[0m means that the downstream branch tip is not a direct descendant of the upstream branch tip,
            - [33myellow edge[0m means that the downstream branch tip is a direct descendant of the upstream branch tip,
         but the fork point<fork-point> of the downstream branch is not equal to the upstream branch tip,
            - [32mgreen edge[0m means that the downstream branch tip is a direct descendant of the upstream branch tip
@@ -897,7 +897,7 @@ long_docs: Dict[str, str] = {
         * detects if the branch is merged (grey edge) to its parent (aka upstream):
            - by commit equivalency (default), or by strict detection of merge commits (if `--no-detect-squash-merges` passed),
            - if so, asks the user whether to slide out the branch from the dependency tree (typically branches are no longer needed after they're merged);
-        * otherwise, if the branch has a [91mred[0m or [33myellow[0m edge to its parent/upstream (see status):
+        * otherwise, if the branch has a [31mred[0m or [33myellow[0m edge to its parent/upstream (see status):
            - asks the user whether to rebase (default) or merge (if `--merge` passed) the branch onto into its upstream branch
         - equivalent to `git machete update` with no `--fork-point` option passed;
         * if the branch is not tracked on a remote, is ahead of its remote counterpart, or diverged from the counterpart & has newer head commit than the counterpart:

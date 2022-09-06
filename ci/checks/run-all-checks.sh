@@ -24,7 +24,6 @@ enforce-newline-at-eof.sh
 enforce-release-notes-up-to-date.sh
 enforce-shell-scripts-pass-shellcheck.sh
 enforce-version-bumped.sh
-enforce-docs-up-to-date.sh
 prohibit-deploy-step-in-circleci.sh
 prohibit-double-backticks-in-py.sh
 prohibit-single-backtick-in-rst.sh

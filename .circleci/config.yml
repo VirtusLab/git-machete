@@ -91,7 +91,7 @@ jobs:
       - checkout
       - run:
           name: Run tests against Python 3.10 and git 2.33.1 (with building docs)
-          command: PYTHON_VERSION=3.10 GIT_VERSION=2.33.1 BUILD_DOCS=true  bash ci/tox/ci-run.sh
+          command: PYTHON_VERSION=3.10 GIT_VERSION=2.33.1 BUILD_SPHINX_DOCS=true CHECK_CMD_DOCS_UP_TO_DATE=TRUE bash ci/tox/ci-run.sh
       - store_test_results:
           path: test-results/
       - store_artifacts:

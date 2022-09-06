@@ -17,8 +17,12 @@ else
   TOX_ENV_LIST="mypy-py${PYTHON_VERSION/./},py${PYTHON_VERSION/./}"
 fi
 
-if [[ $BUILD_DOCS = true ]]; then
-  TOX_ENV_LIST="$TOX_ENV_LIST,docs"
+if [[ $BUILD_SPHINX_DOCS = true ]]; then
+  TOX_ENV_LIST="$TOX_ENV_LIST,build_sphinx_docs"
+fi
+
+if [[ $CHECK_CMD_DOCS_UP_TO_DATE = true ]]; then
+  TOX_ENV_LIST="$TOX_ENV_LIST,check_docs"
 fi
 
 if [[ $CHECK_PEP8 = true ]]; then

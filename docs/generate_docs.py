@@ -1,10 +1,10 @@
 import re
 import sys
+import os
 from textwrap import dedent, indent
 from os import listdir
 from os.path import isfile, join
 from bs4 import BeautifulSoup
-from git_machete.utils import AnsiEscapeCodes
 from docutils import core
 
 # - status_extraSpaceBeforeBranchName_config_key
@@ -262,7 +262,7 @@ def skip_prefix_new_lines(txt: str) -> str:
     txt = re.sub(r'\A[\n]+', '', txt)
     return txt
 
-
+# TO DO - refactor
 def skip_holes(txt: str) -> str:
     txt = txt.replace(5 * '\n', '\n\n')\
         .replace(4 * '\n', '\n\n')\
@@ -276,10 +276,15 @@ def skip_holes(txt: str) -> str:
 
 
 if __name__ == '__main__':
+    # This is needed to ensure that the ASCII color codes in the output text will be the same regardless of the execution environment
+    os.environ["TERM"] = "xterm"
+    from git_machete.utils import AnsiEscapeCodes
+
     if len(sys.argv) == 2:
         save_regenerated_docs = False if sys.argv[1] == 'dont_save' else True
     else:
         save_regenerated_docs = True
+
     verbose = False
     output_docs_path = 'git_machete/docs.py'
     docs_source_path = 'docs/source'
@@ -310,7 +315,6 @@ if __name__ == '__main__':
             print(html)
         # print('\n\n\n)
         plain_text = html2txt(html)
-        # plain_text = plain_text.replace(20*' ', '\n'+20*' ')
         plain_text = skip_holes(plain_text)
         plain_text = skip_prefix_new_lines(plain_text)
         plain_text = plain_text.replace('---', '-')
@@ -322,18 +326,8 @@ if __name__ == '__main__':
     if save_regenerated_docs:
         with open(output_docs_path, 'w') as f:
             f.write(output_text)
-
-    print(output_text)
+    else:
+        print(output_text)
 
 #   TO REVIEW / FIX:
 #   - github
-
-
-# if __name__ == '__main__':
-#     from git_machete.long_docs import long_docs
-#     from git_machete.docs import long_docs
-#
-#     for k, v in long_docs.items():
-#         print(k)
-#         print(v)
-#         print()
