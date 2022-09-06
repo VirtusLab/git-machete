@@ -1,0 +1,6 @@
+/dev/fd/11 /dev/fd/12 differ: byte 1, line 1 is  43 #  12 ^J
+
+
+
+
+ <(echo

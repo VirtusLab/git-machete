@@ -22,8 +22,6 @@ then clears the annotation for the current branch (or a branch specified with ``
 If invoked with ``-H`` or ``--sync-github-prs``, annotates the branches based on their corresponding GitHub PR numbers and authors.
 Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
 
-sdfkjbsjdnfgsdgf
-
 .. include:: github_api_access.rst
 .. include:: github_config_keys.rst
 

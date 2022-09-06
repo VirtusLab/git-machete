@@ -1,7 +1,3 @@
-# ---------------------------------------------------------------------------------------------------------
-# Warning: This file is NOT supposed to be edited directly, but instead regenerated via tox -e docs
-# ---------------------------------------------------------------------------------------------------------
-
 from typing import Dict
 
 short_docs: Dict[str, str] = {
@@ -33,6 +29,10 @@ short_docs: Dict[str, str] = {
     "update": "Sync the current branch with its upstream (parent) branch via rebase or merge",
     "version": "Display the version and exit"
 }
+
+# ---------------------------------------------------------------------------------------------------------
+# Warning: This file is NOT supposed to be edited directly, but instead regenerated via tox -e docs
+# ---------------------------------------------------------------------------------------------------------
 
 
 long_docs: Dict[str, str] = {
@@ -88,7 +88,7 @@ long_docs: Dict[str, str] = {
             | o-feature/post-slide-out-hook
             |
             | Remove support for Python 2
-            | Remove support for Python 2 --- 1st round of fixes
+            | Remove support for Python 2 - 1st round of fixes
             ?-chore/v3
             |
             | Apply Python2-compatible static typing
@@ -107,7 +107,7 @@ long_docs: Dict[str, str] = {
             o-feature/post-slide-out-hook
             |
             | Remove support for Python 2
-            | Remove support for Python 2 --- 1st round of fixes
+            | Remove support for Python 2 - 1st round of fixes
             ?-chore/v3
             |
             | Apply Python2-compatible static typing
@@ -469,7 +469,7 @@ long_docs: Dict[str, str] = {
         Branches `adjust-reads-prec`, `edit-margin-not-allowed` and `grep-errors-script` are direct downstream branches for `develop`.
         `block-cancel-order` is a downstream branch of `adjust-reads-prec`, `change-table` is a downstream branch of `block-cancel-order` and so on.
 
-        Every branch name can be followed (after a single space as a delimiter) by a custom annotation --- a PR number in the above example.
+        Every branch name can be followed (after a single space as a delimiter) by a custom annotation - a PR number in the above example.
         The annotations don't influence the way `git machete` operates other than that they are displayed in the output of the `status` command.
         Also see anno command.
 
@@ -543,7 +543,7 @@ long_docs: Dict[str, str] = {
         Once the PR is successfully created, annotates the current branch with the new PR's number.
 
         If `.git/info/description` file is present, its contents are used as PR description.
-        If `.git/info/milestone` file is present, its contents (a single number --- milestone id) are used as milestone.
+        If `.git/info/milestone` file is present, its contents (a single number - milestone id) are used as milestone.
         If `.git/info/reviewers` file is present, its contents (one GitHub login per line) are used to set reviewers.
 
         <b>Options:</b>
@@ -603,8 +603,8 @@ long_docs: Dict[str, str] = {
         is slid out by `advance`, `slide-out` or `traverse`.
 
         At least two parameters (branch names) are passed to the hook:
-        * <new-upstream> is the upstream of the branch that has been slid out, or in case of multiple branches being slid out --- the upstream of the highest slid out branch;
-        * <lowest-slid-out-branch> is the branch that has been slid out, or in case of multiple branches being slid out --- the lowest slid out branch;
+        * <new-upstream> is the upstream of the branch that has been slid out, or in case of multiple branches being slid out - the upstream of the highest slid out branch;
+        * <lowest-slid-out-branch> is the branch that has been slid out, or in case of multiple branches being slid out - the lowest slid out branch;
         * <new-downstreams> are all the following (possibly zero) parameters, which correspond to all original downstreams of <lowest-slid-out-branch>, now reattached as the downstreams of <new-upstream>.
 
         Note that this may be zero, one, or multiple branches.
@@ -628,7 +628,7 @@ long_docs: Dict[str, str] = {
 
         The parameters are exactly the three revisions that are passed to `git rebase --onto`:
         * what is going to be the new base for the rebased commits,
-        * what is the fork point --- the place where the rebased history diverges from the upstream history,
+        * what is the fork point - the place where the rebased history diverges from the upstream history,
         * what branch is rebased.
 
         If the hook returns a non-zero exit code, an error is raised and the entire rebase is aborted.
@@ -814,7 +814,7 @@ long_docs: Dict[str, str] = {
 
         Apart from simply ASCII-formatting the definition file, this also:
         * colors the edges between upstream (parent) and downstream (children) branches:
-           - [31mred edge[0m means that the downstream branch tip is not a direct descendant of the upstream branch tip,
+           - [91mred edge[0m means that the downstream branch tip is not a direct descendant of the upstream branch tip,
            - [33myellow edge[0m means that the downstream branch tip is a direct descendant of the upstream branch tip,
         but the fork point<fork-point> of the downstream branch is not equal to the upstream branch tip,
            - [32mgreen edge[0m means that the downstream branch tip is a direct descendant of the upstream branch tip
@@ -897,9 +897,9 @@ long_docs: Dict[str, str] = {
         * detects if the branch is merged (grey edge) to its parent (aka upstream):
            - by commit equivalency (default), or by strict detection of merge commits (if `--no-detect-squash-merges` passed),
            - if so, asks the user whether to slide out the branch from the dependency tree (typically branches are no longer needed after they're merged);
-        * otherwise, if the branch has a [31mred[0m or [33myellow[0m edge to its parent/upstream (see status):
+        * otherwise, if the branch has a [91mred[0m or [33myellow[0m edge to its parent/upstream (see status):
            - asks the user whether to rebase (default) or merge (if `--merge` passed) the branch onto into its upstream branch
-        --- equivalent to `git machete update` with no `--fork-point` option passed;
+        - equivalent to `git machete update` with no `--fork-point` option passed;
         * if the branch is not tracked on a remote, is ahead of its remote counterpart, or diverged from the counterpart & has newer head commit than the counterpart:
            - asks the user whether to push the branch (possibly with `--force-with-lease` if the branches diverged);
         * otherwise, if the branch diverged from the remote counterpart & has older head commit than the counterpart:
@@ -934,13 +934,13 @@ long_docs: Dict[str, str] = {
            <b>--no-push-untracked</b>
               Do not push untracked branches to remote, re-enable via --push-untracked.
            <b>--push</b>
-              Push all (both tracked and untracked) branches to remote --- default behavior.
+              Push all (both tracked and untracked) branches to remote - default behavior.
            <b>--push-untracked</b>
-              Push untracked branches to remote --- default behavior.
+              Push untracked branches to remote - default behavior.
            <b>--return-to=WHERE</b>
-              Specifies the branch to return after traversal is successfully completed; WHERE can be here (the current branch at the moment when traversal starts), nearest-remaining (nearest remaining branch in case the here branch has been slid out by the traversal) or stay (the default --- just stay wherever the traversal stops). Note: when user quits by q/yq or when traversal is stopped because one of git actions fails, the behavior is always stay.
+              Specifies the branch to return after traversal is successfully completed; WHERE can be here (the current branch at the moment when traversal starts), nearest-remaining (nearest remaining branch in case the here branch has been slid out by the traversal) or stay (the default - just stay wherever the traversal stops). Note: when user quits by q/yq or when traversal is stopped because one of git actions fails, the behavior is always stay.
            <b>--start-from=WHERE</b>
-              Specifies the branch to start the traversal from; WHERE can be here (the default --- current branch, must be managed by git machete), root (root branch of the current branch, as in git machete show root) or first-root (first listed managed branch).
+              Specifies the branch to start the traversal from; WHERE can be here (the default - current branch, must be managed by git machete), root (root branch of the current branch, as in git machete show root) or first-root (first listed managed branch).
            <b>-w</b>, <b>--whole</b>
               Equivalent to -n --start-from=first-root --return-to=nearest-remaining; useful for quickly traversing & syncing all branches (rather than doing more fine-grained operations on the local section of the branch tree).
            <b>-W</b>

@@ -1,4 +1,5 @@
 import re
+import sys
 from textwrap import dedent, indent
 from os import listdir
 from os.path import isfile, join
@@ -275,6 +276,10 @@ def skip_holes(txt: str) -> str:
 
 
 if __name__ == '__main__':
+    if len(sys.argv) == 2:
+        save_regenerated_docs = False if sys.argv[1] == 'dont_save' else True
+    else:
+        save_regenerated_docs = True
     verbose = False
     output_docs_path = 'git_machete/docs.py'
     docs_source_path = 'docs/source'
@@ -284,8 +289,8 @@ if __name__ == '__main__':
     warning_text = '# ---------------------------------------------------------------------------------------------------------\n' \
                    '# Warning: This file is NOT supposed to be edited directly, ' \
                    'but instead regenerated via tox -e docs\n' \
-                   '# ---------------------------------------------------------------------------------------------------------\n\n'
-    output_text = warning_text + short_docs + '\n\nlong_docs: Dict[str, str] = {\n'
+                   '# ---------------------------------------------------------------------------------------------------------\n'
+    output_text = short_docs + '\n' + warning_text + '\n\nlong_docs: Dict[str, str] = {\n'
     path = docs_source_path + '/cli_help'
     commands_and_file_paths = {f.split('.')[0]: join(path, f) for f in sorted(listdir(path)) if isfile(join(path, f))}
 
@@ -308,16 +313,17 @@ if __name__ == '__main__':
         # plain_text = plain_text.replace(20*' ', '\n'+20*' ')
         plain_text = skip_holes(plain_text)
         plain_text = skip_prefix_new_lines(plain_text)
+        plain_text = plain_text.replace('---', '-')
         # plain_text = random_character_fixes(plain_text)
         # print(plain_text)
         output_text += f'    "{command}": """\n' + indent(plain_text, '        ') + '\n   """,\n'
 
     output_text += '}\n'
-    with open(output_docs_path, 'w') as f:
-        f.write(output_text)
+    if save_regenerated_docs:
+        with open(output_docs_path, 'w') as f:
+            f.write(output_text)
 
-    if verbose:
-        print(output_text)
+    print(output_text)
 
 #   TO REVIEW / FIX:
 #   - github
