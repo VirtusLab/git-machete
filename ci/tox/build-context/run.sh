@@ -18,11 +18,11 @@ else
 fi
 
 if [[ $BUILD_SPHINX_DOCS = true ]]; then
-  TOX_ENV_LIST="$TOX_ENV_LIST,build_sphinx_docs"
+  TOX_ENV_LIST="$TOX_ENV_LIST,sphinx-docs"
 fi
 
 if [[ $CHECK_PY_DOCS_UP_TO_DATE = true ]]; then
-  TOX_ENV_LIST="$TOX_ENV_LIST,check_docs"
+  TOX_ENV_LIST="$TOX_ENV_LIST,check-py-docs"
 fi
 
 if [[ $CHECK_PEP8 = true ]]; then
