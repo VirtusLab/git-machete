@@ -21,7 +21,7 @@ if [[ $BUILD_SPHINX_DOCS = true ]]; then
   TOX_ENV_LIST="$TOX_ENV_LIST,build_sphinx_docs"
 fi
 
-if [[ $CHECK_CMD_DOCS_UP_TO_DATE = true ]]; then
+if [[ $CHECK_PY_DOCS_UP_TO_DATE = true ]]; then
   TOX_ENV_LIST="$TOX_ENV_LIST,check_docs"
 fi
 

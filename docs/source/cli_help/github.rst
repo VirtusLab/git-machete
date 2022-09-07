@@ -33,7 +33,7 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 
     ``--all``    Checkout all open PRs.
 
-    ``--by``    Checkout open PRs authored by the given GitHub user.
+    ``--by``     Checkout open PRs authored by the given GitHub user.
 
       **Parameters:**
         ``<github-login>`` GitHub account name.
@@ -41,8 +41,7 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
     ``--mine``    Checkout open PRs for the current user associated with the GitHub token.
 
   **Parameters:**
-    ``<PR-number-1> ... <PR-number-N>``
-      Pull request numbers to checkout.
+    ``<PR-number-1> ... <PR-number-N>``    Pull request numbers to checkout.
 
 ``create-pr [--draft]``:
 
@@ -55,8 +54,7 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 
   **Options:**
 
-    ``--draft``
-      Creates the new PR as a draft.
+    ``--draft``    Creates the new PR as a draft.
 
 ``retarget-pr``:
 

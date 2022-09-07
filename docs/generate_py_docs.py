@@ -33,16 +33,19 @@ def html2txt(html: str):
         if tag.text == u'\xa0':
             tag.decompose()
         else:
+            # add new line and indent for the cells inside a table
             if 'class' not in tag.attrs:
                 new_tag = html_elements.new_tag('td')
                 new_tag.string = '\n      ' + tag.text
                 tag.replace_with(new_tag)
 
+    # substitute double apostrophe with a single apostrophe
     for tag in html_elements.select('tt'):
         new_tag = html_elements.new_tag('cite')
         new_tag.string = '`' + tag.text + '`'
         tag.replace_with(new_tag)
 
+    # make the option's text inside the option list bold
     for tag in html_elements.select('span'):
         if 'class' in tag.attrs:
             if ' '.join(tag.attrs['class']) == 'option':
@@ -50,29 +53,39 @@ def html2txt(html: str):
                 new_tag.string = tag.text
                 tag.replace_with(new_tag)
 
+    # keep bold text bold
     for tag in html_elements.select('strong'):
         new_tag = html_elements.new_tag('strong')
-        new_tag.string = '<b>' + tag.text + '</b>'
+        new_tag.string = '<b>' + tag.text.strip() + '</b>'
         tag.replace_with(new_tag)
 
+    # format elements in the `Option:` section by adding new line and indent
     for tag in html_elements.select('kbd'):
         new_tag = html_elements.new_tag('kbd')
         new_tag.string = '\n   ' + tag.text.strip()
         tag.replace_with(new_tag)
 
+    # add indent to the description list
     for tag in html_elements.select('dt'):
         new_tag = html_elements.new_tag('dt')
-        new_tag.string = '   ' + tag.text.strip()
+        new_tag.string = '   ' + tag.text
         tag.replace_with(new_tag)
 
-    # for tag in html_elements.select('div'):
-    #     if 'class' in tag.attrs:
-    #         if 'admonition note' in ' '.join(tag.attrs['class']):
-    #             new_tag = html_elements.new_tag('div')
-    #             # new_tag.string = '\n' + indent(tag.text, '   ')
-    #             new_tag.string = '\n' + tag.text
-    #             tag.replace_with(new_tag)
+    # add indent to the description list
+    for tag in html_elements.select('dd'):
+        new_tag = html_elements.new_tag('dd')
+        new_tag.string = '      ' + tag.text
+        tag.replace_with(new_tag)
 
+    # add new line before included NOTE class of rst documentation, example: github_api_access.rst
+    for tag in html_elements.select('div'):
+        if 'class' in tag.attrs:
+            if 'admonition note' in ' '.join(tag.attrs['class']):
+                new_tag = html_elements.new_tag('div', attrs={"class": "admonition note"})
+                new_tag.string = '\n' + tag.text
+                tag.replace_with(new_tag)
+
+    # format code examples
     for tag in html_elements.select('pre'):
         if 'class' in tag.attrs:
             if ' '.join(tag.attrs['class']) == 'code shell literal-block':
@@ -84,6 +97,7 @@ def html2txt(html: str):
                 new_tag.string = '\n<dim>' + indent(tag.text, '  ') + '</dim>'
                 tag.replace_with(new_tag)
 
+    # substitute color classes with ANSI codes
     for tag in html_elements.select('span'):
         new_tag = None
         if 'class' in tag.attrs:
@@ -277,8 +291,8 @@ def skip_holes(txt: str) -> str:
 
 
 if __name__ == '__main__':
-    # This is needed to ensure that the ASCII color codes in the output text will be the same regardless of the execution environment
-    os.environ["TERM"] = "xterm"
+    # This is needed to ensure that the ANSI color codes in the output text will be the same regardless of the execution environment
+    os.environ["TERM"] = "xterm-256color"
     from git_machete.utils import AnsiEscapeCodes
 
     if len(sys.argv) == 2:
@@ -286,7 +300,7 @@ if __name__ == '__main__':
     else:
         save_regenerated_docs = True
 
-    verbose = False
+    verbose = True
     output_docs_path = 'git_machete/docs.py'
     docs_source_path = 'docs/source'
     short_docs_path = 'git_machete/short_docs.py'
@@ -301,7 +315,7 @@ if __name__ == '__main__':
     commands_and_file_paths = {f.split('.')[0]: join(path, f) for f in sorted(listdir(path)) if isfile(join(path, f))}
 
     # # NOTE: run generation for single command
-    # cmd = 'anno'
+    # cmd = 'github'
     # commands_and_file_paths = {cmd: f'docs/source/cli_help/{cmd}.rst'}
     for command, file in commands_and_file_paths.items():
         with open(file, 'r') as f:
@@ -324,11 +338,11 @@ if __name__ == '__main__':
         output_text += f'    "{command}": """\n' + indent(plain_text, '        ') + '\n   """,\n'
 
     output_text += '}\n'
-    if save_regenerated_docs:
-        with open(output_docs_path, 'w') as f:
-            f.write(output_text)
-    else:
-        print(output_text)
+    # if save_regenerated_docs:
+    #     with open(output_docs_path, 'w') as f:
+    #         f.write(output_text)
+
+    print(output_text)
 
 #   TO REVIEW / FIX:
 #   - github

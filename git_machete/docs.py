@@ -136,18 +136,20 @@ long_docs: Dict[str, str] = {
 
         If invoked with `-H` or `--sync-github-prs`, annotates the branches based on their corresponding GitHub PR numbers and authors.
         Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
-        Note
 
+        Note
         To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR, even in case of public repositories),
         a GitHub API token with `repo` scope is required, see https://github.com/settings/tokens. This will be resolved from the first of:
-        * `GITHUB_TOKEN` env var,
-        * content of the `.github-token` file in the home directory (`~`),
-        * current auth token from the `gh` GitHub CLI,
-        * current auth token from the `hub` GitHub CLI.
-        Note
 
+        `GITHUB_TOKEN` env var,
+        content of the `.github-token` file in the home directory (`~`),
+        current auth token from the `gh` GitHub CLI,
+        current auth token from the `hub` GitHub CLI.
+
+        Note
         GitHub API server URL will be inferred from `git remote`.
         You can override this by setting the following git config keys:
+
            Remote name
               E.g. `machete.github.remote` = `origin`
            Organization name
@@ -156,12 +158,11 @@ long_docs: Dict[str, str] = {
               E.g. `machete.github.repository` = `git-machete`
 
         To do this, run `git config --local --edit` and add the following section:
-        <dim>
-          [machete "github"]
-              organization = <organization_name>
-              repository = <repo_name>
-              remote = <remote_name>
-        </dim>
+
+        [machete "github"]
+            organization = <organization_name>
+            repository = <repo_name>
+            remote = <remote_name>
 
         In any other case, sets the annotation for the given/current branch to the given <annotation text>.
         If multiple <annotation text>'s are passed to the command, they are concatenated with a single space.
@@ -176,32 +177,34 @@ long_docs: Dict[str, str] = {
 
         <b>Environment variables:</b>
            `GITHUB_TOKEN`
-              GitHub API token.
+                    GitHub API token.
    """,
     "clean": """
         <b>Usage:</b><b>
           git machete clean [-c|--checkout-my-github-prs] [-y|--yes]
         </b>
            Synchronizes with the remote repository:
-      
-        * if invoked with `-H` or `--checkout-my-github-prs`, checks out open PRs for the current user associated with the GitHub token and also traverses the chain of pull requests upwards, adding branches one by one to git-machete and checks them out locally as well,
-        * deletes unmanaged branches,
-        * deletes untracked managed branches that have no downstream branch.
+            
+        if invoked with `-H` or `--checkout-my-github-prs`, checks out open PRs for the current user associated with the GitHub token and also traverses the chain of pull requests upwards, adding branches one by one to git-machete and checks them out locally as well,
+        deletes unmanaged branches,
+        deletes untracked managed branches that have no downstream branch.
 
         No branch will be deleted unless explicitly confirmed by the user (or unless `-y/--yes` option is passed).
         Equivalent of `git machete github sync` if invoked with `-H` or `--checkout-my-github-prs`.
-        Note
 
+        Note
         To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR, even in case of public repositories),
         a GitHub API token with `repo` scope is required, see https://github.com/settings/tokens. This will be resolved from the first of:
-        * `GITHUB_TOKEN` env var,
-        * content of the `.github-token` file in the home directory (`~`),
-        * current auth token from the `gh` GitHub CLI,
-        * current auth token from the `hub` GitHub CLI.
-        Note
 
+        `GITHUB_TOKEN` env var,
+        content of the `.github-token` file in the home directory (`~`),
+        current auth token from the `gh` GitHub CLI,
+        current auth token from the `hub` GitHub CLI.
+
+        Note
         GitHub API server URL will be inferred from `git remote`.
         You can override this by setting the following git config keys:
+
            Remote name
               E.g. `machete.github.remote` = `origin`
            Organization name
@@ -210,12 +213,11 @@ long_docs: Dict[str, str] = {
               E.g. `machete.github.repository` = `git-machete`
 
         To do this, run `git config --local --edit` and add the following section:
-        <dim>
-          [machete "github"]
-              organization = <organization_name>
-              repository = <repo_name>
-              remote = <remote_name>
-        </dim>
+
+        [machete "github"]
+            organization = <organization_name>
+            repository = <repo_name>
+            remote = <remote_name>
 
         <b>Options:</b>
            <b>-c</b>, <b>--checkout-my-github-prs</b>
@@ -225,7 +227,7 @@ long_docs: Dict[str, str] = {
 
         <b>Environment variables:</b>
            `GITHUB_TOKEN`
-              GitHub API token.
+                    GitHub API token.
    """,
     "config": """
         Documentation about available `git machete` config keys and environment variables that change the command's default behavior.
@@ -236,27 +238,27 @@ long_docs: Dict[str, str] = {
         *  `machete.github.{remote,organization,repository}`:
 
         When executing `git machete github <subcommand>` command, GitHub API server URL will be inferred from `git remote`.
-        Note
 
+        Note
         GitHub API server URL will be inferred from `git remote`.
         You can override this by setting the following git config keys:
+
            Remote name
-      
-        E.g. `machete.github.remote` = `origin`
+              E.g. `machete.github.remote` = `origin`
+
            Organization name
-      
-        E.g. `machete.github.organization` = `VirtusLab`
+              E.g. `machete.github.organization` = `VirtusLab`
+
            Repository name
-      
-        E.g. `machete.github.repository` = `git-machete`
+              E.g. `machete.github.repository` = `git-machete`
 
         To do this, run `git config --local --edit` and add the following section:
-        <dim>
-          [machete "github"]
-              organization = <organization_name>
-              repository = <repo_name>
-              remote = <remote_name>
-        </dim>
+
+        [machete "github"]
+            organization = <organization_name>
+            repository = <repo_name>
+            remote = <remote_name>
+
         *  `machete.overrideForkPoint.<branch>.{to,whileDescendantOf}`
 
         Executing `git machete fork-point --override-to=<revision> [<branch>]` sets up a fork point override for <branch>.
@@ -292,12 +294,12 @@ long_docs: Dict[str, str] = {
 
         <b>Environment variables:</b>
            `GIT_MACHETE_EDITOR`
-              Name of the editor used by `git machete e[dit]`, example: `vim` or `nano`.
+                    Name of the editor used by `git machete e[dit]`, example: `vim` or `nano`.
            `GIT_MACHETE_REBASE_OPTS`
-              Used to pass extra options to the underlying `git rebase` invocation (called by the executed command, such as: `reapply`, `slide-out`, `traverse`, `update`)
+                    Used to pass extra options to the underlying `git rebase` invocation (called by the executed command, such as: `reapply`, `slide-out`, `traverse`, `update`)
         Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete update`.
            `GITHUB_TOKEN`
-              Used to store GitHub API token. Used by commands such as: `anno`, `clean`, `github`.
+                    Used to store GitHub API token. Used by commands such as: `anno`, `clean`, `github`.
    """,
     "delete-unmanaged": """
         <b>Usage:</b><b>
@@ -375,7 +377,7 @@ long_docs: Dict[str, str] = {
 
         <b>Environment variables:</b>
            `GIT_MACHETE_EDITOR`
-              Name of the editor executable.
+                    Name of the editor executable.
    """,
     "file": """
         <b>Usage:</b><b>
@@ -385,12 +387,17 @@ long_docs: Dict[str, str] = {
         Outputs the absolute path of machete definition file.
         The file is always called `machete` and is located in the git directory of the project.
            Three cases are possible:
-      
-        *  if `git machete` is executed from a regular working directory (not a worktree or submodule), the file is located under `.git/machete`,
-        *  if `git machete` is executed from a <b>worktree</b>, the file path depends on the `machete.worktree.useTopLevelMacheteFile` config key value:
-        * if `machete.worktree.useTopLevelMacheteFile` is true (default), the file is located under `.git/machete`
-        * if `machete.worktree.useTopLevelMacheteFile` is false, the file is located under `.git/worktrees/.../machete`,
-        *  if `git machete` is executed from a <b>submodule</b>, this file is located in the git folder of the submodule itself under `.git/modules/.../machete`.
+            
+        if `git machete` is executed from a regular working directory (not a worktree or submodule), the file is located under `.git/machete`,
+
+        if `git machete` is executed from a <b>worktree</b>, the file path depends on the `machete.worktree.useTopLevelMacheteFile` config key value:
+
+        if `machete.worktree.useTopLevelMacheteFile` is true (default), the file is located under `.git/machete`
+        if `machete.worktree.useTopLevelMacheteFile` is false, the file is located under `.git/worktrees/.../machete`,
+
+        if `git machete` is executed from a <b>submodule</b>, this file is located in the git folder of the submodule itself under `.git/modules/.../machete`.
+
+
    """,
     "fork-point": """
         <b>Usage:</b><b>
@@ -484,18 +491,20 @@ long_docs: Dict[str, str] = {
         where `<subcommand>` is one of: `anno-prs`, `checkout-prs`, `create-pr`, `retarget-pr`.
 
         Creates, checks out and manages GitHub PRs while keeping them reflected in branch definition file.
-        Note
 
+        Note
         To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR, even in case of public repositories),
         a GitHub API token with `repo` scope is required, see https://github.com/settings/tokens. This will be resolved from the first of:
-        * `GITHUB_TOKEN` env var,
-        * content of the `.github-token` file in the home directory (`~`),
-        * current auth token from the `gh` GitHub CLI,
-        * current auth token from the `hub` GitHub CLI.
-        Note
 
+        `GITHUB_TOKEN` env var,
+        content of the `.github-token` file in the home directory (`~`),
+        current auth token from the `gh` GitHub CLI,
+        current auth token from the `hub` GitHub CLI.
+
+        Note
         GitHub API server URL will be inferred from `git remote`.
         You can override this by setting the following git config keys:
+
            Remote name
               E.g. `machete.github.remote` = `origin`
            Organization name
@@ -504,12 +513,11 @@ long_docs: Dict[str, str] = {
               E.g. `machete.github.repository` = `git-machete`
 
         To do this, run `git config --local --edit` and add the following section:
-        <dim>
-          [machete "github"]
-              organization = <organization_name>
-              repository = <repo_name>
-              remote = <remote_name>
-        </dim>
+
+        [machete "github"]
+            organization = <organization_name>
+            repository = <repo_name>
+            remote = <remote_name>
 
         `anno-prs`:
         Annotates the branches based on their corresponding GitHub PR numbers and authors.
@@ -527,15 +535,13 @@ long_docs: Dict[str, str] = {
 
         `--all`    Checkout all open PRs.
 
-        `--by`    Checkout open PRs authored by the given GitHub user.
+        `--by`     Checkout open PRs authored by the given GitHub user.
            <b>Parameters:</b>
-              `<github-login>` GitHub account name.
+                    `<github-login>` GitHub account name.
 
         `--mine`    Checkout open PRs for the current user associated with the GitHub token.
            <b>Parameters:</b>
-      
-           `<PR-number-1> ... <PR-number-N>`
-              Pull request numbers to checkout.
+                    `<PR-number-1> ... <PR-number-N>`    Pull request numbers to checkout.
 
         `create-pr [--draft]`:
 
@@ -546,9 +552,7 @@ long_docs: Dict[str, str] = {
         If `.git/info/milestone` file is present, its contents (a single number - milestone id) are used as milestone.
         If `.git/info/reviewers` file is present, its contents (one GitHub login per line) are used to set reviewers.
 
-        <b>Options:</b>
-           `--draft`
-              Creates the new PR as a draft.
+        <b>Options:</b>`--draft`    Creates the new PR as a draft.
 
         `retarget-pr`:
         Sets the base of the current branch's PR to upstream (parent) branch, as seen by git machete (see `git machete show up`).
@@ -564,7 +568,7 @@ long_docs: Dict[str, str] = {
 
         <b>Environment variables (all subcommands):</b>
            `GITHUB_TOKEN`
-              GitHub API token.
+                    GitHub API token.
    """,
     "go": """
         <b>Usage:</b><b>
@@ -709,8 +713,9 @@ long_docs: Dict[str, str] = {
 
         <b>Environment variables:</b>
            `GIT_MACHETE_REBASE_OPTS`
-               Extra options to pass to the underlying `git rebase` invocation, space-separated.
+                    Extra options to pass to the underlying `git rebase` invocation, space-separated.
         Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete reapply`.
+
    """,
     "show": """
         <b>Usage:</b><b>
@@ -784,8 +789,9 @@ long_docs: Dict[str, str] = {
 
         <b>Environment variables:</b>
            `GIT_MACHETE_REBASE_OPTS`
-               Extra options to pass to the underlying `git rebase` invocations, space-separated.
+                    Extra options to pass to the underlying `git rebase` invocations, space-separated.
         Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete slide-out`.
+
    """,
     "squash": """
         <b>Usage:</b><b>
@@ -814,7 +820,7 @@ long_docs: Dict[str, str] = {
 
         Apart from simply ASCII-formatting the definition file, this also:
         * colors the edges between upstream (parent) and downstream (children) branches:
-           - [31mred edge[0m means that the downstream branch tip is not a direct descendant of the upstream branch tip,
+           - [91mred edge[0m means that the downstream branch tip is not a direct descendant of the upstream branch tip,
            - [33myellow edge[0m means that the downstream branch tip is a direct descendant of the upstream branch tip,
         but the fork point<fork-point> of the downstream branch is not equal to the upstream branch tip,
            - [32mgreen edge[0m means that the downstream branch tip is a direct descendant of the upstream branch tip
@@ -897,7 +903,7 @@ long_docs: Dict[str, str] = {
         * detects if the branch is merged (grey edge) to its parent (aka upstream):
            - by commit equivalency (default), or by strict detection of merge commits (if `--no-detect-squash-merges` passed),
            - if so, asks the user whether to slide out the branch from the dependency tree (typically branches are no longer needed after they're merged);
-        * otherwise, if the branch has a [31mred[0m or [33myellow[0m edge to its parent/upstream (see status):
+        * otherwise, if the branch has a [91mred[0m or [33myellow[0m edge to its parent/upstream (see status):
            - asks the user whether to rebase (default) or merge (if `--merge` passed) the branch onto into its upstream branch
         - equivalent to `git machete update` with no `--fork-point` option passed;
         * if the branch is not tracked on a remote, is ahead of its remote counterpart, or diverged from the counterpart & has newer head commit than the counterpart:
@@ -950,8 +956,9 @@ long_docs: Dict[str, str] = {
 
         <b>Environment variables:</b>
            `GIT_MACHETE_REBASE_OPTS`
-               Extra options to pass to the underlying `git rebase` invocations, space-separated.
+                    Extra options to pass to the underlying `git rebase` invocations, space-separated.
         Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete traverse`.
+
    """,
     "update": """
         <b>Usage:</b><b>
@@ -980,8 +987,9 @@ long_docs: Dict[str, str] = {
 
         <b>Environment variables:</b>
            `GIT_MACHETE_REBASE_OPTS`
-               Extra options to pass to the underlying `git rebase` invocation, space-separated.
+                    Extra options to pass to the underlying `git rebase` invocation, space-separated.
         Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete update`.
+
    """,
     "version": """
         <b>Usage:</b><b>
