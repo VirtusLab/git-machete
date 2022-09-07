@@ -2,7 +2,7 @@
 
 set -e -o pipefail -u
 
-current_docs=$(cat git_machete/docs.py)
+current_docs=$(<git_machete/docs.py)
 generated_docs=$(python docs/generate_py_docs.py)
 
 if [[ "$current_docs" != "$generated_docs" ]]; then

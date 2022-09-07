@@ -1,13 +1,10 @@
 import re
-import sys
 import os
 from textwrap import dedent, indent
 from os import listdir
 from os.path import isfile, join
 from bs4 import BeautifulSoup
 from docutils import core
-
-# - status_extraSpaceBeforeBranchName_config_key
 
 
 def rst2html(input_string: str, source_path: str = None, destination_path: str = None,
@@ -35,225 +32,86 @@ def html2txt(html: str):
         else:
             # add new line and indent for the cells inside a table
             if 'class' not in tag.attrs:
-                new_tag = html_elements.new_tag('td')
-                new_tag.string = '\n      ' + tag.text
-                tag.replace_with(new_tag)
+                tag.insert_before('\n      ')
 
     # substitute double apostrophe with a single apostrophe
     for tag in html_elements.select('tt'):
-        new_tag = html_elements.new_tag('cite')
-        new_tag.string = '`' + tag.text + '`'
-        tag.replace_with(new_tag)
+        tag.insert_before('`')
+        tag.insert_after('`')
 
     # make the option's text inside the option list bold
     for tag in html_elements.select('span'):
         if 'class' in tag.attrs:
             if ' '.join(tag.attrs['class']) == 'option':
-                new_tag = html_elements.new_tag('strong')
-                new_tag.string = tag.text
-                tag.replace_with(new_tag)
+                tag.insert_before('<b>')
+                tag.insert_after('</b>')
 
     # keep bold text bold
     for tag in html_elements.select('strong'):
-        new_tag = html_elements.new_tag('strong')
-        new_tag.string = '<b>' + tag.text.strip() + '</b>'
-        tag.replace_with(new_tag)
+        tag.insert_before('<b>')
+        tag.insert_after('</b>')
+
+    # add new lines after the paragraph tag
+    for tag in html_elements.select('p'):
+        if 'class' in tag.attrs:
+            if ' '.join(tag.attrs['class']) == 'first':
+                tag.insert_before(' ')
+            else:
+                tag.insert_before('\n')
+        else:
+            tag.insert_before('\n\n')
 
     # format elements in the `Option:` section by adding new line and indent
     for tag in html_elements.select('kbd'):
-        new_tag = html_elements.new_tag('kbd')
-        new_tag.string = '\n   ' + tag.text.strip()
-        tag.replace_with(new_tag)
+        tag.insert_before('\n   ')
 
     # add indent to the description list
     for tag in html_elements.select('dt'):
-        new_tag = html_elements.new_tag('dt')
-        new_tag.string = '   ' + tag.text
-        tag.replace_with(new_tag)
+        tag.string = '\n' + indent(tag.text.strip(), '   ')
 
     # add indent to the description list
     for tag in html_elements.select('dd'):
-        new_tag = html_elements.new_tag('dd')
-        new_tag.string = '      ' + tag.text
-        tag.replace_with(new_tag)
+        tag.string = '\n' + indent(tag.text, '      ')
+
+    # add indent to the description list
+    for tag in html_elements.select('li'):
+        if tag.parent.parent.name == 'li':  # deal with nested lists
+            tag.insert_before('\n   - ')
+        else:
+            tag.insert_before('\n* ')
 
     # add new line before included NOTE class of rst documentation, example: github_api_access.rst
     for tag in html_elements.select('div'):
         if 'class' in tag.attrs:
             if 'admonition note' in ' '.join(tag.attrs['class']):
-                new_tag = html_elements.new_tag('div', attrs={"class": "admonition note"})
-                new_tag.string = '\n' + tag.text
-                tag.replace_with(new_tag)
+                new_tag = html_elements.new_tag('div')
+                new_tag.string = ' \n\n'
+                tag.insert_before(new_tag)
 
     # format code examples
     for tag in html_elements.select('pre'):
         if 'class' in tag.attrs:
             if ' '.join(tag.attrs['class']) == 'code shell literal-block':
-                new_tag = html_elements.new_tag('pre', attrs={"class": "code shell literal-block"})
-                new_tag.string = '<b>' + indent(tag.text, '  ') + '</b>'
-                tag.replace_with(new_tag)
+                tag.string = '<b>' + indent(tag.text, '  ') + '</b>'
             elif 'literal-block' in ' '.join(tag.attrs['class']):
-                new_tag = html_elements.new_tag('pre', attrs={"class": "code literal-block"})
-                new_tag.string = '\n<dim>' + indent(tag.text, '  ') + '</dim>'
-                tag.replace_with(new_tag)
+                tag.string = '\n<dim>' + indent(tag.text, '  ') + '</dim>'
 
     # substitute color classes with ANSI codes
     for tag in html_elements.select('span'):
-        new_tag = None
         if 'class' in tag.attrs:
-            if ' '.join(tag.attrs['class']) == 'green':
-                new_tag = html_elements.new_tag('span', attrs={"class": "green"})
-                new_tag.string = AnsiEscapeCodes.GREEN + tag.text + AnsiEscapeCodes.ENDC
-            elif ' '.join(tag.attrs['class']) == 'yellow':
-                new_tag = html_elements.new_tag('span', attrs={"class": "yellow"})
-                new_tag.string = AnsiEscapeCodes.YELLOW + tag.text + AnsiEscapeCodes.ENDC
-            elif ' '.join(tag.attrs['class']) == 'red':
-                new_tag = html_elements.new_tag('span', attrs={"class": "red"})
-                new_tag.string = AnsiEscapeCodes.RED + tag.text + AnsiEscapeCodes.ENDC
-            elif ' '.join(tag.attrs['class']) == 'gray':
-                new_tag = html_elements.new_tag('span', attrs={"class": "gray"})
-                new_tag.string = AnsiEscapeCodes.DIM + tag.text + AnsiEscapeCodes.ENDC
-            if new_tag:
-                tag.replace_with(new_tag)
+            color = ' '.join(tag.attrs['class']).replace('gray', 'dim')
+            if color in ['green', 'yellow', 'red', 'dim']:
+                tag.insert_before(getattr(AnsiEscapeCodes, color.upper()))
+                tag.insert_after(AnsiEscapeCodes.ENDC)
 
     text: str = ''
     for html_element in html_elements.descendants:
         if isinstance(html_element, str):
-            # if len(html_element) > 1:
-            #     if '\n\n' in html_element:
-            #         new_text = html_element.replace('\n\n', '\n')
-            #     else:
-            #         new_text = html_element.replace('\n', '')
-            # else:
-            #     new_text = html_element
-
-            # if html_element != '\n' and '\n' in html_element:
-            #     new_text = html_element
-            # else:
-            #     new_text = html_element.replace('\n', '')
-
-            # if html_element == '\n':
-            #     new_text = ''
-
-            # if inside_code:
-            #     new_text = html_element
-            # else:
-            #     new_text = html_element.replace('\n', '')
-
-            # new_text = html_element.replace('\n', '')
-
-            # if prev_tag is None:
-            #     new_text = html_element.replace('\n', '')
-            # else:
-            #     new_text = html_element
-
             if html_element != '\n':
                 new_text = html_element
             else:
                 new_text = html_element.replace('\n', '')
-
-            # if prev_tag == 'code':
-            #     new_text = indent(html_element, '  ')
-            # if prev_tag == 'code_shell':
-            #     new_text = html_element
-
             text += new_text
-
-            # if prev_tag == 'kbd':
-            #     text += '\n'
-
-            # prev_tag = None
-            # append at the end of the tag's value
-            # if prev_tag == 'strong':
-            #     text += '</b>'
-            #     prev_tag = None
-        #     elif prev_tag == 'cite':
-        #         text += ''
-        #     elif prev_tag == 'code':
-        #         text += '</dim>'
-        #         prev_tag = None
-
-        # append at the beginning of the tag's value
-        # elif html_element.name in ['kbd']:
-        #     text += '\n   '
-        #     prev_tag = 'kbd'
-        # elif html_element.name in ['td']:
-        #     text += '   '  # not sure if its possible to even them out
-        elif html_element.name in ['p']:
-            if 'class' in html_element.attrs:
-                if ' '.join(html_element.attrs['class']) == 'first':
-                    text += ' '
-                else:
-                    text += '\n'
-            else:
-                text += '\n\n'
-        # elif html_element.name in ['dl']:
-        #     text += '\n'
-        elif html_element.name in ['dt']:
-            text += '\n'
-            # text += '\n   '
-        elif html_element.name in ['dd']:
-            text += '\n      '
-        elif html_element.name == 'li':
-            if html_element.parent.parent.name == 'li':  # deal with nested lists
-                text += '\n   - '
-            else:
-                text += '\n* '
-
-        # # another approach
-        # elif html_element.name in ['kbd']:
-        #     text += '   '
-        #     prev_tag = 'kbd'
-        # # elif html_element.name in ['td']:
-        # #     text += '   '  # not sure if its possible to even them out
-        # elif html_element.name in ['p']:
-        #     if 'class' in html_element.attrs:
-        #         if ' '.join(html_element.attrs['class']) == 'first':
-        #             text += ' '
-        #         else:
-        #             text += ''
-        #     else:
-        #         text += ''
-        #     prev_tag = 'p'
-        # elif html_element.name in ['dt']:
-        #     prev_tag = 'dt'
-        #     text += '   '
-        # elif html_element.name in ['table']:
-        #     prev_tag = 'table'
-        # elif html_element.name in ['tt']:
-        #     prev_tag = 'tt'
-        #     text += ''
-        # elif html_element.name in ['dd']:
-        #     text += '      '
-        #     prev_tag = 'dd'
-        # elif html_element.name == 'ul':
-        #     prev_tag = 'ul'
-        # elif html_element.name == 'li':
-        #     if html_element.parent.parent.name == 'li':  # deal with nested lists
-        #         text += '      - '
-        #     else:
-        #         text += '   * '
-        #     prev_tag = 'li'
-        # elif html_element.name == 'ol':
-        #     prev_tag = 'ol'
-
-        # elif html_element.name == 'strong':
-        #     prev_tag = 'strong'
-        #     text += '<b>'
-        # elif html_element.name == 'pre':
-        #     if 'literal-block' in ' '.join(html_element.attrs['class']):
-        #         if 'shell' in ' '.join(html_element.attrs['class']):
-        #             text += ' '
-        #             prev_tag = 'code_shell'
-                # else:
-                #     text += '\n<dim>'
-                #     prev_tag = 'code'
-        # elif html_element.name == 'cite':
-        #     text += ''
-        #     prev_tag = 'cite'
-        # elif html_element.name == 'div':
-        #     if ' '.join(html_element.attrs['class']) == 'admonition note':
-        #         prev_tag = 'note'
     return text
 
 
@@ -275,19 +133,11 @@ def skip_prefix_new_lines(txt: str) -> str:
     txt = re.sub(r'\A[\n]+', '', txt)
     return txt
 
-# TO DO - refactor skip_holes()
-
 
 def skip_holes(txt: str) -> str:
-    txt = txt.replace(5 * '\n', '\n\n')\
-        .replace(4 * '\n', '\n\n')\
-        .replace(3 * '\n', '\n\n')
+    for i in range(10, 3, -1):
+        txt = txt.replace(i * '\n', '\n\n')
     return txt
-
-
-# def random_character_fixes(txt: str) -> str:
-#     txt = txt.replace('---', '-')
-#     return txt
 
 
 if __name__ == '__main__':
@@ -295,13 +145,7 @@ if __name__ == '__main__':
     os.environ["TERM"] = "xterm-256color"
     from git_machete.utils import AnsiEscapeCodes
 
-    if len(sys.argv) == 2:
-        save_regenerated_docs = False if sys.argv[1] == 'dont_save' else True
-    else:
-        save_regenerated_docs = True
-
-    verbose = True
-    output_docs_path = 'git_machete/docs.py'
+    verbose = False
     docs_source_path = 'docs/source'
     short_docs_path = 'git_machete/short_docs.py'
     with open(short_docs_path, 'r') as f:
@@ -315,7 +159,7 @@ if __name__ == '__main__':
     commands_and_file_paths = {f.split('.')[0]: join(path, f) for f in sorted(listdir(path)) if isfile(join(path, f))}
 
     # # NOTE: run generation for single command
-    # cmd = 'github'
+    # cmd = 'traverse'
     # commands_and_file_paths = {cmd: f'docs/source/cli_help/{cmd}.rst'}
     for command, file in commands_and_file_paths.items():
         with open(file, 'r') as f:
@@ -328,21 +172,11 @@ if __name__ == '__main__':
         html = rst2html(rst)['body']
         if verbose:
             print(html)
-        # print('\n\n\n)
         plain_text = html2txt(html)
         plain_text = skip_holes(plain_text)
         plain_text = skip_prefix_new_lines(plain_text)
         plain_text = plain_text.replace('---', '-')
-        # plain_text = random_character_fixes(plain_text)
-        # print(plain_text)
         output_text += f'    "{command}": """\n' + indent(plain_text, '        ') + '\n   """,\n'
 
-    output_text += '}\n'
-    # if save_regenerated_docs:
-    #     with open(output_docs_path, 'w') as f:
-    #         f.write(output_text)
-
+    output_text += '}'
     print(output_text)
-
-#   TO REVIEW / FIX:
-#   - github
