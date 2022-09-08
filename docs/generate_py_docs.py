@@ -154,21 +154,15 @@ if __name__ == '__main__':
     path = docs_source_path + '/cli_help'
     commands_and_file_paths = {f.split('.')[0]: join(path, f) for f in sorted(listdir(path)) if isfile(join(path, f))}
 
-    verbose = False
-    # # NOTE: run generation for single command
-    # cmd = 'config'
-    # commands_and_file_paths = {cmd: f'docs/source/cli_help/{cmd}.rst'}
     for command, file in commands_and_file_paths.items():
         with open(file, 'r') as f:
             rst = f.read()
 
         rst = skip_or_replace_unparseable_directives(rst)
         rst = resolve_includes(rst=rst, docs_source_path=docs_source_path)
-        if verbose:
-            print(rst)
+
         html = rst2html(rst)
-        if verbose:
-            print(html)
+
         plain_text = html2txt(html)
         plain_text = skip_prefix_new_lines(plain_text)
         plain_text = plain_text.replace('---', '-')
