@@ -1,5 +1,9 @@
 from typing import Dict
 
+# ---------------------------------------------------------------------------------------------------------
+# Warning: This file is supposed to be modified manually
+# ---------------------------------------------------------------------------------------------------------
+
 short_docs: Dict[str, str] = {
     "add": "Add a branch to the tree of branch dependencies",
     "advance": "Fast-forward merge one of children to the current branch, push it and then slide out the child",

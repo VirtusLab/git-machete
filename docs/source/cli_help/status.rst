@@ -70,6 +70,7 @@ With ``--color=always``, git machete always emits colors and with ``--color=auto
     |
     m-<branch4>     # grey (merged to parent)
 
+
 **Options:**
 
 --color=WHEN                      Colorize the output; WHEN can be ``always``, ``auto`` (default; i.e. only if stdout is a terminal), or ``never``.
@@ -80,28 +81,7 @@ With ``--color=always``, git machete always emits colors and with ``--color=auto
 
 --no-detect-squash-merges         Only consider *strict* (fast-forward or 2-parent) merges, rather than rebase/squash merges, when detecting if a branch is merged into its upstream (parent).
 
- .. note::
+**Config keys:**
 
-    To make it easier to select branch name from the ``status`` output on certain terminals
-    (e.g. `Alacritty <https://github.com/alacritty/alacritty>`_), you can add an extra
-    space between ``└─`` and ``branch name`` by setting ``git config machete.status.extraSpaceBeforeBranchName true``.
-
-    For example, by default the status is displayed as:
-
-    .. code-block::
-
-      develop
-      │
-      ├─feature_branch1
-      │
-      └─feature_branch2
-
-    With ``machete.status.extraSpaceBeforeBranchName`` config set to ``true``:
-
-    .. code-block::
-
-       develop
-       │
-       ├─ feature_branch1
-       │
-       └─ feature_branch2
+``machete.status.extraSpaceBeforeBranchName``
+    .. include:: status_config_key.rst

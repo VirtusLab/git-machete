@@ -69,11 +69,11 @@ def html2txt(html: str):
     for tag in html_elements.select('dt'):
         tag.string = '\n' + indent(tag.text.strip(), '   ')
 
-    # add indent to the description list
+    # add indent to the nested description list
     for tag in html_elements.select('dd'):
         tag.string = '\n' + indent(tag.text, '      ')
 
-    # add indent to the description list
+    # add indent and bullet points to the bulleted list
     for tag in html_elements.select('li'):
         if tag.parent.parent.name == 'li':  # deal with nested lists
             tag.insert_before('\n   - ')
@@ -84,19 +84,17 @@ def html2txt(html: str):
     for tag in html_elements.select('div'):
         if 'class' in tag.attrs:
             if 'admonition note' in ' '.join(tag.attrs['class']):
-                new_tag = html_elements.new_tag('div')
-                new_tag.string = ' \n\n'
-                tag.insert_before(new_tag)
+                tag.insert_before('\n')
 
     # format code examples
     for tag in html_elements.select('pre'):
         if 'class' in tag.attrs:
-            if ' '.join(tag.attrs['class']) == 'code shell literal-block':
-                tag.string = '<b>' + indent(tag.text, '  ') + '</b>'
+            if ' '.join(tag.attrs['class']) in ['code shell literal-block', 'code awk literal-block']:
+                tag.string = '<b>' + indent(tag.text.rstrip('\n'), '  ') + '</b>'
             elif 'literal-block' in ' '.join(tag.attrs['class']):
                 tag.string = '\n<dim>' + indent(tag.text, '  ') + '</dim>'
 
-    # substitute color classes with ANSI codes
+    # substitute color classes with respective ANSI codes
     for tag in html_elements.select('span'):
         if 'class' in tag.attrs:
             color = ' '.join(tag.attrs['class']).replace('gray', 'dim')
@@ -134,8 +132,8 @@ def skip_prefix_new_lines(txt: str) -> str:
     return txt
 
 
-def skip_holes(txt: str) -> str:
-    for i in range(10, 3, -1):
+def replace_3_newlines_and_more_with_2_newlines(txt: str) -> str:
+    for i in range(10, 2, -1):
         txt = txt.replace(i * '\n', '\n\n')
     return txt
 
@@ -145,21 +143,18 @@ if __name__ == '__main__':
     os.environ["TERM"] = "xterm-256color"
     from git_machete.utils import AnsiEscapeCodes
 
-    verbose = False
     docs_source_path = 'docs/source'
-    short_docs_path = 'git_machete/short_docs.py'
-    with open(short_docs_path, 'r') as f:
-        short_docs = f.read()
     warning_text = '# ---------------------------------------------------------------------------------------------------------\n' \
                    '# Warning: This file is NOT supposed to be edited directly, ' \
                    'but instead regenerated via tox -e docs\n' \
                    '# ---------------------------------------------------------------------------------------------------------\n'
-    output_text = short_docs + '\n' + warning_text + '\n\nlong_docs: Dict[str, str] = {\n'
+    output_text = 'from typing import Dict\n\n' + warning_text + '\nlong_docs: Dict[str, str] = {\n'
     path = docs_source_path + '/cli_help'
     commands_and_file_paths = {f.split('.')[0]: join(path, f) for f in sorted(listdir(path)) if isfile(join(path, f))}
 
+    verbose = False
     # # NOTE: run generation for single command
-    # cmd = 'traverse'
+    # cmd = 'config'
     # commands_and_file_paths = {cmd: f'docs/source/cli_help/{cmd}.rst'}
     for command, file in commands_and_file_paths.items():
         with open(file, 'r') as f:
@@ -173,9 +168,9 @@ if __name__ == '__main__':
         if verbose:
             print(html)
         plain_text = html2txt(html)
-        plain_text = skip_holes(plain_text)
         plain_text = skip_prefix_new_lines(plain_text)
         plain_text = plain_text.replace('---', '-')
+        plain_text = replace_3_newlines_and_more_with_2_newlines(plain_text)
         output_text += f'    "{command}": """\n' + indent(plain_text, '        ') + '\n   """,\n'
 
     output_text += '}'
