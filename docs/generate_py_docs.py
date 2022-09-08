@@ -17,7 +17,7 @@ def rst2html(input_string: str, source_path: str = None, destination_path: str =
         source=input_string, source_path=source_path,
         destination_path=destination_path,
         writer_name='html', settings_overrides=overrides)
-    return parts
+    return parts['body']
 
 
 def html2txt(html: str):
@@ -27,6 +27,7 @@ def html2txt(html: str):
         tag.decompose()
 
     for tag in html_elements.select('td'):
+        # remove non-breaking spaces
         if tag.text == u'\xa0':
             tag.decompose()
         else:
@@ -102,6 +103,7 @@ def html2txt(html: str):
                 tag.insert_before(getattr(AnsiEscapeCodes, color.upper()))
                 tag.insert_after(AnsiEscapeCodes.ENDC)
 
+    # build plain text output out of the previously formatted string elements
     text: str = ''
     for html_element in html_elements.descendants:
         if isinstance(html_element, str):
@@ -164,13 +166,14 @@ if __name__ == '__main__':
         rst = resolve_includes(rst=rst, docs_source_path=docs_source_path)
         if verbose:
             print(rst)
-        html = rst2html(rst)['body']
+        html = rst2html(rst)
         if verbose:
             print(html)
         plain_text = html2txt(html)
         plain_text = skip_prefix_new_lines(plain_text)
         plain_text = plain_text.replace('---', '-')
         plain_text = replace_3_newlines_and_more_with_2_newlines(plain_text)
+
         output_text += f'    "{command}": """\n' + indent(plain_text, '        ') + '\n   """,\n'
 
     output_text += '}'
