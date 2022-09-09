@@ -123,6 +123,10 @@ class FullCommitHash(AnyRevision):
                                 'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
         return None
 
+    @staticmethod
+    def is_valid(value: str) -> bool:
+        return value is not None and len(value) == 40
+
     def full_name(self) -> "FullCommitHash":
         return self
 

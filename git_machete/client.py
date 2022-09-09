@@ -1583,10 +1583,13 @@ class MacheteClient:
                 self.__git.get_config_attr_or_none(self.config_key_for_override_fork_point_while_descendant_of(branch))) is not None
 
     def __get_fork_point_override_data(self, branch: LocalBranchShortName) -> Optional[ForkPointOverrideData]:
+        to, while_descendant_of = None, None
         to_key = self.config_key_for_override_fork_point_to(branch)
-        to = FullCommitHash.of(self.__git.get_config_attr_or_none(to_key) or "")
+        if FullCommitHash.is_valid(self.__git.get_config_attr_or_none(to_key)):
+            to = FullCommitHash.of(self.__git.get_config_attr_or_none(to_key))
         while_descendant_of_key = self.config_key_for_override_fork_point_while_descendant_of(branch)
-        while_descendant_of = FullCommitHash.of(self.__git.get_config_attr_or_none(while_descendant_of_key) or "")
+        if FullCommitHash.is_valid(self.__git.get_config_attr_or_none(to_key)):
+            while_descendant_of = FullCommitHash.of(self.__git.get_config_attr_or_none(while_descendant_of_key))
         if not to and not while_descendant_of:
             return None
         if to and not while_descendant_of:
