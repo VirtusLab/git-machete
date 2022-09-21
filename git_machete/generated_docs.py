@@ -37,9 +37,9 @@ long_docs: Dict[str, str] = {
         and subsequently slides out `D`. All three steps require manual confirmation unless `-y/--yes` is provided.
 
         The downstream `D` is selected according to the following criteria:
-        * if `C` has exactly one downstream (child) branch `d` connected with a [32mgreen edge[0m (see status for definition) to `C` or is overridden, then `d` is selected as `D`,
-        * if `C` has no downstream branches connected with a [32mgreen edge[0m to `C`, then `advance` fails,
-        * if `C` has more than one downstream branch connected with a [32mgreen edge[0m to `C`,
+        * if `C` has exactly one downstream (child) branch `d` connected with a <green>green edge</green> (see status for definition) to `C` or is overridden, then `d` is selected as `D`,
+        * if `C` has no downstream branches connected with a <green>green edge</green> to `C`, then `advance` fails,
+        * if `C` has more than one downstream branch connected with a <green>green edge</green> to `C`,
         then user is asked to pick the branch to fast-forward merge into (similarly to what happens in `git machete go down`). If `--yes` is specified, then `advance` fails.
 
         As an example, if `git machete status --color=never --list-commits` is as follows:
@@ -85,7 +85,7 @@ long_docs: Dict[str, str] = {
 
         <b>Options:</b>
            <b>-y</b>, <b>--yes</b>
-              Don't ask for confirmation whether to fast-forward the current branch or whether to slide-out the downstream. Fails if the current branch has more than one [32mgreen-edge[0m downstream branch.
+              Don't ask for confirmation whether to fast-forward the current branch or whether to slide-out the downstream. Fails if the current branch has more than one <green>green-edge</green> downstream branch.
    """,
     "anno": """
         <b>Usage:</b><b>
@@ -393,12 +393,12 @@ long_docs: Dict[str, str] = {
         If there is a fork point override for <branch>, this is identical to the what the output of `git machete fork-point` would be if the override was NOT present.
 
         With `--override-to-inferred` option, overrides fork point of the <branch> to the commit that `git machete fork-point` infers to be the fork point of <branch>.
-        Note: this piece of information is also displayed by `git machete status --list-commits` in case a [33myellow[0m edge occurs.
+        Note: this piece of information is also displayed by `git machete status --list-commits` in case a <yellow>yellow</yellow> edge occurs.
 
         With `--unset-override`, the fork point override for <branch> is unset.
         This is simply done by removing the corresponding `machete.overrideForkPoint.<branch>.*` config entries.
 
-        Note: if an overridden fork point applies to a branch `B`, then it's considered to be connected with a [32mgreen[0m edge to its upstream (parent) `U`,
+        Note: if an overridden fork point applies to a branch `B`, then it's considered to be connected with a <green>green</green> edge to its upstream (parent) `U`,
         even if the overridden fork point of `B` is NOT equal to the commit pointed by `U`.
    """,
     "format": """
@@ -753,10 +753,10 @@ long_docs: Dict[str, str] = {
 
         Apart from simply ASCII-formatting the definition file, this also:
         * colors the edges between upstream (parent) and downstream (children) branches:
-           - [91mred edge[0m means that the downstream branch tip is not a direct descendant of the upstream branch tip,
-           - [33myellow edge[0m means that the downstream branch tip is a direct descendant of the upstream branch tip,
+           - <red>red edge</red> means that the downstream branch tip is not a direct descendant of the upstream branch tip,
+           - <yellow>yellow edge</yellow> means that the downstream branch tip is a direct descendant of the upstream branch tip,
         but the fork point<fork-point> of the downstream branch is not equal to the upstream branch tip,
-           - [32mgreen edge[0m means that the downstream branch tip is a direct descendant of the upstream branch tip
+           - <green>green edge</green> means that the downstream branch tip is a direct descendant of the upstream branch tip
         and the fork point of the downstream branch is equal to the upstream branch tip,
            - grey/dimmed edge means that the downstream branch has been merged to the upstream branch,
         detected by commit equivalency (default), or by strict detection of merge commits (if `--no-detect-squash-merges` passed).
@@ -767,7 +767,7 @@ long_docs: Dict[str, str] = {
 
         Name of the currently checked-out branch is underlined (or shown in blue on terminals that don't support underline).
 
-        In case of [33myellow edge[0m, use `-l` or `-L` flag to show the exact location of the inferred fork point
+        In case of <yellow>yellow edge</yellow>, use `-l` or `-L` flag to show the exact location of the inferred fork point
         (which indicates e.g. what range of commits is going to be rebased when the branch is updated).
         The inferred fork point can be always overridden manually, see fork-point.
 
@@ -840,7 +840,7 @@ long_docs: Dict[str, str] = {
         * detects if the branch is merged (grey edge) to its parent (aka upstream):
            - by commit equivalency (default), or by strict detection of merge commits (if `--no-detect-squash-merges` passed),
            - if so, asks the user whether to slide out the branch from the dependency tree (typically branches are no longer needed after they're merged);
-        * otherwise, if the branch has a [91mred[0m or [33myellow[0m edge to its parent/upstream (see status):
+        * otherwise, if the branch has a <red>red</red> or <yellow>yellow</yellow> edge to its parent/upstream (see status):
            - asks the user whether to rebase (default) or merge (if `--merge` passed) the branch onto into its upstream branch
         - equivalent to `git machete update` with no `--fork-point` option passed;
         * if the branch is not tracked on a remote, is ahead of its remote counterpart, or diverged from the counterpart & has newer head commit than the counterpart:

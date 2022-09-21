@@ -1,10 +1,9 @@
-import re
-import os
-from textwrap import dedent, indent
-from os import listdir
-from os.path import isfile, join
 from bs4 import BeautifulSoup
 from docutils import core
+import os
+from os.path import isfile, join
+import re
+from textwrap import dedent, indent
 
 
 def rst2html(input_string: str, source_path: str = None, destination_path: str = None,
@@ -23,6 +22,7 @@ def rst2html(input_string: str, source_path: str = None, destination_path: str =
 def html2txt(html: str):
     html_elements = BeautifulSoup(html, features="html.parser")
 
+    # remove style tags
     for tag in html_elements.select('style'):
         tag.decompose()
 
@@ -100,8 +100,8 @@ def html2txt(html: str):
         if 'class' in tag.attrs:
             color = ' '.join(tag.attrs['class']).replace('gray', 'dim')
             if color in ['green', 'yellow', 'red', 'dim']:
-                tag.insert_before(getattr(AnsiEscapeCodes, color.upper()))
-                tag.insert_after(AnsiEscapeCodes.ENDC)
+                tag.insert_before(f'<{color}>')
+                tag.insert_after(f'</{color}>')
 
     # build plain text output out of the previously formatted string elements
     text: str = ''
@@ -141,10 +141,6 @@ def replace_3_newlines_and_more_with_2_newlines(txt: str) -> str:
 
 
 if __name__ == '__main__':
-    # This is needed to ensure that the ANSI color codes in the output text will be the same regardless of the execution environment
-    os.environ["TERM"] = "xterm-256color"
-    from git_machete.utils import AnsiEscapeCodes
-
     docs_source_path = 'docs/source'
     warning_text = '# ---------------------------------------------------------------------------------------------------------\n' \
                    '# Warning: This file is NOT supposed to be edited directly, ' \
@@ -152,7 +148,7 @@ if __name__ == '__main__':
                    '# ---------------------------------------------------------------------------------------------------------\n'
     output_text = 'from typing import Dict\n\n' + warning_text + '\nlong_docs: Dict[str, str] = {\n'
     path = docs_source_path + '/cli_help'
-    commands_and_file_paths = {f.split('.')[0]: join(path, f) for f in sorted(listdir(path)) if isfile(join(path, f))}
+    commands_and_file_paths = {f.split('.')[0]: join(path, f) for f in sorted(os.listdir(path)) if isfile(join(path, f))}
 
     for command, file in commands_and_file_paths.items():
         with open(file, 'r') as f:

@@ -1,7 +1,7 @@
 from typing import Dict
 
 # ---------------------------------------------------------------------------------------------------------
-# Warning: This file is supposed to be modified manually
+# This file is supposed to be modified manually
 # ---------------------------------------------------------------------------------------------------------
 
 short_docs: Dict[str, str] = {
