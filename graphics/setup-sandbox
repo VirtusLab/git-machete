@@ -8,7 +8,7 @@ newb() {
 
 cmt() {
   b=$(git symbolic-ref --short HEAD)
-  f=${b/\//-}-${1}-${2}.txt
+  f=${b/\//-}-${1}-${2-}.txt
   touch $f
   git add $f
   git commit -m "$*"
@@ -17,10 +17,10 @@ cmt() {
 newrepo() {
   dir=$1
   rm -fr /tmp/_$dir
-  mv ~/$dir /tmp/_$dir
+  mv ~/$dir /tmp/_$dir || true
   mkdir ~/$dir
   cd ~/$dir
-  opt=$2
+  opt=${2-}
   git init $opt
 }
 
@@ -78,6 +78,6 @@ git branch -d root
 
 echo
 echo
-git machete status $1
+git machete status ${1-}
 echo
 echo
