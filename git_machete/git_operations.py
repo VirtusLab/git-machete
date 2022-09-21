@@ -125,7 +125,7 @@ class FullCommitHash(AnyRevision):
 
     @staticmethod
     def is_valid(value: str) -> bool:
-        return value is not None and len(value) == 40
+        return value is not None and len(value) == 40 and value.isalnum()
 
     def full_name(self) -> "FullCommitHash":
         return self

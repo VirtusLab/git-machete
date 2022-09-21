@@ -1593,10 +1593,10 @@ class MacheteClient:
         if not to and not while_descendant_of:
             return None
         if to and not while_descendant_of:
-            warn(f"{to_key} config is set but {while_descendant_of_key} config is missing")
+            warn(f"{to_key} config is set but {while_descendant_of_key} config is missing or invalid")
             return None
         if not to and while_descendant_of:
-            warn(f"{while_descendant_of_key} config is set but {to_key} config is missing")
+            warn(f"{while_descendant_of_key} config is set but {to_key} config is missing or invalid")
             return None
 
         to_hash: Optional[FullCommitHash] = self.__git.get_commit_hash_by_revision(to)
