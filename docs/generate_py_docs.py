@@ -35,7 +35,7 @@ def html2txt(html: str):
             if 'class' not in tag.attrs:
                 tag.insert_before('\n      ')
 
-    # substitute double apostrophe with a single apostrophe
+    # substitute double backticks with a single backtick
     for tag in html_elements.select('tt'):
         tag.insert_before('`')
         tag.insert_after('`')
