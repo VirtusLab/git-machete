@@ -1,3 +1,4 @@
+import string
 from pathlib import Path
 from typing import Any, Callable, Dict, Generator, Iterator, List, Match, NamedTuple, Optional, Set, Tuple
 
@@ -125,7 +126,7 @@ class FullCommitHash(AnyRevision):
 
     @staticmethod
     def is_valid(value: str) -> bool:
-        return value is not None and len(value) == 40 and value.isalnum()
+        return value is not None and len(value) == 40 and all(c in string.hexdigits for c in value)
 
     def full_name(self) -> "FullCommitHash":
         return self
