@@ -57,6 +57,8 @@ def html2txt(html: str):
         if 'class' in tag.attrs:
             if ' '.join(tag.attrs['class']) == 'first':
                 tag.insert_before(' ')
+            if 'admonition-title' in ' '.join(tag.attrs['class']):
+                tag.decompose()
             else:
                 tag.insert_before('\n')
         else:
@@ -72,7 +74,7 @@ def html2txt(html: str):
 
     # add indent to the nested description list
     for tag in html_elements.select('dd'):
-        tag.string = '\n' + indent(tag.text, '      ')
+        tag.string = '\n' + indent(tag.text, '      ') + '\n'
 
     # add indent and bullet points to the bulleted list
     for tag in html_elements.select('li'):
@@ -81,21 +83,15 @@ def html2txt(html: str):
         else:
             tag.insert_before('\n* ')
 
-    # add new line before included NOTE class of rst documentation, example: github_api_access.rst
-    for tag in html_elements.select('div'):
-        if 'class' in tag.attrs:
-            if 'admonition note' in ' '.join(tag.attrs['class']):
-                tag.insert_before('\n')
-
     # format code examples
     for tag in html_elements.select('pre'):
         if 'class' in tag.attrs:
-            if ' '.join(tag.attrs['class']) in ['code shell literal-block', 'code awk literal-block']:
-                tag.string = '<b>' + indent(tag.text.rstrip('\n'), '  ') + '</b>'
-            elif 'literal-block' in ' '.join(tag.attrs['class']):
+            if ' '.join(tag.attrs['class']).replace('first', '').replace('last', '').replace('  ', ' ') == 'code literal-block':
                 tag.string = '\n<dim>' + indent(tag.text, '  ') + '</dim>'
+            elif 'literal-block' in ' '.join(tag.attrs['class']):
+                tag.string = '<b>' + indent(tag.text.rstrip('\n'), '  ') + '</b>'
 
-    # substitute color classes with respective ANSI codes
+    # format colors
     for tag in html_elements.select('span'):
         if 'class' in tag.attrs:
             color = ' '.join(tag.attrs['class']).replace('gray', 'dim')
@@ -103,7 +99,7 @@ def html2txt(html: str):
                 tag.insert_before(f'<{color}>')
                 tag.insert_after(f'</{color}>')
 
-    # build plain text output out of the previously formatted string elements
+    # build python docs string out of the previously formatted html tags
     text: str = ''
     for html_element in html_elements.descendants:
         if isinstance(html_element, str):

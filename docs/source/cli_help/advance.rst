@@ -40,10 +40,6 @@ As an example, if ``git machete status --color=never --list-commits`` is as foll
       |
       | Remove support for Python 2
       | Remove support for Python 2 --- 1st round of fixes
-      ?-chore/v3
-      |
-      | Apply Python2-compatible static typing
-      x-feature/types
 
 then running ``git machete advance`` will fast-forward the current branch ``develop`` to match ``feature/add-from-remote``, and subsequently slide out the latter.
 After ``advance`` completes, ``status`` will show:
@@ -60,10 +56,6 @@ After ``advance`` completes, ``status`` will show:
       |
       | Remove support for Python 2
       | Remove support for Python 2 --- 1st round of fixes
-      ?-chore/v3
-      |
-      | Apply Python2-compatible static typing
-      x-feature/types
 
 Note that the current branch after the operation is still ``develop``, just pointing to ``feature/add-from-remote``'s tip now.
 

@@ -56,10 +56,6 @@ long_docs: Dict[str, str] = {
             |
             | Remove support for Python 2
             | Remove support for Python 2 - 1st round of fixes
-            ?-chore/v3
-            |
-            | Apply Python2-compatible static typing
-            x-feature/types
         </dim>
 
         then running `git machete advance` will fast-forward the current branch `develop` to match `feature/add-from-remote`, and subsequently slide out the latter.
@@ -75,10 +71,6 @@ long_docs: Dict[str, str] = {
             |
             | Remove support for Python 2
             | Remove support for Python 2 - 1st round of fixes
-            ?-chore/v3
-            |
-            | Apply Python2-compatible static typing
-            x-feature/types
         </dim>
 
         Note that the current branch after the operation is still `develop`, just pointing to `feature/add-from-remote`'s tip now.
@@ -100,21 +92,23 @@ long_docs: Dict[str, str] = {
         then clears the annotation for the current branch (or a branch specified with `-b/--branch`).
 
         If invoked with `-H` or `--sync-github-prs`, annotates the branches based on their corresponding GitHub PR numbers and authors.
-        Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.Note
+        Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
 
         To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR, even in case of public repositories),
         a GitHub API token with `repo` scope is required, see https://github.com/settings/tokens. This will be resolved from the first of:
         * `GITHUB_TOKEN` env var,
         * content of the `.github-token` file in the home directory (`~`),
         * current auth token from the `gh` GitHub CLI,
-        * current auth token from the `hub` GitHub CLI.Note
+        * current auth token from the `hub` GitHub CLI.
 
         GitHub API server URL will be inferred from `git remote`.
         You can override this by setting the following git config keys:
            Remote name
               E.g. `machete.github.remote` = `origin`
+
            Organization name
               E.g. `machete.github.organization` = `VirtusLab`
+
            Repository name
               E.g. `machete.github.repository` = `git-machete`
 
@@ -140,6 +134,7 @@ long_docs: Dict[str, str] = {
         <b>Environment variables:</b>
            `GITHUB_TOKEN`
               GitHub API token.
+
    """,
     "clean": """
         <b>Usage:</b><b>
@@ -151,21 +146,23 @@ long_docs: Dict[str, str] = {
         * deletes untracked managed branches that have no downstream branch.
 
         No branch will be deleted unless explicitly confirmed by the user (or unless `-y/--yes` option is passed).
-        Equivalent of `git machete github sync` if invoked with `-H` or `--checkout-my-github-prs`.Note
+        Equivalent of `git machete github sync` if invoked with `-H` or `--checkout-my-github-prs`.
 
         To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR, even in case of public repositories),
         a GitHub API token with `repo` scope is required, see https://github.com/settings/tokens. This will be resolved from the first of:
         * `GITHUB_TOKEN` env var,
         * content of the `.github-token` file in the home directory (`~`),
         * current auth token from the `gh` GitHub CLI,
-        * current auth token from the `hub` GitHub CLI.Note
+        * current auth token from the `hub` GitHub CLI.
 
         GitHub API server URL will be inferred from `git remote`.
         You can override this by setting the following git config keys:
            Remote name
               E.g. `machete.github.remote` = `origin`
+
            Organization name
               E.g. `machete.github.organization` = `VirtusLab`
+
            Repository name
               E.g. `machete.github.repository` = `git-machete`
 
@@ -186,6 +183,7 @@ long_docs: Dict[str, str] = {
         <b>Environment variables:</b>
            `GITHUB_TOKEN`
               GitHub API token.
+
    """,
     "config": """
         Documentation about available `git machete` config keys and environment variables that change the command's default behavior.
@@ -194,9 +192,8 @@ long_docs: Dict[str, str] = {
 
         <b>Config keys:</b>
            `machete.github.{remote,organization,repository}`:
-               When executing `git machete github <subcommand>` command, GitHub API server URL will be inferred from `git remote`.
-
-              Note
+ 
+              When executing `git machete github <subcommand>` command, GitHub API server URL will be inferred from `git remote`.
 
               GitHub API server URL will be inferred from `git remote`.
               You can override this by setting the following git config keys:
@@ -220,13 +217,12 @@ long_docs: Dict[str, str] = {
            `machete.overrideForkPoint.<branch>.{to,whileDescendantOf}`:
               Executing `git machete fork-point --override-to=<revision> [<branch>]` sets up a fork point override for <branch>.
               The override data is stored under `machete.overrideForkPoint.<branch>.to` and `machete.overrideForkPoint.<branch>.whileDescendantOf` git config keys.
-           `machete.status.extraSpaceBeforeBranchName`:
 
-              Note
+           `machete.status.extraSpaceBeforeBranchName`:
 
               To make it easier to select branch name from the `status` output on certain terminals
               (e.g. Alacritty), you can add an extra
-              space between `└─` and `branch name` by setting `git config machete.status.extraSpaceBeforeBranchName true`.
+              space between └─ and `branch name` by setting `git config machete.status.extraSpaceBeforeBranchName true`.
 
               For example, by default the status is displayed as:
 
@@ -252,11 +248,14 @@ long_docs: Dict[str, str] = {
         <b>Environment variables:</b>
            `GIT_MACHETE_EDITOR`:
               Name of the editor used by `git machete e[dit]`, example: `vim` or `nano`.
+
            `GIT_MACHETE_REBASE_OPTS`:
               Used to pass extra options to the underlying `git rebase` invocation (called by the executed command, such as: `reapply`, `slide-out`, `traverse`, `update`)
               Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete update`.
+
            `GITHUB_TOKEN`:
               Used to store GitHub API token. Used by commands such as: `anno`, `clean`, `github`.
+
    """,
     "delete-unmanaged": """
         <b>Usage:</b><b>
@@ -331,6 +330,7 @@ long_docs: Dict[str, str] = {
         <b>Environment variables:</b>
            `GIT_MACHETE_EDITOR`
               Name of the editor executable.
+
    """,
     "file": """
         <b>Usage:</b><b>
@@ -435,21 +435,23 @@ long_docs: Dict[str, str] = {
 
         where `<subcommand>` is one of: `anno-prs`, `checkout-prs`, `create-pr`, `retarget-pr`.
 
-        Creates, checks out and manages GitHub PRs while keeping them reflected in branch definition file.Note
+        Creates, checks out and manages GitHub PRs while keeping them reflected in branch definition file.
 
         To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR, even in case of public repositories),
         a GitHub API token with `repo` scope is required, see https://github.com/settings/tokens. This will be resolved from the first of:
         * `GITHUB_TOKEN` env var,
         * content of the `.github-token` file in the home directory (`~`),
         * current auth token from the `gh` GitHub CLI,
-        * current auth token from the `hub` GitHub CLI.Note
+        * current auth token from the `hub` GitHub CLI.
 
         GitHub API server URL will be inferred from `git remote`.
         You can override this by setting the following git config keys:
            Remote name
               E.g. `machete.github.remote` = `origin`
+
            Organization name
               E.g. `machete.github.organization` = `VirtusLab`
+
            Repository name
               E.g. `machete.github.repository` = `git-machete`
 
@@ -511,6 +513,7 @@ long_docs: Dict[str, str] = {
         <b>Environment variables (all subcommands):</b>
            `GITHUB_TOKEN`
               GitHub API token.
+
    """,
     "go": """
         <b>Usage:</b><b>
@@ -648,9 +651,11 @@ long_docs: Dict[str, str] = {
 
         <b>Environment variables:</b>
            `GIT_MACHETE_REBASE_OPTS`
-               Extra options to pass to the underlying `git rebase` invocation, space-separated.
+ 
+              Extra options to pass to the underlying `git rebase` invocation, space-separated.
 
               Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete reapply`.
+
 
    """,
     "show": """
@@ -723,9 +728,11 @@ long_docs: Dict[str, str] = {
 
         <b>Environment variables:</b>
            `GIT_MACHETE_REBASE_OPTS`
-               Extra options to pass to the underlying `git rebase` invocations, space-separated.
+ 
+              Extra options to pass to the underlying `git rebase` invocations, space-separated.
 
               Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete slide-out`.
+
 
    """,
     "squash": """
@@ -801,11 +808,9 @@ long_docs: Dict[str, str] = {
         <b>Config keys:</b>
            `machete.status.extraSpaceBeforeBranchName`
 
-              Note
-
               To make it easier to select branch name from the `status` output on certain terminals
               (e.g. Alacritty), you can add an extra
-              space between `└─` and `branch name` by setting `git config machete.status.extraSpaceBeforeBranchName true`.
+              space between └─ and `branch name` by setting `git config machete.status.extraSpaceBeforeBranchName true`.
 
               For example, by default the status is displayed as:
 
@@ -893,9 +898,11 @@ long_docs: Dict[str, str] = {
 
         <b>Environment variables:</b>
            `GIT_MACHETE_REBASE_OPTS`
-               Extra options to pass to the underlying `git rebase` invocations, space-separated.
+ 
+              Extra options to pass to the underlying `git rebase` invocations, space-separated.
 
               Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete traverse`.
+
 
    """,
     "update": """
@@ -924,8 +931,7 @@ long_docs: Dict[str, str] = {
 
         <b>Environment variables:</b>
            `GIT_MACHETE_REBASE_OPTS`
-               Extra options to pass to the underlying `git rebase` invocation, space-separated.
-
+              Extra options to pass to the underlying `git rebase` invocation, space-separated.
               Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete update`.
 
    """,

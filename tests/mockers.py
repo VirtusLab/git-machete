@@ -410,3 +410,7 @@ def mock_exit_script(status_code: Optional[int] = None, error: Optional[BaseExce
         raise error
     else:
         sys.exit(status_code)
+
+
+def mock_exit_script_no_exit(status_code: Optional[int] = None, error: Optional[BaseException] = None) -> None:
+    return

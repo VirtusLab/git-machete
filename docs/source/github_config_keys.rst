@@ -14,7 +14,7 @@
 
     To do this, run ``git config --local --edit`` and add the following section:
 
-    .. code-block:: ini
+    .. code-block::
 
         [machete "github"]
             organization = <organization_name>
