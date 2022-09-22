@@ -3,7 +3,7 @@
 ## New in git-machete 3.12.1
 
 - fixed: removed redundant files from Ubuntu package
-- fixed: fork-point overridden with invalid commit hash
+- fixed: fork-point overridden with invalid commit hash is ignored (doesn't crash git-machete anymore)
 
 ## New in git-machete 3.12.0
 
