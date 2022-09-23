@@ -1,3 +1,4 @@
+import string
 from pathlib import Path
 from typing import Any, Callable, Dict, Generator, Iterator, List, Match, NamedTuple, Optional, Set, Tuple
 
@@ -122,6 +123,10 @@ class FullCommitHash(AnyRevision):
                 raise TypeError(f'FullCommitHash requires length of 40. Given value: {value}, has length: {len(value)}.\n'
                                 'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
         return None
+
+    @staticmethod
+    def is_valid(value: str) -> bool:
+        return value is not None and len(value) == 40 and all(c in string.hexdigits for c in value)
 
     def full_name(self) -> "FullCommitHash":
         return self

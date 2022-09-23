@@ -50,3 +50,30 @@ class TestForkPoint:
         assert_command(["fork-point", 'develop'], "515319fa0ab47f372f6159bcc8ac27b43ee8a0ed\n", strip_indentation=False)
 
         assert_command(["fork-point", 'refs/heads/develop'], "515319fa0ab47f372f6159bcc8ac27b43ee8a0ed\n", strip_indentation=False)
+
+    def test_fork_point_override(self) -> None:
+        """
+        Verify behaviour of a 'git machete fork-point' command with fork-point being overridden by config key.
+        """
+        (
+            self.repo_sandbox.new_branch("master")
+                .commit("master commit")
+                .new_branch("develop")
+                .commit("develop commit")
+        )
+        launch_command('discover', '-y')
+
+        # invalid fork point with length not equal to 40
+        self.repo_sandbox.add_git_config_key('machete.overrideForkPoint.develop.to', 39 * 'a')
+        self.repo_sandbox.add_git_config_key('machete.overrideForkPoint.develop.whileDescendantOf', 39 * 'b')
+        launch_command('fork-point')
+
+        # invalid, non-hexadecimal alphanumeric characters present in the fork point
+        self.repo_sandbox.add_git_config_key('machete.overrideForkPoint.develop.to', 20 * 'g1')
+        self.repo_sandbox.add_git_config_key('machete.overrideForkPoint.develop.whileDescendantOf', 20 * 'g1')
+        launch_command('fork-point')
+
+        # invalid, non-hexadecimal special characters present in the fork point
+        self.repo_sandbox.add_git_config_key('machete.overrideForkPoint.develop.to', 40 * '#')
+        self.repo_sandbox.add_git_config_key('machete.overrideForkPoint.develop.whileDescendantOf', 40 * '!')
+        launch_command('fork-point')
