@@ -78,10 +78,10 @@ def html2txt(html: str):
         else:
             tag.insert_before('\n\n')
 
-    # add indent and bullet points to the bulleted list
+    # add indent and bullet points to the nested bulleted list
     for tag in html_elements.select('li'):
         if tag.parent.parent is not None:
-            if tag.parent.parent.name == 'li':  # deal with nested lists
+            if tag.parent.parent.name == 'li':
                 tag.string = indent('- ' + tag.text, INDENT + '  ')
 
     # add indent and bullet points to the bulleted list
