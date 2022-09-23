@@ -15,6 +15,8 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 .. include:: github_api_access.rst
 .. include:: github_config_keys.rst
 
+**Subcommands:**
+
 ``anno-prs``:
     Annotates the branches based on their corresponding GitHub PR numbers and authors.
     Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.

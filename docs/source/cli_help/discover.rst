@@ -10,7 +10,7 @@ discover
 
 Discovers and displays tree of branch dependencies using a heuristic based on reflogs and asks whether to overwrite the existing definition :ref:`file` with the new discovered tree.
 If confirmed with a ``y[es]`` or ``e[dit]`` reply, backs up the current definition file (if it exists) as ``$GIT_DIR/machete~`` and saves the new tree under the usual ``$GIT_DIR/machete`` path.
-If the reply was ``e[dit]``, additionally an editor is opened (as in: `git machete` :ref:`edit`) after saving the new definition file.
+If the reply was ``e[dit]``, additionally an editor is opened (as in: ``git machete`` :ref:`edit`) after saving the new definition file.
 
 **Options:**
 
