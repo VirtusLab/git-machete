@@ -37,7 +37,7 @@ long_docs: Dict[str, str] = {
         and subsequently slides out `D`. All three steps require manual confirmation unless `-y/--yes` is provided.
 
         The downstream `D` is selected according to the following criteria:
-           * if `C` has exactly one downstream (child) branch `d` connected with a <green>green edge</green> (see help for `status` for definition) to `C` or is overridden, then `d` is selected as `D`,
+           * if `C` has exactly one downstream (child) branch `d` connected with a <green>green edge</green> (see help for `status`) to `C` or is overridden, then `d` is selected as `D`,
            * if `C` has no downstream branches connected with a <green>green edge</green> to `C`, then `advance` fails,
            * if `C` has more than one downstream branch connected with a <green>green edge</green> to `C`,
          then user is asked to pick the branch to fast-forward merge into (similarly to what happens in `git machete go down`). If `--yes` is specified, then `advance` fails.
@@ -50,9 +50,9 @@ long_docs: Dict[str, str] = {
             |
             | Enable adding remote branch in the manner similar to git checkout
             o-feature/add-from-remote
-            | |
-            | | Add support and sample for machete-post-slide-out hook
-            | o-feature/post-slide-out-hook
+              |
+              | Add support and sample for machete-post-slide-out hook
+              o-feature/post-slide-out-hook
         </dim>
 
         then running `git machete advance` will fast-forward the current branch `develop` to match `feature/add-from-remote`, and subsequently slide out the latter.
@@ -187,7 +187,7 @@ long_docs: Dict[str, str] = {
         <b>Config keys:</b>
            `machete.github.{remote,organization,repository}`:
  
-              When executing `git machete github <subcommand>` command, following will happen:
+              When executing `git machete github <subcommand>` command, the following will happen:
 
               GitHub API server URL will be inferred from `git remote`.
               You can override this by setting the following git config keys:
@@ -240,14 +240,14 @@ long_docs: Dict[str, str] = {
               `.git/worktrees/.../machete`), set `git config machete.worktree.useTopLevelMacheteFile false`.
 
         <b>Environment variables:</b>
-           `GIT_MACHETE_EDITOR`:
+           `GIT_MACHETE_EDITOR`
               Name of the editor used by `git machete e[dit]`, example: `vim` or `nano`.
 
-           `GIT_MACHETE_REBASE_OPTS`:
+           `GIT_MACHETE_REBASE_OPTS`
               Used to pass extra options to the underlying `git rebase` invocation (called by the executed command, such as: `reapply`, `slide-out`, `traverse`, `update`)
               Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete update`.
 
-           `GITHUB_TOKEN`:
+           `GITHUB_TOKEN`
               Used to store GitHub API token. Used by commands such as: `anno`, `clean`, `github`.
 
    """,
@@ -271,7 +271,7 @@ long_docs: Dict[str, str] = {
            git machete d[iff] [-s|--stat] [<branch>]</b>
 
         Runs `git diff` of the given branch tip against its fork point or, if none specified, of the current working tree against the fork point of the currently checked out branch.
-        See help for `fork-point` for more details on meaning of the fork point.
+        See help for `fork-point` for more details on the meaning of fork point.
 
         Note: the branch in question does not need to occur in the definition file.
 
@@ -285,7 +285,7 @@ long_docs: Dict[str, str] = {
 
         Discovers and displays tree of branch dependencies using a heuristic based on reflogs and asks whether to overwrite the existing definition `file` with the new discovered tree.
         If confirmed with a `y[es]` or `e[dit]` reply, backs up the current definition file (if it exists) as `$GIT_DIR/machete~` and saves the new tree under the usual `$GIT_DIR/machete` path.
-        If the reply was `e[dit]`, additionally an editor is opened (as in `git machete edit<edit>`) after saving the new definition file.
+        If the reply was `e[dit]`, additionally an editor is opened (as in: `git machete` `edit`) after saving the new definition file.
 
         <b>Options:</b>
            <b>-C</b>, <b>--checked-out-since=<date></b>
@@ -929,7 +929,7 @@ long_docs: Dict[str, str] = {
 
         If updating by rebase, interactively rebases the current branch on the top of its upstream (parent) branch.
         The chunk of the history to be rebased starts at the fork point of the current branch, which by default is inferred automatically, but can also be set explicitly by `--fork-point`.
-        See help for `fork-point` for more details on meaning of the fork point.
+        See help for `fork-point` for more details on the meaning of fork point.
 
         If updating by merge, merges the upstream (parent) branch into the current branch.
 
