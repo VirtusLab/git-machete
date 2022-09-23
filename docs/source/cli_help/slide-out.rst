@@ -62,5 +62,4 @@ Note: This command doesn't delete any branches from git, just removes them from 
 
 ``GIT_MACHETE_REBASE_OPTS``
     Extra options to pass to the underlying ``git rebase`` invocations, space-separated.
-
     Example: ``GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete slide-out``.

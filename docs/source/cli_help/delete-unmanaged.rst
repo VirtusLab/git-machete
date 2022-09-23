@@ -13,7 +13,7 @@ and ask to delete each of them (with ``git branch -d`` or ``git branch -D``) if 
 No branch will be deleted unless explicitly confirmed by the user (or unless ``-y/--yes`` option is passed).
 
 Note: this should be used with care since deleting local branches can sometimes make it impossible for ``git machete`` to properly figure out fork points.
-See :ref:`fork-point` for more details.
+See help for :ref:`fork-point` for more details.
 
 **Options:**
 

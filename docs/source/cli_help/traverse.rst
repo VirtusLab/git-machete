@@ -34,7 +34,7 @@ For each branch, the command:
       - by commit equivalency (default), or by strict detection of merge commits (if ``--no-detect-squash-merges`` passed),
       - if so, asks the user whether to slide out the branch from the dependency tree (typically branches are no longer needed after they're merged);
 
-    * otherwise, if the branch has a :red:`red` or :yellow:`yellow` edge to its parent/upstream (see :ref:`status`):
+    * otherwise, if the branch has a :red:`red` or :yellow:`yellow` edge to its parent/upstream (see help for :ref:`status`):
 
       - asks the user whether to rebase (default) or merge (if ``--merge`` passed) the branch onto into its upstream branch
         --- equivalent to ``git machete update`` with no ``--fork-point`` option passed;
@@ -98,5 +98,4 @@ Unlike with e.g. ``git rebase``, there is no special ``--continue`` flag, as ``t
 
 ``GIT_MACHETE_REBASE_OPTS``
     Extra options to pass to the underlying ``git rebase`` invocations, space-separated.
-
     Example: ``GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete traverse``.

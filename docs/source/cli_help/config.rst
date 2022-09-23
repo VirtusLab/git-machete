@@ -9,7 +9,7 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 **Config keys:**
 
 ``machete.github.{remote,organization,repository}``:
-    When executing ``git machete github <subcommand>`` command, GitHub API server URL will be inferred from ``git remote``.
+    When executing ``git machete github <subcommand>`` command, following will happen:
 
     .. include:: github_config_keys.rst
 

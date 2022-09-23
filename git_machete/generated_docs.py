@@ -7,12 +7,12 @@ from typing import Dict
 long_docs: Dict[str, str] = {
     "add": """
         <b>Usage:</b><b>
-          git machete add [-o|--onto=<target-upstream-branch>] [-R|--as-root] [-y|--yes] [<branch>]</b>
+           git machete add [-o|--onto=<target-upstream-branch>] [-R|--as-root] [-y|--yes] [<branch>]</b>
 
         Adds the provided <branch> (or the current branch, if none specified) to the definition file.
         If <branch> is provided but no local branch with the given name exists:
-        * if a remote branch of the same name exists in exactly one remote, then user is asked whether to check out this branch locally (as in `git checkout`),
-        * otherwise, user is asked whether it should be created as a new local branch.
+           * if a remote branch of the same name exists in exactly one remote, then user is asked whether to check out this branch locally (as in `git checkout`),
+           * otherwise, user is asked whether it should be created as a new local branch.
 
         If the definition file is empty or `-R/--as-root` is provided, the branch will be added as a root of the tree of branch dependencies.
         Otherwise, the desired upstream (parent) branch can be specified with `-o/--onto`.
@@ -31,16 +31,16 @@ long_docs: Dict[str, str] = {
    """,
     "advance": """
         <b>Usage:</b><b>
-          git machete advance [-y|--yes]</b>
+           git machete advance [-y|--yes]</b>
 
         Fast forwards (as in `git merge --ff-only`) the current branch `C` to match its downstream `D`, pushes `C`
         and subsequently slides out `D`. All three steps require manual confirmation unless `-y/--yes` is provided.
 
         The downstream `D` is selected according to the following criteria:
-        * if `C` has exactly one downstream (child) branch `d` connected with a <green>green edge</green> (see status for definition) to `C` or is overridden, then `d` is selected as `D`,
-        * if `C` has no downstream branches connected with a <green>green edge</green> to `C`, then `advance` fails,
-        * if `C` has more than one downstream branch connected with a <green>green edge</green> to `C`,
-        then user is asked to pick the branch to fast-forward merge into (similarly to what happens in `git machete go down`). If `--yes` is specified, then `advance` fails.
+           * if `C` has exactly one downstream (child) branch `d` connected with a <green>green edge</green> (see help for `status` for definition) to `C` or is overridden, then `d` is selected as `D`,
+           * if `C` has no downstream branches connected with a <green>green edge</green> to `C`, then `advance` fails,
+           * if `C` has more than one downstream branch connected with a <green>green edge</green> to `C`,
+         then user is asked to pick the branch to fast-forward merge into (similarly to what happens in `git machete go down`). If `--yes` is specified, then `advance` fails.
 
         As an example, if `git machete status --color=never --list-commits` is as follows:
         <dim>
@@ -53,9 +53,6 @@ long_docs: Dict[str, str] = {
             | |
             | | Add support and sample for machete-post-slide-out hook
             | o-feature/post-slide-out-hook
-            |
-            | Remove support for Python 2
-            | Remove support for Python 2 - 1st round of fixes
         </dim>
 
         then running `git machete advance` will fast-forward the current branch `develop` to match `feature/add-from-remote`, and subsequently slide out the latter.
@@ -68,9 +65,6 @@ long_docs: Dict[str, str] = {
             |
             | Add support and sample for machete-post-slide-out hook
             o-feature/post-slide-out-hook
-            |
-            | Remove support for Python 2
-            | Remove support for Python 2 - 1st round of fixes
         </dim>
 
         Note that the current branch after the operation is still `develop`, just pointing to `feature/add-from-remote`'s tip now.
@@ -81,13 +75,13 @@ long_docs: Dict[str, str] = {
    """,
     "anno": """
         <b>Usage:</b><b>
-          git machete anno [-b|--branch=<branch>] [<annotation text>]
-          git machete anno -H|--sync-github-prs</b>
+           git machete anno [-b|--branch=<branch>] [<annotation text>]
+           git machete anno -H|--sync-github-prs</b>
 
         If invoked without any <annotation text>, prints out the custom annotation for the given branch (or current branch, if none specified with `-b/--branch`).
 
         If invoked with a single empty string <annotation text>, like:<b>
-          $ git machete anno ''</b>
+           $ git machete anno ''</b>
 
         then clears the annotation for the current branch (or a branch specified with `-b/--branch`).
 
@@ -96,10 +90,10 @@ long_docs: Dict[str, str] = {
 
         To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR, even in case of public repositories),
         a GitHub API token with `repo` scope is required, see https://github.com/settings/tokens. This will be resolved from the first of:
-        * `GITHUB_TOKEN` env var,
-        * content of the `.github-token` file in the home directory (`~`),
-        * current auth token from the `gh` GitHub CLI,
-        * current auth token from the `hub` GitHub CLI.
+           * `GITHUB_TOKEN` env var,
+           * content of the `.github-token` file in the home directory (`~`),
+           * current auth token from the `gh` GitHub CLI,
+           * current auth token from the `hub` GitHub CLI.
 
         GitHub API server URL will be inferred from `git remote`.
         You can override this by setting the following git config keys:
@@ -138,22 +132,22 @@ long_docs: Dict[str, str] = {
    """,
     "clean": """
         <b>Usage:</b><b>
-          git machete clean [-c|--checkout-my-github-prs] [-y|--yes]</b>
+           git machete clean [-c|--checkout-my-github-prs] [-y|--yes]</b>
 
         Synchronizes with the remote repository:
-        * if invoked with `-H` or `--checkout-my-github-prs`, checks out open PRs for the current user associated with the GitHub token and also traverses the chain of pull requests upwards, adding branches one by one to git-machete and checks them out locally as well,
-        * deletes unmanaged branches,
-        * deletes untracked managed branches that have no downstream branch.
+           * if invoked with `-H` or `--checkout-my-github-prs`, checks out open PRs for the current user associated with the GitHub token and also traverses the chain of pull requests upwards, adding branches one by one to git-machete and checks them out locally as well,
+           * deletes unmanaged branches,
+           * deletes untracked managed branches that have no downstream branch.
 
         No branch will be deleted unless explicitly confirmed by the user (or unless `-y/--yes` option is passed).
         Equivalent of `git machete github sync` if invoked with `-H` or `--checkout-my-github-prs`.
 
         To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR, even in case of public repositories),
         a GitHub API token with `repo` scope is required, see https://github.com/settings/tokens. This will be resolved from the first of:
-        * `GITHUB_TOKEN` env var,
-        * content of the `.github-token` file in the home directory (`~`),
-        * current auth token from the `gh` GitHub CLI,
-        * current auth token from the `hub` GitHub CLI.
+           * `GITHUB_TOKEN` env var,
+           * content of the `.github-token` file in the home directory (`~`),
+           * current auth token from the `gh` GitHub CLI,
+           * current auth token from the `hub` GitHub CLI.
 
         GitHub API server URL will be inferred from `git remote`.
         You can override this by setting the following git config keys:
@@ -193,7 +187,7 @@ long_docs: Dict[str, str] = {
         <b>Config keys:</b>
            `machete.github.{remote,organization,repository}`:
  
-              When executing `git machete github <subcommand>` command, GitHub API server URL will be inferred from `git remote`.
+              When executing `git machete github <subcommand>` command, following will happen:
 
               GitHub API server URL will be inferred from `git remote`.
               You can override this by setting the following git config keys:
@@ -259,14 +253,14 @@ long_docs: Dict[str, str] = {
    """,
     "delete-unmanaged": """
         <b>Usage:</b><b>
-          git machete delete-unmanaged [-y|--yes]</b>
+           git machete delete-unmanaged [-y|--yes]</b>
 
         Goes one-by-one through all the local git branches that don't exist in the definition file,
         and ask to delete each of them (with `git branch -d` or `git branch -D`) if confirmed by user.
         No branch will be deleted unless explicitly confirmed by the user (or unless `-y/--yes` option is passed).
 
         Note: this should be used with care since deleting local branches can sometimes make it impossible for `git machete` to properly figure out fork points.
-        See fork-point for more details.
+        See help for `fork-point` for more details.
 
         <b>Options:</b>
            <b>-y</b>, <b>--yes</b>
@@ -274,10 +268,10 @@ long_docs: Dict[str, str] = {
    """,
     "diff": """
         <b>Usage:</b><b>
-          git machete d[iff] [-s|--stat] [<branch>]</b>
+           git machete d[iff] [-s|--stat] [<branch>]</b>
 
         Runs `git diff` of the given branch tip against its fork point or, if none specified, of the current working tree against the fork point of the currently checked out branch.
-        See fork-point for more details on meaning of the fork point.
+        See help for `fork-point` for more details on meaning of the fork point.
 
         Note: the branch in question does not need to occur in the definition file.
 
@@ -287,11 +281,11 @@ long_docs: Dict[str, str] = {
    """,
     "discover": """
         <b>Usage:</b><b>
-          git machete discover [-C|--checked-out-since=<date>] [-l|--list-commits] [-r|--roots=<branch1>,<branch2>,...] [-y|--yes]</b>
+           git machete discover [-C|--checked-out-since=<date>] [-l|--list-commits] [-r|--roots=<branch1>,<branch2>,...] [-y|--yes]</b>
 
-        Discovers and displays tree of branch dependencies using a heuristic based on reflogs and asks whether to overwrite the existing definition file with the new discovered tree.
+        Discovers and displays tree of branch dependencies using a heuristic based on reflogs and asks whether to overwrite the existing definition `file` with the new discovered tree.
         If confirmed with a `y[es]` or `e[dit]` reply, backs up the current definition file (if it exists) as `$GIT_DIR/machete~` and saves the new tree under the usual `$GIT_DIR/machete` path.
-        If the reply was `e[dit]`, additionally an editor is opened (as in git machete edit<edit>) after saving the new definition file.
+        If the reply was `e[dit]`, additionally an editor is opened (as in `git machete edit<edit>`) after saving the new definition file.
 
         <b>Options:</b>
            <b>-C</b>, <b>--checked-out-since=<date></b>
@@ -305,19 +299,19 @@ long_docs: Dict[str, str] = {
    """,
     "edit": """
         <b>Usage:</b><b>
-          git machete e[dit]</b>
+           git machete e[dit]</b>
 
         Opens an editor and lets you edit the definition file manually.
 
         The editor is determined by checking up the following locations:
-        * `$GIT_MACHETE_EDITOR`
-        * `$GIT_EDITOR`
-        * `$(git config core.editor)`
-        * `$VISUAL`
-        * `$EDITOR`
-        * `editor`
-        * `nano`
-        * `vi`
+           * `$GIT_MACHETE_EDITOR`
+           * `$GIT_EDITOR`
+           * `$(git config core.editor)`
+           * `$VISUAL`
+           * `$EDITOR`
+           * `editor`
+           * `nano`
+           * `vi`
 
         and selecting the first one that is defined and points to an executable file accessible on `PATH`.
 
@@ -334,23 +328,24 @@ long_docs: Dict[str, str] = {
    """,
     "file": """
         <b>Usage:</b><b>
-          git machete file</b>
+           git machete file</b>
 
         Outputs the absolute path of machete definition file.
         The file is always called `machete` and is located in the git directory of the project.
 
         Three cases are possible:
-        * if `git machete` is executed from a regular working directory (not a worktree or submodule), the file is located under `.git/machete`,
-        * if `git machete` is executed from a <b>worktree</b>, the file path depends on the `machete.worktree.useTopLevelMacheteFile` config key value:
-           - if `machete.worktree.useTopLevelMacheteFile` is true (default), the file is located under `.git/machete`
-           - if `machete.worktree.useTopLevelMacheteFile` is false, the file is located under `.git/worktrees/.../machete`,
-        * if `git machete` is executed from a <b>submodule</b>, this file is located in the git folder of the submodule itself under `.git/modules/.../machete`.
+           * if `git machete` is executed from a regular working directory (not a worktree or submodule), the file is located under `.git/machete`,
+           * if `git machete` is executed from a <b>worktree</b>, the file path depends on the `machete.worktree.useTopLevelMacheteFile` config key value:
+              - if `machete.worktree.useTopLevelMacheteFile` is true (default), the file is located under `.git/machete`
+              - if `machete.worktree.useTopLevelMacheteFile` is false, the file is located under `.git/worktrees/.../machete`,
+
+           * if `git machete` is executed from a <b>submodule</b>, this file is located in the git folder of the submodule itself under `.git/modules/.../machete`.
    """,
     "fork-point": """
         <b>Usage:</b><b>
-          git machete fork-point [--inferred] [<branch>]
-          git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent [<branch>]
-          git machete fork-point --unset-override [<branch>]</b>
+           git machete fork-point [--inferred] [<branch>]
+           git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent [<branch>]
+           git machete fork-point --unset-override [<branch>]</b>
 
         Note: in all three forms, if no <branch> is specified, the currently checked out branch is assumed.
         The branch in question does not need to occur in the definition file.
@@ -360,9 +355,9 @@ long_docs: Dict[str, str] = {
 
         Fork point is assumed by many `git machete` commands as the place where the unique history of the <branch> starts.
         The range of commits between the fork point and the tip of the given branch is, for instance:
-        * listed for each branch by `git machete status --list-commits`
-        * passed to `git rebase` by `git machete` `reapply`/`slide-out`/`traverse`/`update`
-        * provided to `git diff`/`log` by `git machete` `diff`/`log`.
+           * listed for each branch by `git machete status --list-commits`
+           * passed to `git rebase` by `git machete` `reapply`/`slide-out`/`traverse`/`update`
+           * provided to `git diff`/`log` by `git machete` `diff`/`log`.
 
         `git machete` assumes fork point of <branch> is the most recent commit in the log of <branch> that has NOT been introduced on that very branch,
         but instead occurs on a reflog (see help for `git reflog`) of some other, usually chronologically earlier, branch.
@@ -375,7 +370,7 @@ long_docs: Dict[str, str] = {
         `git machete fork-point` is different (and more powerful) than `git merge-base --fork-point`,
         since the latter takes into account only the reflog of the one provided upstream branch,
         while the former scans reflogs of all local branches and their remote tracking branches.
-        This makes git machete's `fork-point` more resilient to modifications of `.git/machete` file where certain branches are re-attached under new parents (upstreams).
+        This makes git machete's `fork-point` more resilient to modifications of `.git/machete` `file` where certain branches are re-attached under new parents (upstreams).
 
         With `--override-to=<revision>`, sets up a fork point override for <branch>.
         Fork point for <branch> will be overridden to the provided <revision> (commit) as long as the <branch> still points to (or is descendant of) the commit X
@@ -422,16 +417,16 @@ long_docs: Dict[str, str] = {
         Branches `adjust-reads-prec`, `edit-margin-not-allowed` and `grep-errors-script` are direct downstream branches for `develop`.
         `block-cancel-order` is a downstream branch of `adjust-reads-prec`, `change-table` is a downstream branch of `block-cancel-order` and so on.
 
-        Every branch name can be followed (after a single space as a delimiter) by a custom annotation - a PR number in the above example.
+        Every branch name can be followed (after a single space as a delimiter) by a custom annotation — a PR number in the above example.
         The annotations don't influence the way `git machete` operates other than that they are displayed in the output of the `status` command.
-        Also see anno command.
+        Also see help for `anno` command.
 
         Tabs or any number of spaces can be used as indentation.
         It's only important to be consistent wrt. the sequence of characters used for indentation between all lines.
    """,
     "github": """
         <b>Usage:</b><b>
-          git machete github <subcommand></b>
+           git machete github <subcommand></b>
 
         where `<subcommand>` is one of: `anno-prs`, `checkout-prs`, `create-pr`, `retarget-pr`.
 
@@ -439,10 +434,10 @@ long_docs: Dict[str, str] = {
 
         To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR, even in case of public repositories),
         a GitHub API token with `repo` scope is required, see https://github.com/settings/tokens. This will be resolved from the first of:
-        * `GITHUB_TOKEN` env var,
-        * content of the `.github-token` file in the home directory (`~`),
-        * current auth token from the `gh` GitHub CLI,
-        * current auth token from the `hub` GitHub CLI.
+           * `GITHUB_TOKEN` env var,
+           * content of the `.github-token` file in the home directory (`~`),
+           * current auth token from the `gh` GitHub CLI,
+           * current auth token from the `hub` GitHub CLI.
 
         GitHub API server URL will be inferred from `git remote`.
         You can override this by setting the following git config keys:
@@ -462,53 +457,65 @@ long_docs: Dict[str, str] = {
               repository = <repo_name>
               remote = <remote_name>
         </dim>
+           `anno-prs`:
+              Annotates the branches based on their corresponding GitHub PR numbers and authors.
+              Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
+              Equivalent to `git machete anno --sync-github-prs`.
 
-        `anno-prs`:
-        Annotates the branches based on their corresponding GitHub PR numbers and authors.
-        Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
-        Equivalent to `git machete anno --sync-github-prs`.
+           `checkout-prs [--all | --by=<github-login> | --mine | <PR-number-1> ... <PR-number-N>]`:
+ 
+              Check out the head branch of the given pull requests (specified by numbers or by a flag),
+              also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally.
+              Once the specified pull requests are checked out locally, annotate local branches with corresponding pull request numbers.
+              If only one PR has been checked out, then switch the local repository's HEAD to its head branch.
 
-        `checkout-prs [--all | --by=<github-login> | --mine | <PR-number-1> ... <PR-number-N>]`:
+              <b>Options:</b>
 
-        Check out the head branch of the given pull requests (specified by numbers or by a flag),
-        also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally.
-        Once the specified pull requests are checked out locally, annotate local branches with corresponding pull request numbers.
-        If only one PR has been checked out, then switch the local repository's HEAD to its head branch.
+                 <b>--all</b>
 
-        <b>Options:</b>
+                    Checkout all open PRs.
 
-        `--all`    Checkout all open PRs.
+                 <b>--by=<github-login></b>
 
-        `--by`     Checkout open PRs authored by the given GitHub user.
-           <b>Parameters:</b>
-              `<github-login>` GitHub account name.
+                    Checkout open PRs authored by the given GitHub user. `<github-login>` is the GitHub account name.
 
-        `--mine`    Checkout open PRs for the current user associated with the GitHub token.
-           <b>Parameters:</b>
+                 <b>--mine</b>
+
+                    Checkout open PRs for the current user associated with the GitHub token.
+
+              <b>Parameters:</b>
+
               `<PR-number-1> ... <PR-number-N>`    Pull request numbers to checkout.
 
-        `create-pr [--draft]`:
+           `create-pr [--draft]`:
+ 
+              Creates a PR for the current branch, using the upstream (parent) branch as the PR base.
+              Once the PR is successfully created, annotates the current branch with the new PR's number.
 
-        Creates a PR for the current branch, using the upstream (parent) branch as the PR base.
-        Once the PR is successfully created, annotates the current branch with the new PR's number.
+              If `.git/info/description` file is present, its contents are used as PR description.
+              If `.git/info/milestone` file is present, its contents (a single number — milestone id) are used as milestone.
+              If `.git/info/reviewers` file is present, its contents (one GitHub login per line) are used to set reviewers.
 
-        If `.git/info/description` file is present, its contents are used as PR description.
-        If `.git/info/milestone` file is present, its contents (a single number - milestone id) are used as milestone.
-        If `.git/info/reviewers` file is present, its contents (one GitHub login per line) are used to set reviewers.
+              <b>Options:</b>
 
-        <b>Options:</b>`--draft`    Creates the new PR as a draft.
+                 <b>--draft</b>
 
-        `retarget-pr`:
-        Sets the base of the current branch's PR to upstream (parent) branch, as seen by git machete (see `git machete show up`).
+                    Creates the new PR as a draft.
 
-        `sync`:
+           `retarget-pr`:
+              Sets the base of the current branch's PR to upstream (parent) branch, as seen by git machete (see `git machete show up`).
 
-        Synchronizes with the remote repository:
-        * checks out open PRs for the current user associated with the GitHub token and also traverses the chain of pull requests upwards, adding branches one by one to git-machete and checks them out locally as well,
-        * deletes unmanaged branches,
-        * deletes untracked managed branches that have no downstream branch.
+           `sync`:
+ 
+              Synchronizes with the remote repository:
 
-        Equivalent of `git machete clean --checkout-my-github-prs`.
+                 * checks out open PRs for the current user associated with the GitHub token and also traverses the chain of pull requests upwards, adding branches one by one to git-machete and checks them out locally as well,
+
+                 * deletes unmanaged branches,
+
+                 * deletes untracked managed branches that have no downstream branch.
+
+              Equivalent of `git machete clean --checkout-my-github-prs`.
 
         <b>Environment variables (all subcommands):</b>
            `GITHUB_TOKEN`
@@ -517,24 +524,24 @@ long_docs: Dict[str, str] = {
    """,
     "go": """
         <b>Usage:</b><b>
-          git machete g[o] <direction></b>
+           git machete g[o] <direction></b>
 
         where <direction> is one of: `d[own]`, `f[irst]`, `l[ast]`, `n[ext]`, `p[rev]`, `r[oot]`, `u[p]`
 
         Checks out the branch specified by the given direction relative to the current branch:
-        * `down`:    the direct children/downstream branch of the current branch.
-        * `first`:   the first downstream of the root branch of the current branch (like `root` followed by `next`), or the root branch itself if the root has no downstream branches.
-        * `last`:    the last branch in the definition file that has the same root as the current branch; can be the root branch itself if the root has no downstream branches.
-        * `next`:    the direct successor of the current branch in the definition file.
-        * `prev`:    the direct predecessor of the current branch in the definition file.
-        * `root`:    the root of the tree where the current branch is located. Note: this will typically be something like `develop` or `master`, since all branches are usually meant to be ultimately merged to one of those.
-        * `up`:      the direct parent/upstream branch of the current branch.
+           * `down`:    the direct children/downstream branch of the current branch.
+           * `first`:   the first downstream of the root branch of the current branch (like `root` followed by `next`), or the root branch itself if the root has no downstream branches.
+           * `last`:    the last branch in the definition file that has the same root as the current branch; can be the root branch itself if the root has no downstream branches.
+           * `next`:    the direct successor of the current branch in the definition file.
+           * `prev`:    the direct predecessor of the current branch in the definition file.
+           * `root`:    the root of the tree where the current branch is located. Note: this will typically be something like `develop` or `master`, since all branches are usually meant to be ultimately merged to one of those.
+           * `up`:      the direct parent/upstream branch of the current branch.
 
         Roughly equivalent to `git checkout $(git machete show <direction>)`.
    """,
     "help": """
         <b>Usage:</b><b>
-          git machete help [<command>]</b>
+           git machete help [<command>]</b>
 
         Prints a summary of this tool, or a detailed info on a command if provided.
    """,
@@ -543,102 +550,115 @@ long_docs: Dict[str, str] = {
         All hooks are executed from the top-level folder of the repository (or top-level folder of worktree/submodule, if applicable).
 
         Note: `hooks` is not a command as such, just a help topic (there is no `git machete hooks` command).
-        *  `machete-post-slide-out <new-upstream> <lowest-slid-out-branch> [<new-downstreams>...]`
 
-        The hook that is executed after a branch (or possibly multiple branches, in case of `slide-out`)
-        is slid out by `advance`, `slide-out` or `traverse`.
+        <b>Hooks:</b>
+           `machete-post-slide-out <new-upstream> <lowest-slid-out-branch> [<new-downstreams>...]`
+ 
+              The hook that is executed after a branch (or possibly multiple branches, in case of `slide-out`)
+              is slid out by `advance`, `slide-out` or `traverse`.
 
-        At least two parameters (branch names) are passed to the hook:
-        * <new-upstream> is the upstream of the branch that has been slid out, or in case of multiple branches being slid out - the upstream of the highest slid out branch;
-        * <lowest-slid-out-branch> is the branch that has been slid out, or in case of multiple branches being slid out - the lowest slid out branch;
-        * <new-downstreams> are all the following (possibly zero) parameters, which correspond to all original downstreams of <lowest-slid-out-branch>, now reattached as the downstreams of <new-upstream>.
+              At least two parameters (branch names) are passed to the hook:
 
-        Note that this may be zero, one, or multiple branches.
+                 * <new-upstream> is the upstream of the branch that has been slid out, or in case of multiple branches being slid out — the upstream of the highest slid out branch;
 
-        Note: the hook, if present, is executed:
-        * zero or once during a `advance` execution (depending on whether the slide-out has been confirmed or not),
-        * exactly once during a `slide-out` execution (even if multiple branches are slid out),
-        * zero or more times during `traverse` (every time a slide-out operation is confirmed).
+                 * <lowest-slid-out-branch> is the branch that has been slid out, or in case of multiple branches being slid out — the lowest slid out branch;
 
-        If the hook returns a non-zero exit code, then an error is raised and the execution of the command is aborted,
-        i.e. `slide-out` won't attempt rebase of the new downstream branches and `traverse` won't continue the traversal.
-        In case of `advance` there is no difference (other than exit code of the entire `advance` command being non-zero),
-        since slide-out is the last operation that happens within `advance`.
+                 * <new-downstreams> are all the following (possibly zero) parameters, which correspond to all original downstreams of <lowest-slid-out-branch>, now reattached as the downstreams of <new-upstream>.
 
-        Note that non-zero exit code of the hook doesn't cancel the effects of slide-out itself, only the subsequent operations.
-        The hook is executed only once the slide-out is complete and can in fact rely on .git/machete file being updated to the new branch layout.
-        *  `machete-pre-rebase <new-base> <fork-point-hash> <branch-being-rebased>`
+              Note that this may be zero, one, or multiple branches.
 
-        The hook that is executed before rebase is run during `reapply`, `slide-out`, `traverse` and `update`.
-        Note that it is NOT executed by `squash` (despite its similarity to `reapply`), since no rebase is involved in `squash`.
+              Note: the hook, if present, is executed:
 
-        The parameters are exactly the three revisions that are passed to `git rebase --onto`:
-        * what is going to be the new base for the rebased commits,
-        * what is the fork point - the place where the rebased history diverges from the upstream history,
-        * what branch is rebased.
+                 * zero or once during a `advance` execution (depending on whether the slide-out has been confirmed or not),
 
-        If the hook returns a non-zero exit code, an error is raised and the entire rebase is aborted.
+                 * exactly once during a `slide-out` execution (even if multiple branches are slid out),
 
-        Note: this hook is independent from git's standard `pre-rebase hook`.
-        If machete-pre-rebase returns zero, the execution flow continues to `git rebase`, which may also run `pre-rebase hook` if present.
-        `machete-pre-rebase` is thus always launched before `pre-rebase`.
-        *  `machete-status-branch <branch-name>`
+                 * zero or more times during `traverse` (every time a slide-out operation is confirmed).
 
-        The hook that is executed for each branch displayed during `discover`, `status` and `traverse`.
+              If the hook returns a non-zero exit code, then an error is raised and the execution of the command is aborted,
+              i.e. `slide-out` won't attempt rebase of the new downstream branches and `traverse` won't continue the traversal.
+              In case of `advance` there is no difference (other than exit code of the entire `advance` command being non-zero),
+              since slide-out is the last operation that happens within `advance`.
 
-        The standard output of this hook is displayed at the end of the line, after branch name, (optionally) custom annotation and (optionally) remote sync-ness status.
-        Standard error is ignored. If the hook returns a non-zero exit code, both stdout and stderr are ignored, and printing the status continues as usual.
+              Note that non-zero exit code of the hook doesn't cancel the effects of slide-out itself, only the subsequent operations.
+              The hook is executed only once the slide-out is complete and can in fact rely on .git/machete file being updated to the new branch layout.
 
-        Note: the hook is always invoked with `ASCII_ONLY` variable passed into the environment.
-        If `status` runs in ASCII-only mode (i.e. if `--color=auto` and stdout is not a terminal, or if `--color=never`), then `ASCII_ONLY=true`, otherwise `ASCII_ONLY=false`.
+           `machete-pre-rebase <new-base> <fork-point-hash> <branch-being-rebased>`
+ 
+              The hook that is executed before rebase is run during `reapply`, `slide-out`, `traverse` and `update`.
+              Note that it is NOT executed by `squash` (despite its similarity to `reapply`), since no rebase is involved in `squash`.
 
-        Please see hook_samples for examples.
+              The parameters are exactly the three revisions that are passed to `git rebase --onto`:
+
+                 * what is going to be the new base for the rebased commits,
+
+                 * what is the fork point — the place where the rebased history diverges from the upstream history,
+
+                 * what branch is rebased.
+
+              If the hook returns a non-zero exit code, an error is raised and the entire rebase is aborted.
+
+              Note: this hook is independent from git's standard `pre-rebase hook`.
+              If machete-pre-rebase returns zero, the execution flow continues to `git rebase`, which may also run `pre-rebase hook` if present.
+              `machete-pre-rebase` is thus always launched before `pre-rebase`.
+
+           `machete-status-branch <branch-name>`
+ 
+              The hook that is executed for each branch displayed during `discover`, `status` and `traverse`.
+
+              The standard output of this hook is displayed at the end of the line, after branch name, (optionally) custom annotation and (optionally) remote sync-ness status.
+              Standard error is ignored. If the hook returns a non-zero exit code, both stdout and stderr are ignored, and printing the status continues as usual.
+
+              Note: the hook is always invoked with `ASCII_ONLY` variable passed into the environment.
+              If `status` runs in ASCII-only mode (i.e. if `--color=auto` and stdout is not a terminal, or if `--color=never`), then `ASCII_ONLY=true`, otherwise `ASCII_ONLY=false`.
+
+        Please see hook_samples directory in git-machete project for examples.
         An example of using the standard git `post-commit hook` to `git machete add` branches automatically is also included.
    """,
     "is-managed": """
         <b>Usage:</b><b>
-          git machete is-managed [<branch>]</b>
+           git machete is-managed [<branch>]</b>
 
         Returns with zero exit code if the given branch (or current branch, if none specified) is managed by git machete (i.e. listed in .git/machete).
 
         Returns with a non-zero exit code in case:
-        * the <branch> is provided but isn't managed (or doesn't exist), or
-        * the <branch> isn't provided and the current branch isn't managed, or
-        * the <branch> isn't provided and there's no current branch (detached HEAD).
+           * the <branch> is provided but isn't managed (or doesn't exist), or
+           * the <branch> isn't provided and the current branch isn't managed, or
+           * the <branch> isn't provided and there's no current branch (detached HEAD).
    """,
     "list": """
         <b>Usage:</b><b>
-          git machete list <category></b>
+           git machete list <category></b>
 
         where <category> is one of: `addable`, `childless`, `managed`, `slidable`, `slidable-after <branch>`, `unmanaged`, `with-overridden-fork-point`.
 
         Lists all branches that fall into one of the specified categories:
-        * `addable`: all branches (local or remote) than can be added to the definition file,
-        * `childless`: all branches that do not possess child branches,
-        * `managed`: all branches that appear in the definition file,
-        * `slidable`: all managed branches that have an upstream and can be slid out with slide-out command
-        * `slidable-after <branch>`: the downstream branch of the <branch>, if it exists and is the only downstream of <branch> (i.e. the one that can be slid out immediately following <branch>),
-        * `unmanaged`: all local branches that don't appear in the definition file,
-        * `with-overridden-fork-point`: all local branches that have a fork point<fork-point> override set up (even if this override does not affect the location of their fork point anymore).
+           * `addable`: all branches (local or remote) than can be added to the definition file,
+           * `childless`: all branches that do not possess child branches,
+           * `managed`: all branches that appear in the definition file,
+           * `slidable`: all managed branches that have an upstream and can be slid out with `slide-out` command
+           * `slidable-after <branch>`: the downstream branch of the <branch>, if it exists and is the only downstream of <branch> (i.e. the one that can be slid out immediately following <branch>),
+           * `unmanaged`: all local branches that don't appear in the definition file,
+           * `with-overridden-fork-point`: all local branches that have a `fork point<fork-point>` override set up (even if this override does not affect the location of their fork point anymore).
 
         This command is generally not meant for a day-to-day use, it's mostly needed for the sake of branch name completion in shell.
    """,
     "log": """
         <b>Usage:</b><b>
-          git machete l[og] [<branch>]</b>
+           git machete l[og] [<branch>]</b>
 
         Runs `git log` for the range of commits from tip of the given branch (or current branch, if none specified) back to its fork point.
-        See fork-point for more details on meaning of the fork point.
+        See help for `fork-point` for more details on meaning of the fork point.
 
         Note: the branch in question does not need to occur in the definition file.
    """,
     "reapply": """
         <b>Usage:</b><b>
-          git machete reapply [-f|--fork-point=<fork-point-commit>]</b>
+           git machete reapply [-f|--fork-point=<fork-point-commit>]</b>
 
         Interactively rebase the current branch on the top of its computed fork point.
         The chunk of the history to be rebased starts at the automatically computed fork point of the current branch by default, but can also be set explicitly by `--fork-point`.
-        See fork-point for more details on meaning of the fork point.
+        See help for `fork-point` for more details on meaning of the fork point.
 
         Note: the current reapplied branch does not need to occur in the definition file.
 
@@ -651,33 +671,30 @@ long_docs: Dict[str, str] = {
 
         <b>Environment variables:</b>
            `GIT_MACHETE_REBASE_OPTS`
- 
               Extra options to pass to the underlying `git rebase` invocation, space-separated.
-
               Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete reapply`.
-
 
    """,
     "show": """
         <b>Usage:</b><b>
-          git machete show <direction> [<branch>]</b>
+           git machete show <direction> [<branch>]</b>
 
         where <direction> is one of: `c[urrent]`, `d[own]`, `f[irst]`, `l[ast]`, `n[ext]`, `p[rev]`, `r[oot]`, `u[p]`
         displayed relative to given <branch>, or the current checked out branch if <branch> is unspecified.
 
         Outputs name of the branch (or possibly multiple branches, in case of `down`) that is:
-        * `current`: the current branch; exits with a non-zero status if none (detached HEAD)
-        * `down`:    the direct children/downstream branch of the given branch.
-        * `first`:   the first downstream of the root branch of the given branch (like `root` followed by `next`), or the root branch itself if the root has no downstream branches.
-        * `last`:    the last branch in the definition file that has the same root as the given branch; can be the root branch itself if the root has no downstream branches.
-        * `next`:    the direct successor of the given branch in the definition file.
-        * `prev`:    the direct predecessor of the given branch in the definition file.
-        * `root`:    the root of the tree where the given branch is located. Note: this will typically be something like `develop` or `master`, since all branches are usually meant to be ultimately merged to one of those.
-        * `up`:      the direct parent/upstream branch of the given branch.
+           * `current`: the current branch; exits with a non-zero status if none (detached HEAD)
+           * `down`:    the direct children/downstream branch of the given branch.
+           * `first`:   the first downstream of the root branch of the given branch (like `root` followed by `next`), or the root branch itself if the root has no downstream branches.
+           * `last`:    the last branch in the definition file that has the same root as the given branch; can be the root branch itself if the root has no downstream branches.
+           * `next`:    the direct successor of the given branch in the definition file.
+           * `prev`:    the direct predecessor of the given branch in the definition file.
+           * `root`:    the root of the tree where the given branch is located. Note: this will typically be something like `develop` or `master`, since all branches are usually meant to be ultimately merged to one of those.
+           * `up`:      the direct parent/upstream branch of the given branch.
    """,
     "slide-out": """
         <b>Usage:</b><b>
-          git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [--delete] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] [<branch> [<branch> [<branch> ...]]]</b>
+           git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [--delete] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] [<branch> [<branch> [<branch> ...]]]</b>
 
         Removes the given branch (or multiple branches) from the branch tree definition.  If no branch has been specified current branch is assumed as the only branch.
         Then synchronizes the downstream (child) branches of the last specified branch on the top of the upstream (parent) branch of the first specified branch.
@@ -686,8 +703,8 @@ long_docs: Dict[str, str] = {
         The most common use is to slide out a single branch whose upstream was a `develop`/`master` branch and that has been recently merged.
 
         Since this tool is designed to perform only one single rebase/merge at the end, provided branches must form a chain, i.e. all of the following conditions must be met:
-        * for i=1..N-1, (i+1)-th branch must be the only downstream (child) branch of the i-th branch,
-        * all provided branches must have an upstream branch (so, in other words, roots of branch dependency tree cannot be slid out).
+           * for i=1..N-1, (i+1)-th branch must be the only downstream (child) branch of the i-th branch,
+           * all provided branches must have an upstream branch (so, in other words, roots of branch dependency tree cannot be slid out).
 
         For example, let's assume the following dependency tree:
         <dim>
@@ -728,20 +745,17 @@ long_docs: Dict[str, str] = {
 
         <b>Environment variables:</b>
            `GIT_MACHETE_REBASE_OPTS`
- 
               Extra options to pass to the underlying `git rebase` invocations, space-separated.
-
               Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete slide-out`.
-
 
    """,
     "squash": """
         <b>Usage:</b><b>
-          git machete squash [-f|--fork-point=<fork-point-commit>]</b>
+           git machete squash [-f|--fork-point=<fork-point-commit>]</b>
 
         Squashes the commits belonging uniquely to the current branch into a single commit.
         The chunk of the history to be squashed starts at the automatically computed fork point of the current branch by default, but can also be set explicitly by `--fork-point`.
-        See fork-point for more details on meaning of the fork point.
+        See help for `fork-point` for more details on meaning of the fork point.
         The message for the squashed is taken from the earliest squashed commit, i.e. the commit directly following the fork point.
 
         Note: the current squashed branch does not need to occur in the definition file.
@@ -754,31 +768,32 @@ long_docs: Dict[str, str] = {
    """,
     "status": """
         <b>Usage:</b><b>
-          git machete s[tatus] [--color=WHEN] [-l|--list-commits] [-L|--list-commits-with-hashes] [--no-detect-squash-merges]</b>
+           git machete s[tatus] [--color=WHEN] [-l|--list-commits] [-L|--list-commits-with-hashes] [--no-detect-squash-merges]</b>
 
         Displays a tree-shaped status of the branches listed in the definition file.
 
         Apart from simply ASCII-formatting the definition file, this also:
-        * colors the edges between upstream (parent) and downstream (children) branches:
-           - <red>red edge</red> means that the downstream branch tip is not a direct descendant of the upstream branch tip,
-           - <yellow>yellow edge</yellow> means that the downstream branch tip is a direct descendant of the upstream branch tip,
-        but the fork point<fork-point> of the downstream branch is not equal to the upstream branch tip,
-           - <green>green edge</green> means that the downstream branch tip is a direct descendant of the upstream branch tip
-        and the fork point of the downstream branch is equal to the upstream branch tip,
-           - grey/dimmed edge means that the downstream branch has been merged to the upstream branch,
-        detected by commit equivalency (default), or by strict detection of merge commits (if `--no-detect-squash-merges` passed).
-        * prints (`untracked`/`ahead of <remote>`/`behind <remote>`/`diverged from [& older than] <remote>`) message if the branch is not in sync with its remote counterpart;
-        * displays the custom annotations (see format and anno) next to each branch, if present;
-        * displays the output of `machete-status-branch hook` (see hooks), if present;
-        * optionally lists commits introduced on each branch if `-l/--list-commits` or `-L/--list-commits-with-hashes` is supplied.
+           * colors the edges between upstream (parent) and downstream (children) branches:
+              - <red>red edge</red> means that the downstream branch tip is not a direct descendant of the upstream branch tip,
+              - <yellow>yellow edge</yellow> means that the downstream branch tip is a direct descendant of the upstream branch tip,
+              but the `fork point<fork-point>` of the downstream branch is not equal to the upstream branch tip,
+              - <green>green edge</green> means that the downstream branch tip is a direct descendant of the upstream branch tip
+              and the fork point of the downstream branch is equal to the upstream branch tip,
+              - grey/dimmed edge means that the downstream branch has been merged to the upstream branch,
+              detected by commit equivalency (default), or by strict detection of merge commits (if `--no-detect-squash-merges` passed).
+
+           * prints (`untracked`/`ahead of <remote>`/`behind <remote>`/`diverged from [& older than] <remote>`) message if the branch is not in sync with its remote counterpart;
+           * displays the custom annotations (see help for `format` and `anno`) next to each branch, if present;
+           * displays the output of `machete-status-branch hook` (see help for `hooks`), if present;
+           * optionally lists commits introduced on each branch if `-l/--list-commits` or `-L/--list-commits-with-hashes` is supplied.
 
         Name of the currently checked-out branch is underlined (or shown in blue on terminals that don't support underline).
 
         In case of <yellow>yellow edge</yellow>, use `-l` or `-L` flag to show the exact location of the inferred fork point
         (which indicates e.g. what range of commits is going to be rebased when the branch is updated).
-        The inferred fork point can be always overridden manually, see fork-point.
+        The inferred fork point can be always overridden manually, see help for `fork-point`.
 
-        Grey/dimmed edge suggests that the downstream branch can be slid out (see slide-out and traverse).
+        Grey/dimmed edge suggests that the downstream branch can be slid out (see help for `slide-out` and `traverse`).
 
         Using colors can be disabled with a `--color` flag set to `never`.
         With `--color=always`, git machete always emits colors and with `--color=auto`, it emits colors only when standard output is connected to a terminal.
@@ -828,34 +843,38 @@ long_docs: Dict[str, str] = {
               │
               └─ feature_branch2
 
-
    """,
     "traverse": """
         <b>Usage:</b><b>
-          git machete t[raverse] [-F|--fetch] [-l|--list-commits] [-M|--merge]
-                                 [-n|--no-edit-merge|--no-interactive-rebase] [--no-detect-squash-merges]
-                                 [--[no-]push] [--[no-]push-untracked]
-                                 [--return-to=WHERE] [--start-from=WHERE] [-w|--whole] [-W] [-y|--yes]</b>
+           git machete t[raverse] [-F|--fetch] [-l|--list-commits] [-M|--merge]
+                                  [-n|--no-edit-merge|--no-interactive-rebase] [--no-detect-squash-merges]
+                                  [--[no-]push] [--[no-]push-untracked]
+                                  [--return-to=WHERE] [--start-from=WHERE] [-w|--whole] [-W] [-y|--yes]</b>
 
         Traverses the branch tree in pre-order (i.e. simply in the order as they occur in the definition file).
         By default `traverse` starts from the current branch.
         This behaviour can, however, be customized using options: `--start-from=`, `--whole` or `-w`, `-W`.
 
         For each branch, the command:
-        * detects if the branch is merged (grey edge) to its parent (aka upstream):
-           - by commit equivalency (default), or by strict detection of merge commits (if `--no-detect-squash-merges` passed),
-           - if so, asks the user whether to slide out the branch from the dependency tree (typically branches are no longer needed after they're merged);
-        * otherwise, if the branch has a <red>red</red> or <yellow>yellow</yellow> edge to its parent/upstream (see status):
-           - asks the user whether to rebase (default) or merge (if `--merge` passed) the branch onto into its upstream branch
-        - equivalent to `git machete update` with no `--fork-point` option passed;
-        * if the branch is not tracked on a remote, is ahead of its remote counterpart, or diverged from the counterpart & has newer head commit than the counterpart:
-           - asks the user whether to push the branch (possibly with `--force-with-lease` if the branches diverged);
-        * otherwise, if the branch diverged from the remote counterpart & has older head commit than the counterpart:
-           - asks the user whether to `git reset --keep` the branch to its remote counterpart
-        * otherwise, if the branch is behind its remote counterpart:
-           - asks the user whether to pull the branch;
-        * and finally, if any of the above operations has been successfully completed:
-           - prints the updated `status`.
+           * detects if the branch is merged (grey edge) to its parent (aka upstream):
+              - by commit equivalency (default), or by strict detection of merge commits (if `--no-detect-squash-merges` passed),
+              - if so, asks the user whether to slide out the branch from the dependency tree (typically branches are no longer needed after they're merged);
+
+           * otherwise, if the branch has a <red>red</red> or <yellow>yellow</yellow> edge to its parent/upstream (see help for `status`):
+              - asks the user whether to rebase (default) or merge (if `--merge` passed) the branch onto into its upstream branch
+              — equivalent to `git machete update` with no `--fork-point` option passed;
+
+           * if the branch is not tracked on a remote, is ahead of its remote counterpart, or diverged from the counterpart & has newer head commit than the counterpart:
+              - asks the user whether to push the branch (possibly with `--force-with-lease` if the branches diverged);
+
+           * otherwise, if the branch diverged from the remote counterpart & has older head commit than the counterpart:
+              - asks the user whether to `git reset --keep` the branch to its remote counterpart
+
+           * otherwise, if the branch is behind its remote counterpart:
+              - asks the user whether to pull the branch;
+
+           * and finally, if any of the above operations has been successfully completed:
+              - prints the updated `status`.
 
         If the traverse flow is stopped (typically due to merge/rebase conflicts), just run `git machete traverse` after the merge/rebase is finished.
         It will pick up the walk from the current branch (unless `--start-from=` or `-w` etc. is passed).
@@ -882,13 +901,13 @@ long_docs: Dict[str, str] = {
            <b>--no-push-untracked</b>
               Do not push untracked branches to remote, re-enable via `--push-untracked`.
            <b>--push</b>
-              Push all (both tracked and untracked) branches to remote - default behavior.
+              Push all (both tracked and untracked) branches to remote — default behavior.
            <b>--push-untracked</b>
-              Push untracked branches to remote - default behavior.
+              Push untracked branches to remote — default behavior.
            <b>--return-to=WHERE</b>
-              Specifies the branch to return after traversal is successfully completed; WHERE can be `here` (the current branch at the moment when traversal starts), `nearest-remaining` (nearest remaining branch in case the `here` branch has been slid out by the traversal) or `stay` (the default - just stay wherever the traversal stops). Note: when user quits by `q`/`yq` or when traversal is stopped because one of git actions fails, the behavior is always `stay`.
+              Specifies the branch to return after traversal is successfully completed; WHERE can be `here` (the current branch at the moment when traversal starts), `nearest-remaining` (nearest remaining branch in case the `here` branch has been slid out by the traversal) or `stay` (the default — just stay wherever the traversal stops). Note: when user quits by `q`/`yq` or when traversal is stopped because one of git actions fails, the behavior is always `stay`.
            <b>--start-from=WHERE</b>
-              Specifies the branch to start the traversal from; WHERE can be `here` (the default - current branch, must be managed by git machete), `root` (root branch of the current branch, as in `git machete show root`) or `first-root` (first listed managed branch).
+              Specifies the branch to start the traversal from; WHERE can be `here` (the default — current branch, must be managed by git machete), `root` (root branch of the current branch, as in `git machete show root`) or `first-root` (first listed managed branch).
            <b>-w</b>, <b>--whole</b>
               Equivalent to `-n --start-from=first-root --return-to=nearest-remaining`; useful for quickly traversing & syncing all branches (rather than doing more fine-grained operations on the local section of the branch tree).
            <b>-W</b>
@@ -898,22 +917,19 @@ long_docs: Dict[str, str] = {
 
         <b>Environment variables:</b>
            `GIT_MACHETE_REBASE_OPTS`
- 
               Extra options to pass to the underlying `git rebase` invocations, space-separated.
-
               Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete traverse`.
-
 
    """,
     "update": """
         <b>Usage:</b><b>
-          git machete update [-f|--fork-point=] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase]</b>
+           git machete update [-f|--fork-point=] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase]</b>
 
         Synchronizes the current branch with its upstream (parent) branch either by rebase (default) or by merge (if `--merge` option passed).
 
         If updating by rebase, interactively rebases the current branch on the top of its upstream (parent) branch.
         The chunk of the history to be rebased starts at the fork point of the current branch, which by default is inferred automatically, but can also be set explicitly by `--fork-point`.
-        See fork-point for more details on meaning of the fork point.
+        See help for `fork-point` for more details on meaning of the fork point.
 
         If updating by merge, merges the upstream (parent) branch into the current branch.
 
@@ -937,7 +953,7 @@ long_docs: Dict[str, str] = {
    """,
     "version": """
         <b>Usage:</b><b>
-          git machete version</b>
+           git machete version</b>
 
         Prints the version and exits.
    """,

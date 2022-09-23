@@ -21,6 +21,7 @@ def rst2html(input_string: str, source_path: str = None, destination_path: str =
 
 def html2txt(html: str):
     html_elements = BeautifulSoup(html, features="html.parser")
+    INDENT = '   '
 
     # remove style tags
     for tag in html_elements.select('style'):
@@ -33,12 +34,25 @@ def html2txt(html: str):
         else:
             # add new line and indent for the cells inside a table
             if 'class' not in tag.attrs:
-                tag.insert_before('\n      ')
+                tag.insert_before(f'\n{2 * INDENT}')
 
     # substitute double backticks with a single backtick
     for tag in html_elements.select('tt'):
         tag.insert_before('`')
         tag.insert_after('`')
+
+    # format cite's tag text with single backticks
+    for tag in html_elements.select('cite'):
+        tag.insert_before('`')
+        tag.insert_after('`')
+
+    # format colors
+    for tag in html_elements.select('span'):
+        if 'class' in tag.attrs:
+            color = ' '.join(tag.attrs['class']).replace('gray', 'dim')
+            if color in ['green', 'yellow', 'red', 'dim']:
+                tag.insert_before(f'<{color}>')
+                tag.insert_after(f'</{color}>')
 
     # make the option's text inside the option list bold
     for tag in html_elements.select('span'):
@@ -64,24 +78,30 @@ def html2txt(html: str):
         else:
             tag.insert_before('\n\n')
 
-    # format elements in the `Option:` section by adding new line and indent
-    for tag in html_elements.select('kbd'):
-        tag.insert_before('\n   ')
-
-    # add indent to the description list
-    for tag in html_elements.select('dt'):
-        tag.string = '\n' + indent(tag.text.strip(), '   ')
-
-    # add indent to the nested description list
-    for tag in html_elements.select('dd'):
-        tag.string = '\n' + indent(tag.text, '      ') + '\n'
+    # add indent and bullet points to the bulleted list
+    for tag in html_elements.select('li'):
+        if tag.parent.parent is not None:
+            if tag.parent.parent.name == 'li':  # deal with nested lists
+                tag.string = indent('- ' + tag.text, INDENT + '  ')
 
     # add indent and bullet points to the bulleted list
     for tag in html_elements.select('li'):
-        if tag.parent.parent.name == 'li':  # deal with nested lists
-            tag.insert_before('\n   - ')
-        else:
-            tag.insert_before('\n* ')
+        if tag.parent.parent is not None:
+            if tag.parent.parent.name != 'li':
+                tag.insert_before(f'\n{INDENT}*')
+                tag.string = indent(tag.text, ' ')
+
+    # format elements in the `Option:` section by adding new line and indent
+    for tag in html_elements.select('kbd'):
+        tag.insert_before(f'\n{INDENT}')
+
+    # add indent to the description list
+    for tag in html_elements.select('dt'):
+        tag.string = '\n' + indent(tag.text.strip(), INDENT)
+
+    # add indent to the nested description list
+    for tag in html_elements.select('dd'):
+        tag.string = '\n' + indent(tag.text, 2 * INDENT) + '\n'
 
     # format code examples
     for tag in html_elements.select('pre'):
@@ -89,15 +109,7 @@ def html2txt(html: str):
             if ' '.join(tag.attrs['class']).replace('first', '').replace('last', '').replace('  ', ' ') == 'code literal-block':
                 tag.string = '\n<dim>' + indent(tag.text, '  ') + '</dim>'
             elif 'literal-block' in ' '.join(tag.attrs['class']):
-                tag.string = '<b>' + indent(tag.text.rstrip('\n'), '  ') + '</b>'
-
-    # format colors
-    for tag in html_elements.select('span'):
-        if 'class' in tag.attrs:
-            color = ' '.join(tag.attrs['class']).replace('gray', 'dim')
-            if color in ['green', 'yellow', 'red', 'dim']:
-                tag.insert_before(f'<{color}>')
-                tag.insert_after(f'</{color}>')
+                tag.string = '<b>' + indent(tag.text.rstrip('\n'), INDENT) + '</b>'
 
     # build python docs string out of the previously formatted html tags
     text: str = ''
@@ -146,6 +158,8 @@ if __name__ == '__main__':
     path = docs_source_path + '/cli_help'
     commands_and_file_paths = {f.split('.')[0]: join(path, f) for f in sorted(os.listdir(path)) if isfile(join(path, f))}
 
+    # cmd = 'diff'
+    # commands_and_file_paths = {cmd: f'docs/source/cli_help/{cmd}.rst'}
     for command, file in commands_and_file_paths.items():
         with open(file, 'r') as f:
             rst = f.read()
@@ -154,13 +168,14 @@ if __name__ == '__main__':
         rst = resolve_includes(rst=rst, docs_source_path=docs_source_path)
 
         html = rst2html(rst)
+        # print(html)
 
         plain_text = html2txt(html)
         plain_text = skip_prefix_new_lines(plain_text)
-        plain_text = plain_text.replace('---', '-')
-        plain_text = replace_3_newlines_and_more_with_2_newlines(plain_text)
+        plain_text = plain_text.replace('---', '—')
 
         output_text += f'    "{command}": """\n' + indent(plain_text, '        ') + '\n   """,\n'
+        output_text = replace_3_newlines_and_more_with_2_newlines(output_text)
 
     output_text += '}'
     print(output_text)

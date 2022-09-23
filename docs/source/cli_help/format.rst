@@ -25,7 +25,7 @@ Branches ``adjust-reads-prec``, ``edit-margin-not-allowed`` and ``grep-errors-sc
 
 Every branch name can be followed (after a single space as a delimiter) by a custom annotation --- a PR number in the above example.
 The annotations don't influence the way ``git machete`` operates other than that they are displayed in the output of the ``status`` command.
-Also see :ref:`anno` command.
+Also see help for :ref:`anno` command.
 
 Tabs or any number of spaces can be used as indentation.
 It's only important to be consistent wrt. the sequence of characters used for indentation between all lines.

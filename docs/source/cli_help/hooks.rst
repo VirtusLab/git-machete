@@ -7,8 +7,9 @@ All hooks are executed from the top-level folder of the repository (or top-level
 
 Note: ``hooks`` is not a command as such, just a help topic (there is no ``git machete hooks`` command).
 
-* ``machete-post-slide-out <new-upstream> <lowest-slid-out-branch> [<new-downstreams>...]``
+**Hooks:**
 
+``machete-post-slide-out <new-upstream> <lowest-slid-out-branch> [<new-downstreams>...]``
     The hook that is executed after a branch (or possibly multiple branches, in case of ``slide-out``)
     is slid out by ``advance``, ``slide-out`` or ``traverse``.
 
@@ -34,8 +35,7 @@ Note: ``hooks`` is not a command as such, just a help topic (there is no ``git m
     Note that non-zero exit code of the hook doesn't cancel the effects of slide-out itself, only the subsequent operations.
     The hook is executed only once the slide-out is complete and can in fact rely on .git/machete file being updated to the new branch layout.
 
-* ``machete-pre-rebase <new-base> <fork-point-hash> <branch-being-rebased>``
-
+``machete-pre-rebase <new-base> <fork-point-hash> <branch-being-rebased>``
     The hook that is executed before rebase is run during ``reapply``, ``slide-out``, ``traverse`` and ``update``.
     Note that it is NOT executed by ``squash`` (despite its similarity to ``reapply``), since no rebase is involved in ``squash``.
 
@@ -51,8 +51,7 @@ Note: ``hooks`` is not a command as such, just a help topic (there is no ``git m
     If machete-pre-rebase returns zero, the execution flow continues to ``git rebase``, which may also run ``pre-rebase hook`` if present.
     ``machete-pre-rebase`` is thus always launched before ``pre-rebase``.
 
-* ``machete-status-branch <branch-name>``
-
+``machete-status-branch <branch-name>``
     The hook that is executed for each branch displayed during ``discover``, ``status`` and ``traverse``.
 
     The standard output of this hook is displayed at the end of the line, after branch name, (optionally) custom annotation and (optionally) remote sync-ness status.
@@ -61,5 +60,5 @@ Note: ``hooks`` is not a command as such, just a help topic (there is no ``git m
     Note: the hook is always invoked with ``ASCII_ONLY`` variable passed into the environment.
     If ``status`` runs in ASCII-only mode (i.e. if ``--color=auto`` and stdout is not a terminal, or if ``--color=never``), then ``ASCII_ONLY=true``, otherwise ``ASCII_ONLY=false``.
 
-Please see `hook_samples <https://github.com/VirtusLab/git-machete/tree/master/hook_samples>`_ for examples.
+Please see `hook_samples <https://github.com/VirtusLab/git-machete/tree/master/hook_samples>`_ directory in git-machete project for examples.
 An example of using the standard git ``post-commit hook`` to ``git machete add`` branches automatically is also included.

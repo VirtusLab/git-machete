@@ -12,7 +12,7 @@ Synchronizes the current branch with its upstream (parent) branch either by reba
 
 If updating by rebase, interactively rebases the current branch on the top of its upstream (parent) branch.
 The chunk of the history to be rebased starts at the fork point of the current branch, which by default is inferred automatically, but can also be set explicitly by ``--fork-point``.
-See :ref:`fork-point` for more details on meaning of the *fork point*.
+See help for :ref:`fork-point` for more details on meaning of the *fork point*.
 
 If updating by merge, merges the upstream (parent) branch into the current branch.
 
