@@ -9,7 +9,7 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 **Config keys:**
 
 ``machete.github.{remote,organization,repository}``:
-    When executing ``git machete github <subcommand>`` command, following will happen:
+    When executing ``git machete github <subcommand>`` command, the following will happen:
 
     .. include:: github_config_keys.rst
 
