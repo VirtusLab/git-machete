@@ -34,9 +34,9 @@ As an example, if ``git machete status --color=never --list-commits`` is as foll
       |
       | Enable adding remote branch in the manner similar to git checkout
       o-feature/add-from-remote
-      | |
-      | | Add support and sample for machete-post-slide-out hook
-      | o-feature/post-slide-out-hook
+        |
+        | Add support and sample for machete-post-slide-out hook
+        o-feature/post-slide-out-hook
 
 then running ``git machete advance`` will fast-forward the current branch ``develop`` to match ``feature/add-from-remote``, and subsequently slide out the latter.
 After ``advance`` completes, ``status`` will show:
