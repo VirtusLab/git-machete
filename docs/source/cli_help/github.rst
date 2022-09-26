@@ -15,62 +15,55 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 .. include:: github_api_access.rst
 .. include:: github_config_keys.rst
 
-``anno-prs``:
+**Subcommands:**
 
-  Annotates the branches based on their corresponding GitHub PR numbers and authors.
-  Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
-  Equivalent to ``git machete anno --sync-github-prs``.
+``anno-prs``:
+    Annotates the branches based on their corresponding GitHub PR numbers and authors.
+    Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
+    Equivalent to ``git machete anno --sync-github-prs``.
 
 
 ``checkout-prs [--all | --by=<github-login> | --mine | <PR-number-1> ... <PR-number-N>]``:
+    Check out the head branch of the given pull requests (specified by numbers or by a flag),
+    also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally.
+    Once the specified pull requests are checked out locally, annotate local branches with corresponding pull request numbers.
+    If only one PR has been checked out, then switch the local repository's HEAD to its head branch.
 
-  Check out the head branch of the given pull requests (specified by numbers or by a flag),
-  also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally.
-  Once the specified pull requests are checked out locally, annotate local branches with corresponding pull request numbers.
-  If only one PR has been checked out, then switch the local repository's HEAD to its head branch.
+    **Options:**
 
-  **Options:**
+    --all    Checkout all open PRs.
 
-    ``--all``    Checkout all open PRs.
+    --by=<github-login>     Checkout open PRs authored by the given GitHub user. ``<github-login>`` is the GitHub account name.
 
-    ``--by``    Checkout open PRs authored by the given GitHub user.
+    --mine    Checkout open PRs for the current user associated with the GitHub token.
 
-      **Parameters:**
-        ``<github-login>`` GitHub account name.
+    **Parameters:**
 
-    ``--mine``    Checkout open PRs for the current user associated with the GitHub token.
-
-  **Parameters:**
-    ``<PR-number-1> ... <PR-number-N>``
-      Pull request numbers to checkout.
+    ``<PR-number-1> ... <PR-number-N>``    Pull request numbers to checkout.
 
 ``create-pr [--draft]``:
+    Creates a PR for the current branch, using the upstream (parent) branch as the PR base.
+    Once the PR is successfully created, annotates the current branch with the new PR's number.
 
-  Creates a PR for the current branch, using the upstream (parent) branch as the PR base.
-  Once the PR is successfully created, annotates the current branch with the new PR's number.
+    If ``.git/info/description`` file is present, its contents are used as PR description.
+    If ``.git/info/milestone`` file is present, its contents (a single number --- milestone id) are used as milestone.
+    If ``.git/info/reviewers`` file is present, its contents (one GitHub login per line) are used to set reviewers.
 
-  If ``.git/info/description`` file is present, its contents are used as PR description.
-  If ``.git/info/milestone`` file is present, its contents (a single number --- milestone id) are used as milestone.
-  If ``.git/info/reviewers`` file is present, its contents (one GitHub login per line) are used to set reviewers.
+    **Options:**
 
-  **Options:**
-
-    ``--draft``
-      Creates the new PR as a draft.
+    --draft    Creates the new PR as a draft.
 
 ``retarget-pr``:
-
-  Sets the base of the current branch's PR to upstream (parent) branch, as seen by git machete (see ``git machete show up``).
+    Sets the base of the current branch's PR to upstream (parent) branch, as seen by git machete (see ``git machete show up``).
 
 ``sync``:
+    Synchronizes with the remote repository:
 
-  Synchronizes with the remote repository:
+      1. checks out open PRs for the current user associated with the GitHub token and also traverses the chain of pull requests upwards, adding branches one by one to git-machete and checks them out locally as well,
+      2. deletes unmanaged branches,
+      3. deletes untracked managed branches that have no downstream branch.
 
-    1. checks out open PRs for the current user associated with the GitHub token and also traverses the chain of pull requests upwards, adding branches one by one to git-machete and checks them out locally as well,
-    2. deletes unmanaged branches,
-    3. deletes untracked managed branches that have no downstream branch.
-
-  Equivalent of ``git machete clean --checkout-my-github-prs``.
+    Equivalent of ``git machete clean --checkout-my-github-prs``.
 
 **Environment variables (all subcommands):**
 

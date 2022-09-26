@@ -12,7 +12,7 @@ Synchronizes the current branch with its upstream (parent) branch either by reba
 
 If updating by rebase, interactively rebases the current branch on the top of its upstream (parent) branch.
 The chunk of the history to be rebased starts at the fork point of the current branch, which by default is inferred automatically, but can also be set explicitly by ``--fork-point``.
-See :ref:`fork-point` for more details on meaning of the *fork point*.
+See help for :ref:`fork-point` for more details on the meaning of *fork point*.
 
 If updating by merge, merges the upstream (parent) branch into the current branch.
 
@@ -32,5 +32,4 @@ If updating by merge, merges the upstream (parent) branch into the current branc
 
 ``GIT_MACHETE_REBASE_OPTS``
     Extra options to pass to the underlying ``git rebase`` invocation, space-separated.
-
     Example: ``GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete update``.

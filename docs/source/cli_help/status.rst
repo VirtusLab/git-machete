@@ -40,9 +40,9 @@ Apart from simply ASCII-formatting the definition file, this also:
 
     * prints (``untracked``/``ahead of <remote>``/``behind <remote>``/``diverged from [& older than] <remote>``) message if the branch is not in sync with its remote counterpart;
 
-    * displays the custom annotations (see :ref:`format` and :ref:`anno`) next to each branch, if present;
+    * displays the custom annotations (see help for :ref:`format` and :ref:`anno`) next to each branch, if present;
 
-    * displays the output of ``machete-status-branch hook`` (see :ref:`hooks`), if present;
+    * displays the output of ``machete-status-branch hook`` (see help for :ref:`hooks`), if present;
 
     * optionally lists commits introduced on each branch if ``-l/--list-commits`` or ``-L/--list-commits-with-hashes`` is supplied.
 
@@ -50,9 +50,9 @@ Name of the currently checked-out branch is underlined (or shown in blue on term
 
 In case of :yellow:`yellow edge`, use ``-l`` or ``-L`` flag to show the exact location of the inferred fork point
 (which indicates e.g. what range of commits is going to be rebased when the branch is updated).
-The inferred fork point can be always overridden manually, see :ref:`fork-point`.
+The inferred fork point can be always overridden manually, see help for :ref:`fork-point`.
 
-:grey:`Grey/dimmed edge` suggests that the downstream branch can be slid out (see :ref:`slide-out` and :ref:`traverse`).
+:grey:`Grey/dimmed edge` suggests that the downstream branch can be slid out (see help for :ref:`slide-out` and :ref:`traverse`).
 
 Using colors can be disabled with a ``--color`` flag set to ``never``.
 With ``--color=always``, git machete always emits colors and with ``--color=auto``, it emits colors only when standard output is connected to a terminal.
@@ -70,6 +70,7 @@ With ``--color=always``, git machete always emits colors and with ``--color=auto
     |
     m-<branch4>     # grey (merged to parent)
 
+
 **Options:**
 
 --color=WHEN                      Colorize the output; WHEN can be ``always``, ``auto`` (default; i.e. only if stdout is a terminal), or ``never``.
@@ -80,28 +81,7 @@ With ``--color=always``, git machete always emits colors and with ``--color=auto
 
 --no-detect-squash-merges         Only consider *strict* (fast-forward or 2-parent) merges, rather than rebase/squash merges, when detecting if a branch is merged into its upstream (parent).
 
- .. note::
+**Config keys:**
 
-    To make it easier to select branch name from the ``status`` output on certain terminals
-    (e.g. `Alacritty <https://github.com/alacritty/alacritty>`_), you can add an extra
-    space between ``└─`` and ``branch name`` by setting ``git config machete.status.extraSpaceBeforeBranchName true``.
-
-    For example, by default the status is displayed as:
-
-    .. code-block::
-
-      develop
-      │
-      ├─feature_branch1
-      │
-      └─feature_branch2
-
-    With ``machete.status.extraSpaceBeforeBranchName`` config set to ``true``:
-
-    .. code-block::
-
-       develop
-       │
-       ├─ feature_branch1
-       │
-       └─ feature_branch2
+``machete.status.extraSpaceBeforeBranchName``
+    .. include:: status_config_key.rst

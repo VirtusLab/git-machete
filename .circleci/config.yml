@@ -85,13 +85,13 @@ jobs:
       - codecov/upload:
           file: coverage.xml
 
-  "sphinx docs and python 3_10 git 2_33_1":
+  "docs and python 3_10 git 2_33_1":
     executor: ubuntu_executor
     steps:
       - checkout
       - run:
           name: Run tests against Python 3.10 and git 2.33.1 (with building docs)
-          command: PYTHON_VERSION=3.10 GIT_VERSION=2.33.1 BUILD_DOCS=true  bash ci/tox/ci-run.sh
+          command: PYTHON_VERSION=3.10 GIT_VERSION=2.33.1 BUILD_SPHINX_DOCS=true CHECK_PY_DOCS_UP_TO_DATE=true bash ci/tox/ci-run.sh
       - store_test_results:
           path: test-results/
       - store_artifacts:
@@ -191,7 +191,7 @@ mandatory_jobs: &mandatory_jobs
   - python 3_7 git 2_7_6
   - pep8 and python 3_8 git 2_25_0
   - coverage and python 3_9 git 2_30_1
-  - sphinx docs and python 3_10 git 2_33_1
+  - docs and python 3_10 git 2_33_1
 
 workflows:
   version: 2
@@ -202,7 +202,7 @@ workflows:
       - python 3_7 git 2_7_6
       - pep8 and python 3_8 git 2_25_0
       - coverage and python 3_9 git 2_30_1
-      - sphinx docs and python 3_10 git 2_33_1
+      - docs and python 3_10 git 2_33_1
       - dry run deploy:
           filters:
             branches:

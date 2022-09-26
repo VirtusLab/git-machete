@@ -2,9 +2,11 @@ from typing import Any, List
 
 import pytest
 
-from git_machete.docs import long_docs
+from git_machete.generated_long_docs import long_docs
 
-from .mockers import GitRepositorySandbox, launch_command, mock_run_cmd
+from unittest import mock
+
+from .mockers import GitRepositorySandbox, launch_command, mock_exit_script_no_exit, mock_run_cmd
 
 
 class TestHelp:
@@ -56,3 +58,9 @@ class TestHelp:
                 assert expected_exit_code_when_failed == e.value.code, \
                     f"Verify that `git machete {command} --help` causes " \
                     f"SystemExit with {expected_exit_code} exit code."
+
+    @mock.patch('git_machete.cli.exit_script', mock_exit_script_no_exit)
+    def test_help_output_has_no_ansi_codes(self) -> None:
+        for command in long_docs.keys():
+            help_output = launch_command('help', command)
+            assert '\033' not in help_output
