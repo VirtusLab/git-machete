@@ -164,8 +164,6 @@ if __name__ == '__main__':
     path = docs_source_path + '/cli_help'
     commands_and_file_paths = {f.split('.')[0]: join(path, f) for f in sorted(os.listdir(path)) if isfile(join(path, f))}
 
-    cmd = 'github'
-    commands_and_file_paths = {cmd: f'docs/source/cli_help/{cmd}.rst'}
     for command, file in commands_and_file_paths.items():
         with open(file, 'r') as f:
             rst = f.read()
@@ -174,7 +172,6 @@ if __name__ == '__main__':
         rst = resolve_includes(rst=rst, docs_source_path=docs_source_path)
 
         html = rst2html(rst)
-        print(html)
 
         plain_text = html2txt(html)
         plain_text = skip_prefix_new_lines(plain_text)

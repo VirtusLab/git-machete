@@ -504,7 +504,7 @@ long_docs: Dict[str, str] = {
 
                  <b>--by=<github-login></b>
 
-              Checkout open PRs authored by the given GitHub user. `<github-login>` is the GitHub account name.
+              Checkout open PRs authored by the given GitHub user, where `<github-login>` is the GitHub account name.
 
                  <b>--mine</b>
               Checkout open PRs for the current user associated with the GitHub token.
