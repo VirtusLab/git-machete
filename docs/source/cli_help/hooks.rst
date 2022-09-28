@@ -15,9 +15,11 @@ Note: ``hooks`` is not a command as such, just a help topic (there is no ``git m
 
     At least two parameters (branch names) are passed to the hook:
 
-        * <new-upstream> is the upstream of the branch that has been slid out, or in case of multiple branches being slid out --- the upstream of the highest slid out branch;
+        * <new-upstream> is the upstream of the branch that has been slid out, or in case of multiple branches being slid out
+          --- the upstream of the highest slid out branch;
         * <lowest-slid-out-branch> is the branch that has been slid out, or in case of multiple branches being slid out --- the lowest slid out branch;
-        * <new-downstreams> are all the following (possibly zero) parameters, which correspond to all original downstreams of <lowest-slid-out-branch>, now reattached as the downstreams of <new-upstream>.
+        * <new-downstreams> are all the following (possibly zero) parameters, which correspond to all original downstreams
+          of <lowest-slid-out-branch>, now reattached as the downstreams of <new-upstream>.
 
     Note that this may be zero, one, or multiple branches.
 
@@ -54,11 +56,13 @@ Note: ``hooks`` is not a command as such, just a help topic (there is no ``git m
 ``machete-status-branch <branch-name>``
     The hook that is executed for each branch displayed during ``discover``, ``status`` and ``traverse``.
 
-    The standard output of this hook is displayed at the end of the line, after branch name, (optionally) custom annotation and (optionally) remote sync-ness status.
-    Standard error is ignored. If the hook returns a non-zero exit code, both stdout and stderr are ignored, and printing the status continues as usual.
+    The standard output of this hook is displayed at the end of the line, after branch name, (optionally) custom annotation and
+    (optionally) remote sync-ness status. Standard error is ignored. If the hook returns a non-zero exit code, both stdout and stderr
+    are ignored, and printing the status continues as usual.
 
     Note: the hook is always invoked with ``ASCII_ONLY`` variable passed into the environment.
-    If ``status`` runs in ASCII-only mode (i.e. if ``--color=auto`` and stdout is not a terminal, or if ``--color=never``), then ``ASCII_ONLY=true``, otherwise ``ASCII_ONLY=false``.
+    If ``status`` runs in ASCII-only mode (i.e. if ``--color=auto`` and stdout is not a terminal, or if ``--color=never``),
+    then ``ASCII_ONLY=true``, otherwise ``ASCII_ONLY=false``.
 
 Please see `hook_samples <https://github.com/VirtusLab/git-machete/tree/master/hook_samples>`_ directory in git-machete project for examples.
 An example of using the standard git ``post-commit hook`` to ``git machete add`` branches automatically is also included.

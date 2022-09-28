@@ -15,7 +15,8 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 
 ``machete.overrideForkPoint.<branch>.{to,whileDescendantOf}``:
     Executing ``git machete fork-point --override-to=<revision> [<branch>]`` sets up a fork point override for <branch>.
-    The override data is stored under ``machete.overrideForkPoint.<branch>.to`` and ``machete.overrideForkPoint.<branch>.whileDescendantOf`` git config keys.
+    The override data is stored under ``machete.overrideForkPoint.<branch>.to`` and
+    ``machete.overrideForkPoint.<branch>.whileDescendantOf`` git config keys.
 
 ``machete.status.extraSpaceBeforeBranchName``:
     .. include:: status_config_key.rst
@@ -32,7 +33,8 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
     Name of the editor used by ``git machete e[dit]``, example: ``vim`` or ``nano``.
 
 ``GIT_MACHETE_REBASE_OPTS``
-    Used to pass extra options to the underlying ``git rebase`` invocation (called by the executed command, such as: ``reapply``, ``slide-out``, ``traverse``, ``update``)
+    Used to pass extra options to the underlying ``git rebase`` invocation (called by the executed command,
+    such as: ``reapply``, ``slide-out``, ``traverse``, ``update``)
     Example: ``GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete update``.
 
 ``GITHUB_TOKEN``
