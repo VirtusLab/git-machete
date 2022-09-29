@@ -1,6 +1,6 @@
 from typing import Any
 
-from .mockers import (GitRepositorySandbox, assert_command, mock_run_cmd_and_forward_stdout)
+from .mockers import (GitRepositorySandbox, assert_command, launch_command, mock_run_cmd_and_forward_stdout)
 
 
 class TestDiff:
@@ -32,7 +32,30 @@ class TestDiff:
                                                   file_content='Develop content\n',
                                                   message='develop commit')
                 .push()
+                .write_to_file(file_name='file_name.txt',
+                               file_content='Content not committed\n')
         )
+
+        expected_status_output = """
+        diff --git a/develop_file_name.txt b/develop_file_name.txt
+        new file mode 100644
+        index 0000000..a3bd4e5
+        --- /dev/null
+        +++ b/develop_file_name.txt
+        @@ -0,0 +1 @@
+        +Develop content
+        diff --git a/file_name.txt b/file_name.txt
+        index ff98b6d..5c3aa83 100644
+        --- a/file_name.txt
+        +++ b/file_name.txt
+        @@ -1 +1 @@
+        -Some file content
+        +Content not committed
+        
+        """
+
+        # Test `git machete diff` without providing the branch name, git diff against the current working tree
+        assert_command(["diff"], expected_status_output, indent='')
 
         expected_status_output = """
         diff --git a/develop_file_name.txt b/develop_file_name.txt
@@ -44,9 +67,6 @@ class TestDiff:
         +Develop content
 
         """
-
-        # Test `git machete diff` without providing the branch name
-        assert_command(["diff"], expected_status_output, indent='')
 
         assert_command(["diff", "develop"], expected_status_output, indent='')
 

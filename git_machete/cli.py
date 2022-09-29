@@ -463,7 +463,12 @@ def set_utils_global_variables(
 
 def get_local_branch_short_name_from_arg_or_current_branch(
         branch_from_arg: Optional[AnyBranchName], git_context: GitContext) -> LocalBranchShortName:
-    return LocalBranchShortName.of(branch_from_arg.replace('refs/heads/', '')) if branch_from_arg else git_context.get_current_branch()
+    return get_local_branch_short_name_from_arg(branch_from_arg) if branch_from_arg else git_context.get_current_branch()
+
+
+def get_local_branch_short_name_from_arg(
+        branch_from_arg: Optional[AnyBranchName]) -> LocalBranchShortName:
+    return LocalBranchShortName.of(branch_from_arg.replace('refs/heads/', '')) if branch_from_arg else None
 
 
 def exit_script(status_code: Optional[int] = None, error: Optional[BaseException] = None) -> None:
@@ -564,7 +569,7 @@ def launch(orig_args: List[str]) -> None:
             machete_client.delete_unmanaged(opt_yes=cli_opts.opt_yes)
         elif cmd in {"diff", alias_by_command["diff"]}:
             machete_client.read_definition_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
-            machete_client.diff(branch=get_local_branch_short_name_from_arg_or_current_branch(cli_opts.opt_branch, git),
+            machete_client.diff(branch=get_local_branch_short_name_from_arg(cli_opts.opt_branch),
                                 opt_stat=cli_opts.opt_stat)  # passing None if not specified
         elif cmd == "discover":
             # No need to read definition file.
