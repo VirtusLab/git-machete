@@ -467,7 +467,7 @@ def get_local_branch_short_name_from_arg_or_current_branch(
 
 
 def get_local_branch_short_name_from_arg(
-        branch_from_arg: Optional[AnyBranchName]) -> LocalBranchShortName:
+        branch_from_arg: Optional[AnyBranchName]) -> Optional[LocalBranchShortName]:
     return LocalBranchShortName.of(branch_from_arg.replace('refs/heads/', '')) if branch_from_arg else None
 
 
