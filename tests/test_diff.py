@@ -1,6 +1,6 @@
 from typing import Any
 
-from .mockers import (GitRepositorySandbox, assert_command, launch_command, mock_run_cmd_and_forward_stdout)
+from .mockers import (GitRepositorySandbox, assert_command, mock_run_cmd_and_forward_stdout)
 
 
 class TestDiff:
@@ -51,7 +51,7 @@ class TestDiff:
         @@ -1 +1 @@
         -Some file content
         +Content not committed
-        
+
         """
 
         # Test `git machete diff` without providing the branch name, git diff against the current working tree
