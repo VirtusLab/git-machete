@@ -21,20 +21,16 @@ def rst2html(input_string: str, source_path: str = None, destination_path: str =
 
 def html2txt(html: str):
     html_elements = BeautifulSoup(html, features="html.parser")
-    INDENT = '   '
+    INDENT = 3 * ' '
 
     # remove style tags
     for tag in html_elements.select('style'):
         tag.decompose()
 
+    # remove non-breaking spaces
     for tag in html_elements.select('td'):
-        # remove non-breaking spaces
         if tag.text == u'\xa0':
             tag.decompose()
-        else:
-            # add new line and indent for the cells inside a table
-            if 'class' not in tag.attrs:
-                tag.insert_before(f'\n{2 * INDENT}')
 
     # substitute double backticks with a single backtick
     for tag in html_elements.select('tt'):
@@ -82,14 +78,19 @@ def html2txt(html: str):
     for tag in html_elements.select('li'):
         if tag.parent.parent is not None:
             if tag.parent.parent.name == 'li':
-                tag.string = indent('- ' + tag.text, INDENT + '  ')
+                lines = tag.text.splitlines()
+                tag.string = f' - {lines[0]}'
+                if len(lines) > 1:
+                    tag.string += indent('\n' + '\n'.join(lines[1:]), INDENT)
 
     # add indent and bullet points to the bulleted list
     for tag in html_elements.select('li'):
         if tag.parent.parent is not None:
             if tag.parent.parent.name != 'li':
-                tag.insert_before(f'\n{INDENT}*')
-                tag.string = indent(tag.text, ' ')
+                lines = tag.text.splitlines()
+                tag.string = f'\n{INDENT}* {lines[0]}'
+                if len(lines) > 1:
+                    tag.string += indent('\n' + '\n'.join(lines[1:]), INDENT + '  ')
 
     # format elements in the `Option:` section by adding new line and indent
     for tag in html_elements.select('kbd'):
@@ -102,6 +103,11 @@ def html2txt(html: str):
     # add indent to the nested description list
     for tag in html_elements.select('dd'):
         tag.string = '\n' + indent(tag.text, 2 * INDENT) + '\n'
+
+    # add new line and indent for the cells inside a table (e.g. options inside **Options:** section)
+    for tag in html_elements.select('td'):
+        if 'class' not in tag.attrs:
+            tag.string = indent(f'\n{tag.text}', 2 * INDENT)
 
     # format code examples
     for tag in html_elements.select('pre'):
@@ -118,7 +124,7 @@ def html2txt(html: str):
             if html_element != '\n':
                 new_text = html_element
             else:
-                new_text = html_element.replace('\n', '')
+                new_text = ''
             text += new_text
     return text
 

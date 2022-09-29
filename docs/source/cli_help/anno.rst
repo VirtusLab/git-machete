@@ -9,7 +9,8 @@ anno
     git machete anno [-b|--branch=<branch>] [<annotation text>]
     git machete anno -H|--sync-github-prs
 
-If invoked without any <annotation text>, prints out the custom annotation for the given branch (or current branch, if none specified with ``-b/--branch``).
+If invoked without any <annotation text>, prints out the custom annotation for the given branch
+(or current branch, if none specified with ``-b/--branch``).
 
 If invoked with a single empty string <annotation text>, like:
 

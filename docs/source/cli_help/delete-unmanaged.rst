@@ -12,7 +12,8 @@ Goes one-by-one through all the local git branches that don't exist in the defin
 and ask to delete each of them (with ``git branch -d`` or ``git branch -D``) if confirmed by user.
 No branch will be deleted unless explicitly confirmed by the user (or unless ``-y/--yes`` option is passed).
 
-Note: this should be used with care since deleting local branches can sometimes make it impossible for ``git machete`` to properly figure out fork points.
+Note: this should be used with care since deleting local branches can sometimes make it impossible
+for ``git machete`` to properly figure out fork points.
 See help for :ref:`fork-point` for more details.
 
 **Options:**

@@ -38,7 +38,8 @@ Apart from simply ASCII-formatting the definition file, this also:
         detected by commit equivalency (default), or by strict detection of merge commits (if ``--no-detect-squash-merges`` passed).
 
 
-    * prints (``untracked``/``ahead of <remote>``/``behind <remote>``/``diverged from [& older than] <remote>``) message if the branch is not in sync with its remote counterpart;
+    * prints (``untracked``/``ahead of <remote>``/``behind <remote>``/``diverged from [& older than] <remote>``) message if the branch
+      is not in sync with its remote counterpart;
 
     * displays the custom annotations (see help for :ref:`format` and :ref:`anno`) next to each branch, if present;
 
@@ -79,7 +80,8 @@ With ``--color=always``, git machete always emits colors and with ``--color=auto
 
 -L, --list-commits-with-hashes    Additionally list the short hashes and messages of commits introduced on each branch.
 
---no-detect-squash-merges         Only consider *strict* (fast-forward or 2-parent) merges, rather than rebase/squash merges, when detecting if a branch is merged into its upstream (parent).
+--no-detect-squash-merges         Only consider *strict* (fast-forward or 2-parent) merges, rather than rebase/squash merges,
+                                  when detecting if a branch is merged into its upstream (parent).
 
 **Config keys:**
 
