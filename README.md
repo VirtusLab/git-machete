@@ -48,7 +48,6 @@ git-machete requires Python >= 3.6. Python 2.x is no longer supported.
 ### Using Homebrew (macOS)
 
 ```shell script
-brew tap VirtusLab/git-machete
 brew install git-machete
 ```
 
