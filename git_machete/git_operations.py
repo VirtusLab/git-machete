@@ -455,7 +455,7 @@ class GitContext:
         return re.match("^[0-9a-f]{40}$", revision)
 
     def is_commit_present_in_repository(self, revision: AnyRevision) -> bool:
-        return True if self._run_git(f"rev-parse", "--verify --quiet {revision}" + "^{commit}", allow_non_zero=True) == 0 else False
+        return True if self._run_git("rev-parse", "--verify --quiet {revision}" + "^{commit}", allow_non_zero=True) == 0 else False
 
     def get_committer_unix_timestamp_by_revision(self, revision: AnyBranchName) -> int:
         if self.__committer_unix_timestamp_by_revision_cached is None:
