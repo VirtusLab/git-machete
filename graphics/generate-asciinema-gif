@@ -65,5 +65,5 @@ script | asciinema rec --command="bash -c \"$nested_command\"" "$cast"
 # Note: for some reason, the resulting gif manifested weird behavior for widths lower than 120;
 # I needed to crop the right margin in an external tool.
 asciicast2gif -s 0.75 -S 1 -w 120 -h 35 <(head -n $(( $(wc -l "$cast" | awk '{print $1}') - 2 )) "$cast") "$gif"
-echo "$gif"
+echo "Location of the generated GIF file: $gif"
 eog "$gif"
