@@ -36,24 +36,24 @@ spoonfeed() {
 
 function script() {
   spoonfeed 2 'git ma~chete dis~cover --ch~ecked-out-since="2 weeks ago"'
-  spoonfeed 3 'y^'
-  spoonfeed 3 '~clear'
+  spoonfeed 5 'y^'
+  spoonfeed 1 '~clear'
 
   spoonfeed 1 'git ma~chete st~atus --l~ist-commits'
-  spoonfeed 4 '~clear'
+  spoonfeed 5 '~clear'
 
   spoonfeed 1 'git chec~kout d~evelop'
   spoonfeed 1 'git ma~chete tr~averse'
-  spoonfeed 3 'y^'
-  spoonfeed 3 'yq^'
-  spoonfeed 2 '~clear'
+  spoonfeed 4 'y^'
+  spoonfeed 4 'yq^'
+  spoonfeed 3 '~clear'
 
   spoonfeed 1 'git ma~chete st~atus --l~ist-commits'
-  spoonfeed 4 '~clear'
+  spoonfeed 5 '~clear'
 
   spoonfeed 1 'git ma~chete tr~averse'
-  spoonfeed 3 'y^'
-  spoonfeed 3 'yq^'
+  spoonfeed 4 'y^'
+  spoonfeed 2 'yq^'
   spoonfeed 5 '~clear'
   spoonfeed 1 '~exit'
 }
@@ -61,9 +61,9 @@ function script() {
 init_contents='set -e -o pipefail -u; PS1=\(\\\$\(date\ +%H:%M:%S\)\)\ \$\ ; export GIT_MACHETE_DIM_AS_GRAY=true; export GIT_SEQUENCE_EDITOR=:'
 nested_command="bash --init-file <(echo '$init_contents')"
 script | asciinema rec --command="bash -c \"$nested_command\"" "$cast"
-# `head -n -3` to remove the 3 final lines responsible for the terminating `exit`
+# `head -n $(( $(wc -l "$cast" | awk '{print $1}') - 2 ))` to remove the 3 final lines responsible for the terminating `exit`
 # Note: for some reason, the resulting gif manifested weird behavior for widths lower than 120;
 # I needed to crop the right margin in an external tool.
-asciicast2gif -s 1 -S 0.75 -w 120 -h 35 <(head -n -3 "$cast") "$gif"
+asciicast2gif -s 0.75 -S 1 -w 120 -h 35 <(head -n $(( $(wc -l "$cast" | awk '{print $1}') - 2 )) "$cast") "$gif"
 echo "$gif"
 eog "$gif"
