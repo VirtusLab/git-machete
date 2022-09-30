@@ -128,7 +128,7 @@ class FullCommitHash(AnyRevision):
     def is_valid(value: str) -> bool:
         revision = AnyRevision(value)
         return value is not None and len(value) == 40 and all(c in string.hexdigits for c in value) \
-               and GitContext().is_commit_present_in_repository(revision)
+            and GitContext().is_commit_present_in_repository(revision)
 
     def full_name(self) -> "FullCommitHash":
         return self
