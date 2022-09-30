@@ -1632,8 +1632,8 @@ class MacheteClient:
         if not self.__git.is_ancestor_or_equal(while_descendant_of.full_name(), branch.full_name()):
             warn(fmt(
                 f"since branch <b>{branch}</b> is no longer a descendant of commit "
-                f"{self.__git.get_short_commit_hash_by_revision(while_descendant_of)}, ",
-                f"the fork point override to commit {self.__git.get_short_commit_hash_by_revision(to)} no longer applies.\n",
+                f"{while_descendant_of}, ",
+                f"the fork point override to commit {to} no longer applies.\n",
                 f"Consider running:\n  `git machete fork-point --unset-override {branch}`\n"))
             return None
         debug(f"since branch {branch} is descendant of while_descendant_of={while_descendant_of}, "

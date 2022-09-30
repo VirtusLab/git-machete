@@ -126,7 +126,8 @@ class FullCommitHash(AnyRevision):
 
     @staticmethod
     def is_valid(value: str) -> bool:
-        return value is not None and len(value) == 40 and all(c in string.hexdigits for c in value)
+        revision = AnyRevision(value)
+        return value is not None and GitContext.is_full_hash(revision) and GitContext().is_commit_present_in_repository(revision)
 
     def full_name(self) -> "FullCommitHash":
         return self
@@ -206,8 +207,9 @@ class GitContext:
 
     @staticmethod
     def _run_git(git_cmd: str, *args: str, **kwargs: Any) -> int:
+        allow_non_zero = kwargs.pop("allow_non_zero", False)
         exit_code = utils.run_cmd("git", git_cmd, *args, **kwargs)
-        if not kwargs.get("allow_non_zero") and exit_code != 0:
+        if not allow_non_zero and exit_code != 0:
             raise MacheteException(f"`{utils.get_cmd_shell_repr('git', git_cmd, *args, env=kwargs.get('env'))}` returned {exit_code}")
         return exit_code
 
@@ -451,6 +453,9 @@ class GitContext:
     @staticmethod
     def is_full_hash(revision: AnyRevision) -> Optional[Match[str]]:
         return re.match("^[0-9a-f]{40}$", revision)
+
+    def is_commit_present_in_repository(self, revision: AnyRevision) -> bool:
+        return True if self._run_git(f"rev-parse", "--verify --quiet {revision}" + "^{commit}", allow_non_zero=True) == 0 else False
 
     def get_committer_unix_timestamp_by_revision(self, revision: AnyBranchName) -> int:
         if self.__committer_unix_timestamp_by_revision_cached is None:

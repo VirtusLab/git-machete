@@ -1,4 +1,6 @@
-from .mockers import (GitRepositorySandbox, assert_command, launch_command)
+from typing import Any
+
+from .mockers import (get_current_commit_hash, GitRepositorySandbox, assert_command, launch_command, mock_run_cmd)
 
 import os
 
@@ -51,29 +53,52 @@ class TestForkPoint:
 
         assert_command(["fork-point", 'refs/heads/develop'], "515319fa0ab47f372f6159bcc8ac27b43ee8a0ed\n", strip_indentation=False)
 
-    def test_fork_point_override(self) -> None:
+    def test_fork_point_override(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
         """
         Verify behaviour of a 'git machete fork-point' command with fork-point being overridden by config key.
         """
         (
             self.repo_sandbox.new_branch("master")
-                .commit("master commit")
-                .new_branch("develop")
+                .commit("master first commit")
+        )
+        master_branch_first_commit_hash = get_current_commit_hash()
+        self.repo_sandbox.commit("master second commit")
+        develop_branch_fork_point = get_current_commit_hash()
+        (
+            self.repo_sandbox.new_branch("develop")
                 .commit("develop commit")
         )
+
         launch_command('discover', '-y')
 
         # invalid fork point with length not equal to 40
         self.repo_sandbox.add_git_config_key('machete.overrideForkPoint.develop.to', 39 * 'a')
         self.repo_sandbox.add_git_config_key('machete.overrideForkPoint.develop.whileDescendantOf', 39 * 'b')
-        launch_command('fork-point')
+        # with pytest.raises(SystemExit):
+        assert launch_command('fork-point').strip() == develop_branch_fork_point
 
         # invalid, non-hexadecimal alphanumeric characters present in the fork point
         self.repo_sandbox.add_git_config_key('machete.overrideForkPoint.develop.to', 20 * 'g1')
         self.repo_sandbox.add_git_config_key('machete.overrideForkPoint.develop.whileDescendantOf', 20 * 'g1')
-        launch_command('fork-point')
+        assert launch_command('fork-point').strip() == develop_branch_fork_point
 
         # invalid, non-hexadecimal special characters present in the fork point
         self.repo_sandbox.add_git_config_key('machete.overrideForkPoint.develop.to', 40 * '#')
         self.repo_sandbox.add_git_config_key('machete.overrideForkPoint.develop.whileDescendantOf', 40 * '!')
-        launch_command('fork-point')
+        assert launch_command('fork-point').strip() == develop_branch_fork_point
+
+        # valid commit hash but not present in the repository
+        self.repo_sandbox.add_git_config_key('machete.overrideForkPoint.develop.to', 40 * 'a')
+        self.repo_sandbox.add_git_config_key('machete.overrideForkPoint.develop.whileDescendantOf', 40 * 'a')
+        expected_output = (
+            'Warn: since branch develop is no longer a descendant of commit '
+            f'{40 * "a"}, the fork point override to commit '
+            f'{40 * "a"} no longer applies.\n'
+            'Consider running:\n'
+            '  `git machete fork-point --unset-override develop`\n''\n'
+        )
+        assert launch_command('fork-point').strip() == expected_output + develop_branch_fork_point
+
+        # valid fork-point override commit hash
+        launch_command('fork-point', f'--override-to={master_branch_first_commit_hash}')
