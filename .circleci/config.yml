@@ -109,11 +109,6 @@ jobs:
           command: bash ci/pypi/ci-deploy.sh --dry-run
 
       - run:
-          name: '[Dry run] Update Homebrew tap with local installation test'
-          # Prerequisites: artifacts must be released to test PyPI first
-          command: bash ci/homebrew-tap/ci-deploy.sh --dry-run
-
-      - run:
           name: '[Dry run] Publish image to Docker Hub'
           command: bash ci/docker/ci-deploy.sh --dry-run
 
@@ -146,11 +141,6 @@ jobs:
       - run:
           name: 'Deploy to PyPI'
           command: bash ci/pypi/ci-deploy.sh
-
-      - run:
-          name: 'Update Homebrew tap'
-          # Prerequisites: artifacts must be released to PyPI first
-          command: bash ci/homebrew-tap/ci-deploy.sh
 
       - run:
           name: 'Publish image to Docker Hub'
