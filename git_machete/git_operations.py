@@ -125,10 +125,10 @@ class FullCommitHash(AnyRevision):
         return None
 
     @staticmethod
-    def is_valid(value: str) -> bool:
+    def is_valid(value: str, git_context: "GitContext") -> bool:
         revision = AnyRevision(value)
         return value is not None and len(value) == 40 and all(c in string.hexdigits for c in value) \
-            and GitContext().is_commit_present_in_repository(revision)
+            and git_context.is_commit_present_in_repository(revision)
 
     def full_name(self) -> "FullCommitHash":
         return self
@@ -208,18 +208,20 @@ class GitContext:
 
     @staticmethod
     def _run_git(git_cmd: str, *args: str, **kwargs: Any) -> int:
-        allow_non_zero = kwargs.pop("allow_non_zero", False)
-        exit_code = utils.run_cmd("git", git_cmd, *args, **kwargs)
+        kwargs_ = kwargs.copy()
+        allow_non_zero = kwargs_.pop("allow_non_zero", False)
+        exit_code = utils.run_cmd("git", git_cmd, *args, **kwargs_)
         if not allow_non_zero and exit_code != 0:
-            raise MacheteException(f"`{utils.get_cmd_shell_repr('git', git_cmd, *args, env=kwargs.get('env'))}` returned {exit_code}")
+            raise MacheteException(f"`{utils.get_cmd_shell_repr('git', git_cmd, *args, env=kwargs_.get('env'))}` returned {exit_code}")
         return exit_code
 
     @staticmethod
     def _popen_git(git_cmd: str, *args: str, **kwargs: Any) -> str:
-        allow_non_zero = kwargs.pop("allow_non_zero", False)
-        exit_code, stdout, stderr = utils.popen_cmd("git", git_cmd, *args, **kwargs)
+        kwargs_ = kwargs.copy()
+        allow_non_zero = kwargs_.pop("allow_non_zero", False)
+        exit_code, stdout, stderr = utils.popen_cmd("git", git_cmd, *args, **kwargs_)
         if not allow_non_zero and exit_code != 0:
-            exit_code_msg: str = fmt(f"`{utils.get_cmd_shell_repr('git', git_cmd, *args, env=kwargs.get('env'))}` returned {exit_code}\n")
+            exit_code_msg: str = fmt(f"`{utils.get_cmd_shell_repr('git', git_cmd, *args, env=kwargs_.get('env'))}` returned {exit_code}\n")
             stdout_msg: str = f"\n{utils.bold('stdout')}:\n{utils.dim(stdout)}" if stdout else ""
             stderr_msg: str = f"\n{utils.bold('stderr')}:\n{utils.dim(stderr)}" if stderr else ""
             # Not applying the formatter to avoid transforming whatever characters might be in the output of the command.
@@ -456,7 +458,7 @@ class GitContext:
         return re.match("^[0-9a-f]{40}$", revision)
 
     def is_commit_present_in_repository(self, revision: AnyRevision) -> bool:
-        return True if self._run_git("rev-parse", f"--verify --quiet {revision}" + "^{commit}", allow_non_zero=True) == 0 else False
+        return self._run_git("rev-parse", "--verify", "--quiet", revision + "^{commit}", allow_non_zero=True) == 0
 
     def get_committer_unix_timestamp_by_revision(self, revision: AnyBranchName) -> int:
         if self.__committer_unix_timestamp_by_revision_cached is None:
