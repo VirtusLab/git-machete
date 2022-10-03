@@ -1,4 +1,4 @@
-from git_operations import FullCommitHash, GitContext, LocalBranchShortName
+from git_machete.git_operations import FullCommitHash, GitContext, LocalBranchShortName
 from .mockers import (get_current_commit_hash, GitRepositorySandbox)
 
 
