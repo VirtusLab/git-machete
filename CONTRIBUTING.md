@@ -157,8 +157,6 @@ Review fixes should be pushed on separate commits for easier viewing on GitHub (
    Instruction on how to be a maintainer and other helpful tips can be found in
    [conda-forge recipe maintainer docs](https://conda-forge.org/docs/maintainer/adding_pkgs.html#recipe-maintainer).
 
-1. Verify that the latest commit in [VirtusLab/homebrew-git-machete](https://github.com/VirtusLab/homebrew-git-machete) tap repo refers to the latest version.
-
 1. Verify that a Docker image for the new version has been pushed to Docker Hub: [gitmachete/git-machete](https://hub.docker.com/r/gitmachete/git-machete/tags).
 
 1. Verify that a newly released version is present in `latest/stable` channel in [Snap](https://snapcraft.io/git-machete/releases).
