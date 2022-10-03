@@ -2,6 +2,10 @@
 
 ## New in git-machete 3.12.1
 
+- added: `git-machete` is now available in homebrew core formulae
+
+## New in git-machete 3.12.1
+
 - fixed: removed redundant files from Ubuntu package
 - fixed: fork-point overridden with invalid commit hash is ignored (doesn't crash git-machete anymore)
 - fixed: `git machete diff` now works as intended (runs `git diff` against the current working directory, not the current branch)
