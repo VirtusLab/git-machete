@@ -1,6 +1,6 @@
 # Release notes
 
-## New in git-machete 3.12.1
+## New in git-machete 3.12.2
 
 - added: `git-machete` is now available in homebrew core formulae
 
