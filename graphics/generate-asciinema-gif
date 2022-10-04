@@ -6,7 +6,7 @@ timestamp=$(date +%s)
 cast=/tmp/${timestamp}.cast
 gif=/tmp/${timestamp}.gif
 
-spoonfeed() {
+function spoonfeed() {
   init_delay=$1
   sleep $init_delay
 
@@ -61,9 +61,7 @@ function script() {
 init_contents='set -e -o pipefail -u; PS1=\(\\\$\(date\ +%H:%M:%S\)\)\ \$\ ; export GIT_MACHETE_DIM_AS_GRAY=true; export GIT_SEQUENCE_EDITOR=:'
 nested_command="bash --init-file <(echo '$init_contents')"
 script | asciinema rec --command="bash -c \"$nested_command\"" "$cast"
-# `head -n $(( $(wc -l "$cast" | awk '{print $1}') - 2 ))` to remove the 3 final lines responsible for the terminating `exit`
-# Note: for some reason, the resulting gif manifested weird behavior for widths lower than 120;
-# I needed to crop the right margin in an external tool.
-asciicast2gif -s 0.75 -S 1 -w 120 -h 35 <(head -n $(( $(wc -l "$cast" | awk '{print $1}') - 2 )) "$cast") "$gif"
+# `head -n ...` to remove the 3 final lines responsible for the terminating `exit`
+agg --speed 0.75 --cols 120 --rows 35 <(head -n $(( $(wc -l < "$cast") - 2 )) "$cast") "$gif"
 echo "Location of the generated GIF file: $gif"
 eog "$gif"

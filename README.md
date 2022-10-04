@@ -215,7 +215,7 @@ this approach **works poorly with stacked PRs**.
 You might end up with a very tangled history very quickly, and a non-trivial sequence of `git cherry-pick`s might be needed to restore order.
 
 That is why we recommend using rebase over merge for stacked PRs.
-However, we still recommend using merge for the narrow case of [backporting hotfixes](https://slides.com/plipski/git-machete/#/11)).
+However, we still recommend using merge for the narrow case of [backporting hotfixes](https://slides.com/plipski/git-machete/#/11).
 
 <br/>
 
