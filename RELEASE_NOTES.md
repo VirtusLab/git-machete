@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.12.2
+
 ## New in git-machete 3.12.1
 
 - fixed: removed redundant files from Ubuntu package
