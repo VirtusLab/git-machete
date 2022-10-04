@@ -23,5 +23,13 @@ if [[ $do_push == true ]]; then
   brew bump-formula-pr --url $url --sha256 $sha256 git-machete
 else
   echo "Refraining from push since it's a dry run"
-  brew bump-formula-pr --dry-run --url $url --sha256 $sha256 git-machete
+  brew bump-formula-pr --write-only --url $url --sha256 $sha256 git-machete
 fi
+
+brew install git-machete
+if [[ "$version" != "$(git machete --version | cut -d' ' -f4)" ]]; then
+  echo "Something went wrong during brew installation: installed version does not match version from formula."
+  echo "Formula version: $version, installed version: $(git machete --version | cut -d' ' -f4)"
+  exit 1
+fi
+brew remove git-machete
