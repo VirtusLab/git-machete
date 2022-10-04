@@ -109,7 +109,7 @@ jobs:
           command: bash ci/pypi/ci-deploy.sh --dry-run
 
       - run:
-          name: '[Dry run] Update Homebrew with local installation test'
+          name: '[Dry run] Update Homebrew'
           # Prerequisites: artifacts must be released to test PyPI first
           command: bash ci/homebrew/ci-deploy.sh --dry-run
 
@@ -208,7 +208,6 @@ workflows:
             branches:
               only:
                 - "develop"
-                - "bug/fix_homebrew_update"
                 - "/hotfix.*/"
           requires:
             *mandatory_jobs
