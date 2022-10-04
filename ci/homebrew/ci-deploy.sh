@@ -14,7 +14,7 @@ else
 fi
 
 version=$(python3 setup.py --version)
-url="https://pypi.org/packages/source/g/git-machete/git-machete-$version.tar.gz"
+url="https://$pypi_host/packages/source/g/git-machete/git-machete-$version.tar.gz"
 sha256=$(
   curl -s https://$pypi_host/pypi/git-machete/$version/json \
   | jq --raw-output '.urls | map(select(.packagetype == "sdist")) | .[0].digests.sha256')
@@ -26,7 +26,7 @@ else
   brew bump-formula-pr --write-only --url $url --sha256 $sha256 git-machete
 fi
 
-brew install --build-from-source --formula /home/linuxbrew/.linuxbrew/Homebrew/Library/Taps/homebrew/homebrew-core/Formula/git-machete.rb
+brew install git-machete
 if [[ "$version" != "$(git machete --version | cut -d' ' -f4)" ]]; then
   echo "Something went wrong during brew installation: installed version does not match version from formula."
   echo "Formula version: $version, installed version: $(git machete --version | cut -d' ' -f4)"
