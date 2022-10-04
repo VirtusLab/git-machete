@@ -208,7 +208,7 @@ workflows:
             branches:
               only:
                 - "develop"
-                - bug/fix_homebrew_update
+                - "bug/fix_homebrew_update"
                 - "/hotfix.*/"
           requires:
             *mandatory_jobs
