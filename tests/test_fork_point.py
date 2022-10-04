@@ -54,7 +54,7 @@ class TestForkPoint:
         assert_command(["fork-point", 'refs/heads/develop'], "515319fa0ab47f372f6159bcc8ac27b43ee8a0ed\n", strip_indentation=False)
 
     def test_fork_point_override(self, mocker: Any) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        # mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
         """
         Verify behaviour of a 'git machete fork-point' command with fork-point being overridden by config key.
         """
@@ -71,7 +71,7 @@ class TestForkPoint:
         )
 
         launch_command('discover', '-y')
-
+        y = launch_command('fork-point').strip()
         # invalid fork point with length not equal to 40
         self.repo_sandbox.add_git_config_key('machete.overrideForkPoint.develop.to', 39 * 'a')
         self.repo_sandbox.add_git_config_key('machete.overrideForkPoint.develop.whileDescendantOf', 39 * 'b')
@@ -91,14 +91,10 @@ class TestForkPoint:
         # valid commit hash but not present in the repository
         self.repo_sandbox.add_git_config_key('machete.overrideForkPoint.develop.to', 40 * 'a')
         self.repo_sandbox.add_git_config_key('machete.overrideForkPoint.develop.whileDescendantOf', 40 * 'a')
-        expected_output = (
-            'Warn: since branch develop is no longer a descendant of commit '
-            f'{40 * "a"}, the fork point override to commit '
-            f'{40 * "a"} no longer applies.\n'
-            'Consider running:\n'
-            '  `git machete fork-point --unset-override develop`\n''\n'
-        )
-        assert launch_command('fork-point').strip() == expected_output + develop_branch_fork_point
+
+        # assert launch_command('fork-point').strip() == develop_branch_fork_point
 
         # valid fork-point override commit hash
         launch_command('fork-point', f'--override-to={master_branch_first_commit_hash}')
+        x = launch_command('fork-point').strip()
+        assert launch_command('fork-point').strip() == master_branch_first_commit_hash
