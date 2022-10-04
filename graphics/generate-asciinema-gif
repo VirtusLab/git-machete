@@ -4,6 +4,7 @@ set -e -o pipefail -u
 
 timestamp=$(date +%s)
 cast=/tmp/${timestamp}.cast
+gif_tmp=/tmp/${timestamp}_tmp.gif
 gif=/tmp/${timestamp}.gif
 
 function spoonfeed() {
@@ -62,6 +63,7 @@ init_contents='set -e -o pipefail -u; PS1=\(\\\$\(date\ +%H:%M:%S\)\)\ \$\ ; exp
 nested_command="bash --init-file <(echo '$init_contents')"
 script | asciinema rec --command="bash -c \"$nested_command\"" "$cast"
 # `head -n ...` to remove the 3 final lines responsible for the terminating `exit`
-agg --speed 0.75 --cols 120 --rows 35 <(head -n $(( $(wc -l < "$cast") - 2 )) "$cast") "$gif"
+agg --speed 0.75 --cols 120 --rows 35 <(head -n $(( $(wc -l < "$cast") - 2 )) "$cast") "$gif_tmp"
+gifsicle --crop 0,0+710x572 --colors 32 "$gif_tmp" > "$gif"
 echo "Location of the generated GIF file: $gif"
 eog "$gif"
