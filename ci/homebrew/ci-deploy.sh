@@ -26,7 +26,7 @@ else
   brew bump-formula-pr --write-only --url $url --sha256 $sha256 git-machete
 fi
 
-brew install git-machete
+brew install --build-from-source --formula /home/linuxbrew/.linuxbrew/Homebrew/Library/Taps/homebrew/homebrew-core/Formula/git-machete.rb
 if [[ "$version" != "$(git machete --version | cut -d' ' -f4)" ]]; then
   echo "Something went wrong during brew installation: installed version does not match version from formula."
   echo "Formula version: $version, installed version: $(git machete --version | cut -d' ' -f4)"
