@@ -52,7 +52,8 @@ Run [`graphics/setup-sandbox`](graphics/setup-sandbox) script to set up a test r
 
 1. Generate sandbox repositories as shown above.
 1. `cd` into `~/machete-sandbox` and switch to `develop` branch with `git checkout develop`
-1. Install [asciinema](https://github.com/asciinema/asciinema), [agg](https://github.com/asciinema/agg) and their dependencies.
+1. Install [asciinema](https://github.com/asciinema/asciinema), [agg](https://github.com/asciinema/agg), [gifsicle](https://github.com/kohler/gifsicle)
+   and their dependencies.
 1. Run [`graphics/generate-asciinema-gif`](graphics/generate-asciinema-gif) (It will print the location of the generated GIF file)
 1. Replace existing GIF [`graphics/discover-status-traverse.gif`](graphics/discover-status-traverse.gif) with the new one.
 

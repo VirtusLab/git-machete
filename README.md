@@ -32,7 +32,7 @@ even when **multiple branches** are present in the repository
 
 [//]: # (The image is referenced by its full URL to ensure it renders correctly on https://pypi.org/project/git-machete/)
 <p align="center">
-    <img src="https://raw.githubusercontent.com/VirtusLab/git-machete/docs/560-slow-down-the-gif-in-readme/graphics/discover-status-traverse.gif"
+    <img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/graphics/discover-status-traverse.gif"
          alt="git machete discover, status and traverse" />
 </p>
 
