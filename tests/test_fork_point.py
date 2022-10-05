@@ -1,4 +1,4 @@
-from .mockers import (GitRepositorySandbox, assert_command, launch_command)
+from .mockers import (get_current_commit_hash, GitRepositorySandbox, assert_command, launch_command)
 
 import os
 
@@ -57,8 +57,13 @@ class TestForkPoint:
         """
         (
             self.repo_sandbox.new_branch("master")
-                .commit("master commit")
-                .new_branch("develop")
+                .commit("master first commit")
+        )
+        master_branch_first_commit_hash = get_current_commit_hash()
+        self.repo_sandbox.commit("master second commit")
+        develop_branch_fork_point = get_current_commit_hash()
+        (
+            self.repo_sandbox.new_branch("develop")
                 .commit("develop commit")
         )
         launch_command('discover', '-y')
@@ -66,14 +71,23 @@ class TestForkPoint:
         # invalid fork point with length not equal to 40
         self.repo_sandbox.add_git_config_key('machete.overrideForkPoint.develop.to', 39 * 'a')
         self.repo_sandbox.add_git_config_key('machete.overrideForkPoint.develop.whileDescendantOf', 39 * 'b')
-        launch_command('fork-point')
+        assert launch_command('fork-point').strip() == develop_branch_fork_point
 
         # invalid, non-hexadecimal alphanumeric characters present in the fork point
         self.repo_sandbox.add_git_config_key('machete.overrideForkPoint.develop.to', 20 * 'g1')
         self.repo_sandbox.add_git_config_key('machete.overrideForkPoint.develop.whileDescendantOf', 20 * 'g1')
-        launch_command('fork-point')
+        assert launch_command('fork-point').strip() == develop_branch_fork_point
 
         # invalid, non-hexadecimal special characters present in the fork point
         self.repo_sandbox.add_git_config_key('machete.overrideForkPoint.develop.to', 40 * '#')
         self.repo_sandbox.add_git_config_key('machete.overrideForkPoint.develop.whileDescendantOf', 40 * '!')
-        launch_command('fork-point')
+        assert launch_command('fork-point').strip() == develop_branch_fork_point
+
+        # valid commit hash but not present in the repository
+        self.repo_sandbox.add_git_config_key('machete.overrideForkPoint.develop.to', 40 * 'a')
+        self.repo_sandbox.add_git_config_key('machete.overrideForkPoint.develop.whileDescendantOf', 40 * 'a')
+        assert launch_command('fork-point').strip() == develop_branch_fork_point
+
+        # valid fork-point override commit hash
+        launch_command('fork-point', f'--override-to={master_branch_first_commit_hash}')
+        assert launch_command('fork-point').strip() == master_branch_first_commit_hash

@@ -1,6 +1,6 @@
 import inspect
 from enum import auto, Enum
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, TypeVar
+from typing import Any, Callable, Dict, Iterable, List, NamedTuple, Optional, Set, Tuple, TypeVar
 
 import os
 import sys
@@ -319,3 +319,9 @@ sync_to_parent_status_to_junction_ascii_only_map: Dict[SyncToParentStatus, str] 
     SyncToParentStatus.InSyncButForkPointOff: "?-",
     SyncToParentStatus.OutOfSync: "x-"
 }
+
+
+class CommandResult(NamedTuple):
+    stdout: str
+    stderr: str
+    exit_code: int

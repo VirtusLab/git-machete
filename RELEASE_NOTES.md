@@ -3,6 +3,7 @@
 ## New in git-machete 3.12.2
 
 - added: `git-machete` is now available in homebrew core formulae; if `git-machete` has already been installed from the tap on a given machine, `brew` should automatically pull new updates from homebrew core from now on
+- fixed: fork-point overridden with commit hash that no longer exists is ignored (doesn't crash git-machete anymore)
 
 ## New in git-machete 3.12.1
 
