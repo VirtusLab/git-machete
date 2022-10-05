@@ -1,5 +1,7 @@
+from unittest import mock
+
 from git_machete.git_operations import FullCommitHash, GitContext, LocalBranchShortName
-from .mockers import (get_current_commit_hash, GitRepositorySandbox)
+from .mockers import (get_current_commit_hash, GitRepositorySandbox, mock_run_cmd)
 
 
 class TestGitOperations:
@@ -18,32 +20,40 @@ class TestGitOperations:
             .execute('git config user.name "Tester Test"')
         )
 
+    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)
     def test_run_git(self) -> None:
         """
-        Verify behaviour of a 'GitContext._run_git()' method via `GitContext.is_commit_present_in_repository()` method
+        Verify behaviour of a 'GitContext._run_git()' method
         """
         (
             self.repo_sandbox.new_branch("master")
-                .commit('Master commit')
+                .commit("master first commit")
         )
-        existing_commit_hash = get_current_commit_hash()
+        master_branch_first_commit_hash = get_current_commit_hash()
+
         git = GitContext()
-        assert git.is_commit_present_in_repository(revision=FullCommitHash(40 * 'a')) is False
-        assert git.is_commit_present_in_repository(revision=existing_commit_hash) is True
+        assert git._run_git("rev-parse", "--verify", "--quiet", master_branch_first_commit_hash + "^{commit}", allow_non_zero=True) == 0
+        assert git._run_git("rev-parse", "HEAD") == 0
 
     def test_popen_git(self) -> None:
         """
-        Verify behaviour of a 'GitContext._popen_git()' method via `GitContext.is_ancestor_or_equal()` method
+        Verify behaviour of a 'GitContext._popen_git()' method
         """
         (
             self.repo_sandbox.new_branch("master")
-                .commit('Master commit')
-                .new_branch("develop")
-                .commit("develop commit.")
+                .commit("master first commit")
+        )
+        master_branch_first_commit_hash = get_current_commit_hash()
+        (
+            self.repo_sandbox.new_branch("develop")
+                .commit("develop commit")
                 .new_branch("feature")
-                .commit('feature commit.')
+                .commit("feature commit")
         )
         git = GitContext()
+        assert git.is_commit_present_in_repository(revision=FullCommitHash(40 * 'a')) is False
+        assert git.is_commit_present_in_repository(revision=master_branch_first_commit_hash) is True
+
         assert git.is_ancestor_or_equal(earlier_revision=LocalBranchShortName('feature'),
                                         later_revision=LocalBranchShortName('master')) is False
         assert git.is_ancestor_or_equal(earlier_revision=LocalBranchShortName('develop'),
