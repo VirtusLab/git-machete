@@ -8,7 +8,7 @@ import shlex
 import sys
 
 from git_machete.exceptions import MacheteException
-from git_machete.utils import colored, CommandOutput, debug, fmt, AnsiEscapeCodes
+from git_machete.utils import colored, CommandResult, debug, fmt, AnsiEscapeCodes
 from git_machete import utils
 from git_machete.constants import (
     GitFormatPatterns, MAX_COUNT_FOR_INITIAL_LOG, SyncToRemoteStatuses)
@@ -216,7 +216,7 @@ class GitContext:
         return exit_code
 
     @staticmethod
-    def _popen_git(git_cmd: str, *args: str, **kwargs: Any) -> CommandOutput:
+    def _popen_git(git_cmd: str, *args: str, **kwargs: Any) -> CommandResult:
         kwargs_ = kwargs.copy()
         allow_non_zero = kwargs_.pop("allow_non_zero", False)
         exit_code, stdout, stderr = utils.popen_cmd("git", git_cmd, *args, **kwargs_)
@@ -226,7 +226,7 @@ class GitContext:
             stderr_msg: str = f"\n{utils.bold('stderr')}:\n{utils.dim(stderr)}" if stderr else ""
             # Not applying the formatter to avoid transforming whatever characters might be in the output of the command.
             raise MacheteException(exit_code_msg + stdout_msg + stderr_msg, apply_fmt=False)
-        return CommandOutput(stdout, stderr, exit_code)
+        return CommandResult(stdout, stderr, exit_code)
 
     def get_default_editor_with_args(self) -> List[str]:
         # Based on the git's own algorithm for identifying the editor.

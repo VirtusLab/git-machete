@@ -321,7 +321,7 @@ sync_to_parent_status_to_junction_ascii_only_map: Dict[SyncToParentStatus, str] 
 }
 
 
-class CommandOutput(NamedTuple):
+class CommandResult(NamedTuple):
     stdout: str
     stderr: str
     exit_code: int
