@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.12.5
+
+- added: `git machete github retarget-pr` now updates annotation for the branch associated with the retargeted PR
+
 ## New in git-machete 3.12.4
 
 - fixed: Homebrew release process
