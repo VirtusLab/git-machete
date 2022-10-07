@@ -50,8 +50,7 @@ Run [`graphics/setup-sandbox`](graphics/setup-sandbox) script to set up a test r
 
 ## Regenerate the GIF in README.md
 
-1. Generate sandbox repositories as shown above.
-1. `cd` into `~/machete-sandbox` and switch to `develop` branch with `git checkout develop`
+1. Generate sandbox repositories as shown above and `cd` into `~/machete-sandbox`.
 1. Install [asciinema](https://github.com/asciinema/asciinema), [agg](https://github.com/asciinema/agg), [gifsicle](https://github.com/kohler/gifsicle)
    and their dependencies.
 1. Run [`graphics/generate-asciinema-gif`](graphics/generate-asciinema-gif) (It will print the location of the generated GIF file)

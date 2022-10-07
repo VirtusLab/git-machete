@@ -64,7 +64,8 @@ nested_command="bash --init-file <(echo '$init_contents')"
 script | asciinema rec --command="bash -c \"$nested_command\"" "$cast"
 # `head -n ...` to remove the 3 final lines responsible for the terminating `exit`
 # `--cols 140 --rows 40` to fit the text on the screen without breaking the lines
-agg --speed 0.75 --cols 140 --rows 40 --font-size 12 <(head -n $(( $(wc -l < "$cast") - 2 )) "$cast") "$gif_tmp"
+#agg --speed 0.75 --cols 140 --rows 40 --font-size 12 --theme asciinema <(head -n $(( $(wc -l < "$cast") - 2 )) "$cast") "$gif_tmp"
+asciicast2gif -s 1 -S 1 -w 120 -h 35 <(head -n $(( $(wc -l < "$cast") - 2 )) "$cast") "$gif_tmp"
 # `--crop 0,0+890x600` to match the text
-gifsicle --crop 0,0+890x600 --colors 32 "$gif_tmp" > "$gif"
+gifsicle --crop 0,0+890x600 --colors 256 "$gif_tmp" > "$gif"
 echo "Location of the generated GIF file: $gif"
