@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.12.5
+
+- fixed: improved formatting of `git machete` commands output
+
 ## New in git-machete 3.12.4
 
 - fixed: Homebrew release process
@@ -8,10 +12,6 @@
 
 - fixed: release instructions in CONTRIBUTING.md are now correct
 - fixed: release to Homebrew doesn't crash the deployment process
-
-## New in git-machete 3.12.2
-
-- fixed: improved formatting of `git machete` commands output
 
 ## New in git-machete 3.12.2
 
