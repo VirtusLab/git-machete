@@ -120,12 +120,12 @@ class TestGithub:
         launch_command("discover", "-y")
         assert_command(
             ['github', 'retarget-pr'],
-            'The base branch of PR #15 has been switched to `branch-1`\n',
+            'The base branch of PR #15 has been switched to branch-1\n',
             strip_indentation=False
         )
         assert_command(
             ['github', 'retarget-pr'],
-            'The base branch of PR #15 is already `branch-1`\n',
+            'The base branch of PR #15 is already branch-1\n',
             strip_indentation=False
         )
 
@@ -186,7 +186,7 @@ class TestGithub:
         launch_command("discover", "-y")
         assert_command(
             ['github', 'retarget-pr'],
-            'The base branch of PR #20 has been switched to `feature`\n',
+            'The base branch of PR #20 has been switched to feature\n',
             strip_indentation=False
         )
 
@@ -212,7 +212,7 @@ class TestGithub:
 
         assert_command(
             ['github', 'retarget-pr'],
-            'The base branch of PR #25 has been switched to `feature`\n',
+            'The base branch of PR #25 has been switched to feature\n',
             strip_indentation=False
         )
 
@@ -227,7 +227,7 @@ class TestGithub:
         launch_command("discover", "-y")
         assert_command(
             ['github', 'retarget-pr'],
-            'The base branch of PR #35 has been switched to `feature_2`\n',
+            'The base branch of PR #35 has been switched to feature_2\n',
             strip_indentation=False
         )
 
@@ -528,7 +528,7 @@ class TestGithub:
         )
         launch_command('discover')
 
-        expected_error_message = "All commits in `testing/endpoints` branch are already included in `develop` branch.\n" \
+        expected_error_message = "All commits in testing/endpoints branch are already included in develop branch.\n" \
                                  "Cannot create pull request."
         with pytest.raises(MacheteException) as e:
             launch_command("github", "create-pr")
@@ -537,7 +537,7 @@ class TestGithub:
                 'Verify that expected error message has appeared when head branch is equal or ancestor of base branch.'
 
         self.repo_sandbox.check_out('develop')
-        expected_error_message = "Branch `develop` does not have a parent branch (it is a root), " \
+        expected_error_message = "Branch develop does not have a parent branch (it is a root), " \
                                  "base branch for the PR cannot be established."
         with pytest.raises(MacheteException) as e:
             launch_command("github", "create-pr")
@@ -584,8 +584,8 @@ class TestGithub:
         launch_command('discover')
 
         expected_msg = ("Fetching origin...\n"
-                        "Warn: Base branch for this PR (`feature/api_handling`) is not found on remote, pushing...\n"
-                        "Creating a PR from `feature/api_exception_handling` to `feature/api_handling`... OK, see www.github.com\n")
+                        "Warn: Base branch for this PR (feature/api_handling) is not found on remote, pushing...\n"
+                        "Creating a PR from feature/api_exception_handling to feature/api_handling... OK, see www.github.com\n")
         assert_command(['github', 'create-pr'], expected_msg, strip_indentation=False)
         assert_command(
             ['status'],
@@ -654,7 +654,7 @@ class TestGithub:
 
         launch_command("discover", "-y")
         expected_result = """
-        Branch `feature` is untracked and there's no `origin` repository.
+        Branch feature is untracked and there's no origin repository.
         [1] origin_1
         [2] origin_2
         Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request: 
@@ -667,7 +667,7 @@ class TestGithub:
             o-feature *
 
         Fetching origin_1...
-        Creating a PR from `feature` to `branch-1`... OK, see www.github.com
+        Creating a PR from feature to branch-1... OK, see www.github.com
         """  # noqa: W291, E501
         assert_command(
             ['github', 'create-pr'],
@@ -684,9 +684,9 @@ class TestGithub:
         )
 
         expected_result = """
-        Added branch `feature_1` onto `feature`
+        Added branch feature_1 onto feature
         Fetching origin_2...
-        Creating a PR from `feature_1` to `feature`... OK, see www.github.com
+        Creating a PR from feature_1 to feature... OK, see www.github.com
         """
         assert_command(
             ['github', 'create-pr'],
@@ -702,8 +702,8 @@ class TestGithub:
         )
 
         expected_result = """
-        Added branch `feature_2` onto `feature`
-        Branch `feature_2` is untracked and there's no `origin` repository.
+        Added branch feature_2 onto feature
+        Branch feature_2 is untracked and there's no origin repository.
         [1] origin_1
         [2] origin_2
         Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request: 
@@ -719,7 +719,7 @@ class TestGithub:
               o-feature_2 *
 
         Fetching origin_1...
-        Creating a PR from `feature_2` to `feature`... OK, see www.github.com
+        Creating a PR from feature_2 to feature... OK, see www.github.com
         """  # noqa: W291
         assert_command(
             ['github', 'create-pr'],
@@ -736,7 +736,7 @@ class TestGithub:
         )
 
         expected_result = """
-        Added branch `feature_3` onto `feature_2`
+        Added branch feature_3 onto feature_2
         Branch feature_3 is untracked, but its remote counterpart candidate origin_1/feature_3 already exists and both branches point to the same commit.
 
           root
@@ -752,7 +752,7 @@ class TestGithub:
                 o-feature_3 *
 
         Fetching origin_1...
-        Creating a PR from `feature_3` to `feature_2`... OK, see www.github.com
+        Creating a PR from feature_3 to feature_2... OK, see www.github.com
         """  # noqa: E501
         assert_command(
             ['github', 'create-pr'],
@@ -769,10 +769,10 @@ class TestGithub:
         )
 
         expected_result = """
-        Added branch `feature_4` onto `feature_3`
+        Added branch feature_4 onto feature_3
         Fetching origin_2...
-        Warn: Base branch for this PR (`feature_3`) is not found on remote, pushing...
-        Creating a PR from `feature_4` to `feature_3`... OK, see www.github.com
+        Warn: Base branch for this PR (feature_3) is not found on remote, pushing...
+        Creating a PR from feature_4 to feature_3... OK, see www.github.com
         """
         assert_command(
             ['github', 'create-pr'],
@@ -790,9 +790,9 @@ class TestGithub:
         )
 
         expected_result = """
-        Added branch `feature_5` onto `feature_3`
+        Added branch feature_5 onto feature_3
         Fetching origin...
-        Creating a PR from `feature_5` to `feature_3`... OK, see www.github.com
+        Creating a PR from feature_5 to feature_3... OK, see www.github.com
         """
         assert_command(
             ['github', 'create-pr'],
@@ -1074,7 +1074,7 @@ class TestGithub:
         repo: str
         org: str
         _, org, repo = get_parsed_github_remote_url(self.repo_sandbox.remote_path, remote='origin')
-        expected_error_message = f"PR #100 is not found in repository `{org}/{repo}`"
+        expected_error_message = f"PR #100 is not found in repository {org}/{repo}"
         with pytest.raises(MacheteException) as e:
             launch_command('github', 'checkout-prs', '100')
         if e:
@@ -1089,7 +1089,7 @@ class TestGithub:
 
         # check against user with no open pull requests
         expected_msg = ("Checking for open GitHub PRs...\n"
-                        f"Warn: User `tester` has no open pull request in repository `{org}/{repo}`\n")
+                        f"Warn: User tester has no open pull request in repository {org}/{repo}\n")
         assert_command(['github', 'checkout-prs', '--by', 'tester'], expected_msg, strip_indentation=False)
 
         # Check against closed pull request with head branch deleted from remote
@@ -1105,8 +1105,8 @@ class TestGithub:
          )
         os.chdir(self.repo_sandbox.local_path)
 
-        expected_error_message = "Could not check out PR #5 because its head branch `bugfix/remove-n-option` " \
-                                 "is already deleted from `testing`."
+        expected_error_message = "Could not check out PR #5 because its head branch bugfix/remove-n-option " \
+                                 "is already deleted from testing."
         with pytest.raises(MacheteException) as e:
             launch_command('github', 'checkout-prs', '5')
         if e:
@@ -1125,7 +1125,7 @@ class TestGithub:
 
         expected_msg = ("Checking for open GitHub PRs...\n"
                         "Warn: Pull request #5 is already closed.\n"
-                        "Pull request `#5` checked out at local branch `bugfix/remove-n-option`\n")
+                        "Pull request #5 checked out at local branch bugfix/remove-n-option\n")
 
         assert_command(['github', 'checkout-prs', '5'], expected_msg, strip_indentation=False)
 
@@ -1229,7 +1229,7 @@ class TestGithub:
         os.chdir(self.repo_sandbox.local_path)
         rewrite_definition_file("master")
         expected_msg = ("Checking for open GitHub PRs...\n"
-                        "Pull request `#2` checked out at local branch `comments/add_docstrings`\n")
+                        "Pull request #2 checked out at local branch comments/add_docstrings\n")
         assert_command(
             ['github', 'checkout-prs', '2'],
             expected_msg,
@@ -1253,7 +1253,7 @@ class TestGithub:
         self.repo_sandbox.execute('git branch -D sphinx_export')
         expected_msg = ("Checking for open GitHub PRs...\n"
                         "Warn: Pull request #23 is already closed.\n"
-                        "Pull request `#23` checked out at local branch `sphinx_export`\n")
+                        "Pull request #23 checked out at local branch sphinx_export\n")
 
         assert_command(
             ['github', 'checkout-prs', '23'],
@@ -1316,9 +1316,9 @@ class TestGithub:
         launch_command('discover')
         expected_msg = ("Checking for open GitHub PRs...\n"
                         "Warn: Pull request #2 comes from fork and its repository is already deleted. "
-                        "No remote tracking data will be set up for `feature/allow_checkout` branch.\n"
+                        "No remote tracking data will be set up for feature/allow_checkout branch.\n"
                         "Warn: Pull request #2 is already closed.\n"
-                        "Pull request `#2` checked out at local branch `feature/allow_checkout`\n")
+                        "Pull request #2 checked out at local branch feature/allow_checkout\n")
         assert_command(
             ['github', 'checkout-prs', '2'],
             expected_msg,

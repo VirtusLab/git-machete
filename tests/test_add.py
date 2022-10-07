@@ -41,8 +41,8 @@ class TestAdd:
         # Test `git machete add` without providing the branch name
         assert_command(
             ['add', '-y'],
-            'Adding `bugfix/feature_fail` onto the inferred upstream (parent) branch `develop`\n'
-            'Added branch `bugfix/feature_fail` onto `develop`\n',
+            'Adding bugfix/feature_fail onto the inferred upstream (parent) branch develop\n'
+            'Added branch bugfix/feature_fail onto develop\n',
             strip_indentation=False
         )
 
@@ -50,8 +50,8 @@ class TestAdd:
         self.repo_sandbox.new_branch("bugfix/some_feature")
         assert_command(
             ['add', '-y', 'bugfix/some_feature'],
-            'Adding `bugfix/some_feature` onto the inferred upstream (parent) branch `develop`\n'
-            'Added branch `bugfix/some_feature` onto `develop`\n',
+            'Adding bugfix/some_feature onto the inferred upstream (parent) branch develop\n'
+            'Added branch bugfix/some_feature onto develop\n',
             strip_indentation=False
         )
 
@@ -59,8 +59,8 @@ class TestAdd:
         self.repo_sandbox.new_branch("bugfix/another_feature")
         assert_command(
             ['add', '-y', 'refs/heads/bugfix/another_feature'],
-            'Adding `bugfix/another_feature` onto the inferred upstream (parent) branch `develop`\n'
-            'Added branch `bugfix/another_feature` onto `develop`\n',
+            'Adding bugfix/another_feature onto the inferred upstream (parent) branch develop\n'
+            'Added branch bugfix/another_feature onto develop\n',
             strip_indentation=False
         )
 
@@ -69,6 +69,6 @@ class TestAdd:
 
         assert_command(
             ['add', '--onto=feature'],
-            'Added branch `chore/remove_indentation` onto `feature`\n',
+            'Added branch chore/remove_indentation onto feature\n',
             strip_indentation=False
         )

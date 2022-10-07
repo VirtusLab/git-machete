@@ -217,7 +217,6 @@ class AnsiEscapeCodes:
         # If we cannot retrieve the number of supported colors, let's defensively assume it's low.
         __number_of_supported_colors = 8
     __is_full_fledged_terminal = __number_of_supported_colors >= 256
-    __is_full_fledged_terminal = True
 
     # `GIT_MACHETE_DIM_AS_GRAY` remains undocumented as for now,
     # is just needed for animated gifs to render correctly
@@ -266,9 +265,9 @@ fmt_transformations: List[Callable[[str], str]] = [
     lambda x: re.sub('<u>(.*?)</u>', underline(r"\1"), x, flags=re.DOTALL),
     lambda x: re.sub('<dim>(.*?)</dim>', dim(r"\1"), x, flags=re.DOTALL),
     lambda x: re.sub('<red>(.*?)</red>', colored(r"\1", AnsiEscapeCodes.RED), x, flags=re.DOTALL),
-    lambda x: re.sub('<yellow>(.*?)</yellow>', colored(r"\1", AnsiEscapeCodes.YELLOW), x, flags=re.DOTALL)
-    .replace('\033[0m', '\033[0m' + '\033'+AnsiEscapeCodes.YELLOW),
+    lambda x: re.sub('<yellow>(.*?)</yellow>', colored(r"\1", AnsiEscapeCodes.YELLOW), x, flags=re.DOTALL),
     lambda x: re.sub('<green>(.*?)</green>', colored(r"\1", AnsiEscapeCodes.GREEN), x, flags=re.DOTALL),
+    lambda x: re.sub('<orange>(.*?)</orange>', colored(r"\1", AnsiEscapeCodes.ORANGE), x, flags=re.DOTALL)
 ]
 
 

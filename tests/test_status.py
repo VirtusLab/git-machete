@@ -39,8 +39,8 @@ class TestStatus:
         self.repo_sandbox.new_branch("root")
         rewrite_definition_file(body)
 
-        expected_error_message: str = '.git/machete, line 5: branch `develop` re-appears in the tree definition. ' \
-                                      'Edit the definition file manually with `git machete edit`'
+        expected_error_message: str = '.git/machete, line 5: branch develop re-appears in the tree definition. ' \
+                                      'Edit the definition file manually with git machete edit'
 
         with pytest.raises(MacheteException) as e:
             launch_command('status')
