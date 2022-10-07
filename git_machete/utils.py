@@ -217,6 +217,7 @@ class AnsiEscapeCodes:
         # If we cannot retrieve the number of supported colors, let's defensively assume it's low.
         __number_of_supported_colors = 8
     __is_full_fledged_terminal = __number_of_supported_colors >= 256
+    __is_full_fledged_terminal = True
 
     # `GIT_MACHETE_DIM_AS_GRAY` remains undocumented as for now,
     # is just needed for animated gifs to render correctly
@@ -224,6 +225,8 @@ class AnsiEscapeCodes:
     __dim_as_gray = os.environ.get('GIT_MACHETE_DIM_AS_GRAY') == 'true'
 
     ENDC = '\033[0m'
+    ENDC_UNDERLINE = '\033[24m'
+    ENDC_BOLD_DIM = '\033[22m'
     BOLD = '\033[1m'
     DIM = '\033[38;2;128;128;128m' if __dim_as_gray else '\033[2m'
     # Let's fall back to cyan on 8-color terminals
@@ -237,16 +240,16 @@ class AnsiEscapeCodes:
 
 
 def bold(s: str) -> str:
-    return s if ascii_only or not s else AnsiEscapeCodes.BOLD + s + AnsiEscapeCodes.ENDC
+    return s if ascii_only or not s else AnsiEscapeCodes.BOLD + s + AnsiEscapeCodes.ENDC_BOLD_DIM
 
 
 def dim(s: str) -> str:
-    return s if ascii_only or not s else AnsiEscapeCodes.DIM + s + AnsiEscapeCodes.ENDC
+    return s if ascii_only or not s else AnsiEscapeCodes.DIM + s + AnsiEscapeCodes.ENDC_BOLD_DIM
 
 
 def underline(s: str, star_if_ascii_only: bool = False) -> str:
     if s and not ascii_only:
-        return AnsiEscapeCodes.UNDERLINE + s + AnsiEscapeCodes.ENDC
+        return AnsiEscapeCodes.UNDERLINE + s + AnsiEscapeCodes.ENDC_UNDERLINE
     elif s and star_if_ascii_only:
         return s + " *"
     else:
@@ -258,13 +261,14 @@ def colored(s: str, color: str) -> str:
 
 
 fmt_transformations: List[Callable[[str], str]] = [
+    lambda x: re.sub('`(.*?)`', underline(r"\1"), x),
     lambda x: re.sub('<b>(.*?)</b>', bold(r"\1"), x, flags=re.DOTALL),
     lambda x: re.sub('<u>(.*?)</u>', underline(r"\1"), x, flags=re.DOTALL),
     lambda x: re.sub('<dim>(.*?)</dim>', dim(r"\1"), x, flags=re.DOTALL),
     lambda x: re.sub('<red>(.*?)</red>', colored(r"\1", AnsiEscapeCodes.RED), x, flags=re.DOTALL),
-    lambda x: re.sub('<yellow>(.*?)</yellow>', colored(r"\1", AnsiEscapeCodes.YELLOW), x, flags=re.DOTALL),
+    lambda x: re.sub('<yellow>(.*?)</yellow>', colored(r"\1", AnsiEscapeCodes.YELLOW), x, flags=re.DOTALL)
+    .replace('\033[0m', '\033[0m' + '\033'+AnsiEscapeCodes.YELLOW),
     lambda x: re.sub('<green>(.*?)</green>', colored(r"\1", AnsiEscapeCodes.GREEN), x, flags=re.DOTALL),
-    lambda x: re.sub('`(.*?)`', r"`\1`" if ascii_only else AnsiEscapeCodes.UNDERLINE + r"\1" + AnsiEscapeCodes.ENDC, x),
 ]
 
 
