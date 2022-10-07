@@ -6,7 +6,7 @@ class TestUtils():
         """
         Verify behaviour of a Utils fmt() function
         """
-        os.environ["TERM"] = 'xterm-8color'
+        os.environ["TERM"] = 'xterm-256color'
         from git_machete import utils
         utils.ascii_only = False
         del os.environ["TERM"]
