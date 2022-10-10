@@ -142,7 +142,7 @@ Review fixes should be pushed on separate commits for easier viewing on GitHub (
          git pull origin develop
          git checkout master
          git pull origin master
-         git merge --no-ff develop
+         git merge --ff-only develop
          git push origin master
 
 1. Verify that the release has been created on [GitHub](https://github.com/VirtusLab/git-machete/releases)

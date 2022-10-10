@@ -1,5 +1,10 @@
 # Release notes
 
+## New in git-machete 3.12.3
+
+- fixed: release instructions in CONTRIBUTING.md are now correct
+- fixed: release to Homebrew doesn't crash the deployment process
+
 ## New in git-machete 3.12.2
 
 - added: `git-machete` is now available in homebrew core formulae; if `git-machete` has already been installed from the tap on a given machine, `brew` should automatically pull new updates from homebrew core from now on

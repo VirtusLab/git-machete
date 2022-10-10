@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e -o pipefail -u
+set -e -o pipefail -u -x
 
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" < /dev/null
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
@@ -19,13 +19,18 @@ sha256=$(
   curl -s https://$pypi_host/pypi/git-machete/"$version"/json \
   | jq --raw-output '.urls | map(select(.packagetype == "sdist")) | .[0].digests.sha256')
 
+git config user.email "gitmachete@virtuslab.com"
+git config user.name "Git Machete Bot"
+
+echo "Bump homebrew formula"
 if [[ $do_push == true ]]; then
-  brew bump-formula-pr --url "$url" --sha256 "$sha256" git-machete
+  brew bump-formula-pr --no-browse --verbose --url "$url" --sha256 "$sha256" git-machete
 else
   echo "Refraining from push since it's a dry run"
-  brew bump-formula-pr --write-only --url "$url" --sha256 "$sha256" git-machete
+  brew bump-formula-pr --write-only --no-browse --verbose --url "$url" --sha256 "$sha256" git-machete
 fi
 
+echo "Install formula locally"
 brew install --build-from-source --formula /home/linuxbrew/.linuxbrew/Homebrew/Library/Taps/homebrew/homebrew-core/Formula/git-machete.rb
 if [[ "$version" != "$(git machete --version | cut -d' ' -f4)" ]]; then
   echo "Something went wrong during brew installation: installed version does not match version from formula."
