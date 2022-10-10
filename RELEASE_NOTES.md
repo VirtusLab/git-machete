@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.12.5
+
 ## New in git-machete 3.12.4
 
 - fixed: Homebrew release process
