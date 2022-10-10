@@ -3,6 +3,7 @@
 ## New in git-machete 3.12.3
 
 - fixed: release instructions in CONTRIBUTING.md are now correct
+- fixed: release to Homebrew doesn't crash the deployment process
 
 ## New in git-machete 3.12.2
 
