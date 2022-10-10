@@ -2108,6 +2108,9 @@ class MacheteClient:
         else:
             print(fmt(f'The base branch of PR #{pr.number} is already `{new_base}`'))
 
+        self.__annotations[head] = f'PR #{pr.number}'
+        self.save_definition_file()
+
     def __derive_remote_and_github_org_and_repo(self,
                                                 branch_used_for_tracking_data: LocalBranchShortName = None
                                                 ) -> RemoteAndOrganizationAndRepository:
@@ -2198,8 +2201,8 @@ class MacheteClient:
         description_path = self.__git.get_main_git_subpath('info', 'description')
         description: str = utils.slurp_file_or_empty(description_path)
 
-        ok_str = ' <green><b>OK</b></green>'
-        print(fmt(f'Creating a {"draft " if opt_draft else ""}PR from `{head}` to `{base}`...'), end='', flush=True)
+        ok_str = '<green><b>OK</b></green>'
+        print(fmt(f'Creating a {"draft " if opt_draft else ""}PR from `{head}` to `{base}`... '), end='', flush=True)
         pr: GitHubPullRequest = create_pull_request(org, repo, head=head, base=base, title=commits[0].subject,
                                                     description=description, draft=opt_draft)
         print(fmt(f'{ok_str}, see <b>{pr.html_url}</b>'))
