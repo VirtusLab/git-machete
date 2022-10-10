@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.12.4
+
+- fixed: Homebrew release process
+
 ## New in git-machete 3.12.3
 
 - fixed: release instructions in CONTRIBUTING.md are now correct
