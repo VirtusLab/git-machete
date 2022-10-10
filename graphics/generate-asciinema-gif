@@ -4,7 +4,6 @@ set -e -o pipefail -u
 
 timestamp=$(date +%s)
 cast=/tmp/${timestamp}.cast
-gif_tmp=/tmp/${timestamp}_tmp.gif
 gif=/tmp/${timestamp}.gif
 
 function spoonfeed() {
@@ -63,10 +62,8 @@ init_contents='set -e -o pipefail -u; PS1=\(\\\$\(date\ +%H:%M:%S\)\)\ \$\ ; exp
 nested_command="bash --init-file <(echo '$init_contents')"
 script | asciinema rec --command="bash -c \"$nested_command\"" "$cast"
 # `head -n ...` to remove the 3 final lines responsible for the terminating `exit`
-# TODO (#137): `gh` can store auth token for public and enterprise domains, specify single domain for lookup.
-# `--cols 140 --rows 40` to fit the text on the screen without breaking the lines
-#agg --speed 0.75 --cols 140 --rows 40 --font-size 12 --theme asciinema <(head -n $(( $(wc -l < "$cast") - 2 )) "$cast") "$gif_tmp"
-asciicast2gif -s 0.75 -S 1 -w 123 -h 35 <(head -n $(( $(wc -l < "$cast") - 2 )) "$cast") "$gif_tmp"
-# `--crop 0,0+890x600` to match the text
-#gifsicle --crop 0,0+890x600 --colors 256 "$gif_tmp" > "$gif"
+# TODO (https://github.com/asciinema/agg/issues/22): Text underlining gets lost after conversion from `.cast` to `.gif` (it works in archived `asciicast2gif`).
+# `--cols 122 --rows 35` to fit the text on the screen without breaking the lines
+#agg --speed 0.75 --cols 122 --rows 35 --font-size 12 --theme asciinema <(head -n $(( $(wc -l < "$cast") - 2 )) "$cast") "$gif"
+asciicast2gif -s 0.75 -S 1 -w 122 -h 35 <(head -n $(( $(wc -l < "$cast") - 2 )) "$cast") "$gif"
 echo "Location of the generated GIF file: $gif"
