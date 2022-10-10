@@ -2,6 +2,7 @@
 
 ## New in git-machete 3.12.5
 
+- added: `git machete github retarget-pr` now updates annotation for the branch associated with the retargeted PR
 - improved: Modify formatting in error message for `github create-pr`
 
 ## New in git-machete 3.12.4

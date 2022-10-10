@@ -118,11 +118,38 @@ class TestGithub:
         )
 
         launch_command("discover", "-y")
+        launch_command("anno", "-H")
+
+        expected_status_output = """
+        root (untracked)
+        |
+        o-branch-1
+          |
+          o-feature *  PR #15 (github_user) WRONG PR BASE or MACHETE PARENT? PR has 'root'
+        """
+        assert_command(
+            ['status'],
+            expected_result=expected_status_output
+        )
+
         assert_command(
             ['github', 'retarget-pr'],
             'The base branch of PR #15 has been switched to `branch-1`\n',
             strip_indentation=False
         )
+
+        expected_status_output = """
+        root (untracked)
+        |
+        o-branch-1
+          |
+          o-feature *  PR #15
+        """
+        assert_command(
+            ['status'],
+            expected_result=expected_status_output
+        )
+
         assert_command(
             ['github', 'retarget-pr'],
             'The base branch of PR #15 is already `branch-1`\n',

@@ -2108,6 +2108,9 @@ class MacheteClient:
         else:
             print(fmt(f'The base branch of PR #{pr.number} is already `{new_base}`'))
 
+        self.__annotations[head] = f'PR #{pr.number}'
+        self.save_definition_file()
+
     def __derive_remote_and_github_org_and_repo(self,
                                                 branch_used_for_tracking_data: LocalBranchShortName = None
                                                 ) -> RemoteAndOrganizationAndRepository:
