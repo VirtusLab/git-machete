@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.12.5
 
+- improved: Modify formatting in error message for `github create-pr`
+
 ## New in git-machete 3.12.4
 
 - fixed: Homebrew release process
