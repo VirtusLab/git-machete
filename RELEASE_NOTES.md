@@ -3,8 +3,9 @@
 ## New in git-machete 3.12.5
 
 - added: `git machete github retarget-pr` now updates annotation for the branch associated with the retargeted PR
-- improved: Modify formatting in error message for `github create-pr`
-- fixed: Modify formatting of `git machete` commands output
+- improved: modify formatting in error message for `github create-pr`
+- fixed: modify formatting of `git machete` commands output
+- improved: the .gif file in the README.md file has been slowed down to provide a better viewing experience
 
 ## New in git-machete 3.12.4
 
