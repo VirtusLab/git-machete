@@ -29,8 +29,22 @@ else
   echo "Refraining from push since it's a dry run"
   brew bump-formula-pr --write-only --no-browse --verbose --url "$url" --sha256 "$sha256" git-machete
 
-  echo "Install formula locally"
-  brew install --build-from-source --formula /home/linuxbrew/.linuxbrew/Homebrew/Library/Taps/homebrew/homebrew-core/Formula/git-machete.rb
+  echo "Attempt to install the formula locally"
+  attempts=3
+  i=1
+  while true; do
+    if brew install --build-from-source --formula /home/linuxbrew/.linuxbrew/Homebrew/Library/Taps/homebrew/homebrew-core/Formula/git-machete.rb; then
+      break
+    elif (( i < attempts )); then
+      echo "Retrying the installation..."
+      i=$((i + 1))
+      sleep 30
+    else
+      echo "Installing the formula locally did not succeed despite $attempts attempts"
+      exit 1
+    fi
+  done
+
   if [[ "$version" != "$(git machete --version | cut -d' ' -f4)" ]]; then
     echo "Something went wrong during brew installation: installed version does not match version from formula."
     echo "Formula version: $version, installed version: $(git machete --version | cut -d' ' -f4)"
