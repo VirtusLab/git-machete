@@ -148,7 +148,7 @@ jobs:
           command: bash ci/pypi/ci-deploy.sh
 
       - run:
-          name: 'Update Homebrew'
+          name: 'Update Homebrew formula'
           # Prerequisites: artifacts must be released to PyPI first
           command: bash ci/homebrew/ci-deploy.sh
 
