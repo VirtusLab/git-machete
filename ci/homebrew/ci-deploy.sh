@@ -33,8 +33,6 @@ else
   attempts=3
   i=1
   while true; do
-#    if brew install --build-from-source --formula /home/linuxbrew/.linuxbrew/Homebrew/Library/Taps/homebrew/homebrew-core/Formula/git-machete.rb; then
-#      break
     if false; then
       echo "xd"
     elif (( i < attempts )); then
