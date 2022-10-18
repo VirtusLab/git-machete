@@ -124,6 +124,11 @@ def html2txt(html_: str):
                 new_text = html_element
             else:
                 new_text = ''
+
+            # keep exactly one line gap between points in bulleted list
+            if f'{INDENT_LEN_3}- ' in html_element and f'{INDENT_LEN_3}* ' in html_element:
+                new_text = html_element.rstrip()
+
             text += new_text
     return text
 
