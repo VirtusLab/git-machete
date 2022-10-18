@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.12.6
+
 ## New in git-machete 3.12.5
 
 - added: `git machete github retarget-pr` now updates annotation for the branch associated with the retargeted PR
