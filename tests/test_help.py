@@ -2,7 +2,7 @@ from typing import Any, List
 
 import pytest
 
-from git_machete.generated_long_docs import long_docs
+from git_machete.generated_docs import long_docs
 
 from unittest import mock
 
