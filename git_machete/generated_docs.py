@@ -393,7 +393,6 @@ long_docs: Dict[str, str] = {
              the file path depends on the `machete.worktree.useTopLevelMacheteFile` config key value:
               - if `machete.worktree.useTopLevelMacheteFile` is true (default), the file is located under `.git/machete`
               - if `machete.worktree.useTopLevelMacheteFile` is false, the file is located under `.git/worktrees/.../machete`,
-
            * if `git machete` is executed from a <b>submodule</b>, this file is located in the git folder of the submodule itself under `.git/modules/.../machete`.
    """,
     "fork-point": """
@@ -860,7 +859,6 @@ long_docs: Dict[str, str] = {
                 and the fork point of the downstream branch is equal to the upstream branch tip,
               - grey/dimmed edge means that the downstream branch has been merged to the upstream branch,
                 detected by commit equivalency (default), or by strict detection of merge commits (if `--no-detect-squash-merges` passed).
-
            * prints (`untracked`/`ahead of <remote>`/`behind <remote>`/`diverged from [& older than] <remote>`) message if the branch
              is not in sync with its remote counterpart;
            * displays the custom annotations (see help for `format` and `anno`) next to each branch, if present;
@@ -940,21 +938,16 @@ long_docs: Dict[str, str] = {
            * detects if the branch is merged (grey edge) to its parent (aka upstream):
               - by commit equivalency (default), or by strict detection of merge commits (if `--no-detect-squash-merges` passed),
               - if so, asks the user whether to slide out the branch from the dependency tree (typically branches are no longer needed after they're merged);
-
            * otherwise, if the branch has a <red>red</red> or <yellow>yellow</yellow> edge to its parent/upstream (see help for `status`):
               - asks the user whether to rebase (default) or merge (if `--merge` passed) the branch onto into its upstream branch
                 — equivalent to `git machete update` with no `--fork-point` option passed;
-
            * if the branch is not tracked on a remote, is ahead of its remote counterpart, or diverged from the counterpart &
              has newer head commit than the counterpart:
               - asks the user whether to push the branch (possibly with `--force-with-lease` if the branches diverged);
-
            * otherwise, if the branch diverged from the remote counterpart & has older head commit than the counterpart:
               - asks the user whether to `git reset --keep` the branch to its remote counterpart
-
            * otherwise, if the branch is behind its remote counterpart:
               - asks the user whether to pull the branch;
-
            * and finally, if any of the above operations has been successfully completed:
               - prints the updated `status`.
 
