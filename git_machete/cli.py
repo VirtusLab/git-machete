@@ -29,6 +29,8 @@ alias_by_command: Dict[str, str] = {
     "traverse": "t"
 }
 
+command_by_alias: Dict[str, str] = {v: k for k, v in alias_by_command.items()}
+
 command_groups: List[Tuple[str, List[str]]] = [
     ("General topics",
      ["config", "file", "format", "help", "hooks", "version"]),
@@ -44,11 +46,16 @@ command_groups: List[Tuple[str, List[str]]] = [
      ["github"])
 ]
 
+commands_and_aliases = list(long_docs.keys()) + list(alias_by_command.keys())
+
 
 def get_help_description(command: str = None) -> str:
     usage_str = ''
-    if command and command in long_docs:
-        usage_str += fmt(textwrap.dedent(long_docs[command]))
+    if command and command in commands_and_aliases:
+        if command in long_docs:
+            usage_str += fmt(textwrap.dedent(long_docs[command]))
+        elif command in command_by_alias:
+            usage_str += fmt(textwrap.dedent(long_docs[command_by_alias[command]]))
     else:
         usage_str += get_short_general_usage() + '\n'
         if command:
@@ -239,7 +246,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
 
     help_parser = subparsers.add_parser(
         'help', add_help=False, usage=argparse.SUPPRESS, parents=[common_args_parser])
-    help_parser.add_argument('topic_or_cmd', nargs='?', choices=list(short_docs.keys()))
+    help_parser.add_argument('topic_or_cmd', nargs='?', choices=commands_and_aliases)
 
     is_managed_parser = subparsers.add_parser(
         'is-managed',
