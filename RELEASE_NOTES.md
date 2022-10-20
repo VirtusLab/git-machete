@@ -3,6 +3,7 @@
 ## New in git-machete 3.12.6
 
 - improved: modify formatting of command line documentation
+- added: `git machete help <command>` now accepts command aliases
 - fixed: removed stack trace when terminating `git machete` command prompt with `Ctrl+D`
 
 ## New in git-machete 3.12.5
