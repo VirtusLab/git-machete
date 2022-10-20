@@ -810,6 +810,8 @@ def launch(orig_args: List[str]) -> None:
                 opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
                 opt_fork_point=cli_opts.opt_fork_point)
 
+    except EOFError:
+        exit_script(4)
     except KeyboardInterrupt:
         exit_script(3)
     except (argparse.ArgumentError, argparse.ArgumentTypeError) as e:
