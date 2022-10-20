@@ -32,7 +32,7 @@ class UnprocessableEntityHTTPError(MacheteException):
 
 class ExitCode(IntEnum):
     SUCCESS = 0
-    ARGUMENT_ERROR = 1
-    MACHETE_EXCEPTION = 2
+    MACHETE_EXCEPTION = 1
+    ARGUMENT_ERROR = 2
     KEYBOARD_INTERRUPT = 3
     END_OF_FILE_SIGNAL = 4

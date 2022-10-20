@@ -670,7 +670,7 @@ def launch(orig_args: List[str]) -> None:
             machete_client.read_definition_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             branch = get_local_branch_short_name_from_arg_or_current_branch(cli_opts.opt_branch, git)
             if branch is None or branch not in machete_client.managed_branches:
-                exit_script(ExitCode.ARGUMENT_ERROR)
+                exit_script(ExitCode.MACHETE_EXCEPTION)
         elif cmd == "list":
             category = parsed_cli.category
             if category == 'slidable-after' and 'branch' not in parsed_cli_as_dict:
