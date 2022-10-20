@@ -54,9 +54,9 @@ class TestHelp:
             else:
                 with pytest.raises(SystemExit) as e:
                     launch_command(command, "--help")
-                assert ExitCode.MACHETE_EXCEPTION == e.value.code, \
+                assert ExitCode.ARGUMENT_ERROR == e.value.code, \
                     f"Verify that `git machete {command} --help` causes " \
-                    f"SystemExit with {ExitCode.MACHETE_EXCEPTION} exit code."
+                    f"SystemExit with {ExitCode.ARGUMENT_ERROR} exit code."
 
     @mock.patch('git_machete.cli.exit_script', mock_exit_script_no_exit)
     def test_help_output_has_no_ansi_codes(self) -> None:
