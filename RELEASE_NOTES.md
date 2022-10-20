@@ -3,6 +3,7 @@
 ## New in git-machete 3.12.6
 
 - improved: modify formatting of command line documentation
+- added: `git machete help <command>` now accepts command aliases 
 
 ## New in git-machete 3.12.5
 
