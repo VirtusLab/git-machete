@@ -1,3 +1,5 @@
+from enum import IntEnum
+
 from git_machete import utils
 
 
@@ -26,3 +28,11 @@ class UnprocessableEntityHTTPError(MacheteException):
 
     def __str__(self) -> str:
         return str(self.msg)
+
+
+class ExitCode(IntEnum):
+    SUCCESS = 0
+    ARGUMENT_ERROR = 1
+    MACHETE_EXCEPTION = 2
+    KEYBOARD_INTERRUPT = 3
+    END_OF_FILE_SIGNAL = 4

@@ -406,12 +406,12 @@ def mock_should_perform_interactive_slide_out(cmd: str) -> bool:
     return True
 
 
-def mock_exit_script(status_code: Optional[int] = None, error: Optional[BaseException] = None) -> None:
+def mock_exit_script(status_code: int, error: Optional[BaseException] = None) -> None:
     if error:
         raise error
     else:
         sys.exit(status_code)
 
 
-def mock_exit_script_no_exit(status_code: Optional[int] = None, error: Optional[BaseException] = None) -> None:
+def mock_exit_script_no_exit(status_code: int, error: Optional[BaseException] = None) -> None:
     return
