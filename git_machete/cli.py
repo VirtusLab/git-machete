@@ -12,7 +12,7 @@ from git_machete import __version__
 from git_machete import utils
 from git_machete.client import MacheteClient
 from git_machete.generated_docs import short_docs, long_docs
-from git_machete.exceptions import MacheteException, StopInteraction
+from git_machete.exceptions import ExitCode, MacheteException, StopInteraction
 from git_machete.git_operations import AnyBranchName, AnyRevision, GitContext, LocalBranchShortName, RemoteBranchShortName
 from git_machete.utils import bold, fmt, underline, excluding, warn
 
@@ -115,7 +115,7 @@ class MacheteHelpAction(argparse.Action):
         # parser name (prog) is expected to be `git machete` or `git machete <command>`
         command_name = parser.prog.replace('git machete', '').strip()
         print(get_help_description(command_name))
-        parser.exit(status=None)
+        parser.exit(status=ExitCode.SUCCESS)
 
 
 def create_cli_parser() -> argparse.ArgumentParser:
@@ -477,7 +477,7 @@ def get_local_branch_short_name_from_arg(
     return LocalBranchShortName.of(branch_from_arg.replace('refs/heads/', '')) if branch_from_arg else None
 
 
-def exit_script(status_code: Optional[int] = None, error: Optional[BaseException] = None) -> None:
+def exit_script(status_code: int, error: Optional[BaseException] = None) -> None:
     # Single point of exit is useful, because we can mock this method in tests
     # and verify that actual errors like MacheteException are raised with
     # appropriate messages. Otherwise it's not possible, because SystemError
@@ -505,16 +505,16 @@ def launch(orig_args: List[str]) -> None:
 
         if not orig_args:
             print(get_help_description())
-            exit_script(2)
+            exit_script(ExitCode.ARGUMENT_ERROR)
 
         cmd = parsed_cli.command
 
         if cmd == "help":
             print(get_help_description(parsed_cli.topic_or_cmd))
-            exit_script()
+            exit_script(ExitCode.SUCCESS)
         elif cmd == "version":
             version()
-            exit_script()
+            exit_script(ExitCode.SUCCESS)
 
         machete_client = MacheteClient(git)
 
@@ -670,7 +670,7 @@ def launch(orig_args: List[str]) -> None:
             machete_client.read_definition_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             branch = get_local_branch_short_name_from_arg_or_current_branch(cli_opts.opt_branch, git)
             if branch is None or branch not in machete_client.managed_branches:
-                exit_script(1)
+                exit_script(ExitCode.MACHETE_EXCEPTION)
         elif cmd == "list":
             category = parsed_cli.category
             if category == 'slidable-after' and 'branch' not in parsed_cli_as_dict:
@@ -817,13 +817,15 @@ def launch(orig_args: List[str]) -> None:
                 opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
                 opt_fork_point=cli_opts.opt_fork_point)
 
-    except (KeyboardInterrupt, EOFError):
-        exit_script(3)
+    except EOFError:
+        exit_script(ExitCode.END_OF_FILE_SIGNAL)
+    except KeyboardInterrupt:
+        exit_script(ExitCode.KEYBOARD_INTERRUPT)
     except (argparse.ArgumentError, argparse.ArgumentTypeError) as e:
         print(get_short_general_usage())
-        exit_script(2, e)
+        exit_script(ExitCode.ARGUMENT_ERROR, e)
     except MacheteException as e:
-        exit_script(1, e)
+        exit_script(ExitCode.MACHETE_EXCEPTION, e)
     except StopInteraction:
         pass
     finally:
