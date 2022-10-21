@@ -103,13 +103,10 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Run tests against Python 3.11 and git 2.38.1 (with building docs)
-          command: PYTHON_VERSION=3.11 GIT_VERSION=2.38.1 BUILD_SPHINX_DOCS=true CHECK_PY_DOCS_UP_TO_DATE=true bash ci/tox/ci-run.sh
+          name: Run tests against Python 3.11 and git 2.38.1
+          command: PYTHON_VERSION=3.11 GIT_VERSION=2.38.1 bash ci/tox/ci-run.sh
       - store_test_results:
           path: test-results/
-      - store_artifacts:
-          path: docs/html/
-          destination: docs
 
   "dry run deploy":
     executor: ubuntu_executor
