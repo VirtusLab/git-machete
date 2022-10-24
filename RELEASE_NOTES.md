@@ -5,7 +5,7 @@
 - improved: modify formatting of command line documentation
 - added: `git machete help <command>` now accepts command aliases
 - fixed: removed stack trace when terminating `git machete` command prompt with `Ctrl+D`
-- added: machete config key `mahcete.traverse.push` that controls `--push` flag of `traverse` command
+- added: machete config key `machete.traverse.push` that controls `--push` flag of `traverse` command
 
 ## New in git-machete 3.12.5
 
