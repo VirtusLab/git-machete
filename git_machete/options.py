@@ -1,12 +1,12 @@
 from typing import Optional, List
 
 from git_machete.exceptions import MacheteException
-from git_machete.git_operations import AnyBranchName, AnyRevision, LocalBranchShortName
+from git_machete.git_operations import AnyBranchName, AnyRevision, GitContext, LocalBranchShortName
 
 
 class CommandLineOptions:
 
-    def __init__(self) -> None:
+    def __init__(self, git: GitContext) -> None:
         self.opt_as_root: bool = False
         self.opt_branch: Optional[AnyBranchName] = None
         self.opt_checked_out_since: Optional[str] = None
@@ -29,8 +29,10 @@ class CommandLineOptions:
         self.opt_override_to: Optional[str] = None
         self.opt_override_to_inferred: bool = False
         self.opt_override_to_parent: bool = False
-        self.opt_push_tracked: Optional[bool] = True
-        self.opt_push_untracked: Optional[bool] = True
+        self.opt_push_tracked: Optional[bool] = git.get_boolean_config_attr(key='machete.traverse.push',
+                                                                            default_value=True)
+        self.opt_push_untracked: Optional[bool] = git.get_boolean_config_attr(key='machete.traverse.push',
+                                                                              default_value=True)
         self.opt_return_to: str = "stay"
         self.opt_roots: List[LocalBranchShortName] = list()
         self.opt_start_from: str = "here"
