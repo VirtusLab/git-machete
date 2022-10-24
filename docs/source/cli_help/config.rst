@@ -21,6 +21,9 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 ``machete.status.extraSpaceBeforeBranchName``:
     .. include:: status_config_key.rst
 
+``machete.traverse.push``:
+    .. include:: traverse_config_key.rst
+
 ``machete.worktree.useTopLevelMacheteFile``:
     The default value of this key is ``true``, which means that the path to machete definition file will be ``.git/machete``
     for both regular directory and worktree. If you want the worktree to have its own machete definition file (located under
