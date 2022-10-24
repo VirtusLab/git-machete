@@ -7,7 +7,7 @@ from unittest import mock
 import pytest
 
 from git_machete.exceptions import MacheteException
-from git_machete.git_operations import LocalBranchShortName
+from git_machete.git_operations import GitContext, LocalBranchShortName
 from git_machete.github import get_parsed_github_remote_url
 from git_machete.options import CommandLineOptions
 
@@ -22,8 +22,8 @@ FAKE_GITHUB_REMOTE_PATTERNS = ['(.*)/(.*)']
 
 
 class FakeCommandLineOptions(CommandLineOptions):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, git: GitContext) -> None:
+        super().__init__(git)
         self.opt_no_interactive_rebase: bool = True
         self.opt_yes: bool = True
 
