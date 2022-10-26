@@ -98,6 +98,16 @@ jobs:
           path: docs/html/
           destination: docs
 
+  "python 3_11 git 2_38_1":
+    executor: ubuntu_executor
+    steps:
+      - checkout
+      - run:
+          name: Run tests against Python 3.11 and git 2.38.1
+          command: PYTHON_VERSION=3.11 GIT_VERSION=2.38.1 bash ci/tox/ci-run.sh
+      - store_test_results:
+          path: test-results/
+
   "dry run deploy":
     executor: ubuntu_executor
     steps:
@@ -192,6 +202,7 @@ mandatory_jobs: &mandatory_jobs
   - pep8 and python 3_8 git 2_25_0
   - coverage and python 3_9 git 2_30_1
   - docs and python 3_10 git 2_33_1
+  - python 3_11 git 2_38_1
 
 workflows:
   version: 2
@@ -203,6 +214,7 @@ workflows:
       - pep8 and python 3_8 git 2_25_0
       - coverage and python 3_9 git 2_30_1
       - docs and python 3_10 git 2_33_1
+      - python 3_11 git 2_38_1
       - dry run deploy:
           filters:
             branches:
