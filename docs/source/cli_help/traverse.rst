@@ -86,6 +86,7 @@ Unlike with e.g. ``git rebase``, there is no special ``--continue`` flag, as ``t
 
 --push                       Push all (both tracked and untracked) branches to remote --- default behavior. Default behaviour can be changed
                              by setting git configuration key ``git config machete.traverse.push false``.
+                             Configuration key value can be overridden by the presence of the flag.
 
 --push-untracked             Push untracked branches to remote --- default behavior.
 

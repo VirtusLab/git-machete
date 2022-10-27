@@ -22,8 +22,8 @@ FAKE_GITHUB_REMOTE_PATTERNS = ['(.*)/(.*)']
 
 
 class FakeCommandLineOptions(CommandLineOptions):
-    def __init__(self, git: GitContext) -> None:
-        super().__init__(git)
+    def __init__(self) -> None:
+        super().__init__()
         self.opt_no_interactive_rebase: bool = True
         self.opt_yes: bool = True
 

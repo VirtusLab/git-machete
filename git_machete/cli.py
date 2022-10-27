@@ -491,13 +491,15 @@ def exit_script(status_code: int, error: Optional[BaseException] = None) -> None
 
 
 def launch(orig_args: List[str]) -> None:
+    cli_opts = git_machete.options.CommandLineOptions()
     git = GitContext()
-    cli_opts = git_machete.options.CommandLineOptions(git)
 
     try:
         cli_parser: argparse.ArgumentParser = create_cli_parser()
         parsed_cli: argparse.Namespace = cli_parser.parse_args(orig_args)
         parsed_cli_as_dict: Dict[str, str] = vars(parsed_cli)
+
+        update_cli_options_using_config_keys(cli_opts, git)
 
         update_cli_opts_using_parsed_args(cli_opts, parsed_cli)
         cli_opts.validate()
