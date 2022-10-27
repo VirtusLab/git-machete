@@ -27,6 +27,9 @@ Traverses the branch tree in pre-order (i.e. simply in the order as they occur i
 By default ``traverse`` starts from the current branch.
 This behaviour can, however, be customized using options: ``--start-from=``, ``--whole`` or ``-w``, ``-W``.
 
+By default ``traverse`` pushes branches.
+This behaviour can, however, be customized using options: ``--start-from=``, ``--whole`` or ``-w``, ``-W``.
+
 For each branch, the command:
 
     * detects if the branch is merged (:grey:`grey` edge) to its parent (aka upstream):
