@@ -27,8 +27,9 @@ Traverses the branch tree in pre-order (i.e. simply in the order as they occur i
 By default ``traverse`` starts from the current branch.
 This behaviour can, however, be customized using options: ``--start-from=``, ``--whole`` or ``-w``, ``-W``.
 
-By default ``traverse`` pushes branches.
-This behaviour can, however, be customized using options: ``--start-from=``, ``--whole`` or ``-w``, ``-W``.
+By default ``traverse`` asks if the branch should be pushed, this behaviour can, however, be changed with the ``machete.traverse.push`` configuration key.
+It can also be customized using options: ``--[no-]push`` or ``--[no-]push-untracked`` --- the order of the flags defines their precedence over each other
+(the one on the right overriding the ones on the left). More on them in the **Options** section below.
 
 For each branch, the command:
 
