@@ -25,7 +25,9 @@ else
 #  echo "$SNAPCRAFT_LOGIN_CREDENTIALS_CONTENTS_BASE64" | base64 -d > ~/.snapcraft.login
 #  cat /home/circleci/.cache/snapcraft/log/snapcraft-20220708-133250.692570.log
   export SNAPCRAFT_STORE_CREDENTIALS=$SNAPCRAFT_LOGIN_CREDENTIALS_CONTENTS_BASE64
+  echo "SNAPCRAFT_STORE_CREDENTIALS"
   echo $SNAPCRAFT_STORE_CREDENTIALS
+  echo "VERSION"
   snapcraft --version
   snapcraft login
   snapcraft whoami
