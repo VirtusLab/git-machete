@@ -220,12 +220,15 @@ workflows:
             branches:
               only:
                 - "develop"
+                - "build/use_SNAPCRAFT_STORE_CREDENTIALS_env_var_for_logging"
                 - "/hotfix.*/"
           requires:
             *mandatory_jobs
       - deploy from master:
           filters:
             branches:
-              only: "master"
+              only:
+                - "master"
+                - "build/use_SNAPCRAFT_STORE_CREDENTIALS_env_var_for_logging"
           requires:
             *mandatory_jobs
