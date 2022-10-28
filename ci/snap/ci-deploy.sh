@@ -30,6 +30,8 @@ else
   echo "VERSION"
   snapcraft --version
   snapcraft login
+
+  echo "AFTER LOGIN"
   snapcraft whoami
   snapcraft upload --release=edge git-machete*.snap
   snapcraft status git-machete
