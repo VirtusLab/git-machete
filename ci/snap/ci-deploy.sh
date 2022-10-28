@@ -16,13 +16,13 @@ sudo lxd init --minimal
 # `--use-lxd` applied to use a LXD container instead of a VM, to work around lack of support for KVM on CircleCI VMs.
 snapcraft --use-lxd
 
-if [[ ${1-} == "--dry-run" ]]; then
+if [[ ${1-} == "--dry-run" || ${CIRCLE_BRANCH-} != "master" ]]; then
   ! command -v git-machete
   sudo snap install git-machete*.snap --dangerous --classic
   git machete version
   sudo snap remove git-machete
 else
   export SNAPCRAFT_STORE_CREDENTIALS=$SNAPCRAFT_LOGIN_CREDENTIALS_CONTENTS_BASE64
-  snapcraft upload --release=edge git-machete*.snap
+  snapcraft upload --release=stable git-machete*.snap
   snapcraft status git-machete
 fi
