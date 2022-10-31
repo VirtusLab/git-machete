@@ -989,7 +989,7 @@ long_docs: Dict[str, str] = {
               by setting git configuration key `git config machete.traverse.push false`.
               Configuration key value can be overridden by the presence of the flag.
            <b>--push-untracked</b>
-              Push untracked branches to remote — default behavior.
+              Push untracked branches to remote.
            <b>--return-to=WHERE</b>
               Specifies the branch to return after traversal is successfully completed;
               WHERE can be `here` (the current branch at the moment when traversal starts), `nearest-remaining`
