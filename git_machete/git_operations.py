@@ -347,9 +347,8 @@ class GitContext:
         return self.__config_cached.get(key.lower())
 
     def get_boolean_config_attr(self, key: str, default_value: bool) -> bool:
-        self.__ensure_config_loaded()
-        if self.__config_cached.get(key.lower()) is not None:
-            return self.__config_cached.get(key.lower()) == 'true'
+        if self.get_boolean_config_attr_or_none(key) is not None:
+            return self.get_boolean_config_attr_or_none(key)
         return default_value
 
     def get_boolean_config_attr_or_none(self, key: str) -> Optional[bool]:
