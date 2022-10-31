@@ -84,7 +84,9 @@ Unlike with e.g. ``git rebase``, there is no special ``--continue`` flag, as ``t
 
 --no-push-untracked          Do not push untracked branches to remote, re-enable via ``--push-untracked``.
 
---push                       Push all (both tracked and untracked) branches to remote --- default behavior.
+--push                       Push all (both tracked and untracked) branches to remote --- default behavior. Default behaviour can be changed
+                             by setting git configuration key ``git config machete.traverse.push false``.
+                             Configuration key value can be overridden by the presence of the flag.
 
 --push-untracked             Push untracked branches to remote --- default behavior.
 
@@ -105,6 +107,11 @@ Unlike with e.g. ``git rebase``, there is no special ``--continue`` flag, as ``t
 -W                           Equivalent to ``--fetch --whole``; useful for even more automated traversal of all branches.
 
 -y, --yes                    Don't ask for any interactive input, including confirmation of rebase/push/pull. Implies ``-n``.
+
+**Config keys:**
+
+``machete.traverse.push``
+    .. include:: traverse_config_key.rst
 
 **Environment variables:**
 

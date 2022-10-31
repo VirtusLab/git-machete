@@ -218,6 +218,41 @@ class TestTraverse:
             """,
         )
 
+    def test_traverse_push_config_key(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        self.setup_discover_standard_tree()
+        self.repo_sandbox.add_git_config_key('machete.traverse.push', 'false')
+        launch_command("traverse", "-Wy")
+        assert_command(
+            ["status", "-l"],
+            """
+            develop
+            |
+            | Allow ownership links
+            | 1st round of fixes
+            o-allow-ownership-link (diverged from origin)
+            | |
+            | | Build arbitrarily long chains
+            | o-build-chain (untracked)
+            |
+            | Call web service
+            | 1st round of fixes
+            | 2nd round of fixes
+            o-call-ws (ahead of origin)
+              |
+              | Drop unneeded SQL constraints
+              o-drop-constraint (untracked)
+
+            master
+            |
+            | HOTFIX Add the trigger (amended)
+            o-hotfix/add-trigger (diverged from origin)
+              |
+              | Ignore trailing data (amended)
+              o-ignore-trailing *
+            """,
+        )
+
     def test_discover_traverse_squash(self, mocker: Any) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
         self.setup_discover_standard_tree()
