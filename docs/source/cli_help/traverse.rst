@@ -88,7 +88,7 @@ Unlike with e.g. ``git rebase``, there is no special ``--continue`` flag, as ``t
                              by setting git configuration key ``git config machete.traverse.push false``.
                              Configuration key value can be overridden by the presence of the flag.
 
---push-untracked             Push untracked branches to remote --- default behavior.
+--push-untracked             Push untracked branches to remote.
 
 --return-to=WHERE            Specifies the branch to return after traversal is successfully completed;
                              WHERE can be ``here`` (the current branch at the moment when traversal starts), ``nearest-remaining``
