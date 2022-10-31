@@ -276,6 +276,12 @@ long_docs: Dict[str, str] = {
               │
               └─ feature_branch2
 
+           `machete.traverse.push`:
+
+              To change the behaviour of `git machete traverse` command so that it doesn't push branches by default,
+              you need to set config key `git config machete.traverse.push false`.
+              Configuration key value can be overridden by the presence of the flag.
+
            `machete.worktree.useTopLevelMacheteFile`:
               The default value of this key is `true`, which means that the path to machete definition file will be `.git/machete`
               for both regular directory and worktree. If you want the worktree to have its own machete definition file (located under
@@ -979,7 +985,9 @@ long_docs: Dict[str, str] = {
            <b>--no-push-untracked</b>
               Do not push untracked branches to remote, re-enable via `--push-untracked`.
            <b>--push</b>
-              Push all (both tracked and untracked) branches to remote — default behavior.
+              Push all (both tracked and untracked) branches to remote — default behavior. Default behaviour can be changed
+              by setting git configuration key `git config machete.traverse.push false`.
+              Configuration key value can be overridden by the presence of the flag.
            <b>--push-untracked</b>
               Push untracked branches to remote — default behavior.
            <b>--return-to=WHERE</b>
@@ -1000,6 +1008,13 @@ long_docs: Dict[str, str] = {
               Equivalent to `--fetch --whole`; useful for even more automated traversal of all branches.
            <b>-y</b>, <b>--yes</b>
               Don't ask for any interactive input, including confirmation of rebase/push/pull. Implies `-n`.
+
+        <b>Config keys:</b>
+           `machete.traverse.push`
+
+              To change the behaviour of `git machete traverse` command so that it doesn't push branches by default,
+              you need to set config key `git config machete.traverse.push false`.
+              Configuration key value can be overridden by the presence of the flag.
 
         <b>Environment variables:</b>
            `GIT_MACHETE_REBASE_OPTS`
