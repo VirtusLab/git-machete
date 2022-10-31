@@ -657,12 +657,6 @@ class MacheteClient:
     ) -> None:
         self.expect_at_least_one_managed_branch()
 
-        opt_push_tracked_default_value = CommandLineOptions().opt_push_tracked
-        opt_push_untracked_default_value = CommandLineOptions().opt_push_untracked
-        machete_traverse_push_config_key = self.__git.get_boolean_config_attr_or_none(key='machete.traverse.push')
-        if machete_traverse_push_config_key:
-
-
         self.__empty_line_status = True
         any_action_suggested: bool = False
 

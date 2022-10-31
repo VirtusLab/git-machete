@@ -459,6 +459,18 @@ def update_cli_opts_using_parsed_args(
         cli_opts.opt_no_interactive_rebase = True
 
 
+def update_cli_options_using_config_keys(
+        cli_opts: git_machete.options.CommandLineOptions,
+        git: GitContext
+) -> None:
+    machete_traverse_push_config_key = git.get_boolean_config_attr_or_none(key='machete.traverse.push')
+    if machete_traverse_push_config_key is not None:
+        if machete_traverse_push_config_key:
+            cli_opts.opt_push_tracked, cli_opts.opt_push_untracked = True, True
+        else:
+            cli_opts.opt_push_tracked, cli_opts.opt_push_untracked = False, False
+
+
 def set_utils_global_variables(
         cli_opts: git_machete.options.CommandLineOptions) -> None:
     if cli_opts.opt_color:
