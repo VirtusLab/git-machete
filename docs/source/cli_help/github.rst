@@ -13,7 +13,8 @@ where ``<subcommand>`` is one of: ``anno-prs``, ``checkout-prs``, ``create-pr``,
 Creates, checks out and manages GitHub PRs while keeping them reflected in branch definition file.
 
 .. include:: github_api_access.rst
-.. include:: github_config_keys.rst
+.. note::
+    .. include:: github_config_keys.rst
 
 **Subcommands:**
 

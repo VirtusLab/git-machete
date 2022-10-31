@@ -1,4 +1,4 @@
- .. note::
+.. note::
 
     To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR,
     even in case of public repositories), a GitHub API token with ``repo`` scope is required, see https://github.com/settings/tokens.
