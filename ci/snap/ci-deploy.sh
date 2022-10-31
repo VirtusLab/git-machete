@@ -22,8 +22,7 @@ if [[ ${1-} == "--dry-run" || ${CIRCLE_BRANCH-} != "master" ]]; then
   git machete version
   sudo snap remove git-machete
 else
-  echo "$SNAPCRAFT_LOGIN_CREDENTIALS_CONTENTS_BASE64" | base64 -d > ~/.snapcraft.login
-  snapcraft login --with ~/.snapcraft.login
+  export SNAPCRAFT_STORE_CREDENTIALS=$SNAPCRAFT_LOGIN_CREDENTIALS_CONTENTS_BASE64
   snapcraft upload --release=stable git-machete*.snap
   snapcraft status git-machete
 fi
