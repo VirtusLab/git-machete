@@ -1,20 +1,22 @@
-GitHub API server URL will be inferred from ``git remote``.
-You can override this by setting the following git config keys:
+.. note::
 
-    Remote name
-        E.g. ``machete.github.remote`` = ``origin``
+    GitHub API server URL will be inferred from ``git remote``.
+    You can override this by setting the following git config keys:
 
-    Organization name
-        E.g. ``machete.github.organization`` = ``VirtusLab``
+        Remote name
+            E.g. ``machete.github.remote`` = ``origin``
 
-    Repository name
-        E.g. ``machete.github.repository`` = ``git-machete``
+        Organization name
+            E.g. ``machete.github.organization`` = ``VirtusLab``
 
-To do this, run ``git config --local --edit`` and add the following section:
+        Repository name
+            E.g. ``machete.github.repository`` = ``git-machete``
 
-.. code-block::
+    To do this, run ``git config --local --edit`` and add the following section:
 
-    [machete "github"]
-        organization = <organization_name>
-        repository = <repo_name>
-        remote = <remote_name>
+    .. code-block::
+
+        [machete "github"]
+            organization = <organization_name>
+            repository = <repo_name>
+            remote = <remote_name>

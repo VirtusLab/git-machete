@@ -112,6 +112,7 @@ Unlike with e.g. ``git rebase``, there is no special ``--continue`` flag, as ``t
 
 ``machete.traverse.push``
     .. include:: traverse_config_key.rst
+        :start-line: 2
 
 **Environment variables:**
 

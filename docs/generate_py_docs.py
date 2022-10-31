@@ -139,8 +139,10 @@ def skip_or_replace_unparseable_directives(rst_: str) -> str:
 
 
 def resolve_includes(rst_: str, docs_source_path_: str) -> str:
-    matches = re.findall(r'(.*)\.\. include:: (.*)', rst_)
-    for indent_, match in matches:
+    # matches = re.findall(r'(.*)\.\. include:: (.*)', rst_)
+    matches = re.findall(r'(.*)\.\. include:: (.*)\n(.* :(.*): ([0-9]*)\n)?(.* :(.*): ([0-9]*)\n)?', rst_)
+    matches2 = re.findall(r'(.*) :start-line: ([0-9]*)', rst_)
+    for indent_, match, start_line, end_line in matches:
         with open(f'{docs_source_path_}/{match}', 'r') as handle:
             include_text = handle.read()
         rst_ = rst_.replace(f'{indent_}.. include:: {match}', indent(dedent(include_text), indent_))
@@ -161,7 +163,8 @@ def replace_3_newlines_and_more_with_2_newlines(txt: str) -> str:
 if __name__ == '__main__':
     INDENT_LEN_3 = 3 * ' '
     INDENT_LEN_4 = 4 * ' '
-    docs_source_path = 'docs/source'
+    docs_source_path = 'source'
+    # docs_source_path = 'docs/source'
     warning_text = '# ---------------------------------------------------------------------------------------------------------\n' \
                    '# Warning: This file is NOT supposed to be edited directly, ' \
                    'but instead regenerated via `tox -e py-docs`\n' \
@@ -187,6 +190,8 @@ if __name__ == '__main__':
     path = docs_source_path + '/cli_help'
     commands_and_file_paths = {f.split('.')[0]: join(path, f) for f in sorted(os.listdir(path)) if isfile(join(path, f))}
 
+    command = 'github'
+    commands_and_file_paths = {command: path + f'/{command}.rst'}
     for command, file in commands_and_file_paths.items():
         with open(file, 'r') as f:
             rst = f.read()
