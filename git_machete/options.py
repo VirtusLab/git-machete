@@ -1,7 +1,7 @@
 from typing import Optional, List
 
 from git_machete.exceptions import MacheteException
-from git_machete.git_operations import AnyBranchName, AnyRevision, GitContext, LocalBranchShortName
+from git_machete.git_operations import AnyBranchName, AnyRevision, LocalBranchShortName
 
 
 class CommandLineOptions:

@@ -22,7 +22,6 @@ from git_machete.github import (
     create_pull_request, checkout_pr_refs, derive_pull_request_by_head, derive_pull_requests,
     get_github_token_possible_providers, get_parsed_github_remote_url, get_pull_request_by_number_or_none, GitHubPullRequest,
     is_github_remote_url, RemoteAndOrganizationAndRepository, set_base_of_pull_request, set_milestone_of_pull_request)
-from git_machete.options import CommandLineOptions
 from git_machete.utils import (
     AnsiEscapeCodes, sync_to_parent_status_to_junction_ascii_only_map, SyncToParentStatus, get_pretty_choices, flat_map, excluding, fmt,
     sync_to_parent_status_to_edge_color_map, tupled, warn, debug, bold,

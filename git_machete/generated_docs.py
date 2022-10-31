@@ -280,6 +280,7 @@ long_docs: Dict[str, str] = {
 
               To change the behaviour of `git machete traverse` command so that it doesn't push branches by default,
               you need to set config key `git config machete.traverse.push false`.
+              Configuration key value can be overridden by the presence of the flag.
 
            `machete.worktree.useTopLevelMacheteFile`:
               The default value of this key is `true`, which means that the path to machete definition file will be `.git/machete`
@@ -986,6 +987,7 @@ long_docs: Dict[str, str] = {
            <b>--push</b>
               Push all (both tracked and untracked) branches to remote — default behavior. Default behaviour can be changed
               by setting git configuration key `git config machete.traverse.push false`.
+              Configuration key value can be overridden by the presence of the flag.
            <b>--push-untracked</b>
               Push untracked branches to remote — default behavior.
            <b>--return-to=WHERE</b>
@@ -1012,6 +1014,7 @@ long_docs: Dict[str, str] = {
 
               To change the behaviour of `git machete traverse` command so that it doesn't push branches by default,
               you need to set config key `git config machete.traverse.push false`.
+              Configuration key value can be overridden by the presence of the flag.
 
         <b>Environment variables:</b>
            `GIT_MACHETE_REBASE_OPTS`

@@ -7,7 +7,7 @@ from unittest import mock
 import pytest
 
 from git_machete.exceptions import MacheteException
-from git_machete.git_operations import GitContext, LocalBranchShortName
+from git_machete.git_operations import LocalBranchShortName
 from git_machete.github import get_parsed_github_remote_url
 from git_machete.options import CommandLineOptions
 
