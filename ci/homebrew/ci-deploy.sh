@@ -30,7 +30,7 @@ else
   brew bump-formula-pr --write-only --no-browse --verbose --url "$url" --sha256 "$sha256" git-machete
 
   echo "Attempt to install the formula locally"
-  attempts=3
+  attempts=5
   i=1
   while true; do
     if brew install --build-from-source --formula /home/linuxbrew/.linuxbrew/Homebrew/Library/Taps/homebrew/homebrew-core/Formula/git-machete.rb; then
@@ -38,7 +38,7 @@ else
     elif (( i < attempts )); then
       echo "Retrying the installation..."
       i=$((i + 1))
-      sleep 30
+      sleep 60
     else
       echo "Installing the formula locally did not succeed despite $attempts attempts"
       exit 1

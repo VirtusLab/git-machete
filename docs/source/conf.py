@@ -49,7 +49,8 @@ exclude_patterns = [
     'learning_materials.rst',
     'github_api_access.rst',
     'github_config_keys.rst',
-    'status_config_key.rst'
+    'status_config_key.rst',
+    'traverse_config_key.rst'
 ]
 
 
