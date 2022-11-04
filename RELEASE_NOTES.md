@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.13.1
+
+- improved: formatting of the `config` section in the sphinx documentation
+
 ## New in git-machete 3.13.0
 
 - improved: modify formatting of command line documentation

@@ -141,11 +141,19 @@ def skip_or_replace_unparseable_directives(rst_: str) -> str:
 def resolve_includes(rst_: str, docs_source_path_: str) -> str:
     # matches = re.findall(r'(.*)\.\. include:: (.*)', rst_)
     matches = re.findall(r'(.*)\.\. include:: (.*)\n(.* :(.*): ([0-9]*)\n)?(.* :(.*): ([0-9]*)\n)?', rst_)
-    matches2 = re.findall(r'(.*) :start-line: ([0-9]*)', rst_)
-    for indent_, match, start_line, end_line in matches:
+    for indent_, match, option_1_str, option_1, option_1_value, option_2_str, option_2, option_2_value in matches:
         with open(f'{docs_source_path_}/{match}', 'r') as handle:
-            include_text = handle.read()
-        rst_ = rst_.replace(f'{indent_}.. include:: {match}', indent(dedent(include_text), indent_))
+            include_text = handle.readlines()
+        text_to_replace = f'{indent_}.. include:: {match}'
+        start_line, end_line = 0, len(include_text)
+        if option_1 == 'start-line':
+            start_line = int(option_1_value)
+            text_to_replace += f'\n{option_1_str}'
+        if option_2 == 'end-line':
+            end_line = int(option_2_value)
+            text_to_replace += f'{option_2_str}'
+        include_text = include_text[start_line:end_line]
+        rst_ = rst_.replace(text_to_replace, indent(dedent(''.join(include_text)), indent_), 1)
     return rst_
 
 
@@ -163,8 +171,7 @@ def replace_3_newlines_and_more_with_2_newlines(txt: str) -> str:
 if __name__ == '__main__':
     INDENT_LEN_3 = 3 * ' '
     INDENT_LEN_4 = 4 * ' '
-    docs_source_path = 'source'
-    # docs_source_path = 'docs/source'
+    docs_source_path = 'docs/source'
     warning_text = '# ---------------------------------------------------------------------------------------------------------\n' \
                    '# Warning: This file is NOT supposed to be edited directly, ' \
                    'but instead regenerated via `tox -e py-docs`\n' \
@@ -190,8 +197,6 @@ if __name__ == '__main__':
     path = docs_source_path + '/cli_help'
     commands_and_file_paths = {f.split('.')[0]: join(path, f) for f in sorted(os.listdir(path)) if isfile(join(path, f))}
 
-    command = 'github'
-    commands_and_file_paths = {command: path + f'/{command}.rst'}
     for command, file in commands_and_file_paths.items():
         with open(file, 'r') as f:
             rst = f.read()

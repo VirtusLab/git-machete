@@ -249,18 +249,16 @@ long_docs: Dict[str, str] = {
                   repository = <repo_name>
                   remote = <remote_name>
 
-              start-line:2
-
            `machete.overrideForkPoint.<branch>.{to,whileDescendantOf}`:
               Executing `git machete fork-point --override-to=<revision> [<branch>]` sets up a fork point override for <branch>.
               The override data is stored under `machete.overrideForkPoint.<branch>.to` and
               `machete.overrideForkPoint.<branch>.whileDescendantOf` git config keys.
 
            `machete.status.extraSpaceBeforeBranchName`:
-
+ 
               To make it easier to select branch name from the `status` output on certain terminals
-              (e.g. Alacritty), you can add an extra
-              space between └─ and `branch name` by setting `git config machete.status.extraSpaceBeforeBranchName true`.
+              (e.g. Alacritty), you can add an extra space between └─ and `branch name`
+              by setting `git config machete.status.extraSpaceBeforeBranchName true`.
 
               For example, by default the status is displayed as:
 
@@ -278,15 +276,10 @@ long_docs: Dict[str, str] = {
               │
               └─ feature_branch2
 
-              start-line:2
-
            `machete.traverse.push`:
-
               To change the behaviour of `git machete traverse` command so that it doesn't push branches by default,
               you need to set config key `git config machete.traverse.push false`.
               Configuration key value can be overridden by the presence of the flag.
-
-              start-line:2
 
            `machete.worktree.useTopLevelMacheteFile`:
               The default value of this key is `true`, which means that the path to machete definition file will be `.git/machete`
@@ -901,8 +894,8 @@ long_docs: Dict[str, str] = {
         </dim>
 
         To make it easier to select branch name from the `status` output on certain terminals
-        (e.g. Alacritty), you can add an extra
-        space between └─ and `branch name` by setting `git config machete.status.extraSpaceBeforeBranchName true`.
+        (e.g. Alacritty), you can add an extra space between └─ and `branch name`
+        by setting `git config machete.status.extraSpaceBeforeBranchName true`.
 
         For example, by default the status is displayed as:
         <dim>
@@ -935,35 +928,9 @@ long_docs: Dict[str, str] = {
 
         <b>Config keys:</b>
            `machete.status.extraSpaceBeforeBranchName`
-
-              System Message: ERROR/3 (`<string>`, line 115)
-
-              Content block expected for the "note" directive; none found.
-
-              .. note::
-
               To make it easier to select branch name from the `status` output on certain terminals
-              (e.g. Alacritty), you can add an extra
-              space between └─ and `branch name` by setting `git config machete.status.extraSpaceBeforeBranchName true`.
-
-              For example, by default the status is displayed as:
-
-              develop
-              │
-              ├─feature_branch1
-              │
-              └─feature_branch2
-
-              With `machete.status.extraSpaceBeforeBranchName` config set to `true`:
-
-              develop
-              │
-              ├─ feature_branch1
-              │
-              └─ feature_branch2
-
-               :start-line: 2
-               :end-line: 6
+              (e.g. Alacritty), you can add an extra space between └─ and `branch name`
+              by setting `git config machete.status.extraSpaceBeforeBranchName true`.
 
    """,
     "traverse": """
@@ -1048,12 +1015,9 @@ long_docs: Dict[str, str] = {
 
         <b>Config keys:</b>
            `machete.traverse.push`
-
               To change the behaviour of `git machete traverse` command so that it doesn't push branches by default,
               you need to set config key `git config machete.traverse.push false`.
               Configuration key value can be overridden by the presence of the flag.
-
-              start-line:2
 
         <b>Environment variables:</b>
            `GIT_MACHETE_REBASE_OPTS`
