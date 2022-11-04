@@ -957,6 +957,10 @@ long_docs: Dict[str, str] = {
            * and finally, if any of the above operations has been successfully completed:
               - prints the updated `status`.
 
+        By default `traverse` asks if the branch should be pushed, this behaviour can, however, be changed with the `machete.traverse.push` configuration key.
+        It can also be customized using options: `--[no-]push` or `--[no-]push-untracked` — the order of the flags defines their precedence over each other
+        (the one on the right overriding the ones on the left). More on them in the <b>Options</b> section below.
+
         If the traverse flow is stopped (typically due to merge/rebase conflicts), just run `git machete traverse` after the merge/rebase is finished.
         It will pick up the walk from the current branch (unless `--start-from=` or `-w` etc. is passed).
         Unlike with e.g. `git rebase`, there is no special `--continue` flag, as `traverse` is stateless
