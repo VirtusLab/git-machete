@@ -940,10 +940,6 @@ long_docs: Dict[str, str] = {
         By default `traverse` starts from the current branch.
         This behaviour can, however, be customized using options: `--start-from=`, `--whole` or `-w`, `-W`.
 
-        By default `traverse` asks if the branch should be pushed, this behaviour can, however, be changed with the `machete.traverse.push` configuration key.
-        It can also be customized using options: `--[no-]push` or `--[no-]push-untracked` — the order of the flags defines their precedence over each other
-        (the one on the right overriding the ones on the left). More on them in the <b>Options</b> section below.
-
         For each branch, the command:
            * detects if the branch is merged (grey edge) to its parent (aka upstream):
               - by commit equivalency (default), or by strict detection of merge commits (if `--no-detect-squash-merges` passed),
@@ -960,6 +956,10 @@ long_docs: Dict[str, str] = {
               - asks the user whether to pull the branch;
            * and finally, if any of the above operations has been successfully completed:
               - prints the updated `status`.
+
+        By default `traverse` asks if the branch should be pushed, this behaviour can, however, be changed with the `machete.traverse.push` configuration key.
+        It can also be customized using options: `--[no-]push` or `--[no-]push-untracked` — the order of the flags defines their precedence over each other
+        (the one on the right overriding the ones on the left). More on them in the <b>Options</b> section below.
 
         If the traverse flow is stopped (typically due to merge/rebase conflicts), just run `git machete traverse` after the merge/rebase is finished.
         It will pick up the walk from the current branch (unless `--start-from=` or `-w` etc. is passed).
