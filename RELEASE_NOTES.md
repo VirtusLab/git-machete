@@ -11,7 +11,6 @@
 - fixed: removed stack trace when terminating `git machete` command prompt with `Ctrl+D`
 - added: support for Python 3.11
 - added: machete config key `machete.traverse.push` that controls default behavior of `traverse` command
-- improved: formatting of the `config` section in the sphinx documentation
 
 ## New in git-machete 3.12.5
 
