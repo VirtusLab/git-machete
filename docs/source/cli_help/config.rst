@@ -2,11 +2,11 @@
 
 config
 ------
-Documentation about available ``git machete`` config keys and environment variables that change the command's default behavior.
+Documentation about available ``git machete`` git config keys and environment variables that change the command's default behavior.
 
 Note: ``config`` is not a command as such, just a help topic (there is no ``git machete config`` command).
 
-**Config keys:**
+**Git config keys:**
 
 ``machete.github.{remote,organization,repository}``:
     When executing ``git machete github <subcommand>`` command, the following will happen:

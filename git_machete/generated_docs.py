@@ -221,11 +221,11 @@ long_docs: Dict[str, str] = {
 
    """,
     "config": """
-        Documentation about available `git machete` config keys and environment variables that change the command's default behavior.
+        Documentation about available `git machete` git config keys and environment variables that change the command's default behavior.
 
         Note: `config` is not a command as such, just a help topic (there is no `git machete config` command).
 
-        <b>Config keys:</b>
+        <b>Git config keys:</b>
            `machete.github.{remote,organization,repository}`:
  
               When executing `git machete github <subcommand>` command, the following will happen:
@@ -255,7 +255,7 @@ long_docs: Dict[str, str] = {
               `machete.overrideForkPoint.<branch>.whileDescendantOf` git config keys.
 
            `machete.status.extraSpaceBeforeBranchName`:
- 
+
               To make it easier to select branch name from the `status` output on certain terminals
               (e.g. Alacritty), you can add an extra space between └─ and `branch name`
               by setting `git config machete.status.extraSpaceBeforeBranchName true`.
@@ -277,6 +277,7 @@ long_docs: Dict[str, str] = {
               └─ feature_branch2
 
            `machete.traverse.push`:
+
               To change the behaviour of `git machete traverse` command so that it doesn't push branches by default,
               you need to set config key `git config machete.traverse.push false`.
               Configuration key value can be overridden by the presence of the flag.
@@ -1015,6 +1016,7 @@ long_docs: Dict[str, str] = {
 
         <b>Config keys:</b>
            `machete.traverse.push`
+
               To change the behaviour of `git machete traverse` command so that it doesn't push branches by default,
               you need to set config key `git config machete.traverse.push false`.
               Configuration key value can be overridden by the presence of the flag.

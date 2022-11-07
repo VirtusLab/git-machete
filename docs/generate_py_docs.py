@@ -1,4 +1,4 @@
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Comment
 from docutils import core
 import os
 from os.path import isfile, join
@@ -25,6 +25,10 @@ def html2txt(html_: str):
     # remove style tags
     for tag in html_elements.select('style'):
         tag.decompose()
+
+    # remove comments
+    for comment in html_elements.findAll(string=lambda string: isinstance(string, Comment)):
+        comment.extract()
 
     # remove non-breaking spaces
     for tag in html_elements.select('td'):
@@ -140,6 +144,15 @@ def skip_or_replace_unparseable_directives(rst_: str) -> str:
 
 def resolve_includes(rst_: str, docs_source_path_: str) -> str:
     matches = re.findall(r'(.*)\.\. include:: (.*)\n(.* :(.*): ([0-9]*)\n)?(.* :(.*): ([0-9]*)\n)?', rst_)
+    # example matches:
+    #     .. include:: status_config_key.rst
+    #
+    #     .. include:: status_config_key.rst
+    #         :start-line: 2
+    #
+    #     .. include:: status_config_key.rst
+    #         :start-line: 2
+    #         :end-line: 6
     for indent_, match, option_1_str, option_1, option_1_value, option_2_str, option_2, option_2_value in matches:
         with open(f'{docs_source_path_}/{match}', 'r') as handle:
             include_text = handle.readlines()
