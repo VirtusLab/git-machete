@@ -71,6 +71,7 @@ With ``--color=always``, git machete always emits colors and with ``--color=auto
     |
     m-<branch4>     # grey (merged to parent)
 
+.. include:: status_config_key.rst
 
 **Options:**
 
@@ -87,3 +88,5 @@ With ``--color=always``, git machete always emits colors and with ``--color=auto
 
 ``machete.status.extraSpaceBeforeBranchName``
     .. include:: status_config_key.rst
+        :start-line: 2
+        :end-line: 6

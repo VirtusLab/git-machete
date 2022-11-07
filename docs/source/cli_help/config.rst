@@ -2,16 +2,17 @@
 
 config
 ------
-Documentation about available ``git machete`` config keys and environment variables that change the command's default behavior.
+Documentation about available ``git machete`` git config keys and environment variables that change the command's default behavior.
 
 Note: ``config`` is not a command as such, just a help topic (there is no ``git machete config`` command).
 
-**Config keys:**
+**Git config keys:**
 
 ``machete.github.{remote,organization,repository}``:
     When executing ``git machete github <subcommand>`` command, the following will happen:
 
     .. include:: github_config_keys.rst
+        :start-line: 2
 
 ``machete.overrideForkPoint.<branch>.{to,whileDescendantOf}``:
     Executing ``git machete fork-point --override-to=<revision> [<branch>]`` sets up a fork point override for <branch>.
@@ -20,9 +21,11 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 
 ``machete.status.extraSpaceBeforeBranchName``:
     .. include:: status_config_key.rst
+        :start-line: 2
 
 ``machete.traverse.push``:
     .. include:: traverse_config_key.rst
+        :start-line: 2
 
 ``machete.worktree.useTopLevelMacheteFile``:
     The default value of this key is ``true``, which means that the path to machete definition file will be ``.git/machete``

@@ -221,11 +221,11 @@ long_docs: Dict[str, str] = {
 
    """,
     "config": """
-        Documentation about available `git machete` config keys and environment variables that change the command's default behavior.
+        Documentation about available `git machete` git config keys and environment variables that change the command's default behavior.
 
         Note: `config` is not a command as such, just a help topic (there is no `git machete config` command).
 
-        <b>Config keys:</b>
+        <b>Git config keys:</b>
            `machete.github.{remote,organization,repository}`:
  
               When executing `git machete github <subcommand>` command, the following will happen:
@@ -257,8 +257,8 @@ long_docs: Dict[str, str] = {
            `machete.status.extraSpaceBeforeBranchName`:
 
               To make it easier to select branch name from the `status` output on certain terminals
-              (e.g. Alacritty), you can add an extra
-              space between └─ and `branch name` by setting `git config machete.status.extraSpaceBeforeBranchName true`.
+              (e.g. Alacritty), you can add an extra space between └─ and `branch name`
+              by setting `git config machete.status.extraSpaceBeforeBranchName true`.
 
               For example, by default the status is displayed as:
 
@@ -894,6 +894,28 @@ long_docs: Dict[str, str] = {
           m-<branch4>     # grey (merged to parent)
         </dim>
 
+        To make it easier to select branch name from the `status` output on certain terminals
+        (e.g. Alacritty), you can add an extra space between └─ and `branch name`
+        by setting `git config machete.status.extraSpaceBeforeBranchName true`.
+
+        For example, by default the status is displayed as:
+        <dim>
+          develop
+          │
+          ├─feature_branch1
+          │
+          └─feature_branch2
+        </dim>
+
+        With `machete.status.extraSpaceBeforeBranchName` config set to `true`:
+        <dim>
+          develop
+          │
+          ├─ feature_branch1
+          │
+          └─ feature_branch2
+        </dim>
+
         <b>Options:</b>
            <b>--color=WHEN</b>
               Colorize the output; WHEN can be `always`, `auto` (default; i.e. only if stdout is a terminal), or `never`.
@@ -907,26 +929,9 @@ long_docs: Dict[str, str] = {
 
         <b>Config keys:</b>
            `machete.status.extraSpaceBeforeBranchName`
-
               To make it easier to select branch name from the `status` output on certain terminals
-              (e.g. Alacritty), you can add an extra
-              space between └─ and `branch name` by setting `git config machete.status.extraSpaceBeforeBranchName true`.
-
-              For example, by default the status is displayed as:
-
-              develop
-              │
-              ├─feature_branch1
-              │
-              └─feature_branch2
-
-              With `machete.status.extraSpaceBeforeBranchName` config set to `true`:
-
-              develop
-              │
-              ├─ feature_branch1
-              │
-              └─ feature_branch2
+              (e.g. Alacritty), you can add an extra space between └─ and `branch name`
+              by setting `git config machete.status.extraSpaceBeforeBranchName true`.
 
    """,
     "traverse": """
