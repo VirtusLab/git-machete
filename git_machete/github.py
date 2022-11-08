@@ -16,7 +16,7 @@ from git_machete.git_operations import GitContext, LocalBranchShortName
 
 GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
 
-# TODO (#137): Support Github Enterprise endpoints
+# TODO (#137): Support GitHub Enterprise endpoints
 GITHUB_DOMAIN = "github.com"
 
 # GitHub DOES NOT allow trailing `.git` suffix in the repository name (also applies to multiple repetitions e.g. `repo_name.git.git`)
