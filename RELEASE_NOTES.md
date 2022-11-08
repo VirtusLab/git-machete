@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.13.1
 
+- fixed: support GitHub remote URLs without `.git` suffix
+
 ## New in git-machete 3.13.0
 
 - improved: modify formatting of command line documentation
