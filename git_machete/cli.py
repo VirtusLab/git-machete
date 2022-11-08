@@ -49,7 +49,7 @@ command_groups: List[Tuple[str, List[str]]] = [
 commands_and_aliases = list(long_docs.keys()) + list(alias_by_command.keys())
 
 
-def get_help_description(command: str = None) -> str:
+def get_help_description(command: str = None, do_not_display_help_topics: bool = False) -> str:
     usage_str = ''
     if command and command in commands_and_aliases:
         if command in long_docs:
@@ -65,6 +65,9 @@ def get_help_description(command: str = None) -> str:
             "    Get familiar with the help for <b>format</b>, <b>edit</b>,"
             " <b>status</b> and <b>update</b>, in this order.\n\n")
         for hdr, cmds in command_groups:
+            if do_not_display_help_topics:
+                if hdr == 'General topics':
+                    _ = [cmds.remove(help_topic) for help_topic in ['config', 'format', 'hooks']]
             usage_str += underline(hdr) + '\n\n'
             for cm in cmds:
                 alias = f", {alias_by_command[cm]}" if cm in alias_by_command else ""
@@ -518,7 +521,7 @@ def launch(orig_args: List[str]) -> None:
         set_utils_global_variables(cli_opts)
 
         if not orig_args:
-            print(get_help_description())
+            print(get_help_description(do_not_display_help_topics=True))
             exit_script(ExitCode.ARGUMENT_ERROR)
 
         cmd = parsed_cli.command
