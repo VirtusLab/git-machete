@@ -67,7 +67,7 @@ def get_help_description(command: str = None, do_not_display_help_topics: bool =
         for hdr, cmds in command_groups:
             if do_not_display_help_topics:
                 if hdr == 'General topics':
-                    _ = [cmds.remove(help_topic) for help_topic in ['config', 'format', 'hooks']]
+                    cmds = [topic for topic in cmds if topic not in ['config', 'format', 'hooks']]
             usage_str += underline(hdr) + '\n\n'
             for cm in cmds:
                 alias = f", {alias_by_command[cm]}" if cm in alias_by_command else ""
