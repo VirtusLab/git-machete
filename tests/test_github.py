@@ -1432,7 +1432,6 @@ class TestGithub:
             self.repo_sandbox.check_out("mars")
 
     def test_github_remote_patterns(self) -> None:
-        from git_machete.github import get_parsed_github_remote_url
         organization = 'virtuslab'
         repository = 'repo_sandbox'
         urls = [f'https://tester@github.com/{organization}/{repository}',

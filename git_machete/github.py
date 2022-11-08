@@ -15,10 +15,11 @@ from git_machete.exceptions import MacheteException, UnprocessableEntityHTTPErro
 from git_machete.git_operations import GitContext, LocalBranchShortName
 
 GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
-# GitHub Enterprise deployments use alternate domains.
-# The logic in this module will need to be expanded to detect
-# and use alternate remote domains to provide enterprise support.
+
+# TODO (#137): Support Github Enterprise endpoints
 GITHUB_DOMAIN = "github.com"
+
+# Github DOES NOT allow trailing `.git` suffix in the repository name (also applies to multiple repetitions e.g. `repo_name.git.git)
 GITHUB_REMOTE_PATTERNS = [
     r"^https://.*@github\.com/(.*)/(.*)$",
     r"^https://github\.com/(.*)/(.*)$",
@@ -319,9 +320,11 @@ def get_parsed_github_remote_url(url: str, remote: str) -> Optional[RemoteAndOrg
     for pattern in GITHUB_REMOTE_PATTERNS:
         match = re.match(pattern, url)
         if match:
+            org = match.group(1)
+            repo = match.group(2)
             return RemoteAndOrganizationAndRepository(remote=remote,
-                                                      organization=match.group(1),
-                                                      repository=match.group(2) if match.group(2)[-4:] != '.git' else match.group(2)[:-4])
+                                                      organization=org,
+                                                      repository=repo if repo[-4:] != '.git' else repo[:-4])
     return None
 
 
