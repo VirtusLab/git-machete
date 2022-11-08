@@ -2210,12 +2210,12 @@ class MacheteClient:
         milestone_path: str = self.__git.get_main_git_subpath('info', 'milestone')
         milestone: str = utils.slurp_file_or_empty(milestone_path).strip()
         if milestone:
-            print(fmt(f'Setting milestone of PR #{pr.number} to {milestone}...'), end='', flush=True)
+            print(fmt(f'Setting milestone of PR #{pr.number} to {milestone}... '), end='', flush=True)
             set_milestone_of_pull_request(org, repo, pr.number, milestone=milestone)
             print(fmt(ok_str))
 
         if current_user:
-            print(fmt(f'Adding `{current_user}` as assignee to PR #{pr.number}...'), end='', flush=True)
+            print(fmt(f'Adding `{current_user}` as assignee to PR #{pr.number}... '), end='', flush=True)
             add_assignees_to_pull_request(org, repo, pr.number, [current_user])
             print(fmt(ok_str))
 
@@ -2224,7 +2224,7 @@ class MacheteClient:
         if reviewers:
             print(
                 fmt(f'Adding {", ".join(f"`{reviewer}`" for reviewer in reviewers)} '
-                    f'as reviewer{"s" if len(reviewers) > 1 else ""} to PR #{pr.number}...'),
+                    f'as reviewer{"s" if len(reviewers) > 1 else ""} to PR #{pr.number}... '),
                 end='', flush=True)
             try:
                 add_reviewers_to_pull_request(org, repo, pr.number, reviewers)
