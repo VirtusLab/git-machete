@@ -19,7 +19,7 @@ GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
 # TODO (#137): Support Github Enterprise endpoints
 GITHUB_DOMAIN = "github.com"
 
-# Github DOES NOT allow trailing `.git` suffix in the repository name (also applies to multiple repetitions e.g. `repo_name.git.git)
+# GitHub DOES NOT allow trailing `.git` suffix in the repository name (also applies to multiple repetitions e.g. `repo_name.git.git`)
 GITHUB_REMOTE_PATTERNS = [
     r"^https://.*@github\.com/(.*)/(.*)$",
     r"^https://github\.com/(.*)/(.*)$",
