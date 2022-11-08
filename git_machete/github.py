@@ -20,10 +20,10 @@ GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
 # and use alternate remote domains to provide enterprise support.
 GITHUB_DOMAIN = "github.com"
 GITHUB_REMOTE_PATTERNS = [
-    r"^https://.*@github\.com/(.*)/(.*)\.git$",
-    r"^https://github\.com/(.*)/(.*)\.git$",
-    r"^git@github\.com:(.*)/(.*)\.git$",
-    r"^ssh://git@github\.com/(.*)/(.*)\.git$"
+    r"^https://.*@github\.com/(.*)/(.*)$",
+    r"^https://github\.com/(.*)/(.*)$",
+    r"^git@github\.com:(.*)/(.*)$",
+    r"^ssh://git@github\.com/(.*)/(.*)$"
 ]
 
 
@@ -321,7 +321,7 @@ def get_parsed_github_remote_url(url: str, remote: str) -> Optional[RemoteAndOrg
         if match:
             return RemoteAndOrganizationAndRepository(remote=remote,
                                                       organization=match.group(1),
-                                                      repository=match.group(2))
+                                                      repository=match.group(2) if match.group(2)[-4:] != '.git' else match.group(2)[:-4])
     return None
 
 

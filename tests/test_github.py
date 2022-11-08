@@ -8,7 +8,7 @@ import pytest
 
 from git_machete.exceptions import MacheteException
 from git_machete.git_operations import LocalBranchShortName
-from git_machete.github import get_parsed_github_remote_url
+from git_machete.github import get_parsed_github_remote_url, RemoteAndOrganizationAndRepository
 from git_machete.options import CommandLineOptions
 
 from .mockers import (GitRepositorySandbox, MockContextManager,
@@ -1430,3 +1430,18 @@ class TestGithub:
 
         with pytest.raises(subprocess.CalledProcessError):
             self.repo_sandbox.check_out("mars")
+
+    def test_github_remote_patterns(self) -> None:
+        from git_machete.github import get_parsed_github_remote_url
+        organization = 'virtuslab'
+        repository = 'repo_sandbox'
+        urls = [f'https://tester@github.com/{organization}/{repository}',
+                f'https://github.com/{organization}/{repository}',
+                f'git@github.com:{organization}/{repository}',
+                f'ssh://git@github.com/{organization}/{repository}']
+        urls = urls + [url + '.git' for url in urls]
+
+        for url in urls:
+            remote_and_organization_and_repository: RemoteAndOrganizationAndRepository = get_parsed_github_remote_url(url, 'origin')
+            assert remote_and_organization_and_repository.organization == organization
+            assert remote_and_organization_and_repository.repository == repository
