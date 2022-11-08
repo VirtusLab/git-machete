@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.13.1
+
 ## New in git-machete 3.13.0
 
 - improved: modify formatting of command line documentation
