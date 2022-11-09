@@ -3,6 +3,7 @@
 ## New in git-machete 3.13.1
 
 - fixed: support GitHub remote URLs without `.git` suffix
+- fixed: `git machete` now correctly displays only available commands (without help topics)
 
 ## New in git-machete 3.13.0
 
