@@ -125,7 +125,7 @@ class TestGithub:
         |
         o-branch-1
           |
-          o-feature *  PR #15 (github_user) WRONG PR BASE or MACHETE PARENT? PR has 'root'
+          o-feature *  PR #15 (github_user) WRONG PR BASE or MACHETE PARENT? PR has 'root' rebase=no push=no
         """
         assert_command(
             ['status'],
@@ -278,7 +278,7 @@ class TestGithub:
             },
             {
                 'head': {'ref': 'call-ws', 'repo': mock_repository_info},
-                'user': {'login': 'github_user'},
+                'user': {'login': 'very_complex_user_token'},
                 'base': {'ref': 'develop'},
                 'number': '31',
                 'html_url': 'www.github.com',
@@ -333,6 +333,11 @@ class TestGithub:
                 .add_remote('new_origin', 'https://github.com/user/repo.git')
         )
         launch_command("discover", "-y")
+
+        # test that `anno-prs` add `rebase=no push=no` qualifiers to branches associated with the PRs whose owner
+        # is different than the current user, overwrite annotation text but doesn't overwrite existing qualifiers
+        launch_command('anno', '-b=allow-ownership-link', 'rebase=no')
+        launch_command('anno', '-b=build-chain', 'rebase=no push=no')
         launch_command('github', 'anno-prs')
         assert_command(
             ["status"],
@@ -341,15 +346,15 @@ class TestGithub:
             |
             o-hotfix/add-trigger (diverged from origin)
               |
-              o-ignore-trailing *  PR #3 (github_user) (diverged from & older than origin)
+              o-ignore-trailing *  PR #3 (github_user) rebase=no push=no (diverged from & older than origin)
 
             develop
             |
-            x-allow-ownership-link  PR #7 (github_user) (ahead of origin)
+            x-allow-ownership-link  PR #7 (github_user) rebase=no (ahead of origin)
             | |
-            | x-build-chain (untracked)
+            | x-build-chain  rebase=no push=no (untracked)
             |
-            o-call-ws  PR #31 (github_user) (ahead of origin)
+            o-call-ws  PR #31 (ahead of origin)
               |
               x-drop-constraint (untracked)
             """
@@ -373,15 +378,15 @@ class TestGithub:
             |
             o-hotfix/add-trigger (diverged from origin)
               |
-              o-ignore-trailing *  PR #3 (github_user) (diverged from & older than origin)
+              o-ignore-trailing *  PR #3 (github_user) rebase=no push=no (diverged from & older than origin)
 
             develop
             |
-            x-allow-ownership-link  PR #7 (github_user) (ahead of origin)
+            x-allow-ownership-link  PR #7 (github_user) rebase=no (ahead of origin)
             | |
-            | x-build-chain (untracked)
+            | x-build-chain  rebase=no push=no (untracked)
             |
-            o-call-ws  PR #31 (github_user) (ahead of origin)
+            o-call-ws  PR #31 (ahead of origin)
               |
               x-drop-constraint (untracked)
             """,
@@ -979,7 +984,7 @@ class TestGithub:
             |
             o-hotfix/add-trigger
               |
-              o-ignore-trailing  PR #3 (github_user)
+              o-ignore-trailing  PR #3 (github_user) rebase=no push=no
                 |
                 o-chore/fields
 
@@ -987,13 +992,13 @@ class TestGithub:
             |
             o-enhance/feature
               |
-              o-bugfix/feature  PR #6 (github_user)
+              o-bugfix/feature  PR #6 (github_user) rebase=no push=no
                 |
-                o-allow-ownership-link  PR #12 (github_user)
+                o-allow-ownership-link  PR #12 (github_user) rebase=no push=no
                   |
-                  o-restrict_access  PR #17 (github_user)
+                  o-restrict_access  PR #17 (github_user) rebase=no push=no
                     |
-                    o-chore/redundant_checks *  PR #18 (github_user)
+                    o-chore/redundant_checks *  PR #18 (github_user) rebase=no push=no
             """
         )
         # broken chain of pull requests (add new root)
@@ -1005,7 +1010,7 @@ class TestGithub:
             |
             o-hotfix/add-trigger
               |
-              o-ignore-trailing  PR #3 (github_user)
+              o-ignore-trailing  PR #3 (github_user) rebase=no push=no
                 |
                 o-chore/fields
 
@@ -1013,19 +1018,19 @@ class TestGithub:
             |
             o-enhance/feature
               |
-              o-bugfix/feature  PR #6 (github_user)
+              o-bugfix/feature  PR #6 (github_user) rebase=no push=no
                 |
-                o-allow-ownership-link  PR #12 (github_user)
+                o-allow-ownership-link  PR #12 (github_user) rebase=no push=no
                   |
-                  o-restrict_access  PR #17 (github_user)
+                  o-restrict_access  PR #17 (github_user) rebase=no push=no
                     |
-                    o-chore/redundant_checks  PR #18 (github_user)
+                    o-chore/redundant_checks  PR #18 (github_user) rebase=no push=no
 
             bugfix/add_user
             |
-            o-testing/add_user  PR #22 (github_user)
+            o-testing/add_user  PR #22 (github_user) rebase=no push=no
               |
-              o-chore/comments *  PR #24 (github_user)
+              o-chore/comments *  PR #24 (github_user) rebase=no push=no
             """
         )
 
@@ -1038,7 +1043,7 @@ class TestGithub:
             |
             o-hotfix/add-trigger
               |
-              o-ignore-trailing  PR #3 (github_user)
+              o-ignore-trailing  PR #3 (github_user) rebase=no push=no
                 |
                 o-chore/fields
 
@@ -1046,19 +1051,19 @@ class TestGithub:
             |
             o-enhance/feature
               |
-              o-bugfix/feature  PR #6 (github_user)
+              o-bugfix/feature  PR #6 (github_user) rebase=no push=no
                 |
-                o-allow-ownership-link  PR #12 (github_user)
+                o-allow-ownership-link  PR #12 (github_user) rebase=no push=no
                   |
-                  o-restrict_access  PR #17 (github_user)
+                  o-restrict_access  PR #17 (github_user) rebase=no push=no
                     |
-                    o-chore/redundant_checks  PR #18 (github_user)
+                    o-chore/redundant_checks  PR #18 (github_user) rebase=no push=no
 
             bugfix/add_user
             |
-            o-testing/add_user  PR #22 (github_user)
+            o-testing/add_user  PR #22 (github_user) rebase=no push=no
               |
-              o-chore/comments *  PR #24 (github_user)
+              o-chore/comments *  PR #24 (github_user) rebase=no push=no
             """
         )
 
@@ -1071,7 +1076,7 @@ class TestGithub:
             |
             o-hotfix/add-trigger
               |
-              o-ignore-trailing  PR #3 (github_user)
+              o-ignore-trailing  PR #3 (github_user) rebase=no push=no
                 |
                 o-chore/fields
 
@@ -1079,21 +1084,21 @@ class TestGithub:
             |
             o-enhance/feature
             | |
-            | o-bugfix/feature  PR #6 (github_user)
+            | o-bugfix/feature  PR #6 (github_user) rebase=no push=no
             |   |
-            |   o-allow-ownership-link  PR #12 (github_user)
+            |   o-allow-ownership-link  PR #12 (github_user) rebase=no push=no
             |     |
-            |     o-restrict_access  PR #17 (github_user)
+            |     o-restrict_access  PR #17 (github_user) rebase=no push=no
             |       |
-            |       o-chore/redundant_checks  PR #18 (github_user)
+            |       o-chore/redundant_checks  PR #18 (github_user) rebase=no push=no
             |
-            o-enhance/add_user  PR #19 (github_user)
+            o-enhance/add_user  PR #19 (github_user) rebase=no push=no
 
             bugfix/add_user
             |
-            o-testing/add_user  PR #22 (github_user)
+            o-testing/add_user  PR #22 (github_user) rebase=no push=no
               |
-              o-chore/comments *  PR #24 (github_user)
+              o-chore/comments *  PR #24 (github_user) rebase=no push=no
             """
         )
 
@@ -1270,9 +1275,9 @@ class TestGithub:
 
             chore/sync_to_docs
             |
-            o-improve/refactor  PR #1 (github_user)
+            o-improve/refactor  PR #1 (github_user) rebase=no push=no
               |
-              o-comments/add_docstrings *  PR #2 (github_user)
+              o-comments/add_docstrings *  PR #2 (github_user) rebase=no push=no
             """
         )
 
@@ -1294,9 +1299,9 @@ class TestGithub:
 
             chore/sync_to_docs
             |
-            o-improve/refactor  PR #1 (github_user)
+            o-improve/refactor  PR #1 (github_user) rebase=no push=no
               |
-              o-comments/add_docstrings  PR #2 (github_user)
+              o-comments/add_docstrings  PR #2 (github_user) rebase=no push=no
                 |
                 o-sphinx_export *
             """
@@ -1356,6 +1361,222 @@ class TestGithub:
             ("Verify that 'git machete github checkout prs' performs 'git checkout' to "
              "the head branch of given pull request."
              )
+
+    git_api_state_for_test_github_checkout_prs_of_current_user_and_other_users = MockGitHubAPIState(
+        [
+            {
+                'head': {'ref': 'chore/redundant_checks', 'repo': mock_repository_info},
+                'user': {'login': 'github_user'},
+                'base': {'ref': 'restrict_access'},
+                'number': '18',
+                'html_url': 'www.github.com',
+                'state': 'open'
+            },
+            {
+                'head': {'ref': 'restrict_access', 'repo': mock_repository_info},
+                'user': {'login': 'very_complex_user_token'},
+                'base': {'ref': 'allow-ownership-link'},
+                'number': '17',
+                'html_url': 'www.github.com',
+                'state': 'open'
+            },
+            {
+                'head': {'ref': 'allow-ownership-link', 'repo': mock_repository_info},
+                'user': {'login': 'github_user'},
+                'base': {'ref': 'bugfix/feature'},
+                'number': '12',
+                'html_url': 'www.github.com',
+                'state': 'open'
+            },
+            {
+                'head': {'ref': 'bugfix/feature', 'repo': mock_repository_info},
+                'user': {'login': 'very_complex_user_token'},
+                'base': {'ref': 'enhance/feature'},
+                'number': '6',
+                'html_url': 'www.github.com',
+                'state': 'open'
+            },
+            {
+                'head': {'ref': 'enhance/add_user', 'repo': mock_repository_info},
+                'user': {'login': 'github_user'},
+                'base': {'ref': 'develop'},
+                'number': '19',
+                'html_url': 'www.github.com',
+                'state': 'open'
+            },
+            {
+                'head': {'ref': 'testing/add_user', 'repo': mock_repository_info},
+                'user': {'login': 'very_complex_user_token'},
+                'base': {'ref': 'bugfix/add_user'},
+                'number': '22',
+                'html_url': 'www.github.com',
+                'state': 'open'
+            },
+            {'head': {'ref': 'chore/comments', 'repo': mock_repository_info},
+             'user': {'login': 'github_user'},
+             'base': {'ref': 'testing/add_user'},
+             'number': '24',
+             'html_url': 'www.github.com',
+             'state': 'open'
+             },
+            {
+                'head': {'ref': 'ignore-trailing', 'repo': mock_repository_info},
+                'user': {'login': 'very_complex_user_token'},
+                'base': {'ref': 'hotfix/add-trigger'},
+                'number': '3',
+                'html_url': 'www.github.com',
+                'state': 'open'
+            },
+            {
+                'head': {'ref': 'bugfix/remove-n-option',
+                         'repo': {'full_name': 'testing/checkout_prs', 'html_url': GitRepositorySandbox.second_remote_path}},
+                'user': {'login': 'github_user'},
+                'base': {'ref': 'develop'},
+                'number': '5',
+                'html_url': 'www.github.com',
+                'state': 'closed'
+            }
+        ]
+    )
+
+    @mock.patch('git_machete.cli.exit_script', mock_exit_script)
+    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_checkout_prs`
+    # due to `git fetch` executed by `checkout-prs` subcommand.
+    @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
+    @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
+    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+    @mock.patch('git_machete.github.__get_github_token', mock__get_github_token)
+    @mock.patch('urllib.request.Request', git_api_state_for_test_github_checkout_prs_of_current_user_and_other_users.new_request())
+    @mock.patch('urllib.request.urlopen', MockContextManager)
+    @mock.patch('git_machete.github.derive_current_user_login', mock_derive_current_user_login)
+    def test_github_checkout_prs_of_current_user_and_other_users(self, tmp_path: Any) -> None:
+        (
+            self.repo_sandbox.new_branch("root")
+            .commit("initial commit")
+            .new_branch("develop")
+            .commit("first commit")
+            .push()
+            .new_branch("enhance/feature")
+            .commit("introduce feature")
+            .push()
+            .new_branch("bugfix/feature")
+            .commit("bugs removed")
+            .push()
+            .new_branch("allow-ownership-link")
+            .commit("fixes")
+            .push()
+            .new_branch('restrict_access')
+            .commit('authorized users only')
+            .push()
+            .new_branch("chore/redundant_checks")
+            .commit('remove some checks')
+            .push()
+            .check_out("root")
+            .new_branch("master")
+            .commit("Master commit")
+            .push()
+            .new_branch("hotfix/add-trigger")
+            .commit("HOTFIX Add the trigger")
+            .push()
+            .new_branch("ignore-trailing")
+            .commit("Ignore trailing data")
+            .push()
+            .delete_branch("root")
+            .new_branch('chore/fields')
+            .commit("remove outdated fields")
+            .push()
+            .check_out('develop')
+            .new_branch('enhance/add_user')
+            .commit('allow externals to add users')
+            .push()
+            .new_branch('bugfix/add_user')
+            .commit('first round of fixes')
+            .push()
+            .new_branch('testing/add_user')
+            .commit('add test set for add_user feature')
+            .push()
+            .new_branch('chore/comments')
+            .commit('code maintenance')
+            .push()
+            .check_out('master')
+        )
+        for branch in ('chore/redundant_checks', 'restrict_access', 'allow-ownership-link', 'bugfix/feature', 'enhance/add_user',
+                       'testing/add_user', 'chore/comments', 'bugfix/add_user'):
+            self.repo_sandbox.execute(f"git branch -D {branch}")
+
+        launch_command('discover')
+
+        # test that `checkout-prs` add `rebase=no push=no` qualifiers to branches associated with the PRs whose owner
+        # is different than the current user
+        launch_command('github', 'checkout-prs', '--all')
+        assert_command(
+            ["status"],
+            """
+            master *
+            |
+            o-hotfix/add-trigger
+              |
+              o-ignore-trailing  PR #3
+                |
+                o-chore/fields
+
+            develop
+            |
+            o-enhance/feature
+            | |
+            | o-bugfix/feature  PR #6
+            |   |
+            |   o-allow-ownership-link  PR #12 (github_user) rebase=no push=no
+            |     |
+            |     o-restrict_access  PR #17
+            |       |
+            |       o-chore/redundant_checks  PR #18 (github_user) rebase=no push=no
+            |
+            o-enhance/add_user  PR #19 (github_user) rebase=no push=no
+
+            bugfix/add_user
+            |
+            o-testing/add_user  PR #22
+              |
+              o-chore/comments  PR #24 (github_user) rebase=no push=no
+            """
+        )
+
+        # test that `checkout-prs` doesn't overwrite annotation qualifiers but overwrites annotation text
+        launch_command('anno', '-b=allow-ownership-link', 'branch_annotation rebase=no')
+        launch_command('github', 'checkout-prs', '--all')
+        assert_command(
+            ["status"],
+            """
+            master *
+            |
+            o-hotfix/add-trigger
+              |
+              o-ignore-trailing  PR #3
+                |
+                o-chore/fields
+
+            develop
+            |
+            o-enhance/feature
+            | |
+            | o-bugfix/feature  PR #6
+            |   |
+            |   o-allow-ownership-link  PR #12 (github_user) rebase=no
+            |     |
+            |     o-restrict_access  PR #17
+            |       |
+            |       o-chore/redundant_checks  PR #18 (github_user) rebase=no push=no
+            |
+            o-enhance/add_user  PR #19 (github_user) rebase=no push=no
+
+            bugfix/add_user
+            |
+            o-testing/add_user  PR #22
+              |
+              o-chore/comments  PR #24 (github_user) rebase=no push=no
+            """
+        )
 
     git_api_state_for_test_github_sync = MockGitHubAPIState(
         [

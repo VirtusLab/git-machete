@@ -65,6 +65,24 @@ It will pick up the walk from the current branch (unless ``--start-from=`` or ``
 Unlike with e.g. ``git rebase``, there is no special ``--continue`` flag, as ``traverse`` is stateless
 (doesn't keep a state of its own like ``git rebase`` does in ``.git/rebase-apply/``).
 
+The rebase and push behaviour of ``traverse`` can also be customized for each branch separately using *branch qualifiers*.
+There are ``rebase=no`` and ``push=no`` qualifiers that can be used to opt out of default behaviour (rebasing and pushing).
+The qualifier can appear anywhere in the annotation but needs to be separated by a whitespace from any other character, e.g. ``some_annotation_text rebase=no push=no``.
+Qualifiers can only be overwritten by manually editing ``.git/machete`` file or modifying it with ``git machete e[dit]`` or by updating annotations with ``git machete anno``.
+Example machete file with branch qualifiers:
+
+.. code-block::
+
+    master
+      develop  rebase=no
+        my-branch  PR #123
+        someone-elses-branch  PR #124 rebase=no push=no
+        branch-for-local-experiments  push=no
+
+Operations like ``git machete github anno-prs`` and ``git machete github checkout-prs`` add ``rebase=no push=no`` branch qualifiers
+when the current user is **not** the owner of the PR associated with that branch. ``git machete discover`` doesn't modify the qualifiers.
+
+
 **Options:**
 
 -F, --fetch                  Fetch the remotes of all managed branches at the beginning of traversal (no ``git pull`` involved, only ``git fetch``).

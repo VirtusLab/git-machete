@@ -69,3 +69,27 @@ class TestAnno:
             x-feature  Custom annotation for `feature` branch (untracked)
             """,
         )
+
+        # check if annotation qualifiers are parsed correctly and that they can be overwritten by `git machete anno`
+        launch_command('anno', '-b=refs/heads/feature', 'push=no Custom annotation for `feature` branch rebase=no')
+        assert_command(
+            ["status"],
+            """
+            master (untracked)
+
+            develop *  Custom annotation for `develop` branch (untracked)
+            |
+            x-feature  Custom annotation for `feature` branch rebase=no push=no (untracked)
+            """,
+        )
+        launch_command('anno', '-b=refs/heads/feature', 'Custom annotation for `feature` branch')
+        assert_command(
+            ["status"],
+            """
+            master (untracked)
+
+            develop *  Custom annotation for `develop` branch (untracked)
+            |
+            x-feature  Custom annotation for `feature` branch (untracked)
+            """,
+        )

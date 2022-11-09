@@ -354,7 +354,7 @@ def launch_command(*args: str) -> str:
 def assert_command(cmds: Iterable[str], expected_result: str, strip_indentation: bool = True, indent: str = '  ') -> None:
     expected_result = adapt(expected_result, indent) if strip_indentation else expected_result
     actual_result = launch_command(*cmds)
-    assert actual_result == expected_result, f'Actual result:\n`{actual_result}`\nExpected result: `{expected_result}`'
+    assert actual_result == expected_result, f'Actual result:\n`{actual_result}`\nExpected result:\n`{expected_result}`'
 
 
 def rewrite_definition_file(new_body: str) -> None:

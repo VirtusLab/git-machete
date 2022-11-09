@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.14.0
 
+- added: `push=no` and `rebase=no` branch qualifiers that control push and rebase behaviour of `git machete traverse`
+
 ## New in git-machete 3.13.2
 
 - fixed: redo the failed release

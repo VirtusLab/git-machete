@@ -41,7 +41,8 @@ Apart from simply ASCII-formatting the definition file, this also:
     * prints (``untracked``/``ahead of <remote>``/``behind <remote>``/``diverged from [& older than] <remote>``) message if the branch
       is not in sync with its remote counterpart;
 
-    * displays the custom annotations (see help for :ref:`format` and :ref:`anno`) next to each branch, if present;
+    * displays the custom annotations (see help for :ref:`format` and :ref:`anno`) next to each branch, if present. Annotations might contain underlined branch
+      qualifiers (``rebase=no``, ``push=no``) that control rebase and push behaviour of ``traverse`` (see help for :ref:`traverse`);
 
     * displays the output of ``machete-status-branch hook`` (see help for :ref:`hooks`), if present;
 

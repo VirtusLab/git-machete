@@ -124,7 +124,9 @@ long_docs: Dict[str, str] = {
         then clears the annotation for the current branch (or a branch specified with `-b/--branch`).
 
         If invoked with `-H` or `--sync-github-prs`, annotates the branches based on their corresponding GitHub PR numbers and authors.
-        Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
+        When the current user is <b>not</b> the owner of the PR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
+        so that you don't rebase or push someone else's PR by accident (see help for `traverse`).
+        Any existing annotations (except branch qualifiers) are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
 
         To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR,
         even in case of public repositories), a GitHub API token with `repo` scope is required, see https://github.com/settings/tokens.
@@ -155,6 +157,8 @@ long_docs: Dict[str, str] = {
 
         In any other case, sets the annotation for the given/current branch to the given <annotation text>.
         If multiple <annotation text>'s are passed to the command, they are concatenated with a single space.
+
+        Note: `anno` command is able to overwrite existing branch qualifiers.
 
         Note: all the effects of `anno` can be always achieved by manually editing the definition file.
 
@@ -339,6 +343,7 @@ long_docs: Dict[str, str] = {
         If confirmed with a `y[es]` or `e[dit]` reply, backs up the current definition file (if it exists) as `$GIT_DIR/machete~`
         and saves the new tree under the usual `$GIT_DIR/machete` path.
         If the reply was `e[dit]`, additionally an editor is opened (as in: `git machete` `edit`) after saving the new definition file.
+        `discover` retains the existing branch qualifiers used by `git machete traverse` (see help for `traverse`).
 
         <b>Options:</b>
            <b>-C</b>, <b>--checked-out-since=<date></b>
@@ -462,12 +467,12 @@ long_docs: Dict[str, str] = {
         The format of the definition file should be as follows:
         <dim>
           develop
-              adjust-reads-prec PR #234
-                  block-cancel-order PR #235
+              adjust-reads-prec PR #234 rebase=no push=no
+                  block-cancel-order PR #235 rebase=no
                       change-table
                           drop-location-type
               edit-margin-not-allowed
-                  full-load-gatling
+                  full-load-gatling push=no
               grep-errors-script
           master
               hotfix/receipt-trigger PR #236
@@ -477,8 +482,8 @@ long_docs: Dict[str, str] = {
         Branches `adjust-reads-prec`, `edit-margin-not-allowed` and `grep-errors-script` are direct downstream branches for `develop`.
         `block-cancel-order` is a downstream branch of `adjust-reads-prec`, `change-table` is a downstream branch of `block-cancel-order` and so on.
 
-        Every branch name can be followed (after a single space as a delimiter) by a custom annotation — a PR number in the above example.
-        The annotations don't influence the way `git machete` operates other than that they are displayed in the output of the `status` command.
+        Every branch name can be followed (after a single space as a delimiter) by a custom annotation, e.g. `PR #234 rebase=no push=no`, `PR #235 rebase=no` or `push=no`.
+        Annotations might contain underlined branch qualifiers (`rebase=no`, `push=no`) that control rebase and push behaviour of `traverse` (see help for `traverse`).
         Also see help for `anno` command.
 
         Tabs or any number of spaces can be used as indentation.
@@ -524,6 +529,8 @@ long_docs: Dict[str, str] = {
               Annotates the branches based on their corresponding GitHub PR numbers and authors.
               Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
               Equivalent to `git machete anno --sync-github-prs`.
+              When the current user is <b>not</b> the owner of the PR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
+              so that you don't rebase or push someone else's PR by accident (see help for `traverse`).
 
            `checkout-prs [--all | --by=<github-login> | --mine | <PR-number-1> ... <PR-number-N>]`:
  
@@ -531,6 +538,8 @@ long_docs: Dict[str, str] = {
               also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally.
               Once the specified pull requests are checked out locally, annotate local branches with corresponding pull request numbers.
               If only one PR has been checked out, then switch the local repository's HEAD to its head branch.
+              When the current user is <b>not</b> the owner of the PR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
+              so that you don't rebase or push someone else's PR by accident (see help for `traverse`).
 
               <b>Options:</b>
 
@@ -867,7 +876,8 @@ long_docs: Dict[str, str] = {
                 detected by commit equivalency (default), or by strict detection of merge commits (if `--no-detect-squash-merges` passed).
            * prints (`untracked`/`ahead of <remote>`/`behind <remote>`/`diverged from [& older than] <remote>`) message if the branch
              is not in sync with its remote counterpart;
-           * displays the custom annotations (see help for `format` and `anno`) next to each branch, if present;
+           * displays the custom annotations (see help for `format` and `anno`) next to each branch, if present. Annotations might contain underlined branch
+             qualifiers (`rebase=no`, `push=no`) that control rebase and push behaviour of `traverse` (see help for `traverse`);
            * displays the output of `machete-status-branch hook` (see help for `hooks`), if present;
            * optionally lists commits introduced on each branch if `-l/--list-commits` or `-L/--list-commits-with-hashes` is supplied.
 
@@ -970,6 +980,22 @@ long_docs: Dict[str, str] = {
         It will pick up the walk from the current branch (unless `--start-from=` or `-w` etc. is passed).
         Unlike with e.g. `git rebase`, there is no special `--continue` flag, as `traverse` is stateless
         (doesn't keep a state of its own like `git rebase` does in `.git/rebase-apply/`).
+
+        The rebase and push behaviour of `traverse` can also be customized for each branch separately using branch qualifiers.
+        There are `rebase=no` and `push=no` qualifiers that can be used to opt out of default behaviour (rebasing and pushing).
+        The qualifier can appear anywhere in the annotation but needs to be separated by a whitespace from any other character, e.g. `some_annotation_text rebase=no push=no`.
+        Qualifiers can only be overwritten by manually editing `.git/machete` file or modifying it with `git machete e[dit]` or by updating annotations with `git machete anno`.
+        Example machete file with branch qualifiers:
+        <dim>
+          master
+            develop  rebase=no
+              my-branch  PR #123
+              someone-elses-branch  PR #124 rebase=no push=no
+              branch-for-local-experiments  push=no
+        </dim>
+
+        Operations like `git machete github anno-prs` and `git machete github checkout-prs` add `rebase=no push=no` branch qualifiers
+        when the current user is <b>not</b> the owner of the PR associated with that branch. `git machete discover` doesn't modify the qualifiers.
 
         <b>Options:</b>
            <b>-F</b>, <b>--fetch</b>

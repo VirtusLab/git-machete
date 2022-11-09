@@ -536,21 +536,20 @@ def launch(orig_args: List[str]) -> None:
 
         machete_client = MacheteClient(git)
 
-        if cmd != 'discover':
-            if not os.path.exists(machete_client.definition_file_path):
-                # We're opening in "append" and not "write" mode to avoid a race condition:
-                # if other process writes to the file between we check the
-                # result of `os.path.exists` and call `open`,
-                # then open(..., "w") would result in us clearing up the file
-                # contents, while open(..., "a") has no effect.
-                with open(machete_client.definition_file_path, "a"):
-                    pass
-            elif os.path.isdir(machete_client.definition_file_path):
-                # Extremely unlikely case, basically checking if anybody
-                # tampered with the repository.
-                raise MacheteException(
-                    f"{machete_client.definition_file_path} is a directory "
-                    "rather than a regular file, aborting")
+        if not os.path.exists(machete_client.definition_file_path):
+            # We're opening in "append" and not "write" mode to avoid a race condition:
+            # if other process writes to the file between we check the
+            # result of `os.path.exists` and call `open`,
+            # then open(..., "w") would result in us clearing up the file
+            # contents, while open(..., "a") has no effect.
+            with open(machete_client.definition_file_path, "a"):
+                pass
+        elif os.path.isdir(machete_client.definition_file_path):
+            # Extremely unlikely case, basically checking if anybody
+            # tampered with the repository.
+            raise MacheteException(
+                f"{machete_client.definition_file_path} is a directory "
+                "rather than a regular file, aborting")
 
         should_perform_interactive_slide_out = MacheteClient.should_perform_interactive_slide_out(cmd)
         if cmd == "add":
@@ -596,7 +595,7 @@ def launch(orig_args: List[str]) -> None:
             machete_client.diff(branch=get_local_branch_short_name_from_arg(cli_opts.opt_branch),
                                 opt_stat=cli_opts.opt_stat)  # passing None if not specified
         elif cmd == "discover":
-            # No need to read definition file.
+            machete_client.read_definition_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             machete_client.discover_tree(
                 opt_checked_out_since=cli_opts.opt_checked_out_since,
                 opt_list_commits=cli_opts.opt_list_commits,

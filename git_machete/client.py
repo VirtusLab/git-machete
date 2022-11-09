@@ -24,8 +24,8 @@ from git_machete.github import (
     is_github_remote_url, RemoteAndOrganizationAndRepository, set_base_of_pull_request, set_milestone_of_pull_request)
 from git_machete.utils import (
     AnsiEscapeCodes, sync_to_parent_status_to_junction_ascii_only_map, SyncToParentStatus, get_pretty_choices, flat_map, excluding, fmt,
-    sync_to_parent_status_to_edge_color_map, tupled, warn, debug, bold,
-    colored, underline, dim, get_second)
+    sync_to_parent_status_to_edge_color_map, tupled, warn, debug, bold, colored, underline, dim, get_second)
+from git_machete.annotation import Annotation
 
 
 # Allowed parameter values for show/go command
@@ -44,7 +44,7 @@ class MacheteClient:
         self.__down_branches: Dict[LocalBranchShortName, Optional[List[LocalBranchShortName]]] = {}  # TODO (#110): default dict with []
         self.__indent: Optional[str] = None
         self.__roots: List[LocalBranchShortName] = []
-        self.__annotations: Dict[LocalBranchShortName, str] = {}
+        self.__annotations: Dict[LocalBranchShortName, Annotation] = {}
         self.__empty_line_status: Optional[bool] = None
         self.__branch_pairs_by_hash_in_reflog: Optional[Dict[FullCommitHash, Optional[List[BranchPair]]]] = None
 
@@ -67,6 +67,10 @@ class MacheteClient:
     @up_branch.setter
     def up_branch(self, val: Dict[LocalBranchShortName, Optional[LocalBranchShortName]]) -> None:
         self._up_branch = val
+
+    @property
+    def annotations(self) -> Dict[LocalBranchShortName, Annotation]:
+        return self.__annotations
 
     def get_childless_branches(self) -> List[LocalBranchShortName]:
         parent_branches = [parent_branch for parent_branch, child_branches in self.__down_branches.items() if len(child_branches) > 0]
@@ -108,7 +112,7 @@ class MacheteClient:
                                                                        line.strip().split(" ", 1)]
             branch = branch_and_maybe_annotation[0]
             if len(branch_and_maybe_annotation) > 1:
-                self.__annotations[branch] = branch_and_maybe_annotation[1]
+                self.__annotations[branch] = Annotation(branch_and_maybe_annotation[1])
             if branch in self.managed_branches:
                 raise MacheteException(
                     f"{self._definition_file_path}, line {index + 1}: branch "
@@ -202,7 +206,8 @@ class MacheteClient:
             self.__indent = "\t"
 
         def render_dfs(branch: LocalBranchShortName, depth: int) -> List[str]:
-            self.annotation = f" {self.__annotations[branch]}" if branch in self.__annotations else ""
+            self.annotation = f" {self.__annotations[branch].text_without_qualifiers} {self.__annotations[branch].qualifiers_text}" \
+                if branch in self.__annotations else ""
             res: List[str] = [depth * self.__indent + branch + self.annotation]
             for down_branch in self.__down_branches.get(branch, []):
                 res += render_dfs(down_branch, depth + 1)
@@ -311,12 +316,12 @@ class MacheteClient:
         if branch in self.__annotations and words == ['']:
             del self.__annotations[branch]
         else:
-            self.__annotations[branch] = " ".join(words)
+            self.__annotations[branch] = Annotation(" ".join(words))
         self.save_definition_file()
 
     def print_annotation(self, branch: LocalBranchShortName) -> None:
         if branch in self.__annotations:
-            print(self.__annotations[branch])
+            print(self.__annotations[branch].text)
 
     def update(
             self, *, opt_merge: bool, opt_no_edit_merge: bool,
@@ -371,7 +376,8 @@ class MacheteClient:
         self.__down_branches = {}
         self.up_branch = {}
         self.__indent = "\t"
-        self.__annotations = {}
+        for branch in self.annotations.keys():
+            self.annotations[branch].text_without_qualifiers = ''
 
         root_of = dict((branch, branch) for branch in all_local_branches)
 
@@ -778,6 +784,10 @@ class MacheteClient:
                 else:
                     ans = self.ask_if(f"Rebase {bold(branch)} onto {bold(upstream)}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
                                       f"Rebasing {bold(branch)} onto {bold(upstream)}...", opt_yes=opt_yes)
+
+                rebase = True
+                if branch in self.annotations:
+                    rebase = self.annotations[branch].qualifiers.rebase
                 if ans in ('y', 'yes', 'yq'):
                     if opt_merge:
                         self.__git.merge(upstream, branch, opt_no_edit_merge)
@@ -793,7 +803,7 @@ class MacheteClient:
                         if self.__git.is_merge_in_progress():
                             print("\nMerge in progress; stopping the traversal")
                             return
-                    else:
+                    elif rebase:
                         self.__git.rebase(
                             LocalBranchShortName.of(upstream).full_name(), self.fork_point(
                                 branch,
@@ -825,31 +835,35 @@ class MacheteClient:
 
             if needs_remote_sync:
                 any_action_suggested = True
+                push = True
+                if current_branch in self.annotations:
+                    push = self.annotations[current_branch].qualifiers.push
                 try:
+                    if push:
+                        if s == SyncToRemoteStatuses.AHEAD_OF_REMOTE:
+                            self.__handle_ahead_state(
+                                current_branch=current_branch,
+                                remote=remote,
+                                is_called_from_traverse=True,
+                                opt_push_tracked=opt_push_tracked,
+                                opt_yes=opt_yes)
+                        elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
+                            self.__handle_diverged_and_newer_state(
+                                current_branch=current_branch,
+                                remote=remote,
+                                opt_push_tracked=opt_push_tracked,
+                                opt_yes=opt_yes)
+                        elif s == SyncToRemoteStatuses.UNTRACKED:
+                            self.__handle_untracked_state(
+                                branch=current_branch,
+                                is_called_from_traverse=True,
+                                opt_push_untracked=opt_push_untracked,
+                                opt_push_tracked=opt_push_tracked,
+                                opt_yes=opt_yes)
                     if s == SyncToRemoteStatuses.BEHIND_REMOTE:
                         self.__handle_behind_state(current_branch, remote, opt_yes=opt_yes)
-                    elif s == SyncToRemoteStatuses.AHEAD_OF_REMOTE:
-                        self.__handle_ahead_state(
-                            current_branch=current_branch,
-                            remote=remote,
-                            is_called_from_traverse=True,
-                            opt_push_tracked=opt_push_tracked,
-                            opt_yes=opt_yes)
                     elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
                         self.__handle_diverged_and_older_state(current_branch, opt_yes=opt_yes)
-                    elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
-                        self.__handle_diverged_and_newer_state(
-                            current_branch=current_branch,
-                            remote=remote,
-                            opt_push_tracked=opt_push_tracked,
-                            opt_yes=opt_yes)
-                    elif s == SyncToRemoteStatuses.UNTRACKED:
-                        self.__handle_untracked_state(
-                            branch=current_branch,
-                            is_called_from_traverse=True,
-                            opt_push_untracked=opt_push_untracked,
-                            opt_push_tracked=opt_push_tracked,
-                            opt_yes=opt_yes)
                 except StopInteraction:
                     return
 
@@ -1029,7 +1043,9 @@ class MacheteClient:
             else:
                 current = bold(branch)
 
-            anno: str = f"  {dim(self.__annotations[branch])}" if branch in self.__annotations else ""
+            anno: str = ''
+            if branch in self.__annotations:
+                anno = self.__annotations[branch].get_formatted_text()
 
             s, remote = self.__git.get_combined_remote_sync_status(branch)
             sync_status = {
@@ -1434,7 +1450,7 @@ class MacheteClient:
         current_user: Optional[str] = git_machete.github.derive_current_user_login()
         debug('Current GitHub user is ' + (current_user or '<none>'))
         all_prs: List[GitHubPullRequest] = derive_pull_requests(org, repo)
-        self.__sync_annotations_to_definition_file(all_prs, current_user)
+        self.__sync_annotations_to_definition_file(all_prs, current_user=current_user)
 
     def __sync_annotations_to_definition_file(self,
                                               prs: List[GitHubPullRequest],
@@ -1452,10 +1468,20 @@ class MacheteClient:
                     warn(f'branch `{pr.head}` has a different base in PR #{pr.number} (`{pr.base}`) '
                          f'than in machete file (`{upstream or "<none, is a root>"}`)')
                     anno += f" WRONG PR BASE or MACHETE PARENT? PR has '{pr.base}'"
-                if self.__annotations.get(LocalBranchShortName.of(pr.head)) != anno:
+                old_annotation_text, old_annotation_qualifiers_text = '', ''
+                if LocalBranchShortName.of(pr.head) in self.__annotations:
+                    old_annotation_text = self.__annotations[LocalBranchShortName.of(pr.head)].text
+                    old_annotation_qualifiers_text = self.__annotations[LocalBranchShortName.of(pr.head)].qualifiers_text
+
+                if pr.user != current_user and old_annotation_qualifiers_text == '':
+                    if verbose:
+                        print(fmt(f'Annotating `{pr.head}` as `{anno} rebase=no push=no`'))
+                    self.__annotations[LocalBranchShortName.of(pr.head)] = Annotation(f'{anno} rebase=no push=no')
+                elif old_annotation_text != anno:
                     if verbose:
                         print(fmt(f'Annotating `{pr.head}` as `{anno}`'))
-                    self.__annotations[LocalBranchShortName.of(pr.head)] = anno
+                    self.__annotations[LocalBranchShortName.of(pr.head)] = Annotation(f'{anno} {old_annotation_qualifiers_text}') \
+                        if old_annotation_text is not None else Annotation(anno)
             else:
                 debug(f'{pr} does NOT correspond to a managed branch')
         self.save_definition_file()
@@ -2012,7 +2038,7 @@ class MacheteClient:
                         checked_out_prs.append(pr)
 
         debug('Current GitHub user is ' + (current_user or '<none>'))
-        self.__sync_annotations_to_definition_file(all_open_prs, current_user, verbose=verbose)
+        self.__sync_annotations_to_definition_file(all_open_prs, current_user=current_user, verbose=verbose)
         if len(applicable_prs) == 1:
             self.__git.checkout(LocalBranchShortName.of(pr.head))
             if verbose:
@@ -2113,7 +2139,7 @@ class MacheteClient:
         else:
             print(fmt(f'The base branch of PR #{pr.number} is already `{new_base}`'))
 
-        self.__annotations[head] = f'PR #{pr.number}'
+        self.__annotations[head] = Annotation(f'PR #{pr.number}')
         self.save_definition_file()
 
     def __derive_remote_and_github_org_and_repo(self,
@@ -2241,7 +2267,7 @@ class MacheteClient:
                     raise e
             print(fmt(ok_str))
 
-        self.__annotations[head] = f'PR #{pr.number}'
+        self.__annotations[head] = Annotation(f'PR #{pr.number}')
         self.save_definition_file()
 
     def __handle_diverged_and_newer_state(
@@ -2419,7 +2445,10 @@ class MacheteClient:
             SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE)
         needs_remote_sync = s in statuses_to_sync
 
-        if needs_remote_sync:
+        push = True
+        if current_branch in self.annotations:
+            push = self.annotations[current_branch].qualifiers.push
+        if needs_remote_sync and push:
             if s == SyncToRemoteStatuses.AHEAD_OF_REMOTE:
                 self.__handle_ahead_state(
                     current_branch=current_branch,

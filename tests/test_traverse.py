@@ -1,7 +1,8 @@
+from textwrap import dedent
 from typing import Any
 
 from .mockers import (GitRepositorySandbox, assert_command, launch_command,
-                      mock_run_cmd)
+                      mock_run_cmd, rewrite_definition_file)
 
 
 class TestTraverse:
@@ -347,4 +348,127 @@ class TestTraverse:
               |
               o-snickers *
             """
+        )
+
+    def test_traverse_qualifiers_no_push(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        self.setup_discover_standard_tree()
+
+        body: str = \
+            """
+            develop
+            \tallow-ownership-link push=no
+            \t\tbuild-chain push=no
+            \tcall-ws push=no
+            \t\tdrop-constraint push=no
+            master
+            \thotfix/add-trigger push=no
+            \t\tignore-trailing
+            """
+
+        body = dedent(body).strip()
+        rewrite_definition_file(body)
+
+        launch_command("traverse", "-Wy")
+        assert_command(
+            ["status"],
+            """
+            develop
+            |
+            o-allow-ownership-link  push=no (diverged from origin)
+            | |
+            | o-build-chain  push=no (untracked)
+            |
+            o-call-ws  push=no (ahead of origin)
+              |
+              o-drop-constraint  push=no (untracked)
+
+            master
+            |
+            o-hotfix/add-trigger  push=no (diverged from origin)
+              |
+              o-ignore-trailing *
+            """,
+        )
+
+    def test_traverse_qualifiers_no_rebase(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        self.setup_discover_standard_tree()
+
+        body: str = \
+            """
+            develop
+            \tallow-ownership-link rebase=no
+            \t\tbuild-chain rebase=no
+            \tcall-ws rebase=no
+            \t\tdrop-constraint
+            master
+            \thotfix/add-trigger
+            \t\tignore-trailing
+            """
+
+        body = dedent(body).strip()
+        rewrite_definition_file(body)
+
+        launch_command("traverse", "-Wy")
+        assert_command(
+            ["status"],
+            """
+            develop
+            |
+            x-allow-ownership-link  rebase=no
+            | |
+            | x-build-chain  rebase=no
+            |
+            o-call-ws  rebase=no
+              |
+              o-drop-constraint
+
+            master
+            |
+            o-hotfix/add-trigger
+              |
+              o-ignore-trailing *
+            """,
+        )
+
+    def test_traverse_qualifiers_no_rebase_no_push(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        self.setup_discover_standard_tree()
+
+        body: str = \
+            """
+            develop
+            \tallow-ownership-link rebase=no push=no
+            \t\tbuild-chain rebase=no push=no
+            \tcall-ws
+            \t\tdrop-constraint rebase=no push=no
+            master
+            \thotfix/add-trigger
+            \t\tignore-trailing
+            """
+
+        body = dedent(body).strip()
+        rewrite_definition_file(body)
+
+        launch_command("traverse", "-Wy")
+        assert_command(
+            ["status"],
+            """
+            develop
+            |
+            x-allow-ownership-link  rebase=no push=no (ahead of origin)
+            | |
+            | x-build-chain  rebase=no push=no (untracked)
+            |
+            o-call-ws
+              |
+              x-drop-constraint  rebase=no push=no (untracked)
+
+            master
+            |
+            o-hotfix/add-trigger
+              |
+              o-ignore-trailing *
+            """,
         )
