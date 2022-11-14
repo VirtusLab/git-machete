@@ -56,7 +56,7 @@ class TestTraverse:
             .sleep(1)
             .commit_amend("Ignore trailing data (amended)")
             .push()
-            .reset_to("ignore-trailing@{1}")
+            .reset_to("ignore-trailing@{1}")  # noqa: FS003
             .delete_branch("root")
         )
 

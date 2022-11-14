@@ -979,17 +979,17 @@ class MacheteClient:
                             # the above call to 'fork_point_hash'.
                             fp_branches_formatted: str = " and ".join(
                                 sorted(underline(lb_or_rb) for lb, lb_or_rb in fork_point_branches_cached[branch]))
-                            fp_suffix: str = " %s %s %s seems to be a part of the unique history of %s" % \
-                                             (colored(utils.get_right_arrow(), AnsiEscapeCodes.RED),
-                                              colored("fork point ???", AnsiEscapeCodes.RED),
-                                              "this commit" if opt_list_commits_with_hashes else f"commit {commit.short_hash}",
-                                              fp_branches_formatted)
+                            right_arrow = colored(utils.get_right_arrow(), AnsiEscapeCodes.RED)
+                            fork_point = colored("fork point ???", AnsiEscapeCodes.RED)
+                            fp_suffix: str = f' {right_arrow} {fork_point}\
+                                {"this commit" if opt_list_commits_with_hashes else f"commit {commit.short_hash}"}\
+                                seems to be a part of the unique history of {fp_branches_formatted}'
                         else:
                             fp_suffix = ''
                         print_line_prefix(branch, utils.get_vertical_bar())
-                        out.write(" %s%s%s\n" % (
-                            f"{dim(commit.short_hash)}  " if opt_list_commits_with_hashes else "", dim(commit.subject),
-                            fp_suffix))
+                        out.write(f' {f"{dim(commit.short_hash)}  " if opt_list_commits_with_hashes else ""}'
+                                  f'{dim(commit.subject)}'
+                                  f'{fp_suffix}\n')
 
                 junction: str
                 if utils.ascii_only:
@@ -1025,7 +1025,7 @@ class MacheteClient:
                     prefix = "REVERTING "
                 else:
                     prefix = ""
-                current = "%s%s" % (bold(colored(prefix, AnsiEscapeCodes.RED)), bold(underline(branch, star_if_ascii_only=True)))
+                current = f"{bold(colored(prefix, AnsiEscapeCodes.RED))}{bold(underline(branch, star_if_ascii_only=True))}"
             else:
                 current = bold(branch)
 
@@ -1424,8 +1424,9 @@ class MacheteClient:
 
         result = [hash for (hash, gs) in branch_reflog if
                   hash not in hashes_to_exclude and not is_excluded_reflog_subject(hash, gs)]
+        reflog = (", ".join(result) or "<empty>")
         debug("computed filtered reflog (= reflog without branch creation "
-              "and branch reset events irrelevant for fork point/upstream inference): %s\n" % (", ".join(result) or "<empty>"))
+              f"and branch reset events irrelevant for fork point/upstream inference): {reflog}\n")
         return result
 
     def sync_annotations_to_github_prs(self) -> None:
@@ -1527,7 +1528,8 @@ class MacheteClient:
                     joined_branch_pairs = ", ".join(map(tupled(branch_pair_to_str), branch_pairs_))
                     yield dim(f"{hash_} => {joined_branch_pairs}")
 
-            debug("branches containing the given hash in their filtered reflog: \n%s\n" % "\n".join(log_result()))
+            branches = "\n".join(log_result())
+            debug(f"branches containing the given hash in their filtered reflog: \n{branches}\n")
 
         branch_full_hash: FullCommitHash = self.__git.get_commit_hash_by_revision(branch)
 
@@ -2134,7 +2136,7 @@ class MacheteClient:
                     'corresponds to GitHub (see `git remote -v` for details). \n'
                     'It is possible that you are using custom GitHub URL.\n'
                     'If that is the case, you can provide repository information explicitly, via these 3 git config keys: '
-                    '`machete.github.{remote,organization,repository}`\n'))
+                    '`machete.github.[remote,organization,repository]`\n'))
 
         if len(remote_and_github_org_and_repo) == 1:
             return remote_and_github_org_and_repo[list(remote_and_github_org_and_repo.keys())[0]]
@@ -2153,7 +2155,7 @@ class MacheteClient:
             f'Multiple non-origin remotes correspond to GitHub in this repository: '
             f'{", ".join(remote_and_github_org_and_repo.keys())} -> aborting. \n'
             f'You can also select the repository by providing 3 git config keys: '
-            '`machete.github.{remote,organization,repository}`\n')
+            f'`machete.github.[remote,organization,repository]`\n')
 
     def __get_remote_and_organization_and_repository_name_for_custom_url(self) -> RemoteAndOrganizationAndRepository:
         return RemoteAndOrganizationAndRepository(remote=self.__git.get_config_attr_or_none("machete.github.remote"),

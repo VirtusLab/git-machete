@@ -78,7 +78,7 @@ class GitRepositorySandbox:
         return self
 
     def commit(self, message: str = "Some commit message.") -> "GitRepositorySandbox":
-        f = "%s.txt" % "".join(random.choice(string.ascii_letters) for _ in range(20))
+        f = f'{"".join(random.choice(string.ascii_letters) for _ in range(20))}.txt'
         self.execute(f"touch {f}")
         self.execute(f"git add {f}")
         self.execute(f'git commit -m "{message}"')

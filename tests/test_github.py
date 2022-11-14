@@ -193,7 +193,7 @@ class TestGithub:
         launch_command("discover", "-y")
         expected_error_message = (
             "Multiple non-origin remotes correspond to GitHub in this repository: origin_1, origin_2 -> aborting. \n"
-            "You can also select the repository by providing 3 git config keys: `machete.github.{remote,organization,repository}`\n"
+            "You can also select the repository by providing 3 git config keys: `machete.github.[remote,organization,repository]`\n"
         )
         with pytest.raises(MacheteException) as e:
             launch_command("github", "retarget-pr")
@@ -328,7 +328,7 @@ class TestGithub:
                 .sleep(1)
                 .commit_amend("Ignore trailing data (amended)")
                 .push()
-                .reset_to("ignore-trailing@{1}")
+                .reset_to("ignore-trailing@{1}")  # noqa: FS003
                 .delete_branch("root")
                 .add_remote('new_origin', 'https://github.com/user/repo.git')
         )
@@ -451,7 +451,7 @@ class TestGithub:
                 .sleep(1)
                 .commit_amend("Ignore trailing data (amended)")
                 .push()
-                .reset_to("ignore-trailing@{1}")
+                .reset_to("ignore-trailing@{1}")  # noqa: FS003
                 .delete_branch("root")
                 .new_branch('chore/fields')
                 .commit("remove outdated fields")

@@ -421,7 +421,7 @@ class GitContext:
         self.flush_caches()
 
     def __find_short_commit_hash_by_revision(self, revision: AnyRevision) -> ShortCommitHash:
-        return ShortCommitHash.of(self._popen_git("rev-parse", "--short", revision + "^{commit}").stdout.rstrip())
+        return ShortCommitHash.of(self._popen_git("rev-parse", "--short", revision + "^{commit}").stdout.rstrip())  # noqa: FS003
 
     def get_short_commit_hash_by_revision(self, revision: AnyRevision) -> ShortCommitHash:
         if revision not in self.__short_commit_hash_by_revision_cached:
@@ -432,7 +432,7 @@ class GitContext:
         # Without ^{commit}, 'git rev-parse --verify' will not only accept references to other kinds of objects (like trees and blobs),
         # but just echo the argument (and exit successfully) even if the argument doesn't match anything in the object store.
         try:
-            return FullCommitHash.of(self._popen_git("rev-parse", "--verify", "--quiet", revision + "^{commit}").stdout.rstrip())
+            return FullCommitHash.of(self._popen_git("rev-parse", "--verify", "--quiet", revision + "^{commit}").stdout.rstrip())  # noqa: FS003, E501
         except MacheteException:
             return None
 
@@ -447,7 +447,7 @@ class GitContext:
 
     def __find_tree_hash_by_revision(self, revision: AnyRevision) -> Optional[FullTreeHash]:
         try:
-            return FullTreeHash.of(self._popen_git("rev-parse", "--verify", "--quiet", revision + "^{tree}").stdout.rstrip())
+            return FullTreeHash.of(self._popen_git("rev-parse", "--verify", "--quiet", revision + "^{tree}").stdout.rstrip())  # noqa: FS003
         except MacheteException:
             return None
 
@@ -460,10 +460,10 @@ class GitContext:
 
     @staticmethod
     def is_full_hash(revision: AnyRevision) -> Optional[Match[str]]:
-        return re.match("^[0-9a-f]{40}$", revision)
+        return re.match("^[0-9a-f]{40}$", revision)  # noqa: FS003
 
     def is_commit_present_in_repository(self, revision: AnyRevision) -> bool:
-        return self._popen_git("rev-parse", "--verify", "--quiet", revision + "^{commit}", allow_non_zero=True).exit_code == 0
+        return self._popen_git("rev-parse", "--verify", "--quiet", revision + "^{commit}", allow_non_zero=True).exit_code == 0  # noqa: FS003, E501
 
     def get_committer_unix_timestamp_by_revision(self, revision: AnyBranchName) -> int:
         if self.__committer_unix_timestamp_by_revision_cached is None:
@@ -978,7 +978,7 @@ class GitContext:
         # %gs - reflog subject
         output = self._popen_git("reflog", "show", "--format=%gd:%gs", "--date=raw").stdout
         for entry in utils.get_non_empty_lines(output):
-            pattern = "^HEAD@\\{([0-9]+) .+\\}:checkout: moving from (.+) to (.+)$"
+            pattern = "^HEAD@\\{([0-9]+) .+\\}:checkout: moving from (.+) to (.+)$"  # noqa: FS003
             match = re.search(pattern, entry)
             if match:
                 from_branch = match.group(2)
@@ -1010,7 +1010,7 @@ class GitContext:
             self, parent_revision: AnyRevision, msg: str, env: Dict[str, str]) -> FullCommitHash:
         # returns hash of the new commit
         return FullCommitHash.of(self._popen_git(
-            "commit-tree", "HEAD^{tree}", "-p", parent_revision, "-m", msg, env=env).stdout)
+            "commit-tree", "HEAD^{tree}", "-p", parent_revision, "-m", msg, env=env).stdout)  # noqa: FS003
 
     def delete_branch(self, branch_name: LocalBranchShortName, force: bool = False) -> int:
         self.flush_caches()
