@@ -454,10 +454,12 @@ def update_cli_opts_using_parsed_args(
             cli_opts.opt_n = True
             cli_opts.opt_return_to = "nearest-remaining"
         elif opt == "yes":
-            cli_opts.opt_yes = cli_opts.opt_no_interactive_rebase = True
+            cli_opts.opt_yes = True
 
     if cli_opts.opt_n and cli_opts.opt_merge:
         cli_opts.opt_no_edit_merge = True
+    if cli_opts.opt_yes and not cli_opts.opt_merge:
+        cli_opts.opt_no_interactive_rebase = True
     elif cli_opts.opt_n and not cli_opts.opt_merge:
         cli_opts.opt_no_interactive_rebase = True
 
