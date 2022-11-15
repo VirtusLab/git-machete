@@ -4,6 +4,7 @@
 
 - fixed: support GitHub remote URLs without `.git` suffix
 - fixed: `git machete` now correctly displays only available commands (without help topics)
+- fixed: `git machete traverse -y -M` no longer exits with error
 
 ## New in git-machete 3.13.0
 

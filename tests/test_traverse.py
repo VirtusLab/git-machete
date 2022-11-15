@@ -319,3 +319,32 @@ class TestTraverse:
               o-ignore-trailing
             """,
         )
+
+    def test_traverse_with_merge(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        (
+            self.repo_sandbox
+            .new_branch("develop")
+            .commit("develop commit 1")
+            .new_branch('mars')
+            .commit('mars commit 1')
+            .new_branch('snickers')
+            .commit('snickers commit')
+            .check_out('mars')
+            .commit('mars commit 2')
+            .check_out('develop')
+            .commit('develop commit 2')
+        )
+
+        launch_command("discover", "-y", "--roots=develop")
+        launch_command("traverse", '-y', '-M', '-n')
+        assert_command(
+            ["status"],
+            """
+            develop
+            |
+            o-mars
+              |
+              o-snickers *
+            """
+        )
