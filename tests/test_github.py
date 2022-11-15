@@ -193,7 +193,7 @@ class TestGithub:
         launch_command("discover", "-y")
         expected_error_message = (
             "Multiple non-origin remotes correspond to GitHub in this repository: origin_1, origin_2 -> aborting. \n"
-            "You can also select the repository by providing 3 git config keys: `machete.github.[remote,organization,repository]`\n"
+            "You can also select the repository by providing 3 git config keys: `machete.github.{remote,organization,repository}`\n"  # noqa: FS003, E501
         )
         with pytest.raises(MacheteException) as e:
             launch_command("github", "retarget-pr")
