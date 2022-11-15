@@ -458,10 +458,9 @@ def update_cli_opts_using_parsed_args(
 
     if cli_opts.opt_n and cli_opts.opt_merge:
         cli_opts.opt_no_edit_merge = True
-    if cli_opts.opt_yes and not cli_opts.opt_merge:
-        cli_opts.opt_no_interactive_rebase = True
-    elif cli_opts.opt_n and not cli_opts.opt_merge:
-        cli_opts.opt_no_interactive_rebase = True
+    if not cli_opts.opt_merge:
+        if cli_opts.opt_yes or cli_opts.opt_n:
+            cli_opts.opt_no_interactive_rebase = True
 
 
 def update_cli_options_using_config_keys(
