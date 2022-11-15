@@ -1,1 +1,2 @@
 flake8==5.0.4
+flake8-use-fstring==1.4

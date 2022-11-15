@@ -13,11 +13,11 @@ prev_is_unsafe_terminated_string && /^ *f?["'][^ ]/ {
   exit_code = 1
 }
 
-                 { prev_is_unsafe_terminated_string = 0 }
+                      { prev_is_unsafe_terminated_string = 0 }
 
-/[^ ]["'] *\\?$/ { prev_is_unsafe_terminated_string = 1 }
+/[^ ]["'] *\\?$/      { prev_is_unsafe_terminated_string = 1 }
 
-/\\n["'] *\\?$/  { prev_is_unsafe_terminated_string = 0 }
+/(\\n|\})["'] *\\?$/  { prev_is_unsafe_terminated_string = 0 }
 
 { prev = $0 }
 

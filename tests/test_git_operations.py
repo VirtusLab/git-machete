@@ -32,7 +32,7 @@ class TestGitOperations:
         master_branch_first_commit_hash = get_current_commit_hash()
 
         git = GitContext()
-        assert git._run_git("rev-parse", "--verify", "--quiet", master_branch_first_commit_hash + "^{commit}", allow_non_zero=True) == 0
+        assert git._run_git("rev-parse", "--verify", "--quiet", master_branch_first_commit_hash + "^{commit}", allow_non_zero=True) == 0  # noqa: FS003, E501
         assert git._run_git("rev-parse", "HEAD") == 0
 
     def test_popen_git(self) -> None:
