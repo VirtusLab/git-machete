@@ -14,7 +14,6 @@ Make sure the following bundled plugins are enabled:
 
 Optionally, you can also install the following non-bundled plugins from Marketplace:
 * [AWK Support](https://plugins.jetbrains.com/plugin/17037-awk-support)
-* [.ignore](https://plugins.jetbrains.com/plugin/7495--ignore)
 * [NixIDEA](https://plugins.jetbrains.com/plugin/8607-nixidea)
 * [Requirements](https://plugins.jetbrains.com/plugin/10837-requirements/)
 
