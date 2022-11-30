@@ -1884,7 +1884,11 @@ class MacheteClient:
             if verbose:
                 print(fmt(opt_yes_msg) if apply_fmt else opt_yes_msg)
             return 'y'
-        return input(fmt(msg) if apply_fmt else msg).lower()
+        try:
+            ans: str = input(fmt(msg) if apply_fmt else msg).lower()
+        except InterruptedError:
+            sys.exit(1)
+        return ans
 
     @staticmethod
     def pick(choices: List[LocalBranchShortName], name: str, apply_fmt: bool = True) -> LocalBranchShortName:
