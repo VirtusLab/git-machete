@@ -30,19 +30,34 @@ ln -s ../../ci/checks/run-all-checks.sh .git/hooks/pre-commit
 
 Install `fish` and `shellcheck` for `run-all-checks.sh` to pass successfully.
 
-
 ## Run tests locally
 
-To develop that project and run tests locally, it is needed to have Python installed with `tox`.
+To run tests in terminal, it is required to have at least one Python interpreter version installed with `tox`, available versions are 3.{6-11}.
+To run all tests, execute `tox` (requires each Python 3.X version previously specified), to run selected test environment execute `tox -e test_env_name` ---
+the name of the `test_env_name` can specify Python version of the environment, e.g. `py37`, if the `tox` can't discover version from the name, the highest version currently installed will be used.
 
-Use `tox -e venv` to setup virtual environment to work on that project in your favorite IDE.
-Use `.tox/venv/bin/python` as a reference `python` interpreter in your IDE.
+## Local installation for development purposes
 
-To run tests, execute `tox`.
+### Terminal: venv
 
-It's also possible to execute tests graphically in PyCharm (right-clicking on the test file
-or clicking the green triangle on the left of the test case name), which can be very useful when debugging a single test case.
-To do so, make sure that the libraries from [requirements.testenv.txt](requirements.testenv.txt) are installed in the current venv.
+To execute `git-machete` commands in terminal using current branch implementation, you must first have a virtual environment.
+You can create one named `venv` by executing `tox -e venv` or use existing environment (need to install requirements from [requirements.testenv.txt](requirements.testenv.txt)).
+You have to activate the environment, for the `venv` environment run `source .tox/venv/bin/activate` from `git-machete` root directory.
+Lastly, install `git-machete` in development mode with `pip install -e .` --- codebase can now be edited in-place without reinstallation.
+
+### Terminal: user-wide installation
+
+Use `pip install --user .`. Locate the installed package with `pip show -f
+
+### IDE (PyCharm): venv
+
+To execute tests in IDE (e.g. PyCharm -> right-clicking on the test file or clicking the green triangle on the left of the test case name),
+you must first have a virtual environment. You can create one named `venv` by executing `tox -e venv` or use existing environment
+(but then you need to install requirements from [requirements.testenv.txt](requirements.testenv.txt)).
+Lastly, setup `python` interpreter for your project in the IDE, e.g. `.tox/venv/bin/python`.
+
+To run/debug `git-machete` commands directly in IDE you need to create custom *Run/Debug Configuration*: set *Script Path* e.g. to [`git_machete/cli.py`](git_machete/cli.py)
+and provide command as *Parameters*.
 
 
 ## Generate sandbox repositories
