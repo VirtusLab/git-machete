@@ -28,6 +28,7 @@ ln -s ../../hook_samples/post-commit .git/hooks/post-commit
 ln -s ../../ci/checks/run-all-checks.sh .git/hooks/pre-commit
 ```
 
+Install `fish` and `shellcheck` for `run-all-checks.sh` to pass successfully.
 
 ## Run tests locally
 
@@ -184,7 +185,7 @@ Review fixes should be pushed on separate commits for easier viewing on GitHub (
    Inspect the output of `docker-compose` and verify that the latest version gets correctly installed on Ubuntu (esp. see the output of `git machete --version`).
 
 1. Thanks to the courtesy of [@blitz (Julian Stecklina)](https://github.com/blitz),
-   a [git-machete package](https://github.com/NixOS/nixpkgs/blob/master/pkgs/applications/version-management/git-and-tools/git-machete/default.nix)
+   a [git-machete package](https://github.com/NixOS/nixpkgs/blob/master/pkgs/applications/version-management/git-machete/default.nix)
    lives in [Nixpkgs](https://github.com/NixOS/nixpkgs) &mdash; the collection of packages for [Nix package manager](https://nixos.org/).
 
    Since @blitz's [PR #131141 to NixOS/nixpkgs](https://github.com/NixOS/nixpkgs/pull/131141),
