@@ -8,4 +8,4 @@ RUN chmod +x /root/entrypoint.sh
 CMD /root/entrypoint.sh
 
 WORKDIR /root/nixpkgs
-ENV EXPRESSION_PATH=pkgs/applications/version-management/git-and-tools/git-machete/default.nix
+ENV EXPRESSION_PATH=pkgs/applications/version-management/git-machete/default.nix
