@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.13.2
+
+- fixed: redo the failed release
+
 ## New in git-machete 3.13.1
 
 - fixed: support GitHub remote URLs without `.git` suffix
