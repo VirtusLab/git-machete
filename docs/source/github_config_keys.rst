@@ -3,6 +3,9 @@
     GitHub API server URL will be inferred from ``git remote``.
     You can override this by setting the following git config keys:
 
+        GitHub Enterprise domain
+            E.g. ``machete.github.domain`` = ``git.example.org``
+
         Remote name
             E.g. ``machete.github.remote`` = ``origin``
 
@@ -17,10 +20,11 @@
     .. code-block::
 
         [machete "github"]
+            domain = <domain>
             organization = <organization_name>
             repository = <repo_name>
             remote = <remote_name>
 
 ..
-    Text order in this file is relevant, if you want to change something, find each ``.. include:: status_config_key.rst`` instance
+    Text order in this file is relevant, if you want to change something, find each ``.. include:: github_config_keys.rst`` instance
     and if the instance has ``start-line`` or ``end-line`` options provided, make sure that after changes the output text stays the same.

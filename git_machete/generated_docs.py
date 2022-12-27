@@ -138,6 +138,9 @@ long_docs: Dict[str, str] = {
 
         GitHub API server URL will be inferred from `git remote`.
         You can override this by setting the following git config keys:
+           GitHub Enterprise domain
+              E.g. `machete.github.domain` = `git.example.org`
+
            Remote name
               E.g. `machete.github.remote` = `origin`
 
@@ -150,6 +153,7 @@ long_docs: Dict[str, str] = {
         To do this, run `git config --local --edit` and add the following section:
         <dim>
           [machete "github"]
+              domain = <domain>
               organization = <organization_name>
               repository = <repo_name>
               remote = <remote_name>
@@ -196,6 +200,9 @@ long_docs: Dict[str, str] = {
 
         GitHub API server URL will be inferred from `git remote`.
         You can override this by setting the following git config keys:
+           GitHub Enterprise domain
+              E.g. `machete.github.domain` = `git.example.org`
+
            Remote name
               E.g. `machete.github.remote` = `origin`
 
@@ -208,6 +215,7 @@ long_docs: Dict[str, str] = {
         To do this, run `git config --local --edit` and add the following section:
         <dim>
           [machete "github"]
+              domain = <domain>
               organization = <organization_name>
               repository = <repo_name>
               remote = <remote_name>
@@ -230,12 +238,15 @@ long_docs: Dict[str, str] = {
         Note: `config` is not a command as such, just a help topic (there is no `git machete config` command).
 
         <b>Git config keys:</b>
-           `machete.github.{remote,organization,repository}`:
+           `machete.github.{domain,remote,organization,repository}`:
  
               When executing `git machete github <subcommand>` command, the following will happen:
 
               GitHub API server URL will be inferred from `git remote`.
               You can override this by setting the following git config keys:
+
+                 GitHub Enterprise domain
+              E.g. `machete.github.domain` = `git.example.org`
 
                  Remote name
               E.g. `machete.github.remote` = `origin`
@@ -249,6 +260,7 @@ long_docs: Dict[str, str] = {
               To do this, run `git config --local --edit` and add the following section:
 
               [machete "github"]
+                  domain = <domain>
                   organization = <organization_name>
                   repository = <repo_name>
                   remote = <remote_name>
@@ -507,6 +519,9 @@ long_docs: Dict[str, str] = {
 
         GitHub API server URL will be inferred from `git remote`.
         You can override this by setting the following git config keys:
+           GitHub Enterprise domain
+              E.g. `machete.github.domain` = `git.example.org`
+
            Remote name
               E.g. `machete.github.remote` = `origin`
 
@@ -519,6 +534,7 @@ long_docs: Dict[str, str] = {
         To do this, run `git config --local --edit` and add the following section:
         <dim>
           [machete "github"]
+              domain = <domain>
               organization = <organization_name>
               repository = <repo_name>
               remote = <remote_name>

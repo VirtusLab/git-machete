@@ -1,4 +1,3 @@
-# Deliberately NOT using much more convenient `requests` to avoid external dependencies
 import http
 import json
 import os
@@ -7,6 +6,7 @@ import shutil
 import subprocess
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional
+# Deliberately NOT using much more convenient `requests` to avoid external dependencies in production code
 import urllib.request
 import urllib.error
 
@@ -15,17 +15,18 @@ from git_machete.exceptions import MacheteException, UnprocessableEntityHTTPErro
 from git_machete.git_operations import GitContext, LocalBranchShortName
 
 GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
+DEFAULT_GITHUB_DOMAIN = "github.com"
 
-# TODO (#137): Support GitHub Enterprise endpoints
-GITHUB_DOMAIN = "github.com"
 
-# GitHub DOES NOT allow trailing `.git` suffix in the repository name (also applies to multiple repetitions e.g. `repo_name.git.git`)
-GITHUB_REMOTE_PATTERNS = [
-    r"^https://.*@github\.com/(.*)/(.*)$",
-    r"^https://github\.com/(.*)/(.*)$",
-    r"^git@github\.com:(.*)/(.*)$",
-    r"^ssh://git@github\.com/(.*)/(.*)$"
-]
+def github_remote_url_patterns(domain: str) -> List[str]:
+    # GitHub DOES NOT allow trailing `.git` suffix in the repository name (also applies to multiple repetitions e.g. `repo_name.git.git`)
+    domain_regex = re.escape(domain)
+    return [
+        f"^https://.*@{domain_regex}/(.*)/(.*)$",
+        f"^https://{domain_regex}/(.*)/(.*)$",
+        f"^git@{domain_regex}:(.*)/(.*)$",
+        f"^ssh://git@{domain_regex}/(.*)/(.*)$"
+    ]
 
 
 class GitHubPullRequest(object):
@@ -74,38 +75,36 @@ class GithubTokenAndTokenProvider(NamedTuple):
     token_provider: str
 
 
-def __get_github_token_and_provider() -> Optional[GithubTokenAndTokenProvider]:
+def __get_github_token_and_provider(domain: str) -> Optional[GithubTokenAndTokenProvider]:
     def get_token_from_gh() -> Optional[GithubTokenAndTokenProvider]:
         # Abort without error if `gh` isn't available
         gh = shutil.which('gh')
         if not gh:
             return None
 
-        # Run via subprocess.run as we're insensitive to return code.
-        #
-        # TODO (#137): `gh` can store auth token for public and enterprise domains,
-        #  specify single domain for lookup.
-        # This is *only* github.com until enterprise support is added.
+        # There is also `gh auth token`, but it's only been added in gh v2.17.0, in Oct 2022.
+        # Let's stick to the older `gh auth status --show-token` for compatibility.
         proc = subprocess.run(
-            [gh, "auth", "status", "--hostname", GITHUB_DOMAIN, "--show-token"],
+            [gh, "auth", "status", "--hostname", domain, "--show-token"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
+        if proc.returncode != 0:
+            return None
 
-        # gh auth status outputs to stderr in the form:
+        # `gh auth status --show-token` outputs to stderr in the form:
         #
         # {domain}:
         #   ✓ Logged in to {domain} as {username} ({config_path})
         #   ✓ Git operations for {domain} configured to use {protocol} protocol.
-        #   ✓ Token: *******************
+        #   ✓ Token: <token>
         #
-        # with non-zero exit code on failure
-        result = proc.stderr.decode()
-
-        match = re.search(r"Token: (\w+)", result)
+        # with non-zero exit code on failure.
+        stderr = proc.stderr.decode()
+        match = re.search(r"Token: (\w+)", stderr)
         if match:
-            return GithubTokenAndTokenProvider(token=match.groups()[0],
-                                               token_provider='current auth token from the `gh` GitHub CLI')
+            return GithubTokenAndTokenProvider(token=match.group(1),
+                                               token_provider=f'auth token for {domain} from `hub` GitHub CLI')
         return None
 
     def get_token_from_hub() -> Optional[GithubTokenAndTokenProvider]:
@@ -113,17 +112,25 @@ def __get_github_token_and_provider() -> Optional[GithubTokenAndTokenProvider]:
         config_hub_path: str = os.path.join(home_path, ".config", "hub")
         if os.path.isfile(config_hub_path):
             with open(config_hub_path) as config_hub:
-                config_hub_content: str = config_hub.read()
                 # ~/.config/hub is a yaml file, with a structure similar to:
                 #
-                # {domain}:
-                # - user: {username}
+                # {domain1}:
+                # - user: {username1}
                 #   oauth_token: *******************
                 #   protocol: {protocol}
-                match = re.search(r"oauth_token: (\w+)", config_hub_content)
-                if match:
-                    return GithubTokenAndTokenProvider(token=match.groups()[0],
-                                                       token_provider='current auth token from the `hub` GitHub CLI')
+                #
+                # {domain2}:
+                # - user: {username2}
+                #   oauth_token: *******************
+                #   protocol: {protocol}
+                found_host = False
+                for line in config_hub.readlines():
+                    if line.rstrip() == domain + ":":
+                        found_host = True
+                    elif found_host and line.lstrip().startswith("oauth_token:"):
+                        result = re.sub(' *oauth_token: *', '', line).rstrip().replace('"', '')
+                        return GithubTokenAndTokenProvider(token=result,
+                                                           token_provider=f'auth token for {domain} from `hub` GitHub CLI')
         return None
 
     def get_token_from_env() -> Optional[GithubTokenAndTokenProvider]:
@@ -135,12 +142,17 @@ def __get_github_token_and_provider() -> Optional[GithubTokenAndTokenProvider]:
 
     def get_token_from_file_in_home_directory() -> Optional[GithubTokenAndTokenProvider]:
         required_file_name = '.github-token'
+        token_provider = f'auth token for {domain} from `~/.github-token`'
         file_full_path = os.path.expanduser(f'~/{required_file_name}')
 
         if os.path.isfile(file_full_path):
             with open(file_full_path) as file:
-                return GithubTokenAndTokenProvider(token=file.read().strip(),
-                                                   token_provider='content of the `~/.github-token` file')
+                for line in file.readlines():
+                    if line.endswith(" " + domain):
+                        token = line.split(" ")[0]
+                        return GithubTokenAndTokenProvider(token=token, token_provider=token_provider)
+                    elif domain == DEFAULT_GITHUB_DOMAIN and " " not in line.rstrip():
+                        return GithubTokenAndTokenProvider(token=line.rstrip(), token_provider=token_provider)
         return None
 
     return (get_token_from_env() or
@@ -149,13 +161,13 @@ def __get_github_token_and_provider() -> Optional[GithubTokenAndTokenProvider]:
             get_token_from_hub())
 
 
-def __get_github_token() -> Optional[str]:
-    github_token_and_provider = __get_github_token_and_provider()
+def __get_github_token(domain: str) -> Optional[str]:
+    github_token_and_provider = __get_github_token_and_provider(domain)
     return github_token_and_provider.token if github_token_and_provider else None
 
 
-def __get_github_token_provider() -> Optional[str]:
-    github_token_and_provider = __get_github_token_and_provider()
+def __get_github_token_provider(domain: str) -> Optional[str]:
+    github_token_and_provider = __get_github_token_and_provider(domain)
     return github_token_and_provider.token_provider if github_token_and_provider else None
 
 
@@ -172,7 +184,8 @@ def __extract_failure_info_from_422(response: Any) -> str:
     return str(response)
 
 
-def __fire_github_api_request(method: str, path: str, token: Optional[str], request_body: Optional[Dict[str, Any]] = None) -> Any:
+def __fire_github_api_request(domain: str, method: str, path: str,
+                              token: Optional[str], request_body: Optional[Dict[str, Any]] = None) -> Any:
     headers: Dict[str, str] = {
         'Content-type': 'application/json',
         'User-Agent': 'git-machete',
@@ -181,7 +194,7 @@ def __fire_github_api_request(method: str, path: str, token: Optional[str], requ
     if token:
         headers['Authorization'] = 'Bearer ' + token
 
-    host = 'https://api.' + GITHUB_DOMAIN
+    host = 'https://api.' + domain
     url = host + path
     json_body: Optional[str] = json.dumps(request_body) if request_body else None
     http_request = urllib.request.Request(url, headers=headers, data=json_body.encode() if json_body else None, method=method.upper())
@@ -199,26 +212,27 @@ def __fire_github_api_request(method: str, path: str, token: Optional[str], requ
         elif err.code in (http.HTTPStatus.UNAUTHORIZED, http.HTTPStatus.FORBIDDEN):
             first_line = f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`\n'
             if token:
-                raise MacheteException(first_line + f'Make sure that the GitHub API token provided by the {__get_github_token_provider()} '
-                                                    f'is valid and allows for access to `{method.upper()}` `https://{host}{path}`.\n'
+                raise MacheteException(first_line + 'Make sure that the GitHub API token '
+                                                    f'provided by the {__get_github_token_provider(domain)} '
+                                                    f'is valid and allows for access to `{method.upper()}` `{host}{path}`.\n'
                                                     'You can also use a different token provider, available providers can be found '
-                                                    'when running `git machete help github`')
+                                                    'when running `git machete help github`.')
             else:
                 raise MacheteException(
                     first_line + f'You might not have the required permissions for this repository.\n'
-                                 f'Provide a GitHub API token with `repo` access via {__get_github_token_provider()}.\n'
-                                 'Visit `https://github.com/settings/tokens` to generate a new one.\n'
+                                 f'Provide a GitHub API token with `repo` access via {__get_github_token_provider(domain)}.\n'
+                                 f'Visit `https://{domain}/settings/tokens` to generate a new one.\n'
                                  'You can also use a different token provider, available providers can be found '
-                                 'when running `git machete help github`')
+                                 'when running `git machete help github`.')
         elif err.code == http.HTTPStatus.NOT_FOUND:
             raise MacheteException(
                 f'`{method} {url}` request ended up in 404 response from GitHub. A valid GitHub API token is required.\n'
                 f'Provide a GitHub API token with `repo` access via one of the: {get_github_token_possible_providers()} '
-                'Visit `https://github.com/settings/tokens` to generate a new one.')  # TODO (#164): make dedicated exception here
+                f'Visit `https://{domain}/settings/tokens` to generate a new one.')  # TODO (#164): make dedicated exception here
         elif err.code == http.HTTPStatus.TEMPORARY_REDIRECT:
             if err.headers['Location'] is not None:
                 if len(err.headers['Location'].split('/')) >= 5:
-                    current_repo_and_org = get_repo_and_org_names_by_id(err.headers['Location'].split('/')[4])
+                    current_repo_and_org = get_repo_and_org_names_by_id(domain, err.headers['Location'].split('/')[4])
             else:
                 first_line = fmt(f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`\n')
                 raise MacheteException(
@@ -237,7 +251,7 @@ def __fire_github_api_request(method: str, path: str, token: Optional[str], requ
                  f'new repository = `{current_repo_and_org.split("/")[1]}`.\n'
                  'You can update your remote repository via: `git remote set-url <remote_name> <new_repository_url>`.',
                  end='')
-            return __fire_github_api_request(method=method, path=new_path, token=token, request_body=request_body)
+            return __fire_github_api_request(domain=domain, method=method, path=new_path, token=token, request_body=request_body)
         else:
             first_line = fmt(f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`\n')
             raise MacheteException(
@@ -246,8 +260,9 @@ def __fire_github_api_request(method: str, path: str, token: Optional[str], requ
         raise MacheteException(f'Could not connect to {host}: {e}')
 
 
-def create_pull_request(org: str, repo: str, head: str, base: str, title: str, description: str, draft: bool) -> GitHubPullRequest:
-    token: Optional[str] = __get_github_token()
+def create_pull_request(domain: str, org: str, repo: str,
+                        head: str, base: str, title: str, description: str, draft: bool) -> GitHubPullRequest:
+    token: Optional[str] = __get_github_token(domain)
     request_body: Dict[str, Any] = {
         'head': head,
         'base': base,
@@ -255,69 +270,69 @@ def create_pull_request(org: str, repo: str, head: str, base: str, title: str, d
         'body': description,
         'draft': draft
     }
-    pr = __fire_github_api_request('POST', f'/repos/{org}/{repo}/pulls', token, request_body)
+    pr = __fire_github_api_request(domain, 'POST', f'/repos/{org}/{repo}/pulls', token, request_body)
     return __parse_pr_json(pr)
 
 
-def add_assignees_to_pull_request(org: str, repo: str, number: int, assignees: List[str]) -> None:
-    token: Optional[str] = __get_github_token()
+def add_assignees_to_pull_request(domain: str, org: str, repo: str, number: int, assignees: List[str]) -> None:
+    token: Optional[str] = __get_github_token(domain)
     request_body: Dict[str, List[str]] = {
         'assignees': assignees
     }
     # Adding assignees is only available via the Issues API, not PRs API.
-    __fire_github_api_request('POST', f'/repos/{org}/{repo}/issues/{number}/assignees', token, request_body)
+    __fire_github_api_request(domain, 'POST', f'/repos/{org}/{repo}/issues/{number}/assignees', token, request_body)
 
 
-def add_reviewers_to_pull_request(org: str, repo: str, number: int, reviewers: List[str]) -> None:
-    token: Optional[str] = __get_github_token()
+def add_reviewers_to_pull_request(domain: str, org: str, repo: str, number: int, reviewers: List[str]) -> None:
+    token: Optional[str] = __get_github_token(domain)
     request_body: Dict[str, List[str]] = {
         'reviewers': reviewers
     }
-    __fire_github_api_request('POST', f'/repos/{org}/{repo}/pulls/{number}/requested_reviewers', token, request_body)
+    __fire_github_api_request(domain, 'POST', f'/repos/{org}/{repo}/pulls/{number}/requested_reviewers', token, request_body)
 
 
-def set_base_of_pull_request(org: str, repo: str, number: int, base: LocalBranchShortName) -> None:
-    token: Optional[str] = __get_github_token()
+def set_base_of_pull_request(domain: str, org: str, repo: str, number: int, base: LocalBranchShortName) -> None:
+    token: Optional[str] = __get_github_token(domain)
     request_body: Dict[str, str] = {'base': base}
-    __fire_github_api_request('PATCH', f'/repos/{org}/{repo}/pulls/{number}', token, request_body)
+    __fire_github_api_request(domain, 'PATCH', f'/repos/{org}/{repo}/pulls/{number}', token, request_body)
 
 
-def set_milestone_of_pull_request(org: str, repo: str, number: int, milestone: str) -> None:
-    token: Optional[str] = __get_github_token()
+def set_milestone_of_pull_request(domain: str, org: str, repo: str, number: int, milestone: str) -> None:
+    token: Optional[str] = __get_github_token(domain)
     request_body: Dict[str, str] = {'milestone': milestone}
     # Setting milestone is only available via the Issues API, not PRs API.
-    __fire_github_api_request('PATCH', f'/repos/{org}/{repo}/issues/{number}', token, request_body)
+    __fire_github_api_request(domain, 'PATCH', f'/repos/{org}/{repo}/issues/{number}', token, request_body)
 
 
-def derive_pull_request_by_head(org: str, repo: str, head: LocalBranchShortName) -> Optional[GitHubPullRequest]:
-    token: Optional[str] = __get_github_token()
-    prs = __fire_github_api_request('GET', f'/repos/{org}/{repo}/pulls?head={org}:{head}', token)
+def derive_pull_request_by_head(domain: str, org: str, repo: str, head: LocalBranchShortName) -> Optional[GitHubPullRequest]:
+    token: Optional[str] = __get_github_token(domain)
+    prs = __fire_github_api_request(domain, 'GET', f'/repos/{org}/{repo}/pulls?head={org}:{head}', token)
     if len(prs) >= 1:
         return __parse_pr_json(prs[0])
     else:
         return None
 
 
-def derive_pull_requests(org: str, repo: str) -> List[GitHubPullRequest]:
-    token: Optional[str] = __get_github_token()
-    prs = __fire_github_api_request('GET', f'/repos/{org}/{repo}/pulls', token)
+def derive_pull_requests(domain: str, org: str, repo: str) -> List[GitHubPullRequest]:
+    token: Optional[str] = __get_github_token(domain)
+    prs = __fire_github_api_request(domain, 'GET', f'/repos/{org}/{repo}/pulls', token)
     return list(map(__parse_pr_json, prs))
 
 
-def derive_current_user_login() -> Optional[str]:
-    token: Optional[str] = __get_github_token()
+def derive_current_user_login(domain: str) -> Optional[str]:
+    token: Optional[str] = __get_github_token(domain)
     if not token:
         return None
-    user = __fire_github_api_request('GET', '/user', token)
+    user = __fire_github_api_request(domain, 'GET', '/user', token)
     return str(user['login'])  # str() to satisfy mypy
 
 
-def is_github_remote_url(url: str) -> bool:
-    return any((re.match(pattern, url) for pattern in GITHUB_REMOTE_PATTERNS))
+def is_github_remote_url(domain: str, url: str) -> bool:
+    return any((re.match(pattern, url) for pattern in github_remote_url_patterns(domain)))
 
 
-def get_parsed_github_remote_url(url: str, remote: str) -> Optional[RemoteAndOrganizationAndRepository]:
-    for pattern in GITHUB_REMOTE_PATTERNS:
+def get_parsed_github_remote_url(domain: str, url: str, remote: str) -> Optional[RemoteAndOrganizationAndRepository]:
+    for pattern in github_remote_url_patterns(domain):
         match = re.match(pattern, url)
         if match:
             org = match.group(1)
@@ -328,10 +343,10 @@ def get_parsed_github_remote_url(url: str, remote: str) -> Optional[RemoteAndOrg
     return None
 
 
-def get_pull_request_by_number_or_none(number: int, org: str, repo: str) -> Optional[GitHubPullRequest]:
-    token: Optional[str] = __get_github_token()
+def get_pull_request_by_number_or_none(domain: str, number: int, org: str, repo: str) -> Optional[GitHubPullRequest]:
+    token: Optional[str] = __get_github_token(domain)
     try:
-        pr_json: Dict[str, Any] = __fire_github_api_request('GET', f'/repos/{org}/{repo}/pulls/{number}', token)
+        pr_json: Dict[str, Any] = __fire_github_api_request(domain, 'GET', f'/repos/{org}/{repo}/pulls/{number}', token)
         return __parse_pr_json(pr_json)
     except MacheteException:
         return None
@@ -342,9 +357,9 @@ def checkout_pr_refs(git: GitContext, remote: str, pr_number: int, branch: Local
     git.checkout(branch)
 
 
-def get_repo_and_org_names_by_id(repo_id: str) -> str:
-    token: Optional[str] = __get_github_token()
-    repo = __fire_github_api_request('GET', f'/repositories/{repo_id}', token)
+def get_repo_and_org_names_by_id(domain: str, repo_id: str) -> str:
+    token: Optional[str] = __get_github_token(domain)
+    repo = __fire_github_api_request(domain, 'GET', f'/repositories/{repo_id}', token)
     return str(repo['full_name'])
 
 
