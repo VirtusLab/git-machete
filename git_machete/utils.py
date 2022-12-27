@@ -209,14 +209,19 @@ def slurp_file_or_empty(path: str) -> str:
         return ''
 
 
-class AnsiEscapeCodes:
+def is_terminal_fully_fledged() -> bool:
     try:
         stdout = popen_cmd('tput', 'colors')[1]
-        __number_of_supported_colors = int(stdout)
+        number_of_supported_colors = int(stdout)
     except Exception:
         # If we cannot retrieve the number of supported colors, let's defensively assume it's low.
-        __number_of_supported_colors = 8
-    __is_full_fledged_terminal = __number_of_supported_colors >= 256
+        number_of_supported_colors = 8
+    return number_of_supported_colors >= 256
+
+
+class AnsiEscapeCodes:
+
+    __is_terminal_fully_fledged = is_terminal_fully_fledged()
 
     # `GIT_MACHETE_DIM_AS_GRAY` remains undocumented as for now,
     # is just needed for animated gifs to render correctly
@@ -229,13 +234,13 @@ class AnsiEscapeCodes:
     BOLD = '\033[1m'
     DIM = '\033[38;2;128;128;128m' if __dim_as_gray else '\033[2m'
     # Let's fall back to cyan on 8-color terminals
-    UNDERLINE = '\033[4m' if __is_full_fledged_terminal else '\033[36m'
+    UNDERLINE = '\033[4m' if __is_terminal_fully_fledged else '\033[36m'
     GREEN = '\033[32m'
     YELLOW = '\033[33m'
     # Let's fall back to yellow on 8-color terminals
-    ORANGE = '\033[00;38;5;208m' if __is_full_fledged_terminal else '\033[33m'
+    ORANGE = '\033[00;38;5;208m' if __is_terminal_fully_fledged else '\033[33m'
     # Let's fall back to dark red (which might be similar to yellow :/) on 8-color terminals
-    RED = '\033[91m' if __is_full_fledged_terminal else '\033[31m'
+    RED = '\033[91m' if __is_terminal_fully_fledged else '\033[31m'
 
 
 def bold(s: str) -> str:
