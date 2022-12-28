@@ -203,6 +203,15 @@ def __fire_github_api_request(domain: str, method: str, path: str,
     try:
         with urllib.request.urlopen(http_request) as response:
             parsed_response_body: Any = json.loads(response.read().decode())
+            # https://docs.github.com/en/rest/guides/using-pagination-in-the-rest-api?apiVersion=2022-11-28#using-link-headers
+            link_header: str = response.info()["link"]
+            if link_header:
+                host_regex = re.escape(host)
+                match = re.search(f'<{host_regex}(/[^>]+)>; rel="next"', link_header)
+                if match:
+                    next_page_path = match.group(1)
+                    debug(f'there is more data to retrieve under {next_page_path}')
+                    return parsed_response_body + __fire_github_api_request(domain, method, next_page_path, token, request_body)
             return parsed_response_body
     except urllib.error.HTTPError as err:
         if err.code == http.HTTPStatus.UNPROCESSABLE_ENTITY:
@@ -315,7 +324,8 @@ def derive_pull_request_by_head(domain: str, org: str, repo: str, head: LocalBra
 
 def derive_pull_requests(domain: str, org: str, repo: str) -> List[GitHubPullRequest]:
     token: Optional[str] = __get_github_token(domain)
-    prs = __fire_github_api_request(domain, 'GET', f'/repos/{org}/{repo}/pulls', token)
+    # As of Dec 2022, GitHub API never returns more than 100 PRs, even if per_page>100.
+    prs = __fire_github_api_request(domain, 'GET', f'/repos/{org}/{repo}/pulls?per_page=100', token)
     return list(map(__parse_pr_json, prs))
 
 

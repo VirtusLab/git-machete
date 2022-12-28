@@ -161,6 +161,9 @@ class MockGitHubAPIResponse:
     def read(self) -> bytes:
         return json.dumps(self.response_data).encode()
 
+    def info(self) -> Dict[str, None]:
+        return {"link": None}
+
 
 class MockGitHubAPIRequest:
     def __init__(self, github_api_state: MockGitHubAPIState) -> None:

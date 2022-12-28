@@ -5,6 +5,7 @@
 - added: `push=no` and `rebase=no` branch qualifiers that control push and rebase behaviour of `git machete traverse`
 - added: `machete.github.domain` config key to support GitHub Enterprise domains
 - added: support for per-domain entries in `~/.github-token` file
+- fixed: fetching GitHub PRs when there is more than 30 of them in the given repository
 
 ## New in git-machete 3.13.2
 

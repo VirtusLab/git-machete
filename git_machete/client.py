@@ -1461,10 +1461,12 @@ class MacheteClient:
     def sync_annotations_to_github_prs(self) -> None:
         domain = self.__derive_github_domain()
         _, org, repo = self.__derive_remote_and_github_org_and_repo(domain)
+        print('Checking for open GitHub PRs... ', end='', flush=True)
         current_user: Optional[str] = git_machete.github.derive_current_user_login(domain)
         debug('Current GitHub user is ' + (current_user or '<none>'))
-        all_prs: List[GitHubPullRequest] = derive_pull_requests(domain, org, repo)
-        self.__sync_annotations_to_definition_file(all_prs, current_user)
+        all_open_prs: List[GitHubPullRequest] = derive_pull_requests(domain, org, repo)
+        print(fmt('<green><b>OK</b></green>'))
+        self.__sync_annotations_to_definition_file(all_open_prs, current_user)
 
     def __sync_annotations_to_definition_file(self,
                                               prs: List[GitHubPullRequest],
@@ -1967,12 +1969,13 @@ class MacheteClient:
                             verbose: bool = False,
                             fail_on_missing_current_user_for_my_opened_prs: bool = True
                             ) -> None:
-        print(bold('Checking for open GitHub PRs...'))
         org: str
         repo: str
         remote: str
         domain = self.__derive_github_domain()
         remote, org, repo = self.__derive_remote_and_github_org_and_repo(domain)
+        print('Checking for open GitHub PRs... ', end='', flush=True)
+
         current_user: Optional[str] = git_machete.github.derive_current_user_login(domain)
         if not current_user and my_opened_prs:
             msg = ("Could not determine current user name, please check that the GitHub API token provided by one of the: "
@@ -1983,6 +1986,8 @@ class MacheteClient:
             else:
                 raise MacheteException(msg)
         all_open_prs: List[GitHubPullRequest] = derive_pull_requests(domain, org, repo)
+        print(fmt('<green><b>OK</b></green>'))
+
         applicable_prs: List[GitHubPullRequest] = self.__get_applicable_pull_requests(pr_nos,
                                                                                       all_opened_prs_from_github=all_open_prs,
                                                                                       domain=domain,

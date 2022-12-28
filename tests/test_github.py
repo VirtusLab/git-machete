@@ -1123,7 +1123,7 @@ class TestGithub:
                 'Verify that expected error message has appeared when one of the given pull requests to checkout does not exists.'
 
         # check against user with no open pull requests
-        expected_msg = ("Checking for open GitHub PRs...\n"
+        expected_msg = ("Checking for open GitHub PRs... OK\n"
                         f"Warn: User tester has no open pull request in repository {org}/{repo}\n")
         assert_command(['github', 'checkout-prs', '--by', 'tester'], expected_msg, strip_indentation=False)
 
@@ -1158,14 +1158,14 @@ class TestGithub:
          )
         os.chdir(self.repo_sandbox.local_path)
 
-        expected_msg = ("Checking for open GitHub PRs...\n"
+        expected_msg = ("Checking for open GitHub PRs... OK\n"
                         "Warn: Pull request #5 is already closed.\n"
                         "Pull request #5 checked out at local branch bugfix/remove-n-option\n")
 
         assert_command(['github', 'checkout-prs', '5'], expected_msg, strip_indentation=False)
 
         # Check against multiple PRs
-        expected_msg = 'Checking for open GitHub PRs...\n'
+        expected_msg = 'Checking for open GitHub PRs... OK\n'
 
         assert_command(['github', 'checkout-prs', '3', '12'], expected_msg, strip_indentation=False)
 
@@ -1263,7 +1263,7 @@ class TestGithub:
         )
         os.chdir(self.repo_sandbox.local_path)
         rewrite_definition_file("master")
-        expected_msg = ("Checking for open GitHub PRs...\n"
+        expected_msg = ("Checking for open GitHub PRs... OK\n"
                         "Pull request #2 checked out at local branch comments/add_docstrings\n")
         assert_command(
             ['github', 'checkout-prs', '2'],
@@ -1286,7 +1286,7 @@ class TestGithub:
 
         # Check against closed pull request
         self.repo_sandbox.execute('git branch -D sphinx_export')
-        expected_msg = ("Checking for open GitHub PRs...\n"
+        expected_msg = ("Checking for open GitHub PRs... OK\n"
                         "Warn: Pull request #23 is already closed.\n"
                         "Pull request #23 checked out at local branch sphinx_export\n")
 
@@ -1349,7 +1349,7 @@ class TestGithub:
             .push()
         )
         launch_command('discover')
-        expected_msg = ("Checking for open GitHub PRs...\n"
+        expected_msg = ("Checking for open GitHub PRs... OK\n"
                         "Warn: Pull request #2 comes from fork and its repository is already deleted. "
                         "No remote tracking data will be set up for feature/allow_checkout branch.\n"
                         "Warn: Pull request #2 is already closed.\n"
