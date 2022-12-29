@@ -1,7 +1,7 @@
 import os
 import subprocess
 from tempfile import mkdtemp
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, List, Optional
 from unittest import mock
 
 import pytest

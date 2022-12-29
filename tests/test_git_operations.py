@@ -1,7 +1,10 @@
 from unittest import mock
 
-from git_machete.git_operations import FullCommitHash, GitContext, LocalBranchShortName
-from .mockers import (get_current_commit_hash, GitRepositorySandbox, mock_run_cmd)
+from git_machete.git_operations import (FullCommitHash, GitContext,
+                                        LocalBranchShortName)
+
+from .mockers import (GitRepositorySandbox, get_current_commit_hash,
+                      mock_run_cmd)
 
 
 class TestGitOperations:

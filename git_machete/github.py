@@ -4,15 +4,16 @@ import os
 import re
 import shutil
 import subprocess
-from pathlib import Path
-from typing import Any, Dict, List, NamedTuple, Optional
+import urllib.error
 # Deliberately NOT using much more convenient `requests` to avoid external dependencies in production code
 import urllib.request
-import urllib.error
+from pathlib import Path
+from typing import Any, Dict, List, NamedTuple, Optional
 
-from git_machete.utils import debug, fmt, warn
-from git_machete.exceptions import MacheteException, UnprocessableEntityHTTPError
+from git_machete.exceptions import (MacheteException,
+                                    UnprocessableEntityHTTPError)
 from git_machete.git_operations import GitContext, LocalBranchShortName
+from git_machete.utils import debug, fmt, warn
 
 GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
 DEFAULT_GITHUB_DOMAIN = "github.com"

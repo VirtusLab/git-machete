@@ -1,11 +1,11 @@
 import inspect
-from enum import auto, Enum
-from typing import Any, Callable, Dict, Iterable, List, NamedTuple, Optional, Set, Tuple, TypeVar
-
 import os
-import sys
 import re
 import subprocess
+import sys
+from enum import Enum, auto
+from typing import (Any, Callable, Dict, Iterable, List, NamedTuple, Optional,
+                    Set, Tuple, TypeVar)
 
 T = TypeVar('T')
 # To avoid displaying the same warning multiple times during a single run.

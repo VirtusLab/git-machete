@@ -30,6 +30,7 @@ ln -s ../../ci/checks/run-all-checks.sh .git/hooks/pre-commit
 
 Install `fish` and `shellcheck` for `run-all-checks.sh` to pass successfully.
 
+
 ## Run tests locally
 
 To develop that project and run tests locally, it is needed to have Python installed with `tox`.
@@ -48,6 +49,7 @@ To do so, make sure that the libraries from [requirements.testenv.txt](requireme
 
 Run [`graphics/setup-sandbox`](graphics/setup-sandbox) script to set up a test repo under `~/machete-sandbox` with a remote in `~/machete-sandbox-remote`.
 
+
 ## Regenerate the GIF in README.md
 
 1. Generate sandbox repositories as shown above and `cd` into `~/machete-sandbox`.
@@ -55,6 +57,7 @@ Run [`graphics/setup-sandbox`](graphics/setup-sandbox) script to set up a test r
    and their dependencies.
 1. Run [`graphics/generate-asciinema-gif`](graphics/generate-asciinema-gif) (It will print the location of the generated GIF file)
 1. Replace existing GIF [`graphics/discover-status-traverse.gif`](graphics/discover-status-traverse.gif) with the new one.
+
 
 ## Command properties/classification
 

@@ -4,28 +4,40 @@ import itertools
 import os
 import shutil
 import sys
-from typing import Callable, Dict, Generator, List, Optional, Tuple
 from collections import OrderedDict
+from typing import Callable, Dict, Generator, List, Optional, Tuple
 
 import git_machete.github
 import git_machete.options
 from git_machete import utils
-from git_machete.constants import (
-    DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, GitFormatPatterns, PICK_FIRST_ROOT, PICK_LAST_ROOT,
-    SyncToRemoteStatuses)
-from git_machete.exceptions import MacheteException, StopInteraction, UnprocessableEntityHTTPError
-from git_machete.git_operations import (
-    AnyBranchName, AnyRevision, ForkPointOverrideData,
-    FullCommitHash, GitContext, GitLogEntry, HEAD, BranchPair, LocalBranchShortName, RemoteBranchShortName)
-from git_machete.github import (
-    DEFAULT_GITHUB_DOMAIN, add_assignees_to_pull_request, add_reviewers_to_pull_request,
-    create_pull_request, checkout_pr_refs, derive_pull_request_by_head, derive_pull_requests,
-    get_github_token_possible_providers, get_parsed_github_remote_url, get_pull_request_by_number_or_none, GitHubPullRequest,
-    is_github_remote_url, RemoteAndOrganizationAndRepository, set_base_of_pull_request, set_milestone_of_pull_request)
-from git_machete.utils import (
-    AnsiEscapeCodes, sync_to_parent_status_to_junction_ascii_only_map, SyncToParentStatus, get_pretty_choices, flat_map, excluding, fmt,
-    sync_to_parent_status_to_edge_color_map, tupled, warn, debug, bold, colored, underline, dim, get_second)
 from git_machete.annotation import Annotation
+from git_machete.constants import (DISCOVER_DEFAULT_FRESH_BRANCH_COUNT,
+                                   PICK_FIRST_ROOT, PICK_LAST_ROOT,
+                                   GitFormatPatterns, SyncToRemoteStatuses)
+from git_machete.exceptions import (MacheteException, StopInteraction,
+                                    UnprocessableEntityHTTPError)
+from git_machete.git_operations import (HEAD, AnyBranchName, AnyRevision,
+                                        BranchPair, ForkPointOverrideData,
+                                        FullCommitHash, GitContext,
+                                        GitLogEntry, LocalBranchShortName,
+                                        RemoteBranchShortName)
+from git_machete.github import (DEFAULT_GITHUB_DOMAIN, GitHubPullRequest,
+                                RemoteAndOrganizationAndRepository,
+                                add_assignees_to_pull_request,
+                                add_reviewers_to_pull_request,
+                                checkout_pr_refs, create_pull_request,
+                                derive_pull_request_by_head,
+                                derive_pull_requests,
+                                get_github_token_possible_providers,
+                                get_parsed_github_remote_url,
+                                get_pull_request_by_number_or_none,
+                                is_github_remote_url, set_base_of_pull_request,
+                                set_milestone_of_pull_request)
+from git_machete.utils import (
+    AnsiEscapeCodes, SyncToParentStatus, bold, colored, debug, dim, excluding,
+    flat_map, fmt, get_pretty_choices, get_second,
+    sync_to_parent_status_to_edge_color_map,
+    sync_to_parent_status_to_junction_ascii_only_map, tupled, underline, warn)
 
 
 # Allowed parameter values for show/go command

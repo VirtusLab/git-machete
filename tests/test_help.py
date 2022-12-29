@@ -1,13 +1,13 @@
 from typing import Any, List
+from unittest import mock
 
 import pytest
 
-from git_machete.exceptions import ExitCode
 from git_machete.cli import commands_and_aliases
+from git_machete.exceptions import ExitCode
 
-from unittest import mock
-
-from .mockers import GitRepositorySandbox, launch_command, mock_exit_script_no_exit, mock_run_cmd
+from .mockers import (GitRepositorySandbox, launch_command,
+                      mock_exit_script_no_exit, mock_run_cmd)
 
 
 class TestHelp:

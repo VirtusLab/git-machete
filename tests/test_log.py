@@ -1,6 +1,7 @@
 from typing import Any
 
-from .mockers import (GitRepositorySandbox, get_current_commit_hash, launch_command, mock_run_cmd_and_forward_stdout)
+from .mockers import (GitRepositorySandbox, get_current_commit_hash,
+                      launch_command, mock_run_cmd_and_forward_stdout)
 
 
 class TestLog:

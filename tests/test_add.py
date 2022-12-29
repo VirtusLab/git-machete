@@ -1,6 +1,7 @@
 from typing import Any
 
-from .mockers import (GitRepositorySandbox, assert_command, launch_command, mock_run_cmd)
+from .mockers import (GitRepositorySandbox, assert_command, launch_command,
+                      mock_run_cmd)
 
 
 class TestAdd:

@@ -6,8 +6,8 @@ import pytest
 
 from git_machete.exceptions import MacheteException
 
-from .mockers import (assert_command, GitRepositorySandbox, launch_command, mock_exit_script,
-                      mock_run_cmd, rewrite_definition_file)
+from .mockers import (GitRepositorySandbox, assert_command, launch_command,
+                      mock_exit_script, mock_run_cmd, rewrite_definition_file)
 
 
 class TestStatus:

@@ -1,4 +1,4 @@
-from .mockers import (GitRepositorySandbox, assert_command, launch_command)
+from .mockers import GitRepositorySandbox, assert_command, launch_command
 
 
 class TestAnno:

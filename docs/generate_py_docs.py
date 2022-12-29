@@ -1,9 +1,10 @@
+import os
+import re
+from os.path import isfile, join
+from textwrap import dedent, indent
+
 from bs4 import BeautifulSoup, Comment
 from docutils import core
-import os
-from os.path import isfile, join
-import re
-from textwrap import dedent, indent
 
 
 def rst2html(input_string: str, source_path: str = None, destination_path: str = None,

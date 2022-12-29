@@ -1,5 +1,7 @@
 from textwrap import dedent
-from .mockers import (assert_command, GitRepositorySandbox, launch_command, rewrite_definition_file)
+
+from .mockers import (GitRepositorySandbox, assert_command, launch_command,
+                      rewrite_definition_file)
 
 
 class TestDiscover:

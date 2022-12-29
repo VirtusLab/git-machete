@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
-from git_machete import __version__
 from os import path
+
 from setuptools import setup
+
+from git_machete import __version__
 
 this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, 'README.md'), mode="r", encoding="utf-8") as f:

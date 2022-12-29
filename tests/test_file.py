@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-from .mockers import (GitRepositorySandbox, launch_command, GitContext)
+from .mockers import GitContext, GitRepositorySandbox, launch_command
 
 
 class TestFile:

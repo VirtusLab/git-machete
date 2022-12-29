@@ -1,17 +1,18 @@
-import string
-from pathlib import Path
-from typing import Any, Callable, Dict, Generator, Iterator, List, Match, NamedTuple, Optional, Set, Tuple
-
 import os
 import re
 import shlex
+import string
 import sys
+from pathlib import Path
+from typing import (Any, Callable, Dict, Generator, Iterator, List, Match,
+                    NamedTuple, Optional, Set, Tuple)
 
-from git_machete.exceptions import MacheteException
-from git_machete.utils import colored, CommandResult, debug, fmt, AnsiEscapeCodes
 from git_machete import utils
-from git_machete.constants import (
-    GitFormatPatterns, MAX_COUNT_FOR_INITIAL_LOG, SyncToRemoteStatuses)
+from git_machete.constants import (MAX_COUNT_FOR_INITIAL_LOG,
+                                   GitFormatPatterns, SyncToRemoteStatuses)
+from git_machete.exceptions import MacheteException
+from git_machete.utils import (AnsiEscapeCodes, CommandResult, colored, debug,
+                               fmt)
 
 
 class AnyRevision(str):

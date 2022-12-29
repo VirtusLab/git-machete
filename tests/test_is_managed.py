@@ -1,6 +1,6 @@
 import pytest
 
-from .mockers import (GitRepositorySandbox, launch_command)
+from .mockers import GitRepositorySandbox, launch_command
 
 
 class TestIsManaged:

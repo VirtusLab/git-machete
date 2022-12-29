@@ -1,6 +1,7 @@
 from typing import Any
 
-from .mockers import (GitRepositorySandbox, assert_command, mock_run_cmd_and_forward_stdout)
+from .mockers import (GitRepositorySandbox, assert_command,
+                      mock_run_cmd_and_forward_stdout)
 
 
 class TestDiff:
