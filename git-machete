@@ -17,4 +17,5 @@ def validate_python_version():  # type: ignore
 validate_python_version()  # type: ignore
 
 from git_machete import cli
+
 cli.main()

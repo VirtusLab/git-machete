@@ -26,7 +26,7 @@ if [[ $CHECK_PY_DOCS_UP_TO_DATE = true ]]; then
 fi
 
 if [[ $CHECK_PEP8 = true ]]; then
-  TOX_ENV_LIST="$TOX_ENV_LIST,pep8"
+  TOX_ENV_LIST="$TOX_ENV_LIST,pep8,isort-check"
 fi
 
 tox -e $TOX_ENV_LIST
