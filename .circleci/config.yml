@@ -117,6 +117,9 @@ jobs:
           name: '[Dry run] Deploy to PyPI'
           # Side effects: does an actual release, but to the test PyPI
           command: bash ci/pypi/ci-deploy.sh --dry-run
+      - run:
+          name: '[Dry run] Wait up to 30 minutes for PyPI package to be available'
+          command: bash ci/pypi/ci-wait-for-package.sh test.pypi.org 30
 
       - run:
           name: '[Dry run] Update Homebrew with local installation test'
@@ -156,6 +159,11 @@ jobs:
       - run:
           name: 'Deploy to PyPI'
           command: bash ci/pypi/ci-deploy.sh
+      - run:
+          # See https://github.com/Homebrew/homebrew-core/pull/119200/commits/a4902911fadbdcf2c6b64ce691024ff97a516f1c
+          # for a case where the package wasn't available right after the upload and Homebrew Core build failed.
+          name: 'Wait up to 30 minutes for PyPI package to be available'
+          command: bash ci/pypi/ci-wait-for-package.sh pypi.org 30
 
       - run:
           name: 'Update Homebrew formula'
