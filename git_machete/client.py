@@ -776,62 +776,59 @@ class MacheteClient:
                 # If user answered 'no', we don't try to rebase/merge but still
                 # suggest to sync with remote (if needed; very rare in practice).
             elif needs_parent_sync:
-                any_action_suggested = True
-                self.__print_new_line(False)
-                if opt_merge:
-                    ans = self.ask_if(f"Merge {bold(upstream)} into {bold(branch)}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
-                                      f"Merging {bold(upstream)} into {bold(branch)}...", opt_yes=opt_yes)
-                else:
-                    ans = self.ask_if(f"Rebase {bold(branch)} onto {bold(upstream)}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
-                                      f"Rebasing {bold(branch)} onto {bold(upstream)}...", opt_yes=opt_yes)
-
-                rebase = True
-                if branch in self.annotations:
-                    rebase = self.annotations[branch].qualifiers.rebase
-                if ans in ('y', 'yes', 'yq'):
+                if branch not in self.annotations or self.annotations[branch].qualifiers.rebase:
+                    any_action_suggested = True
+                    self.__print_new_line(False)
                     if opt_merge:
-                        self.__git.merge(upstream, branch, opt_no_edit_merge)
-                        # It's clearly possible that merge can be in progress
-                        # after 'git merge' returned non-zero exit code;
-                        # this happens most commonly in case of conflicts.
-                        # As for now, we're not aware of any case when merge can
-                        # be still in progress after 'git merge' returns zero,
-                        # at least not with the options that git-machete passes
-                        # to merge; this happens though in case of 'git merge
-                        # --no-commit' (which we don't ever invoke).
-                        # It's still better, however, to be on the safe side.
-                        if self.__git.is_merge_in_progress():
-                            print("\nMerge in progress; stopping the traversal")
+                        ans = self.ask_if(f"Merge {bold(upstream)} into {bold(branch)}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
+                                          f"Merging {bold(upstream)} into {bold(branch)}...", opt_yes=opt_yes)
+                    else:
+                        ans = self.ask_if(f"Rebase {bold(branch)} onto {bold(upstream)}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
+                                          f"Rebasing {bold(branch)} onto {bold(upstream)}...", opt_yes=opt_yes)
+                    if ans in ('y', 'yes', 'yq'):
+                        if opt_merge:
+                            self.__git.merge(upstream, branch, opt_no_edit_merge)
+                            # It's clearly possible that merge can be in progress
+                            # after 'git merge' returned non-zero exit code;
+                            # this happens most commonly in case of conflicts.
+                            # As for now, we're not aware of any case when merge can
+                            # be still in progress after 'git merge' returns zero,
+                            # at least not with the options that git-machete passes
+                            # to merge; this happens though in case of 'git merge
+                            # --no-commit' (which we don't ever invoke).
+                            # It's still better, however, to be on the safe side.
+                            if self.__git.is_merge_in_progress():
+                                print("\nMerge in progress; stopping the traversal")
+                                return
+                        else:
+                            self.__git.rebase(
+                                LocalBranchShortName.of(upstream).full_name(), self.fork_point(
+                                    branch,
+                                    use_overrides=True,
+                                    opt_no_detect_squash_merges=opt_no_detect_squash_merges),
+                                branch, opt_no_interactive_rebase)
+                            # It's clearly possible that rebase can be in progress
+                            # after 'git rebase' returned non-zero exit code;
+                            # this happens most commonly in case of conflicts,
+                            # regardless of whether the rebase is interactive or not.
+                            # But for interactive rebases, it's still possible that
+                            # even if 'git rebase' returned zero, the rebase is still
+                            # in progress; e.g. when interactive rebase gets to 'edit'
+                            # command, it will exit returning zero, but the rebase
+                            # will be still in progress, waiting for user edits and
+                            # a subsequent 'git rebase --continue'.
+                            rebased_branch = self.__git.get_currently_rebased_branch_or_none()
+                            if rebased_branch:  # 'remote_branch' should be equal to 'branch' at this point anyway
+                                print(fmt(f"\nRebase of `{rebased_branch}` in progress; stopping the traversal"))
+                                return
+                        if ans == 'yq':
                             return
-                    elif rebase:
-                        self.__git.rebase(
-                            LocalBranchShortName.of(upstream).full_name(), self.fork_point(
-                                branch,
-                                use_overrides=True,
-                                opt_no_detect_squash_merges=opt_no_detect_squash_merges),
-                            branch, opt_no_interactive_rebase)
-                        # It's clearly possible that rebase can be in progress
-                        # after 'git rebase' returned non-zero exit code;
-                        # this happens most commonly in case of conflicts,
-                        # regardless of whether the rebase is interactive or not.
-                        # But for interactive rebases, it's still possible that
-                        # even if 'git rebase' returned zero, the rebase is still
-                        # in progress; e.g. when interactive rebase gets to 'edit'
-                        # command, it will exit returning zero, but the rebase
-                        # will be still in progress, waiting for user edits and
-                        # a subsequent 'git rebase --continue'.
-                        rebased_branch = self.__git.get_currently_rebased_branch_or_none()
-                        if rebased_branch:  # 'remote_branch' should be equal to 'branch' at this point anyway
-                            print(fmt(f"\nRebase of `{rebased_branch}` in progress; stopping the traversal"))
-                            return
-                    if ans == 'yq':
-                        return
 
-                    self.flush_caches()
-                    s, remote = self.__git.get_strict_remote_sync_status(branch)
-                    needs_remote_sync = s in statuses_to_sync
-                elif ans in ('q', 'quit'):
-                    return
+                        self.flush_caches()
+                        s, remote = self.__git.get_strict_remote_sync_status(branch)
+                        needs_remote_sync = s in statuses_to_sync
+                    elif ans in ('q', 'quit'):
+                        return
 
             if needs_remote_sync:
                 any_action_suggested = True
