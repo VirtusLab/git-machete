@@ -36,18 +36,35 @@ To run tests in terminal, it is required to have at least one Python interpreter
 To run all tests, execute `tox` (requires each Python 3.X version previously specified), to run selected test environment execute `tox -e test_env_name` ---
 the name of the `test_env_name` can specify Python version of the environment, e.g. `py37`, if the `tox` can't discover version from the name, the highest version currently installed will be used.
 
-## Local installation for development purposes
+## Install locally for development purposes
 
 ### Terminal: venv
 
 To execute `git-machete` commands in terminal using current branch implementation, you must first have a virtual environment.
 You can create one named `venv` by executing `tox -e venv` or use existing environment (need to install requirements from [requirements.testenv.txt](requirements.testenv.txt)).
 You have to activate the environment, for the `venv` environment run `source .tox/venv/bin/activate` from `git-machete` root directory.
-Lastly, install `git-machete` in development mode with `pip install -e .` --- codebase can now be edited in-place without reinstallation.
+Lastly, install `git-machete` in development mode with `pip install --editable .` --- codebase can now be edited in-place without reinstallation.
 
 ### Terminal: user-wide installation
 
-Use `pip install --user .`. Locate the installed package with `pip show -f
+Use `pip install --user .`. Locate the installed package with `pip show -f git-machete` --- you'll see something like:
+
+```
+<...metadata...>
+Location: /Users/pawel_lipski/Library/Python/3.9/lib/python/site-packages
+Requires:
+Required-by:
+Files:
+  <...files...>
+  ../../../bin/git-machete
+  <...files...>
+```
+
+Compound the `Location` with the relative path to `bin/git-machete` launcher script to locate the directory where the launcher script is located.
+In the above macOS example, it'll be `$HOME/Library/Python/3.9/bin`.
+On Linuxes, it's likely to be `$HOME/.local/bin` instead.
+Add this directory to `PATH`.
+Re-installation will be needed after a modification, as `--editable` and `--user` don't seem to work together.
 
 ### IDE (PyCharm): venv
 
