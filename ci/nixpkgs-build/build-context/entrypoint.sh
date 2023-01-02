@@ -13,4 +13,4 @@ sed -i -f- $EXPRESSION_PATH <<EOF
 EOF
 cat $EXPRESSION_PATH
 
-nix-build -A gitAndTools.git-machete
+nix-build -A git-machete --dry-run
