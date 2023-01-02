@@ -853,13 +853,17 @@ class MacheteClient:
             if needs_remote_sync:
                 any_action_suggested = True
                 try:
-                    if s == SyncToRemoteStatuses.AHEAD_OF_REMOTE:
+                    if s == SyncToRemoteStatuses.BEHIND_REMOTE:
+                        self.__handle_behind_state(current_branch, remote, opt_yes=opt_yes)
+                    elif s == SyncToRemoteStatuses.AHEAD_OF_REMOTE:
                         self.__handle_ahead_state(
                             current_branch=current_branch,
                             remote=remote,
                             is_called_from_traverse=True,
                             opt_push_tracked=opt_push_tracked,
                             opt_yes=opt_yes)
+                    elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
+                        self.__handle_diverged_and_older_state(current_branch, opt_yes=opt_yes)
                     elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
                         self.__handle_diverged_and_newer_state(
                             current_branch=current_branch,
@@ -873,10 +877,6 @@ class MacheteClient:
                             opt_push_untracked=opt_push_untracked,
                             opt_push_tracked=opt_push_tracked,
                             opt_yes=opt_yes)
-                    elif s == SyncToRemoteStatuses.BEHIND_REMOTE:
-                        self.__handle_behind_state(current_branch, remote, opt_yes=opt_yes)
-                    elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
-                        self.__handle_diverged_and_older_state(current_branch, opt_yes=opt_yes)
                 except StopInteraction:
                     return
 
@@ -2452,45 +2452,41 @@ class MacheteClient:
                 f'All commits in `{current_branch}` branch are already included in `{up_branch}` branch.\nCannot create pull request.')
 
         s, remote = self.__git.get_strict_remote_sync_status(current_branch)
-        statuses_to_sync = (
+        statuses_to_push = (
             SyncToRemoteStatuses.UNTRACKED,
             SyncToRemoteStatuses.AHEAD_OF_REMOTE,
             SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE)
-        needs_remote_sync = s in statuses_to_sync
+        if s in statuses_to_push:
+            if current_branch not in self.annotations or self.annotations[current_branch].qualifiers.push:
+                if s == SyncToRemoteStatuses.AHEAD_OF_REMOTE:
+                    self.__handle_ahead_state(
+                        current_branch=current_branch,
+                        remote=remote,
+                        is_called_from_traverse=False,
+                        opt_push_tracked=True,
+                        opt_yes=opt_yes)
+                elif s == SyncToRemoteStatuses.UNTRACKED:
+                    self.__handle_untracked_state(
+                        branch=current_branch,
+                        is_called_from_traverse=False,
+                        opt_push_tracked=True,
+                        opt_push_untracked=True,
+                        opt_yes=opt_yes)
+                elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
+                    self.__handle_diverged_and_newer_state(
+                        current_branch=current_branch,
+                        remote=remote,
+                        is_called_from_traverse=False,
+                        opt_push_tracked=True,
+                        opt_yes=opt_yes)
 
-        push = True
-        if current_branch in self.annotations:
-            push = self.annotations[current_branch].qualifiers.push
-        if needs_remote_sync and push:
-            if s == SyncToRemoteStatuses.AHEAD_OF_REMOTE:
-                self.__handle_ahead_state(
-                    current_branch=current_branch,
-                    remote=remote,
-                    is_called_from_traverse=False,
-                    opt_push_tracked=True,
-                    opt_yes=opt_yes)
-            elif s == SyncToRemoteStatuses.UNTRACKED:
-                self.__handle_untracked_state(
-                    branch=current_branch,
-                    is_called_from_traverse=False,
-                    opt_push_tracked=True,
-                    opt_push_untracked=True,
-                    opt_yes=opt_yes)
-            elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
-                self.__handle_diverged_and_newer_state(
-                    current_branch=current_branch,
-                    remote=remote,
-                    is_called_from_traverse=False,
-                    opt_push_tracked=True,
-                    opt_yes=opt_yes)
-
-            self.__print_new_line(False)
-            self.status(
-                warn_when_branch_in_sync_but_fork_point_off=True,
-                opt_list_commits=False,
-                opt_list_commits_with_hashes=False,
-                opt_no_detect_squash_merges=False)
-            self.__print_new_line(False)
+                self.__print_new_line(False)
+                self.status(
+                    warn_when_branch_in_sync_but_fork_point_off=True,
+                    opt_list_commits=False,
+                    opt_list_commits_with_hashes=False,
+                    opt_no_detect_squash_merges=False)
+                self.__print_new_line(False)
 
         else:
             if s == SyncToRemoteStatuses.BEHIND_REMOTE:
