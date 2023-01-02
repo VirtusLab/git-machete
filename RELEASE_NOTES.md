@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.14.0
+
 ## New in git-machete 3.13.2
 
 - fixed: redo the failed release
