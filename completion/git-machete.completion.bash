@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 _git_machete() {
-  local cmds="add advance anno clean d delete-unmanaged diff discover e edit file fork-point g github go help is-managed l list log reapply s show slide-out squash status traverse update version"
+  local cmds="add advance anno clean d delete-unmanaged diff discover e edit file fork-point g github go help is-managed l list log reapply s show slide-out squash status t traverse update version"
   local help_topics="$cmds config format hooks"
 
   local categories="addable childless managed slidable slidable-after unmanaged with-overridden-fork-point"

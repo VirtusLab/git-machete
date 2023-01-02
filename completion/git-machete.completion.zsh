@@ -122,7 +122,7 @@ _git-machete() {
             '(--no-detect-squash-merges)'--no-detect-squash-merges'[Only consider "strict" (fast-forward or 2-parent) merges, rather than rebase/squash merges, when detecting if a branch is merged into its upstream]' \
           && ret=0
           ;;
-        (traverse)
+        (t|traverse)
           _arguments \
             '(-F --fetch)'{-F,--fetch}'[Fetch the remotes of all managed branches at the beginning of traversal]' \
             '(-l --list-commits)'{-l,--list-commits}'[List the messages of commits introduced on each branch]' \
