@@ -699,13 +699,19 @@ class MacheteClient:
             needs_slide_out: bool = self.__is_merged_to_upstream(
                 branch, opt_no_detect_squash_merges=opt_no_detect_squash_merges)
             s, remote = self.__git.get_strict_remote_sync_status(branch)
-            statuses_to_sync = (
-                SyncToRemoteStatuses.UNTRACKED,
-                SyncToRemoteStatuses.AHEAD_OF_REMOTE,
-                SyncToRemoteStatuses.BEHIND_REMOTE,
-                SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE,
-                SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE)
-            needs_remote_sync = s in statuses_to_sync
+            if s in (
+                    SyncToRemoteStatuses.BEHIND_REMOTE,
+                    SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE):
+                needs_remote_sync = True
+            elif s in (
+                    SyncToRemoteStatuses.UNTRACKED,
+                    SyncToRemoteStatuses.AHEAD_OF_REMOTE,
+                    SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE):
+                needs_remote_sync = True
+                if branch in self.annotations:
+                    needs_remote_sync = self.annotations[branch].qualifiers.push
+            else:
+                needs_remote_sync = False
 
             if needs_slide_out:
                 # Avoid unnecessary fork point check if we already know that the
@@ -729,6 +735,8 @@ class MacheteClient:
                               branch, use_overrides=True,
                               opt_no_detect_squash_merges=opt_no_detect_squash_merges)))
                 )
+                if needs_parent_sync and branch in self.annotations:
+                    needs_parent_sync = self.annotations[branch].qualifiers.rebase
 
             if branch != current_branch and (needs_slide_out or needs_parent_sync or needs_remote_sync):
                 self.__print_new_line(False)
@@ -776,88 +784,96 @@ class MacheteClient:
                 # If user answered 'no', we don't try to rebase/merge but still
                 # suggest to sync with remote (if needed; very rare in practice).
             elif needs_parent_sync:
-                if branch not in self.annotations or self.annotations[branch].qualifiers.rebase:
-                    any_action_suggested = True
-                    self.__print_new_line(False)
+                any_action_suggested = True
+                self.__print_new_line(False)
+                if opt_merge:
+                    ans = self.ask_if(f"Merge {bold(upstream)} into {bold(branch)}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
+                                      f"Merging {bold(upstream)} into {bold(branch)}...", opt_yes=opt_yes)
+                else:
+                    ans = self.ask_if(f"Rebase {bold(branch)} onto {bold(upstream)}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
+                                      f"Rebasing {bold(branch)} onto {bold(upstream)}...", opt_yes=opt_yes)
+                if ans in ('y', 'yes', 'yq'):
                     if opt_merge:
-                        ans = self.ask_if(f"Merge {bold(upstream)} into {bold(branch)}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
-                                          f"Merging {bold(upstream)} into {bold(branch)}...", opt_yes=opt_yes)
-                    else:
-                        ans = self.ask_if(f"Rebase {bold(branch)} onto {bold(upstream)}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
-                                          f"Rebasing {bold(branch)} onto {bold(upstream)}...", opt_yes=opt_yes)
-                    if ans in ('y', 'yes', 'yq'):
-                        if opt_merge:
-                            self.__git.merge(upstream, branch, opt_no_edit_merge)
-                            # It's clearly possible that merge can be in progress
-                            # after 'git merge' returned non-zero exit code;
-                            # this happens most commonly in case of conflicts.
-                            # As for now, we're not aware of any case when merge can
-                            # be still in progress after 'git merge' returns zero,
-                            # at least not with the options that git-machete passes
-                            # to merge; this happens though in case of 'git merge
-                            # --no-commit' (which we don't ever invoke).
-                            # It's still better, however, to be on the safe side.
-                            if self.__git.is_merge_in_progress():
-                                print("\nMerge in progress; stopping the traversal")
-                                return
-                        else:
-                            self.__git.rebase(
-                                LocalBranchShortName.of(upstream).full_name(), self.fork_point(
-                                    branch,
-                                    use_overrides=True,
-                                    opt_no_detect_squash_merges=opt_no_detect_squash_merges),
-                                branch, opt_no_interactive_rebase)
-                            # It's clearly possible that rebase can be in progress
-                            # after 'git rebase' returned non-zero exit code;
-                            # this happens most commonly in case of conflicts,
-                            # regardless of whether the rebase is interactive or not.
-                            # But for interactive rebases, it's still possible that
-                            # even if 'git rebase' returned zero, the rebase is still
-                            # in progress; e.g. when interactive rebase gets to 'edit'
-                            # command, it will exit returning zero, but the rebase
-                            # will be still in progress, waiting for user edits and
-                            # a subsequent 'git rebase --continue'.
-                            rebased_branch = self.__git.get_currently_rebased_branch_or_none()
-                            if rebased_branch:  # 'remote_branch' should be equal to 'branch' at this point anyway
-                                print(fmt(f"\nRebase of `{rebased_branch}` in progress; stopping the traversal"))
-                                return
-                        if ans == 'yq':
+                        self.__git.merge(upstream, branch, opt_no_edit_merge)
+                        # It's clearly possible that merge can be in progress
+                        # after 'git merge' returned non-zero exit code;
+                        # this happens most commonly in case of conflicts.
+                        # As for now, we're not aware of any case when merge can
+                        # be still in progress after 'git merge' returns zero,
+                        # at least not with the options that git-machete passes
+                        # to merge; this happens though in case of 'git merge
+                        # --no-commit' (which we don't ever invoke).
+                        # It's still better, however, to be on the safe side.
+                        if self.__git.is_merge_in_progress():
+                            print("\nMerge in progress; stopping the traversal")
                             return
-
-                        self.flush_caches()
-                        s, remote = self.__git.get_strict_remote_sync_status(branch)
-                        needs_remote_sync = s in statuses_to_sync
-                    elif ans in ('q', 'quit'):
+                    else:
+                        self.__git.rebase(
+                            LocalBranchShortName.of(upstream).full_name(), self.fork_point(
+                                branch,
+                                use_overrides=True,
+                                opt_no_detect_squash_merges=opt_no_detect_squash_merges),
+                            branch, opt_no_interactive_rebase)
+                        # It's clearly possible that rebase can be in progress
+                        # after 'git rebase' returned non-zero exit code;
+                        # this happens most commonly in case of conflicts,
+                        # regardless of whether the rebase is interactive or not.
+                        # But for interactive rebases, it's still possible that
+                        # even if 'git rebase' returned zero, the rebase is still
+                        # in progress; e.g. when interactive rebase gets to 'edit'
+                        # command, it will exit returning zero, but the rebase
+                        # will be still in progress, waiting for user edits and
+                        # a subsequent 'git rebase --continue'.
+                        rebased_branch = self.__git.get_currently_rebased_branch_or_none()
+                        if rebased_branch:  # 'remote_branch' should be equal to 'branch' at this point anyway
+                            print(fmt(f"\nRebase of `{rebased_branch}` in progress; stopping the traversal"))
+                            return
+                    if ans == 'yq':
                         return
+
+                    self.flush_caches()
+                    s, remote = self.__git.get_strict_remote_sync_status(branch)
+                    if s in (
+                            SyncToRemoteStatuses.BEHIND_REMOTE,
+                            SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE):
+                        needs_remote_sync = True
+                    elif s in (
+                            SyncToRemoteStatuses.UNTRACKED,
+                            SyncToRemoteStatuses.AHEAD_OF_REMOTE,
+                            SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE):
+                        needs_remote_sync = True
+                        if branch in self.annotations:
+                            needs_remote_sync = self.annotations[branch].qualifiers.push
+                    else:
+                        needs_remote_sync = False
+
+                elif ans in ('q', 'quit'):
+                    return
 
             if needs_remote_sync:
                 any_action_suggested = True
-                push = True
-                if current_branch in self.annotations:
-                    push = self.annotations[current_branch].qualifiers.push
                 try:
-                    if push:
-                        if s == SyncToRemoteStatuses.AHEAD_OF_REMOTE:
-                            self.__handle_ahead_state(
-                                current_branch=current_branch,
-                                remote=remote,
-                                is_called_from_traverse=True,
-                                opt_push_tracked=opt_push_tracked,
-                                opt_yes=opt_yes)
-                        elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
-                            self.__handle_diverged_and_newer_state(
-                                current_branch=current_branch,
-                                remote=remote,
-                                opt_push_tracked=opt_push_tracked,
-                                opt_yes=opt_yes)
-                        elif s == SyncToRemoteStatuses.UNTRACKED:
-                            self.__handle_untracked_state(
-                                branch=current_branch,
-                                is_called_from_traverse=True,
-                                opt_push_untracked=opt_push_untracked,
-                                opt_push_tracked=opt_push_tracked,
-                                opt_yes=opt_yes)
-                    if s == SyncToRemoteStatuses.BEHIND_REMOTE:
+                    if s == SyncToRemoteStatuses.AHEAD_OF_REMOTE:
+                        self.__handle_ahead_state(
+                            current_branch=current_branch,
+                            remote=remote,
+                            is_called_from_traverse=True,
+                            opt_push_tracked=opt_push_tracked,
+                            opt_yes=opt_yes)
+                    elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
+                        self.__handle_diverged_and_newer_state(
+                            current_branch=current_branch,
+                            remote=remote,
+                            opt_push_tracked=opt_push_tracked,
+                            opt_yes=opt_yes)
+                    elif s == SyncToRemoteStatuses.UNTRACKED:
+                        self.__handle_untracked_state(
+                            branch=current_branch,
+                            is_called_from_traverse=True,
+                            opt_push_untracked=opt_push_untracked,
+                            opt_push_tracked=opt_push_tracked,
+                            opt_yes=opt_yes)
+                    elif s == SyncToRemoteStatuses.BEHIND_REMOTE:
                         self.__handle_behind_state(current_branch, remote, opt_yes=opt_yes)
                     elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
                         self.__handle_diverged_and_older_state(current_branch, opt_yes=opt_yes)
