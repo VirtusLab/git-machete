@@ -4,7 +4,12 @@
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-import git_machete
+import os
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
+
+import git_machete  # noqa: E402
 
 # -- Path setup --------------------------------------------------------------
 

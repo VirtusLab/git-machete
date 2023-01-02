@@ -136,6 +136,19 @@ long_docs: Dict[str, str] = {
            * current auth token from the `gh` GitHub CLI,
            * current auth token from the `hub` GitHub CLI.
 
+        GitHub Enterprise domains are supported.
+
+        `GITHUB_TOKEN` is used indiscriminately for any domain, both github.com and Enterprise.
+
+        `gh` and `hub` have their own built-in support for Enterprise domains, which is honored by git-machete.
+
+        `.github-token` can have multiple per-domain entries in the format:
+        <dim>
+          ghp_mytoken_for_github_com
+          ghp_myothertoken_for_git_example_org git.example.org
+          ghp_yetanothertoken_for_git_example_com git.example.com
+        </dim>
+
         GitHub API server URL will be inferred from `git remote`.
         You can override this by setting the following git config keys:
            GitHub Enterprise domain
@@ -197,6 +210,19 @@ long_docs: Dict[str, str] = {
            * content of the `.github-token` file in the home directory (`~`),
            * current auth token from the `gh` GitHub CLI,
            * current auth token from the `hub` GitHub CLI.
+
+        GitHub Enterprise domains are supported.
+
+        `GITHUB_TOKEN` is used indiscriminately for any domain, both github.com and Enterprise.
+
+        `gh` and `hub` have their own built-in support for Enterprise domains, which is honored by git-machete.
+
+        `.github-token` can have multiple per-domain entries in the format:
+        <dim>
+          ghp_mytoken_for_github_com
+          ghp_myothertoken_for_git_example_org git.example.org
+          ghp_yetanothertoken_for_git_example_com git.example.com
+        </dim>
 
         GitHub API server URL will be inferred from `git remote`.
         You can override this by setting the following git config keys:
@@ -516,6 +542,19 @@ long_docs: Dict[str, str] = {
            * content of the `.github-token` file in the home directory (`~`),
            * current auth token from the `gh` GitHub CLI,
            * current auth token from the `hub` GitHub CLI.
+
+        GitHub Enterprise domains are supported.
+
+        `GITHUB_TOKEN` is used indiscriminately for any domain, both github.com and Enterprise.
+
+        `gh` and `hub` have their own built-in support for Enterprise domains, which is honored by git-machete.
+
+        `.github-token` can have multiple per-domain entries in the format:
+        <dim>
+          ghp_mytoken_for_github_com
+          ghp_myothertoken_for_git_example_org git.example.org
+          ghp_yetanothertoken_for_git_example_com git.example.com
+        </dim>
 
         GitHub API server URL will be inferred from `git remote`.
         You can override this by setting the following git config keys:
