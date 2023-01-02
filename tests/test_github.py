@@ -1445,10 +1445,10 @@ class TestGithub:
     @mock.patch('git_machete.cli.exit_script', mock_exit_script)
     # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_checkout_prs`
     # due to `git fetch` executed by `checkout-prs` subcommand.
-    @mock.patch('git_machete.github.GITHUB_REMOTE_PATTERNS', FAKE_GITHUB_REMOTE_PATTERNS)
+    @mock.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    @mock.patch('git_machete.github.__get_github_token', mock__get_github_token)
+    @mock.patch('git_machete.github.__get_github_token', mock__get_github_token_none)
     @mock.patch('urllib.request.Request', git_api_state_for_test_github_checkout_prs_of_current_user_and_other_users.new_request())
     @mock.patch('urllib.request.urlopen', MockContextManager)
     @mock.patch('git_machete.github.derive_current_user_login', mock_derive_current_user_login)
