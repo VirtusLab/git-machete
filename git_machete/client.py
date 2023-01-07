@@ -2175,7 +2175,10 @@ class MacheteClient:
         else:
             print(fmt(f'The base branch of PR #{pr.number} is already `{new_base}`'))
 
-        self.__annotations[head] = Annotation(f'PR #{pr.number}')
+        if self.__annotations.get(head) and self.__annotations[head].qualifiers_text:
+            self.__annotations[head] = Annotation(f'PR #{pr.number} ' + self.__annotations[head].qualifiers_text)
+        else:
+            self.__annotations[head] = Annotation(f'PR #{pr.number}')
         self.save_definition_file()
 
     def __derive_github_domain(self) -> str:

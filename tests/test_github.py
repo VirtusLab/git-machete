@@ -145,7 +145,7 @@ class TestGithub:
         |
         o-branch-1
           |
-          o-feature *  PR #15
+          o-feature *  PR #15 rebase=no push=no
         """
         assert_command(
             ['status'],
