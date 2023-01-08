@@ -218,9 +218,8 @@ class MacheteClient:
             self.__indent = "\t"
 
         def render_dfs(branch: LocalBranchShortName, depth: int) -> List[str]:
-            self.annotation = f" {self.__annotations[branch].text_without_qualifiers} {self.__annotations[branch].qualifiers_text}" \
-                if branch in self.__annotations else ""
-            res: List[str] = [depth * self.__indent + branch + self.annotation]
+            annotation = self.__annotations[branch].get_unformatted_text() if branch in self.__annotations else ""
+            res: List[str] = [depth * self.__indent + branch + annotation]
             for down_branch in self.__down_branches.get(branch, []):
                 res += render_dfs(down_branch, depth + 1)
             return res
