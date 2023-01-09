@@ -51,7 +51,7 @@ class Annotation:
         self.qualifiers_text = self.qualifiers.get_qualifiers_text()
 
     def get_unformatted_text(self) -> str:
-        annotation_text = f"  {self.text_without_qualifiers}"
+        annotation_text = f" {self.text_without_qualifiers}"
         if self.qualifiers_text != '':
             annotation_text += ' ' if self.text_without_qualifiers != '' else ''
             annotation_text += self.qualifiers_text
