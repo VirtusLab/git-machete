@@ -229,7 +229,6 @@ workflows:
               only:
                 - "develop"
                 - "/hotfix.*/"
-                - "debug/snapcraft-stuck" #########
           requires:
             *mandatory_jobs
       - deploy from master:
