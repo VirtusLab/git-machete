@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e -o pipefail -u
+set -e -o pipefail -u -x
 
 # By default, CircleCi VM's terminal width and height equals 0 which causes `craft_cli/messages.py`, line 279 to exit with `ZeroDivisionError`.
 # The terminal width in `craft_cli/messages.py` is being retrieved by `shutil.get_terminal_size()` using `COLUMNS` env var on line 1365
@@ -12,12 +12,14 @@ sudo apt-get update
 sudo apt-get install -y snapd
 sudo snap install review-tools
 sudo snap install snapcraft --classic
+
+sudo snap install lxd
 sudo lxd init --minimal
 # `--use-lxd` applied to use a LXD container instead of a VM, to work around lack of support for KVM on CircleCI VMs.
 snapcraft --use-lxd
 
 if [[ ${1-} == "--dry-run" || ${CIRCLE_BRANCH-} != "master" ]]; then
-  ! command -v git-machete
+  if command -v git-machete; then exit 1; fi
   sudo snap install git-machete*.snap --dangerous --classic
   git machete version
   sudo snap remove git-machete

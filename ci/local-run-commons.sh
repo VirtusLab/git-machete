@@ -3,7 +3,7 @@
 set -e -o pipefail -u
 
 function check_var() {
-  [[ ${!1-} ]] && return 0 || true
+  if [[ ${!1-} ]]; then return 0; fi
   [[ -f .env ]] || { echo "Var $1 missing from environment and no .env file found; see .env.sample file"; return 1; }
   grep -q "^$1=" .env || { echo "Var $1 missing both from environment and .env file"; return 1; }
 }
