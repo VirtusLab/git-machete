@@ -15,6 +15,9 @@ sudo snap install snapcraft --classic
 
 sudo snap install lxd
 sudo lxd init --minimal
+# Workaround taken from https://discuss.linuxcontainers.org/t/lxdbr0-firewall-problem-with-ubuntu-22-04-host-running-docker-and-lxd/15298
+sudo iptables -A FORWARD -i lxdbr0 -j ACCEPT
+sudo iptables -A FORWARD -o lxdbr0 -j ACCEPT
 # `--use-lxd` applied to use a LXD container instead of a VM, to work around lack of support for KVM on CircleCI VMs.
 snapcraft --use-lxd
 

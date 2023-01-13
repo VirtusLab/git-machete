@@ -3,7 +3,7 @@ version: 2.1
 executors:
   ubuntu_executor:
     machine:
-      image: ubuntu-2004:202111-02
+      image: ubuntu-2204:2022.10.2
     environment:
       # Needed to avoid warning: https://superuser.com/questions/575844/warning-terminal-is-not-fully-functional
       TERM: ansi
@@ -229,6 +229,7 @@ workflows:
               only:
                 - "develop"
                 - "/hotfix.*/"
+                - "debug/snapcraft-stuck" #########
           requires:
             *mandatory_jobs
       - deploy from master:
