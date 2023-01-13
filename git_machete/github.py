@@ -195,8 +195,12 @@ def __fire_github_api_request(domain: str, method: str, path: str,
     if token:
         headers['Authorization'] = 'Bearer ' + token
 
-    host = 'https://api.' + domain
-    url = host + path
+    if domain == DEFAULT_GITHUB_DOMAIN:
+        url_prefix = 'https://api.' + domain
+    else:
+        url_prefix = 'https://' + domain + '/api/v3'
+
+    url = url_prefix + path
     json_body: Optional[str] = json.dumps(request_body) if request_body else None
     http_request = urllib.request.Request(url, headers=headers, data=json_body.encode() if json_body else None, method=method.upper())
     debug(f'firing a {method} request to {url} with {"a" if token else "no"} bearer token and request body {json_body or "<none>"}')
@@ -207,8 +211,8 @@ def __fire_github_api_request(domain: str, method: str, path: str,
             # https://docs.github.com/en/rest/guides/using-pagination-in-the-rest-api?apiVersion=2022-11-28#using-link-headers
             link_header: str = response.info()["link"]
             if link_header:
-                host_regex = re.escape(host)
-                match = re.search(f'<{host_regex}(/[^>]+)>; rel="next"', link_header)
+                url_prefix_regex = re.escape(url_prefix)
+                match = re.search(f'<{url_prefix_regex}(/[^>]+)>; rel="next"', link_header)
                 if match:
                     next_page_path = match.group(1)
                     debug(f'there is more data to retrieve under {next_page_path}')
@@ -224,7 +228,7 @@ def __fire_github_api_request(domain: str, method: str, path: str,
             if token:
                 raise MacheteException(first_line + 'Make sure that the GitHub API token '
                                                     f'provided by the {__get_github_token_provider(domain)} '
-                                                    f'is valid and allows for access to `{method.upper()}` `{host}{path}`.\n'
+                                                    f'is valid and allows for access to `{method.upper()}` `{url_prefix}{path}`.\n'
                                                     'You can also use a different token provider, available providers can be found '
                                                     'when running `git machete help github`.')
             else:
@@ -267,7 +271,7 @@ def __fire_github_api_request(domain: str, method: str, path: str,
             raise MacheteException(
                 first_line + "Please open an issue regarding this topic under link: https://github.com/VirtusLab/git-machete/issues/new")
     except OSError as e:
-        raise MacheteException(f'Could not connect to {host}: {e}')
+        raise MacheteException(f'Could not connect to {url_prefix}: {e}')
 
 
 def create_pull_request(domain: str, org: str, repo: str,

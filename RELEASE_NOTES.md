@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.14.1
 
+- fixed: URL prefix for GitHub Enterprise API endpoints
+
 ## New in git-machete 3.14.0
 
 - added: `push=no` and `rebase=no` branch qualifiers that control push and rebase behaviour of `git machete traverse`
