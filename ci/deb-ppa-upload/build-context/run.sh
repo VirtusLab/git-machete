@@ -9,9 +9,8 @@ fi
 
 install -d -m 0700 ~/.gnupg/ ~/.gnupg/private-keys-v1.d/ ~/.ssh/
 echo "$GPG_PRIVATE_KEY_PASSPHRASE" > ~/.gnupg/passphrase.txt
-echo "$GPG_PRIVATE_KEY_CONTENTS_BASE64" | base64 -d > ~/.gnupg/private-keys-v1.d/"$GPG_PRIVATE_KEY_ID".key
-echo "$GPG_PUBRING_KEYBOX_CONTENTS_BASE64" | base64 -d > ~/.gnupg/pubring.kbx
-echo "$GPG_TRUSTDB_GPG_CONTENTS_BASE64" | base64 -d > ~/.gnupg/trustdb.gpg
+echo "$GPG_PRIVATE_KEY_CONTENTS_BASE64" | base64 -d > ~/.gnupg/private.key
+/gpg-wrapper.sh --import ~/.gnupg/private.key
 echo "$SSH_PRIVATE_KEY_CONTENTS_BASE64" | base64 -d > ~/.ssh/id_rsa
 chmod 400 ~/.ssh/id_rsa
 
@@ -24,6 +23,8 @@ cp LICENSE debian/copyright
 sed '/## New in git-machete 2\.12\.7/,$d' RELEASE_NOTES.md | awk \
   -v distro_name="$TARGET_DISTRO_NAME" \
   -v distro_number="$TARGET_DISTRO_NUMBER" \
+  -v gpg_email="$GPG_EMAIL" \
+  -v gpg_username="$GPG_USERNAME" \
   -f /release-notes-to-changelog.awk > debian/changelog
 
 # Since we upload over SFTP, we need to whitelist the host first to avoid the prompt.
@@ -44,12 +45,13 @@ while true; do
 done
 
 # `-p` flag points to a script that wraps gpg so that we don't get asked for password to the private key on TTY.
-debuild -S -p"/gpg-sign.sh"
+debuild -S -p"/gpg-wrapper.sh"
 cat ../python3-git-machete_*.dsc
 cat ../python3-git-machete_*_source.buildinfo
 cat ../python3-git-machete_*_source.changes
 tar tvf ../python3-git-machete_*.tar.gz
 
+envsubst '$LAUNCHPAD_USERNAME' < /dput.cf.envsubst | tee /etc/dput.cf
 if [[ $DO_DPUT == true ]]; then
   dput ppa:virtuslab/git-machete ../python3-git-machete_*_source.changes
 else

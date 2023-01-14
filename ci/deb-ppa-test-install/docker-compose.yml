@@ -6,4 +6,5 @@ services:
       context: build-context
       dockerfile: ../Dockerfile # relative to build-context
       args:
+        launchpad_username: ${LAUNCHPAD_USERNAME}
         ubuntu_version: ${UBUNTU_VERSION}

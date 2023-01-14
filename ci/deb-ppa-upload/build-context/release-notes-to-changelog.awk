@@ -2,7 +2,7 @@
 
 function trailer(v) {
   "git log -1 --date=rfc2822 --format=%cd v" v " 2>/dev/null || date --rfc-email" |& getline date
-  printf "\n -- Pawel Lipski <plipski@virtuslab.com>  %s\n\n\n", date
+  printf "\n -- %s <%s>  %s\n\n\n", gpg_username, gpg_email, date
 }
 
 /## New in git-machete .*/ {

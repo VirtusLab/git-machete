@@ -8,10 +8,11 @@ RUN \
       debhelper devscripts fakeroot dh-python gawk python3-all python3-paramiko python3-setuptools sudo; \
     rm -rfv /var/lib/apt/lists/*
 
-COPY dput.cf /etc/
-COPY entrypoint.sh gpg-sign.sh release-notes-to-changelog.awk run.sh /
-RUN chmod a+r /etc/dput.cf /release-notes-to-changelog.awk
-RUN chmod a+rx /entrypoint.sh /gpg-sign.sh /run.sh
+COPY dput.cf.envsubst entrypoint.sh gpg-wrapper.sh release-notes-to-changelog.awk run.sh /
+RUN chmod a+r /dput.cf.envsubst /release-notes-to-changelog.awk
+RUN touch /etc/dput.cf
+RUN chmod a+w /etc/dput.cf
+RUN chmod a+rx /entrypoint.sh /gpg-wrapper.sh /run.sh
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["/run.sh"]
 # One extra level under / is needed, since Debian packaging tools will write files

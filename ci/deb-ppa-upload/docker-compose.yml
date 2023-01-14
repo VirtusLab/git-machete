@@ -10,6 +10,9 @@ services:
       - ./../..:/git-machete/mount/
     environment:
       - DO_DPUT
+      - GPG_EMAIL
+      - GPG_USERNAME
+      - LAUNCHPAD_USERNAME
       - TARGET_DISTRO_NAME
       - TARGET_DISTRO_NUMBER
     env_file:

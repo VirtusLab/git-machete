@@ -3,5 +3,5 @@
 [ppa]
 fqdn = ppa.launchpad.net
 method = sftp
-incoming = ~virtuslab/ubuntu/git-machete/
-login = virtuslab
+incoming = ~$LAUNCHPAD_USERNAME/ubuntu/git-machete/
+login = $LAUNCHPAD_USERNAME
