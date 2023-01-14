@@ -45,21 +45,29 @@ class Annotation:
     qualifiers: Qualifiers
 
     def __init__(self, text: str):
-        self.text = text
+        self.text = text.strip()
         self.qualifiers = Qualifiers(text)
         self.text_without_qualifiers = self.qualifiers.get_annotation_text_without_qualifiers()
         self.qualifiers_text = self.qualifiers.get_qualifiers_text()
 
     def get_unformatted_text(self) -> str:
-        annotation_text = f" {self.text_without_qualifiers}"
-        if self.qualifiers_text != '':
-            annotation_text += ' ' if self.text_without_qualifiers != '' else ''
+        if not (self.text_without_qualifiers or self.qualifiers_text):
+            return ''
+        annotation_text = ' '
+        if self.text_without_qualifiers:
+            annotation_text += self.text_without_qualifiers
+        if self.qualifiers_text:
+            annotation_text += ' ' if self.text_without_qualifiers else ''
             annotation_text += self.qualifiers_text
         return annotation_text
 
     def get_formatted_text(self) -> str:
-        annotation_text = f"  {utils.dim(self.text_without_qualifiers)}"
-        if self.qualifiers_text != '':
-            annotation_text += ' ' if self.text_without_qualifiers != '' else ''
+        if not (self.text_without_qualifiers or self.qualifiers_text):
+            return ''
+        annotation_text = "  "
+        if self.text_without_qualifiers:
+            annotation_text += utils.dim(self.text_without_qualifiers)
+        if self.qualifiers_text:
+            annotation_text += ' ' if self.text_without_qualifiers else ''
             annotation_text += utils.dim(utils.underline(s=self.qualifiers_text))
         return annotation_text

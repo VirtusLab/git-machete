@@ -1019,9 +1019,9 @@ class MacheteClient:
                                 sorted(underline(lb_or_rb) for lb, lb_or_rb in fork_point_branches_cached[branch]))
                             right_arrow = colored(utils.get_right_arrow(), AnsiEscapeCodes.RED)
                             fork_point = colored("fork point ???", AnsiEscapeCodes.RED)
-                            fp_suffix: str = f' {right_arrow} {fork_point} \
-                                {"this commit" if opt_list_commits_with_hashes else f"commit {commit.short_hash}"}\
-                                seems to be a part of the unique history of {fp_branches_formatted}'
+                            fp_suffix: str = f' {right_arrow} {fork_point} ' + \
+                                ("this commit" if opt_list_commits_with_hashes else f"commit {commit.short_hash}") + \
+                                f' seems to be a part of the unique history of {fp_branches_formatted}'
                         else:
                             fp_suffix = ''
                         print_line_prefix(branch, utils.get_vertical_bar())

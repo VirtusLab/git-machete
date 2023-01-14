@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.14.2
+
+- fixed: superfluous whitespace around fork point hint in `status`
+
 ## New in git-machete 3.14.1
 
 - fixed: URL prefix for GitHub Enterprise API endpoints
