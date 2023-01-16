@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.14.3
 
+- improved: docs for `machete.github.*` and other config keys
+
 ## New in git-machete 3.14.2
 
 - fixed: superfluous whitespace around fork point hint in `status`

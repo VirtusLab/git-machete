@@ -16,8 +16,11 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 
 ``machete.overrideForkPoint.<branch>.{to,whileDescendantOf}``:
     Executing ``git machete fork-point --override-to=<revision> [<branch>]`` sets up a fork point override for <branch>.
+
     The override data is stored under ``machete.overrideForkPoint.<branch>.to`` and
     ``machete.overrideForkPoint.<branch>.whileDescendantOf`` git config keys.
+
+    There should be **no** need for the user to interact with these keys directly.
 
 ``machete.status.extraSpaceBeforeBranchName``:
     .. include:: status_config_key.rst
@@ -29,8 +32,10 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 
 ``machete.worktree.useTopLevelMacheteFile``:
     The default value of this key is ``true``, which means that the path to machete definition file will be ``.git/machete``
-    for both regular directory and worktree. If you want the worktree to have its own machete definition file (located under
-    ``.git/worktrees/.../machete``), set ``git config machete.worktree.useTopLevelMacheteFile false``.
+    for both regular directory and worktree.
+
+    If you want the worktree to have its own machete definition file (located under ``.git/worktrees/.../machete``),
+    set ``git config machete.worktree.useTopLevelMacheteFile false``.
 
 
 **Environment variables:**

@@ -24,7 +24,7 @@ Branches ``adjust-reads-prec``, ``edit-margin-not-allowed`` and ``grep-errors-sc
 ``block-cancel-order`` is a downstream branch of ``adjust-reads-prec``, ``change-table`` is a downstream branch of ``block-cancel-order`` and so on.
 
 Every branch name can be followed (after a single space as a delimiter) by a custom annotation, e.g. ``PR #234 rebase=no push=no``, ``PR #235 rebase=no`` or ``push=no``.
-Annotations might contain underlined branch qualifiers (``rebase=no``, ``push=no``) that control rebase and push behaviour of ``traverse`` (see help for :ref:`traverse`).
+Annotations might contain underlined branch qualifiers (``rebase=no``, ``push=no``) that control rebase and push behavior of ``traverse`` (see help for :ref:`traverse`).
 Also see help for :ref:`anno` command.
 
 Tabs or any number of spaces can be used as indentation.

@@ -25,7 +25,7 @@ traverse
 
 Traverses the branch tree in pre-order (i.e. simply in the order as they occur in the definition file).
 By default ``traverse`` starts from the current branch.
-This behaviour can, however, be customized using options: ``--start-from=``, ``--whole`` or ``-w``, ``-W``.
+This behavior can, however, be customized using options: ``--start-from=``, ``--whole`` or ``-w``, ``-W``.
 
 For each branch, the command:
 
@@ -56,7 +56,7 @@ For each branch, the command:
 
       - prints the updated ``status``.
 
-By default ``traverse`` asks if the branch should be pushed, this behaviour can, however, be changed with the ``machete.traverse.push`` configuration key.
+By default ``traverse`` asks if the branch should be pushed, this behavior can, however, be changed with the ``machete.traverse.push`` configuration key.
 It can also be customized using options: ``--[no-]push`` or ``--[no-]push-untracked`` --- the order of the flags defines their precedence over each other
 (the one on the right overriding the ones on the left). More on them in the **Options** section below.
 
@@ -65,8 +65,8 @@ It will pick up the walk from the current branch (unless ``--start-from=`` or ``
 Unlike with e.g. ``git rebase``, there is no special ``--continue`` flag, as ``traverse`` is stateless
 (doesn't keep a state of its own like ``git rebase`` does in ``.git/rebase-apply/``).
 
-The rebase and push behaviour of ``traverse`` can also be customized for each branch separately using *branch qualifiers*.
-There are ``rebase=no`` and ``push=no`` qualifiers that can be used to opt out of default behaviour (rebasing and pushing).
+The rebase and push behavior of ``traverse`` can also be customized for each branch separately using *branch qualifiers*.
+There are ``rebase=no`` and ``push=no`` qualifiers that can be used to opt out of default behavior (rebasing and pushing).
 The qualifier can appear anywhere in the annotation but needs to be separated by a whitespace from any other character, e.g. ``some_annotation_text rebase=no push=no``.
 Qualifiers can only be overwritten by manually editing ``.git/machete`` file or modifying it with ``git machete e[dit]`` or by updating annotations with ``git machete anno``.
 Example machete file with branch qualifiers:
@@ -106,7 +106,7 @@ when the current user is **not** the owner of the PR associated with that branch
 
 --no-push-untracked          Do not push untracked branches to remote, re-enable via ``--push-untracked``.
 
---push                       Push all (both tracked and untracked) branches to remote --- default behavior. Default behaviour can be changed
+--push                       Push all (both tracked and untracked) branches to remote --- default behavior. Default behavior can be changed
                              by setting git configuration key ``git config machete.traverse.push false``.
                              Configuration key value can be overridden by the presence of the flag.
 

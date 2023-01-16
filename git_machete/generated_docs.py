@@ -150,27 +150,20 @@ long_docs: Dict[str, str] = {
         </dim>
 
         GitHub API server URL will be inferred from `git remote`.
-        You can override this by setting the following git config keys:
+        You can alter the default behavior by setting the following git config keys:
            GitHub Enterprise domain
-              E.g. `machete.github.domain` = `git.example.org`
+              E.g. `git config machete.github.domain git.example.org`
 
            Remote name
-              E.g. `machete.github.remote` = `origin`
+              E.g. `git config machete.github.remote origin`
 
            Organization name
-              E.g. `machete.github.organization` = `VirtusLab`
+              E.g. `git config machete.github.organization VirtusLab`
 
            Repository name
-              E.g. `machete.github.repository` = `git-machete`
-
-        To do this, run `git config --local --edit` and add the following section:
-        <dim>
-          [machete "github"]
-              domain = <domain>
-              organization = <organization_name>
-              repository = <repo_name>
-              remote = <remote_name>
-        </dim>
+              E.g. `git config machete.github.repository git-machete`
+        Note that you do <b>not</b> need to set all four keys at once.
+        For example, in a typical usage of GitHub Enterprise, it should be enough to just set `machete.github.domain`.
 
         In any other case, sets the annotation for the given/current branch to the given <annotation text>.
         If multiple <annotation text>'s are passed to the command, they are concatenated with a single space.
@@ -225,27 +218,20 @@ long_docs: Dict[str, str] = {
         </dim>
 
         GitHub API server URL will be inferred from `git remote`.
-        You can override this by setting the following git config keys:
+        You can alter the default behavior by setting the following git config keys:
            GitHub Enterprise domain
-              E.g. `machete.github.domain` = `git.example.org`
+              E.g. `git config machete.github.domain git.example.org`
 
            Remote name
-              E.g. `machete.github.remote` = `origin`
+              E.g. `git config machete.github.remote origin`
 
            Organization name
-              E.g. `machete.github.organization` = `VirtusLab`
+              E.g. `git config machete.github.organization VirtusLab`
 
            Repository name
-              E.g. `machete.github.repository` = `git-machete`
-
-        To do this, run `git config --local --edit` and add the following section:
-        <dim>
-          [machete "github"]
-              domain = <domain>
-              organization = <organization_name>
-              repository = <repo_name>
-              remote = <remote_name>
-        </dim>
+              E.g. `git config machete.github.repository git-machete`
+        Note that you do <b>not</b> need to set all four keys at once.
+        For example, in a typical usage of GitHub Enterprise, it should be enough to just set `machete.github.domain`.
 
         <b>Options:</b>
            <b>-c</b>, <b>--checkout-my-github-prs</b>
@@ -269,32 +255,31 @@ long_docs: Dict[str, str] = {
               When executing `git machete github <subcommand>` command, the following will happen:
 
               GitHub API server URL will be inferred from `git remote`.
-              You can override this by setting the following git config keys:
+              You can alter the default behavior by setting the following git config keys:
 
                  GitHub Enterprise domain
-              E.g. `machete.github.domain` = `git.example.org`
+              E.g. `git config machete.github.domain git.example.org`
 
                  Remote name
-              E.g. `machete.github.remote` = `origin`
+              E.g. `git config machete.github.remote origin`
 
                  Organization name
-              E.g. `machete.github.organization` = `VirtusLab`
+              E.g. `git config machete.github.organization VirtusLab`
 
                  Repository name
-              E.g. `machete.github.repository` = `git-machete`
+              E.g. `git config machete.github.repository git-machete`
 
-              To do this, run `git config --local --edit` and add the following section:
-
-              [machete "github"]
-                  domain = <domain>
-                  organization = <organization_name>
-                  repository = <repo_name>
-                  remote = <remote_name>
+              Note that you do <b>not</b> need to set all four keys at once.
+              For example, in a typical usage of GitHub Enterprise, it should be enough to just set `machete.github.domain`.
 
            `machete.overrideForkPoint.<branch>.{to,whileDescendantOf}`:
+ 
               Executing `git machete fork-point --override-to=<revision> [<branch>]` sets up a fork point override for <branch>.
+
               The override data is stored under `machete.overrideForkPoint.<branch>.to` and
               `machete.overrideForkPoint.<branch>.whileDescendantOf` git config keys.
+
+              There should be <b>no</b> need for the user to interact with these keys directly.
 
            `machete.status.extraSpaceBeforeBranchName`:
 
@@ -320,14 +305,17 @@ long_docs: Dict[str, str] = {
 
            `machete.traverse.push`:
 
-              To change the behaviour of `git machete traverse` command so that it doesn't push branches by default,
+              To change the behavior of `git machete traverse` command so that it doesn't push branches by default,
               you need to set config key `git config machete.traverse.push false`.
-              Configuration key value can be overridden by the presence of the flag.
+              Configuration key value can be overridden by the presence of the `--push` or `--push-untracked` flags.
 
            `machete.worktree.useTopLevelMacheteFile`:
+ 
               The default value of this key is `true`, which means that the path to machete definition file will be `.git/machete`
-              for both regular directory and worktree. If you want the worktree to have its own machete definition file (located under
-              `.git/worktrees/.../machete`), set `git config machete.worktree.useTopLevelMacheteFile false`.
+              for both regular directory and worktree.
+
+              If you want the worktree to have its own machete definition file (located under `.git/worktrees/.../machete`),
+              set `git config machete.worktree.useTopLevelMacheteFile false`.
 
         <b>Environment variables:</b>
            `GIT_MACHETE_EDITOR`
@@ -521,7 +509,7 @@ long_docs: Dict[str, str] = {
         `block-cancel-order` is a downstream branch of `adjust-reads-prec`, `change-table` is a downstream branch of `block-cancel-order` and so on.
 
         Every branch name can be followed (after a single space as a delimiter) by a custom annotation, e.g. `PR #234 rebase=no push=no`, `PR #235 rebase=no` or `push=no`.
-        Annotations might contain underlined branch qualifiers (`rebase=no`, `push=no`) that control rebase and push behaviour of `traverse` (see help for `traverse`).
+        Annotations might contain underlined branch qualifiers (`rebase=no`, `push=no`) that control rebase and push behavior of `traverse` (see help for `traverse`).
         Also see help for `anno` command.
 
         Tabs or any number of spaces can be used as indentation.
@@ -557,27 +545,20 @@ long_docs: Dict[str, str] = {
         </dim>
 
         GitHub API server URL will be inferred from `git remote`.
-        You can override this by setting the following git config keys:
+        You can alter the default behavior by setting the following git config keys:
            GitHub Enterprise domain
-              E.g. `machete.github.domain` = `git.example.org`
+              E.g. `git config machete.github.domain git.example.org`
 
            Remote name
-              E.g. `machete.github.remote` = `origin`
+              E.g. `git config machete.github.remote origin`
 
            Organization name
-              E.g. `machete.github.organization` = `VirtusLab`
+              E.g. `git config machete.github.organization VirtusLab`
 
            Repository name
-              E.g. `machete.github.repository` = `git-machete`
-
-        To do this, run `git config --local --edit` and add the following section:
-        <dim>
-          [machete "github"]
-              domain = <domain>
-              organization = <organization_name>
-              repository = <repo_name>
-              remote = <remote_name>
-        </dim>
+              E.g. `git config machete.github.repository git-machete`
+        Note that you do <b>not</b> need to set all four keys at once.
+        For example, in a typical usage of GitHub Enterprise, it should be enough to just set `machete.github.domain`.
 
         <b>Subcommands:</b>
            `anno-prs`:
@@ -932,7 +913,7 @@ long_docs: Dict[str, str] = {
            * prints (`untracked`/`ahead of <remote>`/`behind <remote>`/`diverged from [& older than] <remote>`) message if the branch
              is not in sync with its remote counterpart;
            * displays the custom annotations (see help for `format` and `anno`) next to each branch, if present. Annotations might contain underlined branch
-             qualifiers (`rebase=no`, `push=no`) that control rebase and push behaviour of `traverse` (see help for `traverse`);
+             qualifiers (`rebase=no`, `push=no`) that control rebase and push behavior of `traverse` (see help for `traverse`);
            * displays the output of `machete-status-branch hook` (see help for `hooks`), if present;
            * optionally lists commits introduced on each branch if `-l/--list-commits` or `-L/--list-commits-with-hashes` is supplied.
 
@@ -1008,7 +989,7 @@ long_docs: Dict[str, str] = {
 
         Traverses the branch tree in pre-order (i.e. simply in the order as they occur in the definition file).
         By default `traverse` starts from the current branch.
-        This behaviour can, however, be customized using options: `--start-from=`, `--whole` or `-w`, `-W`.
+        This behavior can, however, be customized using options: `--start-from=`, `--whole` or `-w`, `-W`.
 
         For each branch, the command:
            * detects if the branch is merged (grey edge) to its parent (aka upstream):
@@ -1027,7 +1008,7 @@ long_docs: Dict[str, str] = {
            * and finally, if any of the above operations has been successfully completed:
               - prints the updated `status`.
 
-        By default `traverse` asks if the branch should be pushed, this behaviour can, however, be changed with the `machete.traverse.push` configuration key.
+        By default `traverse` asks if the branch should be pushed, this behavior can, however, be changed with the `machete.traverse.push` configuration key.
         It can also be customized using options: `--[no-]push` or `--[no-]push-untracked` — the order of the flags defines their precedence over each other
         (the one on the right overriding the ones on the left). More on them in the <b>Options</b> section below.
 
@@ -1036,8 +1017,8 @@ long_docs: Dict[str, str] = {
         Unlike with e.g. `git rebase`, there is no special `--continue` flag, as `traverse` is stateless
         (doesn't keep a state of its own like `git rebase` does in `.git/rebase-apply/`).
 
-        The rebase and push behaviour of `traverse` can also be customized for each branch separately using branch qualifiers.
-        There are `rebase=no` and `push=no` qualifiers that can be used to opt out of default behaviour (rebasing and pushing).
+        The rebase and push behavior of `traverse` can also be customized for each branch separately using branch qualifiers.
+        There are `rebase=no` and `push=no` qualifiers that can be used to opt out of default behavior (rebasing and pushing).
         The qualifier can appear anywhere in the annotation but needs to be separated by a whitespace from any other character, e.g. `some_annotation_text rebase=no push=no`.
         Qualifiers can only be overwritten by manually editing `.git/machete` file or modifying it with `git machete e[dit]` or by updating annotations with `git machete anno`.
         Example machete file with branch qualifiers:
@@ -1075,7 +1056,7 @@ long_docs: Dict[str, str] = {
            <b>--no-push-untracked</b>
               Do not push untracked branches to remote, re-enable via `--push-untracked`.
            <b>--push</b>
-              Push all (both tracked and untracked) branches to remote — default behavior. Default behaviour can be changed
+              Push all (both tracked and untracked) branches to remote — default behavior. Default behavior can be changed
               by setting git configuration key `git config machete.traverse.push false`.
               Configuration key value can be overridden by the presence of the flag.
            <b>--push-untracked</b>
@@ -1102,9 +1083,9 @@ long_docs: Dict[str, str] = {
         <b>Config keys:</b>
            `machete.traverse.push`
 
-              To change the behaviour of `git machete traverse` command so that it doesn't push branches by default,
+              To change the behavior of `git machete traverse` command so that it doesn't push branches by default,
               you need to set config key `git config machete.traverse.push false`.
-              Configuration key value can be overridden by the presence of the flag.
+              Configuration key value can be overridden by the presence of the `--push` or `--push-untracked` flags.
 
         <b>Environment variables:</b>
            `GIT_MACHETE_REBASE_OPTS`
