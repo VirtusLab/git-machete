@@ -9,7 +9,7 @@ To regenerate Snapcraft token:
 
 - Generate a new token:
   ```shell
-  snapcraft export-login ~/.snapcraft-credentials`
+  snapcraft export-login ~/.snapcraft-credentials
   ```
   Use `admin@virtuslab.com` account. Password to be found in password manager.
 

@@ -22,7 +22,9 @@ sha256=$(
 git config --global user.email "gitmachete@virtuslab.com"
 git config --global user.name "Git Machete Bot"
 
-echo "Bump homebrew formula"
+# Relying on HOMEBREW_GITHUB_API_TOKEN, provided by the CI
+# See https://docs.brew.sh/Manpage -> Ctrl+F HOMEBREW_GITHUB_API_TOKEN
+echo "Bump Homebrew formula"
 if [[ $do_push == true ]]; then
   brew bump-formula-pr --no-browse --verbose --url "$url" --sha256 "$sha256" git-machete
 else
