@@ -1138,7 +1138,7 @@ class MacheteClient:
         current_branch = self.__git.get_current_branch_or_none()
         if current_branch and current_branch in branches_to_delete:
             branches_to_delete = excluding(branches_to_delete, [current_branch])
-            print(fmt(f"Skipping current branch `{current_branch}`"))
+            print(fmt(f"Skipping current branch {bold(current_branch)}"))
         if branches_to_delete:
             branches_merged_to_head = self.__git.get_merged_local_branches()
 
@@ -1147,7 +1147,7 @@ class MacheteClient:
                 remote_branch = self.__git.get_strict_counterpart_for_fetching_of_branch(branch)
                 is_merged_to_remote = self.__git.is_ancestor_or_equal(branch.full_name(),
                                                                       remote_branch.full_name()) if remote_branch else True
-                msg_core = f"{bold(branch)} (merged to HEAD{'' if is_merged_to_remote else f', but not merged to {remote_branch}'})"
+                msg_core = f"{bold(branch)} (merged to HEAD{'' if is_merged_to_remote else f', but not merged to {bold(remote_branch)}'})"
                 msg = f"Delete branch {msg_core}?" + get_pretty_choices('y', 'N', 'q')
                 opt_yes_msg = f"Deleting branch {msg_core}"
                 ans = self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes)
@@ -2067,7 +2067,7 @@ class MacheteClient:
                             verbose=verbose,
                             switch_head_if_new_branch=False)
                     if pr not in checked_out_prs:
-                        print(fmt(f"Pull request `#{pr.number}` checked out at local branch `{pr.head}`"))
+                        print(fmt(f"Pull request {bold('#' + str(pr.number))} checked out at local branch {bold(pr.head)}"))
                         checked_out_prs.append(pr)
 
         debug('Current GitHub user is ' + (current_user or '<none>'))
@@ -2075,7 +2075,7 @@ class MacheteClient:
         if len(applicable_prs) == 1:
             self.__git.checkout(LocalBranchShortName.of(pr.head))
             if verbose:
-                print(fmt(f"Switched to local branch `{pr.head}`"))
+                print(fmt(f"Switched to local branch {bold(pr.head)}"))
 
     @staticmethod
     def __get_path_from_pr_chain(current_pr: GitHubPullRequest, all_open_prs: List[GitHubPullRequest]) -> List[LocalBranchShortName]:
