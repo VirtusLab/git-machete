@@ -1474,7 +1474,7 @@ class MacheteClient:
         _, org, repo = self.__derive_remote_and_github_org_and_repo(domain)
         print('Checking for open GitHub PRs... ', end='', flush=True)
         current_user: Optional[str] = git_machete.github.derive_current_user_login(domain)
-        debug('Current GitHub user is ' + (current_user or '<none>'))
+        debug('Current GitHub user is ' + (bold(current_user) or '<none>'))
         all_open_prs: List[GitHubPullRequest] = derive_pull_requests(domain, org, repo)
         print(fmt('<green><b>OK</b></green>'))
         self.__sync_annotations_to_definition_file(all_open_prs, current_user)
@@ -1487,12 +1487,12 @@ class MacheteClient:
         for pr in prs:
             if LocalBranchShortName.of(pr.head) in self.managed_branches:
                 debug(f'{pr} corresponds to a managed branch')
-                anno: str = f'PR #{pr.number}'
+                anno: str = f'PR {bold("#" + str(pr.number))}'
                 if pr.user != current_user:
-                    anno += f' ({pr.user})'
+                    anno += f' ({bold(pr.user)})'
                 upstream: Optional[LocalBranchShortName] = self.up_branch.get(LocalBranchShortName.of(pr.head))
                 if pr.base != upstream:
-                    warn(f'branch {bold(pr.head)} has a different base in PR #{pr.number} (`{pr.base}`) '
+                    warn(f'branch {bold(pr.head)} has a different base in PR {bold("#" + str(pr.number))} ({bold(pr.base)}) '
                          f'than in machete file ({bold(upstream) or "<none, is a root>"})')
                     anno += f" WRONG PR BASE or MACHETE PARENT? PR has {bold(pr.base)}"
                 old_annotation_text, old_annotation_qualifiers_text = '', ''
@@ -2011,7 +2011,7 @@ class MacheteClient:
 
         debug(f'organization is {org}, repository is {repo}')
         if verbose:
-            print(f"Fetching {remote}...")
+            print(f"Fetching {bold(remote)}...")
         self.__git.fetch_remote(remote)
 
         pr: Optional[GitHubPullRequest] = None
@@ -2029,20 +2029,20 @@ class MacheteClient:
                         remote_to_fetch = remote_already_added
                     if remote != remote_to_fetch:
                         if verbose:
-                            print(f"Fetching {remote_to_fetch}...")
+                            print(f"Fetching {bold(remote_to_fetch)}...")
                         self.__git.fetch_remote(remote_to_fetch)
                     if '/'.join([remote_to_fetch, pr.head]) not in self.__git.get_remote_branches():
-                        raise MacheteException(f"Could not check out PR #{pr.number} because its head branch `{pr.head}` "
-                                               f"is already deleted from `{remote_to_fetch}`.")
+                        raise MacheteException(f"Could not check out PR {bold('#' + str(pr.number))} because its head branch {bold(pr.head)} "
+                                               f"is already deleted from {bold(remote_to_fetch)}.")
             else:
-                warn(f'Pull request #{pr.number} comes from fork and its repository is already deleted. '
-                     f'No remote tracking data will be set up for `{pr.head}` branch.')
+                warn(f'Pull request {bold("#" + str(pr.number))} comes from fork and its repository is already deleted. '
+                     f'No remote tracking data will be set up for {bold(pr.head)} branch.')
                 if verbose:
-                    print(fmt(f"Checking out `{pr.head}` locally..."))
+                    print(fmt(f"Checking out {bold(pr.head)} locally..."))
                 checkout_pr_refs(self.__git, remote, pr.number, LocalBranchShortName.of(pr.head))
                 self.flush_caches()
             if pr.state == 'closed':
-                warn(f'Pull request #{pr.number} is already closed.')
+                warn(f'Pull request {bold("#" + str(pr.number))} is already closed.')
             debug(f'found {pr}')
 
             path: List[LocalBranchShortName] = self.__get_path_from_pr_chain(pr, all_open_prs)
