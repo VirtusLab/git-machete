@@ -590,7 +590,7 @@ class MacheteClient:
     def advance(self, *, branch: LocalBranchShortName, opt_yes: bool) -> None:
         if not self.__down_branches.get(branch):
             raise MacheteException(
-                f"`{branch}` does not have any downstream (child) branches to advance towards")
+                f"{bold(branch)} does not have any downstream (child) branches to advance towards")
 
         def connected_with_green_edge(bd: LocalBranchShortName) -> bool:
             return bool(
@@ -603,17 +603,17 @@ class MacheteClient:
         candidate_downstreams = list(filter(connected_with_green_edge, self.__down_branches[branch]))
         if not candidate_downstreams:
             raise MacheteException(
-                f"No downstream (child) branch of `{branch}` is connected to "
-                f"`{branch}` with a green edge")
+                f"No downstream (child) branch of {bold(branch)} is connected to "
+                f"{bold(branch)} with a green edge")
         if len(candidate_downstreams) > 1:
             if opt_yes:
                 raise MacheteException(
-                    f"More than one downstream (child) branch of `{branch}` is "
-                    f"connected to `{branch}` with a green edge and `-y/--yes` option is specified")
+                    f"More than one downstream (child) branch of {bold(branch)} is "
+                    f"connected to {bold(branch)} with a green edge and `-y/--yes` option is specified")
             else:
                 down_branch = self.pick(
                     candidate_downstreams,
-                    f"downstream branch towards which `{branch}` is to be fast-forwarded")
+                    f"downstream branch towards which {bold(branch)} is to be fast-forwarded")
                 self.__git.merge_fast_forward_only(down_branch)
         else:
             down_branch = candidate_downstreams[0]
