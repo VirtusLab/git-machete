@@ -630,7 +630,7 @@ def launch(orig_args: List[str]) -> None:
                     machete_client.set_fork_point_override(branch, upstream)
                 else:
                     raise MacheteException(
-                        f"Branch {branch} does not have upstream (parent) branch")
+                        f"Branch {bold(branch)} does not have upstream (parent) branch")
             elif cli_opts.opt_unset_override:
                 machete_client.unset_fork_point_override(branch)
             else:
