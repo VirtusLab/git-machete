@@ -1492,9 +1492,9 @@ class MacheteClient:
                     anno += f' ({pr.user})'
                 upstream: Optional[LocalBranchShortName] = self.up_branch.get(LocalBranchShortName.of(pr.head))
                 if pr.base != upstream:
-                    warn(f'branch `{pr.head}` has a different base in PR #{pr.number} (`{pr.base}`) '
-                         f'than in machete file (`{upstream or "<none, is a root>"}`)')
-                    anno += f" WRONG PR BASE or MACHETE PARENT? PR has '{pr.base}'"
+                    warn(f'branch {bold(pr.head)} has a different base in PR #{pr.number} (`{pr.base}`) '
+                         f'than in machete file ({bold(upstream) or "<none, is a root>"})')
+                    anno += f" WRONG PR BASE or MACHETE PARENT? PR has {bold(pr.base)}"
                 old_annotation_text, old_annotation_qualifiers_text = '', ''
                 if LocalBranchShortName.of(pr.head) in self.__annotations:
                     old_annotation_text = self.__annotations[LocalBranchShortName.of(pr.head)].text
@@ -1502,11 +1502,11 @@ class MacheteClient:
 
                 if pr.user != current_user and old_annotation_qualifiers_text == '':
                     if verbose:
-                        print(fmt(f'Annotating `{pr.head}` as `{anno} rebase=no push=no`'))
+                        print(fmt(f'Annotating {bold(pr.head)} as `{anno} rebase=no push=no`'))
                     self.__annotations[LocalBranchShortName.of(pr.head)] = Annotation(f'{anno} rebase=no push=no')
                 elif old_annotation_text != anno:
                     if verbose:
-                        print(fmt(f'Annotating `{pr.head}` as `{anno}`'))
+                        print(fmt(f'Annotating {bold(pr.head)} as `{anno}`'))
                     self.__annotations[LocalBranchShortName.of(pr.head)] = Annotation(f'{anno} {old_annotation_qualifiers_text}') \
                         if old_annotation_text is not None else Annotation(anno)
             else:
