@@ -372,7 +372,7 @@ class MacheteClient:
             raise MacheteException("No local branches found")
         for root in opt_roots:
             if root not in self.__git.get_local_branches():
-                raise MacheteException(f"`{root}` is not a local branch")
+                raise MacheteException(f"{bold(root)} is not a local branch")
         if opt_roots:
             self.__roots = list(map(LocalBranchShortName.of, opt_roots))
         else:
@@ -465,7 +465,7 @@ class MacheteClient:
             warn(
                 "skipping %s since %s merged to another branch and would not "
                 "have any downstream branches.\n"
-                % (", ".join(f"`{branch}`" for branch in merged_branches_to_skip),
+                % (", ".join(f"{bold(branch)}" for branch in merged_branches_to_skip),
                    "it's" if len(merged_branches_to_skip) == 1 else "they're"))
             self.managed_branches = excluding(self.managed_branches, merged_branches_to_skip)
             for branch in merged_branches_to_skip:
