@@ -1700,13 +1700,13 @@ class MacheteClient:
 
     def set_fork_point_override(self, branch: LocalBranchShortName, to_revision: AnyRevision) -> None:
         if branch not in self.__git.get_local_branches():
-            raise MacheteException(f"`{branch}` is not a local branch")
+            raise MacheteException(f"{bold(branch)} is not a local branch")
         to_hash = self.__git.get_commit_hash_by_revision(to_revision)
         if not to_hash:
-            raise MacheteException(f"Cannot find revision {to_revision}")
+            raise MacheteException(f"Cannot find revision {bold(to_revision)}")
         if not self.__git.is_ancestor_or_equal(to_hash.full_name(), branch.full_name()):
             raise MacheteException(
-                f"Cannot override fork point: {self.__git.get_revision_repr(to_revision)} is not an ancestor of {branch}")
+                f"Cannot override fork point: {bold(self.__git.get_revision_repr(to_revision))} is not an ancestor of {bold(branch)}")
 
         to_key = self.config_key_for_override_fork_point_to(branch)
         self.__git.set_config_attr(to_key, to_hash)
@@ -1719,7 +1719,7 @@ class MacheteClient:
                   f"<b>{self.__git.get_revision_repr(to_revision)}</b>.\n",
                   f"This applies as long as {branch} points to (or is descendant of)"
                   " its current head (commit "
-                  f"{self.__git.get_short_commit_hash_by_revision(branch_hash)}).\n\n",
+                  f"<b>{self.__git.get_short_commit_hash_by_revision(branch_hash)}</b>).\n\n",
                   f"This information is stored under git config keys:\n"
                   f"  * `{to_key}`\n"
                   f"  * `{while_descendant_of_key}`\n\n",
