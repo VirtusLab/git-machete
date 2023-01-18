@@ -128,7 +128,7 @@ class MacheteClient:
             if branch in self.managed_branches:
                 raise MacheteException(
                     f"{self._definition_file_path}, line {index + 1}: branch "
-                    f"`{branch}` re-appears in the tree definition. {hint}")
+                    f"{bold(branch)}` re-appears in the tree definition. {hint}")
             if verify_branches and branch not in self.__git.get_local_branches():
                 invalid_branches += [branch]
             self.managed_branches += [branch]
@@ -150,7 +150,7 @@ class MacheteClient:
                 raise MacheteException(
                     f"{self._definition_file_path}, line {index + 1}: too much "
                     f"indent (level {depth}, expected at most {last_depth + 1}) "
-                    f"for the branch `{branch}`. {hint}")
+                    f"for the branch {bold(branch)}. {hint}")
             last_depth = depth
 
             at_depth[depth] = branch
@@ -170,13 +170,13 @@ class MacheteClient:
         if perform_interactive_slide_out:
             if len(invalid_branches) == 1:
                 ans: str = self.ask_if(
-                    f"Skipping `{invalid_branches[0]}` " +
+                    f"Skipping {bold(invalid_branches[0])} " +
                     "which is not a local branch (perhaps it has been deleted?).\n" +
                     "Slide it out from the definition file?" +
                     get_pretty_choices("y", "e[dit]", "N"), opt_yes_msg=None, opt_yes=False)
             else:
                 ans = self.ask_if(
-                    f"Skipping {', '.join(f'`{branch}`' for branch in invalid_branches)}"
+                    f"Skipping {', '.join(f'{bold(branch)}' for branch in invalid_branches)}"
                     " which are not local branches (perhaps they have been deleted?).\n"
                     "Slide them out from the definition file?" + get_pretty_choices("y", "e[dit]", "N"),
                     opt_yes_msg=None, opt_yes=False)
