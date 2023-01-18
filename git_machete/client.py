@@ -247,7 +247,7 @@ class MacheteClient:
             ) -> None:
         if branch in self.managed_branches:
             raise MacheteException(
-                f"Branch `{branch}` already exists in the tree of branch dependencies")
+                f"Branch {bold(branch)} already exists in the tree of branch dependencies")
 
         if opt_onto:
             self.expect_in_managed_branches(opt_onto)
@@ -256,10 +256,10 @@ class MacheteClient:
             remote_branch: Optional[RemoteBranchShortName] = self.__git.get_sole_remote_branch(branch)
             if remote_branch:
                 common_line = (
-                    f"A local branch `{branch}` does not exist, but a remote "
-                    f"branch `{remote_branch}` exists.\n")
-                msg = common_line + f"Check out `{branch}` locally?" + get_pretty_choices('y', 'N')
-                opt_yes_msg = common_line + f"Checking out `{branch}` locally..."
+                    f"A local branch {bold(branch)} does not exist, but a remote "
+                    f"branch {bold(remote_branch)} exists.\n")
+                msg = common_line + f"Check out {bold(branch)} locally?" + get_pretty_choices('y', 'N')
+                opt_yes_msg = common_line + f"Checking out {bold(branch)} locally..."
                 if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
                     self.__git.create_branch(branch, remote_branch.full_name(), switch_head=switch_head_if_new_branch)
                 else:
@@ -268,8 +268,8 @@ class MacheteClient:
                 # specified via `--onto`, we'll try to infer it now.
             else:
                 out_of = LocalBranchShortName.of(opt_onto).full_name() if opt_onto else HEAD
-                out_of_str = f"`{opt_onto}`" if opt_onto else "the current HEAD"
-                msg = (f"A local branch `{branch}` does not exist. Create (out "
+                out_of_str = f"{bold(opt_onto)}" if opt_onto else "the current HEAD"
+                msg = (f"A local branch {bold(branch)} does not exist. Create (out "
                        f"of {out_of_str})?" + get_pretty_choices('y', 'N'))
                 opt_yes_msg = (f"A local branch `{branch}` does not exist. "
                                f"Creating out of {out_of_str}")
@@ -287,7 +287,7 @@ class MacheteClient:
         if opt_as_root or not self.__roots:
             self.__roots += [branch]
             if verbose:
-                print(fmt(f"Added branch `{branch}` as a new root"))
+                print(fmt(f"Added branch {bold(branch)} as a new root"))
         else:
             if not opt_onto:
                 upstream = self.__infer_upstream(
@@ -296,16 +296,16 @@ class MacheteClient:
                     reject_reason_message="this candidate is not a managed branch")
                 if not upstream:
                     raise MacheteException(
-                        f"Could not automatically infer upstream (parent) branch for `{branch}`.\n"
+                        f"Could not automatically infer upstream (parent) branch for {bold(branch)}.\n"
                         "You can either:\n"
                         "1) specify the desired upstream branch with `--onto` or\n"
-                        f"2) pass `--as-root` to attach `{branch}` as a new root or\n"
+                        f"2) pass `--as-root` to attach {bold(branch)} as a new root or\n"
                         "3) edit the definition file manually with `git machete edit`")
                 else:
-                    msg = (f"Add `{branch}` onto the inferred upstream (parent) "
-                           f"branch `{upstream}`?" + get_pretty_choices('y', 'N'))
-                    opt_yes_msg = (f"Adding `{branch}` onto the inferred upstream"
-                                   f" (parent) branch `{upstream}`")
+                    msg = (f"Add {bold(branch)} onto the inferred upstream (parent) "
+                           f"branch {bold(upstream)}?" + get_pretty_choices('y', 'N'))
+                    opt_yes_msg = (f"Adding {bold(branch)} onto the inferred upstream"
+                                   f" (parent) branch {bold(upstream)}")
                     if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
                         opt_onto = upstream
                     else:
@@ -317,7 +317,7 @@ class MacheteClient:
             else:
                 self.__down_branches[opt_onto] = [branch]
             if verbose:
-                print(fmt(f"Added branch `{branch}` onto `{opt_onto}`"))
+                print(fmt(f"Added branch {bold(branch)} onto {bold(opt_onto)}"))
 
         self.managed_branches += [branch]
         self.save_definition_file()
