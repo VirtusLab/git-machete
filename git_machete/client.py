@@ -92,7 +92,7 @@ class MacheteClient:
         if branch not in self.managed_branches:
             raise MacheteException(
                 f"Branch {bold(branch)} not found in the tree of branch dependencies.\n"
-                f"Use `git machete add {bold(branch)}` or `git machete edit`")
+                f"Use `git machete add {branch}` or `git machete edit`")
 
     def expect_at_least_one_managed_branch(self) -> None:
         if not self.__roots:
@@ -141,8 +141,8 @@ class MacheteClient:
                     indent_expanded: str = "".join(mapping[c] for c in self.__indent)
                     raise MacheteException(
                         f"{self._definition_file_path}, line {index + 1}: "
-                        f"invalid indent `{prefix_expanded}`, expected a multiply"
-                        f" of `{indent_expanded}`. {hint}")
+                        f"invalid indent {bold(prefix_expanded)}, expected a multiply"
+                        f" of {bold(indent_expanded)}. {hint}")
             else:
                 depth = 0
 
@@ -182,7 +182,8 @@ class MacheteClient:
                     opt_yes_msg=None, opt_yes=False)
         else:
             if len(invalid_branches) > 0:
-                print(f"Warning: sliding invalid branches: {', '.join(invalid_branches)} out of the definition file", file=sys.stderr)
+                print(f"Warning: sliding invalid branches: {', '.join(f'{bold(branch)}' for branch in invalid_branches)} "
+                      f"out of the definition file", file=sys.stderr)
             ans = 'y'
 
         def recursive_slide_out_invalid_branches(branch_: LocalBranchShortName) -> List[LocalBranchShortName]:
@@ -1076,11 +1077,11 @@ class MacheteClient:
                 SyncToRemoteStatuses.NO_REMOTES: "",
                 SyncToRemoteStatuses.UNTRACKED: colored(" (untracked)", AnsiEscapeCodes.ORANGE),
                 SyncToRemoteStatuses.IN_SYNC_WITH_REMOTE: "",
-                SyncToRemoteStatuses.BEHIND_REMOTE: colored(f" (behind {remote})", AnsiEscapeCodes.RED),
-                SyncToRemoteStatuses.AHEAD_OF_REMOTE: colored(f" (ahead of {remote})", AnsiEscapeCodes.RED),
-                SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: colored(f" (diverged from & older than {remote})",
+                SyncToRemoteStatuses.BEHIND_REMOTE: colored(f" (behind {bold(remote)})", AnsiEscapeCodes.RED),
+                SyncToRemoteStatuses.AHEAD_OF_REMOTE: colored(f" (ahead of {bold(remote)})", AnsiEscapeCodes.RED),
+                SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: colored(f" (diverged from & older than {bold(remote)})",
                                                                                   AnsiEscapeCodes.RED),
-                SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: colored(f" (diverged from {remote})", AnsiEscapeCodes.RED)
+                SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: colored(f" (diverged from {bold(remote)})", AnsiEscapeCodes.RED)
             }[SyncToRemoteStatuses(s)]
 
             hook_output = ""
@@ -1104,12 +1105,12 @@ class MacheteClient:
         branches_in_sync_but_fork_point_off = [k for k, v in sync_to_parent_status.items() if v == SyncToParentStatus.InSyncButForkPointOff]
         if branches_in_sync_but_fork_point_off and warn_when_branch_in_sync_but_fork_point_off:
             if len(branches_in_sync_but_fork_point_off) == 1:
-                first_part = f"yellow edge indicates that fork point for `{branches_in_sync_but_fork_point_off[0]}` " \
+                first_part = f"yellow edge indicates that fork point for {bold(branches_in_sync_but_fork_point_off[0])} " \
                              f"is probably incorrectly inferred,\n or that some extra branch should be between " \
-                             f"`{self.up_branch[LocalBranchShortName.of(branches_in_sync_but_fork_point_off[0])]}` and " \
-                             f"`{branches_in_sync_but_fork_point_off[0]}`"
+                             f"{bold(self.up_branch[LocalBranchShortName.of(branches_in_sync_but_fork_point_off[0])])} and " \
+                             f"{bold(branches_in_sync_but_fork_point_off[0])}"
             else:
-                affected_branches = ", ".join(map(lambda x: f"`{x}`", branches_in_sync_but_fork_point_off))
+                affected_branches = ", ".join(map(lambda x: f"{bold(x)}", branches_in_sync_but_fork_point_off))
                 first_part = f"yellow edges indicate that fork points for {affected_branches} are probably incorrectly inferred,\n" \
                              f"or that some extra branch should be added between each of these branches and its parent"
 
@@ -1119,8 +1120,8 @@ class MacheteClient:
             elif len(branches_in_sync_but_fork_point_off) == 1:
                 second_part = "Consider using `git machete fork-point " \
                               f"--override-to=<revision>|--override-to-inferred|--override-to-parent " \
-                              f"{branches_in_sync_but_fork_point_off[0]}`,\nor reattaching `{branches_in_sync_but_fork_point_off[0]}` " \
-                              f"under a different parent branch"
+                              f"{bold(branches_in_sync_but_fork_point_off[0])}`,\nor reattaching " \
+                              f"{bold(branches_in_sync_but_fork_point_off[0])} under a different parent branch"
             else:
                 second_part = "Consider using `git machete fork-point " \
                               "--override-to=<revision>|--override-to-inferred|--override-to-parent <branch>` for each affected branch,\n" \
@@ -2382,7 +2383,7 @@ class MacheteClient:
                 opt_yes=opt_yes)
         else:
             # We know that there is at least 1 remote, otherwise 's' would be 'NO_REMOTES'
-            print(fmt(f"Branch `{bold(branch)}` is untracked and there's no `{bold('origin')}` repository."))
+            print(f"Branch {bold(branch)} is untracked and there's no {bold('origin')} repository.")
             self.__pick_remote(
                 branch=branch,
                 is_called_from_traverse=is_called_from_traverse,
