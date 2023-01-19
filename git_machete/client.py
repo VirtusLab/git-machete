@@ -1215,7 +1215,7 @@ class MacheteClient:
                     f"falling back to {upstream} as fork point")
                 return self.__git.get_commit_hash_by_revision(upstream), []
             else:
-                raise MacheteException(f"Cannot find fork point for branch `{branch}`")
+                raise MacheteException(f"Cannot find fork point for branch {bold(branch)}")
         else:
             debug(f"commit {fp_hash} is the most recent point in history of {branch} to occur on "
                   "filtered reflog of any other branch or its remote counterpart "
@@ -1968,8 +1968,8 @@ class MacheteClient:
                 earlier_revision=fork_point_hash.full_name(),
                 later_revision=branch.full_name()):
             raise MacheteException(
-                f"Fork point {fork_point_hash} is not ancestor of or the tip "
-                f"of the {branch} branch.")
+                f"Fork point {bold(fork_point_hash)} is not ancestor of or the tip "
+                f"of the {bold(branch)} branch.")
 
     def checkout_github_prs(self,
                             pr_nos: Optional[List[int]],
