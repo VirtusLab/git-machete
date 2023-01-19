@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.15.0
+
+- added: `slide-out=no` branch qualifier that control the slide-out behaviour of `git machete traverse`
+
 ## New in git-machete 3.14.3
 
 - improved: docs for `machete.github.*` and other config keys
