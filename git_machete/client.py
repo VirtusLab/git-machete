@@ -272,7 +272,7 @@ class MacheteClient:
                 out_of_str = f"{bold(opt_onto)}" if opt_onto else "the current HEAD"
                 msg = (f"A local branch {bold(branch)} does not exist. Create (out "
                        f"of {out_of_str})?" + get_pretty_choices('y', 'N'))
-                opt_yes_msg = (f"A local branch `{branch}` does not exist. "
+                opt_yes_msg = (f"A local branch {bold(branch)} does not exist. "
                                f"Creating out of {out_of_str}")
                 if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
                     # If `--onto` hasn't been explicitly specified, let's try to
@@ -679,7 +679,7 @@ class MacheteClient:
 
         if opt_fetch:
             for remote in self.__git.get_remotes():
-                print(f"Fetching {remote}...")
+                print(f"Fetching {bold(remote)}...")
                 self.__git.fetch_remote(remote)
             if self.__git.get_remotes():
                 self.flush_caches()
@@ -1648,28 +1648,28 @@ class MacheteClient:
         if not to and not while_descendant_of:
             return None
         if to and not while_descendant_of:
-            warn(f"{to_key} config is set but {while_descendant_of_key} config is missing or invalid")
+            warn(f"`{to_key}` config is set but `{while_descendant_of_key}` config is missing or invalid")
             return None
         if not to and while_descendant_of:
-            warn(f"{while_descendant_of_key} config is set but {to_key} config is missing or invalid")
+            warn(f"`{while_descendant_of_key}` config is set but `{to_key}` config is missing or invalid")
             return None
 
         to_hash: Optional[FullCommitHash] = self.__git.get_commit_hash_by_revision(to)
         while_descendant_of_hash: Optional[FullCommitHash] = self.__git.get_commit_hash_by_revision(while_descendant_of)
         if not to_hash or not while_descendant_of_hash:
             if not to_hash:
-                warn(f"{to_key} config value `{to}` does not point to a valid commit")
+                warn(f"`{to_key}` config value {bold(to)} does not point to a valid commit")
             if not while_descendant_of_hash:
-                warn(f"{while_descendant_of_key} config value `{while_descendant_of}` does not point to a valid commit")
+                warn(f"`{while_descendant_of_key}` config value {bold(while_descendant_of)} does not point to a valid commit")
             return None
         # This check needs to be performed every time the config is retrieved.
         # We can't rely on the values being validated in set_fork_point_override(),
         # since the config could have been modified outside of git-machete.
         if not self.__git.is_ancestor_or_equal(to_hash.full_name(), while_descendant_of_hash.full_name()):
             warn(
-                f"commit {self.__git.get_short_commit_hash_by_revision(to)} pointed by {to_key} config "
-                f"is not an ancestor of commit {self.__git.get_short_commit_hash_by_revision(while_descendant_of)} "
-                f"pointed by {while_descendant_of_key} config")
+                f"commit {bold(self.__git.get_short_commit_hash_by_revision(to))} pointed by `{to_key}` config "
+                f"is not an ancestor of commit {bold(self.__git.get_short_commit_hash_by_revision(while_descendant_of))} "
+                f"pointed by `{while_descendant_of_key}` config")
             return None
         return ForkPointOverrideData(to_hash, while_descendant_of_hash)
 
@@ -1686,9 +1686,9 @@ class MacheteClient:
         # branch currently points.
         if not self.__git.is_ancestor_or_equal(while_descendant_of.full_name(), branch.full_name()):
             warn(fmt(
-                f"since branch <b>{branch}</b> is no longer a descendant of commit "
-                f"{while_descendant_of}, ",
-                f"the fork point override to commit {to} no longer applies.\n",
+                f"since branch {bold(branch)} is no longer a descendant of commit "
+                f"{bold(while_descendant_of)}, ",
+                f"the fork point override to commit {bold(to)} no longer applies.\n",
                 f"Consider running:\n  `git machete fork-point --unset-override {branch}`\n"))
             return None
         debug(f"since branch {branch} is descendant of while_descendant_of={while_descendant_of}, "
@@ -1718,7 +1718,7 @@ class MacheteClient:
 
         print(fmt(f"Fork point for <b>{branch}</b> is overridden to "
                   f"<b>{self.__git.get_revision_repr(to_revision)}</b>.\n",
-                  f"This applies as long as {branch} points to (or is descendant of)"
+                  f"This applies as long as <b>{branch}</b> points to (or is descendant of)"
                   " its current head (commit "
                   f"<b>{self.__git.get_short_commit_hash_by_revision(branch_hash)}</b>).\n\n",
                   f"This information is stored under git config keys:\n"
@@ -1821,7 +1821,7 @@ class MacheteClient:
                 elif ans in ('q', 'quit'):
                     raise StopInteraction
                 else:
-                    raise MacheteException(f'Cannot create pull request from untracked branch `{branch}`')
+                    raise MacheteException(f'Cannot create pull request from untracked branch {bold(branch)}')
                 return
 
         relation: int = self.__git.get_relation_to_remote_counterpart(branch, remote_branch)
@@ -2476,12 +2476,13 @@ class MacheteClient:
         up_branch: Optional[LocalBranchShortName] = self.up_branch.get(current_branch)
         if not up_branch:
             raise MacheteException(
-                f'Branch `{current_branch}` does not have a parent branch (it is a root), '
+                f'Branch {bold(current_branch)} does not have a parent branch (it is a root), '
                 'base branch for the PR cannot be established.')
 
         if self.__git.is_ancestor_or_equal(current_branch.full_name(), up_branch.full_name()):
             raise MacheteException(
-                f'All commits in `{current_branch}` branch are already included in `{up_branch}` branch.\nCannot create pull request.')
+                f'All commits in {bold(current_branch)} branch are already included in {bold(up_branch)} branch.'
+                f'\nCannot create pull request.')
 
         s, remote = self.__git.get_strict_remote_sync_status(current_branch)
         statuses_to_push = (
@@ -2522,12 +2523,12 @@ class MacheteClient:
 
         else:
             if s == SyncToRemoteStatuses.BEHIND_REMOTE:
-                warn(f"Branch {current_branch} is in <b>BEHIND_REMOTE</b> state.\nConsider using 'git pull'.\n")
+                warn(f"Branch {bold(current_branch)} is in <b>BEHIND_REMOTE</b> state.\nConsider using 'git pull'.\n")
                 self.__print_new_line(False)
                 ans = self.ask_if("Proceed with pull request creation?" + get_pretty_choices('y', 'Q'),
                                   "Proceeding with pull request creation...", opt_yes=opt_yes)
             elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
-                warn(f"Branch {current_branch} is in <b>DIVERGED_FROM_AND_OLDER_THAN_REMOTE</b> state.\n"
+                warn(f"Branch {bold(current_branch)} is in <b>DIVERGED_FROM_AND_OLDER_THAN_REMOTE</b> state.\n"
                      f"Consider using 'git reset --keep'.\n")
                 self.__print_new_line(False)
                 ans = self.ask_if("Proceed with pull request creation?" + get_pretty_choices('y', 'Q'),
