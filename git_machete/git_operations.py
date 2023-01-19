@@ -11,7 +11,7 @@ from git_machete import utils
 from git_machete.constants import (MAX_COUNT_FOR_INITIAL_LOG,
                                    GitFormatPatterns, SyncToRemoteStatuses)
 from git_machete.exceptions import MacheteException
-from git_machete.utils import (AnsiEscapeCodes, CommandResult, bold, colored, debug, fmt)
+from git_machete.utils import (AnsiEscapeCodes, CommandResult, colored, debug, fmt)
 
 
 class AnyRevision(str):
@@ -724,7 +724,7 @@ class GitContext:
         remote_branch = self.get_currently_rebased_branch_or_none()
         if remote_branch:
             raise MacheteException(
-                f"Rebase of {bold(remote_branch)} in progress. "
+                f"Rebase of {utils.bold(remote_branch)} in progress. "
                 f"Conclude the rebase first with `git rebase --continue` or `git rebase --abort`.")
         if self.is_am_in_progress():
             raise MacheteException(
