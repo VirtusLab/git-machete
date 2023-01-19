@@ -91,8 +91,8 @@ class MacheteClient:
     def expect_in_managed_branches(self, branch: LocalBranchShortName) -> None:
         if branch not in self.managed_branches:
             raise MacheteException(
-                f"Branch `{branch}` not found in the tree of branch dependencies.\n"
-                f"Use `git machete add {branch}` or `git machete edit`")
+                f"Branch {bold(branch)} not found in the tree of branch dependencies.\n"
+                f"Use `git machete add {bold(branch)}` or `git machete edit`")
 
     def expect_at_least_one_managed_branch(self) -> None:
         if not self.__roots:
@@ -128,7 +128,7 @@ class MacheteClient:
             if branch in self.managed_branches:
                 raise MacheteException(
                     f"{self._definition_file_path}, line {index + 1}: branch "
-                    f"{bold(branch)}` re-appears in the tree definition. {hint}")
+                    f"{bold(branch)} re-appears in the tree definition. {hint}")
             if verify_branches and branch not in self.__git.get_local_branches():
                 invalid_branches += [branch]
             self.managed_branches += [branch]
@@ -1487,12 +1487,12 @@ class MacheteClient:
         for pr in prs:
             if LocalBranchShortName.of(pr.head) in self.managed_branches:
                 debug(f'{pr} corresponds to a managed branch')
-                anno: str = f'PR {bold("#" + str(pr.number))}'
+                anno: str = f'PR #{bold(str(pr.number))}'
                 if pr.user != current_user:
                     anno += f' ({bold(pr.user)})'
                 upstream: Optional[LocalBranchShortName] = self.up_branch.get(LocalBranchShortName.of(pr.head))
                 if pr.base != upstream:
-                    warn(f'branch {bold(pr.head)} has a different base in PR {bold("#" + str(pr.number))} ({bold(pr.base)}) '
+                    warn(f'branch {bold(pr.head)} has a different base in PR #{bold(str(pr.number))} ({bold(pr.base)}) '
                          f'than in machete file ({bold(upstream) or "<none, is a root>"})')
                     anno += f" WRONG PR BASE or MACHETE PARENT? PR has {bold(pr.base)}"
                 old_annotation_text, old_annotation_qualifiers_text = '', ''
@@ -2032,18 +2032,18 @@ class MacheteClient:
                             print(f"Fetching {bold(remote_to_fetch)}...")
                         self.__git.fetch_remote(remote_to_fetch)
                     if '/'.join([remote_to_fetch, pr.head]) not in self.__git.get_remote_branches():
-                        raise MacheteException(f"Could not check out PR {bold('#' + str(pr.number))} "
+                        raise MacheteException(f"Could not check out PR #{bold(str(pr.number))} "
                                                f"because its head branch {bold(pr.head)} "
                                                f"is already deleted from {bold(remote_to_fetch)}.")
             else:
-                warn(f'Pull request {bold("#" + str(pr.number))} comes from fork and its repository is already deleted. '
+                warn(f'Pull request #{bold(str(pr.number))} comes from fork and its repository is already deleted. '
                      f'No remote tracking data will be set up for {bold(pr.head)} branch.')
                 if verbose:
                     print(fmt(f"Checking out {bold(pr.head)} locally..."))
                 checkout_pr_refs(self.__git, remote, pr.number, LocalBranchShortName.of(pr.head))
                 self.flush_caches()
             if pr.state == 'closed':
-                warn(f'Pull request {bold("#" + str(pr.number))} is already closed.')
+                warn(f'Pull request #{bold(str(pr.number))} is already closed.')
             debug(f'found {pr}')
 
             path: List[LocalBranchShortName] = self.__get_path_from_pr_chain(pr, all_open_prs)
@@ -2067,7 +2067,7 @@ class MacheteClient:
                             verbose=verbose,
                             switch_head_if_new_branch=False)
                     if pr not in checked_out_prs:
-                        print(fmt(f"Pull request {bold('#' + str(pr.number))} checked out at local branch {bold(pr.head)}"))
+                        print(fmt(f"Pull request #{bold(str(pr.number))} checked out at local branch {bold(pr.head)}"))
                         checked_out_prs.append(pr)
 
         debug('Current GitHub user is ' + (current_user or '<none>'))
@@ -2107,26 +2107,26 @@ class MacheteClient:
                     if pr_from_github:
                         result.append(pr_from_github)
                     else:
-                        raise MacheteException(f"PR #{pr_no} is not found in repository `{org}/{repo}`")
+                        raise MacheteException(f"PR #{bold(str(pr_no))} is not found in repository {bold(org)}/{bold(repo)}")
             if not result:
                 raise MacheteException(
-                    f"Given PRs: {', '.join(map(str, prs_list))} are not found in repository `{org}/{repo}`")
+                    f"Given PRs: {', '.join(map(str, prs_list))} are not found in repository {bold(org)}/{bold(repo)}")
             return result
         if all:
             if not all_opened_prs_from_github:
-                warn(f"Currently there are no pull requests opened in repository `{org}/{repo}`")
+                warn(f"Currently there are no pull requests opened in repository {bold(org)}/{bold(repo)}")
                 return []
             return all_opened_prs_from_github
         elif my and user:
             result = [pr for pr in all_opened_prs_from_github if pr.user == user]
             if not result:
-                warn(f"Current user `{user}` has no open pull request in repository `{org}/{repo}`")
+                warn(f"Current user {bold(user)} has no open pull request in repository {bold(org)}/{bold(repo)}")
                 return []
             return result
         elif by:
             result = [pr for pr in all_opened_prs_from_github if pr.user == by]
             if not result:
-                warn(f"User `{by}` has no open pull request in repository `{org}/{repo}`")
+                warn(f"User {bold(by)} has no open pull request in repository {bold(org)}/{bold(repo)}")
                 return []
             return result
         return []
@@ -2158,27 +2158,27 @@ class MacheteClient:
 
         pr: Optional[GitHubPullRequest] = derive_pull_request_by_head(domain, org, repo, head)
         if not pr:
-            raise MacheteException(f'No PR is opened in `{org}/{repo}` for branch `{head}`')
+            raise MacheteException(f'No PR is opened in {bold(org)}/{bold(repo)} for branch {bold(head)}')
         debug(f'found {pr}')
 
         new_base: Optional[LocalBranchShortName] = self.up_branch.get(LocalBranchShortName.of(head))
         if not new_base:
             raise MacheteException(
-                f'Branch `{head}` does not have a parent branch (it is a root) '
-                f'even though there is an open PR #{pr.number} to `{pr.base}`.\n'
+                f'Branch {bold(head)} does not have a parent branch (it is a root) '
+                f'even though there is an open PR #{bold(str(pr.number))} to {bold(pr.base)}.\n'
                 'Consider modifying the branch definition file (`git machete edit`)'
-                f' so that `{head}` is a child of `{pr.base}`.')
+                f' so that {bold(head)} is a child of {bold(pr.base)}.')
 
         if pr.base != new_base:
             set_base_of_pull_request(domain, org, repo, pr.number, base=new_base)
-            print(fmt(f'The base branch of PR #{pr.number} has been switched to `{new_base}`'))
+            print(f'The base branch of PR #{bold(str(pr.number))} has been switched to {bold(new_base)}')
         else:
-            print(fmt(f'The base branch of PR #{pr.number} is already `{new_base}`'))
+            print(f'The base branch of PR #{bold(str(pr.number))} is already {bold(new_base)}')
 
         if self.__annotations.get(head) and self.__annotations[head].qualifiers_text:
-            self.__annotations[head] = Annotation(f'PR #{pr.number} ' + self.__annotations[head].qualifiers_text)
+            self.__annotations[head] = Annotation(f'PR #{bold(str(pr.number))} ' + self.__annotations[head].qualifiers_text)
         else:
-            self.__annotations[head] = Annotation(f'PR #{pr.number}')
+            self.__annotations[head] = Annotation(f'PR #{bold(str(pr.number))}')
         self.save_definition_file()
 
     def __derive_github_domain(self) -> str:
@@ -2248,15 +2248,15 @@ class MacheteClient:
 
         base: Optional[LocalBranchShortName] = self.up_branch.get(LocalBranchShortName.of(head))
         if not base:
-            raise MacheteException(f'Could not determine base branch for PR. Branch `{head}` is a root branch.')
+            raise MacheteException(f'Could not determine base branch for PR. Branch {bold(head)} is a root branch.')
         org: str
         repo: str
         domain = self.__derive_github_domain()
         remote, org, repo = self.__derive_remote_and_github_org_and_repo(domain, branch_used_for_tracking_data=head)
-        print(f"Fetching {remote}...")
+        print(f"Fetching {bold(remote)}...")
         self.__git.fetch_remote(remote)
         if '/'.join([remote, base]) not in self.__git.get_remote_branches():
-            warn(f'Base branch for this PR (`{base}`) is not found on remote, pushing...')
+            warn(f'Base branch for this PR ({bold(base)}) is not found on remote, pushing...')
             self.handle_untracked_branch(
                 branch=base,
                 new_remote=remote,
@@ -2272,13 +2272,13 @@ class MacheteClient:
 
         fork_point = self.fork_point(head, use_overrides=True, opt_no_detect_squash_merges=False)
         if not fork_point:
-            raise MacheteException(f"Could not find a fork-point for branch {head}.")
+            raise MacheteException(f"Could not find a fork-point for branch {bold(head)}.")
         commits: List[GitLogEntry] = self.__git.get_commits_between(fork_point, head)
         description_path = self.__git.get_main_git_subpath('info', 'description')
         description: str = utils.slurp_file_or_empty(description_path)
 
         ok_str = '<green><b>OK</b></green>'
-        print(fmt(f'Creating a {"draft " if opt_draft else ""}PR from `{head}` to `{base}`... '), end='', flush=True)
+        print(f'Creating a {"draft " if opt_draft else ""}PR from {bold(head)} to {bold(base)}... ', end='', flush=True)
         pr: GitHubPullRequest = create_pull_request(domain, org, repo, head=head, base=base, title=commits[0].subject,
                                                     description=description, draft=opt_draft)
         print(fmt(f'{ok_str}, see <b>{pr.html_url}</b>'))
@@ -2286,22 +2286,21 @@ class MacheteClient:
         milestone_path: str = self.__git.get_main_git_subpath('info', 'milestone')
         milestone: str = utils.slurp_file_or_empty(milestone_path).strip()
         if milestone:
-            print(fmt(f'Setting milestone of PR #{pr.number} to {milestone}... '), end='', flush=True)
+            print(f'Setting milestone of PR #{bold(str(pr.number))} to {bold(milestone)}... ', end='', flush=True)
             set_milestone_of_pull_request(domain, org, repo, pr.number, milestone=milestone)
             print(fmt(ok_str))
 
         if current_user:
-            print(fmt(f'Adding `{current_user}` as assignee to PR #{pr.number}... '), end='', flush=True)
+            print(f'Adding {bold(current_user)} as assignee to PR #{bold(str(pr.number))}... ', end='', flush=True)
             add_assignees_to_pull_request(domain, org, repo, pr.number, [current_user])
             print(fmt(ok_str))
 
         reviewers_path = self.__git.get_main_git_subpath('info', 'reviewers')
         reviewers: List[str] = utils.get_non_empty_lines(utils.slurp_file_or_empty(reviewers_path))
         if reviewers:
-            print(
-                fmt(f'Adding {", ".join(f"`{reviewer}`" for reviewer in reviewers)} '
-                    f'as reviewer{"s" if len(reviewers) > 1 else ""} to PR #{pr.number}... '),
-                end='', flush=True)
+            print(f'Adding {", ".join(f"{bold(reviewer)}" for reviewer in reviewers)} '
+                  f'as reviewer{"s" if len(reviewers) > 1 else ""} to PR #{bold(str(pr.number))}... ',
+                  end='', flush=True)
             try:
                 add_reviewers_to_pull_request(domain, org, repo, pr.number, reviewers)
             except UnprocessableEntityHTTPError as e:
@@ -2312,7 +2311,7 @@ class MacheteClient:
                     raise e
             print(fmt(ok_str))
 
-        self.__annotations[head] = Annotation(f'PR #{pr.number}')
+        self.__annotations[head] = Annotation(f'PR #{bold(str(pr.number))}')
         self.save_definition_file()
 
     def __handle_diverged_and_newer_state(
