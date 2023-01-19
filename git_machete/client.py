@@ -342,18 +342,18 @@ class MacheteClient:
         if opt_merge:
             with_branch = self.up(
                 current_branch,
-                prompt_if_inferred_msg=("Branch `%s` not found in the tree of branch dependencies. "
-                                        "Merge with the inferred upstream `%s`?" + get_pretty_choices('y', 'N')),
-                prompt_if_inferred_yes_opt_msg=("Branch `%s` not found in the tree of branch dependencies. "
-                                                "Merging with the inferred upstream `%s`..."))
+                prompt_if_inferred_msg=("Branch <b>%s</b> not found in the tree of branch dependencies. "
+                                        "Merge with the inferred upstream <b>%s</b>?" + get_pretty_choices('y', 'N')),
+                prompt_if_inferred_yes_opt_msg=("Branch <b>%s</b> not found in the tree of branch dependencies. "
+                                                "Merging with the inferred upstream <b>%s</b>..."))
             self.__git.merge(with_branch, current_branch, opt_no_edit_merge)
         else:
             onto_branch = self.up(
                 current_branch,
-                prompt_if_inferred_msg=("Branch `%s` not found in the tree of branch dependencies. "
-                                        "Rebase onto the inferred upstream `%s`?" + get_pretty_choices('y', 'N')),
-                prompt_if_inferred_yes_opt_msg=("Branch `%s` not found in the tree of branch dependencies. "
-                                                "Rebasing onto the inferred upstream `%s`..."))
+                prompt_if_inferred_msg=("Branch <b>%s</b> not found in the tree of branch dependencies. "
+                                        "Rebase onto the inferred upstream <b>%s</b>?" + get_pretty_choices('y', 'N')),
+                prompt_if_inferred_yes_opt_msg=("Branch <b>%s</b> not found in the tree of branch dependencies. "
+                                                "Rebasing onto the inferred upstream <b>%s</b>..."))
             self.__git.rebase(
                 LocalBranchShortName.of(onto_branch).full_name(),
                 opt_fork_point or self.fork_point(
@@ -1266,7 +1266,7 @@ class MacheteClient:
         self.expect_in_managed_branches(branch)
         dbs = self.__down_branches.get(branch)
         if not dbs:
-            raise MacheteException(f"Branch `{branch}` has no downstream branch")
+            raise MacheteException(f"Branch {bold(branch)} has no downstream branch")
         elif len(dbs) == 1:
             return [dbs[0]]
         elif pick_mode:
@@ -1289,14 +1289,14 @@ class MacheteClient:
         self.expect_in_managed_branches(branch)
         index: int = self.managed_branches.index(branch) + 1
         if index == len(self.managed_branches):
-            raise MacheteException(f"Branch `{branch}` has no successor")
+            raise MacheteException(f"Branch {bold(branch)} has no successor")
         return self.managed_branches[index]
 
     def prev_branch(self, branch: LocalBranchShortName) -> LocalBranchShortName:
         self.expect_in_managed_branches(branch)
         index: int = self.managed_branches.index(branch) - 1
         if index == -1:
-            raise MacheteException(f"Branch `{branch}` has no predecessor")
+            raise MacheteException(f"Branch {bold(branch)} has no predecessor")
         return self.managed_branches[index]
 
     def root_branch(self, branch: LocalBranchShortName, if_unmanaged: int) -> LocalBranchShortName:
@@ -1304,12 +1304,12 @@ class MacheteClient:
             if self.__roots:
                 if if_unmanaged == PICK_FIRST_ROOT:
                     warn(
-                        f"{branch} is not a managed branch, assuming "
+                        f"{bold(branch)} is not a managed branch, assuming "
                         f"{self.__roots[0]} (the first root) instead as root")
                     return self.__roots[0]
                 else:  # if_unmanaged == PICK_LAST_ROOT
                     warn(
-                        f"{branch} is not a managed branch, assuming "
+                        f"{bold(branch)} is not a managed branch, assuming "
                         f"{self.__roots[-1]} (the last root) instead as root")
                     return self.__roots[-1]
             else:
@@ -1327,7 +1327,7 @@ class MacheteClient:
             if upstream:
                 return upstream
             else:
-                raise MacheteException(f"Branch `{branch}` has no upstream branch")
+                raise MacheteException(f"Branch {bold(branch)} has no upstream branch")
         else:
             upstream = self.__infer_upstream(branch)
             if upstream:
@@ -1341,12 +1341,12 @@ class MacheteClient:
                     raise MacheteException("Aborting.")
                 else:
                     warn(
-                        f"branch `{branch}` not found in the tree of branch "
-                        f"dependencies; the upstream has been inferred to `{upstream}`")
+                        f"branch {bold(branch)} not found in the tree of branch "
+                        f"dependencies; the upstream has been inferred to {bold(upstream)}")
                     return upstream
             else:
                 raise MacheteException(
-                    f"Branch `{branch}` not found in the tree of branch "
+                    f"Branch {bold(branch)} not found in the tree of branch "
                     f"dependencies and its upstream could not be inferred")
 
     def get_slidable_branches(self) -> List[LocalBranchShortName]:
