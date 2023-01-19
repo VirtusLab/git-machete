@@ -2481,8 +2481,8 @@ class MacheteClient:
 
         if self.__git.is_ancestor_or_equal(current_branch.full_name(), up_branch.full_name()):
             raise MacheteException(
-                f'All commits in {bold(current_branch)} branch are already included in {bold(up_branch)} branch.'
-                f'\nCannot create pull request.')
+                f'All commits in {bold(current_branch)} branch are already included in {bold(up_branch)} branch.\n'
+                f'Cannot create pull request.')
 
         s, remote = self.__git.get_strict_remote_sync_status(current_branch)
         statuses_to_push = (
