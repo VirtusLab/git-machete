@@ -11,7 +11,8 @@ from git_machete import utils
 from git_machete.constants import (MAX_COUNT_FOR_INITIAL_LOG,
                                    GitFormatPatterns, SyncToRemoteStatuses)
 from git_machete.exceptions import MacheteException
-from git_machete.utils import (AnsiEscapeCodes, CommandResult, colored, debug, fmt)
+from git_machete.utils import (AnsiEscapeCodes, CommandResult, colored, debug,
+                               fmt)
 
 
 class AnyRevision(str):
