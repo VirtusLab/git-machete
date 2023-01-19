@@ -1544,7 +1544,7 @@ class MacheteClient:
                                         ) -> Generator[Tuple[FullCommitHash, List[BranchPair]], None, None]:
 
         if branch not in self.__git.get_local_branches():
-            raise MacheteException(f"`{branch}` is not a local branch")
+            raise MacheteException(f"{bold(branch)} is not a local branch")
 
         if self.__branch_pairs_by_hash_in_reflog is None:
             def generate_entries() -> Generator[Tuple[FullCommitHash, BranchPair], None, None]:
