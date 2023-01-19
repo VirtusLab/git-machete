@@ -515,7 +515,7 @@ class MacheteClient:
             self.expect_in_managed_branches(branch)
             new_upstream = self.up_branch.get(branch)
             if not new_upstream:
-                raise MacheteException(f"No upstream branch defined for `{branch}`, cannot slide out")
+                raise MacheteException(f"No upstream branch defined for {bold(branch)}, cannot slide out")
 
         if opt_down_fork_point:
             last_branch_to_slide_out = branches_to_slide_out[-1]
@@ -535,16 +535,16 @@ class MacheteClient:
         for bu, bd in zip(branches_to_slide_out[:-1], branches_to_slide_out[1:]):
             dbs = self.__down_branches.get(bu)
             if not dbs or len(dbs) == 0:
-                raise MacheteException(f"No downstream branch defined for `{bu}`, cannot slide out")
+                raise MacheteException(f"No downstream branch defined for {bold(bu)}, cannot slide out")
             elif len(dbs) > 1:
-                flat_dbs = ", ".join(f"`{x}`" for x in dbs)
+                flat_dbs = ", ".join(f"{bold(x)}" for x in dbs)
                 raise MacheteException(
-                    f"Multiple downstream branches defined for `{bu}`: {flat_dbs}; cannot slide out")
+                    f"Multiple downstream branches defined for {bold(bu)}: {flat_dbs}; cannot slide out")
             elif dbs != [bd]:
-                raise MacheteException(f"'{bd}' is not downstream of '{bu}', cannot slide out")
+                raise MacheteException(f"{bold(bd)} is not downstream of {bold(bu)}, cannot slide out")
 
             if self.up_branch[bd] != bu:
-                raise MacheteException(f"`{bu}` is not upstream of `{bd}`, cannot slide out")
+                raise MacheteException(f"{bold(bu)} is not upstream of {bold(bd)}, cannot slide out")
 
         # Get new branches
         new_upstream = self.up_branch[branches_to_slide_out[0]]
@@ -1130,7 +1130,7 @@ class MacheteClient:
             warn(f"{first_part}.\n\n{second_part}.")
 
     def delete_unmanaged(self, *, opt_yes: bool) -> None:
-        print(bold('Checking for unmanaged branches...'))
+        print('Checking for unmanaged branches...')
         branches_to_delete = excluding(self.__git.get_local_branches(), self.managed_branches)
         self._delete_branches(branches_to_delete=branches_to_delete, opt_yes=opt_yes)
 
@@ -1138,7 +1138,7 @@ class MacheteClient:
         current_branch = self.__git.get_current_branch_or_none()
         if current_branch and current_branch in branches_to_delete:
             branches_to_delete = excluding(branches_to_delete, [current_branch])
-            print(fmt(f"Skipping current branch {bold(current_branch)}"))
+            print(f"Skipping current branch {bold(current_branch)}")
         if branches_to_delete:
             branches_merged_to_head = self.__git.get_merged_local_branches()
 
