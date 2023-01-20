@@ -2312,7 +2312,7 @@ class MacheteClient:
                     raise e
             print(fmt(ok_str))
 
-        self.__annotations[head] = Annotation(f'PR #{bold(str(pr.number))}')
+        self.__annotations[head] = Annotation(f'PR #{pr.number}')
         self.save_definition_file()
 
     def __handle_diverged_and_newer_state(
