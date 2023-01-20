@@ -129,6 +129,10 @@ class GitRepositorySandbox:
             f.write(file_content)
         return self
 
+    def merge(self, branch_name: str) -> "GitRepositorySandbox":
+        self.execute(f'git merge {branch_name}')
+        return self
+
 
 class MockGitHubAPIState:
     def __init__(self, pulls: List[Dict[str, Any]], issues: List[Dict[str, Any]] = None) -> None:

@@ -13,8 +13,10 @@ class Qualifiers:
         self._annotation_without_qualifiers = annotation
         self._rebase_text = ''
         self._push_text = ''
+        self._slide_out_text = ''
         self.rebase = True
         self.push = True
+        self.slide_out = None
 
         match_pattern: Callable[[str], str] = lambda text: f'.*\\b{text}=no\\b.*'
         sub_pattern: Callable[[str], str] = lambda text: f'[ ]?{text}=no[ ]?'
@@ -31,11 +33,17 @@ class Qualifiers:
             self._push_text = 'push=no'
             self._annotation_without_qualifiers = re.sub(sub_pattern('push'), ' ', self._annotation_without_qualifiers)
 
+        slide_out_match = re.match(match_pattern('slide-out'), annotation)
+        if slide_out_match:
+            self.slide_out = False
+            self._slide_out_text = 'slide-out=no'
+            self._annotation_without_qualifiers = re.sub(sub_pattern('slide-out'), ' ', self._annotation_without_qualifiers)
+
     def get_annotation_text_without_qualifiers(self) -> str:
         return self._annotation_without_qualifiers.strip()
 
     def get_qualifiers_text(self) -> str:
-        return f'{self._rebase_text.strip()} {self._push_text.strip()}'.replace('  ', ' ').strip()
+        return f'{self._rebase_text.strip()} {self._push_text.strip()} {self._slide_out_text.strip()}'.replace('  ', ' ').strip()
 
 
 class Annotation:
