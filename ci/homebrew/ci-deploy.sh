@@ -31,6 +31,8 @@ else
   echo "Refraining from push since it's a dry run"
   brew bump-formula-pr --write-only --no-browse --verbose --url "$url" --sha256 "$sha256" git-machete
 
+  export HOMEBREW_NO_INSTALL_FROM_API=1
+  brew config
   echo "Attempt to install the formula locally"
   attempts=5
   i=1
