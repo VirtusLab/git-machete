@@ -1488,9 +1488,9 @@ class MacheteClient:
         for pr in prs:
             if LocalBranchShortName.of(pr.head) in self.managed_branches:
                 debug(f'{pr} corresponds to a managed branch')
-                anno: str = f'PR #{bold(str(pr.number))}'
+                anno: str = f'PR #{pr.number}'
                 if pr.user != current_user:
-                    anno += f' ({bold(pr.user)})'
+                    anno += f' ({pr.user})'
                 upstream: Optional[LocalBranchShortName] = self.up_branch.get(LocalBranchShortName.of(pr.head))
                 if pr.base != upstream:
                     warn(f'branch {bold(pr.head)} has a different base in PR #{bold(str(pr.number))} ({bold(pr.base)}) '
@@ -2177,9 +2177,9 @@ class MacheteClient:
             print(f'The base branch of PR #{bold(str(pr.number))} is already {bold(new_base)}')
 
         if self.__annotations.get(head) and self.__annotations[head].qualifiers_text:
-            self.__annotations[head] = Annotation(f'PR #{bold(str(pr.number))} ' + self.__annotations[head].qualifiers_text)
+            self.__annotations[head] = Annotation(f'PR #{pr.number} ' + self.__annotations[head].qualifiers_text)
         else:
-            self.__annotations[head] = Annotation(f'PR #{bold(str(pr.number))}')
+            self.__annotations[head] = Annotation(f'PR #{pr.number}')
         self.save_definition_file()
 
     def __derive_github_domain(self) -> str:
@@ -2282,7 +2282,7 @@ class MacheteClient:
         print(f'Creating a {"draft " if opt_draft else ""}PR from {bold(head)} to {bold(base)}... ', end='', flush=True)
         pr: GitHubPullRequest = create_pull_request(domain, org, repo, head=head, base=base, title=commits[0].subject,
                                                     description=description, draft=opt_draft)
-        print(fmt(f'{ok_str}, see <b>{pr.html_url}</b>'))
+        print(fmt(f'{ok_str}, see `{pr.html_url}`'))
 
         milestone_path: str = self.__git.get_main_git_subpath('info', 'milestone')
         milestone: str = utils.slurp_file_or_empty(milestone_path).strip()
