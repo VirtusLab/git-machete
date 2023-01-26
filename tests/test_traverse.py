@@ -491,10 +491,7 @@ class TestTraverse:
 
         body = dedent(body).strip()
         rewrite_definition_file(body)
-        (
-            self.repo_sandbox.check_out('develop')
-            .merge('call-ws')
-        )
+        self.repo_sandbox.check_out('develop').merge('call-ws')
 
         launch_command("traverse", "-Wy")
         assert_command(

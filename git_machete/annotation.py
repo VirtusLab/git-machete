@@ -43,7 +43,7 @@ class Qualifiers:
         return self._annotation_without_qualifiers.strip()
 
     def get_qualifiers_text(self) -> str:
-        return f'{self._rebase_text.strip()} {self._push_text.strip()} {self._slide_out_text.strip()}'.replace('  ', ' ').strip()
+        return f'{self._rebase_text} {self._push_text} {self._slide_out_text}'.replace('  ', ' ').strip()
 
 
 class Annotation:

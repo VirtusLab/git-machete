@@ -65,16 +65,16 @@ It will pick up the walk from the current branch (unless ``--start-from=`` or ``
 Unlike with e.g. ``git rebase``, there is no special ``--continue`` flag, as ``traverse`` is stateless
 (doesn't keep a state of its own like ``git rebase`` does in ``.git/rebase-apply/``).
 
-The rebase and push behavior of ``traverse`` can also be customized for each branch separately using *branch qualifiers*.
-There are ``rebase=no`` and ``push=no`` qualifiers that can be used to opt out of default behavior (rebasing and pushing).
-The qualifier can appear anywhere in the annotation but needs to be separated by a whitespace from any other character, e.g. ``some_annotation_text rebase=no push=no``.
+The rebase, push and slide out behavior of ``traverse`` can also be customized for each branch separately using *branch qualifiers*.
+There are ``rebase=no``, ``push=no`` and ``slide-out=no`` qualifiers that can be used to opt out of default behavior (rebasing, pushing and sliding the branch out of the dependency tree).
+The qualifier can appear anywhere in the annotation but needs to be separated by a whitespace from any other character, e.g. ``some_annotation_text rebase=no push=no slide-out=no``.
 Qualifiers can only be overwritten by manually editing ``.git/machete`` file or modifying it with ``git machete e[dit]`` or by updating annotations with ``git machete anno``.
 Example machete file with branch qualifiers:
 
 .. code-block::
 
     master
-      develop  rebase=no
+      develop  rebase=no slide-out=no
         my-branch  PR #123
         someone-elses-branch  PR #124 rebase=no push=no
         branch-for-local-experiments  push=no
