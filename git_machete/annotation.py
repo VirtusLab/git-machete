@@ -1,5 +1,4 @@
 import re
-from typing import Callable
 
 from git_machete import utils
 
