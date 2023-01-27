@@ -2,6 +2,7 @@
 
 ## New in git-machete 3.15.0
 
+- improved: formatting in `git machete` command prompts and outputs
 - added: `slide-out=no` branch qualifier that control the slide-out behaviour of `git machete traverse`
 
 ## New in git-machete 3.14.3
