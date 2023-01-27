@@ -18,8 +18,11 @@ class Qualifiers:
         self.push = True
         self.slide_out = None
 
-        match_pattern: Callable[[str], str] = lambda text: f'.*\\b{text}=no\\b.*'
-        sub_pattern: Callable[[str], str] = lambda text: f'[ ]?{text}=no[ ]?'
+        def match_pattern(text: str) -> str:
+            return f'.*\\b{text}=no\\b.*'
+
+        def sub_pattern(text: str) -> str:
+            return f'[ ]?{text}=no[ ]?'
 
         rebase_match = re.match(match_pattern('rebase'), annotation)
         if rebase_match:
