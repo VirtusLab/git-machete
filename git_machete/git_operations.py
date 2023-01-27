@@ -725,7 +725,8 @@ class GitContext:
         remote_branch = self.get_currently_rebased_branch_or_none()
         if remote_branch:
             raise MacheteException(
-                f"Rebase of `{remote_branch}` in progress. Conclude the rebase first with `git rebase --continue` or `git rebase --abort`.")
+                f"Rebase of {utils.bold(remote_branch)} in progress. "
+                f"Conclude the rebase first with `git rebase --continue` or `git rebase --abort`.")
         if self.is_am_in_progress():
             raise MacheteException(
                 "`git am` session in progress. Conclude `git am` first with `git am --continue` or `git am --abort`.")

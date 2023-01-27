@@ -13,7 +13,7 @@ from typing import Any, Dict, List, NamedTuple, Optional
 from git_machete.exceptions import (MacheteException,
                                     UnprocessableEntityHTTPError)
 from git_machete.git_operations import GitContext, LocalBranchShortName
-from git_machete.utils import debug, fmt, warn
+from git_machete.utils import bold, debug, fmt, warn
 
 GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
 DEFAULT_GITHUB_DOMAIN = "github.com"
@@ -261,8 +261,8 @@ def __fire_github_api_request(domain: str, method: str, path: str,
             warn(f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`. \n'
                  'It looks like the organization or repository name got changed recently and is outdated.\n'
                  'Inferring current organization or repository... '
-                 f'New organization = `{current_repo_and_org.split("/")[0]}`, '
-                 f'new repository = `{current_repo_and_org.split("/")[1]}`.\n'
+                 f'New organization = {bold(current_repo_and_org.split("/")[0])}, '
+                 f'new repository = {bold(current_repo_and_org.split("/")[1])}.\n'
                  'You can update your remote repository via: `git remote set-url <remote_name> <new_repository_url>`.',
                  end='')
             return __fire_github_api_request(domain=domain, method=method, path=new_path, token=token, request_body=request_body)
