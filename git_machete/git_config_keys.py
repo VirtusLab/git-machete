@@ -1,5 +1,3 @@
-from git_machete.git_operations import AnyBranchName
-
 GITHUB_DOMAIN = 'machete.github.domain'
 GITHUB_REMOTE = 'machete.github.remote'
 GITHUB_ORGANIZATION = 'machete.github.organization'
@@ -9,9 +7,9 @@ WORKTREE_USE_TOP_LEVEL_MACHETE_FILE = 'machete.worktree.useTopLevelMacheteFile'
 STATUS_EXTRA_SPACE_BEFORE_BRANCH_NAME = 'machete.status.extraSpaceBeforeBranchName'
 
 
-def override_fork_point_to(branch: AnyBranchName) -> str:
+def override_fork_point_to(branch: str) -> str:
     return f'machete.overrideForkPoint.{branch}.to'
 
 
-def override_fork_point_while_descendant_of(branch: AnyBranchName) -> str:
+def override_fork_point_while_descendant_of(branch: str) -> str:
     return f'machete.overrideForkPoint.{branch}.whileDescendantOf'
