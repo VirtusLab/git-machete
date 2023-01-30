@@ -7,6 +7,7 @@ import sys
 import textwrap
 from typing import Any, Dict, List, Optional, Sequence, Tuple, TypeVar, Union
 
+import git_machete.git_config_keys as git_config_keys
 import git_machete.options
 from git_machete import __version__, utils
 from git_machete.client import MacheteClient
@@ -468,7 +469,7 @@ def update_cli_options_using_config_keys(
         cli_opts: git_machete.options.CommandLineOptions,
         git: GitContext
 ) -> None:
-    machete_traverse_push_config_key = git.get_boolean_config_attr_or_none(key='machete.traverse.push')
+    machete_traverse_push_config_key = git.get_boolean_config_attr_or_none(key=git_config_keys.TRAVERSE_PUSH)
     if machete_traverse_push_config_key is not None:
         if machete_traverse_push_config_key:
             cli_opts.opt_push_tracked, cli_opts.opt_push_untracked = True, True

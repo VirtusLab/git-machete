@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import (Any, Callable, Dict, Generator, Iterator, List, Match,
                     NamedTuple, Optional, Set, Tuple)
 
+import git_machete.git_config_keys as git_config_keys
 from git_machete import utils
 from git_machete.constants import (MAX_COUNT_FOR_INITIAL_LOG,
                                    GitFormatPatterns, SyncToRemoteStatuses)
@@ -324,7 +325,7 @@ class GitContext:
         return os.path.join(self.__get_main_git_dir(), *fragments)
 
     def get_git_machete_definition_file_path(self) -> str:
-        use_top_level_machete_file = self.get_boolean_config_attr(key='machete.worktree.useTopLevelMacheteFile',
+        use_top_level_machete_file = self.get_boolean_config_attr(key=git_config_keys.WORKTREE_USE_TOP_LEVEL_MACHETE_FILE,
                                                                   default_value=True)
         return os.path.join(self.__get_main_git_dir() if use_top_level_machete_file else self.__get_worktree_git_dir(), 'machete')
 

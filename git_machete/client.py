@@ -7,6 +7,7 @@ import sys
 from collections import OrderedDict
 from typing import Callable, Dict, Generator, List, Optional, Tuple
 
+import git_machete.git_config_keys as git_config_keys
 import git_machete.github
 import git_machete.options
 from git_machete import utils
@@ -984,7 +985,7 @@ class MacheteClient:
         hook_path = self.__git.get_hook_path("machete-status-branch")
         hook_executable = self.__git.check_hook_executable(hook_path)
 
-        maybe_space_before_branch_name = ' ' if self.__git.get_boolean_config_attr(key='machete.status.extraSpaceBeforeBranchName',
+        maybe_space_before_branch_name = ' ' if self.__git.get_boolean_config_attr(key=git_config_keys.STATUS_EXTRA_SPACE_BEFORE_BRANCH_NAME,
                                                                                    default_value=False) else ''
 
         def print_line_prefix(branch_: LocalBranchShortName, suffix: str) -> None:
@@ -1624,25 +1625,17 @@ class MacheteClient:
                     debug(f"upstream candidate {candidate} rejected ({reject_reason_message})")
         return None
 
-    @staticmethod
-    def config_key_for_override_fork_point_to(branch: LocalBranchShortName) -> str:
-        return f"machete.overrideForkPoint.{branch}.to"
-
-    @staticmethod
-    def config_key_for_override_fork_point_while_descendant_of(branch: LocalBranchShortName) -> str:
-        return f"machete.overrideForkPoint.{branch}.whileDescendantOf"
-
     # Also includes config that is incomplete (only one entry out of two) or otherwise invalid.
     def has_any_fork_point_override_config(self, branch: LocalBranchShortName) -> bool:
-        return (self.__git.get_config_attr_or_none(self.config_key_for_override_fork_point_to(branch)) or
-                self.__git.get_config_attr_or_none(self.config_key_for_override_fork_point_while_descendant_of(branch))) is not None
+        return (self.__git.get_config_attr_or_none(git_config_keys.override_fork_point_to(branch)) or
+                self.__git.get_config_attr_or_none(git_config_keys.override_fork_point_while_descendant_of(branch))) is not None
 
     def __get_fork_point_override_data(self, branch: LocalBranchShortName) -> Optional[ForkPointOverrideData]:
         to, while_descendant_of = None, None
-        to_key = self.config_key_for_override_fork_point_to(branch)
+        to_key = git_config_keys.override_fork_point_to(branch)
         if FullCommitHash.is_valid(value=self.__git.get_config_attr_or_none(to_key), git_context=self.__git):
             to = FullCommitHash.of(self.__git.get_config_attr_or_none(to_key))
-        while_descendant_of_key = self.config_key_for_override_fork_point_while_descendant_of(branch)
+        while_descendant_of_key = git_config_keys.override_fork_point_while_descendant_of(branch)
         if FullCommitHash.is_valid(value=self.__git.get_config_attr_or_none(while_descendant_of_key), git_context=self.__git):
             while_descendant_of = FullCommitHash.of(self.__git.get_config_attr_or_none(while_descendant_of_key))
         if not to and not while_descendant_of:
@@ -1696,8 +1689,8 @@ class MacheteClient:
         return to
 
     def unset_fork_point_override(self, branch: LocalBranchShortName) -> None:
-        self.__git.unset_config_attr(self.config_key_for_override_fork_point_to(branch))
-        self.__git.unset_config_attr(self.config_key_for_override_fork_point_while_descendant_of(branch))
+        self.__git.unset_config_attr(git_config_keys.override_fork_point_to(branch))
+        self.__git.unset_config_attr(git_config_keys.override_fork_point_while_descendant_of(branch))
 
     def set_fork_point_override(self, branch: LocalBranchShortName, to_revision: AnyRevision) -> None:
         if branch not in self.__git.get_local_branches():
@@ -1709,10 +1702,10 @@ class MacheteClient:
             raise MacheteException(
                 f"Cannot override fork point: {bold(self.__git.get_revision_repr(to_revision))} is not an ancestor of {bold(branch)}")
 
-        to_key = self.config_key_for_override_fork_point_to(branch)
+        to_key = git_config_keys.override_fork_point_to(branch)
         self.__git.set_config_attr(to_key, to_hash)
 
-        while_descendant_of_key = self.config_key_for_override_fork_point_while_descendant_of(branch)
+        while_descendant_of_key = git_config_keys.override_fork_point_while_descendant_of(branch)
         branch_hash = self.__git.get_commit_hash_by_revision(branch)
         self.__git.set_config_attr(while_descendant_of_key, branch_hash)
 
@@ -2183,7 +2176,7 @@ class MacheteClient:
         self.save_definition_file()
 
     def __derive_github_domain(self) -> str:
-        return self.__git.get_config_attr_or_none("machete.github.domain") or DEFAULT_GITHUB_DOMAIN
+        return self.__git.get_config_attr_or_none(key=git_config_keys.GITHUB_DOMAIN) or DEFAULT_GITHUB_DOMAIN
 
     def __derive_remote_and_github_org_and_repo(self,
                                                 domain: str,
@@ -2232,9 +2225,9 @@ class MacheteClient:
             '`machete.github.{domain,remote,organization,repository}`.\n')  # noqa: FS003
 
     def __get_remote_and_organization_and_repository_name_from_config(self) -> RemoteAndOrganizationAndRepository:
-        return RemoteAndOrganizationAndRepository(remote=self.__git.get_config_attr_or_none("machete.github.remote"),
-                                                  organization=self.__git.get_config_attr_or_none("machete.github.organization"),
-                                                  repository=self.__git.get_config_attr_or_none("machete.github.repository"))
+        return RemoteAndOrganizationAndRepository(remote=self.__git.get_config_attr_or_none(key=git_config_keys.GITHUB_REMOTE),
+                                                  organization=self.__git.get_config_attr_or_none(key=git_config_keys.GITHUB_ORGANIZATION),
+                                                  repository=self.__git.get_config_attr_or_none(key=git_config_keys.GITHUB_REPOSITORY))
 
     def create_github_pr(
             self,
