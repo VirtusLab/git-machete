@@ -7,8 +7,7 @@ from pathlib import Path
 from typing import (Any, Callable, Dict, Generator, Iterator, List, Match,
                     NamedTuple, Optional, Set, Tuple)
 
-from git_machete import git_config_keys
-from git_machete import utils
+from git_machete import git_config_keys, utils
 from git_machete.constants import (MAX_COUNT_FOR_INITIAL_LOG,
                                    GitFormatPatterns, SyncToRemoteStatuses)
 from git_machete.exceptions import MacheteException

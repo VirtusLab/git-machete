@@ -7,9 +7,8 @@ import sys
 import textwrap
 from typing import Any, Dict, List, Optional, Sequence, Tuple, TypeVar, Union
 
-from git_machete import git_config_keys
 import git_machete.options
-from git_machete import __version__, utils
+from git_machete import __version__, git_config_keys, utils
 from git_machete.client import MacheteClient
 from git_machete.exceptions import ExitCode, MacheteException, StopInteraction
 from git_machete.generated_docs import long_docs, short_docs

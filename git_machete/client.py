@@ -7,10 +7,9 @@ import sys
 from collections import OrderedDict
 from typing import Callable, Dict, Generator, List, Optional, Tuple
 
-from git_machete import git_config_keys
 import git_machete.github
 import git_machete.options
-from git_machete import utils
+from git_machete import git_config_keys, utils
 from git_machete.annotation import Annotation
 from git_machete.constants import (DISCOVER_DEFAULT_FRESH_BRANCH_COUNT,
                                    PICK_FIRST_ROOT, PICK_LAST_ROOT,
