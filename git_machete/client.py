@@ -7,7 +7,7 @@ import sys
 from collections import OrderedDict
 from typing import Callable, Dict, Generator, List, Optional, Tuple
 
-import git_machete.git_config_keys as git_config_keys
+from git_machete import git_config_keys
 import git_machete.github
 import git_machete.options
 from git_machete import utils
