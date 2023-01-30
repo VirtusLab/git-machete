@@ -7,7 +7,7 @@ import sys
 import textwrap
 from typing import Any, Dict, List, Optional, Sequence, Tuple, TypeVar, Union
 
-import git_machete.git_config_keys as git_config_keys
+from git_machete import git_config_keys
 import git_machete.options
 from git_machete import __version__, utils
 from git_machete.client import MacheteClient
