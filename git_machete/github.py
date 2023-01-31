@@ -76,6 +76,12 @@ class GithubTokenAndTokenProvider(NamedTuple):
     token_provider: str
 
 
+class GitHubClient(NamedTuple):
+    domain: str
+    org: str
+    repo: str
+
+
 def __get_github_token_and_provider(domain: str) -> Optional[GithubTokenAndTokenProvider]:
     def get_token_from_gh() -> Optional[GithubTokenAndTokenProvider]:
         # Abort without error if `gh` isn't available
@@ -274,9 +280,8 @@ def __fire_github_api_request(domain: str, method: str, path: str,
         raise MacheteException(f'Could not connect to {url_prefix}: {e}')
 
 
-def create_pull_request(domain: str, org: str, repo: str,
-                        head: str, base: str, title: str, description: str, draft: bool) -> GitHubPullRequest:
-    token: Optional[str] = __get_github_token(domain)
+def create_pull_request(github_client: GitHubClient, head: str, base: str, title: str, description: str, draft: bool) -> GitHubPullRequest:
+    token: Optional[str] = __get_github_token(github_client.domain)
     request_body: Dict[str, Any] = {
         'head': head,
         'base': base,
@@ -284,53 +289,60 @@ def create_pull_request(domain: str, org: str, repo: str,
         'body': description,
         'draft': draft
     }
-    pr = __fire_github_api_request(domain, 'POST', f'/repos/{org}/{repo}/pulls', token, request_body)
+    pr = __fire_github_api_request(github_client.domain, 'POST',
+                                   f'/repos/{github_client.org}/{github_client.repo}/pulls', token, request_body)
     return __parse_pr_json(pr)
 
 
-def add_assignees_to_pull_request(domain: str, org: str, repo: str, number: int, assignees: List[str]) -> None:
-    token: Optional[str] = __get_github_token(domain)
+def add_assignees_to_pull_request(github_client: GitHubClient, number: int, assignees: List[str]) -> None:
+    token: Optional[str] = __get_github_token(github_client.domain)
     request_body: Dict[str, List[str]] = {
         'assignees': assignees
     }
     # Adding assignees is only available via the Issues API, not PRs API.
-    __fire_github_api_request(domain, 'POST', f'/repos/{org}/{repo}/issues/{number}/assignees', token, request_body)
+    __fire_github_api_request(github_client.domain, 'POST',
+                              f'/repos/{github_client.org}/{github_client.repo}/issues/{number}/assignees', token, request_body)
 
 
-def add_reviewers_to_pull_request(domain: str, org: str, repo: str, number: int, reviewers: List[str]) -> None:
-    token: Optional[str] = __get_github_token(domain)
+def add_reviewers_to_pull_request(github_client: GitHubClient, number: int, reviewers: List[str]) -> None:
+    token: Optional[str] = __get_github_token(github_client.domain)
     request_body: Dict[str, List[str]] = {
         'reviewers': reviewers
     }
-    __fire_github_api_request(domain, 'POST', f'/repos/{org}/{repo}/pulls/{number}/requested_reviewers', token, request_body)
+    __fire_github_api_request(github_client.domain, 'POST',
+                              f'/repos/{github_client.org}/{github_client.repo}/pulls/{number}/requested_reviewers', token, request_body)
 
 
-def set_base_of_pull_request(domain: str, org: str, repo: str, number: int, base: LocalBranchShortName) -> None:
-    token: Optional[str] = __get_github_token(domain)
+def set_base_of_pull_request(github_client: GitHubClient, number: int, base: LocalBranchShortName) -> None:
+    token: Optional[str] = __get_github_token(github_client.domain)
     request_body: Dict[str, str] = {'base': base}
-    __fire_github_api_request(domain, 'PATCH', f'/repos/{org}/{repo}/pulls/{number}', token, request_body)
+    __fire_github_api_request(github_client.domain, 'PATCH',
+                              f'/repos/{github_client.org}/{github_client.repo}/pulls/{number}', token, request_body)
 
 
-def set_milestone_of_pull_request(domain: str, org: str, repo: str, number: int, milestone: str) -> None:
-    token: Optional[str] = __get_github_token(domain)
+def set_milestone_of_pull_request(github_client: GitHubClient, number: int, milestone: str) -> None:
+    token: Optional[str] = __get_github_token(github_client.domain)
     request_body: Dict[str, str] = {'milestone': milestone}
     # Setting milestone is only available via the Issues API, not PRs API.
-    __fire_github_api_request(domain, 'PATCH', f'/repos/{org}/{repo}/issues/{number}', token, request_body)
+    __fire_github_api_request(github_client.domain, 'PATCH',
+                              f'/repos/{github_client.org}/{github_client.repo}/issues/{number}', token, request_body)
 
 
-def derive_pull_request_by_head(domain: str, org: str, repo: str, head: LocalBranchShortName) -> Optional[GitHubPullRequest]:
-    token: Optional[str] = __get_github_token(domain)
-    prs = __fire_github_api_request(domain, 'GET', f'/repos/{org}/{repo}/pulls?head={org}:{head}', token)
+def derive_pull_request_by_head(github_client: GitHubClient, head: LocalBranchShortName) -> Optional[GitHubPullRequest]:
+    token: Optional[str] = __get_github_token(github_client.domain)
+    prs = __fire_github_api_request(github_client.domain, 'GET',
+                                    f'/repos/{github_client.org}/{github_client.repo}/pulls?head={github_client.org}:{head}', token)
     if len(prs) >= 1:
         return __parse_pr_json(prs[0])
     else:
         return None
 
 
-def derive_pull_requests(domain: str, org: str, repo: str) -> List[GitHubPullRequest]:
-    token: Optional[str] = __get_github_token(domain)
+def derive_pull_requests(github_client: GitHubClient) -> List[GitHubPullRequest]:
+    token: Optional[str] = __get_github_token(github_client.domain)
     # As of Dec 2022, GitHub API never returns more than 100 PRs, even if per_page>100.
-    prs = __fire_github_api_request(domain, 'GET', f'/repos/{org}/{repo}/pulls?per_page=100', token)
+    prs = __fire_github_api_request(github_client.domain, 'GET',
+                                    f'/repos/{github_client.org}/{github_client.repo}/pulls?per_page=100', token)
     return list(map(__parse_pr_json, prs))
 
 
@@ -358,10 +370,11 @@ def get_parsed_github_remote_url(domain: str, url: str, remote: str) -> Optional
     return None
 
 
-def get_pull_request_by_number_or_none(domain: str, number: int, org: str, repo: str) -> Optional[GitHubPullRequest]:
-    token: Optional[str] = __get_github_token(domain)
+def get_pull_request_by_number_or_none(github_client: GitHubClient, number: int) -> Optional[GitHubPullRequest]:
+    token: Optional[str] = __get_github_token(github_client.domain)
     try:
-        pr_json: Dict[str, Any] = __fire_github_api_request(domain, 'GET', f'/repos/{org}/{repo}/pulls/{number}', token)
+        pr_json: Dict[str, Any] = __fire_github_api_request(github_client.domain, 'GET',
+                                                            f'/repos/{github_client.org}/{github_client.repo}/pulls/{number}', token)
         return __parse_pr_json(pr_json)
     except MacheteException:
         return None
