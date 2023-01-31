@@ -42,19 +42,19 @@ a port into a plugin for the IntelliJ Platform products, including PyCharm, WebS
 
 ## Install
 
-We suggest a couple of alternative ways of installation.
+We provide a couple of alternative ways of installation.
 
 **Instructions for installing bash, zsh, and fish completion scripts are provided in [completion/README.md](completion/README.md).**
 
 git-machete requires Python >= 3.6. Python 2.x is no longer supported.
 
-### Using Homebrew (macOS)
+### Using Homebrew (macOS & most Linux distributions)
 
 ```shell script
 brew install git-machete
 ```
 
-### Using Snappy (most Linux distributions)
+### Using snap (most Linux distributions)
 
 **Tip:** check the [guide on installing snapd](https://snapcraft.io/docs/installing-snapd) if you don't have Snap support set up yet in your system.
 
@@ -66,7 +66,7 @@ It can also be installed via Ubuntu Software (simply search for `git-machete`).
 
 **Note:** classic confinement is necessary to ensure access to the editor installed in the system (to edit e.g. .git/machete file or rebase TODO list).
 
-### Using PPA (Ubuntu)
+### Using apt-get via PPA (Ubuntu)
 
 **Tip:** run `sudo apt-get install -y software-properties-common` first if `add-apt-repository` is not available on your system.
 
@@ -81,9 +81,9 @@ sudo apt-get install -y python3-git-machete
 Download the rpm package from the [latest release](https://github.com/VirtusLab/git-machete/releases/latest)
 and install either by opening it in your desktop environment or with `rpm -i git-machete-*.noarch.rpm`.
 
-### Using AUR (Arch Linux)
+### Using Alpine, Arch, Gentoo & other Linux distro-specific package managers
 
-Install the AUR package [git-machete](https://aur.archlinux.org/packages/git-machete) using an AUR helper of your preference.
+Check [Repology](https://repology.org/project/git-machete/versions) for the available distro-specific packages.
 
 ### Using Nix (macOS & most Linux distributions)
 
@@ -177,10 +177,10 @@ git machete github create-pr [--draft]
 
 **Note**: for private repositories, a GitHub API token with `repo` access is required.
 This will be resolved from the first of:
-1. The `GITHUB_TOKEN` env var.
-2. The content of the `.github-token` file in the home directory (`~`). This file has to be manually created by the user.
-3. The auth token from the current [`gh`](https://cli.github.com/) configuration.
-4. The auth token from the current [`hub`](https://github.com/github/hub) configuration.
+1. `GITHUB_TOKEN` env var.
+2. Contents of the `.github-token` file in the home directory (`~`). This file has to be manually created by the user.
+3. Auth token from the current [`gh`](https://cli.github.com/) configuration.
+4. Auth token from the current [`hub`](https://github.com/github/hub) configuration.
 
 <br/>
 

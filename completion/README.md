@@ -110,7 +110,7 @@ exec $SHELL -l
 ## Fish
 
 ### Mac (via Homebrew)
-Please look at the section about [installation via Homebrew](../README.md#using-homebrew-macos).
+Please look at the section about [installation via Homebrew](../README.md#using-homebrew-macos--most-linux-distributions).
 ``brew install git-machete`` automatically installs fish completion files for ``git machete``.
 
 ### Linux
