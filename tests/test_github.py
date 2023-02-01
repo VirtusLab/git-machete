@@ -1679,7 +1679,7 @@ class TestGithub:
                 'number': f'{i}',
                 'html_url': 'www.github.com',
                 'state': 'open'
-            } for i in range(110)]
+            } for i in range(0, 111)]
     )
 
     @mock.patch('git_machete.cli.exit_script', mock_exit_script)
@@ -1700,13 +1700,15 @@ class TestGithub:
             .commit("first commit")
             .push()
         )
-        for i in range(110):
-            self.repo_sandbox.check_out('develop').new_branch(f'feature_{i}').commit("first commit").push()
+        for i in range(111):
+            self.repo_sandbox.check_out('develop').new_branch(f'feature_{i}').commit().push()
+
+        launch_command('discover', '--checked-out-since=1 day ago')
 
         self.repo_sandbox.check_out('develop')
-        for i in range(110):
+        for i in range(111):
             self.repo_sandbox.execute(f"git branch -D feature_{i}")
 
-        launch_command('discover')
-
         launch_command('github', 'checkout-prs', '--all')
+        launch_command('discover', '--checked-out-since=1 day ago')
+        print(launch_command('status'))
