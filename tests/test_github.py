@@ -1668,3 +1668,45 @@ class TestGithub:
             remote_and_organization_and_repository = get_parsed_github_remote_url('github.com', url, 'origin')
             assert remote_and_organization_and_repository.organization == organization
             assert remote_and_organization_and_repository.repository == repository
+
+    git_api_state_for_test_github_api_pagination = MockGitHubAPIState(
+        [
+            {
+                'head': {'ref': f'feature_{i}', 'repo': {'full_name': 'testing/checkout_prs',
+                                                         'html_url': 'https://github.com/tester/repo_sandbox.git'}},
+                'user': {'login': 'github_user'},
+                'base': {'ref': 'develop'},
+                'number': f'{i}',
+                'html_url': 'www.github.com',
+                'state': 'open'
+            } for i in range(110)]
+    )
+
+    @mock.patch('git_machete.cli.exit_script', mock_exit_script)
+    # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_checkout_prs`
+    # due to `git fetch` executed by `checkout-prs` subcommand.
+    @mock.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
+    @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
+    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+    @mock.patch('git_machete.github.__get_github_token', mock__get_github_token_none)
+    @mock.patch('urllib.request.Request', git_api_state_for_test_github_api_pagination.new_request())
+    @mock.patch('urllib.request.urlopen', MockContextManager)
+    @mock.patch('git_machete.github.derive_current_user_login', mock_derive_current_user_login)
+    def test_github_api_pagination(self, tmp_path: Any) -> None:
+        (
+            self.repo_sandbox.new_branch("root")
+            .commit("initial commit")
+            .new_branch("develop")
+            .commit("first commit")
+            .push()
+        )
+        for i in range(110):
+            self.repo_sandbox.check_out('develop').new_branch(f'feature_{i}').commit("first commit").push()
+
+        self.repo_sandbox.check_out('develop')
+        for i in range(110):
+            self.repo_sandbox.execute(f"git branch -D feature_{i}")
+
+        launch_command('discover')
+
+        launch_command('github', 'checkout-prs', '--all')
