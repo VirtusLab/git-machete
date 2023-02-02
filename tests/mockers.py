@@ -154,16 +154,15 @@ class MockGitHubAPIState:
 
 
 class MockGitHubAPIResponse:
-    def __init__(self, status_code: int, response_data: Union[List[Dict[str, Any]], Dict[str, Any]], link: Any) -> None:
+    def __init__(self, status_code: int, response_data: Union[List[Dict[str, Any]], Dict[str, Any]]) -> None:
         self.response_data: Union[List[Dict[str, Any]], Dict[str, Any]] = response_data
         self.status_code: int = status_code
-        self.link: Any = link
 
     def read(self) -> bytes:
         return json.dumps(self.response_data).encode()
 
     def info(self) -> Dict[str, Any]:
-        return {"link": self.link}
+        return {"link": None}
 
 
 class MockGitHubAPIRequest:
@@ -302,20 +301,7 @@ class MockGitHubAPIRequest:
 
     @staticmethod
     def make_response_object(status_code: int, response_data: Union[List[Dict[str, Any]], Dict[str, Any]]) -> "MockGitHubAPIResponse":
-        return MockGitHubAPIResponse(status_code, response_data, None)
-
-    def make_paginated_response_object(self, status_code: int, response_data: Union[List[Dict[str, Any]], Dict[str, Any]]) -> "MockGitHubAPIResponse":
-        global counter
-        if counter == 0:
-            link = '<https://api.github.com/repositories/1300192/pulls?page=2>; rel="next", ' \
-                   '<https://api.github.com/repositories/1300192/pulls?page=1>; rel="first"'
-        elif counter == 1:
-            link = '<https://api.github.com/repositories/1300192/pulls?page=3>; rel="next", ' \
-                   '<https://api.github.com/repositories/1300192/pulls?page=1>; rel="first"'
-        else:
-            link = '<https://api.github.com/repositories/1300192/pulls?page=1>; rel="first"'
-        counter += 1
-        return MockGitHubAPIResponse(status_code, response_data, link)
+        return MockGitHubAPIResponse(status_code, response_data)
 
     @staticmethod
     def find_number(url: str, entity: str) -> Optional[str]:

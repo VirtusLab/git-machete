@@ -52,6 +52,25 @@ def mock_input(msg: str) -> str:
     return '1'
 
 
+counter = 0
+prs_per_page = 34
+
+
+def mock_info(x: Any) -> Dict[str, Any]:
+    global counter
+    if counter == 0:
+        link = '<https://api.github.com/repositories/1300192/pulls?page=2>; rel="next", ' \
+               '<https://api.github.com/repositories/1300192/pulls?page=1>; rel="first"'
+    elif counter == 1:
+        link = '<https://api.github.com/repositories/1300192/pulls?page=3>; rel="next", ' \
+               '<https://api.github.com/repositories/1300192/pulls?page=1>; rel="first"'
+    else:
+        link = '<https://api.github.com/repositories/1300192/pulls?page=1>; rel="first"'
+    counter += 1
+
+    return {"link": link}
+
+
 class TestGithub:
     mock_repository_info: Dict[str, str] = {'full_name': 'testing/checkout_prs',
                                             'html_url': 'https://github.com/tester/repo_sandbox.git'}
@@ -1679,7 +1698,7 @@ class TestGithub:
                 'number': f'{i}',
                 'html_url': 'www.github.com',
                 'state': 'open'
-            } for i in range(0, 33)]
+            } for i in range(counter * prs_per_page, (counter + 1) * prs_per_page)]
     )
 
     @mock.patch('git_machete.cli.exit_script', mock_exit_script)
@@ -1692,8 +1711,9 @@ class TestGithub:
     @mock.patch('urllib.request.Request', git_api_state_for_test_github_api_pagination.new_request())
     @mock.patch('urllib.request.urlopen', MockContextManager)
     @mock.patch('git_machete.github.derive_current_user_login', mock_derive_current_user_login)
-    @mock.patch('tests.mockers.MockGitHubAPIRequest.make_response_object', MockGitHubAPIRequest.make_paginated_response_object)
+    @mock.patch('tests.mockers.MockGitHubAPIResponse.info', mock_info)
     def test_github_api_pagination(self, tmp_path: Any) -> None:
+        global prs_per_page
         (
             self.repo_sandbox.new_branch("root")
             .commit("initial commit")
@@ -1701,13 +1721,13 @@ class TestGithub:
             .commit("first commit")
             .push()
         )
-        for i in range(33):
+        for i in range(3*prs_per_page + 1):
             self.repo_sandbox.check_out('develop').new_branch(f'feature_{i}').commit().push()
 
         launch_command('discover', '--checked-out-since=1 day ago')
 
         self.repo_sandbox.check_out('develop')
-        for i in range(33):
+        for i in range(3*prs_per_page + 1):
             self.repo_sandbox.execute(f"git branch -D feature_{i}")
 
         launch_command('github', 'checkout-prs', '--all')
