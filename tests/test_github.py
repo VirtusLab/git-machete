@@ -12,7 +12,7 @@ from git_machete.github import get_parsed_github_remote_url
 from git_machete.options import CommandLineOptions
 
 from .mockers import (GitRepositorySandbox, MockContextManager,
-                      MockGitHubAPIState, MockHTTPError, assert_command,
+                      MockGitHubAPIRequest, MockGitHubAPIState, MockHTTPError, assert_command,
                       get_current_commit_hash, git, launch_command,
                       mock_ask_if, mock_exit_script, mock_run_cmd,
                       mock_should_perform_interactive_slide_out,
@@ -1679,7 +1679,7 @@ class TestGithub:
                 'number': f'{i}',
                 'html_url': 'www.github.com',
                 'state': 'open'
-            } for i in range(0, 111)]
+            } for i in range(0, 33)]
     )
 
     @mock.patch('git_machete.cli.exit_script', mock_exit_script)
@@ -1692,6 +1692,7 @@ class TestGithub:
     @mock.patch('urllib.request.Request', git_api_state_for_test_github_api_pagination.new_request())
     @mock.patch('urllib.request.urlopen', MockContextManager)
     @mock.patch('git_machete.github.derive_current_user_login', mock_derive_current_user_login)
+    @mock.patch('tests.mockers.MockGitHubAPIRequest.make_response_object', MockGitHubAPIRequest.make_paginated_response_object)
     def test_github_api_pagination(self, tmp_path: Any) -> None:
         (
             self.repo_sandbox.new_branch("root")
@@ -1700,13 +1701,13 @@ class TestGithub:
             .commit("first commit")
             .push()
         )
-        for i in range(111):
+        for i in range(33):
             self.repo_sandbox.check_out('develop').new_branch(f'feature_{i}').commit().push()
 
         launch_command('discover', '--checked-out-since=1 day ago')
 
         self.repo_sandbox.check_out('develop')
-        for i in range(111):
+        for i in range(33):
             self.repo_sandbox.execute(f"git branch -D feature_{i}")
 
         launch_command('github', 'checkout-prs', '--all')
