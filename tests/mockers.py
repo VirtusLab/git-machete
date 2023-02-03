@@ -38,7 +38,7 @@ Tips on when and why to use mocking functions:
 """
 
 git: GitContext = GitContext()
-counter = 0
+
 
 def popen(command: str) -> str:
     with os.popen(command) as process:
@@ -176,7 +176,6 @@ class MockGitHubAPIRequest:
         self.json_data: Union[str, bytes] = data
         self.return_data: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None
         self.headers: Dict[str, str] = headers
-        self.counter = 0
         return self.handle_method(method)
 
     def handle_method(self, method: str) -> "MockGitHubAPIResponse":

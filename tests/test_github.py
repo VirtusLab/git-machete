@@ -13,10 +13,10 @@ from git_machete.github import get_parsed_github_remote_url
 from git_machete.options import CommandLineOptions
 
 from .mockers import (GitRepositorySandbox, MockContextManager,
-                      MockGitHubAPIRequest, MockGitHubAPIState, MockHTTPError,
-                      assert_command, get_current_commit_hash, git,
-                      launch_command, mock_ask_if, mock_exit_script,
-                      mock_run_cmd, mock_should_perform_interactive_slide_out,
+                      MockGitHubAPIState, MockHTTPError, assert_command,
+                      get_current_commit_hash, git, launch_command,
+                      mock_ask_if, mock_exit_script, mock_run_cmd,
+                      mock_should_perform_interactive_slide_out,
                       rewrite_definition_file)
 
 
@@ -57,32 +57,32 @@ prs_per_page = 2
 number_of_pages = 3
 
 
-def mock_read(self) -> bytes:
+def mock_read(self: Any) -> bytes:
     response_data = [
-            {
-                'head': {'ref': f'feature_{i}', 'repo': {'full_name': 'testing/checkout_prs',
-                                                         'html_url': 'https://github.com/tester/repo_sandbox.git'}},
-                'user': {'login': 'github_user'},
-                'base': {'ref': 'develop'},
-                'number': f'{i}',
-                'html_url': 'www.github.com',
-                'state': 'open'
-            } for i in range(mock_read.counter * prs_per_page, (mock_read.counter + 1) * prs_per_page)]
+        {
+            'head': {'ref': f'feature_{i}', 'repo': {'full_name': 'testing/checkout_prs',
+                                                     'html_url': 'https://github.com/tester/repo_sandbox.git'}},
+            'user': {'login': 'github_user'},
+            'base': {'ref': 'develop'},
+            'number': f'{i}',
+            'html_url': 'www.github.com',
+            'state': 'open'
+        } for i in range(mock_read.counter * prs_per_page, (mock_read.counter + 1) * prs_per_page)]  # type: ignore[attr-defined]
 
-    mock_read.counter += 1
+    mock_read.counter += 1  # type: ignore[attr-defined]
     return json.dumps(response_data).encode()
 
 
 def mock_info(x: Any) -> Dict[str, Any]:
-    if mock_info.counter < number_of_pages - 1:
-        link = f'<https://api.github.com/repositories/1300192/pulls?page={mock_info.counter + 2}>; rel="next"'
+    if mock_info.counter < number_of_pages - 1:  # type: ignore[attr-defined]
+        link = f'<https://api.github.com/repositories/1300192/pulls?page={mock_info.counter + 2}>; rel="next"'  # type: ignore[attr-defined]
     else:
         link = ''
-    mock_info.counter += 1
+    mock_info.counter += 1  # type: ignore[attr-defined]
     return {"link": link}
 
 
-mock_info.counter = mock_read.counter = 0
+mock_info.counter = mock_read.counter = 0  # type: ignore[attr-defined]
 
 
 class TestGithub:
