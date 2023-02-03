@@ -1,3 +1,4 @@
+import json
 import os
 import subprocess
 from tempfile import mkdtemp
@@ -12,10 +13,10 @@ from git_machete.github import get_parsed_github_remote_url
 from git_machete.options import CommandLineOptions
 
 from .mockers import (GitRepositorySandbox, MockContextManager,
-                      MockGitHubAPIRequest, MockGitHubAPIState, MockHTTPError, assert_command,
-                      get_current_commit_hash, git, launch_command,
-                      mock_ask_if, mock_exit_script, mock_run_cmd,
-                      mock_should_perform_interactive_slide_out,
+                      MockGitHubAPIRequest, MockGitHubAPIState, MockHTTPError,
+                      assert_command, get_current_commit_hash, git,
+                      launch_command, mock_ask_if, mock_exit_script,
+                      mock_run_cmd, mock_should_perform_interactive_slide_out,
                       rewrite_definition_file)
 
 
@@ -52,23 +53,36 @@ def mock_input(msg: str) -> str:
     return '1'
 
 
-counter = 0
-prs_per_page = 34
+prs_per_page = 2
+number_of_pages = 3
+
+
+def mock_read(self) -> bytes:
+    response_data = [
+            {
+                'head': {'ref': f'feature_{i}', 'repo': {'full_name': 'testing/checkout_prs',
+                                                         'html_url': 'https://github.com/tester/repo_sandbox.git'}},
+                'user': {'login': 'github_user'},
+                'base': {'ref': 'develop'},
+                'number': f'{i}',
+                'html_url': 'www.github.com',
+                'state': 'open'
+            } for i in range(mock_read.counter * prs_per_page, (mock_read.counter + 1) * prs_per_page)]
+
+    mock_read.counter += 1
+    return json.dumps(response_data).encode()
 
 
 def mock_info(x: Any) -> Dict[str, Any]:
-    global counter
-    if counter == 0:
-        link = '<https://api.github.com/repositories/1300192/pulls?page=2>; rel="next", ' \
-               '<https://api.github.com/repositories/1300192/pulls?page=1>; rel="first"'
-    elif counter == 1:
-        link = '<https://api.github.com/repositories/1300192/pulls?page=3>; rel="next", ' \
-               '<https://api.github.com/repositories/1300192/pulls?page=1>; rel="first"'
+    if mock_info.counter < number_of_pages - 1:
+        link = f'<https://api.github.com/repositories/1300192/pulls?page={mock_info.counter + 2}>; rel="next"'
     else:
-        link = '<https://api.github.com/repositories/1300192/pulls?page=1>; rel="first"'
-    counter += 1
-
+        link = ''
+    mock_info.counter += 1
     return {"link": link}
+
+
+mock_info.counter = mock_read.counter = 0
 
 
 class TestGithub:
@@ -1688,19 +1702,6 @@ class TestGithub:
             assert remote_and_organization_and_repository.organization == organization
             assert remote_and_organization_and_repository.repository == repository
 
-    git_api_state_for_test_github_api_pagination = MockGitHubAPIState(
-        [
-            {
-                'head': {'ref': f'feature_{i}', 'repo': {'full_name': 'testing/checkout_prs',
-                                                         'html_url': 'https://github.com/tester/repo_sandbox.git'}},
-                'user': {'login': 'github_user'},
-                'base': {'ref': 'develop'},
-                'number': f'{i}',
-                'html_url': 'www.github.com',
-                'state': 'open'
-            } for i in range(counter * prs_per_page, (counter + 1) * prs_per_page)]
-    )
-
     @mock.patch('git_machete.cli.exit_script', mock_exit_script)
     # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_checkout_prs`
     # due to `git fetch` executed by `checkout-prs` subcommand.
@@ -1708,28 +1709,35 @@ class TestGithub:
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     @mock.patch('git_machete.github.__get_github_token', mock__get_github_token_none)
-    @mock.patch('urllib.request.Request', git_api_state_for_test_github_api_pagination.new_request())
     @mock.patch('urllib.request.urlopen', MockContextManager)
     @mock.patch('git_machete.github.derive_current_user_login', mock_derive_current_user_login)
+    @mock.patch('urllib.request.Request', MockGitHubAPIState([]).new_request())
     @mock.patch('tests.mockers.MockGitHubAPIResponse.info', mock_info)
+    @mock.patch('tests.mockers.MockGitHubAPIResponse.read', mock_read)
     def test_github_api_pagination(self, tmp_path: Any) -> None:
         global prs_per_page
         (
-            self.repo_sandbox.new_branch("root")
-            .commit("initial commit")
-            .new_branch("develop")
+            self.repo_sandbox.new_branch("develop")
             .commit("first commit")
             .push()
         )
-        for i in range(3*prs_per_page + 1):
+        for i in range(number_of_pages * prs_per_page):
             self.repo_sandbox.check_out('develop').new_branch(f'feature_{i}').commit().push()
-
+        self.repo_sandbox.check_out('develop')
         launch_command('discover', '--checked-out-since=1 day ago')
+        expected_status_output = '  develop *\n' + '\n'.join([f' |\n o-feature_{i}'
+                                                              for i in range(number_of_pages * prs_per_page)]) + '\n'
+        assert_command(['status'], expected_status_output)
 
         self.repo_sandbox.check_out('develop')
-        for i in range(3*prs_per_page + 1):
+        for i in range(number_of_pages * prs_per_page):
             self.repo_sandbox.execute(f"git branch -D feature_{i}")
+        launch_command('discover', '--checked-out-since=1 day ago')
+        expected_status_output = '  develop *\n'
+        assert_command(['status'], expected_status_output)
 
         launch_command('github', 'checkout-prs', '--all')
         launch_command('discover', '--checked-out-since=1 day ago')
-        print(launch_command('status'))
+        expected_status_output = '  develop *\n' + '\n'.join([f' |\n o-feature_{i}  rebase=no push=no'
+                                                              for i in range(number_of_pages * prs_per_page)]) + '\n'
+        assert_command(['status'], expected_status_output)
