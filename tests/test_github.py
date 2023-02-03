@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import subprocess
 from tempfile import mkdtemp
 from typing import Any, Dict, List, Optional
@@ -53,7 +54,7 @@ def mock_input(msg: str) -> str:
     return '1'
 
 
-prs_per_page = 100
+prs_per_page = 20
 number_of_pages = 3
 
 
@@ -83,6 +84,19 @@ def mock_info(x: Any) -> Dict[str, Any]:
 
 
 mock_info.counter = mock_read.counter = 0  # type: ignore[attr-defined]
+
+
+def mock_get_local_branches(self) -> List[LocalBranchShortName]:
+
+    def atoi(text: str) -> Any:
+        return int(text) if text.isdigit() else text
+
+    def natural_keys(text: str) -> List[Any]:
+        return [atoi(c) for c in re.split(r'(\d+)', text)]
+
+    if self._local_branches_cached is None:
+        self._load_branches()
+    return sorted(self._local_branches_cached, key=natural_keys)
 
 
 class TestGithub:
@@ -1714,6 +1728,7 @@ class TestGithub:
     @mock.patch('urllib.request.Request', MockGitHubAPIState([]).new_request())
     @mock.patch('tests.mockers.MockGitHubAPIResponse.info', mock_info)
     @mock.patch('tests.mockers.MockGitHubAPIResponse.read', mock_read)
+    @mock.patch('git_machete.git_operations.GitContext.get_local_branches', mock_get_local_branches)
     def test_github_api_pagination(self, tmp_path: Any) -> None:
         global prs_per_page
         (

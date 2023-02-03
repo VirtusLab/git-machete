@@ -199,7 +199,7 @@ class GitContext:
         self.__commit_hash_by_revision_cached: Optional[
             Dict[AnyRevision, Optional[FullCommitHash]]] = None  # TODO (#110): default dict with None
         self.__committer_unix_timestamp_by_revision_cached: Optional[Dict[AnyRevision, int]] = None  # TODO (#110): default dict with 0
-        self.__local_branches_cached: Optional[List[LocalBranchShortName]] = None
+        self._local_branches_cached: Optional[List[LocalBranchShortName]] = None
         self.__remote_branches_cached: Optional[List[RemoteBranchShortName]] = None
         self.__initial_log_hashes_cached: Dict[FullCommitHash, List[FullCommitHash]] = {}
         self.__remaining_log_hashes_cached: Dict[FullCommitHash, List[FullCommitHash]] = {}
@@ -441,7 +441,7 @@ class GitContext:
         if self.is_full_hash(revision.full_name()):
             return FullCommitHash.of(revision)
         if self.__commit_hash_by_revision_cached is None:
-            self.__load_branches()
+            self._load_branches()
         if revision not in self.__commit_hash_by_revision_cached:
             self.__commit_hash_by_revision_cached[revision] = self.__find_commit_hash_by_revision(revision)
         return self.__commit_hash_by_revision_cached[revision]
@@ -454,7 +454,7 @@ class GitContext:
 
     def get_tree_hash_by_commit_hash(self, commit_hash: FullCommitHash) -> Optional[FullTreeHash]:
         if self.__tree_hash_by_commit_hash_cached is None:
-            self.__load_branches()
+            self._load_branches()
         if commit_hash not in self.__tree_hash_by_commit_hash_cached:
             self.__tree_hash_by_commit_hash_cached[commit_hash] = self.__find_tree_hash_by_revision(commit_hash)
         return self.__tree_hash_by_commit_hash_cached[commit_hash]
@@ -468,7 +468,7 @@ class GitContext:
 
     def get_committer_unix_timestamp_by_revision(self, revision: AnyBranchName) -> int:
         if self.__committer_unix_timestamp_by_revision_cached is None:
-            self.__load_branches()
+            self._load_branches()
         return self.__committer_unix_timestamp_by_revision_cached.get(revision.full_name(), 0)
 
     def __get_remotes_containing_branch(self, branch: LocalBranchShortName, remotes: Optional[List[str]] = None) -> List[str]:
@@ -512,7 +512,7 @@ class GitContext:
 
     def get_strict_counterpart_for_fetching_of_branch(self, branch: LocalBranchShortName) -> Optional[RemoteBranchShortName]:
         if self.__counterparts_for_fetching_cached is None:
-            self.__load_branches()
+            self._load_branches()
         return self.__counterparts_for_fetching_cached.get(branch)
 
     def get_combined_counterpart_for_fetching_of_branch(self, branch: LocalBranchShortName) -> Optional[RemoteBranchShortName]:
@@ -541,20 +541,20 @@ class GitContext:
         self.flush_caches()
 
     def get_local_branches(self) -> List[LocalBranchShortName]:
-        if self.__local_branches_cached is None:
-            self.__load_branches()
-        return self.__local_branches_cached
+        if self._local_branches_cached is None:
+            self._load_branches()
+        return self._local_branches_cached
 
     def get_remote_branches(self) -> List[RemoteBranchShortName]:
         if self.__remote_branches_cached is None:
-            self.__load_branches()
+            self._load_branches()
         return self.__remote_branches_cached
 
-    def __load_branches(self) -> None:
+    def _load_branches(self) -> None:
         self.__commit_hash_by_revision_cached = {}
         self.__committer_unix_timestamp_by_revision_cached = {}
         self.__counterparts_for_fetching_cached = {}
-        self.__local_branches_cached = []
+        self._local_branches_cached = []
         self.__remote_branches_cached = []
         self.__tree_hash_by_commit_hash_cached = {}
 
@@ -589,7 +589,7 @@ class GitContext:
                 fetch_counterpart_stripped = RemoteBranchFullName.of(fetch_counterpart).to_short_name()
             else:
                 fetch_counterpart_stripped = None
-            self.__local_branches_cached += [b_stripped_local]
+            self._local_branches_cached += [b_stripped_local]
             self.__commit_hash_by_revision_cached[LocalBranchFullName.of(branch)] = FullCommitHash.of(commit_hash)
             self.__tree_hash_by_commit_hash_cached[FullCommitHash.of(commit_hash)] = FullTreeHash.of(tree_hash)
             self.__committer_unix_timestamp_by_revision_cached[LocalBranchFullName.of(branch)] = int(
@@ -677,7 +677,7 @@ class GitContext:
         self.__short_commit_hash_by_revision_cached = {}
         self.__commit_hash_by_revision_cached = None
         self.__committer_unix_timestamp_by_revision_cached = None
-        self.__local_branches_cached = None
+        self._local_branches_cached = None
         self.__remote_branches_cached = None
         self.__reflogs_cached = None
 
