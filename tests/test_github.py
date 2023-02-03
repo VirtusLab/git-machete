@@ -53,7 +53,7 @@ def mock_input(msg: str) -> str:
     return '1'
 
 
-prs_per_page = 2
+prs_per_page = 100
 number_of_pages = 3
 
 
