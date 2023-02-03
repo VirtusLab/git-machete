@@ -86,7 +86,7 @@ def mock_info(x: Any) -> Dict[str, Any]:
 mock_info.counter = mock_read.counter = 0  # type: ignore[attr-defined]
 
 
-def mock_get_local_branches(self) -> List[LocalBranchShortName]:
+def mock_get_local_branches(self: Any) -> List[LocalBranchShortName]:
 
     def atoi(text: str) -> Any:
         return int(text) if text.isdigit() else text
