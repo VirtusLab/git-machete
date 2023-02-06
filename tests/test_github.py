@@ -1,6 +1,5 @@
 import json
 import os
-import re
 import subprocess
 from tempfile import mkdtemp
 from typing import Any, Dict, List, Optional
@@ -54,7 +53,7 @@ def mock_input(msg: str) -> str:
     return '1'
 
 
-prs_per_page = 5
+prs_per_page = 3
 number_of_pages = 3
 
 
