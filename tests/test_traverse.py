@@ -472,3 +472,45 @@ class TestTraverse:
               o-ignore-trailing *
             """,
         )
+
+    def test_traverse_qualifiers_no_slide_out(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        self.setup_discover_standard_tree()
+
+        body: str = \
+            """
+            develop
+            \tallow-ownership-link
+            \t\tbuild-chain
+            \tcall-ws slide-out=no
+            \t\tdrop-constraint
+            master
+            \thotfix/add-trigger
+            \t\tignore-trailing
+            """
+
+        body = dedent(body).strip()
+        rewrite_definition_file(body)
+        self.repo_sandbox.check_out('develop').merge('call-ws')
+
+        launch_command("traverse", "-Wy")
+        assert_command(
+            ["status"],
+            """
+            develop *
+            |
+            o-allow-ownership-link
+            | |
+            | o-build-chain
+            |
+            m-call-ws  slide-out=no
+              |
+              o-drop-constraint
+
+            master
+            |
+            o-hotfix/add-trigger
+              |
+              o-ignore-trailing
+            """,
+        )
