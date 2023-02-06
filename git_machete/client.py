@@ -711,6 +711,8 @@ class MacheteClient:
 
             needs_slide_out: bool = self.__is_merged_to_upstream(
                 branch, opt_no_detect_squash_merges=opt_no_detect_squash_merges)
+            if needs_slide_out and branch in self.annotations:
+                needs_slide_out = self.annotations[branch].qualifiers.slide_out
             s, remote = self.__git.get_strict_remote_sync_status(branch)
             if s in (
                     SyncToRemoteStatuses.BEHIND_REMOTE,
