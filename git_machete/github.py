@@ -37,7 +37,9 @@ class GitHubPullRequest(object):
         self.repository_url: str = repository_url
 
     @classmethod
-    def from_json(cls, pr_json: Dict[str, Any]):
+    def from_json(cls,
+                  pr_json: Dict[str, Any]
+                  ) -> "GitHubPullRequest":
         return cls(number=int(pr_json['number']),
                    user=pr_json['user']['login'],
                    base=pr_json['base']['ref'],
@@ -60,7 +62,9 @@ class RemoteAndOrganizationAndRepository(NamedTuple):
 class GithubToken:
     GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
 
-    def __init__(self, domain: str):
+    def __init__(self,
+                 domain: str
+                 ) -> None:
         self.__domain: str = domain
         self.__value: Optional[str] = None
         self.__provider: Optional[str] = None
@@ -69,8 +73,8 @@ class GithubToken:
             if not(self.value and self.provider):
                 token_retrieval_method()
 
-    def __bool__(self):
-        return self.__value and self.__provider
+    def __bool__(self) -> bool:
+        return self.__value is not None and self.__provider is not None
 
     def __get_token_from_hub(self) -> None:
         home_path: str = str(Path.home())
@@ -166,13 +170,21 @@ class GithubToken:
 class GitHubClient:
     DEFAULT_GITHUB_DOMAIN = "github.com"
 
-    def __init__(self, domain: str, org: str, repo: str) -> None:
+    def __init__(self,
+                 domain: str,
+                 org: str,
+                 repo: str
+                 ) -> None:
         self.__domain: str = domain
         self.__org: str = org
         self.__repo: str = repo
         self.__token: GithubToken = GithubToken(domain=domain)
 
-    def __fire_github_api_request(self, method: str, path: str, request_body: Optional[Dict[str, Any]] = None) -> Any:
+    def __fire_github_api_request(self,
+                                  method: str,
+                                  path: str,
+                                  request_body: Optional[Dict[str, Any]] = None
+                                  ) -> Any:
         headers: Dict[str, str] = {
             'Content-type': 'application/json',
             'User-Agent': 'git-machete',
@@ -272,7 +284,13 @@ class GitHubClient:
             return '\n'.join(ret)
         return str(response)
 
-    def create_pull_request(self, head: str, base: str, title: str, description: str, draft: bool) -> GitHubPullRequest:
+    def create_pull_request(self,
+                            head: str,
+                            base: str,
+                            title: str,
+                            description: str,
+                            draft: bool
+                            ) -> GitHubPullRequest:
         request_body: Dict[str, Any] = {
             'head': head,
             'base': base,
@@ -283,7 +301,10 @@ class GitHubClient:
         pr = self.__fire_github_api_request(method='POST', path=f'/repos/{self.__org}/{self.__repo}/pulls', request_body=request_body)
         return GitHubPullRequest.from_json(pr)
 
-    def add_assignees_to_pull_request(self, number: int, assignees: List[str]) -> None:
+    def add_assignees_to_pull_request(self,
+                                      number: int,
+                                      assignees: List[str]
+                                      ) -> None:
         request_body: Dict[str, List[str]] = {
             'assignees': assignees
         }
@@ -291,23 +312,34 @@ class GitHubClient:
         self.__fire_github_api_request(method='POST', path=f'/repos/{self.__org}/{self.__repo}/issues/{number}/assignees',
                                        request_body=request_body)
 
-    def add_reviewers_to_pull_request(self, number: int, reviewers: List[str]) -> None:
+    def add_reviewers_to_pull_request(self,
+                                      number: int,
+                                      reviewers: List[str]
+                                      ) -> None:
         request_body: Dict[str, List[str]] = {
             'reviewers': reviewers
         }
         self.__fire_github_api_request(method='POST', path=f'/repos/{self.__org}/{self.__repo}/pulls/{number}/requested_reviewers',
                                        request_body=request_body)
 
-    def set_base_of_pull_request(self, number: int, base: LocalBranchShortName) -> None:
+    def set_base_of_pull_request(self,
+                                 number: int,
+                                 base: LocalBranchShortName
+                                 ) -> None:
         request_body: Dict[str, str] = {'base': base}
         self.__fire_github_api_request(method='PATCH', path=f'/repos/{self.__org}/{self.__repo}/pulls/{number}', request_body=request_body)
 
-    def set_milestone_of_pull_request(self, number: int, milestone: str) -> None:
+    def set_milestone_of_pull_request(self,
+                                      number: int,
+                                      milestone: str
+                                      ) -> None:
         request_body: Dict[str, str] = {'milestone': milestone}
         # Setting milestone is only available via the Issues API, not PRs API.
         self.__fire_github_api_request(method='PATCH', path=f'/repos/{self.__org}/{self.__repo}/issues/{number}', request_body=request_body)
 
-    def derive_pull_request_by_head(self, head: LocalBranchShortName) -> Optional[GitHubPullRequest]:
+    def derive_pull_request_by_head(self,
+                                    head: LocalBranchShortName
+                                    ) -> Optional[GitHubPullRequest]:
         prs = self.__fire_github_api_request(method='GET', path=f'/repos/{self.__org}/{self.__repo}/pulls?head={self.__org}:{head}')
         if len(prs) >= 1:
             return GitHubPullRequest.from_json(prs[0])
@@ -325,10 +357,15 @@ class GitHubClient:
         user = self.__fire_github_api_request(method='GET', path='/user')
         return str(user['login'])  # str() to satisfy mypy
 
-    def is_github_remote_url(self, url: str) -> bool:
+    def is_github_remote_url(self,
+                             url: str
+                             ) -> bool:
         return any((re.match(pattern, url) for pattern in github_remote_url_patterns(self.__domain)))
 
-    def get_parsed_github_remote_url(self, url: str, remote: str) -> Optional[RemoteAndOrganizationAndRepository]:
+    def get_parsed_github_remote_url(self,
+                                     url: str,
+                                     remote: str
+                                     ) -> Optional[RemoteAndOrganizationAndRepository]:
         for pattern in github_remote_url_patterns(self.__domain):
             match = re.match(pattern, url)
             if match:
@@ -339,19 +376,27 @@ class GitHubClient:
                                                           repository=repo if repo[-4:] != '.git' else repo[:-4])
         return None
 
-    def get_pull_request_by_number_or_none(self, number: int) -> Optional[GitHubPullRequest]:
+    def get_pull_request_by_number_or_none(self,
+                                           number: int
+                                           ) -> Optional[GitHubPullRequest]:
         try:
             pr_json: Dict[str, Any] = self.__fire_github_api_request(method='GET', path=f'/repos/{self.__org}/{self.__repo}/pulls/{number}')
             return GitHubPullRequest.from_json(pr_json)
         except MacheteException:
             return None
 
-    def get_repo_and_org_names_by_id(self, repo_id: str) -> str:
+    def get_repo_and_org_names_by_id(self,
+                                     repo_id: str
+                                     ) -> str:
         repo = self.__fire_github_api_request(path='GET', method=f'/repositories/{repo_id}')
         return str(repo['full_name'])
 
 
-def checkout_pr_refs(git: GitContext, remote: str, pr_number: int, branch: LocalBranchShortName) -> None:
+def checkout_pr_refs(git: GitContext,
+                     remote: str,
+                     pr_number: int,
+                     branch: LocalBranchShortName
+                     ) -> None:
     git.fetch_ref(remote, f'pull/{pr_number}/head:{branch}')
     git.checkout(branch)
 
