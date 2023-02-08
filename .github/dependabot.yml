@@ -10,6 +10,3 @@ updates:
     reviewers:
       - PawelLipski
     target-branch: develop
-    # TODO (#771): remove this pin once sphinx-rtd-theme 1.2.0 is released
-    ignore:
-      - dependency-name: "sphinx"

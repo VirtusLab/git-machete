@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.15.1
+
 ## New in git-machete 3.15.0
 
 - improved: formatting in `git machete` command prompts and outputs
