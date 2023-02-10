@@ -13,10 +13,10 @@ from git_machete.github import get_parsed_github_remote_url
 from git_machete.options import CommandLineOptions
 
 from .mockers import (GitRepositorySandbox, MockContextManager,
-                      MockContextManagerRaise403, MockGitHubAPIState, MockHTTPError, assert_command,
-                      get_current_commit_hash, git, launch_command,
-                      mock_ask_if, mock_exit_script, mock_run_cmd,
-                      mock_should_perform_interactive_slide_out,
+                      MockContextManagerRaise403, MockGitHubAPIState,
+                      MockHTTPError, assert_command, get_current_commit_hash,
+                      git, launch_command, mock_ask_if, mock_exit_script,
+                      mock_run_cmd, mock_should_perform_interactive_slide_out,
                       rewrite_definition_file)
 
 
@@ -1777,11 +1777,12 @@ class TestGithub:
         )
 
         launch_command('discover', '-y')
-        expected_error_message = ("GitHub API returned `403` HTTP status with error message: `Forbidden`\n"
-                                  "You might not have the required permissions for this repository.\n"
-                                  "Provide a GitHub API token with `repo` access via None.\n"
-                                  f"Visit `https://{github_enterprise_domain}/settings/tokens` to generate a new one.\n"
-                                  "You can also use a different token provider, available providers can be found when running `git machete help github`.")
+        expected_error_message = (
+            "GitHub API returned `403` HTTP status with error message: `Forbidden`\n"
+            "You might not have the required permissions for this repository.\n"
+            "Provide a GitHub API token with `repo` access via None.\n"
+            f"Visit `https://{github_enterprise_domain}/settings/tokens` to generate a new one.\n"
+            "You can also use a different token provider, available providers can be found when running `git machete help github`.")
 
         with pytest.raises(MacheteException) as e:
             launch_command('github', 'checkout-prs', '--all')
