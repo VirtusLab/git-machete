@@ -1,4 +1,4 @@
-from unittest import mock
+from typing import Any
 
 from git_machete.git_operations import (FullCommitHash, GitContext,
                                         LocalBranchShortName)
@@ -23,11 +23,11 @@ class TestGitOperations:
             .execute('git config user.name "Tester Test"')
         )
 
-    @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)
-    def test_run_git(self) -> None:
+    def test_run_git(self, mocker: Any) -> None:
         """
         Verify behaviour of a 'GitContext._run_git()' method
         """
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)
         (
             self.repo_sandbox.new_branch("master")
                 .commit("master first commit")
