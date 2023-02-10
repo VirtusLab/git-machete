@@ -7,8 +7,6 @@ import sys
 from collections import OrderedDict
 from typing import Callable, Dict, Generator, List, Optional, Tuple
 
-import git_machete.github
-import git_machete.options
 from git_machete import git_config_keys, utils
 from git_machete.annotation import Annotation
 from git_machete.constants import (DISCOVER_DEFAULT_FRESH_BRANCH_COUNT,
@@ -2099,7 +2097,8 @@ class MacheteClient:
             return result
         if all:
             if not all_opened_prs_from_github:
-                warn(f"Currently there are no pull requests opened in repository {bold(github_client.organization)}/{bold(github_client.repository)}")
+                warn(f"Currently there are no pull requests opened in repository "
+                     f"{bold(github_client.organization)}/{bold(github_client.repository)}")
                 return []
             return all_opened_prs_from_github
         elif my and user:
@@ -2112,7 +2111,8 @@ class MacheteClient:
         elif by:
             result = [pr for pr in all_opened_prs_from_github if pr.user == by]
             if not result:
-                warn(f"User {bold(by)} has no open pull request in repository {bold(github_client.organization)}/{bold(github_client.repository)}")
+                warn(f"User {bold(by)} has no open pull request in repository "
+                     f"{bold(github_client.organization)}/{bold(github_client.repository)}")
                 return []
             return result
         return []
@@ -2144,7 +2144,8 @@ class MacheteClient:
 
         pr: Optional[GitHubPullRequest] = github_client.derive_pull_request_by_head(head)
         if not pr:
-            raise MacheteException(f'No PR is opened in {bold(remote_org_repo.organization)}/{bold(remote_org_repo.organization)} for branch {bold(head)}')
+            raise MacheteException(f'No PR is opened in {bold(remote_org_repo.organization)}/{bold(remote_org_repo.organization)} '
+                                   f'for branch {bold(head)}')
         debug(f'found {pr}')
 
         new_base: Optional[LocalBranchShortName] = self.up_branch.get(LocalBranchShortName.of(head))

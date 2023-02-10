@@ -28,6 +28,9 @@ class FakeCommandLineOptions(CommandLineOptions):
 
 
 class FakeGitHubToken(GitHubToken):
+    def __bool__(self) -> bool:
+        return True
+
     @property
     def value(self) -> Optional[str]:
         return 'fake_token'
@@ -1164,7 +1167,8 @@ class TestGithub:
 
         # check against user with no open pull requests
         expected_msg = ("Checking for open GitHub PRs... OK\n"
-                        f"Warn: User tester has no open pull request in repository {remote_org_repo.organization}/{remote_org_repo.repository}\n")
+                        f"Warn: User tester has no open pull request in repository "
+                        f"{remote_org_repo.organization}/{remote_org_repo.repository}\n")
         assert_command(['github', 'checkout-prs', '--by', 'tester'], expected_msg, strip_indentation=False)
 
         # Check against closed pull request with head branch deleted from remote

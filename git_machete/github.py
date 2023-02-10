@@ -8,9 +8,9 @@ import urllib.error
 # Deliberately NOT using much more convenient `requests` to avoid external dependencies in production code
 import urllib.request
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple, Optional
+from typing import Any, Dict, List, Optional
 
-import git_config_keys
+from git_machete import git_config_keys
 from git_machete.exceptions import (MacheteException,
                                     UnprocessableEntityHTTPError)
 from git_machete.git_operations import GitContext, LocalBranchShortName
@@ -64,7 +64,7 @@ class RemoteAndOrganizationAndRepository:
         self.organization = organization
         self.repository = repository
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return self.remote is not None and self.organization is not None and self.repository is not None
 
     @classmethod
@@ -105,7 +105,7 @@ class GitHubToken:
         self.__provider: Optional[str] = None
         for token_retrieval_method in [self.__get_token_from_hub, self.__get_token_from_gh, self.__get_token_from_env,
                                        self.__get_token_from_file_in_home_directory]:
-            if not(self.value and self.provider):
+            if not (self.value and self.provider):
                 token_retrieval_method()
 
     def __bool__(self) -> bool:
@@ -244,7 +244,8 @@ class GitHubClient:
         url = url_prefix + path
         json_body: Optional[str] = json.dumps(request_body) if request_body else None
         http_request = urllib.request.Request(url, headers=headers, data=json_body.encode() if json_body else None, method=method.upper())
-        debug(f'firing a {method} request to {url} with {"a" if self.__token else "no"} bearer token and request body {json_body or "<none>"}')
+        debug(f'firing a {method} request to {url} with {"a" if self.__token else "no"} '
+              f'bearer token and request body {json_body or "<none>"}')
 
         try:
             with urllib.request.urlopen(http_request) as response:
@@ -309,8 +310,8 @@ class GitHubClient:
                 return self.__fire_github_api_request(method=method, path=new_path, request_body=request_body)
             else:
                 first_line = fmt(f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`\n')
-                raise MacheteException(
-                    first_line + "Please open an issue regarding this topic under link: https://github.com/VirtusLab/git-machete/issues/new")
+                raise MacheteException(first_line + "Please open an issue regarding this topic under link: "
+                                                    "https://github.com/VirtusLab/git-machete/issues/new")
         except OSError as e:
             raise MacheteException(f'Could not connect to {url_prefix}: {e}')
 
@@ -341,7 +342,9 @@ class GitHubClient:
             'body': description,
             'draft': draft
         }
-        pr = self.__fire_github_api_request(method='POST', path=f'/repos/{self.__organization}/{self.__repository}/pulls', request_body=request_body)
+        pr = self.__fire_github_api_request(method='POST',
+                                            path=f'/repos/{self.__organization}/{self.__repository}/pulls',
+                                            request_body=request_body)
         return GitHubPullRequest.from_json(pr)
 
     def add_assignees_to_pull_request(self,
@@ -352,7 +355,8 @@ class GitHubClient:
             'assignees': assignees
         }
         # Adding assignees is only available via the Issues API, not PRs API.
-        self.__fire_github_api_request(method='POST', path=f'/repos/{self.__organization}/{self.__repository}/issues/{number}/assignees',
+        self.__fire_github_api_request(method='POST',
+                                       path=f'/repos/{self.__organization}/{self.__repository}/issues/{number}/assignees',
                                        request_body=request_body)
 
     def add_reviewers_to_pull_request(self,
@@ -362,7 +366,8 @@ class GitHubClient:
         request_body: Dict[str, List[str]] = {
             'reviewers': reviewers
         }
-        self.__fire_github_api_request(method='POST', path=f'/repos/{self.__organization}/{self.__repository}/pulls/{number}/requested_reviewers',
+        self.__fire_github_api_request(method='POST',
+                                       path=f'/repos/{self.__organization}/{self.__repository}/pulls/{number}/requested_reviewers',
                                        request_body=request_body)
 
     def set_base_of_pull_request(self,
@@ -370,7 +375,9 @@ class GitHubClient:
                                  base: LocalBranchShortName
                                  ) -> None:
         request_body: Dict[str, str] = {'base': base}
-        self.__fire_github_api_request(method='PATCH', path=f'/repos/{self.__organization}/{self.__repository}/pulls/{number}', request_body=request_body)
+        self.__fire_github_api_request(method='PATCH',
+                                       path=f'/repos/{self.__organization}/{self.__repository}/pulls/{number}',
+                                       request_body=request_body)
 
     def set_milestone_of_pull_request(self,
                                       number: int,
@@ -378,12 +385,16 @@ class GitHubClient:
                                       ) -> None:
         request_body: Dict[str, str] = {'milestone': milestone}
         # Setting milestone is only available via the Issues API, not PRs API.
-        self.__fire_github_api_request(method='PATCH', path=f'/repos/{self.__organization}/{self.__repository}/issues/{number}', request_body=request_body)
+        self.__fire_github_api_request(method='PATCH',
+                                       path=f'/repos/{self.__organization}/{self.__repository}/issues/{number}',
+                                       request_body=request_body)
 
     def derive_pull_request_by_head(self,
                                     head: LocalBranchShortName
                                     ) -> Optional[GitHubPullRequest]:
-        prs = self.__fire_github_api_request(method='GET', path=f'/repos/{self.__organization}/{self.__repository}/pulls?head={self.__organization}:{head}')
+        prs = self.__fire_github_api_request(method='GET',
+                                             path=f'/repos/{self.__organization}/{self.__repository}/pulls?head='
+                                                  f'{self.__organization}:{head}')
         if len(prs) >= 1:
             return GitHubPullRequest.from_json(prs[0])
         else:
@@ -391,20 +402,24 @@ class GitHubClient:
 
     def derive_pull_requests(self) -> List[GitHubPullRequest]:
         # As of Dec 2022, GitHub API never returns more than 100 PRs, even if per_page>100.
-        prs = self.__fire_github_api_request(method='GET', path=f'/repos/{self.__organization}/{self.__repository}/pulls?per_page=100')
+        prs = self.__fire_github_api_request(method='GET',
+                                             path=f'/repos/{self.__organization}/{self.__repository}/pulls?per_page=100')
         return list(map(GitHubPullRequest.from_json, prs))
 
     def derive_current_user_login(self) -> Optional[str]:
         if not self.__token:
             return None
-        user = self.__fire_github_api_request(method='GET', path='/user')
+        user = self.__fire_github_api_request(method='GET',
+                                              path='/user')
         return str(user['login'])  # str() to satisfy mypy
 
     def get_pull_request_by_number_or_none(self,
                                            number: int
                                            ) -> Optional[GitHubPullRequest]:
         try:
-            pr_json: Dict[str, Any] = self.__fire_github_api_request(method='GET', path=f'/repos/{self.__organization}/{self.__repository}/pulls/{number}')
+            pr_json: Dict[str, Any] = self.__fire_github_api_request(method='GET',
+                                                                     path=f'/repos/{self.__organization}/'
+                                                                          f'{self.__repository}/pulls/{number}')
             return GitHubPullRequest.from_json(pr_json)
         except MacheteException:
             return None
@@ -412,7 +427,8 @@ class GitHubClient:
     def get_repo_and_org_names_by_id(self,
                                      repo_id: str
                                      ) -> str:
-        repo = self.__fire_github_api_request(path='GET', method=f'/repositories/{repo_id}')
+        repo = self.__fire_github_api_request(path='GET',
+                                              method=f'/repositories/{repo_id}')
         return str(repo['full_name'])
 
     @staticmethod
