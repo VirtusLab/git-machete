@@ -9,7 +9,8 @@ import pytest
 
 from git_machete.exceptions import MacheteException
 from git_machete.git_operations import LocalBranchShortName
-from git_machete.github import GitHubClient, GitHubToken, RemoteAndOrganizationAndRepository
+from git_machete.github import (GitHubClient, GitHubToken,
+                                RemoteAndOrganizationAndRepository)
 from git_machete.options import CommandLineOptions
 
 from .mockers import (GitRepositorySandbox, MockContextManager,

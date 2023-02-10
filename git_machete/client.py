@@ -19,9 +19,7 @@ from git_machete.git_operations import (HEAD, AnyBranchName, AnyRevision,
                                         FullCommitHash, GitContext,
                                         GitLogEntry, LocalBranchShortName,
                                         RemoteBranchShortName)
-from git_machete.github import (GitHubClient,
-                                GitHubToken,
-                                GitHubPullRequest,
+from git_machete.github import (GitHubClient, GitHubPullRequest, GitHubToken,
                                 RemoteAndOrganizationAndRepository,
                                 checkout_pr_refs)
 from git_machete.utils import (
