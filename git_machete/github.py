@@ -431,12 +431,6 @@ class GitHubClient:
                                               method=f'/repositories/{repo_id}')
         return str(repo['full_name'])
 
-    @staticmethod
-    def is_github_remote_url(domain: str,
-                             url: str
-                             ) -> bool:
-        return any((re.match(pattern, url) for pattern in github_remote_url_patterns(domain)))
-
 
 def checkout_pr_refs(git: GitContext,
                      remote: str,
@@ -456,3 +450,9 @@ def github_remote_url_patterns(domain: str) -> List[str]:
         f"^git@{domain_regex}:(.*)/(.*)$",
         f"^ssh://git@{domain_regex}/(.*)/(.*)$"
     ]
+
+
+def is_github_remote_url(domain: str,
+                         url: str
+                         ) -> bool:
+    return any((re.match(pattern, url) for pattern in github_remote_url_patterns(domain)))

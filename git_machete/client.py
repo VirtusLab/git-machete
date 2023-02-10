@@ -21,7 +21,7 @@ from git_machete.git_operations import (HEAD, AnyBranchName, AnyRevision,
                                         RemoteBranchShortName)
 from git_machete.github import (GitHubClient, GitHubPullRequest, GitHubToken,
                                 RemoteAndOrganizationAndRepository,
-                                checkout_pr_refs)
+                                checkout_pr_refs, is_github_remote_url)
 from git_machete.utils import (
     AnsiEscapeCodes, SyncToParentStatus, bold, colored, debug, dim, excluding,
     flat_map, fmt, get_pretty_choices, get_second,
@@ -2127,7 +2127,7 @@ class MacheteClient:
         for remote, url in url_for_remote.items():
             url = url if url.endswith('.git') else url + '.git'
             remote_url = remote_url if remote_url.endswith('.git') else remote_url + '.git'
-            if GitHubClient.is_github_remote_url(github_domain, url) and \
+            if is_github_remote_url(github_domain, url) and \
                     RemoteAndOrganizationAndRepository.from_url(github_domain, url, remote) == \
                     RemoteAndOrganizationAndRepository.from_url(github_domain, remote_url, remote):
                 return remote
@@ -2185,7 +2185,7 @@ class MacheteClient:
 
         remote_and_organization_and_repository_from_urls: Dict[str, RemoteAndOrganizationAndRepository] = {
             remote: RemoteAndOrganizationAndRepository.from_url(domain, url, remote)
-            for remote, url in url_for_remote.items() if GitHubClient.is_github_remote_url(domain, url)
+            for remote, url in url_for_remote.items() if is_github_remote_url(domain, url)
         }
 
         if not remote_and_organization_and_repository_from_urls:
