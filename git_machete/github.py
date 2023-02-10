@@ -10,6 +10,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional
 
+import git_config_keys
 from git_machete.exceptions import (MacheteException,
                                     UnprocessableEntityHTTPError)
 from git_machete.git_operations import GitContext, LocalBranchShortName
@@ -27,14 +28,14 @@ class GitHubPullRequest(object):
                  full_repository_name: str,
                  repository_url: str
                  ) -> None:
-        self.number: int = number
-        self.user: str = user
-        self.base: str = base
-        self.head: str = head
-        self.html_url: str = html_url
-        self.state: str = state
-        self.full_repository_name: str = full_repository_name
-        self.repository_url: str = repository_url
+        self.number = number
+        self.user = user
+        self.base = base
+        self.head = head
+        self.html_url = html_url
+        self.state = state
+        self.full_repository_name = full_repository_name
+        self.repository_url = repository_url
 
     @classmethod
     def from_json(cls,
@@ -53,19 +54,53 @@ class GitHubPullRequest(object):
         return f"PR #{self.number} by {self.user}: {self.head} -> {self.base}"
 
 
-class RemoteAndOrganizationAndRepository(NamedTuple):
-    remote: str
-    organization: str
-    repository: str
+class RemoteAndOrganizationAndRepository:
+    def __init__(self,
+                 remote: Optional[str],
+                 organization: Optional[str],
+                 repository: Optional[str]
+                 ) -> None:
+        self.remote = remote
+        self.organization = organization
+        self.repository = repository
+
+    def __bool__(self):
+        return self.remote is not None and self.organization is not None and self.repository is not None
+
+    @classmethod
+    def from_config(cls,
+                    git: GitContext
+                    ) -> "RemoteAndOrganizationAndRepository":
+        return RemoteAndOrganizationAndRepository(remote=git.get_config_attr_or_none(key=git_config_keys.GITHUB_REMOTE),
+                                                  organization=git.get_config_attr_or_none(key=git_config_keys.GITHUB_ORGANIZATION),
+                                                  repository=git.get_config_attr_or_none(key=git_config_keys.GITHUB_REPOSITORY))
+
+    @classmethod
+    def from_url(cls,
+                 domain: str,
+                 url: str,
+                 remote: str
+                 ) -> Optional["RemoteAndOrganizationAndRepository"]:
+        for pattern in github_remote_url_patterns(domain):
+            match = re.match(pattern, url)
+            if match:
+                org = match.group(1)
+                repo = match.group(2)
+                return RemoteAndOrganizationAndRepository(remote=remote,
+                                                          organization=org,
+                                                          repository=repo if repo[-4:] != '.git' else repo[:-4])
+        return RemoteAndOrganizationAndRepository(remote=None,
+                                                  organization=None,
+                                                  repository=None)
 
 
-class GithubToken:
+class GitHubToken:
     GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
 
     def __init__(self,
                  domain: str
                  ) -> None:
-        self.__domain: str = domain
+        self.__domain = domain
         self.__value: Optional[str] = None
         self.__provider: Optional[str] = None
         for token_retrieval_method in [self.__get_token_from_hub, self.__get_token_from_gh, self.__get_token_from_env,
@@ -152,11 +187,11 @@ class GithubToken:
                         self.__value = line.rstrip()
 
     @property
-    def value(self) -> str:
+    def value(self) -> Optional[str]:
         return self.__value
 
     @property
-    def provider(self) -> str:
+    def provider(self) -> Optional[str]:
         return self.__provider
 
     @classmethod
@@ -172,13 +207,21 @@ class GitHubClient:
 
     def __init__(self,
                  domain: str,
-                 org: str,
-                 repo: str
+                 organization: str,
+                 repository: str
                  ) -> None:
         self.__domain: str = domain
-        self.__org: str = org
-        self.__repo: str = repo
-        self.__token: GithubToken = GithubToken(domain=domain)
+        self.__organization: str = organization
+        self.__repository: str = repository
+        self.__token: GitHubToken = GitHubToken(domain=domain)
+
+    @property
+    def organization(self) -> str:
+        return self.__organization
+
+    @property
+    def repository(self) -> str:
+        return self.__repository
 
     def __fire_github_api_request(self,
                                   method: str,
@@ -239,7 +282,7 @@ class GitHubClient:
             elif err.code == http.HTTPStatus.NOT_FOUND:
                 raise MacheteException(
                     f'`{method} {url}` request ended up in 404 response from GitHub. A valid GitHub API token is required.\n'
-                    f'Provide a GitHub API token with `repo` access via one of the: {GithubToken.get_possible_providers()} '
+                    f'Provide a GitHub API token with `repo` access via one of the: {GitHubToken.get_possible_providers()} '
                     f'Visit `https://{self.__domain}/settings/tokens` to generate a new one.')  # TODO (#164): make dedicated exception here
             elif err.code == http.HTTPStatus.TEMPORARY_REDIRECT:
                 if err.headers['Location'] is not None:
@@ -298,7 +341,7 @@ class GitHubClient:
             'body': description,
             'draft': draft
         }
-        pr = self.__fire_github_api_request(method='POST', path=f'/repos/{self.__org}/{self.__repo}/pulls', request_body=request_body)
+        pr = self.__fire_github_api_request(method='POST', path=f'/repos/{self.__organization}/{self.__repository}/pulls', request_body=request_body)
         return GitHubPullRequest.from_json(pr)
 
     def add_assignees_to_pull_request(self,
@@ -309,7 +352,7 @@ class GitHubClient:
             'assignees': assignees
         }
         # Adding assignees is only available via the Issues API, not PRs API.
-        self.__fire_github_api_request(method='POST', path=f'/repos/{self.__org}/{self.__repo}/issues/{number}/assignees',
+        self.__fire_github_api_request(method='POST', path=f'/repos/{self.__organization}/{self.__repository}/issues/{number}/assignees',
                                        request_body=request_body)
 
     def add_reviewers_to_pull_request(self,
@@ -319,7 +362,7 @@ class GitHubClient:
         request_body: Dict[str, List[str]] = {
             'reviewers': reviewers
         }
-        self.__fire_github_api_request(method='POST', path=f'/repos/{self.__org}/{self.__repo}/pulls/{number}/requested_reviewers',
+        self.__fire_github_api_request(method='POST', path=f'/repos/{self.__organization}/{self.__repository}/pulls/{number}/requested_reviewers',
                                        request_body=request_body)
 
     def set_base_of_pull_request(self,
@@ -327,7 +370,7 @@ class GitHubClient:
                                  base: LocalBranchShortName
                                  ) -> None:
         request_body: Dict[str, str] = {'base': base}
-        self.__fire_github_api_request(method='PATCH', path=f'/repos/{self.__org}/{self.__repo}/pulls/{number}', request_body=request_body)
+        self.__fire_github_api_request(method='PATCH', path=f'/repos/{self.__organization}/{self.__repository}/pulls/{number}', request_body=request_body)
 
     def set_milestone_of_pull_request(self,
                                       number: int,
@@ -335,12 +378,12 @@ class GitHubClient:
                                       ) -> None:
         request_body: Dict[str, str] = {'milestone': milestone}
         # Setting milestone is only available via the Issues API, not PRs API.
-        self.__fire_github_api_request(method='PATCH', path=f'/repos/{self.__org}/{self.__repo}/issues/{number}', request_body=request_body)
+        self.__fire_github_api_request(method='PATCH', path=f'/repos/{self.__organization}/{self.__repository}/issues/{number}', request_body=request_body)
 
     def derive_pull_request_by_head(self,
                                     head: LocalBranchShortName
                                     ) -> Optional[GitHubPullRequest]:
-        prs = self.__fire_github_api_request(method='GET', path=f'/repos/{self.__org}/{self.__repo}/pulls?head={self.__org}:{head}')
+        prs = self.__fire_github_api_request(method='GET', path=f'/repos/{self.__organization}/{self.__repository}/pulls?head={self.__organization}:{head}')
         if len(prs) >= 1:
             return GitHubPullRequest.from_json(prs[0])
         else:
@@ -348,7 +391,7 @@ class GitHubClient:
 
     def derive_pull_requests(self) -> List[GitHubPullRequest]:
         # As of Dec 2022, GitHub API never returns more than 100 PRs, even if per_page>100.
-        prs = self.__fire_github_api_request(method='GET', path=f'/repos/{self.__org}/{self.__repo}/pulls?per_page=100')
+        prs = self.__fire_github_api_request(method='GET', path=f'/repos/{self.__organization}/{self.__repository}/pulls?per_page=100')
         return list(map(GitHubPullRequest.from_json, prs))
 
     def derive_current_user_login(self) -> Optional[str]:
@@ -357,30 +400,11 @@ class GitHubClient:
         user = self.__fire_github_api_request(method='GET', path='/user')
         return str(user['login'])  # str() to satisfy mypy
 
-    def is_github_remote_url(self,
-                             url: str
-                             ) -> bool:
-        return any((re.match(pattern, url) for pattern in github_remote_url_patterns(self.__domain)))
-
-    def get_parsed_github_remote_url(self,
-                                     url: str,
-                                     remote: str
-                                     ) -> Optional[RemoteAndOrganizationAndRepository]:
-        for pattern in github_remote_url_patterns(self.__domain):
-            match = re.match(pattern, url)
-            if match:
-                org = match.group(1)
-                repo = match.group(2)
-                return RemoteAndOrganizationAndRepository(remote=remote,
-                                                          organization=org,
-                                                          repository=repo if repo[-4:] != '.git' else repo[:-4])
-        return None
-
     def get_pull_request_by_number_or_none(self,
                                            number: int
                                            ) -> Optional[GitHubPullRequest]:
         try:
-            pr_json: Dict[str, Any] = self.__fire_github_api_request(method='GET', path=f'/repos/{self.__org}/{self.__repo}/pulls/{number}')
+            pr_json: Dict[str, Any] = self.__fire_github_api_request(method='GET', path=f'/repos/{self.__organization}/{self.__repository}/pulls/{number}')
             return GitHubPullRequest.from_json(pr_json)
         except MacheteException:
             return None
@@ -390,6 +414,12 @@ class GitHubClient:
                                      ) -> str:
         repo = self.__fire_github_api_request(path='GET', method=f'/repositories/{repo_id}')
         return str(repo['full_name'])
+
+    @staticmethod
+    def is_github_remote_url(domain: str,
+                             url: str
+                             ) -> bool:
+        return any((re.match(pattern, url) for pattern in github_remote_url_patterns(domain)))
 
 
 def checkout_pr_refs(git: GitContext,
