@@ -392,9 +392,9 @@ class GitHubClient:
     def derive_pull_request_by_head(self,
                                     head: LocalBranchShortName
                                     ) -> Optional[GitHubPullRequest]:
+        path = f'/repos/{self.__organization}/{self.__repository}/pulls?head={self.__organization}:{head}'
         prs = self.__fire_github_api_request(method='GET',
-                                             path=f'/repos/{self.__organization}/{self.__repository}/pulls?head='
-                                                  f'{self.__organization}:{head}')
+                                             path=path)
         if len(prs) >= 1:
             return GitHubPullRequest.from_json(prs[0])
         else:
@@ -417,9 +417,9 @@ class GitHubClient:
                                            number: int
                                            ) -> Optional[GitHubPullRequest]:
         try:
+            path = f'/repos/{self.__organization}/{self.__repository}/pulls/{number}'
             pr_json: Dict[str, Any] = self.__fire_github_api_request(method='GET',
-                                                                     path=f'/repos/{self.__organization}/'
-                                                                          f'{self.__repository}/pulls/{number}')
+                                                                     path=path)
             return GitHubPullRequest.from_json(pr_json)
         except MacheteException:
             return None
