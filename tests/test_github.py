@@ -13,7 +13,7 @@ from git_machete.github import get_parsed_github_remote_url
 from git_machete.options import CommandLineOptions
 
 from .mockers import (GitRepositorySandbox, MockContextManager,
-                      MockGitHubAPIState, MockHTTPError, assert_command,
+                      MockContextManagerRaise403, MockGitHubAPIState, MockHTTPError, assert_command,
                       get_current_commit_hash, git, launch_command,
                       mock_ask_if, mock_exit_script, mock_run_cmd,
                       mock_should_perform_interactive_slide_out,
@@ -1741,3 +1741,49 @@ class TestGithub:
         expected_status_output = '  develop *\n' + '\n'.join([f' |\n o-feature_{i}  rebase=no push=no'
                                                               for i in range(number_of_pages * prs_per_page)]) + '\n'
         assert_command(['status'], expected_status_output)
+
+    def test_github_enterprise_domain(self, mocker: Any) -> None:
+        git_api_state_for_test_github_enterprise_domain = MockGitHubAPIState(
+            [
+                {
+                    'head': {'ref': 'snickers', 'repo': self.mock_repository_info},
+                    'user': {'login': 'other_user'},
+                    'base': {'ref': 'develop'},
+                    'number': '7',
+                    'html_url': 'www.github.com',
+                    'state': 'open'
+                }
+            ]
+        )
+        mocker.patch('git_machete.client.MacheteClient.should_perform_interactive_slide_out', mock_should_perform_interactive_slide_out)
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)
+        mocker.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
+        mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
+        mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
+        mocker.patch('git_machete.github.__get_github_token', mock__get_github_token_none)
+        mocker.patch('urllib.request.urlopen', MockContextManagerRaise403)
+        mocker.patch('urllib.request.Request', git_api_state_for_test_github_enterprise_domain.new_request())
+        mocker.patch('git_machete.cli.exit_script', mock_exit_script)
+
+        github_enterprise_domain = 'git.example.org'
+        (
+            self.repo_sandbox.new_branch("develop")
+            .commit("first commit")
+            .push()
+            .new_branch("snickers")
+            .commit("first commit")
+            .push()
+            .add_git_config_key('machete.github.domain', github_enterprise_domain)
+        )
+
+        launch_command('discover', '-y')
+        expected_error_message = ("GitHub API returned `403` HTTP status with error message: `Forbidden`\n"
+                                  "You might not have the required permissions for this repository.\n"
+                                  "Provide a GitHub API token with `repo` access via None.\n"
+                                  f"Visit `https://{github_enterprise_domain}/settings/tokens` to generate a new one.\n"
+                                  "You can also use a different token provider, available providers can be found when running `git machete help github`.")
+
+        with pytest.raises(MacheteException) as e:
+            launch_command('github', 'checkout-prs', '--all')
+        if e:
+            assert e.value.args[0] == expected_error_message, 'Verify that expected error message has appeared.'

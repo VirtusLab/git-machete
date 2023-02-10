@@ -345,6 +345,14 @@ class MockContextManager:
         pass
 
 
+class MockContextManagerRaise403(MockContextManager):
+    def __init__(self, obj: MockGitHubAPIResponse) -> None:
+        super().__init__(obj)
+
+    def __enter__(self) -> MockGitHubAPIResponse:
+        raise HTTPError(None, 403, 'Forbidden', None, None)
+
+
 def adapt(s: str, indent: str) -> str:
     return textwrap.indent(textwrap.dedent(s[1:]), indent)
 
