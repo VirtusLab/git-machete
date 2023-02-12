@@ -943,10 +943,8 @@ class MacheteClient:
                 try:
                     # We're always using fork point overrides, even when status
                     # is launched from discover().
-                    fork_point_hash_cached[branch_], fork_point_branches_cached[branch_] = self.__fork_point_and_containing_branch_pairs(
-                        branch_,
-                        use_overrides=True,
-                        opt_no_detect_squash_merges=opt_no_detect_squash_merges)
+                    fork_point_hash_cached[branch_], fork_point_branches_cached[branch_] = \
+                        self.__fork_point_and_containing_branch_pairs(branch_, use_overrides=True)
                 except MacheteException:
                     fork_point_hash_cached[branch_], fork_point_branches_cached[branch_] = None, []
             return fork_point_hash_cached[branch_]
@@ -1174,8 +1172,7 @@ class MacheteClient:
 
     def __fork_point_and_containing_branch_pairs(self,
                                                  branch: LocalBranchShortName,
-                                                 use_overrides: bool,
-                                                 opt_no_detect_squash_merges: bool
+                                                 use_overrides: bool
                                                  ) -> Tuple[FullCommitHash, List[BranchPair]]:
         upstream = self.up_branch.get(branch)
 
@@ -1184,7 +1181,7 @@ class MacheteClient:
             if overridden_fp_hash:
                 if upstream and \
                         self.__git.is_ancestor_or_equal(upstream.full_name(), branch.full_name()) and \
-                        not self.__git.is_ancestor_or_equal(upstream.full_name(), overridden_fp_hash.full_name()):
+                        not self.__git.is_ancestor_or_equal(upstream.full_name(), overridden_fp_hash):
                     # We need to handle the case when branch is a descendant of upstream,
                     # but the fork point of branch is overridden to a commit that
                     # is NOT a descendant of upstream. In this case it's more
@@ -1206,6 +1203,8 @@ class MacheteClient:
                     f"cannot find fork point, but {branch} is descendant of its upstream {upstream}; "
                     f"falling back to {upstream} as fork point")
                 return self.__git.get_commit_hash_by_revision(upstream), []
+            elif upstream and not self.__git.is_ancestor_or_equal(upstream.full_name(), branch.full_name()):
+                return self.__git.get_merge_base(upstream.full_name(), branch.full_name()), []
             else:
                 raise MacheteException(f"Cannot find fork point for branch {bold(branch)}")
         else:
@@ -1215,7 +1214,7 @@ class MacheteClient:
 
             if upstream and \
                     self.__git.is_ancestor_or_equal(upstream.full_name(), branch.full_name()) and \
-                    not self.__git.is_ancestor_or_equal(upstream.full_name(), fp_hash.full_name()):
+                    not self.__git.is_ancestor_or_equal(upstream.full_name(), fp_hash):
                 # That happens very rarely in practice (typically current head
                 # of any branch, including upstream, should occur on the reflog
                 # of this branch, thus is_ancestor(upstream, branch) should imply
@@ -1225,8 +1224,13 @@ class MacheteClient:
                     f"{upstream} is descendant of its upstream {branch}, but inferred fork point commit {fp_hash} "
                     f"is NOT a descendant of {upstream}; falling back to {upstream} as fork point")
                 return self.__git.get_commit_hash_by_revision(upstream), []
+            elif upstream and \
+                    not self.__git.is_ancestor_or_equal(upstream.full_name(), branch.full_name()) and \
+                    self.__git.is_ancestor_or_equal(fp_hash, upstream.full_name()):
+
+                common_ancestor_hash = self.__git.get_merge_base(upstream.full_name(), branch.full_name())
+                return common_ancestor_hash or fp_hash, []
             else:
-                debug(f"choosing commit {fp_hash} as fork point")
                 return fp_hash, containing_branch_pairs
 
     def fork_point(
@@ -1236,8 +1240,7 @@ class MacheteClient:
             *,
             opt_no_detect_squash_merges: bool
     ) -> Optional[FullCommitHash]:
-        hash, containing_branch_pairs = self.__fork_point_and_containing_branch_pairs(
-            branch, use_overrides, opt_no_detect_squash_merges=opt_no_detect_squash_merges)
+        hash, containing_branch_pairs = self.__fork_point_and_containing_branch_pairs(branch, use_overrides)
         return FullCommitHash.of(hash) if hash else None
 
     def diff(self, *, branch: Optional[LocalBranchShortName], opt_stat: bool) -> None:

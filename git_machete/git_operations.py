@@ -775,14 +775,22 @@ class GitContext:
             later_revision: AnyRevision,
     ) -> bool:
         earlier_hash = self.get_commit_hash_by_revision(earlier_revision)
+        return self.get_merge_base(earlier_revision, later_revision) == earlier_hash
+
+    def get_merge_base(
+            self,
+            earlier_revision: AnyRevision,
+            later_revision: AnyRevision,
+    ) -> Optional[FullCommitHash]:
+        earlier_hash = self.get_commit_hash_by_revision(earlier_revision)
         later_hash = self.get_commit_hash_by_revision(later_revision)
         # This if statement is not changing the outcome of the later return, but
         # it enhances the efficiency of the script. If both hashes are the same,
         # there is no point running git merge-base.
         if earlier_hash == later_hash:
-            return True
+            return earlier_hash
 
-        return self.__get_merge_base(earlier_hash, later_hash) == earlier_hash
+        return self.__get_merge_base(earlier_hash, later_hash)
 
     # Determine if reachable_from, or any ancestors of reachable_from that are NOT ancestors of equivalent_to,
     # contain a tree with identical contents to equivalent_to, indicating that
