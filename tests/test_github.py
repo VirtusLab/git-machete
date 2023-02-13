@@ -9,7 +9,8 @@ import pytest
 
 from git_machete.exceptions import MacheteException
 from git_machete.git_operations import LocalBranchShortName
-from git_machete.github import get_parsed_github_remote_url
+from git_machete.github import (GitHubClient, GitHubToken,
+                                RemoteAndOrganizationAndRepository)
 from git_machete.options import CommandLineOptions
 
 from .mockers import (GitRepositorySandbox, MockContextManager,
@@ -27,6 +28,24 @@ class FakeCommandLineOptions(CommandLineOptions):
         self.opt_yes: bool = True
 
 
+class FakeGitHubToken(GitHubToken):
+    def __bool__(self) -> bool:
+        return True
+
+    @property
+    def value(self) -> Optional[str]:
+        return 'fake_token'
+
+    @property
+    def provider(self) -> Optional[str]:
+        return 'fake_provider'
+
+
+class EmptyGitHubToken(GitHubToken):
+    def __bool__(self) -> bool:
+        return False
+
+
 def mock_github_remote_url_patterns(domain: str) -> List[str]:
     return ['(.*)/(.*)']
 
@@ -38,14 +57,6 @@ def mock_fetch_ref(cls: Any, remote: str, ref: str) -> None:
 
 def mock_derive_current_user_login(domain: str) -> str:
     return "very_complex_user_token"
-
-
-def mock__get_github_token_none(domain: str) -> Optional[str]:
-    return None
-
-
-def mock__get_github_token_fake(domain: str) -> Optional[str]:
-    return 'token'
 
 
 def mock_input(msg: str) -> str:
@@ -324,7 +335,7 @@ class TestGithub:
     )
 
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    @mock.patch('git_machete.github.derive_current_user_login', mock_derive_current_user_login)
+    @mock.patch('git_machete.github.GitHubClient.derive_current_user_login', mock_derive_current_user_login)
     @mock.patch('urllib.request.urlopen', MockContextManager)
     @mock.patch('urllib.request.Request', git_api_state_for_test_anno_prs.new_request())
     def test_github_anno_prs(self) -> None:
@@ -628,7 +639,7 @@ class TestGithub:
 
     # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_create_pr` due to `git fetch` executed by `create-pr` subcommand.
     @mock.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
-    @mock.patch('git_machete.github.__get_github_token', mock__get_github_token_none)
+    @mock.patch('git_machete.github.GitHubToken', EmptyGitHubToken)
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
@@ -688,7 +699,7 @@ class TestGithub:
     @mock.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
     # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_create_pr` due to `git fetch` executed by `create-pr` subcommand.
     @mock.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
-    @mock.patch('git_machete.github.__get_github_token', mock__get_github_token_none)
+    @mock.patch('git_machete.github.GitHubToken', EmptyGitHubToken)
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('urllib.error.HTTPError', MockHTTPError)  # need to provide read() method, which does not actually reads error from url
@@ -951,7 +962,7 @@ class TestGithub:
     @mock.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    @mock.patch('git_machete.github.__get_github_token', mock__get_github_token_none)
+    @mock.patch('git_machete.github.GitHubToken', EmptyGitHubToken)
     @mock.patch('urllib.request.Request', git_api_state_for_test_checkout_prs.new_request())
     @mock.patch('urllib.request.urlopen', MockContextManager)
     def test_github_checkout_prs(self, tmp_path: Any) -> None:
@@ -1139,10 +1150,10 @@ class TestGithub:
         )
 
         # check against wrong pr number
-        repo: str
-        org: str
-        _, org, repo = get_parsed_github_remote_url(domain='github.com', url=self.repo_sandbox.remote_path, remote='origin')
-        expected_error_message = f"PR #100 is not found in repository {org}/{repo}"
+        remote_org_repo = RemoteAndOrganizationAndRepository.from_url(domain=GitHubClient.DEFAULT_GITHUB_DOMAIN,
+                                                                      url=self.repo_sandbox.remote_path,
+                                                                      remote='origin')
+        expected_error_message = f"PR #100 is not found in repository {remote_org_repo.organization}/{remote_org_repo.repository}"
         with pytest.raises(MacheteException) as e:
             launch_command('github', 'checkout-prs', '100')
         if e:
@@ -1157,7 +1168,8 @@ class TestGithub:
 
         # check against user with no open pull requests
         expected_msg = ("Checking for open GitHub PRs... OK\n"
-                        f"Warn: User tester has no open pull request in repository {org}/{repo}\n")
+                        f"Warn: User tester has no open pull request in repository "
+                        f"{remote_org_repo.organization}/{remote_org_repo.repository}\n")
         assert_command(['github', 'checkout-prs', '--by', 'tester'], expected_msg, strip_indentation=False)
 
         # Check against closed pull request with head branch deleted from remote
@@ -1481,10 +1493,10 @@ class TestGithub:
     @mock.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    @mock.patch('git_machete.github.__get_github_token', mock__get_github_token_none)
+    @mock.patch('git_machete.github.GitHubToken', EmptyGitHubToken)
     @mock.patch('urllib.request.Request', git_api_state_for_test_github_checkout_prs_of_current_user_and_other_users.new_request())
     @mock.patch('urllib.request.urlopen', MockContextManager)
-    @mock.patch('git_machete.github.derive_current_user_login', mock_derive_current_user_login)
+    @mock.patch('git_machete.github.GitHubClient.derive_current_user_login', mock_derive_current_user_login)
     def test_github_checkout_prs_of_current_user_and_other_users(self, tmp_path: Any) -> None:
         (
             self.repo_sandbox.new_branch("root")
@@ -1632,7 +1644,7 @@ class TestGithub:
     @mock.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
-    @mock.patch('git_machete.github.__get_github_token', mock__get_github_token_fake)
+    @mock.patch('git_machete.github.GitHubToken', FakeGitHubToken)
     @mock.patch('urllib.request.urlopen', MockContextManager)
     @mock.patch('urllib.request.Request', git_api_state_for_test_github_sync.new_request())
     def test_github_sync(self) -> None:
@@ -1698,7 +1710,9 @@ class TestGithub:
         urls = urls + [url + '.git' for url in urls]
 
         for url in urls:
-            remote_and_organization_and_repository = get_parsed_github_remote_url('github.com', url, 'origin')
+            remote_and_organization_and_repository = RemoteAndOrganizationAndRepository.from_url(domain=GitHubClient.DEFAULT_GITHUB_DOMAIN,
+                                                                                                 url=url,
+                                                                                                 remote='origin')
             assert remote_and_organization_and_repository.organization == organization
             assert remote_and_organization_and_repository.repository == repository
 
@@ -1708,9 +1722,9 @@ class TestGithub:
     @mock.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
     @mock.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
     @mock.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-    @mock.patch('git_machete.github.__get_github_token', mock__get_github_token_none)
+    @mock.patch('git_machete.github.GitHubToken', EmptyGitHubToken)
     @mock.patch('urllib.request.urlopen', MockContextManager)
-    @mock.patch('git_machete.github.derive_current_user_login', mock_derive_current_user_login)
+    @mock.patch('git_machete.github.GitHubClient.derive_current_user_login', mock_derive_current_user_login)
     @mock.patch('urllib.request.Request', MockGitHubAPIState([]).new_request())
     @mock.patch('tests.mockers.MockGitHubAPIResponse.info', mock_info)
     @mock.patch('tests.mockers.MockGitHubAPIResponse.read', mock_read)
