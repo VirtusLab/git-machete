@@ -15,12 +15,11 @@ from typing import Any, Dict, Iterable, List, Optional, Union
 from urllib.error import HTTPError
 from urllib.parse import ParseResult, parse_qs, urlparse
 
-from github import GitHubToken
-from options import CommandLineOptions
-
 from git_machete import cli
 from git_machete.git_operations import (FullCommitHash, GitContext,
                                         LocalBranchShortName)
+from git_machete.github import GitHubToken
+from git_machete.options import CommandLineOptions
 from git_machete.utils import dim
 
 """
