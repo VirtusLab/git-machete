@@ -45,6 +45,14 @@ class EmptyGitHubToken(GitHubToken):
     def __bool__(self) -> bool:
         return False
 
+    @property
+    def value(self) -> Optional[str]:
+        return None
+
+    @property
+    def provider(self) -> Optional[str]:
+        return None
+
 
 def mock_github_remote_url_patterns(domain: str) -> List[str]:
     return ['(.*)/(.*)']
@@ -1767,14 +1775,12 @@ class TestGithub:
         mocker.patch('git_machete.cli.exit_script', mock_exit_script)
 
         github_enterprise_domain = 'git.example.org'
-        (
-            self.repo_sandbox.add_git_config_key('machete.github.domain', github_enterprise_domain)
-        )
+        self.repo_sandbox.add_git_config_key('machete.github.domain', github_enterprise_domain)
 
         expected_error_message = (
             "GitHub API returned `403` HTTP status with error message: `Forbidden`\n"
             "You might not have the required permissions for this repository.\n"
-            "Provide a GitHub API token with `repo` access via auth token for git.example.org from `~/.github-token`.\n"
+            "Provide a GitHub API token with `repo` access via None.\n"
             f"Visit `https://{github_enterprise_domain}/settings/tokens` to generate a new one.\n"
             "You can also use a different token provider, available providers can be found when running `git machete help github`.")
 
