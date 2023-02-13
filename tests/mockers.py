@@ -461,11 +461,11 @@ class EmptyGitHubToken(GitHubToken):
 
     @property
     def value(self) -> Optional[str]:
-        return None
+        return 'dummy_token'
 
     @property
     def provider(self) -> Optional[str]:
-        return None
+        return 'dummy_provider'
 
 
 def mock_github_remote_url_patterns(domain: str) -> List[str]:

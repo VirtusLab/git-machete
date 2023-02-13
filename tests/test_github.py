@@ -11,7 +11,7 @@ from git_machete.github import GitHubClient, RemoteAndOrganizationAndRepository
 
 from .mockers import (EmptyGitHubToken, FakeCommandLineOptions,
                       FakeGitHubToken, GitRepositorySandbox,
-                      MockContextManager, MockGitHubAPIState, MockHTTPError,
+                      MockContextManager, MockContextManagerRaise403, MockGitHubAPIState, MockHTTPError,
                       assert_command, launch_command, mock_ask_if,
                       mock_derive_current_user_login, mock_exit_script,
                       mock_fetch_ref, mock_github_remote_url_patterns,
@@ -1743,7 +1743,7 @@ class TestGithub:
         expected_error_message = (
             "GitHub API returned `403` HTTP status with error message: `Forbidden`\n"
             "You might not have the required permissions for this repository.\n"
-            "Provide a GitHub API token with `repo` access via None.\n"
+            "Provide a GitHub API token with `repo` access via dummy_provider.\n"
             f"Visit `https://{github_enterprise_domain}/settings/tokens` to generate a new one.\n"
             "You can also use a different token provider, available providers can be found when running `git machete help github`.")
 
