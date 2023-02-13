@@ -1774,7 +1774,7 @@ class TestGithub:
         expected_error_message = (
             "GitHub API returned `403` HTTP status with error message: `Forbidden`\n"
             "You might not have the required permissions for this repository.\n"
-            "Provide a GitHub API token with `repo` access via None.\n"
+            "Provide a GitHub API token with `repo` access via auth token for git.example.org from `~/.github-token`.\n"
             f"Visit `https://{github_enterprise_domain}/settings/tokens` to generate a new one.\n"
             "You can also use a different token provider, available providers can be found when running `git machete help github`.")
 
