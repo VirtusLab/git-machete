@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.15.2
+
+- fixed: zsh shell completion for the `slide-out` command no longer fails
+
 ## New in git-machete 3.15.1
 
 - fixed: in case of red edge, the unique history of a branch never includes commits reachable from its parent
