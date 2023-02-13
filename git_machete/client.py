@@ -1200,13 +1200,17 @@ class MacheteClient:
         except StopIteration:
             if upstream and self.__git.is_ancestor_or_equal(upstream.full_name(), branch.full_name()):
                 debug(
-                    f"cannot find fork point, but {branch} is descendant of its upstream {upstream}; "
+                    f"cannot find fork point, but {branch} is a descendant of its upstream {upstream}; "
                     f"falling back to {upstream} as fork point")
                 return self.__git.get_commit_hash_by_revision(upstream), []
             elif upstream and not self.__git.is_ancestor_or_equal(upstream.full_name(), branch.full_name()):
-                return self.__git.get_merge_base(upstream.full_name(), branch.full_name()), []
-            else:
-                raise MacheteException(f"Cannot find fork point for branch {bold(branch)}")
+                common_ancestor_hash = self.__git.get_merge_base(upstream.full_name(), branch.full_name())
+                if common_ancestor_hash:
+                    debug(
+                        f"cannot find fork point, and {branch} is NOT a descendant of its upstream {upstream}; "
+                        f"falling back to common ancestor of {branch} and {upstream} (commit {common_ancestor_hash}) as fork point")
+                    return common_ancestor_hash, []
+            raise MacheteException(f"Cannot find fork point for branch {bold(branch)}")
         else:
             debug(f"commit {fp_hash} is the most recent point in history of {branch} to occur on "
                   "filtered reflog of any other branch or its remote counterpart "
@@ -1221,15 +1225,23 @@ class MacheteClient:
                 # is_ancestor(upstream, FP(branch)), but it's still possible in
                 # case reflog of upstream is incomplete for whatever reason.
                 debug(
-                    f"{upstream} is descendant of its upstream {branch}, but inferred fork point commit {fp_hash} "
-                    f"is NOT a descendant of {upstream}; falling back to {upstream} as fork point")
+                    f"{upstream} is an ancestor of its upstream {branch}, "
+                    f"but the inferred fork point commit {fp_hash} is NOT a descendant of {upstream}; "
+                    f"falling back to {upstream} as fork point")
                 return self.__git.get_commit_hash_by_revision(upstream), []
             elif upstream and \
                     not self.__git.is_ancestor_or_equal(upstream.full_name(), branch.full_name()) and \
                     self.__git.is_ancestor_or_equal(fp_hash, upstream.full_name()):
 
                 common_ancestor_hash = self.__git.get_merge_base(upstream.full_name(), branch.full_name())
-                return common_ancestor_hash or fp_hash, []
+                if common_ancestor_hash:
+                    debug(
+                        f"{upstream} is NOT an ancestor of its upstream {branch}, "
+                        f"but the inferred fork point commit {fp_hash} is an ancestor of {upstream}; "
+                        f"falling back to the common ancestor of {branch} and {upstream} (commit {common_ancestor_hash}) as fork point")
+                    return common_ancestor_hash, []
+                else:
+                    return fp_hash, []
             else:
                 return fp_hash, containing_branch_pairs
 
