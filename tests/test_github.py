@@ -3,6 +3,7 @@ import os
 import subprocess
 from tempfile import mkdtemp
 from typing import Any, Dict
+from unittest.mock import mock_open
 
 import pytest
 
@@ -1789,3 +1790,28 @@ class TestGithub:
             .add_git_config_key('machete.github.domain', github_enterprise_domain)
         )
         launch_command('github', 'checkout-prs', '--all')
+
+    def test_get_token_from_file_in_home_directory(self, mocker: Any):
+        github_token_contents = ('ghp_mytoken_for_github_com'
+                                 'ghp_myothertoken_for_git_example_org git.example.org'
+                                 'ghp_yetanothertoken_for_git_example_com git.example.com')
+        mocker.patch('builtins.open', mock_open(read_data=github_token_contents))
+        mocker.patch('os.path.isfile', mock_is_file)
+        mocker.patch('urllib.request.urlopen', MockContextManager)
+        mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
+        # mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_enterprise_domain.new_request())
+
+        (
+            self.repo_sandbox.new_branch("develop")
+                .commit("first commit")
+                .push()
+                .new_branch("snickers")
+                .commit("first commit")
+                .push()
+                .check_out("develop")
+                .delete_branch("snickers")
+        )
+
+        launch_command('github', 'anno-prs')
+
+
