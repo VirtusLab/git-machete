@@ -1802,10 +1802,8 @@ class MacheteClient:
                         opt_push_untracked=opt_push_untracked,
                         opt_push_tracked=opt_push_tracked,
                         opt_yes=opt_yes)
-                elif ans in ('q', 'quit'):
-                    raise StopInteraction
                 else:
-                    raise MacheteException(f'Cannot create pull request from untracked branch {bold(branch)}')
+                    raise StopInteraction
                 return
 
         relation: int = self.__git.get_relation_to_remote_counterpart(branch, remote_branch)
