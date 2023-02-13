@@ -103,10 +103,15 @@ class GitHubToken:
         self.__domain = domain
         self.__value: Optional[str] = None
         self.__provider: Optional[str] = None
-        for token_retrieval_method in [self.__get_token_from_hub, self.__get_token_from_gh, self.__get_token_from_env,
-                                       self.__get_token_from_file_in_home_directory]:
+        for token_retrieval_method in [self.__get_token_from_env,
+                                       self.__get_token_from_file_in_home_directory,
+                                       self.__get_token_from_gh,
+                                       self.__get_token_from_hub]:
             if not (self.value and self.provider):
                 token_retrieval_method()
+            if self.value and self.provider:
+                debug("authenticating via " + self.provider)
+                break
 
     def __bool__(self) -> bool:
         return self.__value is not None and self.__provider is not None
@@ -135,6 +140,7 @@ class GitHubToken:
                         result = re.sub(' *oauth_token: *', '', line).rstrip().replace('"', '')
                         self.__value = result
                         self.__provider = f'auth token for {self.__domain} from `hub` GitHub CLI'
+                        break
 
     def __get_token_from_gh(self) -> None:
         # Abort without error if `gh` isn't available
