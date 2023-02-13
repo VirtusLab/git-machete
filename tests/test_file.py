@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from typing import Any
 
 from .mockers import GitContext, GitRepositorySandbox, launch_command
 
@@ -20,7 +19,7 @@ class TestFile:
             .execute('git config user.name "Tester Test"')
         )
 
-    def test_file(self, mocker: Any) -> None:
+    def test_file(self) -> None:
         """
         Verify behaviour of a 'git machete file' command.
         """

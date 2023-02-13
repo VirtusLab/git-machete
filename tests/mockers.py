@@ -16,7 +16,10 @@ from urllib.error import HTTPError
 from urllib.parse import ParseResult, parse_qs, urlparse
 
 from git_machete import cli
-from git_machete.git_operations import FullCommitHash, GitContext
+from git_machete.git_operations import (FullCommitHash, GitContext,
+                                        LocalBranchShortName)
+from git_machete.github import GitHubToken
+from git_machete.options import CommandLineOptions
 from git_machete.utils import dim
 
 """
@@ -422,3 +425,46 @@ def mock_exit_script(status_code: int, error: Optional[BaseException] = None) ->
 
 def mock_exit_script_no_exit(status_code: int, error: Optional[BaseException] = None) -> None:
     return
+
+
+class FakeCommandLineOptions(CommandLineOptions):
+    def __init__(self) -> None:
+        super().__init__()
+        self.opt_no_interactive_rebase: bool = True
+        self.opt_yes: bool = True
+
+
+class FakeGitHubToken(GitHubToken):
+    def __bool__(self) -> bool:
+        return True
+
+    @property
+    def value(self) -> Optional[str]:
+        return 'fake_token'
+
+    @property
+    def provider(self) -> Optional[str]:
+        return 'fake_provider'
+
+
+class EmptyGitHubToken(GitHubToken):
+    def __bool__(self) -> bool:
+        return False
+
+
+def mock_github_remote_url_patterns(domain: str) -> List[str]:
+    return ['(.*)/(.*)']
+
+
+def mock_fetch_ref(cls: Any, remote: str, ref: str) -> None:
+    branch: LocalBranchShortName = LocalBranchShortName.of(ref[ref.index(':') + 1:])
+    git.create_branch(branch, get_current_commit_hash(), switch_head=True)
+
+
+def mock_derive_current_user_login(domain: str) -> str:
+    return "very_complex_user_token"
+
+
+def mock_input(msg: str) -> str:
+    print(msg)
+    return '1'
