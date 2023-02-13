@@ -431,14 +431,14 @@ class GitHubClient:
                                               method=f'/repositories/{repo_id}')
         return str(repo['full_name'])
 
-
-def checkout_pr_refs(git: GitContext,
-                     remote: str,
-                     pr_number: int,
-                     branch: LocalBranchShortName
-                     ) -> None:
-    git.fetch_ref(remote, f'pull/{pr_number}/head:{branch}')
-    git.checkout(branch)
+    @staticmethod
+    def checkout_pr_refs(git: GitContext,
+                         remote: str,
+                         pr_number: int,
+                         branch: LocalBranchShortName
+                         ) -> None:
+        git.fetch_ref(remote, f'pull/{pr_number}/head:{branch}')
+        git.checkout(branch)
 
 
 def github_remote_url_patterns(domain: str) -> List[str]:

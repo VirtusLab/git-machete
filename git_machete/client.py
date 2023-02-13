@@ -21,7 +21,7 @@ from git_machete.git_operations import (HEAD, AnyBranchName, AnyRevision,
                                         RemoteBranchShortName)
 from git_machete.github import (GitHubClient, GitHubPullRequest, GitHubToken,
                                 RemoteAndOrganizationAndRepository,
-                                checkout_pr_refs, is_github_remote_url)
+                                is_github_remote_url)
 from git_machete.utils import (
     AnsiEscapeCodes, SyncToParentStatus, bold, colored, debug, dim, excluding,
     flat_map, fmt, get_pretty_choices, get_second,
@@ -2019,7 +2019,7 @@ class MacheteClient:
                      f'No remote tracking data will be set up for {bold(pr.head)} branch.')
                 if verbose:
                     print(fmt(f"Checking out {bold(pr.head)} locally..."))
-                checkout_pr_refs(self.__git, remote_org_repo.remote, pr.number, LocalBranchShortName.of(pr.head))
+                github_client.checkout_pr_refs(self.__git, remote_org_repo.remote, pr.number, LocalBranchShortName.of(pr.head))
                 self.flush_caches()
             if pr.state == 'closed':
                 warn(f'Pull request #{bold(str(pr.number))} is already closed.')
