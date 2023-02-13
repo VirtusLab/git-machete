@@ -666,7 +666,7 @@ class TestGithub:
         mocker.patch('git_machete.github.GitHubToken', EmptyGitHubToken)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
-        mocker.patch('urllib.error.HTTPError', MockHTTPError)  # need to provide read() method, which does not actually reads error from url
+        mocker.patch('urllib.error.HTTPError', MockHTTPError)  # need to provide read() method, which does not actually read error from url
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_create_pr_with_multiple_non_origin_remotes.new_request())
         mocker.patch('urllib.request.urlopen', MockContextManager)
         mocker.patch('builtins.input', mock_input)
