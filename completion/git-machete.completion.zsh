@@ -98,8 +98,8 @@ _git-machete() {
             && ret=0
           ;;
         (slide-out)
+          # TODO (#113): suggest further branches based on the previous specified branch (like in Bash completion script)
           _arguments \
-            # TODO (#113): suggest further branches based on the previous specified branch (like in Bash completion script)
             '*:: :__git_machete_list_slidable' \
             '(-d --down-fork-point)'{-d,--down-fork-point=}'[If updating by rebase, specify fork point commit after which the rebased part of history of the downstream branch is meant to start]: :__git_references' \
             '(--delete)'--delete'[Delete slid-out branches]' \
