@@ -11,8 +11,9 @@ from git_machete.github import GitHubClient, RemoteAndOrganizationAndRepository
 
 from .mockers import (EmptyGitHubToken, FakeCommandLineOptions,
                       FakeGitHubToken, GitRepositorySandbox,
-                      MockContextManager, MockContextManagerRaise403, MockGitHubAPIState, MockHTTPError,
-                      assert_command, launch_command, mock_ask_if,
+                      MockContextManager, MockContextManagerRaise403,
+                      MockGitHubAPIState, MockHTTPError, assert_command,
+                      launch_command, mock_ask_if,
                       mock_derive_current_user_login, mock_exit_script,
                       mock_fetch_ref, mock_github_remote_url_patterns,
                       mock_input, mock_run_cmd,
