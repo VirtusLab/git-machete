@@ -15,6 +15,8 @@ from .mockers import (EmptyGitHubToken, FakeCommandLineOptions,
                       MockContextManager, MockContextManagerRaise403,
                       MockGitHubAPIState, MockHTTPError, assert_command,
                       launch_command, mock_ask_if,
+                      mock_is_file, MockContextManager, MockGitHubAPIState, MockHTTPError,
+                      assert_command, launch_command, mock_ask_if,
                       mock_derive_current_user_login, mock_exit_script,
                       mock_fetch_ref, mock_github_remote_url_patterns,
                       mock_input, mock_run_cmd,
@@ -1795,6 +1797,7 @@ class TestGithub:
         github_token_contents = ('ghp_mytoken_for_github_com'
                                  'ghp_myothertoken_for_git_example_org git.example.org'
                                  'ghp_yetanothertoken_for_git_example_com git.example.com')
+
         mocker.patch('builtins.open', mock_open(read_data=github_token_contents))
         mocker.patch('os.path.isfile', mock_is_file)
         mocker.patch('urllib.request.urlopen', MockContextManager)

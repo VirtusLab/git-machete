@@ -484,3 +484,7 @@ def mock_derive_current_user_login(domain: str) -> str:
 def mock_input(msg: str) -> str:
     print(msg)
     return '1'
+
+
+def mock_is_file(file: Any) -> bool:
+    return True
