@@ -1762,7 +1762,7 @@ class TestGithub:
         mocker.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
-        mocker.patch('git_machete.github.__get_github_token', mock__get_github_token_none)
+        mocker.patch('git_machete.github.GitHubToken', EmptyGitHubToken)
         mocker.patch('urllib.request.urlopen', MockContextManagerRaise403)
         mocker.patch('git_machete.cli.exit_script', mock_exit_script)
 
@@ -1801,7 +1801,7 @@ class TestGithub:
         mocker.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
-        mocker.patch('git_machete.github.__get_github_token', mock__get_github_token_fake)
+        mocker.patch('git_machete.github.GitHubToken', FakeGitHubToken)
         mocker.patch('urllib.request.urlopen', MockContextManager)
         mocker.patch('urllib.request.Request', git_api_state_for_test_github_enterprise_domain.new_request())
         mocker.patch('git_machete.cli.exit_script', mock_exit_script)
