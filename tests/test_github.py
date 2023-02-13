@@ -660,7 +660,8 @@ class TestGithub:
     def test_github_create_pr_with_multiple_non_origin_remotes(self, mocker: Any) -> None:
         mocker.patch('git_machete.cli.exit_script', mock_exit_script)
         mocker.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
-        # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_create_pr` due to `git fetch` executed by `create-pr` subcommand.
+        # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_create_pr`
+        # due to `git fetch` executed by `create-pr` subcommand.
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
         mocker.patch('git_machete.github.GitHubToken', EmptyGitHubToken)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
@@ -1461,7 +1462,8 @@ class TestGithub:
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
         mocker.patch('git_machete.github.GitHubToken', EmptyGitHubToken)
-        mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_checkout_prs_of_current_user_and_other_users.new_request())
+        mocker.patch('urllib.request.Request',
+                     self.git_api_state_for_test_github_checkout_prs_of_current_user_and_other_users.new_request())
         mocker.patch('urllib.request.urlopen', MockContextManager)
         mocker.patch('git_machete.github.GitHubClient.derive_current_user_login', mock_derive_current_user_login)
 
