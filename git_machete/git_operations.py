@@ -749,7 +749,12 @@ class GitContext:
             raise MacheteException("Not currently on any branch")
         return result
 
-    def __get_merge_base(self, hash1: FullCommitHash, hash2: FullCommitHash) -> FullCommitHash:
+    def __get_merge_base_for_commit_hashes(self, hash1: FullCommitHash, hash2: FullCommitHash) -> FullCommitHash:
+        # This if statement is not changing the outcome of the later return, but
+        # it enhances the efficiency of the script. If both hashes are the same,
+        # there is no point running git merge-base.
+        if hash1 == hash2:
+            return hash1
         if hash1 > hash2:
             hash1, hash2 = hash2, hash1
         if not (hash1, hash2) in self.__merge_base_cached:
@@ -776,13 +781,16 @@ class GitContext:
     ) -> bool:
         earlier_hash = self.get_commit_hash_by_revision(earlier_revision)
         later_hash = self.get_commit_hash_by_revision(later_revision)
-        # This if statement is not changing the outcome of the later return, but
-        # it enhances the efficiency of the script. If both hashes are the same,
-        # there is no point running git merge-base.
-        if earlier_hash == later_hash:
-            return True
+        return self.__get_merge_base_for_commit_hashes(earlier_hash, later_hash) == earlier_hash
 
-        return self.__get_merge_base(earlier_hash, later_hash) == earlier_hash
+    def get_merge_base(
+            self,
+            earlier_revision: AnyRevision,
+            later_revision: AnyRevision,
+    ) -> Optional[FullCommitHash]:
+        earlier_hash = self.get_commit_hash_by_revision(earlier_revision)
+        later_hash = self.get_commit_hash_by_revision(later_revision)
+        return self.__get_merge_base_for_commit_hashes(earlier_hash, later_hash)
 
     # Determine if reachable_from, or any ancestors of reachable_from that are NOT ancestors of equivalent_to,
     # contain a tree with identical contents to equivalent_to, indicating that
