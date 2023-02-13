@@ -1,5 +1,4 @@
 from typing import Any, List
-from unittest import mock
 
 import pytest
 
@@ -58,8 +57,8 @@ class TestHelp:
                     f"Verify that `git machete {command} --help` causes " \
                     f"SystemExit with {ExitCode.ARGUMENT_ERROR} exit code."
 
-    @mock.patch('git_machete.cli.exit_script', mock_exit_script_no_exit)
-    def test_help_output_has_no_ansi_codes(self) -> None:
+    def test_help_output_has_no_ansi_codes(self, mocker: Any) -> None:
+        mocker.patch('git_machete.cli.exit_script', mock_exit_script_no_exit)
         for command in commands_and_aliases:
             help_output = launch_command('help', command)
             assert '\033' not in help_output
