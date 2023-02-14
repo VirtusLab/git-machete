@@ -1793,6 +1793,9 @@ class TestGithub:
         )
         launch_command('github', 'checkout-prs', '--all')
 
+    def test_get_github_retrieval_order(self, mocker: Any):
+        pass
+
     def test_get_token_from_file_in_home_directory(self, mocker: Any):
         github_token_contents = ('ghp_mytoken_for_github_com'
                                  'ghp_myothertoken_for_git_example_org git.example.org'
@@ -1817,4 +1820,11 @@ class TestGithub:
 
         launch_command('github', 'anno-prs')
 
+    def test_get_token_from_env_var(self, mocker: Any):
+        pass
 
+    def test_get_token_from_hub(self, mocker: Any):
+        pass
+
+    def test_get_token_from_gh(self, mocker: Any):
+        pass
