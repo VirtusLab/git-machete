@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.15.3
+
+- improved: stability of releases to Homebrew
+
 ## New in git-machete 3.15.2
 
 - fixed: zsh shell completion for the `slide-out` command no longer fails

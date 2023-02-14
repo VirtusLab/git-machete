@@ -25,11 +25,18 @@ git config --global user.name "Git Machete Bot"
 # Relying on HOMEBREW_GITHUB_API_TOKEN, provided by the CI
 # See https://docs.brew.sh/Manpage -> Ctrl+F HOMEBREW_GITHUB_API_TOKEN
 echo "Bump Homebrew formula"
+# `--force` ignores the existence of open PRs for the same formula.
+# It is useful for the rare cases where a develop/master build runs while a PR for the previously released version is still pending.
+# See https://app.circleci.com/pipelines/github/VirtusLab/git-machete/3140/workflows/6ee0916d-fc11-49b2-b29a-5bbc95cb25c4/jobs/16418:
+#   Error: These open pull requests may be duplicates:
+#   git-machete 3.15.1 https://github.com/Homebrew/homebrew-core/pull/123123
+#   Duplicate PRs should not be opened. Use --force to override this error.
+flags=(--force --no-browse --verbose --url "$url" --sha256 "$sha256")
 if [[ $do_push == true ]]; then
-  brew bump-formula-pr --no-browse --verbose --url "$url" --sha256 "$sha256" git-machete
+  brew bump-formula-pr "${flags[@]}" git-machete
 else
   echo "Refraining from push since it's a dry run"
-  brew bump-formula-pr --write-only --no-browse --verbose --url "$url" --sha256 "$sha256" git-machete
+  brew bump-formula-pr --write-only "${flags[@]}" git-machete
 
   export HOMEBREW_NO_INSTALL_FROM_API=1
   brew config
