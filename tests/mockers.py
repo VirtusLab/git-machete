@@ -494,12 +494,13 @@ def mock_is_file_false(file: Any) -> bool:
     return False
 
 
-def mock_is_file_not_github_token(file: Any):
+def mock_is_file_not_github_token(file: Any) -> bool:
     if '.github-token' not in file:
         return True
+    return False
 
 
-def mock_os_environ_get_none(self, key: str, default=None) -> Optional[str]:
+def mock_os_environ_get_none(self: Any, key: str, default=None) -> Optional[str]:
     if key == GitHubToken.GITHUB_TOKEN_ENV_VAR:
         return None
     try:
@@ -508,14 +509,13 @@ def mock_os_environ_get_none(self, key: str, default=None) -> Optional[str]:
         return default
 
 
-def mock_os_environ_get_github_token(key: str, default=None) -> Optional[str]:
-    return 'github_token_from_env_var'
-
-
-def mock_iterate_read_data(read_data):
-    data_as_list = read_data.split('\n')
-    for line in data_as_list:
-        yield line
+def mock_os_environ_get_github_token(self, key: str, default=None) -> Optional[str]:
+    if key == GitHubToken.GITHUB_TOKEN_ENV_VAR:
+        return 'github_token_from_env_var'
+    try:
+        return self[key]
+    except KeyError:
+        return default
 
 
 def mock_shutil_which_gh(cmd):

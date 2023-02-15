@@ -13,7 +13,7 @@ from git_machete.github import GitHubClient, GitHubToken, RemoteAndOrganizationA
 
 from .mockers import (EmptyGitHubToken, FakeCommandLineOptions,
                       FakeGitHubToken, GitRepositorySandbox,
-                      mock_is_file_not_github_token, mock_iterate_read_data, mock_os_environ_get_github_token, mock_shutil_which_gh,
+                      mock_is_file_not_github_token, mock_os_environ_get_github_token, mock_shutil_which_gh,
                       mock_subprocess_run, MockContextManager,
                       MockContextManagerRaise403,
                       MockGitHubAPIState, MockHTTPError, assert_command,
@@ -1796,11 +1796,11 @@ class TestGithub:
         )
         launch_command('github', 'checkout-prs', '--all')
 
-    def test_github_token_retrieval_order(self, mocker: Any):
+    def test_github_token_retrieval_order(self, mocker: Any) -> None:
         mocker.patch('os.path.isfile', mock_is_file_false)
         mocker.patch('urllib.request.urlopen', MockContextManager)
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
-        mocker.patch('collections.Mapping.get', mock_os_environ_get_none)
+        mocker.patch('_collections_abc.Mapping.get', mock_os_environ_get_none)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_enterprise_domain.new_request())
 
         (
@@ -1821,21 +1821,21 @@ class TestGithub:
 
         assert launch_command('github', 'anno-prs', '--debug').splitlines()[8:12] == expected_output
 
-    def test_get_token_from_env_var(self, mocker: Any):
-        mocker.patch('os.environ.get', mock_os_environ_get_github_token)
+    def test_get_token_from_env_var(self, mocker: Any) -> None:
+        mocker.patch('_collections_abc.Mapping.get', mock_os_environ_get_github_token)
 
         github_token = GitHubToken(domain=GitHubClient.DEFAULT_GITHUB_DOMAIN)
         assert github_token.provider == '`GITHUB_TOKEN` environment variable'
         assert github_token.value == 'github_token_from_env_var'
 
-    def test_get_token_from_file_in_home_directory(self, mocker: Any):
+    def test_get_token_from_file_in_home_directory(self, mocker: Any) -> None:
         github_token_contents = ('ghp_mytoken_for_github_com\n'
                                  'ghp_myothertoken_for_git_example_org git.example.org\n'
                                  'ghp_yetanothertoken_for_git_example_com git.example.com')
-
-        mocker.patch('builtins.open', mock_open(read_data=github_token_contents))
+        _mock_open = mock_open(read_data=github_token_contents)
+        _mock_open.return_value.readlines.return_value = github_token_contents.split('\n')
+        mocker.patch('builtins.open', _mock_open)
         mocker.patch('os.path.isfile', mock_is_file_true)
-        mocker.patch('unittest.mock._iterate_read_data', mock_iterate_read_data)
 
         domain = GitHubClient.DEFAULT_GITHUB_DOMAIN
         github_token = GitHubToken(domain=domain)
@@ -1854,7 +1854,7 @@ class TestGithub:
 
     def test_get_token_from_gh(self, mocker: Any):
         mocker.patch('os.path.isfile', mock_is_file_false)
-        mocker.patch('os.environ.get', mock_os_environ_get_none)
+        mocker.patch('_collections_abc.Mapping.get', mock_os_environ_get_none)
         mocker.patch('shutil.which', mock_shutil_which_gh)
         mocker.patch('subprocess.run', mock_subprocess_run)
 
@@ -1863,7 +1863,7 @@ class TestGithub:
         assert github_token.provider == f'auth token for {domain} from `gh` GitHub CLI'
         assert github_token.value == 'ghp_mytoken_for_github_com_from_gh_cli'
 
-    def test_get_token_from_hub(self, mocker: Any):
+    def test_get_token_from_hub(self, mocker: Any) -> None:
         domain1 = GitHubClient.DEFAULT_GITHUB_DOMAIN
         domain2 = 'git.example.org'
         config_hub_contents = f'''        {domain1}:
@@ -1879,7 +1879,6 @@ class TestGithub:
 
         mocker.patch('builtins.open', mock_open(read_data=dedent(config_hub_contents)))
         mocker.patch('os.path.isfile', mock_is_file_not_github_token)
-        mocker.patch('unittest.mock._iterate_read_data', mock_iterate_read_data)
 
         github_token = GitHubToken(domain=domain1)
         assert github_token.provider == f'auth token for {domain1} from `hub` GitHub CLI'

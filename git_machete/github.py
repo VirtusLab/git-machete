@@ -141,8 +141,10 @@ class GitHubToken:
                     if line.endswith(" " + self.__domain):
                         token = line.split(" ")[0]
                         self.__value = token
+                        break
                     elif self.__domain == GitHubClient.DEFAULT_GITHUB_DOMAIN and " " not in line.rstrip():
                         self.__value = line.rstrip()
+                        break
 
     def __get_token_from_gh(self) -> None:
         debug("3. Trying to authenticate via `gh` GitHub CLI...")
