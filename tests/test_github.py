@@ -3,27 +3,115 @@ import os
 import subprocess
 from tempfile import mkdtemp
 from textwrap import dedent
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 from unittest.mock import mock_open
 
 import pytest
 
 from git_machete.exceptions import MacheteException
 from git_machete.github import GitHubClient, GitHubToken, RemoteAndOrganizationAndRepository
+from git_machete.options import CommandLineOptions
+from git_operations import LocalBranchShortName
 
-from .mockers import (EmptyGitHubToken, FakeCommandLineOptions,
-                      FakeGitHubToken, GitRepositorySandbox,
-                      mock_is_file_not_github_token, mock_os_environ_get_github_token, mock_shutil_which_gh,
-                      mock_subprocess_run, MockContextManager,
+from .mockers import (get_current_commit_hash, git, GitRepositorySandbox, MockContextManager,
                       MockContextManagerRaise403,
                       MockGitHubAPIState, MockHTTPError, assert_command,
                       launch_command, mock_ask_if,
-                      mock_derive_current_user_login, mock_exit_script,
-                      mock_fetch_ref, mock_github_remote_url_patterns,
-                      mock_input, mock_is_file_false, mock_is_file_true,
-                      mock_os_environ_get_none, mock_run_cmd,
+                      mock_exit_script, mock_run_cmd,
                       mock_should_perform_interactive_slide_out,
                       rewrite_definition_file)
+
+
+class FakeCommandLineOptions(CommandLineOptions):
+    def __init__(self) -> None:
+        super().__init__()
+        self.opt_no_interactive_rebase: bool = True
+        self.opt_yes: bool = True
+
+
+class FakeGitHubToken(GitHubToken):
+    def __bool__(self) -> bool:
+        return True
+
+    @property
+    def value(self) -> Optional[str]:
+        return 'fake_token'
+
+    @property
+    def provider(self) -> Optional[str]:
+        return 'fake_provider'
+
+
+class EmptyGitHubToken(GitHubToken):
+    def __bool__(self) -> bool:
+        return False
+
+    @property
+    def value(self) -> Optional[str]:
+        return 'dummy_token'
+
+    @property
+    def provider(self) -> Optional[str]:
+        return 'dummy_provider'
+
+
+def mock_github_remote_url_patterns(domain: str) -> List[str]:
+    return ['(.*)/(.*)']
+
+
+def mock_fetch_ref(cls: Any, remote: str, ref: str) -> None:
+    branch: LocalBranchShortName = LocalBranchShortName.of(ref[ref.index(':') + 1:])
+    git.create_branch(branch, get_current_commit_hash(), switch_head=True)
+
+
+def mock_derive_current_user_login(domain: str) -> str:
+    return "very_complex_user_token"
+
+
+def mock_input(msg: str) -> str:
+    print(msg)
+    return '1'
+
+
+def mock_is_file_true(file: Any) -> bool:
+    return True
+
+
+def mock_is_file_false(file: Any) -> bool:
+    return False
+
+
+def mock_is_file_not_github_token(file: Any) -> bool:
+    if '.github-token' not in file:
+        return True
+    return False
+
+
+def mock_os_environ_get_none(self: Any, key: str, default=None) -> Optional[str]:
+    if key == GitHubToken.GITHUB_TOKEN_ENV_VAR:
+        return None
+    try:
+        return self[key]
+    except KeyError:
+        return default
+
+
+def mock_os_environ_get_github_token(self, key: str, default=None) -> Optional[str]:
+    if key == GitHubToken.GITHUB_TOKEN_ENV_VAR:
+        return 'github_token_from_env_var'
+    try:
+        return self[key]
+    except KeyError:
+        return default
+
+
+def mock_shutil_which_gh(cmd):
+    return 'path_to_gh_executable'
+
+
+def mock_subprocess_run(*args, stdout, stderr):
+    return subprocess.CompletedProcess(args, 0, b'stdout', b'Token: ghp_mytoken_for_github_com_from_gh_cli')
+
 
 prs_per_page = 3
 number_of_pages = 3
