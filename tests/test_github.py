@@ -1,6 +1,6 @@
 import json
 import os
-import subprocess
+from subprocess import CalledProcessError, CompletedProcess
 from tempfile import mkdtemp
 from textwrap import dedent
 from typing import Any, Dict, List, Optional
@@ -9,16 +9,16 @@ from unittest.mock import mock_open
 import pytest
 
 from git_machete.exceptions import MacheteException
-from git_machete.github import GitHubClient, GitHubToken, RemoteAndOrganizationAndRepository
+from git_machete.git_operations import LocalBranchShortName
+from git_machete.github import (GitHubClient, GitHubToken,
+                                RemoteAndOrganizationAndRepository)
 from git_machete.options import CommandLineOptions
-from git_operations import LocalBranchShortName
 
-from .mockers import (get_current_commit_hash, git, GitRepositorySandbox, MockContextManager,
-                      MockContextManagerRaise403,
-                      MockGitHubAPIState, MockHTTPError, assert_command,
-                      launch_command, mock_ask_if,
-                      mock_exit_script, mock_run_cmd,
-                      mock_should_perform_interactive_slide_out,
+from .mockers import (GitRepositorySandbox, MockContextManager,
+                      MockContextManagerRaise403, MockGitHubAPIState,
+                      MockHTTPError, assert_command, get_current_commit_hash,
+                      git, launch_command, mock_ask_if, mock_exit_script,
+                      mock_run_cmd, mock_should_perform_interactive_slide_out,
                       rewrite_definition_file)
 
 
@@ -87,7 +87,7 @@ def mock_is_file_not_github_token(file: Any) -> bool:
     return False
 
 
-def mock_os_environ_get_none(self: Any, key: str, default=None) -> Optional[str]:
+def mock_os_environ_get_none(self: Any, key: str, default: Optional[str] = None) -> Any:
     if key == GitHubToken.GITHUB_TOKEN_ENV_VAR:
         return None
     try:
@@ -96,7 +96,7 @@ def mock_os_environ_get_none(self: Any, key: str, default=None) -> Optional[str]
         return default
 
 
-def mock_os_environ_get_github_token(self, key: str, default=None) -> Optional[str]:
+def mock_os_environ_get_github_token(self: Any, key: str, default: Optional[str] = None) -> Any:
     if key == GitHubToken.GITHUB_TOKEN_ENV_VAR:
         return 'github_token_from_env_var'
     try:
@@ -105,12 +105,12 @@ def mock_os_environ_get_github_token(self, key: str, default=None) -> Optional[s
         return default
 
 
-def mock_shutil_which_gh(cmd):
+def mock_shutil_which_gh(cmd: Any) -> str:
     return 'path_to_gh_executable'
 
 
-def mock_subprocess_run(*args, stdout, stderr):
-    return subprocess.CompletedProcess(args, 0, b'stdout', b'Token: ghp_mytoken_for_github_com_from_gh_cli')
+def mock_subprocess_run(*args, stdout: bytes, stderr: bytes) -> "CompletedProcess":  # type: ignore[no-untyped-def, type-arg]
+    return CompletedProcess(args, 0, b'stdout', b'Token: ghp_mytoken_for_github_com_from_gh_cli')
 
 
 prs_per_page = 3
@@ -1761,7 +1761,7 @@ class TestGithub:
         )
         assert_command(['status'], expected_status_output)
 
-        with pytest.raises(subprocess.CalledProcessError):
+        with pytest.raises(CalledProcessError):
             self.repo_sandbox.check_out("mars")
 
     def test_github_remote_patterns(self) -> None:
@@ -1940,7 +1940,7 @@ class TestGithub:
         assert github_token.provider == f'auth token for {domain} from `~/.github-token`'
         assert github_token.value == 'ghp_yetanothertoken_for_git_example_com'
 
-    def test_get_token_from_gh(self, mocker: Any):
+    def test_get_token_from_gh(self, mocker: Any) -> None:
         mocker.patch('os.path.isfile', mock_is_file_false)
         mocker.patch('_collections_abc.Mapping.get', mock_os_environ_get_none)
         mocker.patch('shutil.which', mock_shutil_which_gh)

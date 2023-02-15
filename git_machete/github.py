@@ -126,7 +126,7 @@ class GitHubToken:
     def __get_token_from_file_in_home_directory(self) -> None:
         debug("2. Trying to authenticate via `~/.github-token`...")
         required_file_name = '.github-token'
-        self.__provider = f'auth token for {self.__domain} from `~/.github-token`'
+        provider = f'auth token for {self.__domain} from `~/.github-token`'
         file_full_path = os.path.expanduser(f'~/{required_file_name}')
 
         if os.path.isfile(file_full_path):
@@ -141,9 +141,11 @@ class GitHubToken:
                     if line.endswith(" " + self.__domain):
                         token = line.split(" ")[0]
                         self.__value = token
+                        self.__provider = provider
                         break
                     elif self.__domain == GitHubClient.DEFAULT_GITHUB_DOMAIN and " " not in line.rstrip():
                         self.__value = line.rstrip()
+                        self.__provider = provider
                         break
 
     def __get_token_from_gh(self) -> None:
