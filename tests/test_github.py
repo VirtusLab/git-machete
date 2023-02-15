@@ -1800,8 +1800,7 @@ class TestGithub:
         mocker.patch('os.path.isfile', mock_is_file_false)
         mocker.patch('urllib.request.urlopen', MockContextManager)
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
-        mocker.patch('os.environ.get', mock_os_environ_get_none)
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)
+        mocker.patch('collections.Mapping.get', mock_os_environ_get_none)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_enterprise_domain.new_request())
 
         (

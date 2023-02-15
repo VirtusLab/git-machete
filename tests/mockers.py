@@ -499,8 +499,13 @@ def mock_is_file_not_github_token(file: Any):
         return True
 
 
-def mock_os_environ_get_none(key: str, default=None) -> Optional[str]:
-    return None
+def mock_os_environ_get_none(self, key: str, default=None) -> Optional[str]:
+    if key == GitHubToken.GITHUB_TOKEN_ENV_VAR:
+        return None
+    try:
+        return self[key]
+    except KeyError:
+        return default
 
 
 def mock_os_environ_get_github_token(key: str, default=None) -> Optional[str]:
