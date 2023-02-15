@@ -486,5 +486,36 @@ def mock_input(msg: str) -> str:
     return '1'
 
 
-def mock_is_file(file: Any) -> bool:
+def mock_is_file_true(file: Any) -> bool:
     return True
+
+
+def mock_is_file_false(file: Any) -> bool:
+    return False
+
+
+def mock_is_file_not_github_token(file: Any):
+    if '.github-token' not in file:
+        return True
+
+
+def mock_os_environ_get_none(key: str, default=None) -> Optional[str]:
+    return None
+
+
+def mock_os_environ_get_github_token(key: str, default=None) -> Optional[str]:
+    return 'github_token_from_env_var'
+
+
+def mock_iterate_read_data(read_data):
+    data_as_list = read_data.split('\n')
+    for line in data_as_list:
+        yield line
+
+
+def mock_shutil_which_gh(cmd):
+    return 'path_to_gh_executable'
+
+
+def mock_subprocess_run(*args, stdout, stderr):
+    return subprocess.CompletedProcess(args, 0, b'stdout', b'Token: ghp_mytoken_for_github_com_from_gh_cli')
