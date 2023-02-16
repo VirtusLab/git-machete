@@ -29,6 +29,7 @@ git config --global user.name "Git Machete Bot"
 # Relying on HOMEBREW_GITHUB_API_TOKEN, provided by the CI
 # See https://docs.brew.sh/Manpage -> Ctrl+F HOMEBREW_GITHUB_API_TOKEN
 #brew install git-machete
+brew tap homebrew/core
 brew info git-machete
 echo "Bump Homebrew formula"
 # `--force` ignores the existence of open PRs for the same formula.
