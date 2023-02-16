@@ -64,16 +64,13 @@ class RemoteAndOrganizationAndRepository:
         self.organization = organization
         self.repository = repository
 
-    def __bool__(self) -> bool:
-        return self.remote is not None and self.organization is not None and self.repository is not None
-
     @classmethod
     def from_config(cls,
                     git: GitContext
                     ) -> "RemoteAndOrganizationAndRepository":
-        return RemoteAndOrganizationAndRepository(remote=git.get_config_attr_or_none(key=git_config_keys.GITHUB_REMOTE),
-                                                  organization=git.get_config_attr_or_none(key=git_config_keys.GITHUB_ORGANIZATION),
-                                                  repository=git.get_config_attr_or_none(key=git_config_keys.GITHUB_REPOSITORY))
+        return cls(remote=git.get_config_attr_or_none(key=git_config_keys.GITHUB_REMOTE),
+                   organization=git.get_config_attr_or_none(key=git_config_keys.GITHUB_ORGANIZATION),
+                   repository=git.get_config_attr_or_none(key=git_config_keys.GITHUB_REPOSITORY))
 
     @classmethod
     def from_url(cls,
@@ -86,19 +83,18 @@ class RemoteAndOrganizationAndRepository:
             if match:
                 org = match.group(1)
                 repo = match.group(2)
-                return RemoteAndOrganizationAndRepository(remote=remote,
-                                                          organization=org,
-                                                          repository=repo if repo[-4:] != '.git' else repo[:-4])
-        return RemoteAndOrganizationAndRepository(remote=None,
-                                                  organization=None,
-                                                  repository=None)
+                return cls(remote=remote,
+                           organization=org,
+                           repository=repo if repo[-4:] != '.git' else repo[:-4])
+        return None
 
 
 class GitHubToken:
     GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
 
     def __init__(self,
-                 domain: str
+                 value: Optional[str],
+                 provider
                  ) -> None:
         self.__domain = domain
         self.__value: Optional[str] = None
@@ -112,6 +108,10 @@ class GitHubToken:
             if self.value and self.provider:
                 debug("authenticating via " + self.provider)
                 break
+
+    @classmethod
+    def from_domain(cls, domain: str):
+
 
     def __bool__(self) -> bool:
         return self.__value is not None and self.__provider is not None
