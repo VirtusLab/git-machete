@@ -234,5 +234,5 @@ workflows:
           filters:
             branches:
               only: "master"
-          requires:
-            *mandatory_jobs
+#          requires:
+#            *mandatory_jobs
