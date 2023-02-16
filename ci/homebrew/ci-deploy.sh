@@ -3,6 +3,8 @@
 set -e -o pipefail -u -x
 
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" < /dev/null
+## The two lines below are added to avoid ->  Warning: /home/linuxbrew/.linuxbrew/bin is not in your PATH
+(echo; echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"') >> /home/circleci/.bash_profile
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 
 if [[ ${1-} == "--dry-run" || ${CIRCLE_BRANCH-} != "master" ]]; then
@@ -24,6 +26,9 @@ git config --global user.name "Git Machete Bot"
 
 # Relying on HOMEBREW_GITHUB_API_TOKEN, provided by the CI
 # See https://docs.brew.sh/Manpage -> Ctrl+F HOMEBREW_GITHUB_API_TOKEN
+
+# We need to run `brew tap homebrew/core` manually because since Homebrew 4.0.0 it is no longer done by default when installing `brew`; see https://brew.sh/2023/02/16/homebrew-4.0.0/
+brew tap homebrew/core
 echo "Bump Homebrew formula"
 # `--force` ignores the existence of open PRs for the same formula.
 # It is useful for the rare cases where a develop/master build runs while a PR for the previously released version is still pending.
