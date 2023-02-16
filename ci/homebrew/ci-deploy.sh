@@ -43,7 +43,7 @@ else
   echo "Refraining from push since it's a dry run"
   brew bump-formula-pr --write-only "${flags[@]}" git-machete
 
-  export HOMEBREW_NO_INSTALL_FROM_API=1
+#  export HOMEBREW_NO_INSTALL_FROM_API=1
   brew config
   echo "Attempt to install the formula locally"
   attempts=5

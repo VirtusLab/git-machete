@@ -94,11 +94,14 @@ class GitHubToken:
 
     def __init__(self,
                  value: Optional[str],
-                 provider
+                 provider: Optional[str]
                  ) -> None:
-        self.__domain = domain
-        self.__value: Optional[str] = None
-        self.__provider: Optional[str] = None
+        self.__value: Optional[str] = value
+        self.__provider: Optional[str] = provider
+
+    @classmethod
+    def from_domain(cls, domain: str):
+
         for token_retrieval_method in [self.__get_token_from_env,
                                        self.__get_token_from_file_in_home_directory,
                                        self.__get_token_from_gh,
@@ -110,15 +113,9 @@ class GitHubToken:
                 break
 
     @classmethod
-    def from_domain(cls, domain: str):
-
-
-    def __bool__(self) -> bool:
-        return self.__value is not None and self.__provider is not None
-
-    def __get_token_from_env(self) -> None:
-        debug(f"1. Trying to authenticate via `{self.GITHUB_TOKEN_ENV_VAR}` environment variable...")
-        github_token = os.environ.get(self.GITHUB_TOKEN_ENV_VAR)
+    def __get_token_from_env(cls, domain: str) -> None:
+        debug(f"1. Trying to authenticate via `{cls.GITHUB_TOKEN_ENV_VAR}` environment variable...")
+        github_token = os.environ.get(cls.GITHUB_TOKEN_ENV_VAR)
         if github_token:
             self.__value = github_token
             self.__provider = f'`{self.GITHUB_TOKEN_ENV_VAR}` environment variable'
