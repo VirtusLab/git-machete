@@ -27,7 +27,7 @@ git config --global user.name "Git Machete Bot"
 # Relying on HOMEBREW_GITHUB_API_TOKEN, provided by the CI
 # See https://docs.brew.sh/Manpage -> Ctrl+F HOMEBREW_GITHUB_API_TOKEN
 
-# We need to run `brew tap homebrew/core` manually since it is no longer done by default when installing `brew`
+# We need to run `brew tap homebrew/core` manually because since Homebrew 4.0.0 it is no longer done by default when installing `brew`; see https://brew.sh/2023/02/16/homebrew-4.0.0/
 brew tap homebrew/core
 echo "Bump Homebrew formula"
 # `--force` ignores the existence of open PRs for the same formula.
