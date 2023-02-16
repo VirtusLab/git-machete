@@ -1,24 +1,117 @@
 import json
 import os
-import subprocess
+from subprocess import CalledProcessError, CompletedProcess
 from tempfile import mkdtemp
-from typing import Any, Dict
+from textwrap import dedent
+from typing import Any, Dict, List, Optional
+from unittest.mock import mock_open
 
 import pytest
 
 from git_machete.exceptions import MacheteException
-from git_machete.github import GitHubClient, RemoteAndOrganizationAndRepository
+from git_machete.git_operations import LocalBranchShortName
+from git_machete.github import (GitHubClient, GitHubToken,
+                                RemoteAndOrganizationAndRepository)
+from git_machete.options import CommandLineOptions
 
-from .mockers import (EmptyGitHubToken, FakeCommandLineOptions,
-                      FakeGitHubToken, GitRepositorySandbox,
-                      MockContextManager, MockContextManagerRaise403,
-                      MockGitHubAPIState, MockHTTPError, assert_command,
-                      launch_command, mock_ask_if,
-                      mock_derive_current_user_login, mock_exit_script,
-                      mock_fetch_ref, mock_github_remote_url_patterns,
-                      mock_input, mock_run_cmd,
-                      mock_should_perform_interactive_slide_out,
+from .mockers import (GitRepositorySandbox, MockContextManager,
+                      MockContextManagerRaise403, MockGitHubAPIState,
+                      MockHTTPError, assert_command, get_current_commit_hash,
+                      git, launch_command, mock_ask_if, mock_exit_script,
+                      mock_run_cmd, mock_should_perform_interactive_slide_out,
                       rewrite_definition_file)
+
+
+class FakeCommandLineOptions(CommandLineOptions):
+    def __init__(self) -> None:
+        super().__init__()
+        self.opt_no_interactive_rebase: bool = True
+        self.opt_yes: bool = True
+
+
+class FakeGitHubToken(GitHubToken):
+    def __bool__(self) -> bool:
+        return True
+
+    @property
+    def value(self) -> Optional[str]:
+        return 'fake_token'
+
+    @property
+    def provider(self) -> Optional[str]:
+        return 'fake_provider'
+
+
+class EmptyGitHubToken(GitHubToken):
+    def __bool__(self) -> bool:
+        return False
+
+    @property
+    def value(self) -> Optional[str]:
+        return 'dummy_token'
+
+    @property
+    def provider(self) -> Optional[str]:
+        return 'dummy_provider'
+
+
+def mock_github_remote_url_patterns(domain: str) -> List[str]:
+    return ['(.*)/(.*)']
+
+
+def mock_fetch_ref(cls: Any, remote: str, ref: str) -> None:
+    branch: LocalBranchShortName = LocalBranchShortName.of(ref[ref.index(':') + 1:])
+    git.create_branch(branch, get_current_commit_hash(), switch_head=True)
+
+
+def mock_derive_current_user_login(domain: str) -> str:
+    return "very_complex_user_token"
+
+
+def mock_input(msg: str) -> str:
+    print(msg)
+    return '1'
+
+
+def mock_is_file_true(file: Any) -> bool:
+    return True
+
+
+def mock_is_file_false(file: Any) -> bool:
+    return False
+
+
+def mock_is_file_not_github_token(file: Any) -> bool:
+    if '.github-token' not in file:
+        return True
+    return False
+
+
+def mock_os_environ_get_none(self: Any, key: str, default: Optional[str] = None) -> Any:
+    if key == GitHubToken.GITHUB_TOKEN_ENV_VAR:
+        return None
+    try:
+        return self[key]
+    except KeyError:
+        return default
+
+
+def mock_os_environ_get_github_token(self: Any, key: str, default: Optional[str] = None) -> Any:
+    if key == GitHubToken.GITHUB_TOKEN_ENV_VAR:
+        return 'github_token_from_env_var'
+    try:
+        return self[key]
+    except KeyError:
+        return default
+
+
+def mock_shutil_which_gh(cmd: Any) -> str:
+    return 'path_to_gh_executable'
+
+
+def mock_subprocess_run(*args, stdout: bytes, stderr: bytes) -> "CompletedProcess":  # type: ignore[no-untyped-def, type-arg]
+    return CompletedProcess(args, 0, b'stdout', b'Token: ghp_mytoken_for_github_com_from_gh_cli')
+
 
 prs_per_page = 3
 number_of_pages = 3
@@ -1668,7 +1761,7 @@ class TestGithub:
         )
         assert_command(['status'], expected_status_output)
 
-        with pytest.raises(subprocess.CalledProcessError):
+        with pytest.raises(CalledProcessError):
             self.repo_sandbox.check_out("mars")
 
     def test_github_remote_patterns(self) -> None:
@@ -1753,19 +1846,20 @@ class TestGithub:
         if e:
             assert e.value.args[0] == expected_error_message, 'Verify that expected error message has appeared.'
 
+    git_api_state_for_test_github_enterprise_domain = MockGitHubAPIState(
+        [
+            {
+                'head': {'ref': 'snickers', 'repo': mock_repository_info},
+                'user': {'login': 'other_user'},
+                'base': {'ref': 'develop'},
+                'number': '7',
+                'html_url': 'www.github.com',
+                'state': 'open'
+            }
+        ]
+    )
+
     def test_github_enterprise_domain(self, mocker: Any) -> None:
-        git_api_state_for_test_github_enterprise_domain = MockGitHubAPIState(
-            [
-                {
-                    'head': {'ref': 'snickers', 'repo': self.mock_repository_info},
-                    'user': {'login': 'other_user'},
-                    'base': {'ref': 'develop'},
-                    'number': '7',
-                    'html_url': 'www.github.com',
-                    'state': 'open'
-                }
-            ]
-        )
         mocker.patch('git_machete.client.MacheteClient.should_perform_interactive_slide_out', mock_should_perform_interactive_slide_out)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)
         mocker.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
@@ -1773,7 +1867,7 @@ class TestGithub:
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
         mocker.patch('git_machete.github.GitHubToken', FakeGitHubToken)
         mocker.patch('urllib.request.urlopen', MockContextManager)
-        mocker.patch('urllib.request.Request', git_api_state_for_test_github_enterprise_domain.new_request())
+        mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_enterprise_domain.new_request())
         mocker.patch('git_machete.cli.exit_script', mock_exit_script)
 
         github_enterprise_domain = 'git.example.org'
@@ -1789,3 +1883,95 @@ class TestGithub:
             .add_git_config_key('machete.github.domain', github_enterprise_domain)
         )
         launch_command('github', 'checkout-prs', '--all')
+
+    def test_github_token_retrieval_order(self, mocker: Any) -> None:
+        mocker.patch('os.path.isfile', mock_is_file_false)
+        mocker.patch('urllib.request.urlopen', MockContextManager)
+        mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
+        mocker.patch('_collections_abc.Mapping.get', mock_os_environ_get_none)
+        mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_enterprise_domain.new_request())
+
+        (
+            self.repo_sandbox.new_branch("develop")
+                .commit("first commit")
+                .push()
+                .new_branch("snickers")
+                .commit("first commit")
+                .push()
+                .check_out("develop")
+                .delete_branch("snickers")
+        )
+
+        expected_output = ['__get_token_from_env(): 1. Trying to authenticate via `GITHUB_TOKEN` environment variable...',
+                           '__get_token_from_file_in_home_directory(): 2. Trying to authenticate via `~/.github-token`...',
+                           '__get_token_from_gh(): 3. Trying to authenticate via `gh` GitHub CLI...',
+                           '__get_token_from_hub(): 4. Trying to authenticate via `hub` GitHub CLI...']
+
+        assert launch_command('github', 'anno-prs', '--debug').splitlines()[8:12] == expected_output
+
+    def test_get_token_from_env_var(self, mocker: Any) -> None:
+        mocker.patch('_collections_abc.Mapping.get', mock_os_environ_get_github_token)
+
+        github_token = GitHubToken(domain=GitHubClient.DEFAULT_GITHUB_DOMAIN)
+        assert github_token.provider == '`GITHUB_TOKEN` environment variable'
+        assert github_token.value == 'github_token_from_env_var'
+
+    def test_get_token_from_file_in_home_directory(self, mocker: Any) -> None:
+        github_token_contents = ('ghp_mytoken_for_github_com\n'
+                                 'ghp_myothertoken_for_git_example_org git.example.org\n'
+                                 'ghp_yetanothertoken_for_git_example_com git.example.com')
+        _mock_open = mock_open(read_data=github_token_contents)
+        _mock_open.return_value.readlines.return_value = github_token_contents.split('\n')
+        mocker.patch('builtins.open', _mock_open)
+        mocker.patch('os.path.isfile', mock_is_file_true)
+
+        domain = GitHubClient.DEFAULT_GITHUB_DOMAIN
+        github_token = GitHubToken(domain=domain)
+        assert github_token.provider == f'auth token for {domain} from `~/.github-token`'
+        assert github_token.value == 'ghp_mytoken_for_github_com'
+
+        domain = 'git.example.org'
+        github_token = GitHubToken(domain=domain)
+        assert github_token.provider == f'auth token for {domain} from `~/.github-token`'
+        assert github_token.value == 'ghp_myothertoken_for_git_example_org'
+
+        domain = 'git.example.com'
+        github_token = GitHubToken(domain=domain)
+        assert github_token.provider == f'auth token for {domain} from `~/.github-token`'
+        assert github_token.value == 'ghp_yetanothertoken_for_git_example_com'
+
+    def test_get_token_from_gh(self, mocker: Any) -> None:
+        mocker.patch('os.path.isfile', mock_is_file_false)
+        mocker.patch('_collections_abc.Mapping.get', mock_os_environ_get_none)
+        mocker.patch('shutil.which', mock_shutil_which_gh)
+        mocker.patch('subprocess.run', mock_subprocess_run)
+
+        domain = 'git.example.com'
+        github_token = GitHubToken(domain=domain)
+        assert github_token.provider == f'auth token for {domain} from `gh` GitHub CLI'
+        assert github_token.value == 'ghp_mytoken_for_github_com_from_gh_cli'
+
+    def test_get_token_from_hub(self, mocker: Any) -> None:
+        domain1 = GitHubClient.DEFAULT_GITHUB_DOMAIN
+        domain2 = 'git.example.org'
+        config_hub_contents = f'''        {domain1}:
+        - user: username1
+          oauth_token: ghp_mytoken_for_github_com
+          protocol: protocol
+
+        {domain2}:
+        - user: username2
+          oauth_token: ghp_myothertoken_for_git_example_org
+          protocol: protocol
+        '''
+
+        mocker.patch('builtins.open', mock_open(read_data=dedent(config_hub_contents)))
+        mocker.patch('os.path.isfile', mock_is_file_not_github_token)
+
+        github_token = GitHubToken(domain=domain1)
+        assert github_token.provider == f'auth token for {domain1} from `hub` GitHub CLI'
+        assert github_token.value == 'ghp_mytoken_for_github_com'
+
+        github_token = GitHubToken(domain=domain2)
+        assert github_token.provider == f'auth token for {domain2} from `hub` GitHub CLI'
+        assert github_token.value == 'ghp_myothertoken_for_git_example_org'

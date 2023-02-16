@@ -116,33 +116,40 @@ class GitHubToken:
     def __bool__(self) -> bool:
         return self.__value is not None and self.__provider is not None
 
-    def __get_token_from_hub(self) -> None:
-        home_path: str = str(Path.home())
-        config_hub_path: str = os.path.join(home_path, ".config", "hub")
-        if os.path.isfile(config_hub_path):
-            with open(config_hub_path) as config_hub:
-                # ~/.config/hub is a yaml file, with a structure similar to:
+    def __get_token_from_env(self) -> None:
+        debug(f"1. Trying to authenticate via `{self.GITHUB_TOKEN_ENV_VAR}` environment variable...")
+        github_token = os.environ.get(self.GITHUB_TOKEN_ENV_VAR)
+        if github_token:
+            self.__value = github_token
+            self.__provider = f'`{self.GITHUB_TOKEN_ENV_VAR}` environment variable'
+
+    def __get_token_from_file_in_home_directory(self) -> None:
+        debug("2. Trying to authenticate via `~/.github-token`...")
+        required_file_name = '.github-token'
+        provider = f'auth token for {self.__domain} from `~/.github-token`'
+        file_full_path = os.path.expanduser(f'~/{required_file_name}')
+
+        if os.path.isfile(file_full_path):
+            with open(file_full_path) as file:
+                # ~/.github-token is a file with a structure similar to:
                 #
-                # {domain1}:
-                # - user: {username1}
-                #   oauth_token: *******************
-                #   protocol: {protocol}
-                #
-                # {domain2}:
-                # - user: {username2}
-                #   oauth_token: *******************
-                #   protocol: {protocol}
-                found_host = False
-                for line in config_hub.readlines():
-                    if line.rstrip() == self.__domain + ":":
-                        found_host = True
-                    elif found_host and line.lstrip().startswith("oauth_token:"):
-                        result = re.sub(' *oauth_token: *', '', line).rstrip().replace('"', '')
-                        self.__value = result
-                        self.__provider = f'auth token for {self.__domain} from `hub` GitHub CLI'
+                # ghp_mytoken_for_github_com
+                # ghp_myothertoken_for_git_example_org git.example.org
+                # ghp_yetanothertoken_for_git_example_com git.example.com
+
+                for line in file.readlines():
+                    if line.endswith(" " + self.__domain):
+                        token = line.split(" ")[0]
+                        self.__value = token
+                        self.__provider = provider
+                        break
+                    elif self.__domain == GitHubClient.DEFAULT_GITHUB_DOMAIN and " " not in line.rstrip():
+                        self.__value = line.rstrip()
+                        self.__provider = provider
                         break
 
     def __get_token_from_gh(self) -> None:
+        debug("3. Trying to authenticate via `gh` GitHub CLI...")
         # Abort without error if `gh` isn't available
         gh = shutil.which('gh')
         if not gh:
@@ -170,27 +177,34 @@ class GitHubToken:
         match = re.search(r"Token: (\w+)", stderr)
         if match:
             self.__value = match.group(1)
-            self.__provider = f'auth token for {self.__domain} from `hub` GitHub CLI'
+            self.__provider = f'auth token for {self.__domain} from `gh` GitHub CLI'
 
-    def __get_token_from_env(self) -> None:
-        github_token = os.environ.get(self.GITHUB_TOKEN_ENV_VAR)
-        if github_token:
-            self.__value = github_token
-            self.__provider = f'`{self.GITHUB_TOKEN_ENV_VAR}` environment variable'
-
-    def __get_token_from_file_in_home_directory(self) -> None:
-        required_file_name = '.github-token'
-        self.__provider = f'auth token for {self.__domain} from `~/.github-token`'
-        file_full_path = os.path.expanduser(f'~/{required_file_name}')
-
-        if os.path.isfile(file_full_path):
-            with open(file_full_path) as file:
-                for line in file.readlines():
-                    if line.endswith(" " + self.__domain):
-                        token = line.split(" ")[0]
-                        self.__value = token
-                    elif self.__domain == GitHubClient.DEFAULT_GITHUB_DOMAIN and " " not in line.rstrip():
-                        self.__value = line.rstrip()
+    def __get_token_from_hub(self) -> None:
+        debug("4. Trying to authenticate via `hub` GitHub CLI...")
+        home_path: str = str(Path.home())
+        config_hub_path: str = os.path.join(home_path, ".config", "hub")
+        if os.path.isfile(config_hub_path):
+            with open(config_hub_path) as config_hub:
+                # ~/.config/hub is a yaml file, with a structure similar to:
+                #
+                # {domain1}:
+                # - user: {username1}
+                #   oauth_token: *******************
+                #   protocol: {protocol}
+                #
+                # {domain2}:
+                # - user: {username2}
+                #   oauth_token: *******************
+                #   protocol: {protocol}
+                found_host = False
+                for line in config_hub.readlines():
+                    if line.rstrip() == self.__domain + ":":
+                        found_host = True
+                    elif found_host and line.lstrip().startswith("oauth_token:"):
+                        result = re.sub(' *oauth_token:  *', '', line).rstrip().replace('"', '')
+                        self.__value = result
+                        self.__provider = f'auth token for {self.__domain} from `hub` GitHub CLI'
+                        break
 
     @property
     def value(self) -> Optional[str]:
