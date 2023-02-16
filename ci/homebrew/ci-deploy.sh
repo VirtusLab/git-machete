@@ -24,7 +24,7 @@ git config --global user.name "Git Machete Bot"
 
 # Relying on HOMEBREW_GITHUB_API_TOKEN, provided by the CI
 # See https://docs.brew.sh/Manpage -> Ctrl+F HOMEBREW_GITHUB_API_TOKEN
-brew install git-machete
+#brew install git-machete
 echo "Bump Homebrew formula"
 # `--force` ignores the existence of open PRs for the same formula.
 # It is useful for the rare cases where a develop/master build runs while a PR for the previously released version is still pending.
@@ -32,6 +32,7 @@ echo "Bump Homebrew formula"
 #   Error: These open pull requests may be duplicates:
 #   git-machete 3.15.1 https://github.com/Homebrew/homebrew-core/pull/123123
 #   Duplicate PRs should not be opened. Use --force to override this error.
+brew developer off
 flags=(--no-browse --verbose --url "$url" --sha256 "$sha256")
 if [[ $do_push == true ]]; then
   brew bump-formula-pr "${flags[@]}" git-machete
