@@ -36,7 +36,8 @@ if [[ $do_push == true ]]; then
   brew bump-formula-pr "${flags[@]}" git-machete
 else
   echo "Refraining from push since it's a dry run"
-  brew bump-formula-pr --write-only "${flags[@]}" git-machete
+#  brew bump-formula-pr --write-only "${flags[@]}" git-machete
+  brew bump-formula-pr --dry-run "${flags[@]}" git-machete
 
   export HOMEBREW_NO_INSTALL_FROM_API=1
   brew config
