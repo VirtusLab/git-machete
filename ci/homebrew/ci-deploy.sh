@@ -37,14 +37,12 @@ echo "Bump Homebrew formula"
 #   Error: These open pull requests may be duplicates:
 #   git-machete 3.15.1 https://github.com/Homebrew/homebrew-core/pull/123123
 #   Duplicate PRs should not be opened. Use --force to override this error.
-brew developer off
-flags=(--no-browse --verbose --url "$url" --sha256 "$sha256")
+flags=(--no-browse --force --verbose --url "$url" --sha256 "$sha256")
 if [[ $do_push == true ]]; then
   brew bump-formula-pr "${flags[@]}" git-machete
 else
   echo "Refraining from push since it's a dry run"
-#  brew bump-formula-pr --write-only "${flags[@]}" git-machete
-  brew bump-formula-pr --dry-run "${flags[@]}" git-machete
+  brew bump-formula-pr --write-only --debug "${flags[@]}" git-machete
 
   export HOMEBREW_NO_INSTALL_FROM_API=1
   brew config
