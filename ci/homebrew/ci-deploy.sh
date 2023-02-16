@@ -5,9 +5,6 @@ set -e -o pipefail -u -x
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" < /dev/null
 (echo; echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"') >> /home/circleci/.bash_profile
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-sudo apt-get install build-essential
-brew install gcc
-#eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 
 if [[ ${1-} == "--dry-run" || ${CIRCLE_BRANCH-} != "master" ]]; then
   do_push=false
@@ -28,9 +25,7 @@ git config --global user.name "Git Machete Bot"
 
 # Relying on HOMEBREW_GITHUB_API_TOKEN, provided by the CI
 # See https://docs.brew.sh/Manpage -> Ctrl+F HOMEBREW_GITHUB_API_TOKEN
-#brew install git-machete
 brew tap homebrew/core
-brew info git-machete
 echo "Bump Homebrew formula"
 # `--force` ignores the existence of open PRs for the same formula.
 # It is useful for the rare cases where a develop/master build runs while a PR for the previously released version is still pending.
@@ -43,7 +38,7 @@ if [[ $do_push == true ]]; then
   brew bump-formula-pr "${flags[@]}" git-machete
 else
   echo "Refraining from push since it's a dry run"
-  brew bump-formula-pr --write-only --debug "${flags[@]}" git-machete
+  brew bump-formula-pr --write-only "${flags[@]}" git-machete
 
   export HOMEBREW_NO_INSTALL_FROM_API=1
   brew config
