@@ -229,7 +229,7 @@ workflows:
               only:
                 - "develop"
                 - "/hotfix.*/"
-                - 'fix-homebrew-update-in-deploy-dry-run
+                - 'fix-homebrew-update-in-deploy-dry-run'
       - deploy from master:
           filters:
             branches:
