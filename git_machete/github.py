@@ -64,6 +64,9 @@ class RemoteAndOrganizationAndRepository:
         self.organization = organization
         self.repository = repository
 
+    def __bool__(self) -> bool:
+        return self.remote is not None and self.organization is not None and self.repository is not None
+
     @classmethod
     def from_config(cls,
                     git: GitContext
@@ -86,7 +89,9 @@ class RemoteAndOrganizationAndRepository:
                 return cls(remote=remote,
                            organization=org,
                            repository=repo if repo[-4:] != '.git' else repo[:-4])
-        return None
+        return cls(remote=None,
+                   organization=None,
+                   repository=None)
 
 
 class GitHubToken:
@@ -120,8 +125,8 @@ class GitHubToken:
         debug(f"1. Trying to authenticate via `{cls.GITHUB_TOKEN_ENV_VAR}` environment variable...")
         github_token = os.environ.get(cls.GITHUB_TOKEN_ENV_VAR)
         if github_token:
-            cls(value=github_token,
-                provider=f'`{cls.GITHUB_TOKEN_ENV_VAR}` environment variable')
+            return cls(value=github_token,
+                       provider=f'`{cls.GITHUB_TOKEN_ENV_VAR}` environment variable')
         return None
 
     @classmethod
@@ -177,7 +182,7 @@ class GitHubToken:
         match = re.search(r"Token: (\w+)", stderr)
         if match:
             return cls(value=match.group(1),
-                       provider=f'auth token for {domain} from `hub` GitHub CLI')
+                       provider=f'auth token for {domain} from `gh` GitHub CLI')
         return None
 
     @classmethod
@@ -290,7 +295,7 @@ class GitHubClient:
                 else:
                     raise MacheteException(
                         first_line + f'You might not have the required permissions for this repository.\n'
-                                     f'Provide a GitHub API token with `repo` access via {self.__token.provider}.\n'
+                                     f'Provide a GitHub API token with `repo` access.\n'
                                      f'Visit `https://{self.__domain}/settings/tokens` to generate a new one.\n'
                                      'You can also use a different token provider, available providers can be found '
                                      'when running `git machete help github`.')
