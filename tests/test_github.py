@@ -42,6 +42,10 @@ class FakeGitHubToken(GitHubToken):
         return 'fake_provider'
 
 
+def mock_from_domain_none(domain: str) -> None:
+    return None
+
+
 class EmptyGitHubToken(GitHubToken):
     def __bool__(self) -> bool:
         return False
@@ -695,7 +699,7 @@ class TestGithub:
         # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_create_pr`
         # due to `git fetch` executed by `create-pr` subcommand.
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
-        mocker.patch('git_machete.github.GitHubToken', EmptyGitHubToken)
+        mocker.patch('git_machete.github.GitHubToken.from_domain', mock_from_domain_none)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)

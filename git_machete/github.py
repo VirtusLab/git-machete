@@ -98,32 +98,37 @@ class GitHubToken:
                  ) -> None:
         self.__value: Optional[str] = value
         self.__provider: Optional[str] = provider
+        debug("authenticating via " + self.provider)
+
+    @property
+    def value(self) -> Optional[str]:
+        return self.__value
+
+    @property
+    def provider(self) -> Optional[str]:
+        return self.__provider
 
     @classmethod
-    def from_domain(cls, domain: str):
-
-        for token_retrieval_method in [self.__get_token_from_env,
-                                       self.__get_token_from_file_in_home_directory,
-                                       self.__get_token_from_gh,
-                                       self.__get_token_from_hub]:
-            if not (self.value and self.provider):
-                token_retrieval_method()
-            if self.value and self.provider:
-                debug("authenticating via " + self.provider)
-                break
+    def from_domain(cls, domain: str) -> Optional["GitHubToken"]:
+        return (cls.__get_token_from_env() or
+                cls.__get_token_from_file_in_home_directory(domain) or
+                cls.__get_token_from_gh(domain) or
+                cls.__get_token_from_hub(domain))
 
     @classmethod
-    def __get_token_from_env(cls, domain: str) -> None:
+    def __get_token_from_env(cls) -> Optional["GitHubToken"]:
         debug(f"1. Trying to authenticate via `{cls.GITHUB_TOKEN_ENV_VAR}` environment variable...")
         github_token = os.environ.get(cls.GITHUB_TOKEN_ENV_VAR)
         if github_token:
-            self.__value = github_token
-            self.__provider = f'`{self.GITHUB_TOKEN_ENV_VAR}` environment variable'
+            cls(value=github_token,
+                provider=f'`{cls.GITHUB_TOKEN_ENV_VAR}` environment variable')
+        return None
 
-    def __get_token_from_file_in_home_directory(self) -> None:
+    @classmethod
+    def __get_token_from_file_in_home_directory(cls, domain: str) -> Optional["GitHubToken"]:
         debug("2. Trying to authenticate via `~/.github-token`...")
         required_file_name = '.github-token'
-        provider = f'auth token for {self.__domain} from `~/.github-token`'
+        provider = f'auth token for {domain} from `~/.github-token`'
         file_full_path = os.path.expanduser(f'~/{required_file_name}')
 
         if os.path.isfile(file_full_path):
@@ -135,32 +140,30 @@ class GitHubToken:
                 # ghp_yetanothertoken_for_git_example_com git.example.com
 
                 for line in file.readlines():
-                    if line.endswith(" " + self.__domain):
+                    if line.endswith(" " + domain):
                         token = line.split(" ")[0]
-                        self.__value = token
-                        self.__provider = provider
-                        break
-                    elif self.__domain == GitHubClient.DEFAULT_GITHUB_DOMAIN and " " not in line.rstrip():
-                        self.__value = line.rstrip()
-                        self.__provider = provider
-                        break
+                        return cls(value=token, provider=provider)
+                    elif domain == GitHubClient.DEFAULT_GITHUB_DOMAIN and " " not in line.rstrip():
+                        return cls(value=line.rstrip(), provider=provider)
+        return None
 
-    def __get_token_from_gh(self) -> None:
+    @classmethod
+    def __get_token_from_gh(cls, domain: str) -> Optional["GitHubToken"]:
         debug("3. Trying to authenticate via `gh` GitHub CLI...")
         # Abort without error if `gh` isn't available
         gh = shutil.which('gh')
         if not gh:
-            return
+            return None
 
         # There is also `gh auth token`, but it's only been added in gh v2.17.0, in Oct 2022.
         # Let's stick to the older `gh auth status --show-token` for compatibility.
         proc = subprocess.run(
-            [gh, "auth", "status", "--hostname", self.__domain, "--show-token"],
+            [gh, "auth", "status", "--hostname", domain, "--show-token"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
         if proc.returncode != 0:
-            return
+            return None
 
         # `gh auth status --show-token` outputs to stderr in the form:
         #
@@ -173,10 +176,12 @@ class GitHubToken:
         stderr = proc.stderr.decode()
         match = re.search(r"Token: (\w+)", stderr)
         if match:
-            self.__value = match.group(1)
-            self.__provider = f'auth token for {self.__domain} from `gh` GitHub CLI'
+            return cls(value=match.group(1),
+                       provider=f'auth token for {domain} from `hub` GitHub CLI')
+        return None
 
-    def __get_token_from_hub(self) -> None:
+    @classmethod
+    def __get_token_from_hub(cls, domain: str) -> Optional["GitHubToken"]:
         debug("4. Trying to authenticate via `hub` GitHub CLI...")
         home_path: str = str(Path.home())
         config_hub_path: str = os.path.join(home_path, ".config", "hub")
@@ -195,21 +200,13 @@ class GitHubToken:
                 #   protocol: {protocol}
                 found_host = False
                 for line in config_hub.readlines():
-                    if line.rstrip() == self.__domain + ":":
+                    if line.rstrip() == domain + ":":
                         found_host = True
                     elif found_host and line.lstrip().startswith("oauth_token:"):
                         result = re.sub(' *oauth_token:  *', '', line).rstrip().replace('"', '')
-                        self.__value = result
-                        self.__provider = f'auth token for {self.__domain} from `hub` GitHub CLI'
-                        break
-
-    @property
-    def value(self) -> Optional[str]:
-        return self.__value
-
-    @property
-    def provider(self) -> Optional[str]:
-        return self.__provider
+                        return cls(value=result,
+                                   provider=f'auth token for {domain} from `hub` GitHub CLI')
+        return None
 
     @classmethod
     def get_possible_providers(cls) -> str:
@@ -230,7 +227,7 @@ class GitHubClient:
         self.__domain: str = domain
         self.__organization: str = organization
         self.__repository: str = repository
-        self.__token: GitHubToken = GitHubToken(domain=domain)
+        self.__token: Optional[GitHubToken] = GitHubToken.from_domain(domain)
 
     @property
     def organization(self) -> str:
