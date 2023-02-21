@@ -98,11 +98,11 @@ class GitHubToken:
     GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
 
     def __init__(self,
-                 value: Optional[str],
-                 provider: Optional[str]
+                 value: str,
+                 provider: str
                  ) -> None:
-        self.__value: Optional[str] = value
-        self.__provider: Optional[str] = provider
+        self.__value = value
+        self.__provider = provider
         debug("authenticating via " + self.provider)
 
     @property
@@ -114,7 +114,7 @@ class GitHubToken:
         return self.__provider
 
     @classmethod
-    def from_domain(cls, domain: str) -> Optional["GitHubToken"]:
+    def for_domain(cls, domain: str) -> Optional["GitHubToken"]:
         return (cls.__get_token_from_env() or
                 cls.__get_token_from_file_in_home_directory(domain) or
                 cls.__get_token_from_gh(domain) or
@@ -232,7 +232,7 @@ class GitHubClient:
         self.__domain: str = domain
         self.__organization: str = organization
         self.__repository: str = repository
-        self.__token: Optional[GitHubToken] = GitHubToken.from_domain(domain)
+        self.__token: Optional[GitHubToken] = GitHubToken.for_domain(domain)
 
     @property
     def organization(self) -> str:

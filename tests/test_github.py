@@ -1899,7 +1899,7 @@ class TestGithub:
     def test_get_token_from_env_var(self, mocker: Any) -> None:
         mocker.patch('_collections_abc.Mapping.get', mock_os_environ_get_github_token)
 
-        github_token = GitHubToken.from_domain(domain=GitHubClient.DEFAULT_GITHUB_DOMAIN)
+        github_token = GitHubToken.for_domain(domain=GitHubClient.DEFAULT_GITHUB_DOMAIN)
         assert github_token.provider == '`GITHUB_TOKEN` environment variable'
         assert github_token.value == 'github_token_from_env_var'
 
@@ -1913,17 +1913,17 @@ class TestGithub:
         mocker.patch('os.path.isfile', mock_is_file_true)
 
         domain = GitHubClient.DEFAULT_GITHUB_DOMAIN
-        github_token = GitHubToken.from_domain(domain=domain)
+        github_token = GitHubToken.for_domain(domain=domain)
         assert github_token.provider == f'auth token for {domain} from `~/.github-token`'
         assert github_token.value == 'ghp_mytoken_for_github_com'
 
         domain = 'git.example.org'
-        github_token = GitHubToken.from_domain(domain=domain)
+        github_token = GitHubToken.for_domain(domain=domain)
         assert github_token.provider == f'auth token for {domain} from `~/.github-token`'
         assert github_token.value == 'ghp_myothertoken_for_git_example_org'
 
         domain = 'git.example.com'
-        github_token = GitHubToken.from_domain(domain=domain)
+        github_token = GitHubToken.for_domain(domain=domain)
         assert github_token.provider == f'auth token for {domain} from `~/.github-token`'
         assert github_token.value == 'ghp_yetanothertoken_for_git_example_com'
 
@@ -1934,7 +1934,7 @@ class TestGithub:
         mocker.patch('subprocess.run', mock_subprocess_run)
 
         domain = 'git.example.com'
-        github_token = GitHubToken.from_domain(domain=domain)
+        github_token = GitHubToken.for_domain(domain=domain)
         assert github_token.provider == f'auth token for {domain} from `gh` GitHub CLI'
         assert github_token.value == 'ghp_mytoken_for_github_com_from_gh_cli'
 
@@ -1955,10 +1955,10 @@ class TestGithub:
         mocker.patch('builtins.open', mock_open(read_data=dedent(config_hub_contents)))
         mocker.patch('os.path.isfile', mock_is_file_not_github_token)
 
-        github_token = GitHubToken.from_domain(domain=domain1)
+        github_token = GitHubToken.for_domain(domain=domain1)
         assert github_token.provider == f'auth token for {domain1} from `hub` GitHub CLI'
         assert github_token.value == 'ghp_mytoken_for_github_com'
 
-        github_token = GitHubToken.from_domain(domain=domain2)
+        github_token = GitHubToken.for_domain(domain=domain2)
         assert github_token.provider == f'auth token for {domain2} from `hub` GitHub CLI'
         assert github_token.value == 'ghp_myothertoken_for_git_example_org'
