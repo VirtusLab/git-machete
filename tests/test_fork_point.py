@@ -83,7 +83,11 @@ class TestForkPoint:
 
         # valid commit hash but not present in the repository
         self.repo_sandbox.add_git_config_key('machete.overrideForkPoint.develop.to', 40 * 'a')
-        assert launch_command('fork-point').strip() == develop_branch_fork_point
+        assert launch_command('fork-point').strip() == (
+               "Warn: since branch develop is no longer a descendant of commit aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, the fork point override to this commit no longer applies.\n"  # noqa: E501
+               "Consider running:\n"
+               "  git machete fork-point --unset-override develop\n\n" +
+               develop_branch_fork_point)
 
         # valid fork-point override commit hash
         launch_command('fork-point', f'--override-to={master_branch_first_commit_hash}')

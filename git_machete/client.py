@@ -1647,8 +1647,7 @@ class MacheteClient:
 
         to_hash: Optional[FullCommitHash] = self.__git.get_commit_hash_by_revision(to)
         if not to_hash:
-            if not to_hash:
-                warn(f"`{to_key}` config value {bold(to)} does not point to a valid commit")
+            warn(f"`{to_key}` config value {bold(to)} does not point to a valid commit")
             return None
 
         return ForkPointOverrideData(to_hash)
@@ -1663,7 +1662,7 @@ class MacheteClient:
         if not self.__git.is_ancestor_or_equal(to.full_name(), branch.full_name()):
             warn(fmt(
                 f"since branch {bold(branch)} is no longer a descendant of commit {bold(to)}, ",
-                f"the fork point override to commit {bold(to)} no longer applies.\n",
+                "the fork point override to this commit no longer applies.\n",
                 f"Consider running:\n  `git machete fork-point --unset-override {branch}`\n"))
             return None
         debug(f"since branch {branch} is descendant of {to}, fork point of {branch} is overridden to {to}")
