@@ -29,11 +29,11 @@ class FakeCommandLineOptions(CommandLineOptions):
         self.opt_yes: bool = True
 
 
-def mock_from_domain_none(domain: str) -> None:
+def mock_for_domain_none(domain: str) -> None:
     return None
 
 
-def mock_from_domain_fake(domain: str) -> GitHubToken:
+def mock_for_domain_fake(domain: str) -> GitHubToken:
     return GitHubToken(value='dummy_token',
                        provider='dummy_provider')
 
@@ -678,7 +678,7 @@ class TestGithub:
         # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_create_pr`
         # due to `git fetch` executed by `create-pr` subcommand.
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
-        mocker.patch('git_machete.github.GitHubToken.from_domain', mock_from_domain_none)
+        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
@@ -740,7 +740,7 @@ class TestGithub:
         # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_create_pr`
         # due to `git fetch` executed by `create-pr` subcommand.
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
-        mocker.patch('git_machete.github.GitHubToken.from_domain', mock_from_domain_none)
+        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('urllib.error.HTTPError', MockHTTPError)  # need to provide read() method, which does not actually read error from url
@@ -1004,7 +1004,7 @@ class TestGithub:
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-        mocker.patch('git_machete.github.GitHubToken.from_domain', mock_from_domain_none)
+        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_checkout_prs.new_request())
         mocker.patch('urllib.request.urlopen', MockContextManager)
 
@@ -1538,7 +1538,7 @@ class TestGithub:
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-        mocker.patch('git_machete.github.GitHubToken.from_domain', mock_from_domain_none)
+        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
         mocker.patch('urllib.request.Request',
                      self.git_api_state_for_test_github_checkout_prs_of_current_user_and_other_users.new_request())
         mocker.patch('urllib.request.urlopen', MockContextManager)
@@ -1691,7 +1691,7 @@ class TestGithub:
         mocker.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
-        mocker.patch('git_machete.github.GitHubToken.from_domain', mock_from_domain_fake)
+        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_fake)
         mocker.patch('urllib.request.urlopen', MockContextManager)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_sync.new_request())
 
@@ -1770,7 +1770,7 @@ class TestGithub:
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-        mocker.patch('git_machete.github.GitHubToken.from_domain', mock_from_domain_none)
+        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
         mocker.patch('urllib.request.urlopen', MockContextManager)
         mocker.patch('git_machete.github.GitHubClient.derive_current_user_login', mock_derive_current_user_login)
         mocker.patch('urllib.request.Request', MockGitHubAPIState([]).new_request())
@@ -1810,7 +1810,7 @@ class TestGithub:
         mocker.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
-        mocker.patch('git_machete.github.GitHubToken.from_domain', mock_from_domain_none)
+        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
         mocker.patch('urllib.request.urlopen', MockContextManagerRaise403)
         mocker.patch('git_machete.cli.exit_script', mock_exit_script)
 
@@ -1848,7 +1848,7 @@ class TestGithub:
         mocker.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
-        mocker.patch('git_machete.github.GitHubToken.from_domain', mock_from_domain_fake)
+        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_fake)
         mocker.patch('urllib.request.urlopen', MockContextManager)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_enterprise_domain.new_request())
         mocker.patch('git_machete.cli.exit_script', mock_exit_script)
