@@ -157,9 +157,8 @@ class FullTreeHash(str):
 
 
 class ForkPointOverrideData:
-    def __init__(self, to_hash: FullCommitHash, while_descendant_of_hash: FullCommitHash):
+    def __init__(self, to_hash: FullCommitHash):
         self.to_hash: FullCommitHash = to_hash
-        self.while_descendant_of_hash: FullCommitHash = while_descendant_of_hash
 
 
 class GitLogEntry(NamedTuple):
