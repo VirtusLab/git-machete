@@ -1640,7 +1640,7 @@ class MacheteClient:
     def __get_fork_point_override_data(self, branch: LocalBranchShortName) -> Optional[ForkPointOverrideData]:
         # Note that here we ignore the now-deprecated `whileDescendantOf`.
         to_key = git_config_keys.override_fork_point_to(branch)
-        if FullCommitHash.is_valid(value=self.__git.get_config_attr_or_none(to_key), git_context=self.__git):
+        if FullCommitHash.is_valid(value=self.__git.get_config_attr_or_none(to_key)):
             to = FullCommitHash.of(self.__git.get_config_attr_or_none(to_key))
         else:
             return None

@@ -378,7 +378,7 @@ def update_cli_opts_using_parsed_args(
 
     for opt, arg in vars(parsed_args).items():
         if opt == "branch":
-            cli_opts.opt_branch = AnyBranchName.of(arg)
+            cli_opts.opt_branch = AnyBranchName.of(arg) if arg else None
         elif opt == "checked_out_since":
             cli_opts.opt_checked_out_since = arg
         elif opt == "color":
@@ -386,7 +386,7 @@ def update_cli_opts_using_parsed_args(
         elif opt == "delete":
             cli_opts.opt_delete = True
         elif opt == "down_fork_point":
-            cli_opts.opt_down_fork_point = AnyRevision.of(arg)
+            cli_opts.opt_down_fork_point = AnyRevision.of(arg) if arg else None
         elif opt == "debug":
             cli_opts.opt_debug = True
         elif opt == "draft":
@@ -394,7 +394,7 @@ def update_cli_opts_using_parsed_args(
         elif opt == "fetch":
             cli_opts.opt_fetch = True
         elif opt == "fork_point":
-            cli_opts.opt_fork_point = AnyRevision.of(arg)
+            cli_opts.opt_fork_point = AnyRevision.of(arg) if arg else None
         elif opt == "inferred":
             cli_opts.opt_inferred = True
         elif opt == "list_commits_with_hashes":
@@ -417,7 +417,7 @@ def update_cli_opts_using_parsed_args(
         elif opt == "no_push_untracked":
             cli_opts.opt_push_untracked = False
         elif opt == "onto":
-            cli_opts.opt_onto = LocalBranchShortName.of(arg)
+            cli_opts.opt_onto = LocalBranchShortName.of(arg) if arg else None
         elif opt == "override_to":
             cli_opts.opt_override_to = arg
         elif opt == "override_to_inferred":
@@ -432,7 +432,7 @@ def update_cli_opts_using_parsed_args(
         elif opt == "as_root":
             cli_opts.opt_as_root = True
         elif opt == "roots":
-            cli_opts.opt_roots = list(map(LocalBranchShortName.of, arg.split(",")))
+            cli_opts.opt_roots = list(map(LocalBranchShortName.of, filter(None, arg.split(","))))
         elif opt == "return_to":
             cli_opts.opt_return_to = arg
         elif opt == "stat":
@@ -705,11 +705,10 @@ def launch(orig_args: List[str]) -> None:
                     return LocalBranchShortName.of(re.sub("^[^/]+/", "", remote_branch))
 
                 remote_counterparts_of_local_branches = utils.map_truthy_only(
-                    lambda _branch: LocalBranchShortName.of(git.get_combined_counterpart_for_fetching_of_branch(_branch)),
+                    git.get_combined_counterpart_for_fetching_of_branch,
                     git.get_local_branches())
-                qualifying_remote_branches: List[RemoteBranchShortName] = excluding(git.get_remote_branches(),
-                                                                                    {RemoteBranchShortName.of(b) for b in
-                                                                                     remote_counterparts_of_local_branches})
+                qualifying_remote_branches: List[RemoteBranchShortName] = \
+                    excluding(git.get_remote_branches(), remote_counterparts_of_local_branches)
                 res = excluding(git.get_local_branches(), machete_client.managed_branches) + list(
                     map(strip_remote_name, qualifying_remote_branches))
             elif category == "childless":

@@ -17,8 +17,12 @@ from git_machete.utils import (AnsiEscapeCodes, CommandResult, colored, debug,
 
 class AnyRevision(str):
     @staticmethod
-    def of(value: str) -> Optional["AnyRevision"]:
-        return AnyRevision(value) if value else None
+    def of(value: str) -> "AnyRevision":
+        if not value:
+            raise TypeError(f'AnyRevision.of should not accept {value} as a param.\n'
+                            'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
+
+        return AnyRevision(value)
 
     def full_name(self) -> "AnyRevision":
         return self
@@ -26,8 +30,11 @@ class AnyRevision(str):
 
 class AnyBranchName(AnyRevision):
     @staticmethod
-    def of(value: str) -> Optional["AnyBranchName"]:
-        return AnyBranchName(value) if value else None
+    def of(value: str) -> "AnyBranchName":
+        if not value:
+            raise TypeError(f'AnyBranchName.of should not accept {value} as a param.\n'
+                            'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
+        return AnyBranchName(value)
 
     def full_name(self) -> "AnyBranchName":
         return self
@@ -35,33 +42,29 @@ class AnyBranchName(AnyRevision):
 
 class LocalBranchShortName(AnyBranchName):
     @staticmethod
-    def of(value: str) -> Optional["LocalBranchShortName"]:
-        if value:
-            if value.startswith('refs/heads/') or value.startswith('refs/remotes/'):
-                raise TypeError(
-                    f'LocalBranchShortName cannot accept refs/heads or refs/remotes. Given value: {value}.\n'
-                    'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
-            else:
-                return LocalBranchShortName(value)
-        return None
+    def of(value: str) -> "LocalBranchShortName":
+        if value.startswith('refs/heads/') or value.startswith('refs/remotes/'):
+            raise TypeError(
+                f'LocalBranchShortName cannot accept refs/heads or refs/remotes. Given value: {value}.\n'
+                'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
+        else:
+            return LocalBranchShortName(value)
 
-    def full_name(self) -> Optional["LocalBranchFullName"]:
+    def full_name(self) -> "LocalBranchFullName":
         return LocalBranchFullName.from_short_name(self)
 
 
 class LocalBranchFullName(AnyBranchName):
     @staticmethod
-    def of(value: str) -> Optional["LocalBranchFullName"]:
-        if value:
-            if value.startswith('refs/heads/'):
-                return LocalBranchFullName(value)
-            else:
-                raise TypeError(f'LocalBranchFullName needs to have `refs/heads` prefix before branch name. Given value: {value}.\n'
-                                'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
-        return None
+    def of(value: str) -> "LocalBranchFullName":
+        if value and value.startswith('refs/heads/'):
+            return LocalBranchFullName(value)
+        else:
+            raise TypeError(f'LocalBranchFullName needs to have `refs/heads` prefix before branch name. Given value: {value}.\n'
+                            'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
 
     @staticmethod
-    def from_short_name(value: LocalBranchShortName) -> Optional["LocalBranchFullName"]:
+    def from_short_name(value: LocalBranchShortName) -> "LocalBranchFullName":
         return LocalBranchFullName.of(f"refs/heads/{value}")
 
     def full_name(self) -> "LocalBranchFullName":
@@ -73,37 +76,33 @@ class LocalBranchFullName(AnyBranchName):
 
 class RemoteBranchShortName(AnyBranchName):
     @staticmethod
-    def of(value: str) -> Optional["RemoteBranchShortName"]:
-        if value:
-            if value.startswith('refs/heads/') or value.startswith('refs/remotes/'):
-                raise TypeError(
-                    f'RemoteBranchShortName cannot accept refs/heads or refs/remotes. Given value: {value}.\n'
-                    'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
-            else:
-                return RemoteBranchShortName(value)
-        return None
+    def of(value: str) -> "RemoteBranchShortName":
+        if value and value.startswith('refs/heads/') or value.startswith('refs/remotes/'):
+            raise TypeError(
+                f'RemoteBranchShortName cannot accept refs/heads or refs/remotes. Given value: {value}.\n'
+                'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
+        else:
+            return RemoteBranchShortName(value)
 
-    def full_name(self) -> Optional["RemoteBranchFullName"]:
+    def full_name(self) -> "RemoteBranchFullName":
         return RemoteBranchFullName.from_short_name(self)
 
 
 class RemoteBranchFullName(AnyBranchName):
     @staticmethod
-    def of(value: str) -> Optional["RemoteBranchFullName"]:
-        if value:
-            if value.startswith('refs/remotes/'):
-                return RemoteBranchFullName(value)
-            else:
-                raise TypeError(f'RemoteBranchFullName needs to have `refs/remotes` prefix before branch name. Given value: {value}.\n'
-                                'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
-        return None
+    def of(value: str) -> "RemoteBranchFullName":
+        if value and value.startswith('refs/remotes/'):
+            return RemoteBranchFullName(value)
+        else:
+            raise TypeError(f'RemoteBranchFullName needs to have `refs/remotes` prefix before branch name. Given value: {value}.\n'
+                            'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
 
     @staticmethod
     def is_valid(value: str) -> bool:
         return value is not None and value.startswith('refs/remotes/')
 
     @staticmethod
-    def from_short_name(value: RemoteBranchShortName) -> Optional["RemoteBranchFullName"]:
+    def from_short_name(value: RemoteBranchShortName) -> "RemoteBranchFullName":
         return RemoteBranchFullName.of(f"refs/remotes/{value}")
 
     def full_name(self) -> "RemoteBranchFullName":
@@ -115,18 +114,15 @@ class RemoteBranchFullName(AnyBranchName):
 
 class FullCommitHash(AnyRevision):
     @staticmethod
-    def of(value: str) -> Optional["FullCommitHash"]:
-        value = value.strip()
-        if value:
-            if len(value) == 40:
-                return FullCommitHash(value)
-            else:
-                raise TypeError(f'FullCommitHash requires length of 40. Given value: {value}, has length: {len(value)}.\n'
-                                'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
-        return None
+    def of(value: str) -> "FullCommitHash":
+        if value and len(value) == 40:
+            return FullCommitHash(value)
+        else:
+            raise TypeError(f'FullCommitHash requires length of 40. Given value: {value}, has length: {len(value)}.\n'
+                            'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
 
     @staticmethod
-    def is_valid(value: str, git_context: "GitContext") -> bool:
+    def is_valid(value: str) -> bool:
         return value is not None and len(value) == 40 and all(c in string.hexdigits for c in value)
 
     def full_name(self) -> "FullCommitHash":
@@ -135,14 +131,12 @@ class FullCommitHash(AnyRevision):
 
 class ShortCommitHash(AnyRevision):
     @staticmethod
-    def of(value: str) -> Optional["ShortCommitHash"]:
-        if value:
-            if len(value) >= 7:
-                return ShortCommitHash(value)
-            else:
-                raise TypeError(f'ShortCommitHash requires length greater or equal to 7. Given value: {value}, has length: {len(value)}.\n'
-                                'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
-        return None
+    def of(value: str) -> "ShortCommitHash":
+        if value and len(value) >= 7:
+            return ShortCommitHash(value)
+        else:
+            raise TypeError(f'ShortCommitHash requires length greater or equal to 7. Given value: {value}, has length: {len(value)}.\n'
+                            'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
 
     def full_name(self) -> "ShortCommitHash":
         return self
@@ -151,7 +145,10 @@ class ShortCommitHash(AnyRevision):
 class FullTreeHash(str):
     @staticmethod
     def of(value: str) -> Optional["FullTreeHash"]:
-        return FullTreeHash(value) if value else None
+        if not value:
+            raise TypeError(f'FullTreeHash.of should not accept {value} as a param.\n'
+                            'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
+        return FullTreeHash(value)
 
 
 class ForkPointOverrideData:
@@ -768,8 +765,8 @@ class GitContext:
             # In the rare case when hash1, hash2 have no common commits, the flag: allow_non_zero=True
             # (allows, non zero exit code to be returned by git merge-base command, without raising an exception)
             # is used and the __get_merge_base function returns None.
-            self.__merge_base_cached[hash1, hash2] = FullCommitHash.of(self._popen_git("merge-base", hash1, hash2,
-                                                                                       allow_non_zero=True).stdout)
+            merge_base = self._popen_git("merge-base", hash1, hash2, allow_non_zero=True).stdout.strip()
+            self.__merge_base_cached[hash1, hash2] = FullCommitHash.of(merge_base) if merge_base else None
         return self.__merge_base_cached[hash1, hash2]
 
     # Note: the 'git rev-parse --verify' validation is not performed in case for either of earlier/later
@@ -1011,7 +1008,7 @@ class GitContext:
         params = ["log", "-1", f"--format={information.value}"]
         if commit:
             params.append(commit)
-        return self._popen_git(*params).stdout
+        return self._popen_git(*params).stdout.strip()
 
     def display_branch_history_from_fork_point(self, branch: LocalBranchFullName, fork_point: FullCommitHash) -> int:
         return self._run_git("log", f"^{fork_point}", branch)
@@ -1020,7 +1017,7 @@ class GitContext:
             self, parent_revision: AnyRevision, msg: str, env: Dict[str, str]) -> FullCommitHash:
         # returns hash of the new commit
         return FullCommitHash.of(self._popen_git(
-            "commit-tree", "HEAD^{tree}", "-p", parent_revision, "-m", msg, env=env).stdout)  # noqa: FS003
+            "commit-tree", "HEAD^{tree}", "-p", parent_revision, "-m", msg, env=env).stdout.strip())  # noqa: FS003
 
     def delete_branch(self, branch_name: LocalBranchShortName, force: bool = False) -> int:
         self.flush_caches()

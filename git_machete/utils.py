@@ -8,6 +8,7 @@ from typing import (Any, Callable, Dict, Iterable, List, NamedTuple, Optional,
                     Set, Tuple, TypeVar)
 
 T = TypeVar('T')
+U = TypeVar('U')
 # To avoid displaying the same warning multiple times during a single run.
 displayed_warnings: Set[str] = set()
 
@@ -32,7 +33,7 @@ def find_or_none(func: Callable[[T], bool], iterable: Iterable[T]) -> T:
     return next(filter(func, iterable), None)
 
 
-def map_truthy_only(func: Callable[[T], Optional[T]], iterable: Iterable[T]) -> List[T]:
+def map_truthy_only(func: Callable[[T], Optional[U]], iterable: Iterable[T]) -> List[U]:
     return list(filter(None, map(func, iterable)))
 
 
