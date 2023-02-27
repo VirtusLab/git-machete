@@ -3,7 +3,7 @@ import os
 from subprocess import CalledProcessError, CompletedProcess
 from tempfile import mkdtemp
 from textwrap import dedent
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 from unittest.mock import mock_open
 
 import pytest
@@ -88,12 +88,12 @@ def mock_os_environ_get_github_token(self: Any, key: str, default: Optional[str]
         return default
 
 
-def mock_shutil_which_gh(cmd: Any) -> str:
-    return 'path_to_gh_executable'
+def mock_shutil_which_gh(path: Optional[str]) -> Callable[[Any], str]:
+    return lambda cmd: path
 
 
-def mock_subprocess_run(*args, stdout: bytes, stderr: bytes) -> "CompletedProcess":  # type: ignore[no-untyped-def, type-arg]
-    return CompletedProcess(args, 0, b'stdout', b'Token: ghp_mytoken_for_github_com_from_gh_cli')
+def mock_subprocess_run(returncode: int, stdout: str = '', stderr: str = ''):  # type: ignore[no-untyped-def]
+    return lambda *args, **kwargs: CompletedProcess(args, returncode, bytes(stdout, 'utf-8'), bytes(stderr, 'utf-8'))
 
 
 prs_per_page = 3
@@ -128,7 +128,7 @@ def mock_info(x: Any) -> Dict[str, Any]:
 mock_info.counter = mock_read.counter = 0  # type: ignore[attr-defined]
 
 
-class TestGithub:
+class TestGitHub:
     mock_repository_info: Dict[str, str] = {'full_name': 'testing/checkout_prs',
                                             'html_url': 'https://github.com/tester/repo_sandbox.git'}
 
@@ -1869,6 +1869,7 @@ class TestGithub:
 
     def test_github_token_retrieval_order(self, mocker: Any) -> None:
         mocker.patch('os.path.isfile', mock_is_file_false)
+        mocker.patch('shutil.which', mock_shutil_which_gh(None))
         mocker.patch('urllib.request.urlopen', MockContextManager)
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
         mocker.patch('_collections_abc.Mapping.get', mock_os_environ_get_none)
@@ -1930,8 +1931,14 @@ class TestGithub:
     def test_get_token_from_gh(self, mocker: Any) -> None:
         mocker.patch('os.path.isfile', mock_is_file_false)
         mocker.patch('_collections_abc.Mapping.get', mock_os_environ_get_none)
-        mocker.patch('shutil.which', mock_shutil_which_gh)
-        mocker.patch('subprocess.run', mock_subprocess_run)
+        mocker.patch('shutil.which', mock_shutil_which_gh('/path/to/gh'))
+        mocker.patch('subprocess.run', mock_subprocess_run(returncode=0, stdout='stdout', stderr='''
+        github.com
+            ✓ Logged in to github.com as Foo Bar (/Users/foo_bar/.config/gh/hosts.yml)
+            ✓ Git operations for github.com configured to use ssh protocol.
+            ✓ Token: ghp_mytoken_for_github_com_from_gh_cli
+            ✓ Token scopes: gist, read:discussion, read:org, repo, workflow
+        '''))
 
         domain = 'git.example.com'
         github_token = GitHubToken.for_domain(domain=domain)
@@ -1954,6 +1961,7 @@ class TestGithub:
 
         mocker.patch('builtins.open', mock_open(read_data=dedent(config_hub_contents)))
         mocker.patch('os.path.isfile', mock_is_file_not_github_token)
+        mocker.patch('subprocess.run', mock_subprocess_run(returncode=1))
 
         github_token = GitHubToken.for_domain(domain=domain1)
         assert github_token.provider == f'auth token for {domain1} from `hub` GitHub CLI'
