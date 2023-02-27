@@ -326,7 +326,7 @@ class MacheteClient:
 
     def update(
             self, *, opt_merge: bool, opt_no_edit_merge: bool,
-            opt_no_interactive_rebase: bool, opt_fork_point: AnyRevision) -> None:
+            opt_no_interactive_rebase: bool, opt_fork_point: Optional[AnyRevision]) -> None:
         current_branch = self.__git.get_current_branch()
         if opt_merge:
             with_branch = self.up(

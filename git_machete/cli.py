@@ -50,7 +50,7 @@ command_groups: List[Tuple[str, List[str]]] = [
 commands_and_aliases = list(long_docs.keys()) + list(alias_by_command.keys())
 
 
-def get_help_description(display_help_topics: bool, command: str = None) -> str:
+def get_help_description(display_help_topics: bool, command: Optional[str] = None) -> str:
     usage_str = ''
     if command and command in commands_and_aliases:
         if command in long_docs:
@@ -100,7 +100,7 @@ class MacheteHelpAction(argparse.Action):
             option_strings: str,
             dest: str = argparse.SUPPRESS,
             default: Any = argparse.SUPPRESS,
-            help: str = None
+            help: Optional[str] = None
     ) -> None:
         super(MacheteHelpAction, self).__init__(
             option_strings=option_strings,
@@ -114,7 +114,7 @@ class MacheteHelpAction(argparse.Action):
             parser: argparse.ArgumentParser,
             namespace: argparse.Namespace,
             values: Union[str, Sequence[Any], None],
-            option_string: str = None
+            option_string: Optional[str] = None
     ) -> None:
         # parser name (prog) is expected to be `git machete` or `git machete <command>`
         command_name = parser.prog.replace('git machete', '').strip()
@@ -489,9 +489,8 @@ def get_local_branch_short_name_from_arg_or_current_branch(
     return get_local_branch_short_name_from_arg(branch_from_arg) if branch_from_arg else git_context.get_current_branch()
 
 
-def get_local_branch_short_name_from_arg(
-        branch_from_arg: Optional[AnyBranchName]) -> Optional[LocalBranchShortName]:
-    return LocalBranchShortName.of(branch_from_arg.replace('refs/heads/', '')) if branch_from_arg else None
+def get_local_branch_short_name_from_arg(branch_from_arg: AnyBranchName) -> LocalBranchShortName:
+    return LocalBranchShortName.of(branch_from_arg.replace('refs/heads/', ''))
 
 
 def exit_script(status_code: int, error: Optional[BaseException] = None) -> None:
@@ -593,8 +592,8 @@ def launch(orig_args: List[str]) -> None:
             machete_client.delete_unmanaged(opt_yes=cli_opts.opt_yes)
         elif cmd in {"diff", alias_by_command["diff"]}:
             machete_client.read_definition_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
-            machete_client.diff(branch=get_local_branch_short_name_from_arg(cli_opts.opt_branch),
-                                opt_stat=cli_opts.opt_stat)  # passing None if not specified
+            diff_branch = get_local_branch_short_name_from_arg(cli_opts.opt_branch) if (cli_opts.opt_branch is not None) else None
+            machete_client.diff(branch=diff_branch, opt_stat=cli_opts.opt_stat)
         elif cmd == "discover":
             machete_client.read_definition_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             machete_client.discover_tree(
@@ -612,18 +611,19 @@ def launch(orig_args: List[str]) -> None:
             machete_client.read_definition_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             branch = get_local_branch_short_name_from_arg_or_current_branch(cli_opts.opt_branch, git)
             if cli_opts.opt_inferred:
-                print(machete_client.fork_point(
-                    branch=branch,
-                    use_overrides=False,
-                    opt_no_detect_squash_merges=cli_opts.opt_no_detect_squash_merges))
+                fork_point = machete_client.fork_point(branch=branch, use_overrides=False,
+                                                       opt_no_detect_squash_merges=cli_opts.opt_no_detect_squash_merges)
+                if fork_point:
+                    print(fork_point)
             elif cli_opts.opt_override_to:
                 machete_client.set_fork_point_override(branch, AnyRevision.of(cli_opts.opt_override_to))
             elif cli_opts.opt_override_to_inferred:
-                machete_client.set_fork_point_override(
-                    branch, machete_client.fork_point(
-                        branch=branch,
-                        use_overrides=False,
-                        opt_no_detect_squash_merges=cli_opts.opt_no_detect_squash_merges))
+                fork_point = machete_client.fork_point(branch=branch, use_overrides=False,
+                                                       opt_no_detect_squash_merges=cli_opts.opt_no_detect_squash_merges)
+                if fork_point:
+                    machete_client.set_fork_point_override(branch, fork_point)
+                else:
+                    raise MacheteException(f"Fork point not found for branch <b>{branch}</b>")
             elif cli_opts.opt_override_to_parent:
                 upstream = machete_client.up_branch.get(branch)
                 if upstream:
@@ -738,16 +738,18 @@ def launch(orig_args: List[str]) -> None:
             machete_client.read_definition_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             git.expect_no_operation_in_progress()
             current_branch = git.get_current_branch()
-            if "fork_point" in parsed_cli:
+            if "fork_point" in parsed_cli and cli_opts.opt_fork_point:
                 machete_client.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
                     fork_point_hash=cli_opts.opt_fork_point, branch=current_branch)
-            git.rebase_onto_ancestor_commit(
-                current_branch,
-                cli_opts.opt_fork_point or machete_client.fork_point(
-                    branch=current_branch,
-                    use_overrides=True,
-                    opt_no_detect_squash_merges=cli_opts.opt_no_detect_squash_merges),
-                cli_opts.opt_no_interactive_rebase)
+
+            reapply_fork_point = cli_opts.opt_fork_point or machete_client.fork_point(
+                branch=current_branch,
+                use_overrides=True,
+                opt_no_detect_squash_merges=cli_opts.opt_no_detect_squash_merges)
+            if not reapply_fork_point:
+                raise MacheteException(f"Fork point not found for branch <b>{current_branch}</b>; use `--fork-point` flag")
+
+            git.rebase_onto_ancestor_commit(current_branch, reapply_fork_point, cli_opts.opt_no_interactive_rebase)
         elif cmd == "show":
             direction = parsed_cli.direction
             branch = get_local_branch_short_name_from_arg_or_current_branch(cli_opts.opt_branch, git)
@@ -782,15 +784,18 @@ def launch(orig_args: List[str]) -> None:
             machete_client.read_definition_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             git.expect_no_operation_in_progress()
             current_branch = git.get_current_branch()
-            if "fork_point" in parsed_cli:
+            if "fork_point" in parsed_cli and cli_opts.opt_fork_point:
                 machete_client.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
                     fork_point_hash=cli_opts.opt_fork_point, branch=current_branch)
-            machete_client.squash(
-                current_branch=current_branch,
-                opt_fork_point=cli_opts.opt_fork_point or machete_client.fork_point(
-                    branch=current_branch,
-                    use_overrides=True,
-                    opt_no_detect_squash_merges=cli_opts.opt_no_detect_squash_merges))
+
+            squash_fork_point = cli_opts.opt_fork_point or machete_client.fork_point(
+                branch=current_branch,
+                use_overrides=True,
+                opt_no_detect_squash_merges=cli_opts.opt_no_detect_squash_merges)
+            if not squash_fork_point:
+                raise MacheteException(f"Fork point not found for branch <b>{current_branch}</b>; use `--fork-point` flag")
+
+            machete_client.squash(current_branch=current_branch, opt_fork_point=squash_fork_point)
         elif cmd in {"status", alias_by_command["status"]}:
             machete_client.read_definition_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             machete_client.expect_at_least_one_managed_branch()
@@ -825,7 +830,7 @@ def launch(orig_args: List[str]) -> None:
         elif cmd == "update":
             machete_client.read_definition_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             git.expect_no_operation_in_progress()
-            if "fork_point" in parsed_cli:
+            if "fork_point" in parsed_cli and cli_opts.opt_fork_point:
                 machete_client.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
                     fork_point_hash=cli_opts.opt_fork_point, branch=git.get_current_branch())
             machete_client.update(

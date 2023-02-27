@@ -30,8 +30,8 @@ class CommandLineOptions:
         self.opt_override_to: Optional[str] = None
         self.opt_override_to_inferred: bool = False
         self.opt_override_to_parent: bool = False
-        self.opt_push_tracked: Optional[bool] = True
-        self.opt_push_untracked: Optional[bool] = True
+        self.opt_push_tracked: bool = True
+        self.opt_push_untracked: bool = True
         self.opt_return_to: str = "stay"
         self.opt_roots: List[LocalBranchShortName] = list()
         self.opt_start_from: str = "here"
