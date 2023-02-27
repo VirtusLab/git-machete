@@ -135,7 +135,7 @@ class GitRepositorySandbox:
 
 
 class MockGitHubAPIState:
-    def __init__(self, pulls: List[Dict[str, Any]], issues: List[Dict[str, Any]] = None) -> None:
+    def __init__(self, pulls: List[Dict[str, Any]], issues: Optional[List[Dict[str, Any]]] = None) -> None:
         self.pulls: List[Dict[str, Any]] = pulls
         self.user: Dict[str, str] = {'login': 'other_user', 'type': 'User', 'company': 'VirtusLab'}
         # login must be different from the one used in pull requests, otherwise pull request author will not be annotated
@@ -173,11 +173,11 @@ class MockGitHubAPIRequest:
     def __init__(self, github_api_state: MockGitHubAPIState) -> None:
         self.github_api_state: MockGitHubAPIState = github_api_state
 
-    def __call__(self, url: str, headers: Dict[str, str] = None, data: Union[str, bytes, None] = None,
+    def __call__(self, url: str, headers: Dict[str, str] = {}, data: Union[str, bytes, None] = None,
                  method: str = '') -> "MockGitHubAPIResponse":
         self.parsed_url: ParseResult = urlparse(url, allow_fragments=True)
         self.parsed_query: Dict[str, List[str]] = parse_qs(self.parsed_url.query)
-        self.json_data: Union[str, bytes] = data
+        self.json_data: Union[str, bytes, None] = data
         self.return_data: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None
         self.headers: Dict[str, str] = headers
         return self.handle_method(method)
@@ -232,14 +232,16 @@ class MockGitHubAPIRequest:
             return self.make_response_object(HTTPStatus.NOT_FOUND, [])
 
     def update_pull_request(self) -> "MockGitHubAPIResponse":
-        pull_no: str = self.find_number(self.parsed_url.path, 'pulls')
+        pull_no = self.find_number(self.parsed_url.path, 'pulls')
         if not pull_no:
             if self.is_pull_created():
+                head = json.loads(self.json_data)["head"]  # type: ignore[arg-type]
                 return self.make_response_object(HTTPStatus.UNPROCESSABLE_ENTITY, {'message': 'Validation Failed', 'errors': [
-                    {'message': f'A pull request already exists for test_repo:{json.loads(self.json_data)["head"]}.'}]})
+                    {'message': f'A pull request already exists for test_repo:{head}.'}]})
             return self.create_pull_request()
-        pull: Dict[str, Any] = self.github_api_state.get_pull(pull_no)
-        return self.fill_pull_request_data(json.loads(self.json_data), pull)
+        pull = self.github_api_state.get_pull(pull_no)
+        assert pull is not None
+        return self.fill_pull_request_data(json.loads(self.json_data), pull)  # type: ignore[arg-type]
 
     def create_pull_request(self) -> "MockGitHubAPIResponse":
         pull = {'number': self.get_next_free_number(self.github_api_state.pulls),
@@ -248,15 +250,15 @@ class MockGitHubAPIRequest:
                 'state': 'open',
                 'head': {'ref': "", 'repo': {'full_name': 'testing:checkout_prs', 'html_url': mkdtemp()}},
                 'base': {'ref': ""}}
-        return self.fill_pull_request_data(json.loads(self.json_data), pull)
+        return self.fill_pull_request_data(json.loads(self.json_data), pull)  # type: ignore[arg-type]
 
     def fill_pull_request_data(self, data: Dict[str, Any], pull: Dict[str, Any]) -> "MockGitHubAPIResponse":
         index = self.get_index_or_none(pull, self.github_api_state.issues)
         for key in data.keys():
             if key in ('base', 'head'):
-                pull[key]['ref'] = json.loads(self.json_data)[key]
+                pull[key]['ref'] = json.loads(self.json_data)[key]  # type: ignore[arg-type]
             else:
-                pull[key] = json.loads(self.json_data)[key]
+                pull[key] = json.loads(self.json_data)[key]  # type: ignore[arg-type]
         if index:
             self.github_api_state.pulls[index] = pull
         else:
@@ -264,15 +266,16 @@ class MockGitHubAPIRequest:
         return self.make_response_object(HTTPStatus.CREATED, pull)
 
     def update_issue(self) -> "MockGitHubAPIResponse":
-        issue_no: str = self.find_number(self.parsed_url.path, 'issues')
+        issue_no = self.find_number(self.parsed_url.path, 'issues')
         if not issue_no:
             return self.create_issue()
-        issue: Dict[str, Any] = self.github_api_state.get_issue(issue_no)
-        return self.fill_issue_data(json.loads(self.json_data), issue)
+        issue = self.github_api_state.get_issue(issue_no)
+        assert issue is not None
+        return self.fill_issue_data(json.loads(self.json_data), issue)  # type: ignore[arg-type]
 
     def create_issue(self) -> "MockGitHubAPIResponse":
         issue = {'number': self.get_next_free_number(self.github_api_state.issues)}
-        return self.fill_issue_data(json.loads(self.json_data), issue)
+        return self.fill_issue_data(json.loads(self.json_data), issue)  # type: ignore[arg-type]
 
     def fill_issue_data(self, data: Dict[str, Any], issue: Dict[str, Any]) -> "MockGitHubAPIResponse":
         index = self.get_index_or_none(issue, self.github_api_state.issues)
@@ -285,7 +288,7 @@ class MockGitHubAPIRequest:
         return self.make_response_object(HTTPStatus.CREATED, issue)
 
     def is_pull_created(self) -> bool:
-        deserialized_json_data = json.loads(self.json_data)
+        deserialized_json_data = json.loads(self.json_data)  # type: ignore[arg-type]
         head: str = deserialized_json_data['head']
         base: str = deserialized_json_data['base']
         for pull in self.github_api_state.pulls:
@@ -336,9 +339,9 @@ class MockContextManager:
 
     def __enter__(self) -> MockGitHubAPIResponse:
         if self.obj.status_code == HTTPStatus.NOT_FOUND:
-            raise HTTPError(None, 404, 'Not found', None, None)
+            raise HTTPError("http://example.org", 404, 'Not found', None, None)  # type: ignore[arg-type]
         elif self.obj.status_code == HTTPStatus.UNPROCESSABLE_ENTITY:
-            raise MockHTTPError(None, 422, self.obj.response_data, None, None)
+            raise MockHTTPError("http://example.org", 422, self.obj.response_data, None, None)  # type: ignore[arg-type]
         return self.obj
 
     def __exit__(self, *args: Any) -> None:
@@ -350,7 +353,7 @@ class MockContextManagerRaise403(MockContextManager):
         super().__init__(obj)
 
     def __enter__(self) -> MockGitHubAPIResponse:
-        raise HTTPError(None, 403, 'Forbidden', None, None)
+        raise HTTPError("http://example.org", 403, 'Forbidden', None, None)  # type: ignore[arg-type]
 
 
 def adapt(s: str, indent: str) -> str:

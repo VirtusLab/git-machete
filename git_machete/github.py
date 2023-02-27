@@ -76,11 +76,7 @@ class RemoteAndOrganizationAndRepository:
                    repository=git.get_config_attr_or_none(key=git_config_keys.GITHUB_REPOSITORY))
 
     @classmethod
-    def from_url(cls,
-                 domain: str,
-                 url: str,
-                 remote: str
-                 ) -> Optional["RemoteAndOrganizationAndRepository"]:
+    def from_url(cls, domain: str, url: str, remote: str) -> "RemoteAndOrganizationAndRepository":
         for pattern in github_remote_url_patterns(domain):
             match = re.match(pattern, url)
             if match:
