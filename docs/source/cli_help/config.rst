@@ -14,13 +14,13 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
     .. include:: github_config_keys.rst
         :start-line: 2
 
-``machete.overrideForkPoint.<branch>.{to,whileDescendantOf}``:
-    Executing ``git machete fork-point --override-to=<revision> [<branch>]`` sets up a fork point override for <branch>.
+``machete.overrideForkPoint.<branch>.to``:
+    Executing ``git machete fork-point --override-to[-parent|-inferred|=<revision>] [<branch>]`` sets up a fork point override for <branch>.
 
-    The override data is stored under ``machete.overrideForkPoint.<branch>.to`` and
-    ``machete.overrideForkPoint.<branch>.whileDescendantOf`` git config keys.
+    The override data is stored under ``machete.overrideForkPoint.<branch>.to`` git config key.
 
-    There should be **no** need for the user to interact with these keys directly.
+    There should be **no** need for the user to interact with this key directly,
+    ``git machete fork-point`` with flags should be used instead.
 
 ``machete.status.extraSpaceBeforeBranchName``:
     .. include:: status_config_key.rst

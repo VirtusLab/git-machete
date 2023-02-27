@@ -127,9 +127,7 @@ class FullCommitHash(AnyRevision):
 
     @staticmethod
     def is_valid(value: str, git_context: "GitContext") -> bool:
-        revision = AnyRevision(value)
-        return value is not None and len(value) == 40 and all(c in string.hexdigits for c in value) \
-            and git_context.is_commit_present_in_repository(revision)
+        return value is not None and len(value) == 40 and all(c in string.hexdigits for c in value)
 
     def full_name(self) -> "FullCommitHash":
         return self
@@ -157,9 +155,8 @@ class FullTreeHash(str):
 
 
 class ForkPointOverrideData:
-    def __init__(self, to_hash: FullCommitHash, while_descendant_of_hash: FullCommitHash):
+    def __init__(self, to_hash: FullCommitHash):
         self.to_hash: FullCommitHash = to_hash
-        self.while_descendant_of_hash: FullCommitHash = while_descendant_of_hash
 
 
 class GitLogEntry(NamedTuple):
@@ -193,7 +190,7 @@ class GitContext:
         self.__remotes_cached: Optional[List[str]] = None
         self.__counterparts_for_fetching_cached: Optional[
             Dict[LocalBranchShortName, Optional[RemoteBranchShortName]]] = None  # TODO (#110): default dict with None
-        self.__short_commit_hash_by_revision_cached: Dict[AnyRevision, ShortCommitHash] = {}
+        self.__short_commit_hash_by_revision_cached: Dict[AnyRevision, Optional[ShortCommitHash]] = {}
         self.__tree_hash_by_commit_hash_cached: Optional[
             Dict[FullCommitHash, Optional[FullTreeHash]]] = None  # TODO (#110): default dict with None
         self.__commit_hash_by_revision_cached: Optional[
@@ -424,9 +421,12 @@ class GitContext:
     def __find_short_commit_hash_by_revision(self, revision: AnyRevision) -> ShortCommitHash:
         return ShortCommitHash.of(self._popen_git("rev-parse", "--short", revision + "^{commit}").stdout.rstrip())  # noqa: FS003
 
-    def get_short_commit_hash_by_revision(self, revision: AnyRevision) -> ShortCommitHash:
+    def get_short_commit_hash_by_revision_or_none(self, revision: AnyRevision) -> Optional[ShortCommitHash]:
         if revision not in self.__short_commit_hash_by_revision_cached:
-            self.__short_commit_hash_by_revision_cached[revision] = self.__find_short_commit_hash_by_revision(revision)
+            try:
+                self.__short_commit_hash_by_revision_cached[revision] = self.__find_short_commit_hash_by_revision(revision)
+            except MacheteException:
+                self.__short_commit_hash_by_revision_cached[revision] = None
         return self.__short_commit_hash_by_revision_cached[revision]
 
     def __find_commit_hash_by_revision(self, revision: AnyRevision) -> Optional[FullCommitHash]:
@@ -682,11 +682,11 @@ class GitContext:
         self.__reflogs_cached = None
 
     def get_revision_repr(self, revision: AnyRevision) -> str:
-        short_hash = self.get_short_commit_hash_by_revision(revision)
-        if self.is_full_hash(revision.full_name()) or revision == short_hash:
-            return f"commit {revision}"
+        short_hash = self.get_short_commit_hash_by_revision_or_none(revision)
+        if not short_hash or self.is_full_hash(revision.full_name()) or revision == short_hash:
+            return f"commit <b>{revision}</b>"
         else:
-            return f"{revision} (commit {self.get_short_commit_hash_by_revision(revision)})"
+            return f"<b>{revision}</b> (commit <b>{short_hash}</b>)"
 
     # Note: while rebase is ongoing, the repository is always in a detached HEAD state,
     # so we need to extract the name of the currently rebased branch from the rebase-specific internals

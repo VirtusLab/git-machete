@@ -1631,71 +1631,46 @@ class MacheteClient:
                     debug(f"upstream candidate {candidate} rejected ({reject_reason_message})")
         return None
 
-    # Also includes config that is incomplete (only one entry out of two) or otherwise invalid.
+    # Also includes config that is invalid (corresponding to a non-existent/GCed commit etc.).
     def has_any_fork_point_override_config(self, branch: LocalBranchShortName) -> bool:
         return (self.__git.get_config_attr_or_none(git_config_keys.override_fork_point_to(branch)) or
+                # Note that we still include the now-deprecated `whileDescendantOf` key for this purpose.
                 self.__git.get_config_attr_or_none(git_config_keys.override_fork_point_while_descendant_of(branch))) is not None
 
     def __get_fork_point_override_data(self, branch: LocalBranchShortName) -> Optional[ForkPointOverrideData]:
-        to, while_descendant_of = None, None
+        # Note that here we ignore the now-deprecated `whileDescendantOf`.
         to_key = git_config_keys.override_fork_point_to(branch)
         if FullCommitHash.is_valid(value=self.__git.get_config_attr_or_none(to_key), git_context=self.__git):
             to = FullCommitHash.of(self.__git.get_config_attr_or_none(to_key))
-        while_descendant_of_key = git_config_keys.override_fork_point_while_descendant_of(branch)
-        if FullCommitHash.is_valid(value=self.__git.get_config_attr_or_none(while_descendant_of_key), git_context=self.__git):
-            while_descendant_of = FullCommitHash.of(self.__git.get_config_attr_or_none(while_descendant_of_key))
-        if not to and not while_descendant_of:
-            return None
-        if to and not while_descendant_of:
-            warn(f"`{to_key}` config is set but `{while_descendant_of_key}` config is missing or invalid")
-            return None
-        if not to and while_descendant_of:
-            warn(f"`{while_descendant_of_key}` config is set but `{to_key}` config is missing or invalid")
+        else:
             return None
 
         to_hash: Optional[FullCommitHash] = self.__git.get_commit_hash_by_revision(to)
-        while_descendant_of_hash: Optional[FullCommitHash] = self.__git.get_commit_hash_by_revision(while_descendant_of)
-        if not to_hash or not while_descendant_of_hash:
-            if not to_hash:
-                warn(f"`{to_key}` config value {bold(to)} does not point to a valid commit")
-            if not while_descendant_of_hash:
-                warn(f"`{while_descendant_of_key}` config value {bold(while_descendant_of)} does not point to a valid commit")
+        if not to_hash:
+            warn(f"`{to_key}` config value {bold(to)} does not point to a valid commit")
             return None
-        # This check needs to be performed every time the config is retrieved.
-        # We can't rely on the values being validated in set_fork_point_override(),
-        # since the config could have been modified outside of git-machete.
-        if not self.__git.is_ancestor_or_equal(to_hash.full_name(), while_descendant_of_hash.full_name()):
-            warn(
-                f"commit {bold(self.__git.get_short_commit_hash_by_revision(to))} pointed by `{to_key}` config "
-                f"is not an ancestor of commit {bold(self.__git.get_short_commit_hash_by_revision(while_descendant_of))} "
-                f"pointed by `{while_descendant_of_key}` config")
-            return None
-        return ForkPointOverrideData(to_hash, while_descendant_of_hash)
+
+        return ForkPointOverrideData(to_hash)
 
     def __get_overridden_fork_point(self, branch: LocalBranchShortName) -> Optional[FullCommitHash]:
         override_data: ForkPointOverrideData = self.__get_fork_point_override_data(branch)
         if not override_data:
             return None
 
-        to, while_descendant_of = override_data.to_hash, override_data.while_descendant_of_hash
-        # Note that this check is distinct from the is_ancestor check performed in
-        # get_fork_point_override_data.
-        # While the latter checks the sanity of fork point override configuration,
-        # the former checks if the override still applies to wherever the given
-        # branch currently points.
-        if not self.__git.is_ancestor_or_equal(while_descendant_of.full_name(), branch.full_name()):
+        to = override_data.to_hash
+        # Checks if the override still applies to wherever the given branch currently points.
+        if not self.__git.is_ancestor_or_equal(to.full_name(), branch.full_name()):
             warn(fmt(
-                f"since branch {bold(branch)} is no longer a descendant of commit "
-                f"{bold(while_descendant_of)}, ",
-                f"the fork point override to commit {bold(to)} no longer applies.\n",
+                f"since branch {bold(branch)} is no longer a descendant of commit {bold(to)}, ",
+                "the fork point override to this commit no longer applies.\n",
                 f"Consider running:\n  `git machete fork-point --unset-override {branch}`\n"))
             return None
-        debug(f"since branch {branch} is descendant of while_descendant_of={while_descendant_of}, "
-              f"fork point of {branch} is overridden to {to}")
+        debug(f"since branch {branch} is descendant of {to}, fork point of {branch} is overridden to {to}")
         return to
 
     def unset_fork_point_override(self, branch: LocalBranchShortName) -> None:
         self.__git.unset_config_attr(git_config_keys.override_fork_point_to(branch))
+        # Note that we still unset the now-deprecated `whileDescendantOf` key.
         self.__git.unset_config_attr(git_config_keys.override_fork_point_while_descendant_of(branch))
 
     def set_fork_point_override(self, branch: LocalBranchShortName, to_revision: AnyRevision) -> None:
@@ -1711,20 +1686,15 @@ class MacheteClient:
         to_key = git_config_keys.override_fork_point_to(branch)
         self.__git.set_config_attr(to_key, to_hash)
 
+        # Let's still set the now-deprecated `whileDescendantOf` key to maintain compatibility with older git-machete clients
+        # (esp. IntelliJ plugin) that still require that key for an override to apply.
         while_descendant_of_key = git_config_keys.override_fork_point_while_descendant_of(branch)
-        branch_hash = self.__git.get_commit_hash_by_revision(branch)
-        self.__git.set_config_attr(while_descendant_of_key, branch_hash)
+        self.__git.set_config_attr(while_descendant_of_key, to_hash)
 
-        print(fmt(f"Fork point for <b>{branch}</b> is overridden to "
-                  f"<b>{self.__git.get_revision_repr(to_revision)}</b>.\n",
-                  f"This applies as long as <b>{branch}</b> points to (or is descendant of)"
-                  " its current head (commit "
-                  f"<b>{self.__git.get_short_commit_hash_by_revision(branch_hash)}</b>).\n\n",
-                  f"This information is stored under git config keys:\n"
-                  f"  * `{to_key}`\n"
-                  f"  * `{while_descendant_of_key}`\n\n",
-                  "To unset this override, use:\n  `git machete fork-point "
-                  f"--unset-override {branch}`"))
+        print(fmt(f"Fork point for <b>{branch}</b> is overridden to {self.__git.get_revision_repr(to_revision)}.\n",
+                  f"This applies as long as <b>{branch}</b> is a descendant of commit <b>{to_hash}</b>.\n\n"
+                  f"This information is stored under `{to_key}` git config key.\n\n"
+                  f"To unset this override, use:\n  `git machete fork-point --unset-override {branch}`"))
 
     def __pick_remote(
             self,
