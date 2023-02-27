@@ -684,9 +684,9 @@ class GitContext:
     def get_revision_repr(self, revision: AnyRevision) -> str:
         short_hash = self.get_short_commit_hash_by_revision_or_none(revision)
         if not short_hash or self.is_full_hash(revision.full_name()) or revision == short_hash:
-            return f"commit {revision}"
+            return f"commit <b>{revision}</b>"
         else:
-            return f"{revision} (commit {short_hash})"
+            return f"<b>{revision}</b> (commit <b>{short_hash}</b>)"
 
     # Note: while rebase is ongoing, the repository is always in a detached HEAD state,
     # so we need to extract the name of the currently rebased branch from the rebase-specific internals

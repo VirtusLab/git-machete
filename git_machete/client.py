@@ -1691,9 +1691,8 @@ class MacheteClient:
         while_descendant_of_key = git_config_keys.override_fork_point_while_descendant_of(branch)
         self.__git.set_config_attr(while_descendant_of_key, to_hash)
 
-        print(fmt(f"Fork point for <b>{branch}</b> is overridden to "
-                  f"<b>{self.__git.get_revision_repr(to_revision)}</b>.\n",
-                  f"This applies as long as <b>{branch}</b> is a descendant of <b>{self.__git.get_revision_repr(to_revision)}</b>.\n\n"
+        print(fmt(f"Fork point for <b>{branch}</b> is overridden to {self.__git.get_revision_repr(to_revision)}.\n",
+                  f"This applies as long as <b>{branch}</b> is a descendant of commit <b>{to_hash}</b>.\n\n"
                   f"This information is stored under `{to_key}` git config key.\n\n"
                   f"To unset this override, use:\n  `git machete fork-point --unset-override {branch}`"))
 
