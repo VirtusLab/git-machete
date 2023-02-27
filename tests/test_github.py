@@ -29,30 +29,13 @@ class FakeCommandLineOptions(CommandLineOptions):
         self.opt_yes: bool = True
 
 
-class FakeGitHubToken(GitHubToken):
-    def __bool__(self) -> bool:
-        return True
-
-    @property
-    def value(self) -> Optional[str]:
-        return 'fake_token'
-
-    @property
-    def provider(self) -> Optional[str]:
-        return 'fake_provider'
+def mock_for_domain_none(domain: str) -> None:
+    return None
 
 
-class EmptyGitHubToken(GitHubToken):
-    def __bool__(self) -> bool:
-        return False
-
-    @property
-    def value(self) -> Optional[str]:
-        return 'dummy_token'
-
-    @property
-    def provider(self) -> Optional[str]:
-        return 'dummy_provider'
+def mock_for_domain_fake(domain: str) -> GitHubToken:
+    return GitHubToken(value='dummy_token',
+                       provider='dummy_provider')
 
 
 def mock_github_remote_url_patterns(domain: str) -> List[str]:
@@ -695,7 +678,7 @@ class TestGithub:
         # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_create_pr`
         # due to `git fetch` executed by `create-pr` subcommand.
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
-        mocker.patch('git_machete.github.GitHubToken', EmptyGitHubToken)
+        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
@@ -757,7 +740,7 @@ class TestGithub:
         # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_create_pr`
         # due to `git fetch` executed by `create-pr` subcommand.
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
-        mocker.patch('git_machete.github.GitHubToken', EmptyGitHubToken)
+        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('urllib.error.HTTPError', MockHTTPError)  # need to provide read() method, which does not actually read error from url
@@ -1021,7 +1004,7 @@ class TestGithub:
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-        mocker.patch('git_machete.github.GitHubToken', EmptyGitHubToken)
+        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_checkout_prs.new_request())
         mocker.patch('urllib.request.urlopen', MockContextManager)
 
@@ -1555,7 +1538,7 @@ class TestGithub:
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-        mocker.patch('git_machete.github.GitHubToken', EmptyGitHubToken)
+        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
         mocker.patch('urllib.request.Request',
                      self.git_api_state_for_test_github_checkout_prs_of_current_user_and_other_users.new_request())
         mocker.patch('urllib.request.urlopen', MockContextManager)
@@ -1708,7 +1691,7 @@ class TestGithub:
         mocker.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
-        mocker.patch('git_machete.github.GitHubToken', FakeGitHubToken)
+        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_fake)
         mocker.patch('urllib.request.urlopen', MockContextManager)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_sync.new_request())
 
@@ -1787,7 +1770,7 @@ class TestGithub:
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-        mocker.patch('git_machete.github.GitHubToken', EmptyGitHubToken)
+        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
         mocker.patch('urllib.request.urlopen', MockContextManager)
         mocker.patch('git_machete.github.GitHubClient.derive_current_user_login', mock_derive_current_user_login)
         mocker.patch('urllib.request.Request', MockGitHubAPIState([]).new_request())
@@ -1827,7 +1810,7 @@ class TestGithub:
         mocker.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
-        mocker.patch('git_machete.github.GitHubToken', EmptyGitHubToken)
+        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
         mocker.patch('urllib.request.urlopen', MockContextManagerRaise403)
         mocker.patch('git_machete.cli.exit_script', mock_exit_script)
 
@@ -1837,7 +1820,7 @@ class TestGithub:
         expected_error_message = (
             "GitHub API returned `403` HTTP status with error message: `Forbidden`\n"
             "You might not have the required permissions for this repository.\n"
-            "Provide a GitHub API token with `repo` access via dummy_provider.\n"
+            "Provide a GitHub API token with `repo` access.\n"
             f"Visit `https://{github_enterprise_domain}/settings/tokens` to generate a new one.\n"
             "You can also use a different token provider, available providers can be found when running `git machete help github`.")
 
@@ -1865,7 +1848,7 @@ class TestGithub:
         mocker.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
-        mocker.patch('git_machete.github.GitHubToken', FakeGitHubToken)
+        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_fake)
         mocker.patch('urllib.request.urlopen', MockContextManager)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_enterprise_domain.new_request())
         mocker.patch('git_machete.cli.exit_script', mock_exit_script)
@@ -1902,17 +1885,21 @@ class TestGithub:
                 .delete_branch("snickers")
         )
 
-        expected_output = ['__get_token_from_env(): 1. Trying to authenticate via `GITHUB_TOKEN` environment variable...',
-                           '__get_token_from_file_in_home_directory(): 2. Trying to authenticate via `~/.github-token`...',
-                           '__get_token_from_gh(): 3. Trying to authenticate via `gh` GitHub CLI...',
-                           '__get_token_from_hub(): 4. Trying to authenticate via `hub` GitHub CLI...']
+        expected_output = ["__get_token_from_env(cls=<class 'git_machete.github.GitHubToken'>): "
+                           "1. Trying to authenticate via `GITHUB_TOKEN` environment variable...",
+                           "__get_token_from_file_in_home_directory(cls=<class 'git_machete.github.GitHubToken'>, domain=github.com): "
+                           "2. Trying to authenticate via `~/.github-token`...",
+                           "__get_token_from_gh(cls=<class 'git_machete.github.GitHubToken'>, domain=github.com): "
+                           "3. Trying to authenticate via `gh` GitHub CLI...",
+                           "__get_token_from_hub(cls=<class 'git_machete.github.GitHubToken'>, domain=github.com): "
+                           "4. Trying to authenticate via `hub` GitHub CLI..."]
 
         assert launch_command('github', 'anno-prs', '--debug').splitlines()[8:12] == expected_output
 
     def test_get_token_from_env_var(self, mocker: Any) -> None:
         mocker.patch('_collections_abc.Mapping.get', mock_os_environ_get_github_token)
 
-        github_token = GitHubToken(domain=GitHubClient.DEFAULT_GITHUB_DOMAIN)
+        github_token = GitHubToken.for_domain(domain=GitHubClient.DEFAULT_GITHUB_DOMAIN)
         assert github_token.provider == '`GITHUB_TOKEN` environment variable'
         assert github_token.value == 'github_token_from_env_var'
 
@@ -1926,17 +1913,17 @@ class TestGithub:
         mocker.patch('os.path.isfile', mock_is_file_true)
 
         domain = GitHubClient.DEFAULT_GITHUB_DOMAIN
-        github_token = GitHubToken(domain=domain)
+        github_token = GitHubToken.for_domain(domain=domain)
         assert github_token.provider == f'auth token for {domain} from `~/.github-token`'
         assert github_token.value == 'ghp_mytoken_for_github_com'
 
         domain = 'git.example.org'
-        github_token = GitHubToken(domain=domain)
+        github_token = GitHubToken.for_domain(domain=domain)
         assert github_token.provider == f'auth token for {domain} from `~/.github-token`'
         assert github_token.value == 'ghp_myothertoken_for_git_example_org'
 
         domain = 'git.example.com'
-        github_token = GitHubToken(domain=domain)
+        github_token = GitHubToken.for_domain(domain=domain)
         assert github_token.provider == f'auth token for {domain} from `~/.github-token`'
         assert github_token.value == 'ghp_yetanothertoken_for_git_example_com'
 
@@ -1947,7 +1934,7 @@ class TestGithub:
         mocker.patch('subprocess.run', mock_subprocess_run)
 
         domain = 'git.example.com'
-        github_token = GitHubToken(domain=domain)
+        github_token = GitHubToken.for_domain(domain=domain)
         assert github_token.provider == f'auth token for {domain} from `gh` GitHub CLI'
         assert github_token.value == 'ghp_mytoken_for_github_com_from_gh_cli'
 
@@ -1968,10 +1955,10 @@ class TestGithub:
         mocker.patch('builtins.open', mock_open(read_data=dedent(config_hub_contents)))
         mocker.patch('os.path.isfile', mock_is_file_not_github_token)
 
-        github_token = GitHubToken(domain=domain1)
+        github_token = GitHubToken.for_domain(domain=domain1)
         assert github_token.provider == f'auth token for {domain1} from `hub` GitHub CLI'
         assert github_token.value == 'ghp_mytoken_for_github_com'
 
-        github_token = GitHubToken(domain=domain2)
+        github_token = GitHubToken.for_domain(domain=domain2)
         assert github_token.provider == f'auth token for {domain2} from `hub` GitHub CLI'
         assert github_token.value == 'ghp_myothertoken_for_git_example_org'
