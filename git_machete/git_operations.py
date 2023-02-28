@@ -123,7 +123,7 @@ class FullCommitHash(AnyRevision):
 
     @staticmethod
     def is_valid(value: str) -> bool:
-        return value is not None and len(value) == 40 and all(c in string.hexdigits for c in value)
+        return len(value) == 40 and all(c in string.hexdigits for c in value)
 
     def full_name(self) -> "FullCommitHash":
         return self
@@ -910,7 +910,7 @@ class GitContext:
         self._run_git("merge", "--ff-only", branch.full_name())
         self.flush_caches()
 
-    def rebase(self, onto: AnyRevision, fork_revision: AnyRevision, branch: LocalBranchShortName, opt_no_interactive_rebase: bool) -> None:
+    def rebase(self, onto: AnyRevision, from_exclusive: AnyRevision, branch: LocalBranchShortName, opt_no_interactive_rebase: bool) -> None:
         def do_rebase() -> None:
             # Let's use `OPTS` suffix for consistency with git's built-in env var `GIT_DIFF_OPTS`
             git_machete_rebase_opts_var = 'GIT_MACHETE_REBASE_OPTS'
@@ -918,7 +918,7 @@ class GitContext:
             try:
                 if not opt_no_interactive_rebase:
                     rebase_opts.append("--interactive")
-                self._run_git("rebase", *rebase_opts, "--onto", onto, fork_revision, branch)
+                self._run_git("rebase", *rebase_opts, "--onto", onto, from_exclusive, branch)
             finally:
                 # https://public-inbox.org/git/317468c6-40cc-9f26-8ee3-3392c3908efb@talktalk.net/T
                 # In our case, this can happen when git version invoked by git-machete to start the rebase
@@ -950,7 +950,7 @@ class GitContext:
         hook_path = self.get_hook_path("machete-pre-rebase")
         if self.check_hook_executable(hook_path):
             debug(f"running machete-pre-rebase hook ({hook_path})")
-            exit_code = utils.run_cmd(hook_path, onto, fork_revision, branch, cwd=self.get_root_dir())
+            exit_code = utils.run_cmd(hook_path, onto, from_exclusive, branch, cwd=self.get_root_dir())
             if exit_code == 0:
                 do_rebase()
             else:

@@ -1195,6 +1195,7 @@ class TestGitHub:
         remote_org_repo = RemoteAndOrganizationAndRepository.from_url(domain=GitHubClient.DEFAULT_GITHUB_DOMAIN,
                                                                       url=self.repo_sandbox.remote_path,
                                                                       remote='origin')
+        assert remote_org_repo is not None
         expected_error_message = f"PR #100 is not found in repository {remote_org_repo.organization}/{remote_org_repo.repository}"
         with pytest.raises(MacheteException) as e:
             launch_command('github', 'checkout-prs', '100')
@@ -1760,6 +1761,7 @@ class TestGitHub:
             remote_and_organization_and_repository = RemoteAndOrganizationAndRepository.from_url(domain=GitHubClient.DEFAULT_GITHUB_DOMAIN,
                                                                                                  url=url,
                                                                                                  remote='origin')
+            assert remote_and_organization_and_repository is not None
             assert remote_and_organization_and_repository.organization == organization
             assert remote_and_organization_and_repository.repository == repository
 

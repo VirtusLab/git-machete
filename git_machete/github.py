@@ -55,28 +55,23 @@ class GitHubPullRequest(object):
 
 
 class RemoteAndOrganizationAndRepository:
-    def __init__(self,
-                 remote: Optional[str],
-                 organization: Optional[str],
-                 repository: Optional[str]
-                 ) -> None:
-        self.remote = remote
-        self.organization = organization
-        self.repository = repository
-
-    def __bool__(self) -> bool:
-        return self.remote is not None and self.organization is not None and self.repository is not None
+    def __init__(self, remote: str, organization: str, repository: str) -> None:
+        self.remote: str = remote
+        self.organization: str = organization
+        self.repository: str = repository
 
     @classmethod
-    def from_config(cls,
-                    git: GitContext
-                    ) -> "RemoteAndOrganizationAndRepository":
-        return cls(remote=git.get_config_attr_or_none(key=git_config_keys.GITHUB_REMOTE),
-                   organization=git.get_config_attr_or_none(key=git_config_keys.GITHUB_ORGANIZATION),
-                   repository=git.get_config_attr_or_none(key=git_config_keys.GITHUB_REPOSITORY))
+    def from_config(cls, git: GitContext) -> Optional["RemoteAndOrganizationAndRepository"]:
+        remote = git.get_config_attr_or_none(key=git_config_keys.GITHUB_REMOTE)
+        organization = git.get_config_attr_or_none(key=git_config_keys.GITHUB_ORGANIZATION)
+        repository = git.get_config_attr_or_none(key=git_config_keys.GITHUB_REPOSITORY)
+        if remote and organization and repository:
+            return cls(remote, organization, repository)
+        else:
+            return None
 
     @classmethod
-    def from_url(cls, domain: str, url: str, remote: str) -> "RemoteAndOrganizationAndRepository":
+    def from_url(cls, domain: str, url: str, remote: str) -> Optional["RemoteAndOrganizationAndRepository"]:
         for pattern in github_remote_url_patterns(domain):
             match = re.match(pattern, url)
             if match:
@@ -85,9 +80,7 @@ class RemoteAndOrganizationAndRepository:
                 return cls(remote=remote,
                            organization=org,
                            repository=repo if repo[-4:] != '.git' else repo[:-4])
-        return cls(remote=None,
-                   organization=None,
-                   repository=None)
+        return None
 
 
 class GitHubToken:

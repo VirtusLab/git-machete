@@ -8,14 +8,14 @@ class Qualifiers:
     push: bool
 
     def __init__(self, annotation: str):
-        self._annotation = annotation
-        self._annotation_without_qualifiers = annotation
-        self._rebase_text = ''
-        self._push_text = ''
-        self._slide_out_text = ''
-        self.rebase = True
-        self.push = True
-        self.slide_out = None
+        self._annotation: str = annotation
+        self._annotation_without_qualifiers: str = annotation
+        self._rebase_text: str = ''
+        self._push_text: str = ''
+        self._slide_out_text: str = ''
+        self.rebase: bool = True
+        self.push: bool = True
+        self.slide_out: bool = True
 
         def match_pattern(text: str) -> str:
             return f'.*\\b{text}=no\\b.*'
