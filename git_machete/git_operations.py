@@ -197,8 +197,8 @@ class GitContext:
         self.__remote_branches_cached: Optional[List[RemoteBranchShortName]] = None
         self.__initial_log_hashes_cached: Dict[FullCommitHash, List[FullCommitHash]] = {}
         self.__remaining_log_hashes_cached: Dict[FullCommitHash, List[FullCommitHash]] = {}
-        self.__reflogs_cached: Optional[Dict[AnyBranchName, Optional[List[GitReflogEntry]]]] = None
-        self.__merge_base_cached: Dict[Tuple[FullCommitHash, FullCommitHash], FullCommitHash] = {}
+        self.__reflogs_cached: Optional[Dict[AnyBranchName, List[GitReflogEntry]]] = None
+        self.__merge_base_cached: Dict[Tuple[FullCommitHash, FullCommitHash], Optional[FullCommitHash]] = {}
         self.__is_equivalent_tree_reachable_cached: Dict[Tuple[FullCommitHash, FullCommitHash], bool] = {}
 
     @staticmethod
@@ -276,8 +276,10 @@ class GitContext:
             # We need to cut out the x.y.z part and not just take the result of 'git version' as is,
             # because the version string in certain distributions of git (esp. on OS X) has an extra suffix,
             # which is irrelevant for our purpose (checking whether certain git CLI features are available/bugs are fixed).
-            raw = re.search(r"\d+.\d+.\d+", self._popen_git("version").stdout).group(0)
-            self._git_version = tuple(map(int, raw.split(".")))
+            raw = re.search(r"\d+.\d+.\d+", self._popen_git("version").stdout)
+            if not raw:  # unlikely, never observed so far; mostly to satisfy mypy
+                return 0, 0, 0
+            self._git_version = tuple(map(int, raw.group(0).split(".")))
         return self._git_version
 
     def get_root_dir(self) -> str:
@@ -339,15 +341,16 @@ class GitContext:
 
     def get_config_attr_or_none(self, key: str) -> Optional[str]:
         self.__ensure_config_loaded()
+        assert self.__config_cached is not None
         return self.__config_cached.get(key.lower())
 
     def get_boolean_config_attr(self, key: str, default_value: bool) -> bool:
-        if self.get_boolean_config_attr_or_none(key) is not None:
-            return self.get_boolean_config_attr_or_none(key)
-        return default_value
+        value = self.get_boolean_config_attr_or_none(key)
+        return value if value is not None else default_value
 
     def get_boolean_config_attr_or_none(self, key: str) -> Optional[bool]:
         self.__ensure_config_loaded()
+        assert self.__config_cached is not None
         if self.__config_cached.get(key.lower()) is not None:
             return self.__config_cached.get(key.lower()) == 'true'
         return None
@@ -355,10 +358,12 @@ class GitContext:
     def set_config_attr(self, key: str, value: str) -> None:
         self._run_git("config", "--", key, value)
         self.__ensure_config_loaded()
+        assert self.__config_cached is not None
         self.__config_cached[key.lower()] = value
 
     def unset_config_attr(self, key: str) -> None:
         self.__ensure_config_loaded()
+        assert self.__config_cached is not None
         if self.get_config_attr_or_none(key):
             self._run_git("config", "--unset", key)
             del self.__config_cached[key.lower()]
@@ -372,8 +377,10 @@ class GitContext:
             self.__remotes_cached = utils.get_non_empty_lines(self._popen_git("remote").stdout)
         return self.__remotes_cached
 
-    def get_url_of_remote(self, remote: str) -> str:
-        return self.get_config_attr_or_none(f"remote.{remote}.url").strip()  # 'git remote get-url' method has only been added in git v2.5.1
+    def get_url_of_remote(self, remote: str) -> Optional[str]:
+        self.__ensure_config_loaded()
+        url = self.get_config_attr_or_none(f"remote.{remote}.url")  # 'git remote get-url' method has only been added in git v2.5.1
+        return url.strip() if url else None
 
     def fetch_remote(self, remote: str) -> None:
         if remote not in self.__fetch_done_for:
@@ -439,6 +446,7 @@ class GitContext:
             return FullCommitHash.of(revision)
         if self.__commit_hash_by_revision_cached is None:
             self.__load_branches()
+        assert self.__commit_hash_by_revision_cached is not None
         if revision not in self.__commit_hash_by_revision_cached:
             self.__commit_hash_by_revision_cached[revision] = self.__find_commit_hash_by_revision(revision)
         return self.__commit_hash_by_revision_cached[revision]
@@ -452,6 +460,7 @@ class GitContext:
     def get_tree_hash_by_commit_hash(self, commit_hash: FullCommitHash) -> Optional[FullTreeHash]:
         if self.__tree_hash_by_commit_hash_cached is None:
             self.__load_branches()
+        assert self.__tree_hash_by_commit_hash_cached is not None
         if commit_hash not in self.__tree_hash_by_commit_hash_cached:
             self.__tree_hash_by_commit_hash_cached[commit_hash] = self.__find_tree_hash_by_revision(commit_hash)
         return self.__tree_hash_by_commit_hash_cached[commit_hash]
@@ -466,6 +475,7 @@ class GitContext:
     def get_committer_unix_timestamp_by_revision(self, revision: AnyBranchName) -> int:
         if self.__committer_unix_timestamp_by_revision_cached is None:
             self.__load_branches()
+        assert self.__committer_unix_timestamp_by_revision_cached is not None
         return self.__committer_unix_timestamp_by_revision_cached.get(revision.full_name(), 0)
 
     def __get_remotes_containing_branch(self, branch: LocalBranchShortName, remotes: Optional[List[str]] = None) -> List[str]:
@@ -510,6 +520,7 @@ class GitContext:
     def get_strict_counterpart_for_fetching_of_branch(self, branch: LocalBranchShortName) -> Optional[RemoteBranchShortName]:
         if self.__counterparts_for_fetching_cached is None:
             self.__load_branches()
+        assert self.__counterparts_for_fetching_cached is not None
         return self.__counterparts_for_fetching_cached.get(branch)
 
     def get_combined_counterpart_for_fetching_of_branch(self, branch: LocalBranchShortName) -> Optional[RemoteBranchShortName]:
@@ -540,11 +551,13 @@ class GitContext:
     def get_local_branches(self) -> List[LocalBranchShortName]:
         if self.__local_branches_cached is None:
             self.__load_branches()
+        assert self.__local_branches_cached is not None
         return self.__local_branches_cached
 
     def get_remote_branches(self) -> List[RemoteBranchShortName]:
         if self.__remote_branches_cached is None:
             self.__load_branches()
+        assert self.__remote_branches_cached is not None
         return self.__remote_branches_cached
 
     def __load_branches(self) -> None:
@@ -618,10 +631,16 @@ class GitContext:
         # %gd - reflog selector (refname@{num})
         # %H - full hash
         # %gs - reflog subject
-        local_branches = [str(branch.full_name()) for branch in self.get_local_branches()]  # str here to match _popen_git() input type
-        counterpart_branches = [str(self.get_combined_counterpart_for_fetching_of_branch(branch).full_name()) for branch in
-                                self.get_local_branches() if self.get_combined_counterpart_for_fetching_of_branch(branch)]
-        all_branches = local_branches + counterpart_branches
+        local_branches: List[str] = [branch.full_name() for branch in self.get_local_branches()]  # str to match _popen_git() input type
+
+        def get_counterpart_branches() -> Generator[str, None, None]:
+            for branch in self.get_local_branches():
+                counterpart = self.get_combined_counterpart_for_fetching_of_branch(branch)
+                if counterpart:
+                    yield counterpart.full_name()
+        counterpart_branches: List[str] = list(get_counterpart_branches())
+
+        all_branches: List[str] = local_branches + counterpart_branches
 
         # The trailing '--' is necessary to avoid ambiguity in case there is a file called just exactly like one of the branches.
         entries = utils.get_non_empty_lines(self._popen_git("reflog", "show", "--format=%gD\t%H\t%gs", *(all_branches + ["--"])).stdout)
@@ -635,9 +654,10 @@ class GitContext:
             if len(branch_and_pos) != 2:  # invalid, shouldn't happen
                 continue
             branch, pos = branch_and_pos
-            if branch not in self.__reflogs_cached:
-                self.__reflogs_cached[AnyBranchName.of(branch)] = []
-            self.__reflogs_cached[AnyBranchName.of(branch)] += [GitReflogEntry(hash=FullCommitHash.of(hash), reflog_subject=subject)]
+            any_branch_name = AnyBranchName.of(branch)
+            if any_branch_name not in self.__reflogs_cached:
+                self.__reflogs_cached[any_branch_name] = []
+            self.__reflogs_cached[any_branch_name] += [GitReflogEntry(hash=FullCommitHash.of(hash), reflog_subject=subject)]
 
     def get_reflog(self, branch: AnyBranchName) -> List[GitReflogEntry]:
         # git version 2.14.2 fixed a bug that caused fetching reflog of more than
@@ -645,6 +665,7 @@ class GitContext:
         if self.get_git_version() >= (2, 14, 2):
             if self.__reflogs_cached is None:
                 self.__load_all_reflogs()
+            assert self.__reflogs_cached is not None
             return self.__reflogs_cached.get(branch, [])
         else:
             if self.__reflogs_cached is None:
@@ -746,7 +767,7 @@ class GitContext:
             raise MacheteException("Not currently on any branch")
         return result
 
-    def __get_merge_base_for_commit_hashes(self, hash1: FullCommitHash, hash2: FullCommitHash) -> FullCommitHash:
+    def __get_merge_base_for_commit_hashes(self, hash1: FullCommitHash, hash2: FullCommitHash) -> Optional[FullCommitHash]:
         # This if statement is not changing the outcome of the later return, but
         # it enhances the efficiency of the script. If both hashes are the same,
         # there is no point running git merge-base.
@@ -778,6 +799,8 @@ class GitContext:
     ) -> bool:
         earlier_hash = self.get_commit_hash_by_revision(earlier_revision)
         later_hash = self.get_commit_hash_by_revision(later_revision)
+        if not earlier_hash or not later_hash:
+            return False
         return self.__get_merge_base_for_commit_hashes(earlier_hash, later_hash) == earlier_hash
 
     def get_merge_base(
@@ -787,6 +810,8 @@ class GitContext:
     ) -> Optional[FullCommitHash]:
         earlier_hash = self.get_commit_hash_by_revision(earlier_revision)
         later_hash = self.get_commit_hash_by_revision(later_revision)
+        if not earlier_hash or not later_hash:
+            return None
         return self.__get_merge_base_for_commit_hashes(earlier_hash, later_hash)
 
     # Determine if reachable_from, or any ancestors of reachable_from that are NOT ancestors of equivalent_to,
@@ -799,6 +824,8 @@ class GitContext:
     ) -> bool:
         equivalent_to_commit_hash = self.get_commit_hash_by_revision(equivalent_to)
         reachable_from_commit_hash = self.get_commit_hash_by_revision(reachable_from)
+        if not equivalent_to_commit_hash or not reachable_from_commit_hash:
+            return False
 
         if equivalent_to_commit_hash == reachable_from_commit_hash:
             return True
@@ -1024,7 +1051,7 @@ class GitContext:
         delete_option = '-D' if force else '-d'
         return self._run_git("branch", delete_option, branch_name)
 
-    def display_diff(self, fork_point: AnyRevision, format_with_stat: bool, branch: LocalBranchShortName = None) -> int:
+    def display_diff(self, fork_point: AnyRevision, format_with_stat: bool, branch: Optional[LocalBranchShortName] = None) -> int:
         params = ["diff"]
         if format_with_stat:
             params.append("--stat")

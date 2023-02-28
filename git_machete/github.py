@@ -99,14 +99,14 @@ class GitHubToken:
                  ) -> None:
         self.__value = value
         self.__provider = provider
-        debug("authenticating via " + self.provider)
+        debug("authenticating via " + self.__provider)
 
     @property
-    def value(self) -> Optional[str]:
+    def value(self) -> str:
         return self.__value
 
     @property
-    def provider(self) -> Optional[str]:
+    def provider(self) -> str:
         return self.__provider
 
     @classmethod
