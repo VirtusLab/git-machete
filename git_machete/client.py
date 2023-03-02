@@ -615,15 +615,18 @@ class MacheteClient:
             else:
                 return
 
-        remote = self.__git.get_strict_remote_for_fetching_of_branch(branch)
-        ans = self.ask_if(f"\nBranch {bold(branch)} is now fast-forwarded to match {bold(down_branch)}. "
-                          f"Push {bold(branch)} to {bold(remote)}?" + get_pretty_choices('y', 'N'),
-                          f"\nBranch {bold(branch)} is now fast-forwarded to match {bold(down_branch)}. "
-                          f"Pushing {bold(branch)} to {bold(remote)}...",
-                          opt_yes=opt_yes)
-        if ans in ('y', 'yes'):
-            self.__git.push(remote, branch)
-            branch_pushed_or_fast_forwarded_msg = f"\nBranch {bold(branch)} is now pushed to {bold(remote)}."
+        remote = self.__git.get_combined_remote_for_fetching_of_branch(branch)
+        if remote:
+            ans = self.ask_if(f"\nBranch {bold(branch)} is now fast-forwarded to match {bold(down_branch)}. "
+                              f"Push {bold(branch)} to {bold(remote)}?" + get_pretty_choices('y', 'N'),
+                              f"\nBranch {bold(branch)} is now fast-forwarded to match {bold(down_branch)}. "
+                              f"Pushing {bold(branch)} to {bold(remote)}...",
+                              opt_yes=opt_yes)
+            if ans in ('y', 'yes'):
+                self.__git.push(remote, branch)
+                branch_pushed_or_fast_forwarded_msg = f"\nBranch {bold(branch)} is now pushed to {bold(remote)}."
+            else:
+                branch_pushed_or_fast_forwarded_msg = f"\nBranch {bold(branch)} is now fast-forwarded to match {bold(down_branch)}."
         else:
             branch_pushed_or_fast_forwarded_msg = f"\nBranch {bold(branch)} is now fast-forwarded to match {bold(down_branch)}."
 

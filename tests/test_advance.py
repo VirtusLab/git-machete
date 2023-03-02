@@ -2,14 +2,8 @@ from typing import Any
 
 import pytest
 
-from git_machete.git_operations import LocalBranchShortName
-
-from .mockers import (GitRepositorySandbox, get_current_commit_hash,
-                      launch_command, mock_run_cmd)
-
-
-def mock_push(remote: str, branch: LocalBranchShortName, force_with_lease: bool = False) -> None:
-    pass
+from .mockers import (GitRepositorySandbox, get_commit_hash,
+                      get_current_commit_hash, launch_command, mock_run_cmd)
 
 
 class TestAdvance:
@@ -27,7 +21,7 @@ class TestAdvance:
             .execute('git config user.name "Tester Test"')
         )
 
-    def test_advance_with_no_downstream_branches(self, mocker: Any) -> None:
+    def test_advance_for_no_downstream_branches(self, mocker: Any) -> None:
         """Verify behaviour of a 'git machete advance' command.
 
         Verify that 'git machete advance' raises an error when current branch
@@ -46,26 +40,60 @@ class TestAdvance:
         with pytest.raises(SystemExit):
             launch_command("advance")
 
-    def test_advance_with_one_downstream_branch(self, mocker: Any) -> None:
+    def test_advance_with_push_for_one_downstream_branch(self, mocker: Any) -> None:
         """Verify behaviour of a 'git machete advance' command.
 
         Verify that when there is only one, rebased downstream branch of a
-        current branch 'git machete advance' merges commits from that branch
-        and slides out child branches of the downstream branch. It edits the git
-        machete discovered tree to reflect new dependencies.
-
+        current branch 'git machete advance' merges commits from that branch,
+        pushes the current branch and slides out child branches of the downstream branch.
+        Also, it edits the git machete discovered tree to reflect new dependencies.
         """
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-        mocker.patch('git_machete.git_operations.GitContext.push', mock_push)
 
         (
             self.repo_sandbox.new_branch("root")
             .commit()
             .new_branch("level-1-branch")
             .commit()
-            .new_branch("level-2-branch")
+        )
+        launch_command("discover", "-y")
+        level_1_commit_hash = get_current_commit_hash()
+
+        self.repo_sandbox.check_out("root")
+        self.repo_sandbox.push()
+        launch_command("advance", "-y")
+
+        root_commit_hash = get_current_commit_hash()
+        origin_root_commit_hash = get_commit_hash("origin/root")
+
+        assert level_1_commit_hash == root_commit_hash, \
+            ("Verify that when there is only one, rebased downstream branch of a "
+             "current branch, then 'git machete advance' merges commits from that branch "
+             "and slides out child branches of the downstream branch.")
+        assert root_commit_hash == origin_root_commit_hash, \
+            ("Verify that when there is only one, rebased downstream branch of a "
+             "current branch, and the current branch is tracked, "
+             "then 'git machete advance' pushes the current branch.")
+        assert "level-1-branch" not in launch_command("status"), \
+            ("Verify that branch to which advance was performed is removed "
+             "from the git-machete tree and the structure of the git machete "
+             "tree is updated.")
+
+    def test_advance_without_push_for_one_downstream_branch(self, mocker: Any) -> None:
+        """Verify behaviour of a 'git machete advance' command.
+
+        Verify that when there is only one, rebased downstream branch of a
+        current branch 'git machete advance' merges commits from that branch
+        and slides out child branches of the downstream branch.
+        Also, it edits the git machete discovered tree to reflect new dependencies.
+        """
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+
+        (
+            self.repo_sandbox.new_branch("root")
             .commit()
-            .check_out("level-1-branch")
+            .new_branch("level-1-branch")
+            .commit()
         )
         launch_command("discover", "-y")
         level_1_commit_hash = get_current_commit_hash()
@@ -73,20 +101,18 @@ class TestAdvance:
         self.repo_sandbox.check_out("root")
         launch_command("advance", "-y")
 
-        root_top_commit_hash = get_current_commit_hash()
+        root_commit_hash = get_current_commit_hash()
 
-        assert level_1_commit_hash == root_top_commit_hash, \
+        assert level_1_commit_hash == root_commit_hash, \
             ("Verify that when there is only one, rebased downstream branch of a "
-             "current branch 'git machete advance' merges commits from that branch "
-             "and slides out child branches of the downstream branch."
-             )
+             "current branch, then 'git machete advance' merges commits from that branch "
+             "and slides out child branches of the downstream branch.")
         assert "level-1-branch" not in launch_command("status"), \
             ("Verify that branch to which advance was performed is removed "
              "from the git-machete tree and the structure of the git machete "
-             "tree is updated."
-             )
+             "tree is updated.")
 
-    def test_advance_with_few_possible_downstream_branches_and_yes_option(self, mocker: Any) -> None:
+    def test_advance_for_few_possible_downstream_branches_and_yes_option(self, mocker: Any) -> None:
         """Verify behaviour of a 'git machete advance' command.
 
         Verify that 'git machete advance -y' raises an error when current branch

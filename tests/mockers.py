@@ -382,8 +382,13 @@ def rewrite_definition_file(new_body: str) -> None:
 
 
 def get_current_commit_hash() -> FullCommitHash:
-    """Returns hash of a commit of the current branch head."""
-    return FullCommitHash.of(popen("git rev-parse HEAD"))
+    """Returns hash of the commit of the current branch head."""
+    return get_commit_hash("HEAD")
+
+
+def get_commit_hash(revision: str) -> FullCommitHash:
+    """Returns hash of the commit pointed by the given revision."""
+    return FullCommitHash.of(popen(f"git rev-parse {revision}"))
 
 
 def mock_run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
