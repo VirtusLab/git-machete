@@ -147,9 +147,8 @@ class MacheteClient:
             if depth:
                 p = at_depth[depth - 1]
                 self.up_branch[branch] = p
-                dbp = self.__down_branches.get(p)
-                if dbp is not None:
-                    dbp += [branch]
+                if p in self.__down_branches:
+                    self.__down_branches[p] += [branch]
                 else:
                     self.__down_branches[p] = [branch]
             else:
@@ -306,9 +305,8 @@ class MacheteClient:
 
             self.up_branch[branch] = opt_onto
 
-            dbo = self.__down_branches.get(opt_onto)
-            if dbo is not None:
-                dbo += [branch]
+            if opt_onto in self.__down_branches:
+                self.__down_branches[opt_onto] += [branch]
             else:
                 self.__down_branches[opt_onto] = [branch]
             if verbose:
@@ -439,9 +437,8 @@ class MacheteClient:
                 debug(f"inferred upstream of {branch} is {upstream}, attaching {branch} as a child of {upstream}\n")
                 self.up_branch[branch] = upstream
                 root_of[branch] = upstream
-                dbu = self.__down_branches.get(upstream)
-                if dbu is not None:
-                    dbu += [branch]
+                if upstream in self.__down_branches:
+                    self.__down_branches[upstream] += [branch]
                 else:
                     self.__down_branches[upstream] = [branch]
             else:
@@ -472,9 +469,7 @@ class MacheteClient:
             for branch in merged_branches_to_skip:
                 upstream = self.up_branch[branch]
                 if upstream:
-                    dbu = self.__down_branches[upstream]
-                    if dbu is not None:
-                        self.__down_branches[upstream] = excluding(dbu, [branch])
+                    self.__down_branches[upstream] = excluding(self.__down_branches[upstream], [branch])
                 del self.up_branch[branch]
             # We're NOT applying the removal process recursively,
             # so it's theoretically possible that some merged branches became childless
@@ -562,14 +557,14 @@ class MacheteClient:
             self.managed_branches.remove(branch)
 
         assert new_upstream is not None
-        dbnu = self.__down_branches[new_upstream] = [
+        self.__down_branches[new_upstream] = [
             branch for branch in (self.__down_branches.get(new_upstream) or [])
             if branch != branches_to_slide_out[0]]
 
         # Reconnect the downstreams to the new upstream in the tree
         for new_downstream in new_downstreams:
             self.up_branch[new_downstream] = new_upstream
-            dbnu += [new_downstream]
+            self.__down_branches[new_upstream] += [new_downstream]
 
         # Update definition, fire post-hook, and perform the branch update
         self.save_definition_file()

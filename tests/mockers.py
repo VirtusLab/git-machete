@@ -15,7 +15,7 @@ from typing import Any, Dict, Iterable, List, Optional, Union
 from urllib.error import HTTPError
 from urllib.parse import ParseResult, parse_qs, urlparse
 
-from git_machete import cli
+from git_machete import cli, utils
 from git_machete.git_operations import FullCommitHash, GitContext
 from git_machete.utils import dim
 
@@ -364,6 +364,8 @@ def launch_command(*args: str) -> str:
     with io.StringIO() as out:
         with redirect_stdout(out):
             with redirect_stderr(out):
+                utils.debug_mode = False
+                utils.verbose_mode = False
                 cli.launch(list(args))
                 git.flush_caches()
         return out.getvalue()
