@@ -957,7 +957,8 @@ class MacheteClient:
             next_sibling_of_ancestor_by_branch[parent] = accumulated_path_
             children = self.__down_branches.get(parent)
             if children:
-                for (v, nv) in zip(children, children[1:] + [None]):  # type: ignore
+                shifted_children: List[Optional[LocalBranchShortName]] = children[1:]  # type: ignore[assignment]
+                for (v, nv) in zip(children, shifted_children + [None]):
                     prefix_dfs(v, accumulated_path_ + [nv])
 
         for root in self.__roots:
