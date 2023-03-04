@@ -1609,13 +1609,12 @@ class MacheteClient:
 
             self.__branch_pairs_by_hash_in_reflog = {}
             for hash, branch_pair in generate_entries():
-                branch_pairs_for_hash = self.__branch_pairs_by_hash_in_reflog.get(hash)
-                if branch_pairs_for_hash:
+                if hash in self.__branch_pairs_by_hash_in_reflog:
                     # The practice shows that it's rather unlikely for a given
                     # commit to appear on filtered reflogs of two unrelated branches
                     # ("unrelated" as in, not a local branch and its remote counterpart)
                     # but we need to handle this case anyway.
-                    branch_pairs_for_hash += [branch_pair]
+                    self.__branch_pairs_by_hash_in_reflog[hash] += [branch_pair]
                 else:
                     self.__branch_pairs_by_hash_in_reflog[hash] = [branch_pair]
 
@@ -2144,16 +2143,17 @@ class MacheteClient:
             return result
         return []
 
-    def __get_added_remote_name_or_none(self, github_domain: str, remote_url: str) -> Optional[str]:
-        """
-        Function to check if remote is added locally by its url,
-        because it may happen that remote is already added under a name different from the name of organization on GitHub
-        """
-        url_for_remote: Dict[str, str] = {
+    def __get_url_for_remote(self) -> Dict[str, str]:
+        return {
             remote: url for remote, url in ((remote_, self.__git.get_url_of_remote(remote_)) for remote_ in self.__git.get_remotes()) if url
         }
 
-        for remote, url in url_for_remote.items():
+    def __get_added_remote_name_or_none(self, github_domain: str, remote_url: str) -> Optional[str]:
+        """
+        Check if remote is added locally by its url,
+        because it may happen that remote is already added under a name different from the name of organization on GitHub
+        """
+        for remote, url in self.__get_url_for_remote().items():
             url = url if url.endswith('.git') else url + '.git'
             remote_url = remote_url if remote_url.endswith('.git') else remote_url + '.git'
             if is_github_remote_url(github_domain, url) and \
@@ -2206,9 +2206,7 @@ class MacheteClient:
         if remote_and_organization_and_repository_from_config:
             return remote_and_organization_and_repository_from_config
 
-        url_for_remote: Dict[str, str] = {
-            remote: url for remote, url in ((remote_, self.__git.get_url_of_remote(remote_)) for remote_ in self.__git.get_remotes()) if url
-        }
+        url_for_remote = self.__get_url_for_remote()
         if not url_for_remote:
             raise MacheteException(fmt('No remotes defined for this repository (see `git remote`)'))
 
