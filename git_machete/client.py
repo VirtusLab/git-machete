@@ -41,8 +41,8 @@ class MacheteClient:
         self.__git: GitContext = git
         self._definition_file_path: str = self.__git.get_git_machete_definition_file_path()
         self._managed_branches: List[LocalBranchShortName] = []
-        self._up_branch: Dict[LocalBranchShortName, LocalBranchShortName] = {}  # TODO (#110): default dict with None
-        self.__down_branches: Dict[LocalBranchShortName, List[LocalBranchShortName]] = {}  # TODO (#110): default dict with []
+        self._up_branch: Dict[LocalBranchShortName, LocalBranchShortName] = {}
+        self.__down_branches: Dict[LocalBranchShortName, List[LocalBranchShortName]] = {}
         self.__indent: Optional[str] = None
         self.__roots: List[LocalBranchShortName] = []
         self.__annotations: Dict[LocalBranchShortName, Annotation] = {}
@@ -959,7 +959,7 @@ class MacheteClient:
             children = self.__down_branches.get(parent)
             if children:
                 shifted_children: List[Optional[LocalBranchShortName]] = children[1:]  # type: ignore[assignment]
-                for (v, nv) in zip(children, shifted_children + [None]):  # ignore: type[index]
+                for (v, nv) in zip(children, shifted_children + [None]):
                     prefix_dfs(v, accumulated_path_ + [nv])
 
         for root in self.__roots:
