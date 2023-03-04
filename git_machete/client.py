@@ -957,7 +957,7 @@ class MacheteClient:
             next_sibling_of_ancestor_by_branch[parent] = accumulated_path_
             children = self.__down_branches.get(parent)
             if children:
-                for (v, nv) in zip(children, children[1:] + [None]):
+                for (v, nv) in zip(children, children[1:] + [None]):  # type: ignore
                     prefix_dfs(v, accumulated_path_ + [nv])
 
         for root in self.__roots:
@@ -1130,12 +1130,12 @@ class MacheteClient:
 
         branches_in_sync_but_fork_point_off = [k for k, v in sync_to_parent_status.items() if v == SyncToParentStatus.InSyncButForkPointOff]
         if branches_in_sync_but_fork_point_off and warn_when_branch_in_sync_but_fork_point_off:
-            branch = branches_in_sync_but_fork_point_off[0]
+            yellow_edge_branch: LocalBranchShortName = branches_in_sync_but_fork_point_off[0]
             if len(branches_in_sync_but_fork_point_off) == 1:
-                first_part = (f"yellow edge indicates that fork point for {bold(branch)} "
+                first_part = (f"yellow edge indicates that fork point for {bold(str(yellow_edge_branch))} "
                               f"is probably incorrectly inferred,\n or that some extra branch should be between "
-                              f"{bold(self.up_branch[LocalBranchShortName.of(branch)])} and "  # type: ignore [arg-type]
-                              f"{bold(branch)}")
+                              f"{bold(str(self.up_branch[yellow_edge_branch]))} and "
+                              f"{bold(str(yellow_edge_branch))}")
             else:
                 affected_branches = ", ".join(map(lambda x: f"{bold(x)}", branches_in_sync_but_fork_point_off))
                 first_part = f"yellow edges indicate that fork points for {affected_branches} are probably incorrectly inferred,\n" \
