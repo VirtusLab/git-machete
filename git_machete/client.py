@@ -41,8 +41,8 @@ class MacheteClient:
         self.__git: GitContext = git
         self._definition_file_path: str = self.__git.get_git_machete_definition_file_path()
         self._managed_branches: List[LocalBranchShortName] = []
-        self._up_branch: Dict[LocalBranchShortName, Optional[LocalBranchShortName]] = {}  # TODO (#110): default dict with None
-        self.__down_branches: Dict[LocalBranchShortName, Optional[List[LocalBranchShortName]]] = {}  # TODO (#110): default dict with []
+        self._up_branch: Dict[LocalBranchShortName, LocalBranchShortName] = {}  # TODO (#110): default dict with None
+        self.__down_branches: Dict[LocalBranchShortName, List[LocalBranchShortName]] = {}  # TODO (#110): default dict with []
         self.__indent: Optional[str] = None
         self.__roots: List[LocalBranchShortName] = []
         self.__annotations: Dict[LocalBranchShortName, Annotation] = {}
@@ -62,11 +62,11 @@ class MacheteClient:
         self._managed_branches = val
 
     @property
-    def up_branch(self) -> Dict[LocalBranchShortName, Optional[LocalBranchShortName]]:
+    def up_branch(self) -> Dict[LocalBranchShortName, LocalBranchShortName]:
         return self._up_branch
 
     @up_branch.setter
-    def up_branch(self, val: Dict[LocalBranchShortName, Optional[LocalBranchShortName]]) -> None:
+    def up_branch(self, val: Dict[LocalBranchShortName, LocalBranchShortName]) -> None:
         self._up_branch = val
 
     @property
@@ -556,8 +556,9 @@ class MacheteClient:
 
         # Remove the slid-out branches from the tree
         for branch in branches_to_slide_out:
-            self.up_branch[branch] = None
-            self.__down_branches[branch] = None
+            del self.up_branch[branch]
+            if branch in self.__down_branches:
+                del self.__down_branches[branch]
             self.managed_branches.remove(branch)
 
         assert new_upstream is not None
@@ -958,7 +959,7 @@ class MacheteClient:
             children = self.__down_branches.get(parent)
             if children:
                 shifted_children: List[Optional[LocalBranchShortName]] = children[1:]  # type: ignore[assignment]
-                for (v, nv) in zip(children, shifted_children + [None]):
+                for (v, nv) in zip(children, shifted_children + [None]):  # ignore: type[index]
                     prefix_dfs(v, accumulated_path_ + [nv])
 
         for root in self.__roots:
@@ -1334,7 +1335,7 @@ class MacheteClient:
     def last_branch(self, branch: LocalBranchShortName) -> LocalBranchShortName:
         destination = self.root_branch(branch, if_unmanaged=PICK_LAST_ROOT)
         while self.__down_branches.get(destination):
-            destination = self.__down_branches[destination][-1]  # type: ignore [index]
+            destination = self.__down_branches[destination][-1]
         return destination
 
     def next_branch(self, branch: LocalBranchShortName) -> LocalBranchShortName:
@@ -2571,7 +2572,8 @@ class MacheteClient:
                 if not self.__down_branches.get(managed_branch):
                     branches_to_delete.append(managed_branch)
                     self.managed_branches.remove(managed_branch)
-                    self.up_branch[managed_branch] = None
+                    if managed_branch in self.up_branch:
+                        del self.up_branch[managed_branch]
 
         self._delete_branches(branches_to_delete=branches_to_delete, opt_yes=opt_yes)
         self.save_definition_file()
