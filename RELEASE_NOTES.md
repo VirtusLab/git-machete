@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.16.1
+
 ## New in git-machete 3.16.0
 
 - deprecated: `machete.overrideForkPoint.<branch>.whileDescendantOf` is no longer taken into account; it's still written, however, for compatibility reasons
