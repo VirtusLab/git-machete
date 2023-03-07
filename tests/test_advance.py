@@ -112,7 +112,7 @@ class TestAdvance:
              "from the git-machete tree and the structure of the git machete "
              "tree is updated.")
 
-    def test_advance_for_few_possible_downstream_branches_and_yes_option(self, mocker: Any) -> None:
+    def test_advance_for_a_few_possible_downstream_branches_and_yes_option(self, mocker: Any) -> None:
         """Verify behaviour of a 'git machete advance' command.
 
         Verify that 'git machete advance -y' raises an error when current branch
