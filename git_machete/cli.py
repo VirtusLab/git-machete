@@ -623,7 +623,7 @@ def launch(orig_args: List[str]) -> None:
                 if fork_point:
                     machete_client.set_fork_point_override(branch, fork_point)
                 else:
-                    raise MacheteException(f"Fork point not found for branch <b>{branch}</b>")
+                    raise MacheteException(f"Cannot infer fork point for branch <b>{branch}</b>. Use `--override-to=...` flag instead.")
             elif cli_opts.opt_override_to_parent:
                 upstream = machete_client.up_branch.get(branch)
                 if upstream:
