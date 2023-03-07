@@ -14,13 +14,14 @@ from git_machete.exceptions import MacheteException
 from git_machete.utils import (AnsiEscapeCodes, CommandResult, colored, debug,
                                fmt)
 
+GITHUB_NEW_ISSUE_MESSAGE = 'Consider posting an issue at https://github.com/VirtusLab/git-machete/issues/new'
+
 
 class AnyRevision(str):
     @staticmethod
     def of(value: str) -> "AnyRevision":
         if not value:
-            raise TypeError(f'AnyRevision.of should not accept {value} as a param.\n'
-                            'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
+            raise TypeError(f'AnyRevision.of should not accept {value} as a param.\n' + GITHUB_NEW_ISSUE_MESSAGE)
 
         return AnyRevision(value)
 
@@ -32,8 +33,7 @@ class AnyBranchName(AnyRevision):
     @staticmethod
     def of(value: str) -> "AnyBranchName":
         if not value:
-            raise TypeError(f'AnyBranchName.of should not accept {value} as a param.\n'
-                            'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
+            raise TypeError(f'AnyBranchName.of should not accept {value} as a param.\n' + GITHUB_NEW_ISSUE_MESSAGE)
         return AnyBranchName(value)
 
     def full_name(self) -> "AnyBranchName":
@@ -45,8 +45,7 @@ class LocalBranchShortName(AnyBranchName):
     def of(value: str) -> "LocalBranchShortName":
         if value.startswith('refs/heads/') or value.startswith('refs/remotes/'):
             raise TypeError(
-                f'LocalBranchShortName cannot accept refs/heads or refs/remotes. Given value: {value}.\n'
-                'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
+                f'LocalBranchShortName cannot accept `refs/heads` or `refs/remotes`. Given value: {value}.\n' + GITHUB_NEW_ISSUE_MESSAGE)
         else:
             return LocalBranchShortName(value)
 
@@ -60,8 +59,9 @@ class LocalBranchFullName(AnyBranchName):
         if value and value.startswith('refs/heads/'):
             return LocalBranchFullName(value)
         else:
-            raise TypeError(f'LocalBranchFullName needs to have `refs/heads` prefix before branch name. Given value: {value}.\n'
-                            'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
+            raise TypeError(
+                f'LocalBranchFullName needs to have `refs/heads` prefix before branch name. Given value: {value}.\n' +
+                GITHUB_NEW_ISSUE_MESSAGE)
 
     @staticmethod
     def from_short_name(value: LocalBranchShortName) -> "LocalBranchFullName":
@@ -79,8 +79,7 @@ class RemoteBranchShortName(AnyBranchName):
     def of(value: str) -> "RemoteBranchShortName":
         if value and value.startswith('refs/heads/') or value.startswith('refs/remotes/'):
             raise TypeError(
-                f'RemoteBranchShortName cannot accept refs/heads or refs/remotes. Given value: {value}.\n'
-                'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
+                f'RemoteBranchShortName cannot accept `refs/heads` or `refs/remotes`. Given value: {value}.\n' + GITHUB_NEW_ISSUE_MESSAGE)
         else:
             return RemoteBranchShortName(value)
 
@@ -94,8 +93,9 @@ class RemoteBranchFullName(AnyBranchName):
         if value and value.startswith('refs/remotes/'):
             return RemoteBranchFullName(value)
         else:
-            raise TypeError(f'RemoteBranchFullName needs to have `refs/remotes` prefix before branch name. Given value: {value}.\n'
-                            'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
+            raise TypeError(
+                f'RemoteBranchFullName needs to have `refs/remotes` prefix before branch name. Given value: {value}.\n' +
+                GITHUB_NEW_ISSUE_MESSAGE)
 
     @staticmethod
     def is_valid(value: str) -> bool:
@@ -118,8 +118,8 @@ class FullCommitHash(AnyRevision):
         if value and len(value) == 40:
             return FullCommitHash(value)
         else:
-            raise TypeError(f'FullCommitHash requires length of 40. Given value: {value}, has length: {len(value)}.\n'
-                            'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
+            raise TypeError(
+                f'FullCommitHash requires length of 40. Given value: "{value}".\n' + GITHUB_NEW_ISSUE_MESSAGE)
 
     @staticmethod
     def is_valid(value: str) -> bool:
@@ -135,8 +135,9 @@ class ShortCommitHash(AnyRevision):
         if value and len(value) >= 7:
             return ShortCommitHash(value)
         else:
-            raise TypeError(f'ShortCommitHash requires length greater or equal to 7. Given value: {value}, has length: {len(value)}.\n'
-                            'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
+            raise TypeError(
+                f'ShortCommitHash requires length greater or equal to 7. Given value: "{value}".\n' +
+                GITHUB_NEW_ISSUE_MESSAGE)
 
     def full_name(self) -> "ShortCommitHash":
         return self
@@ -146,8 +147,7 @@ class FullTreeHash(str):
     @staticmethod
     def of(value: str) -> Optional["FullTreeHash"]:
         if not value:
-            raise TypeError(f'FullTreeHash.of should not accept {value} as a param.\n'
-                            'Consider posting an issue on https://github.com/VirtusLab/git-machete/issues/new')
+            raise TypeError(f'FullTreeHash.of should not accept {value} as a param.\n' + GITHUB_NEW_ISSUE_MESSAGE)
         return FullTreeHash(value)
 
 
