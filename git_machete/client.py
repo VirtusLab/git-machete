@@ -2278,16 +2278,22 @@ class MacheteClient:
         debug(f'organization is {remote_org_repo.organization}, repository is {remote_org_repo.repository}')
         debug('current GitHub user is ' + (current_user or '<none>'))
 
+        description_path = self.__git.get_main_git_subpath('info', 'description')
+        description: str = utils.slurp_file_or_empty(description_path)
+
         fork_point = self.fork_point(head, use_overrides=True, opt_no_detect_squash_merges=False)
         if not fork_point:
             raise MacheteException(f"Could not find a fork-point for branch {bold(head)}.")
         commits: List[GitLogEntry] = self.__git.get_commits_between(fork_point, head)
-        description_path = self.__git.get_main_git_subpath('info', 'description')
-        description: str = utils.slurp_file_or_empty(description_path)
+        # git-machete can still see an empty range of unique commits (e.g. in case of yellow edge)
+        # even though GitHub sees a non-empty range.
+        # Let's use branch name as a fallback for PR title in such case.
+        title = commits[0].subject if commits else head
 
         ok_str = '<green><b>OK</b></green>'
         print(f'Creating a {"draft " if opt_draft else ""}PR from {bold(head)} to {bold(base)}... ', end='', flush=True)
-        pr: GitHubPullRequest = github_client.create_pull_request(head=head, base=base, title=commits[0].subject,
+
+        pr: GitHubPullRequest = github_client.create_pull_request(head=head, base=base, title=title,
                                                                   description=description, draft=opt_draft)
         print(fmt(f'{ok_str}, see `{pr.html_url}`'))
 
