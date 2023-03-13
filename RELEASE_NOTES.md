@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.16.2
+
 ## New in git-machete 3.16.1
 
 - fixed: `advance` crashing when the current branch is untracked
