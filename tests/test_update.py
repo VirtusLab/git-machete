@@ -1,7 +1,9 @@
+import os
 from typing import Any
 
 import pytest
 
+from git_machete.git_operations import GitContext
 from .mockers import (GitRepositorySandbox, get_current_commit_hash,
                       launch_command, mock_run_cmd, popen)
 
@@ -51,6 +53,44 @@ class TestUpdate:
             ("Verify that 'git machete update --no-interactive-rebase' perform "
              "'git rebase' to the parent branch of the current branch."
              )
+
+    def test_update_drops_empty_commits(self, mocker: Any) -> None:
+        """Verify behaviour of a 'git machete update' command.
+
+        Verify that 'git machete update' drops effectively-empty commits.
+        """
+        git = GitContext()
+        if git.get_git_version() < (2, 26, 0):
+            return
+7
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+
+        (
+            self.repo_sandbox.new_branch("level-0-branch")
+            .commit("Basic commit.")
+            .new_branch("level-1-branch")
+            .commit("level-1 commit")
+            .commit("level-1 commit... but to be cherry-picked onto level-0-branch")
+            .check_out("level-0-branch")
+            .commit("New commit on level-0-branch")
+            .execute("git cherry-pick level-1-branch")
+        )
+        launch_command("discover", "-y")
+
+        parents_new_commit_hash = get_current_commit_hash()
+        self.repo_sandbox.check_out("level-1-branch")
+        try:
+            os.environ["GIT_SEQUENCE_EDITOR"] = ":"
+            launch_command("update")
+        finally:
+            del os.environ["GIT_SEQUENCE_EDITOR"]
+
+        new_fork_point_hash = launch_command("fork-point").strip()
+        assert parents_new_commit_hash == new_fork_point_hash, \
+            "Verify that 'git machete update' drops effectively-empty commits."
+        branch_history = popen('git log level-0-branch..level-1-branch')
+        assert "level-1 commit" in branch_history
+        assert "level-1 commit... but to be cherry-picked onto level-0-branch" not in branch_history
 
     def test_update_with_fork_point_specified(self, mocker: Any) -> None:
         """Verify behaviour of a 'git machete update --no-interactive-rebase -f <commit_hash>' cmd.
