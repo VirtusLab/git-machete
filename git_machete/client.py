@@ -1545,7 +1545,7 @@ class MacheteClient:
                     anno += f" WRONG PR BASE or MACHETE PARENT? PR has {pr.base}"
                 old_annotation_text, old_annotation_qualifiers_text = '', ''
                 if LocalBranchShortName.of(pr.head) in self.__annotations:
-                    old_annotation_text = self.__annotations[LocalBranchShortName.of(pr.head)].text
+                    old_annotation_text = self.__annotations[LocalBranchShortName.of(pr.head)].text_without_qualifiers
                     old_annotation_qualifiers_text = self.__annotations[LocalBranchShortName.of(pr.head)].qualifiers_text
 
                 if pr.user != current_user and old_annotation_qualifiers_text == '':
