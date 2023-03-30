@@ -204,7 +204,7 @@ class TestGitHub:
         |
         o-branch-1
           |
-          o-feature *  PR #15 (github_user) WRONG PR BASE or MACHETE PARENT? PR has root rebase=no push=no
+          o-feature *  PR #15 (github_user) rebase=no push=no
         """
         assert_command(
             ['status'],
