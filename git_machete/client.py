@@ -1539,9 +1539,6 @@ class MacheteClient:
                 if pr.user != current_user:
                     anno += f' ({pr.user})'
                 upstream: Optional[LocalBranchShortName] = self.up_branch.get(LocalBranchShortName.of(pr.head))
-                if pr.base != upstream:
-                    warn(f'branch {bold(pr.head)} has a different base in PR #{bold(str(pr.number))} ({bold(pr.base)}) '
-                         f'than in machete file ({bold(upstream) if upstream else "<none, is a root>"})')
                 old_annotation_text, old_annotation_qualifiers_text = '', ''
                 if LocalBranchShortName.of(pr.head) in self.__annotations:
                     old_annotation_text = self.__annotations[LocalBranchShortName.of(pr.head)].text
