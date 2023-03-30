@@ -62,7 +62,7 @@ class TestUpdate:
         git = GitContext()
         if git.get_git_version() < (2, 26, 0):
             return
-7
+
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
 
         (
