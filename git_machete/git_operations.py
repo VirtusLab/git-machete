@@ -918,7 +918,10 @@ class GitContext:
             try:
                 if not opt_no_interactive_rebase:
                     rebase_opts.append("--interactive")
-                self._run_git("rebase", *rebase_opts, "--empty=drop", "--onto", onto, from_exclusive, branch)
+                if self.get_git_version() < (2, 26, 0):
+                    self._run_git("rebase", *rebase_opts, "--onto", onto, from_exclusive, branch)
+                else:
+                    self._run_git("rebase", *rebase_opts, "--empty=drop", "--onto", onto, from_exclusive, branch)
             finally:
                 # https://public-inbox.org/git/317468c6-40cc-9f26-8ee3-3392c3908efb@talktalk.net/T
                 # In our case, this can happen when git version invoked by git-machete to start the rebase
