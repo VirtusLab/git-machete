@@ -4,6 +4,7 @@ from typing import Any
 import pytest
 
 from git_machete.git_operations import GitContext
+
 from .mockers import (GitRepositorySandbox, get_current_commit_hash,
                       launch_command, mock_run_cmd, popen)
 
