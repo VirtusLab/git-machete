@@ -1,7 +1,6 @@
 # git-machete
 
 [![homebrew formula](https://img.shields.io/homebrew/v/git-machete)](https://formulae.brew.sh/formula/git-machete)
-[![homebrew formula monthly downloads](https://img.shields.io/homebrew/installs/dm/git-machete)](https://formulae.brew.sh/formula/git-machete)
 [![PyPI package](https://img.shields.io/pypi/v/git-machete.svg)](https://pypi.org/project/git-machete)
 [![PyPI package monthly downloads](https://img.shields.io/pypi/dm/git-machete.svg)](https://pypistats.org/packages/git-machete)
 [![Conda package](https://img.shields.io/conda/vn/conda-forge/git-machete.svg)](https://anaconda.org/conda-forge/git-machete)
