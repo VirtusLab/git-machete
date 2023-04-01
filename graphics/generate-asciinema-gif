@@ -63,9 +63,7 @@ timestamp=$(date +%s)
 cast=/tmp/${timestamp}.cast
 gif_path=/tmp/${timestamp}.gif
 
-# See https://superuser.com/q/1007647 for PROMPT_COMMAND
-init_contents='set -e -o pipefail -u; unset PROMPT_COMMAND; PS1=\\\\[\\\\033[96m\\\\]\(\\\$\(date\ +%H:%M:%S\)\)\ \$\\\\[\\\\033[0m\\\\]\ ; export GIT_MACHETE_DIM_AS_GRAY=true; export GIT_SEQUENCE_EDITOR=:'
-nested_command="bash --init-file <(echo '$init_contents')"
+nested_command="bash --init-file $self_dir/bash-init-file"
 script | asciinema rec --command="bash -c \"$nested_command\"" "$cast"
 
 theme=000000,ffffff,000000,ff0000,00ff00,ffff00,00ffff,ff00ff,00ffff,d9d9d9,4d4d4d,ff0000,00ff00,ffff00,00ffff,ff00ff,00ffff,ffffff
