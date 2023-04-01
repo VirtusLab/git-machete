@@ -2,10 +2,6 @@
 
 set -e -o pipefail -u
 
-timestamp=$(date +%s)
-cast=/tmp/${timestamp}.cast
-gif=/tmp/${timestamp}.gif
-
 function spoonfeed() {
   init_delay=$1
   sleep $init_delay
@@ -58,12 +54,22 @@ function script() {
   spoonfeed 1 '~exit'
 }
 
-init_contents='set -e -o pipefail -u; PS1=\(\\\$\(date\ +%H:%M:%S\)\)\ \$\ ; export GIT_MACHETE_DIM_AS_GRAY=true; export GIT_SEQUENCE_EDITOR=:'
+self_dir=$(cd "$(dirname "$0")" &>/dev/null; pwd -P)
+sandbox_dir=$(mktemp -d)
+"$self_dir/setup-sandbox" "$sandbox_dir"
+cd "$sandbox_dir"/machete-sandbox
+
+timestamp=$(date +%s)
+cast=/tmp/${timestamp}.cast
+gif_path=/tmp/${timestamp}.gif
+
+# See https://superuser.com/q/1007647 for PROMPT_COMMAND
+init_contents='set -e -o pipefail -u; unset PROMPT_COMMAND; PS1=\(\\\$\(date\ +%H:%M:%S\)\)\ \$\ ; export GIT_MACHETE_DIM_AS_GRAY=true; export GIT_SEQUENCE_EDITOR=:'
 nested_command="bash --init-file <(echo '$init_contents')"
 script | asciinema rec --command="bash -c \"$nested_command\"" "$cast"
+
 # `head -n ...` to remove the 3 final lines responsible for the terminating `exit`
 # `--cols 122 --rows 35` to fit the text on the screen without breaking the lines
-# TODO (#691): Replace `asciicast2gif` (it is no longer being maintained) with `agg` in `graphics/generate-asciinema-gif`.
-#agg --speed 0.75 --cols 122 --rows 35 --font-size 12 --theme asciinema <(head -n $(( $(wc -l < "$cast") - 2 )) "$cast") "$gif"
-asciicast2gif -s 0.75 -S 1 -w 122 -h 35 <(head -n $(( $(wc -l < "$cast") - 2 )) "$cast") "$gif"
-echo "Location of the generated GIF file: $gif"
+agg --speed 0.75 --cols 122 --rows 35 --font-size 12 --theme asciinema <(head -n $(( $(wc -l < "$cast") - 2 )) "$cast") "$gif_path"
+echo "Location of the generated GIF file:"
+echo "$gif_path"
