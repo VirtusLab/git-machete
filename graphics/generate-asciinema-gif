@@ -64,12 +64,13 @@ cast=/tmp/${timestamp}.cast
 gif_path=/tmp/${timestamp}.gif
 
 # See https://superuser.com/q/1007647 for PROMPT_COMMAND
-init_contents='set -e -o pipefail -u; unset PROMPT_COMMAND; PS1=\(\\\$\(date\ +%H:%M:%S\)\)\ \$\ ; export GIT_MACHETE_DIM_AS_GRAY=true; export GIT_SEQUENCE_EDITOR=:'
+init_contents='set -e -o pipefail -u; unset PROMPT_COMMAND; PS1=\\\\[\\\\033[96m\\\\]\(\\\$\(date\ +%H:%M:%S\)\)\ \$\\\\[\\\\033[0m\\\\]\ ; export GIT_MACHETE_DIM_AS_GRAY=true; export GIT_SEQUENCE_EDITOR=:'
 nested_command="bash --init-file <(echo '$init_contents')"
 script | asciinema rec --command="bash -c \"$nested_command\"" "$cast"
 
+theme=000000,ffffff,000000,ff0000,00ff00,ffff00,00ffff,ff00ff,00ffff,d9d9d9,4d4d4d,ff0000,00ff00,ffff00,00ffff,ff00ff,00ffff,ffffff
 # `head -n ...` to remove the 3 final lines responsible for the terminating `exit`
 # `--cols 122 --rows 35` to fit the text on the screen without breaking the lines
-agg --speed 0.75 --cols 122 --rows 35 --font-size 12 --theme asciinema <(head -n $(( $(wc -l < "$cast") - 2 )) "$cast") "$gif_path"
+agg --speed 0.75 --cols 122 --rows 35 --font-size 12 --theme "$theme" <(head -n $(( $(wc -l < "$cast") - 2 )) "$cast") "$gif_path"
 echo "Location of the generated GIF file:"
 echo "$gif_path"
