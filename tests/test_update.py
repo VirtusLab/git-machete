@@ -3,10 +3,11 @@ from typing import Any
 
 import pytest
 
+from git_machete.exceptions import MacheteException
 from git_machete.git_operations import GitContext
 
 from .mockers import (GitRepositorySandbox, get_current_commit_hash,
-                      launch_command, mock_run_cmd, popen)
+                      launch_command, mock_exit_script, mock_run_cmd, popen)
 
 
 class TestUpdate:
@@ -58,11 +59,9 @@ class TestUpdate:
     def test_update_drops_empty_commits(self, mocker: Any) -> None:
         """Verify behaviour of a 'git machete update' command.
 
-        Verify that 'git machete update' drops effectively-empty commits.
+        Verify that 'git machete update' drops effectively-empty commits if the underlying git supports that behavior.
         """
         git = GitContext()
-        if git.get_git_version() < (2, 26, 0):
-            return
 
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
 
@@ -82,7 +81,17 @@ class TestUpdate:
         self.repo_sandbox.check_out("level-1-branch")
         try:
             os.environ["GIT_SEQUENCE_EDITOR"] = ":"
-            launch_command("update")
+            if git.get_git_version() >= (2, 26, 0):
+                launch_command("update")
+            else:
+                mocker.patch('git_machete.cli.exit_script', mock_exit_script)
+                try:
+                    launch_command("update")
+                except MacheteException:
+                    pass
+                else:
+                    raise Exception("`git machete update` was supposed to fail")
+                self.repo_sandbox.execute("git rebase --continue")
         finally:
             del os.environ["GIT_SEQUENCE_EDITOR"]
 
