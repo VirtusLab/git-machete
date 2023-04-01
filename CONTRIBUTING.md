@@ -86,8 +86,7 @@ Run [`graphics/setup-sandbox`](graphics/setup-sandbox) script to set up a test r
 
 1. Install [asciinema](https://github.com/asciinema/asciinema) and [agg (at least v1.4.0)](https://github.com/asciinema/agg).
    On macOS, just `brew install asciinema agg` should be enough.
-1. Run [`graphics/generate-asciinema-gif`](graphics/generate-asciinema-gif). Once complete, it will print the location of the generated GIF file.
-1. Replace the existing GIF [`graphics/discover-status-traverse.gif`](graphics/discover-status-traverse.gif) with the new one.
+1. Run [`./graphics/generate-asciinema-gif graphics/discover-status-traverse.gif`](graphics/generate-asciinema-gif).
 
 
 ## Command properties/classification
