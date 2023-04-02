@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -e -o pipefail -u
+
+unset PROMPT_COMMAND
+PS1='\[\033[96m\]($(date +%H:%M:%S)) \$\[\033[0m\] '
+export GIT_MACHETE_DIM_AS_GRAY=true
+export GIT_SEQUENCE_EDITOR=:
