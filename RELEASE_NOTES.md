@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.16.3
+
 ## New in git-machete 3.16.2
 
 - fixed: interactive rebase triggered by `traverse`, `update` etc. no longer fails when an effectively-empty commit (commit whose changes have already been applied in the given rebase) is encountered

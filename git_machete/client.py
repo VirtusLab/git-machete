@@ -5,7 +5,7 @@ import os
 import shutil
 import sys
 from collections import OrderedDict
-from typing import Callable, cast, Dict, Generator, List, Optional, Tuple
+from typing import Callable, Dict, Generator, List, Optional, Tuple
 
 from git_machete import git_config_keys, utils
 from git_machete.annotation import Annotation
