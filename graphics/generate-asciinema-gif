@@ -68,9 +68,9 @@ sandbox_dir=$(mktemp -d)
 cd "$sandbox_dir"/machete-sandbox
 
 script | asciinema rec --command="bash --init-file '$self_dir/bash-init-file'" --overwrite "$cast_path"
-# Remove the 3 final lines responsible for the terminating `exit`
+# Remove the final lines responsible for the terminating `exit`
 cast_line_count=$(wc -l < "$cast_path")
-head -n $(( cast_line_count - 2 )) "$cast_path" | sponge "$cast_path"
+head -n $(( cast_line_count - 5 )) "$cast_path" | sponge "$cast_path"
 
 theme=000000,ffffff,000000,ff0000,00ff00,ffff00,00ffff,ff00ff,00ffff,d9d9d9,4d4d4d,ff0000,00ff00,ffff00,00ffff,ff00ff,00ffff,ffffff
 # `--cols=... --rows=...` to fit the text on the screen without breaking the lines
@@ -79,5 +79,8 @@ agg --speed=0.75 --theme="$theme" \
   --cols=122 --rows=35 \
   --font-size=14 --line-height=1.2 \
   "$cast_path" "$gif_path"
+# TODO (#870): remove once looping in `agg` is fixed
+mogrify -loop 0 "$gif_path"
+
 echo "Location of the generated GIF file:"
 echo "$gif_path"
