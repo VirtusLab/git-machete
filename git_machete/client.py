@@ -1538,6 +1538,13 @@ class MacheteClient:
                 anno: str = f'PR #{pr.number}'
                 if pr.user != current_user:
                     anno += f' ({pr.user})'
+                upstream: Optional[LocalBranchShortName] = self.up_branch.get(LocalBranchShortName.of(pr.head))
+                upstream_tracking_branch = self.__git.get_combined_counterpart_for_fetching_of_branch(upstream).split('/')[1]
+
+                if pr.base != upstream_tracking_branch:
+                    warn(f'branch {bold(pr.head)} has a different base in PR #{bold(str(pr.number))} ({bold(pr.base)}) '
+                         f'than in machete file ({bold(upstream) if upstream else "<none, is a root>"})')
+                    anno += f" WRONG PR BASE or MACHETE PARENT? PR has {pr.base}"
                 old_annotation_text, old_annotation_qualifiers_text = '', ''
                 if LocalBranchShortName.of(pr.head) in self.__annotations:
                     old_annotation_text = self.__annotations[LocalBranchShortName.of(pr.head)].text_without_qualifiers
