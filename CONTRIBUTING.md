@@ -84,28 +84,26 @@ Run [`graphics/setup-sandbox`](graphics/setup-sandbox) script to set up a test r
 
 ## Regenerate the GIF in README.md
 
-1. Generate sandbox repositories as shown above and `cd` into `~/machete-sandbox`.
-1. Install [asciinema](https://github.com/asciinema/asciinema), [asciicast2gif](https://github.com/asciinema/asciicast2gif)
-   and their dependencies.
-1. Run [`graphics/generate-asciinema-gif`](graphics/generate-asciinema-gif) (It will print the location of the generated GIF file)
-1. Replace existing GIF [`graphics/discover-status-traverse.gif`](graphics/discover-status-traverse.gif) with the new one.
+1. Install [asciinema](https://github.com/asciinema/asciinema) and [agg (at least v1.4.0)](https://github.com/asciinema/agg).
+   On macOS, just `brew install asciinema agg` should be enough.
+1. Run [`./graphics/generate-asciinema-gif graphics/discover-status-traverse.gif`](graphics/generate-asciinema-gif).
 
 
 ## Command properties/classification
 
 Deprecated commands are excluded.
 
-| Property                                                          | Commands                                                                                                                                       |
-| ----------------------------------------------------------------- | -----------------------------------------------------------------------------------------------------------------------------------------------|
-| can accept interactive input on stdin                             | `add`, `advance`, `delete-unmanaged`, `discover`,`github`<sup>[1]</sup>, `go`, `traverse`, `update`                                            |
-| can display status (and run `machete-status-branch` hook)         | `discover`, `github`<sup>[1]</sup>, `status`, `traverse`                                                                                       |
-| can modify the .git/machete file                                  | `add`, `advance`, `anno`, `discover`, `edit`, `github`, `slide-out`, `traverse`                                                                |
-| can modify the git repository (excluding .git/machete)            | `add`, `advance`, `delete-unmanaged`, `github`<sup>[1]</sup>, `go`, `reapply`, `slide-out`, `squash`, `traverse`, `update`                     |
-| can run merge                                                     | `advance`<sup>[2]</sup>, `slide-out`, `traverse`, `update`                                                                                     |
-| can run rebase (and run `machete-pre-rebase` hook)                | `reapply`<sup>[3]</sup>, `slide-out`, `traverse`, `update`                                                                                     |
-| can slide out a branch (and run `machete-post-slide-out` hook)    | `advance`, `slide-out`, `traverse`                                                                                                             |
-| expects no ongoing rebase/merge/cherry-pick/revert/am             | `advance`, `go`, `reapply`, `slide-out`, `squash`, `traverse`, `update`                                                                        |
-| has stable output format across minor versions (plumbing command) | `file`, `fork-point`<sup>[4]</sup>, `is-managed`, `list`, `show`, `version`                                                                    |
+| Property                                                          | Commands                                                                                                                   |
+|-------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| can accept interactive input on stdin                             | `add`, `advance`, `delete-unmanaged`, `discover`,`github`<sup>[1]</sup>, `go`, `traverse`, `update`                        |
+| can display status (and run `machete-status-branch` hook)         | `discover`, `github`<sup>[1]</sup>, `status`, `traverse`                                                                   |
+| can modify the .git/machete file                                  | `add`, `advance`, `anno`, `discover`, `edit`, `github`, `slide-out`, `traverse`                                            |
+| can modify the git repository (excluding .git/machete)            | `add`, `advance`, `delete-unmanaged`, `github`<sup>[1]</sup>, `go`, `reapply`, `slide-out`, `squash`, `traverse`, `update` |
+| can run merge                                                     | `advance`<sup>[2]</sup>, `slide-out`, `traverse`, `update`                                                                 |
+| can run rebase (and run `machete-pre-rebase` hook)                | `reapply`<sup>[3]</sup>, `slide-out`, `traverse`, `update`                                                                 |
+| can slide out a branch (and run `machete-post-slide-out` hook)    | `advance`, `slide-out`, `traverse`                                                                                         |
+| expects no ongoing rebase/merge/cherry-pick/revert/am             | `advance`, `go`, `reapply`, `slide-out`, `squash`, `traverse`, `update`                                                    |
+| has stable output format across minor versions (plumbing command) | `file`, `fork-point`<sup>[4]</sup>, `is-managed`, `list`, `show`, `version`                                                |
 
 [1]: `github` can only display status, accept interactive mode or modify git repository when `create-pr` or `checkout-prs` subcommand is passed.
 
@@ -200,8 +198,6 @@ Review fixes should be pushed on separate commits for easier viewing on GitHub (
    [conda-forge recipe maintainer docs](https://conda-forge.org/docs/maintainer/adding_pkgs.html#recipe-maintainer).
 
 1. Verify that there is an open PR in [homebrew-core](https://github.com/Homebrew/homebrew-core/pulls?q=is%3Apr+git-machete) titled: `git-machete <latest_version>`.
-
-1. Verify that a Docker image for the new version has been pushed to Docker Hub: [gitmachete/git-machete](https://hub.docker.com/r/gitmachete/git-machete/tags).
 
 1. Verify that a newly released version is present in `latest/stable` channel in [Snap](https://snapcraft.io/git-machete/releases).
 

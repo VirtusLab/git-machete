@@ -918,6 +918,8 @@ class GitContext:
             try:
                 if not opt_no_interactive_rebase:
                     rebase_opts.append("--interactive")
+                if self.get_git_version() >= (2, 26, 0):
+                    rebase_opts.append("--empty=drop")
                 self._run_git("rebase", *rebase_opts, "--onto", onto, from_exclusive, branch)
             finally:
                 # https://public-inbox.org/git/317468c6-40cc-9f26-8ee3-3392c3908efb@talktalk.net/T

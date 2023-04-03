@@ -17,9 +17,9 @@ cmt() {
 newrepo() {
   dir=$1
   rm -fr /tmp/_$dir
-  mv ~/$dir /tmp/_$dir || true
-  mkdir ~/$dir
-  cd ~/$dir
+  mv $root_dir/$dir /tmp/_$dir || true
+  mkdir $root_dir/$dir
+  cd $root_dir/$dir
   opt=${2-}
   git init $opt
 }
@@ -29,9 +29,11 @@ push() {
   git push -u origin $b
 }
 
+root_dir=$(realpath "${1-$HOME}")
+
 newrepo machete-sandbox-remote --bare
 newrepo machete-sandbox
-git remote add origin ~/machete-sandbox-remote
+git remote add origin $root_dir/machete-sandbox-remote
 
 newb root
   cmt Root
@@ -78,6 +80,6 @@ git branch -d root
 
 echo
 echo
-git machete status ${1-}
+git machete status
 echo
 echo
