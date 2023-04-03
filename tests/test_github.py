@@ -1980,7 +1980,6 @@ class TestGitHub:
         assert github_token.provider == f'auth token for {domain2} from `hub` GitHub CLI'
         assert github_token.value == 'ghp_myothertoken_for_git_example_org'
 
-
     git_api_state_for_test_local_branch_name_different_than_tracking_branch_name = MockGitHubAPIState(
         [
             {
@@ -2000,7 +1999,8 @@ class TestGitHub:
 
     def test_local_branch_name_different_than_tracking_branch_name(self, mocker: Any) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-        mocker.patch('urllib.request.Request', self.git_api_state_for_test_local_branch_name_different_than_tracking_branch_name.new_request())
+        mocker.patch('urllib.request.Request',
+                     self.git_api_state_for_test_local_branch_name_different_than_tracking_branch_name.new_request())
         mocker.patch('urllib.request.urlopen', MockContextManager)
 
         (

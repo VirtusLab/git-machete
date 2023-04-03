@@ -1539,7 +1539,7 @@ class MacheteClient:
                 if pr.user != current_user:
                     anno += f' ({pr.user})'
                 upstream: Optional[LocalBranchShortName] = self.up_branch.get(LocalBranchShortName.of(pr.head))
-                upstream_tracking_branch = self.__git.get_combined_counterpart_for_fetching_of_branch(upstream).split('/')[1]
+                upstream_tracking_branch = '/'.join(self.__git.get_combined_counterpart_for_fetching_of_branch(upstream).split('/')[1:])
 
                 if pr.base != upstream_tracking_branch:
                     warn(f'branch {bold(pr.head)} has a different base in PR #{bold(str(pr.number))} ({bold(pr.base)}) '
