@@ -97,7 +97,7 @@ class GitRepositorySandbox:
 
     def push(self, remote: str = 'origin', set_upstream: bool = True, tracking_branch: Optional[str] = None) -> "GitRepositorySandbox":
         branch = popen("git symbolic-ref -q --short HEAD")
-        tracking_branch = popen("git symbolic-ref -q --short HEAD") if not tracking_branch else tracking_branch
+        tracking_branch = branch if not tracking_branch else tracking_branch
         self.execute(f"git push {'--set-upstream' if set_upstream else ''} {remote} {branch}:{tracking_branch}")
         return self
 
