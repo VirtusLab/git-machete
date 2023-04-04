@@ -84,8 +84,11 @@ Run [`graphics/setup-sandbox`](graphics/setup-sandbox) script to set up a test r
 
 ## Regenerate the GIF in README.md
 
-1. Install [asciinema](https://github.com/asciinema/asciinema) and [agg (at least v1.4.0)](https://github.com/asciinema/agg).
-   On macOS, just `brew install asciinema agg` should be enough.
+1. Install [asciinema](https://github.com/asciinema/asciinema),
+   [agg (at least v1.4.0)](https://github.com/asciinema/agg),
+   [ImageMagick](https://imagemagick.org/script/command-line-processing.php)
+   and [sponge](https://linux.die.net/man/1/sponge).
+   On macOS, just `brew install asciinema agg imagemagick sponge` should be enough.
 1. Run [`./graphics/generate-asciinema-gif graphics/discover-status-traverse.gif`](graphics/generate-asciinema-gif).
 
 
