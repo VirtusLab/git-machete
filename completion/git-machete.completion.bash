@@ -30,6 +30,7 @@ _git_machete() {
   local traverse_opts="-F --fetch -l --list-commits -M --merge -n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase --no-push --no-push-untracked --push --push-untracked --return-to= --start-from= -w --whole -W -y --yes"
   local update_opts="-f --fork-point= -M --merge -n --no-edit-merge --no-interactive-rebase"
 
+  # shellcheck disable=SC2154
   case $cur in
     --branch=*|--onto=*) __gitcomp_nl "$(git machete list managed 2>/dev/null)" "" "${cur##--*=}" ;;
     --by=*|--checked-out-since=*) COMPREPLY=('');;

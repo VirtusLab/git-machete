@@ -5,6 +5,8 @@
 
 # This particular example shifts the files stored in a specific directory so that they remain correctly sequentially numbered after the rebase.
 
+set -e -o pipefail -u
+
 if [ $# -eq 3 ]; then
   # Path for Play framework evolution files.
   evolution_dir=app/src/main/resources/evolutions/default
