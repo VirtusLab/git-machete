@@ -2,7 +2,7 @@
 
 ## New in git-machete 3.16.4
 
-- fixed: `github anno-prs` no longer assumes that remote tracking branch has the same name as the local branch
+- fixed: `github anno-prs` no longer assumes that local branch and its remote counterpart share the same name
 
 ## New in git-machete 3.16.3
 
