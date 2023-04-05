@@ -2021,7 +2021,7 @@ class TestGitHub:
         )
 
         launch_command("discover", "-y")
-        launch_command("anno", "-H")
+        launch_command("github", "anno-prs")
 
         expected_status_output = """
         root
