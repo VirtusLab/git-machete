@@ -235,6 +235,78 @@ class TestGitHub:
             strip_indentation=False
         )
 
+    git_api_state_for_test_github_retarget_pr_explicit_branch = MockGitHubAPIState(
+        [
+            {
+                'head': {'ref': 'feature', 'repo': mock_repository_info},
+                'user': {'login': 'github_user'},
+                'base': {'ref': 'root'}, 'number': '15',
+                'html_url': 'www.github.com', 'state': 'open'
+            }
+        ]
+    )
+
+    def test_github_retarget_pr_explicit_branch(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_retarget_pr_explicit_branch.new_request())
+        mocker.patch('urllib.request.urlopen', MockContextManager)
+
+        branchs_first_commit_msg = "First commit on branch."
+        branchs_second_commit_msg = "Second commit on branch."
+        (
+            self.repo_sandbox.new_branch("root")
+                .commit("First commit on root.")
+                .new_branch("branch-1")
+                .commit(branchs_first_commit_msg)
+                .commit(branchs_second_commit_msg)
+                .push()
+                .new_branch('feature')
+                .commit('introduce feature')
+                .push()
+                .check_out('root')
+                .add_remote('new_origin', 'https://github.com/user/repo.git')
+        )
+
+        body: str = \
+            """
+            root
+                branch-1
+                    feature
+            """
+        body = dedent(body)
+        rewrite_definition_file(body)
+        launch_command("anno", "-H")
+
+        expected_status_output = """
+        root * (untracked)
+        |
+        o-branch-1
+          |
+          o-feature  PR #15 (github_user) WRONG PR BASE or MACHETE PARENT? PR has root rebase=no push=no
+        """
+        assert_command(
+            ['status'],
+            expected_result=expected_status_output
+        )
+
+        assert_command(
+            ['github', 'retarget-pr', '--branch', 'feature'],
+            'The base branch of PR #15 has been switched to branch-1\n',
+            strip_indentation=False
+        )
+
+        expected_status_output = """
+        root * (untracked)
+        |
+        o-branch-1
+          |
+          o-feature  PR #15 rebase=no push=no
+        """
+        assert_command(
+            ['status'],
+            expected_result=expected_status_output
+        )
+
     def test_github_retarget_pr_multiple_non_origin_remotes(self, mocker: Any) -> None:
         mocker.patch('git_machete.cli.exit_script', mock_exit_script)
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
