@@ -23,7 +23,7 @@ _git_machete() {
   local fork_point_opts="--inferred --override-to= --override-to-inferred --override-to-parent --unset-override"
   local github_create_pr_opts="--draft"
   local github_checkout_prs_opts="--all --by= --mine"
-  local github_retarget_pr_opts="--branch="
+  local github_retarget_pr_opts="-b --branch="
   local reapply_opts="-f --fork-point="
   local slide_out_opts="-d --down-fork-point= --delete -M --merge -n --no-edit-merge --no-interactive-rebase"
   local squash_opts="-f --fork-point="

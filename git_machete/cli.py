@@ -231,7 +231,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
         parents=[common_args_parser])
     github_parser.add_argument('subcommand', choices=['anno-prs', 'checkout-prs', 'create-pr', 'retarget-pr', 'sync'])
     github_parser.add_argument('pr_no', nargs='*', type=int)
-    github_parser.add_argument('--branch')
+    github_parser.add_argument('-b', '--branch', default=argparse.SUPPRESS)
     github_parser.add_argument('--all', action='store_true')
     github_parser.add_argument('--by')
     github_parser.add_argument('--draft', action='store_true')

@@ -266,7 +266,7 @@ __git_machete_github_subcommands ()
         ;;
 
         (retarget-pr)
-          _arguments '(--branch)'--branch'[Specify the branch for which the associated PR base will be set to its upstream (parent) branch.]'
+          _arguments '(-b --branch)'{-b,--branch=}'[Specify the branch for which the associated PR base will be set to its upstream (parent) branch.]'
         ;;
       esac
     ;;
