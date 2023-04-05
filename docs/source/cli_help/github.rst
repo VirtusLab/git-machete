@@ -62,7 +62,7 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 
     **Options:**
 
-    --branch=<branch-name>     Specify the branch for which the associated PR base will be set to its upstream (parent) branch.
+    --branch=<branch-name>     Specify the branch for which the associated PR base will be set to its upstream (parent) branch. Use current branch if absent.
 
 ``sync``:
     Synchronizes with the remote repository:
