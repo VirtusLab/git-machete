@@ -4,6 +4,8 @@
 
 - added: `--branch=<branch>` option to `git machete github retarget-pr` command
 
+- fixed: `github anno-prs` no longer assumes that local branch and its remote counterpart share the same name
+
 ## New in git-machete 3.16.3
 
 - fixed: a few glitches in the animated gif in README

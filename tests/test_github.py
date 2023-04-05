@@ -2037,3 +2037,65 @@ class TestGitHub:
         assert github_token is not None
         assert github_token.provider == f'auth token for {domain2} from `hub` GitHub CLI'
         assert github_token.value == 'ghp_myothertoken_for_git_example_org'
+
+    git_api_state_for_test_local_branch_name_different_than_tracking_branch_name = MockGitHubAPIState(
+        [
+            {
+                'head': {'ref': 'feature_repo', 'repo': mock_repository_info},
+                'user': {'login': 'github_user'},
+                'base': {'ref': 'root'}, 'number': '15',
+                'html_url': 'www.github.com', 'state': 'open'
+            },
+            {
+                'head': {'ref': 'feature_1', 'repo': mock_repository_info},
+                'user': {'login': 'github_user'},
+                'base': {'ref': 'feature_repo'}, 'number': '20',
+                'html_url': 'www.github.com', 'state': 'open'
+            }
+        ]
+    )
+
+    def test_local_branch_name_different_than_tracking_branch_name(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('urllib.request.Request',
+                     self.git_api_state_for_test_local_branch_name_different_than_tracking_branch_name.new_request())
+        mocker.patch('urllib.request.urlopen', MockContextManager)
+
+        (
+            self.repo_sandbox.new_branch("root")
+                .commit("First commit on root.")
+                .push()
+                .new_branch('feature_repo')
+                .commit('introduce feature')
+                .push()
+                .new_branch('feature')
+                .commit('introduce feature')
+                .push(tracking_branch='feature_repo')
+                .new_branch('feature_1')
+                .commit('introduce feature')
+                .push()
+                .delete_branch('feature_repo')
+                .add_remote('new_origin', 'https://github.com/user/repo.git')
+        )
+
+        body: str = \
+            """
+            root
+                feature
+                    feature_1
+            """
+        body = dedent(body)
+        rewrite_definition_file(body)
+        launch_command("github", "anno-prs")
+
+        expected_status_output = """
+        root
+        |
+        o-feature
+          |
+          o-feature_1 *  PR #20 (github_user) rebase=no push=no
+        """
+        assert_command(
+            ['status'],
+            expected_result=expected_status_output
+        )
