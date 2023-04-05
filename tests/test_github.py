@@ -2006,7 +2006,14 @@ class TestGitHub:
                 .add_remote('new_origin', 'https://github.com/user/repo.git')
         )
 
-        launch_command("discover", "-y")
+        body: str = \
+            """
+            root
+                feature
+                    feature_1
+            """
+        body = dedent(body)
+        rewrite_definition_file(body)
         launch_command("github", "anno-prs")
 
         expected_status_output = """
