@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.16.4
 
+- fixed: `github anno-prs` no longer assumes that local branch and its remote counterpart share the same name
+
 ## New in git-machete 3.16.3
 
 - fixed: a few glitches in the animated gif in README
