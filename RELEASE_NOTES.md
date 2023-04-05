@@ -1,6 +1,8 @@
 # Release notes
 
-## New in git-machete 3.16.4
+## New in git-machete 3.17.0
+
+- added: `<branch>` parameter to `git machete github retarget-pr` command
 
 ## New in git-machete 3.16.3
 
