@@ -990,14 +990,6 @@ class GitContext:
             return SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE if b_t < rb_t else \
                 SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE
 
-    def get_strict_remote_sync_status(self, branch: LocalBranchShortName) -> Tuple[int, Optional[str]]:
-        if not self.get_remotes():
-            return SyncToRemoteStatuses.NO_REMOTES, None
-        remote_branch = self.get_strict_counterpart_for_fetching_of_branch(branch)
-        if not remote_branch:
-            return SyncToRemoteStatuses.UNTRACKED, None
-        return self.get_relation_to_remote_counterpart(branch, remote_branch), self.get_strict_remote_for_fetching_of_branch(branch)
-
     def get_combined_remote_sync_status(self, branch: LocalBranchShortName) -> Tuple[int, Optional[str]]:
         if not self.get_remotes():
             return SyncToRemoteStatuses.NO_REMOTES, None

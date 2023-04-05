@@ -719,7 +719,7 @@ class MacheteClient:
                 branch, opt_no_detect_squash_merges=opt_no_detect_squash_merges)
             if needs_slide_out and branch in self.annotations:
                 needs_slide_out = self.annotations[branch].qualifiers.slide_out
-            s, remote = self.__git.get_strict_remote_sync_status(branch)
+            s, remote = self.__git.get_combined_remote_sync_status(branch)
             if s in (
                     SyncToRemoteStatuses.BEHIND_REMOTE,
                     SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE):
@@ -858,7 +858,7 @@ class MacheteClient:
                         return
 
                     self.flush_caches()
-                    s, remote = self.__git.get_strict_remote_sync_status(branch)
+                    s, remote = self.__git.get_combined_remote_sync_status(branch)
                     if s in (
                             SyncToRemoteStatuses.BEHIND_REMOTE,
                             SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE):
@@ -2506,7 +2506,7 @@ class MacheteClient:
                 f'All commits in {bold(current_branch)} branch are already included in {bold(up_branch)} branch.\n'
                 f'Cannot create pull request.')
 
-        s, remote = self.__git.get_strict_remote_sync_status(current_branch)
+        s, remote = self.__git.get_combined_remote_sync_status(current_branch)
         statuses_to_push = (
             SyncToRemoteStatuses.UNTRACKED,
             SyncToRemoteStatuses.AHEAD_OF_REMOTE,
@@ -2572,7 +2572,7 @@ class MacheteClient:
         branches_to_delete: List[LocalBranchShortName] = []
         # TODO (#453): Consider switching to immutable collections for keeping the state (managed_branches etc.).
         for managed_branch in self.managed_branches.copy():
-            status, _ = self.__git.get_strict_remote_sync_status(managed_branch)
+            status, _ = self.__git.get_combined_remote_sync_status(managed_branch)
             if status == SyncToRemoteStatuses.UNTRACKED:
                 if not self.__down_branches.get(managed_branch):
                     branches_to_delete.append(managed_branch)
