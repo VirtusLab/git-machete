@@ -1540,7 +1540,6 @@ class MacheteClient:
                     anno += f' ({pr.user})'
                 upstream: Optional[LocalBranchShortName] = self.up_branch.get(LocalBranchShortName.of(pr.head))
                 if upstream is not None:
-                    assert upstream is not None  # Cast away 'Optional'
                     counterpart = self.__git.get_combined_counterpart_for_fetching_of_branch(upstream)
                 else:
                     counterpart = None
