@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.16.4
+
 ## New in git-machete 3.16.3
 
 - fixed: a few glitches in the animated gif in README
