@@ -614,7 +614,7 @@ long_docs: Dict[str, str] = {
 
                  <b>-b</b>, <b>--branch=<branch></b>
 
-              Specify the branch for which the associated PR base will be set to its upstream (parent) branch. Use current branch if absent.
+              Specify the branch for which the associated PR base will be set to its upstream (parent) branch. The current branch is used if the option is absent.
 
            `sync`:
  
