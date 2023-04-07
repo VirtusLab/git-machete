@@ -304,7 +304,7 @@ class TestGitHub:
                 .push(remote='origin_2')
         )
 
-        body: str = \
+        body = \
             """
             root
                 branch-1
@@ -326,7 +326,7 @@ class TestGitHub:
                 .commit('introduce feature 2')
         )
 
-        body: str = \
+        body = \
             """
             root
                 branch-1
@@ -362,7 +362,7 @@ class TestGitHub:
                 .push(remote='origin_1')
         )
 
-        body: str = \
+        body = \
             """
             root
                 branch-1
@@ -704,7 +704,7 @@ class TestGitHub:
                 .new_branch('testing/endpoints')
                 .push()
         )
-        body: str = \
+        body = \
             """
             master
                 hotfix/add-trigger
