@@ -247,6 +247,7 @@ class TestGitHub:
     )
 
     def test_github_retarget_pr_explicit_branch(self, mocker: Any) -> None:
+        mocker.patch('git_machete.cli.exit_script', mock_exit_script)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_retarget_pr_explicit_branch.new_request())
         mocker.patch('urllib.request.urlopen', MockContextManager)
@@ -264,7 +265,11 @@ class TestGitHub:
                 .commit('introduce feature')
                 .push()
                 .check_out('root')
+                .new_branch('branch-without-pr')
+                .commit('branch-without-pr')
+                .push()
                 .add_remote('new_origin', 'https://github.com/user/repo.git')
+                .check_out('root')
         )
 
         body: str = \
@@ -272,6 +277,7 @@ class TestGitHub:
             root
                 branch-1
                     feature
+                branch-without-pr
             """
         body = dedent(body)
         rewrite_definition_file(body)
@@ -281,8 +287,10 @@ class TestGitHub:
         root * (untracked)
         |
         o-branch-1
-          |
-          o-feature  PR #15 (github_user) WRONG PR BASE or MACHETE PARENT? PR has root rebase=no push=no
+        | |
+        | o-feature  PR #15 (github_user) WRONG PR BASE or MACHETE PARENT? PR has root rebase=no push=no
+        |
+        o-branch-without-pr
         """
         assert_command(
             ['status'],
@@ -299,13 +307,31 @@ class TestGitHub:
         root * (untracked)
         |
         o-branch-1
-          |
-          o-feature  PR #15 rebase=no push=no
+        | |
+        | o-feature  PR #15 rebase=no push=no
+        |
+        o-branch-without-pr
         """
         assert_command(
             ['status'],
             expected_result=expected_status_output
         )
+
+        expected_error_message = ('`GET https://api.github.com/repos/user/repo/pulls?head=user:branch-without-pr` request '
+                                  'ended up in 404 response from GitHub. A valid GitHub API token is required.\n'
+                                  'Provide a GitHub API token with `repo` access via one of the: \n'
+                                  '\t1. `GITHUB_TOKEN` environment variable.\n'
+                                  '\t2. Content of the `~/.github-token` file.\n'
+                                  '\t3. Current auth token from the `gh` GitHub CLI.\n'
+                                  '\t4. Current auth token from the `hub` GitHub CLI.\n'
+                                  ' Visit `https://github.com/settings/tokens` to generate a new one.')
+        with pytest.raises(MacheteException) as e:
+            launch_command("github", "retarget-pr", "--branch", "branch-without-pr")
+        if e:
+            assert e.value.args[0] == expected_error_message, \
+                'Verify that expected error message has appeared when given pull request to create is already created.'
+
+        launch_command('github', 'retarget-pr', '--branch', 'branch-without-pr', '--ignore-if-missing')
 
     def test_github_retarget_pr_multiple_non_origin_remotes(self, mocker: Any) -> None:
         mocker.patch('git_machete.cli.exit_script', mock_exit_script)

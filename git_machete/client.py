@@ -2168,7 +2168,7 @@ class MacheteClient:
                 return remote
         return None
 
-    def retarget_github_pr(self, head: LocalBranchShortName) -> None:
+    def retarget_github_pr(self, head: LocalBranchShortName, ignore_if_missing: bool) -> None:
         domain = self.__derive_github_domain()
         remote_org_repo = self.__derive_remote_and_github_org_and_repo(domain=domain, branch_used_for_tracking_data=head)
         github_client = GitHubClient(domain=domain, organization=remote_org_repo.organization, repository=remote_org_repo.repository)
@@ -2176,7 +2176,7 @@ class MacheteClient:
         debug(f'organization is {remote_org_repo.organization}, repository is {remote_org_repo.repository}')
 
         pr: Optional[GitHubPullRequest] = github_client.derive_pull_request_by_head(head)
-        if not pr:
+        if not pr and not ignore_if_missing:
             raise MacheteException(f'No PR is opened in {bold(remote_org_repo.organization)}/{bold(remote_org_repo.organization)} '
                                    f'for branch {bold(head)}')
         debug(f'found {pr}')
