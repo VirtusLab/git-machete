@@ -231,6 +231,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
         parents=[common_args_parser])
     github_parser.add_argument('subcommand', choices=['anno-prs', 'checkout-prs', 'create-pr', 'retarget-pr', 'sync'])
     github_parser.add_argument('pr_no', nargs='*', type=int)
+    github_parser.add_argument('-b', '--branch', default=argparse.SUPPRESS)
     github_parser.add_argument('--all', action='store_true')
     github_parser.add_argument('--by')
     github_parser.add_argument('--draft', action='store_true')
@@ -657,6 +658,8 @@ def launch(orig_args: List[str]) -> None:
                     raise MacheteException(f"'--{command}' argument is only valid with 'checkout-prs' subcommand.")
             if 'pr_no' in parsed_cli and github_subcommand != 'checkout-prs':
                 raise MacheteException("'pr_no' option is only valid with 'checkout-prs' subcommand.")
+            if 'branch' in parsed_cli and github_subcommand != 'retarget-pr':
+                raise MacheteException("'--branch' option is only valid with 'retarget-pr' subcommand.")
 
             if github_subcommand == "anno-prs":
                 machete_client.sync_annotations_to_github_prs()
@@ -676,9 +679,9 @@ def launch(orig_args: List[str]) -> None:
                     opt_draft=cli_opts.opt_draft,
                     opt_onto=cli_opts.opt_onto)
             elif github_subcommand == "retarget-pr":
-                current_branch = git.get_current_branch()
-                machete_client.expect_in_managed_branches(current_branch)
-                machete_client.retarget_github_pr(current_branch)
+                branch = parsed_cli.branch if 'branch' in parsed_cli else git.get_current_branch()
+                machete_client.expect_in_managed_branches(branch)
+                machete_client.retarget_github_pr(branch)
             elif github_subcommand == "sync":
                 machete_client.checkout_github_prs(pr_nos=[],
                                                    my_opened_prs=True)

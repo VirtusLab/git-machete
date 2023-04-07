@@ -91,6 +91,7 @@ complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand
 complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand_from github; and __fish_seen_subcommand_from checkout-prs; and not __fish_seen_subcommand_from --by"      -f -l by           -d "Checkout someone's open PRs"
 complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand_from github; and __fish_seen_subcommand_from checkout-prs; and not __fish_seen_subcommand_from --mine"    -f -l mine         -d 'Checkout open PRs for the current user associated with the GitHub token'
 complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand_from github; and __fish_seen_subcommand_from create-pr; and not __fish_seen_subcommand_from --draft"      -f -l draft        -d 'Creates the new PR as a draft'
+complete -c git -n "__fish_git_using_command machete; and __fish_seen_subcommand_from github; and __fish_seen_subcommand_from retarget-pr; and not __fish_seen_subcommand_from --branch"   -f -l branch -s b -a '(__fish_git_local_branches)'        -d 'Specify the branch for which the associated PR base will be set to its upstream (parent) branch'
 
 # git machete go
 complete -c git -n "__fish_git_using_command machete; and not __fish_seen_subcommand_from $__mcht_commands" -f -a go -d 'Check out the branch relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument'
