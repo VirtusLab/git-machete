@@ -1,4 +1,5 @@
-from .mockers import GitRepositorySandbox, assert_command, launch_command, rewrite_definition_file
+from .mockers import (GitRepositorySandbox, assert_command, launch_command,
+                      rewrite_definition_file)
 
 
 class TestAnno:

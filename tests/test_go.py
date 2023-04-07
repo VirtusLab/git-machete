@@ -1,6 +1,7 @@
 from typing import Any
 
-from .mockers import GitRepositorySandbox, launch_command, mock_run_cmd, rewrite_definition_file
+from .mockers import (GitRepositorySandbox, launch_command, mock_run_cmd,
+                      rewrite_definition_file)
 
 
 class TestGo:

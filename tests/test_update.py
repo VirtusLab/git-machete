@@ -7,7 +7,8 @@ from git_machete.exceptions import MacheteException
 from git_machete.git_operations import GitContext
 
 from .mockers import (GitRepositorySandbox, get_current_commit_hash,
-                      launch_command, mock_exit_script, mock_run_cmd, popen, rewrite_definition_file)
+                      launch_command, mock_exit_script, mock_run_cmd, popen,
+                      rewrite_definition_file)
 
 
 class TestUpdate:

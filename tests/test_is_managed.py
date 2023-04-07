@@ -1,6 +1,7 @@
 import pytest
 
-from .mockers import GitRepositorySandbox, launch_command, rewrite_definition_file
+from .mockers import (GitRepositorySandbox, launch_command,
+                      rewrite_definition_file)
 
 
 class TestIsManaged:

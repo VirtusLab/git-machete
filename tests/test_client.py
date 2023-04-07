@@ -1,4 +1,3 @@
-from textwrap import dedent
 from typing import Dict
 
 from git_machete.annotation import Annotation

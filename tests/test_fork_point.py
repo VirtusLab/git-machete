@@ -1,7 +1,8 @@
 import os
 
 from .mockers import (GitRepositorySandbox, assert_command,
-                      get_current_commit_hash, launch_command, rewrite_definition_file)
+                      get_current_commit_hash, launch_command,
+                      rewrite_definition_file)
 
 
 class TestForkPoint:

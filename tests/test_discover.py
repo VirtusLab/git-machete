@@ -1,5 +1,3 @@
-from textwrap import dedent
-
 from .mockers import (GitRepositorySandbox, assert_command, launch_command,
                       rewrite_definition_file)
 

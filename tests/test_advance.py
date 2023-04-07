@@ -3,7 +3,8 @@ from typing import Any
 import pytest
 
 from .mockers import (GitRepositorySandbox, get_commit_hash,
-                      get_current_commit_hash, launch_command, mock_run_cmd, rewrite_definition_file)
+                      get_current_commit_hash, launch_command, mock_run_cmd,
+                      rewrite_definition_file)
 
 
 class TestAdvance:

@@ -5,7 +5,8 @@ import pytest
 
 from .mockers import (GitRepositorySandbox, assert_command, launch_command,
                       mock_ask_if, mock_run_cmd,
-                      mock_should_perform_interactive_slide_out, rewrite_definition_file)
+                      mock_should_perform_interactive_slide_out,
+                      rewrite_definition_file)
 
 
 class TestClean:

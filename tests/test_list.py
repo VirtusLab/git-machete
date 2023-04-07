@@ -1,4 +1,3 @@
-from textwrap import dedent
 from typing import Any
 
 from .mockers import (GitRepositorySandbox, assert_command, launch_command,
