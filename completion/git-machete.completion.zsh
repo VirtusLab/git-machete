@@ -264,6 +264,10 @@ __git_machete_github_subcommands ()
             '(--by)'--by'[Checkout open PRs authored by the given GitHub user]' \
             '(--mine)'--mine'[Checkout open PRs for the current user associated with the GitHub token.]'
         ;;
+
+        (retarget-pr)
+          _arguments '(-b --branch)'{-b,--branch=}'[Specify the branch for which the associated PR base will be set to its upstream (parent) branch.]'
+        ;;
       esac
     ;;
   esac

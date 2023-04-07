@@ -606,8 +606,15 @@ long_docs: Dict[str, str] = {
                  <b>--draft</b>
               Creates the new PR as a draft.
 
-           `retarget-pr`:
-              Sets the base of the current branch's PR to upstream (parent) branch, as seen by git machete (see `git machete show up`).
+           `retarget-pr [-b|--branch=<branch>]`:
+ 
+              Sets the base of the current (or specified) branch's PR to upstream (parent) branch, as seen by git machete (see `git machete show up`).
+
+              <b>Options:</b>
+
+                 <b>-b</b>, <b>--branch=<branch></b>
+
+              Specify the branch for which the associated PR base will be set to its upstream (parent) branch. The current branch is used if the option is absent.
 
            `sync`:
  
