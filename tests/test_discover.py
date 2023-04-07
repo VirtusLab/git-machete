@@ -44,8 +44,6 @@ class TestDiscover:
             feature2 annotation
             feature3 annotation rebase=no push=no
             """
-        body = dedent(body)
-
         rewrite_definition_file(body)
         launch_command('discover', '-y')
         expected_status_output = (

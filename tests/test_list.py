@@ -55,7 +55,6 @@ class TestList:
                 feature_0_1
               feature_1
             """
-        body = dedent(body)
         rewrite_definition_file(body)
 
         (

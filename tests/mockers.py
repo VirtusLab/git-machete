@@ -378,7 +378,9 @@ def assert_command(cmds: Iterable[str], expected_result: str, strip_indentation:
     assert actual_result == expected_result, f'Actual result:\n`{actual_result}`\nExpected result:\n`{expected_result}`'
 
 
-def rewrite_definition_file(new_body: str) -> None:
+def rewrite_definition_file(new_body: str, dedent=True) -> None:
+    if dedent:
+        new_body = textwrap.dedent(new_body)
     definition_file_path = git.get_main_git_subpath("machete")
     with open(os.path.join(os.getcwd(), definition_file_path), 'w') as def_file:
         def_file.writelines(new_body)

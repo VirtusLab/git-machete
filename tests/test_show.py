@@ -1,7 +1,7 @@
 from typing import Any
 
 from .mockers import (GitRepositorySandbox, assert_command, launch_command,
-                      mock_run_cmd)
+                      mock_run_cmd, rewrite_definition_file)
 
 
 class TestShow:
@@ -60,7 +60,19 @@ class TestShow:
             .delete_branch("root")
         )
 
-        launch_command("discover", "-y", "--roots=develop,master")
+        body: str = \
+            """
+            develop
+                allow-ownership-link
+                    build-chain
+                call-ws
+                    drop-constraint
+            master
+                hotfix/add-trigger
+                    ignore-trailing
+            """
+        rewrite_definition_file(body)
+
         assert_command(
             ["status"],
             """
@@ -108,7 +120,12 @@ class TestShow:
             .new_branch("level-1-branch")
             .commit()
         )
-        launch_command("discover", "-y")
+        body: str = \
+            """
+            level-0-branch
+                level-1-branch
+            """
+        rewrite_definition_file(body)
 
         assert 'level-0-branch' == launch_command("show", "up").strip(), \
             ("Verify that 'git machete show up' displays name of a parent/upstream "
@@ -135,7 +152,12 @@ class TestShow:
             .commit()
             .check_out("level-0-branch")
         )
-        launch_command("discover", "-y")
+        body: str = \
+            """
+            level-0-branch
+                level-1-branch
+            """
+        rewrite_definition_file(body)
 
         assert 'level-1-branch' == launch_command("show", "down").strip(), \
             ("Verify that 'git machete show down' displays name of "
@@ -177,7 +199,18 @@ class TestShow:
             .commit()
             .check_out("level-3b-branch")
         )
-        launch_command("discover", "-y")
+        body: str = \
+            """
+            level-0-branch
+                level-1a-branch
+                    level-2a-branch
+                level-1b-branch
+                    level-2b-branch
+                        level-3b-branch
+            a-additional-root
+                branch-from-a-additional-root
+            """
+        rewrite_definition_file(body)
 
         assert 'level-1a-branch' == launch_command("show", "first").strip(), \
             ("Verify that 'git machete show first' displays name of the first downstream "
@@ -217,7 +250,16 @@ class TestShow:
             .commit()
             .check_out("level-1a-branch")
         )
-        launch_command("discover", "-y")
+        body: str = \
+            """
+            level-0-branch
+                level-1a-branch
+                    level-2a-branch
+                level-1b-branch
+            x-additional-root
+                branch-from-x-additional-root
+            """
+        rewrite_definition_file(body)
 
         assert 'level-1b-branch' == launch_command("show", "last").strip(), \
             ("Verify that 'git machete show last' displays name of the last downstream "
@@ -252,7 +294,14 @@ class TestShow:
             .commit()
             .check_out("level-2a-branch")
         )
-        launch_command("discover", "-y")
+        body: str = \
+            """
+            level-0-branch
+                level-1a-branch
+                    level-2a-branch
+                level-1b-branch
+            """
+        rewrite_definition_file(body)
 
         assert 'level-1b-branch' == launch_command("show", "next").strip(), \
             ("Verify that 'git machete show next' displays name of "
@@ -286,7 +335,14 @@ class TestShow:
             .new_branch("level-1b-branch")
             .commit()
         )
-        launch_command("discover", "-y")
+        body: str = \
+            """
+            level-0-branch
+                level-1a-branch
+                    level-2a-branch
+                level-1b-branch
+            """
+        rewrite_definition_file(body)
 
         assert 'level-2a-branch' == launch_command("show", "prev").strip(), \
             ("Verify that 'git machete show prev' displays name of "
@@ -324,7 +380,16 @@ class TestShow:
             .commit()
             .check_out("level-2a-branch")
         )
-        launch_command("discover", "-y")
+        body: str = \
+            """
+            level-0-branch
+                level-1a-branch
+                    level-2a-branch
+                level-1b-branch
+            additional-root
+                branch-from-additional-root
+            """
+        rewrite_definition_file(body)
 
         assert 'level-0-branch' == launch_command("show", "root").strip(), \
             ("Verify that 'git machete show root' displays name of the root of "

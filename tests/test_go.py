@@ -1,6 +1,6 @@
 from typing import Any
 
-from .mockers import GitRepositorySandbox, launch_command, mock_run_cmd
+from .mockers import GitRepositorySandbox, launch_command, mock_run_cmd, rewrite_definition_file
 
 
 class TestGo:
@@ -33,7 +33,12 @@ class TestGo:
             .new_branch("level-1-branch")
             .commit()
         )
-        launch_command("discover", "-y")
+        body: str = \
+            """
+            level-0-branch
+                level-1-branch
+            """
+        rewrite_definition_file(body)
         launch_command("go", "up")
 
         assert 'level-0-branch' == launch_command("show", "current").strip(), \
@@ -65,7 +70,12 @@ class TestGo:
             .commit()
             .check_out("level-0-branch")
         )
-        launch_command("discover", "-y")
+        body: str = \
+            """
+            level-0-branch
+                level-1-branch
+            """
+        rewrite_definition_file(body)
         launch_command("go", "down")
 
         assert 'level-1-branch' == launch_command("show", "current").strip(), \
@@ -112,7 +122,18 @@ class TestGo:
             .commit()
             .check_out("level-3b-branch")
         )
-        launch_command("discover", "-y")
+        body: str = \
+            """
+            level-0-branch
+                level-1a-branch
+                    level-2a-branch
+                level-1b-branch
+                    level-2b-branch
+                        level-3b-branch
+            a-additional-root
+                branch-from-a-additional-root
+            """
+        rewrite_definition_file(body)
         launch_command("go", "first")
 
         assert 'level-1a-branch' == launch_command("show", "current").strip(), \
@@ -142,7 +163,11 @@ class TestGo:
             self.repo_sandbox.new_branch("level-0-branch")
             .commit()
         )
-        launch_command("discover", "-y")
+        body: str = \
+            """
+            level-0-branch
+            """
+        rewrite_definition_file(body)
         launch_command("go", "first")
 
         assert 'level-0-branch' == launch_command("show", "current").strip(), \
@@ -184,7 +209,16 @@ class TestGo:
             .commit()
             .check_out("level-1a-branch")
         )
-        launch_command("discover", "-y")
+        body: str = \
+            """
+            level-0-branch
+                level-1a-branch
+                    level-2a-branch
+                level-1b-branch
+            x-additional-root
+                branch-from-x-additional-root
+            """
+        rewrite_definition_file(body)
         launch_command("go", "last")
 
         assert 'level-1b-branch' == launch_command("show", "current").strip(), \
@@ -224,7 +258,14 @@ class TestGo:
             .commit()
             .check_out("level-2a-branch")
         )
-        launch_command("discover", "-y")
+        body: str = \
+            """
+            level-0-branch
+                level-1a-branch
+                    level-2a-branch
+                level-1b-branch
+            """
+        rewrite_definition_file(body)
         launch_command("go", "next")
 
         assert 'level-1b-branch' == launch_command("show", "current").strip(), \
@@ -261,7 +302,13 @@ class TestGo:
             .commit()
             .check_out("level-1-branch")
         )
-        launch_command("discover", "-y")
+        body: str = \
+            """
+            level-0-branch
+                level-1-branch
+            x-additional-root
+            """
+        rewrite_definition_file(body)
         launch_command("go", "next")
 
         assert 'x-additional-root' == launch_command("show", "current").strip(), \
@@ -298,7 +345,14 @@ class TestGo:
             .new_branch("level-1b-branch")
             .commit()
         )
-        launch_command("discover", "-y")
+        body: str = \
+            """
+            level-0-branch
+                level-1a-branch
+                    level-2a-branch
+                level-1b-branch
+            """
+        rewrite_definition_file(body)
         launch_command("go", "prev")
 
         assert 'level-2a-branch' == launch_command("show", "current").strip(), \
@@ -333,7 +387,12 @@ class TestGo:
             .commit()
             .check_out("level-0-branch")
         )
-        launch_command("discover", "-y")
+        body: str = \
+            """
+            a-additional-root
+            level-0-branch
+            """
+        rewrite_definition_file(body)
         launch_command("go", "prev")
 
         assert 'a-additional-root' == launch_command("show", "current").strip(), \
@@ -374,7 +433,16 @@ class TestGo:
             .commit()
             .check_out("level-2a-branch")
         )
-        launch_command("discover", "-y")
+        body: str = \
+            """
+            level-0-branch
+                level-1a-branch
+                    level-2a-branch
+                level-1b-branch
+            additional-root
+                branch-from-additional-root
+            """
+        rewrite_definition_file(body)
         launch_command("go", "root")
 
         assert 'level-0-branch' == launch_command("show", "current").strip(), \

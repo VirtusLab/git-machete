@@ -7,7 +7,7 @@ from git_machete.exceptions import MacheteException
 from git_machete.git_operations import GitContext
 
 from .mockers import (GitRepositorySandbox, get_current_commit_hash,
-                      launch_command, mock_exit_script, mock_run_cmd, popen)
+                      launch_command, mock_exit_script, mock_run_cmd, popen, rewrite_definition_file)
 
 
 class TestUpdate:
@@ -44,7 +44,13 @@ class TestUpdate:
             .check_out("level-0-branch")
             .commit("New commit on level-0-branch")
         )
-        launch_command("discover", "-y")
+        body: str = \
+            """
+            level-0-branch
+                level-1-branch
+                    level-2-branch
+            """
+        rewrite_definition_file(body)
 
         parents_new_commit_hash = get_current_commit_hash()
         self.repo_sandbox.check_out("level-1-branch")
@@ -75,7 +81,12 @@ class TestUpdate:
             .commit("New commit on level-0-branch")
             .execute("git cherry-pick level-1-branch")
         )
-        launch_command("discover", "-y")
+        body: str = \
+            """
+            level-0-branch
+                level-1-branch
+            """
+        rewrite_definition_file(body)
 
         parents_new_commit_hash = get_current_commit_hash()
         self.repo_sandbox.check_out("level-1-branch")
@@ -129,7 +140,12 @@ class TestUpdate:
         )
         roots_second_commit_hash = get_current_commit_hash()
         self.repo_sandbox.check_out("branch-1")
-        launch_command("discover", "-y")
+        body: str = \
+            """
+            root
+                branch-1
+            """
+        rewrite_definition_file(body)
 
         launch_command(
             "update", "--no-interactive-rebase", "-f", branch_second_commit_hash)
@@ -165,7 +181,13 @@ class TestUpdate:
                 .commit("Commit on branch-1b.")
         )
 
-        launch_command('discover', '-y')
+        body: str = \
+            """
+            branch-0
+                branch-1a
+                branch-1b
+            """
+        rewrite_definition_file(body)
 
         with pytest.raises(SystemExit):
             # First exception MacheteException is raised, followed by SystemExit.

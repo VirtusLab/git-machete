@@ -1,6 +1,6 @@
 import pytest
 
-from .mockers import GitRepositorySandbox, launch_command
+from .mockers import GitRepositorySandbox, launch_command, rewrite_definition_file
 
 
 class TestIsManaged:
@@ -32,7 +32,13 @@ class TestIsManaged:
                 .check_out("develop")
                 .commit("New commit on develop")
         )
-        launch_command("discover", "-y")
+        body: str = \
+            """
+            master
+            develop
+                feature
+            """
+        rewrite_definition_file(body)
 
         # Test `git machete is-managed` without providing the branch name
         launch_command('is-managed')

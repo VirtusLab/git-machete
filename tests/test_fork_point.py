@@ -1,7 +1,7 @@
 import os
 
 from .mockers import (GitRepositorySandbox, assert_command,
-                      get_current_commit_hash, launch_command)
+                      get_current_commit_hash, launch_command, rewrite_definition_file)
 
 
 class TestForkPoint:
@@ -41,7 +41,13 @@ class TestForkPoint:
             os.environ.pop('GIT_COMMITTER_DATE', None)
             os.environ.pop('GIT_AUTHOR_DATE', None)
 
-        launch_command('discover', '-y')
+        body: str = \
+            """
+            master
+            develop
+                feature
+            """
+        rewrite_definition_file(body)
 
         # Test `git machete fork-point` without providing the branch name
         # hash 67007ed30def3b9b658380b895a9f62b525286e0 corresponds to the commit on develop branch
@@ -67,7 +73,12 @@ class TestForkPoint:
             self.repo_sandbox.new_branch("develop")
                 .commit("develop commit")
         )
-        launch_command('discover', '-y')
+        body: str = \
+            """
+            master
+            develop
+            """
+        rewrite_definition_file(body)
 
         # invalid fork point with length not equal to 40
         self.repo_sandbox.add_git_config_key('machete.overrideForkPoint.develop.to', 39 * 'a')

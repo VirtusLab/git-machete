@@ -5,7 +5,7 @@ import pytest
 
 from .mockers import (GitRepositorySandbox, assert_command, launch_command,
                       mock_ask_if, mock_run_cmd,
-                      mock_should_perform_interactive_slide_out)
+                      mock_should_perform_interactive_slide_out, rewrite_definition_file)
 
 
 class TestClean:
@@ -49,15 +49,25 @@ class TestClean:
                 .commit()
                 .new_branch('moo2')
                 .commit()
-        )
-        launch_command('discover')
-        (
-            self.repo_sandbox
                 .check_out("master")
                 .new_branch('mars')
                 .commit()
                 .check_out("master")
         )
+
+        body: str = \
+            """
+            master
+                bar
+                    bar2
+                foo
+                    foo2
+                moo
+                    moo2
+                mars
+            """
+        rewrite_definition_file(body)
+
         launch_command('clean')
 
         expected_status_output = (

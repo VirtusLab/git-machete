@@ -3,7 +3,7 @@ from typing import Any
 import pytest
 
 from .mockers import (GitRepositorySandbox, get_commit_hash,
-                      get_current_commit_hash, launch_command, mock_run_cmd)
+                      get_current_commit_hash, launch_command, mock_run_cmd, rewrite_definition_file)
 
 
 class TestAdvance:
@@ -35,7 +35,8 @@ class TestAdvance:
             self.repo_sandbox.new_branch("root")
                 .commit()
         )
-        launch_command("discover", "-y")
+        body: str = "root"
+        rewrite_definition_file(body)
 
         with pytest.raises(SystemExit):
             launch_command("advance")
@@ -56,7 +57,12 @@ class TestAdvance:
             .new_branch("level-1-branch")
             .commit()
         )
-        launch_command("discover", "-y")
+        body: str = \
+            """
+            root
+                level-1-branch
+            """
+        rewrite_definition_file(body)
         level_1_commit_hash = get_current_commit_hash()
 
         self.repo_sandbox.check_out("root")
@@ -95,7 +101,13 @@ class TestAdvance:
             .new_branch("level-1-branch")
             .commit()
         )
-        launch_command("discover", "-y")
+
+        body: str = \
+            """
+            root
+                level-1-branch
+            """
+        rewrite_definition_file(body)
         level_1_commit_hash = get_current_commit_hash()
 
         self.repo_sandbox.check_out("root")
@@ -131,7 +143,14 @@ class TestAdvance:
             .commit()
             .check_out("root")
         )
-        launch_command("discover", "-y")
+
+        body: str = \
+            """
+            root
+                level-1a-branch
+                level-1b-branch
+            """
+        rewrite_definition_file(body)
 
         with pytest.raises(SystemExit):
             launch_command("advance", '-y')
