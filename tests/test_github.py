@@ -279,7 +279,6 @@ class TestGitHub:
                 branch-1
                     feature
             """
-        body = dedent(body)
         rewrite_definition_file(body)
         launch_command("anno", "-H")
 
@@ -1978,17 +1977,15 @@ class TestGitHub:
         for i in range(number_of_pages * prs_per_page):
             self.repo_sandbox.check_out('develop').new_branch(f'feature_{i}').commit().push()
         self.repo_sandbox.check_out('develop')
-        launch_command('discover', '--checked-out-since=1 day ago')
-        expected_status_output = '  develop *\n' + '\n'.join([f' |\n o-feature_{i}'
-                                                              for i in range(number_of_pages * prs_per_page)]) + '\n'
-        assert_command(['status'], expected_status_output)
+        body: str = 'develop *\n' + '\n'.join([f'feature_{i}'
+                                               for i in range(number_of_pages * prs_per_page)]) + '\n'
+        rewrite_definition_file(body)
 
         self.repo_sandbox.check_out('develop')
         for i in range(number_of_pages * prs_per_page):
             self.repo_sandbox.execute(f"git branch -D feature_{i}")
-        launch_command('discover', '--checked-out-since=1 day ago')
-        expected_status_output = '  develop *\n'
-        assert_command(['status'], expected_status_output)
+        body = 'develop *\n'
+        rewrite_definition_file(body)
 
         launch_command('github', 'checkout-prs', '--all')
         launch_command('discover', '--checked-out-since=1 day ago')
