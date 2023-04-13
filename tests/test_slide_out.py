@@ -4,7 +4,7 @@ import pytest
 
 from .mockers import (GitRepositorySandbox, assert_command,
                       get_current_commit_hash, launch_command, mock_run_cmd,
-                      mock_run_cmd_and_forward_stdout)
+                      mock_run_cmd_and_forward_stdout, rewrite_definition_file)
 
 
 class TestSlideOut:
@@ -48,7 +48,16 @@ class TestSlideOut:
             .push()
         )
 
-        launch_command("discover", "-y", "--roots=develop")
+        body: str = \
+            """
+            develop
+                slide_root
+                    child_a
+                    child_b
+                        child_c
+                            child_d
+            """
+        rewrite_definition_file(body)
 
         assert_command(
             ["status", "-l"],
@@ -192,7 +201,14 @@ class TestSlideOut:
         hash_of_second_commit_on_branch_3 = get_current_commit_hash()
         self.repo_sandbox.commit("Third commit on branch-3.")
 
-        launch_command('discover', '-y')
+        body: str = \
+            """
+            branch-0
+                branch-1
+                    branch-2
+                        branch-3
+            """
+        rewrite_definition_file(body)
         launch_command(
             'slide-out', '-n', 'branch-1', 'branch-2', '-d',
             hash_of_second_commit_on_branch_3)
@@ -223,7 +239,14 @@ class TestSlideOut:
         )
         hash_of_commit_that_is_not_ancestor_of_branch_2 = get_current_commit_hash()
 
-        launch_command('discover', '-y')
+        body: str = \
+            """
+            branch-0
+                branch-1
+                    branch-2
+                        branch-3
+            """
+        rewrite_definition_file(body)
 
         with pytest.raises(SystemExit):
             launch_command(
@@ -245,7 +268,14 @@ class TestSlideOut:
 
         hash_of_only_commit_on_branch_2b = get_current_commit_hash()
 
-        launch_command('discover', '-y')
+        body: str = \
+            """
+            branch-0
+                branch-1
+                    branch-2a
+                    branch-2b
+            """
+        rewrite_definition_file(body)
 
         with pytest.raises(SystemExit):
             launch_command(

@@ -1,4 +1,3 @@
-from textwrap import dedent
 from typing import Dict
 
 from git_machete.annotation import Annotation
@@ -69,8 +68,6 @@ class TestClient:
             feature7 annotation1rebase=no push=noannotation2
             feature8 annotation rebase=no push=no rebase=no push=no
             """
-        body = dedent(body)
-
         self.repo_sandbox.new_branch("root")
         rewrite_definition_file(body)
         git = GitContext()

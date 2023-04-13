@@ -1,7 +1,7 @@
 from typing import Any
 
-from .mockers import (GitRepositorySandbox, assert_command, launch_command,
-                      mock_run_cmd)
+from .mockers import (GitRepositorySandbox, assert_command, mock_run_cmd,
+                      rewrite_definition_file)
 
 
 class TestAdd:
@@ -35,7 +35,13 @@ class TestAdd:
                 .check_out("develop")
                 .commit("New commit on develop")
         )
-        launch_command("discover", "-y")
+        body: str = \
+            """
+            master
+                develop
+                    feature
+            """
+        rewrite_definition_file(body)
 
         self.repo_sandbox.new_branch("bugfix/feature_fail")
 

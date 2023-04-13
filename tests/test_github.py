@@ -195,8 +195,14 @@ class TestGitHub:
                 .check_out('feature')
                 .add_remote('new_origin', 'https://github.com/user/repo.git')
         )
+        body: str = \
+            """
+            root
+                branch-1
+                    feature
+            """
+        rewrite_definition_file(body)
 
-        launch_command("discover", "-y")
         launch_command("anno", "-H")
 
         expected_status_output = """
@@ -273,7 +279,6 @@ class TestGitHub:
                 branch-1
                     feature
             """
-        body = dedent(body)
         rewrite_definition_file(body)
         launch_command("anno", "-H")
 
@@ -342,7 +347,14 @@ class TestGitHub:
                 .push(remote='origin_2', set_upstream=False)
         )
 
-        launch_command("discover", "-y")
+        body: str = \
+            """
+            root
+                branch-1
+                    feature
+            """
+        rewrite_definition_file(body)
+
         expected_error_message = (
             "Multiple non-origin remotes correspond to GitHub in this repository: origin_1, origin_2 -> aborting. \n"
             "You can also select the repository by providing some or all of git config keys: "
@@ -363,7 +375,15 @@ class TestGitHub:
                 .push(remote='origin_2')
         )
 
-        launch_command("discover", "-y")
+        body = \
+            """
+            root
+                branch-1
+                    feature
+                        feature_1
+            """
+        rewrite_definition_file(body)
+
         assert_command(
             ['github', 'retarget-pr'],
             'The base branch of PR #20 has been switched to feature\n',
@@ -377,7 +397,16 @@ class TestGitHub:
                 .commit('introduce feature 2')
         )
 
-        launch_command("discover", "-y")
+        body = \
+            """
+            root
+                branch-1
+                    feature
+                        feature_1
+                        feature_2
+            """
+        rewrite_definition_file(body)
+
         with pytest.raises(MacheteException) as e:
             launch_command("github", "retarget-pr")
         if e:
@@ -404,7 +433,17 @@ class TestGitHub:
                 .push(remote='origin_1')
         )
 
-        launch_command("discover", "-y")
+        body = \
+            """
+            root
+                branch-1
+                    feature
+                        feature_1
+                        feature_2
+                            feature_3
+            """
+        rewrite_definition_file(body)
+
         assert_command(
             ['github', 'retarget-pr'],
             'The base branch of PR #35 has been switched to feature_2\n',
@@ -486,7 +525,18 @@ class TestGitHub:
                 .delete_branch("root")
                 .add_remote('new_origin', 'https://github.com/user/repo.git')
         )
-        launch_command("discover", "-y")
+        body: str = \
+            """
+            master
+                hotfix/add-trigger
+                    ignore-trailing
+            develop
+                allow-ownership-link
+                    build-chain
+                call-ws
+                    drop-constraint
+            """
+        rewrite_definition_file(body)
 
         # test that `anno-prs` add `rebase=no push=no` qualifiers to branches associated with the PRs whose owner
         # is different than the current user, overwrite annotation text but doesn't overwrite existing qualifiers
@@ -523,7 +573,6 @@ class TestGitHub:
                 .add_git_config_key('machete.github.repository', 'custom_repo')
         )
 
-        launch_command("discover", "-y")
         launch_command('github', 'anno-prs')
         assert_command(
             ["status"],
@@ -619,8 +668,20 @@ class TestGitHub:
                 .check_out("call-ws")
                 .add_remote('new_origin', 'https://github.com/user/repo.git')
         )
+        body: str = \
+            """
+            master
+                hotfix/add-trigger
+                    ignore-trailing
+                        chore/fields
+            develop
+                allow-ownership-link
+                    build-chain
+                call-ws
+                    drop-constraint
+            """
+        rewrite_definition_file(body)
 
-        launch_command("discover")
         launch_command("github", "create-pr")
         # ahead of origin state, push is advised and accepted
         assert_command(
@@ -714,7 +775,20 @@ class TestGitHub:
                 .new_branch('testing/endpoints')
                 .push()
         )
-        launch_command('discover')
+        body = \
+            """
+            master
+                hotfix/add-trigger
+                    ignore-trailing
+                        chore/fields
+            develop
+                allow-ownership-link
+                    build-chain
+                call-ws
+                    drop-constraint
+                testing/endpoints
+            """
+        rewrite_definition_file(body)
 
         expected_error_message = "All commits in testing/endpoints branch are already included in develop branch.\n" \
                                  "Cannot create pull request."
@@ -770,8 +844,13 @@ class TestGitHub:
                 .push()
                 .delete_branch("root")
         )
-
-        launch_command('discover')
+        body: str = \
+            """
+            develop
+                feature/api_handling
+                    feature/api_exception_handling
+            """
+        rewrite_definition_file(body)
 
         expected_msg = ("Fetching origin...\n"
                         "Warn: Base branch for this PR (feature/api_handling) is not found on remote, pushing...\n"
@@ -843,8 +922,14 @@ class TestGitHub:
                 .push(remote='origin_1', set_upstream=False)
                 .push(remote='origin_2', set_upstream=False)
         )
+        body: str = \
+            """
+            root
+                branch-1
+                    feature
+            """
+        rewrite_definition_file(body)
 
-        launch_command("discover", "-y")
         expected_result = """
         Branch feature is untracked and there's no origin repository.
         [1] origin_1
@@ -1120,7 +1205,20 @@ class TestGitHub:
                        'testing/add_user', 'chore/comments', 'bugfix/add_user'):
             self.repo_sandbox.execute(f"git branch -D {branch}")
 
-        launch_command('discover')
+        body: str = \
+            """
+            master
+                hotfix/add-trigger
+                    ignore-trailing
+                        chore/fields
+            develop
+                enhance/feature
+                    bugfix/feature
+                        allow-ownership-link
+                            restrict_access
+                                chore/redundant_checks
+            """
+        rewrite_definition_file(body)
 
         # not broken chain of pull requests (root found in dependency tree)
         launch_command('github', 'checkout-prs', '18')
@@ -1496,7 +1594,12 @@ class TestGitHub:
             .commit('initial develop commit')
             .push()
         )
-        launch_command('discover')
+        body: str = \
+            """
+            root
+            develop
+            """
+        rewrite_definition_file(body)
         expected_msg = ("Checking for open GitHub PRs... OK\n"
                         "Warn: Pull request #2 comes from fork and its repository is already deleted. "
                         "No remote tracking data will be set up for feature/allow_checkout branch.\n"
@@ -1657,7 +1760,23 @@ class TestGitHub:
                        'testing/add_user', 'chore/comments', 'bugfix/add_user'):
             self.repo_sandbox.execute(f"git branch -D {branch}")
 
-        launch_command('discover')
+        body: str = \
+            """
+            master
+                hotfix/add-trigger
+                    ignore-trailing
+                        chore/fields
+            develop
+                enhance/feature
+                    bugfix/feature
+                        allow-ownership-link
+                            restrict_access
+                                chore/redundant_checks
+            bugfix/add_user
+                testing/add_user
+                    chore/comments
+            """
+        rewrite_definition_file(body)
 
         # test that `checkout-prs` add `rebase=no push=no` qualifiers to branches associated with the PRs whose owner
         # is different than the current user
@@ -1778,7 +1897,19 @@ class TestGitHub:
                 .new_branch('snickers')
                 .push()
         )
-        launch_command('discover', '-y')
+        body: str = \
+            """
+            master
+                bar
+                    bar2
+                foo
+                    foo2
+                moo
+                    moo2
+                snickers
+            """
+        rewrite_definition_file(body)
+
         (
             self.repo_sandbox
                 .check_out("master")
@@ -1846,17 +1977,15 @@ class TestGitHub:
         for i in range(number_of_pages * prs_per_page):
             self.repo_sandbox.check_out('develop').new_branch(f'feature_{i}').commit().push()
         self.repo_sandbox.check_out('develop')
-        launch_command('discover', '--checked-out-since=1 day ago')
-        expected_status_output = '  develop *\n' + '\n'.join([f' |\n o-feature_{i}'
-                                                              for i in range(number_of_pages * prs_per_page)]) + '\n'
-        assert_command(['status'], expected_status_output)
+        body: str = 'develop *\n' + '\n'.join([f'feature_{i}'
+                                               for i in range(number_of_pages * prs_per_page)]) + '\n'
+        rewrite_definition_file(body)
 
         self.repo_sandbox.check_out('develop')
         for i in range(number_of_pages * prs_per_page):
             self.repo_sandbox.execute(f"git branch -D feature_{i}")
-        launch_command('discover', '--checked-out-since=1 day ago')
-        expected_status_output = '  develop *\n'
-        assert_command(['status'], expected_status_output)
+        body = 'develop *\n'
+        rewrite_definition_file(body)
 
         launch_command('github', 'checkout-prs', '--all')
         launch_command('discover', '--checked-out-since=1 day ago')
@@ -2084,7 +2213,6 @@ class TestGitHub:
                 feature
                     feature_1
             """
-        body = dedent(body)
         rewrite_definition_file(body)
         launch_command("github", "anno-prs")
 
