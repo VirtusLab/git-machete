@@ -1,4 +1,3 @@
-from textwrap import dedent
 from typing import Any
 
 from .mockers import (GitRepositorySandbox, assert_command, launch_command,
@@ -61,7 +60,18 @@ class TestTraverse:
             .delete_branch("root")
         )
 
-        launch_command("discover", "-y", "--roots=develop,master")
+        body: str = \
+            """
+            develop
+                allow-ownership-link
+                    build-chain
+                call-ws
+                    drop-constraint
+            master
+                hotfix/add-trigger
+                    ignore-trailing
+            """
+        rewrite_definition_file(body)
         assert_command(
             ["status"],
             """
@@ -337,7 +347,13 @@ class TestTraverse:
             .commit('develop commit 2')
         )
 
-        launch_command("discover", "-y", "--roots=develop")
+        body: str = \
+            """
+            develop
+                mars
+                    snickers
+            """
+        rewrite_definition_file(body)
         launch_command("traverse", '-y', '-M', '-n')
         assert_command(
             ["status"],
@@ -365,8 +381,6 @@ class TestTraverse:
             \thotfix/add-trigger push=no
             \t\tignore-trailing
             """
-
-        body = dedent(body).strip()
         rewrite_definition_file(body)
 
         launch_command("traverse", "-Wy")
@@ -406,8 +420,6 @@ class TestTraverse:
             \thotfix/add-trigger
             \t\tignore-trailing
             """
-
-        body = dedent(body).strip()
         rewrite_definition_file(body)
 
         launch_command("traverse", "-Wy")
@@ -447,8 +459,6 @@ class TestTraverse:
             \thotfix/add-trigger
             \t\tignore-trailing
             """
-
-        body = dedent(body).strip()
         rewrite_definition_file(body)
 
         launch_command("traverse", "-Wy")
@@ -488,8 +498,6 @@ class TestTraverse:
             \thotfix/add-trigger
             \t\tignore-trailing
             """
-
-        body = dedent(body).strip()
         rewrite_definition_file(body)
         self.repo_sandbox.check_out('develop').merge('call-ws')
 

@@ -1,4 +1,5 @@
-from .mockers import GitRepositorySandbox, assert_command, launch_command
+from .mockers import (GitRepositorySandbox, assert_command, launch_command,
+                      rewrite_definition_file)
 
 
 class TestAnno:
@@ -31,7 +32,13 @@ class TestAnno:
                 .check_out("develop")
                 .commit("New commit on develop")
         )
-        launch_command('discover', '-y')
+        body: str = \
+            """
+            master
+            develop
+                feature
+            """
+        rewrite_definition_file(body)
 
         # Test `git machete anno` without providing the branch name
         launch_command('anno', 'Custom annotation for `develop` branch')

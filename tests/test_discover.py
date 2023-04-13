@@ -1,5 +1,3 @@
-from textwrap import dedent
-
 from .mockers import (GitRepositorySandbox, assert_command, launch_command,
                       rewrite_definition_file)
 
@@ -44,8 +42,6 @@ class TestDiscover:
             feature2 annotation
             feature3 annotation rebase=no push=no
             """
-        body = dedent(body)
-
         rewrite_definition_file(body)
         launch_command('discover', '-y')
         expected_status_output = (

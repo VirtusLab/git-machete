@@ -65,7 +65,13 @@ class TestStatus:
                 .push()
                 .add_git_config_key('machete.status.extraSpaceBeforeBranchName', 'true')
         )
-        launch_command('discover', '-y')
+        body: str = \
+            """
+            master
+                bar
+                    foo
+            """
+        rewrite_definition_file(body)
 
         expected_status_output = (
             """
@@ -111,7 +117,14 @@ class TestStatus:
             .push()
         )
 
-        launch_command("discover", "-y", "--roots=root")
+        body: str = \
+            """
+            root
+                develop
+                    feature
+                        child
+            """
+        rewrite_definition_file(body)
 
         assert_command(
             ["status", "-l"],
@@ -267,7 +280,15 @@ class TestStatus:
                 .push()
                 .push(remote='origin_1')
         )
-        launch_command('discover', '-y')
+        body: str = \
+            """
+            master
+                bar
+                    foo
+                        snickers
+                            mars
+            """
+        rewrite_definition_file(body)
         expected_status_output = (
             """
             master
@@ -296,7 +317,13 @@ class TestStatus:
             .push()
             .commit("bar")
         )
-        launch_command('discover', '-y')
+        body: str = \
+            """
+            master
+                foo
+                    bar
+            """
+        rewrite_definition_file(body)
         expected_status_output = (
             """
             master
