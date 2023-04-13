@@ -5,6 +5,7 @@
 - added: `--ignore-if-missing` flag to `git machete github retarget-pr` command
 - added: `--branch=<branch>` option to `git machete github retarget-pr` command
 - fixed: `github anno-prs` no longer assumes that local branch and its remote counterpart share the same name
+- fixed: `git machete --help` displays a man page (instead of crashing with `No manual entry for git-machete`) when git-machete is installed via Homebrew
 
 ## New in git-machete 3.16.3
 

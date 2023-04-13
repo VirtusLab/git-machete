@@ -24,8 +24,8 @@ import git_machete  # noqa: E402
 # -- Project information -----------------------------------------------------
 
 project = 'git-machete'
-copyright = '2017-2021, Paweł Lipski'
-author = 'Paweł Lipski'
+copyright = '2017-2023, VirtusLab'
+author = 'VirtusLab'
 
 # The full version, including alpha/beta/rc tags
 

@@ -7,7 +7,7 @@ if ! ( [ -f setup.py ] && grep -q "name='git-machete'" setup.py ); then
   exit 1
 fi
 
-env | sort | head -3
+env | sort | head -4
 
 set -x
 
@@ -17,19 +17,19 @@ else
   TOX_ENV_LIST="mypy-py${PYTHON_VERSION/./},py${PYTHON_VERSION/./}"
 fi
 
-if [[ $BUILD_SPHINX_DOCS = true ]]; then
-  TOX_ENV_LIST="$TOX_ENV_LIST,sphinx-docs"
+if [[ $BUILD_SPHINX_HTML = true ]]; then
+  TOX_ENV_LIST="$TOX_ENV_LIST,sphinx-html"
 fi
 
-if [[ $CHECK_PY_DOCS_UP_TO_DATE = true ]]; then
-  TOX_ENV_LIST="$TOX_ENV_LIST,check-py-docs"
+if [[ $CHECK_DOCS_UP_TO_DATE = true ]]; then
+  TOX_ENV_LIST="$TOX_ENV_LIST,check-py-docs,check-sphinx-man"
 fi
 
 if [[ $CHECK_PEP8 = true ]]; then
   TOX_ENV_LIST="$TOX_ENV_LIST,pep8,isort-check"
 fi
 
-tox -e $TOX_ENV_LIST
+tox -e "$TOX_ENV_LIST"
 
 $PYTHON setup.py install --user
 PATH=$PATH:$HOME/.local/bin/

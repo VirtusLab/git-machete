@@ -1,110 +1,112 @@
-.. _completion:
+.. only:: html
 
-Installing git machete command line completion
-==============================================
+  .. _completion:
 
-Bash:
+  Installing git machete command line completion
+  ==============================================
 
-    * Mac (via Homebrew)
-        Make sure you have bash completion installed (with ``brew install bash-completion``).
+  Bash:
 
-        ``brew install git machete`` automatically installs bash completion files for ``git machete``.
-    * Linux
-        #. In a non-minimal installation of Linux, bash completion should be available.
-        #. Place the completion script in ``/etc/bash_completion.d/``.
+      * Mac (via Homebrew)
+          Make sure you have bash completion installed (with ``brew install bash-completion``).
 
-        .. code-block:: shell
+          ``brew install git machete`` automatically installs bash completion files for ``git machete``.
+      * Linux
+          #. In a non-minimal installation of Linux, bash completion should be available.
+          #. Place the completion script in ``/etc/bash_completion.d/``.
 
-            sudo curl -L https://raw.githubusercontent.com/VirtusLab/git-machete/master/completion/git-machete.completion.bash -o /etc/bash_completion.d/git-machete
+          .. code-block:: shell
 
-Zsh:
+              sudo curl -L https://raw.githubusercontent.com/VirtusLab/git-machete/master/completion/git-machete.completion.bash -o /etc/bash_completion.d/git-machete
 
-    * Linux/Mac: with [oh-my-zsh](https://ohmyz.sh/) shell
-        .. code-block:: shell
+  Zsh:
 
-            $ mkdir -p ~/.oh-my-zsh/custom/plugins/git-machete/
-            $ curl -L https://raw.githubusercontent.com/VirtusLab/git-machete/master/completion/git-machete.completion.zsh -o ~/.oh-my-zsh/custom/plugins/git-machete/git-machete.plugin.zsh
+      * Linux/Mac: with `oh-my-zsh <https://ohmyz.sh/>`_ shell
+          .. code-block:: shell
 
-        Add ``git machete`` to the plugins list in ``~/.zshrc`` to run autocompletion within the oh-my-zsh shell.
-        In the following example, ``...`` represents other zsh plugins you may have installed.
+              $ mkdir -p ~/.oh-my-zsh/custom/plugins/git-machete/
+              $ curl -L https://raw.githubusercontent.com/VirtusLab/git-machete/master/completion/git-machete.completion.zsh -o ~/.oh-my-zsh/custom/plugins/git-machete/git-machete.plugin.zsh
 
-        .. code-block:: shell
+          Add ``git machete`` to the plugins list in ``~/.zshrc`` to run autocompletion within the oh-my-zsh shell.
+          In the following example, ``...`` represents other zsh plugins you may have installed.
 
-            plugins=(... git-machete
-            )
+          .. code-block:: shell
 
-
-        * Workarounds for Zsh on Mac
-
-            On Mac, unfortunately there might be a problem that ``git machete`` subcommands still don't complete even when the zsh plugin is active. This issue also affects other non-standard ``git`` subcommands like ``git flow`` and ``git lfs``. To work the issue around, first establish how ``git`` is installed in your system.
-
-            .. code-block:: shell
-
-                which git
+              plugins=(... git-machete
+              )
 
 
-            If ``git`` resolves to ``/usr/bin/git``, then likely ``git`` is the default installation provided in Mac OS.
-            As a workaround, add the following line directly at the end of ``~/.zshrc``:
+          * Workarounds for Zsh on Mac
 
-            .. code-block:: shell
+              On Mac, unfortunately there might be a problem that ``git machete`` subcommands still don't complete even when the zsh plugin is active. This issue also affects other non-standard ``git`` subcommands like ``git flow`` and ``git lfs``. To work the issue around, first establish how ``git`` is installed in your system.
 
-                source ~/.oh-my-zsh/custom/plugins/git-machete/git-machete.plugin.zsh
+              .. code-block:: shell
 
-            and reload the shell.
+                  which git
 
-            If ``git`` resolves to ``/usr/local/bin/git``, then likely ``git`` has been installed via ``brew``.
-            Up to our current knowledge, workaround is much harder to provide in such scenario.
 
-            One option is to ``brew uninstall git`` and then use the solution for Mac's default ``git`` provided above,
-            but that's likely undesired since ``git`` shipped with Mac OS is almost always an older version than what's available via ``brew``.
+              If ``git`` resolves to ``/usr/bin/git``, then likely ``git`` is the default installation provided in Mac OS.
+              As a workaround, add the following line directly at the end of ``~/.zshrc``:
 
-            Another, less intrusive workaround is to make sure that the zsh ``_git`` function
-            is NOT taken from brew-git's ``/usr/local/share/zsh/site-functions/_git``,
-            but instead from ``/usr/share/zsh/5.7.1/functions/_git`` (zsh version path fragment can be different from ``5.7.1``).
-            Add the following at the end of ``~/.zshrc``:
+              .. code-block:: shell
 
-            .. code-block:: shell
+                  source ~/.oh-my-zsh/custom/plugins/git-machete/git-machete.plugin.zsh
 
-                source /usr/share/zsh/5.7.1/functions/_git  # or other zsh version instead of 5.7.1, depending on what's available in the system
+              and reload the shell.
 
-            and reload the shell.
+              If ``git`` resolves to ``/usr/local/bin/git``, then likely ``git`` has been installed via ``brew``.
+              Up to our current knowledge, workaround is much harder to provide in such scenario.
 
-    * Linux/Mac: without oh-my-zsh shell
-        #. Place the completion script in your ``/path/to/zsh/completion`` (typically ``~/.zsh/completion/``):
+              One option is to ``brew uninstall git`` and then use the solution for Mac's default ``git`` provided above,
+              but that's likely undesired since ``git`` shipped with Mac OS is almost always an older version than what's available via ``brew``.
 
-            .. code-block:: shell
+              Another, less intrusive workaround is to make sure that the zsh ``_git`` function
+              is NOT taken from brew-git's ``/usr/local/share/zsh/site-functions/_git``,
+              but instead from ``/usr/share/zsh/5.7.1/functions/_git`` (zsh version path fragment can be different from ``5.7.1``).
+              Add the following at the end of ``~/.zshrc``:
 
-                $ mkdir -p ~/.zsh/completion
-                $ curl -L https://raw.githubusercontent.com/VirtusLab/git-machete/master/completion/git-machete.completion.zsh -o ~/.zsh/completion/_git-machete
+              .. code-block:: shell
 
-        #. Include the directory in your ``$fpath`` by adding in ``~/.zshrc``:
+                  source /usr/share/zsh/5.7.1/functions/_git  # or other zsh version instead of 5.7.1, depending on what's available in the system
 
-            .. code-block:: shell
+              and reload the shell.
 
-                fpath=(~/.zsh/completion $fpath)
+      * Linux/Mac: without oh-my-zsh shell
+          #. Place the completion script in your ``/path/to/zsh/completion`` (typically ``~/.zsh/completion/``):
 
-        #. Make sure ``compinit`` is loaded or do it by adding in ``~/.zshrc``:
+              .. code-block:: shell
 
-            .. code-block:: shell
+                  $ mkdir -p ~/.zsh/completion
+                  $ curl -L https://raw.githubusercontent.com/VirtusLab/git-machete/master/completion/git-machete.completion.zsh -o ~/.zsh/completion/_git-machete
 
-                autoload -Uz compinit && compinit -i
+          #. Include the directory in your ``$fpath`` by adding in ``~/.zshrc``:
 
-        #. Then reload your shell:
+              .. code-block:: shell
 
-            .. code-block:: shell
+                  fpath=(~/.zsh/completion $fpath)
 
-                exec $SHELL -l
+          #. Make sure ``compinit`` is loaded or do it by adding in ``~/.zshrc``:
 
-Fish:
+              .. code-block:: shell
 
-    * Mac (via Homebrew)
-        Please look at the section about [installation via Homebrew](https://github.com/VirtusLab/git-machete#using-homebrew-macos).
-        ``brew install git-machete`` automatically installs fish completion files for ``git machete``.
-    * Linux
-        Place the completion script in ``/path/to/fish/completions/`` (typically ``~/.config/fish/completions/git-machete.fish``).
+                  autoload -Uz compinit && compinit -i
 
-        .. code-block:: shell
+          #. Then reload your shell:
 
-            mkdir -p ~/.config/fish/completions
-            curl -L https://raw.githubusercontent.com/VirtusLab/git-machete/master/completion/git-machete.fish -o ~/.config/fish/completions/git-machete.fish
-            echo "source ~/.config/fish/completions/git-machete.fish >/dev/null" >> ~/.config/fish/config.fish
+              .. code-block:: shell
+
+                  exec $SHELL -l
+
+  Fish:
+
+      * Mac (via Homebrew)
+          Please take a look at the section about `installation via Homebrew <https://github.com/VirtusLab/git-machete#using-homebrew-macos>`_.
+          ``brew install git-machete`` automatically installs fish completion files for ``git machete``.
+      * Linux
+          Place the completion script in ``/path/to/fish/completions/`` (typically ``~/.config/fish/completions/git-machete.fish``).
+
+          .. code-block:: shell
+
+              mkdir -p ~/.config/fish/completions
+              curl -L https://raw.githubusercontent.com/VirtusLab/git-machete/master/completion/git-machete.fish -o ~/.config/fish/completions/git-machete.fish
+              echo "source ~/.config/fish/completions/git-machete.fish >/dev/null" >> ~/.config/fish/config.fish
