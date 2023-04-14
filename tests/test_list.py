@@ -1,4 +1,3 @@
-from textwrap import dedent
 from typing import Any
 
 from .mockers import (GitRepositorySandbox, assert_command, launch_command,
@@ -55,7 +54,6 @@ class TestList:
                 feature_0_1
               feature_1
             """
-        body = dedent(body)
         rewrite_definition_file(body)
 
         (
