@@ -79,8 +79,6 @@ agg --speed=0.75 --theme="$theme" \
   --cols=122 --rows=35 \
   --font-size=14 --line-height=1.2 \
   "$cast_path" "$gif_path"
-# TODO (#870): remove once looping in `agg` is fixed
-mogrify -loop 0 "$gif_path"
 
 echo "Location of the generated GIF file:"
 echo "$gif_path"
