@@ -731,6 +731,8 @@ class MacheteClient:
                 needs_remote_sync = True
                 if branch in self.annotations:
                     needs_remote_sync = self.annotations[branch].qualifiers.push
+                if not opt_push_tracked and not opt_push_untracked:
+                    needs_remote_sync = False
             else:
                 needs_remote_sync = False
 
