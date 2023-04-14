@@ -97,7 +97,7 @@ class TestTraverse:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
         self.setup_discover_standard_tree()
 
-        launch_command("traverse", "-Wy", "--no-push")
+        x = launch_command("traverse", "-Wy", "--no-push")
         assert_command(
             ["status", "-l"],
             """
@@ -263,6 +263,81 @@ class TestTraverse:
               o-ignore-trailing *
             """,
         )
+
+    def test_traverse_no_push_no_checkout(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        (
+            self.repo_sandbox.new_branch("root")
+                .commit("root")
+                .new_branch("develop")
+                .commit("develop commit")
+                .commit("Other develop commit")
+                .push()
+                .new_branch("allow-ownership-link")
+                .commit("Allow ownership links")
+                .push()
+                .check_out("allow-ownership-link")
+                .commit("1st round of fixes")
+                .new_branch("build-chain")
+                .commit("Build arbitrarily long chains")
+                .check_out("root")
+                .new_branch("master")
+                .commit("Master commit")
+                .push()
+                .new_branch("hotfix/add-trigger")
+                .commit("HOTFIX Add the trigger")
+                .push()
+                .commit_amend("HOTFIX Add the trigger (amended)")
+                .delete_branch("root")
+        )
+
+        body: str = \
+            """
+            develop
+                allow-ownership-link
+                    build-chain
+            master
+                hotfix/add-trigger
+            """
+        rewrite_definition_file(body)
+        assert_command(
+            ["status"],
+            """
+            develop
+            |
+            o-allow-ownership-link (ahead of origin)
+              |
+              o-build-chain (untracked)
+
+            master
+            |
+            o-hotfix/add-trigger * (diverged from origin)
+            """
+        )
+
+        expected_result = '''
+        Fetching origin...
+
+        Checking out the first root branch (develop)
+
+          develop
+          |
+          o-allow-ownership-link (ahead of origin)
+            |
+            o-build-chain (untracked)
+
+          master
+          |
+          o-hotfix/add-trigger * (diverged from origin)
+
+        No successor of develop needs to be slid out or synced with upstream branch or remote; nothing left to update
+        Tip: traverse by default starts from the current branch, use flags (--start-from=, --whole or -w, -W) to change this behavior.
+        Further info under git machete traverse --help.
+        Returned to the initial branch hotfix/add-trigger
+        '''
+        assert_command(["traverse", "-Wy", "--no-push"],
+                       expected_result,
+                       indent='')
 
     def test_discover_traverse_squash(self, mocker: Any) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
