@@ -2175,13 +2175,9 @@ class MacheteClient:
 
         debug(f'organization is {remote_org_repo.organization}, repository is {remote_org_repo.repository}')
 
-        try:
-            pr: Optional[GitHubPullRequest] = github_client.derive_pull_request_by_head(head)
-        except MacheteException as err:
-            if ignore_if_missing:
-                return
-            else:
-                raise MacheteException(err.parameter)
+        pr: Optional[GitHubPullRequest] = github_client.derive_pull_request_by_head(head, ignore_if_missing)
+        if not pr:
+            return
         debug(f'found {pr}')
 
         new_base: Optional[LocalBranchShortName] = self.up_branch.get(LocalBranchShortName.of(head))
