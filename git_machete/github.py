@@ -399,22 +399,15 @@ class GitHubClient:
 
     def derive_pull_request_by_head(self,
                                     head: LocalBranchShortName,
-                                    ignore_if_missing: bool
                                     ) -> Optional[GitHubPullRequest]:
         path = f'/repos/{self.__organization}/{self.__repository}/pulls?head={self.__organization}:{head}'
 
-        try:
-            prs = self.__fire_github_api_request(method='GET',
-                                                 path=path)
-            if len(prs) >= 1:
-                return GitHubPullRequest.from_json(prs[0])
-            else:
-                return None
-        except MacheteException as err:
-            if ignore_if_missing:
-                return None
-            else:
-                raise MacheteException(err.parameter)
+        prs = self.__fire_github_api_request(method='GET',
+                                             path=path)
+        if len(prs) >= 1:
+            return GitHubPullRequest.from_json(prs[0])
+        else:
+            return None
 
     def derive_pull_requests(self) -> List[GitHubPullRequest]:
         # As of Dec 2022, GitHub API never returns more than 100 PRs, even if per_page>100.
