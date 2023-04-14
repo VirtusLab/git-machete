@@ -398,10 +398,9 @@ class GitHubClient:
                                        request_body=request_body)
 
     def derive_pull_request_by_head(self,
-                                    head: LocalBranchShortName,
+                                    head: LocalBranchShortName
                                     ) -> Optional[GitHubPullRequest]:
         path = f'/repos/{self.__organization}/{self.__repository}/pulls?head={self.__organization}:{head}'
-
         prs = self.__fire_github_api_request(method='GET',
                                              path=path)
         if len(prs) >= 1:
