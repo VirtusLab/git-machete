@@ -57,12 +57,14 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 
     --draft    Creates the new PR as a draft.
 
-``retarget-pr [-b|--branch=<branch>]``:
+``retarget-pr [-b|--branch=<branch> | --ignore-if-missing]``:
     Sets the base of the current (or specified) branch's PR to upstream (parent) branch, as seen by git machete (see ``git machete show up``).
 
     **Options:**
 
     -b, --branch=<branch>     Specify the branch for which the associated PR base will be set to its upstream (parent) branch. The current branch is used if the option is absent.
+
+    --ignore-if-missing       Ignore errors and quietly terminate execution if there is no PR opened for current (or specified) branch.
 
 ``sync``:
     Synchronizes with the remote repository:

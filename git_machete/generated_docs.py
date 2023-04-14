@@ -606,7 +606,7 @@ long_docs: Dict[str, str] = {
                  <b>--draft</b>
               Creates the new PR as a draft.
 
-           `retarget-pr [-b|--branch=<branch>]`:
+           `retarget-pr [-b|--branch=<branch> | --ignore-if-missing]`:
  
               Sets the base of the current (or specified) branch's PR to upstream (parent) branch, as seen by git machete (see `git machete show up`).
 
@@ -615,6 +615,10 @@ long_docs: Dict[str, str] = {
                  <b>-b</b>, <b>--branch=<branch></b>
 
               Specify the branch for which the associated PR base will be set to its upstream (parent) branch. The current branch is used if the option is absent.
+
+                 <b>--ignore-if-missing</b>
+
+              Ignore errors and quietly terminate execution if there is no PR opened for current (or specified) branch.
 
            `sync`:
  
