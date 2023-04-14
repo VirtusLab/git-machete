@@ -97,7 +97,7 @@ class TestTraverse:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
         self.setup_discover_standard_tree()
 
-        x = launch_command("traverse", "-Wy", "--no-push")
+        launch_command("traverse", "-Wy", "--no-push")
         assert_command(
             ["status", "-l"],
             """
