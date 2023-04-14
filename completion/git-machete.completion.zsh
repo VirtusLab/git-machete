@@ -267,6 +267,7 @@ __git_machete_github_subcommands ()
 
         (retarget-pr)
           _arguments '(-b --branch)'{-b,--branch=}'[Specify the branch for which the associated PR base will be set to its upstream (parent) branch.]'
+          _arguments '(--ignore-if-missing)'--ignore-if-missing'[Ignore errors and quietly terminate execution if there is no PR opened for current (or specified) branch.]'
         ;;
       esac
     ;;

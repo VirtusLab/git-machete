@@ -236,6 +236,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
     github_parser.add_argument('--by')
     github_parser.add_argument('--draft', action='store_true')
     github_parser.add_argument('--mine', action='store_true')
+    github_parser.add_argument('--ignore-if-missing', action='store_true')
 
     go_parser = subparsers.add_parser(
         'go',
@@ -660,6 +661,8 @@ def launch(orig_args: List[str]) -> None:
                 raise MacheteException("'pr_no' option is only valid with 'checkout-prs' subcommand.")
             if 'branch' in parsed_cli and github_subcommand != 'retarget-pr':
                 raise MacheteException("'--branch' option is only valid with 'retarget-pr' subcommand.")
+            if 'ignore-if-missing' in parsed_cli and github_subcommand != 'retarget-pr':
+                raise MacheteException("'--ignore-if-missing' option is only valid with 'retarget-pr' subcommand.")
 
             if github_subcommand == "anno-prs":
                 machete_client.sync_annotations_to_github_prs()
@@ -681,7 +684,9 @@ def launch(orig_args: List[str]) -> None:
             elif github_subcommand == "retarget-pr":
                 branch = parsed_cli.branch if 'branch' in parsed_cli else git.get_current_branch()
                 machete_client.expect_in_managed_branches(branch)
-                machete_client.retarget_github_pr(branch)
+                machete_client.retarget_github_pr(head=branch,
+                                                  ignore_if_missing=parsed_cli.ignore_if_missing if 'ignore_if_missing' in parsed_cli
+                                                  else False)
             elif github_subcommand == "sync":
                 machete_client.checkout_github_prs(pr_nos=[],
                                                    my_opened_prs=True)
