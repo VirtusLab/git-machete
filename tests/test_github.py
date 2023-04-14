@@ -317,19 +317,19 @@ class TestGitHub:
             expected_result=expected_status_output
         )
 
-        expected_error_message = ('`GET https://api.github.com/repos/user/repo/pulls?head=user:branch-without-pr` request '
+        expected_error_message = ('GET https://api.github.com/repos/user/repo/pulls?head=user:branch-without-pr request '
                                   'ended up in 404 response from GitHub. A valid GitHub API token is required.\n'
-                                  'Provide a GitHub API token with `repo` access via one of the: \n'
-                                  '\t1. `GITHUB_TOKEN` environment variable.\n'
-                                  '\t2. Content of the `~/.github-token` file.\n'
-                                  '\t3. Current auth token from the `gh` GitHub CLI.\n'
-                                  '\t4. Current auth token from the `hub` GitHub CLI.\n'
-                                  ' Visit `https://github.com/settings/tokens` to generate a new one.')
+                                  'Provide a GitHub API token with repo access via one of the: \n'
+                                  '\t1. GITHUB_TOKEN environment variable.\n'
+                                  '\t2. Content of the ~/.github-token file.\n'
+                                  '\t3. Current auth token from the gh GitHub CLI.\n'
+                                  '\t4. Current auth token from the hub GitHub CLI.\n'
+                                  ' Visit https://github.com/settings/tokens to generate a new one.')
         with pytest.raises(MacheteException) as e:
             launch_command("github", "retarget-pr", "--branch", "branch-without-pr")
         if e:
             assert e.value.args[0] == expected_error_message, \
-                'Verify that expected error message has appeared when given pull request to create is already created.'
+                'Verify that expected error message has appeared when there is no pull request associated with that branch name.'
 
         launch_command('github', 'retarget-pr', '--branch', 'branch-without-pr', '--ignore-if-missing')
 
