@@ -4,7 +4,7 @@
 # (or possibly multiple branches, in case of 'slide-out') of are slid out.
 
 # This sample retargets all GitHub PRs (using 'hub' CLI and GitHub API - authorizing with the token from ~/.config/hub)
-# whose current base is the slid-out branch, so that the new upstream becomes their new base.
+# corresponding to the children of the slid-out branch.
 
 # Note: since around May 2020, GitHub automatically retargets a PR Z->Y to Z->X once any PR Y->X (for some X) is merged.
 # It obviously won't automatically retarget PR Z->Y to Z->X, however, when Y is slid out locally without any PR Y->X getting merged.
@@ -13,34 +13,8 @@
 
 set -e -o pipefail -u
 
-# Do nothing if GitHub CLI isn't installed.
-command -v hub >/dev/null 2>/dev/null || exit 0
+new_downstreams=("${@:3}")
 
-# String extraction like the one below would be much easier with lookarounds,
-# but unfortunately we can't rely on 'grep -P' being available (esp. on Mac OS).
-org_and_repo=$(git remote get-url origin | grep 'github\.com' | grep -Eo '[^/:]+/[^/:]+\.git$' | sed 's/\.git$//')
-# Token is used implicitly by 'hub', and explicitly for the API call.
-# 'xargs' with no arguments trims leading and trailing whitespace from the input string.
-hub_token=$(grep 'oauth_token:' ~/.config/hub | cut -d: -f2 | xargs)
-
-new_upstream=$1
-slid_out_branch=$2
-# We ignore the new downstreams (params $3 and further).
-# This hook retargets each PR that:
-# * has ANY branch as its head (not just a branch from the new downstreams)
-# * has 'slid_out_branch' as its base,
-# so that its new base is 'new_upstream'
-
-hub pr list --base="$slid_out_branch" --format="%I %H%n" | while read -r pr_number head; do
-  echo -n "Retargeting PR #$pr_number (head: $head -> old base: $slid_out_branch) to the new base: $new_upstream..."
-  curl -XPATCH \
-    -H "Authorization: token $hub_token" \
-    -H "Content-Type: application/vnd.github.v3+json" \
-    "https://api.github.com/repos/$org_and_repo/pulls/$pr_number" \
-    -d "{ \"base\": \"$new_upstream\" }" \
-    --fail \
-    --silent \
-    --show-error \
-    -o/dev/null \
-    -w " HTTP status %{http_code}\n"
+for new_downstream in "${new_downstreams[@]}"; do
+  git machete github retarget-pr --branch="$new_downstream" --ignore-if-missing
 done
