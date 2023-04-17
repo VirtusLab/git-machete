@@ -26,6 +26,7 @@ enforce-shell-scripts-pass-shellcheck.sh
 enforce-version-bumped.sh
 prohibit-deploy-step-in-circleci.sh
 prohibit-double-backticks-in-py.sh
+prohibit-markdown-links-in-rst.sh
 prohibit-single-backtick-in-rst.sh
 prohibit-strings-split-without-delimiter.sh
 prohibit-strings-with-backslash-continuation.sh

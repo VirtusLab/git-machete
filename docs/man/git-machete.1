@@ -1,0 +1,1982 @@
+.\" Man page generated from reStructuredText.
+.
+.
+.nr rst2man-indent-level 0
+.
+.de1 rstReportMargin
+\\$1 \\n[an-margin]
+level \\n[rst2man-indent-level]
+level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
+-
+\\n[rst2man-indent0]
+\\n[rst2man-indent1]
+\\n[rst2man-indent2]
+..
+.de1 INDENT
+.\" .rstReportMargin pre:
+. RS \\$1
+. nr rst2man-indent\\n[rst2man-indent-level] \\n[an-margin]
+. nr rst2man-indent-level +1
+.\" .rstReportMargin post:
+..
+.de UNINDENT
+. RE
+.\" indent \\n[an-margin]
+.\" old: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.nr rst2man-indent-level -1
+.\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.in \\n[rst2man-indent\\n[rst2man-indent-level]]u
+..
+.TH "GIT-MACHETE" "1" "Apr 17, 2023" "" "git-machete"
+.SH NAME
+git-machete \- git-machete 3.17.0
+.sp
+Probably the sharpest git repository organizer & rebase/merge workflow automation tool you\(aqve ever seen.
+.sp
+git machete is a robust tool that \fBsimplifies your git workflows\fP\&.
+.sp
+The bird\(aqs eye view provided by git machete makes \fBmerges/rebases/push/pulls hassle\-free\fP
+even when \fBmultiple branches\fP are present in the repository
+(master/develop, your topic branches, teammate\(aqs branches checked out for review, etc.).
+.sp
+Using this tool, you can maintain \fBsmall, focused, easy\-to\-review pull requests\fP with little effort.
+.sp
+A look at a \fBgit machete status\fP gives an instant answer to the questions:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+What branches are in this repository?
+.IP \(bu 2
+What is going to be merged (rebased/pushed/pulled) and to what?
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+\fBgit machete traverse\fP semi\-automatically traverses the branches, helping you effortlessly rebase, merge, push and pull.
+.sp
+When git\-machete is installed, it adds \fBmachete\fP command to \fBgit\fP, so it can be called from command line: \fBgit machete <command> <options>\fP\&. git machete comes with a wide variety of customizable commands and in this site you can find their documentation.
+.sp
+git machete commands and help topics:
+.INDENT 0.0
+.IP \(bu 2
+\fI\%add\fP              \-\- Add a branch to the tree of branch dependencies
+.IP \(bu 2
+\fI\%advance\fP          \-\- Fast\-forward merge one of children to the current branch, push it and then slide out the child
+.IP \(bu 2
+\fI\%anno\fP             \-\- Manage custom annotations
+.IP \(bu 2
+\fI\%clean\fP            \-\- Delete untracked and unmanaged branches and also optionally check out user\(aqs open GitHub PRs
+.IP \(bu 2
+\fI\%config\fP           \-\- Display docs for the git machete configuration keys and environment variables
+.IP \(bu 2
+\fI\%delete\-unmanaged\fP \-\- Delete local branches that are not present in the definition file
+.IP \(bu 2
+\fI\%diff\fP             \-\- Diff current working directory or a given branch against its computed fork point
+.IP \(bu 2
+\fI\%discover\fP         \-\- Automatically discover tree of branch dependencies
+.IP \(bu 2
+\fI\%edit\fP             \-\- Edit the definition file
+.IP \(bu 2
+\fI\%file\fP             \-\- Display the location of the definition file
+.IP \(bu 2
+\fI\%fork\-point\fP       \-\- Display or override fork point for a branch
+.IP \(bu 2
+\fI\%format\fP           \-\- Display docs for the format of the definition file
+.IP \(bu 2
+\fI\%github\fP           \-\- Create, check out and manage GitHub PRs while keeping them reflected in git machete
+.IP \(bu 2
+\fI\%go\fP               \-\- Check out the branch relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument
+.IP \(bu 2
+\fI\%help\fP             \-\- Display this overview, or detailed help for a specified command
+.IP \(bu 2
+\fI\%hooks\fP            \-\- Display docs for the extra hooks added by git machete
+.IP \(bu 2
+\fI\%is\-managed\fP       \-\- Check if the current branch is managed by git machete (mostly for scripts)
+.IP \(bu 2
+\fI\%list\fP             \-\- List all branches that fall into one of pre\-defined categories (mostly for internal use)
+.IP \(bu 2
+\fI\%log\fP              \-\- Log the part of history specific to the given branch
+.IP \(bu 2
+\fI\%reapply\fP          \-\- Rebase the current branch onto its computed fork point
+.IP \(bu 2
+\fI\%show\fP             \-\- Show name(s) of the branch(es) relative to the position of a branch, accepts down/first/last/next/root/prev/up argument
+.IP \(bu 2
+\fI\%slide\-out\fP        \-\- Slide out the current branch and sync its downstream (child) branches with its upstream (parent) branch via rebase or merge
+.IP \(bu 2
+\fI\%squash\fP           \-\- Squash the unique history of the current branch into a single commit
+.IP \(bu 2
+\fI\%status\fP           \-\- Display formatted tree of branch dependencies, including info on their sync with upstream branch and with remote
+.IP \(bu 2
+\fI\%traverse\fP         \-\- Walk through the tree of branch dependencies and rebase, merge, slide out, push and/or pull each branch one by one. By default starts from current branch
+.IP \(bu 2
+\fI\%update\fP           \-\- Sync the current branch with its upstream (parent) branch via rebase or merge
+.IP \(bu 2
+\fI\%version\fP          \-\- Display the version and exit
+.UNINDENT
+.sp
+To get help via CLI run:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git machete help
+git machete help go
+git machete go \-\-help
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.SH ADD
+.sp
+\fBUsage:\fP
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git machete add [\-o|\-\-onto=<target\-upstream\-branch>] [\-R|\-\-as\-root] [\-y|\-\-yes] [<branch>]
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Adds the provided <branch> (or the current branch, if none specified) to the definition file.
+If <branch> is provided but no local branch with the given name exists:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+if a remote branch of the same name exists in exactly one remote,
+then user is asked whether to check out this branch locally (as in \fBgit checkout\fP),
+.IP \(bu 2
+otherwise, user is asked whether it should be created as a new local branch.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+If the definition file is empty or \fB\-R/\-\-as\-root\fP is provided, the branch will be added as a root of the tree of branch dependencies.
+Otherwise, the desired upstream (parent) branch can be specified with \fB\-o/\-\-onto\fP\&.
+Neither of these options is mandatory, however; if both are skipped, git machete will try to automatically infer the target upstream.
+If the upstream branch can be inferred, the user will be presented with inferred branch and asked to confirm.
+.sp
+Note: all the effects of \fBadd\fP (except git branch creation) can as well be achieved by manually editing the definition file.
+.sp
+\fBOptions:\fP
+.INDENT 0.0
+.TP
+.BI \-o\fP,\fB  \-\-onto\fB= <target\-upstream\-branch>
+Specifies the target parent branch to add the given branch onto.
+Cannot be specified together with \fB\-R/\-\-as\-root\fP\&.
+.TP
+.B  \-R\fP,\fB  \-\-as\-root
+Add the given branch as a new root (and not onto any other branch).
+Cannot be specified together with \fB\-o/\-\-onto\fP\&.
+.TP
+.B  \-y\fP,\fB  \-\-yes
+Don\(aqt ask for confirmation whether to create the branch or whether to add onto the inferred upstream.
+.UNINDENT
+.SH ADVANCE
+.sp
+\fBUsage:\fP
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git machete advance [\-y|\-\-yes]
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Fast forwards (as in \fBgit merge \-\-ff\-only\fP) the current branch \fBC\fP to match its downstream \fBD\fP, pushes \fBC\fP
+and subsequently slides out \fBD\fP\&. All three steps require manual confirmation unless \fB\-y/\-\-yes\fP is provided.
+.sp
+The downstream \fBD\fP is selected according to the following criteria:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+if \fBC\fP has exactly one downstream (child) branch \fBd\fP connected with a green edge (see help for \fI\%status\fP) to \fBC\fP
+or is overridden, then \fBd\fP is selected as \fBD\fP,
+.IP \(bu 2
+if \fBC\fP has no downstream branches connected with a green edge to \fBC\fP, then \fBadvance\fP fails,
+.IP \(bu 2
+if \fBC\fP has more than one downstream branch connected with a green edge to \fBC\fP,
+then user is asked to pick the branch to fast\-forward merge into (similarly to what happens in \fBgit machete go down\fP).
+If \fB\-\-yes\fP is specified, then \fBadvance\fP fails.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+As an example, if \fBgit machete status \-\-color=never \-\-list\-commits\fP is as follows:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+master
+|
+m\-develop *
+  |
+  | Enable adding remote branch in the manner similar to git checkout
+  o\-feature/add\-from\-remote
+    |
+    | Add support and sample for machete\-post\-slide\-out hook
+    o\-feature/post\-slide\-out\-hook
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+then running \fBgit machete advance\fP will fast\-forward the current branch \fBdevelop\fP to match \fBfeature/add\-from\-remote\fP,
+and subsequently slide out the latter.
+After \fBadvance\fP completes, \fBstatus\fP will show:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+master
+|
+| Enable adding remote branch in the manner similar to git checkout
+o\-develop *
+  |
+  | Add support and sample for machete\-post\-slide\-out hook
+  o\-feature/post\-slide\-out\-hook
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Note that the current branch after the operation is still \fBdevelop\fP, just pointing to \fBfeature/add\-from\-remote\fP\(aqs tip now.
+.sp
+\fBOptions:\fP
+.INDENT 0.0
+.TP
+.B  \-y\fP,\fB  \-\-yes
+Don\(aqt ask for confirmation whether to fast\-forward the current branch or whether to slide\-out the downstream.
+Fails if the current branch has more than one green\-edge downstream branch.
+.UNINDENT
+.SH ANNO
+.sp
+\fBUsage:\fP
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git machete anno [\-b|\-\-branch=<branch>] [<annotation text>]
+git machete anno \-H|\-\-sync\-github\-prs
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+If invoked without any <annotation text>, prints out the custom annotation for the given branch
+(or current branch, if none specified with \fB\-b/\-\-branch\fP).
+.sp
+If invoked with a single empty string <annotation text>, like:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ git machete anno \(aq\(aq
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+then clears the annotation for the current branch (or a branch specified with \fB\-b/\-\-branch\fP).
+.sp
+If invoked with \fB\-H\fP or \fB\-\-sync\-github\-prs\fP, annotates the branches based on their corresponding GitHub PR numbers and authors.
+When the current user is \fBnot\fP the owner of the PR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
+so that you don\(aqt rebase or push someone else\(aqs PR by accident (see help for \fI\%traverse\fP).
+Any existing annotations (except branch qualifiers) are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
+.sp
+\fBNOTE:\fP
+.INDENT 0.0
+.INDENT 3.5
+To allow GitHub API access for private repositories (and also to perform side\-effecting actions like opening a PR,
+even in case of public repositories), a GitHub API token with \fBrepo\fP scope is required, see \fI\%https://github.com/settings/tokens\fP\&.
+This will be resolved from the first of:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP 1. 3
+\fBGITHUB_TOKEN\fP env var,
+.IP 2. 3
+content of the \fB\&.github\-token\fP file in the home directory (\fB~\fP),
+.IP 3. 3
+current auth token from the \fBgh\fP GitHub CLI,
+.IP 4. 3
+current auth token from the \fBhub\fP GitHub CLI.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+GitHub Enterprise domains are supported.
+.sp
+\fBGITHUB_TOKEN\fP is used indiscriminately for any domain, both github.com and Enterprise.
+.sp
+\fBgh\fP and \fBhub\fP have their own built\-in support for Enterprise domains, which is honored by git\-machete.
+.sp
+\fB\&.github\-token\fP can have multiple per\-domain entries in the format:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+ghp_mytoken_for_github_com
+ghp_myothertoken_for_git_example_org git.example.org
+ghp_yetanothertoken_for_git_example_com git.example.com
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+\fBNOTE:\fP
+.INDENT 0.0
+.INDENT 3.5
+GitHub API server URL will be inferred from \fBgit remote\fP\&.
+You can alter the default behavior by setting the following git config keys:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.TP
+.B GitHub Enterprise domain
+E.g. \fBgit config machete.github.domain git.example.org\fP
+.TP
+.B Remote name
+E.g. \fBgit config machete.github.remote origin\fP
+.TP
+.B Organization name
+E.g. \fBgit config machete.github.organization VirtusLab\fP
+.TP
+.B Repository name
+E.g. \fBgit config machete.github.repository git\-machete\fP
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+Note that you do \fBnot\fP need to set all four keys at once.
+For example, in a typical usage of GitHub Enterprise, it should be enough to just set \fBmachete.github.domain\fP\&.
+.UNINDENT
+.UNINDENT
+.sp
+In any other case, sets the annotation for the given/current branch to the given <annotation text>.
+If multiple <annotation text>\(aqs are passed to the command, they are concatenated with a single space.
+.sp
+Note: \fBanno\fP command is able to overwrite existing branch qualifiers.
+.sp
+Note: all the effects of \fBanno\fP can be always achieved by manually editing the definition file.
+.sp
+\fBOptions:\fP
+.INDENT 0.0
+.TP
+.BI \-b\fP,\fB  \-\-branch\fB= <branch>
+Branch to set the annotation for.
+.TP
+.B  \-H\fP,\fB  \-\-sync\-github\-prs
+Annotate with GitHub PR numbers and authors where applicable.
+.UNINDENT
+.sp
+\fBEnvironment variables:\fP
+.INDENT 0.0
+.TP
+.B \fBGITHUB_TOKEN\fP
+GitHub API token.
+.UNINDENT
+.SH CONFIG
+.sp
+Documentation about available \fBgit machete\fP git config keys and environment variables that change the command\(aqs default behavior.
+.sp
+Note: \fBconfig\fP is not a command as such, just a help topic (there is no \fBgit machete config\fP command).
+.sp
+\fBGit config keys:\fP
+.INDENT 0.0
+.TP
+.B \fBmachete.github.{domain,remote,organization,repository}\fP:
+When executing \fBgit machete github <subcommand>\fP command, the following will happen:
+.INDENT 7.0
+.INDENT 3.5
+GitHub API server URL will be inferred from \fBgit remote\fP\&.
+You can alter the default behavior by setting the following git config keys:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.TP
+.B GitHub Enterprise domain
+E.g. \fBgit config machete.github.domain git.example.org\fP
+.TP
+.B Remote name
+E.g. \fBgit config machete.github.remote origin\fP
+.TP
+.B Organization name
+E.g. \fBgit config machete.github.organization VirtusLab\fP
+.TP
+.B Repository name
+E.g. \fBgit config machete.github.repository git\-machete\fP
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+Note that you do \fBnot\fP need to set all four keys at once.
+For example, in a typical usage of GitHub Enterprise, it should be enough to just set \fBmachete.github.domain\fP\&.
+.UNINDENT
+.UNINDENT
+.TP
+.B \fBmachete.overrideForkPoint.<branch>.to\fP:
+Executing \fBgit machete fork\-point \-\-override\-to[\-parent|\-inferred|=<revision>] [<branch>]\fP sets up a fork point override for <branch>.
+.sp
+The override data is stored under \fBmachete.overrideForkPoint.<branch>.to\fP git config key.
+.sp
+There should be \fBno\fP need for the user to interact with this key directly,
+\fBgit machete fork\-point\fP with flags should be used instead.
+.TP
+.B \fBmachete.status.extraSpaceBeforeBranchName\fP:
+.INDENT 7.0
+.INDENT 3.5
+To make it easier to select branch name from the \fBstatus\fP output on certain terminals
+(e.g. \fI\%Alacritty\fP), you can add an extra space between └─ and \fBbranch name\fP
+by setting \fBgit config machete.status.extraSpaceBeforeBranchName true\fP\&.
+.sp
+For example, by default the status is displayed as:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+develop
+│
+├─feature_branch1
+│
+└─feature_branch2
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+With \fBmachete.status.extraSpaceBeforeBranchName\fP config set to \fBtrue\fP:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+develop
+│
+├─ feature_branch1
+│
+└─ feature_branch2
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.TP
+.B \fBmachete.traverse.push\fP:
+.INDENT 7.0
+.INDENT 3.5
+To change the behavior of \fBgit machete traverse\fP command so that it doesn\(aqt push branches by default,
+you need to set config key \fBgit config machete.traverse.push false\fP\&.
+Configuration key value can be overridden by the presence of the \fB\-\-push\fP or \fB\-\-push\-untracked\fP flags.
+.UNINDENT
+.UNINDENT
+.TP
+.B \fBmachete.worktree.useTopLevelMacheteFile\fP:
+The default value of this key is \fBtrue\fP, which means that the path to machete definition file will be \fB\&.git/machete\fP
+for both regular directory and worktree.
+.sp
+If you want the worktree to have its own machete definition file (located under \fB\&.git/worktrees/.../machete\fP),
+set \fBgit config machete.worktree.useTopLevelMacheteFile false\fP\&.
+.UNINDENT
+.sp
+\fBEnvironment variables:\fP
+.INDENT 0.0
+.TP
+.B \fBGIT_MACHETE_EDITOR\fP
+Name of the editor used by \fBgit machete e[dit]\fP, example: \fBvim\fP or \fBnano\fP\&.
+.TP
+.B \fBGIT_MACHETE_REBASE_OPTS\fP
+Used to pass extra options to the underlying \fBgit rebase\fP invocation (called by the executed command,
+such as: \fBreapply\fP, \fBslide\-out\fP, \fBtraverse\fP, \fBupdate\fP)
+Example: \fBGIT_MACHETE_REBASE_OPTS=\(dq\-\-keep\-empty \-\-rebase\-merges\(dq git machete update\fP\&.
+.TP
+.B \fBGITHUB_TOKEN\fP
+Used to store GitHub API token. Used by commands such as: \fBanno\fP, \fBclean\fP, \fBgithub\fP\&.
+.UNINDENT
+.SH CLEAN
+.sp
+\fBUsage:\fP
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git machete clean [\-c|\-\-checkout\-my\-github\-prs] [\-y|\-\-yes]
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Synchronizes with the remote repository:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP 1. 3
+if invoked with \fB\-H\fP or \fB\-\-checkout\-my\-github\-prs\fP, checks out open PRs for the current user associated with the GitHub token
+and also traverses the chain of pull requests upwards, adding branches one by one to git\-machete and checks them out locally as well,
+.IP 2. 3
+deletes unmanaged branches,
+.IP 3. 3
+deletes untracked managed branches that have no downstream branch.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+No branch will be deleted unless explicitly confirmed by the user (or unless \fB\-y/\-\-yes\fP option is passed).
+Equivalent of \fBgit machete github sync\fP if invoked with \fB\-H\fP or \fB\-\-checkout\-my\-github\-prs\fP\&.
+.sp
+\fBNOTE:\fP
+.INDENT 0.0
+.INDENT 3.5
+To allow GitHub API access for private repositories (and also to perform side\-effecting actions like opening a PR,
+even in case of public repositories), a GitHub API token with \fBrepo\fP scope is required, see \fI\%https://github.com/settings/tokens\fP\&.
+This will be resolved from the first of:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP 1. 3
+\fBGITHUB_TOKEN\fP env var,
+.IP 2. 3
+content of the \fB\&.github\-token\fP file in the home directory (\fB~\fP),
+.IP 3. 3
+current auth token from the \fBgh\fP GitHub CLI,
+.IP 4. 3
+current auth token from the \fBhub\fP GitHub CLI.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+GitHub Enterprise domains are supported.
+.sp
+\fBGITHUB_TOKEN\fP is used indiscriminately for any domain, both github.com and Enterprise.
+.sp
+\fBgh\fP and \fBhub\fP have their own built\-in support for Enterprise domains, which is honored by git\-machete.
+.sp
+\fB\&.github\-token\fP can have multiple per\-domain entries in the format:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+ghp_mytoken_for_github_com
+ghp_myothertoken_for_git_example_org git.example.org
+ghp_yetanothertoken_for_git_example_com git.example.com
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+\fBNOTE:\fP
+.INDENT 0.0
+.INDENT 3.5
+GitHub API server URL will be inferred from \fBgit remote\fP\&.
+You can alter the default behavior by setting the following git config keys:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.TP
+.B GitHub Enterprise domain
+E.g. \fBgit config machete.github.domain git.example.org\fP
+.TP
+.B Remote name
+E.g. \fBgit config machete.github.remote origin\fP
+.TP
+.B Organization name
+E.g. \fBgit config machete.github.organization VirtusLab\fP
+.TP
+.B Repository name
+E.g. \fBgit config machete.github.repository git\-machete\fP
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+Note that you do \fBnot\fP need to set all four keys at once.
+For example, in a typical usage of GitHub Enterprise, it should be enough to just set \fBmachete.github.domain\fP\&.
+.UNINDENT
+.UNINDENT
+.sp
+\fBOptions:\fP
+.INDENT 0.0
+.TP
+.B  \-c\fP,\fB  \-\-checkout\-my\-github\-prs
+Checkout your open PRs into local branches.
+.TP
+.B  \-y\fP,\fB  \-\-yes
+Don\(aqt ask for confirmation when deleting branches from git.
+.UNINDENT
+.sp
+\fBEnvironment variables:\fP
+.INDENT 0.0
+.TP
+.B \fBGITHUB_TOKEN\fP
+GitHub API token.
+.UNINDENT
+.SH DELETE-UNMANAGED
+.sp
+\fBUsage:\fP
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git machete delete\-unmanaged [\-y|\-\-yes]
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Goes one\-by\-one through all the local git branches that don\(aqt exist in the definition file,
+and ask to delete each of them (with \fBgit branch \-d\fP or \fBgit branch \-D\fP) if confirmed by user.
+No branch will be deleted unless explicitly confirmed by the user (or unless \fB\-y/\-\-yes\fP option is passed).
+.sp
+Note: this should be used with care since deleting local branches can sometimes make it impossible
+for \fBgit machete\fP to properly figure out fork points.
+See help for \fI\%fork\-point\fP for more details.
+.sp
+\fBOptions:\fP
+.INDENT 0.0
+.TP
+.B  \-y\fP,\fB  \-\-yes
+Don\(aqt ask for confirmation.
+.UNINDENT
+.SH DIFF
+.sp
+\fBUsage:\fP
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git machete d[iff] [\-s|\-\-stat] [<branch>]
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Runs \fBgit diff\fP of the given branch tip against its fork point or, if none specified,
+of the current working tree against the fork point of the currently checked out branch.
+See help for \fI\%fork\-point\fP for more details on the meaning of \fIfork point\fP\&.
+.sp
+Note: the branch in question does not need to occur in the definition file.
+.sp
+\fBOptions:\fP
+.INDENT 0.0
+.TP
+.B  \-s\fP,\fB  \-\-stat
+Makes \fBgit machete diff\fP pass \fB\-\-stat\fP option to \fBgit diff\fP, so that only summary (diffstat) is printed.
+.UNINDENT
+.SH DISCOVER
+.sp
+\fBUsage:\fP
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git machete discover [\-C|\-\-checked\-out\-since=<date>] [\-l|\-\-list\-commits] [\-r|\-\-roots=<branch1>,<branch2>,...] [\-y|\-\-yes]
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Discovers and displays tree of branch dependencies using a heuristic based on reflogs and asks whether to overwrite the existing definition
+\fI\%file\fP with the new discovered tree.
+If confirmed with a \fBy[es]\fP or \fBe[dit]\fP reply, backs up the current definition file (if it exists) as \fB$GIT_DIR/machete~\fP
+and saves the new tree under the usual \fB$GIT_DIR/machete\fP path.
+If the reply was \fBe[dit]\fP, additionally an editor is opened (as in: \fBgit machete\fP \fI\%edit\fP) after saving the new definition file.
+\fBdiscover\fP retains the existing branch qualifiers used by \fBgit machete traverse\fP (see help for \fI\%traverse\fP).
+.sp
+\fBOptions:\fP
+.INDENT 0.0
+.TP
+.BI \-C\fP,\fB  \-\-checked\-out\-since\fB= <date>
+Only consider branches checked out at least once since the given date.
+<date> can be e.g. \fB2 weeks ago\fP or \fB2020\-06\-01\fP, as in \fBgit log \-\-since=<date>\fP\&.
+If not present, the date is selected automatically so that around 10 branches are included.
+.TP
+.B  \-l\fP,\fB  \-\-list\-commits
+When printing the discovered tree, additionally lists the messages of commits introduced on each branch
+(as for \fBgit machete status\fP).
+.TP
+.BI \-r\fP,\fB  \-\-roots\fB= <branch1,...>
+Comma\-separated list of branches that should be considered roots of trees of branch dependencies.
+If not present, \fBmaster\fP is assumed to be a root. Note that in the process of discovery,
+certain other branches can also be additionally deemed to be roots as well.
+.TP
+.B  \-y\fP,\fB  \-\-yes
+Don\(aqt ask for confirmation before saving the newly\-discovered tree.
+Mostly useful in scripts; not recommended for manual use.
+.UNINDENT
+.SH EDIT
+.sp
+\fBUsage:\fP
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git machete e[dit]
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Opens an editor and lets you edit the definition file manually.
+.sp
+The editor is determined by checking up the following locations:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+\fB$GIT_MACHETE_EDITOR\fP
+.IP \(bu 2
+\fB$GIT_EDITOR\fP
+.IP \(bu 2
+\fB$(git config core.editor)\fP
+.IP \(bu 2
+\fB$VISUAL\fP
+.IP \(bu 2
+\fB$EDITOR\fP
+.IP \(bu 2
+\fBeditor\fP
+.IP \(bu 2
+\fBnano\fP
+.IP \(bu 2
+\fBvi\fP
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+and selecting the first one that is defined and points to an executable file accessible on \fBPATH\fP\&.
+.sp
+Note that the above editor selection only applies for editing the definition file,
+but not for any other actions that may be indirectly triggered by git machete, including editing of rebase TODO list, commit messages etc.
+.sp
+The definition file can be always accessed and edited directly under the path returned by \fBgit machete file\fP
+(usually \fB\&.git/machete\fP, unless worktrees or submodules are involved).
+.sp
+\fBEnvironment variables:\fP
+.INDENT 0.0
+.TP
+.B \fBGIT_MACHETE_EDITOR\fP
+Name of the editor executable.
+.UNINDENT
+.SH FILE
+.sp
+\fBUsage:\fP
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git machete file
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Outputs the absolute path of machete definition file.
+The file is always called \fBmachete\fP and is located in the git directory of the project.
+.sp
+Three cases are possible:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+if \fBgit machete\fP is executed from a regular working directory (not a worktree or submodule),
+the file is located under \fB\&.git/machete\fP,
+.IP \(bu 2
+if \fBgit machete\fP is executed from a \fBworktree\fP,
+the file path depends on the \fBmachete.worktree.useTopLevelMacheteFile\fP config key value:
+.INDENT 2.0
+.IP \(bu 2
+if \fBmachete.worktree.useTopLevelMacheteFile\fP is true (default), the file is located under \fB\&.git/machete\fP
+.IP \(bu 2
+if \fBmachete.worktree.useTopLevelMacheteFile\fP is false, the file is located under \fB\&.git/worktrees/.../machete\fP,
+.UNINDENT
+.IP \(bu 2
+if \fBgit machete\fP is executed from a \fBsubmodule\fP, this file is located in the git folder of the submodule itself under \fB\&.git/modules/.../machete\fP\&.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SH FORK-POINT
+.sp
+\fBUsage:\fP
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git machete fork\-point [\-\-inferred] [<branch>]
+git machete fork\-point \-\-override\-to=<revision>|\-\-override\-to\-inferred|\-\-override\-to\-parent [<branch>]
+git machete fork\-point \-\-unset\-override [<branch>]
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Note: in all three forms, if no \fB<branch>\fP is specified, the currently checked out branch is assumed.
+The branch in question does not need to occur in the definition file.
+.sp
+Without any option, displays full hash of the fork point commit for the \fB<branch>\fP\&.
+Fork point of the given \fB<branch>\fP is the commit at which the history of the \fB<branch>\fP diverges from history of any other branch.
+.sp
+Fork point is assumed by many \fBgit machete\fP commands as the place where the unique history of the \fB<branch>\fP starts.
+The range of commits between the fork point and the tip of the given branch is, for instance:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+listed for each branch by \fBgit machete status \-\-list\-commits\fP
+.IP \(bu 2
+passed to \fBgit rebase\fP by \fBgit machete\fP \fBreapply\fP/\fBslide\-out\fP/\fBtraverse\fP/\fBupdate\fP
+.IP \(bu 2
+provided to \fBgit diff\fP/\fBlog\fP by \fBgit machete\fP \fBdiff\fP/\fBlog\fP\&.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+\fBgit machete\fP assumes fork point of \fB<branch>\fP is the most recent commit in the log of \fB<branch>\fP that has NOT been introduced on that very branch,
+but instead occurs on a reflog (see help for \fBgit reflog\fP) of some other, usually chronologically earlier, branch.
+This yields a correct result in typical cases, but there are some situations
+(esp. when some local branches have been deleted) where the fork point might not be determined correctly.
+Thus, all rebase\-involving operations (\fBreapply\fP, \fBslide\-out\fP, \fBtraverse\fP and \fBupdate\fP) run \fBgit rebase\fP in the interactive mode by default,
+unless told explicitly not to do so by \fB\-\-no\-interactive\-rebase\fP flag, so that the suggested commit range can be inspected before the rebase commences.
+Also, \fBreapply\fP, \fBslide\-out\fP, \fBsquash\fP, and \fBupdate\fP allow to specify the fork point explicitly by a command\-line option.
+.sp
+\fBgit machete fork\-point\fP is different (and more powerful) than \fBgit merge\-base \-\-fork\-point\fP,
+since the latter takes into account only the reflog of the one provided upstream branch,
+while the former scans reflogs of all local branches and their remote tracking branches.
+This makes git machete\(aqs \fBfork\-point\fP more resilient to modifications of \fB\&.git/machete\fP \fI\%file\fP where certain branches are re\-attached under new parents (upstreams).
+.sp
+With \fB\-\-override\-to=<revision>\fP, sets up a fork point override for \fB<branch>\fP\&.
+Fork point for \fB<branch>\fP will be overridden to the provided <revision> (commit) as long as the \fB<branch>\fP still points to (or is descendant of) that commit.
+Even if revision is a symbolic name (e.g. other branch name or \fBHEAD~3)\fP and not explicit commit hash (like \fBa1b2c3ff\fP),
+it\(aqs still resolved to a specific commit hash at the moment the override is set up (and not later when the override is actually used).
+The override data is stored under \fBmachete.overrideForkPoint.<branch>.to\fP git config key.
+Note: the provided fork point <revision> must be an ancestor of the current \fB<branch>\fP commit.
+.sp
+With \fB\-\-override\-to\-parent\fP, overrides fork point of the \fB<branch>\fP to the commit currently pointed by \fB<branch>\fP\(aqs parent in the branch dependency tree.
+Note: this will only work if \fB<branch>\fP has a parent at all (i.e. is not a root) and parent of \fB<branch>\fP is an ancestor of current \fB<branch>\fP commit.
+.sp
+With \fB\-\-inferred\fP, displays the commit that \fBgit machete fork\-point\fP infers to be the fork point of \fB<branch>\fP\&.
+If there is NO fork point override for \fB<branch>\fP, this is identical to the output of \fBgit machete fork\-point\fP\&.
+If there is a fork point override for \fB<branch>\fP, this is identical to the what the output of \fBgit machete fork\-point\fP would be if the override was NOT present.
+.sp
+With \fB\-\-override\-to\-inferred\fP option, overrides fork point of the \fB<branch>\fP to the commit that \fBgit machete fork\-point\fP infers to be the fork point of \fB<branch>\fP\&.
+Note: this piece of information is also displayed by \fBgit machete status \-\-list\-commits\fP in case a yellow edge occurs.
+.sp
+With \fB\-\-unset\-override\fP, the fork point override for \fB<branch>\fP is unset.
+This is simply done by removing the corresponding \fBmachete.overrideForkPoint.<branch>.to\fP config entry.
+.sp
+Note: if an overridden fork point applies to a branch \fBB\fP, then it\(aqs considered to be connected with a green edge to its upstream (parent) \fBU\fP,
+even if the overridden fork point of \fBB\fP is NOT equal to the commit pointed by \fBU\fP\&.
+.SH FORMAT
+.sp
+Note: there is no \fBgit machete format\fP command as such; \fBformat\fP is just a topic of \fBgit machete help\fP\&.
+.sp
+The format of the definition file should be as follows:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+develop
+    adjust\-reads\-prec PR #234 rebase=no push=no
+        block\-cancel\-order PR #235 rebase=no
+            change\-table
+                drop\-location\-type
+    edit\-margin\-not\-allowed
+        full\-load\-gatling push=no
+    grep\-errors\-script
+master
+    hotfix/receipt\-trigger PR #236
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+In the above example \fBdevelop\fP and \fBmaster\fP are roots of the tree of branch dependencies.
+Branches \fBadjust\-reads\-prec\fP, \fBedit\-margin\-not\-allowed\fP and \fBgrep\-errors\-script\fP are direct downstream branches for \fBdevelop\fP\&.
+\fBblock\-cancel\-order\fP is a downstream branch of \fBadjust\-reads\-prec\fP, \fBchange\-table\fP is a downstream branch of \fBblock\-cancel\-order\fP and so on.
+.sp
+Every branch name can be followed (after a single space as a delimiter) by a custom annotation, e.g. \fBPR #234 rebase=no push=no\fP, \fBPR #235 rebase=no\fP or \fBpush=no\fP\&.
+Annotations might contain underlined branch qualifiers (\fBrebase=no\fP, \fBpush=no\fP) that control rebase and push behavior of \fBtraverse\fP (see help for \fI\%traverse\fP).
+Also see help for \fI\%anno\fP command.
+.sp
+Tabs or any number of spaces can be used as indentation.
+It\(aqs only important to be consistent wrt. the sequence of characters used for indentation between all lines.
+.SH GITHUB
+.sp
+\fBUsage:\fP
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git machete github <subcommand>
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+where \fB<subcommand>\fP is one of: \fBanno\-prs\fP, \fBcheckout\-prs\fP, \fBcreate\-pr\fP, \fBretarget\-pr\fP\&.
+.sp
+Creates, checks out and manages GitHub PRs while keeping them reflected in branch definition file.
+.sp
+\fBNOTE:\fP
+.INDENT 0.0
+.INDENT 3.5
+To allow GitHub API access for private repositories (and also to perform side\-effecting actions like opening a PR,
+even in case of public repositories), a GitHub API token with \fBrepo\fP scope is required, see \fI\%https://github.com/settings/tokens\fP\&.
+This will be resolved from the first of:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP 1. 3
+\fBGITHUB_TOKEN\fP env var,
+.IP 2. 3
+content of the \fB\&.github\-token\fP file in the home directory (\fB~\fP),
+.IP 3. 3
+current auth token from the \fBgh\fP GitHub CLI,
+.IP 4. 3
+current auth token from the \fBhub\fP GitHub CLI.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+GitHub Enterprise domains are supported.
+.sp
+\fBGITHUB_TOKEN\fP is used indiscriminately for any domain, both github.com and Enterprise.
+.sp
+\fBgh\fP and \fBhub\fP have their own built\-in support for Enterprise domains, which is honored by git\-machete.
+.sp
+\fB\&.github\-token\fP can have multiple per\-domain entries in the format:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+ghp_mytoken_for_github_com
+ghp_myothertoken_for_git_example_org git.example.org
+ghp_yetanothertoken_for_git_example_com git.example.com
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+\fBNOTE:\fP
+.INDENT 0.0
+.INDENT 3.5
+GitHub API server URL will be inferred from \fBgit remote\fP\&.
+You can alter the default behavior by setting the following git config keys:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.TP
+.B GitHub Enterprise domain
+E.g. \fBgit config machete.github.domain git.example.org\fP
+.TP
+.B Remote name
+E.g. \fBgit config machete.github.remote origin\fP
+.TP
+.B Organization name
+E.g. \fBgit config machete.github.organization VirtusLab\fP
+.TP
+.B Repository name
+E.g. \fBgit config machete.github.repository git\-machete\fP
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+Note that you do \fBnot\fP need to set all four keys at once.
+For example, in a typical usage of GitHub Enterprise, it should be enough to just set \fBmachete.github.domain\fP\&.
+.UNINDENT
+.UNINDENT
+.sp
+\fBSubcommands:\fP
+.INDENT 0.0
+.TP
+.B \fBanno\-prs\fP:
+Annotates the branches based on their corresponding GitHub PR numbers and authors.
+Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
+Equivalent to \fBgit machete anno \-\-sync\-github\-prs\fP\&.
+When the current user is \fBnot\fP the owner of the PR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
+so that you don\(aqt rebase or push someone else\(aqs PR by accident (see help for \fI\%traverse\fP).
+.TP
+.B \fBcheckout\-prs [\-\-all | \-\-by=<github\-login> | \-\-mine | <PR\-number\-1> ... <PR\-number\-N>]\fP:
+Check out the head branch of the given pull requests (specified by numbers or by a flag),
+also traverse chain of pull requests upwards, adding branches one by one to git\-machete and check them out locally.
+Once the specified pull requests are checked out locally, annotate local branches with corresponding pull request numbers.
+If only one PR has been checked out, then switch the local repository\(aqs HEAD to its head branch.
+When the current user is \fBnot\fP the owner of the PR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
+so that you don\(aqt rebase or push someone else\(aqs PR by accident (see help for \fI\%traverse\fP).
+.sp
+\fBOptions:\fP
+.INDENT 7.0
+.TP
+.B  \-\-all
+Checkout all open PRs.
+.TP
+.BI \-\-by\fB= <github\-login>
+Checkout open PRs authored by the given GitHub user, where \fB<github\-login>\fP is the GitHub account name.
+.TP
+.B  \-\-mine
+Checkout open PRs for the current user associated with the GitHub token.
+.UNINDENT
+.sp
+\fBParameters:\fP
+.sp
+\fB<PR\-number\-1> ... <PR\-number\-N>\fP    Pull request numbers to checkout.
+.TP
+.B \fBcreate\-pr [\-\-draft]\fP:
+Creates a PR for the current branch, using the upstream (parent) branch as the PR base.
+Once the PR is successfully created, annotates the current branch with the new PR\(aqs number.
+.sp
+If \fB\&.git/info/description\fP file is present, its contents are used as PR description.
+If \fB\&.git/info/milestone\fP file is present, its contents (a single number \-\-\- milestone id) are used as milestone.
+If \fB\&.git/info/reviewers\fP file is present, its contents (one GitHub login per line) are used to set reviewers.
+.sp
+\fBOptions:\fP
+.INDENT 7.0
+.TP
+.B  \-\-draft
+Creates the new PR as a draft.
+.UNINDENT
+.TP
+.B \fBretarget\-pr [\-b|\-\-branch=<branch> | \-\-ignore\-if\-missing]\fP:
+Sets the base of the current (or specified) branch\(aqs PR to upstream (parent) branch, as seen by git machete (see \fBgit machete show up\fP).
+.sp
+\fBOptions:\fP
+.INDENT 7.0
+.TP
+.BI \-b\fP,\fB  \-\-branch\fB= <branch>
+Specify the branch for which the associated PR base will be set to its upstream (parent) branch. The current branch is used if the option is absent.
+.TP
+.B  \-\-ignore\-if\-missing
+Ignore errors and quietly terminate execution if there is no PR opened for current (or specified) branch.
+.UNINDENT
+.TP
+.B \fBsync\fP:
+Synchronizes with the remote repository:
+.INDENT 7.0
+.INDENT 3.5
+.INDENT 0.0
+.IP 1. 3
+checks out open PRs for the current user associated with the GitHub token and also traverses the chain of pull requests upwards,
+adding branches one by one to git\-machete and checks them out locally as well,
+.IP 2. 3
+deletes unmanaged branches,
+.IP 3. 3
+deletes untracked managed branches that have no downstream branch.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+Equivalent of \fBgit machete clean \-\-checkout\-my\-github\-prs\fP\&.
+.UNINDENT
+.sp
+\fBEnvironment variables (all subcommands):\fP
+.INDENT 0.0
+.TP
+.B \fBGITHUB_TOKEN\fP
+GitHub API token.
+.UNINDENT
+.SH GO
+.sp
+\fBUsage:\fP
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git machete g[o] <direction>
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+where <direction> is one of: \fBd[own]\fP, \fBf[irst]\fP, \fBl[ast]\fP, \fBn[ext]\fP, \fBp[rev]\fP, \fBr[oot]\fP, \fBu[p]\fP
+.sp
+Checks out the branch specified by the given direction relative to the current branch:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+\fBdown\fP:    the direct children/downstream branch of the current branch.
+.IP \(bu 2
+\fBfirst\fP:   the first downstream of the root branch of the current branch (like \fBroot\fP followed by \fBnext\fP),
+or the root branch itself if the root has no downstream branches.
+.IP \(bu 2
+\fBlast\fP:    the last branch in the definition file that has the same root as the current branch;
+can be the root branch itself if the root has no downstream branches.
+.IP \(bu 2
+\fBnext\fP:    the direct successor of the current branch in the definition file.
+.IP \(bu 2
+\fBprev\fP:    the direct predecessor of the current branch in the definition file.
+.IP \(bu 2
+\fBroot\fP:    the root of the tree where the current branch is located.
+Note: this will typically be something like \fBdevelop\fP or \fBmaster\fP,
+since all branches are usually meant to be ultimately merged to one of those.
+.IP \(bu 2
+\fBup\fP:      the direct parent/upstream branch of the current branch.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+Roughly equivalent to \fBgit checkout $(git machete show <direction>)\fP\&.
+.SH HELP
+.sp
+\fBUsage:\fP
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git machete help [<command>]
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Prints a summary of this tool, or a detailed info on a command if provided.
+.SH HOOKS
+.sp
+As with the standard git hooks, git machete looks for its own specific hooks in \fB$GIT_DIR/hooks/*\fP (or \fB$(git config core.hooksPath)/*\fP, if set).
+All hooks are executed from the top\-level folder of the repository (or top\-level folder of worktree/submodule, if applicable).
+.sp
+Note: \fBhooks\fP is not a command as such, just a help topic (there is no \fBgit machete hooks\fP command).
+.sp
+\fBHooks:\fP
+.INDENT 0.0
+.TP
+.B \fBmachete\-post\-slide\-out <new\-upstream> <lowest\-slid\-out\-branch> [<new\-downstreams>...]\fP
+The hook that is executed after a branch (or possibly multiple branches, in case of \fBslide\-out\fP)
+is slid out by \fBadvance\fP, \fBslide\-out\fP or \fBtraverse\fP\&.
+.sp
+At least two parameters (branch names) are passed to the hook:
+.INDENT 7.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+<new\-upstream> is the upstream of the branch that has been slid out, or in case of multiple branches being slid out
+\-\-\- the upstream of the highest slid out branch;
+.IP \(bu 2
+<lowest\-slid\-out\-branch> is the branch that has been slid out, or in case of multiple branches being slid out \-\-\- the lowest slid out branch;
+.IP \(bu 2
+<new\-downstreams> are all the following (possibly zero) parameters, which correspond to all original downstreams
+of <lowest\-slid\-out\-branch>, now reattached as the downstreams of <new\-upstream>.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+Note that this may be zero, one, or multiple branches.
+.sp
+Note: the hook, if present, is executed:
+.INDENT 7.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+zero or once during a \fBadvance\fP execution (depending on whether the slide\-out has been confirmed or not),
+.IP \(bu 2
+exactly once during a \fBslide\-out\fP execution (even if multiple branches are slid out),
+.IP \(bu 2
+zero or more times during \fBtraverse\fP (every time a slide\-out operation is confirmed).
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+If the hook returns a non\-zero exit code, then an error is raised and the execution of the command is aborted,
+i.e. \fBslide\-out\fP won\(aqt attempt rebase of the new downstream branches and \fBtraverse\fP won\(aqt continue the traversal.
+In case of \fBadvance\fP there is no difference (other than exit code of the entire \fBadvance\fP command being non\-zero),
+since slide\-out is the last operation that happens within \fBadvance\fP\&.
+.sp
+Note that non\-zero exit code of the hook doesn\(aqt cancel the effects of slide\-out itself, only the subsequent operations.
+The hook is executed only once the slide\-out is complete and can in fact rely on .git/machete file being updated to the new branch layout.
+.TP
+.B \fBmachete\-pre\-rebase <new\-base> <fork\-point\-hash> <branch\-being\-rebased>\fP
+The hook that is executed before rebase is run during \fBreapply\fP, \fBslide\-out\fP, \fBtraverse\fP and \fBupdate\fP\&.
+Note that it is NOT executed by \fBsquash\fP (despite its similarity to \fBreapply\fP), since no rebase is involved in \fBsquash\fP\&.
+.sp
+The parameters are exactly the three revisions that are passed to \fBgit rebase \-\-onto\fP:
+.INDENT 7.0
+.INDENT 3.5
+.INDENT 0.0
+.IP 1. 3
+what is going to be the new base for the rebased commits,
+.IP 2. 3
+what is the fork point \-\-\- the place where the rebased history diverges from the upstream history,
+.IP 3. 3
+what branch is rebased.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+If the hook returns a non\-zero exit code, an error is raised and the entire rebase is aborted.
+.sp
+Note: this hook is independent from git\(aqs standard \fBpre\-rebase hook\fP\&.
+If machete\-pre\-rebase returns zero, the execution flow continues to \fBgit rebase\fP, which may also run \fBpre\-rebase hook\fP if present.
+\fBmachete\-pre\-rebase\fP is thus always launched before \fBpre\-rebase\fP\&.
+.TP
+.B \fBmachete\-status\-branch <branch\-name>\fP
+The hook that is executed for each branch displayed during \fBdiscover\fP, \fBstatus\fP and \fBtraverse\fP\&.
+.sp
+The standard output of this hook is displayed at the end of the line, after branch name, (optionally) custom annotation and
+(optionally) remote sync\-ness status. Standard error is ignored. If the hook returns a non\-zero exit code, both stdout and stderr
+are ignored, and printing the status continues as usual.
+.sp
+Note: the hook is always invoked with \fBASCII_ONLY\fP variable passed into the environment.
+If \fBstatus\fP runs in ASCII\-only mode (i.e. if \fB\-\-color=auto\fP and stdout is not a terminal, or if \fB\-\-color=never\fP),
+then \fBASCII_ONLY=true\fP, otherwise \fBASCII_ONLY=false\fP\&.
+.UNINDENT
+.sp
+Please see \fI\%hook_samples\fP directory in git\-machete project for examples.
+An example of using the standard git \fBpost\-commit hook\fP to \fBgit machete add\fP branches automatically is also included.
+.SH IS-MANAGED
+.sp
+\fBUsage:\fP
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git machete is\-managed [<branch>]
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Returns with zero exit code if the given branch (or current branch, if none specified) is managed by git machete (i.e. listed in .git/machete).
+.sp
+Returns with a non\-zero exit code in case:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+the <branch> is provided but isn\(aqt managed (or doesn\(aqt exist), or
+.IP \(bu 2
+the <branch> isn\(aqt provided and the current branch isn\(aqt managed, or
+.IP \(bu 2
+the <branch> isn\(aqt provided and there\(aqs no current branch (detached HEAD).
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SH LIST
+.sp
+\fBUsage:\fP
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git machete list <category>
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+where <category> is one of: \fBaddable\fP, \fBchildless\fP, \fBmanaged\fP, \fBslidable\fP, \fBslidable\-after <branch>\fP, \fBunmanaged\fP, \fBwith\-overridden\-fork\-point\fP\&.
+.sp
+Lists all branches that fall into one of the specified categories:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+\fBaddable\fP: all branches (local or remote) than can be added to the definition file,
+.IP \(bu 2
+\fBchildless\fP: all branches that do not possess child branches,
+.IP \(bu 2
+\fBmanaged\fP: all branches that appear in the definition file,
+.IP \(bu 2
+\fBslidable\fP: all managed branches that have an upstream and can be slid out with \fI\%slide\-out\fP command
+.IP \(bu 2
+\fBslidable\-after <branch>\fP: the downstream branch of the <branch>, if it exists and is the only downstream of <branch>
+(i.e. the one that can be slid out immediately following <branch>),
+.IP \(bu 2
+\fBunmanaged\fP: all local branches that don\(aqt appear in the definition file,
+.IP \(bu 2
+\fBwith\-overridden\-fork\-point\fP: all local branches that have a \fI\%fork point\fP override set up
+(even if this override does not affect the location of their fork point anymore).
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+This command is generally not meant for a day\-to\-day use, it\(aqs mostly needed for the sake of branch name completion in shell.
+.SH LOG
+.sp
+\fBUsage:\fP
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git machete l[og] [<branch>]
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Runs \fBgit log\fP for the range of commits from tip of the given branch (or current branch, if none specified) back to its fork point.
+See help for \fI\%fork\-point\fP for more details on meaning of the \fIfork point\fP\&.
+.sp
+Note: the branch in question does not need to occur in the definition file.
+.SH REAPPLY
+.sp
+\fBUsage:\fP
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git machete reapply [\-f|\-\-fork\-point=<fork\-point\-commit>]
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Interactively rebase the current branch on the top of its computed fork point.
+The chunk of the history to be rebased starts at the automatically computed fork point of the current branch by default,
+but can also be set explicitly by \fB\-\-fork\-point\fP\&.
+See help for \fI\%fork\-point\fP for more details on meaning of the \fIfork point\fP\&.
+.sp
+Note: the current reapplied branch does not need to occur in the definition file.
+.sp
+Tip: \fBreapply\fP can be used for squashing the commits on the current branch to make history more condensed before push to the remote,
+but there is also dedicated \fBsquash\fP command that achieves the same goal without running \fBgit rebase\fP\&.
+.sp
+\fBOptions:\fP
+.INDENT 0.0
+.TP
+.BI \-f\fP,\fB  \-\-fork\-point\fB= <fork\-point\-commit>
+Specifies the alternative fork point commit after which the rebased part of history is meant to start.
+.UNINDENT
+.sp
+\fBEnvironment variables:\fP
+.INDENT 0.0
+.TP
+.B \fBGIT_MACHETE_REBASE_OPTS\fP
+Extra options to pass to the underlying \fBgit rebase\fP invocation, space\-separated.
+Example: \fBGIT_MACHETE_REBASE_OPTS=\(dq\-\-keep\-empty \-\-rebase\-merges\(dq git machete reapply\fP\&.
+.UNINDENT
+.SH SHOW
+.sp
+\fBUsage:\fP
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git machete show <direction> [<branch>]
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+where <direction> is one of: \fBc[urrent]\fP, \fBd[own]\fP, \fBf[irst]\fP, \fBl[ast]\fP, \fBn[ext]\fP, \fBp[rev]\fP, \fBr[oot]\fP, \fBu[p]\fP
+displayed relative to given <branch>, or the current checked out branch if <branch> is unspecified.
+.sp
+Outputs name of the branch (or possibly multiple branches, in case of \fBdown\fP) that is:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+\fBcurrent\fP: the current branch; exits with a non\-zero status if none (detached HEAD)
+.IP \(bu 2
+\fBdown\fP:    the direct children/downstream branch of the given branch.
+.IP \(bu 2
+\fBfirst\fP:   the first downstream of the root branch of the given branch (like \fBroot\fP followed by \fBnext\fP),
+or the root branch itself if the root has no downstream branches.
+.IP \(bu 2
+\fBlast\fP:    the last branch in the definition file that has the same root as the given branch; can be the root branch itself
+if the root has no downstream branches.
+.IP \(bu 2
+\fBnext\fP:    the direct successor of the given branch in the definition file.
+.IP \(bu 2
+\fBprev\fP:    the direct predecessor of the given branch in the definition file.
+.IP \(bu 2
+\fBroot\fP:    the root of the tree where the given branch is located.
+Note: this will typically be something like \fBdevelop\fP or \fBmaster\fP,
+since all branches are usually meant to be ultimately merged to one of those.
+.IP \(bu 2
+\fBup\fP:      the direct parent/upstream branch of the given branch.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SH SLIDE-OUT
+.sp
+\fBUsage:\fP
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git machete slide\-out [\-d|\-\-down\-fork\-point=<down\-fork\-point\-commit>] [\-\-delete] [\-M|\-\-merge] [\-n|\-\-no\-edit\-merge|\-\-no\-interactive\-rebase] [<branch> [<branch> [<branch> ...]]]
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Removes the given branch (or multiple branches) from the branch tree definition.  If no branch has been specified current branch is assumed as the only branch.
+Then synchronizes the downstream (child) branches of the last specified branch on the top of the upstream (parent) branch of the first specified branch.
+Sync is performed either by rebase (default) or by merge (if \fB\-\-merge\fP option passed).
+.sp
+The most common use is to slide out a single branch whose upstream was a \fBdevelop\fP/\fBmaster\fP branch and that has been recently merged.
+.sp
+Since this tool is designed to perform only one single rebase/merge at the end, provided branches must form a chain, i.e. all of the following conditions must be met:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+for i=1..N\-1, (i+1)\-th branch must be the only downstream (child) branch of the i\-th branch,
+.IP \(bu 2
+all provided branches must have an upstream branch (so, in other words, roots of branch dependency tree cannot be slid out).
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+For example, let\(aqs assume the following dependency tree:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+develop
+    adjust\-reads\-prec
+        block\-cancel\-order
+            change\-table
+                drop\-location\-type
+            add\-notification
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+And now let\(aqs assume that \fBadjust\-reads\-prec\fP and later \fBblock\-cancel\-order\fP were merged to develop.
+After running \fBgit machete slide\-out adjust\-reads\-prec block\-cancel\-order\fP the tree will be reduced to:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+develop
+    change\-table
+        drop\-location\-type
+    add\-notification
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+and \fBchange\-table\fP and \fBadd\-notification\fP will be rebased onto develop (fork point for this rebase is configurable, see \fB\-d\fP option below).
+.sp
+Note: This command doesn\(aqt delete any branches from git, just removes them from the tree of branch dependencies.
+.sp
+\fBOptions:\fP
+.INDENT 0.0
+.TP
+.BI \-d\fP,\fB  \-\-down\-fork\-point\fB= <down\-fork\-point\-commit>
+If updating by rebase, specifies the alternative fork point for downstream branches for the operation.
+\fBgit machete fork\-point\fP overrides for downstream branches are recommended over use of this option.
+See also doc for \fB\-\-fork\-point\fP option in \fBgit machete help reapply\fP and \fBgit machete help update\fP\&.
+Not allowed if updating by merge.
+.TP
+.B  \-\-delete
+Delete the slid\-out branches.
+.TP
+.B  \-M\fP,\fB  \-\-merge
+Update the downstream branch by merge rather than by rebase.
+.TP
+.B  \-n
+If updating by rebase, equivalent to \fB\-\-no\-interactive\-rebase\fP\&.
+If updating by merge, equivalent to \fB\-\-no\-edit\-merge\fP\&.
+.TP
+.B  \-\-no\-edit\-merge
+If updating by merge, skip opening the editor for merge commit message while doing
+\fBgit merge\fP (i.e. pass \fB\-\-no\-edit\fP flag to underlying \fBgit merge\fP).
+Not allowed if updating by rebase.
+.TP
+.B  \-\-no\-interactive\-rebase
+If updating by rebase, run \fBgit rebase\fP in non\-interactive mode (without \fB\-i/\-\-interactive\fP flag).
+Not allowed if updating by merge.
+.UNINDENT
+.sp
+\fBEnvironment variables:\fP
+.INDENT 0.0
+.TP
+.B \fBGIT_MACHETE_REBASE_OPTS\fP
+Extra options to pass to the underlying \fBgit rebase\fP invocations, space\-separated.
+Example: \fBGIT_MACHETE_REBASE_OPTS=\(dq\-\-keep\-empty \-\-rebase\-merges\(dq git machete slide\-out\fP\&.
+.UNINDENT
+.SH SQUASH
+.sp
+\fBUsage:\fP
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git machete squash [\-f|\-\-fork\-point=<fork\-point\-commit>]
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Squashes the commits belonging uniquely to the current branch into a single commit.
+The chunk of the history to be squashed starts at the automatically computed fork point of the current branch by default,
+but can also be set explicitly by \fB\-\-fork\-point\fP\&.
+See help for \fI\%fork\-point\fP for more details on meaning of the \fIfork point\fP\&.
+The message for the squashed is taken from the earliest squashed commit, i.e. the commit directly following the fork point.
+.sp
+Note: the current squashed branch does not need to occur in the definition file.
+.sp
+Tip: \fBsquash\fP does NOT run \fBgit rebase\fP under the hood. For more complex scenarios that require rewriting the history of current branch, see \fBreapply\fP and \fBupdate\fP\&.
+.sp
+\fBOptions:\fP
+.INDENT 0.0
+.TP
+.BI \-f\fP,\fB  \-\-fork\-point\fB= <fork\-point\-commit>
+Specifies the alternative fork point commit after which the squashed part of history is meant to start.
+.UNINDENT
+.SH STATUS
+.sp
+\fBUsage:\fP
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git machete s[tatus] [\-\-color=WHEN] [\-l|\-\-list\-commits] [\-L|\-\-list\-commits\-with\-hashes] [\-\-no\-detect\-squash\-merges]
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Displays a tree\-shaped status of the branches listed in the definition file.
+.sp
+Apart from simply ASCII\-formatting the definition file, this also:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+colors the edges between upstream (parent) and downstream (children) branches:
+.INDENT 2.0
+.IP \(bu 2
+red edge means that the downstream branch tip is not a direct descendant of the upstream branch tip,
+.IP \(bu 2
+yellow edge means that the downstream branch tip is a direct descendant of the upstream branch tip,
+but the \fI\%fork point\fP of the downstream branch is not equal to the upstream branch tip,
+.IP \(bu 2
+green edge means that the downstream branch tip is a direct descendant of the upstream branch tip
+and the fork point of the downstream branch is equal to the upstream branch tip,
+.IP \(bu 2
+grey/dimmed edge means that the downstream branch has been merged to the upstream branch,
+detected by commit equivalency (default), or by strict detection of merge commits (if \fB\-\-no\-detect\-squash\-merges\fP passed).
+.UNINDENT
+.IP \(bu 2
+prints (\fBuntracked\fP/\fBahead of <remote>\fP/\fBbehind <remote>\fP/\fBdiverged from [& older than] <remote>\fP) message if the branch
+is not in sync with its remote counterpart;
+.IP \(bu 2
+displays the custom annotations (see help for \fI\%format\fP and \fI\%anno\fP) next to each branch, if present. Annotations might contain underlined branch
+qualifiers (\fBrebase=no\fP, \fBpush=no\fP) that control rebase and push behavior of \fBtraverse\fP (see help for \fI\%traverse\fP);
+.IP \(bu 2
+displays the output of \fBmachete\-status\-branch hook\fP (see help for \fI\%hooks\fP), if present;
+.IP \(bu 2
+optionally lists commits introduced on each branch if \fB\-l/\-\-list\-commits\fP or \fB\-L/\-\-list\-commits\-with\-hashes\fP is supplied.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+Name of the currently checked\-out branch is underlined (or shown in blue on terminals that don\(aqt support underline).
+.sp
+In case of yellow edge, use \fB\-l\fP or \fB\-L\fP flag to show the exact location of the inferred fork point
+(which indicates e.g. what range of commits is going to be rebased when the branch is updated).
+The inferred fork point can be always overridden manually, see help for \fI\%fork\-point\fP\&.
+.sp
+Grey/dimmed edge suggests that the downstream branch can be slid out (see help for \fI\%slide\-out\fP and \fI\%traverse\fP).
+.sp
+Using colors can be disabled with a \fB\-\-color\fP flag set to \fBnever\fP\&.
+With \fB\-\-color=always\fP, git machete always emits colors and with \fB\-\-color=auto\fP, it emits colors only when standard output is connected to a terminal.
+\fB\-\-color=auto\fP is the default. When colors are disabled, relation between branches is represented in the following way (not including the hash\-comments):
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+<branch0>
+|
+o\-<branch1> *   # green (in sync with parent; asterisk for the current branch)
+| |
+| x\-<branch2>   # red (not in sync with parent)
+|   |
+|   ?\-<branch3> # yellow (in sync with parent, but parent is not the fork point)
+|
+m\-<branch4>     # grey (merged to parent)
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+\fBNOTE:\fP
+.INDENT 0.0
+.INDENT 3.5
+To make it easier to select branch name from the \fBstatus\fP output on certain terminals
+(e.g. \fI\%Alacritty\fP), you can add an extra space between └─ and \fBbranch name\fP
+by setting \fBgit config machete.status.extraSpaceBeforeBranchName true\fP\&.
+.sp
+For example, by default the status is displayed as:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+develop
+│
+├─feature_branch1
+│
+└─feature_branch2
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+With \fBmachete.status.extraSpaceBeforeBranchName\fP config set to \fBtrue\fP:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+develop
+│
+├─ feature_branch1
+│
+└─ feature_branch2
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+\fBOptions:\fP
+.INDENT 0.0
+.TP
+.BI \-\-color\fB= WHEN
+Colorize the output; WHEN can be \fBalways\fP, \fBauto\fP (default; i.e. only if stdout is a terminal), or \fBnever\fP\&.
+.TP
+.B  \-l\fP,\fB  \-\-list\-commits
+Additionally list the commits introduced on each branch.
+.TP
+.B  \-L\fP,\fB  \-\-list\-commits\-with\-hashes
+Additionally list the short hashes and messages of commits introduced on each branch.
+.TP
+.B  \-\-no\-detect\-squash\-merges
+Only consider \fIstrict\fP (fast\-forward or 2\-parent) merges, rather than rebase/squash merges,
+when detecting if a branch is merged into its upstream (parent).
+.UNINDENT
+.sp
+\fBConfig keys:\fP
+.INDENT 0.0
+.TP
+.B \fBmachete.status.extraSpaceBeforeBranchName\fP
+.INDENT 7.0
+.INDENT 3.5
+To make it easier to select branch name from the \fBstatus\fP output on certain terminals
+(e.g. \fI\%Alacritty\fP), you can add an extra space between └─ and \fBbranch name\fP
+by setting \fBgit config machete.status.extraSpaceBeforeBranchName true\fP\&.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SH TRAVERSE
+.sp
+\fBUsage:\fP
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git machete t[raverse] [\-F|\-\-fetch] [\-l|\-\-list\-commits] [\-M|\-\-merge]
+                       [\-n|\-\-no\-edit\-merge|\-\-no\-interactive\-rebase] [\-\-no\-detect\-squash\-merges]
+                       [\-\-[no\-]push] [\-\-[no\-]push\-untracked]
+                       [\-\-return\-to=WHERE] [\-\-start\-from=WHERE] [\-w|\-\-whole] [\-W] [\-y|\-\-yes]
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Traverses the branch tree in pre\-order (i.e. simply in the order as they occur in the definition file).
+By default \fBtraverse\fP starts from the current branch.
+This behavior can, however, be customized using options: \fB\-\-start\-from=\fP, \fB\-\-whole\fP or \fB\-w\fP, \fB\-W\fP\&.
+.sp
+For each branch, the command:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+detects if the branch is merged (grey edge) to its parent (aka upstream):
+.INDENT 2.0
+.IP \(bu 2
+by commit equivalency (default), or by strict detection of merge commits (if \fB\-\-no\-detect\-squash\-merges\fP passed),
+.IP \(bu 2
+if so, asks the user whether to slide out the branch from the dependency tree (typically branches are no longer needed after they\(aqre merged);
+.UNINDENT
+.IP \(bu 2
+otherwise, if the branch has a red or yellow edge to its parent/upstream (see help for \fI\%status\fP):
+.INDENT 2.0
+.IP \(bu 2
+asks the user whether to rebase (default) or merge (if \fB\-\-merge\fP passed) the branch onto into its upstream branch
+\-\-\- equivalent to \fBgit machete update\fP with no \fB\-\-fork\-point\fP option passed;
+.UNINDENT
+.IP \(bu 2
+if the branch is not tracked on a remote, is ahead of its remote counterpart, or diverged from the counterpart &
+has newer head commit than the counterpart:
+.INDENT 2.0
+.IP \(bu 2
+asks the user whether to push the branch (possibly with \fB\-\-force\-with\-lease\fP if the branches diverged);
+.UNINDENT
+.IP \(bu 2
+otherwise, if the branch diverged from the remote counterpart & has older head commit than the counterpart:
+.INDENT 2.0
+.IP \(bu 2
+asks the user whether to \fBgit reset \-\-keep\fP the branch to its remote counterpart
+.UNINDENT
+.IP \(bu 2
+otherwise, if the branch is behind its remote counterpart:
+.INDENT 2.0
+.IP \(bu 2
+asks the user whether to pull the branch;
+.UNINDENT
+.IP \(bu 2
+and finally, if any of the above operations has been successfully completed:
+.INDENT 2.0
+.IP \(bu 2
+prints the updated \fBstatus\fP\&.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+By default \fBtraverse\fP asks if the branch should be pushed, this behavior can, however, be changed with the \fBmachete.traverse.push\fP configuration key.
+It can also be customized using options: \fB\-\-[no\-]push\fP or \fB\-\-[no\-]push\-untracked\fP \-\-\- the order of the flags defines their precedence over each other
+(the one on the right overriding the ones on the left). More on them in the \fBOptions\fP section below.
+.sp
+If the traverse flow is stopped (typically due to merge/rebase conflicts), just run \fBgit machete traverse\fP after the merge/rebase is finished.
+It will pick up the walk from the current branch (unless \fB\-\-start\-from=\fP or \fB\-w\fP etc. is passed).
+Unlike with e.g. \fBgit rebase\fP, there is no special \fB\-\-continue\fP flag, as \fBtraverse\fP is stateless
+(doesn\(aqt keep a state of its own like \fBgit rebase\fP does in \fB\&.git/rebase\-apply/\fP).
+.sp
+The rebase, push and slide\-out behaviors of \fBtraverse\fP can also be customized for each branch separately using \fIbranch qualifiers\fP\&.
+There are \fBrebase=no\fP, \fBpush=no\fP and \fBslide\-out=no\fP qualifiers that can be used to opt out of default behavior (rebasing, pushing and sliding the branch out of the dependency tree).
+The qualifier can appear anywhere in the annotation but needs to be separated by a whitespace from any other character, e.g. \fBsome_annotation_text rebase=no push=no slide\-out=no\fP\&.
+Qualifiers can only be overwritten by manually editing \fB\&.git/machete\fP file or modifying it with \fBgit machete e[dit]\fP, or by updating annotations with \fBgit machete anno\fP\&.
+Example machete file with branch qualifiers:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+master
+  develop  rebase=no slide\-out=no
+    my\-branch  PR #123
+    someone\-elses\-branch  PR #124 rebase=no push=no
+    branch\-for\-local\-experiments  push=no
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Operations like \fBgit machete github anno\-prs\fP and \fBgit machete github checkout\-prs\fP add \fBrebase=no push=no\fP branch qualifiers
+when the current user is \fBnot\fP the owner of the PR associated with that branch. \fBgit machete discover\fP doesn\(aqt modify the qualifiers.
+.sp
+\fBOptions:\fP
+.INDENT 0.0
+.TP
+.B  \-F\fP,\fB  \-\-fetch
+Fetch the remotes of all managed branches at the beginning of traversal (no \fBgit pull\fP involved, only \fBgit fetch\fP).
+.TP
+.B  \-l\fP,\fB  \-\-list\-commits
+When printing the status, additionally list the messages of commits introduced on each branch.
+.TP
+.B  \-M\fP,\fB  \-\-merge
+Update by merge rather than by rebase.
+.TP
+.B  \-n
+If updating by rebase, equivalent to \fB\-\-no\-interactive\-rebase\fP\&. If updating by merge, equivalent to \fB\-\-no\-edit\-merge\fP\&.
+.TP
+.B  \-\-no\-detect\-squash\-merges
+Only consider \fIstrict\fP (fast\-forward or 2\-parent) merges, rather than rebase/squash merges,
+when detecting if a branch is merged into its upstream (parent).
+.TP
+.B  \-\-no\-edit\-merge
+If updating by merge, skip opening the editor for merge commit message while doing \fBgit merge\fP
+(i.e. pass \fB\-\-no\-edit\fP flag to the underlying \fBgit merge\fP). Not allowed if updating by rebase.
+.TP
+.B  \-\-no\-interactive\-rebase
+If updating by rebase, run \fBgit rebase\fP in non\-interactive mode (without \fB\-i/\-\-interactive\fP flag).
+Not allowed if updating by merge.
+.TP
+.B  \-\-no\-push
+Do not push any (neither tracked nor untracked) branches to remote, re\-enable via \fB\-\-push\fP\&.
+.TP
+.B  \-\-no\-push\-untracked
+Do not push untracked branches to remote, re\-enable via \fB\-\-push\-untracked\fP\&.
+.TP
+.B  \-\-push
+Push all (both tracked and untracked) branches to remote \-\-\- default behavior. Default behavior can be changed
+by setting git configuration key \fBgit config machete.traverse.push false\fP\&.
+Configuration key value can be overridden by the presence of the flag.
+.TP
+.B  \-\-push\-untracked
+Push untracked branches to remote.
+.TP
+.BI \-\-return\-to\fB= WHERE
+Specifies the branch to return after traversal is successfully completed;
+WHERE can be \fBhere\fP (the current branch at the moment when traversal starts), \fBnearest\-remaining\fP
+(nearest remaining branch in case the \fBhere\fP branch has been slid out by the traversal) or
+\fBstay\fP (the default \-\-\- just stay wherever the traversal stops). Note: when user quits by \fBq\fP/\fByq\fP
+or when traversal is stopped because one of git actions fails, the behavior is always \fBstay\fP\&.
+.TP
+.BI \-\-start\-from\fB= WHERE
+Specifies the branch to start the traversal from; WHERE can be \fBhere\fP
+(the default \-\-\- current branch, must be managed by git machete), \fBroot\fP (root branch of the current branch,
+as in \fBgit machete show root\fP) or \fBfirst\-root\fP (first listed managed branch).
+.TP
+.B  \-w\fP,\fB  \-\-whole
+Equivalent to \fB\-n \-\-start\-from=first\-root \-\-return\-to=nearest\-remaining\fP;
+useful for quickly traversing & syncing all branches (rather than doing more fine\-grained operations on the
+local section of the branch tree).
+.TP
+.B  \-W
+Equivalent to \fB\-\-fetch \-\-whole\fP; useful for even more automated traversal of all branches.
+.TP
+.B  \-y\fP,\fB  \-\-yes
+Don\(aqt ask for any interactive input, including confirmation of rebase/push/pull. Implies \fB\-n\fP\&.
+.UNINDENT
+.sp
+\fBConfig keys:\fP
+.INDENT 0.0
+.TP
+.B \fBmachete.traverse.push\fP
+.INDENT 7.0
+.INDENT 3.5
+To change the behavior of \fBgit machete traverse\fP command so that it doesn\(aqt push branches by default,
+you need to set config key \fBgit config machete.traverse.push false\fP\&.
+Configuration key value can be overridden by the presence of the \fB\-\-push\fP or \fB\-\-push\-untracked\fP flags.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+\fBEnvironment variables:\fP
+.INDENT 0.0
+.TP
+.B \fBGIT_MACHETE_REBASE_OPTS\fP
+Extra options to pass to the underlying \fBgit rebase\fP invocations, space\-separated.
+Example: \fBGIT_MACHETE_REBASE_OPTS=\(dq\-\-keep\-empty \-\-rebase\-merges\(dq git machete traverse\fP\&.
+.UNINDENT
+.SH UPDATE
+.sp
+\fBUsage:\fP
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git machete update [\-f|\-\-fork\-point=] [\-M|\-\-merge] [\-n|\-\-no\-edit\-merge|\-\-no\-interactive\-rebase]
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Synchronizes the current branch with its upstream (parent) branch either by rebase (default) or by merge (if \fB\-\-merge\fP option passed).
+.sp
+If updating by rebase, interactively rebases the current branch on the top of its upstream (parent) branch.
+The chunk of the history to be rebased starts at the fork point of the current branch, which by default is inferred automatically,
+but can also be set explicitly by \fB\-\-fork\-point\fP\&.
+See help for \fI\%fork\-point\fP for more details on the meaning of \fIfork point\fP\&.
+.sp
+If updating by merge, merges the upstream (parent) branch into the current branch.
+.sp
+\fBOptions:\fP
+.INDENT 0.0
+.TP
+.BI \-f\fP,\fB  \-\-fork\-point\fB= <fork\-point\-commit>
+If updating by rebase, specifies the alternative fork point commit after which the rebased
+part of history is meant to start. Not allowed if updating by merge.
+.TP
+.B  \-M\fP,\fB  \-\-merge
+Update by merge rather than by rebase.
+.TP
+.B  \-n
+If updating by rebase, equivalent to \fB\-\-no\-interactive\-rebase\fP\&.
+If updating by merge, equivalent to \fB\-\-no\-edit\-merge\fP\&.
+.TP
+.B  \-\-no\-edit\-merge
+If updating by merge, skip opening the editor for merge commit message while doing \fBgit merge\fP
+(i.e. pass \fB\-\-no\-edit\fP flag to underlying \fBgit merge\fP). Not allowed if updating by rebase.
+.TP
+.B  \-\-no\-interactive\-rebase
+If updating by rebase, run \fBgit rebase\fP in non\-interactive mode (without \fB\-i/\-\-interactive\fP flag).
+Not allowed if updating by merge.
+.UNINDENT
+.sp
+\fBEnvironment variables:\fP
+.INDENT 0.0
+.TP
+.B \fBGIT_MACHETE_REBASE_OPTS\fP
+Extra options to pass to the underlying \fBgit rebase\fP invocation, space\-separated.
+Example: \fBGIT_MACHETE_REBASE_OPTS=\(dq\-\-keep\-empty \-\-rebase\-merges\(dq git machete update\fP\&.
+.UNINDENT
+.SH VERSION
+.sp
+\fBUsage:\fP
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git machete version
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Prints the version and exits.
+.SH AUTHOR
+VirtusLab
+.SH COPYRIGHT
+2017-2023, VirtusLab
+.\" Generated by docutils manpage writer.
+.

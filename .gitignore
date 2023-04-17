@@ -10,6 +10,10 @@ build/
 coverage.xml
 dist/
 docs/html/
+# See https://stackoverflow.com/a/21643672 for why not just `docs/man/`
+docs/man/**
+!docs/man/git-machete.1
+docs/man-compare
 *.egg-info/
 .eggs/
 htmlcov/
