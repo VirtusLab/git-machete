@@ -2,10 +2,15 @@
 
 set -e -o pipefail -u -x
 
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" < /dev/null
+HOMEBREW_VERSION=4.0.13
+
+NONINTERACTIVE=1 bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+# https://stackoverflow.com/questions/54912857/how-do-i-install-old-version-of-homebrew-itself-not-the-formula
+(cd /home/linuxbrew/.linuxbrew/Homebrew; git checkout $HOMEBREW_VERSION)
 ## The two lines below are added to avoid ->  Warning: /home/linuxbrew/.linuxbrew/bin is not in your PATH
 (echo; echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"') >> /home/circleci/.bash_profile
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+brew --version
 
 if [[ ${1-} == "--dry-run" || ${CIRCLE_BRANCH-} != "master" ]]; then
   do_push=false
