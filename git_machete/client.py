@@ -1228,6 +1228,9 @@ class MacheteClient:
                         f"{branch} is descendant of its upstream {upstream}, but overridden fork point commit {overridden_fp_hash} "
                         f"is NOT a descendant of {upstream}; falling back to {upstream} as fork point")
                     return self.__git.get_commit_hash_by_revision(upstream), []
+                elif upstream and \
+                        self.__git.is_ancestor_or_equal(overridden_fp_hash, upstream.full_name()):
+                    return self.__git.get_merge_base(upstream.full_name(), branch.full_name()), []
                 else:
                     debug(f"fork point of {branch} is overridden to {overridden_fp_hash}; skipping inference")
                     return overridden_fp_hash, []

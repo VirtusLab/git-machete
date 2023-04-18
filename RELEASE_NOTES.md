@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.17.1
+
+- fixed: in the rare case when overridden fork point for branch X is an ancestor of X's parent, the effective fork point is selected to the latest common ancestor of X and X's parent
+
 ## New in git-machete 3.17.0
 
 - added: `--ignore-if-missing` flag to `git machete github retarget-pr` command
