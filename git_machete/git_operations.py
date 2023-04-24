@@ -406,6 +406,8 @@ class GitContext:
     def push(self, remote: str, branch: LocalBranchShortName, force_with_lease: bool = False) -> None:
         if not force_with_lease:
             opt_force = []
+        elif self.get_git_version() >= (2, 30, 0):  # earliest version of git to support 'push --force-with-lease --force-if-includes'
+            opt_force = ["--force-with-lease", "--force-if-includes"]
         elif self.get_git_version() >= (1, 8, 5):  # earliest version of git to support 'push --force-with-lease'
             opt_force = ["--force-with-lease"]
         else:

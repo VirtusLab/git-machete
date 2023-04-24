@@ -1,4 +1,5 @@
 tar-ignore = AUTHORS
+tar-ignore = BADGES.md
 tar-ignore = blogs
 tar-ignore = build
 tar-ignore = ChangeLog

@@ -3,6 +3,7 @@
 ## New in git-machete 3.17.1
 
 - fixed: in the rare case when overridden fork point for branch X is an ancestor of X's parent, the effective fork point is selected to the latest common ancestor of X and X's parent
+- improved: if git >= 2.30.0, pass `--force-if-includes` to `git push` alongside `--force-with-lease`
 
 ## New in git-machete 3.17.0
 
