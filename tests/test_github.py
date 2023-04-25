@@ -2015,8 +2015,8 @@ class TestGitHub:
 
         launch_command('github', 'checkout-prs', '--all')
         launch_command('discover', '--checked-out-since=1 day ago')
-        expected_status_output = '  develop *\n' + '\n'.join([f' |\n o-feature_{i}  rebase=no push=no'
-                                                              for i in range(number_of_pages * prs_per_page)]) + '\n'
+        expected_status_output = 'develop *\n' + '\n'.join([f'|\no-feature_{i}  rebase=no push=no'
+                                                            for i in range(number_of_pages * prs_per_page)]) + '\n'
         assert_command(['status'], expected_status_output)
 
     def test_github_enterprise_domain_fail(self, mocker: Any) -> None:

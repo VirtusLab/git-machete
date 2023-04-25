@@ -357,10 +357,6 @@ class MockContextManagerRaise403(MockContextManager):
         raise HTTPError("http://example.org", 403, 'Forbidden', None, None)  # type: ignore[arg-type]
 
 
-def adapt(s: str, indent: str) -> str:
-    return textwrap.indent(textwrap.dedent(s[1:]), indent)
-
-
 def launch_command(*args: str) -> str:
     with io.StringIO() as out:
         with redirect_stdout(out):
@@ -373,9 +369,12 @@ def launch_command(*args: str) -> str:
 
 
 def assert_command(cmds: Iterable[str], expected_result: str, strip_indentation: bool = True, indent: str = '  ') -> None:
-    expected_result = adapt(expected_result, indent) if strip_indentation else expected_result
+    if expected_result.startswith("\n"):
+        # removeprefix is only available since Python 3.9
+        expected_result = expected_result[1:]
+    expected_result = textwrap.indent(textwrap.dedent(expected_result), indent) if strip_indentation else expected_result
     actual_result = launch_command(*cmds)
-    assert actual_result == expected_result, f'Actual result:\n`{actual_result}`\nExpected result:\n`{expected_result}`'
+    assert actual_result == expected_result, f'Actual result:\n\n{actual_result}\n\nExpected result:\n\n{expected_result}'
 
 
 def rewrite_definition_file(new_body: str, dedent: bool = True) -> None:

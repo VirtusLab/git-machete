@@ -21,7 +21,7 @@ newrepo() {
   mkdir $root_dir/$dir
   cd $root_dir/$dir
   opt=${2-}
-  git init $opt
+  git -c init.defaultBranch=master init $opt
 }
 
 push() {

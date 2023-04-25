@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.17.2
+
+- fixed: when `origin/feature/foo` branch exists, `git machete add foo` no longer falsely recognizes `origin/feature/foo` as a potential remote tracking branch for `foo`
+
 ## New in git-machete 3.17.1
 
 - fixed: in the rare case when overridden fork point for branch X is an ancestor of X's parent, the effective fork point is selected to the latest common ancestor of X and X's parent

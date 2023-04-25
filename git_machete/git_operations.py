@@ -854,16 +854,9 @@ class GitContext:
         return result
 
     def get_sole_remote_branch(self, branch: LocalBranchShortName) -> Optional[RemoteBranchShortName]:
-        def matches(remote_branch: RemoteBranchShortName) -> bool:
-            # Note that this matcher is defensively too inclusive:
-            # if there is both origin/foo and origin/feature/foo,
-            # then both are matched for 'foo';
-            # this is to reduce risk wrt. which '/'-separated fragments belong to remote and which to branch name.
-            # FIXME (#116): this is still likely to deliver incorrect results in rare corner cases with compound remote names.
-            return remote_branch.endswith(f"/{branch}")
-
-        matching_remote_branches = list(filter(matches, self.get_remote_branches()))
-        return matching_remote_branches[0] if len(matching_remote_branches) == 1 else None
+        remote_branches = self.get_remote_branches()
+        matching_remotes = [remote for remote in self.get_remotes() if (remote + "/" + branch) in remote_branches]
+        return RemoteBranchShortName(matching_remotes[0] + "/" + branch) if len(matching_remotes) == 1 else None
 
     def get_merged_local_branches(self) -> List[LocalBranchShortName]:
         if self.get_git_version() >= (2, 7, 6):  # earliest version of git to support 'for-each-ref --merged'

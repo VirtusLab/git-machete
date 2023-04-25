@@ -21,7 +21,7 @@ class TestAdd:
 
     def test_add(self, mocker: Any) -> None:
         """
-        Verify behaviour of a 'git machete add' command.
+        Verify the behaviour of a 'git machete add' command.
         """
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
 
@@ -77,5 +77,35 @@ class TestAdd:
         assert_command(
             ['add', '--onto=feature'],
             'Added branch chore/remove_indentation onto feature\n',
+            strip_indentation=False
+        )
+
+    def test_add_check_out_remote_branch(self, mocker: Any) -> None:
+        """
+        Verify the behaviour of a 'git machete add' command in the special case when a remote branch is checked out locally.
+        """
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+
+        (
+            self.repo_sandbox.new_branch("master")
+            .commit("master commit.")
+            .new_branch("feature/foo")
+            .push()
+            .check_out("master")
+            .delete_branch("feature/foo")
+        )
+
+        assert_command(
+            ['add', '-y', 'foo'],
+            'A local branch foo does not exist. Creating out of the current HEAD\n'
+            'Added branch foo as a new root\n',
+            strip_indentation=False
+        )
+
+        assert_command(
+            ['add', '-y', '--as-root', 'feature/foo'],
+            'A local branch feature/foo does not exist, but a remote branch origin/feature/foo exists.\n'
+            'Checking out feature/foo locally...\n'
+            'Added branch feature/foo as a new root\n',
             strip_indentation=False
         )

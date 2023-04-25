@@ -1440,8 +1440,8 @@ class MacheteClient:
                 "start of range of commits to squash.")
         if len(commits) == 1:
             print(f"Exactly one commit ({bold(commits[0].short_hash)}) to squash, ignoring.\n")
-            print("Tip: use `-f` or `--fork-point` to specify where the range of "
-                  "commits to squash starts.")
+            print(fmt("Tip: use `-f` or `--fork-point` to specify where the range of "
+                  "commits to squash starts."))
             return
 
         earliest_commit = commits[0]
