@@ -82,7 +82,7 @@ class TestStatus:
                o- foo *
             """
         )
-        assert_command(['status'], expected_status_output, indent='   ')
+        assert_command(['status'], expected_status_output)
 
         self.repo_sandbox.add_git_config_key('machete.status.extraSpaceBeforeBranchName', 'false')
 

@@ -219,8 +219,7 @@ class TestGitHub:
 
         assert_command(
             ['github', 'retarget-pr'],
-            'The base branch of PR #15 has been switched to branch-1\n',
-            strip_indentation=False
+            'The base branch of PR #15 has been switched to branch-1\n'
         )
 
         expected_status_output = """
@@ -237,8 +236,7 @@ class TestGitHub:
 
         assert_command(
             ['github', 'retarget-pr'],
-            'The base branch of PR #15 is already branch-1\n',
-            strip_indentation=False
+            'The base branch of PR #15 is already branch-1\n'
         )
 
     git_api_state_for_test_github_retarget_pr_explicit_branch = MockGitHubAPIState(
@@ -304,8 +302,7 @@ class TestGitHub:
 
         assert_command(
             ['github', 'retarget-pr', '--branch', 'feature'],
-            'The base branch of PR #15 has been switched to branch-1\n',
-            strip_indentation=False
+            'The base branch of PR #15 has been switched to branch-1\n'
         )
 
         expected_status_output = """
@@ -412,8 +409,7 @@ class TestGitHub:
 
         assert_command(
             ['github', 'retarget-pr'],
-            'The base branch of PR #20 has been switched to feature\n',
-            strip_indentation=False
+            'The base branch of PR #20 has been switched to feature\n'
         )
 
         # branch feature_2 is not present in any of the remotes
@@ -447,8 +443,7 @@ class TestGitHub:
 
         assert_command(
             ['github', 'retarget-pr'],
-            'The base branch of PR #25 has been switched to feature\n',
-            strip_indentation=False
+            'The base branch of PR #25 has been switched to feature\n'
         )
 
         # branch feature_3 present in only one remote: origin_1 and has tracking data
@@ -472,8 +467,7 @@ class TestGitHub:
 
         assert_command(
             ['github', 'retarget-pr'],
-            'The base branch of PR #35 has been switched to feature_2\n',
-            strip_indentation=False
+            'The base branch of PR #35 has been switched to feature_2\n'
         )
 
     git_api_state_for_test_anno_prs = MockGitHubAPIState(
@@ -881,7 +875,7 @@ class TestGitHub:
         expected_msg = ("Fetching origin...\n"
                         "Warn: Base branch for this PR (feature/api_handling) is not found on remote, pushing...\n"
                         "Creating a PR from feature/api_exception_handling to feature/api_handling... OK, see www.github.com\n")
-        assert_command(['github', 'create-pr'], expected_msg, strip_indentation=False)
+        assert_command(['github', 'create-pr'], expected_msg)
         assert_command(
             ['status'],
             """
@@ -974,8 +968,7 @@ class TestGitHub:
         """  # noqa: W291, E501
         assert_command(
             ['github', 'create-pr'],
-            expected_result,
-            indent=''
+            expected_result
         )
         # branch feature_1 present in each of the remotes, tracking data present
         (
@@ -993,8 +986,7 @@ class TestGitHub:
         """
         assert_command(
             ['github', 'create-pr'],
-            expected_result,
-            indent=''
+            expected_result
         )
 
         # branch feature_2 not present in any of the remotes, remote origin_1 picked manually via mock_input()
@@ -1026,8 +1018,7 @@ class TestGitHub:
         """  # noqa: W291
         assert_command(
             ['github', 'create-pr'],
-            expected_result,
-            indent=''
+            expected_result
         )
 
         # branch feature_2 present in only one remote: origin_1, no tracking data
@@ -1045,8 +1036,7 @@ class TestGitHub:
         """  # noqa: E501
         assert_command(
             ['github', 'create-pr'],
-            expected_result,
-            indent=''
+            expected_result
         )
 
         # branch feature_3 present in only one remote: origin_2, tracking data present
@@ -1065,8 +1055,7 @@ class TestGitHub:
         """
         assert_command(
             ['github', 'create-pr'],
-            expected_result,
-            indent=''
+            expected_result
         )
 
         # branch feature_3 present in only one remote: origin_2 with tracking data, origin remote present - takes priority
@@ -1085,8 +1074,7 @@ class TestGitHub:
         """
         assert_command(
             ['github', 'create-pr'],
-            expected_result,
-            indent=''
+            expected_result
         )
 
     git_api_state_for_test_checkout_prs = MockGitHubAPIState(
@@ -1395,7 +1383,7 @@ class TestGitHub:
         expected_msg = ("Checking for open GitHub PRs... OK\n"
                         f"Warn: User tester has no open pull request in repository "
                         f"{remote_org_repo.organization}/{remote_org_repo.repository}\n")
-        assert_command(['github', 'checkout-prs', '--by', 'tester'], expected_msg, strip_indentation=False)
+        assert_command(['github', 'checkout-prs', '--by', 'tester'], expected_msg)
 
         # Check against closed pull request with head branch deleted from remote
         local_path = tmp_path
@@ -1432,12 +1420,12 @@ class TestGitHub:
                         "Warn: Pull request #5 is already closed.\n"
                         "Pull request #5 checked out at local branch bugfix/remove-n-option\n")
 
-        assert_command(['github', 'checkout-prs', '5'], expected_msg, strip_indentation=False)
+        assert_command(['github', 'checkout-prs', '5'], expected_msg)
 
         # Check against multiple PRs
         expected_msg = 'Checking for open GitHub PRs... OK\n'
 
-        assert_command(['github', 'checkout-prs', '3', '12'], expected_msg, strip_indentation=False)
+        assert_command(['github', 'checkout-prs', '3', '12'], expected_msg)
 
     git_api_state_for_test_github_checkout_prs_fresh_repo = MockGitHubAPIState(
         [
@@ -1538,8 +1526,7 @@ class TestGitHub:
                         "Pull request #2 checked out at local branch comments/add_docstrings\n")
         assert_command(
             ['github', 'checkout-prs', '2'],
-            expected_msg,
-            strip_indentation=False
+            expected_msg
         )
 
         assert_command(
@@ -1563,8 +1550,7 @@ class TestGitHub:
 
         assert_command(
             ['github', 'checkout-prs', '23'],
-            expected_msg,
-            strip_indentation=False
+            expected_msg
         )
         assert_command(
             ["status"],
@@ -1633,8 +1619,7 @@ class TestGitHub:
                         "Pull request #2 checked out at local branch feature/allow_checkout\n")
         assert_command(
             ['github', 'checkout-prs', '2'],
-            expected_msg,
-            strip_indentation=False
+            expected_msg
         )
 
         assert 'feature/allow_checkout' == launch_command("show", "current").strip(), \

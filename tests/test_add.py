@@ -49,8 +49,7 @@ class TestAdd:
         assert_command(
             ['add', '-y'],
             'Adding bugfix/feature_fail onto the inferred upstream (parent) branch develop\n'
-            'Added branch bugfix/feature_fail onto develop\n',
-            strip_indentation=False
+            'Added branch bugfix/feature_fail onto develop\n'
         )
 
         self.repo_sandbox.check_out('develop')
@@ -58,8 +57,7 @@ class TestAdd:
         assert_command(
             ['add', '-y', 'bugfix/some_feature'],
             'Adding bugfix/some_feature onto the inferred upstream (parent) branch develop\n'
-            'Added branch bugfix/some_feature onto develop\n',
-            strip_indentation=False
+            'Added branch bugfix/some_feature onto develop\n'
         )
 
         self.repo_sandbox.check_out('develop')
@@ -67,8 +65,7 @@ class TestAdd:
         assert_command(
             ['add', '-y', 'refs/heads/bugfix/another_feature'],
             'Adding bugfix/another_feature onto the inferred upstream (parent) branch develop\n'
-            'Added branch bugfix/another_feature onto develop\n',
-            strip_indentation=False
+            'Added branch bugfix/another_feature onto develop\n'
         )
 
         # test with --onto option
@@ -76,8 +73,7 @@ class TestAdd:
 
         assert_command(
             ['add', '--onto=feature'],
-            'Added branch chore/remove_indentation onto feature\n',
-            strip_indentation=False
+            'Added branch chore/remove_indentation onto feature\n'
         )
 
     def test_add_check_out_remote_branch(self, mocker: Any) -> None:
@@ -98,14 +94,12 @@ class TestAdd:
         assert_command(
             ['add', '-y', 'foo'],
             'A local branch foo does not exist. Creating out of the current HEAD\n'
-            'Added branch foo as a new root\n',
-            strip_indentation=False
+            'Added branch foo as a new root\n'
         )
 
         assert_command(
             ['add', '-y', '--as-root', 'feature/foo'],
             'A local branch feature/foo does not exist, but a remote branch origin/feature/foo exists.\n'
             'Checking out feature/foo locally...\n'
-            'Added branch feature/foo as a new root\n',
-            strip_indentation=False
+            'Added branch feature/foo as a new root\n'
         )

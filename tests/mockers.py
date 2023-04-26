@@ -368,12 +368,12 @@ def launch_command(*args: str) -> str:
         return out.getvalue()
 
 
-def assert_command(cmds: Iterable[str], expected_result: str, strip_indentation: bool = True, indent: str = '  ') -> None:
+def assert_command(cmds: Iterable[str], expected_result: str) -> None:
     if expected_result.startswith("\n"):
         # removeprefix is only available since Python 3.9
         expected_result = expected_result[1:]
-    expected_result = textwrap.indent(textwrap.dedent(expected_result), indent) if strip_indentation else expected_result
-    actual_result = launch_command(*cmds)
+    expected_result = textwrap.dedent(expected_result)
+    actual_result = textwrap.dedent(launch_command(*cmds))
     assert actual_result == expected_result, f'Actual result:\n\n{actual_result}\n\nExpected result:\n\n{expected_result}'
 
 

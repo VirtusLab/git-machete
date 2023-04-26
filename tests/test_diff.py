@@ -56,7 +56,7 @@ class TestDiff:
         """
 
         # Test `git machete diff` without providing the branch name, git diff against the current working tree
-        assert_command(["diff"], expected_status_output, indent='')
+        assert_command(["diff"], expected_status_output)
 
         expected_status_output = """
         diff --git a/develop_file_name.txt b/develop_file_name.txt
@@ -69,6 +69,6 @@ class TestDiff:
 
         """
 
-        assert_command(["diff", "develop"], expected_status_output, indent='')
+        assert_command(["diff", "develop"], expected_status_output)
 
-        assert_command(["diff", "refs/heads/develop"], expected_status_output, indent='')
+        assert_command(["diff", "refs/heads/develop"], expected_status_output)

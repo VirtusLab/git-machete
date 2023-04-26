@@ -73,8 +73,7 @@ class TestList:
         """
         assert_command(
             ['list', 'managed'],
-            expected_output,
-            indent=''
+            expected_output
         )
 
         expected_output = """
@@ -82,8 +81,7 @@ class TestList:
         """
         assert_command(
             ['list', 'addable'],
-            expected_output,
-            indent=''
+            expected_output
         )
 
         expected_output = """
@@ -94,8 +92,7 @@ class TestList:
         """
         assert_command(
             ['list', 'childless'],
-            expected_output,
-            indent=''
+            expected_output
         )
 
         expected_output = """
@@ -107,8 +104,7 @@ class TestList:
         """
         assert_command(
             ['list', 'slidable'],
-            expected_output,
-            indent=''
+            expected_output
         )
 
         expected_output = """
@@ -116,8 +112,7 @@ class TestList:
         """
         assert_command(
             ['list', 'slidable-after', 'feature_0_0'],
-            expected_output,
-            indent=''
+            expected_output
         )
 
         expected_output = """
@@ -125,8 +120,7 @@ class TestList:
         """
         assert_command(
             ['list', 'unmanaged'],
-            expected_output,
-            indent=''
+            expected_output
         )
 
         self.repo_sandbox.check_out("feature_1")
@@ -137,6 +131,5 @@ class TestList:
         """
         assert_command(
             ['list', 'with-overridden-fork-point'],
-            expected_output,
-            indent=''
+            expected_output
         )

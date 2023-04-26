@@ -52,12 +52,12 @@ class TestForkPoint:
 
         # Test `git machete fork-point` without providing the branch name
         # hash 67007ed30def3b9b658380b895a9f62b525286e0 corresponds to the commit on develop branch
-        assert_command(["fork-point"], "67007ed30def3b9b658380b895a9f62b525286e0\n", strip_indentation=False)
+        assert_command(["fork-point"], "67007ed30def3b9b658380b895a9f62b525286e0\n")
 
         # hash 515319fa0ab47f372f6159bcc8ac27b43ee8a0ed corresponds to the commit on master branch
-        assert_command(["fork-point", 'develop'], "515319fa0ab47f372f6159bcc8ac27b43ee8a0ed\n", strip_indentation=False)
+        assert_command(["fork-point", 'develop'], "515319fa0ab47f372f6159bcc8ac27b43ee8a0ed\n")
 
-        assert_command(["fork-point", 'refs/heads/develop'], "515319fa0ab47f372f6159bcc8ac27b43ee8a0ed\n", strip_indentation=False)
+        assert_command(["fork-point", 'refs/heads/develop'], "515319fa0ab47f372f6159bcc8ac27b43ee8a0ed\n")
 
     def test_fork_point_override(self) -> None:
         """

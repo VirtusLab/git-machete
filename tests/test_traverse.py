@@ -336,8 +336,7 @@ class TestTraverse:
         Returned to the initial branch hotfix/add-trigger
         '''
         assert_command(["traverse", "-Wy", "--no-push"],
-                       expected_result,
-                       indent='')
+                       expected_result)
 
     def test_discover_traverse_squash(self, mocker: Any) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
