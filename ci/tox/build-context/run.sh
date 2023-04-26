@@ -22,11 +22,11 @@ if [[ $BUILD_SPHINX_HTML = true ]]; then
 fi
 
 if [[ $CHECK_DOCS_UP_TO_DATE = true ]]; then
-  TOX_ENV_LIST="$TOX_ENV_LIST,check-py-docs,check-sphinx-man"
+  TOX_ENV_LIST="$TOX_ENV_LIST,py-docs-check,sphinx-man-check"
 fi
 
 if [[ $CHECK_PEP8 = true ]]; then
-  TOX_ENV_LIST="$TOX_ENV_LIST,pep8,isort-check"
+  TOX_ENV_LIST="$TOX_ENV_LIST,pep8-check,isort-check"
 fi
 
 tox -e "$TOX_ENV_LIST"
