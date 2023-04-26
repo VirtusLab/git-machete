@@ -80,7 +80,6 @@ class MockGitHubAPIRequest:
         self.parsed_url: ParseResult = urlparse(url, allow_fragments=True)
         self.parsed_query: Dict[str, List[str]] = parse_qs(self.parsed_url.query)
         self.json_data: Union[str, bytes, None] = data
-        self.return_data: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None
         self.headers: Dict[str, str] = headers
         return self.handle_method(method)
 
@@ -231,7 +230,7 @@ class MockHTTPError(HTTPError):
         super().__init__(url, code, msg, hdrs, fp)
         self.msg = msg
 
-    def read(self, n: int = 1) -> bytes:
+    def read(self, n: int = 1) -> bytes:  # noqa: F841
         return json.dumps(self.msg).encode()
 
 

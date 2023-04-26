@@ -49,7 +49,7 @@ def tupled(f: Callable[..., T]) -> Callable[[Any], T]:
 
 
 def get_second(pair: Tuple[Any, T]) -> T:
-    a, b = pair
+    _, b = pair
     return b
 
 

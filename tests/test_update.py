@@ -4,9 +4,8 @@ from typing import Any
 import pytest
 
 from git_machete.exceptions import MacheteException
-from git_machete.git_operations import GitContext
 
-from .base_test import BaseTest, popen
+from .base_test import BaseTest, git, popen
 from .mockers import (get_current_commit_hash, launch_command,
                       mock_exit_script, mock_run_cmd, rewrite_definition_file)
 
@@ -55,8 +54,6 @@ class TestUpdate(BaseTest):
 
         Verify that 'git machete update' drops effectively-empty commits if the underlying git supports that behavior.
         """
-        git = GitContext()
-
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
 
         (

@@ -22,4 +22,3 @@ class GitFormatPatterns(Enum):
     AUTHOR_EMAIL = "%aE"
     AUTHOR_DATE = "%ai"
     RAW_BODY = "%B"
-    SUBJECT = "%s"

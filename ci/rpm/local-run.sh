@@ -8,5 +8,5 @@ export_directory_hash rpm
 cd "$(git rev-parse --show-toplevel)"/ci/rpm/
 
 set -x
-docker-compose build rpm
+docker-compose --progress=plain build rpm
 docker-compose run -e GID="$(id -g)" -e UID="$(id -u)" rpm

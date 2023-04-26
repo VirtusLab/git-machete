@@ -1,9 +1,9 @@
 from typing import Any
 
-from git_machete.git_operations import (FullCommitHash, GitContext,
+from git_machete.git_operations import (AnyRevision, FullCommitHash,
                                         LocalBranchShortName)
 
-from .base_test import BaseTest
+from .base_test import BaseTest, git
 from .mockers import get_current_commit_hash, mock_run_cmd
 
 
@@ -20,7 +20,6 @@ class TestGitOperations(BaseTest):
         )
         master_branch_first_commit_hash = get_current_commit_hash()
 
-        git = GitContext()
         assert git._run_git("rev-parse", "--verify", "--quiet", master_branch_first_commit_hash + "^{commit}", allow_non_zero=True) == 0  # noqa: FS003, E501
         assert git._run_git("rev-parse", "HEAD") == 0
 
@@ -39,9 +38,12 @@ class TestGitOperations(BaseTest):
                 .new_branch("feature")
                 .commit("feature commit")
         )
-        git = GitContext()
-        assert git.is_commit_present_in_repository(revision=FullCommitHash(40 * 'a')) is False
-        assert git.is_commit_present_in_repository(revision=master_branch_first_commit_hash) is True
+
+        def is_commit_present_in_repository(revision: AnyRevision) -> bool:
+            return git._popen_git("rev-parse", "--verify", "--quiet", revision + "^{commit}", allow_non_zero=True).exit_code == 0  # noqa: FS003, E501
+
+        assert is_commit_present_in_repository(revision=FullCommitHash(40 * 'a')) is False
+        assert is_commit_present_in_repository(revision=master_branch_first_commit_hash) is True
 
         assert git.is_ancestor_or_equal(earlier_revision=LocalBranchShortName('feature'),
                                         later_revision=LocalBranchShortName('master')) is False

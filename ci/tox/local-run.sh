@@ -10,5 +10,5 @@ check_var GIT_VERSION
 check_var PYTHON_VERSION
 
 set -x
-docker-compose build tox
+docker-compose --progress=plain build tox
 docker-compose run -e GID="$(id -g)" -e UID="$(id -u)" tox

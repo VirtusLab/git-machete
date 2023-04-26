@@ -8,7 +8,6 @@ class Qualifiers:
     push: bool
 
     def __init__(self, annotation: str):
-        self._annotation: str = annotation
         self._annotation_without_qualifiers: str = annotation
         self._rebase_text: str = ''
         self._push_text: str = ''

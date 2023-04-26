@@ -60,7 +60,7 @@ jobs:
   # (other than Python 3.6 being EOLed and hence not supporting the versions of packages used for the checks).
   # Each of these needs to be run against just one Python version
   # (since there's very little chance that they pass under one version but fail under another),
-  # so let's spread these checks evenly across versions to reduce CI latency
+  # so let's spread these checks evenly across versions to reduce CI execution time
   # (when compared to the scenario where all checks are executed under the same Python version).
 
   "pep8 and python 3_8 git 2_25_0":
@@ -68,7 +68,7 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Run tests against Python 3.8 and git 2.25.0 (with PEP8 check)
+          name: Run tests against Python 3.8 and git 2.25.0 (with isort/PEP8/vulture check)
           command: PYTHON_VERSION=3.8 GIT_VERSION=2.25.0 CHECK_PEP8=true  bash ci/tox/ci-run.sh
       - store_test_results:
           path: test-results/

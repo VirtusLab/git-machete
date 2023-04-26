@@ -168,8 +168,8 @@ class GitReflogEntry(NamedTuple):
 
 
 class BranchPair(NamedTuple):
-    local_branch: LocalBranchShortName
-    local_or_remote_branch: AnyBranchName
+    local_branch: LocalBranchShortName  # noqa: F841
+    local_or_remote_branch: AnyBranchName  # noqa: F841
 
 
 HEAD = AnyRevision.of("HEAD")
@@ -471,9 +471,6 @@ class GitContext:
     def is_full_hash(revision: AnyRevision) -> Optional[Match[str]]:
         return re.match("^[0-9a-f]{40}$", revision)  # noqa: FS003
 
-    def is_commit_present_in_repository(self, revision: AnyRevision) -> bool:
-        return self._popen_git("rev-parse", "--verify", "--quiet", revision + "^{commit}", allow_non_zero=True).exit_code == 0  # noqa: FS003, E501
-
     def get_committer_unix_timestamp_by_revision(self, revision: AnyBranchName) -> int:
         if self.__committer_unix_timestamp_by_revision_cached is None:
             self.__load_branches()
@@ -652,10 +649,10 @@ class GitContext:
             if len(values) != 3:  # invalid, shouldn't happen
                 continue
             selector, hash, subject = values
-            branch_and_pos = selector.split("@")
-            if len(branch_and_pos) != 2:  # invalid, shouldn't happen
+            branch_and_index = selector.split("@")
+            if len(branch_and_index) != 2:  # invalid, shouldn't happen
                 continue
-            branch, pos = branch_and_pos
+            branch, _ = branch_and_index
             any_branch_name = AnyBranchName.of(branch)
             if any_branch_name not in self.__reflogs_cached:
                 self.__reflogs_cached[any_branch_name] = []

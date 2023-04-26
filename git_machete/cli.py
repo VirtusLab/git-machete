@@ -112,9 +112,9 @@ class MacheteHelpAction(argparse.Action):
     def __call__(
             self,
             parser: argparse.ArgumentParser,
-            namespace: argparse.Namespace,
+            namespace: argparse.Namespace,  # noqa: F841
             values: Union[str, Sequence[Any], None],
-            option_string: Optional[str] = None
+            option_string: Optional[str] = None  # noqa: F841
     ) -> None:
         # parser name (prog) is expected to be `git machete` or `git machete <command>`
         command_name = parser.prog.replace('git machete', '').strip()

@@ -9,7 +9,7 @@ cd "$(git rev-parse --show-toplevel)"/ci/deb-ppa-upload/
 check_env gpg-ssh.env
 
 set -x
-docker-compose build deb-ppa-upload
+docker-compose --progress=plain build deb-ppa-upload
 common_flags=(
   -e "GID=$(id -g)"
   -e "UID=$(id -u)"
