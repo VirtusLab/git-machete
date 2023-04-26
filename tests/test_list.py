@@ -1,23 +1,11 @@
 from typing import Any
 
-from .mockers import (GitRepositorySandbox, assert_command, launch_command,
-                      mock_run_cmd, rewrite_definition_file)
+from .base_test import BaseTest
+from .mockers import (assert_command, launch_command, mock_run_cmd,
+                      rewrite_definition_file)
 
 
-class TestList:
-
-    def setup_method(self) -> None:
-        self.repo_sandbox = GitRepositorySandbox()
-
-        (
-            self.repo_sandbox
-            # Create the remote and sandbox repos, chdir into sandbox repo
-            .new_repo(self.repo_sandbox.remote_path, "--bare")
-            .new_repo(self.repo_sandbox.local_path)
-            .execute(f"git remote add origin {self.repo_sandbox.remote_path}")
-            .execute('git config user.email "tester@test.com"')
-            .execute('git config user.name "Tester Test"')
-        )
+class TestList(BaseTest):
 
     def test_list(self, mocker: Any) -> None:
         """

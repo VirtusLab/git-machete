@@ -14,11 +14,12 @@ from git_machete.github import (GitHubClient, GitHubToken,
                                 RemoteAndOrganizationAndRepository)
 from git_machete.options import CommandLineOptions
 
-from .mockers import (GitRepositorySandbox, MockContextManager,
-                      MockContextManagerRaise403, MockGitHubAPIState,
-                      MockHTTPError, assert_command, get_current_commit_hash,
-                      git, launch_command, mock_ask_if, mock_exit_script,
-                      mock_run_cmd, mock_should_perform_interactive_slide_out,
+from .base_test import BaseTest, GitRepositorySandbox, git
+from .mockers import (MockContextManager, MockContextManagerRaise403,
+                      MockGitHubAPIState, MockHTTPError, assert_command,
+                      get_current_commit_hash, launch_command, mock_ask_if,
+                      mock_exit_script, mock_run_cmd,
+                      mock_should_perform_interactive_slide_out,
                       rewrite_definition_file)
 
 
@@ -128,23 +129,9 @@ def mock_info(x: Any) -> Dict[str, Any]:
 mock_info.counter = mock_read.counter = 0  # type: ignore[attr-defined]
 
 
-class TestGitHub:
+class TestGitHub(BaseTest):
     mock_repository_info: Dict[str, str] = {'full_name': 'testing/checkout_prs',
                                             'html_url': 'https://github.com/tester/repo_sandbox.git'}
-
-    def setup_method(self) -> None:
-
-        self.repo_sandbox = GitRepositorySandbox()
-
-        (
-            self.repo_sandbox
-            # Create the remote and sandbox repos, chdir into sandbox repo
-            .new_repo(self.repo_sandbox.remote_path, "--bare")
-            .new_repo(self.repo_sandbox.local_path)
-            .execute(f"git remote add origin {self.repo_sandbox.remote_path}")
-            .execute('git config user.email "tester@test.com"')
-            .execute('git config user.name "Tester Test"')
-        )
 
     git_api_state_for_test_retarget_pr = MockGitHubAPIState(
         [

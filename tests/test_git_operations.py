@@ -3,25 +3,11 @@ from typing import Any
 from git_machete.git_operations import (FullCommitHash, GitContext,
                                         LocalBranchShortName)
 
-from .mockers import (GitRepositorySandbox, get_current_commit_hash,
-                      mock_run_cmd)
+from .base_test import BaseTest
+from .mockers import get_current_commit_hash, mock_run_cmd
 
 
-class TestGitOperations:
-
-    def setup_method(self) -> None:
-
-        self.repo_sandbox = GitRepositorySandbox()
-
-        (
-            self.repo_sandbox
-            # Create the remote and sandbox repos, chdir into sandbox repo
-            .new_repo(self.repo_sandbox.remote_path, "--bare")
-            .new_repo(self.repo_sandbox.local_path)
-            .execute(f"git remote add origin {self.repo_sandbox.remote_path}")
-            .execute('git config user.email "tester@test.com"')
-            .execute('git config user.name "Tester Test"')
-        )
+class TestGitOperations(BaseTest):
 
     def test_run_git(self, mocker: Any) -> None:
         """

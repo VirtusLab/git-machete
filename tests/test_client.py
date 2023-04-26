@@ -4,24 +4,11 @@ from git_machete.annotation import Annotation
 from git_machete.client import MacheteClient
 from git_machete.git_operations import GitContext, LocalBranchShortName
 
-from .mockers import GitRepositorySandbox, rewrite_definition_file
+from .base_test import BaseTest
+from .mockers import rewrite_definition_file
 
 
-class TestClient:
-
-    def setup_method(self) -> None:
-
-        self.repo_sandbox = GitRepositorySandbox()
-
-        (
-            self.repo_sandbox
-            # Create the remote and sandbox repos, chdir into sandbox repo
-            .new_repo(self.repo_sandbox.remote_path, "--bare")
-            .new_repo(self.repo_sandbox.local_path)
-            .execute(f"git remote add origin {self.repo_sandbox.remote_path}")
-            .execute('git config user.email "tester@test.com"')
-            .execute('git config user.name "Tester Test"')
-        )
+class TestClient(BaseTest):
 
     def test_annotations_read_definition_file(self) -> None:
         """
