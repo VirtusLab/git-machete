@@ -1,7 +1,8 @@
 from typing import Any
 
 from .base_test import BaseTest
-from .mockers import assert_command, mock_run_cmd, rewrite_definition_file
+from .mockers import (assert_command, mock_ask_if, mock_run_cmd,
+                      rewrite_definition_file)
 
 
 class TestAdd(BaseTest):
@@ -49,9 +50,9 @@ class TestAdd(BaseTest):
 
         self.repo_sandbox.check_out('develop')
         self.repo_sandbox.new_branch("bugfix/another_feature")
+        mocker.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
         assert_command(
-            ['add', '-y', 'refs/heads/bugfix/another_feature'],
-            'Adding bugfix/another_feature onto the inferred upstream (parent) branch develop\n'
+            ['add', 'refs/heads/bugfix/another_feature'],
             'Added branch bugfix/another_feature onto develop\n'
         )
 

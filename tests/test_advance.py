@@ -4,7 +4,7 @@ import pytest
 
 from .base_test import BaseTest
 from .mockers import (get_commit_hash, get_current_commit_hash, launch_command,
-                      mock_run_cmd, rewrite_definition_file)
+                      mock_ask_if, mock_run_cmd, rewrite_definition_file)
 
 
 class TestAdvance(BaseTest):
@@ -37,6 +37,7 @@ class TestAdvance(BaseTest):
         pushes the current branch and slides out child branches of the downstream branch.
         Also, it edits the git machete discovered tree to reflect new dependencies.
         """
+        mocker.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
 
         (
@@ -55,7 +56,7 @@ class TestAdvance(BaseTest):
 
         self.repo_sandbox.check_out("root")
         self.repo_sandbox.push()
-        launch_command("advance", "-y")
+        launch_command("advance")
 
         root_commit_hash = get_current_commit_hash()
         origin_root_commit_hash = get_commit_hash("origin/root")

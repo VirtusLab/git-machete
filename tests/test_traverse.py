@@ -1,8 +1,8 @@
 from typing import Any
 
 from .base_test import BaseTest
-from .mockers import (assert_command, launch_command, mock_run_cmd,
-                      rewrite_definition_file)
+from .mockers import (assert_command, launch_command, mock_ask_if,
+                      mock_run_cmd, rewrite_definition_file)
 
 
 class TestTraverse(BaseTest):
@@ -416,7 +416,8 @@ class TestTraverse(BaseTest):
                     snickers
             """
         rewrite_definition_file(body)
-        launch_command("traverse", '-y', '-M', '-n')
+        mocker.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
+        launch_command("traverse", '-M', '-n')
         assert_command(
             ["status"],
             """
