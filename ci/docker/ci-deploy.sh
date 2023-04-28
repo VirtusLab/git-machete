@@ -15,7 +15,7 @@ docker build \
   -t gitmachete/git-machete:latest \
   -f ci/docker/Dockerfile .
 
-[[ $(docker run gitmachete/git-machete:latest --version) == "git machete version $version" ]]
+[[ $(docker run gitmachete/git-machete:latest version) == "git-machete version $version" ]]
 
 if [[ $do_push == true ]]; then
   echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin

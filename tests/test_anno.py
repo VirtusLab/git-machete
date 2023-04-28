@@ -87,3 +87,23 @@ class TestAnno(BaseTest):
             x-feature  Custom annotation for `feature` branch (untracked)
             """,
         )
+
+        assert_command(
+            ['anno'],
+            'Custom annotation for `develop` branch\n'
+        )
+
+        assert_command(
+            ['anno', '-b', 'feature'],
+            'Custom annotation for `feature` branch\n'
+        )
+
+        assert_command(
+            ['anno', '-b', 'feature', ''],
+            ""
+        )
+
+        assert_command(
+            ['anno', '-b', 'feature'],
+            ""
+        )

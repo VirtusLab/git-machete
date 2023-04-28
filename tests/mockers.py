@@ -274,7 +274,7 @@ def assert_command(cmds: Iterable[str], expected_result: str) -> None:
         expected_result = expected_result[1:]
     expected_result = textwrap.dedent(expected_result)
     actual_result = textwrap.dedent(launch_command(*cmds))
-    assert actual_result == expected_result, f'Actual result:\n\n{actual_result}\n\nExpected result:\n\n{expected_result}'
+    assert actual_result == expected_result
 
 
 def rewrite_definition_file(new_body: str, dedent: bool = True) -> None:

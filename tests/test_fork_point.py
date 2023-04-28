@@ -38,7 +38,7 @@ class TestForkPoint(BaseTest):
 
         # Test `git machete fork-point` without providing the branch name
         # hash 67007ed30def3b9b658380b895a9f62b525286e0 corresponds to the commit on develop branch
-        assert_command(["fork-point"], "67007ed30def3b9b658380b895a9f62b525286e0\n")
+        assert_command(["fork-point", "--inferred"], "67007ed30def3b9b658380b895a9f62b525286e0\n")
 
         # hash 515319fa0ab47f372f6159bcc8ac27b43ee8a0ed corresponds to the commit on master branch
         assert_command(["fork-point", 'develop'], "515319fa0ab47f372f6159bcc8ac27b43ee8a0ed\n")
@@ -56,10 +56,7 @@ class TestForkPoint(BaseTest):
         master_branch_first_commit_hash = get_current_commit_hash()
         self.repo_sandbox.commit("master second commit")
         develop_branch_fork_point = get_current_commit_hash()
-        (
-            self.repo_sandbox.new_branch("develop")
-                .commit("develop commit")
-        )
+        self.repo_sandbox.new_branch("develop").commit("develop commit")
         body: str = \
             """
             master
@@ -90,3 +87,6 @@ class TestForkPoint(BaseTest):
         # valid fork-point override commit hash
         launch_command('fork-point', f'--override-to={master_branch_first_commit_hash}')
         assert launch_command('fork-point').strip() == master_branch_first_commit_hash
+
+        launch_command('fork-point', '--unset-override')
+        assert launch_command('fork-point').strip() == develop_branch_fork_point

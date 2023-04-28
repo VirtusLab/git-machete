@@ -1,6 +1,6 @@
 from typing import Any
 
-from .base_test import BaseTest
+from .base_test import BaseTest, git
 from .mockers import (assert_command, launch_command, mock_run_cmd,
                       rewrite_definition_file)
 
@@ -330,7 +330,40 @@ class TestTraverse(BaseTest):
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
         self.setup_discover_standard_tree()
 
-        launch_command("traverse", "-Wy")
+        self.repo_sandbox.check_out("hotfix/add-trigger")
+        launch_command("traverse", "--fetch", "--start-from=root", "--return-to=here", "-y")
+        assert_command(
+            ["status", "-l"],
+            """
+            develop
+            |
+            | Allow ownership links
+            | 1st round of fixes
+            x-allow-ownership-link (ahead of origin)
+            | |
+            | | Build arbitrarily long chains
+            | x-build-chain (untracked)
+            |
+            | Call web service
+            | 1st round of fixes
+            | 2nd round of fixes
+            o-call-ws (ahead of origin)
+              |
+              | Drop unneeded SQL constraints
+              x-drop-constraint (untracked)
+
+            master
+            |
+            | HOTFIX Add the trigger (amended)
+            o-hotfix/add-trigger *
+              |
+              | Ignore trailing data (amended)
+              o-ignore-trailing
+            """,
+        )
+        assert git.get_current_branch() == "hotfix/add-trigger"
+
+        launch_command("traverse", "-wy")
         assert_command(
             ["status", "-l"],
             """
@@ -354,15 +387,15 @@ class TestTraverse(BaseTest):
             master
             |
             | HOTFIX Add the trigger (amended)
-            o-hotfix/add-trigger
+            o-hotfix/add-trigger *
               |
               | Ignore trailing data (amended)
-              o-ignore-trailing *
+              o-ignore-trailing
             """,
         )
 
-        # Go from ignore-trailing to call-ws which has >1 commit to be squashed
-        for _ in range(4):
+        # Go from hotfix/add-trigger to call-ws which has >1 commit to be squashed
+        for _ in range(3):
             launch_command("go", "prev")
         launch_command("squash")
         assert_command(

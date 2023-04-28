@@ -76,6 +76,10 @@ class TestUpdate(BaseTest):
         parents_new_commit_hash = get_current_commit_hash()
         self.repo_sandbox.check_out("level-1-branch")
         try:
+            # Note that `--empty=drop` is the default in NON-interactive mode.
+            # We want to check if effectively empty commits are dropped in interactive mode as well.
+            # Let's substitute the editor opened by git for interactive rebase to-do list
+            # so that the test can run in a fully automated manner.
             os.environ["GIT_SEQUENCE_EDITOR"] = ":"
             if git.get_git_version() >= (2, 26, 0):
                 launch_command("update")

@@ -128,7 +128,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
     common_args_parser.add_argument('--debug', action='store_true')
     common_args_parser.add_argument('-h', '--help', action=MacheteHelpAction)
     common_args_parser.add_argument(
-        '--version', action='version', version=f'%(prog)s version {__version__}')
+        '--version', action='version', version=f'git-machete version {__version__}')
     common_args_parser.add_argument('-v', '--verbose', action='store_true')
 
     cli_parser = argparse.ArgumentParser(

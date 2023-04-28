@@ -2,10 +2,10 @@ from typing import Any
 
 import pytest
 
-from .base_test import BaseTest
+from .base_test import BaseTest, git
 from .mockers import (assert_command, get_current_commit_hash, launch_command,
-                      mock_run_cmd, mock_run_cmd_and_forward_stdout,
-                      rewrite_definition_file)
+                      mock_ask_if, mock_run_cmd,
+                      mock_run_cmd_and_forward_stdout, rewrite_definition_file)
 
 
 class TestSlideOut(BaseTest):
@@ -154,10 +154,16 @@ class TestSlideOut(BaseTest):
             """,
         )
 
-        # Slide-out a terminal branch. (child_d)
+        # Slide-out and delete a terminal branch (child_d).
         # This just slices the branch off the tree.
         launch_command("go", "down")
-        launch_command("slide-out", "-n")
+        assert "child_d" in git.get_local_branches()
+        mocker.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
+        assert_command(
+            ["slide-out", "-n", "--delete"],
+            ""
+        )
+        assert "child_d" not in git.get_local_branches()
 
         assert_command(
             ["status", "-l"],
