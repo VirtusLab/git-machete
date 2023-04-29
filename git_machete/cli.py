@@ -19,8 +19,6 @@ from git_machete.utils import bold, excluding, fmt, underline, warn
 
 T = TypeVar('T')
 
-initial_current_directory: Optional[str] = utils.get_current_directory_or_none() or os.getenv('PWD')
-
 alias_by_command: Dict[str, str] = {
     "diff": "d",
     "edit": "e",
@@ -47,21 +45,17 @@ command_groups: List[Tuple[str, List[str]]] = [
      ["github"])
 ]
 
-commands_and_aliases = list(long_docs.keys()) + list(alias_by_command.keys())
+commands_and_aliases = list(long_docs.keys()) + list(command_by_alias.keys())
 
 
 def get_help_description(display_help_topics: bool, command: Optional[str] = None) -> str:
     usage_str = ''
-    if command and command in commands_and_aliases:
-        if command in long_docs:
-            usage_str += fmt(textwrap.dedent(long_docs[command]))
-        elif command in command_by_alias:
-            usage_str += fmt(textwrap.dedent(long_docs[command_by_alias[command]]))
+    if command in long_docs:
+        usage_str += fmt(textwrap.dedent(long_docs[command]))
+    elif command in command_by_alias:
+        usage_str += fmt(textwrap.dedent(long_docs[command_by_alias[command]]))
     else:
-        usage_str += get_short_general_usage() + '\n'
-        if command:
-            usage_str += f"\nUnknown command: '{command}'"
-        usage_str += fmt(
+        usage_str += get_short_general_usage() + '\n' + fmt(
             "\n<u>TL;DR tip</u>\n\n"
             "    Get familiar with the help for <b>format</b>, <b>edit</b>,"
             " <b>status</b> and <b>update</b>, in this order.\n\n")
@@ -480,8 +474,7 @@ def update_cli_options_using_config_keys(
 
 def set_utils_global_variables(
         cli_opts: git_machete.options.CommandLineOptions) -> None:
-    if cli_opts.opt_color:
-        utils.ascii_only = (cli_opts.opt_color == "never" or (cli_opts.opt_color == "auto" and not sys.stdout.isatty()))
+    utils.ascii_only = (cli_opts.opt_color == "never" or (cli_opts.opt_color == "auto" and not sys.stdout.isatty()))
     utils.debug_mode = cli_opts.opt_debug
     utils.verbose_mode = cli_opts.opt_verbose
 
@@ -511,6 +504,7 @@ def exit_script(status_code: int, error: Optional[BaseException] = None) -> None
 def launch(orig_args: List[str]) -> None:
     cli_opts = git_machete.options.CommandLineOptions()
     git = GitContext()
+    initial_current_directory: Optional[str] = utils.get_current_directory_or_none()
 
     try:
         cli_parser: argparse.ArgumentParser = create_cli_parser()
@@ -735,6 +729,8 @@ def launch(orig_args: List[str]) -> None:
                     filter(
                         lambda _branch: machete_client.has_any_fork_point_override_config(_branch),
                         git.get_local_branches()))
+            else:  # should never happen
+                raise MacheteException(f"Invalid category: `{category}`")
 
             if res:
                 print("\n".join(res))
@@ -859,6 +855,10 @@ def launch(orig_args: List[str]) -> None:
     except StopInteraction:
         pass
     finally:
+        # Note that this problem (current directory no longer existing due to e.g. underlying git checkouts)
+        # seems to be specific to Linuxes (or to older versions of git).
+        # Under macOS 13.2 + git 2.40.0, the directory isn't removed during a checkout
+        # if it's a current working directory of the git process.
         if initial_current_directory and not utils.does_directory_exist(initial_current_directory):
             nearest_existing_parent_directory = initial_current_directory
             while not utils.does_directory_exist(nearest_existing_parent_directory):

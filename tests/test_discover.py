@@ -45,3 +45,18 @@ class TestDiscover(BaseTest):
             """
         )
         assert_command(['status'], expected_status_output)
+
+        launch_command('discover', '--roots=feature1,master', '-y')
+        expected_status_output = (
+            """
+            feature1 (untracked)
+            |
+            o-feature2 (untracked)
+
+            master
+            |
+            o-feature3  rebase=no push=no
+              |
+              o-feature4 * (untracked)
+            """
+        )

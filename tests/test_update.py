@@ -1,4 +1,3 @@
-import os
 from typing import Any
 
 import pytest
@@ -7,7 +6,8 @@ from git_machete.exceptions import MacheteException
 
 from .base_test import BaseTest, git, popen
 from .mockers import (get_current_commit_hash, launch_command,
-                      mock_exit_script, mock_run_cmd, rewrite_definition_file)
+                      mock_exit_script, mock_run_cmd, overridden_environment,
+                      rewrite_definition_file)
 
 
 class TestUpdate(BaseTest):
@@ -75,25 +75,20 @@ class TestUpdate(BaseTest):
 
         parents_new_commit_hash = get_current_commit_hash()
         self.repo_sandbox.check_out("level-1-branch")
-        try:
-            # Note that `--empty=drop` is the default in NON-interactive mode.
-            # We want to check if effectively empty commits are dropped in interactive mode as well.
-            # Let's substitute the editor opened by git for interactive rebase to-do list
-            # so that the test can run in a fully automated manner.
-            os.environ["GIT_SEQUENCE_EDITOR"] = ":"
+        # Note that `--empty=drop` is the default in NON-interactive mode.
+        # We want to check if effectively empty commits are dropped in interactive mode as well.
+        # Let's substitute the editor opened by git for interactive rebase to-do list
+        # so that the test can run in a fully automated manner.
+        with overridden_environment(GIT_SEQUENCE_EDITOR=":"):
             if git.get_git_version() >= (2, 26, 0):
                 launch_command("update")
             else:
                 mocker.patch('git_machete.cli.exit_script', mock_exit_script)
-                try:
+                with pytest.raises(MacheteException) as e:
                     launch_command("update")
-                except MacheteException:
-                    pass
-                else:
-                    raise Exception("`git machete update` was supposed to fail")
+                assert "git rebase --interactive --onto refs/heads/level-0-branch" in e.value.parameter
+                assert "level-1-branch returned 1" in e.value.parameter
                 self.repo_sandbox.execute("git rebase --continue")
-        finally:
-            del os.environ["GIT_SEQUENCE_EDITOR"]
 
         new_fork_point_hash = launch_command("fork-point").strip()
         assert parents_new_commit_hash == new_fork_point_hash, \

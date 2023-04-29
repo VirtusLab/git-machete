@@ -1,10 +1,14 @@
 import json
 import os
+import re
+from http import HTTPStatus
 from subprocess import CalledProcessError, CompletedProcess
 from tempfile import mkdtemp
 from textwrap import dedent
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, ContextManager, Dict, List, Optional, Union
 from unittest.mock import mock_open
+from urllib.error import HTTPError
+from urllib.parse import ParseResult, parse_qs, urlparse
 
 import pytest
 
@@ -15,10 +19,8 @@ from git_machete.github import (GitHubClient, GitHubToken,
 from git_machete.options import CommandLineOptions
 
 from .base_test import BaseTest, GitRepositorySandbox, git
-from .mockers import (MockContextManager, MockContextManagerRaise403,
-                      MockGitHubAPIState, MockHTTPError, assert_command,
-                      get_current_commit_hash, launch_command, mock_ask_if,
-                      mock_exit_script, mock_run_cmd,
+from .mockers import (assert_command, get_current_commit_hash, launch_command,
+                      mock_ask_if, mock_exit_script, mock_run_cmd,
                       mock_should_perform_interactive_slide_out,
                       rewrite_definition_file)
 
@@ -127,6 +129,227 @@ def mock_info(x: Any) -> Dict[str, Any]:
 
 
 mock_info.counter = mock_read.counter = 0  # type: ignore[attr-defined]
+
+
+class MockGitHubAPIState:
+    def __init__(self, pulls: List[Dict[str, Any]], issues: Optional[List[Dict[str, Any]]] = None) -> None:
+        self.pulls: List[Dict[str, Any]] = pulls
+        self.user: Dict[str, str] = {'login': 'other_user', 'type': 'User', 'company': 'VirtusLab'}
+        # login must be different from the one used in pull requests, otherwise pull request author will not be annotated
+        self.issues: List[Dict[str, Any]] = issues or []
+
+    def new_request(self) -> "MockGitHubAPIRequest":
+        return MockGitHubAPIRequest(self)
+
+    def get_issue(self, issue_no: str) -> Optional[Dict[str, Any]]:
+        for issue in self.issues:
+            if issue['number'] == issue_no:
+                return issue
+        return None
+
+    def get_pull(self, pull_no: str) -> Optional[Dict[str, Any]]:
+        for pull in self.pulls:
+            if pull['number'] == pull_no:
+                return pull
+        return None
+
+
+class MockGitHubAPIResponse:
+    def __init__(self, status_code: int, response_data: Union[List[Dict[str, Any]], Dict[str, Any]]) -> None:
+        self.response_data: Union[List[Dict[str, Any]], Dict[str, Any]] = response_data
+        self.status_code: int = status_code
+
+    def read(self) -> bytes:
+        return json.dumps(self.response_data).encode()
+
+    def info(self) -> Dict[str, Any]:
+        return {"link": None}
+
+
+class MockGitHubAPIRequest:
+    def __init__(self, github_api_state: MockGitHubAPIState) -> None:
+        self.github_api_state: MockGitHubAPIState = github_api_state
+
+    def __call__(self, url: str, headers: Dict[str, str] = {}, data: Union[str, bytes, None] = None,
+                 method: str = '') -> "MockGitHubAPIResponse":
+        self.parsed_url: ParseResult = urlparse(url, allow_fragments=True)
+        self.parsed_query: Dict[str, List[str]] = parse_qs(self.parsed_url.query)
+        self.json_data: Union[str, bytes, None] = data
+        self.headers: Dict[str, str] = headers
+        return self.handle_method(method)
+
+    def handle_method(self, method: str) -> "MockGitHubAPIResponse":
+        if method == "GET":
+            return self.handle_get()
+        elif method == "PATCH":
+            return self.handle_patch()
+        elif method == "POST":
+            return self.handle_post()
+        else:
+            return self.make_response_object(HTTPStatus.METHOD_NOT_ALLOWED, [])
+
+    def handle_get(self) -> "MockGitHubAPIResponse":
+        if 'pulls' in self.parsed_url.path:
+            full_head_name: Optional[List[str]] = self.parsed_query.get('head')
+            number: Optional[str] = self.find_number(self.parsed_url.path, 'pulls')
+            if number:
+                for pr in self.github_api_state.pulls:
+                    if pr['number'] == number:
+                        return self.make_response_object(HTTPStatus.OK, pr)
+                return self.make_response_object(HTTPStatus.NOT_FOUND, [])
+            elif full_head_name:
+                head: str = full_head_name[0].split(':')[1]
+                for pr in self.github_api_state.pulls:
+                    if pr['head']['ref'] == head:
+                        return self.make_response_object(HTTPStatus.OK, [pr])
+                return self.make_response_object(HTTPStatus.NOT_FOUND, [])
+            else:
+                return self.make_response_object(HTTPStatus.OK, [pull for pull in self.github_api_state.pulls if pull['state'] == 'open'])
+        elif self.parsed_url.path.endswith('user'):
+            return self.make_response_object(HTTPStatus.OK, self.github_api_state.user)
+        else:
+            return self.make_response_object(HTTPStatus.NOT_FOUND, [])
+
+    def handle_patch(self) -> "MockGitHubAPIResponse":
+        if 'issues' in self.parsed_url.path:
+            return self.update_issue()
+        elif 'pulls' in self.parsed_url.path:
+            return self.update_pull_request()
+        else:
+            return self.make_response_object(HTTPStatus.NOT_FOUND, [])
+
+    def handle_post(self) -> "MockGitHubAPIResponse":
+        assert not self.parsed_query
+        if 'issues' in self.parsed_url.path:
+            return self.update_issue()
+        elif 'pulls' in self.parsed_url.path:
+            return self.update_pull_request()
+        else:
+            return self.make_response_object(HTTPStatus.NOT_FOUND, [])
+
+    def update_pull_request(self) -> "MockGitHubAPIResponse":
+        pull_no = self.find_number(self.parsed_url.path, 'pulls')
+        if not pull_no:
+            if self.is_pull_created():
+                head = json.loads(self.json_data)["head"]  # type: ignore[arg-type]
+                return self.make_response_object(HTTPStatus.UNPROCESSABLE_ENTITY, {'message': 'Validation Failed', 'errors': [
+                    {'message': f'A pull request already exists for test_repo:{head}.'}]})
+            return self.create_pull_request()
+        pull = self.github_api_state.get_pull(pull_no)
+        assert pull is not None
+        return self.fill_pull_request_data(json.loads(self.json_data), pull)  # type: ignore[arg-type]
+
+    def create_pull_request(self) -> "MockGitHubAPIResponse":
+        pull = {'number': self.get_next_free_number(self.github_api_state.pulls),
+                'user': {'login': 'github_user'},
+                'html_url': 'www.github.com',
+                'state': 'open',
+                'head': {'ref': "", 'repo': {'full_name': 'testing:checkout_prs', 'html_url': mkdtemp()}},
+                'base': {'ref': ""}}
+        return self.fill_pull_request_data(json.loads(self.json_data), pull)  # type: ignore[arg-type]
+
+    def fill_pull_request_data(self, data: Dict[str, Any], pull: Dict[str, Any]) -> "MockGitHubAPIResponse":
+        index = self.get_index_or_none(pull, self.github_api_state.issues)
+        for key in data.keys():
+            if key in ('base', 'head'):
+                pull[key]['ref'] = json.loads(self.json_data)[key]  # type: ignore[arg-type]
+            else:
+                pull[key] = json.loads(self.json_data)[key]  # type: ignore[arg-type]
+        if index:
+            self.github_api_state.pulls[index] = pull
+        else:
+            self.github_api_state.pulls.append(pull)
+        return self.make_response_object(HTTPStatus.CREATED, pull)
+
+    def update_issue(self) -> "MockGitHubAPIResponse":
+        issue_no = self.find_number(self.parsed_url.path, 'issues')
+        if not issue_no:
+            return self.create_issue()
+        issue = self.github_api_state.get_issue(issue_no)
+        assert issue is not None
+        return self.fill_issue_data(json.loads(self.json_data), issue)  # type: ignore[arg-type]
+
+    def create_issue(self) -> "MockGitHubAPIResponse":
+        issue = {'number': self.get_next_free_number(self.github_api_state.issues)}
+        return self.fill_issue_data(json.loads(self.json_data), issue)  # type: ignore[arg-type]
+
+    def fill_issue_data(self, data: Dict[str, Any], issue: Dict[str, Any]) -> "MockGitHubAPIResponse":
+        index = self.get_index_or_none(issue, self.github_api_state.issues)
+        for key in data.keys():
+            issue[key] = data[key]
+        if index is not None:
+            self.github_api_state.issues[index] = issue
+        else:
+            self.github_api_state.issues.append(issue)
+        return self.make_response_object(HTTPStatus.CREATED, issue)
+
+    def is_pull_created(self) -> bool:
+        deserialized_json_data = json.loads(self.json_data)  # type: ignore[arg-type]
+        head: str = deserialized_json_data['head']
+        base: str = deserialized_json_data['base']
+        for pull in self.github_api_state.pulls:
+            pull_head: str = pull['head']['ref']
+            pull_base: str = pull['base']['ref']
+            if (head, base) == (pull_head, pull_base):
+                return True
+        return False
+
+    @staticmethod
+    def get_index_or_none(entity: Dict[str, Any], base: List[Dict[str, Any]]) -> Optional[int]:
+        try:
+            return base.index(entity)
+        except ValueError:
+            return None
+
+    @staticmethod
+    def make_response_object(status_code: int, response_data: Union[List[Dict[str, Any]], Dict[str, Any]]) -> "MockGitHubAPIResponse":
+        return MockGitHubAPIResponse(status_code, response_data)
+
+    @staticmethod
+    def find_number(url: str, entity: str) -> Optional[str]:
+        m = re.search(f'{entity}/(\\d+)', url)
+        if m:
+            return m.group(1)
+        return None
+
+    @staticmethod
+    def get_next_free_number(entities: List[Dict[str, Any]]) -> str:
+        numbers = [int(item['number']) for item in entities]
+        return str(max(numbers) + 1)
+
+
+class MockHTTPError(HTTPError):
+    from email.message import Message
+
+    def __init__(self, url: str, code: int, msg: Any, hdrs: Message, fp: Any) -> None:
+        super().__init__(url, code, msg, hdrs, fp)
+        self.msg = msg
+
+    def read(self, n: int = 1) -> bytes:  # noqa: F841
+        return json.dumps(self.msg).encode()
+
+
+class MockContextManager(ContextManager[MockGitHubAPIResponse]):
+    def __init__(self, obj: MockGitHubAPIResponse) -> None:
+        self.obj = obj
+
+    def __enter__(self) -> MockGitHubAPIResponse:
+        if self.obj.status_code == HTTPStatus.NOT_FOUND:
+            raise HTTPError("http://example.org", 404, 'Not found', None, None)  # type: ignore[arg-type]
+        elif self.obj.status_code == HTTPStatus.UNPROCESSABLE_ENTITY:
+            raise MockHTTPError("http://example.org", 422, self.obj.response_data, None, None)  # type: ignore[arg-type]
+        return self.obj
+
+    def __exit__(self, *args: Any) -> None:
+        pass
+
+
+class MockContextManagerRaise403(MockContextManager):
+    def __init__(self, obj: MockGitHubAPIResponse) -> None:
+        super().__init__(obj)
+
+    def __enter__(self) -> MockGitHubAPIResponse:
+        raise HTTPError("http://example.org", 403, 'Forbidden', None, None)  # type: ignore[arg-type]
 
 
 class TestGitHub(BaseTest):
@@ -316,9 +539,8 @@ class TestGitHub(BaseTest):
                                   ' Visit https://github.com/settings/tokens to generate a new one.')
         with pytest.raises(MacheteException) as e:
             launch_command("github", "retarget-pr", "--branch", "branch-without-pr")
-        if e:
-            assert e.value.args[0] == expected_error_message, \
-                'Verify that expected error message has appeared when there is no pull request associated with that branch name.'
+        assert e.value.args[0] == expected_error_message, \
+            'Verify that expected error message has appeared when there is no pull request associated with that branch name.'
 
         launch_command('github', 'retarget-pr', '--branch', 'branch-without-pr', '--ignore-if-missing')
 
@@ -372,9 +594,8 @@ class TestGitHub(BaseTest):
         )
         with pytest.raises(MacheteException) as e:
             launch_command("github", "retarget-pr")
-        if e:
-            assert e.value.args[0] == expected_error_message, \
-                'Verify that expected error message has appeared when given pull request to create is already created.'
+        assert e.value.args[0] == expected_error_message, \
+            'Verify that expected error message has appeared when given pull request to create is already created.'
 
         # branch feature_1 present in each remote, tracking data present
         (
@@ -418,9 +639,8 @@ class TestGitHub(BaseTest):
 
         with pytest.raises(MacheteException) as e:
             launch_command("github", "retarget-pr")
-        if e:
-            assert e.value.args[0] == expected_error_message, \
-                'Verify that expected error message has appeared when given pull request to create is already created.'
+        assert e.value.args[0] == expected_error_message, \
+            'Verify that expected error message has appeared when given pull request to create is already created.'
 
         # branch feature_2 present in only one remote: origin_1 and there is no tracking data available -> infer the remote
         (
@@ -575,9 +795,9 @@ class TestGitHub(BaseTest):
         (
             self.repo_sandbox
                 .remove_remote('new_origin')
-                .add_git_config_key('machete.github.remote', 'custom_origin')
-                .add_git_config_key('machete.github.organization', 'custom_user')
-                .add_git_config_key('machete.github.repository', 'custom_repo')
+                .set_git_config_key('machete.github.remote', 'custom_origin')
+                .set_git_config_key('machete.github.organization', 'custom_user')
+                .set_git_config_key('machete.github.repository', 'custom_repo')
         )
 
         launch_command('github', 'anno-prs')
@@ -772,9 +992,8 @@ class TestGitHub(BaseTest):
         expected_error_message = "A pull request already exists for test_repo:hotfix/add-trigger."
         with pytest.raises(MacheteException) as e:
             launch_command("github", "create-pr")
-        if e:
-            assert e.value.args[0] == expected_error_message, \
-                'Verify that expected error message has appeared when given pull request to create is already created.'
+        assert e.value.args[0] == expected_error_message, \
+            'Verify that expected error message has appeared when given pull request to create is already created.'
 
         # check against head branch is ancestor or equal to base branch
         (
@@ -801,18 +1020,16 @@ class TestGitHub(BaseTest):
                                  "Cannot create pull request."
         with pytest.raises(MacheteException) as e:
             launch_command("github", "create-pr")
-        if e:
-            assert e.value.parameter == expected_error_message, \
-                'Verify that expected error message has appeared when head branch is equal or ancestor of base branch.'
+        assert e.value.parameter == expected_error_message, \
+            'Verify that expected error message has appeared when head branch is equal or ancestor of base branch.'
 
         self.repo_sandbox.check_out('develop')
         expected_error_message = "Branch develop does not have a parent branch (it is a root), " \
                                  "base branch for the PR cannot be established."
         with pytest.raises(MacheteException) as e:
             launch_command("github", "create-pr")
-        if e:
-            assert e.value.parameter == expected_error_message, \
-                'Verify that expected error message has appeared when creating PR from root branch.'
+        assert e.value.parameter == expected_error_message, \
+            'Verify that expected error message has appeared when creating PR from root branch.'
 
     git_api_state_for_test_create_pr_missing_base_branch_on_remote = MockGitHubAPIState(
         [
@@ -1356,15 +1573,13 @@ class TestGitHub(BaseTest):
         expected_error_message = f"PR #100 is not found in repository {remote_org_repo.organization}/{remote_org_repo.repository}"
         with pytest.raises(MacheteException) as e:
             launch_command('github', 'checkout-prs', '100')
-        if e:
-            assert e.value.parameter == expected_error_message, \
-                'Verify that expected error message has appeared when given pull request to checkout does not exists.'
+        assert e.value.parameter == expected_error_message, \
+            'Verify that expected error message has appeared when given pull request to checkout does not exists.'
 
         with pytest.raises(MacheteException) as e:
             launch_command('github', 'checkout-prs', '19', '100')
-        if e:
-            assert e.value.parameter == expected_error_message, \
-                'Verify that expected error message has appeared when one of the given pull requests to checkout does not exists.'
+        assert e.value.parameter == expected_error_message, \
+            'Verify that expected error message has appeared when one of the given pull requests to checkout does not exists.'
 
         # check against user with no open pull requests
         expected_msg = ("Checking for open GitHub PRs... OK\n"
@@ -1389,10 +1604,9 @@ class TestGitHub(BaseTest):
                                  "is already deleted from testing."
         with pytest.raises(MacheteException) as e:
             launch_command('github', 'checkout-prs', '5')
-        if e:
-            assert e.value.parameter == expected_error_message, \
-                'Verify that expected error message has appeared when given pull request to checkout ' \
-                'have already deleted branch from remote.'
+        assert e.value.parameter == expected_error_message, \
+            'Verify that expected error message has appeared when given pull request to checkout ' \
+            'have already deleted branch from remote.'
 
         # Check against pr come from fork
         os.chdir(local_path)
@@ -1963,8 +2177,8 @@ class TestGitHub(BaseTest):
         mocker.patch('urllib.request.urlopen', MockContextManager)
         mocker.patch('git_machete.github.GitHubClient.derive_current_user_login', mock_derive_current_user_login)
         mocker.patch('urllib.request.Request', MockGitHubAPIState([]).new_request())
-        mocker.patch('tests.mockers.MockGitHubAPIResponse.info', mock_info)
-        mocker.patch('tests.mockers.MockGitHubAPIResponse.read', mock_read)
+        mocker.patch('tests.test_github.MockGitHubAPIResponse.info', mock_info)
+        mocker.patch('tests.test_github.MockGitHubAPIResponse.read', mock_read)
 
         global prs_per_page
         (
@@ -2002,7 +2216,7 @@ class TestGitHub(BaseTest):
         mocker.patch('git_machete.cli.exit_script', mock_exit_script)
 
         github_enterprise_domain = 'git.example.org'
-        self.repo_sandbox.add_git_config_key('machete.github.domain', github_enterprise_domain)
+        self.repo_sandbox.set_git_config_key('machete.github.domain', github_enterprise_domain)
 
         expected_error_message = (
             "GitHub API returned `403` HTTP status with error message: `Forbidden`\n"
@@ -2013,8 +2227,7 @@ class TestGitHub(BaseTest):
 
         with pytest.raises(MacheteException) as e:
             launch_command('github', 'checkout-prs', '--all')
-        if e:
-            assert e.value.args[0] == expected_error_message, 'Verify that expected error message has appeared.'
+        assert e.value.args[0] == expected_error_message, 'Verify that expected error message has appeared.'
 
     git_api_state_for_test_github_enterprise_domain = MockGitHubAPIState(
         [
@@ -2050,7 +2263,7 @@ class TestGitHub(BaseTest):
             .push()
             .check_out("develop")
             .delete_branch("snickers")
-            .add_git_config_key('machete.github.domain', github_enterprise_domain)
+            .set_git_config_key('machete.github.domain', github_enterprise_domain)
         )
         launch_command('github', 'checkout-prs', '--all')
 

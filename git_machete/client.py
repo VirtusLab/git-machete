@@ -206,7 +206,7 @@ class MacheteClient:
 
     def render_tree(self) -> List[str]:
         if not self.__indent:
-            self.__indent = "\t"
+            self.__indent = "  "
 
         def render_dfs(branch: LocalBranchShortName, depth: int) -> List[str]:
             annotation = self.__annotations[branch].get_unformatted_text() if branch in self.__annotations else ""
@@ -384,7 +384,7 @@ class MacheteClient:
                 self.__roots += [LocalBranchShortName.of("develop")]
         self.__down_branches = {}
         self.up_branch = {}
-        self.__indent = "\t"
+        self.__indent = "  "
         for branch in self.annotations.keys():
             self.annotations[branch].text_without_qualifiers = ''
 
@@ -1132,7 +1132,7 @@ class MacheteClient:
             yellow_edge_branch: LocalBranchShortName = branches_in_sync_but_fork_point_off[0]
             if len(branches_in_sync_but_fork_point_off) == 1:
                 first_part = (f"yellow edge indicates that fork point for {bold(str(yellow_edge_branch))} "
-                              f"is probably incorrectly inferred,\n or that some extra branch should be between "
+                              f"is probably incorrectly inferred,\nor that some extra branch should be between "
                               f"{bold(str(self.up_branch[yellow_edge_branch]))} and "
                               f"{bold(str(yellow_edge_branch))}")
             else:
@@ -1176,7 +1176,7 @@ class MacheteClient:
                 msg_core_suffix = '' if is_merged_to_remote else f', but not merged to {bold(remote_branch)}'  # type: ignore[arg-type]
                 msg_core = f"{bold(branch)} (merged to HEAD{msg_core_suffix})"
                 msg = f"Delete branch {msg_core}?" + get_pretty_choices('y', 'N', 'q')
-                opt_yes_msg = f"Deleting branch {msg_core}"
+                opt_yes_msg = f"Deleting branch {msg_core}..."
                 ans = self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes)
                 if ans in ('y', 'yes'):
                     self.__git.delete_branch(branch, force=is_merged_to_remote)
@@ -1187,7 +1187,7 @@ class MacheteClient:
             for branch in branches_to_delete_unmerged_to_head:
                 msg_core = f"{bold(branch)} (unmerged to HEAD)"
                 msg = f"Delete branch {msg_core}?" + get_pretty_choices('y', 'N', 'q')
-                opt_yes_msg = f"Deleting branch {msg_core}"
+                opt_yes_msg = f"Deleting branch {msg_core}..."
                 ans = self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes)
                 if ans in ('y', 'yes'):
                     self.__git.delete_branch(branch, force=True)

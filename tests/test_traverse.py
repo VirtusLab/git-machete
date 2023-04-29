@@ -1,13 +1,17 @@
 from typing import Any
 
+import pytest
+
+from git_machete.exceptions import MacheteException
+
 from .base_test import BaseTest, git
-from .mockers import (assert_command, launch_command, mock_run_cmd,
-                      rewrite_definition_file)
+from .mockers import (assert_command, launch_command, mock_exit_script,
+                      mock_run_cmd, rewrite_definition_file)
 
 
 class TestTraverse(BaseTest):
 
-    def setup_discover_standard_tree(self) -> None:
+    def setup_standard_tree(self) -> None:
         (
             self.repo_sandbox.new_branch("root")
             .commit("root")
@@ -83,7 +87,7 @@ class TestTraverse(BaseTest):
 
     def test_traverse_no_push(self, mocker: Any) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-        self.setup_discover_standard_tree()
+        self.setup_standard_tree()
 
         launch_command("traverse", "-Wy", "--no-push")
         assert_command(
@@ -118,7 +122,7 @@ class TestTraverse(BaseTest):
 
     def test_traverse_no_push_override(self, mocker: Any) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-        self.setup_discover_standard_tree()
+        self.setup_standard_tree()
         self.repo_sandbox.check_out("hotfix/add-trigger")
         launch_command("t", "-Wy", "--no-push", "--push", "--start-from=here")
         assert_command(
@@ -151,40 +155,77 @@ class TestTraverse(BaseTest):
             """,
         )
         self.repo_sandbox.check_out("ignore-trailing")
-        launch_command("t", "-Wy", "--no-push", "--push")
+        self.repo_sandbox.set_git_config_key("machete.traverse.push", "false")
+        launch_command("t", "-Wy")
         assert_command(
-            ["status", "-l"],
+            ["status"],
             """
             develop
             |
-            | Allow ownership links
-            | 1st round of fixes
-            o-allow-ownership-link
+            o-allow-ownership-link (diverged from origin)
             | |
-            | | Build arbitrarily long chains
+            | o-build-chain (untracked)
+            |
+            o-call-ws (ahead of origin)
+              |
+              o-drop-constraint (untracked)
+
+            master
+            |
+            o-hotfix/add-trigger
+              |
+              o-ignore-trailing *
+            """,
+        )
+
+        launch_command("t", "-Wy", "--push-untracked")
+        assert_command(
+            ["status"],
+            """
+            develop
+            |
+            o-allow-ownership-link (diverged from origin)
+            | |
             | o-build-chain
             |
-            | Call web service
-            | 1st round of fixes
-            | 2nd round of fixes
-            o-call-ws
+            o-call-ws (ahead of origin)
               |
-              | Drop unneeded SQL constraints
               o-drop-constraint
 
             master
             |
-            | HOTFIX Add the trigger (amended)
             o-hotfix/add-trigger
               |
-              | Ignore trailing data (amended)
+              o-ignore-trailing *
+            """,
+        )
+
+        self.repo_sandbox.set_git_config_key("machete.traverse.push", "true")
+        launch_command("t", "-Wy", "--no-push-untracked")
+        assert_command(
+            ["status"],
+            """
+            develop
+            |
+            o-allow-ownership-link
+            | |
+            | o-build-chain
+            |
+            o-call-ws
+              |
+              o-drop-constraint
+
+            master
+            |
+            o-hotfix/add-trigger
+              |
               o-ignore-trailing *
             """,
         )
 
     def test_traverse_no_push_untracked(self, mocker: Any) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-        self.setup_discover_standard_tree()
+        self.setup_standard_tree()
 
         launch_command("traverse", "-Wy", "--no-push-untracked")
         assert_command(
@@ -219,8 +260,8 @@ class TestTraverse(BaseTest):
 
     def test_traverse_push_config_key(self, mocker: Any) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-        self.setup_discover_standard_tree()
-        self.repo_sandbox.add_git_config_key('machete.traverse.push', 'false')
+        self.setup_standard_tree()
+        self.repo_sandbox.set_git_config_key('machete.traverse.push', 'false')
         launch_command("traverse", "-Wy")
         assert_command(
             ["status", "-l"],
@@ -326,9 +367,9 @@ class TestTraverse(BaseTest):
         assert_command(["traverse", "-Wy", "--no-push"],
                        expected_result)
 
-    def test_discover_traverse_squash(self, mocker: Any) -> None:
+    def test_traverse_and_squash(self, mocker: Any) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-        self.setup_discover_standard_tree()
+        self.setup_standard_tree()
 
         self.repo_sandbox.check_out("hotfix/add-trigger")
         launch_command("traverse", "--fetch", "--start-from=root", "--return-to=here", "-y")
@@ -449,7 +490,7 @@ class TestTraverse(BaseTest):
                     snickers
             """
         rewrite_definition_file(body)
-        launch_command("traverse", '-y', '-M', '-n')
+        launch_command("traverse", '-y', '-M', '--no-edit-merge')
         assert_command(
             ["status"],
             """
@@ -463,7 +504,7 @@ class TestTraverse(BaseTest):
 
     def test_traverse_qualifiers_no_push(self, mocker: Any) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-        self.setup_discover_standard_tree()
+        self.setup_standard_tree()
 
         body: str = \
             """
@@ -478,7 +519,7 @@ class TestTraverse(BaseTest):
             """
         rewrite_definition_file(body)
 
-        launch_command("traverse", "-Wy")
+        launch_command("traverse", "-Wy", "--no-push-untracked", "--push-untracked")
         assert_command(
             ["status"],
             """
@@ -502,7 +543,7 @@ class TestTraverse(BaseTest):
 
     def test_traverse_qualifiers_no_rebase(self, mocker: Any) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-        self.setup_discover_standard_tree()
+        self.setup_standard_tree()
 
         body: str = \
             """
@@ -541,7 +582,7 @@ class TestTraverse(BaseTest):
 
     def test_traverse_qualifiers_no_rebase_no_push(self, mocker: Any) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-        self.setup_discover_standard_tree()
+        self.setup_standard_tree()
 
         body: str = \
             """
@@ -580,7 +621,7 @@ class TestTraverse(BaseTest):
 
     def test_traverse_qualifiers_no_slide_out(self, mocker: Any) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
-        self.setup_discover_standard_tree()
+        self.setup_standard_tree()
 
         body: str = \
             """
@@ -617,3 +658,11 @@ class TestTraverse(BaseTest):
               o-ignore-trailing
             """,
         )
+
+    def test_traverse_no_managed_branches(self, mocker: Any) -> None:
+        mocker.patch('git_machete.cli.exit_script', mock_exit_script)
+
+        with pytest.raises(MacheteException) as e:
+            launch_command("traverse")
+        assert e.value.args[0] == "No branches listed in .git/machete; " \
+                                  "use `git machete discover` or `git machete edit`, or edit .git/machete manually."

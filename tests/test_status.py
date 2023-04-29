@@ -18,23 +18,87 @@ class TestStatus(BaseTest):
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
 
         body: str = \
-            """master
+            """
+            master
             \tdevelop
             \t\n
             develop
             """
-
-        self.repo_sandbox.new_branch("root")
         rewrite_definition_file(body)
 
-        expected_error_message: str = '.git/machete, line 5: branch develop re-appears in the tree definition. ' \
+        expected_error_message: str = '.git/machete, line 6: branch develop re-appears in the tree definition. ' \
                                       'Edit the definition file manually with git machete edit'
 
         with pytest.raises(MacheteException) as e:
             launch_command('status')
-        if e:
-            assert e.value.parameter == expected_error_message, \
-                'Verify that expected error message has appeared if a branch re-appears in tree definition.'
+        assert e.value.parameter == expected_error_message
+
+    def test_indent_not_multiply_of_base_indent(self, mocker: Any) -> None:
+        mocker.patch('git_machete.cli.exit_script', mock_exit_script)
+
+        body: str = \
+            """
+            master
+            \tdevelop
+            \t foo
+            """
+        rewrite_definition_file(body)
+
+        expected_error_message: str = '.git/machete, line 4: invalid indent <TAB><SPACE>, expected a multiply of <TAB>. ' \
+                                      'Edit the definition file manually with git machete edit'
+
+        with pytest.raises(MacheteException) as e:
+            launch_command('status')
+        assert e.value.parameter == expected_error_message
+
+    def test_status_branch_hook_output(self) -> None:
+        (
+            self.repo_sandbox
+            .remove_remote('origin')
+            .new_branch('master')
+            .commit('master commit')
+            .new_branch('develop')
+            .commit('develop commit')
+        )
+
+        body: str = \
+            """
+            master
+              develop
+            """
+        rewrite_definition_file(body)
+
+        self.repo_sandbox.write_to_file(".git/hooks/machete-status-branch", "#!/bin/bash\ngit ls-tree $1 | wc -l | sed 's/ *//'")
+        assert_command(
+            ["status"],
+            """
+            hint: The '.git/hooks/machete-status-branch' hook was ignored because it's not set as executable.
+            hint: You can disable this warning with `git config advice.ignoredHook false`.
+              master
+              |
+              o-develop *
+            """
+        )
+
+        self.repo_sandbox.set_git_config_key("advice.ignoredHook", "false")
+        assert_command(
+            ["status"],
+            """
+            master
+            |
+            o-develop *
+            """
+        )
+
+        self.repo_sandbox.set_file_executable(".git/hooks/machete-status-branch")
+        assert_command(
+            ["status"],
+            """
+            master  1
+            |
+            o-develop *  2
+            """
+        )
 
     def test_extra_space_before_branch_name(self, mocker: Any) -> None:
         mocker.patch('git_machete.cli.exit_script', mock_exit_script)
@@ -51,7 +115,7 @@ class TestStatus(BaseTest):
                 .new_branch('foo')
                 .commit()
                 .push()
-                .add_git_config_key('machete.status.extraSpaceBeforeBranchName', 'true')
+                .set_git_config_key('machete.status.extraSpaceBeforeBranchName', 'true')
         )
         body: str = \
             """
@@ -72,7 +136,7 @@ class TestStatus(BaseTest):
         )
         assert_command(['status'], expected_status_output)
 
-        self.repo_sandbox.add_git_config_key('machete.status.extraSpaceBeforeBranchName', 'false')
+        self.repo_sandbox.set_git_config_key('machete.status.extraSpaceBeforeBranchName', 'false')
 
         expected_status_output = (
             """

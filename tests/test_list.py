@@ -1,5 +1,9 @@
 from typing import Any
 
+import pytest
+
+from git_machete.exceptions import ExitCode
+
 from .base_test import BaseTest
 from .mockers import (assert_command, launch_command, mock_run_cmd,
                       rewrite_definition_file)
@@ -45,9 +49,14 @@ class TestList(BaseTest):
         rewrite_definition_file(body)
 
         (
-            self.repo_sandbox.check_out("develop")
-                             .new_branch("feature_2")
-                             .commit("feature_2 commit.")
+            self.repo_sandbox
+                .check_out("develop")
+                .new_branch("feature_2")
+                .commit("feature_2 commit.")
+                .new_branch("feature_3")
+                .push()
+                .check_out("feature_2")
+                .delete_branch("feature_3")
         )
 
         expected_output = """
@@ -66,6 +75,7 @@ class TestList(BaseTest):
 
         expected_output = """
         feature_2
+        feature_3
         """
         assert_command(
             ['list', 'addable'],
@@ -121,3 +131,13 @@ class TestList(BaseTest):
             ['list', 'with-overridden-fork-point'],
             expected_output
         )
+
+        launch_command('fork-point', '--unset-override')
+        assert_command(
+            ['list', 'with-overridden-fork-point'],
+            ""
+        )
+
+        with pytest.raises(SystemExit) as e:
+            launch_command('list', 'no-such-category')
+        assert ExitCode.ARGUMENT_ERROR == e.value.code

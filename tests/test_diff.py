@@ -13,14 +13,14 @@ class TestDiff(BaseTest):
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_stdout)  # to hide git outputs in tests
         (
             self.repo_sandbox.new_branch("master")
-                .add_file_with_content_and_commit(message='master commit1')
+                .add_file_and_commit(message='master commit1')
                 .push()
                 .new_branch("develop")
-                .add_file_with_content_and_commit(file_name='develop_file_name.txt',
-                                                  file_content='Develop content\n',
-                                                  message='develop commit')
+                .add_file_and_commit(file_path='develop_file_name.txt',
+                                     file_content='Develop content\n',
+                                     message='develop commit')
                 .push()
-                .write_to_file(file_name='file_name.txt',
+                .write_to_file(file_path='file_name.txt',
                                file_content='Content not committed\n')
         )
 
@@ -55,7 +55,11 @@ class TestDiff(BaseTest):
         +Develop content
 
         """
-
         assert_command(["diff", "develop"], expected_status_output)
-
         assert_command(["diff", "refs/heads/develop"], expected_status_output)
+
+        assert_command(
+            ["diff", "--stat", "refs/heads/develop"],
+            "develop_file_name.txt | 1 +\n"
+            "1 file changed, 1 insertion(+)\n\n"
+        )

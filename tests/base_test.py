@@ -1,10 +1,8 @@
 import os
-import random
-import string
 import subprocess
 import time
 from tempfile import mkdtemp
-from typing import Optional
+from typing import List, Optional
 
 from git_machete.git_operations import GitContext
 
@@ -37,6 +35,7 @@ class GitRepositorySandbox:
     def __init__(self) -> None:
         self.remote_path = mkdtemp()
         self.local_path = mkdtemp()
+        self.file_counter = 0
 
     def execute(self, command: str) -> "GitRepositorySandbox":
         subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)
@@ -64,16 +63,17 @@ class GitRepositorySandbox:
         return self
 
     def commit(self, message: str = "Some commit message.") -> "GitRepositorySandbox":
-        f = f'{"".join(random.choice(string.ascii_letters) for _ in range(20))}.txt'
+        f = f'{self.file_counter}.txt'
+        self.file_counter += 1
         self.execute(f"touch {f}")
         self.execute(f"git add {f}")
         self.execute(f'git commit -m "{message}"')
         return self
 
-    def add_file_with_content_and_commit(self, file_name: str = 'file_name.txt', file_content: str = 'Some file content\n',
-                                         message: str = "Some commit message.") -> "GitRepositorySandbox":
-        self.write_to_file(file_name=file_name, file_content=file_content)
-        self.execute(f"git add {file_name}")
+    def add_file_and_commit(self, file_path: str = 'file_name.txt', file_content: str = 'Some file content\n',
+                            message: str = "Some commit message.") -> "GitRepositorySandbox":
+        self.write_to_file(file_path=file_path, file_content=file_content)
+        self.execute(f"git add {file_path}")
         self.execute(f'git commit -m "{message}"')
         return self
 
@@ -87,8 +87,8 @@ class GitRepositorySandbox:
         self.execute(f"git push {'--set-upstream' if set_upstream else ''} {remote} {branch}:{tracking_branch}")
         return self
 
-    def sleep(self, seconds: int) -> "GitRepositorySandbox":
-        time.sleep(seconds)
+    def merge(self, branch_name: str) -> "GitRepositorySandbox":
+        self.execute(f'git merge {branch_name}')
         return self
 
     def reset_to(self, revision: str) -> "GitRepositorySandbox":
@@ -107,15 +107,30 @@ class GitRepositorySandbox:
         self.execute(f'git remote remove {remote}')
         return self
 
-    def add_git_config_key(self, key: str, value: str) -> "GitRepositorySandbox":
+    def get_local_branches(self) -> List[str]:
+        return subprocess.check_output("git for-each-ref refs/heads/ --format='%(refname:short)'",
+                                       stderr=subprocess.STDOUT, shell=True, encoding='utf-8').splitlines()
+
+    def set_git_config_key(self, key: str, value: str) -> "GitRepositorySandbox":
         self.execute(f'git config {key} {value}')
         return self
 
-    def write_to_file(self, file_name: str, file_content: str) -> "GitRepositorySandbox":
-        with open(file_name, 'w') as f:
+    def read_file(self, file_name: str) -> str:
+        with open(file_name) as f:
+            return f.read()
+
+    def write_to_file(self, file_path: str, file_content: str) -> "GitRepositorySandbox":
+        dirname = os.path.dirname(file_path)
+        if dirname:
+            os.makedirs(dirname, exist_ok=True)
+        with open(file_path, 'w') as f:
             f.write(file_content)
         return self
 
-    def merge(self, branch_name: str) -> "GitRepositorySandbox":
-        self.execute(f'git merge {branch_name}')
+    def set_file_executable(self, file_name: str) -> "GitRepositorySandbox":
+        os.chmod(file_name, 0o700)
+        return self
+
+    def sleep(self, seconds: int) -> "GitRepositorySandbox":
+        time.sleep(seconds)
         return self

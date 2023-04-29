@@ -39,7 +39,7 @@ class TestFile(BaseTest):
 
             # check git machete definition file path when inside a worktree
             # but with the `machete.worktree.useTopLevelMacheteFile` key set to `False`
-            self.repo_sandbox.add_git_config_key('machete.worktree.useTopLevelMacheteFile', 'false')
+            self.repo_sandbox.set_git_config_key('machete.worktree.useTopLevelMacheteFile', 'false')
             self.repo_sandbox.execute("git worktree add -f -b mars_feature mars_worktree develop")
             os.chdir('mars_worktree')
             definition_file_full_path = launch_command("file")
