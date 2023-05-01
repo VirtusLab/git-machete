@@ -6,12 +6,14 @@ import sys
 import textwrap
 from contextlib import (_GeneratorContextManager, redirect_stderr,
                         redirect_stdout)
-from typing import Any, Callable, Iterable, Iterator, Optional
+from typing import Any, Callable, Iterable, Iterator
+
+import pytest
 
 from git_machete import cli, utils
-from git_machete.git_operations import FullCommitHash
+from git_machete.exceptions import MacheteException
 from git_machete.utils import dim
-from tests.base_test import git, popen
+from tests.base_test import git
 
 """
 Usage: mockers.py
@@ -64,7 +66,7 @@ def launch_command(*args: str) -> str:
         return out.getvalue()
 
 
-def assert_command(cmds: Iterable[str], expected_result: str) -> None:
+def assert_success(cmds: Iterable[str], expected_result: str) -> None:
     if expected_result.startswith("\n"):
         # removeprefix is only available since Python 3.9
         expected_result = expected_result[1:]
@@ -73,36 +75,36 @@ def assert_command(cmds: Iterable[str], expected_result: str) -> None:
     assert actual_result == expected_result
 
 
-def rewrite_definition_file(new_body: str, dedent: bool = True) -> None:
-    if dedent:
-        new_body = textwrap.dedent(new_body)
+def assert_failure(cmds: Iterable[str], expected_result: str) -> None:
+    if expected_result.startswith("\n"):
+        # removeprefix is only available since Python 3.9
+        expected_result = expected_result[1:]
+    expected_result = textwrap.dedent(expected_result)
+
+    with pytest.raises(MacheteException) as e:
+        launch_command(*cmds)
+    assert e.value.msg == expected_result
+
+
+def rewrite_definition_file(new_body: str) -> None:
+    new_body = textwrap.dedent(new_body)
     definition_file_path = git.get_main_git_subpath("machete")
     with open(os.path.join(os.getcwd(), definition_file_path), 'w') as def_file:
         def_file.writelines(new_body)
 
 
-def get_current_commit_hash() -> FullCommitHash:
-    """Returns hash of the commit of the current branch head."""
-    return get_commit_hash("HEAD")
-
-
-def get_commit_hash(revision: str) -> FullCommitHash:
-    """Returns hash of the commit pointed by the given revision."""
-    return FullCommitHash.of(popen(f"git rev-parse {revision}"))
-
-
-def mock_run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
-    """Execute command in the new subprocess but redirect the stdout and stderr together to the PIPE's stdout"""
+def mock_run_cmd_and_discard_output(cmd: str, *args: str, **kwargs: Any) -> int:
+    """Execute command in the new subprocess but discard stdout and stderr"""
     completed_process: subprocess.CompletedProcess[bytes] = subprocess.run(
         [cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
-    exit_code: int = completed_process.returncode
 
+    exit_code: int = completed_process.returncode
     if exit_code != 0:
         print(dim(f"<exit code: {exit_code}>\n"), file=sys.stderr)
     return completed_process.returncode
 
 
-def mock_run_cmd_and_forward_stdout(cmd: str, *args: str, **kwargs: Any) -> int:
+def mock_run_cmd_and_forward_output(cmd: str, *args: str, **kwargs: Any) -> int:
     """Execute command in the new subprocess but capture together process's stdout and stderr and load it into sys.stdout via
     `print(completed_process.stdout.decode('utf-8'))`. This sys.stdout is later being redirected via the `redirect_stdout` in
     `launch_command()` and gets returned by this function. Below is shown the chain of function calls that presents this mechanism:
@@ -115,30 +117,26 @@ def mock_run_cmd_and_forward_stdout(cmd: str, *args: str, **kwargs: Any) -> int:
     completed_process: subprocess.CompletedProcess[bytes] = subprocess.run(
         [cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
     print(completed_process.stdout.decode('utf-8'))
+
     exit_code: int = completed_process.returncode
     if exit_code != 0:
         print(dim(f"<exit code: {exit_code}>\n"), file=sys.stderr)
     return exit_code
 
 
-def mock_ask_if(*args: str, **kwargs: Any) -> str:
+def mock_input_returning_y(msg: str) -> str:
+    print(msg)
     return 'y'
 
 
-def mock_ask_if_returning(answer: str) -> Callable[..., str]:
-    return lambda *args, **kwargs: answer
+def mock_input_returning(*answers: str) -> Callable[..., str]:
+    class Wrapper(object):
+        def __init__(self) -> None:
+            self.index = -1
 
+        def __call__(self, msg: str) -> str:
+            print(msg)
+            self.index += 1
+            return answers[self.index]
 
-def mock_should_perform_interactive_slide_out(cmd: str) -> bool:
-    return True
-
-
-def mock_exit_script(status_code: int, error: Optional[BaseException] = None) -> None:
-    if error:
-        raise error
-    else:
-        sys.exit(status_code)
-
-
-def mock_exit_script_no_exit(status_code: int, error: Optional[BaseException] = None) -> None:
-    return
+    return Wrapper()

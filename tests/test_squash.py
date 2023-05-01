@@ -1,7 +1,7 @@
-import pytest
 
 from .base_test import BaseTest, popen
-from .mockers import get_current_commit_hash, launch_command
+from .mockers import (assert_failure, fixed_author_and_committer_date,
+                      launch_command)
 
 
 class TestSquash(BaseTest):
@@ -12,7 +12,7 @@ class TestSquash(BaseTest):
                 .commit("First commit.")
                 .commit("Second commit.")
         )
-        fork_point = get_current_commit_hash()
+        fork_point = self.repo_sandbox.get_current_commit_hash()
 
         (
             self.repo_sandbox.commit("Third commit.")
@@ -33,20 +33,22 @@ class TestSquash(BaseTest):
              " from one succeeding the fork-point until tip of the branch.")
 
     def test_squash_with_invalid_fork_point(self) -> None:
-        (
-            self.repo_sandbox.new_branch('branch-0')
-                .commit()
-                .new_branch('branch-1a')
-                .commit()
-        )
-        fork_point_to_branch_1a = get_current_commit_hash()
+        with fixed_author_and_committer_date():
+            (
+                self.repo_sandbox.new_branch('branch-0')
+                    .commit()
+                    .new_branch('branch-1a')
+                    .commit()
+            )
+            fork_point_to_branch_1a = self.repo_sandbox.get_current_commit_hash()
 
-        (
-            self.repo_sandbox.check_out('branch-0')
-                .new_branch('branch-1b')
-                .commit()
-        )
+            (
+                self.repo_sandbox.check_out('branch-0')
+                    .new_branch('branch-1b')
+                    .commit()
+            )
 
-        with pytest.raises(SystemExit):
-            # First exception MacheteException is raised, followed by SystemExit.
-            launch_command('squash', '-f', fork_point_to_branch_1a)
+        assert_failure(
+            ['squash', '-f', fork_point_to_branch_1a],
+            "Fork point dcd2db55125a1b67b367565e890a604639949a51 is not ancestor of or the tip of the branch-1b branch."
+        )

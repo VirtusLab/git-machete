@@ -38,14 +38,14 @@ class GitRepositorySandbox:
         self.file_counter = 0
 
     def execute(self, command: str) -> "GitRepositorySandbox":
-        subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)
+        subprocess.check_call(command, shell=True)
         return self
 
     def new_repo(self, *args: str, switch_dir_to_new_repo: bool = True) -> "GitRepositorySandbox":
         previous_dir = os.getcwd()
         os.chdir(args[0])
         opts = args[1:]
-        self.execute(f"git init {' '.join(opts)}")
+        self.execute(f"git init --quiet {' '.join(opts)}")
         if not switch_dir_to_new_repo:
             os.chdir(previous_dir)
         return self
@@ -103,13 +103,21 @@ class GitRepositorySandbox:
         self.execute(f'git remote add {remote} {url}')
         return self
 
-    def remove_remote(self, remote: str) -> "GitRepositorySandbox":
+    def remove_remote(self, remote: str = 'origin') -> "GitRepositorySandbox":
         self.execute(f'git remote remove {remote}')
         return self
 
     def get_local_branches(self) -> List[str]:
-        return subprocess.check_output("git for-each-ref refs/heads/ --format='%(refname:short)'",
-                                       stderr=subprocess.STDOUT, shell=True, encoding='utf-8').splitlines()
+        return popen("git for-each-ref refs/heads/ --format='%(refname:short)'").splitlines()
+
+    def is_ancestor(self, earlier: str, later: str) -> bool:
+        return subprocess.call(f"git merge-base --is-ancestor  '{earlier}'  '{later}'", shell=True) == 0
+
+    def get_current_commit_hash(self) -> str:
+        return self.get_commit_hash("HEAD")
+
+    def get_commit_hash(self, revision: str) -> str:
+        return popen(f"git rev-parse {revision}")
 
     def set_git_config_key(self, key: str, value: str) -> "GitRepositorySandbox":
         self.execute(f'git config {key} {value}')
@@ -125,6 +133,10 @@ class GitRepositorySandbox:
             os.makedirs(dirname, exist_ok=True)
         with open(file_path, 'w') as f:
             f.write(file_content)
+        return self
+
+    def remove_file(self, file_path: str) -> "GitRepositorySandbox":
+        self.execute(f"rm -rf './{file_path}'")
         return self
 
     def set_file_executable(self, file_name: str) -> "GitRepositorySandbox":

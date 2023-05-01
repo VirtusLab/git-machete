@@ -1,43 +1,61 @@
 from typing import Any
 
-import pytest
-
 from .base_test import BaseTest
-from .mockers import (get_commit_hash, get_current_commit_hash, launch_command,
-                      mock_run_cmd, rewrite_definition_file)
+from .mockers import (assert_failure, assert_success, launch_command,
+                      mock_input_returning, mock_run_cmd_and_discard_output,
+                      rewrite_definition_file)
 
 
 class TestAdvance(BaseTest):
 
     def test_advance_for_no_downstream_branches(self, mocker: Any) -> None:
-        """Verify behaviour of a 'git machete advance' command.
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
-        Verify that 'git machete advance' raises an error when current branch
-        has no downstream branches.
+        self.repo_sandbox.new_branch("root").commit()
+        rewrite_definition_file("root")
 
-        """
+        assert_failure(["advance"], "root does not have any downstream (child) branches to advance towards")
 
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+    def test_advance_for_no_applicable_downstream_branches(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
-            self.repo_sandbox.new_branch("root")
-                .commit()
+            self.repo_sandbox
+            .new_branch("master")
+            .commit()
+            .new_branch("develop")
+            .commit()
+            .check_out("master")
+            .commit()
         )
-        body: str = "root"
-        rewrite_definition_file(body)
+        rewrite_definition_file("master\n  develop")
 
-        with pytest.raises(SystemExit):
-            launch_command("advance")
+        assert_failure(["advance"], "No downstream (child) branch of master is connected to master with a green edge")
+
+    def test_advance_with_immediate_cancel(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+
+        (
+            self.repo_sandbox
+            .new_branch("master")
+            .commit()
+            .new_branch("develop")
+            .commit()
+            .check_out("master")
+        )
+        rewrite_definition_file("master\n  develop")
+
+        mocker.patch("builtins.input", mock_input_returning("n"))
+        assert_success(["advance"], "Fast-forward master to match develop? (y, N) \n")
 
     def test_advance_with_push_for_one_downstream_branch(self, mocker: Any) -> None:
-        """Verify behaviour of a 'git machete advance' command.
-
+        """
         Verify that when there is only one, rebased downstream branch of a
         current branch 'git machete advance' merges commits from that branch,
         pushes the current branch and slides out child branches of the downstream branch.
-        Also, it edits the git machete discovered tree to reflect new dependencies.
+        Also, it modifies the branch layout to reflect new dependencies.
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("root")
@@ -51,14 +69,14 @@ class TestAdvance(BaseTest):
                 level-1-branch
             """
         rewrite_definition_file(body)
-        level_1_commit_hash = get_current_commit_hash()
+        level_1_commit_hash = self.repo_sandbox.get_current_commit_hash()
 
         self.repo_sandbox.check_out("root")
         self.repo_sandbox.push()
         launch_command("advance", "-y")
 
-        root_commit_hash = get_current_commit_hash()
-        origin_root_commit_hash = get_commit_hash("origin/root")
+        root_commit_hash = self.repo_sandbox.get_current_commit_hash()
+        origin_root_commit_hash = self.repo_sandbox.get_commit_hash("origin/root")
 
         assert level_1_commit_hash == root_commit_hash, \
             ("Verify that when there is only one, rebased downstream branch of a "
@@ -74,19 +92,19 @@ class TestAdvance(BaseTest):
              "tree is updated.")
 
     def test_advance_without_push_for_one_downstream_branch(self, mocker: Any) -> None:
-        """Verify behaviour of a 'git machete advance' command.
-
-        Verify that when there is only one, rebased downstream branch of a
-        current branch 'git machete advance' merges commits from that branch
-        and slides out child branches of the downstream branch.
-        Also, it edits the git machete discovered tree to reflect new dependencies.
-        """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
-            self.repo_sandbox.new_branch("root")
+            self.repo_sandbox
+            .remove_remote()
+            .new_branch("root")
             .commit()
             .new_branch("level-1-branch")
+            .commit()
+            .new_branch("level-2a-branch")
+            .commit()
+            .check_out("level-1-branch")
+            .new_branch("level-2b-branch")
             .commit()
         )
 
@@ -94,36 +112,40 @@ class TestAdvance(BaseTest):
             """
             root
                 level-1-branch
+                    level-2a-branch
+                    level-2b-branch
             """
         rewrite_definition_file(body)
-        level_1_commit_hash = get_current_commit_hash()
 
         self.repo_sandbox.check_out("root")
         launch_command("advance", "-y")
 
-        root_commit_hash = get_current_commit_hash()
+        assert self.repo_sandbox.get_commit_hash("level-1-branch") == self.repo_sandbox.get_commit_hash("root")
 
-        assert level_1_commit_hash == root_commit_hash, \
-            ("Verify that when there is only one, rebased downstream branch of a "
-             "current branch, then 'git machete advance' merges commits from that branch "
-             "and slides out child branches of the downstream branch.")
-        assert "level-1-branch" not in launch_command("status"), \
-            ("Verify that branch to which advance was performed is removed "
-             "from the git-machete tree and the structure of the git machete "
-             "tree is updated.")
+        assert_success(
+            ["status", "-l"],
+            """
+            root *
+            |
+            | Some commit message.
+            o-level-2a-branch
+            |
+            | Some commit message.
+            o-level-2b-branch
+            """
+        )
 
     def test_advance_for_a_few_possible_downstream_branches_and_yes_option(self, mocker: Any) -> None:
-        """Verify behaviour of a 'git machete advance' command.
-
+        """
         Verify that 'git machete advance -y' raises an error when current branch
         has more than one synchronized downstream branch and option '-y' is passed.
-
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("root")
             .commit()
+            .push()
             .new_branch("level-1a-branch")
             .commit()
             .check_out("root")
@@ -140,5 +162,31 @@ class TestAdvance(BaseTest):
             """
         rewrite_definition_file(body)
 
-        with pytest.raises(SystemExit):
-            launch_command("advance", '-y')
+        expected_error_message = "More than one downstream (child) branch of root " \
+                                 "is connected to root with a green edge and -y/--yes option is specified"
+        assert_failure(['advance', '-y'], expected_error_message)
+
+        mocker.patch("builtins.input", mock_input_returning("1", "N", "n"))
+        assert_success(
+            ["advance"],
+            """
+            [1] level-1a-branch
+            [2] level-1b-branch
+            Specify downstream branch towards which root is to be fast-forwarded or hit <return> to skip: 
+
+            Branch root is now fast-forwarded to match level-1a-branch. Push root to origin? (y, N) 
+
+            Branch root is now fast-forwarded to match level-1a-branch. Slide level-1a-branch out of the tree of branch dependencies? (y, N) 
+            """
+        )
+
+        assert_success(
+            ["status"],
+            """
+            root * (ahead of origin)
+            |
+            m-level-1a-branch (untracked)
+            |
+            x-level-1b-branch (untracked)
+            """
+        )

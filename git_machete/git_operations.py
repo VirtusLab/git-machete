@@ -4,8 +4,8 @@ import shlex
 import string
 import sys
 from pathlib import Path
-from typing import (Any, Callable, Dict, Generator, Iterator, List, Match,
-                    NamedTuple, Optional, Set, Tuple)
+from typing import (Any, Callable, Dict, Iterator, List, Match, NamedTuple,
+                    Optional, Set, Tuple)
 
 from git_machete import git_config_keys, utils
 from git_machete.constants import (MAX_COUNT_FOR_INITIAL_LOG,
@@ -613,7 +613,7 @@ class GitContext:
     # Since getting the full history of a branch can be an expensive operation for large repositories
     # (compared to all other underlying git operations), there's a simple optimization in place:
     # we first fetch only a couple of first commits in the history, and only fetch the rest if needed.
-    def spoonfeed_log_hashes(self, branch_full_hash: FullCommitHash) -> Generator[FullCommitHash, None, None]:
+    def spoonfeed_log_hashes(self, branch_full_hash: FullCommitHash) -> Iterator[FullCommitHash]:
         if branch_full_hash not in self.__initial_log_hashes_cached:
             self.__initial_log_hashes_cached[branch_full_hash] = self.__get_log_hashes(branch_full_hash,
                                                                                        max_count=MAX_COUNT_FOR_INITIAL_LOG)
@@ -632,7 +632,7 @@ class GitContext:
         # %gs - reflog subject
         local_branches: List[str] = [branch.full_name() for branch in self.get_local_branches()]  # str to match _popen_git() input type
 
-        def get_counterpart_branches() -> Generator[str, None, None]:
+        def get_counterpart_branches() -> Iterator[str]:
             for branch in self.get_local_branches():
                 counterpart = self.get_combined_counterpart_for_fetching_of_branch(branch)
                 if counterpart:

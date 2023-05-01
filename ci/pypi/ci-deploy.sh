@@ -17,7 +17,7 @@ password = $token
 EOF
 
 set -x
-pip3 install twine wheel
+pip3 install -r requirements.pypi-deploy.txt
 python3 setup.py sdist
 python3 setup.py bdist_wheel
 python3 -m twine upload --repository $repository --skip-existing dist/*

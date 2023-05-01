@@ -1,15 +1,15 @@
 from typing import Any
 
 from .base_test import BaseTest
-from .mockers import (assert_command, fixed_author_and_committer_date,
-                      launch_command, mock_ask_if_returning,
-                      mock_run_cmd_and_forward_stdout, rewrite_definition_file)
+from .mockers import (assert_success, fixed_author_and_committer_date,
+                      launch_command, mock_input_returning,
+                      mock_run_cmd_and_forward_output, rewrite_definition_file)
 
 
 class TestDeleteUnmanaged(BaseTest):
 
     def test_delete_unmanaged(self, mocker: Any) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_stdout)
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_output)
 
         with fixed_author_and_committer_date():
             (
@@ -26,7 +26,7 @@ class TestDeleteUnmanaged(BaseTest):
             """
         rewrite_definition_file(body)
 
-        assert_command(
+        assert_success(
             ["delete-unmanaged", "--yes"],
             """
             Checking for unmanaged branches...
@@ -38,7 +38,7 @@ class TestDeleteUnmanaged(BaseTest):
         )
 
         self.repo_sandbox.check_out("master")
-        assert_command(
+        assert_success(
             ["delete-unmanaged", "-y"],
             """
             Checking for unmanaged branches...
@@ -48,7 +48,7 @@ class TestDeleteUnmanaged(BaseTest):
             """
         )
 
-        assert_command(
+        assert_success(
             ["delete-unmanaged", "-y"],
             """
             Checking for unmanaged branches...
@@ -57,6 +57,6 @@ class TestDeleteUnmanaged(BaseTest):
         )
 
         self.repo_sandbox.new_branch("foo").check_out("master")
-        mocker.patch("git_machete.client.MacheteClient.ask_if", mock_ask_if_returning("n"))
+        mocker.patch("builtins.input", mock_input_returning("n"))
         launch_command("delete-unmanaged")
         assert self.repo_sandbox.get_local_branches() == ["foo", "master"]

@@ -2,7 +2,7 @@ import json
 import os
 import re
 from http import HTTPStatus
-from subprocess import CalledProcessError, CompletedProcess
+from subprocess import CompletedProcess
 from tempfile import mkdtemp
 from textwrap import dedent
 from typing import Any, Callable, ContextManager, Dict, List, Optional, Union
@@ -10,19 +10,15 @@ from unittest.mock import mock_open
 from urllib.error import HTTPError
 from urllib.parse import ParseResult, parse_qs, urlparse
 
-import pytest
-
-from git_machete.exceptions import MacheteException
-from git_machete.git_operations import LocalBranchShortName
+from git_machete.git_operations import AnyRevision, LocalBranchShortName
 from git_machete.github import (GitHubClient, GitHubToken,
                                 RemoteAndOrganizationAndRepository)
 from git_machete.options import CommandLineOptions
 
 from .base_test import BaseTest, GitRepositorySandbox, git
-from .mockers import (assert_command, get_current_commit_hash, launch_command,
-                      mock_ask_if, mock_exit_script, mock_run_cmd,
-                      mock_should_perform_interactive_slide_out,
-                      rewrite_definition_file)
+from .mockers import (assert_failure, assert_success, launch_command,
+                      mock_input_returning, mock_input_returning_y,
+                      mock_run_cmd_and_discard_output, rewrite_definition_file)
 
 
 class FakeCommandLineOptions(CommandLineOptions):
@@ -47,16 +43,11 @@ def mock_github_remote_url_patterns(domain: str) -> List[str]:
 
 def mock_fetch_ref(cls: Any, remote: str, ref: str) -> None:
     branch: LocalBranchShortName = LocalBranchShortName.of(ref[ref.index(':') + 1:])
-    git.create_branch(branch, get_current_commit_hash(), switch_head=True)
+    git.create_branch(branch, git.get_commit_hash_by_revision(AnyRevision("HEAD")), switch_head=True)  # type: ignore[arg-type]
 
 
 def mock_derive_current_user_login(domain: str) -> str:
     return "very_complex_user_token"
-
-
-def mock_input(msg: str) -> str:
-    print(msg)
-    return '1'
 
 
 def mock_is_file_true(file: Any) -> bool:
@@ -386,7 +377,7 @@ class TestGitHub(BaseTest):
     )
 
     def test_github_retarget_pr(self, mocker: Any) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_retarget_pr.new_request())
         mocker.patch('urllib.request.urlopen', MockContextManager)
 
@@ -422,12 +413,12 @@ class TestGitHub(BaseTest):
           |
           o-feature *  PR #15 (github_user) WRONG PR BASE or MACHETE PARENT? PR has root rebase=no push=no
         """
-        assert_command(
+        assert_success(
             ['status'],
             expected_result=expected_status_output
         )
 
-        assert_command(
+        assert_success(
             ['github', 'retarget-pr'],
             'The base branch of PR #15 has been switched to branch-1\n'
         )
@@ -439,12 +430,12 @@ class TestGitHub(BaseTest):
           |
           o-feature *  PR #15 rebase=no push=no
         """
-        assert_command(
+        assert_success(
             ['status'],
             expected_result=expected_status_output
         )
 
-        assert_command(
+        assert_success(
             ['github', 'retarget-pr'],
             'The base branch of PR #15 is already branch-1\n'
         )
@@ -461,8 +452,7 @@ class TestGitHub(BaseTest):
     )
 
     def test_github_retarget_pr_explicit_branch(self, mocker: Any) -> None:
-        mocker.patch('git_machete.cli.exit_script', mock_exit_script)
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_retarget_pr_explicit_branch.new_request())
         mocker.patch('urllib.request.urlopen', MockContextManager)
 
@@ -505,12 +495,12 @@ class TestGitHub(BaseTest):
         |
         o-branch-without-pr
         """
-        assert_command(
+        assert_success(
             ['status'],
             expected_result=expected_status_output
         )
 
-        assert_command(
+        assert_success(
             ['github', 'retarget-pr', '--branch', 'feature'],
             'The base branch of PR #15 has been switched to branch-1\n'
         )
@@ -524,7 +514,7 @@ class TestGitHub(BaseTest):
         |
         o-branch-without-pr
         """
-        assert_command(
+        assert_success(
             ['status'],
             expected_result=expected_status_output
         )
@@ -537,17 +527,13 @@ class TestGitHub(BaseTest):
                                   '\t3. Current auth token from the gh GitHub CLI.\n'
                                   '\t4. Current auth token from the hub GitHub CLI.\n'
                                   ' Visit https://github.com/settings/tokens to generate a new one.')
-        with pytest.raises(MacheteException) as e:
-            launch_command("github", "retarget-pr", "--branch", "branch-without-pr")
-        assert e.value.args[0] == expected_error_message, \
-            'Verify that expected error message has appeared when there is no pull request associated with that branch name.'
+        assert_failure(["github", "retarget-pr", "--branch", "branch-without-pr"], expected_error_message)
 
         launch_command('github', 'retarget-pr', '--branch', 'branch-without-pr', '--ignore-if-missing')
 
     def test_github_retarget_pr_multiple_non_origin_remotes(self, mocker: Any) -> None:
-        mocker.patch('git_machete.cli.exit_script', mock_exit_script)
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_retarget_pr.new_request())
         mocker.patch('urllib.request.urlopen', MockContextManager)
 
@@ -561,7 +547,7 @@ class TestGitHub(BaseTest):
 
         # branch feature present in each remote, no branch tracking data
         (
-            self.repo_sandbox.remove_remote(remote='origin')
+            self.repo_sandbox.remove_remote()
                 .new_branch("root")
                 .add_remote('origin_1', origin_1_remote_path)
                 .add_remote('origin_2', origin_2_remote_path)
@@ -590,12 +576,9 @@ class TestGitHub(BaseTest):
         expected_error_message = (
             "Multiple non-origin remotes correspond to GitHub in this repository: origin_1, origin_2 -> aborting. \n"
             "You can also select the repository by providing some or all of git config keys: "
-            "`machete.github.{domain,remote,organization,repository}`.\n"  # noqa: FS003
+            "machete.github.{domain,remote,organization,repository}.\n"  # noqa: FS003
         )
-        with pytest.raises(MacheteException) as e:
-            launch_command("github", "retarget-pr")
-        assert e.value.args[0] == expected_error_message, \
-            'Verify that expected error message has appeared when given pull request to create is already created.'
+        assert_failure(["github", "retarget-pr"], expected_error_message)
 
         # branch feature_1 present in each remote, tracking data present
         (
@@ -615,7 +598,7 @@ class TestGitHub(BaseTest):
             """
         rewrite_definition_file(body)
 
-        assert_command(
+        assert_success(
             ['github', 'retarget-pr'],
             'The base branch of PR #20 has been switched to feature\n'
         )
@@ -637,10 +620,7 @@ class TestGitHub(BaseTest):
             """
         rewrite_definition_file(body)
 
-        with pytest.raises(MacheteException) as e:
-            launch_command("github", "retarget-pr")
-        assert e.value.args[0] == expected_error_message, \
-            'Verify that expected error message has appeared when given pull request to create is already created.'
+        assert_failure(["github", "retarget-pr"], expected_error_message)
 
         # branch feature_2 present in only one remote: origin_1 and there is no tracking data available -> infer the remote
         (
@@ -648,7 +628,7 @@ class TestGitHub(BaseTest):
                 .push(remote='origin_1', set_upstream=False)
         )
 
-        assert_command(
+        assert_success(
             ['github', 'retarget-pr'],
             'The base branch of PR #25 has been switched to feature\n'
         )
@@ -672,7 +652,7 @@ class TestGitHub(BaseTest):
             """
         rewrite_definition_file(body)
 
-        assert_command(
+        assert_success(
             ['github', 'retarget-pr'],
             'The base branch of PR #35 has been switched to feature_2\n'
         )
@@ -707,7 +687,7 @@ class TestGitHub(BaseTest):
     )
 
     def test_github_anno_prs(self, mocker: Any) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('git_machete.github.GitHubClient.derive_current_user_login', mock_derive_current_user_login)
         mocker.patch('urllib.request.urlopen', MockContextManager)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_anno_prs.new_request())
@@ -770,7 +750,7 @@ class TestGitHub(BaseTest):
         launch_command('anno', '-b=allow-ownership-link', 'rebase=no')
         launch_command('anno', '-b=build-chain', 'rebase=no push=no')
         launch_command('github', 'anno-prs')
-        assert_command(
+        assert_success(
             ["status"],
             """
             master
@@ -801,7 +781,7 @@ class TestGitHub(BaseTest):
         )
 
         launch_command('github', 'anno-prs')
-        assert_command(
+        assert_success(
             ["status"],
             """
             master
@@ -841,12 +821,11 @@ class TestGitHub(BaseTest):
     )
 
     def test_github_create_pr(self, mocker: Any) -> None:
-        mocker.patch('git_machete.cli.exit_script', mock_exit_script)
-        mocker.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
+        mocker.patch('builtins.input', mock_input_returning_y)
         # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_create_pr`
         # due to `git fetch` executed by `create-pr` subcommand.
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('urllib.error.HTTPError', MockHTTPError)  # need to provide read() method, which does not actually reads error from url
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_create_pr.new_request())
@@ -911,7 +890,7 @@ class TestGitHub(BaseTest):
 
         launch_command("github", "create-pr")
         # ahead of origin state, push is advised and accepted
-        assert_command(
+        assert_success(
             ['status'],
             """
             master
@@ -936,7 +915,7 @@ class TestGitHub(BaseTest):
         self.repo_sandbox.check_out('chore/fields')
         #  untracked state (can only create pr when branch is pushed)
         launch_command("github", "create-pr", "--draft")
-        assert_command(
+        assert_success(
             ['status'],
             """
             master
@@ -967,7 +946,7 @@ class TestGitHub(BaseTest):
 
         # diverged from and newer than origin
         launch_command("github", "create-pr")
-        assert_command(
+        assert_success(
             ['status'],
             """
             master
@@ -990,10 +969,7 @@ class TestGitHub(BaseTest):
             """,
         )
         expected_error_message = "A pull request already exists for test_repo:hotfix/add-trigger."
-        with pytest.raises(MacheteException) as e:
-            launch_command("github", "create-pr")
-        assert e.value.args[0] == expected_error_message, \
-            'Verify that expected error message has appeared when given pull request to create is already created.'
+        assert_failure(["github", "create-pr"], expected_error_message)
 
         # check against head branch is ancestor or equal to base branch
         (
@@ -1018,18 +994,12 @@ class TestGitHub(BaseTest):
 
         expected_error_message = "All commits in testing/endpoints branch are already included in develop branch.\n" \
                                  "Cannot create pull request."
-        with pytest.raises(MacheteException) as e:
-            launch_command("github", "create-pr")
-        assert e.value.parameter == expected_error_message, \
-            'Verify that expected error message has appeared when head branch is equal or ancestor of base branch.'
+        assert_failure(["github", "create-pr"], expected_error_message)
 
         self.repo_sandbox.check_out('develop')
         expected_error_message = "Branch develop does not have a parent branch (it is a root), " \
                                  "base branch for the PR cannot be established."
-        with pytest.raises(MacheteException) as e:
-            launch_command("github", "create-pr")
-        assert e.value.parameter == expected_error_message, \
-            'Verify that expected error message has appeared when creating PR from root branch.'
+        assert_failure(["github", "create-pr"], expected_error_message)
 
     git_api_state_for_test_create_pr_missing_base_branch_on_remote = MockGitHubAPIState(
         [
@@ -1045,13 +1015,13 @@ class TestGitHub(BaseTest):
     )
 
     def test_github_create_pr_missing_base_branch_on_remote(self, mocker: Any) -> None:
+        mocker.patch('builtins.input', mock_input_returning_y)
         # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_create_pr`
         # due to `git fetch` executed by `create-pr` subcommand.
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
         mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
-        mocker.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
         mocker.patch('urllib.request.urlopen', MockContextManager)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_create_pr_missing_base_branch_on_remote.new_request())
 
@@ -1078,9 +1048,10 @@ class TestGitHub(BaseTest):
 
         expected_msg = ("Fetching origin...\n"
                         "Warn: Base branch for this PR (feature/api_handling) is not found on remote, pushing...\n"
+                        "Push untracked branch feature/api_handling to origin? (y, Q) \n"
                         "Creating a PR from feature/api_exception_handling to feature/api_handling... OK, see www.github.com\n")
-        assert_command(['github', 'create-pr'], expected_msg)
-        assert_command(
+        assert_success(['github', 'create-pr'], expected_msg)
+        assert_success(
             ['status'],
             """
             develop
@@ -1110,18 +1081,16 @@ class TestGitHub(BaseTest):
     )
 
     def test_github_create_pr_with_multiple_non_origin_remotes(self, mocker: Any) -> None:
-        mocker.patch('git_machete.cli.exit_script', mock_exit_script)
-        mocker.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
+        mocker.patch('builtins.input', mock_input_returning('1', 'y', 'y'))
         # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_create_pr`
         # due to `git fetch` executed by `create-pr` subcommand.
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
         mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('urllib.error.HTTPError', MockHTTPError)  # need to provide read() method, which does not actually read error from url
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_create_pr_with_multiple_non_origin_remotes.new_request())
         mocker.patch('urllib.request.urlopen', MockContextManager)
-        mocker.patch('builtins.input', mock_input)
 
         origin_1_remote_path = mkdtemp()
         origin_2_remote_path = mkdtemp()
@@ -1130,7 +1099,7 @@ class TestGitHub(BaseTest):
 
         # branch feature present in each of the remotes, no branch tracking data, remote origin_1 picked manually via mock_input()
         (
-            self.repo_sandbox.remove_remote(remote='origin')
+            self.repo_sandbox.remove_remote()
                 .new_branch("root")
                 .add_remote('origin_1', origin_1_remote_path)
                 .add_remote('origin_2', origin_2_remote_path)
@@ -1160,6 +1129,7 @@ class TestGitHub(BaseTest):
         [2] origin_2
         Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request: 
         Branch feature is untracked, but its remote counterpart candidate origin_1/feature already exists and both branches point to the same commit.
+        Set the remote of feature to origin_1 without pushing or pulling? (y, N, q, yq, o[ther-remote]) 
 
           root
           |
@@ -1170,7 +1140,7 @@ class TestGitHub(BaseTest):
         Fetching origin_1...
         Creating a PR from feature to branch-1... OK, see www.github.com
         """  # noqa: W291, E501
-        assert_command(
+        assert_success(
             ['github', 'create-pr'],
             expected_result
         )
@@ -1184,11 +1154,12 @@ class TestGitHub(BaseTest):
         )
 
         expected_result = """
+        Add feature_1 onto the inferred upstream (parent) branch feature? (y, N) 
         Added branch feature_1 onto feature
         Fetching origin_2...
         Creating a PR from feature_1 to feature... OK, see www.github.com
         """
-        assert_command(
+        assert_success(
             ['github', 'create-pr'],
             expected_result
         )
@@ -1200,12 +1171,16 @@ class TestGitHub(BaseTest):
                 .commit('introduce feature 2')
         )
 
+        mocker.patch('builtins.input', mock_input_returning('y', '1', 'y'))
+
         expected_result = """
+        Add feature_2 onto the inferred upstream (parent) branch feature? (y, N) 
         Added branch feature_2 onto feature
         Branch feature_2 is untracked and there's no origin repository.
         [1] origin_1
         [2] origin_2
         Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request: 
+        Push untracked branch feature_2 to origin_1? (y, Q, o[ther-remote]) 
 
           root
           |
@@ -1220,7 +1195,7 @@ class TestGitHub(BaseTest):
         Fetching origin_1...
         Creating a PR from feature_2 to feature... OK, see www.github.com
         """  # noqa: W291
-        assert_command(
+        assert_success(
             ['github', 'create-pr'],
             expected_result
         )
@@ -1233,12 +1208,14 @@ class TestGitHub(BaseTest):
                 .push(remote='origin_1', set_upstream=False)
         )
 
+        mocker.patch('builtins.input', mock_input_returning('y'))
         expected_result = """
+        Add feature_3 onto the inferred upstream (parent) branch feature_2? (y, N) 
         Added branch feature_3 onto feature_2
         Fetching origin_1...
         Creating a PR from feature_3 to feature_2... OK, see www.github.com
         """  # noqa: E501
-        assert_command(
+        assert_success(
             ['github', 'create-pr'],
             expected_result
         )
@@ -1251,13 +1228,16 @@ class TestGitHub(BaseTest):
                 .push(remote='origin_2')
         )
 
+        mocker.patch('builtins.input', mock_input_returning('y', 'y'))
         expected_result = """
+        Add feature_4 onto the inferred upstream (parent) branch feature_3? (y, N) 
         Added branch feature_4 onto feature_3
         Fetching origin_2...
         Warn: Base branch for this PR (feature_3) is not found on remote, pushing...
+        Push untracked branch feature_3 to origin_2? (y, Q) 
         Creating a PR from feature_4 to feature_3... OK, see www.github.com
         """
-        assert_command(
+        assert_success(
             ['github', 'create-pr'],
             expected_result
         )
@@ -1271,12 +1251,15 @@ class TestGitHub(BaseTest):
                 .push(remote='origin_2')
         )
 
+        mocker.patch('builtins.input', mock_input_returning('y', 'y'))
         expected_result = """
+        Add feature_5 onto the inferred upstream (parent) branch feature_3? (y, N) 
         Added branch feature_5 onto feature_3
         Fetching origin...
+        Push untracked branch feature_3 to origin? (y, Q) 
         Creating a PR from feature_5 to feature_3... OK, see www.github.com
         """
-        assert_command(
+        assert_success(
             ['github', 'create-pr'],
             expected_result
         )
@@ -1359,12 +1342,11 @@ class TestGitHub(BaseTest):
     )
 
     def test_github_checkout_prs(self, mocker: Any, tmp_path: Any) -> None:
-        mocker.patch('git_machete.cli.exit_script', mock_exit_script)
         # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_checkout_prs`
         # due to `git fetch` executed by `checkout-prs` subcommand.
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_checkout_prs.new_request())
         mocker.patch('urllib.request.urlopen', MockContextManager)
@@ -1440,7 +1422,7 @@ class TestGitHub(BaseTest):
 
         # not broken chain of pull requests (root found in dependency tree)
         launch_command('github', 'checkout-prs', '18')
-        assert_command(
+        assert_success(
             ["status"],
             """
             master
@@ -1466,7 +1448,7 @@ class TestGitHub(BaseTest):
         )
         # broken chain of pull requests (add new root)
         launch_command('github', 'checkout-prs', '24')
-        assert_command(
+        assert_success(
             ["status"],
             """
             master
@@ -1499,7 +1481,7 @@ class TestGitHub(BaseTest):
 
         # broken chain of pull requests (branches already added)
         launch_command('github', 'checkout-prs', '24')
-        assert_command(
+        assert_success(
             ["status"],
             """
             master
@@ -1532,7 +1514,7 @@ class TestGitHub(BaseTest):
 
         # all PRs
         launch_command('github', 'checkout-prs', '--all')
-        assert_command(
+        assert_success(
             ["status"],
             """
             master
@@ -1571,21 +1553,15 @@ class TestGitHub(BaseTest):
                                                                       remote='origin')
         assert remote_org_repo is not None
         expected_error_message = f"PR #100 is not found in repository {remote_org_repo.organization}/{remote_org_repo.repository}"
-        with pytest.raises(MacheteException) as e:
-            launch_command('github', 'checkout-prs', '100')
-        assert e.value.parameter == expected_error_message, \
-            'Verify that expected error message has appeared when given pull request to checkout does not exists.'
+        assert_failure(['github', 'checkout-prs', '100'], expected_error_message)
 
-        with pytest.raises(MacheteException) as e:
-            launch_command('github', 'checkout-prs', '19', '100')
-        assert e.value.parameter == expected_error_message, \
-            'Verify that expected error message has appeared when one of the given pull requests to checkout does not exists.'
+        assert_failure(['github', 'checkout-prs', '19', '100'], expected_error_message)
 
         # check against user with no open pull requests
         expected_msg = ("Checking for open GitHub PRs... OK\n"
                         f"Warn: User tester has no open pull request in repository "
                         f"{remote_org_repo.organization}/{remote_org_repo.repository}\n")
-        assert_command(['github', 'checkout-prs', '--by', 'tester'], expected_msg)
+        assert_success(['github', 'checkout-prs', '--by', 'tester'], expected_msg)
 
         # Check against closed pull request with head branch deleted from remote
         local_path = tmp_path
@@ -1602,31 +1578,24 @@ class TestGitHub(BaseTest):
 
         expected_error_message = "Could not check out PR #5 because its head branch bugfix/remove-n-option " \
                                  "is already deleted from testing."
-        with pytest.raises(MacheteException) as e:
-            launch_command('github', 'checkout-prs', '5')
-        assert e.value.parameter == expected_error_message, \
-            'Verify that expected error message has appeared when given pull request to checkout ' \
-            'have already deleted branch from remote.'
+        assert_failure(['github', 'checkout-prs', '5'], expected_error_message)
 
         # Check against pr come from fork
         os.chdir(local_path)
         (self.repo_sandbox
          .new_branch('bugfix/remove-n-option')
          .commit('first commit')
-         .push()
-         )
+         .push())
         os.chdir(self.repo_sandbox.local_path)
 
         expected_msg = ("Checking for open GitHub PRs... OK\n"
                         "Warn: Pull request #5 is already closed.\n"
                         "Pull request #5 checked out at local branch bugfix/remove-n-option\n")
-
-        assert_command(['github', 'checkout-prs', '5'], expected_msg)
+        assert_success(['github', 'checkout-prs', '5'], expected_msg)
 
         # Check against multiple PRs
         expected_msg = 'Checking for open GitHub PRs... OK\n'
-
-        assert_command(['github', 'checkout-prs', '3', '12'], expected_msg)
+        assert_success(['github', 'checkout-prs', '3', '12'], expected_msg)
 
     git_api_state_for_test_github_checkout_prs_fresh_repo = MockGitHubAPIState(
         [
@@ -1667,7 +1636,7 @@ class TestGitHub(BaseTest):
     )
 
     def test_github_checkout_prs_freshly_cloned(self, mocker: Any, tmp_path: Any) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_checkout_prs_freshly_cloned`
         # due to `git fetch` executed by `checkout-prs` subcommand.
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
@@ -1725,12 +1694,12 @@ class TestGitHub(BaseTest):
         rewrite_definition_file("master")
         expected_msg = ("Checking for open GitHub PRs... OK\n"
                         "Pull request #2 checked out at local branch comments/add_docstrings\n")
-        assert_command(
+        assert_success(
             ['github', 'checkout-prs', '2'],
             expected_msg
         )
 
-        assert_command(
+        assert_success(
             ["status"],
             """
             master
@@ -1749,11 +1718,11 @@ class TestGitHub(BaseTest):
                         "Warn: Pull request #23 is already closed.\n"
                         "Pull request #23 checked out at local branch sphinx_export\n")
 
-        assert_command(
+        assert_success(
             ['github', 'checkout-prs', '23'],
             expected_msg
         )
-        assert_command(
+        assert_success(
             ["status"],
             """
             master
@@ -1791,7 +1760,7 @@ class TestGitHub(BaseTest):
     def test_github_checkout_prs_from_fork_with_deleted_repo(self, mocker: Any) -> None:
         mocker.patch('git_machete.git_operations.GitContext.fetch_ref', mock_fetch_ref)
         # need to mock fetch_ref due to underlying `git fetch pull/head` calls
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
         # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_checkout_prs_from_fork_with_deleted_repo`
@@ -1818,7 +1787,7 @@ class TestGitHub(BaseTest):
                         "No remote tracking data will be set up for feature/allow_checkout branch.\n"
                         "Warn: Pull request #2 is already closed.\n"
                         "Pull request #2 checked out at local branch feature/allow_checkout\n")
-        assert_command(
+        assert_success(
             ['github', 'checkout-prs', '2'],
             expected_msg
         )
@@ -1906,12 +1875,11 @@ class TestGitHub(BaseTest):
     )
 
     def test_github_checkout_prs_of_current_user_and_other_users(self, mocker: Any, tmp_path: Any) -> None:
-        mocker.patch('git_machete.cli.exit_script', mock_exit_script)
         # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_checkout_prs`
         # due to `git fetch` executed by `checkout-prs` subcommand.
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
         mocker.patch('urllib.request.Request',
                      self.git_api_state_for_test_github_checkout_prs_of_current_user_and_other_users.new_request())
@@ -1993,7 +1961,7 @@ class TestGitHub(BaseTest):
         # test that `checkout-prs` add `rebase=no push=no` qualifiers to branches associated with the PRs whose owner
         # is different than the current user
         launch_command('github', 'checkout-prs', '--all')
-        assert_command(
+        assert_success(
             ["status"],
             """
             master *
@@ -2029,7 +1997,7 @@ class TestGitHub(BaseTest):
         # test that `checkout-prs` doesn't overwrite annotation qualifiers but overwrites annotation text
         launch_command('anno', '-b=allow-ownership-link', 'branch_annotation rebase=no')
         launch_command('github', 'checkout-prs', '--all')
-        assert_command(
+        assert_success(
             ["status"],
             """
             master *
@@ -2076,9 +2044,8 @@ class TestGitHub(BaseTest):
     )
 
     def test_github_sync(self, mocker: Any) -> None:
-        mocker.patch('git_machete.client.MacheteClient.should_perform_interactive_slide_out', mock_should_perform_interactive_slide_out)
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)
-        mocker.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
+        mocker.patch('builtins.input', mock_input_returning_y)
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
         mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_fake)
@@ -2133,21 +2100,23 @@ class TestGitHub(BaseTest):
 
         expected_status_output = (
             """
-            master
-            |
-            o-bar (untracked)
-            |
-            o-foo
-            |
-            o-moo (untracked)
-            |
-            o-snickers *  PR #7
+            Warning: sliding invalid branches: bar2, foo2, moo2 out of the definition file
+              master
+              |
+              o-bar (untracked)
+              |
+              o-foo
+              |
+              o-moo (untracked)
+              |
+              o-snickers *  PR #7
             """
         )
-        assert_command(['status'], expected_status_output)
+        assert_success(['status'], expected_status_output)
 
-        with pytest.raises(CalledProcessError):
-            self.repo_sandbox.check_out("mars")
+        branches = self.repo_sandbox.get_local_branches()
+        assert 'foo' in branches
+        assert 'mars' not in branches
 
     def test_github_remote_patterns(self) -> None:
         organization = 'virtuslab'
@@ -2167,12 +2136,11 @@ class TestGitHub(BaseTest):
             assert remote_and_organization_and_repository.repository == repository
 
     def test_github_api_pagination(self, mocker: Any, tmp_path: Any) -> None:
-        mocker.patch('git_machete.cli.exit_script', mock_exit_script)
         # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_checkout_prs`
         # due to `git fetch` executed by `checkout-prs` subcommand.
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
         mocker.patch('urllib.request.urlopen', MockContextManager)
         mocker.patch('git_machete.github.GitHubClient.derive_current_user_login', mock_derive_current_user_login)
@@ -2203,31 +2171,26 @@ class TestGitHub(BaseTest):
         launch_command('discover', '--checked-out-since=1 day ago')
         expected_status_output = 'develop *\n' + '\n'.join([f'|\no-feature_{i}  rebase=no push=no'
                                                             for i in range(number_of_pages * prs_per_page)]) + '\n'
-        assert_command(['status'], expected_status_output)
+        assert_success(['status'], expected_status_output)
 
     def test_github_enterprise_domain_fail(self, mocker: Any) -> None:
-        mocker.patch('git_machete.client.MacheteClient.should_perform_interactive_slide_out', mock_should_perform_interactive_slide_out)
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)
-        mocker.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        mocker.patch('builtins.input', mock_input_returning("1"))
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
         mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
         mocker.patch('urllib.request.urlopen', MockContextManagerRaise403)
-        mocker.patch('git_machete.cli.exit_script', mock_exit_script)
 
         github_enterprise_domain = 'git.example.org'
         self.repo_sandbox.set_git_config_key('machete.github.domain', github_enterprise_domain)
 
         expected_error_message = (
-            "GitHub API returned `403` HTTP status with error message: `Forbidden`\n"
+            "GitHub API returned 403 HTTP status with error message: Forbidden\n"
             "You might not have the required permissions for this repository.\n"
-            "Provide a GitHub API token with `repo` access.\n"
-            f"Visit `https://{github_enterprise_domain}/settings/tokens` to generate a new one.\n"
-            "You can also use a different token provider, available providers can be found when running `git machete help github`.")
-
-        with pytest.raises(MacheteException) as e:
-            launch_command('github', 'checkout-prs', '--all')
-        assert e.value.args[0] == expected_error_message, 'Verify that expected error message has appeared.'
+            "Provide a GitHub API token with repo access.\n"
+            f"Visit https://{github_enterprise_domain}/settings/tokens to generate a new one.\n"
+            "You can also use a different token provider, available providers can be found when running git machete help github.")
+        assert_failure(['github', 'checkout-prs', '--all'], expected_error_message)
 
     git_api_state_for_test_github_enterprise_domain = MockGitHubAPIState(
         [
@@ -2243,15 +2206,13 @@ class TestGitHub(BaseTest):
     )
 
     def test_github_enterprise_domain(self, mocker: Any) -> None:
-        mocker.patch('git_machete.client.MacheteClient.should_perform_interactive_slide_out', mock_should_perform_interactive_slide_out)
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)
-        mocker.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
+        mocker.patch('builtins.input', mock_input_returning("1"))
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
         mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_fake)
         mocker.patch('urllib.request.urlopen', MockContextManager)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_enterprise_domain.new_request())
-        mocker.patch('git_machete.cli.exit_script', mock_exit_script)
 
         github_enterprise_domain = 'git.example.org'
         (
@@ -2396,7 +2357,7 @@ class TestGitHub(BaseTest):
     )
 
     def test_local_branch_name_different_than_tracking_branch_name(self, mocker: Any) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('urllib.request.Request',
                      self.git_api_state_for_test_local_branch_name_different_than_tracking_branch_name.new_request())
         mocker.patch('urllib.request.urlopen', MockContextManager)
@@ -2434,7 +2395,7 @@ class TestGitHub(BaseTest):
           |
           o-feature_1 *  PR #20 (github_user) rebase=no push=no
         """
-        assert_command(
+        assert_success(
             ['status'],
             expected_result=expected_status_output
         )

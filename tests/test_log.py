@@ -1,24 +1,23 @@
 from typing import Any
 
 from .base_test import BaseTest
-from .mockers import (get_current_commit_hash, launch_command,
-                      mock_run_cmd_and_forward_stdout)
+from .mockers import launch_command, mock_run_cmd_and_forward_output
 
 
 class TestLog(BaseTest):
 
     def test_log(self, mocker: Any) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_stdout)
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_output)
 
         self.repo_sandbox.new_branch('root')
         self.repo_sandbox.commit()
-        roots_only_commit_hash = get_current_commit_hash()
+        roots_only_commit_hash = self.repo_sandbox.get_current_commit_hash()
 
         self.repo_sandbox.new_branch('child')
         self.repo_sandbox.commit()
-        childs_first_commit_hash = get_current_commit_hash()
+        childs_first_commit_hash = self.repo_sandbox.get_current_commit_hash()
         self.repo_sandbox.commit()
-        childs_second_commit_hash = get_current_commit_hash()
+        childs_second_commit_hash = self.repo_sandbox.get_current_commit_hash()
 
         log_contents = [launch_command('log'), launch_command('log', 'child'), launch_command('log', 'refs/heads/child')]
 

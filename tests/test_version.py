@@ -1,17 +1,13 @@
-from typing import Any
 
 from git_machete import __version__
 
-from .mockers import assert_command, mock_exit_script_no_exit
+from .mockers import assert_success
 
 
 class TestVersion:
 
-    def test_version(self, mocker: Any) -> None:
-        mocker.patch('git_machete.cli.exit_script', mock_exit_script_no_exit)
-        mocker.patch('sys.exit', mock_exit_script_no_exit)
-
-        assert_command(
+    def test_version(self) -> None:
+        assert_success(
             ["version"],
             f"git-machete version {__version__}\n"
         )

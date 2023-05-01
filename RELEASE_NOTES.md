@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.17.3
+
 ## New in git-machete 3.17.2
 
 - fixed: when `origin/feature/foo` branch exists, `git machete add foo` no longer falsely recognizes `origin/feature/foo` as a potential remote tracking branch for `foo`

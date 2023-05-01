@@ -1,17 +1,16 @@
 from typing import Any
 
-import pytest
-
 from .base_test import BaseTest, git
-from .mockers import (assert_command, get_current_commit_hash, launch_command,
-                      mock_ask_if, mock_run_cmd,
-                      mock_run_cmd_and_forward_stdout, rewrite_definition_file)
+from .mockers import (assert_failure, assert_success,
+                      fixed_author_and_committer_date, launch_command,
+                      mock_input_returning_y, mock_run_cmd_and_discard_output,
+                      mock_run_cmd_and_forward_output, rewrite_definition_file)
 
 
 class TestSlideOut(BaseTest):
 
     def test_slide_out(self, mocker: Any) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         (
             self.repo_sandbox.new_branch("develop")
             .commit("develop commit")
@@ -47,7 +46,7 @@ class TestSlideOut(BaseTest):
             """
         rewrite_definition_file(body)
 
-        assert_command(
+        assert_success(
             ["status", "-l"],
             """
             develop
@@ -75,7 +74,7 @@ class TestSlideOut(BaseTest):
         launch_command("go", "up")
         launch_command("slide-out", "-n")
 
-        assert_command(
+        assert_success(
             ["status", "-l"],
             """
             develop
@@ -100,7 +99,7 @@ class TestSlideOut(BaseTest):
         launch_command("go", "up")
         launch_command("go", "up")
 
-        assert_command(
+        assert_success(
             ["status", "-l"],
             """
                 develop
@@ -121,7 +120,7 @@ class TestSlideOut(BaseTest):
 
         launch_command("slide-out", "-n")
 
-        assert_command(
+        assert_success(
             ["status", "-l"],
             """
             develop
@@ -138,7 +137,7 @@ class TestSlideOut(BaseTest):
         )
 
         launch_command("traverse", "-Wy")
-        assert_command(
+        assert_success(
             ["status", "-l"],
             """
             develop
@@ -158,14 +157,14 @@ class TestSlideOut(BaseTest):
         # This just slices the branch off the tree.
         launch_command("go", "down")
         assert "child_d" in git.get_local_branches()
-        mocker.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
-        assert_command(
+        mocker.patch('builtins.input', mock_input_returning_y)
+        assert_success(
             ["slide-out", "-n", "--delete"],
-            ""
+            "Delete branch child_d (unmerged to HEAD)? (y, N, q) \n"
         )
         assert "child_d" not in git.get_local_branches()
 
-        assert_command(
+        assert_success(
             ["status", "-l"],
             """
             develop
@@ -179,7 +178,7 @@ class TestSlideOut(BaseTest):
         )
 
     def test_slide_out_with_valid_down_fork_point(self, mocker: Any) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_stdout)
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_output)
 
         (
             self.repo_sandbox.new_branch('branch-0')
@@ -192,7 +191,7 @@ class TestSlideOut(BaseTest):
                 .commit()
                 .commit('Second commit on branch-3.')
         )
-        hash_of_second_commit_on_branch_3 = get_current_commit_hash()
+        hash_of_second_commit_on_branch_3 = self.repo_sandbox.get_current_commit_hash()
         self.repo_sandbox.commit("Third commit on branch-3.")
 
         body: str = \
@@ -216,22 +215,23 @@ class TestSlideOut(BaseTest):
             """
         )
 
-        assert_command(['status', '-l'], expected_status_output)
+        assert_success(['status', '-l'], expected_status_output)
 
-    def test_slide_out_with_invalid_down_fork_point(self, mocker: Any) -> None:
-        (
-            self.repo_sandbox.new_branch('branch-0')
-                .commit()
-                .new_branch('branch-1')
-                .commit()
-                .new_branch('branch-2')
-                .commit()
-                .new_branch('branch-3')
-                .commit()
-                .check_out('branch-2')
-                .commit('Commit that is not ancestor of branch-3.')
-        )
-        hash_of_commit_that_is_not_ancestor_of_branch_2 = get_current_commit_hash()
+    def test_slide_out_with_invalid_down_fork_point(self) -> None:
+        with fixed_author_and_committer_date():
+            (
+                self.repo_sandbox.new_branch('branch-0')
+                    .commit()
+                    .new_branch('branch-1')
+                    .commit()
+                    .new_branch('branch-2')
+                    .commit()
+                    .new_branch('branch-3')
+                    .commit()
+                    .check_out('branch-2')
+                    .commit('Commit that is not ancestor of branch-3.')
+            )
+        hash_of_commit_that_is_not_ancestor_of_branch_2 = self.repo_sandbox.get_current_commit_hash()
 
         body: str = \
             """
@@ -242,12 +242,12 @@ class TestSlideOut(BaseTest):
             """
         rewrite_definition_file(body)
 
-        with pytest.raises(SystemExit):
-            launch_command(
-                'slide-out', '-n', 'branch-1', 'branch-2', '-d',
-                hash_of_commit_that_is_not_ancestor_of_branch_2)
+        assert_failure(
+            ['slide-out', '-n', 'branch-1', 'branch-2', '-d', hash_of_commit_that_is_not_ancestor_of_branch_2],
+            "Fork point 790f30303cca5e14d58f85c5aa1359a8d4dace8c is not ancestor of or the tip of the branch-3 branch."
+        )
 
-    def test_slide_out_with_down_fork_point_and_multiple_children_of_last_branch(self, mocker: Any) -> None:
+    def test_slide_out_with_down_fork_point_and_multiple_children_of_last_branch(self) -> None:
         (
             self.repo_sandbox.new_branch('branch-0')
                 .commit()
@@ -260,7 +260,7 @@ class TestSlideOut(BaseTest):
                 .commit()
         )
 
-        hash_of_only_commit_on_branch_2b = get_current_commit_hash()
+        hash_of_only_commit_on_branch_2b = self.repo_sandbox.get_current_commit_hash()
 
         body: str = \
             """
@@ -271,7 +271,7 @@ class TestSlideOut(BaseTest):
             """
         rewrite_definition_file(body)
 
-        with pytest.raises(SystemExit):
-            launch_command(
-                'slide-out', '-n', 'branch-1', '-d',
-                hash_of_only_commit_on_branch_2b)
+        assert_failure(
+            ['slide-out', '-n', 'branch-1', '-d', hash_of_only_commit_on_branch_2b],
+            "Last branch to slide out can't have more than one child branch if option --down-fork-point is passed."
+        )

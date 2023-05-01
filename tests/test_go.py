@@ -1,7 +1,8 @@
 from typing import Any
 
 from .base_test import BaseTest
-from .mockers import launch_command, mock_run_cmd, rewrite_definition_file
+from .mockers import (launch_command, mock_run_cmd_and_discard_output,
+                      rewrite_definition_file)
 
 
 class TestGo(BaseTest):
@@ -13,7 +14,7 @@ class TestGo(BaseTest):
         parent/upstream branch of the current branch.
 
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("level-0-branch")
@@ -49,7 +50,7 @@ class TestGo(BaseTest):
         child/downstream branch of the current branch.
 
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("level-0-branch")
@@ -66,18 +67,13 @@ class TestGo(BaseTest):
         rewrite_definition_file(body)
         launch_command("go", "down")
 
-        assert 'level-1-branch' == launch_command("show", "current").strip(), \
-            ("Verify that 'git machete go down' performs 'git checkout' to "
-             "the child/downstream branch of the current branch."
-             )
+        assert launch_command("show", "current").strip() == 'level-1-branch'
+
         # check short command behaviour
         self.repo_sandbox.check_out("level-0-branch")
         launch_command("g", "d")
 
-        assert 'level-1-branch' == launch_command("show", "current").strip(), \
-            ("Verify that 'git machete g d' performs 'git checkout' to "
-             "the child/downstream branch of the current branch."
-             )
+        assert launch_command("show", "current").strip() == 'level-1-branch'
 
     def test_go_first_root_with_downstream(self, mocker: Any) -> None:
         """Verify behaviour of a 'git machete go first' command.
@@ -87,7 +83,7 @@ class TestGo(BaseTest):
         if root branch has any downstream branches.
 
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("level-0-branch")
@@ -145,7 +141,7 @@ class TestGo(BaseTest):
         if root branch has no downstream.
 
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("level-0-branch")
@@ -178,7 +174,7 @@ class TestGo(BaseTest):
         has any downstream branches.
 
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("level-0-branch")
@@ -232,7 +228,7 @@ class TestGo(BaseTest):
         when successor branch exists within the root tree.
 
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("level-0-branch")
@@ -278,7 +274,7 @@ class TestGo(BaseTest):
         share root with the current branch.
 
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("level-0-branch")
@@ -320,7 +316,7 @@ class TestGo(BaseTest):
         when predecessor branch exists within the root tree.
 
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("level-0-branch")
@@ -365,7 +361,7 @@ class TestGo(BaseTest):
         branch doesn't exist.
 
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("level-0-branch")
@@ -403,7 +399,7 @@ class TestGo(BaseTest):
         the root of the current branch.
 
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("level-0-branch")

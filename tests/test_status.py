@@ -2,20 +2,14 @@ import os
 from tempfile import mkdtemp
 from typing import Any
 
-import pytest
-
-from git_machete.exceptions import MacheteException
-
 from .base_test import BaseTest
-from .mockers import (assert_command, launch_command, mock_exit_script,
-                      mock_run_cmd, rewrite_definition_file)
+from .mockers import (assert_failure, assert_success, launch_command,
+                      mock_run_cmd_and_discard_output, rewrite_definition_file)
 
 
 class TestStatus(BaseTest):
 
-    def test_branch_reappears_in_definition(self, mocker: Any) -> None:
-        mocker.patch('git_machete.cli.exit_script', mock_exit_script)
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+    def test_branch_reappears_in_definition(self) -> None:
 
         body: str = \
             """
@@ -28,14 +22,9 @@ class TestStatus(BaseTest):
 
         expected_error_message: str = '.git/machete, line 6: branch develop re-appears in the tree definition. ' \
                                       'Edit the definition file manually with git machete edit'
+        assert_failure(['status'], expected_error_message)
 
-        with pytest.raises(MacheteException) as e:
-            launch_command('status')
-        assert e.value.parameter == expected_error_message
-
-    def test_indent_not_multiply_of_base_indent(self, mocker: Any) -> None:
-        mocker.patch('git_machete.cli.exit_script', mock_exit_script)
-
+    def test_indent_not_multiply_of_base_indent(self) -> None:
         body: str = \
             """
             master
@@ -46,15 +35,25 @@ class TestStatus(BaseTest):
 
         expected_error_message: str = '.git/machete, line 4: invalid indent <TAB><SPACE>, expected a multiply of <TAB>. ' \
                                       'Edit the definition file manually with git machete edit'
+        assert_failure(['status'], expected_error_message)
 
-        with pytest.raises(MacheteException) as e:
-            launch_command('status')
-        assert e.value.parameter == expected_error_message
+    def test_indent_too_deep(self) -> None:
+        body: str = \
+            """
+            master
+            \tdevelop
+            \t\t\tfoo
+            """
+        rewrite_definition_file(body)
+
+        expected_error_message: str = '.git/machete, line 4: too much indent (level 3, expected at most 2) for the branch foo. ' \
+                                      'Edit the definition file manually with git machete edit'
+        assert_failure(['status'], expected_error_message)
 
     def test_status_branch_hook_output(self) -> None:
         (
             self.repo_sandbox
-            .remove_remote('origin')
+            .remove_remote()
             .new_branch('master')
             .commit('master commit')
             .new_branch('develop')
@@ -69,7 +68,7 @@ class TestStatus(BaseTest):
         rewrite_definition_file(body)
 
         self.repo_sandbox.write_to_file(".git/hooks/machete-status-branch", "#!/bin/bash\ngit ls-tree $1 | wc -l | sed 's/ *//'")
-        assert_command(
+        assert_success(
             ["status"],
             """
             hint: The '.git/hooks/machete-status-branch' hook was ignored because it's not set as executable.
@@ -81,7 +80,7 @@ class TestStatus(BaseTest):
         )
 
         self.repo_sandbox.set_git_config_key("advice.ignoredHook", "false")
-        assert_command(
+        assert_success(
             ["status"],
             """
             master
@@ -91,7 +90,7 @@ class TestStatus(BaseTest):
         )
 
         self.repo_sandbox.set_file_executable(".git/hooks/machete-status-branch")
-        assert_command(
+        assert_success(
             ["status"],
             """
             master  1
@@ -100,9 +99,28 @@ class TestStatus(BaseTest):
             """
         )
 
+        self.repo_sandbox.write_to_file(".git/hooks/machete-status-branch", "#!/bin/bash\necho '    '")
+        assert_success(
+            ["status"],
+            """
+            master
+            |
+            o-develop *
+            """
+        )
+
+        self.repo_sandbox.write_to_file(".git/hooks/machete-status-branch", "#!/bin/bash\nexit 1")
+        assert_success(
+            ["status"],
+            """
+            master
+            |
+            o-develop *
+            """
+        )
+
     def test_extra_space_before_branch_name(self, mocker: Any) -> None:
-        mocker.patch('git_machete.cli.exit_script', mock_exit_script)
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox
@@ -134,7 +152,7 @@ class TestStatus(BaseTest):
                o- foo *
             """
         )
-        assert_command(['status'], expected_status_output)
+        assert_success(['status'], expected_status_output)
 
         self.repo_sandbox.set_git_config_key('machete.status.extraSpaceBeforeBranchName', 'false')
 
@@ -147,10 +165,10 @@ class TestStatus(BaseTest):
               o-foo *
             """
         )
-        assert_command(['status'], expected_status_output)
+        assert_success(['status'], expected_status_output)
 
     def test_squashed_branch_recognized_as_merged(self, mocker: Any) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("root")
@@ -178,7 +196,7 @@ class TestStatus(BaseTest):
             """
         rewrite_definition_file(body)
 
-        assert_command(
+        assert_success(
             ["status", "-l"],
             """
             root
@@ -205,7 +223,7 @@ class TestStatus(BaseTest):
         )
 
         # in default mode, feature is detected as "m" (merged) into develop
-        assert_command(
+        assert_success(
             ["status", "-l"],
             """
             root
@@ -223,7 +241,7 @@ class TestStatus(BaseTest):
         )
 
         # but under --no-detect-squash-merges, feature is detected as "x" (behind) develop
-        assert_command(
+        assert_success(
             ["status", "-l", "--no-detect-squash-merges"],
             """
             root
@@ -245,7 +263,7 @@ class TestStatus(BaseTest):
         # traverse then slide out the feature branch
         launch_command("traverse", "-w", "-y")
 
-        assert_command(
+        assert_success(
             ["status", "-l"],
             """
             root
@@ -272,7 +290,7 @@ class TestStatus(BaseTest):
         )
 
         # status before fetch will show develop as out of date
-        assert_command(
+        assert_success(
             ["status", "-l"],
             """
             root
@@ -290,7 +308,7 @@ class TestStatus(BaseTest):
         # fetch-traverse will fetch upstream squash, detect, and slide out the child branch
         launch_command("traverse", "-W", "-y")
 
-        assert_command(
+        assert_success(
             ["status", "-l"],
             """
             root
@@ -303,8 +321,7 @@ class TestStatus(BaseTest):
         )
 
     def test_inferring_counterpart_for_fetching_of_branch(self, mocker: Any) -> None:
-        mocker.patch('git_machete.cli.exit_script', mock_exit_script)
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         origin_1_remote_path = mkdtemp()
         self.repo_sandbox.new_repo(origin_1_remote_path)
@@ -354,10 +371,10 @@ class TestStatus(BaseTest):
                   o-mars *
             """
         )
-        assert_command(['status'], expected_status_output)
+        assert_success(['status'], expected_status_output)
 
     def test_status_when_child_branch_is_pushed_immediately_after_creation(self, mocker: Any) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("master")
@@ -385,4 +402,36 @@ class TestStatus(BaseTest):
               o-bar * (ahead of origin)
             """
         )
-        assert_command(['status'], expected_status_output)
+        assert_success(['status'], expected_status_output)
+
+    def test_status_fork_point_without_reflogs(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+
+        (
+            self.repo_sandbox
+            .remove_remote()
+            .new_branch("master")
+            .commit()
+            .new_branch("develop")
+            .commit()
+            .check_out("master")
+            .commit()
+        )
+        body: str = \
+            """
+            master
+                develop
+            """
+        rewrite_definition_file(body)
+
+        self.repo_sandbox.remove_file(".git/logs/")
+
+        expected_status_output = (
+            """
+            master *
+            |
+            | Some commit message.
+            x-develop
+            """
+        )
+        assert_success(['status', '-l'], expected_status_output)

@@ -1,7 +1,7 @@
 from typing import Any
 
 from .base_test import BaseTest
-from .mockers import assert_command, mock_run_cmd_and_forward_stdout
+from .mockers import assert_success, mock_run_cmd_and_forward_output
 
 
 class TestDiff(BaseTest):
@@ -10,7 +10,7 @@ class TestDiff(BaseTest):
         """
         Verify behaviour of a 'git machete diff' command.
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_stdout)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_output)  # to hide git outputs in tests
         (
             self.repo_sandbox.new_branch("master")
                 .add_file_and_commit(message='master commit1')
@@ -43,7 +43,7 @@ class TestDiff(BaseTest):
         """
 
         # Test `git machete diff` without providing the branch name, git diff against the current working tree
-        assert_command(["diff"], expected_status_output)
+        assert_success(["diff"], expected_status_output)
 
         expected_status_output = """
         diff --git a/develop_file_name.txt b/develop_file_name.txt
@@ -55,10 +55,10 @@ class TestDiff(BaseTest):
         +Develop content
 
         """
-        assert_command(["diff", "develop"], expected_status_output)
-        assert_command(["diff", "refs/heads/develop"], expected_status_output)
+        assert_success(["diff", "develop"], expected_status_output)
+        assert_success(["diff", "refs/heads/develop"], expected_status_output)
 
-        assert_command(
+        assert_success(
             ["diff", "--stat", "refs/heads/develop"],
             "develop_file_name.txt | 1 +\n"
             "1 file changed, 1 insertion(+)\n\n"

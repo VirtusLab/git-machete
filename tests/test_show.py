@@ -1,13 +1,13 @@
 from typing import Any
 
 from .base_test import BaseTest
-from .mockers import (assert_command, launch_command, mock_run_cmd,
-                      rewrite_definition_file)
+from .mockers import (assert_failure, assert_success, launch_command,
+                      mock_run_cmd_and_discard_output, rewrite_definition_file)
 
 
 class TestShow(BaseTest):
 
-    def setup_discover_standard_tree(self) -> None:
+    def setup_standard_tree(self) -> None:
         (
             self.repo_sandbox.new_branch("root")
             .commit("root")
@@ -61,7 +61,7 @@ class TestShow(BaseTest):
             """
         rewrite_definition_file(body)
 
-        assert_command(
+        assert_success(
             ["status"],
             """
             develop
@@ -83,9 +83,9 @@ class TestShow(BaseTest):
         )
 
     def test_show(self, mocker: Any) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
-        self.setup_discover_standard_tree()
+        self.setup_standard_tree()
 
         assert launch_command("show", "up").strip() == "hotfix/add-trigger"
         assert launch_command("show", "up", "call-ws").strip() == "develop"
@@ -100,7 +100,7 @@ class TestShow(BaseTest):
         root tree.
 
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("level-0-branch")
@@ -131,30 +131,31 @@ class TestShow(BaseTest):
         child/downstream branch one below current one.
 
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
-            self.repo_sandbox.new_branch("level-0-branch")
+            self.repo_sandbox
+            .new_branch("level-0-branch")
             .commit()
-            .new_branch("level-1-branch")
-            .commit()
+            .new_branch("level-1a-branch")
+            .new_branch("level-2-branch")
+            .check_out("level-0-branch")
+            .new_branch("level-1b-branch")
             .check_out("level-0-branch")
         )
         body: str = \
             """
             level-0-branch
-                level-1-branch
+                level-1a-branch
+                    level-2-branch
+                level-1b-branch
             """
         rewrite_definition_file(body)
 
-        assert 'level-1-branch' == launch_command("show", "down").strip(), \
-            ("Verify that 'git machete show down' displays name of "
-             "a child/downstream branch one below current one."
-             )  # check short command behaviour
-        assert 'level-1-branch' == launch_command("show", "d").strip(), \
-            ("Verify that 'git machete show d' displays name of "
-             "a child/downstream branch one below current one."
-             )
+        assert launch_command("show", "down").strip() == "level-1a-branch\nlevel-1b-branch"
+        assert launch_command("show", "d").strip() == "level-1a-branch\nlevel-1b-branch"
+        assert launch_command("show", "d", "level-1a-branch").strip() == "level-2-branch"
+        assert_failure(["show", "d", "level-1b-branch"], "Branch level-1b-branch has no downstream branch")
 
     def test_show_first(self, mocker: Any) -> None:
         """Verify behaviour of a 'git machete show first' command.
@@ -164,7 +165,7 @@ class TestShow(BaseTest):
         branch has any downstream branches.
 
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("level-0-branch")
@@ -219,7 +220,7 @@ class TestShow(BaseTest):
         branch has any downstream branches.
 
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("level-0-branch")
@@ -268,7 +269,7 @@ class TestShow(BaseTest):
         when successor branch exists within the root tree.
 
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("level-0-branch")
@@ -291,16 +292,9 @@ class TestShow(BaseTest):
             """
         rewrite_definition_file(body)
 
-        assert 'level-1b-branch' == launch_command("show", "next").strip(), \
-            ("Verify that 'git machete show next' displays name of "
-             "a branch right after the current one in the config file "
-             "when successor branch exists within the root tree."
-             )
-        assert 'level-1b-branch' == launch_command("show", "n").strip(), \
-            ("Verify that 'git machete show n' displays name of "
-             "a branch right after the current one in the config file "
-             "when successor branch exists within the root tree."
-             )
+        assert launch_command("show", "next").strip() == 'level-1b-branch'
+        assert launch_command("show", "n").strip() == 'level-1b-branch'
+        assert_failure(["show", "n", "level-1b-branch"], "Branch level-1b-branch has no successor")
 
     def test_show_prev(self, mocker: Any) -> None:
         """Verify behaviour of a 'git machete show prev' command.
@@ -310,7 +304,7 @@ class TestShow(BaseTest):
         when predecessor branch exists within the root tree.
 
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("level-0-branch")
@@ -332,16 +326,9 @@ class TestShow(BaseTest):
             """
         rewrite_definition_file(body)
 
-        assert 'level-2a-branch' == launch_command("show", "prev").strip(), \
-            ("Verify that 'git machete show prev' displays name of "
-             "a branch right before the current one in the config file "
-             "when predecessor branch exists within the root tree."
-             )
-        assert 'level-2a-branch' == launch_command("show", "p").strip(), \
-            ("Verify that 'git machete show p' displays name of "
-             "a branch right before the current one in the config file "
-             "when predecessor branch exists within the root tree."
-             )
+        assert launch_command("show", "prev").strip() == 'level-2a-branch'
+        assert launch_command("show", "p").strip() == 'level-2a-branch'
+        assert_failure(["show", "p", "level-0-branch"], "Branch level-0-branch has no predecessor")
 
     def test_show_root(self, mocker: Any) -> None:
         """Verify behaviour of a 'git machete show root' command.
@@ -350,7 +337,7 @@ class TestShow(BaseTest):
         the current branch.
 
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("level-0-branch")

@@ -1,5 +1,5 @@
 from .base_test import BaseTest
-from .mockers import assert_command, launch_command, rewrite_definition_file
+from .mockers import assert_success, launch_command, rewrite_definition_file
 
 
 class TestAnno(BaseTest):
@@ -29,7 +29,7 @@ class TestAnno(BaseTest):
 
         # Test `git machete anno` without providing the branch name
         launch_command('anno', 'Custom annotation for `develop` branch')
-        assert_command(
+        assert_success(
             ["status"],
             """
             master (untracked)
@@ -41,7 +41,7 @@ class TestAnno(BaseTest):
         )
 
         launch_command('anno', '-b=feature', 'Custom annotation for `feature` branch')
-        assert_command(
+        assert_success(
             ["status"],
             """
             master (untracked)
@@ -53,7 +53,7 @@ class TestAnno(BaseTest):
         )
 
         launch_command('anno', '-b=refs/heads/feature', 'Custom annotation for `feature` branch')
-        assert_command(
+        assert_success(
             ["status"],
             """
             master (untracked)
@@ -66,7 +66,7 @@ class TestAnno(BaseTest):
 
         # check if annotation qualifiers are parsed correctly and that they can be overwritten by `git machete anno`
         launch_command('anno', '-b=refs/heads/feature', 'push=no Custom annotation for `feature` branch rebase=no')
-        assert_command(
+        assert_success(
             ["status"],
             """
             master (untracked)
@@ -77,7 +77,7 @@ class TestAnno(BaseTest):
             """,
         )
         launch_command('anno', '-b=refs/heads/feature', 'Custom annotation for `feature` branch')
-        assert_command(
+        assert_success(
             ["status"],
             """
             master (untracked)
@@ -88,22 +88,22 @@ class TestAnno(BaseTest):
             """,
         )
 
-        assert_command(
+        assert_success(
             ['anno'],
             'Custom annotation for `develop` branch\n'
         )
 
-        assert_command(
+        assert_success(
             ['anno', '-b', 'feature'],
             'Custom annotation for `feature` branch\n'
         )
 
-        assert_command(
+        assert_success(
             ['anno', '-b', 'feature', ''],
             ""
         )
 
-        assert_command(
+        assert_success(
             ['anno', '-b', 'feature'],
             ""
         )

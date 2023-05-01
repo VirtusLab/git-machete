@@ -1,23 +1,15 @@
-import subprocess
 from typing import Any
 
-import pytest
-
 from .base_test import BaseTest
-from .mockers import (assert_command, launch_command, mock_ask_if,
-                      mock_run_cmd, mock_should_perform_interactive_slide_out,
-                      rewrite_definition_file)
+from .mockers import (assert_success, launch_command, mock_input_returning_y,
+                      mock_run_cmd_and_discard_output, rewrite_definition_file)
 
 
 class TestClean(BaseTest):
 
     def test_clean(self, mocker: Any) -> None:
-        mocker.patch(
-            'git_machete.client.MacheteClient.should_perform_interactive_slide_out',
-            mock_should_perform_interactive_slide_out,
-        )
-        mocker.patch('git_machete.client.MacheteClient.ask_if', mock_ask_if)
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)
+        mocker.patch('builtins.input', mock_input_returning_y)
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         (
             self.repo_sandbox.new_branch('master')
                 .commit()
@@ -60,16 +52,18 @@ class TestClean(BaseTest):
 
         expected_status_output = (
             """
-            master *
-            |
-            o-bar (untracked)
-            |
-            o-foo
-            |
-            o-moo (untracked)
+            Warning: sliding invalid branches: bar2, foo2, moo2, mars out of the definition file
+              master *
+              |
+              o-bar (untracked)
+              |
+              o-foo
+              |
+              o-moo (untracked)
             """
         )
-        assert_command(['status'], expected_status_output)
+        assert_success(['status'], expected_status_output)
 
-        with pytest.raises(subprocess.CalledProcessError):
-            self.repo_sandbox.check_out("mars")
+        branches = self.repo_sandbox.get_local_branches()
+        assert 'foo' in branches
+        assert 'mars' not in branches

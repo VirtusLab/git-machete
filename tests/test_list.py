@@ -5,8 +5,8 @@ import pytest
 from git_machete.exceptions import ExitCode
 
 from .base_test import BaseTest
-from .mockers import (assert_command, launch_command, mock_run_cmd,
-                      rewrite_definition_file)
+from .mockers import (assert_success, launch_command,
+                      mock_run_cmd_and_discard_output, rewrite_definition_file)
 
 
 class TestList(BaseTest):
@@ -15,7 +15,7 @@ class TestList(BaseTest):
         """
         Verify behaviour of a 'git machete list' command.
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("master")
@@ -68,7 +68,7 @@ class TestList(BaseTest):
         feature_0_1
         feature_1
         """
-        assert_command(
+        assert_success(
             ['list', 'managed'],
             expected_output
         )
@@ -77,7 +77,7 @@ class TestList(BaseTest):
         feature_2
         feature_3
         """
-        assert_command(
+        assert_success(
             ['list', 'addable'],
             expected_output
         )
@@ -88,7 +88,7 @@ class TestList(BaseTest):
         feature_0_1
         feature_1
         """
-        assert_command(
+        assert_success(
             ['list', 'childless'],
             expected_output
         )
@@ -100,7 +100,7 @@ class TestList(BaseTest):
         feature_0_1
         feature_1
         """
-        assert_command(
+        assert_success(
             ['list', 'slidable'],
             expected_output
         )
@@ -108,7 +108,7 @@ class TestList(BaseTest):
         expected_output = """
         feature_0_0_0
         """
-        assert_command(
+        assert_success(
             ['list', 'slidable-after', 'feature_0_0'],
             expected_output
         )
@@ -116,7 +116,7 @@ class TestList(BaseTest):
         expected_output = """
         feature_2
         """
-        assert_command(
+        assert_success(
             ['list', 'unmanaged'],
             expected_output
         )
@@ -127,13 +127,13 @@ class TestList(BaseTest):
         expected_output = """
         feature_1
         """
-        assert_command(
+        assert_success(
             ['list', 'with-overridden-fork-point'],
             expected_output
         )
 
         launch_command('fork-point', '--unset-override')
-        assert_command(
+        assert_success(
             ['list', 'with-overridden-fork-point'],
             ""
         )

@@ -1,7 +1,6 @@
 from .base_test import BaseTest
-from .mockers import (assert_command, fixed_author_and_committer_date,
-                      get_current_commit_hash, launch_command,
-                      rewrite_definition_file)
+from .mockers import (assert_success, fixed_author_and_committer_date,
+                      launch_command, rewrite_definition_file)
 
 
 class TestForkPoint(BaseTest):
@@ -30,13 +29,13 @@ class TestForkPoint(BaseTest):
 
         # Test `git machete fork-point` without providing the branch name
         # hash 67007ed30def3b9b658380b895a9f62b525286e0 corresponds to the commit on develop branch
-        assert_command(["fork-point"], "03e727bb987b21acce75e404f57e9d33ca876c20\n")
-        assert_command(["fork-point", "--inferred"], "03e727bb987b21acce75e404f57e9d33ca876c20\n")
+        assert_success(["fork-point"], "03e727bb987b21acce75e404f57e9d33ca876c20\n")
+        assert_success(["fork-point", "--inferred"], "03e727bb987b21acce75e404f57e9d33ca876c20\n")
 
         # hash 515319fa0ab47f372f6159bcc8ac27b43ee8a0ed corresponds to the commit on master branch
-        assert_command(["fork-point", 'develop'], "58a3121d3ef89189eb51176c7ec5344f4aab2f84\n")
+        assert_success(["fork-point", 'develop'], "58a3121d3ef89189eb51176c7ec5344f4aab2f84\n")
 
-        assert_command(["fork-point", 'refs/heads/develop'], "58a3121d3ef89189eb51176c7ec5344f4aab2f84\n")
+        assert_success(["fork-point", 'refs/heads/develop'], "58a3121d3ef89189eb51176c7ec5344f4aab2f84\n")
 
     def test_fork_point_override_to_commit(self) -> None:
         """
@@ -46,9 +45,9 @@ class TestForkPoint(BaseTest):
             self.repo_sandbox.new_branch("master")
                 .commit("master first commit")
         )
-        master_branch_first_commit_hash = get_current_commit_hash()
+        master_branch_first_commit_hash = self.repo_sandbox.get_current_commit_hash()
         self.repo_sandbox.commit("master second commit")
-        develop_branch_fork_point = get_current_commit_hash()
+        develop_branch_fork_point = self.repo_sandbox.get_current_commit_hash()
         self.repo_sandbox.new_branch("develop").commit("develop commit")
         body: str = \
             """
@@ -86,6 +85,8 @@ class TestForkPoint(BaseTest):
         assert launch_command('fork-point').strip() == develop_branch_fork_point
         assert launch_command('fork-point', '--inferred').strip() == develop_branch_fork_point
 
+        assert_success(['fork-point', '--unset-override'], "")
+
     def test_fork_point_override_to_parent_and_inferred(self) -> None:
         with fixed_author_and_committer_date():
             (
@@ -107,7 +108,7 @@ class TestForkPoint(BaseTest):
 
         assert launch_command("fork-point").strip() == "a71ffac2c1d41b8d1592a25f0056e4dfca829608"
         assert launch_command("fork-point", "--inferred").strip() == "a71ffac2c1d41b8d1592a25f0056e4dfca829608"
-        assert_command(
+        assert_success(
             ["status", "--list-commits-with-hashes"],
             """
               master (untracked)
@@ -127,7 +128,7 @@ class TestForkPoint(BaseTest):
         launch_command("fork-point", "--override-to-parent")
         assert launch_command("fork-point").strip() == "7e6757a9e7888e8cad7e112ae4dc305966335594"
         assert launch_command("fork-point", "--inferred").strip() == "a71ffac2c1d41b8d1592a25f0056e4dfca829608"
-        assert_command(
+        assert_success(
             ["status", "-L"],
             """
               master (untracked)
@@ -141,7 +142,7 @@ class TestForkPoint(BaseTest):
         launch_command("fork-point", "--override-to-inferred")
         assert launch_command("fork-point").strip() == "a71ffac2c1d41b8d1592a25f0056e4dfca829608"
         assert launch_command("fork-point", "--inferred").strip() == "a71ffac2c1d41b8d1592a25f0056e4dfca829608"
-        assert_command(
+        assert_success(
             ["status", "-L"],
             """
               master (untracked)

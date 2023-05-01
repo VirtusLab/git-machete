@@ -1,9 +1,9 @@
 from typing import Any
 
 from .base_test import BaseTest
-from .mockers import (assert_command, fixed_author_and_committer_date,
-                      launch_command, mock_run_cmd, overridden_environment,
-                      rewrite_definition_file)
+from .mockers import (assert_success, fixed_author_and_committer_date,
+                      launch_command, mock_run_cmd_and_discard_output,
+                      overridden_environment, rewrite_definition_file)
 
 
 class TestReapply(BaseTest):
@@ -13,12 +13,12 @@ class TestReapply(BaseTest):
         Verify that 'git machete reapply' performs
         'git rebase' to the fork point of the current branch.
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd)  # to hide git outputs in tests
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         with fixed_author_and_committer_date():
             (
                 self.repo_sandbox
-                .remove_remote("origin")
+                .remove_remote()
                 .new_branch("level-0-branch")
                 .commit("Basic commit.")
                 .new_branch("level-1-branch")
@@ -42,7 +42,7 @@ class TestReapply(BaseTest):
         rewrite_definition_file(body)
 
         self.repo_sandbox.check_out("level-1-branch")
-        assert_command(
+        assert_success(
             ["status", "-L"],
             """
             level-0-branch
@@ -65,7 +65,7 @@ class TestReapply(BaseTest):
             with fixed_author_and_committer_date():
                 launch_command("reapply")
 
-        assert_command(
+        assert_success(
             ["status", "-L"],
             """
             level-0-branch
@@ -87,7 +87,7 @@ class TestReapply(BaseTest):
             with fixed_author_and_committer_date():
                 launch_command("reapply", "--fork-point=64f8913")
 
-        assert_command(
+        assert_success(
             ["status", "-L"],
             """
             level-0-branch

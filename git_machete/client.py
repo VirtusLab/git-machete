@@ -5,7 +5,7 @@ import os
 import shutil
 import sys
 from collections import OrderedDict
-from typing import Callable, Dict, Generator, List, Optional, Tuple
+from typing import Callable, Dict, Iterator, List, Optional, Tuple
 
 from git_machete import git_config_keys, utils
 from git_machete.annotation import Annotation
@@ -171,9 +171,8 @@ class MacheteClient:
                     "Slide them out from the definition file?" + get_pretty_choices("y", "e[dit]", "N"),
                     opt_yes_msg=None, opt_yes=False)
         else:
-            if len(invalid_branches) > 0:
-                print(f"Warning: sliding invalid branches: {', '.join(f'{bold(branch)}' for branch in invalid_branches)} "
-                      f"out of the definition file", file=sys.stderr)
+            print(f"Warning: sliding invalid branches: {', '.join(f'{bold(branch)}' for branch in invalid_branches)} "
+                  f"out of the definition file", file=sys.stderr)
             ans = 'y'
 
         def recursive_slide_out_invalid_branches(branch_: LocalBranchShortName) -> List[LocalBranchShortName]:
@@ -346,8 +345,7 @@ class MacheteClient:
                                         "Rebase onto the inferred upstream <b>%s</b>?" + get_pretty_choices('y', 'N')),
                 prompt_if_inferred_yes_opt_msg=("Branch <b>%s</b> not found in the tree of branch dependencies. "
                                                 "Rebasing onto the inferred upstream <b>%s</b>..."))
-            rebase_fork_point = opt_fork_point or self.fork_point(
-                current_branch, use_overrides=True, opt_no_detect_squash_merges=False)
+            rebase_fork_point = opt_fork_point or self.fork_point(current_branch, use_overrides=True)
 
             if not rebase_fork_point:
                 raise MacheteException(f"Fork point not found for branch <b>{current_branch}</b>; use `--fork-point` flag")
@@ -488,7 +486,7 @@ class MacheteClient:
             f"\nThe existing definition file will be backed up as {self._definition_file_path}~"
             if do_backup else "")
         msg = f"Save the above tree to {self._definition_file_path}?{backup_msg}" + get_pretty_choices('y', 'e[dit]', 'N')
-        opt_yes_msg = f"Saving the above tree to {self._definition_file_path}... {backup_msg}"
+        opt_yes_msg = f"Saving the above tree to {self._definition_file_path}...{backup_msg}"
         ans = self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes)
         if ans in ('y', 'yes'):
             if do_backup:
@@ -578,8 +576,7 @@ class MacheteClient:
                 self.__git.merge(new_upstream, new_downstream, opt_no_edit_merge)
             else:
                 print(f"Rebasing {bold(new_downstream)} onto {bold(new_upstream)}...")
-                down_fork_point = opt_down_fork_point or \
-                    self.fork_point(new_downstream, use_overrides=True, opt_no_detect_squash_merges=False)
+                down_fork_point = opt_down_fork_point or self.fork_point(new_downstream, use_overrides=True)
                 if not down_fork_point:
                     raise MacheteException(f"Fork point not found for branch <b>{new_downstream}</b>; use `--down-fork-point` flag")
                 self.__git.rebase(
@@ -602,8 +599,7 @@ class MacheteClient:
                 not self.__is_merged_to_upstream(bd, opt_no_detect_squash_merges=False) and
                 self.__git.is_ancestor_or_equal(branch.full_name(), bd.full_name()) and
                 (self.__get_overridden_fork_point(bd) or
-                 self.__git.get_commit_hash_by_revision(branch) ==
-                 self.fork_point(bd, use_overrides=False, opt_no_detect_squash_merges=False)))
+                 self.__git.get_commit_hash_by_revision(branch) == self.fork_point(bd, use_overrides=False)))
 
         candidate_downstreams = list(filter(connected_with_green_edge, down_branches))
         if not candidate_downstreams:
@@ -754,9 +750,7 @@ class MacheteClient:
                     upstream and
                     not (self.__git.is_ancestor_or_equal(upstream.full_name(), branch.full_name()) and
                          (self.__git.get_commit_hash_by_revision(upstream) ==
-                          self.fork_point(
-                              branch, use_overrides=True,
-                              opt_no_detect_squash_merges=opt_no_detect_squash_merges)))
+                          self.fork_point(branch, use_overrides=True)))
                 )
                 if needs_parent_sync and branch in self.annotations:
                     needs_parent_sync = self.annotations[branch].qualifiers.rebase
@@ -834,7 +828,7 @@ class MacheteClient:
                             print("\nMerge in progress; stopping the traversal")
                             return
                     else:
-                        fork_point = self.fork_point(branch, use_overrides=True, opt_no_detect_squash_merges=opt_no_detect_squash_merges)
+                        fork_point = self.fork_point(branch, use_overrides=True)
                         if not fork_point:
                             raise MacheteException(f"Fork point not found for branch <b>{branch}</b>; "
                                                    f"use `git machete fork-point {branch} --override-to...`")
@@ -1288,16 +1282,14 @@ class MacheteClient:
     def fork_point(
             self,
             branch: LocalBranchShortName,
-            use_overrides: bool,
-            *,
-            opt_no_detect_squash_merges: bool
+            use_overrides: bool
     ) -> Optional[FullCommitHash]:
         hash, containing_branch_pairs = self.__fork_point_and_containing_branch_pairs(branch, use_overrides)
         return FullCommitHash.of(hash) if hash else None
 
     def diff(self, *, branch: Optional[LocalBranchShortName], opt_stat: bool) -> None:
         diff_branch = branch or self.__git.get_current_branch()
-        fork_point = self.fork_point(diff_branch, use_overrides=True, opt_no_detect_squash_merges=False)
+        fork_point = self.fork_point(diff_branch, use_overrides=True)
         if not fork_point:
             raise MacheteException(f"Fork point not found for branch <b>{diff_branch}</b>; "
                                    f"use `git machete fork-point {diff_branch} --override-to...`")
@@ -1309,7 +1301,7 @@ class MacheteClient:
             format_with_stat=opt_stat)
 
     def log(self, branch: LocalBranchShortName) -> None:
-        fork_point = self.fork_point(branch, use_overrides=True, opt_no_detect_squash_merges=False)
+        fork_point = self.fork_point(branch, use_overrides=True)
         if not fork_point:
             raise MacheteException(f"Fork point not found for branch <b>{branch}</b>; "
                                    f"use `git machete fork-point {branch} --override-to...`")
@@ -1598,15 +1590,13 @@ class MacheteClient:
         else:
             raise MacheteException(f"Invalid direction: `{param}`; expected: {allowed_directions(allow_current)}")
 
-    def __match_log_to_filtered_reflogs(self,
-                                        branch: LocalBranchShortName
-                                        ) -> Generator[Tuple[FullCommitHash, List[BranchPair]], None, None]:
+    def __match_log_to_filtered_reflogs(self, branch: LocalBranchShortName) -> Iterator[Tuple[FullCommitHash, List[BranchPair]]]:
 
         if branch not in self.__git.get_local_branches():
             raise MacheteException(f"{bold(branch)} is not a local branch")
 
         if self.__branch_pairs_by_hash_in_reflog is None:
-            def generate_entries() -> Generator[Tuple[FullCommitHash, BranchPair], None, None]:
+            def generate_entries() -> Iterator[Tuple[FullCommitHash, BranchPair]]:
                 for lb in self.__git.get_local_branches():
                     lb_hashes = set()
                     for hash_ in self.filtered_reflog(lb):
@@ -1629,7 +1619,7 @@ class MacheteClient:
                 else:
                     self.__branch_pairs_by_hash_in_reflog[hash] = [branch_pair]
 
-            def log_result() -> Generator[str, None, None]:
+            def log_result() -> Iterator[str]:
                 branch_pairs_: List[BranchPair]
                 hash_: FullCommitHash
                 assert self.__branch_pairs_by_hash_in_reflog is not None
@@ -2186,7 +2176,7 @@ class MacheteClient:
             if ignore_if_missing:
                 pr = None
             else:
-                raise MacheteException(err.parameter)
+                raise MacheteException(err.msg)
         if not pr:
             return
         debug(f'found {pr}')
@@ -2297,7 +2287,7 @@ class MacheteClient:
         description_path = self.__git.get_main_git_subpath('info', 'description')
         description: str = utils.slurp_file_or_empty(description_path)
 
-        fork_point = self.fork_point(head, use_overrides=True, opt_no_detect_squash_merges=False)
+        fork_point = self.fork_point(head, use_overrides=True)
         if not fork_point:
             raise MacheteException(f"Could not find a fork-point for branch {bold(head)}.")
         commits: List[GitLogEntry] = self.__git.get_commits_between(fork_point, head)
