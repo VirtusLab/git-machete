@@ -22,7 +22,11 @@ setup(
     license='MIT',
     keywords='git',
     packages=['git_machete'],
-    scripts=['git-machete'],
+    entry_points={
+        'console_scripts': [
+            'git-machete = git_machete.bin:main'
+        ]
+    },
     python_requires='>=3.6, <4',
     classifiers=[
         'Programming Language :: Python',
