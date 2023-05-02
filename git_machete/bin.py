@@ -1,15 +1,16 @@
-# flake8: noqa
 import sys
 
+# Since this shim needs to be compatible with Python 2,
+# let's skip mypy checks, as type annotations were only introduced in Python 3.5.
 
-def main():
-    # Check for correct python version
-    # Since function below needs to be compatible with python 2, lets skip Mypy checks, cause type annotations were introduced in python 3.5
+
+def main():  # type: ignore
     def validate_python_version():  # type: ignore
         if sys.version_info[:2] < (3, 6):
-            version_str = "{}.{}.{}".format(sys.version_info.major, sys.version_info.minor, sys.version_info.micro)
+            # String interpolations were only introduced in Python 3.6
+            version_str = "{}.{}.{}".format(sys.version_info.major, sys.version_info.minor, sys.version_info.micro)  # noqa: FS002
             sys.stderr.write(
-                "Python {} is no longer supported. \n".format(version_str) +
+                "Python {} is no longer supported. \n".format(version_str) +  # noqa: FS002
                 "Please switch to Python 3.6 or higher.\n")
             sys.exit(1)
 

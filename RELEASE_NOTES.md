@@ -3,6 +3,7 @@
 ## New in git-machete 3.17.2
 
 - fixed: when `origin/feature/foo` branch exists, `git machete add foo` no longer falsely recognizes `origin/feature/foo` as a potential remote tracking branch for `foo`
+- fixed: on Windows, git-machete installed globally via `pip` no longer crashes on `ModuleNotFoundError` within venvs (contributed by @cspotcode)
 
 ## New in git-machete 3.17.1
 
