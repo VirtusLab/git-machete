@@ -55,31 +55,40 @@ class GitHubPullRequest(object):
 
 
 class RemoteAndOrganizationAndRepository:
-    def __init__(self, remote: str, organization: str, repository: str) -> None:
-        self.remote: str = remote
-        self.organization: str = organization
-        self.repository: str = repository
+    repository: str
+    organization: str
+    fork_organization: Optional[str]
+    remote: str
+
+    def __init__(self, remote: str, organization: str, fork_organization: Optional[str], repository: str) -> None:
+        self.remote = remote
+        self.organization = organization
+        self.fork_organization = fork_organization
+        self.repository = repository
 
     @classmethod
     def from_config(cls, git: GitContext) -> Optional["RemoteAndOrganizationAndRepository"]:
         remote = git.get_config_attr_or_none(key=git_config_keys.GITHUB_REMOTE)
+        fork_organization = git.get_config_attr_or_none(key=git_config_keys.GITHUB_ORGANIZATION)
         organization = git.get_config_attr_or_none(key=git_config_keys.GITHUB_ORGANIZATION)
         repository = git.get_config_attr_or_none(key=git_config_keys.GITHUB_REPOSITORY)
         if remote and organization and repository:
-            return cls(remote, organization, repository)
+            return cls(remote, organization, fork_organization, repository)
         else:
             return None
 
     @classmethod
-    def from_url(cls, domain: str, url: str, remote: str) -> Optional["RemoteAndOrganizationAndRepository"]:
+    def from_url(cls, git: GitContext, domain: str, url: str, remote: str) -> Optional["RemoteAndOrganizationAndRepository"]:
+        fork_organization = git.get_config_attr_or_none(key=git_config_keys.GITHUB_ORGANIZATION)
         for pattern in github_remote_url_patterns(domain):
             match = re.match(pattern, url)
             if match:
-                org = match.group(1)
-                repo = match.group(2)
+                organization = match.group(1)
+                repository = match.group(2)
                 return cls(remote=remote,
-                           organization=org,
-                           repository=repo if repo[-4:] != '.git' else repo[:-4])
+                           organization=organization,
+                           fork_organization=fork_organization,
+                           repository=repository if repository[-4:] != '.git' else repository[:-4])
         return None
 
 

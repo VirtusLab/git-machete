@@ -2168,8 +2168,8 @@ class MacheteClient:
             url = url if url.endswith('.git') else url + '.git'
             remote_url = remote_url if remote_url.endswith('.git') else remote_url + '.git'
             if is_github_remote_url(github_domain, url) and \
-                    RemoteAndOrganizationAndRepository.from_url(github_domain, url, remote) == \
-                    RemoteAndOrganizationAndRepository.from_url(github_domain, remote_url, remote):
+                    RemoteAndOrganizationAndRepository.from_url(self.__git, github_domain, url, remote) == \
+                    RemoteAndOrganizationAndRepository.from_url(self.__git, github_domain, remote_url, remote):
                 return remote
         return None
 
@@ -2228,7 +2228,8 @@ class MacheteClient:
 
         remote_and_organization_and_repository_from_urls: Dict[str, RemoteAndOrganizationAndRepository] = {
             remote: ror for remote, ror in (
-                (remote, RemoteAndOrganizationAndRepository.from_url(domain, url, remote)) for remote, url in url_for_remote.items()
+                (remote, RemoteAndOrganizationAndRepository.from_url(self.__git, domain, url, remote))
+                for remote, url in url_for_remote.items()
                 if is_github_remote_url(domain, url)
             ) if ror
         }

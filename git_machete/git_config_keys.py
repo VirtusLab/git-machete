@@ -1,6 +1,7 @@
 GITHUB_DOMAIN = 'machete.github.domain'
 GITHUB_REMOTE = 'machete.github.remote'
 GITHUB_ORGANIZATION = 'machete.github.organization'
+GITHUB_FORK_ORGANIZATION = 'machete.github.forkOrganization'
 GITHUB_REPOSITORY = 'machete.github.repository'
 TRAVERSE_PUSH = 'machete.traverse.push'
 WORKTREE_USE_TOP_LEVEL_MACHETE_FILE = 'machete.worktree.useTopLevelMacheteFile'

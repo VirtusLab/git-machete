@@ -1566,7 +1566,8 @@ class TestGitHub(BaseTest):
         )
 
         # check against wrong pr number
-        remote_org_repo = RemoteAndOrganizationAndRepository.from_url(domain=GitHubClient.DEFAULT_GITHUB_DOMAIN,
+        remote_org_repo = RemoteAndOrganizationAndRepository.from_url(git=git,
+                                                                      domain=GitHubClient.DEFAULT_GITHUB_DOMAIN,
                                                                       url=self.repo_sandbox.remote_path,
                                                                       remote='origin')
         assert remote_org_repo is not None
@@ -2159,9 +2160,12 @@ class TestGitHub(BaseTest):
         urls = urls + [url + '.git' for url in urls]
 
         for url in urls:
-            remote_and_organization_and_repository = RemoteAndOrganizationAndRepository.from_url(domain=GitHubClient.DEFAULT_GITHUB_DOMAIN,
-                                                                                                 url=url,
-                                                                                                 remote='origin')
+            remote_and_organization_and_repository = RemoteAndOrganizationAndRepository.from_url(
+                git=git,
+                domain=GitHubClient.DEFAULT_GITHUB_DOMAIN,
+                url=url,
+                remote='origin'
+            )
             assert remote_and_organization_and_repository is not None
             assert remote_and_organization_and_repository.organization == organization
             assert remote_and_organization_and_repository.repository == repository
