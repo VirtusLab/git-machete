@@ -1,10 +1,41 @@
 
 from .base_test import BaseTest, popen
-from .mockers import (assert_failure, fixed_author_and_committer_date,
-                      launch_command)
+from .mockers import (assert_failure, assert_success,
+                      fixed_author_and_committer_date, launch_command)
 
 
 class TestSquash(BaseTest):
+
+    def test_squash_no_commits(self) -> None:
+        with fixed_author_and_committer_date():
+            (
+                self.repo_sandbox
+                .new_branch("master")
+                .commit()
+                .new_branch("develop")
+            )
+
+        assert_failure(
+            ["squash"],
+            "No commits to squash. Use -f or --fork-point to specify the "
+            "start of range of commits to squash."
+        )
+
+    def test_squash_single_commit(self) -> None:
+        with fixed_author_and_committer_date():
+            (
+                self.repo_sandbox
+                .new_branch("master")
+                .commit()
+                .new_branch("develop")
+                .commit()
+            )
+
+        assert_success(
+            ["squash"],
+            "Exactly one commit (dcd2db5) to squash, ignoring.\n"
+            "Tip: use -f or --fork-point to specify where the range of commits to squash starts.\n"
+        )
 
     def test_squash_with_valid_fork_point(self) -> None:
         (

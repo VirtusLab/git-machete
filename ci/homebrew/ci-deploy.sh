@@ -66,9 +66,9 @@ else
     fi
   done
 
-  if [[ "$version" != "$(git machete --version | cut -d' ' -f4)" ]]; then
+  if [[ "$version" != "$(git machete version | cut -d' ' -f3)" ]]; then
     echo "Something went wrong during brew installation: installed version does not match version from formula."
-    echo "Formula version: $version, installed version: $(git machete --version | cut -d' ' -f4)"
+    echo "Formula version: $version, installed version: $(git machete version | cut -d' ' -f3)"
     exit 1
   fi
   brew remove git-machete

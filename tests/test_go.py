@@ -1,11 +1,35 @@
 from typing import Any
 
+import pytest
+
+from git_machete.exceptions import ExitCode
+
 from .base_test import BaseTest
 from .mockers import (launch_command, mock_run_cmd_and_discard_output,
                       rewrite_definition_file)
 
 
 class TestGo(BaseTest):
+
+    def test_go_current(self) -> None:
+        (
+            self.repo_sandbox
+            .new_branch("level-0-branch")
+            .commit()
+        )
+        with pytest.raises(SystemExit) as e:
+            launch_command("go", "current")
+        assert ExitCode.ARGUMENT_ERROR == e.value.code
+
+    def test_go_invalid_direction(self) -> None:
+        (
+            self.repo_sandbox
+            .new_branch("level-0-branch")
+            .commit()
+        )
+        with pytest.raises(SystemExit) as e:
+            launch_command("go", "invalid")
+        assert ExitCode.ARGUMENT_ERROR == e.value.code
 
     def test_go_up(self, mocker: Any) -> None:
         """Verify behaviour of a 'git machete go up' command.
