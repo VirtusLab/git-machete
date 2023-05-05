@@ -67,7 +67,7 @@ class TestStatus(BaseTest):
             """
         rewrite_definition_file(body)
 
-        self.repo_sandbox.write_to_file(".git/hooks/machete-status-branch", "#!/bin/bash\ngit ls-tree $1 | wc -l | sed 's/ *//'")
+        self.repo_sandbox.write_to_file(".git/hooks/machete-status-branch", "#!/bin/sh\ngit ls-tree $1 | wc -l | sed 's/ *//'")
         assert_success(
             ["status"],
             """
@@ -99,7 +99,7 @@ class TestStatus(BaseTest):
             """
         )
 
-        self.repo_sandbox.write_to_file(".git/hooks/machete-status-branch", "#!/bin/bash\necho '    '")
+        self.repo_sandbox.write_to_file(".git/hooks/machete-status-branch", "#!/bin/sh\necho '    '")
         assert_success(
             ["status"],
             """
@@ -109,7 +109,7 @@ class TestStatus(BaseTest):
             """
         )
 
-        self.repo_sandbox.write_to_file(".git/hooks/machete-status-branch", "#!/bin/bash\nexit 1")
+        self.repo_sandbox.write_to_file(".git/hooks/machete-status-branch", "#!/bin/sh\nexit 1")
         assert_success(
             ["status"],
             """

@@ -1,7 +1,7 @@
 from .base_test import BaseTest
 from .mockers import assert_success, launch_command, overridden_environment
 
-dummy_editor = "bash -c 'echo foo > $1' 'ignored_$0'"
+dummy_editor = "sh -c 'echo foo > $1' 'ignored_$0'"
 
 
 class TestEdit(BaseTest):
@@ -18,7 +18,7 @@ class TestEdit(BaseTest):
             assert_success(
                 ["edit"],
                 """
-                Opening '$GIT_EDITOR' (bash -c 'echo foo > $1' 'ignored_$0').
+                Opening '$GIT_EDITOR' (sh -c 'echo foo > $1' 'ignored_$0').
                 To override this choice, use GIT_MACHETE_EDITOR env var, e.g. export GIT_MACHETE_EDITOR=vi.
 
                 See git machete help edit and git machete edit --debug for more details.
