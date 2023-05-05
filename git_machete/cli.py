@@ -737,7 +737,7 @@ def launch(orig_args: List[str]) -> None:
         if direction == "current":
             if 'branch' in parsed_cli:
                 raise MacheteException(
-                    '`show current` with a <branch> argument does not make sense')
+                    '`show current` with a `<branch>` argument does not make sense')
             print(branch)
         else:
             machete_client.read_definition_file(perform_interactive_slide_out=should_perform_interactive_slide_out,

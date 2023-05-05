@@ -1,14 +1,13 @@
+
 from .base_test import BaseTest
-from .mockers import (assert_success, fixed_author_and_committer_date,
-                      launch_command, rewrite_definition_file)
+from .mockers import (assert_failure, assert_success,
+                      fixed_author_and_committer_date, launch_command,
+                      rewrite_definition_file)
 
 
 class TestForkPoint(BaseTest):
 
     def test_fork_point_get(self) -> None:
-        """
-        Verify behaviour of a 'git machete fork-point' command.
-        """
         with fixed_author_and_committer_date():
             (
                 self.repo_sandbox.new_branch("master")
@@ -37,10 +36,36 @@ class TestForkPoint(BaseTest):
 
         assert_success(["fork-point", 'refs/heads/develop'], "58a3121d3ef89189eb51176c7ec5344f4aab2f84\n")
 
+    def test_fork_point_override_for_invalid_branch(self) -> None:
+        (
+            self.repo_sandbox
+            .new_branch("master")
+            .commit()
+        )
+
+        assert_failure(
+            ["fork-point", "--override-to=@", "no-such-branch"],
+            "no-such-branch is not a local branch"
+        )
+
+    def test_fork_point_override_to_non_ancestor_commit(self) -> None:
+        with fixed_author_and_committer_date():
+            (
+                self.repo_sandbox
+                .new_branch("master")
+                .commit()
+                .new_branch("develop")
+                .commit()
+                .check_out("master")
+                .commit()
+            )
+
+        assert_failure(
+            ["fork-point", "develop", "--override-to=master"],
+            "Cannot override fork point: master (commit 4b1e298) is not an ancestor of develop"
+        )
+
     def test_fork_point_override_to_commit(self) -> None:
-        """
-        Verify behaviour of a 'git machete fork-point' command with fork-point being overridden by config key.
-        """
         (
             self.repo_sandbox.new_branch("master")
                 .commit("master first commit")

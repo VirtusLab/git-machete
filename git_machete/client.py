@@ -2305,7 +2305,7 @@ class MacheteClient:
         milestone_path: str = self.__git.get_main_git_subpath('info', 'milestone')
         milestone: str = utils.slurp_file_or_empty(milestone_path).strip()
         if milestone:
-            print(f'Setting milestone of PR #{bold(str(pr.number))} to {bold(milestone)}... ', end='', flush=True)
+            print(f'Setting milestone of PR #{bold(str(pr.number))} to #{bold(milestone)}... ', end='', flush=True)
             github_client.set_milestone_of_pull_request(pr.number, milestone=milestone)
             print(fmt(ok_str))
 

@@ -92,6 +92,9 @@ class TestShow(BaseTest):
         assert launch_command("show", "up", "refs/heads/call-ws").strip() == "develop"
         assert launch_command("show", "current").strip() == "ignore-trailing"
 
+    def test_show_current_with_branch(self) -> None:
+        assert_failure(["show", "current", "master"], "show current with a <branch> argument does not make sense")
+
     def test_show_up(self, mocker: Any) -> None:
         """Verify behaviour of a 'git machete show up' command.
 
