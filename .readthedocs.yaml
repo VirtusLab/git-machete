@@ -1,0 +1,14 @@
+version: 2
+
+build:
+  os: ubuntu-22.04
+  tools:
+    # Python 3.11 is needed due to https://github.com/VirtusLab/git-machete/issues/936
+    python: "3.11"
+
+sphinx:
+  configuration: docs/source/conf.py
+
+python:
+  install:
+    - requirements: requirements.sphinx-docs.txt

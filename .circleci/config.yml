@@ -56,55 +56,60 @@ jobs:
       - store_test_results:
           path: test-results/
 
-  # Note that there is no particular reason for the below assignment of PEP8/coverage/docs checks to Python version
-  # (other than Python 3.6 being EOLed and hence not supporting the versions of packages used for the checks).
-  # Each of these needs to be run against just one Python version
+  "python 3_8 git 2_25_0":
+    executor: ubuntu_executor
+    steps:
+      - checkout
+      - run:
+          name: Run tests against Python 3.8 and git 2.25.0
+          command: PYTHON_VERSION=3.8 GIT_VERSION=2.25.0  bash ci/tox/ci-run.sh
+      - store_test_results:
+          path: test-results/
+
+  # Note that there is no particular reason for the below assignment
+  # of PEP8/coverage/docs checks to Python version, other than:
+  #  - Python 3.6 being EOLed and hence not supporting the versions of packages used for the checks,
+  #  - https://github.com/VirtusLab/git-machete/issues/936 apparently forcing the use of Python 3.11 for Sphinx HTML docs.
+  # Each of these checks needs to be run against just one Python version
   # (since there's very little chance that they pass under one version but fail under another),
   # so let's spread these checks evenly across versions to reduce CI execution time
   # (when compared to the scenario where all checks are executed under the same Python version).
 
-  "pep8 and python 3_8 git 2_25_0":
+  "pep8 and python 3_9 git 2_30_1":
     executor: ubuntu_executor
     steps:
       - checkout
       - run:
-          name: Run tests against Python 3.8 and git 2.25.0 (with isort/PEP8/vulture check)
-          command: PYTHON_VERSION=3.8 GIT_VERSION=2.25.0 CHECK_PEP8=true  bash ci/tox/ci-run.sh
-      - store_test_results:
-          path: test-results/
-
-  "coverage and python 3_9 git 2_30_1":
-    executor: ubuntu_executor
-    steps:
-      - checkout
-      - run:
-          name: Run tests against Python 3.9 and git 2.30.1 (with coverage report)
-          command: PYTHON_VERSION=3.9 GIT_VERSION=2.30.1 CHECK_COVERAGE=true  bash ci/tox/ci-run.sh
+          name: Run tests against Python 3.9 and git 2.30.1 (with isort/PEP8/vulture check)
+          command: PYTHON_VERSION=3.9 GIT_VERSION=2.30.1 CHECK_PEP8=true  bash ci/tox/ci-run.sh
       - store_test_results:
           path: test-results/
       - codecov/upload:
           file: coverage.xml
 
-  "docs and python 3_10 git 2_33_1":
+  "coverage and python 3_10 git 2_33_1":
     executor: ubuntu_executor
     steps:
       - checkout
       - run:
-          name: Run tests against Python 3.10 and git 2.33.1 (with building docs)
-          command: PYTHON_VERSION=3.10 GIT_VERSION=2.33.1 BUILD_SPHINX_HTML=true CHECK_DOCS_UP_TO_DATE=true bash ci/tox/ci-run.sh
+          name: Run tests against Python 3.10 and git 2.33.1 (with coverage report)
+          command: PYTHON_VERSION=3.10 GIT_VERSION=2.33.1 CHECK_COVERAGE=true  bash ci/tox/ci-run.sh
       - store_test_results:
           path: test-results/
       - store_artifacts:
           path: docs/html/
           destination: docs
 
-  "python 3_11 git 2_38_1":
+  # Note that if docs are ever to be built under a different Python version in CI,
+  # this change needs to be reflected in tox.ini and .readthedocs.yaml as well
+  # to avoid errors like https://github.com/VirtusLab/git-machete/issues/936.
+  "docs and python 3_11 git 2_38_1":
     executor: ubuntu_executor
     steps:
       - checkout
       - run:
-          name: Run tests against Python 3.11 and git 2.38.1
-          command: PYTHON_VERSION=3.11 GIT_VERSION=2.38.1 bash ci/tox/ci-run.sh
+          name: Run tests against Python 3.11 and git 2.38.1 (with building docs)
+          command: PYTHON_VERSION=3.11 GIT_VERSION=2.38.1 BUILD_SPHINX_HTML=true CHECK_DOCS_UP_TO_DATE=true  bash ci/tox/ci-run.sh
       - store_test_results:
           path: test-results/
 
@@ -207,10 +212,10 @@ mandatory_jobs: &mandatory_jobs
   - general checks
   - python 3_6 git 1_8_10
   - python 3_7 git 2_7_6
-  - pep8 and python 3_8 git 2_25_0
-  - coverage and python 3_9 git 2_30_1
-  - docs and python 3_10 git 2_33_1
-  - python 3_11 git 2_38_1
+  - python 3_8 git 2_25_0
+  - pep8 and python 3_9 git 2_30_1
+  - coverage and python 3_10 git 2_33_1
+  - docs and python 3_11 git 2_38_1
 
 workflows:
   version: 2
@@ -219,10 +224,10 @@ workflows:
       - general checks
       - python 3_6 git 1_8_10
       - python 3_7 git 2_7_6
-      - pep8 and python 3_8 git 2_25_0
-      - coverage and python 3_9 git 2_30_1
-      - docs and python 3_10 git 2_33_1
-      - python 3_11 git 2_38_1
+      - python 3_8 git 2_25_0
+      - pep8 and python 3_9 git 2_30_1
+      - coverage and python 3_10 git 2_33_1
+      - docs and python 3_11 git 2_38_1
       - dry run deploy:
           filters:
             branches:

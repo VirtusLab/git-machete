@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.17.4
+
+- fixed: building the docs for readthedocs.org
+
 ## New in git-machete 3.17.3
 
 - fixed: building the package for Alpine Linux (contributed by @Ikke)
