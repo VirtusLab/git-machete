@@ -324,7 +324,7 @@ class TestStatus(BaseTest):
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         origin_1_remote_path = mkdtemp()
-        self.repo_sandbox.new_repo(origin_1_remote_path)
+        self.repo_sandbox.new_repo(origin_1_remote_path, bare=True)
 
         os.chdir(self.repo_sandbox.local_path)
 

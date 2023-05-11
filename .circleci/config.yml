@@ -12,7 +12,8 @@ executors:
     machine:
       image: windows-server-2022-gui:2023.03.1
       shell: bash.exe
-    resource_class: windows.large
+    # Jobs using windows.large sometimes get stuck on `Preparing environment` :/
+    resource_class: windows.medium
 
 orbs:
   codecov: codecov/codecov@3.2.2

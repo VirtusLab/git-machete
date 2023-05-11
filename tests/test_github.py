@@ -542,8 +542,8 @@ class TestGitHub(BaseTest):
 
         origin_1_remote_path = mkdtemp()
         origin_2_remote_path = mkdtemp()
-        self.repo_sandbox.new_repo(origin_1_remote_path, switch_dir_to_new_repo=False)
-        self.repo_sandbox.new_repo(origin_2_remote_path, switch_dir_to_new_repo=False)
+        self.repo_sandbox.new_repo(origin_1_remote_path, bare=True, switch_dir_to_new_repo=False)
+        self.repo_sandbox.new_repo(origin_2_remote_path, bare=True, switch_dir_to_new_repo=False)
 
         # branch feature present in each remote, no branch tracking data
         (
@@ -1094,8 +1094,8 @@ class TestGitHub(BaseTest):
 
         origin_1_remote_path = mkdtemp()
         origin_2_remote_path = mkdtemp()
-        self.repo_sandbox.new_repo(origin_1_remote_path, "--bare", switch_dir_to_new_repo=False)
-        self.repo_sandbox.new_repo(origin_2_remote_path, "--bare", switch_dir_to_new_repo=False)
+        self.repo_sandbox.new_repo(origin_1_remote_path, bare=True, switch_dir_to_new_repo=False)
+        self.repo_sandbox.new_repo(origin_2_remote_path, bare=True, switch_dir_to_new_repo=False)
 
         # branch feature present in each of the remotes, no branch tracking data, remote origin_1 picked manually via mock_input()
         (
@@ -1565,8 +1565,8 @@ class TestGitHub(BaseTest):
 
         # Check against closed pull request with head branch deleted from remote
         local_path = tmp_path
-        self.repo_sandbox.new_repo(GitRepositorySandbox.second_remote_path)
-        (self.repo_sandbox.new_repo(local_path)
+        self.repo_sandbox.new_repo(GitRepositorySandbox.second_remote_path, bare=True)
+        (self.repo_sandbox.new_repo(local_path, bare=False)
             .execute(f"git remote add origin {GitRepositorySandbox.second_remote_path}")
             .execute('git config user.email "tester@test.com"')
             .execute('git config user.name "Tester Test"')
@@ -1680,9 +1680,9 @@ class TestGitHub(BaseTest):
             self.repo_sandbox.execute(f"git branch -D -r origin/{branch}")
 
         local_path = tmp_path
-        self.repo_sandbox.new_repo(GitRepositorySandbox.second_remote_path)
+        self.repo_sandbox.new_repo(GitRepositorySandbox.second_remote_path, bare=True)
         (
-            self.repo_sandbox.new_repo(local_path)
+            self.repo_sandbox.new_repo(local_path, bare=False)
             .execute(f"git remote add origin {GitRepositorySandbox.second_remote_path}")
             .execute('git config user.email "tester@test.com"')
             .execute('git config user.name "Tester Test"')

@@ -21,8 +21,8 @@ class BaseTest:
         (
             self.repo_sandbox
             # Create the remote and sandbox repos, chdir into sandbox repo
-            .new_repo(self.repo_sandbox.remote_path, "--bare")
-            .new_repo(self.repo_sandbox.local_path)
+            .new_repo(self.repo_sandbox.remote_path, bare=True)
+            .new_repo(self.repo_sandbox.local_path, bare=False)
             .execute(f"git remote add origin {self.repo_sandbox.remote_path}")
             .execute('git config user.email "tester@test.com"')
             .execute('git config user.name "Tester Test"')
@@ -41,11 +41,11 @@ class GitRepositorySandbox:
         subprocess.check_call(command, shell=True)
         return self
 
-    def new_repo(self, *args: str, switch_dir_to_new_repo: bool = True) -> "GitRepositorySandbox":
+    def new_repo(self, directory: str, bare: bool, switch_dir_to_new_repo: bool = True) -> "GitRepositorySandbox":
         previous_dir = os.getcwd()
-        os.chdir(args[0])
-        opts = args[1:]
-        self.execute(f"git init --quiet {' '.join(opts)}")
+        os.chdir(directory)
+        bare_opt = '--bare' if bare else ''
+        self.execute(f'git init --quiet "{directory}" {bare_opt}')
         if not switch_dir_to_new_repo:
             os.chdir(previous_dir)
         return self
