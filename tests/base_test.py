@@ -108,7 +108,7 @@ class GitRepositorySandbox:
         return self
 
     def get_local_branches(self) -> List[str]:
-        return popen("git for-each-ref refs/heads/ --format='%(refname:short)'").splitlines()
+        return popen('git for-each-ref refs/heads/ "--format=%(refname:short)"').splitlines()
 
     def is_ancestor(self, earlier: str, later: str) -> bool:
         return subprocess.call(f"git merge-base --is-ancestor  '{earlier}'  '{later}'", shell=True) == 0

@@ -198,3 +198,23 @@ class TestUpdate(BaseTest):
         expected_error_message = "Fork point 807bcd9f5e9c7e52e7866eedcb58c2e000526700 " \
                                  "is not ancestor of or the tip of the branch-1b branch."
         assert_failure(['update', '-f', branch_1a_hash], expected_error_message)
+
+    def test_update_with_stop_for_edit(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+
+        (
+            self.repo_sandbox.new_branch('branch-0')
+            .commit()
+            .new_branch("branch-1")
+            .commit()
+        )
+        rewrite_definition_file("branch-0\n\tbranch-1")
+
+        with overridden_environment(GIT_SEQUENCE_EDITOR="sed -i.bak '1s/^pick /edit /'"):
+            launch_command("update")
+        # See https://github.com/VirtusLab/git-machete/issues/935, which can only be reproduced on Windows
+        # when some file is staged before `git rebase --continue` is executed.
+        self.repo_sandbox.execute("touch bar.txt")
+        self.repo_sandbox.execute("git add bar.txt")
+        with overridden_environment(GIT_EDITOR="cat"):
+            self.repo_sandbox.execute("git rebase --continue")

@@ -3,6 +3,7 @@
 ## New in git-machete 3.17.4
 
 - fixed: building the docs for readthedocs.org
+- fixed: `.git/rebase-merge/author-script` used to be rewritten to CRLF newlines on Windows, breaking the rebases (reported by @cspotcode)
 
 ## New in git-machete 3.17.3
 

@@ -63,7 +63,10 @@ def launch_command(*args: str) -> str:
                 utils.verbose_mode = False
                 cli.launch(list(args))
                 git.flush_caches()
-        return out.getvalue()
+        output = out.getvalue()
+        if sys.platform == 'win32':
+            output = output.replace('.git\\machete', '.git/machete')
+        return output
 
 
 def assert_success(cmds: Iterable[str], expected_result: str) -> None:
@@ -83,7 +86,10 @@ def assert_failure(cmds: Iterable[str], expected_result: str) -> None:
 
     with pytest.raises(MacheteException) as e:
         launch_command(*cmds)
-    assert e.value.msg == expected_result
+    error_message = e.value.msg
+    if sys.platform == 'win32':
+        error_message = error_message.replace('.git\\machete', '.git/machete')
+    assert error_message == expected_result
 
 
 def rewrite_definition_file(new_body: str) -> None:

@@ -1,3 +1,4 @@
+import io
 import os
 import re
 import shlex
@@ -936,9 +937,9 @@ class GitContext:
                         with open(author_script) as f_read:
                             return map(fix_if_needed, f_read.readlines())
 
-                    fixed_lines = get_all_lines_fixed()  # must happen before the 'with' clause where we open for writing
-                    with open(author_script, "w") as f_write:
-                        f_write.write("".join(fixed_lines))
+                    fixed_lines = get_all_lines_fixed()  # must happen before we open for writing
+                    # See https://github.com/VirtusLab/git-machete/issues/935 for why author-script needs to be saved in this manner
+                    io.open(author_script, "w", newline="").write("".join(fixed_lines))
                 self.flush_caches()
 
         hook_path = self.get_hook_path("machete-pre-rebase")

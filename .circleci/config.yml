@@ -8,6 +8,11 @@ executors:
       # Needed to avoid warning: https://superuser.com/questions/575844/warning-terminal-is-not-fully-functional
       TERM: ansi
     resource_class: large
+  windows_executor:
+    machine:
+      image: windows-server-2022-gui:2023.03.1
+      shell: bash.exe
+    resource_class: windows.large
 
 orbs:
   codecov: codecov/codecov@3.2.2
@@ -113,6 +118,14 @@ jobs:
       - store_test_results:
           path: test-results/
 
+  "windows tests":
+    executor: windows_executor
+    steps:
+      - checkout
+      - run: pip install tox
+      # TODO (#941): run all tests on Windows, without exceptions
+      - run: tox -e py311 -- -k "not TestGitHub and not test_status_branch_hook_output and not test_update_by_merge" -vv
+
   "dry run deploy":
     executor: ubuntu_executor
     steps:
@@ -216,6 +229,7 @@ mandatory_jobs: &mandatory_jobs
   - pep8 and python 3_9 git 2_30_1
   - coverage and python 3_10 git 2_33_1
   - docs and python 3_11 git 2_38_1
+  - windows tests
 
 workflows:
   version: 2
@@ -228,6 +242,7 @@ workflows:
       - pep8 and python 3_9 git 2_30_1
       - coverage and python 3_10 git 2_33_1
       - docs and python 3_11 git 2_38_1
+      - windows tests
       - dry run deploy:
           filters:
             branches:
