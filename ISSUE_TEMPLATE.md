@@ -19,10 +19,10 @@ git machete --version
 
 ```
 
-## Please `cp -r .git .git.bak` or there's no hope!
+## Please `cp -r .git .git.bak`!
 
 Please back-up your `.git` folder at its current state for the issue to be reproducible in the future!
-Since `git machete` heavily relies on branch reflogs (`.git/logs/refs/`) that change as state of the repository changes, get expired due to `git gc` etc., not doing this almost guarantees we won't be able to reproduce the issue and determine whether it was fixed or not.
+`git machete` heavily relies on branch reflogs (`.git/logs/refs/`) that change as state of the repository changes, get expired due to `git gc` etc.
 
 ## Additional diagnostics info
 

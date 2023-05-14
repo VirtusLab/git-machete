@@ -41,7 +41,7 @@ a port into a plugin for the IntelliJ Platform products, including PyCharm, WebS
 
 ## Install
 
-We provide a couple of alternative ways of installation.
+We provide a couple of alternative ways of installation. See [PACKAGES.md](PACKAGES.md) for the full list.
 
 **Instructions for installing bash, zsh, and fish completion scripts are provided in [completion/README.md](completion/README.md).**
 
@@ -51,6 +51,34 @@ git-machete requires Python >= 3.6. Python 2.x is no longer supported.
 
 ```shell script
 brew install git-machete
+```
+
+### Using pip with sudo (system-wide install)
+
+You need to have Python and `pip` installed from system packages.
+
+```shell script
+sudo -H pip install git-machete
+```
+
+**Tip:** pass an extra `-U` flag to `pip install` to upgrade an already installed version.
+
+### Using pip without sudo (user-wide install)
+
+You need to have Python and `pip` installed from system packages.
+
+```shell script
+pip install --user git-machete
+```
+
+Please verify that your `PATH` variable has `${HOME}/.local/bin/` included.
+
+**Tip:** pass an extra `-U` flag to `pip install` to upgrade an already installed version.
+
+### Using conda
+
+```shell script
+conda install -c conda-forge git-machete
 ```
 
 ### Using snap (most Linux distributions)
@@ -96,34 +124,6 @@ nix-env -i git-machete
 **Note:** since `nixos-21.05`, `git-machete` is included in the stable channels as well.
 The latest released version, however, is generally available in the unstable channel.
 Stable channels may lag behind; see [repology](https://repology.org/project/git-machete/versions) for the current channel-package mapping.
-
-### Using pip with sudo (system-wide install)
-
-You need to have Python and `pip` installed from system packages.
-
-```shell script
-sudo -H pip install git-machete
-```
-
-**Tip:** pass an extra `-U` flag to `pip install` to upgrade an already installed version.
-
-### Using pip without sudo (user-wide install)
-
-You need to have Python and `pip` installed from system packages.
-
-```shell script
-pip install --user git-machete
-```
-
-Please verify that your `PATH` variable has `${HOME}/.local/bin/` included.
-
-**Tip:** pass an extra `-U` flag to `pip install` to upgrade an already installed version.
-
-### Using conda
-
-```shell script
-conda install -c conda-forge git-machete
-```
 
 <br/>
 

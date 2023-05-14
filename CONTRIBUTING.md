@@ -187,53 +187,7 @@ Review fixes should be pushed on separate commits for easier viewing on GitHub (
          git merge --ff-only develop
          git push origin master
 
-1. Verify that the release has been created on [GitHub](https://github.com/VirtusLab/git-machete/releases)
-   and that a `git-machete-<VERSION>-1.noarch.rpm` file is present under the Assets.
-
-1. Verify that the latest version is uploaded to [PyPI](https://pypi.org/project/git-machete).
-
-1. Verify that the latest version is uploaded to [Anaconda](https://anaconda.org/conda-forge/git-machete).
-   Thanks to the courtesy of [@asford (Alex Ford)](https://github.com/asford),
-   there exists [conda-forge/git-machete-feedstock](https://github.com/conda-forge/git-machete-feedstock) repository.
-   A bot is responsible for keeping the package up-to-date based on PyPI's release.
-   Instruction on how to be a maintainer and other helpful tips can be found in
-   [conda-forge recipe maintainer docs](https://conda-forge.org/docs/maintainer/adding_pkgs.html#recipe-maintainer).
-
-1. Verify that there is an open PR in [homebrew-core](https://github.com/Homebrew/homebrew-core/pulls?q=is%3Apr+git-machete) titled: `git-machete <latest_version>`.
-
-1. Verify that a newly released version is present in `latest/stable` channel in [Snap](https://snapcraft.io/git-machete/releases).
-
-   Install the `stable` revision locally (`sudo snap install --classic git-machete`)
-   and verify that it works correctly, esp. if it comes to push/pull via ssh/https and editor (`git machete edit` and interactive rebases).
-
-1. Verify that a build started for [docs at Read the Docs](https://readthedocs.org/projects/git-machete/builds/).
-   If not, check `readthedocs.org` webhook on GitHub (under Settings > Webhooks).
-
-   Once the build is ready, verify the [doc contents](https://git-machete.readthedocs.io/en/stable).
-
-1. Verify that a build started on [git-machete PPA](https://launchpad.net/~virtuslab/+archive/ubuntu/git-machete/+packages).
-
-   Once the new version of package is published and the old one is removed (typically takes around 20-30 min),
-   follow the instructions from [ci/deb-ppa-test-install/README.md](https://github.com/VirtusLab/git-machete/tree/master/ci/deb-ppa-test-install).
-   Inspect the output of `docker-compose` and verify that the latest version gets correctly installed on Ubuntu (esp. see the output of `git machete --version`).
-
-1. Thanks to the courtesy of [@blitz (Julian Stecklina)](https://github.com/blitz),
-   a [git-machete package](https://github.com/NixOS/nixpkgs/blob/master/pkgs/applications/version-management/git-machete/default.nix)
-   lives in [Nixpkgs](https://github.com/NixOS/nixpkgs) &mdash; the collection of packages for [Nix package manager](https://nixos.org/).
-
-   Since @blitz's [PR #131141 to NixOS/nixpkgs](https://github.com/NixOS/nixpkgs/pull/131141),
-   automatic updates of this package (based on the package hosted on PyPI) should be performed by [@r-ryantm bot](https://github.com/r-ryantm).
-   Verify that [version-bump PRs to NixOS/nixpkgs](https://github.com/NixOS/nixpkgs/pulls?q=is%3Apr+git-machete),
-   are regularly opened so that Nix package is kept up to date with git-machete releases.
-
-   If package-update PR has not been opened for a long time, it's probably due to the failure of Nix package build.
-   Check [r-ryantm build system](https://r.ryantm.com/log/updatescript/git-machete/) for recent build logs.
-
-1. Thanks to the courtesy of [Ila&iuml; Deutel](https://github.com/ilai-deutel),
-   a [git-machete package](https://aur.archlinux.org/packages/git-machete) is hosted in Arch User Repository (AUR).
-   If the release introduces significant changes/critical bugfixes, please [flag the package as out of date](https://aur.archlinux.org/pkgbase/git-machete/flag).
-
-1. Verify that changes you made in files holding blogs content are reflected in the corresponding medium articles. Files and corresponding to them articles:
+1. Verify that changes you made in files holding blogs content (if any) are reflected in the corresponding medium articles:
    * [blogs/git-machete-1/blog.md](https://github.com/VirtusLab/git-machete/blob/develop/blogs/git-machete-1/blog.md) &mdash; [Make your way through the git (rebase) jungle with Git Machete](https://medium.com/virtuslab/make-your-way-through-the-git-rebase-jungle-with-git-machete-e2ed4dbacd02);
    * [blogs/git-machete-2/blog.md](https://github.com/VirtusLab/git-machete/blob/develop/blogs/git-machete-2/blog.md) &mdash; [Git Machete Strikes again!](https://medium.com/virtuslab/git-machete-strikes-again-traverse-the-git-rebase-jungle-even-faster-with-v2-0-f43ebaf8abb0);
    * [blogs/docker-ci-tricks-1/blog.md](https://github.com/VirtusLab/git-machete/blob/develop/blogs/docker-ci-tricks-1/blog.md) &mdash; [Nifty Docker tricks for your CI (vol. 1)](https://medium.com/virtuslab/nifty-docker-tricks-for-your-ci-vol-1-c4a36d2192ea);
