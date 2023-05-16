@@ -2222,7 +2222,6 @@ class MacheteClient:
         remote_and_organization_and_repository_from_urls: Dict[str, RemoteAndOrganizationAndRepository] = {
             remote: ror for remote, ror in (
                 (remote, RemoteAndOrganizationAndRepository.from_url(domain, url, remote)) for remote, url in url_for_remote.items()
-                if is_github_remote_url(domain, url)
             ) if ror
         }
 

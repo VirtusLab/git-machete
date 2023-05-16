@@ -461,7 +461,5 @@ def github_remote_url_patterns(domain: str) -> List[str]:
     ]
 
 
-def is_github_remote_url(domain: str,
-                         url: str
-                         ) -> bool:
+def is_github_remote_url(domain: str, url: str) -> bool:
     return any((re.match(pattern, url) for pattern in github_remote_url_patterns(domain)))

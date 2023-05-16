@@ -137,8 +137,7 @@ jobs:
     steps:
       - checkout
       - run: pip install tox
-      # TODO (#941): run all tests on Windows, without exceptions
-      - run: tox -e py311 -- -k "not test_github_retarget_pr_multiple_non_origin_remotes" -vv
+      - run: tox -e py311 -- -v
 
   "dry run deploy":
     executor: ubuntu_executor

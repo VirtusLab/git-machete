@@ -8,7 +8,7 @@ from urllib.error import HTTPError
 from urllib.parse import ParseResult, parse_qs, urlparse
 
 from git_machete.git_operations import AnyRevision, LocalBranchShortName
-from git_machete.github import GitHubToken
+from git_machete.github import GitHubToken, RemoteAndOrganizationAndRepository
 from git_machete.options import CommandLineOptions
 
 from .base_test import git
@@ -33,9 +33,8 @@ def mock_for_domain_fake(domain: str) -> GitHubToken:
                        provider='dummy_provider')
 
 
-def mock_github_remote_url_patterns(domain: str) -> List[str]:
-    # Backslash for Windows
-    return ['(.*)[\\\\/](.*)']
+def mock_from_url(domain: str, url: str, remote: str) -> "RemoteAndOrganizationAndRepository":
+    return RemoteAndOrganizationAndRepository(remote, "example-org", "example-repo")
 
 
 def mock_fetch_ref(cls: Any, remote: str, ref: str) -> None:

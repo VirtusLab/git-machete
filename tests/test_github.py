@@ -15,8 +15,7 @@ from tests.mockers_github import (FakeCommandLineOptions, MockContextManager,
                                   MockGitHubAPIState,
                                   mock_derive_current_user_login,
                                   mock_for_domain_fake, mock_for_domain_none,
-                                  mock_github_remote_url_patterns,
-                                  mock_is_file_false,
+                                  mock_from_url, mock_is_file_false,
                                   mock_is_file_not_github_token,
                                   mock_is_file_true,
                                   mock_os_environ_get_github_token,
@@ -78,7 +77,7 @@ class TestGitHub(BaseTest):
             assert remote_and_organization_and_repository.repository == repository
 
     def test_github_api_pagination(self, mocker: Any, tmp_path: Any) -> None:
-        mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
+        mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
@@ -117,7 +116,7 @@ class TestGitHub(BaseTest):
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('builtins.input', mock_input_returning("1"))
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
-        mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
+        mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
         mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
         mocker.patch('urllib.request.urlopen', MockContextManagerRaise403)
 
@@ -149,8 +148,8 @@ class TestGitHub(BaseTest):
         mocker.patch('builtins.input', mock_input_returning("1"))
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
-        mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
         mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_fake)
+        mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
         mocker.patch('urllib.request.urlopen', MockContextManager)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_enterprise_domain.new_request())
 
@@ -170,7 +169,7 @@ class TestGitHub(BaseTest):
 
     def test_github_token_retrieval_order(self, mocker: Any) -> None:
         mocker.patch('_collections_abc.Mapping.get', mock_os_environ_get_none)
-        mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
+        mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
         mocker.patch('os.path.isfile', mock_is_file_false)
         mocker.patch('shutil.which', mock_shutil_which(None))
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_enterprise_domain.new_request())

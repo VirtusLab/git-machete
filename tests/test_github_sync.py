@@ -7,8 +7,7 @@ from tests.mockers import (assert_success, launch_command,
                            rewrite_definition_file)
 from tests.mockers_github import (FakeCommandLineOptions, MockContextManager,
                                   MockGitHubAPIState, mock_for_domain_fake,
-                                  mock_github_remote_url_patterns,
-                                  mock_repository_info)
+                                  mock_from_url, mock_repository_info)
 
 
 class TestGitHubSync(BaseTest):
@@ -30,7 +29,7 @@ class TestGitHubSync(BaseTest):
         mocker.patch('builtins.input', mock_input_returning_y)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
-        mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
+        mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
         mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_fake)
         mocker.patch('urllib.request.urlopen', MockContextManager)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_sync.new_request())

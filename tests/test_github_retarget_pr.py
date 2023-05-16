@@ -6,8 +6,7 @@ from tests.mockers import (assert_failure, assert_success, launch_command,
                            mock_run_cmd_and_discard_output,
                            rewrite_definition_file)
 from tests.mockers_github import (MockContextManager, MockGitHubAPIState,
-                                  mock_github_remote_url_patterns,
-                                  mock_repository_info)
+                                  mock_from_url, mock_repository_info)
 
 
 class TestGitHubRetargetPR(BaseTest):
@@ -197,7 +196,7 @@ class TestGitHubRetargetPR(BaseTest):
         launch_command('github', 'retarget-pr', '--branch', 'branch-without-pr', '--ignore-if-missing')
 
     def test_github_retarget_pr_multiple_non_origin_remotes(self, mocker: Any) -> None:
-        mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
+        mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_retarget_pr.new_request())
         mocker.patch('urllib.request.urlopen', MockContextManager)

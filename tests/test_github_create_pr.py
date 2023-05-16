@@ -8,8 +8,7 @@ from tests.mockers import (assert_failure, assert_success, launch_command,
                            rewrite_definition_file)
 from tests.mockers_github import (FakeCommandLineOptions, MockContextManager,
                                   MockGitHubAPIState, MockHTTPError,
-                                  mock_for_domain_none,
-                                  mock_github_remote_url_patterns,
+                                  mock_for_domain_none, mock_from_url,
                                   mock_repository_info)
 
 
@@ -37,7 +36,7 @@ class TestGitHubCreatePR(BaseTest):
         mocker.patch('builtins.input', mock_input_returning_y)
         # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_create_pr`
         # due to `git fetch` executed by `create-pr` subcommand.
-        mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
+        mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('urllib.error.HTTPError', MockHTTPError)  # need to provide read() method, which does not actually reads error from url
@@ -231,7 +230,7 @@ class TestGitHubCreatePR(BaseTest):
         mocker.patch('builtins.input', mock_input_returning_y)
         # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_create_pr`
         # due to `git fetch` executed by `create-pr` subcommand.
-        mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
+        mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
         mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
@@ -297,7 +296,7 @@ class TestGitHubCreatePR(BaseTest):
         mocker.patch('builtins.input', mock_input_returning('1', 'y', 'y'))
         # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_create_pr`
         # due to `git fetch` executed by `create-pr` subcommand.
-        mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
+        mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
         mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
