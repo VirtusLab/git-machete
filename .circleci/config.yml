@@ -125,7 +125,7 @@ jobs:
       - checkout
       - run: pip install tox
       # TODO (#941): run all tests on Windows, without exceptions
-      - run: tox -e py311 -- -k "not TestGitHub and not test_status_branch_hook_output and not test_update_by_merge" -vv
+      - run: tox -e py311 -- -k "not test_github_retarget_pr_multiple_non_origin_remotes" -vv
 
   "dry run deploy":
     executor: ubuntu_executor
@@ -222,6 +222,8 @@ jobs:
       # 2) every time a https://github.com/r-ryantm bot runs on NixOS/nixpkgs repository,
       #    Nix git-machete package is updated with the fresh version/package hash according to the data from PyPI.
 
+# Note that this top-level key is NOT consumed by CircleCI,
+# it's just to introduce a reusable anchor to be referenced from `requires`.
 mandatory_jobs: &mandatory_jobs
   - general checks
   - python 3_6 git 1_8_10

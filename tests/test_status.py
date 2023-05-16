@@ -1,6 +1,9 @@
 import os
+import sys
 from tempfile import mkdtemp
 from typing import Any
+
+import pytest
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
@@ -50,14 +53,15 @@ class TestStatus(BaseTest):
                                       'Edit the definition file manually with git machete edit'
         assert_failure(['status'], expected_error_message)
 
-    def test_status_branch_hook_output(self) -> None:
+    @pytest.mark.skipif(sys.platform == "win32", reason="Windows doesn't distinguish between executable and non-executable files")
+    def test_status_advice_ignored_non_executable_hook(self) -> None:
         (
             self.repo_sandbox
             .remove_remote()
             .new_branch('master')
-            .commit('master commit')
+            .commit()
             .new_branch('develop')
-            .commit('develop commit')
+            .commit()
         )
 
         body: str = \
@@ -89,6 +93,24 @@ class TestStatus(BaseTest):
             """
         )
 
+    def test_status_branch_hook_output(self) -> None:
+        (
+            self.repo_sandbox
+            .remove_remote()
+            .new_branch('master')
+            .commit()
+            .new_branch('develop')
+            .commit()
+        )
+
+        body: str = \
+            """
+            master
+              develop
+            """
+        rewrite_definition_file(body)
+
+        self.repo_sandbox.write_to_file(".git/hooks/machete-status-branch", "#!/bin/sh\ngit ls-tree $1 | wc -l | sed 's/ *//'")
         self.repo_sandbox.set_file_executable(".git/hooks/machete-status-branch")
         assert_success(
             ["status"],

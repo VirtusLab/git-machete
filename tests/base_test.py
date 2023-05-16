@@ -111,7 +111,7 @@ class GitRepositorySandbox:
         return popen('git for-each-ref refs/heads/ "--format=%(refname:short)"').splitlines()
 
     def is_ancestor(self, earlier: str, later: str) -> bool:
-        return subprocess.call(f"git merge-base --is-ancestor  '{earlier}'  '{later}'", shell=True) == 0
+        return subprocess.call(f'git merge-base --is-ancestor  "{earlier}"  "{later}"', shell=True) == 0
 
     def get_current_commit_hash(self) -> str:
         return self.get_commit_hash("HEAD")
@@ -136,7 +136,7 @@ class GitRepositorySandbox:
         return self
 
     def remove_file(self, file_path: str) -> "GitRepositorySandbox":
-        self.execute(f"rm -rf './{file_path}'")
+        self.execute(f'rm -rf "./{file_path}"')
         return self
 
     def set_file_executable(self, file_name: str) -> "GitRepositorySandbox":

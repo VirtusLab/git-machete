@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.17.5
 
+- fixed: `machete-status-branch` hook can now be executed on Windows
+
 ## New in git-machete 3.17.4
 
 - fixed: building the docs for readthedocs.org

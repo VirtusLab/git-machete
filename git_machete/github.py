@@ -289,10 +289,11 @@ class GitHubClient:
                                      'You can also use a different token provider, available providers can be found '
                                      'when running `git machete help github`.')
             elif err.code == http.HTTPStatus.NOT_FOUND:
+                # TODO (#164): make a dedicated exception here
                 raise MacheteException(
                     f'`{method} {url}` request ended up in 404 response from GitHub. A valid GitHub API token is required.\n'
                     f'Provide a GitHub API token with `repo` access via one of the: {GitHubToken.get_possible_providers()} '
-                    f'Visit `https://{self.__domain}/settings/tokens` to generate a new one.')  # TODO (#164): make dedicated exception here
+                    f'Visit `https://{self.__domain}/settings/tokens` to generate a new one.')
             elif err.code == http.HTTPStatus.TEMPORARY_REDIRECT:
                 if err.headers['Location'] is not None:
                     if len(err.headers['Location'].split('/')) >= 5:

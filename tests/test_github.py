@@ -38,7 +38,8 @@ def mock_for_domain_fake(domain: str) -> GitHubToken:
 
 
 def mock_github_remote_url_patterns(domain: str) -> List[str]:
-    return ['(.*)/(.*)']
+    # Backslash for Windows
+    return ['(.*)[\\\\/](.*)']
 
 
 def mock_fetch_ref(cls: Any, remote: str, ref: str) -> None:
@@ -82,7 +83,7 @@ def mock_os_environ_get_github_token(self: Any, key: str, default: Optional[str]
         return default
 
 
-def mock_shutil_which_gh(path: Optional[str]) -> Callable[[Any], Optional[str]]:
+def mock_shutil_which(path: Optional[str]) -> Callable[[Any], Optional[str]]:
     return lambda cmd: path
 
 
@@ -124,10 +125,10 @@ mock_info.counter = mock_read.counter = 0  # type: ignore[attr-defined]
 
 class MockGitHubAPIState:
     def __init__(self, pulls: List[Dict[str, Any]], issues: Optional[List[Dict[str, Any]]] = None) -> None:
-        self.pulls: List[Dict[str, Any]] = pulls
+        self.pulls: List[Dict[str, Any]] = [dict(pull) for pull in pulls]
         self.user: Dict[str, str] = {'login': 'other_user', 'type': 'User', 'company': 'VirtusLab'}
         # login must be different from the one used in pull requests, otherwise pull request author will not be annotated
-        self.issues: List[Dict[str, Any]] = issues or []
+        self.issues: List[Dict[str, Any]] = list(issues) if issues else []
 
     def new_request(self) -> "MockGitHubAPIRequest":
         return MockGitHubAPIRequest(self)
@@ -2229,12 +2230,12 @@ class TestGitHub(BaseTest):
         launch_command('github', 'checkout-prs', '--all')
 
     def test_github_token_retrieval_order(self, mocker: Any) -> None:
-        mocker.patch('os.path.isfile', mock_is_file_false)
-        mocker.patch('shutil.which', mock_shutil_which_gh(None))
-        mocker.patch('urllib.request.urlopen', MockContextManager)
-        mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
         mocker.patch('_collections_abc.Mapping.get', mock_os_environ_get_none)
+        mocker.patch('git_machete.github.github_remote_url_patterns', mock_github_remote_url_patterns)
+        mocker.patch('os.path.isfile', mock_is_file_false)
+        mocker.patch('shutil.which', mock_shutil_which(None))
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_enterprise_domain.new_request())
+        mocker.patch('urllib.request.urlopen', MockContextManager)
 
         (
             self.repo_sandbox.new_branch("develop")
@@ -2296,7 +2297,7 @@ class TestGitHub(BaseTest):
     def test_get_token_from_gh(self, mocker: Any) -> None:
         mocker.patch('os.path.isfile', mock_is_file_false)
         mocker.patch('_collections_abc.Mapping.get', mock_os_environ_get_none)
-        mocker.patch('shutil.which', mock_shutil_which_gh('/path/to/gh'))
+        mocker.patch('shutil.which', mock_shutil_which('/path/to/gh'))
         mocker.patch('subprocess.run', mock_subprocess_run(returncode=0, stdout='stdout', stderr='''
         github.com
             ✓ Logged in to github.com as Foo Bar (/Users/foo_bar/.config/gh/hosts.yml)

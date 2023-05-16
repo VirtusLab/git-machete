@@ -1107,7 +1107,11 @@ class MacheteClient:
             if hook_executable:
                 debug(f"running machete-status-branch hook ({hook_path}) for branch {branch}")
                 hook_env = dict(os.environ, ASCII_ONLY=str(utils.ascii_only).lower())
-                status_code, stdout, stderr = utils.popen_cmd(hook_path, branch, cwd=self.__git.get_root_dir(), env=hook_env)
+                if sys.platform == "win32":
+                    status_code, stdout, stderr = utils.popen_cmd("sh", hook_path, branch, cwd=self.__git.get_root_dir(), env=hook_env)
+                else:
+                    status_code, stdout, stderr = utils.popen_cmd(hook_path, branch, cwd=self.__git.get_root_dir(), env=hook_env)
+
                 if status_code == 0:
                     if not stdout.isspace():
                         # Replace all newlines with spaces, in case the hook prints out more than one line
