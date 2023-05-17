@@ -1,6 +1,9 @@
 version: 2.1
 
 executors:
+  macos_executor:
+    macos:
+      xcode: 14.2.0
   ubuntu_executor:
     machine:
       image: ubuntu-2204:2022.10.2
@@ -119,6 +122,16 @@ jobs:
       - store_test_results:
           path: test-results/
 
+  # Note the while we use Linux to test against specific Python&git version,
+  # on macOS and Windows we're just checking compatibility with the OS itself,
+  # relying on whatever recent versions of Python and git are provided in the image.
+  "macos tests":
+    executor: macos_executor
+    steps:
+      - checkout
+      - run: pip install tox
+      - run: tox -e py311 -- -v
+
   "windows tests":
     executor: windows_executor
     steps:
@@ -232,6 +245,7 @@ mandatory_jobs: &mandatory_jobs
   - pep8 and python 3_9 git 2_30_1
   - coverage and python 3_10 git 2_33_1
   - docs and python 3_11 git 2_38_1
+  - macos tests
   - windows tests
 
 workflows:
@@ -245,6 +259,7 @@ workflows:
       - pep8 and python 3_9 git 2_30_1
       - coverage and python 3_10 git 2_33_1
       - docs and python 3_11 git 2_38_1
+      - macos tests
       - windows tests
       - dry run deploy:
           filters:
