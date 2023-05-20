@@ -2,7 +2,8 @@
 
 ## New in git-machete 3.17.5
 
-- fixed: `machete-status-branch` hook can now be executed on Windows
+- fixed: `machete-post-slide-out`, `machete-pre-rebase` and `machete-status-branch` hooks can now be executed on Windows
+- fixed: unstable behavior after `edit` option has been selected for interactively sliding out invalid branches
 
 ## New in git-machete 3.17.4
 

@@ -26,20 +26,29 @@ class TestDeleteUnmanaged(BaseTest):
             """
         rewrite_definition_file(body)
 
+        mocker.patch("builtins.input", mock_input_returning("q"))
+        launch_command("delete-unmanaged")
+        mocker.patch("builtins.input", mock_input_returning("n"))
+        launch_command("delete-unmanaged")
+        mocker.patch("builtins.input", mock_input_returning("y"))
         assert_success(
-            ["delete-unmanaged", "--yes"],
+            ["delete-unmanaged"],
             """
             Checking for unmanaged branches...
             Skipping current branch feature
-            Deleting branch develop (merged to HEAD)...
+            Delete branch develop (merged to HEAD)? (y, N, q) 
             Deleted branch develop (was 03e727b).
 
             """
         )
 
         self.repo_sandbox.check_out("master")
+        mocker.patch("builtins.input", mock_input_returning("q"))
+        launch_command("delete-unmanaged")
+        mocker.patch("builtins.input", mock_input_returning("n"))
+        launch_command("delete-unmanaged")
         assert_success(
-            ["delete-unmanaged", "-y"],
+            ["delete-unmanaged", "--yes"],
             """
             Checking for unmanaged branches...
             Deleting branch feature (unmerged to HEAD)...

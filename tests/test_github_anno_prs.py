@@ -4,9 +4,9 @@ from tests.base_test import BaseTest
 from tests.mockers import (assert_success, launch_command,
                            mock_run_cmd_and_discard_output,
                            rewrite_definition_file)
-from tests.mockers_github import (MockContextManager, MockGitHubAPIState,
+from tests.mockers_github import (MockGitHubAPIState,
                                   mock_derive_current_user_login,
-                                  mock_repository_info)
+                                  mock_repository_info, mock_urlopen)
 
 
 class TestGitHubAnnoPRs(BaseTest):
@@ -43,7 +43,7 @@ class TestGitHubAnnoPRs(BaseTest):
     def test_github_anno_prs(self, mocker: Any) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('git_machete.github.GitHubClient.derive_current_user_login', mock_derive_current_user_login)
-        mocker.patch('urllib.request.urlopen', MockContextManager)
+        mocker.patch('urllib.request.urlopen', mock_urlopen)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_anno_prs.new_request())
 
         (

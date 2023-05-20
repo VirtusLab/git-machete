@@ -5,7 +5,8 @@ import pytest
 from git_machete.exceptions import ExitCode
 
 from .base_test import BaseTest
-from .mockers import (launch_command, mock_run_cmd_and_discard_output,
+from .mockers import (assert_failure, assert_success, launch_command,
+                      mock_input_returning, mock_run_cmd_and_discard_output,
                       rewrite_definition_file)
 
 
@@ -36,15 +37,16 @@ class TestGo(BaseTest):
 
         Verify that 'git machete go up' performs 'git checkout' to the
         parent/upstream branch of the current branch.
-
         """
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
-            self.repo_sandbox.new_branch("level-0-branch")
+            self.repo_sandbox
+            .new_branch("level-0-branch")
             .commit()
             .new_branch("level-1-branch")
             .commit()
+            .new_branch("level-2-branch")
         )
         body: str = \
             """
@@ -52,20 +54,29 @@ class TestGo(BaseTest):
                 level-1-branch
             """
         rewrite_definition_file(body)
-        launch_command("go", "up")
 
+        self.repo_sandbox.check_out("level-0-branch")
+        assert_failure(["go", "up"], "Branch level-0-branch has no upstream branch")
+
+        self.repo_sandbox.check_out("level-1-branch")
+        launch_command("go", "up")
         assert 'level-0-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete go up' performs 'git checkout' to "
-             "the parent/upstream branch of the current branch."
-             )
-        # check short command behaviour
+             "the parent/upstream branch of the current branch.")
+
         self.repo_sandbox.check_out("level-1-branch")
         launch_command("g", "u")
-
         assert 'level-0-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete g u' performs 'git checkout' to "
-             "the parent/upstream branch of the current branch."
-             )
+             "the parent/upstream branch of the current branch.")
+
+        self.repo_sandbox.check_out("level-2-branch")
+        assert_success(
+            ["g", "u"],
+            "Warn: branch level-2-branch not found in the tree of branch dependencies; "
+            "the upstream has been inferred to level-1-branch\n"
+        )
+        assert 'level-1-branch' == launch_command("show", "current").strip()
 
     def test_go_down(self, mocker: Any) -> None:
         """Verify behaviour of a 'git machete go down' command.
@@ -77,27 +88,37 @@ class TestGo(BaseTest):
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
-            self.repo_sandbox.new_branch("level-0-branch")
+            self.repo_sandbox
+            .new_branch("level-0-branch")
             .commit()
             .new_branch("level-1-branch")
             .commit()
-            .check_out("level-0-branch")
+            .new_branch("level-2a-branch")
+            .commit()
+            .check_out("level-1-branch")
+            .new_branch("level-2b-branch")
+            .commit()
         )
         body: str = \
             """
             level-0-branch
                 level-1-branch
+                    level-2a-branch
+                    level-2b-branch
             """
         rewrite_definition_file(body)
+
+        self.repo_sandbox.check_out("level-0-branch")
         launch_command("go", "down")
+        assert launch_command("show", "current").strip() == "level-1-branch"
 
-        assert launch_command("show", "current").strip() == 'level-1-branch'
-
-        # check short command behaviour
         self.repo_sandbox.check_out("level-0-branch")
         launch_command("g", "d")
+        assert launch_command("show", "current").strip() == "level-1-branch"
 
-        assert launch_command("show", "current").strip() == 'level-1-branch'
+        mocker.patch("builtins.input", mock_input_returning("2"))
+        launch_command("go", "down")
+        assert launch_command("show", "current").strip() == "level-2b-branch"
 
     def test_go_first_root_with_downstream(self, mocker: Any) -> None:
         """Verify behaviour of a 'git machete go first' command.
@@ -105,7 +126,6 @@ class TestGo(BaseTest):
         Verify that 'git machete go first' performs 'git checkout' to
         the first downstream branch of a root branch in the config file
         if root branch has any downstream branches.
-
         """
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
@@ -124,11 +144,10 @@ class TestGo(BaseTest):
             .new_branch("level-3b-branch")
             .commit()
             # a added so root will be placed in the config file after the level-0-branch
-            .new_root_branch("a-additional-root")
+            .new_orphan_branch("a-additional-root")
             .commit()
             .new_branch("branch-from-a-additional-root")
             .commit()
-            .check_out("level-3b-branch")
         )
         body: str = \
             """
@@ -137,33 +156,29 @@ class TestGo(BaseTest):
                     level-2a-branch
                 level-1b-branch
                     level-2b-branch
-                        level-3b-branch
             a-additional-root
                 branch-from-a-additional-root
             """
         rewrite_definition_file(body)
-        launch_command("go", "first")
 
+        self.repo_sandbox.check_out("level-3b-branch")
+        launch_command("go", "first")
         assert 'level-1a-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete go first' performs 'git checkout' to "
              "the first downstream branch of a root branch if root branch "
-             "has any downstream branches."
-             )
-        # check short command behaviour
+             "has any downstream branches.")
+
         self.repo_sandbox.check_out("level-3b-branch")
         launch_command("g", "f")
-
         assert 'level-1a-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete g d' performs 'git checkout' to "
-             "the child/downstream branch of the current branch."
-             )
+             "the child/downstream branch of the current branch.")
 
     def test_go_first_root_without_downstream(self, mocker: Any) -> None:
         """Verify behaviour of a 'git machete go first' command.
 
         Verify that 'git machete go first' set current branch to root
         if root branch has no downstream.
-
         """
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
@@ -210,12 +225,13 @@ class TestGo(BaseTest):
             .check_out("level-0-branch")
             .new_branch("level-1b-branch")
             .commit()
+            .new_branch("level-2b-branch")
+            .commit()
             # x added so root will be placed in the config file after the level-0-branch
-            .new_root_branch("x-additional-root")
+            .new_orphan_branch("x-additional-root")
             .commit()
             .new_branch("branch-from-x-additional-root")
             .commit()
-            .check_out("level-1a-branch")
         )
         body: str = \
             """
@@ -227,22 +243,24 @@ class TestGo(BaseTest):
                 branch-from-x-additional-root
             """
         rewrite_definition_file(body)
-        launch_command("go", "last")
 
+        self.repo_sandbox.check_out("level-1a-branch")
+        launch_command("go", "last")
         assert 'level-1b-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete go last' performs 'git checkout' to "
              "the last downstream branch of a root branch if root branch "
-             "has any downstream branches."
-             )
-        # check short command behaviour
+             "has any downstream branches.")
+
         self.repo_sandbox.check_out("level-1a-branch")
         launch_command("g", "l")
-
         assert 'level-1b-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete g l' performs 'git checkout' to "
              "the last downstream branch of a root branch if root branch "
-             "has any downstream branches."
-             )
+             "has any downstream branches.")
+
+        self.repo_sandbox.check_out("level-2b-branch")
+        launch_command("g", "l")
+        assert 'branch-from-x-additional-root' == launch_command("show", "current").strip()
 
     def test_go_next_successor_exists(self, mocker: Any) -> None:
         """Verify behaviour of a 'git machete go next' command.
@@ -306,7 +324,7 @@ class TestGo(BaseTest):
             .new_branch("level-1-branch")
             .commit()
             # x added so root will be placed in the config file after the level-0-branch
-            .new_root_branch("x-additional-root")
+            .new_orphan_branch("x-additional-root")
             .commit()
             .check_out("level-1-branch")
         )
@@ -391,7 +409,7 @@ class TestGo(BaseTest):
             self.repo_sandbox.new_branch("level-0-branch")
             .commit()
             # a added so root will be placed in the config file before the level-0-branch
-            .new_root_branch("a-additional-root")
+            .new_orphan_branch("a-additional-root")
             .commit()
             .check_out("level-0-branch")
         )
@@ -435,7 +453,7 @@ class TestGo(BaseTest):
             .check_out("level-0-branch")
             .new_branch("level-1b-branch")
             .commit()
-            .new_root_branch("additional-root")
+            .new_orphan_branch("additional-root")
             .commit()
             .new_branch("branch-from-additional-root")
             .commit()
@@ -465,3 +483,10 @@ class TestGo(BaseTest):
             ("Verify that 'git machete g r' performs 'git checkout' to "
              "the root of the current branch."
              )
+
+    def test_go_root_no_branches(self) -> None:
+        assert_failure(
+            ["g", "root"],
+            "No branches listed in .git/machete; use git machete discover "
+            "or git machete edit, or edit .git/machete manually."
+        )

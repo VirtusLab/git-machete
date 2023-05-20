@@ -2,7 +2,8 @@ from typing import Any
 
 from .base_test import BaseTest, git
 from .mockers import (assert_failure, assert_success, launch_command,
-                      mock_run_cmd_and_discard_output, rewrite_definition_file)
+                      mock_input_returning, mock_run_cmd_and_discard_output,
+                      rewrite_definition_file)
 
 
 class TestTraverse(BaseTest):
@@ -78,6 +79,49 @@ class TestTraverse(BaseTest):
             o-hotfix/add-trigger (diverged from origin)
               |
               o-ignore-trailing * (diverged from & older than origin)
+            """
+        )
+
+    def test_traverse_slide_out(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        (
+            self.repo_sandbox
+            .remove_remote()
+            .new_branch("master")
+            .commit()
+            .new_branch("develop")
+            .commit()
+            .new_branch("feature")
+            .commit()
+            .check_out("master")
+            .execute("git merge --ff-only develop")
+            .check_out("develop")
+        )
+        body: str = \
+            """
+            master
+                develop  PR #123
+                    feature
+            """
+        rewrite_definition_file(body)
+
+        mocker.patch('builtins.input', mock_input_returning("q"))
+        assert_success(
+            ["traverse"],
+            "Branch develop is merged into master. Slide develop out of the tree of branch dependencies? (y, N, q, yq) \n"
+        )
+        mocker.patch('builtins.input', mock_input_returning("yq"))
+        assert_success(
+            ["traverse"],
+            "Branch develop is merged into master. Slide develop out of the tree of branch dependencies? (y, N, q, yq) \n"
+        )
+        assert_success(
+            ["status", "-l"],
+            """
+            master
+            |
+            | Some commit message.
+            o-feature
             """
         )
 

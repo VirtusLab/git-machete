@@ -6,12 +6,6 @@ from typing import List, Optional
 
 from git_machete.git_operations import GitContext
 
-
-def popen(command: str) -> str:
-    with os.popen(command) as process:
-        return process.read().strip()
-
-
 git: GitContext = GitContext()
 
 
@@ -37,8 +31,16 @@ class GitRepositorySandbox:
         self.local_path = mkdtemp()
         self.file_counter = 0
 
+    def popen(self, command: str) -> str:
+        with os.popen(command) as process:
+            return process.read().strip()
+
     def execute(self, command: str) -> "GitRepositorySandbox":
         subprocess.check_call(command, shell=True)
+        return self
+
+    def execute_ignoring_exit_code(self, command: str) -> "GitRepositorySandbox":
+        subprocess.call(command, shell=True)
         return self
 
     def new_repo(self, directory: str, bare: bool, switch_dir_to_new_repo: bool = True) -> "GitRepositorySandbox":
@@ -54,7 +56,7 @@ class GitRepositorySandbox:
         self.execute(f"git checkout -b {branch_name}")
         return self
 
-    def new_root_branch(self, branch_name: str) -> "GitRepositorySandbox":
+    def new_orphan_branch(self, branch_name: str) -> "GitRepositorySandbox":
         self.execute(f"git checkout --orphan {branch_name}")
         return self
 
@@ -82,7 +84,7 @@ class GitRepositorySandbox:
         return self
 
     def push(self, remote: str = 'origin', set_upstream: bool = True, tracking_branch: Optional[str] = None) -> "GitRepositorySandbox":
-        branch = popen("git symbolic-ref -q --short HEAD")
+        branch = self.popen("git symbolic-ref -q --short HEAD")
         tracking_branch = tracking_branch or branch
         self.execute(f"git push {'--set-upstream' if set_upstream else ''} {remote} {branch}:{tracking_branch}")
         return self
@@ -108,7 +110,7 @@ class GitRepositorySandbox:
         return self
 
     def get_local_branches(self) -> List[str]:
-        return popen('git for-each-ref refs/heads/ "--format=%(refname:short)"').splitlines()
+        return self.popen('git for-each-ref refs/heads/ "--format=%(refname:short)"').splitlines()
 
     def is_ancestor(self, earlier: str, later: str) -> bool:
         return subprocess.call(f'git merge-base --is-ancestor  "{earlier}"  "{later}"', shell=True) == 0
@@ -117,7 +119,7 @@ class GitRepositorySandbox:
         return self.get_commit_hash("HEAD")
 
     def get_commit_hash(self, revision: str) -> str:
-        return popen(f"git rev-parse {revision}")
+        return self.popen(f"git rev-parse {revision}")
 
     def set_git_config_key(self, key: str, value: str) -> "GitRepositorySandbox":
         self.execute(f'git config {key} {value}')

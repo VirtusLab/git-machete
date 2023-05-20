@@ -1,8 +1,9 @@
 from typing import Any
 
 from .base_test import BaseTest
-from .mockers import (assert_failure, assert_success,
-                      mock_run_cmd_and_discard_output, rewrite_definition_file)
+from .mockers import (assert_failure, assert_success, mock_input_returning,
+                      mock_input_returning_y, mock_run_cmd_and_discard_output,
+                      rewrite_definition_file)
 
 
 class TestAdd(BaseTest):
@@ -31,6 +32,11 @@ class TestAdd(BaseTest):
         self.repo_sandbox.new_branch("bugfix/feature_fail")
 
         # Test `git machete add` without providing the branch name
+        mocker.patch("builtins.input", mock_input_returning("n"))
+        assert_success(
+            ['add'],
+            'Add bugfix/feature_fail onto the inferred upstream (parent) branch develop? (y, N) \n'
+        )
         assert_success(
             ['add', '-y'],
             'Adding bugfix/feature_fail onto the inferred upstream (parent) branch develop\n'
@@ -76,10 +82,23 @@ class TestAdd(BaseTest):
             .delete_branch("feature/foo")
         )
 
+        mocker.patch("builtins.input", mock_input_returning("n"))
+        assert_success(
+            ['add', 'foo'],
+            'A local branch foo does not exist. Create out of the current HEAD? (y, N) \n'
+        )
+
         assert_success(
             ['add', '-y', 'foo'],
             'A local branch foo does not exist. Creating out of the current HEAD\n'
             'Added branch foo as a new root\n'
+        )
+
+        mocker.patch("builtins.input", mock_input_returning("n"))
+        assert_success(
+            ['add', '--as-root', 'feature/foo'],
+            'A local branch feature/foo does not exist, but a remote branch origin/feature/foo exists.\n'
+            'Check out feature/foo locally? (y, N) \n'
         )
 
         assert_success(
@@ -87,6 +106,43 @@ class TestAdd(BaseTest):
             'A local branch feature/foo does not exist, but a remote branch origin/feature/foo exists.\n'
             'Checking out feature/foo locally...\n'
             'Added branch feature/foo as a new root\n'
+        )
+
+    def test_add_new_branch_onto_managed_current_branch(self, mocker: Any) -> None:
+        (
+            self.repo_sandbox.new_branch("master")
+            .commit()
+        )
+
+        rewrite_definition_file("master")
+
+        mocker.patch("builtins.input", mock_input_returning_y)
+        assert_success(
+            ['add', 'foo'],
+            "A local branch foo does not exist. Create out of the current HEAD? (y, N) \n"
+            "Added branch foo onto master\n"
+        )
+
+    def test_add_new_branch_when_cannot_infer_parent(self, mocker: Any) -> None:
+        (
+            self.repo_sandbox.new_branch("master")
+            .commit()
+            .new_branch("develop")
+            .commit()
+            .check_out("master")
+        )
+
+        rewrite_definition_file("develop")
+
+        mocker.patch("builtins.input", mock_input_returning_y)
+        assert_failure(
+            ['add', 'foo'],
+            """
+            Could not automatically infer upstream (parent) branch for foo.
+            You can either:
+            1) specify the desired upstream branch with --onto or
+            2) pass --as-root to attach foo as a new root or
+            3) edit the definition file manually with git machete edit"""
         )
 
     def test_add_already_managed_branch(self) -> None:
@@ -100,3 +156,19 @@ class TestAdd(BaseTest):
         rewrite_definition_file("master\n  develop")
 
         assert_failure(['add', 'develop'], 'Branch develop already exists in the tree of branch dependencies')
+
+    def test_add_onto_non_existent_branch(self) -> None:
+        (
+            self.repo_sandbox.new_branch("master")
+            .commit("master commit.")
+            .new_branch("develop")
+            .commit("develop commit.")
+        )
+
+        rewrite_definition_file("master")
+
+        assert_failure(
+            ['add', 'develop', '--onto', 'foo'],
+            "Branch foo not found in the tree of branch dependencies.\n"
+            "Use git machete add foo or git machete edit."
+        )

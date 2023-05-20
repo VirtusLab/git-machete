@@ -5,8 +5,8 @@ from tests.base_test import BaseTest
 from tests.mockers import (assert_failure, assert_success, launch_command,
                            mock_run_cmd_and_discard_output,
                            rewrite_definition_file)
-from tests.mockers_github import (MockContextManager, MockGitHubAPIState,
-                                  mock_from_url, mock_repository_info)
+from tests.mockers_github import (MockGitHubAPIState, mock_from_url,
+                                  mock_repository_info, mock_urlopen)
 
 
 class TestGitHubRetargetPR(BaseTest):
@@ -43,7 +43,7 @@ class TestGitHubRetargetPR(BaseTest):
     def test_github_retarget_pr(self, mocker: Any) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_retarget_pr.new_request())
-        mocker.patch('urllib.request.urlopen', MockContextManager)
+        mocker.patch('urllib.request.urlopen', mock_urlopen)
 
         branchs_first_commit_msg = "First commit on branch."
         branchs_second_commit_msg = "Second commit on branch."
@@ -118,7 +118,7 @@ class TestGitHubRetargetPR(BaseTest):
     def test_github_retarget_pr_explicit_branch(self, mocker: Any) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_retarget_pr_explicit_branch.new_request())
-        mocker.patch('urllib.request.urlopen', MockContextManager)
+        mocker.patch('urllib.request.urlopen', mock_urlopen)
 
         branchs_first_commit_msg = "First commit on branch."
         branchs_second_commit_msg = "Second commit on branch."
@@ -199,7 +199,7 @@ class TestGitHubRetargetPR(BaseTest):
         mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_retarget_pr.new_request())
-        mocker.patch('urllib.request.urlopen', MockContextManager)
+        mocker.patch('urllib.request.urlopen', mock_urlopen)
 
         branchs_first_commit_msg = "First commit on branch."
         branchs_second_commit_msg = "Second commit on branch."

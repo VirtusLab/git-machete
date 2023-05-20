@@ -1,9 +1,10 @@
+import contextlib
 import json
 import re
 from http import HTTPStatus
 from subprocess import CompletedProcess
 from tempfile import mkdtemp
-from typing import Any, Callable, ContextManager, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, Iterator, List, Optional, Union
 from urllib.error import HTTPError
 from urllib.parse import ParseResult, parse_qs, urlparse
 
@@ -284,24 +285,15 @@ class MockHTTPError(HTTPError):
         return json.dumps(self.msg).encode()
 
 
-class MockContextManager(ContextManager[MockGitHubAPIResponse]):
-    def __init__(self, obj: MockGitHubAPIResponse) -> None:
-        self.obj = obj
-
-    def __enter__(self) -> MockGitHubAPIResponse:
-        if self.obj.status_code == HTTPStatus.NOT_FOUND:
-            raise HTTPError("http://example.org", 404, 'Not found', None, None)  # type: ignore[arg-type]
-        elif self.obj.status_code == HTTPStatus.UNPROCESSABLE_ENTITY:
-            raise MockHTTPError("http://example.org", 422, self.obj.response_data, None, None)  # type: ignore[arg-type]
-        return self.obj
-
-    def __exit__(self, *args: Any) -> None:
-        pass
+@contextlib.contextmanager
+def mock_urlopen(obj: MockGitHubAPIResponse) -> Iterator[MockGitHubAPIResponse]:
+    if obj.status_code == HTTPStatus.NOT_FOUND:
+        raise HTTPError("http://example.org", 404, 'Not found', None, None)  # type: ignore[arg-type]
+    elif obj.status_code == HTTPStatus.UNPROCESSABLE_ENTITY:
+        raise MockHTTPError("http://example.org", 422, obj.response_data, None, None)  # type: ignore[arg-type]
+    yield obj
 
 
-class MockContextManagerRaise403(MockContextManager):
-    def __init__(self, obj: MockGitHubAPIResponse) -> None:
-        super().__init__(obj)
-
-    def __enter__(self) -> MockGitHubAPIResponse:
-        raise HTTPError("http://example.org", 403, 'Forbidden', None, None)  # type: ignore[arg-type]
+@contextlib.contextmanager
+def mock_urlopen_raising_403(obj: MockGitHubAPIResponse) -> Iterator[MockGitHubAPIResponse]:
+    raise HTTPError("http://example.org", 403, 'Forbidden', None, None)  # type: ignore[arg-type]

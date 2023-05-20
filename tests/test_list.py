@@ -105,31 +105,29 @@ class TestList(BaseTest):
             expected_output
         )
 
-        expected_output = """
-        feature_0_0_0
-        """
         assert_success(
             ['list', 'slidable-after', 'feature_0_0'],
-            expected_output
+            "feature_0_0_0\n"
+        )
+        assert_success(
+            ['list', 'slidable-after', 'develop'],
+            ""
+        )
+        assert_success(
+            ['list', 'slidable-after', 'feature_0'],
+            ""
         )
 
-        expected_output = """
-        feature_2
-        """
         assert_success(
             ['list', 'unmanaged'],
-            expected_output
+            "feature_2\n"
         )
 
         self.repo_sandbox.check_out("feature_1")
         launch_command('fork-point', '--override-to-inferred')
-
-        expected_output = """
-        feature_1
-        """
         assert_success(
             ['list', 'with-overridden-fork-point'],
-            expected_output
+            "feature_1\n"
         )
 
         launch_command('fork-point', '--unset-override')
