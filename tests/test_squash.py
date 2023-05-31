@@ -1,5 +1,5 @@
 
-from .base_test import BaseTest, popen
+from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success,
                       fixed_author_and_committer_date, launch_command)
 
@@ -58,7 +58,7 @@ class TestSquash(BaseTest):
             "First commit."
         )
 
-        current_branch_log = popen('git log -3 --format=%s')
+        current_branch_log = self.repo_sandbox.popen('git log -3 --format=%s')
         assert current_branch_log == expected_branch_log, \
             ("Verify that `git machete squash -f <fork-point>` squashes commit"
              " from one succeeding the fork-point until tip of the branch.")

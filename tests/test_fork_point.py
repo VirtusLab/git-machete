@@ -93,6 +93,9 @@ class TestForkPoint(BaseTest):
         self.repo_sandbox.set_git_config_key('machete.overrideForkPoint.develop.to', 40 * '#')
         assert launch_command('fork-point').strip() == develop_branch_fork_point
 
+        # invalid fork-point override revision
+        assert_failure(['fork-point', '--override-to=no-such-commit'], "Cannot find revision no-such-commit")
+
         # valid commit hash but not present in the repository
         self.repo_sandbox.set_git_config_key('machete.overrideForkPoint.develop.to', 40 * 'a')
         assert launch_command('fork-point').strip() == (
@@ -175,4 +178,59 @@ class TestForkPoint(BaseTest):
               | 4aed40c  develop commit
               o-develop * (untracked)
             """
+        )
+
+    def test_fork_point_overridden_to_non_descendant_of_parent_while_branch_descendant_of_parent(self) -> None:
+        with fixed_author_and_committer_date():
+            (
+                self.repo_sandbox
+                .new_branch("branch-0")
+                .commit()
+                .new_branch("branch-1")
+                .commit()
+                .new_branch("branch-2")
+                .commit()
+            )
+
+        body: str = \
+            """
+            branch-1
+                branch-2
+            """
+        rewrite_definition_file(body)
+        launch_command('fork-point', '--override-to=branch-0')
+
+        assert launch_command("fork-point").strip() == self.repo_sandbox.get_commit_hash("branch-1")
+
+    def test_fork_point_while_parent_unrelated_to_child(self) -> None:
+        (
+            self.repo_sandbox
+            .new_branch("branch-1")
+            .commit()
+            .new_orphan_branch("branch-2")
+            .commit()
+        )
+
+        body: str = \
+            """
+            branch-1
+                branch-2
+            """
+        rewrite_definition_file(body)
+
+        assert_failure(
+            ["fork-point"],
+            "Fork point not found for branch branch-2; use git machete fork-point branch-2 --override-to..."
+        )
+
+    def test_fork_point_when_no_other_branches(self) -> None:
+        (
+            self.repo_sandbox
+            .new_branch("branch-1")
+            .commit()
+        )
+
+        assert_failure(
+            ["fork-point"],
+            "Fork point not found for branch branch-1; use git machete fork-point branch-1 --override-to..."
         )

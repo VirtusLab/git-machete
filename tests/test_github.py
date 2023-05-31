@@ -10,9 +10,7 @@ from tests.mockers import (assert_failure, assert_success, launch_command,
                            mock_input_returning,
                            mock_run_cmd_and_discard_output,
                            rewrite_definition_file)
-from tests.mockers_github import (FakeCommandLineOptions, MockContextManager,
-                                  MockContextManagerRaise403,
-                                  MockGitHubAPIState,
+from tests.mockers_github import (FakeCommandLineOptions, MockGitHubAPIState,
                                   mock_derive_current_user_login,
                                   mock_for_domain_fake, mock_for_domain_none,
                                   mock_from_url, mock_is_file_false,
@@ -21,7 +19,8 @@ from tests.mockers_github import (FakeCommandLineOptions, MockContextManager,
                                   mock_os_environ_get_github_token,
                                   mock_os_environ_get_none,
                                   mock_repository_info, mock_shutil_which,
-                                  mock_subprocess_run)
+                                  mock_subprocess_run, mock_urlopen,
+                                  mock_urlopen_raising_403)
 
 PRS_PER_PAGE = 3
 NUMBER_OF_PAGES = 3
@@ -81,7 +80,7 @@ class TestGitHub(BaseTest):
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
-        mocker.patch('urllib.request.urlopen', MockContextManager)
+        mocker.patch('urllib.request.urlopen', mock_urlopen)
         mocker.patch('git_machete.github.GitHubClient.derive_current_user_login', mock_derive_current_user_login)
         mocker.patch('urllib.request.Request', MockGitHubAPIState([]).new_request())
         # TODO (#915): test code should not be mocked
@@ -118,7 +117,7 @@ class TestGitHub(BaseTest):
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
         mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
-        mocker.patch('urllib.request.urlopen', MockContextManagerRaise403)
+        mocker.patch('urllib.request.urlopen', mock_urlopen_raising_403)
 
         github_enterprise_domain = 'git.example.org'
         self.repo_sandbox.set_git_config_key('machete.github.domain', github_enterprise_domain)
@@ -150,7 +149,7 @@ class TestGitHub(BaseTest):
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_fake)
         mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
-        mocker.patch('urllib.request.urlopen', MockContextManager)
+        mocker.patch('urllib.request.urlopen', mock_urlopen)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_enterprise_domain.new_request())
 
         github_enterprise_domain = 'git.example.org'
@@ -173,7 +172,7 @@ class TestGitHub(BaseTest):
         mocker.patch('os.path.isfile', mock_is_file_false)
         mocker.patch('shutil.which', mock_shutil_which(None))
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_enterprise_domain.new_request())
-        mocker.patch('urllib.request.urlopen', MockContextManager)
+        mocker.patch('urllib.request.urlopen', mock_urlopen)
 
         (
             self.repo_sandbox.new_branch("develop")
@@ -299,7 +298,7 @@ class TestGitHub(BaseTest):
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('urllib.request.Request',
                      self.git_api_state_for_test_local_branch_name_different_than_tracking_branch_name.new_request())
-        mocker.patch('urllib.request.urlopen', MockContextManager)
+        mocker.patch('urllib.request.urlopen', mock_urlopen)
 
         (
             self.repo_sandbox.new_branch("root")

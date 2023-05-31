@@ -727,8 +727,6 @@ def launch(orig_args: List[str]) -> None:
                 fork_point_hash=cli_opts.opt_fork_point, branch=current_branch)
 
         reapply_fork_point = cli_opts.opt_fork_point or machete_client.fork_point(branch=current_branch, use_overrides=True)
-        if not reapply_fork_point:
-            raise MacheteException(f"Fork point not found for branch <b>{current_branch}</b>; use `--fork-point` flag")
 
         git.rebase_onto_ancestor_commit(current_branch, reapply_fork_point, cli_opts.opt_no_interactive_rebase)
     elif cmd == "show":
@@ -770,9 +768,6 @@ def launch(orig_args: List[str]) -> None:
                 fork_point_hash=cli_opts.opt_fork_point, branch=current_branch)
 
         squash_fork_point = cli_opts.opt_fork_point or machete_client.fork_point(branch=current_branch, use_overrides=True)
-        if not squash_fork_point:
-            raise MacheteException(f"Fork point not found for branch <b>{current_branch}</b>; use `--fork-point` flag")
-
         machete_client.squash(current_branch=current_branch, opt_fork_point=squash_fork_point)
     elif cmd in {"status", alias_by_command["status"]}:
         machete_client.read_definition_file(perform_interactive_slide_out=should_perform_interactive_slide_out)

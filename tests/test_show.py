@@ -185,7 +185,7 @@ class TestShow(BaseTest):
             .new_branch("level-3b-branch")
             .commit()
             # a added so root will be placed in the config file after the level-0-branch
-            .new_root_branch("a-additional-root")
+            .new_orphan_branch("a-additional-root")
             .commit()
             .new_branch("branch-from-a-additional-root")
             .commit()
@@ -236,7 +236,7 @@ class TestShow(BaseTest):
             .new_branch("level-1b-branch")
             .commit()
             # x added so root will be placed in the config file after the level-0-branch
-            .new_root_branch("x-additional-root")
+            .new_orphan_branch("x-additional-root")
             .commit()
             .new_branch("branch-from-x-additional-root")
             .commit()
@@ -352,7 +352,7 @@ class TestShow(BaseTest):
             .check_out("level-0-branch")
             .new_branch("level-1b-branch")
             .commit()
-            .new_root_branch("additional-root")
+            .new_orphan_branch("additional-root")
             .commit()
             .new_branch("branch-from-additional-root")
             .commit()

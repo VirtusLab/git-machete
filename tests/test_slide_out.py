@@ -93,9 +93,8 @@ class TestSlideOut(BaseTest):
             """,
         )
 
-        # Slide-out an interior branch with multiple downstreams. (slide_root)
-        # This rebases all the downstreams onto the new upstream. (develop -> [child_a, child_b])
-        launch_command("traverse", "-Wy")
+        # Slide-out an interior branch with multiple downstreams (slide_root).
+        # This rebases all the downstreams onto the new upstream (develop -> [child_a, child_b]).
         launch_command("go", "up")
         launch_command("go", "up")
 
@@ -114,43 +113,29 @@ class TestSlideOut(BaseTest):
                   o-child_b
                     |
                     | child_d_1
-                    o-child_d
+                    o-child_d (diverged from origin)
                 """,
         )
 
-        launch_command("slide-out", "-n")
+        mocker.patch('builtins.input', mock_input_returning_y)
+        launch_command("slide-out", "-n", "--delete", "--merge")
 
         assert_success(
             ["status", "-l"],
             """
             develop
             |
-            | child_a_1
-            o-child_a (diverged from origin)
-            |
-            | child_b_1
-            o-child_b * (diverged from origin)
-              |
-              | child_d_1
-              x-child_d
-            """,
-        )
-
-        launch_command("traverse", "-Wy")
-        assert_success(
-            ["status", "-l"],
-            """
-            develop
-            |
+            | slide_root_1
             | child_a_1
             o-child_a
             |
+            | slide_root_1
             | child_b_1
             o-child_b *
               |
               | child_d_1
-              o-child_d
-            """,
+              o-child_d (diverged from origin)
+            """
         )
 
         # Slide-out and delete a terminal branch (child_d).
@@ -169,15 +154,96 @@ class TestSlideOut(BaseTest):
             """
             develop
             |
+            | slide_root_1
             | child_a_1
             o-child_a
             |
+            | slide_root_1
             | child_b_1
             o-child_b *
             """,
         )
 
-    def test_slide_out_with_valid_down_fork_point(self, mocker: Any) -> None:
+    def test_slide_out_with_post_slide_out_hook(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_output)
+
+        (
+            self.repo_sandbox.new_branch('branch-0')
+            .commit()
+            .new_branch('branch-1')
+            .commit()
+            .new_branch('branch-2')
+            .commit()
+        )
+
+        body: str = \
+            """
+            branch-0
+                branch-1
+                    branch-2
+            """
+        rewrite_definition_file(body)
+
+        self.repo_sandbox.write_to_file(".git/hooks/machete-post-slide-out", '#!/bin/sh\necho "$@" > machete-post-slide-out-output')
+        self.repo_sandbox.set_file_executable(".git/hooks/machete-post-slide-out")
+        launch_command("slide-out", "-n", "branch-1")
+        assert "branch-0 branch-1 branch-2" == self.repo_sandbox.read_file("machete-post-slide-out-output").strip()
+
+        self.repo_sandbox.write_to_file(".git/hooks/machete-post-slide-out", "#!/bin/sh\nexit 1")
+        assert_failure(["slide-out", "-n", "branch-2"], "The machete-post-slide-out hook exited with 1, aborting.")
+
+    def test_slide_out_with_invalid_down_fork_point(self) -> None:
+        with fixed_author_and_committer_date():
+            (
+                self.repo_sandbox.new_branch('branch-0')
+                    .commit()
+                    .new_branch('branch-1')
+                    .commit()
+                    .new_branch('branch-2')
+                    .commit()
+                    .new_branch('branch-3')
+                    .commit()
+                    .check_out('branch-2')
+                    .commit('Commit that is not ancestor of branch-3.')
+            )
+        hash_of_commit_that_is_not_ancestor_of_branch_2 = self.repo_sandbox.get_current_commit_hash()
+
+        body: str = \
+            """
+            branch-0
+                branch-1
+                    branch-2
+                        branch-3
+            """
+        rewrite_definition_file(body)
+
+        assert_failure(
+            ['slide-out', '-n', 'branch-1', 'branch-2', '-d', hash_of_commit_that_is_not_ancestor_of_branch_2],
+            "Fork point 790f30303cca5e14d58f85c5aa1359a8d4dace8c is not ancestor of or the tip of the branch-3 branch."
+        )
+
+    def test_slide_out_with_down_fork_point_and_no_child_of_last_branch(self) -> None:
+        (
+            self.repo_sandbox
+            .new_branch('branch-0')
+            .commit()
+            .new_branch('branch-1')
+            .commit()
+        )
+
+        body: str = \
+            """
+            branch-0
+                branch-1
+            """
+        rewrite_definition_file(body)
+
+        assert_failure(
+            ['slide-out', '-d=@~', 'branch-1'],
+            "Last branch to slide out must have a child branch if option --down-fork-point is passed"
+        )
+
+    def test_slide_out_with_down_fork_point_and_single_child_of_last_branch(self, mocker: Any) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_output)
 
         (
@@ -217,36 +283,6 @@ class TestSlideOut(BaseTest):
 
         assert_success(['status', '-l'], expected_status_output)
 
-    def test_slide_out_with_invalid_down_fork_point(self) -> None:
-        with fixed_author_and_committer_date():
-            (
-                self.repo_sandbox.new_branch('branch-0')
-                    .commit()
-                    .new_branch('branch-1')
-                    .commit()
-                    .new_branch('branch-2')
-                    .commit()
-                    .new_branch('branch-3')
-                    .commit()
-                    .check_out('branch-2')
-                    .commit('Commit that is not ancestor of branch-3.')
-            )
-        hash_of_commit_that_is_not_ancestor_of_branch_2 = self.repo_sandbox.get_current_commit_hash()
-
-        body: str = \
-            """
-            branch-0
-                branch-1
-                    branch-2
-                        branch-3
-            """
-        rewrite_definition_file(body)
-
-        assert_failure(
-            ['slide-out', '-n', 'branch-1', 'branch-2', '-d', hash_of_commit_that_is_not_ancestor_of_branch_2],
-            "Fork point 790f30303cca5e14d58f85c5aa1359a8d4dace8c is not ancestor of or the tip of the branch-3 branch."
-        )
-
     def test_slide_out_with_down_fork_point_and_multiple_children_of_last_branch(self) -> None:
         (
             self.repo_sandbox.new_branch('branch-0')
@@ -273,5 +309,49 @@ class TestSlideOut(BaseTest):
 
         assert_failure(
             ['slide-out', '-n', 'branch-1', '-d', hash_of_only_commit_on_branch_2b],
-            "Last branch to slide out can't have more than one child branch if option --down-fork-point is passed."
+            "Last branch to slide out can't have more than one child branch if option --down-fork-point is passed"
+        )
+
+    def test_slide_out_with_invalid_sequence_of_branches(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_output)
+
+        (
+            self.repo_sandbox.new_branch('branch-0')
+                .commit()
+                .new_branch('branch-1')
+                .commit()
+                .new_branch('branch-2a')
+                .commit()
+                .new_branch('branch-3')
+                .commit()
+                .check_out('branch-1')
+                .new_branch('branch-2b')
+                .commit()
+        )
+
+        body: str = \
+            """
+            branch-0
+                branch-1
+                    branch-2a
+                        branch-3
+                    branch-2b
+            """
+        rewrite_definition_file(body)
+
+        assert_failure(
+            ['slide-out', 'branch-0'],
+            "No upstream branch defined for branch-0, cannot slide out"
+        )
+        assert_failure(
+            ['slide-out', 'branch-3', 'branch-2a'],
+            "No downstream branch defined for branch-3, cannot slide out"
+        )
+        assert_failure(
+            ['slide-out', 'branch-2a', 'branch-1'],
+            "branch-1 is not downstream of branch-2a, cannot slide out"
+        )
+        assert_failure(
+            ['slide-out', 'branch-1', 'branch-2a'],
+            "Multiple downstream branches defined for branch-1: branch-2a, branch-2b; cannot slide out"
         )

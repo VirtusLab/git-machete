@@ -6,11 +6,11 @@ from tests.base_test import BaseTest, GitRepositorySandbox
 from tests.mockers import (assert_failure, assert_success, launch_command,
                            mock_run_cmd_and_discard_output,
                            rewrite_definition_file)
-from tests.mockers_github import (FakeCommandLineOptions, MockContextManager,
-                                  MockGitHubAPIState,
+from tests.mockers_github import (FakeCommandLineOptions, MockGitHubAPIState,
                                   mock_derive_current_user_login,
                                   mock_fetch_ref, mock_for_domain_none,
-                                  mock_from_url, mock_repository_info)
+                                  mock_from_url, mock_repository_info,
+                                  mock_urlopen)
 
 
 class TestGitHubCheckoutPRs(BaseTest):
@@ -100,7 +100,7 @@ class TestGitHubCheckoutPRs(BaseTest):
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_checkout_prs.new_request())
-        mocker.patch('urllib.request.urlopen', MockContextManager)
+        mocker.patch('urllib.request.urlopen', mock_urlopen)
 
         (
             self.repo_sandbox.new_branch("root")
@@ -392,7 +392,7 @@ class TestGitHubCheckoutPRs(BaseTest):
         # due to `git fetch` executed by `checkout-prs` subcommand.
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
-        mocker.patch('urllib.request.urlopen', MockContextManager)
+        mocker.patch('urllib.request.urlopen', mock_urlopen)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_checkout_prs_fresh_repo.new_request())
 
         (
@@ -516,7 +516,7 @@ class TestGitHubCheckoutPRs(BaseTest):
         mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
         # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_checkout_prs_from_fork_with_deleted_repo`
         # due to `git fetch` executed by `checkout-prs` subcommand.
-        mocker.patch('urllib.request.urlopen', MockContextManager)
+        mocker.patch('urllib.request.urlopen', mock_urlopen)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_checkout_prs_from_fork_with_deleted_repo.new_request())
 
         (
@@ -634,7 +634,7 @@ class TestGitHubCheckoutPRs(BaseTest):
         mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
         mocker.patch('urllib.request.Request',
                      self.git_api_state_for_test_github_checkout_prs_of_current_user_and_other_users.new_request())
-        mocker.patch('urllib.request.urlopen', MockContextManager)
+        mocker.patch('urllib.request.urlopen', mock_urlopen)
         mocker.patch('git_machete.github.GitHubClient.derive_current_user_login', mock_derive_current_user_login)
 
         (

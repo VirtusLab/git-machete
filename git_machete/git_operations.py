@@ -279,7 +279,7 @@ class GitContext:
             # which is irrelevant for our purpose (checking whether certain git CLI features are available/bugs are fixed).
             raw = re.search(r"\d+.\d+.\d+", self._popen_git("version").stdout)
             if not raw:  # unlikely, never observed so far; mostly to satisfy mypy
-                return 0, 0, 0
+                return 0, 0, 0  # pragma: no cover
             self._git_version = tuple(map(int, raw.group(0).split(".")))
         return self._git_version
 
@@ -409,9 +409,9 @@ class GitContext:
             opt_force = []
         elif self.get_git_version() >= (2, 30, 0):  # earliest version of git to support 'push --force-with-lease --force-if-includes'
             opt_force = ["--force-with-lease", "--force-if-includes"]
-        elif self.get_git_version() >= (1, 8, 5):  # earliest version of git to support 'push --force-with-lease'
+        elif self.get_git_version() >= (1, 8, 5):  # pragma: no cover; earliest version of git to support 'push --force-with-lease'
             opt_force = ["--force-with-lease"]
-        else:
+        else:  # pragma: no cover
             opt_force = ["--force"]
         args = [remote, branch]
         self._run_git("push", "--set-upstream", *(opt_force + args))
@@ -667,7 +667,7 @@ class GitContext:
                 self.__load_all_reflogs()
             assert self.__reflogs_cached is not None
             return self.__reflogs_cached.get(branch, [])
-        else:
+        else:  # pragma: no cover
             if self.__reflogs_cached is None:
                 self.__reflogs_cached = {}
             if branch not in self.__reflogs_cached:
@@ -863,7 +863,7 @@ class GitContext:
                     utils.get_non_empty_lines(
                         self._popen_git("for-each-ref", "--format=%(refname)", "--merged", "HEAD", "refs/heads").stdout)))
         else:
-            return list(
+            return list(  # pragma: no cover
                 filter(lambda branch: self.is_ancestor_or_equal(branch, AnyRevision.of('HEAD')),
                        map(lambda branch: LocalBranchFullName.of(branch).to_short_name(),
                            utils.get_non_empty_lines(
@@ -904,55 +904,42 @@ class GitContext:
         self.flush_caches()
 
     def rebase(self, onto: AnyRevision, from_exclusive: AnyRevision, branch: LocalBranchShortName, opt_no_interactive_rebase: bool) -> None:
-        def do_rebase() -> None:
-            # Let's use `OPTS` suffix for consistency with git's built-in env var `GIT_DIFF_OPTS`
-            git_machete_rebase_opts_var = 'GIT_MACHETE_REBASE_OPTS'
-            rebase_opts = os.environ.get(git_machete_rebase_opts_var, '').split()
-            try:
-                if not opt_no_interactive_rebase:
-                    rebase_opts.append("--interactive")
-                if self.get_git_version() >= (2, 26, 0):
-                    rebase_opts.append("--empty=drop")
-                self._run_git("rebase", *rebase_opts, "--onto", onto, from_exclusive, branch)
-            finally:
-                # https://public-inbox.org/git/317468c6-40cc-9f26-8ee3-3392c3908efb@talktalk.net/T
-                # In our case, this can happen when git version invoked by git-machete to start the rebase
-                # is different than git version used (outside of git-machete) to continue the rebase.
-                # This used to be the case when git-machete was installed via a strict-confinement snap
-                # with its own version of git baked in as a dependency.
-                # Currently we're using classic-confinement snaps which no longer have this problem
-                # (snapped git-machete uses whatever git is available in the host system),
-                # but it still doesn't harm to patch the author script.
+        # Let's use `OPTS` suffix for consistency with git's built-in env var `GIT_DIFF_OPTS`
+        git_machete_rebase_opts_var = 'GIT_MACHETE_REBASE_OPTS'
+        rebase_opts = os.environ.get(git_machete_rebase_opts_var, '').split()
+        try:
+            if not opt_no_interactive_rebase:
+                rebase_opts.append("--interactive")
+            if self.get_git_version() >= (2, 26, 0):  # pragma: no branch
+                rebase_opts.append("--empty=drop")
+            self._run_git("rebase", *rebase_opts, "--onto", onto, from_exclusive, branch)
+        finally:
+            # https://public-inbox.org/git/317468c6-40cc-9f26-8ee3-3392c3908efb@talktalk.net/T
+            # In our case, this can happen when git version invoked by git-machete to start the rebase
+            # is different than git version used (outside of git-machete) to continue the rebase.
+            # This used to be the case when git-machete was installed via a strict-confinement snap
+            # with its own version of git baked in as a dependency.
+            # Currently we're using classic-confinement snaps which no longer have this problem
+            # (snapped git-machete uses whatever git is available in the host system),
+            # but it still doesn't harm to patch the author script.
 
-                # No need to fix <git-dir>/rebase-apply/author-script,
-                # only <git-dir>/rebase-merge/author-script (i.e. interactive rebases, for the most part) is affected.
-                author_script = self.get_worktree_git_subpath("rebase-merge", "author-script")
-                if os.path.isfile(author_script):
-                    faulty_line_regex = re.compile("[A-Z0-9_]+='[^']*")
+            # No need to fix <git-dir>/rebase-apply/author-script,
+            # only <git-dir>/rebase-merge/author-script (i.e. interactive rebases, for the most part) is affected.
+            author_script = self.get_worktree_git_subpath("rebase-merge", "author-script")
+            if os.path.isfile(author_script):
+                faulty_line_regex = re.compile("[A-Z0-9_]+='[^']*")
 
-                    def fix_if_needed(line: str) -> str:
-                        return f"{line.rstrip()}'\n" if faulty_line_regex.fullmatch(line) else line
+                def fix_if_needed(line: str) -> str:
+                    return f"{line.rstrip()}'\n" if faulty_line_regex.fullmatch(line) else line
 
-                    def get_all_lines_fixed() -> Iterator[str]:
-                        with open(author_script) as f_read:
-                            return map(fix_if_needed, f_read.readlines())
+                def get_all_lines_fixed() -> Iterator[str]:
+                    with open(author_script) as f_read:
+                        return map(fix_if_needed, f_read.readlines())
 
-                    fixed_lines = get_all_lines_fixed()  # must happen before we open for writing
-                    # See https://github.com/VirtusLab/git-machete/issues/935 for why author-script needs to be saved in this manner
-                    io.open(author_script, "w", newline="").write("".join(fixed_lines))
-                self.flush_caches()
-
-        hook_path = self.get_hook_path("machete-pre-rebase")
-        if self.check_hook_executable(hook_path):
-            debug(f"running machete-pre-rebase hook ({hook_path})")
-            exit_code = utils.run_cmd(hook_path, onto, from_exclusive, branch, cwd=self.get_root_dir())
-            if exit_code == 0:
-                do_rebase()
-            else:
-                raise MacheteException(
-                    f"The machete-pre-rebase hook refused to rebase. Error code: {exit_code}\n")
-        else:
-            do_rebase()
+                fixed_lines = get_all_lines_fixed()  # must happen before we open for writing
+                # See https://github.com/VirtusLab/git-machete/issues/935 for why author-script needs to be saved in this manner
+                io.open(author_script, "w", newline="").write("".join(fixed_lines))
+            self.flush_caches()
 
     def rebase_onto_ancestor_commit(self,
                                     branch: LocalBranchShortName,

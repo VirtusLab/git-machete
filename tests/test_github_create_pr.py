@@ -6,10 +6,10 @@ from tests.mockers import (assert_failure, assert_success, launch_command,
                            mock_input_returning, mock_input_returning_y,
                            mock_run_cmd_and_discard_output,
                            rewrite_definition_file)
-from tests.mockers_github import (FakeCommandLineOptions, MockContextManager,
-                                  MockGitHubAPIState, MockHTTPError,
-                                  mock_for_domain_none, mock_from_url,
-                                  mock_repository_info)
+from tests.mockers_github import (FakeCommandLineOptions, MockGitHubAPIState,
+                                  MockHTTPError, mock_for_domain_none,
+                                  mock_from_url, mock_repository_info,
+                                  mock_urlopen)
 
 
 class TestGitHubCreatePR(BaseTest):
@@ -41,7 +41,7 @@ class TestGitHubCreatePR(BaseTest):
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('urllib.error.HTTPError', MockHTTPError)  # need to provide read() method, which does not actually reads error from url
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_create_pr.new_request())
-        mocker.patch('urllib.request.urlopen', MockContextManager)
+        mocker.patch('urllib.request.urlopen', mock_urlopen)
 
         (
             self.repo_sandbox.new_branch("root")
@@ -234,7 +234,7 @@ class TestGitHubCreatePR(BaseTest):
         mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
-        mocker.patch('urllib.request.urlopen', MockContextManager)
+        mocker.patch('urllib.request.urlopen', mock_urlopen)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_create_pr_missing_base_branch_on_remote.new_request())
 
         (
@@ -302,7 +302,7 @@ class TestGitHubCreatePR(BaseTest):
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('urllib.error.HTTPError', MockHTTPError)  # need to provide read() method, which does not actually read error from url
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_create_pr_with_multiple_non_origin_remotes.new_request())
-        mocker.patch('urllib.request.urlopen', MockContextManager)
+        mocker.patch('urllib.request.urlopen', mock_urlopen)
 
         origin_1_remote_path = mkdtemp()
         origin_2_remote_path = mkdtemp()

@@ -1,9 +1,12 @@
 from typing import Any
 
-from .base_test import BaseTest, git, popen
-from .mockers import (assert_failure, fixed_author_and_committer_date,
-                      launch_command, mock_run_cmd_and_discard_output,
-                      overridden_environment, rewrite_definition_file)
+from .base_test import BaseTest, git
+from .mockers import (assert_failure, assert_success,
+                      fixed_author_and_committer_date, launch_command,
+                      mock_input_returning, mock_input_returning_y,
+                      mock_run_cmd_and_discard_output,
+                      mock_run_cmd_and_forward_output, overridden_environment,
+                      rewrite_definition_file)
 
 
 class TestUpdate(BaseTest):
@@ -114,7 +117,7 @@ class TestUpdate(BaseTest):
         new_fork_point_hash = launch_command("fork-point").strip()
         assert parents_new_commit_hash == new_fork_point_hash, \
             "Verify that 'git machete update' drops effectively-empty commits."
-        branch_history = popen('git log level-0-branch..level-1-branch')
+        branch_history = self.repo_sandbox.popen('git log level-0-branch..level-1-branch')
         assert "level-1 commit" in branch_history
         assert "level-1 commit... but to be cherry-picked onto level-0-branch" not in branch_history
 
@@ -153,7 +156,7 @@ class TestUpdate(BaseTest):
         launch_command(
             "update", "--no-interactive-rebase", "-f", branch_second_commit_hash)
         new_fork_point_hash = launch_command("fork-point").strip()
-        branch_history = popen('git log -10 --oneline')
+        branch_history = self.repo_sandbox.popen('git log -10 --oneline')
 
         assert roots_second_commit_hash == new_fork_point_hash, \
             ("Verify that 'git machete update --no-interactive-rebase -f "
@@ -203,7 +206,8 @@ class TestUpdate(BaseTest):
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
-            self.repo_sandbox.new_branch('branch-0')
+            self.repo_sandbox
+            .new_branch('branch-0')
             .commit()
             .new_branch("branch-1")
             .commit()
@@ -218,3 +222,73 @@ class TestUpdate(BaseTest):
         self.repo_sandbox.execute("git add bar.txt")
         with overridden_environment(GIT_EDITOR="cat"):
             self.repo_sandbox.execute("git rebase --continue")
+
+    def test_update_unmanaged_branch(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+
+        (
+            self.repo_sandbox
+            .new_branch('branch-0')
+            .commit()
+            .new_branch("branch-1")
+            .commit()
+            .check_out("branch-0")
+            .commit()
+            .check_out("branch-1")
+        )
+        rewrite_definition_file("branch-0")
+
+        original_branch_1_hash = self.repo_sandbox.get_commit_hash("branch-1")
+        mocker.patch("builtins.input", mock_input_returning(""))
+        assert_failure(["update", "--no-interactive-rebase"], "Aborting.")
+        assert self.repo_sandbox.get_commit_hash("branch-1") == original_branch_1_hash
+
+        mocker.patch("builtins.input", mock_input_returning_y)
+        assert_success(
+            ["update", "--no-interactive-rebase"],
+            "Branch branch-1 not found in the tree of branch dependencies. "
+            "Rebase onto the inferred upstream branch-0? (y, N) \n")
+        assert self.repo_sandbox.is_ancestor("branch-0", "branch-1")
+
+    def test_update_unmanaged_branch_when_parent_cannot_be_inferred(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+
+        (
+            self.repo_sandbox
+            .new_branch('branch-0')
+            .commit()
+            .new_orphan_branch("branch-1")
+            .commit()
+        )
+
+        assert_failure(
+            ["update", "--no-interactive-rebase"],
+            "Branch branch-1 not found in the tree of branch dependencies and its upstream could not be inferred"
+        )
+
+    def test_update_with_pre_rebase_hook(self, mocker: Any) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_output)
+
+        with fixed_author_and_committer_date():
+            (
+                self.repo_sandbox.new_branch('branch-0')
+                .commit()
+                .new_branch('branch-1')
+                .commit()
+            )
+
+        body: str = \
+            """
+            branch-0
+                branch-1
+            """
+        rewrite_definition_file(body)
+
+        self.repo_sandbox.write_to_file(".git/hooks/machete-pre-rebase", '#!/bin/sh\necho "$@" > machete-pre-rebase-output')
+        self.repo_sandbox.set_file_executable(".git/hooks/machete-pre-rebase")
+        launch_command("update", "-n")
+        assert self.repo_sandbox.read_file("machete-pre-rebase-output").strip() == \
+            "refs/heads/branch-0 e6e38425289e69c1c47dc955fdf7f4e8836aa7c4 branch-1"
+
+        self.repo_sandbox.write_to_file(".git/hooks/machete-pre-rebase", "#!/bin/sh\nexit 1")
+        assert_failure(["update", "-n"], "The machete-pre-rebase hook refused to rebase. Error code: 1")
