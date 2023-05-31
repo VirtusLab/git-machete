@@ -1,6 +1,5 @@
-import json
 from textwrap import dedent
-from typing import Any, Dict
+from typing import Any
 from unittest.mock import mock_open
 
 from git_machete.github import (GitHubClient, GitHubToken,
@@ -10,7 +9,9 @@ from tests.mockers import (assert_failure, assert_success, launch_command,
                            mock_input_returning,
                            mock_run_cmd_and_discard_output,
                            rewrite_definition_file)
-from tests.mockers_github import (FakeCommandLineOptions, MockGitHubAPIState,
+from tests.mockers_github import (NUMBER_OF_PAGES, PRS_PER_PAGE,
+                                  FakeCommandLineOptions, MockGitHubAPIState,
+                                  PaginatedMockGitHubAPIResponse,
                                   mock_derive_current_user_login,
                                   mock_for_domain_fake, mock_for_domain_none,
                                   mock_from_url, mock_is_file_false,
@@ -21,39 +22,6 @@ from tests.mockers_github import (FakeCommandLineOptions, MockGitHubAPIState,
                                   mock_repository_info, mock_shutil_which,
                                   mock_subprocess_run, mock_urlopen,
                                   mock_urlopen_raising_403)
-
-PRS_PER_PAGE = 3
-NUMBER_OF_PAGES = 3
-
-
-mock_info_counter = mock_read_counter = 0
-
-
-def mock_read(self: Any) -> bytes:
-    global mock_read_counter
-    response_data = [
-        {
-            'head': {'ref': f'feature_{i}', 'repo': {'full_name': 'testing/checkout_prs',
-                                                     'html_url': 'https://github.com/tester/repo_sandbox.git'}},
-            'user': {'login': 'github_user'},
-            'base': {'ref': 'develop'},
-            'number': f'{i}',
-            'html_url': 'www.github.com',
-            'state': 'open'
-        } for i in range(mock_read_counter * PRS_PER_PAGE, (mock_read_counter + 1) * PRS_PER_PAGE)]
-
-    mock_read_counter += 1
-    return json.dumps(response_data).encode()
-
-
-def mock_info(x: Any) -> Dict[str, Any]:
-    global mock_info_counter
-    if mock_info_counter < NUMBER_OF_PAGES - 1:
-        link = f'<https://api.github.com/repositories/1300192/pulls?page={mock_info_counter + 2}>; rel="next"'
-    else:
-        link = ''
-    mock_info_counter += 1
-    return {"link": link}
 
 
 class TestGitHub(BaseTest):
@@ -68,24 +36,20 @@ class TestGitHub(BaseTest):
         urls = urls + [url + '.git' for url in urls]
 
         for url in urls:
-            remote_and_organization_and_repository = RemoteAndOrganizationAndRepository.from_url(domain=GitHubClient.DEFAULT_GITHUB_DOMAIN,
-                                                                                                 url=url,
-                                                                                                 remote='origin')
+            remote_and_organization_and_repository = RemoteAndOrganizationAndRepository.from_url(
+                domain=GitHubClient.DEFAULT_GITHUB_DOMAIN, url=url, remote='origin')
             assert remote_and_organization_and_repository is not None
             assert remote_and_organization_and_repository.organization == organization
             assert remote_and_organization_and_repository.repository == repository
 
     def test_github_api_pagination(self, mocker: Any, tmp_path: Any) -> None:
+        mocker.patch('git_machete.github.GitHubClient.derive_current_user_login', mock_derive_current_user_login)
+        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
         mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
         mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
+        mocker.patch('urllib.request.Request', MockGitHubAPIState([]).new_request(PaginatedMockGitHubAPIResponse))
         mocker.patch('urllib.request.urlopen', mock_urlopen)
-        mocker.patch('git_machete.github.GitHubClient.derive_current_user_login', mock_derive_current_user_login)
-        mocker.patch('urllib.request.Request', MockGitHubAPIState([]).new_request())
-        # TODO (#915): test code should not be mocked
-        mocker.patch('tests.mockers_github.MockGitHubAPIResponse.info', mock_info)
-        mocker.patch('tests.mockers_github.MockGitHubAPIResponse.read', mock_read)
 
         (
             self.repo_sandbox.new_branch("develop")

@@ -4,7 +4,7 @@ import re
 from http import HTTPStatus
 from subprocess import CompletedProcess
 from tempfile import mkdtemp
-from typing import Any, Callable, Dict, Iterator, List, Optional, Union
+from typing import Any, Callable, Dict, Iterator, List, Optional, Type, Union
 from urllib.error import HTTPError
 from urllib.parse import ParseResult, parse_qs, urlparse
 
@@ -87,6 +87,64 @@ def mock_subprocess_run(returncode: int, stdout: str = '', stderr: str = ''):  #
     return lambda *args, **kwargs: CompletedProcess(args, returncode, bytes(stdout, 'utf-8'), bytes(stderr, 'utf-8'))
 
 
+class MockGitHubAPIResponse:
+    def __init__(self, status_code: int, response_data: Union[List[Dict[str, Any]], Dict[str, Any]]) -> None:
+        self.response_data = response_data
+        self.status_code = status_code
+
+    def read(self) -> bytes:
+        raise NotImplementedError
+
+    def info(self) -> Dict[str, Any]:
+        raise NotImplementedError
+
+
+class SimpleMockGitHubAPIResponse(MockGitHubAPIResponse):
+    def __init__(self, status_code: int, response_data: Union[List[Dict[str, Any]], Dict[str, Any]]) -> None:
+        super().__init__(status_code, response_data)
+
+    def read(self) -> bytes:
+        return json.dumps(self.response_data).encode()
+
+    def info(self) -> Dict[str, Any]:
+        return {"link": None}
+
+
+PRS_PER_PAGE = 3
+NUMBER_OF_PAGES = 3
+
+
+class PaginatedMockGitHubAPIResponse(MockGitHubAPIResponse):
+
+    # Note that this mock implementation currently only works if it's used by a single test only,
+    # due to the reliance on a static class property.
+    page_number: int = 1
+
+    def __init__(self, status_code: int, response_data: Union[List[Dict[str, Any]], Dict[str, Any]]) -> None:
+        super().__init__(status_code, response_data)
+
+    def read(self) -> bytes:
+        response_data = [
+            {
+                'head': {'ref': f'feature_{i}', 'repo': {'full_name': 'testing/checkout_prs',
+                                                         'html_url': 'https://github.com/tester/repo_sandbox.git'}},
+                'user': {'login': 'github_user'},
+                'base': {'ref': 'develop'},
+                'number': f'{i}',
+                'html_url': 'www.github.com',
+                'state': 'open'
+            } for i in range((type(self).page_number - 1) * PRS_PER_PAGE, type(self).page_number * PRS_PER_PAGE)]
+        return json.dumps(response_data).encode()
+
+    def info(self) -> Dict[str, Any]:
+        if type(self).page_number < NUMBER_OF_PAGES:
+            link = f'<https://api.github.com/repositories/1300192/pulls?page={type(self).page_number + 1}>; rel="next"'
+        else:
+            link = ''
+        type(self).page_number += 1
+        return {"link": link}
+
+
 class MockGitHubAPIState:
     def __init__(self, pulls: List[Dict[str, Any]], issues: Optional[List[Dict[str, Any]]] = None) -> None:
         self.pulls: List[Dict[str, Any]] = [dict(pull) for pull in pulls]
@@ -94,8 +152,8 @@ class MockGitHubAPIState:
         # login must be different from the one used in pull requests, otherwise pull request author will not be annotated
         self.issues: List[Dict[str, Any]] = list(issues) if issues else []
 
-    def new_request(self) -> "MockGitHubAPIRequest":
-        return MockGitHubAPIRequest(self)
+    def new_request(self, response_class: Type[MockGitHubAPIResponse] = SimpleMockGitHubAPIResponse) -> "MockGitHubAPIRequest":
+        return MockGitHubAPIRequest(self, response_class)
 
     def get_issue(self, issue_no: str) -> Optional[Dict[str, Any]]:
         for issue in self.issues:
@@ -110,21 +168,10 @@ class MockGitHubAPIState:
         return None
 
 
-class MockGitHubAPIResponse:
-    def __init__(self, status_code: int, response_data: Union[List[Dict[str, Any]], Dict[str, Any]]) -> None:
-        self.response_data: Union[List[Dict[str, Any]], Dict[str, Any]] = response_data
-        self.status_code: int = status_code
-
-    def read(self) -> bytes:
-        return json.dumps(self.response_data).encode()
-
-    def info(self) -> Dict[str, Any]:
-        return {"link": None}
-
-
 class MockGitHubAPIRequest:
-    def __init__(self, github_api_state: MockGitHubAPIState) -> None:
+    def __init__(self, github_api_state: MockGitHubAPIState, response_class: Type[MockGitHubAPIResponse]) -> None:
         self.github_api_state: MockGitHubAPIState = github_api_state
+        self.response_class: Type[MockGitHubAPIResponse] = response_class
 
     def __call__(self, url: str, headers: Dict[str, str] = {}, data: Union[str, bytes, None] = None,
                  method: str = '') -> "MockGitHubAPIResponse":
@@ -257,9 +304,9 @@ class MockGitHubAPIRequest:
         except ValueError:
             return None
 
-    @staticmethod
-    def make_response_object(status_code: int, response_data: Union[List[Dict[str, Any]], Dict[str, Any]]) -> "MockGitHubAPIResponse":
-        return MockGitHubAPIResponse(status_code, response_data)
+    def make_response_object(self, status_code: int,
+                             response_data: Union[List[Dict[str, Any]], Dict[str, Any]]) -> "MockGitHubAPIResponse":
+        return self.response_class(status_code, response_data)
 
     @staticmethod
     def find_number(url: str, entity: str) -> Optional[str]:
@@ -286,7 +333,7 @@ class MockHTTPError(HTTPError):
 
 
 @contextlib.contextmanager
-def mock_urlopen(obj: MockGitHubAPIResponse) -> Iterator[MockGitHubAPIResponse]:
+def mock_urlopen(obj: SimpleMockGitHubAPIResponse) -> Iterator[SimpleMockGitHubAPIResponse]:
     if obj.status_code == HTTPStatus.NOT_FOUND:
         raise HTTPError("http://example.org", 404, 'Not found', None, None)  # type: ignore[arg-type]
     elif obj.status_code == HTTPStatus.UNPROCESSABLE_ENTITY:
@@ -295,5 +342,5 @@ def mock_urlopen(obj: MockGitHubAPIResponse) -> Iterator[MockGitHubAPIResponse]:
 
 
 @contextlib.contextmanager
-def mock_urlopen_raising_403(obj: MockGitHubAPIResponse) -> Iterator[MockGitHubAPIResponse]:
+def mock_urlopen_raising_403(obj: SimpleMockGitHubAPIResponse) -> Iterator[SimpleMockGitHubAPIResponse]:
     raise HTTPError("http://example.org", 403, 'Forbidden', None, None)  # type: ignore[arg-type]
