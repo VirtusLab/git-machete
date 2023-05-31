@@ -1,5 +1,7 @@
 from typing import Any
 
+from git_machete.exceptions import UnderlyingGitException
+
 from .base_test import BaseTest, git
 from .mockers import (assert_failure, assert_success,
                       fixed_author_and_committer_date, launch_command,
@@ -111,7 +113,7 @@ class TestUpdate(BaseTest):
                 with fixed_author_and_committer_date():
                     expected_error_message = "git rebase --interactive --onto refs/heads/level-0-branch " \
                                              "c0306cdd500fc39869505592200258055407bcc6 level-1-branch returned 1"
-                    assert_failure(["update"], expected_error_message)
+                    assert_failure(["update"], expected_error_message, expected_exception=UnderlyingGitException)
                 self.repo_sandbox.execute("git rebase --continue")
 
         new_fork_point_hash = launch_command("fork-point").strip()

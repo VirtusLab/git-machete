@@ -1,19 +1,17 @@
 import io
 import os
 import re
-import shlex
 import string
 import sys
 from pathlib import Path
-from typing import (Any, Callable, Dict, Iterator, List, Match, NamedTuple,
-                    Optional, Set, Tuple)
+from typing import (Any, Dict, Iterator, List, Match, NamedTuple, Optional,
+                    Set, Tuple)
 
-from git_machete import git_config_keys, utils
-from git_machete.constants import (MAX_COUNT_FOR_INITIAL_LOG,
-                                   GitFormatPatterns, SyncToRemoteStatuses)
-from git_machete.exceptions import MacheteException
-from git_machete.utils import (AnsiEscapeCodes, CommandResult, colored, debug,
-                               fmt)
+from . import utils
+from .constants import (MAX_COUNT_FOR_INITIAL_LOG, GitFormatPatterns,
+                        SyncToRemoteStatuses)
+from .exceptions import UnderlyingGitException
+from .utils import AnsiEscapeCodes, CommandResult, colored, debug, fmt
 
 GITHUB_NEW_ISSUE_MESSAGE = 'Consider posting an issue at https://github.com/VirtusLab/git-machete/issues/new'
 
@@ -208,7 +206,8 @@ class GitContext:
         allow_non_zero = kwargs_.pop("allow_non_zero", False)
         exit_code = utils.run_cmd("git", git_cmd, *args, **kwargs_)
         if not allow_non_zero and exit_code != 0:
-            raise MacheteException(f"`{utils.get_cmd_shell_repr('git', git_cmd, *args, env=kwargs_.get('env'))}` returned {exit_code}")
+            raise UnderlyingGitException(
+                f"`{utils.get_cmd_shell_repr('git', git_cmd, *args, env=kwargs_.get('env'))}` returned {exit_code}")
         return exit_code
 
     @staticmethod
@@ -221,56 +220,8 @@ class GitContext:
             stdout_msg: str = f"\n{utils.bold('stdout')}:\n{utils.dim(stdout)}" if stdout else ""
             stderr_msg: str = f"\n{utils.bold('stderr')}:\n{utils.dim(stderr)}" if stderr else ""
             # Not applying the formatter to avoid transforming whatever characters might be in the output of the command.
-            raise MacheteException(exit_code_msg + stdout_msg + stderr_msg, apply_fmt=False)
+            raise UnderlyingGitException(exit_code_msg + stdout_msg + stderr_msg, apply_fmt=False)
         return CommandResult(stdout, stderr, exit_code)
-
-    def get_default_editor_with_args(self) -> List[str]:
-        # Based on the git's own algorithm for identifying the editor.
-        # '$GIT_MACHETE_EDITOR', 'editor' (to please Debian-based systems) and 'nano' have been added.
-        git_machete_editor_var = "GIT_MACHETE_EDITOR"
-        proposed_editor_funs: List[Tuple[str, Callable[[], Optional[str]]]] = [
-            ("$" + git_machete_editor_var, lambda: os.environ.get(git_machete_editor_var)),
-            ("$GIT_EDITOR", lambda: os.environ.get("GIT_EDITOR")),
-            ("git config core.editor", lambda: self.get_config_attr_or_none("core.editor")),
-            ("$VISUAL", lambda: os.environ.get("VISUAL")),
-            ("$EDITOR", lambda: os.environ.get("EDITOR")),
-            ("editor", lambda: "editor"),
-            ("nano", lambda: "nano"),
-            ("vi", lambda: "vi"),
-        ]
-
-        for name, fun in proposed_editor_funs:
-            editor = fun()
-            if not editor:
-                debug(f"'{name}' is undefined")
-            else:
-                editor_parsed = shlex.split(editor)
-                if not editor_parsed:
-                    debug(f"'{name}' shlexes into an empty list")
-                    continue
-                editor_command = editor_parsed[0]
-                editor_repr = "'" + name + "'" + ((' (' + editor + ')') if editor_command != name else '')
-
-                if not utils.find_executable(editor_command):
-                    debug(f"'{editor_command}' executable ('{name}') not found")
-                    if name == "$" + git_machete_editor_var:
-                        # In this specific case, when GIT_MACHETE_EDITOR is defined but doesn't point to a valid executable,
-                        # it's more reasonable/less confusing to raise an error and exit without opening anything.
-                        raise MacheteException(f"<b>{editor_repr}</b> is not available")
-                else:
-                    debug(f"'{editor_command}' executable ('{name}') found")
-                    if name != "$" + git_machete_editor_var and self.get_config_attr_or_none('advice.macheteEditorSelection') != 'false':
-                        sample_alternative = 'nano' if editor_command.startswith('vi') else 'vi'
-                        print(fmt(f"Opening <b>{editor_repr}</b>.\n",
-                                  f"To override this choice, use <b>{git_machete_editor_var}</b> env var, e.g. `export "
-                                  f"{git_machete_editor_var}={sample_alternative}`.\n\n",
-                                  "See `git machete help edit` and `git machete edit --debug` for more details.\n\n"
-                                  "Use `git config --global advice.macheteEditorSelection false` to suppress this message."),
-                              file=sys.stderr)
-                    return editor_parsed
-
-        # This case is extremely unlikely on a modern Unix-like system.
-        return []
 
     def get_git_version(self) -> Tuple[int, ...]:
         if not self._git_version:
@@ -287,19 +238,19 @@ class GitContext:
         if not self._root_dir:
             try:
                 self._root_dir = self._popen_git("rev-parse", "--show-toplevel").stdout.strip()
-            except MacheteException:
-                raise MacheteException("Not a git repository")
+            except UnderlyingGitException:
+                raise UnderlyingGitException("Not a git repository")
         return self._root_dir
 
-    def __get_worktree_git_dir(self) -> str:
+    def get_worktree_git_dir(self) -> str:
         if not self._worktree_git_dir:
             try:
                 self._worktree_git_dir = self._popen_git("rev-parse", "--git-dir").stdout.strip()
-            except MacheteException:
-                raise MacheteException("Not a git repository")
+            except UnderlyingGitException:
+                raise UnderlyingGitException("Not a git repository")
         return self._worktree_git_dir
 
-    def __get_main_git_dir(self) -> str:
+    def get_main_git_dir(self) -> str:
         if not self._main_git_dir:
             try:
                 git_dir: str = self._popen_git("rev-parse", "--git-dir").stdout.strip()
@@ -310,26 +261,21 @@ class GitContext:
                           f'using {self._main_git_dir} as the effective git dir instead')
                 else:
                     self._main_git_dir = git_dir
-            except MacheteException:
-                raise MacheteException("Not a git repository")
+            except UnderlyingGitException:
+                raise UnderlyingGitException("Not a git repository")
         return self._main_git_dir
 
     def get_worktree_git_subpath(self, *fragments: str) -> str:
-        return os.path.join(self.__get_worktree_git_dir(), *fragments)
+        return os.path.join(self.get_worktree_git_dir(), *fragments)
 
     def get_main_git_subpath(self, *fragments: str) -> str:
-        return os.path.join(self.__get_main_git_dir(), *fragments)
-
-    def get_git_machete_definition_file_path(self) -> str:
-        use_top_level_machete_file = self.get_boolean_config_attr(key=git_config_keys.WORKTREE_USE_TOP_LEVEL_MACHETE_FILE,
-                                                                  default_value=True)
-        return os.path.join(self.__get_main_git_dir() if use_top_level_machete_file else self.__get_worktree_git_dir(), 'machete')
+        return os.path.join(self.get_main_git_dir(), *fragments)
 
     def get_git_timespec_parsed_to_unix_timestamp(self, date: str) -> int:
         try:
             return int(self._popen_git("rev-parse", "--since=" + date).stdout.replace("--max-age=", "").strip())
-        except (MacheteException, ValueError):
-            raise MacheteException(f"Cannot parse timespec: `{date}`")
+        except (UnderlyingGitException, ValueError):
+            raise UnderlyingGitException(f"Cannot parse timespec: `{date}`")
 
     def __ensure_config_loaded(self) -> None:
         if self.__config_cached is None:
@@ -400,8 +346,8 @@ class GitContext:
     def reset_keep(self, to_revision: AnyRevision) -> None:
         try:
             self._run_git("reset", "--keep", to_revision)
-        except MacheteException:
-            raise MacheteException(
+        except UnderlyingGitException:
+            raise UnderlyingGitException(
                 f"Cannot perform `git reset --keep {to_revision}`. This is most likely caused by local uncommitted changes.")
 
     def push(self, remote: str, branch: LocalBranchShortName, force_with_lease: bool = False) -> None:
@@ -432,7 +378,7 @@ class GitContext:
         if revision not in self.__short_commit_hash_by_revision_cached:
             try:
                 self.__short_commit_hash_by_revision_cached[revision] = self.__find_short_commit_hash_by_revision(revision)
-            except MacheteException:
+            except UnderlyingGitException:
                 self.__short_commit_hash_by_revision_cached[revision] = None
         return self.__short_commit_hash_by_revision_cached[revision]
 
@@ -441,7 +387,7 @@ class GitContext:
         # but just echo the argument (and exit successfully) even if the argument doesn't match anything in the object store.
         try:
             return FullCommitHash.of(self._popen_git("rev-parse", "--verify", "--quiet", revision + "^{commit}").stdout.rstrip())  # noqa: FS003, E501
-        except MacheteException:
+        except UnderlyingGitException:
             return None
 
     def get_commit_hash_by_revision(self, revision: AnyRevision) -> Optional[FullCommitHash]:
@@ -457,7 +403,7 @@ class GitContext:
     def __find_tree_hash_by_revision(self, revision: AnyRevision) -> Optional[FullTreeHash]:
         try:
             return FullTreeHash.of(self._popen_git("rev-parse", "--verify", "--quiet", revision + "^{tree}").stdout.rstrip())  # noqa: FS003
-        except MacheteException:
+        except UnderlyingGitException:
             return None
 
     def get_tree_hash_by_commit_hash(self, commit_hash: FullCommitHash) -> Optional[FullTreeHash]:
@@ -736,26 +682,26 @@ class GitContext:
         try:
             raw = self._popen_git("symbolic-ref", "--quiet", "HEAD").stdout.strip()
             return LocalBranchFullName.of(raw).to_short_name()
-        except MacheteException:
+        except UnderlyingGitException:
             return None
 
     def expect_no_operation_in_progress(self) -> None:
         remote_branch = self.get_currently_rebased_branch_or_none()
         if remote_branch:
-            raise MacheteException(
+            raise UnderlyingGitException(
                 f"Rebase of {utils.bold(remote_branch)} in progress. "
                 f"Conclude the rebase first with `git rebase --continue` or `git rebase --abort`.")
         if self.is_am_in_progress():
-            raise MacheteException(
+            raise UnderlyingGitException(
                 "`git am` session in progress. Conclude `git am` first with `git am --continue` or `git am --abort`.")
         if self.is_cherry_pick_in_progress():
-            raise MacheteException(
+            raise UnderlyingGitException(
                 "Cherry pick in progress. Conclude the cherry pick first with `git cherry-pick --continue` or `git cherry-pick --abort`.")
         if self.is_merge_in_progress():
-            raise MacheteException(
+            raise UnderlyingGitException(
                 "Merge in progress. Conclude the merge first with `git merge --continue` or `git merge --abort`.")
         if self.is_revert_in_progress():
-            raise MacheteException(
+            raise UnderlyingGitException(
                 "Revert in progress. Conclude the revert first with `git revert --continue` or `git revert --abort`.")
 
     def get_current_branch_or_none(self) -> Optional[LocalBranchShortName]:
@@ -764,7 +710,7 @@ class GitContext:
     def get_current_branch(self) -> LocalBranchShortName:
         result = self.get_current_branch_or_none()
         if not result:
-            raise MacheteException("Not currently on any branch")
+            raise UnderlyingGitException("Not currently on any branch")
         return result
 
     def __get_merge_base_for_commit_hashes(self, hash1: FullCommitHash, hash2: FullCommitHash) -> Optional[FullCommitHash]:
@@ -1001,10 +947,9 @@ class GitContext:
 
     def get_commit_information(self, commit: AnyRevision, information: GitFormatPatterns) -> str:
         if information not in GitFormatPatterns:
-            raise MacheteException(
-                f"Retrieving {information} from commit is not supported by project"
-                " git-machete. Currently supported information are: "
-                f"{', '.join(GitFormatPatterns._member_names_)}")
+            raise UnderlyingGitException(
+                f"Retrieving {information} from commit is not supported. "
+                f"The currently supported patterns are: {', '.join(GitFormatPatterns._member_names_)}")
 
         params = ["log", "-1", f"--format={information.value}"]
         if commit:

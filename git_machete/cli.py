@@ -10,7 +10,8 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, TypeVar, Union
 import git_machete.options
 from git_machete import __version__, git_config_keys, utils
 from git_machete.client import MacheteClient
-from git_machete.exceptions import ExitCode, MacheteException, StopInteraction
+from git_machete.exceptions import (ExitCode, MacheteException,
+                                    StopInteraction, UnderlyingGitException)
 from git_machete.generated_docs import long_docs, short_docs
 from git_machete.git_operations import (AnyBranchName, AnyRevision, GitContext,
                                         LocalBranchShortName,
@@ -826,7 +827,7 @@ def main() -> None:
         print(get_short_general_usage())
         print(e, file=sys.stderr)
         sys.exit(ExitCode.ARGUMENT_ERROR)
-    except MacheteException as e:
+    except (MacheteException, UnderlyingGitException) as e:
         print(e, file=sys.stderr)
         sys.exit(ExitCode.MACHETE_EXCEPTION)
     except StopInteraction:
