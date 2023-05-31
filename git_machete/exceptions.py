@@ -3,6 +3,14 @@ from enum import IntEnum
 from git_machete import utils
 
 
+class UnderlyingGitException(Exception):
+    def __init__(self, msg: str, apply_fmt: bool = True) -> None:
+        self.msg: str = utils.fmt(msg) if apply_fmt else msg
+
+    def __str__(self) -> str:
+        return str(self.msg)
+
+
 class MacheteException(Exception):
     def __init__(self, msg: str, apply_fmt: bool = True) -> None:
         self.msg: str = utils.fmt(msg) if apply_fmt else msg

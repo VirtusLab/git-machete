@@ -6,7 +6,7 @@ import sys
 import textwrap
 from contextlib import (_GeneratorContextManager, redirect_stderr,
                         redirect_stdout)
-from typing import Any, Callable, Iterable, Iterator
+from typing import Any, Callable, Iterable, Iterator, Type
 
 import pytest
 
@@ -78,15 +78,15 @@ def assert_success(cmds: Iterable[str], expected_result: str) -> None:
     assert actual_result == expected_result
 
 
-def assert_failure(cmds: Iterable[str], expected_result: str) -> None:
+def assert_failure(cmds: Iterable[str], expected_result: str, expected_exception: Type[Exception] = MacheteException) -> None:
     if expected_result.startswith("\n"):
         # removeprefix is only available since Python 3.9
         expected_result = expected_result[1:]
     expected_result = textwrap.dedent(expected_result)
 
-    with pytest.raises(MacheteException) as e:
+    with pytest.raises(expected_exception) as e:
         launch_command(*cmds)
-    error_message = e.value.msg
+    error_message = e.value.msg  # type: ignore[attr-defined]
     if sys.platform == 'win32':
         error_message = error_message.replace('.git\\machete', '.git/machete')
     assert error_message == expected_result

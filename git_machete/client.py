@@ -2,31 +2,30 @@ import datetime
 import io
 import itertools
 import os
+import shlex
 import shutil
 import sys
 from collections import OrderedDict
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
-from git_machete import git_config_keys, utils
-from git_machete.annotation import Annotation
-from git_machete.constants import (DISCOVER_DEFAULT_FRESH_BRANCH_COUNT,
-                                   PICK_FIRST_ROOT, PICK_LAST_ROOT,
-                                   GitFormatPatterns, SyncToRemoteStatuses)
-from git_machete.exceptions import (MacheteException, StopInteraction,
-                                    UnprocessableEntityHTTPError)
-from git_machete.git_operations import (HEAD, AnyBranchName, AnyRevision,
-                                        BranchPair, ForkPointOverrideData,
-                                        FullCommitHash, GitContext,
-                                        GitLogEntry, LocalBranchShortName,
-                                        RemoteBranchShortName)
-from git_machete.github import (GitHubClient, GitHubPullRequest, GitHubToken,
-                                RemoteAndOrganizationAndRepository,
-                                is_github_remote_url)
-from git_machete.utils import (
-    AnsiEscapeCodes, SyncToParentStatus, bold, colored, debug, dim, excluding,
-    flat_map, fmt, get_pretty_choices, get_second,
-    sync_to_parent_status_to_edge_color_map,
-    sync_to_parent_status_to_junction_ascii_only_map, tupled, underline, warn)
+from . import git_config_keys, utils
+from .annotation import Annotation
+from .constants import (DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, PICK_FIRST_ROOT,
+                        PICK_LAST_ROOT, GitFormatPatterns,
+                        SyncToRemoteStatuses)
+from .exceptions import (MacheteException, StopInteraction,
+                         UnprocessableEntityHTTPError)
+from .git_operations import (HEAD, AnyBranchName, AnyRevision, BranchPair,
+                             ForkPointOverrideData, FullCommitHash, GitContext,
+                             GitLogEntry, LocalBranchShortName,
+                             RemoteBranchShortName)
+from .github import (GitHubClient, GitHubPullRequest, GitHubToken,
+                     RemoteAndOrganizationAndRepository, is_github_remote_url)
+from .utils import (AnsiEscapeCodes, SyncToParentStatus, bold, colored, debug,
+                    dim, excluding, flat_map, fmt, get_pretty_choices,
+                    get_second, sync_to_parent_status_to_edge_color_map,
+                    sync_to_parent_status_to_junction_ascii_only_map, tupled,
+                    underline, warn)
 
 
 # Allowed parameter values for show/go command
@@ -39,8 +38,14 @@ class MacheteClient:
 
     def __init__(self, git: GitContext) -> None:
         self.__git: GitContext = git
-        self._definition_file_path: str = self.__git.get_git_machete_definition_file_path()
+        self._definition_file_path: str = self.get_git_machete_definition_file_path()
         self.__init_state()
+
+    def get_git_machete_definition_file_path(self) -> str:
+        use_top_level_machete_file = self.__git.get_boolean_config_attr(key=git_config_keys.WORKTREE_USE_TOP_LEVEL_MACHETE_FILE,
+                                                                        default_value=True)
+        machete_file_directory = self.__git.get_main_git_dir() if use_top_level_machete_file else self.__git.get_worktree_git_dir()
+        return os.path.join(machete_file_directory, 'machete')
 
     def __init_state(self) -> None:
         self._managed_branches: List[LocalBranchShortName] = []
@@ -1161,17 +1166,20 @@ class MacheteClient:
             return utils.run_cmd(*args, **kwargs)
 
     def rebase(self, onto: AnyRevision, from_exclusive: AnyRevision, branch: LocalBranchShortName, opt_no_interactive_rebase: bool) -> None:
+        # Let's use `OPTS` suffix for consistency with git's built-in env var `GIT_DIFF_OPTS`
+        extra_rebase_opts = os.environ.get('GIT_MACHETE_REBASE_OPTS', '').split()
+
         hook_path = self.__git.get_hook_path("machete-pre-rebase")
         if self.__git.check_hook_executable(hook_path):
             debug(f"running machete-pre-rebase hook ({hook_path})")
             exit_code = self.__run_hook(hook_path, onto, from_exclusive, branch, cwd=self.__git.get_root_dir())
             if exit_code == 0:
-                self.__git.rebase(onto, from_exclusive, branch, opt_no_interactive_rebase)
+                self.__git.rebase(onto, from_exclusive, branch, opt_no_interactive_rebase, extra_rebase_opts)
             else:
                 raise MacheteException(
                     f"The machete-pre-rebase hook refused to rebase. Error code: {exit_code}")
         else:
-            self.__git.rebase(onto, from_exclusive, branch, opt_no_interactive_rebase)
+            self.__git.rebase(onto, from_exclusive, branch, opt_no_interactive_rebase, extra_rebase_opts)
 
     def delete_unmanaged(self, *, opt_yes: bool) -> None:
         print('Checking for unmanaged branches...')
@@ -1215,7 +1223,7 @@ class MacheteClient:
             print("No branches to delete")
 
     def edit(self) -> int:
-        default_editor_with_args: List[str] = self.__git.get_default_editor_with_args()
+        default_editor_with_args: List[str] = self.__get_default_editor_with_args()
         if not default_editor_with_args:
             raise MacheteException(
                 f"Cannot determine editor. Set `GIT_MACHETE_EDITOR` environment "
@@ -1224,6 +1232,55 @@ class MacheteClient:
         command = default_editor_with_args[0]
         args = default_editor_with_args[1:] + [self._definition_file_path]
         return utils.run_cmd(command, *args)
+
+    def __get_default_editor_with_args(self) -> List[str]:
+        # Based on the git's own algorithm for identifying the editor.
+        # '$GIT_MACHETE_EDITOR', 'editor' (to please Debian-based systems) and 'nano' have been added.
+        git_machete_editor_var = "GIT_MACHETE_EDITOR"
+        proposed_editor_funs: List[Tuple[str, Callable[[], Optional[str]]]] = [
+            ("$" + git_machete_editor_var, lambda: os.environ.get(git_machete_editor_var)),
+            ("$GIT_EDITOR", lambda: os.environ.get("GIT_EDITOR")),
+            ("git config core.editor", lambda: self.__git.get_config_attr_or_none("core.editor")),
+            ("$VISUAL", lambda: os.environ.get("VISUAL")),
+            ("$EDITOR", lambda: os.environ.get("EDITOR")),
+            ("editor", lambda: "editor"),
+            ("nano", lambda: "nano"),
+            ("vi", lambda: "vi"),
+        ]
+
+        for name, fun in proposed_editor_funs:
+            editor = fun()
+            if not editor:
+                debug(f"'{name}' is undefined")
+            else:
+                editor_parsed = shlex.split(editor)
+                if not editor_parsed:
+                    debug(f"'{name}' shlexes into an empty list")
+                    continue
+                editor_command = editor_parsed[0]
+                editor_repr = "'" + name + "'" + ((' (' + editor + ')') if editor_command != name else '')
+
+                if not utils.find_executable(editor_command):
+                    debug(f"'{editor_command}' executable ('{name}') not found")
+                    if name == "$" + git_machete_editor_var:
+                        # In this specific case, when GIT_MACHETE_EDITOR is defined but doesn't point to a valid executable,
+                        # it's more reasonable/less confusing to raise an error and exit without opening anything.
+                        raise MacheteException(f"<b>{editor_repr}</b> is not available")
+                else:
+                    debug(f"'{editor_command}' executable ('{name}') found")
+                    if name != "$" + git_machete_editor_var and \
+                            self.__git.get_config_attr_or_none('advice.macheteEditorSelection') != 'false':
+                        sample_alternative = 'nano' if editor_command.startswith('vi') else 'vi'
+                        print(fmt(f"Opening <b>{editor_repr}</b>.\n",
+                                  f"To override this choice, use <b>{git_machete_editor_var}</b> env var, e.g. `export "
+                                  f"{git_machete_editor_var}={sample_alternative}`.\n\n",
+                                  "See `git machete help edit` and `git machete edit --debug` for more details.\n\n"
+                                  "Use `git config --global advice.macheteEditorSelection false` to suppress this message."),
+                              file=sys.stderr)
+                    return editor_parsed
+
+        # This case is extremely unlikely on a modern Unix-like system.
+        return []
 
     def __fork_point_and_containing_branch_pairs(self,
                                                  branch: LocalBranchShortName,
