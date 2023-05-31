@@ -21,6 +21,8 @@ ascii_only: bool = False
 debug_mode: bool = False
 verbose_mode: bool = False
 
+GITHUB_NEW_ISSUE_MESSAGE = 'Consider posting an issue at https://github.com/VirtusLab/git-machete/issues/new'
+
 
 def excluding(iterable: Iterable[T], s: Iterable[T]) -> List[T]:
     return list(filter(lambda x: x not in s, iterable))

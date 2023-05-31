@@ -8,26 +8,24 @@ import sys
 from collections import OrderedDict
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
-from git_machete import git_config_keys, utils
-from git_machete.annotation import Annotation
-from git_machete.constants import (DISCOVER_DEFAULT_FRESH_BRANCH_COUNT,
-                                   PICK_FIRST_ROOT, PICK_LAST_ROOT,
-                                   GitFormatPatterns, SyncToRemoteStatuses)
-from git_machete.exceptions import (MacheteException, StopInteraction,
-                                    UnprocessableEntityHTTPError)
-from git_machete.git_operations import (HEAD, AnyBranchName, AnyRevision,
-                                        BranchPair, ForkPointOverrideData,
-                                        FullCommitHash, GitContext,
-                                        GitLogEntry, LocalBranchShortName,
-                                        RemoteBranchShortName)
-from git_machete.github import (GitHubClient, GitHubPullRequest, GitHubToken,
-                                RemoteAndOrganizationAndRepository,
-                                is_github_remote_url)
-from git_machete.utils import (
-    AnsiEscapeCodes, SyncToParentStatus, bold, colored, debug, dim, excluding,
-    flat_map, fmt, get_pretty_choices, get_second,
-    sync_to_parent_status_to_edge_color_map,
-    sync_to_parent_status_to_junction_ascii_only_map, tupled, underline, warn)
+from . import git_config_keys, utils
+from .annotation import Annotation
+from .constants import (DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, PICK_FIRST_ROOT,
+                        PICK_LAST_ROOT, GitFormatPatterns,
+                        SyncToRemoteStatuses)
+from .exceptions import (MacheteException, StopInteraction,
+                         UnprocessableEntityHTTPError)
+from .git_operations import (HEAD, AnyBranchName, AnyRevision, BranchPair,
+                             ForkPointOverrideData, FullCommitHash, GitContext,
+                             GitLogEntry, LocalBranchShortName,
+                             RemoteBranchShortName)
+from .github import (GitHubClient, GitHubPullRequest, GitHubToken,
+                     RemoteAndOrganizationAndRepository, is_github_remote_url)
+from .utils import (AnsiEscapeCodes, SyncToParentStatus, bold, colored, debug,
+                    dim, excluding, flat_map, fmt, get_pretty_choices,
+                    get_second, sync_to_parent_status_to_edge_color_map,
+                    sync_to_parent_status_to_junction_ascii_only_map, tupled,
+                    underline, warn)
 
 
 # Allowed parameter values for show/go command
@@ -1168,17 +1166,20 @@ class MacheteClient:
             return utils.run_cmd(*args, **kwargs)
 
     def rebase(self, onto: AnyRevision, from_exclusive: AnyRevision, branch: LocalBranchShortName, opt_no_interactive_rebase: bool) -> None:
+        # Let's use `OPTS` suffix for consistency with git's built-in env var `GIT_DIFF_OPTS`
+        extra_rebase_opts = os.environ.get('GIT_MACHETE_REBASE_OPTS', '').split()
+
         hook_path = self.__git.get_hook_path("machete-pre-rebase")
         if self.__git.check_hook_executable(hook_path):
             debug(f"running machete-pre-rebase hook ({hook_path})")
             exit_code = self.__run_hook(hook_path, onto, from_exclusive, branch, cwd=self.__git.get_root_dir())
             if exit_code == 0:
-                self.__git.rebase(onto, from_exclusive, branch, opt_no_interactive_rebase)
+                self.__git.rebase(onto, from_exclusive, branch, opt_no_interactive_rebase, extra_rebase_opts)
             else:
                 raise MacheteException(
                     f"The machete-pre-rebase hook refused to rebase. Error code: {exit_code}")
         else:
-            self.__git.rebase(onto, from_exclusive, branch, opt_no_interactive_rebase)
+            self.__git.rebase(onto, from_exclusive, branch, opt_no_interactive_rebase, extra_rebase_opts)
 
     def delete_unmanaged(self, *, opt_yes: bool) -> None:
         print('Checking for unmanaged branches...')

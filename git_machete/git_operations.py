@@ -11,9 +11,8 @@ from . import utils
 from .constants import (MAX_COUNT_FOR_INITIAL_LOG, GitFormatPatterns,
                         SyncToRemoteStatuses)
 from .exceptions import UnderlyingGitException
-from .utils import AnsiEscapeCodes, CommandResult, colored, debug, fmt
-
-GITHUB_NEW_ISSUE_MESSAGE = 'Consider posting an issue at https://github.com/VirtusLab/git-machete/issues/new'
+from .utils import (GITHUB_NEW_ISSUE_MESSAGE, AnsiEscapeCodes, CommandResult,
+                    colored, debug, fmt)
 
 
 class AnyRevision(str):
@@ -849,10 +848,9 @@ class GitContext:
         self._run_git("merge", "--ff-only", branch.full_name())
         self.flush_caches()
 
-    def rebase(self, onto: AnyRevision, from_exclusive: AnyRevision, branch: LocalBranchShortName, opt_no_interactive_rebase: bool) -> None:
-        # Let's use `OPTS` suffix for consistency with git's built-in env var `GIT_DIFF_OPTS`
-        git_machete_rebase_opts_var = 'GIT_MACHETE_REBASE_OPTS'
-        rebase_opts = os.environ.get(git_machete_rebase_opts_var, '').split()
+    def rebase(self, onto: AnyRevision, from_exclusive: AnyRevision, branch: LocalBranchShortName,
+               opt_no_interactive_rebase: bool, extra_rebase_opts: List[str]) -> None:
+        rebase_opts = list(extra_rebase_opts)
         try:
             if not opt_no_interactive_rebase:
                 rebase_opts.append("--interactive")
@@ -886,13 +884,6 @@ class GitContext:
                 # See https://github.com/VirtusLab/git-machete/issues/935 for why author-script needs to be saved in this manner
                 io.open(author_script, "w", newline="").write("".join(fixed_lines))
             self.flush_caches()
-
-    def rebase_onto_ancestor_commit(self,
-                                    branch: LocalBranchShortName,
-                                    ancestor_revision: AnyRevision,
-                                    opt_no_interactive_rebase: bool
-                                    ) -> None:
-        self.rebase(ancestor_revision, ancestor_revision, branch, opt_no_interactive_rebase)
 
     def get_commits_between(self, earliest_exclusive: AnyRevision, latest_inclusive: AnyRevision) -> List[GitLogEntry]:
         # Reverse the list, since `git log` by default returns the commits from the latest to earliest.

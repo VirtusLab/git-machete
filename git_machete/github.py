@@ -11,10 +11,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from git_machete import git_config_keys
-from git_machete.exceptions import (MacheteException,
-                                    UnprocessableEntityHTTPError)
-from git_machete.git_operations import GitContext, LocalBranchShortName
-from git_machete.utils import bold, debug, fmt, warn
+
+from .exceptions import MacheteException, UnprocessableEntityHTTPError
+from .git_operations import GitContext, LocalBranchShortName
+from .utils import bold, debug, fmt, warn
 
 
 class GitHubPullRequest(object):

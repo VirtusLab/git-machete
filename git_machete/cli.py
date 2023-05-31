@@ -9,14 +9,14 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, TypeVar, Union
 
 import git_machete.options
 from git_machete import __version__, git_config_keys, utils
-from git_machete.client import MacheteClient
-from git_machete.exceptions import (ExitCode, MacheteException,
-                                    StopInteraction, UnderlyingGitException)
-from git_machete.generated_docs import long_docs, short_docs
-from git_machete.git_operations import (AnyBranchName, AnyRevision, GitContext,
-                                        LocalBranchShortName,
-                                        RemoteBranchShortName)
-from git_machete.utils import bold, excluding, fmt, underline, warn
+
+from .client import MacheteClient
+from .exceptions import (ExitCode, MacheteException, StopInteraction,
+                         UnderlyingGitException)
+from .generated_docs import long_docs, short_docs
+from .git_operations import (AnyBranchName, AnyRevision, GitContext,
+                             LocalBranchShortName, RemoteBranchShortName)
+from .utils import bold, excluding, fmt, underline, warn
 
 T = TypeVar('T')
 
@@ -728,8 +728,7 @@ def launch(orig_args: List[str]) -> None:
                 fork_point_hash=cli_opts.opt_fork_point, branch=current_branch)
 
         reapply_fork_point = cli_opts.opt_fork_point or machete_client.fork_point(branch=current_branch, use_overrides=True)
-
-        git.rebase_onto_ancestor_commit(current_branch, reapply_fork_point, cli_opts.opt_no_interactive_rebase)
+        machete_client.rebase(reapply_fork_point, reapply_fork_point, current_branch, cli_opts.opt_no_interactive_rebase)
     elif cmd == "show":
         direction = parsed_cli.direction
         branch = get_local_branch_short_name_from_arg_or_current_branch(cli_opts.opt_branch, git)
