@@ -1,5 +1,6 @@
 from tempfile import mkdtemp
-from typing import Any
+
+from pytest_mock import MockerFixture
 
 from tests.base_test import BaseTest
 from tests.mockers import (assert_failure, assert_success, launch_command,
@@ -15,32 +16,32 @@ class TestGitHubRetargetPR(BaseTest):
         [
             {
                 'head': {'ref': 'feature', 'repo': mock_repository_info},
-                'user': {'login': 'github_user'},
+                'user': {'login': 'some_other_user'},
                 'base': {'ref': 'root'}, 'number': '15',
                 'html_url': 'www.github.com', 'state': 'open'
             },
             {
                 'head': {'ref': 'feature_1', 'repo': mock_repository_info},
-                'user': {'login': 'github_user'},
+                'user': {'login': 'some_other_user'},
                 'base': {'ref': 'root'}, 'number': '20',
                 'html_url': 'www.github.com', 'state': 'open'
             },
             {
                 'head': {'ref': 'feature_2', 'repo': mock_repository_info},
-                'user': {'login': 'github_user'},
+                'user': {'login': 'some_other_user'},
                 'base': {'ref': 'root'}, 'number': '25',
                 'html_url': 'www.github.com', 'state': 'open'
             },
             {
                 'head': {'ref': 'feature_3', 'repo': mock_repository_info},
-                'user': {'login': 'github_user'},
+                'user': {'login': 'some_other_user'},
                 'base': {'ref': 'root'}, 'number': '35',
                 'html_url': 'www.github.com', 'state': 'open'
             }
         ]
     )
 
-    def test_github_retarget_pr(self, mocker: Any) -> None:
+    def test_github_retarget_pr(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_retarget_pr.new_request())
         mocker.patch('urllib.request.urlopen', mock_urlopen)
@@ -75,7 +76,7 @@ class TestGitHubRetargetPR(BaseTest):
         |
         o-branch-1
           |
-          o-feature *  PR #15 (github_user) WRONG PR BASE or MACHETE PARENT? PR has root rebase=no push=no
+          o-feature *  PR #15 (some_other_user) WRONG PR BASE or MACHETE PARENT? PR has root rebase=no push=no
         """
         assert_success(
             ['status'],
@@ -108,14 +109,14 @@ class TestGitHubRetargetPR(BaseTest):
         [
             {
                 'head': {'ref': 'feature', 'repo': mock_repository_info},
-                'user': {'login': 'github_user'},
+                'user': {'login': 'some_other_user'},
                 'base': {'ref': 'root'}, 'number': '15',
                 'html_url': 'www.github.com', 'state': 'open'
             }
         ]
     )
 
-    def test_github_retarget_pr_explicit_branch(self, mocker: Any) -> None:
+    def test_github_retarget_pr_explicit_branch(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_retarget_pr_explicit_branch.new_request())
         mocker.patch('urllib.request.urlopen', mock_urlopen)
@@ -155,7 +156,7 @@ class TestGitHubRetargetPR(BaseTest):
         |
         o-branch-1
         | |
-        | o-feature  PR #15 (github_user) WRONG PR BASE or MACHETE PARENT? PR has root rebase=no push=no
+        | o-feature  PR #15 (some_other_user) WRONG PR BASE or MACHETE PARENT? PR has root rebase=no push=no
         |
         o-branch-without-pr
         """
@@ -195,7 +196,7 @@ class TestGitHubRetargetPR(BaseTest):
 
         launch_command('github', 'retarget-pr', '--branch', 'branch-without-pr', '--ignore-if-missing')
 
-    def test_github_retarget_pr_multiple_non_origin_remotes(self, mocker: Any) -> None:
+    def test_github_retarget_pr_multiple_non_origin_remotes(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_retarget_pr.new_request())

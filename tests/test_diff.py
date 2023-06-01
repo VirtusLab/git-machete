@@ -1,4 +1,4 @@
-from typing import Any
+from pytest_mock import MockerFixture
 
 from .base_test import BaseTest
 from .mockers import assert_success, mock_run_cmd_and_forward_output
@@ -6,7 +6,7 @@ from .mockers import assert_success, mock_run_cmd_and_forward_output
 
 class TestDiff(BaseTest):
 
-    def test_diff(self, mocker: Any) -> None:
+    def test_diff(self, mocker: MockerFixture) -> None:
         """
         Verify behaviour of a 'git machete diff' command.
         """

@@ -1,4 +1,4 @@
-from typing import Any
+from pytest_mock import MockerFixture
 
 from .base_test import BaseTest
 from .mockers import (assert_success, fixed_author_and_committer_date,
@@ -8,7 +8,7 @@ from .mockers import (assert_success, fixed_author_and_committer_date,
 
 class TestDeleteUnmanaged(BaseTest):
 
-    def test_delete_unmanaged(self, mocker: Any) -> None:
+    def test_delete_unmanaged(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_output)
 
         with fixed_author_and_committer_date():

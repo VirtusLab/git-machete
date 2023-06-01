@@ -8,75 +8,23 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Type, Union
 from urllib.error import HTTPError
 from urllib.parse import ParseResult, parse_qs, urlparse
 
-from git_machete.git_operations import AnyRevision, LocalBranchShortName
 from git_machete.github import GitHubToken, RemoteAndOrganizationAndRepository
-from git_machete.options import CommandLineOptions
-
-from .base_test import git
 
 mock_repository_info: Dict[str, str] = {'full_name': 'testing/checkout_prs',
                                         'html_url': 'https://github.com/tester/repo_sandbox.git'}
 
 
-class FakeCommandLineOptions(CommandLineOptions):
-    def __init__(self) -> None:
-        super().__init__()
-        self.opt_no_interactive_rebase: bool = True
-        self.opt_yes: bool = True
-
-
-def mock_for_domain_none(domain: str) -> None:
+def mock_github_token_for_domain_none(domain: str) -> None:
     return None
 
 
-def mock_for_domain_fake(domain: str) -> GitHubToken:
+def mock_github_token_for_domain_fake(domain: str) -> GitHubToken:
     return GitHubToken(value='dummy_token',
                        provider='dummy_provider')
 
 
 def mock_from_url(domain: str, url: str, remote: str) -> "RemoteAndOrganizationAndRepository":
     return RemoteAndOrganizationAndRepository(remote, "example-org", "example-repo")
-
-
-def mock_fetch_ref(cls: Any, remote: str, ref: str) -> None:
-    branch: LocalBranchShortName = LocalBranchShortName.of(ref[ref.index(':') + 1:])
-    git.create_branch(branch, git.get_commit_hash_by_revision(AnyRevision("HEAD")), switch_head=True)  # type: ignore[arg-type]
-
-
-def mock_derive_current_user_login(domain: str) -> str:
-    return "very_complex_user_token"
-
-
-def mock_is_file_true(file: Any) -> bool:
-    return True
-
-
-def mock_is_file_false(file: Any) -> bool:
-    return False
-
-
-def mock_is_file_not_github_token(file: Any) -> bool:
-    if '.github-token' not in file:
-        return True
-    return False
-
-
-def mock_os_environ_get_none(self: Any, key: str, default: Optional[str] = None) -> Any:
-    if key == GitHubToken.GITHUB_TOKEN_ENV_VAR:
-        return None
-    try:
-        return self[key]
-    except KeyError:
-        return default
-
-
-def mock_os_environ_get_github_token(self: Any, key: str, default: Optional[str] = None) -> Any:
-    if key == GitHubToken.GITHUB_TOKEN_ENV_VAR:
-        return 'github_token_from_env_var'
-    try:
-        return self[key]
-    except KeyError:
-        return default
 
 
 def mock_shutil_which(path: Optional[str]) -> Callable[[Any], Optional[str]]:
@@ -128,7 +76,7 @@ class PaginatedMockGitHubAPIResponse(MockGitHubAPIResponse):
             {
                 'head': {'ref': f'feature_{i}', 'repo': {'full_name': 'testing/checkout_prs',
                                                          'html_url': 'https://github.com/tester/repo_sandbox.git'}},
-                'user': {'login': 'github_user'},
+                'user': {'login': 'some_other_user'},
                 'base': {'ref': 'develop'},
                 'number': f'{i}',
                 'html_url': 'www.github.com',
@@ -148,7 +96,7 @@ class PaginatedMockGitHubAPIResponse(MockGitHubAPIResponse):
 class MockGitHubAPIState:
     def __init__(self, pulls: List[Dict[str, Any]], issues: Optional[List[Dict[str, Any]]] = None) -> None:
         self.pulls: List[Dict[str, Any]] = [dict(pull) for pull in pulls]
-        self.user: Dict[str, str] = {'login': 'other_user', 'type': 'User', 'company': 'VirtusLab'}
+        self.user: Dict[str, str] = {'login': 'github_user', 'type': 'User', 'company': 'VirtusLab'}
         # login must be different from the one used in pull requests, otherwise pull request author will not be annotated
         self.issues: List[Dict[str, Any]] = list(issues) if issues else []
 
@@ -244,7 +192,7 @@ class MockGitHubAPIRequest:
 
     def create_pull_request(self) -> "MockGitHubAPIResponse":
         pull = {'number': self.get_next_free_number(self.github_api_state.pulls),
-                'user': {'login': 'github_user'},
+                'user': {'login': 'some_other_user'},
                 'html_url': 'www.github.com',
                 'state': 'open',
                 'head': {'ref': "", 'repo': {'full_name': 'testing:checkout_prs', 'html_url': mkdtemp()}},

@@ -1,11 +1,11 @@
-from typing import Any
+from pytest_mock import MockerFixture
 
 from tests.base_test import BaseTest
 from tests.mockers import (assert_success, launch_command,
                            mock_run_cmd_and_discard_output,
                            rewrite_definition_file)
 from tests.mockers_github import (MockGitHubAPIState,
-                                  mock_derive_current_user_login,
+                                  mock_github_token_for_domain_fake,
                                   mock_repository_info, mock_urlopen)
 
 
@@ -15,7 +15,7 @@ class TestGitHubAnnoPRs(BaseTest):
         [
             {
                 'head': {'ref': 'ignore-trailing', 'repo': mock_repository_info},
-                'user': {'login': 'github_user'},
+                'user': {'login': 'some_other_user'},
                 'base': {'ref': 'hotfix/add-trigger'},
                 'number': '3',
                 'html_url': 'www.github.com',
@@ -23,7 +23,7 @@ class TestGitHubAnnoPRs(BaseTest):
             },
             {
                 'head': {'ref': 'allow-ownership-link', 'repo': mock_repository_info},
-                'user': {'login': 'github_user'},
+                'user': {'login': 'some_other_user'},
                 'base': {'ref': 'develop'},
                 'number': '7',
                 'html_url': 'www.github.com',
@@ -31,7 +31,7 @@ class TestGitHubAnnoPRs(BaseTest):
             },
             {
                 'head': {'ref': 'call-ws', 'repo': mock_repository_info},
-                'user': {'login': 'very_complex_user_token'},
+                'user': {'login': 'github_user'},
                 'base': {'ref': 'develop'},
                 'number': '31',
                 'html_url': 'www.github.com',
@@ -40,9 +40,9 @@ class TestGitHubAnnoPRs(BaseTest):
         ]
     )
 
-    def test_github_anno_prs(self, mocker: Any) -> None:
+    def test_github_anno_prs(self, mocker: MockerFixture) -> None:
+        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-        mocker.patch('git_machete.github.GitHubClient.derive_current_user_login', mock_derive_current_user_login)
         mocker.patch('urllib.request.urlopen', mock_urlopen)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_anno_prs.new_request())
 
@@ -111,11 +111,11 @@ class TestGitHubAnnoPRs(BaseTest):
             |
             o-hotfix/add-trigger (diverged from origin)
               |
-              o-ignore-trailing *  PR #3 (github_user) rebase=no push=no (diverged from & older than origin)
+              o-ignore-trailing *  PR #3 (some_other_user) rebase=no push=no (diverged from & older than origin)
 
             develop
             |
-            x-allow-ownership-link  PR #7 (github_user) rebase=no (ahead of origin)
+            x-allow-ownership-link  PR #7 (some_other_user) rebase=no (ahead of origin)
             | |
             | x-build-chain  rebase=no push=no (untracked)
             |
@@ -142,11 +142,11 @@ class TestGitHubAnnoPRs(BaseTest):
             |
             o-hotfix/add-trigger (diverged from origin)
               |
-              o-ignore-trailing *  PR #3 (github_user) rebase=no push=no (diverged from & older than origin)
+              o-ignore-trailing *  PR #3 (some_other_user) rebase=no push=no (diverged from & older than origin)
 
             develop
             |
-            x-allow-ownership-link  PR #7 (github_user) rebase=no (ahead of origin)
+            x-allow-ownership-link  PR #7 (some_other_user) rebase=no (ahead of origin)
             | |
             | x-build-chain  rebase=no push=no (untracked)
             |

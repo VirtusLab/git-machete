@@ -1,12 +1,12 @@
-from typing import Any
+from pytest_mock import MockerFixture
 
 from tests.base_test import BaseTest
 from tests.mockers import (assert_success, launch_command,
                            mock_input_returning_y,
                            mock_run_cmd_and_discard_output,
                            rewrite_definition_file)
-from tests.mockers_github import (FakeCommandLineOptions, MockGitHubAPIState,
-                                  mock_for_domain_fake, mock_from_url,
+from tests.mockers_github import (MockGitHubAPIState, mock_from_url,
+                                  mock_github_token_for_domain_fake,
                                   mock_repository_info, mock_urlopen)
 
 
@@ -16,7 +16,7 @@ class TestGitHubSync(BaseTest):
         [
             {
                 'head': {'ref': 'snickers', 'repo': mock_repository_info},
-                'user': {'login': 'other_user'},
+                'user': {'login': 'github_user'},
                 'base': {'ref': 'master'},
                 'number': '7',
                 'html_url': 'www.github.com',
@@ -25,12 +25,11 @@ class TestGitHubSync(BaseTest):
         ]
     )
 
-    def test_github_sync(self, mocker: Any) -> None:
+    def test_github_sync(self, mocker: MockerFixture) -> None:
         mocker.patch('builtins.input', mock_input_returning_y)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-        mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
-        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_fake)
+        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         mocker.patch('urllib.request.urlopen', mock_urlopen)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_sync.new_request())
 

@@ -1,4 +1,4 @@
-from typing import Any
+from pytest_mock import MockerFixture
 
 from .base_test import BaseTest, git
 from .mockers import (assert_failure, assert_success, launch_command,
@@ -82,7 +82,7 @@ class TestTraverse(BaseTest):
             """
         )
 
-    def test_traverse_slide_out(self, mocker: Any) -> None:
+    def test_traverse_slide_out(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         (
             self.repo_sandbox
@@ -125,7 +125,7 @@ class TestTraverse(BaseTest):
             """
         )
 
-    def test_traverse_no_remotes(self, mocker: Any) -> None:
+    def test_traverse_no_remotes(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         self.setup_standard_tree()
         self.repo_sandbox.remove_remote()
@@ -161,7 +161,7 @@ class TestTraverse(BaseTest):
             """
         )
 
-    def test_traverse_no_push(self, mocker: Any) -> None:
+    def test_traverse_no_push(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         self.setup_standard_tree()
 
@@ -196,7 +196,7 @@ class TestTraverse(BaseTest):
             """,
         )
 
-    def test_traverse_no_push_override(self, mocker: Any) -> None:
+    def test_traverse_no_push_override(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         self.setup_standard_tree()
         self.repo_sandbox.check_out("hotfix/add-trigger")
@@ -299,7 +299,7 @@ class TestTraverse(BaseTest):
             """,
         )
 
-    def test_traverse_no_push_untracked(self, mocker: Any) -> None:
+    def test_traverse_no_push_untracked(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         self.setup_standard_tree()
 
@@ -334,7 +334,7 @@ class TestTraverse(BaseTest):
             """,
         )
 
-    def test_traverse_push_config_key(self, mocker: Any) -> None:
+    def test_traverse_push_config_key(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         self.setup_standard_tree()
         self.repo_sandbox.set_git_config_key('machete.traverse.push', 'false')
@@ -369,7 +369,7 @@ class TestTraverse(BaseTest):
             """,
         )
 
-    def test_traverse_no_push_no_checkout(self, mocker: Any) -> None:
+    def test_traverse_no_push_no_checkout(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         (
             self.repo_sandbox.new_branch("root")
@@ -443,7 +443,7 @@ class TestTraverse(BaseTest):
         assert_success(["traverse", "-Wy", "--no-push"],
                        expected_result)
 
-    def test_traverse_and_squash(self, mocker: Any) -> None:
+    def test_traverse_and_squash(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         self.setup_standard_tree()
 
@@ -543,7 +543,7 @@ class TestTraverse(BaseTest):
             """,
         )
 
-    def test_traverse_with_merge(self, mocker: Any) -> None:
+    def test_traverse_with_merge(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         (
             self.repo_sandbox
@@ -578,7 +578,7 @@ class TestTraverse(BaseTest):
             """
         )
 
-    def test_traverse_qualifiers_no_push(self, mocker: Any) -> None:
+    def test_traverse_qualifiers_no_push(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         self.setup_standard_tree()
 
@@ -617,7 +617,7 @@ class TestTraverse(BaseTest):
             """,
         )
 
-    def test_traverse_qualifiers_no_rebase(self, mocker: Any) -> None:
+    def test_traverse_qualifiers_no_rebase(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         self.setup_standard_tree()
 
@@ -656,7 +656,7 @@ class TestTraverse(BaseTest):
             """,
         )
 
-    def test_traverse_qualifiers_no_rebase_no_push(self, mocker: Any) -> None:
+    def test_traverse_qualifiers_no_rebase_no_push(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         self.setup_standard_tree()
 
@@ -695,7 +695,7 @@ class TestTraverse(BaseTest):
             """,
         )
 
-    def test_traverse_qualifiers_no_slide_out(self, mocker: Any) -> None:
+    def test_traverse_qualifiers_no_slide_out(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         self.setup_standard_tree()
 

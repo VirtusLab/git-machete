@@ -109,10 +109,14 @@ class GitHubToken:
                 cls.__get_token_from_gh(domain) or
                 cls.__get_token_from_hub(domain))
 
+    @staticmethod
+    def _get_github_token_env_var() -> Optional[str]:
+        return os.environ.get(GitHubToken.GITHUB_TOKEN_ENV_VAR)
+
     @classmethod
     def __get_token_from_env(cls) -> Optional["GitHubToken"]:
         debug(f"1. Trying to authenticate via `{cls.GITHUB_TOKEN_ENV_VAR}` environment variable...")
-        github_token = os.environ.get(cls.GITHUB_TOKEN_ENV_VAR)
+        github_token = cls._get_github_token_env_var()
         if github_token:
             return cls(value=github_token,
                        provider=f'`{cls.GITHUB_TOKEN_ENV_VAR}` environment variable')
@@ -418,8 +422,7 @@ class GitHubClient:
     def derive_current_user_login(self) -> Optional[str]:
         if not self.__token:
             return None
-        user = self.__fire_github_api_request(method='GET',
-                                              path='/user')
+        user = self.__fire_github_api_request(method='GET', path='/user')
         return str(user['login'])  # str() to satisfy mypy
 
     def get_pull_request_by_number_or_none(self,

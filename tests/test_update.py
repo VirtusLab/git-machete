@@ -1,4 +1,4 @@
-from typing import Any
+from pytest_mock import MockerFixture
 
 from git_machete.exceptions import UnderlyingGitException
 
@@ -13,7 +13,7 @@ from .mockers import (assert_failure, assert_success,
 
 class TestUpdate(BaseTest):
 
-    def test_update_with_fork_point_not_specified(self, mocker: Any) -> None:
+    def test_update_with_fork_point_not_specified(self, mocker: MockerFixture) -> None:
         """
         Verify that 'git machete update --no-interactive-rebase' performs
         'git rebase' to the parent branch of the current branch.
@@ -48,7 +48,7 @@ class TestUpdate(BaseTest):
              "'git rebase' to the parent branch of the current branch."
              )
 
-    def test_update_by_merge(self, mocker: Any) -> None:
+    def test_update_by_merge(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
@@ -76,7 +76,7 @@ class TestUpdate(BaseTest):
         assert self.repo_sandbox.is_ancestor(old_level_1_commit_hash, "level-1-branch")
         assert self.repo_sandbox.is_ancestor("level-0-branch", "level-1-branch")
 
-    def test_update_drops_empty_commits(self, mocker: Any) -> None:
+    def test_update_drops_empty_commits(self, mocker: MockerFixture) -> None:
         """
         Verify that 'git machete update' drops effectively-empty commits if the underlying git supports that behavior.
         """
@@ -123,7 +123,7 @@ class TestUpdate(BaseTest):
         assert "level-1 commit" in branch_history
         assert "level-1 commit... but to be cherry-picked onto level-0-branch" not in branch_history
 
-    def test_update_with_fork_point_specified(self, mocker: Any) -> None:
+    def test_update_with_fork_point_specified(self, mocker: MockerFixture) -> None:
         """
         Verify that 'git machete update --no-interactive-rebase -f <commit_hash>'
         performs 'git rebase' to the upstream branch and drops the commits until
@@ -175,7 +175,7 @@ class TestUpdate(BaseTest):
              "specified by the option '-f' from the current branch."
              )
 
-    def test_update_with_invalid_fork_point(self, mocker: Any) -> None:
+    def test_update_with_invalid_fork_point(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         with fixed_author_and_committer_date():
@@ -204,7 +204,7 @@ class TestUpdate(BaseTest):
                                  "is not ancestor of or the tip of the branch-1b branch."
         assert_failure(['update', '-f', branch_1a_hash], expected_error_message)
 
-    def test_update_with_stop_for_edit(self, mocker: Any) -> None:
+    def test_update_with_stop_for_edit(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
@@ -225,7 +225,7 @@ class TestUpdate(BaseTest):
         with overridden_environment(GIT_EDITOR="cat"):
             self.repo_sandbox.execute("git rebase --continue")
 
-    def test_update_unmanaged_branch(self, mocker: Any) -> None:
+    def test_update_unmanaged_branch(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
@@ -252,7 +252,7 @@ class TestUpdate(BaseTest):
             "Rebase onto the inferred upstream branch-0? (y, N) \n")
         assert self.repo_sandbox.is_ancestor("branch-0", "branch-1")
 
-    def test_update_unmanaged_branch_when_parent_cannot_be_inferred(self, mocker: Any) -> None:
+    def test_update_unmanaged_branch_when_parent_cannot_be_inferred(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
@@ -268,7 +268,7 @@ class TestUpdate(BaseTest):
             "Branch branch-1 not found in the tree of branch dependencies and its upstream could not be inferred"
         )
 
-    def test_update_with_pre_rebase_hook(self, mocker: Any) -> None:
+    def test_update_with_pre_rebase_hook(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_output)
 
         with fixed_author_and_committer_date():

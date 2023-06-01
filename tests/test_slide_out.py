@@ -1,4 +1,4 @@
-from typing import Any
+from pytest_mock import MockerFixture
 
 from .base_test import BaseTest, git
 from .mockers import (assert_failure, assert_success,
@@ -9,7 +9,7 @@ from .mockers import (assert_failure, assert_success,
 
 class TestSlideOut(BaseTest):
 
-    def test_slide_out(self, mocker: Any) -> None:
+    def test_slide_out(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         (
             self.repo_sandbox.new_branch("develop")
@@ -164,7 +164,7 @@ class TestSlideOut(BaseTest):
             """,
         )
 
-    def test_slide_out_with_post_slide_out_hook(self, mocker: Any) -> None:
+    def test_slide_out_with_post_slide_out_hook(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_output)
 
         (
@@ -243,7 +243,7 @@ class TestSlideOut(BaseTest):
             "Last branch to slide out must have a child branch if option --down-fork-point is passed"
         )
 
-    def test_slide_out_with_down_fork_point_and_single_child_of_last_branch(self, mocker: Any) -> None:
+    def test_slide_out_with_down_fork_point_and_single_child_of_last_branch(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_output)
 
         (
@@ -312,7 +312,7 @@ class TestSlideOut(BaseTest):
             "Last branch to slide out can't have more than one child branch if option --down-fork-point is passed"
         )
 
-    def test_slide_out_with_invalid_sequence_of_branches(self, mocker: Any) -> None:
+    def test_slide_out_with_invalid_sequence_of_branches(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_output)
 
         (

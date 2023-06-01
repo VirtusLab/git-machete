@@ -1,6 +1,7 @@
-from typing import Any, List
+from typing import List
 
 import pytest
+from pytest_mock import MockerFixture
 
 from git_machete.cli import commands_and_aliases
 from git_machete.exceptions import ExitCode
@@ -11,7 +12,7 @@ from .mockers import launch_command, mock_run_cmd_and_discard_output
 
 class TestHelp(BaseTest):
 
-    def test_help(self, mocker: Any) -> None:
+    def test_help(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         with pytest.raises(SystemExit) as e:

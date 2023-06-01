@@ -1,4 +1,4 @@
-from typing import Any
+from pytest_mock import MockerFixture
 
 from .base_test import BaseTest
 from .mockers import launch_command, mock_run_cmd_and_forward_output
@@ -6,7 +6,7 @@ from .mockers import launch_command, mock_run_cmd_and_forward_output
 
 class TestLog(BaseTest):
 
-    def test_log(self, mocker: Any) -> None:
+    def test_log(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_output)
 
         self.repo_sandbox.new_branch('root')

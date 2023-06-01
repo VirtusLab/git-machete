@@ -1,4 +1,4 @@
-from typing import Any
+from pytest_mock import MockerFixture
 
 from .base_test import BaseTest
 from .mockers import (assert_success, fixed_author_and_committer_date,
@@ -8,7 +8,7 @@ from .mockers import (assert_success, fixed_author_and_committer_date,
 
 class TestReapply(BaseTest):
 
-    def test_reapply(self, mocker: Any) -> None:
+    def test_reapply(self, mocker: MockerFixture) -> None:
         """
         Verify that 'git machete reapply' performs
         'git rebase' to the fork point of the current branch.

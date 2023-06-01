@@ -1,4 +1,4 @@
-from typing import Any
+from pytest_mock import MockerFixture
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, mock_input_returning,
@@ -8,7 +8,7 @@ from .mockers import (assert_failure, assert_success, mock_input_returning,
 
 class TestAdd(BaseTest):
 
-    def test_add(self, mocker: Any) -> None:
+    def test_add(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
@@ -67,7 +67,7 @@ class TestAdd(BaseTest):
             'Added branch chore/remove_indentation onto feature\n'
         )
 
-    def test_add_check_out_remote_branch(self, mocker: Any) -> None:
+    def test_add_check_out_remote_branch(self, mocker: MockerFixture) -> None:
         """
         Verify the behaviour of a 'git machete add' command in the special case when a remote branch is checked out locally.
         """
@@ -108,7 +108,7 @@ class TestAdd(BaseTest):
             'Added branch feature/foo as a new root\n'
         )
 
-    def test_add_new_branch_onto_managed_current_branch(self, mocker: Any) -> None:
+    def test_add_new_branch_onto_managed_current_branch(self, mocker: MockerFixture) -> None:
         (
             self.repo_sandbox.new_branch("master")
             .commit()
@@ -123,7 +123,7 @@ class TestAdd(BaseTest):
             "Added branch foo onto master\n"
         )
 
-    def test_add_new_branch_when_cannot_infer_parent(self, mocker: Any) -> None:
+    def test_add_new_branch_when_cannot_infer_parent(self, mocker: MockerFixture) -> None:
         (
             self.repo_sandbox.new_branch("master")
             .commit()

@@ -1,6 +1,5 @@
-from typing import Any
-
 import pytest
+from pytest_mock import MockerFixture
 
 from git_machete.exceptions import ExitCode
 
@@ -11,7 +10,7 @@ from .mockers import (assert_success, launch_command,
 
 class TestList(BaseTest):
 
-    def test_list(self, mocker: Any) -> None:
+    def test_list(self, mocker: MockerFixture) -> None:
         """
         Verify behaviour of a 'git machete list' command.
         """

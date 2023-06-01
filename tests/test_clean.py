@@ -1,4 +1,4 @@
-from typing import Any
+from pytest_mock import MockerFixture
 
 from .base_test import BaseTest
 from .mockers import (assert_success, launch_command, mock_input_returning_y,
@@ -7,7 +7,7 @@ from .mockers import (assert_success, launch_command, mock_input_returning_y,
 
 class TestClean(BaseTest):
 
-    def test_clean(self, mocker: Any) -> None:
+    def test_clean(self, mocker: MockerFixture) -> None:
         mocker.patch('builtins.input', mock_input_returning_y)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         (

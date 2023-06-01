@@ -1,4 +1,4 @@
-from typing import Any
+from pytest_mock import MockerFixture
 
 from git_machete.git_operations import (AnyRevision, FullCommitHash,
                                         LocalBranchShortName)
@@ -9,7 +9,7 @@ from .mockers import mock_run_cmd_and_discard_output
 
 class TestGitOperations(BaseTest):
 
-    def test_run_git(self, mocker: Any) -> None:
+    def test_run_git(self, mocker: MockerFixture) -> None:
         """
         Verify behaviour of a 'GitContext._run_git()' method
         """

@@ -1,4 +1,4 @@
-from typing import Any
+from pytest_mock import MockerFixture
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
@@ -8,7 +8,7 @@ from .mockers import (assert_failure, assert_success, launch_command,
 
 class TestAdvance(BaseTest):
 
-    def test_advance_for_no_downstream_branches(self, mocker: Any) -> None:
+    def test_advance_for_no_downstream_branches(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         self.repo_sandbox.new_branch("root").commit()
@@ -16,7 +16,7 @@ class TestAdvance(BaseTest):
 
         assert_failure(["advance"], "root does not have any downstream (child) branches to advance towards")
 
-    def test_advance_for_no_applicable_downstream_branches(self, mocker: Any) -> None:
+    def test_advance_for_no_applicable_downstream_branches(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
@@ -32,7 +32,7 @@ class TestAdvance(BaseTest):
 
         assert_failure(["advance"], "No downstream (child) branch of master is connected to master with a green edge")
 
-    def test_advance_with_immediate_cancel(self, mocker: Any) -> None:
+    def test_advance_with_immediate_cancel(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
@@ -48,7 +48,7 @@ class TestAdvance(BaseTest):
         mocker.patch("builtins.input", mock_input_returning("n"))
         assert_success(["advance"], "Fast-forward master to match develop? (y, N) \n")
 
-    def test_advance_with_push_for_one_downstream_branch(self, mocker: Any) -> None:
+    def test_advance_with_push_for_one_downstream_branch(self, mocker: MockerFixture) -> None:
         """
         Verify that when there is only one, rebased downstream branch of a
         current branch 'git machete advance' merges commits from that branch,
@@ -91,7 +91,7 @@ class TestAdvance(BaseTest):
              "from the git-machete tree and the structure of the git machete "
              "tree is updated.")
 
-    def test_advance_without_push_for_one_downstream_branch(self, mocker: Any) -> None:
+    def test_advance_without_push_for_one_downstream_branch(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
@@ -135,7 +135,7 @@ class TestAdvance(BaseTest):
             """
         )
 
-    def test_advance_for_a_few_possible_downstream_branches_and_yes_option(self, mocker: Any) -> None:
+    def test_advance_for_a_few_possible_downstream_branches_and_yes_option(self, mocker: MockerFixture) -> None:
         """
         Verify that 'git machete advance -y' raises an error when current branch
         has more than one synchronized downstream branch and option '-y' is passed.

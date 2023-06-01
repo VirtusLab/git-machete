@@ -1,6 +1,5 @@
-from typing import Any
-
 import pytest
+from pytest_mock import MockerFixture
 
 from git_machete.exceptions import ExitCode
 
@@ -32,7 +31,7 @@ class TestGo(BaseTest):
             launch_command("go", "invalid")
         assert ExitCode.ARGUMENT_ERROR == e.value.code
 
-    def test_go_up(self, mocker: Any) -> None:
+    def test_go_up(self, mocker: MockerFixture) -> None:
         """Verify behaviour of a 'git machete go up' command.
 
         Verify that 'git machete go up' performs 'git checkout' to the
@@ -78,7 +77,7 @@ class TestGo(BaseTest):
         )
         assert 'level-1-branch' == launch_command("show", "current").strip()
 
-    def test_go_down(self, mocker: Any) -> None:
+    def test_go_down(self, mocker: MockerFixture) -> None:
         """Verify behaviour of a 'git machete go down' command.
 
         Verify that 'git machete go down' performs 'git checkout' to the
@@ -120,7 +119,7 @@ class TestGo(BaseTest):
         launch_command("go", "down")
         assert launch_command("show", "current").strip() == "level-2b-branch"
 
-    def test_go_first_root_with_downstream(self, mocker: Any) -> None:
+    def test_go_first_root_with_downstream(self, mocker: MockerFixture) -> None:
         """Verify behaviour of a 'git machete go first' command.
 
         Verify that 'git machete go first' performs 'git checkout' to
@@ -174,7 +173,7 @@ class TestGo(BaseTest):
             ("Verify that 'git machete g d' performs 'git checkout' to "
              "the child/downstream branch of the current branch.")
 
-    def test_go_first_root_without_downstream(self, mocker: Any) -> None:
+    def test_go_first_root_without_downstream(self, mocker: MockerFixture) -> None:
         """Verify behaviour of a 'git machete go first' command.
 
         Verify that 'git machete go first' set current branch to root
@@ -205,7 +204,7 @@ class TestGo(BaseTest):
              "if root branch has no downstream."
              )
 
-    def test_go_last(self, mocker: Any) -> None:
+    def test_go_last(self, mocker: MockerFixture) -> None:
         """Verify behaviour of a 'git machete go last' command.
 
         Verify that 'git machete go last' performs 'git checkout' to
@@ -262,7 +261,7 @@ class TestGo(BaseTest):
         launch_command("g", "l")
         assert 'branch-from-x-additional-root' == launch_command("show", "current").strip()
 
-    def test_go_next_successor_exists(self, mocker: Any) -> None:
+    def test_go_next_successor_exists(self, mocker: MockerFixture) -> None:
         """Verify behaviour of a 'git machete go next' command.
 
         Verify that 'git machete go next' performs 'git checkout' to
@@ -309,7 +308,7 @@ class TestGo(BaseTest):
              "config file if successor branch exists."
              )
 
-    def test_go_next_successor_on_another_root_tree(self, mocker: Any) -> None:
+    def test_go_next_successor_on_another_root_tree(self, mocker: MockerFixture) -> None:
         """Verify behaviour of a 'git machete go next' command.
 
         Verify that 'git machete go next' can checkout to branch that doesn't
@@ -350,7 +349,7 @@ class TestGo(BaseTest):
              "share root with the current branch."
              )
 
-    def test_go_prev_successor_exists(self, mocker: Any) -> None:
+    def test_go_prev_successor_exists(self, mocker: MockerFixture) -> None:
         """Verify behaviour of a 'git machete go prev' command.
 
         Verify that 'git machete go prev' performs 'git checkout' to
@@ -396,7 +395,7 @@ class TestGo(BaseTest):
              "when predecessor branch exists within the root tree."
              )
 
-    def test_go_prev_successor_on_another_root_tree(self, mocker: Any) -> None:
+    def test_go_prev_successor_on_another_root_tree(self, mocker: MockerFixture) -> None:
         """Verify behaviour of a 'git machete go prev' command.
 
         Verify that 'git machete go prev' raises an error when predecessor
@@ -434,7 +433,7 @@ class TestGo(BaseTest):
              "share root with the current branch."
              )
 
-    def test_go_root(self, mocker: Any) -> None:
+    def test_go_root(self, mocker: MockerFixture) -> None:
         """Verify behaviour of a 'git machete go root' command.
 
         Verify that 'git machete go root' performs 'git checkout' to

@@ -20,6 +20,7 @@ if [[ $0 != *.git/hooks/pre-commit ]]; then
   # let's skip it when this script is executed as git pre-commit hook.
   enforce-links-correct.sh
 fi
+enforce-mocking-only-whitelisted-methods.sh
 enforce-newline-at-eof.sh
 enforce-release-notes-up-to-date.sh
 enforce-shell-scripts-pass-shellcheck.sh

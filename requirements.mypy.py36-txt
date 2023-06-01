@@ -2,3 +2,4 @@
 # Version marks like `python_version=="3.6"` aren't supported by GitHub dependabot.
 mypy==0.971
 pytest==7.0.1
+pytest-mock==3.6.1

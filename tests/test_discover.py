@@ -1,5 +1,6 @@
 import os.path
-from typing import Any
+
+from pytest_mock import MockerFixture
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
@@ -75,7 +76,7 @@ class TestDiscover(BaseTest):
 
         assert_failure(['discover', '--roots=feature1,lolxd'], "lolxd is not a local branch")
 
-    def test_discover_main_branch_and_edit(self, mocker: Any) -> None:
+    def test_discover_main_branch_and_edit(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (

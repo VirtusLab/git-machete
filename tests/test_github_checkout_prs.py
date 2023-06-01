@@ -1,25 +1,25 @@
 import os
 from typing import Any
 
+from pytest_mock import MockerFixture
+
 from git_machete.github import GitHubClient, RemoteAndOrganizationAndRepository
 from tests.base_test import BaseTest, GitRepositorySandbox
 from tests.mockers import (assert_failure, assert_success, launch_command,
                            mock_run_cmd_and_discard_output,
                            rewrite_definition_file)
-from tests.mockers_github import (FakeCommandLineOptions, MockGitHubAPIState,
-                                  mock_derive_current_user_login,
-                                  mock_fetch_ref, mock_for_domain_none,
-                                  mock_from_url, mock_repository_info,
-                                  mock_urlopen)
+from tests.mockers_github import (MockGitHubAPIState, mock_from_url,
+                                  mock_github_token_for_domain_fake,
+                                  mock_github_token_for_domain_none,
+                                  mock_repository_info, mock_urlopen)
 
 
 class TestGitHubCheckoutPRs(BaseTest):
-
     git_api_state_for_test_checkout_prs = MockGitHubAPIState(
         [
             {
                 'head': {'ref': 'chore/redundant_checks', 'repo': mock_repository_info},
-                'user': {'login': 'github_user'},
+                'user': {'login': 'some_other_user'},
                 'base': {'ref': 'restrict_access'},
                 'number': '18',
                 'html_url': 'www.github.com',
@@ -27,7 +27,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             },
             {
                 'head': {'ref': 'restrict_access', 'repo': mock_repository_info},
-                'user': {'login': 'github_user'},
+                'user': {'login': 'some_other_user'},
                 'base': {'ref': 'allow-ownership-link'},
                 'number': '17',
                 'html_url': 'www.github.com',
@@ -35,7 +35,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             },
             {
                 'head': {'ref': 'allow-ownership-link', 'repo': mock_repository_info},
-                'user': {'login': 'github_user'},
+                'user': {'login': 'some_other_user'},
                 'base': {'ref': 'bugfix/feature'},
                 'number': '12',
                 'html_url': 'www.github.com',
@@ -43,7 +43,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             },
             {
                 'head': {'ref': 'bugfix/feature', 'repo': mock_repository_info},
-                'user': {'login': 'github_user'},
+                'user': {'login': 'some_other_user'},
                 'base': {'ref': 'enhance/feature'},
                 'number': '6',
                 'html_url': 'www.github.com',
@@ -51,7 +51,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             },
             {
                 'head': {'ref': 'enhance/add_user', 'repo': mock_repository_info},
-                'user': {'login': 'github_user'},
+                'user': {'login': 'some_other_user'},
                 'base': {'ref': 'develop'},
                 'number': '19',
                 'html_url': 'www.github.com',
@@ -59,14 +59,14 @@ class TestGitHubCheckoutPRs(BaseTest):
             },
             {
                 'head': {'ref': 'testing/add_user', 'repo': mock_repository_info},
-                'user': {'login': 'github_user'},
+                'user': {'login': 'some_other_user'},
                 'base': {'ref': 'bugfix/add_user'},
                 'number': '22',
                 'html_url': 'www.github.com',
                 'state': 'open'
             },
             {'head': {'ref': 'chore/comments', 'repo': mock_repository_info},
-             'user': {'login': 'github_user'},
+             'user': {'login': 'some_other_user'},
              'base': {'ref': 'testing/add_user'},
              'number': '24',
              'html_url': 'www.github.com',
@@ -74,7 +74,7 @@ class TestGitHubCheckoutPRs(BaseTest):
              },
             {
                 'head': {'ref': 'ignore-trailing', 'repo': mock_repository_info},
-                'user': {'login': 'github_user'},
+                'user': {'login': 'some_other_user'},
                 'base': {'ref': 'hotfix/add-trigger'},
                 'number': '3',
                 'html_url': 'www.github.com',
@@ -83,7 +83,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             {
                 'head': {'ref': 'bugfix/remove-n-option',
                          'repo': {'full_name': 'testing/checkout_prs', 'html_url': GitRepositorySandbox.second_remote_path}},
-                'user': {'login': 'github_user'},
+                'user': {'login': 'some_other_user'},
                 'base': {'ref': 'develop'},
                 'number': '5',
                 'html_url': 'www.github.com',
@@ -92,13 +92,10 @@ class TestGitHubCheckoutPRs(BaseTest):
         ]
     )
 
-    def test_github_checkout_prs(self, mocker: Any, tmp_path: Any) -> None:
-        # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_checkout_prs`
-        # due to `git fetch` executed by `checkout-prs` subcommand.
+    def test_github_checkout_prs(self, mocker: MockerFixture, tmp_path: Any) -> None:
         mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
-        mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
+        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_checkout_prs.new_request())
         mocker.patch('urllib.request.urlopen', mock_urlopen)
 
@@ -180,7 +177,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-hotfix/add-trigger
               |
-              o-ignore-trailing  PR #3 (github_user) rebase=no push=no
+              o-ignore-trailing  PR #3 (some_other_user) rebase=no push=no
                 |
                 o-chore/fields
 
@@ -188,13 +185,13 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-enhance/feature
               |
-              o-bugfix/feature  PR #6 (github_user) rebase=no push=no
+              o-bugfix/feature  PR #6 (some_other_user) rebase=no push=no
                 |
-                o-allow-ownership-link  PR #12 (github_user) rebase=no push=no
+                o-allow-ownership-link  PR #12 (some_other_user) rebase=no push=no
                   |
-                  o-restrict_access  PR #17 (github_user) rebase=no push=no
+                  o-restrict_access  PR #17 (some_other_user) rebase=no push=no
                     |
-                    o-chore/redundant_checks *  PR #18 (github_user) rebase=no push=no
+                    o-chore/redundant_checks *  PR #18 (some_other_user) rebase=no push=no
             """
         )
         # broken chain of pull requests (add new root)
@@ -206,7 +203,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-hotfix/add-trigger
               |
-              o-ignore-trailing  PR #3 (github_user) rebase=no push=no
+              o-ignore-trailing  PR #3 (some_other_user) rebase=no push=no
                 |
                 o-chore/fields
 
@@ -214,19 +211,19 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-enhance/feature
               |
-              o-bugfix/feature  PR #6 (github_user) rebase=no push=no
+              o-bugfix/feature  PR #6 (some_other_user) rebase=no push=no
                 |
-                o-allow-ownership-link  PR #12 (github_user) rebase=no push=no
+                o-allow-ownership-link  PR #12 (some_other_user) rebase=no push=no
                   |
-                  o-restrict_access  PR #17 (github_user) rebase=no push=no
+                  o-restrict_access  PR #17 (some_other_user) rebase=no push=no
                     |
-                    o-chore/redundant_checks  PR #18 (github_user) rebase=no push=no
+                    o-chore/redundant_checks  PR #18 (some_other_user) rebase=no push=no
 
             bugfix/add_user
             |
-            o-testing/add_user  PR #22 (github_user) rebase=no push=no
+            o-testing/add_user  PR #22 (some_other_user) rebase=no push=no
               |
-              o-chore/comments *  PR #24 (github_user) rebase=no push=no
+              o-chore/comments *  PR #24 (some_other_user) rebase=no push=no
             """
         )
 
@@ -239,7 +236,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-hotfix/add-trigger
               |
-              o-ignore-trailing  PR #3 (github_user) rebase=no push=no
+              o-ignore-trailing  PR #3 (some_other_user) rebase=no push=no
                 |
                 o-chore/fields
 
@@ -247,19 +244,19 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-enhance/feature
               |
-              o-bugfix/feature  PR #6 (github_user) rebase=no push=no
+              o-bugfix/feature  PR #6 (some_other_user) rebase=no push=no
                 |
-                o-allow-ownership-link  PR #12 (github_user) rebase=no push=no
+                o-allow-ownership-link  PR #12 (some_other_user) rebase=no push=no
                   |
-                  o-restrict_access  PR #17 (github_user) rebase=no push=no
+                  o-restrict_access  PR #17 (some_other_user) rebase=no push=no
                     |
-                    o-chore/redundant_checks  PR #18 (github_user) rebase=no push=no
+                    o-chore/redundant_checks  PR #18 (some_other_user) rebase=no push=no
 
             bugfix/add_user
             |
-            o-testing/add_user  PR #22 (github_user) rebase=no push=no
+            o-testing/add_user  PR #22 (some_other_user) rebase=no push=no
               |
-              o-chore/comments *  PR #24 (github_user) rebase=no push=no
+              o-chore/comments *  PR #24 (some_other_user) rebase=no push=no
             """
         )
 
@@ -272,7 +269,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-hotfix/add-trigger
               |
-              o-ignore-trailing  PR #3 (github_user) rebase=no push=no
+              o-ignore-trailing  PR #3 (some_other_user) rebase=no push=no
                 |
                 o-chore/fields
 
@@ -280,21 +277,21 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-enhance/feature
             | |
-            | o-bugfix/feature  PR #6 (github_user) rebase=no push=no
+            | o-bugfix/feature  PR #6 (some_other_user) rebase=no push=no
             |   |
-            |   o-allow-ownership-link  PR #12 (github_user) rebase=no push=no
+            |   o-allow-ownership-link  PR #12 (some_other_user) rebase=no push=no
             |     |
-            |     o-restrict_access  PR #17 (github_user) rebase=no push=no
+            |     o-restrict_access  PR #17 (some_other_user) rebase=no push=no
             |       |
-            |       o-chore/redundant_checks  PR #18 (github_user) rebase=no push=no
+            |       o-chore/redundant_checks  PR #18 (some_other_user) rebase=no push=no
             |
-            o-enhance/add_user  PR #19 (github_user) rebase=no push=no
+            o-enhance/add_user  PR #19 (some_other_user) rebase=no push=no
 
             bugfix/add_user
             |
-            o-testing/add_user  PR #22 (github_user) rebase=no push=no
+            o-testing/add_user  PR #22 (some_other_user) rebase=no push=no
               |
-              o-chore/comments *  PR #24 (github_user) rebase=no push=no
+              o-chore/comments *  PR #24 (some_other_user) rebase=no push=no
             """
         )
 
@@ -318,12 +315,12 @@ class TestGitHubCheckoutPRs(BaseTest):
         local_path = tmp_path
         self.repo_sandbox.new_repo(GitRepositorySandbox.second_remote_path, bare=True)
         (self.repo_sandbox.new_repo(local_path, bare=False)
-            .execute(f"git remote add origin {GitRepositorySandbox.second_remote_path}")
-            .execute('git config user.email "tester@test.com"')
-            .execute('git config user.name "Tester Test"')
-            .new_branch('main')
-            .commit('initial commit')
-            .push()
+         .execute(f"git remote add origin {GitRepositorySandbox.second_remote_path}")
+         .execute('git config user.email "tester@test.com"')
+         .execute('git config user.name "Tester Test"')
+         .new_branch('main')
+         .commit('initial commit')
+         .push()
          )
         os.chdir(self.repo_sandbox.local_path)
 
@@ -352,7 +349,7 @@ class TestGitHubCheckoutPRs(BaseTest):
         [
             {
                 'head': {'ref': 'comments/add_docstrings', 'repo': mock_repository_info},
-                'user': {'login': 'github_user'},
+                'user': {'login': 'some_other_user'},
                 'base': {'ref': 'improve/refactor'},
                 'number': '2',
                 'html_url': 'www.github.com',
@@ -360,7 +357,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             },
             {
                 'head': {'ref': 'restrict_access', 'repo': mock_repository_info},
-                'user': {'login': 'github_user'},
+                'user': {'login': 'some_other_user'},
                 'base': {'ref': 'allow-ownership-link'},
                 'number': '17',
                 'html_url': 'www.github.com',
@@ -368,7 +365,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             },
             {
                 'head': {'ref': 'improve/refactor', 'repo': mock_repository_info},
-                'user': {'login': 'github_user'},
+                'user': {'login': 'some_other_user'},
                 'base': {'ref': 'chore/sync_to_docs'},
                 'number': '1',
                 'html_url': 'www.github.com',
@@ -377,7 +374,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             {
                 'head': {'ref': 'sphinx_export',
                          'repo': {'full_name': 'testing/checkout_prs', 'html_url': GitRepositorySandbox.second_remote_path}},
-                'user': {'login': 'github_user'},
+                'user': {'login': 'some_other_user'},
                 'base': {'ref': 'comments/add_docstrings'},
                 'number': '23',
                 'html_url': 'www.github.com',
@@ -386,11 +383,8 @@ class TestGitHubCheckoutPRs(BaseTest):
         ]
     )
 
-    def test_github_checkout_prs_freshly_cloned(self, mocker: Any, tmp_path: Any) -> None:
+    def test_github_checkout_prs_freshly_cloned(self, mocker: MockerFixture, tmp_path: Any) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-        # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_checkout_prs_freshly_cloned`
-        # due to `git fetch` executed by `checkout-prs` subcommand.
-        mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
         mocker.patch('urllib.request.urlopen', mock_urlopen)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_checkout_prs_fresh_repo.new_request())
@@ -457,9 +451,9 @@ class TestGitHubCheckoutPRs(BaseTest):
 
             chore/sync_to_docs
             |
-            o-improve/refactor  PR #1 (github_user) rebase=no push=no
+            o-improve/refactor  PR #1 (some_other_user) rebase=no push=no
               |
-              o-comments/add_docstrings *  PR #2 (github_user) rebase=no push=no
+              o-comments/add_docstrings *  PR #2 (some_other_user) rebase=no push=no
             """
         )
 
@@ -480,9 +474,9 @@ class TestGitHubCheckoutPRs(BaseTest):
 
             chore/sync_to_docs
             |
-            o-improve/refactor  PR #1 (github_user) rebase=no push=no
+            o-improve/refactor  PR #1 (some_other_user) rebase=no push=no
               |
-              o-comments/add_docstrings  PR #2 (github_user) rebase=no push=no
+              o-comments/add_docstrings  PR #2 (some_other_user) rebase=no push=no
                 |
                 o-sphinx_export *
             """
@@ -492,7 +486,7 @@ class TestGitHubCheckoutPRs(BaseTest):
         [
             {
                 'head': {'ref': 'feature/allow_checkout', 'repo': None},
-                'user': {'login': 'github_user'},
+                'user': {'login': 'some_other_user'},
                 'base': {'ref': 'develop'},
                 'number': '2',
                 'html_url': 'www.github.com',
@@ -500,7 +494,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             },
             {
                 'head': {'ref': 'bugfix/allow_checkout', 'repo': mock_repository_info},
-                'user': {'login': 'github_user'},
+                'user': {'login': 'some_other_user'},
                 'base': {'ref': 'develop'},
                 'number': '3',
                 'html_url': 'www.github.com',
@@ -508,14 +502,10 @@ class TestGitHubCheckoutPRs(BaseTest):
         ]
     )
 
-    def test_github_checkout_prs_from_fork_with_deleted_repo(self, mocker: Any) -> None:
-        mocker.patch('git_machete.git_operations.GitContext.fetch_ref', mock_fetch_ref)
+    def test_github_checkout_prs_from_fork_with_deleted_repo(self, mocker: MockerFixture) -> None:
         # need to mock fetch_ref due to underlying `git fetch pull/head` calls
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-        mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
-        # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_checkout_prs_from_fork_with_deleted_repo`
-        # due to `git fetch` executed by `checkout-prs` subcommand.
         mocker.patch('urllib.request.urlopen', mock_urlopen)
         mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_checkout_prs_from_fork_with_deleted_repo.new_request())
 
@@ -527,6 +517,11 @@ class TestGitHubCheckoutPRs(BaseTest):
             .commit('initial develop commit')
             .push()
         )
+
+        os.chdir(self.repo_sandbox.remote_path)
+        self.repo_sandbox.execute("git branch pull/2/head develop")
+        os.chdir(self.repo_sandbox.local_path)
+
         body: str = \
             """
             root
@@ -552,7 +547,7 @@ class TestGitHubCheckoutPRs(BaseTest):
         [
             {
                 'head': {'ref': 'chore/redundant_checks', 'repo': mock_repository_info},
-                'user': {'login': 'github_user'},
+                'user': {'login': 'some_other_user'},
                 'base': {'ref': 'restrict_access'},
                 'number': '18',
                 'html_url': 'www.github.com',
@@ -560,7 +555,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             },
             {
                 'head': {'ref': 'restrict_access', 'repo': mock_repository_info},
-                'user': {'login': 'very_complex_user_token'},
+                'user': {'login': 'github_user'},
                 'base': {'ref': 'allow-ownership-link'},
                 'number': '17',
                 'html_url': 'www.github.com',
@@ -568,7 +563,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             },
             {
                 'head': {'ref': 'allow-ownership-link', 'repo': mock_repository_info},
-                'user': {'login': 'github_user'},
+                'user': {'login': 'some_other_user'},
                 'base': {'ref': 'bugfix/feature'},
                 'number': '12',
                 'html_url': 'www.github.com',
@@ -576,7 +571,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             },
             {
                 'head': {'ref': 'bugfix/feature', 'repo': mock_repository_info},
-                'user': {'login': 'very_complex_user_token'},
+                'user': {'login': 'github_user'},
                 'base': {'ref': 'enhance/feature'},
                 'number': '6',
                 'html_url': 'www.github.com',
@@ -584,7 +579,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             },
             {
                 'head': {'ref': 'enhance/add_user', 'repo': mock_repository_info},
-                'user': {'login': 'github_user'},
+                'user': {'login': 'some_other_user'},
                 'base': {'ref': 'develop'},
                 'number': '19',
                 'html_url': 'www.github.com',
@@ -592,22 +587,23 @@ class TestGitHubCheckoutPRs(BaseTest):
             },
             {
                 'head': {'ref': 'testing/add_user', 'repo': mock_repository_info},
-                'user': {'login': 'very_complex_user_token'},
+                'user': {'login': 'github_user'},
                 'base': {'ref': 'bugfix/add_user'},
                 'number': '22',
                 'html_url': 'www.github.com',
                 'state': 'open'
             },
-            {'head': {'ref': 'chore/comments', 'repo': mock_repository_info},
-             'user': {'login': 'github_user'},
-             'base': {'ref': 'testing/add_user'},
-             'number': '24',
-             'html_url': 'www.github.com',
-             'state': 'open'
-             },
+            {
+                'head': {'ref': 'chore/comments', 'repo': mock_repository_info},
+                'user': {'login': 'some_other_user'},
+                'base': {'ref': 'testing/add_user'},
+                'number': '24',
+                'html_url': 'www.github.com',
+                'state': 'open'
+            },
             {
                 'head': {'ref': 'ignore-trailing', 'repo': mock_repository_info},
-                'user': {'login': 'very_complex_user_token'},
+                'user': {'login': 'github_user'},
                 'base': {'ref': 'hotfix/add-trigger'},
                 'number': '3',
                 'html_url': 'www.github.com',
@@ -616,7 +612,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             {
                 'head': {'ref': 'bugfix/remove-n-option',
                          'repo': {'full_name': 'testing/checkout_prs', 'html_url': GitRepositorySandbox.second_remote_path}},
-                'user': {'login': 'github_user'},
+                'user': {'login': 'some_other_user'},
                 'base': {'ref': 'develop'},
                 'number': '5',
                 'html_url': 'www.github.com',
@@ -625,17 +621,13 @@ class TestGitHubCheckoutPRs(BaseTest):
         ]
     )
 
-    def test_github_checkout_prs_of_current_user_and_other_users(self, mocker: Any, tmp_path: Any) -> None:
-        # We need to mock GITHUB_REMOTE_PATTERNS in the tests for `test_github_checkout_prs`
-        # due to `git fetch` executed by `checkout-prs` subcommand.
+    def test_github_checkout_prs_of_current_user_and_other_users(self, mocker: MockerFixture, tmp_path: Any) -> None:
         mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
-        mocker.patch('git_machete.options.CommandLineOptions', FakeCommandLineOptions)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_for_domain_none)
+        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         mocker.patch('urllib.request.Request',
                      self.git_api_state_for_test_github_checkout_prs_of_current_user_and_other_users.new_request())
         mocker.patch('urllib.request.urlopen', mock_urlopen)
-        mocker.patch('git_machete.github.GitHubClient.derive_current_user_login', mock_derive_current_user_login)
 
         (
             self.repo_sandbox.new_branch("root")
@@ -729,19 +721,19 @@ class TestGitHubCheckoutPRs(BaseTest):
             | |
             | o-bugfix/feature  PR #6
             |   |
-            |   o-allow-ownership-link  PR #12 (github_user) rebase=no push=no
+            |   o-allow-ownership-link  PR #12 (some_other_user) rebase=no push=no
             |     |
             |     o-restrict_access  PR #17
             |       |
-            |       o-chore/redundant_checks  PR #18 (github_user) rebase=no push=no
+            |       o-chore/redundant_checks  PR #18 (some_other_user) rebase=no push=no
             |
-            o-enhance/add_user  PR #19 (github_user) rebase=no push=no
+            o-enhance/add_user  PR #19 (some_other_user) rebase=no push=no
 
             bugfix/add_user
             |
             o-testing/add_user  PR #22
               |
-              o-chore/comments  PR #24 (github_user) rebase=no push=no
+              o-chore/comments  PR #24 (some_other_user) rebase=no push=no
             """
         )
 
@@ -765,18 +757,18 @@ class TestGitHubCheckoutPRs(BaseTest):
             | |
             | o-bugfix/feature  PR #6
             |   |
-            |   o-allow-ownership-link  PR #12 (github_user) rebase=no
+            |   o-allow-ownership-link  PR #12 (some_other_user) rebase=no
             |     |
             |     o-restrict_access  PR #17
             |       |
-            |       o-chore/redundant_checks  PR #18 (github_user) rebase=no push=no
+            |       o-chore/redundant_checks  PR #18 (some_other_user) rebase=no push=no
             |
-            o-enhance/add_user  PR #19 (github_user) rebase=no push=no
+            o-enhance/add_user  PR #19 (some_other_user) rebase=no push=no
 
             bugfix/add_user
             |
             o-testing/add_user  PR #22
               |
-              o-chore/comments  PR #24 (github_user) rebase=no push=no
+              o-chore/comments  PR #24 (some_other_user) rebase=no push=no
             """
         )
