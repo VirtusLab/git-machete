@@ -93,8 +93,6 @@ jobs:
           command: PYTHON_VERSION=3.9 GIT_VERSION=2.30.1 CHECK_PEP8=true  bash ci/tox/ci-run.sh
       - store_test_results:
           path: test-results/
-      - codecov/upload:
-          file: coverage.xml
 
   "coverage and python 3_10 git 2_33_1":
     executor: ubuntu_executor
@@ -105,9 +103,8 @@ jobs:
           command: PYTHON_VERSION=3.10 GIT_VERSION=2.33.1 CHECK_COVERAGE=true  bash ci/tox/ci-run.sh
       - store_test_results:
           path: test-results/
-      - store_artifacts:
-          path: docs/html/
-          destination: docs
+      - codecov/upload:
+          file: coverage.xml
 
   # Note that if docs are ever to be built under a different Python version in CI,
   # this change needs to be reflected in tox.ini and .readthedocs.yaml as well
@@ -121,6 +118,9 @@ jobs:
           command: PYTHON_VERSION=3.11 GIT_VERSION=2.38.1 BUILD_SPHINX_HTML=true CHECK_DOCS_UP_TO_DATE=true  bash ci/tox/ci-run.sh
       - store_test_results:
           path: test-results/
+      - store_artifacts:
+          path: docs/html/
+          destination: docs
 
   # Note the while we use Linux to test against specific Python&git version,
   # on macOS and Windows we're just checking compatibility with the OS itself,
