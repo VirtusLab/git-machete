@@ -1516,14 +1516,14 @@ class MacheteClient:
             return
 
         earliest_commit = commits[0]
-        earliest_full_body = self.__git.get_commit_information(FullCommitHash.of(earliest_commit.hash), GitFormatPatterns.RAW_BODY).strip()
+        earliest_full_body = self.__git.get_commit_data(FullCommitHash.of(earliest_commit.hash), GitFormatPatterns.RAW_BODY).strip()
         # %ai for ISO-8601 format; %aE/%aN for respecting .mailmap; see `git rev-list --help`
-        earliest_author_date = self.__git.get_commit_information(FullCommitHash.of(earliest_commit.hash),
-                                                                 GitFormatPatterns.AUTHOR_DATE).strip()
-        earliest_author_email = self.__git.get_commit_information(FullCommitHash.of(earliest_commit.hash),
-                                                                  GitFormatPatterns.AUTHOR_EMAIL).strip()
-        earliest_author_name = self.__git.get_commit_information(FullCommitHash.of(earliest_commit.hash),
-                                                                 GitFormatPatterns.AUTHOR_NAME).strip()
+        earliest_author_date = self.__git.get_commit_data(FullCommitHash.of(earliest_commit.hash),
+                                                          GitFormatPatterns.AUTHOR_DATE).strip()
+        earliest_author_email = self.__git.get_commit_data(FullCommitHash.of(earliest_commit.hash),
+                                                           GitFormatPatterns.AUTHOR_EMAIL).strip()
+        earliest_author_name = self.__git.get_commit_data(FullCommitHash.of(earliest_commit.hash),
+                                                          GitFormatPatterns.AUTHOR_NAME).strip()
 
         # Following the convention of `git cherry-pick`, `git commit --amend`, `git rebase` etc.,
         # let's retain the original author (only committer will be overwritten).

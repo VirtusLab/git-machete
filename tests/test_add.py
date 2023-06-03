@@ -172,3 +172,9 @@ class TestAdd(BaseTest):
             "Branch foo not found in the tree of branch dependencies.\n"
             "Use git machete add foo or git machete edit."
         )
+
+    def test_add_as_root_with_onto(self) -> None:
+        assert_failure(
+            ['add', '--onto', 'foo', '--as-root'],
+            "Option -R/--as-root cannot be specified together with -o/--onto."
+        )

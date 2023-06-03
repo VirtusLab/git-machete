@@ -8,7 +8,7 @@ import urllib.error
 # Deliberately NOT using much more convenient `requests` to avoid external dependencies in production code
 import urllib.request
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, NamedTuple, Optional
 
 from git_machete import git_config_keys
 
@@ -17,25 +17,15 @@ from .git_operations import GitContext, LocalBranchShortName
 from .utils import bold, debug, fmt, warn
 
 
-class GitHubPullRequest(object):
-    def __init__(self,
-                 number: int,
-                 user: str,
-                 base: str,
-                 head: str,
-                 html_url: str,
-                 state: str,
-                 full_repository_name: str,
-                 repository_url: str
-                 ) -> None:
-        self.number = number
-        self.user = user
-        self.base = base
-        self.head = head
-        self.html_url = html_url
-        self.state = state
-        self.full_repository_name = full_repository_name
-        self.repository_url = repository_url
+class GitHubPullRequest(NamedTuple):
+    number: int
+    user: str
+    base: str
+    head: str
+    html_url: str
+    state: str
+    full_repository_name: str
+    repository_url: str
 
     @classmethod
     def from_json(cls,
@@ -54,11 +44,10 @@ class GitHubPullRequest(object):
         return f"PR #{self.number} by {self.user}: {self.head} -> {self.base}"
 
 
-class RemoteAndOrganizationAndRepository:
-    def __init__(self, remote: str, organization: str, repository: str) -> None:
-        self.remote: str = remote
-        self.organization: str = organization
-        self.repository: str = repository
+class RemoteAndOrganizationAndRepository(NamedTuple):
+    remote: str
+    organization: str
+    repository: str
 
     @classmethod
     def from_config(cls, git: GitContext) -> Optional["RemoteAndOrganizationAndRepository"]:
@@ -83,24 +72,13 @@ class RemoteAndOrganizationAndRepository:
         return None
 
 
-class GitHubToken:
-    GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
+GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
 
-    def __init__(self,
-                 value: str,
-                 provider: str
-                 ) -> None:
-        self.__value = value
-        self.__provider = provider
-        debug("authenticating via " + self.__provider)
 
-    @property
-    def value(self) -> str:
-        return self.__value
+class GitHubToken(NamedTuple):
 
-    @property
-    def provider(self) -> str:
-        return self.__provider
+    value: str
+    provider: str
 
     @classmethod
     def for_domain(cls, domain: str) -> Optional["GitHubToken"]:
@@ -109,17 +87,13 @@ class GitHubToken:
                 cls.__get_token_from_gh(domain) or
                 cls.__get_token_from_hub(domain))
 
-    @staticmethod
-    def _get_github_token_env_var() -> Optional[str]:
-        return os.environ.get(GitHubToken.GITHUB_TOKEN_ENV_VAR)
-
     @classmethod
     def __get_token_from_env(cls) -> Optional["GitHubToken"]:
-        debug(f"1. Trying to authenticate via `{cls.GITHUB_TOKEN_ENV_VAR}` environment variable...")
-        github_token = cls._get_github_token_env_var()
+        debug(f"1. Trying to authenticate via `{GITHUB_TOKEN_ENV_VAR}` environment variable...")
+        github_token = os.environ.get(GITHUB_TOKEN_ENV_VAR)
         if github_token:
             return cls(value=github_token,
-                       provider=f'`{cls.GITHUB_TOKEN_ENV_VAR}` environment variable')
+                       provider=f'`{GITHUB_TOKEN_ENV_VAR}` environment variable')
         return None
 
     @classmethod
@@ -208,7 +182,7 @@ class GitHubToken:
 
     @classmethod
     def get_possible_providers(cls) -> str:
-        return (f'\n\t1. `{cls.GITHUB_TOKEN_ENV_VAR}` environment variable.\n'
+        return (f'\n\t1. `{GITHUB_TOKEN_ENV_VAR}` environment variable.\n'
                 '\t2. Content of the `~/.github-token` file.\n'
                 '\t3. Current auth token from the `gh` GitHub CLI.\n'
                 '\t4. Current auth token from the `hub` GitHub CLI.\n')
@@ -299,9 +273,8 @@ class GitHubClient:
                     f'Provide a GitHub API token with `repo` access via one of the: {GitHubToken.get_possible_providers()} '
                     f'Visit `https://{self.__domain}/settings/tokens` to generate a new one.')
             elif err.code == http.HTTPStatus.TEMPORARY_REDIRECT:
-                if err.headers['Location'] is not None:
-                    if len(err.headers['Location'].split('/')) >= 5:
-                        current_repo_and_org = self.get_repo_and_org_names_by_id(err.headers['Location'].split('/')[4])
+                if err.headers['Location'] is not None and len(err.headers['Location'].split('/')) >= 5:
+                    current_repo_and_org = self.get_repo_and_org_names_by_id(err.headers['Location'].split('/')[4])
                 else:
                     first_line = fmt(f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`\n')
                     raise MacheteException(

@@ -9,13 +9,14 @@ from tests.mockers import (assert_failure, assert_success, launch_command,
                            rewrite_definition_file)
 from tests.mockers_github import (MockGitHubAPIState, MockHTTPError,
                                   mock_from_url,
+                                  mock_github_token_for_domain_fake,
                                   mock_github_token_for_domain_none,
                                   mock_repository_info, mock_urlopen)
 
 
 class TestGitHubCreatePR(BaseTest):
 
-    git_api_state_for_test_create_pr = MockGitHubAPIState(
+    github_api_state_for_test_create_pr = MockGitHubAPIState(
         [
             {
                 'head': {'ref': 'ignore-trailing', 'repo': mock_repository_info},
@@ -25,20 +26,16 @@ class TestGitHubCreatePR(BaseTest):
                 'html_url': 'www.github.com',
                 'state': 'open'
             }
-        ],
-        issues=[
-            {'number': '4'},
-            {'number': '5'},
-            {'number': '6'}
         ]
     )
 
     def test_github_create_pr(self, mocker: MockerFixture) -> None:
         mocker.patch('builtins.input', mock_input_returning_y)
+        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('urllib.error.HTTPError', MockHTTPError)  # need to provide read() method, which does not actually reads error from url
-        mocker.patch('urllib.request.Request', self.git_api_state_for_test_create_pr.new_request())
+        mocker.patch('urllib.request.Request', self.github_api_state_for_test_create_pr.get_request_provider())
         mocker.patch('urllib.request.urlopen', mock_urlopen)
 
         (
@@ -122,9 +119,41 @@ class TestGitHubCreatePR(BaseTest):
               x-drop-constraint (untracked)
             """,
         )
-        self.repo_sandbox.check_out('chore/fields')
         #  untracked state (can only create pr when branch is pushed)
-        launch_command("github", "create-pr", "--draft")
+        self.repo_sandbox.check_out('chore/fields')
+
+        self.repo_sandbox.write_to_file(".git/info/milestone", "42")
+        self.repo_sandbox.write_to_file(".git/info/reviewers", "foo\n\nbar")
+        assert_success(
+            ["github", "create-pr", "--draft"],
+            """
+            Push untracked branch chore/fields to origin? (y, Q, o[ther-remote]) 
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+                  |
+                  o-chore/fields *
+
+              develop
+              |
+              x-allow-ownership-link (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              o-call-ws  PR #4
+                |
+                x-drop-constraint (untracked)
+
+            Fetching origin...
+            Creating a draft PR from chore/fields to ignore-trailing... OK, see www.github.com
+            Setting milestone of PR #5 to #42... OK
+            Adding github_user as assignee to PR #5... OK
+            Adding foo, bar as reviewers to PR #5... OK
+            """
+        )
         assert_success(
             ['status'],
             """
@@ -211,7 +240,7 @@ class TestGitHubCreatePR(BaseTest):
                                  "base branch for the PR cannot be established."
         assert_failure(["github", "create-pr"], expected_error_message)
 
-    git_api_state_for_test_create_pr_missing_base_branch_on_remote = MockGitHubAPIState(
+    github_api_state_for_test_create_pr_missing_base_branch_on_remote = MockGitHubAPIState(
         [
             {
                 'head': {'ref': 'chore/redundant_checks', 'repo': mock_repository_info},
@@ -230,7 +259,8 @@ class TestGitHubCreatePR(BaseTest):
         mocker.patch('git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('urllib.request.urlopen', mock_urlopen)
-        mocker.patch('urllib.request.Request', self.git_api_state_for_test_create_pr_missing_base_branch_on_remote.new_request())
+        mocker.patch('urllib.request.Request',
+                     self.github_api_state_for_test_create_pr_missing_base_branch_on_remote.get_request_provider())
 
         (
             self.repo_sandbox.new_branch("root")
@@ -269,7 +299,7 @@ class TestGitHubCreatePR(BaseTest):
             """,
         )
 
-    git_api_state_for_test_github_create_pr_with_multiple_non_origin_remotes = MockGitHubAPIState(
+    github_api_state_for_test_github_create_pr_with_multiple_non_origin_remotes = MockGitHubAPIState(
         [
             {
                 'head': {'ref': 'branch-1', 'repo': mock_repository_info},
@@ -277,13 +307,6 @@ class TestGitHubCreatePR(BaseTest):
                 'base': {'ref': 'root'}, 'number': '15',
                 'html_url': 'www.github.com', 'state': 'open'
             }
-        ],
-        issues=[
-            {'number': '16'},
-            {'number': '17'},
-            {'number': '18'},
-            {'number': '19'},
-            {'number': '20'},
         ]
     )
 
@@ -293,7 +316,8 @@ class TestGitHubCreatePR(BaseTest):
         mocker.patch('git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('urllib.error.HTTPError', MockHTTPError)  # need to provide read() method, which does not actually read error from url
-        mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_create_pr_with_multiple_non_origin_remotes.new_request())
+        mocker.patch('urllib.request.Request',
+                     self.github_api_state_for_test_github_create_pr_with_multiple_non_origin_remotes.get_request_provider())
         mocker.patch('urllib.request.urlopen', mock_urlopen)
 
         origin_1_remote_path = mkdtemp()

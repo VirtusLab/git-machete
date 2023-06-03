@@ -19,7 +19,8 @@ class AnyRevision(str):
     @staticmethod
     def of(value: str) -> "AnyRevision":
         if not value:
-            raise TypeError(f'AnyRevision.of should not accept {value} as a param.\n' + GITHUB_NEW_ISSUE_MESSAGE)
+            raise TypeError(  # pragma: no cover
+                f'AnyRevision.of should not accept {value} as a param.\n' + GITHUB_NEW_ISSUE_MESSAGE)
 
         return AnyRevision(value)
 
@@ -31,7 +32,8 @@ class AnyBranchName(AnyRevision):
     @staticmethod
     def of(value: str) -> "AnyBranchName":
         if not value:
-            raise TypeError(f'AnyBranchName.of should not accept {value} as a param.\n' + GITHUB_NEW_ISSUE_MESSAGE)
+            raise TypeError(  # pragma: no cover
+                f'AnyBranchName.of should not accept {value} as a param.\n' + GITHUB_NEW_ISSUE_MESSAGE)
         return AnyBranchName(value)
 
     def full_name(self) -> "AnyBranchName":
@@ -42,7 +44,7 @@ class LocalBranchShortName(AnyBranchName):
     @staticmethod
     def of(value: str) -> "LocalBranchShortName":
         if value.startswith('refs/heads/') or value.startswith('refs/remotes/'):
-            raise TypeError(
+            raise TypeError(  # pragma: no cover
                 f'LocalBranchShortName cannot accept `refs/heads` or `refs/remotes`. Given value: {value}.\n' + GITHUB_NEW_ISSUE_MESSAGE)
         else:
             return LocalBranchShortName(value)
@@ -57,7 +59,7 @@ class LocalBranchFullName(AnyBranchName):
         if value and value.startswith('refs/heads/'):
             return LocalBranchFullName(value)
         else:
-            raise TypeError(
+            raise TypeError(  # pragma: no cover
                 f'LocalBranchFullName needs to have `refs/heads` prefix before branch name. Given value: {value}.\n' +
                 GITHUB_NEW_ISSUE_MESSAGE)
 
@@ -76,7 +78,7 @@ class RemoteBranchShortName(AnyBranchName):
     @staticmethod
     def of(value: str) -> "RemoteBranchShortName":
         if value and value.startswith('refs/heads/') or value.startswith('refs/remotes/'):
-            raise TypeError(
+            raise TypeError(  # pragma: no cover
                 f'RemoteBranchShortName cannot accept `refs/heads` or `refs/remotes`. Given value: {value}.\n' + GITHUB_NEW_ISSUE_MESSAGE)
         else:
             return RemoteBranchShortName(value)
@@ -91,7 +93,7 @@ class RemoteBranchFullName(AnyBranchName):
         if value and value.startswith('refs/remotes/'):
             return RemoteBranchFullName(value)
         else:
-            raise TypeError(
+            raise TypeError(  # pragma: no cover
                 f'RemoteBranchFullName needs to have `refs/remotes` prefix before branch name. Given value: {value}.\n' +
                 GITHUB_NEW_ISSUE_MESSAGE)
 
@@ -116,7 +118,7 @@ class FullCommitHash(AnyRevision):
         if value and len(value) == 40:
             return FullCommitHash(value)
         else:
-            raise TypeError(
+            raise TypeError(  # pragma: no cover
                 f'FullCommitHash requires length of 40. Given value: "{value}".\n' + GITHUB_NEW_ISSUE_MESSAGE)
 
     @staticmethod
@@ -133,7 +135,7 @@ class ShortCommitHash(AnyRevision):
         if value and len(value) >= 7:
             return ShortCommitHash(value)
         else:
-            raise TypeError(
+            raise TypeError(  # pragma: no cover
                 f'ShortCommitHash requires length greater or equal to 7. Given value: "{value}".\n' +
                 GITHUB_NEW_ISSUE_MESSAGE)
 
@@ -145,7 +147,8 @@ class FullTreeHash(str):
     @staticmethod
     def of(value: str) -> Optional["FullTreeHash"]:
         if not value:
-            raise TypeError(f'FullTreeHash.of should not accept {value} as a param.\n' + GITHUB_NEW_ISSUE_MESSAGE)
+            raise TypeError(  # pragma: no cover
+                f'FullTreeHash.of should not accept {value} as a param.\n' + GITHUB_NEW_ISSUE_MESSAGE)
         return FullTreeHash(value)
 
 
@@ -519,7 +522,7 @@ class GitContext:
         for line in raw_remote:
             values = line.split("\t")
             if len(values) != 4:
-                continue  # invalid, shouldn't happen
+                continue  # pragma: no cover; invalid, shouldn't happen
             branch, commit_hash, tree_hash, committer_unix_timestamp_and_time_zone = values
             b_stripped_remote = RemoteBranchFullName.of(branch).to_short_name()
             self.__remote_branches_cached += [b_stripped_remote]
@@ -535,7 +538,7 @@ class GitContext:
         for line in raw_local:
             values = line.split("\t")
             if len(values) != 5:
-                continue  # invalid, shouldn't happen
+                continue  # pragma: no cover; invalid, shouldn't happen
             branch, commit_hash, tree_hash, committer_unix_timestamp_and_time_zone, fetch_counterpart = values
             b_stripped_local = LocalBranchFullName.of(branch).to_short_name()
             # fetch_counterpart might be empty, or might even point to a local branch
@@ -592,12 +595,12 @@ class GitContext:
         self.__reflogs_cached = {}
         for entry in entries:
             values = entry.split("\t")
-            if len(values) != 3:  # invalid, shouldn't happen
-                continue
+            if len(values) != 3:
+                continue  # pragma: no cover; invalid, shouldn't happen
             selector, hash, subject = values
             branch_and_index = selector.split("@")
-            if len(branch_and_index) != 2:  # invalid, shouldn't happen
-                continue
+            if len(branch_and_index) != 2:
+                continue  # pragma: no cover; invalid, shouldn't happen
             branch, _ = branch_and_index
             any_branch_name = AnyBranchName.of(branch)
             if any_branch_name not in self.__reflogs_cached:
@@ -685,10 +688,10 @@ class GitContext:
             return None
 
     def expect_no_operation_in_progress(self) -> None:
-        remote_branch = self.get_currently_rebased_branch_or_none()
-        if remote_branch:
+        rebased_branch = self.get_currently_rebased_branch_or_none()
+        if rebased_branch:
             raise UnderlyingGitException(
-                f"Rebase of {utils.bold(remote_branch)} in progress. "
+                f"Rebase of {utils.bold(rebased_branch)} in progress. "
                 f"Conclude the rebase first with `git rebase --continue` or `git rebase --abort`.")
         if self.is_am_in_progress():
             raise UnderlyingGitException(
@@ -936,16 +939,13 @@ class GitContext:
                     result[to_branch] = int(match.group(1))
         return result
 
-    def get_commit_information(self, commit: AnyRevision, information: GitFormatPatterns) -> str:
-        if information not in GitFormatPatterns:
-            raise UnderlyingGitException(
-                f"Retrieving {information} from commit is not supported. "
-                f"The currently supported patterns are: {', '.join(GitFormatPatterns._member_names_)}")
+    def get_commit_data(self, commit: AnyRevision, pattern: GitFormatPatterns) -> str:
+        if pattern not in GitFormatPatterns:
+            raise UnderlyingGitException(  # pragma: no cover
+                f"Retrieving {pattern} from commit is not supported. "
+                f"The currently supported patterns are: {', '.join(GitFormatPatterns._member_names_)}.\n" + GITHUB_NEW_ISSUE_MESSAGE)
 
-        params = ["log", "-1", f"--format={information.value}"]
-        if commit:
-            params.append(commit)
-        return self._popen_git(*params).stdout.strip()
+        return self._popen_git("log", "-1", f"--format={pattern.value}", commit).stdout.strip()
 
     def display_branch_history_from_fork_point(self, branch: LocalBranchFullName, fork_point: FullCommitHash) -> int:
         return self._run_git("log", f"^{fork_point}", branch)
@@ -962,7 +962,7 @@ class GitContext:
         return self._run_git("branch", delete_option, branch_name)
 
     def display_diff(self, fork_point: AnyRevision, format_with_stat: bool, branch: Optional[LocalBranchShortName] = None) -> int:
-        params = ["diff"]
+        params = []
         if format_with_stat:
             params.append("--stat")
         params.append(fork_point)
@@ -970,7 +970,7 @@ class GitContext:
             params.append(branch.full_name())
         params.append("--")
 
-        return self._run_git(*params)
+        return self._run_git("diff", *params)
 
     def update_head_ref_to_new_hash_with_reflog_subject(self, hash: FullCommitHash, reflog_subject: str) -> int:
         self.flush_caches()

@@ -438,7 +438,7 @@ class TestStatus(BaseTest):
                 .commit()
                 .push(remote='origin_1', set_upstream=False)
                 .new_branch('mars')
-                .commit()
+                .commit_n_times(15)
                 .push()
                 .push(remote='origin_1')
         )
@@ -497,7 +497,7 @@ class TestStatus(BaseTest):
         )
         assert_success(['status'], expected_status_output)
 
-    def test_status_fork_point_without_reflogs(self, mocker: MockerFixture) -> None:
+    def test_status_fork_point_without_reflogs(self) -> None:
         (
             self.repo_sandbox
             .remove_remote()

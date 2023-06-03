@@ -1,8 +1,11 @@
 import os
 from pathlib import Path
+from tempfile import mkdtemp
+
+from git_machete.exceptions import UnderlyingGitException
 
 from .base_test import BaseTest, git
-from .mockers import launch_command
+from .mockers import assert_failure, launch_command
 
 
 class TestFile(BaseTest):
@@ -46,3 +49,8 @@ class TestFile(BaseTest):
             definition_file_path = Path(definition_file_full_path).parts
             definition_file_path_relative_to_git_dir = '/'.join(definition_file_path[-4:]).rstrip('\n')
             assert definition_file_path_relative_to_git_dir == '.git/worktrees/mars_worktree/machete'
+
+    def test_file_outside_git_repo(self) -> None:
+        other_path = mkdtemp()
+        os.chdir(other_path)
+        assert_failure(["file"], "Not a git repository", expected_exception=UnderlyingGitException)

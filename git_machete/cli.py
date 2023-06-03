@@ -359,7 +359,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
     return cli_parser
 
 
-def update_cli_opts_using_parsed_args(
+def update_cli_options_using_parsed_args(
         cli_opts: git_machete.options.CommandLineOptions,
         parsed_args: argparse.Namespace) -> None:
     # Warning: In mypy, Arguments that come from untyped functions/variables are silently treated by mypy as Any.
@@ -473,9 +473,8 @@ def update_cli_options_using_config_keys(
             cli_opts.opt_push_tracked, cli_opts.opt_push_untracked = False, False
 
 
-def set_utils_global_variables(
-        cli_opts: git_machete.options.CommandLineOptions) -> None:
-    utils.ascii_only = (cli_opts.opt_color == "never" or (cli_opts.opt_color == "auto" and not sys.stdout.isatty()))
+def set_utils_global_variables(cli_opts: git_machete.options.CommandLineOptions) -> None:
+    utils.ascii_only = cli_opts.opt_color == "never" or (cli_opts.opt_color == "auto" and not sys.stdout.isatty())
     utils.debug_mode = cli_opts.opt_debug
     utils.verbose_mode = cli_opts.opt_verbose
 
@@ -498,8 +497,7 @@ def launch(orig_args: List[str]) -> None:
     parsed_cli_as_dict: Dict[str, str] = vars(parsed_cli)
 
     update_cli_options_using_config_keys(cli_opts, git)
-
-    update_cli_opts_using_parsed_args(cli_opts, parsed_cli)
+    update_cli_options_using_parsed_args(cli_opts, parsed_cli)
     cli_opts.validate()
     set_utils_global_variables(cli_opts)
 

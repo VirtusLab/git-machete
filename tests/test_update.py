@@ -294,3 +294,99 @@ class TestUpdate(BaseTest):
 
         self.repo_sandbox.write_to_file(".git/hooks/machete-pre-rebase", "#!/bin/sh\nexit 1")
         assert_failure(["update", "-n"], "The machete-pre-rebase hook refused to rebase. Error code: 1")
+
+    def test_update_no_edit_merge_but_without_merge(self) -> None:
+        assert_failure(
+            ['update', '--no-edit-merge'],
+            "Option --no-edit-merge only makes sense when using merge and must be specified together with -M/--merge."
+        )
+
+    def test_update_no_interactive_rebase_with_merge(self) -> None:
+        assert_failure(
+            ['update', '--no-interactive-rebase', '--merge'],
+            "Option --no-interactive-rebase only makes sense when using rebase and cannot be specified together with -M/--merge."
+        )
+
+    def test_update_fork_point_with_merge(self) -> None:
+        assert_failure(
+            ['update', '-f', '@', '-M'],
+            "Option -f/--fork-point only makes sense when using rebase and cannot be specified together with -M/--merge."
+        )
+
+    def test_update_during_side_effecting_operations(self) -> None:
+        (
+            self.repo_sandbox
+            .remove_remote()
+            .new_branch("master")
+            .commit()
+            .new_branch("develop")
+            .add_file_and_commit("1.txt", "some-content")
+            .check_out("master")
+            .new_branch("feature")
+            .add_file_and_commit("1.txt", "some-other-content")
+            .check_out("develop")
+        )
+
+        body: str = \
+            """
+            master
+                develop
+            """
+        rewrite_definition_file(body)
+
+        # AM
+
+        patch_path = self.repo_sandbox.popen("git format-patch feature")
+        self.repo_sandbox.execute_ignoring_exit_code(f"git am {patch_path}")
+
+        assert_failure(["update"],
+                       "git am session in progress. Conclude git am first "
+                       "with git am --continue or git am --abort.",
+                       expected_exception=UnderlyingGitException)
+
+        self.repo_sandbox.execute("git am --abort")
+
+        # CHERRY-PICK
+
+        self.repo_sandbox.execute_ignoring_exit_code("git cherry-pick feature")
+
+        assert_failure(["update"],
+                       "Cherry pick in progress. Conclude the cherry pick first with "
+                       "git cherry-pick --continue or git cherry-pick --abort.",
+                       expected_exception=UnderlyingGitException)
+
+        self.repo_sandbox.execute("git cherry-pick --abort")
+
+        # MERGE
+
+        self.repo_sandbox.execute_ignoring_exit_code("git merge feature")
+
+        assert_failure(["update"],
+                       "Merge in progress. Conclude the merge first with "
+                       "git merge --continue or git merge --abort.",
+                       expected_exception=UnderlyingGitException)
+
+        self.repo_sandbox.execute("git merge --abort")
+
+        # REBASE
+
+        with overridden_environment(GIT_SEQUENCE_EDITOR="sed -i.bak '1s/^pick /edit /'"):
+            launch_command("update")
+
+        assert_failure(["update"],
+                       "Rebase of develop in progress. Conclude the rebase first with "
+                       "git rebase --continue or git rebase --abort.",
+                       expected_exception=UnderlyingGitException)
+
+        self.repo_sandbox.execute("git rebase --abort")
+
+        # REVERT
+
+        self.repo_sandbox.execute("git revert --no-commit HEAD")
+
+        assert_failure(["update"],
+                       "Revert in progress. Conclude the revert first with "
+                       "git revert --continue or git revert --abort.",
+                       expected_exception=UnderlyingGitException)
+
+        self.repo_sandbox.execute("git revert --abort")

@@ -10,7 +10,6 @@ whitelisted_methods='
 builtins.input
 builtins.open
 git_machete.client.MacheteClient.is_stdout_a_tty
-git_machete.github.GitHubToken._get_github_token_env_var
 git_machete.github.GitHubToken.for_domain
 git_machete.github.RemoteAndOrganizationAndRepository.from_url
 git_machete.utils.run_cmd

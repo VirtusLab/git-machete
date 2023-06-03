@@ -72,6 +72,11 @@ class GitRepositorySandbox:
         self.execute(f'git commit -m "{message}"')
         return self
 
+    def commit_n_times(self, count: int) -> "GitRepositorySandbox":
+        for _ in range(count):
+            self.commit()
+        return self
+
     def add_file_and_commit(self, file_path: str = 'file_name.txt', file_content: str = 'Some file content\n',
                             message: str = "Some commit message.") -> "GitRepositorySandbox":
         self.write_to_file(file_path=file_path, file_content=file_content)

@@ -11,7 +11,7 @@ from tests.mockers_github import (MockGitHubAPIState,
 
 class TestGitHubAnnoPRs(BaseTest):
 
-    git_api_state_for_test_anno_prs = MockGitHubAPIState(
+    github_api_state_for_test_anno_prs = MockGitHubAPIState(
         [
             {
                 'head': {'ref': 'ignore-trailing', 'repo': mock_repository_info},
@@ -44,7 +44,7 @@ class TestGitHubAnnoPRs(BaseTest):
         mocker.patch('git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('urllib.request.urlopen', mock_urlopen)
-        mocker.patch('urllib.request.Request', self.git_api_state_for_test_anno_prs.new_request())
+        mocker.patch('urllib.request.Request', self.github_api_state_for_test_anno_prs.get_request_provider())
 
         (
             self.repo_sandbox.new_branch("root")
@@ -154,4 +154,65 @@ class TestGitHubAnnoPRs(BaseTest):
               |
               x-drop-constraint (untracked)
             """,
+        )
+
+    github_api_state_for_test_local_branch_name_different_than_tracking_branch_name = MockGitHubAPIState(
+        [
+            {
+                'head': {'ref': 'feature_repo', 'repo': mock_repository_info},
+                'user': {'login': 'some_other_user'},
+                'base': {'ref': 'root'}, 'number': '15',
+                'html_url': 'www.github.com', 'state': 'open'
+            },
+            {
+                'head': {'ref': 'feature_1', 'repo': mock_repository_info},
+                'user': {'login': 'some_other_user'},
+                'base': {'ref': 'feature_repo'}, 'number': '20',
+                'html_url': 'www.github.com', 'state': 'open'
+            }
+        ]
+    )
+
+    def test_github_anno_prs_local_branch_name_different_than_tracking_branch_name(self, mocker: MockerFixture) -> None:
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        mocker.patch('urllib.request.Request',
+                     self.github_api_state_for_test_local_branch_name_different_than_tracking_branch_name.get_request_provider())
+        mocker.patch('urllib.request.urlopen', mock_urlopen)
+
+        (
+            self.repo_sandbox.new_branch("root")
+            .commit("First commit on root.")
+            .push()
+            .new_branch('feature_repo')
+            .commit('introduce feature')
+            .push()
+            .new_branch('feature')
+            .commit('introduce feature')
+            .push(tracking_branch='feature_repo')
+            .new_branch('feature_1')
+            .commit('introduce feature')
+            .push()
+            .delete_branch('feature_repo')
+            .add_remote('new_origin', 'https://github.com/user/repo.git')
+        )
+
+        body: str = \
+            """
+            root
+                feature
+                    feature_1
+            """
+        rewrite_definition_file(body)
+        launch_command("github", "anno-prs")
+
+        expected_status_output = """
+        root
+        |
+        o-feature
+          |
+          o-feature_1 *  PR #20 (some_other_user) rebase=no push=no
+        """
+        assert_success(
+            ['status'],
+            expected_result=expected_status_output
         )

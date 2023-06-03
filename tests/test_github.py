@@ -10,16 +10,15 @@ from tests.base_test import BaseTest
 from tests.mockers import (assert_failure, assert_success, launch_command,
                            mock_input_returning, mock_input_returning_y,
                            mock_run_cmd_and_discard_output,
-                           rewrite_definition_file)
+                           overridden_environment, rewrite_definition_file)
 from tests.mockers_github import (NUMBER_OF_PAGES, PRS_PER_PAGE,
-                                  MockGitHubAPIState,
-                                  PaginatedMockGitHubAPIResponse,
-                                  mock_from_url,
+                                  MockGitHubAPIState, mock_from_url,
                                   mock_github_token_for_domain_fake,
                                   mock_github_token_for_domain_none,
+                                  mock_paginated_request_returning_page_number,
                                   mock_repository_info, mock_shutil_which,
                                   mock_subprocess_run, mock_urlopen,
-                                  mock_urlopen_raising_403)
+                                  mock_urlopen_paginated_response)
 
 
 class TestGitHub(BaseTest):
@@ -45,8 +44,8 @@ class TestGitHub(BaseTest):
         mocker.patch('git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
         mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-        mocker.patch('urllib.request.Request', MockGitHubAPIState([]).new_request(PaginatedMockGitHubAPIResponse))
-        mocker.patch('urllib.request.urlopen', mock_urlopen)
+        mocker.patch('urllib.request.Request', mock_paginated_request_returning_page_number)
+        mocker.patch('urllib.request.urlopen', mock_urlopen_paginated_response)
 
         (
             self.repo_sandbox.new_branch("develop")
@@ -73,24 +72,24 @@ class TestGitHub(BaseTest):
         assert_success(['status'], expected_status_output)
 
     def test_github_enterprise_domain_fail(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('builtins.input', mock_input_returning("1"))
-        mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
         mocker.patch('git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
-        mocker.patch('urllib.request.urlopen', mock_urlopen_raising_403)
+        mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        mocker.patch('urllib.request.Request', MockGitHubAPIState([]).get_request_provider())
+        mocker.patch('urllib.request.urlopen', mock_urlopen)
 
-        github_enterprise_domain = 'git.example.org'
-        self.repo_sandbox.set_git_config_key('machete.github.domain', github_enterprise_domain)
+        self.repo_sandbox.set_git_config_key('machete.github.domain', '403.example.org')
 
         expected_error_message = (
             "GitHub API returned 403 HTTP status with error message: Forbidden\n"
             "You might not have the required permissions for this repository.\n"
             "Provide a GitHub API token with repo access.\n"
-            f"Visit https://{github_enterprise_domain}/settings/tokens to generate a new one.\n"
+            "Visit https://403.example.org/settings/tokens to generate a new one.\n"
             "You can also use a different token provider, available providers can be found when running git machete help github.")
         assert_failure(['github', 'checkout-prs', '--all'], expected_error_message)
 
-    git_api_state_for_test_github_enterprise_domain = MockGitHubAPIState(
+    github_api_state_for_test_github_enterprise_domain = MockGitHubAPIState(
         [
             {
                 'head': {'ref': 'snickers', 'repo': mock_repository_info},
@@ -108,8 +107,8 @@ class TestGitHub(BaseTest):
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        mocker.patch('urllib.request.Request', self.github_api_state_for_test_github_enterprise_domain.get_request_provider())
         mocker.patch('urllib.request.urlopen', mock_urlopen)
-        mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_enterprise_domain.new_request())
 
         github_enterprise_domain = 'git.example.org'
         (
@@ -126,11 +125,10 @@ class TestGitHub(BaseTest):
         launch_command('github', 'checkout-prs', '--all')
 
     def test_github_token_retrieval_order(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.github.GitHubToken._get_github_token_env_var', lambda: None)
         mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
         mocker.patch('os.path.isfile', lambda file: False)
         mocker.patch('shutil.which', mock_shutil_which(None))
-        mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_enterprise_domain.new_request())
+        mocker.patch('urllib.request.Request', self.github_api_state_for_test_github_enterprise_domain.get_request_provider())
         mocker.patch('urllib.request.urlopen', mock_urlopen)
 
         (
@@ -155,15 +153,20 @@ class TestGitHub(BaseTest):
 
         assert launch_command('github', 'anno-prs', '--debug').splitlines()[8:12] == expected_output
 
-    def test_get_token_from_env_var(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.github.GitHubToken._get_github_token_env_var', lambda: 'github_token_from_env_var')
+    def test_github_get_token_from_env_var(self) -> None:
+        with overridden_environment(GITHUB_TOKEN='github_token_from_env_var'):
+            github_token = GitHubToken.for_domain(domain="github.com")
 
-        github_token = GitHubToken.for_domain(domain=GitHubClient.DEFAULT_GITHUB_DOMAIN)
         assert github_token is not None
         assert github_token.provider == '`GITHUB_TOKEN` environment variable'
         assert github_token.value == 'github_token_from_env_var'
 
-    def test_get_token_from_file_in_home_directory(self, mocker: MockerFixture) -> None:
+    # Note that tox doesn't pass env vars from its env to the processes by default,
+    # so we don't need to mock away GITHUB_TOKEN in the following tests, even if it's present in the env.
+    # This doesn't cover the case of running from outside tox (e.g. via IntelliJ),
+    # so hiding GITHUB_TOKEN might eventually become necessary.
+
+    def test_github_get_token_from_file_in_home_directory(self, mocker: MockerFixture) -> None:
         github_token_contents = ('ghp_mytoken_for_github_com\n'
                                  'ghp_myothertoken_for_git_example_org git.example.org\n'
                                  'ghp_yetanothertoken_for_git_example_com git.example.com')
@@ -184,16 +187,24 @@ class TestGitHub(BaseTest):
         assert github_token.provider == f'auth token for {domain} from `~/.github-token`'
         assert github_token.value == 'ghp_myothertoken_for_git_example_org'
 
-        domain = 'git.example.com'
+        domain = 'git.example.net'
         github_token = GitHubToken.for_domain(domain=domain)
-        assert github_token is not None
-        assert github_token.provider == f'auth token for {domain} from `~/.github-token`'
-        assert github_token.value == 'ghp_yetanothertoken_for_git_example_com'
+        assert github_token is None
 
-    def test_get_token_from_gh(self, mocker: MockerFixture) -> None:
+    def test_github_get_token_from_gh(self, mocker: MockerFixture) -> None:
         mocker.patch('os.path.isfile', lambda file: False)
-        mocker.patch('git_machete.github.GitHubToken._get_github_token_env_var', lambda: None)
         mocker.patch('shutil.which', mock_shutil_which('/path/to/gh'))
+
+        domain = 'git.example.com'
+
+        # Let's first cover the case where `gh` is present, but not authenticated.
+        mocker.patch('subprocess.run', mock_subprocess_run(returncode=0, stdout='stdout', stderr='''
+        You are not logged into any GitHub hosts. Run gh auth login to authenticate.
+        '''))
+
+        github_token = GitHubToken.for_domain(domain=domain)
+        assert github_token is None
+
         mocker.patch('subprocess.run', mock_subprocess_run(returncode=0, stdout='stdout', stderr='''
         github.com
             ✓ Logged in to github.com as Foo Bar (/Users/foo_bar/.config/gh/hosts.yml)
@@ -202,13 +213,13 @@ class TestGitHub(BaseTest):
             ✓ Token scopes: gist, read:discussion, read:org, repo, workflow
         '''))
 
-        domain = 'git.example.com'
         github_token = GitHubToken.for_domain(domain=domain)
         assert github_token is not None
         assert github_token.provider == f'auth token for {domain} from `gh` GitHub CLI'
         assert github_token.value == 'ghp_mytoken_for_github_com_from_gh_cli'
 
-    def test_get_token_from_hub(self, mocker: MockerFixture) -> None:
+    def test_github_get_token_from_hub(self, mocker: MockerFixture) -> None:
+        domain0 = 'git.example.net'
         domain1 = GitHubClient.DEFAULT_GITHUB_DOMAIN
         domain2 = 'git.example.org'
         config_hub_contents = f'''        {domain1}:
@@ -222,9 +233,12 @@ class TestGitHub(BaseTest):
           protocol: protocol
         '''
 
-        mocker.patch('builtins.open', mock_open(read_data=dedent(config_hub_contents)))
-        mocker.patch('os.path.isfile', lambda file: '.github-token' not in file)
         mocker.patch('subprocess.run', mock_subprocess_run(returncode=1))
+        mocker.patch('os.path.isfile', lambda file: '.github-token' not in file)
+        mocker.patch('builtins.open', mock_open(read_data=dedent(config_hub_contents)))
+
+        github_token = GitHubToken.for_domain(domain=domain0)
+        assert github_token is None
 
         github_token = GitHubToken.for_domain(domain=domain1)
         assert github_token is not None
@@ -235,64 +249,3 @@ class TestGitHub(BaseTest):
         assert github_token is not None
         assert github_token.provider == f'auth token for {domain2} from `hub` GitHub CLI'
         assert github_token.value == 'ghp_myothertoken_for_git_example_org'
-
-    git_api_state_for_test_local_branch_name_different_than_tracking_branch_name = MockGitHubAPIState(
-        [
-            {
-                'head': {'ref': 'feature_repo', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'root'}, 'number': '15',
-                'html_url': 'www.github.com', 'state': 'open'
-            },
-            {
-                'head': {'ref': 'feature_1', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'feature_repo'}, 'number': '20',
-                'html_url': 'www.github.com', 'state': 'open'
-            }
-        ]
-    )
-
-    def test_local_branch_name_different_than_tracking_branch_name(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-        mocker.patch('urllib.request.Request',
-                     self.git_api_state_for_test_local_branch_name_different_than_tracking_branch_name.new_request())
-        mocker.patch('urllib.request.urlopen', mock_urlopen)
-
-        (
-            self.repo_sandbox.new_branch("root")
-                .commit("First commit on root.")
-                .push()
-                .new_branch('feature_repo')
-                .commit('introduce feature')
-                .push()
-                .new_branch('feature')
-                .commit('introduce feature')
-                .push(tracking_branch='feature_repo')
-                .new_branch('feature_1')
-                .commit('introduce feature')
-                .push()
-                .delete_branch('feature_repo')
-                .add_remote('new_origin', 'https://github.com/user/repo.git')
-        )
-
-        body: str = \
-            """
-            root
-                feature
-                    feature_1
-            """
-        rewrite_definition_file(body)
-        launch_command("github", "anno-prs")
-
-        expected_status_output = """
-        root
-        |
-        o-feature
-          |
-          o-feature_1 *  PR #20 (some_other_user) rebase=no push=no
-        """
-        assert_success(
-            ['status'],
-            expected_result=expected_status_output
-        )

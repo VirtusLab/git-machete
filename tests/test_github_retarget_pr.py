@@ -12,7 +12,7 @@ from tests.mockers_github import (MockGitHubAPIState, mock_from_url,
 
 class TestGitHubRetargetPR(BaseTest):
 
-    git_api_state_for_test_retarget_pr = MockGitHubAPIState(
+    github_api_state_for_test_retarget_pr = MockGitHubAPIState(
         [
             {
                 'head': {'ref': 'feature', 'repo': mock_repository_info},
@@ -43,7 +43,7 @@ class TestGitHubRetargetPR(BaseTest):
 
     def test_github_retarget_pr(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-        mocker.patch('urllib.request.Request', self.git_api_state_for_test_retarget_pr.new_request())
+        mocker.patch('urllib.request.Request', self.github_api_state_for_test_retarget_pr.get_request_provider())
         mocker.patch('urllib.request.urlopen', mock_urlopen)
 
         branchs_first_commit_msg = "First commit on branch."
@@ -105,7 +105,7 @@ class TestGitHubRetargetPR(BaseTest):
             'The base branch of PR #15 is already branch-1\n'
         )
 
-    git_api_state_for_test_github_retarget_pr_explicit_branch = MockGitHubAPIState(
+    github_api_state_for_test_github_retarget_pr_explicit_branch = MockGitHubAPIState(
         [
             {
                 'head': {'ref': 'feature', 'repo': mock_repository_info},
@@ -118,7 +118,7 @@ class TestGitHubRetargetPR(BaseTest):
 
     def test_github_retarget_pr_explicit_branch(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-        mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_retarget_pr_explicit_branch.new_request())
+        mocker.patch('urllib.request.Request', self.github_api_state_for_test_github_retarget_pr_explicit_branch.get_request_provider())
         mocker.patch('urllib.request.urlopen', mock_urlopen)
 
         branchs_first_commit_msg = "First commit on branch."
@@ -199,7 +199,7 @@ class TestGitHubRetargetPR(BaseTest):
     def test_github_retarget_pr_multiple_non_origin_remotes(self, mocker: MockerFixture) -> None:
         mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-        mocker.patch('urllib.request.Request', self.git_api_state_for_test_retarget_pr.new_request())
+        mocker.patch('urllib.request.Request', self.github_api_state_for_test_retarget_pr.get_request_provider())
         mocker.patch('urllib.request.urlopen', mock_urlopen)
 
         branchs_first_commit_msg = "First commit on branch."

@@ -12,7 +12,7 @@ from tests.mockers_github import (MockGitHubAPIState, mock_from_url,
 
 class TestGitHubSync(BaseTest):
 
-    git_api_state_for_test_github_sync = MockGitHubAPIState(
+    github_api_state_for_test_github_sync = MockGitHubAPIState(
         [
             {
                 'head': {'ref': 'snickers', 'repo': mock_repository_info},
@@ -31,7 +31,7 @@ class TestGitHubSync(BaseTest):
         mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
         mocker.patch('git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         mocker.patch('urllib.request.urlopen', mock_urlopen)
-        mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_sync.new_request())
+        mocker.patch('urllib.request.Request', self.github_api_state_for_test_github_sync.get_request_provider())
 
         (
             self.repo_sandbox

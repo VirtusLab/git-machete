@@ -15,7 +15,7 @@ from tests.mockers_github import (MockGitHubAPIState, mock_from_url,
 
 
 class TestGitHubCheckoutPRs(BaseTest):
-    git_api_state_for_test_checkout_prs = MockGitHubAPIState(
+    github_api_state_for_test_checkout_prs = MockGitHubAPIState(
         [
             {
                 'head': {'ref': 'chore/redundant_checks', 'repo': mock_repository_info},
@@ -96,7 +96,7 @@ class TestGitHubCheckoutPRs(BaseTest):
         mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
-        mocker.patch('urllib.request.Request', self.git_api_state_for_test_checkout_prs.new_request())
+        mocker.patch('urllib.request.Request', self.github_api_state_for_test_checkout_prs.get_request_provider())
         mocker.patch('urllib.request.urlopen', mock_urlopen)
 
         (
@@ -345,7 +345,7 @@ class TestGitHubCheckoutPRs(BaseTest):
         expected_msg = 'Checking for open GitHub PRs... OK\n'
         assert_success(['github', 'checkout-prs', '3', '12'], expected_msg)
 
-    git_api_state_for_test_github_checkout_prs_fresh_repo = MockGitHubAPIState(
+    github_api_state_for_test_github_checkout_prs_fresh_repo = MockGitHubAPIState(
         [
             {
                 'head': {'ref': 'comments/add_docstrings', 'repo': mock_repository_info},
@@ -387,7 +387,7 @@ class TestGitHubCheckoutPRs(BaseTest):
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
         mocker.patch('urllib.request.urlopen', mock_urlopen)
-        mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_checkout_prs_fresh_repo.new_request())
+        mocker.patch('urllib.request.Request', self.github_api_state_for_test_github_checkout_prs_fresh_repo.get_request_provider())
 
         (
             self.repo_sandbox.new_branch("root")
@@ -482,7 +482,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             """
         )
 
-    git_api_state_for_test_github_checkout_prs_from_fork_with_deleted_repo = MockGitHubAPIState(
+    github_api_state_for_test_github_checkout_prs_from_fork_with_deleted_repo = MockGitHubAPIState(
         [
             {
                 'head': {'ref': 'feature/allow_checkout', 'repo': None},
@@ -507,7 +507,8 @@ class TestGitHubCheckoutPRs(BaseTest):
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
         mocker.patch('urllib.request.urlopen', mock_urlopen)
-        mocker.patch('urllib.request.Request', self.git_api_state_for_test_github_checkout_prs_from_fork_with_deleted_repo.new_request())
+        mocker.patch('urllib.request.Request',
+                     self.github_api_state_for_test_github_checkout_prs_from_fork_with_deleted_repo.get_request_provider())
 
         (
             self.repo_sandbox.new_branch("root")
@@ -543,7 +544,7 @@ class TestGitHubCheckoutPRs(BaseTest):
              "the head branch of given pull request."
              )
 
-    git_api_state_for_test_github_checkout_prs_of_current_user_and_other_users = MockGitHubAPIState(
+    github_api_state_for_test_github_checkout_prs_of_current_user_and_other_users = MockGitHubAPIState(
         [
             {
                 'head': {'ref': 'chore/redundant_checks', 'repo': mock_repository_info},
@@ -626,7 +627,7 @@ class TestGitHubCheckoutPRs(BaseTest):
         mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         mocker.patch('git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         mocker.patch('urllib.request.Request',
-                     self.git_api_state_for_test_github_checkout_prs_of_current_user_and_other_users.new_request())
+                     self.github_api_state_for_test_github_checkout_prs_of_current_user_and_other_users.get_request_provider())
         mocker.patch('urllib.request.urlopen', mock_urlopen)
 
         (

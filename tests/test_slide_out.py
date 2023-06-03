@@ -355,3 +355,9 @@ class TestSlideOut(BaseTest):
             ['slide-out', 'branch-1', 'branch-2a'],
             "Multiple downstream branches defined for branch-1: branch-2a, branch-2b; cannot slide out"
         )
+
+    def test_slide_out_down_fork_point_with_merge(self) -> None:
+        assert_failure(
+            ['slide-out', '--down-fork-point=@', '-M'],
+            "Option -d/--down-fork-point only makes sense when using rebase and cannot be specified together with -M/--merge."
+        )

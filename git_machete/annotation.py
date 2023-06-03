@@ -4,9 +4,6 @@ from git_machete import utils
 
 
 class Qualifiers:
-    rebase: bool
-    push: bool
-
     def __init__(self, annotation: str):
         self._annotation_without_qualifiers: str = annotation
         self._rebase_text: str = ''
@@ -48,11 +45,6 @@ class Qualifiers:
 
 
 class Annotation:
-    text: str
-    text_without_qualifiers: str
-    qualifiers_text: str
-    qualifiers: Qualifiers
-
     def __init__(self, text: str):
         self.text = text.strip()
         self.qualifiers = Qualifiers(text)

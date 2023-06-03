@@ -17,7 +17,7 @@ displayed_warnings: Set[str] = set()
 # every time any command is being popened or run.
 current_directory_confirmed_to_exist: bool = False
 
-ascii_only: bool = False
+ascii_only: bool = not sys.stdout.isatty()
 debug_mode: bool = False
 verbose_mode: bool = False
 
@@ -80,7 +80,7 @@ def find_executable(executable: str) -> Optional[str]:
     base, ext = os.path.splitext(executable)
 
     if (sys.platform == 'win32' or os.name == 'os2') and (ext != '.exe'):
-        executable = f"{executable}.exe"
+        executable = f"{executable}.exe"  # pragma: no cover
 
     if os.path.isfile(executable):
         return executable
@@ -95,7 +95,7 @@ def find_executable(executable: str) -> Optional[str]:
     return None
 
 
-def debug(msg: Optional[str] = None) -> None:
+def debug(msg: str) -> None:
     if debug_mode:
         function_name = bold(inspect.stack()[1].function)
         args, _, _, values = inspect.getargvalues(inspect.stack()[1].frame)
@@ -113,10 +113,7 @@ def debug(msg: Optional[str] = None) -> None:
         args_and_values_str = ', '.join(args_and_values_list)
         args_and_values_bold_str = bold(f'({args_and_values_str})')
 
-        if msg is None:
-            print(f"{function_name}{args_and_values_bold_str}", file=sys.stderr)
-        else:
-            print(f"{function_name}{args_and_values_bold_str}: {dim(msg)}", file=sys.stderr)
+        print(f"{function_name}{args_and_values_bold_str}: {dim(msg)}", file=sys.stderr)
 
 
 def run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
