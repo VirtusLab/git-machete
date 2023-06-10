@@ -9,8 +9,6 @@ from .mockers import (assert_failure, assert_success, mock_input_returning,
 class TestAdd(BaseTest):
 
     def test_add(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-
         (
             self.repo_sandbox.new_branch("master")
                 .commit("master commit.")
@@ -32,7 +30,7 @@ class TestAdd(BaseTest):
         self.repo_sandbox.new_branch("bugfix/feature_fail")
 
         # Test `git machete add` without providing the branch name
-        mocker.patch("builtins.input", mock_input_returning("n"))
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning("n"))
         assert_success(
             ['add'],
             'Add bugfix/feature_fail onto the inferred upstream (parent) branch develop? (y, N) \n'
@@ -71,7 +69,7 @@ class TestAdd(BaseTest):
         """
         Verify the behaviour of a 'git machete add' command in the special case when a remote branch is checked out locally.
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("master")
@@ -82,7 +80,7 @@ class TestAdd(BaseTest):
             .delete_branch("feature/foo")
         )
 
-        mocker.patch("builtins.input", mock_input_returning("n"))
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning("n"))
         assert_success(
             ['add', 'foo'],
             'A local branch foo does not exist. Create out of the current HEAD? (y, N) \n'
@@ -94,7 +92,7 @@ class TestAdd(BaseTest):
             'Added branch foo as a new root\n'
         )
 
-        mocker.patch("builtins.input", mock_input_returning("n"))
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning("n"))
         assert_success(
             ['add', '--as-root', 'feature/foo'],
             'A local branch feature/foo does not exist, but a remote branch origin/feature/foo exists.\n'
@@ -116,7 +114,7 @@ class TestAdd(BaseTest):
 
         rewrite_definition_file("master")
 
-        mocker.patch("builtins.input", mock_input_returning_y)
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning_y)
         assert_success(
             ['add', 'foo'],
             "A local branch foo does not exist. Create out of the current HEAD? (y, N) \n"
@@ -134,7 +132,7 @@ class TestAdd(BaseTest):
 
         rewrite_definition_file("develop")
 
-        mocker.patch("builtins.input", mock_input_returning_y)
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning_y)
         assert_failure(
             ['add', 'foo'],
             """

@@ -2,9 +2,9 @@ from typing import Dict
 
 from git_machete.annotation import Annotation
 from git_machete.client import MacheteClient
-from git_machete.git_operations import LocalBranchShortName
+from git_machete.git_operations import GitContext, LocalBranchShortName
 
-from .base_test import BaseTest, git
+from .base_test import BaseTest
 from .mockers import rewrite_definition_file
 
 
@@ -57,7 +57,7 @@ class TestClient(BaseTest):
             """
         self.repo_sandbox.new_branch("root")
         rewrite_definition_file(body)
-        machete_client = MacheteClient(git)
+        machete_client = MacheteClient(GitContext())
         machete_client.read_definition_file(perform_interactive_slide_out=False)
         annotations: Dict[LocalBranchShortName, Annotation] = machete_client.annotations
 

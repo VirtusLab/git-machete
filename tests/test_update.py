@@ -2,7 +2,7 @@ from pytest_mock import MockerFixture
 
 from git_machete.exceptions import UnderlyingGitException
 
-from .base_test import BaseTest, git
+from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success,
                       fixed_author_and_committer_date, launch_command,
                       mock_input_returning, mock_input_returning_y,
@@ -18,7 +18,7 @@ class TestUpdate(BaseTest):
         Verify that 'git machete update --no-interactive-rebase' performs
         'git rebase' to the parent branch of the current branch.
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("level-0-branch")
@@ -49,7 +49,7 @@ class TestUpdate(BaseTest):
              )
 
     def test_update_by_merge(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("level-0-branch")
@@ -73,14 +73,14 @@ class TestUpdate(BaseTest):
         old_level_1_commit_hash = self.repo_sandbox.get_current_commit_hash()
         launch_command("update", "--merge", "--no-edit-merge")
 
-        assert self.repo_sandbox.is_ancestor(old_level_1_commit_hash, "level-1-branch")
-        assert self.repo_sandbox.is_ancestor("level-0-branch", "level-1-branch")
+        assert self.repo_sandbox.is_ancestor_or_equal(old_level_1_commit_hash, "level-1-branch")
+        assert self.repo_sandbox.is_ancestor_or_equal("level-0-branch", "level-1-branch")
 
     def test_update_drops_empty_commits(self, mocker: MockerFixture) -> None:
         """
         Verify that 'git machete update' drops effectively-empty commits if the underlying git supports that behavior.
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         with fixed_author_and_committer_date():
             (
@@ -107,7 +107,7 @@ class TestUpdate(BaseTest):
         # Let's substitute the editor opened by git for interactive rebase to-do list
         # so that the test can run in a fully automated manner.
         with overridden_environment(GIT_SEQUENCE_EDITOR=":"):
-            if git.get_git_version() >= (2, 26, 0):
+            if self.repo_sandbox.get_git_version() >= (2, 26, 0):
                 launch_command("update")
             else:
                 with fixed_author_and_committer_date():
@@ -129,7 +129,7 @@ class TestUpdate(BaseTest):
         performs 'git rebase' to the upstream branch and drops the commits until
         (included) fork point specified by the option '-f'.
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         branchs_first_commit_msg = "First commit on branch."
         branchs_second_commit_msg = "Second commit on branch."
@@ -176,8 +176,6 @@ class TestUpdate(BaseTest):
              )
 
     def test_update_with_invalid_fork_point(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-
         with fixed_author_and_committer_date():
             (
                 self.repo_sandbox.new_branch('branch-0')
@@ -205,7 +203,7 @@ class TestUpdate(BaseTest):
         assert_failure(['update', '-f', branch_1a_hash], expected_error_message)
 
     def test_update_with_stop_for_edit(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox
@@ -226,7 +224,7 @@ class TestUpdate(BaseTest):
             self.repo_sandbox.execute("git rebase --continue")
 
     def test_update_unmanaged_branch(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox
@@ -241,20 +239,18 @@ class TestUpdate(BaseTest):
         rewrite_definition_file("branch-0")
 
         original_branch_1_hash = self.repo_sandbox.get_commit_hash("branch-1")
-        mocker.patch("builtins.input", mock_input_returning(""))
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning(""))
         assert_failure(["update", "--no-interactive-rebase"], "Aborting.")
         assert self.repo_sandbox.get_commit_hash("branch-1") == original_branch_1_hash
 
-        mocker.patch("builtins.input", mock_input_returning_y)
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning_y)
         assert_success(
             ["update", "--no-interactive-rebase"],
             "Branch branch-1 not found in the tree of branch dependencies. "
             "Rebase onto the inferred upstream branch-0? (y, N) \n")
-        assert self.repo_sandbox.is_ancestor("branch-0", "branch-1")
+        assert self.repo_sandbox.is_ancestor_or_equal("branch-0", "branch-1")
 
-    def test_update_unmanaged_branch_when_parent_cannot_be_inferred(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-
+    def test_update_unmanaged_branch_when_parent_cannot_be_inferred(self) -> None:
         (
             self.repo_sandbox
             .new_branch('branch-0')
@@ -269,7 +265,7 @@ class TestUpdate(BaseTest):
         )
 
     def test_update_with_pre_rebase_hook(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_output)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_forward_output)
 
         with fixed_author_and_committer_date():
             (

@@ -9,7 +9,7 @@ from .mockers import (assert_success, fixed_author_and_committer_date,
 class TestDeleteUnmanaged(BaseTest):
 
     def test_delete_unmanaged(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_output)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_forward_output)
 
         with fixed_author_and_committer_date():
             (
@@ -26,11 +26,11 @@ class TestDeleteUnmanaged(BaseTest):
             """
         rewrite_definition_file(body)
 
-        mocker.patch("builtins.input", mock_input_returning("q"))
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning("q"))
+        launch_command("delete-unmanaged", "-v")
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning("n"))
         launch_command("delete-unmanaged")
-        mocker.patch("builtins.input", mock_input_returning("n"))
-        launch_command("delete-unmanaged")
-        mocker.patch("builtins.input", mock_input_returning("y"))
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning("y"))
         assert_success(
             ["delete-unmanaged"],
             """
@@ -43,9 +43,9 @@ class TestDeleteUnmanaged(BaseTest):
         )
 
         self.repo_sandbox.check_out("master")
-        mocker.patch("builtins.input", mock_input_returning("q"))
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning("q"))
         launch_command("delete-unmanaged")
-        mocker.patch("builtins.input", mock_input_returning("n"))
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning("n"))
         launch_command("delete-unmanaged")
         assert_success(
             ["delete-unmanaged", "--yes"],
@@ -66,6 +66,6 @@ class TestDeleteUnmanaged(BaseTest):
         )
 
         self.repo_sandbox.new_branch("foo").check_out("master")
-        mocker.patch("builtins.input", mock_input_returning("n"))
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning("n"))
         launch_command("delete-unmanaged")
         assert self.repo_sandbox.get_local_branches() == ["foo", "master"]

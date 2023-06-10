@@ -26,12 +26,12 @@ class TestGitHubSync(BaseTest):
     )
 
     def test_github_sync(self, mocker: MockerFixture) -> None:
-        mocker.patch('builtins.input', mock_input_returning_y)
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-        mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
-        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
-        mocker.patch('urllib.request.urlopen', mock_urlopen)
-        mocker.patch('urllib.request.Request', self.github_api_state_for_test_github_sync.get_request_provider())
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen)
+        self.patch_symbol(mocker, 'urllib.request.Request', self.github_api_state_for_test_github_sync.get_request_provider())
 
         (
             self.repo_sandbox

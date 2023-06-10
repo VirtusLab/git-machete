@@ -167,6 +167,8 @@ class TestForkPoint(BaseTest):
             """
         )
 
+        assert_failure(["fork-point", "--override-to-parent", "master"], "Branch master does not have upstream (parent) branch")
+
         launch_command("fork-point", "--override-to-inferred")
         assert launch_command("fork-point").strip() == "a71ffac2c1d41b8d1592a25f0056e4dfca829608"
         assert launch_command("fork-point", "--inferred").strip() == "a71ffac2c1d41b8d1592a25f0056e4dfca829608"

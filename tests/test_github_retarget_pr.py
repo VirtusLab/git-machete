@@ -4,7 +4,6 @@ from pytest_mock import MockerFixture
 
 from tests.base_test import BaseTest
 from tests.mockers import (assert_failure, assert_success, launch_command,
-                           mock_run_cmd_and_discard_output,
                            rewrite_definition_file)
 from tests.mockers_github import (MockGitHubAPIState, mock_from_url,
                                   mock_repository_info, mock_urlopen)
@@ -17,66 +16,83 @@ class TestGitHubRetargetPR(BaseTest):
             {
                 'head': {'ref': 'feature', 'repo': mock_repository_info},
                 'user': {'login': 'some_other_user'},
-                'base': {'ref': 'root'}, 'number': '15',
+                'base': {'ref': 'master'}, 'number': '15',
                 'html_url': 'www.github.com', 'state': 'open'
             },
             {
                 'head': {'ref': 'feature_1', 'repo': mock_repository_info},
                 'user': {'login': 'some_other_user'},
-                'base': {'ref': 'root'}, 'number': '20',
+                'base': {'ref': 'master'}, 'number': '20',
                 'html_url': 'www.github.com', 'state': 'open'
             },
             {
                 'head': {'ref': 'feature_2', 'repo': mock_repository_info},
                 'user': {'login': 'some_other_user'},
-                'base': {'ref': 'root'}, 'number': '25',
+                'base': {'ref': 'master'}, 'number': '25',
                 'html_url': 'www.github.com', 'state': 'open'
             },
             {
                 'head': {'ref': 'feature_3', 'repo': mock_repository_info},
                 'user': {'login': 'some_other_user'},
-                'base': {'ref': 'root'}, 'number': '35',
+                'base': {'ref': 'master'}, 'number': '30',
                 'html_url': 'www.github.com', 'state': 'open'
-            }
+            },
+            {
+                'head': {'ref': 'feature_4', 'repo': mock_repository_info},
+                'user': {'login': 'some_other_user'},
+                'base': {'ref': 'feature'}, 'number': '35',
+                'html_url': 'www.github.com', 'state': 'open'
+            },
+            # Let's include another PR for `feature_2`, but with a different base branch
+            {
+                'head': {'ref': 'feature_4', 'repo': mock_repository_info},
+                'user': {'login': 'some_other_user'},
+                'base': {'ref': 'feature'}, 'number': '40',
+                'html_url': 'www.github.com', 'state': 'open'
+            },
         ]
     )
 
     def test_github_retarget_pr(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-        mocker.patch('urllib.request.Request', self.github_api_state_for_test_retarget_pr.get_request_provider())
-        mocker.patch('urllib.request.urlopen', mock_urlopen)
+        self.patch_symbol(mocker, 'urllib.request.Request', self.github_api_state_for_test_retarget_pr.get_request_provider())
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen)
 
-        branchs_first_commit_msg = "First commit on branch."
-        branchs_second_commit_msg = "Second commit on branch."
         (
-            self.repo_sandbox.new_branch("root")
-                .commit("First commit on root.")
-                .new_branch("branch-1")
-                .commit(branchs_first_commit_msg)
-                .commit(branchs_second_commit_msg)
-                .push()
-                .new_branch('feature')
-                .commit('introduce feature')
-                .push()
-                .check_out('feature')
-                .add_remote('new_origin', 'https://github.com/user/repo.git')
+            self.repo_sandbox.new_branch("master")
+            .commit()
+            .new_branch("develop")
+            .commit()
+            .commit()
+            .push()
+            .new_branch('feature')
+            .commit()
+            .push()
+            .check_out('develop')
+            .new_branch('feature_4')
+            .push()
+            .check_out('feature')
+            # Let's force a 307 redirect during the PATCH.
+            .add_remote('new_origin', 'https://github.com/example-org/old-example-repo.git')
         )
         body: str = \
             """
-            root
-                branch-1
+            master
+                develop
                     feature
+                    feature_4
             """
         rewrite_definition_file(body)
 
         launch_command("anno", "-H")
 
         expected_status_output = """
-        root (untracked)
+        master (untracked)
         |
-        o-branch-1
+        o-develop
           |
-          o-feature *  PR #15 (some_other_user) WRONG PR BASE or MACHETE PARENT? PR has root rebase=no push=no
+          o-feature *  PR #15 (some_other_user) WRONG PR BASE or MACHETE PARENT? PR has master rebase=no push=no
+          |
+          o-feature_4  PR #40 (some_other_user) WRONG PR BASE or MACHETE PARENT? PR has feature rebase=no push=no
         """
         assert_success(
             ['status'],
@@ -85,15 +101,23 @@ class TestGitHubRetargetPR(BaseTest):
 
         assert_success(
             ['github', 'retarget-pr'],
-            'The base branch of PR #15 has been switched to branch-1\n'
+            """
+            Warn: GitHub API returned 307 HTTP status with error message: Temporary redirect.
+            It looks like the organization or repository name got changed recently and is outdated.
+            New organization is example-org and new repository is example-repo.
+            You can update your remote repository via: git remote set-url <remote_name> <new_repository_url>.
+            The base branch of PR #15 has been switched to develop
+            """
         )
 
         expected_status_output = """
-        root (untracked)
+        master (untracked)
         |
-        o-branch-1
+        o-develop
           |
           o-feature *  PR #15 rebase=no push=no
+          |
+          o-feature_4  PR #40 (some_other_user) WRONG PR BASE or MACHETE PARENT? PR has feature rebase=no push=no
         """
         assert_success(
             ['status'],
@@ -102,7 +126,14 @@ class TestGitHubRetargetPR(BaseTest):
 
         assert_success(
             ['github', 'retarget-pr'],
-            'The base branch of PR #15 is already branch-1\n'
+            'The base branch of PR #15 is already develop\n'
+        )
+
+        self.repo_sandbox.check_out("feature_4")
+
+        assert_failure(
+            ['github', 'retarget-pr'],
+            'Multiple PRs have feature_4 as its head: #35, #40'
         )
 
     github_api_state_for_test_github_retarget_pr_explicit_branch = MockGitHubAPIState(
@@ -117,9 +148,9 @@ class TestGitHubRetargetPR(BaseTest):
     )
 
     def test_github_retarget_pr_explicit_branch(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-        mocker.patch('urllib.request.Request', self.github_api_state_for_test_github_retarget_pr_explicit_branch.get_request_provider())
-        mocker.patch('urllib.request.urlopen', mock_urlopen)
+        self.patch_symbol(mocker, 'urllib.request.Request',
+                          self.github_api_state_for_test_github_retarget_pr_explicit_branch.get_request_provider())
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen)
 
         branchs_first_commit_msg = "First commit on branch."
         branchs_second_commit_msg = "Second commit on branch."
@@ -197,10 +228,9 @@ class TestGitHubRetargetPR(BaseTest):
         launch_command('github', 'retarget-pr', '--branch', 'branch-without-pr', '--ignore-if-missing')
 
     def test_github_retarget_pr_multiple_non_origin_remotes(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-        mocker.patch('urllib.request.Request', self.github_api_state_for_test_retarget_pr.get_request_provider())
-        mocker.patch('urllib.request.urlopen', mock_urlopen)
+        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'urllib.request.Request', self.github_api_state_for_test_retarget_pr.get_request_provider())
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen)
 
         branchs_first_commit_msg = "First commit on branch."
         branchs_second_commit_msg = "Second commit on branch."
@@ -319,5 +349,5 @@ class TestGitHubRetargetPR(BaseTest):
 
         assert_success(
             ['github', 'retarget-pr'],
-            'The base branch of PR #35 has been switched to feature_2\n'
+            'The base branch of PR #30 has been switched to feature_2\n'
         )

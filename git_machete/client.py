@@ -401,7 +401,7 @@ class MacheteClient:
 
         non_root_fixed_branches = excluding(all_local_branches, self.__roots)
         last_checkout_timestamps = self.__git.get_latest_checkout_timestamps()
-        non_root_fixed_branches_by_last_checkout_timestamps = sorted(
+        non_root_fixed_branches_by_last_checkout_timestamps: List[Tuple[int, LocalBranchShortName]] = sorted(
             (last_checkout_timestamps.get(branch, 0), branch) for branch in non_root_fixed_branches)
         if opt_checked_out_since:
             threshold = self.__git.get_git_timespec_parsed_to_unix_timestamp(
@@ -418,12 +418,10 @@ class MacheteClient:
             if stale:
                 threshold_date = datetime.datetime.utcfromtimestamp(fresh[0][0]).strftime("%Y-%m-%d")
                 warn(
-                    f"to keep the size of the discovered tree reasonable (ca. "
-                    f"{c} branches), only branches checked out at or after ca. "
-                    f"<b>{threshold_date}</b> are included.\n Use `git machete "
-                    f"discover --checked-out-since=<date>` (where <date> can be "
-                    f"e.g. `'2 weeks ago'` or `2020-06-01`) to change this "
-                    f"threshold so that less or more branches are included.\n")
+                    f"to keep the size of the discovered tree reasonable (ca. {c} branches), "
+                    f"only branches checked out at or after ca. <b>{threshold_date}</b> are included.\n"
+                    "Use `git machete discover --checked-out-since=<date>` (where <date> can be e.g. `'2 weeks ago'` or `2020-06-01`) "
+                    "to change this threshold so that less or more branches are included.\n")
         self.managed_branches = excluding(all_local_branches, stale_non_root_fixed_branches)
         if opt_checked_out_since and not self.managed_branches:
             warn(
@@ -471,8 +469,7 @@ class MacheteClient:
             self.managed_branches = excluding(self.managed_branches, merged_branches_to_skip)
             for branch in merged_branches_to_skip:
                 upstream = self.up_branch[branch]
-                if upstream:
-                    self.__down_branches[upstream] = excluding(self.__down_branches[upstream], [branch])
+                self.__down_branches[upstream] = excluding(self.__down_branches[upstream], [branch])
                 del self.up_branch[branch]
             # We're NOT applying the removal process recursively,
             # so it's theoretically possible that some merged branches became childless
@@ -486,7 +483,7 @@ class MacheteClient:
             opt_list_commits_with_hashes=False,
             opt_no_detect_squash_merges=False)
         print("")
-        do_backup = os.path.isfile(self._definition_file_path)
+        do_backup = os.path.isfile(self._definition_file_path) and io.open(self._definition_file_path).read().strip()
         backup_msg = (
             f"\nThe existing definition file will be backed up as {self._definition_file_path}~"
             if do_backup else "")
@@ -1223,7 +1220,7 @@ class MacheteClient:
             print("No branches to delete")
 
     def edit(self) -> int:
-        default_editor_with_args: List[str] = self.__get_default_editor_with_args()
+        default_editor_with_args: List[str] = self.__get_editor_with_args()
         if not default_editor_with_args:
             raise MacheteException(
                 f"Cannot determine editor. Set `GIT_MACHETE_EDITOR` environment "
@@ -1233,7 +1230,7 @@ class MacheteClient:
         args = default_editor_with_args[1:] + [self._definition_file_path]
         return utils.run_cmd(command, *args)
 
-    def __get_default_editor_with_args(self) -> List[str]:
+    def __get_editor_with_args(self) -> List[str]:
         # Based on the git's own algorithm for identifying the editor.
         # '$GIT_MACHETE_EDITOR', 'editor' (to please Debian-based systems) and 'nano' have been added.
         git_machete_editor_var = "GIT_MACHETE_EDITOR"
@@ -2250,14 +2247,17 @@ class MacheteClient:
         debug(f'organization is {remote_org_repo.organization}, repository is {remote_org_repo.repository}')
 
         try:
-            pr: Optional[GitHubPullRequest] = github_client.derive_pull_request_by_head(head)
+            prs: List[GitHubPullRequest] = github_client.derive_pull_requests_by_head(head)
         except MacheteException as err:
             if ignore_if_missing:
-                pr = None
+                prs = []
             else:
                 raise MacheteException(err.msg)
-        if not pr:
+        if not prs:
             return
+        if len(prs) > 1:
+            raise MacheteException(f"Multiple PRs have {head} as its head: " + ", ".join(f"#{_pr.number}" for _pr in prs))
+        pr = prs[0]
         debug(f'found {pr}')
 
         new_base: Optional[LocalBranchShortName] = self.up_branch.get(LocalBranchShortName.of(head))

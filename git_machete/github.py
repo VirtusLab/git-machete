@@ -76,7 +76,6 @@ GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
 
 
 class GitHubToken(NamedTuple):
-
     value: str
     provider: str
 
@@ -190,6 +189,8 @@ class GitHubToken(NamedTuple):
 
 class GitHubClient:
     DEFAULT_GITHUB_DOMAIN = "github.com"
+    # As of Dec 2022, GitHub API never returns more than 100 PRs, even if per_page query param is above 100.
+    MAX_PULLS_PER_PAGE_COUNT = 100
 
     def __init__(self,
                  domain: str,
@@ -241,7 +242,7 @@ class GitHubClient:
                 if link_header:
                     url_prefix_regex = re.escape(url_prefix)
                     match = re.search(f'<{url_prefix_regex}(/[^>]+)>; rel="next"', link_header)
-                    if match:
+                    if match:  # pragma: no branch; there should always be a match
                         next_page_path = match.group(1)
                         debug(f'there is more data to retrieve under {next_page_path}')
                         return parsed_response_body + self.__fire_github_api_request(method, next_page_path, request_body)
@@ -253,66 +254,71 @@ class GitHubClient:
                 raise UnprocessableEntityHTTPError(error_reason)
             elif err.code in (http.HTTPStatus.UNAUTHORIZED, http.HTTPStatus.FORBIDDEN):
                 first_line = f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`\n'
+                last_line = 'You can also use a different token provider, available providers can be found via `git machete help github`.'
                 if self.__token:
-                    raise MacheteException(first_line + 'Make sure that the GitHub API token '
-                                                        f'provided by the {self.__token.provider} '
-                                                        f'is valid and allows for access to `{method.upper()}` `{url_prefix}{path}`.\n'
-                                                        'You can also use a different token provider, available providers can be found '
-                                                        'when running `git machete help github`.')
+                    raise MacheteException(
+                        first_line + 'Make sure that the GitHub API token '
+                                     f'provided by the {self.__token.provider} '
+                                     f'is valid and allows for access to `{method.upper()}` `{url_prefix}{path}`.\n' + last_line)
                 else:
                     raise MacheteException(
-                        first_line + f'You might not have the required permissions for this repository.\n'
-                                     f'Provide a GitHub API token with `repo` access.\n'
-                                     f'Visit `https://{self.__domain}/settings/tokens` to generate a new one.\n'
-                                     'You can also use a different token provider, available providers can be found '
-                                     'when running `git machete help github`.')
+                        first_line + 'You might not have the required permissions for this repository.\n'
+                                     'Provide a GitHub API token with `repo` access.\n'
+                                     f'Visit `https://{self.__domain}/settings/tokens` to generate a new one.\n' + last_line)
             elif err.code == http.HTTPStatus.NOT_FOUND:
                 # TODO (#164): make a dedicated exception here
                 raise MacheteException(
                     f'`{method} {url}` request ended up in 404 response from GitHub. A valid GitHub API token is required.\n'
                     f'Provide a GitHub API token with `repo` access via one of the: {GitHubToken.get_possible_providers()} '
                     f'Visit `https://{self.__domain}/settings/tokens` to generate a new one.')
+            # See https://stackoverflow.com/a/62385184 for why 307 for POST/PATCH isn't automatically followed by urllib,
+            # unlike 307 for GET, or 301/302 for all HTTP methods.
             elif err.code == http.HTTPStatus.TEMPORARY_REDIRECT:
-                if err.headers['Location'] is not None and len(err.headers['Location'].split('/')) >= 5:
-                    current_repo_and_org = self.get_repo_and_org_names_by_id(err.headers['Location'].split('/')[4])
-                else:
+                # err.headers is a case-insensitive dict of class Message with the `__getitem__` and `get` functions implemented in
+                # https://github.com/python/cpython/blob/3.10/Lib/email/message.py
+                location = err.headers['Location']
+                new_repo_and_org = None
+                if location is not None:
+                    # The URL returned in the `Location` header is of the form "https://api.github.com/repositories/453977473".
+                    # It doesn't contain the info about the new org/repo name, which we'd like to display to the user in a warning.
+                    match = re.search('/repositories/([0-9]+)/', location)
+                    if match:  # pragma: no branch
+                        new_repo_and_org = self.get_repo_and_org_names_by_id(match.group(1))
+                else:  # pragma: no cover; unlikely to ever happen
                     first_line = fmt(f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`\n')
                     raise MacheteException(
                         first_line + 'It looks like the organization or repository name got changed recently and is outdated.\n'
-                        'Inferring current organization or repository... -> Cannot infer current organization or repository\n'
-                        'Update your remote repository manually via: `git remote set-url <remote_name> <new_repository_url>`.')
-                # err.headers is a case-insensitive dict of class Message with the `__getitem__` and `get` functions implemented in
-                # https://github.com/python/cpython/blob/3.10/Lib/email/message.py
-                pulls_or_issues_api_suffix = "/".join(path.split("/")[4:])
-                new_path = f'/repos/{current_repo_and_org}/{pulls_or_issues_api_suffix}'
-                # for example when creating a new PR, new_path='/repos/new_org_name/new_repo_name/pulls'
-                warn(f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`. \n'
-                     'It looks like the organization or repository name got changed recently and is outdated.\n'
-                     'Inferring current organization or repository... '
-                     f'New organization = {bold(current_repo_and_org.split("/")[0])}, '
-                     f'new repository = {bold(current_repo_and_org.split("/")[1])}.\n'
-                     'You can update your remote repository via: `git remote set-url <remote_name> <new_repository_url>`.',
-                     end='')
-                return self.__fire_github_api_request(method=method, path=new_path, request_body=request_body)
-            else:
+                                     'Update your remote repository manually via: `git remote set-url <remote_name> <new_repository_url>`.')
+                new_path = re.sub("https://[^/]+", "", location)
+                result = self.__fire_github_api_request(method=method, path=new_path, request_body=request_body)
+                if new_repo_and_org:  # pragma: no branch
+                    warn(f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`.\n'
+                         'It looks like the organization or repository name got changed recently and is outdated.\n'
+                         f'New organization is {bold(new_repo_and_org.split("/")[0])} and '
+                         f'new repository is {bold(new_repo_and_org.split("/")[1])}.\n'
+                         'You can update your remote repository via: `git remote set-url <remote_name> <new_repository_url>`.')
+                return result
+            else:  # pragma: no cover
                 first_line = fmt(f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`\n')
                 raise MacheteException(first_line + "Please open an issue regarding this topic under link: "
                                                     "https://github.com/VirtusLab/git-machete/issues/new")
-        except OSError as e:
+        except OSError as e:  # pragma: no cover
             raise MacheteException(f'Could not connect to {url_prefix}: {e}')
 
     @staticmethod
     def __extract_failure_info_from_422(response: Any) -> str:
         if response['message'] != 'Validation Failed':
-            return str(response['message'])
+            # This case is defensively included, we don't know if GitHub API can really behave this way.
+            return str(response['message'])  # pragma: no cover
         ret: List[str] = []
-        if response.get('errors'):
+        if response.get('errors'):  # pragma: no branch
             for error in response['errors']:
-                if error.get('message'):
+                if error.get('message'):  # pragma: no branch
                     ret.append(error['message'])
         if ret:
             return '\n'.join(ret)
-        return str(response)
+        else:
+            return str(response)  # pragma: no cover
 
     def create_pull_request(self,
                             head: str,
@@ -375,21 +381,16 @@ class GitHubClient:
                                        path=f'/repos/{self.__organization}/{self.__repository}/issues/{number}',
                                        request_body=request_body)
 
-    def derive_pull_request_by_head(self,
-                                    head: LocalBranchShortName
-                                    ) -> Optional[GitHubPullRequest]:
+    def derive_pull_requests_by_head(self,
+                                     head: LocalBranchShortName
+                                     ) -> List[GitHubPullRequest]:
         path = f'/repos/{self.__organization}/{self.__repository}/pulls?head={self.__organization}:{head}'
-        prs = self.__fire_github_api_request(method='GET',
-                                             path=path)
-        if len(prs) >= 1:
-            return GitHubPullRequest.from_json(prs[0])
-        else:
-            return None
+        prs = self.__fire_github_api_request(method='GET', path=path)
+        return [GitHubPullRequest.from_json(pr) for pr in prs]
 
     def derive_pull_requests(self) -> List[GitHubPullRequest]:
-        # As of Dec 2022, GitHub API never returns more than 100 PRs, even if per_page>100.
-        prs = self.__fire_github_api_request(method='GET',
-                                             path=f'/repos/{self.__organization}/{self.__repository}/pulls?per_page=100')
+        path = f'/repos/{self.__organization}/{self.__repository}/pulls?per_page={self.MAX_PULLS_PER_PAGE_COUNT}'
+        prs = self.__fire_github_api_request(method='GET', path=path)
         return list(map(GitHubPullRequest.from_json, prs))
 
     def derive_current_user_login(self) -> Optional[str]:
@@ -403,17 +404,13 @@ class GitHubClient:
                                            ) -> Optional[GitHubPullRequest]:
         try:
             path = f'/repos/{self.__organization}/{self.__repository}/pulls/{number}'
-            pr_json: Dict[str, Any] = self.__fire_github_api_request(method='GET',
-                                                                     path=path)
+            pr_json: Dict[str, Any] = self.__fire_github_api_request(method='GET', path=path)
             return GitHubPullRequest.from_json(pr_json)
         except MacheteException:
             return None
 
-    def get_repo_and_org_names_by_id(self,
-                                     repo_id: str
-                                     ) -> str:
-        repo = self.__fire_github_api_request(path='GET',
-                                              method=f'/repositories/{repo_id}')
+    def get_repo_and_org_names_by_id(self, repo_id: str) -> str:
+        repo = self.__fire_github_api_request(method='GET', path=f'/repositories/{repo_id}')
         return str(repo['full_name'])
 
     @staticmethod

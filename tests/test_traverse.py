@@ -1,6 +1,8 @@
+import os
+
 from pytest_mock import MockerFixture
 
-from .base_test import BaseTest, git
+from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
                       mock_input_returning, mock_run_cmd_and_discard_output,
                       rewrite_definition_file)
@@ -83,7 +85,6 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_slide_out(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         (
             self.repo_sandbox
             .remove_remote()
@@ -105,12 +106,12 @@ class TestTraverse(BaseTest):
             """
         rewrite_definition_file(body)
 
-        mocker.patch('builtins.input', mock_input_returning("q"))
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
         assert_success(
             ["traverse"],
             "Branch develop is merged into master. Slide develop out of the tree of branch dependencies? (y, N, q, yq) \n"
         )
-        mocker.patch('builtins.input', mock_input_returning("yq"))
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("yq"))
         assert_success(
             ["traverse"],
             "Branch develop is merged into master. Slide develop out of the tree of branch dependencies? (y, N, q, yq) \n"
@@ -126,7 +127,7 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_no_remotes(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         self.setup_standard_tree()
         self.repo_sandbox.remove_remote()
 
@@ -162,7 +163,7 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_no_push(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         self.setup_standard_tree()
 
         launch_command("traverse", "-Wy", "--no-push")
@@ -197,7 +198,7 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_no_push_override(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         self.setup_standard_tree()
         self.repo_sandbox.check_out("hotfix/add-trigger")
         launch_command("t", "-Wy", "--no-push", "--push", "--start-from=here")
@@ -300,7 +301,7 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_no_push_untracked(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         self.setup_standard_tree()
 
         launch_command("traverse", "-Wy", "--no-push-untracked")
@@ -335,7 +336,7 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_push_config_key(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         self.setup_standard_tree()
         self.repo_sandbox.set_git_config_key('machete.traverse.push', 'false')
         launch_command("traverse", "-Wy")
@@ -370,7 +371,7 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_no_push_no_checkout(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         (
             self.repo_sandbox.new_branch("root")
                 .commit("root")
@@ -444,7 +445,7 @@ class TestTraverse(BaseTest):
                        expected_result)
 
     def test_traverse_and_squash(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         self.setup_standard_tree()
 
         self.repo_sandbox.check_out("hotfix/add-trigger")
@@ -478,7 +479,7 @@ class TestTraverse(BaseTest):
               o-ignore-trailing
             """,
         )
-        assert git.get_current_branch() == "hotfix/add-trigger"
+        assert self.repo_sandbox.get_current_branch() == "hotfix/add-trigger"
 
         launch_command("traverse", "-wy")
         assert_success(
@@ -544,7 +545,7 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_with_merge(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         (
             self.repo_sandbox
             .new_branch("develop")
@@ -579,7 +580,7 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_qualifiers_no_push(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         self.setup_standard_tree()
 
         body: str = \
@@ -618,7 +619,7 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_qualifiers_no_rebase(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         self.setup_standard_tree()
 
         body: str = \
@@ -657,7 +658,7 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_qualifiers_no_rebase_no_push(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         self.setup_standard_tree()
 
         body: str = \
@@ -696,7 +697,7 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_qualifiers_no_slide_out(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         self.setup_standard_tree()
 
         body: str = \
@@ -740,3 +741,76 @@ class TestTraverse(BaseTest):
         expected_error_message = "No branches listed in .git/machete; " \
                                  "use git machete discover or git machete edit, or edit .git/machete manually."
         assert_failure(["traverse"], expected_error_message)
+
+    def test_traverse_invalid_flag_values(self) -> None:
+        self.setup_standard_tree()
+        assert_failure(["traverse", "--start-from=nowhere"],
+                       "Invalid argument for --start-from. Valid arguments: here|root|first-root.")
+        assert_failure(["traverse", "--return-to=dunno-where"],
+                       "Invalid argument for --return-to. Valid arguments: here|nearest-remaining|stay.")
+
+    def test_traverse_removes_current_directory(self) -> None:
+        (
+            self.repo_sandbox
+            .new_branch("master")
+            .commit()
+            .new_branch("with-directory")
+            .add_file_and_commit(file_path="directory/file.txt")
+            .check_out("master")
+            .new_branch("without-directory")
+            .commit()
+            .check_out("master")
+            .commit()
+            .check_out("with-directory")
+        )
+
+        body: str = \
+            """
+            master
+              with-directory
+              without-directory
+            """
+        rewrite_definition_file(body)
+
+        os.chdir("directory")
+
+        common_expected_output = """
+            Rebasing with-directory onto master...
+
+            Pushing untracked branch with-directory to origin...
+
+            Checking out without-directory
+
+              master (untracked)
+              |
+              o-with-directory
+              |
+              x-without-directory * (untracked)
+
+            Rebasing without-directory onto master...
+
+            Pushing untracked branch without-directory to origin...
+
+              master (untracked)
+              |
+              o-with-directory
+              |
+              o-without-directory *
+
+            Reached branch without-directory which has no successor; nothing left to update
+            """
+        if self.repo_sandbox.get_git_version() >= (2, 35, 0):
+            # See https://github.com/git/git/blob/master/Documentation/RelNotes/2.35.0.txt#L81 for the fix
+            assert_success(
+                ["traverse", "-y"],
+                common_expected_output
+            )
+            assert os.path.split(os.getcwd())[-1] == "directory"
+        else:
+            assert_success(
+                ["traverse", "-y"],
+                common_expected_output +
+                f"Warn: current directory {self.repo_sandbox.local_path}/directory no longer exists, " +
+                f"the nearest existing parent directory is {self.repo_sandbox.local_path}\n"
+            )
+            assert os.path.split(os.getcwd())[-1] != "directory"

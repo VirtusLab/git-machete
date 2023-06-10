@@ -11,6 +11,8 @@ from .mockers import (assert_failure, assert_success, launch_command,
 class TestDiscover(BaseTest):
 
     def test_discover(self) -> None:
+        assert_failure(['discover'], "No local branches found")
+
         (
             self.repo_sandbox
                 .new_branch('master')
@@ -77,7 +79,7 @@ class TestDiscover(BaseTest):
         assert_failure(['discover', '--roots=feature1,lolxd'], "lolxd is not a local branch")
 
     def test_discover_main_branch_and_edit(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox
@@ -100,12 +102,11 @@ class TestDiscover(BaseTest):
 
               feature1
 
-            Save the above tree to .git/machete?
-            The existing definition file will be backed up as .git/machete~ (y, e[dit], N) 
+            Save the above tree to .git/machete? (y, e[dit], N) 
             """
         )
 
-        mocker.patch('builtins.input', mock_input_returning('e'))
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('e'))
         with overridden_environment(GIT_MACHETE_EDITOR='cat'):
             assert_success(['discover'], expected_status_output)
 
@@ -119,3 +120,96 @@ class TestDiscover(BaseTest):
             feature1
             """
         )
+
+    def test_discover_checked_out_since_in_future(self) -> None:
+        (
+            self.repo_sandbox
+            .new_branch("root")
+            .commit()
+        )
+
+        assert_success(
+            ["discover", "--checked-out-since=tomorrow"],
+            "Warn: no branches satisfying the criteria. "
+            "Try moving the value of --checked-out-since further to the past.\n"
+        )
+
+    def test_discover_with_stale_branches(self) -> None:
+        self.repo_sandbox.remove_remote().new_branch("develop").commit()
+        for i in range(20):
+            self.repo_sandbox.new_branch(f"branch-{i:02d}").commit()
+        assert_success(
+            ["discover", "-y"],
+            "            Warn: to keep the size of the discovered tree reasonable (ca. 10 branches), "
+            "only branches checked out at or after ca. 2023-06-11 are included.\n"
+            "            Use git machete discover --checked-out-since=<date> (where <date> can be e.g. '2 weeks ago' or 2020-06-01) "
+            "to change this threshold so that less or more branches are included.\n"
+            """
+            Discovered tree of branch dependencies:
+
+              develop
+              |
+              ?-branch-10
+                |
+                o-branch-11
+                  |
+                  o-branch-12
+                    |
+                    o-branch-13
+                      |
+                      o-branch-14
+                        |
+                        o-branch-15
+                          |
+                          o-branch-16
+                            |
+                            o-branch-17
+                              |
+                              o-branch-18
+                                |
+                                o-branch-19 *
+
+            Saving the above tree to .git/machete...
+            """
+        )
+
+    def test_discover_with_merged_branches(self, mocker: MockerFixture) -> None:
+        (
+            self.repo_sandbox
+            .remove_remote()
+            .new_branch("master")
+            .commit()
+            .new_branch("feature1")
+            .commit()
+            .check_out("master")
+            .new_branch("feature2")
+            .commit()
+            .check_out("master")
+            .execute("git merge --ff-only feature1")
+        )
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('n'))
+        launch_command("discover")
+        assert self.repo_sandbox.read_file(".git/machete") == ""
+
+        rewrite_definition_file("master\n  feature1")
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('e'))
+        with overridden_environment(GIT_MACHETE_EDITOR='cat'):
+            assert_success(
+                ["discover"],
+                """
+                Warn: skipping feature1 since it's merged to another branch and would not have any downstream branches.
+
+                Discovered tree of branch dependencies:
+
+                  master *
+                  |
+                  x-feature2
+
+                Save the above tree to .git/machete?
+                The existing definition file will be backed up as .git/machete~ (y, e[dit], N) 
+                """
+            )
+
+        assert self.repo_sandbox.read_file(".git/machete~") == "master\n  feature1"

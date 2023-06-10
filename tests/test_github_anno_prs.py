@@ -2,7 +2,6 @@ from pytest_mock import MockerFixture
 
 from tests.base_test import BaseTest
 from tests.mockers import (assert_success, launch_command,
-                           mock_run_cmd_and_discard_output,
                            rewrite_definition_file)
 from tests.mockers_github import (MockGitHubAPIState,
                                   mock_github_token_for_domain_fake,
@@ -41,10 +40,9 @@ class TestGitHubAnnoPRs(BaseTest):
     )
 
     def test_github_anno_prs(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-        mocker.patch('urllib.request.urlopen', mock_urlopen)
-        mocker.patch('urllib.request.Request', self.github_api_state_for_test_anno_prs.get_request_provider())
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen)
+        self.patch_symbol(mocker, 'urllib.request.Request', self.github_api_state_for_test_anno_prs.get_request_provider())
 
         (
             self.repo_sandbox.new_branch("root")
@@ -174,10 +172,9 @@ class TestGitHubAnnoPRs(BaseTest):
     )
 
     def test_github_anno_prs_local_branch_name_different_than_tracking_branch_name(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-        mocker.patch('urllib.request.Request',
-                     self.github_api_state_for_test_local_branch_name_different_than_tracking_branch_name.get_request_provider())
-        mocker.patch('urllib.request.urlopen', mock_urlopen)
+        self.patch_symbol(mocker, 'urllib.request.Request',
+                          self.github_api_state_for_test_local_branch_name_different_than_tracking_branch_name.get_request_provider())
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen)
 
         (
             self.repo_sandbox.new_branch("root")

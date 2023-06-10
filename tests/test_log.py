@@ -7,7 +7,7 @@ from .mockers import launch_command, mock_run_cmd_and_forward_output
 class TestLog(BaseTest):
 
     def test_log(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_output)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_forward_output)
 
         self.repo_sandbox.new_branch('root')
         self.repo_sandbox.commit()

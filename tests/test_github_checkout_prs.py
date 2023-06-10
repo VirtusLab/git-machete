@@ -93,11 +93,11 @@ class TestGitHubCheckoutPRs(BaseTest):
     )
 
     def test_github_checkout_prs(self, mocker: MockerFixture, tmp_path: Any) -> None:
-        mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
-        mocker.patch('urllib.request.Request', self.github_api_state_for_test_checkout_prs.get_request_provider())
-        mocker.patch('urllib.request.urlopen', mock_urlopen)
+        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
+        self.patch_symbol(mocker, 'urllib.request.Request', self.github_api_state_for_test_checkout_prs.get_request_provider())
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen)
 
         (
             self.repo_sandbox.new_branch("root")
@@ -384,10 +384,11 @@ class TestGitHubCheckoutPRs(BaseTest):
     )
 
     def test_github_checkout_prs_freshly_cloned(self, mocker: MockerFixture, tmp_path: Any) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-        mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
-        mocker.patch('urllib.request.urlopen', mock_urlopen)
-        mocker.patch('urllib.request.Request', self.github_api_state_for_test_github_checkout_prs_fresh_repo.get_request_provider())
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen)
+        self.patch_symbol(mocker, 'urllib.request.Request',
+                          self.github_api_state_for_test_github_checkout_prs_fresh_repo.get_request_provider())
 
         (
             self.repo_sandbox.new_branch("root")
@@ -504,11 +505,11 @@ class TestGitHubCheckoutPRs(BaseTest):
 
     def test_github_checkout_prs_from_fork_with_deleted_repo(self, mocker: MockerFixture) -> None:
         # need to mock fetch_ref due to underlying `git fetch pull/head` calls
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-        mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
-        mocker.patch('urllib.request.urlopen', mock_urlopen)
-        mocker.patch('urllib.request.Request',
-                     self.github_api_state_for_test_github_checkout_prs_from_fork_with_deleted_repo.get_request_provider())
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen)
+        self.patch_symbol(mocker, 'urllib.request.Request',
+                          self.github_api_state_for_test_github_checkout_prs_from_fork_with_deleted_repo.get_request_provider())
 
         (
             self.repo_sandbox.new_branch("root")
@@ -623,12 +624,12 @@ class TestGitHubCheckoutPRs(BaseTest):
     )
 
     def test_github_checkout_prs_of_current_user_and_other_users(self, mocker: MockerFixture, tmp_path: Any) -> None:
-        mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
-        mocker.patch('urllib.request.Request',
-                     self.github_api_state_for_test_github_checkout_prs_of_current_user_and_other_users.get_request_provider())
-        mocker.patch('urllib.request.urlopen', mock_urlopen)
+        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
+        self.patch_symbol(mocker, 'urllib.request.Request',
+                          self.github_api_state_for_test_github_checkout_prs_of_current_user_and_other_users.get_request_provider())
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen)
 
         (
             self.repo_sandbox.new_branch("root")

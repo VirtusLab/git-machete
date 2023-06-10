@@ -10,7 +10,7 @@ class TestDiff(BaseTest):
         """
         Verify behaviour of a 'git machete diff' command.
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_output)  # to hide git outputs in tests
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_forward_output)  # to hide git outputs in tests
         (
             self.repo_sandbox.new_branch("master")
                 .add_file_and_commit(message='master commit1')

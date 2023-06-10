@@ -59,7 +59,7 @@ class TestStatus(BaseTest):
         assert_failure(['status'], expected_error_message)
 
     def test_single_invalid_branch_interactive_slide_out(self, mocker: MockerFixture) -> None:
-        mocker.patch("git_machete.client.MacheteClient.is_stdout_a_tty", lambda: True)
+        self.patch_symbol(mocker, "git_machete.client.MacheteClient.is_stdout_a_tty", lambda: True)
 
         (
             self.repo_sandbox
@@ -79,16 +79,16 @@ class TestStatus(BaseTest):
               master *
         """
 
-        mocker.patch("builtins.input", mock_input_returning(""))
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning(""))
         assert_success(["status"], expected_output)
 
-        mocker.patch("builtins.input", mock_input_returning("e"))
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning("e"))
         self.repo_sandbox.set_git_config_key("advice.macheteEditorSelection", "false")
         with overridden_environment(GIT_EDITOR="sed -i.bak '/foo/ d'"):
             assert_success(["status"], expected_output)
 
     def test_multiple_invalid_branches_interactive_slide_out(self, mocker: MockerFixture) -> None:
-        mocker.patch("git_machete.client.MacheteClient.is_stdout_a_tty", lambda: True)
+        self.patch_symbol(mocker, "git_machete.client.MacheteClient.is_stdout_a_tty", lambda: True)
 
         (
             self.repo_sandbox
@@ -120,7 +120,7 @@ class TestStatus(BaseTest):
 
               feature *
         """
-        mocker.patch("builtins.input", mock_input_returning_y)
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning_y)
         assert_success(["status"], expected_output)
 
     @pytest.mark.skipif(sys.platform == "win32", reason="Windows doesn't distinguish between executable and non-executable files")
@@ -213,8 +213,6 @@ class TestStatus(BaseTest):
         )
 
     def test_extra_space_before_branch_name(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-
         (
             self.repo_sandbox
                 .new_branch('master')
@@ -261,7 +259,7 @@ class TestStatus(BaseTest):
         assert_success(['status'], expected_status_output)
 
     def test_squashed_branch_recognized_as_merged(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("root")
@@ -414,8 +412,6 @@ class TestStatus(BaseTest):
         )
 
     def test_inferring_counterpart_for_fetching_of_branch(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-
         origin_1_remote_path = mkdtemp()
         self.repo_sandbox.new_repo(origin_1_remote_path, bare=True)
 
@@ -467,8 +463,6 @@ class TestStatus(BaseTest):
         assert_success(['status'], expected_status_output)
 
     def test_status_when_child_branch_is_pushed_immediately_after_creation(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-
         (
             self.repo_sandbox.new_branch("master")
             .commit("master")
@@ -735,3 +729,29 @@ class TestStatus(BaseTest):
         assert_success(['status', '-l'], expected_status_output)
 
         self.repo_sandbox.execute("git revert --abort")
+
+    def test_status_no_fork_point_for_child_branch(self) -> None:
+        (
+            self.repo_sandbox
+            .remove_remote()
+            .new_branch("master")
+            .commit()
+            # This will cause that develop will not have a fork point.
+            .new_orphan_branch("develop")
+            .commit()
+        )
+        body: str = \
+            """
+            master
+                develop
+            """
+        rewrite_definition_file(body)
+
+        assert_success(
+            ["status", "-l"],
+            """
+            master
+            |
+            x-develop *
+            """
+        )

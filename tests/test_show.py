@@ -1,8 +1,7 @@
-from pytest_mock import MockerFixture
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
-                      mock_run_cmd_and_discard_output, rewrite_definition_file)
+                      rewrite_definition_file)
 
 
 class TestShow(BaseTest):
@@ -82,9 +81,7 @@ class TestShow(BaseTest):
             """
         )
 
-    def test_show(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-
+    def test_show(self) -> None:
         self.setup_standard_tree()
 
         assert launch_command("show", "up").strip() == "hotfix/add-trigger"
@@ -95,16 +92,13 @@ class TestShow(BaseTest):
     def test_show_current_with_branch(self) -> None:
         assert_failure(["show", "current", "master"], "show current with a <branch> argument does not make sense")
 
-    def test_show_up(self, mocker: MockerFixture) -> None:
+    def test_show_up(self) -> None:
         """Verify behaviour of a 'git machete show up' command.
 
         Verify that 'git machete show up' displays name of a parent/upstream
         branch one above current one in the config file from within current
         root tree.
-
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-
         (
             self.repo_sandbox.new_branch("level-0-branch")
             .commit()
@@ -120,22 +114,18 @@ class TestShow(BaseTest):
 
         assert 'level-0-branch' == launch_command("show", "up").strip(), \
             ("Verify that 'git machete show up' displays name of a parent/upstream "
-             "branch one above current one."
-             )  # check short command behaviour
+             "branch one above current one.")
         assert 'level-0-branch' == launch_command("show", "u").strip(), \
             ("Verify that 'git machete show u' displays name of a parent/upstream "
-             "branch one above current one."
-             )
+             "branch one above current one.")
 
-    def test_show_down(self, mocker: MockerFixture) -> None:
+    def test_show_down(self) -> None:
         """Verify behaviour of a 'git machete show down' command.
 
         Verify that 'git machete show down' displays name of a
         child/downstream branch one below current one.
 
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-
         (
             self.repo_sandbox
             .new_branch("level-0-branch")
@@ -160,7 +150,7 @@ class TestShow(BaseTest):
         assert launch_command("show", "d", "level-1a-branch").strip() == "level-2-branch"
         assert_failure(["show", "d", "level-1b-branch"], "Branch level-1b-branch has no downstream branch")
 
-    def test_show_first(self, mocker: MockerFixture) -> None:
+    def test_show_first(self) -> None:
         """Verify behaviour of a 'git machete show first' command.
 
         Verify that 'git machete show first' displays name of the first downstream
@@ -168,8 +158,6 @@ class TestShow(BaseTest):
         branch has any downstream branches.
 
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-
         (
             self.repo_sandbox.new_branch("level-0-branch")
             .commit()
@@ -207,15 +195,13 @@ class TestShow(BaseTest):
         assert 'level-1a-branch' == launch_command("show", "first").strip(), \
             ("Verify that 'git machete show first' displays name of the first downstream "
              "branch of a root branch of the current branch in the config file if root "
-             "branch has any downstream branches."
-             )
+             "branch has any downstream branches.")
         assert 'level-1a-branch' == launch_command("show", "f").strip(), \
             ("Verify that 'git machete show f' displays name of the first downstream "
              "branch of a root branch of the current branch in the config file if root "
-             "branch has any downstream branches."
-             )
+             "branch has any downstream branches.")
 
-    def test_show_last(self, mocker: MockerFixture) -> None:
+    def test_show_last(self) -> None:
         """Verify behaviour of a 'git machete show last' command.
 
         Verify that 'git machete show last' displays name of the last downstream
@@ -223,8 +209,6 @@ class TestShow(BaseTest):
         branch has any downstream branches.
 
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-
         (
             self.repo_sandbox.new_branch("level-0-branch")
             .commit()
@@ -256,15 +240,13 @@ class TestShow(BaseTest):
         assert 'level-1b-branch' == launch_command("show", "last").strip(), \
             ("Verify that 'git machete show last' displays name of the last downstream "
              "branch of a root branch of the current branch in the config file if root "
-             "branch has any downstream branches."
-             )
+             "branch has any downstream branches.")
         assert 'level-1b-branch' == launch_command("show", "l").strip(), \
             ("Verify that 'git machete show l' displays name of the last downstream "
              "branch of a root branch of the current branch in the config file if root "
-             "branch has any downstream branches."
-             )
+             "branch has any downstream branches.")
 
-    def test_show_next(self, mocker: MockerFixture) -> None:
+    def test_show_next(self) -> None:
         """Verify behaviour of a 'git machete show next' command.
 
         Verify that 'git machete show next' displays name of
@@ -272,8 +254,6 @@ class TestShow(BaseTest):
         when successor branch exists within the root tree.
 
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-
         (
             self.repo_sandbox.new_branch("level-0-branch")
             .commit()
@@ -299,7 +279,7 @@ class TestShow(BaseTest):
         assert launch_command("show", "n").strip() == 'level-1b-branch'
         assert_failure(["show", "n", "level-1b-branch"], "Branch level-1b-branch has no successor")
 
-    def test_show_prev(self, mocker: MockerFixture) -> None:
+    def test_show_prev(self) -> None:
         """Verify behaviour of a 'git machete show prev' command.
 
         Verify that 'git machete show prev' displays name of
@@ -307,8 +287,6 @@ class TestShow(BaseTest):
         when predecessor branch exists within the root tree.
 
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-
         (
             self.repo_sandbox.new_branch("level-0-branch")
             .commit()
@@ -333,15 +311,12 @@ class TestShow(BaseTest):
         assert launch_command("show", "p").strip() == 'level-2a-branch'
         assert_failure(["show", "p", "level-0-branch"], "Branch level-0-branch has no predecessor")
 
-    def test_show_root(self, mocker: MockerFixture) -> None:
+    def test_show_root(self) -> None:
         """Verify behaviour of a 'git machete show root' command.
 
         Verify that 'git machete show root' displays name of the root of
         the current branch.
-
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-
         (
             self.repo_sandbox.new_branch("level-0-branch")
             .commit()
@@ -371,9 +346,7 @@ class TestShow(BaseTest):
 
         assert 'level-0-branch' == launch_command("show", "root").strip(), \
             ("Verify that 'git machete show root' displays name of the root of "
-             "the current branch."
-             )
+             "the current branch.")
         assert 'level-0-branch' == launch_command("show", "r").strip(), \
             ("Verify that 'git machete show r' displays name of the root of "
-             "the current branch."
-             )
+             "the current branch.")

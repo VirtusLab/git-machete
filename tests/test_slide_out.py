@@ -1,6 +1,6 @@
 from pytest_mock import MockerFixture
 
-from .base_test import BaseTest, git
+from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success,
                       fixed_author_and_committer_date, launch_command,
                       mock_input_returning_y, mock_run_cmd_and_discard_output,
@@ -10,7 +10,7 @@ from .mockers import (assert_failure, assert_success,
 class TestSlideOut(BaseTest):
 
     def test_slide_out(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         (
             self.repo_sandbox.new_branch("develop")
             .commit("develop commit")
@@ -117,7 +117,7 @@ class TestSlideOut(BaseTest):
                 """,
         )
 
-        mocker.patch('builtins.input', mock_input_returning_y)
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
         launch_command("slide-out", "-n", "--delete", "--merge")
 
         assert_success(
@@ -141,13 +141,13 @@ class TestSlideOut(BaseTest):
         # Slide-out and delete a terminal branch (child_d).
         # This just slices the branch off the tree.
         launch_command("go", "down")
-        assert "child_d" in git.get_local_branches()
-        mocker.patch('builtins.input', mock_input_returning_y)
+        assert "child_d" in self.repo_sandbox.get_local_branches()
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
         assert_success(
             ["slide-out", "-n", "--delete"],
             "Delete branch child_d (unmerged to HEAD)? (y, N, q) \n"
         )
-        assert "child_d" not in git.get_local_branches()
+        assert "child_d" not in self.repo_sandbox.get_local_branches()
 
         assert_success(
             ["status", "-l"],
@@ -165,7 +165,7 @@ class TestSlideOut(BaseTest):
         )
 
     def test_slide_out_with_post_slide_out_hook(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_output)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_forward_output)
 
         (
             self.repo_sandbox.new_branch('branch-0')
@@ -244,7 +244,7 @@ class TestSlideOut(BaseTest):
         )
 
     def test_slide_out_with_down_fork_point_and_single_child_of_last_branch(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_output)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_forward_output)
 
         (
             self.repo_sandbox.new_branch('branch-0')
@@ -313,8 +313,6 @@ class TestSlideOut(BaseTest):
         )
 
     def test_slide_out_with_invalid_sequence_of_branches(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_forward_output)
-
         (
             self.repo_sandbox.new_branch('branch-0')
                 .commit()

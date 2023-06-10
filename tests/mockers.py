@@ -12,8 +12,8 @@ import pytest
 
 from git_machete import cli, utils
 from git_machete.exceptions import MacheteException
+from git_machete.git_operations import GitContext
 from git_machete.utils import dim
-from tests.base_test import git
 
 """
 Usage: mockers.py
@@ -21,17 +21,19 @@ Usage: mockers.py
 This module provides mocking classes and functions used to create pytest based tests.
 
 Tips on when and why to use mocking functions:
-1. `mock_run_cmd()`
+1. `mock_run_cmd_and_discard_output()`
     * used to mock `utils.run_cmd` in order to redirect command's stdout and stderr out of sys.stdout
     * used to hide git command outputs so it's easier to assert correctness of the `git machete` command output
     * used in tests of these git machete commands:
         `add`, `advance`, `clean`, `github`, `go`, `help`, 'show`, `slide-out`, `traverse`, `update`
 
-2. `mock_run_cmd_and_forward_stdout()`
+2. `mock_run_cmd_and_forward_output()`
     * used to mock `utils.run_cmd` in order to capture command's stdout and stderr
     * used to capture git command outputs that would otherwise be lost, once the process that launched them finishes
     * used in tests of these git machete commands: `diff`, `log`, `slide-out`
 """
+
+git: GitContext = GitContext()
 
 
 @contextlib.contextmanager
@@ -61,6 +63,7 @@ def launch_command(*args: str) -> str:
             with redirect_stderr(out):
                 utils.debug_mode = False
                 utils.verbose_mode = False
+                utils.displayed_warnings = set()
                 cli.launch(list(args))
                 git.flush_caches()
         output = out.getvalue()

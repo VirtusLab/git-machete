@@ -13,7 +13,7 @@ class TestReapply(BaseTest):
         Verify that 'git machete reapply' performs
         'git rebase' to the fork point of the current branch.
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         with fixed_author_and_committer_date():
             (

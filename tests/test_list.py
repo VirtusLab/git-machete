@@ -4,7 +4,7 @@ from pytest_mock import MockerFixture
 from git_machete.exceptions import ExitCode
 
 from .base_test import BaseTest
-from .mockers import (assert_success, launch_command,
+from .mockers import (assert_failure, assert_success, launch_command,
                       mock_run_cmd_and_discard_output, rewrite_definition_file)
 
 
@@ -14,7 +14,7 @@ class TestList(BaseTest):
         """
         Verify behaviour of a 'git machete list' command.
         """
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("master")
@@ -138,3 +138,7 @@ class TestList(BaseTest):
         with pytest.raises(SystemExit) as e:
             launch_command('list', 'no-such-category')
         assert ExitCode.ARGUMENT_ERROR == e.value.code
+
+    def test_list_invalid_flag_combinations(self) -> None:
+        assert_failure(["list", "slidable-after"], "git machete list slidable-after requires an extra <branch> argument")
+        assert_failure(["list", "slidable", "some-branch"], "git machete list slidable does not expect extra arguments")

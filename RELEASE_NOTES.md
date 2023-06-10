@@ -4,6 +4,8 @@
 
 - fixed: `machete-post-slide-out`, `machete-pre-rebase` and `machete-status-branch` hooks can now be executed on Windows
 - fixed: unstable behavior after `edit` option has been selected for interactively sliding out invalid branches
+- fixed: handling of HTTP redirects when `git machete github create-pr` and `retarget-pr` act on a repository that has been renamed and/or moved
+- improved: `git machete github retarget-pr` now fails if there are multiple PR with the given head branch (rather than silently take the first of them into account)
 
 ## New in git-machete 3.17.4
 

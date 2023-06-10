@@ -8,8 +8,8 @@ from .mockers import (assert_success, launch_command, mock_input_returning_y,
 class TestClean(BaseTest):
 
     def test_clean(self, mocker: MockerFixture) -> None:
-        mocker.patch('builtins.input', mock_input_returning_y)
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         (
             self.repo_sandbox.new_branch('master')
                 .commit()

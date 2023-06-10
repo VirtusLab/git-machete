@@ -4,7 +4,7 @@ from tempfile import mkdtemp
 
 from git_machete.exceptions import UnderlyingGitException
 
-from .base_test import BaseTest, git
+from .base_test import BaseTest
 from .mockers import assert_failure, launch_command
 
 
@@ -30,7 +30,7 @@ class TestFile(BaseTest):
         definition_file_path_relative_to_git_dir = '/'.join(definition_file_path[-2:]).rstrip('\n')
         assert definition_file_path_relative_to_git_dir == '.git/machete'
 
-        if git.get_git_version() >= (2, 5):  # `git worktree` command was introduced in git version 2.5
+        if self.repo_sandbox.get_git_version() >= (2, 5):  # `git worktree` command was introduced in git version 2.5
             # check git machete definition file path when inside a worktree using the default `True` value
             # for the `machete.worktree.useTopLevelMacheteFile` key
             self.repo_sandbox.execute("git worktree add -f -b snickers_feature snickers_worktree develop")
@@ -54,3 +54,7 @@ class TestFile(BaseTest):
         other_path = mkdtemp()
         os.chdir(other_path)
         assert_failure(["file"], "Not a git repository", expected_exception=UnderlyingGitException)
+
+    def test_file_when_git_machete_is_a_directory(self) -> None:
+        self.repo_sandbox.execute(f"mkdir .git{os.path.sep}machete")
+        assert_failure(["file"], ".git/machete is a directory rather than a regular file, aborting")

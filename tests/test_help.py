@@ -7,14 +7,12 @@ from git_machete.cli import commands_and_aliases
 from git_machete.exceptions import ExitCode
 
 from .base_test import BaseTest
-from .mockers import launch_command, mock_run_cmd_and_discard_output
+from .mockers import launch_command
 
 
 class TestHelp(BaseTest):
 
     def test_help(self, mocker: MockerFixture) -> None:
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-
         with pytest.raises(SystemExit) as e:
             launch_command()
         assert ExitCode.ARGUMENT_ERROR == e.value.code

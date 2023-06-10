@@ -60,7 +60,7 @@ def does_directory_exist(path: str) -> bool:
         # Note that os.path.isdir itself (without os.path.abspath) isn't reliable
         # since it returns a false positive (True) for the current directory when if it doesn't exist
         return os.path.isdir(os.path.abspath(path))
-    except OSError:
+    except OSError:  # pragma: no cover
         return False
 
 

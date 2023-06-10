@@ -1,12 +1,11 @@
 import os
+import re
 import subprocess
 import time
 from tempfile import mkdtemp
-from typing import List, Optional
+from typing import Any, List, Optional, Set, Tuple
 
-from git_machete.git_operations import GitContext
-
-git: GitContext = GitContext()
+from pytest_mock import MockerFixture
 
 
 class BaseTest:
@@ -21,6 +20,22 @@ class BaseTest:
             .execute('git config user.email "tester@test.com"')
             .execute('git config user.name "Tester Test"')
         )
+        self.expected_mock_methods: Set[str] = set()
+
+    def patch_symbol(self, mocker: MockerFixture, symbol: str, target: Any) -> None:
+        if callable(target):
+            def wrapper(*args: Any, **kwargs: Any) -> Any:
+                if symbol in self.expected_mock_methods:
+                    self.expected_mock_methods.remove(symbol)
+                return target(*args, **kwargs)
+            mocker.patch(symbol, wrapper)
+            self.expected_mock_methods.add(symbol)
+        else:
+            mocker.patch(symbol, target)
+
+    def teardown_method(self) -> None:
+        if self.expected_mock_methods:
+            raise Exception("Patched method(s) have never been called: " + ", ".join(self.expected_mock_methods))
 
 
 class GitRepositorySandbox:
@@ -117,14 +132,22 @@ class GitRepositorySandbox:
     def get_local_branches(self) -> List[str]:
         return self.popen('git for-each-ref refs/heads/ "--format=%(refname:short)"').splitlines()
 
-    def is_ancestor(self, earlier: str, later: str) -> bool:
+    def is_ancestor_or_equal(self, earlier: str, later: str) -> bool:
         return subprocess.call(f'git merge-base --is-ancestor  "{earlier}"  "{later}"', shell=True) == 0
 
     def get_current_commit_hash(self) -> str:
         return self.get_commit_hash("HEAD")
 
+    def get_current_branch(self) -> str:
+        return self.popen("git symbolic-ref --short HEAD")
+
     def get_commit_hash(self, revision: str) -> str:
         return self.popen(f"git rev-parse {revision}")
+
+    def get_git_version(self) -> Tuple[int, int, int]:
+        raw = re.search(r"(\d+).(\d+).(\d+)", self.popen("git version"))
+        assert raw
+        return int(raw.group(1)), int(raw.group(2)), int(raw.group(3))
 
     def set_git_config_key(self, key: str, value: str) -> "GitRepositorySandbox":
         self.execute(f'git config {key} {value}')

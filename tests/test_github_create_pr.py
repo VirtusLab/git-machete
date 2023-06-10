@@ -7,8 +7,7 @@ from tests.mockers import (assert_failure, assert_success, launch_command,
                            mock_input_returning, mock_input_returning_y,
                            mock_run_cmd_and_discard_output,
                            rewrite_definition_file)
-from tests.mockers_github import (MockGitHubAPIState, MockHTTPError,
-                                  mock_from_url,
+from tests.mockers_github import (MockGitHubAPIState, mock_from_url,
                                   mock_github_token_for_domain_fake,
                                   mock_github_token_for_domain_none,
                                   mock_repository_info, mock_urlopen)
@@ -30,13 +29,12 @@ class TestGitHubCreatePR(BaseTest):
     )
 
     def test_github_create_pr(self, mocker: MockerFixture) -> None:
-        mocker.patch('builtins.input', mock_input_returning_y)
-        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
-        mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-        mocker.patch('urllib.error.HTTPError', MockHTTPError)  # need to provide read() method, which does not actually reads error from url
-        mocker.patch('urllib.request.Request', self.github_api_state_for_test_create_pr.get_request_provider())
-        mocker.patch('urllib.request.urlopen', mock_urlopen)
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
+        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'urllib.request.Request', self.github_api_state_for_test_create_pr.get_request_provider())
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen)
 
         (
             self.repo_sandbox.new_branch("root")
@@ -254,13 +252,13 @@ class TestGitHubCreatePR(BaseTest):
     )
 
     def test_github_create_pr_missing_base_branch_on_remote(self, mocker: MockerFixture) -> None:
-        mocker.patch('builtins.input', mock_input_returning_y)
-        mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
-        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-        mocker.patch('urllib.request.urlopen', mock_urlopen)
-        mocker.patch('urllib.request.Request',
-                     self.github_api_state_for_test_create_pr_missing_base_branch_on_remote.get_request_provider())
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
+        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen)
+        self.patch_symbol(mocker, 'urllib.request.Request',
+                          self.github_api_state_for_test_create_pr_missing_base_branch_on_remote.get_request_provider())
 
         (
             self.repo_sandbox.new_branch("root")
@@ -311,14 +309,13 @@ class TestGitHubCreatePR(BaseTest):
     )
 
     def test_github_create_pr_with_multiple_non_origin_remotes(self, mocker: MockerFixture) -> None:
-        mocker.patch('builtins.input', mock_input_returning('1', 'y', 'y'))
-        mocker.patch('git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
-        mocker.patch('git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
-        mocker.patch('git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-        mocker.patch('urllib.error.HTTPError', MockHTTPError)  # need to provide read() method, which does not actually read error from url
-        mocker.patch('urllib.request.Request',
-                     self.github_api_state_for_test_github_create_pr_with_multiple_non_origin_remotes.get_request_provider())
-        mocker.patch('urllib.request.urlopen', mock_urlopen)
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('1', 'y', 'y'))
+        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
+        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+        self.patch_symbol(mocker, 'urllib.request.Request',
+                          self.github_api_state_for_test_github_create_pr_with_multiple_non_origin_remotes.get_request_provider())
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen)
 
         origin_1_remote_path = mkdtemp()
         origin_2_remote_path = mkdtemp()
@@ -399,7 +396,7 @@ class TestGitHubCreatePR(BaseTest):
                 .commit('introduce feature 2')
         )
 
-        mocker.patch('builtins.input', mock_input_returning('y', '1', 'y'))
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('y', '1', 'y'))
 
         expected_result = """
         Add feature_2 onto the inferred upstream (parent) branch feature? (y, N) 
@@ -436,7 +433,7 @@ class TestGitHubCreatePR(BaseTest):
                 .push(remote='origin_1', set_upstream=False)
         )
 
-        mocker.patch('builtins.input', mock_input_returning('y'))
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('y'))
         expected_result = """
         Add feature_3 onto the inferred upstream (parent) branch feature_2? (y, N) 
         Added branch feature_3 onto feature_2
@@ -456,7 +453,7 @@ class TestGitHubCreatePR(BaseTest):
                 .push(remote='origin_2')
         )
 
-        mocker.patch('builtins.input', mock_input_returning('y', 'y'))
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('y', 'y'))
         expected_result = """
         Add feature_4 onto the inferred upstream (parent) branch feature_3? (y, N) 
         Added branch feature_4 onto feature_3
@@ -479,11 +476,12 @@ class TestGitHubCreatePR(BaseTest):
                 .push(remote='origin_2')
         )
 
-        mocker.patch('builtins.input', mock_input_returning('y', 'y'))
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('y', 'y'))
         expected_result = """
         Add feature_5 onto the inferred upstream (parent) branch feature_3? (y, N) 
         Added branch feature_5 onto feature_3
         Fetching origin...
+        Warn: Base branch for this PR (feature_3) is not found on remote, pushing...
         Push untracked branch feature_3 to origin? (y, Q) 
         Creating a PR from feature_5 to feature_3... OK, see www.github.com
         """

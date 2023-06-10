@@ -179,7 +179,7 @@ HEAD = AnyRevision.of("HEAD")
 class GitContext:
 
     def __init__(self) -> None:
-        self._git_version: Optional[Tuple[int, ...]] = None
+        self._git_version: Optional[Tuple[int, int, int]] = None
         self._root_dir: Optional[str] = None
         self._main_git_dir: Optional[str] = None
         self._worktree_git_dir: Optional[str] = None
@@ -225,15 +225,15 @@ class GitContext:
             raise UnderlyingGitException(exit_code_msg + stdout_msg + stderr_msg, apply_fmt=False)
         return CommandResult(stdout, stderr, exit_code)
 
-    def get_git_version(self) -> Tuple[int, ...]:
+    def get_git_version(self) -> Tuple[int, int, int]:
         if not self._git_version:
             # We need to cut out the x.y.z part and not just take the result of 'git version' as is,
             # because the version string in certain distributions of git (esp. on OS X) has an extra suffix,
             # which is irrelevant for our purpose (checking whether certain git CLI features are available/bugs are fixed).
-            raw = re.search(r"\d+.\d+.\d+", self._popen_git("version").stdout)
+            raw = re.search(r"(\d+).(\d+).(\d+)", self._popen_git("version").stdout)
             if not raw:  # unlikely, never observed so far; mostly to satisfy mypy
                 return 0, 0, 0  # pragma: no cover
-            self._git_version = tuple(map(int, raw.group(0).split(".")))
+            self._git_version = (int(raw.group(1)), int(raw.group(2)), int(raw.group(3)))
         return self._git_version
 
     def get_root_dir(self) -> str:
@@ -276,7 +276,8 @@ class GitContext:
     def get_git_timespec_parsed_to_unix_timestamp(self, date: str) -> int:
         try:
             return int(self._popen_git("rev-parse", "--since=" + date).stdout.replace("--max-age=", "").strip())
-        except (UnderlyingGitException, ValueError):
+        # Apparently `git rev-parse --since` always prints out a result, even for gibberish inputs
+        except (UnderlyingGitException, ValueError):  # pragma: no cover
             raise UnderlyingGitException(f"Cannot parse timespec: `{date}`")
 
     def __ensure_config_loaded(self) -> None:
@@ -284,7 +285,7 @@ class GitContext:
             self.__config_cached = {}
             for config_line in utils.get_non_empty_lines(self._popen_git("config", "--list").stdout):
                 k_v = config_line.split("=", 1)
-                if len(k_v) == 2:
+                if len(k_v) == 2:  # pragma: no branch; should always be true
                     k, v = k_v
                     self.__config_cached[k.lower()] = v
 
@@ -672,7 +673,7 @@ class GitContext:
         rebase_apply_head_name_file = self.get_worktree_git_subpath("rebase-apply", "head-name")
         # Most likely .git/rebase-apply/head-name can't exist during am sessions, but it's better to be safe.
         if not self.is_am_in_progress() and os.path.isfile(rebase_apply_head_name_file):
-            head_name_file = rebase_apply_head_name_file
+            head_name_file = rebase_apply_head_name_file  # pragma: no cover
 
         if not head_name_file:
             return None
