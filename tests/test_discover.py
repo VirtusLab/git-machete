@@ -1,4 +1,6 @@
 import os.path
+import re
+import textwrap
 
 from pytest_mock import MockerFixture
 
@@ -138,10 +140,10 @@ class TestDiscover(BaseTest):
         self.repo_sandbox.remove_remote().new_branch("develop").commit()
         for i in range(20):
             self.repo_sandbox.new_branch(f"branch-{i:02d}").commit()
-        assert_success(
-            ["discover", "-y"],
+        actual_output = launch_command("discover", "-y")
+        assert re.sub("\\d{4}-\\d{2}-\\d{2}", "YYYY-MM-DD", actual_output, count=1) == textwrap.dedent(  # noqa: FS003
             "            Warn: to keep the size of the discovered tree reasonable (ca. 10 branches), "
-            "only branches checked out at or after ca. 2023-06-11 are included.\n"
+            "only branches checked out at or after ca. YYYY-MM-DD are included.\n"
             "            Use git machete discover --checked-out-since=<date> (where <date> can be e.g. '2 weeks ago' or 2020-06-01) "
             "to change this threshold so that less or more branches are included.\n"
             """
