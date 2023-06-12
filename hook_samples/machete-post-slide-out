@@ -11,7 +11,7 @@
 
 [[ -n "$1" || -n "$2" ]] || { echo "usage: $(basename "$0") <new-upstream> <slid-out-branch> [<new-downstreams>...]"; exit 1; }
 
-set -e -o pipefail -u
+set -e
 
 new_downstreams=("${@:3}")
 
