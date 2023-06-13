@@ -99,8 +99,8 @@ class GitRepositorySandbox:
         self.execute(f'git commit -m "{message}"')
         return self
 
-    def commit_amend(self, message: str) -> "GitRepositorySandbox":
-        self.execute(f'git commit --amend -m "{message}"')
+    def amend_commit(self, message: str = "Some commit message.") -> "GitRepositorySandbox":
+        self.execute(f'git commit -a --amend -m "{message}"')
         return self
 
     def push(self, remote: str = 'origin', set_upstream: bool = True, tracking_branch: Optional[str] = None) -> "GitRepositorySandbox":

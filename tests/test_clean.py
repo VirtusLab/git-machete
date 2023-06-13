@@ -2,14 +2,13 @@ from pytest_mock import MockerFixture
 
 from .base_test import BaseTest
 from .mockers import (assert_success, launch_command, mock_input_returning_y,
-                      mock_run_cmd_and_discard_output, rewrite_definition_file)
+                      rewrite_definition_file)
 
 
 class TestClean(BaseTest):
 
     def test_clean(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         (
             self.repo_sandbox.new_branch('master')
                 .commit()

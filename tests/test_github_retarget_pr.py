@@ -54,8 +54,7 @@ class TestGitHubRetargetPR(BaseTest):
     )
 
     def test_github_retarget_pr(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'urllib.request.Request', self.github_api_state_for_test_retarget_pr.get_request_provider())
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_retarget_pr))
 
         (
             self.repo_sandbox.new_branch("master")
@@ -148,9 +147,8 @@ class TestGitHubRetargetPR(BaseTest):
     )
 
     def test_github_retarget_pr_explicit_branch(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'urllib.request.Request',
-                          self.github_api_state_for_test_github_retarget_pr_explicit_branch.get_request_provider())
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen)
+        self.patch_symbol(mocker, 'urllib.request.urlopen',
+                          mock_urlopen(self.github_api_state_for_test_github_retarget_pr_explicit_branch))
 
         branchs_first_commit_msg = "First commit on branch."
         branchs_second_commit_msg = "Second commit on branch."
@@ -225,12 +223,11 @@ class TestGitHubRetargetPR(BaseTest):
                                   ' Visit https://github.com/settings/tokens to generate a new one.')
         assert_failure(["github", "retarget-pr", "--branch", "branch-without-pr"], expected_error_message)
 
-        launch_command('github', 'retarget-pr', '--branch', 'branch-without-pr', '--ignore-if-missing')
+        launch_command('github', 'retarget-pr', '--debug', '--branch', 'branch-without-pr', '--ignore-if-missing')
 
     def test_github_retarget_pr_multiple_non_origin_remotes(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'urllib.request.Request', self.github_api_state_for_test_retarget_pr.get_request_provider())
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_retarget_pr))
 
         branchs_first_commit_msg = "First commit on branch."
         branchs_second_commit_msg = "Second commit on branch."
@@ -350,4 +347,24 @@ class TestGitHubRetargetPR(BaseTest):
         assert_success(
             ['github', 'retarget-pr'],
             'The base branch of PR #30 has been switched to feature_2\n'
+        )
+
+    github_api_state_for_test_retarget_pr_root_branch = MockGitHubAPIState([{
+        'head': {'ref': 'master', 'repo': mock_repository_info},
+        'user': {'login': 'some_other_user'},
+        'base': {'ref': 'root'}, 'number': '15',
+        'html_url': 'www.github.com', 'state': 'open'
+    }])
+
+    def test_github_retarget_pr_root_branch(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_retarget_pr_root_branch))
+
+        self.repo_sandbox.new_branch("master").commit()
+        rewrite_definition_file("master")
+
+        assert_failure(
+            ['github', 'retarget-pr'],
+            "Branch master does not have a parent branch (it is a root) even though there is an open PR #15 to root.\n"
+            "Consider modifying the branch definition file (git machete edit) so that master is a child of root."
         )

@@ -9,10 +9,9 @@ from pytest_mock import MockerFixture
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success,
-                      fixed_author_and_committer_date, launch_command,
+                      fixed_author_and_committer_date_in_past, launch_command,
                       mock_input_returning, mock_input_returning_y,
-                      mock_run_cmd_and_discard_output, overridden_environment,
-                      rewrite_definition_file)
+                      overridden_environment, rewrite_definition_file)
 
 
 class TestStatus(BaseTest):
@@ -212,7 +211,7 @@ class TestStatus(BaseTest):
             """
         )
 
-    def test_extra_space_before_branch_name(self, mocker: MockerFixture) -> None:
+    def test_extra_space_before_branch_name(self) -> None:
         (
             self.repo_sandbox
                 .new_branch('master')
@@ -258,8 +257,7 @@ class TestStatus(BaseTest):
         )
         assert_success(['status'], expected_status_output)
 
-    def test_squashed_branch_recognized_as_merged(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+    def test_squashed_branch_recognized_as_merged_with_traverse(self) -> None:
 
         (
             self.repo_sandbox.new_branch("root")
@@ -411,7 +409,7 @@ class TestStatus(BaseTest):
             """,
         )
 
-    def test_inferring_counterpart_for_fetching_of_branch(self, mocker: MockerFixture) -> None:
+    def test_inferring_counterpart_for_fetching_of_branch(self) -> None:
         origin_1_remote_path = mkdtemp()
         self.repo_sandbox.new_repo(origin_1_remote_path, bare=True)
 
@@ -462,7 +460,7 @@ class TestStatus(BaseTest):
         )
         assert_success(['status'], expected_status_output)
 
-    def test_status_when_child_branch_is_pushed_immediately_after_creation(self, mocker: MockerFixture) -> None:
+    def test_status_when_child_branch_is_pushed_immediately_after_creation(self) -> None:
         (
             self.repo_sandbox.new_branch("master")
             .commit("master")
@@ -522,7 +520,7 @@ class TestStatus(BaseTest):
         assert_success(['status', '-l'], expected_status_output)
 
     def test_status_yellow_edges(self) -> None:
-        with fixed_author_and_committer_date():
+        with fixed_author_and_committer_date_in_past():
             (
                 self.repo_sandbox
                 .remove_remote()

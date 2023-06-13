@@ -2,9 +2,7 @@ from pytest_mock import MockerFixture
 
 from tests.base_test import BaseTest
 from tests.mockers import (assert_success, launch_command,
-                           mock_input_returning_y,
-                           mock_run_cmd_and_discard_output,
-                           rewrite_definition_file)
+                           mock_input_returning_y, rewrite_definition_file)
 from tests.mockers_github import (MockGitHubAPIState, mock_from_url,
                                   mock_github_token_for_domain_fake,
                                   mock_repository_info, mock_urlopen)
@@ -27,11 +25,9 @@ class TestGitHubSync(BaseTest):
 
     def test_github_sync(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen)
-        self.patch_symbol(mocker, 'urllib.request.Request', self.github_api_state_for_test_github_sync.get_request_provider())
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_github_sync))
 
         (
             self.repo_sandbox

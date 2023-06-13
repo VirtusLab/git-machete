@@ -1,3 +1,4 @@
+import os
 from tempfile import mkdtemp
 
 from pytest_mock import MockerFixture
@@ -5,7 +6,6 @@ from pytest_mock import MockerFixture
 from tests.base_test import BaseTest
 from tests.mockers import (assert_failure, assert_success, launch_command,
                            mock_input_returning, mock_input_returning_y,
-                           mock_run_cmd_and_discard_output,
                            rewrite_definition_file)
 from tests.mockers_github import (MockGitHubAPIState, mock_from_url,
                                   mock_github_token_for_domain_fake,
@@ -32,9 +32,7 @@ class TestGitHubCreatePR(BaseTest):
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-        self.patch_symbol(mocker, 'urllib.request.Request', self.github_api_state_for_test_create_pr.get_request_provider())
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_create_pr))
 
         (
             self.repo_sandbox.new_branch("root")
@@ -66,11 +64,11 @@ class TestGitHubCreatePR(BaseTest):
                 .new_branch("hotfix/add-trigger")
                 .commit("HOTFIX Add the trigger")
                 .push()
-                .commit_amend("HOTFIX Add the trigger (amended)")
+                .amend_commit("HOTFIX Add the trigger (amended)")
                 .new_branch("ignore-trailing")
                 .commit("Ignore trailing data")
                 .sleep(1)
-                .commit_amend("Ignore trailing data (amended)")
+                .amend_commit("Ignore trailing data (amended)")
                 .push()
                 .reset_to("ignore-trailing@{1}")  # noqa: FS003
                 .delete_branch("root")
@@ -238,6 +236,69 @@ class TestGitHubCreatePR(BaseTest):
                                  "base branch for the PR cannot be established."
         assert_failure(["github", "create-pr"], expected_error_message)
 
+        self.repo_sandbox.write_to_file(".git/info/reviewers", "invalid-user")
+        self.repo_sandbox.check_out("allow-ownership-link")
+        assert_success(
+            ["github", "create-pr"],
+            f"""
+            Push allow-ownership-link to origin? (y, N, q) 
+
+              master
+              |
+              o-hotfix/add-trigger
+                |
+                x-ignore-trailing (diverged from & older than origin)
+                  |
+                  o-chore/fields
+
+              develop
+              |
+              x-allow-ownership-link *
+              | |
+              | x-build-chain (untracked)
+              |
+              o-call-ws
+              | |
+              | x-drop-constraint (untracked)
+              |
+              o-testing/endpoints
+
+            Fetching origin...
+            Creating a PR from allow-ownership-link to develop... OK, see www.github.com
+            Setting milestone of PR #7 to #42... OK
+            Adding github_user as assignee to PR #7... OK
+            Adding invalid-user as reviewer to PR #7... 
+            Warn: There are some invalid reviewers in .git{os.path.sep}info{os.path.sep}reviewers file.
+            Skipped adding reviewers to pull request.
+            """
+        )
+
+    def test_github_create_pr_for_root_branch(self) -> None:
+        self.repo_sandbox.new_branch("master").commit()
+        rewrite_definition_file("master")
+        assert_failure(
+            ["github", "create-pr"],
+            "Branch master does not have a parent branch (it is a root), base branch for the PR cannot be established."
+        )
+
+    def test_github_create_pr_for_branch_with_no_fork_point(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+
+        (
+            self.repo_sandbox
+            .new_branch("master")
+            .commit()
+            .push()
+            .new_orphan_branch("develop")
+            .commit()
+            .push()
+        )
+        rewrite_definition_file("master\n  develop")
+        assert_failure(
+            ["github", "create-pr"],
+            "Fork point not found for branch develop; use git machete fork-point develop --override-to..."
+        )
+
     github_api_state_for_test_create_pr_missing_base_branch_on_remote = MockGitHubAPIState(
         [
             {
@@ -255,10 +316,8 @@ class TestGitHubCreatePR(BaseTest):
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
         self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen)
-        self.patch_symbol(mocker, 'urllib.request.Request',
-                          self.github_api_state_for_test_create_pr_missing_base_branch_on_remote.get_request_provider())
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(
+            self.github_api_state_for_test_create_pr_missing_base_branch_on_remote))
 
         (
             self.repo_sandbox.new_branch("root")
@@ -312,10 +371,8 @@ class TestGitHubCreatePR(BaseTest):
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('1', 'y', 'y'))
         self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-        self.patch_symbol(mocker, 'urllib.request.Request',
-                          self.github_api_state_for_test_github_create_pr_with_multiple_non_origin_remotes.get_request_provider())
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen)
+        self.patch_symbol(mocker, 'urllib.request.urlopen',
+                          mock_urlopen(self.github_api_state_for_test_github_create_pr_with_multiple_non_origin_remotes))
 
         origin_1_remote_path = mkdtemp()
         origin_2_remote_path = mkdtemp()

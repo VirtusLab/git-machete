@@ -11,38 +11,24 @@ from tests.mockers_github import (MockGitHubAPIState,
 class TestGitHubAnnoPRs(BaseTest):
 
     github_api_state_for_test_anno_prs = MockGitHubAPIState(
-        [
-            {
-                'head': {'ref': 'ignore-trailing', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'hotfix/add-trigger'},
-                'number': '3',
-                'html_url': 'www.github.com',
-                'state': 'open'
-            },
-            {
-                'head': {'ref': 'allow-ownership-link', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'develop'},
-                'number': '7',
-                'html_url': 'www.github.com',
-                'state': 'open'
-            },
-            {
-                'head': {'ref': 'call-ws', 'repo': mock_repository_info},
-                'user': {'login': 'github_user'},
-                'base': {'ref': 'develop'},
-                'number': '31',
-                'html_url': 'www.github.com',
-                'state': 'open'
-            }
-        ]
+        [{
+            'head': {'ref': head, 'repo': mock_repository_info},
+            'user': {'login': user},
+            'base': {'ref': base},
+            'number': str(number),
+            'html_url': 'www.github.com',
+            'state': 'open'
+        } for (number, user, head, base) in (
+            (3, 'some_other_user', 'ignore-trailing', 'hotfix/add-trigger'),
+            (7, 'some_other_user', 'allow-ownership-link', 'develop'),
+            (31, 'github_user', 'call-ws', 'develop'),
+            (37, 'github_user', 'develop', 'master'),
+        )]
     )
 
     def test_github_anno_prs(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen)
-        self.patch_symbol(mocker, 'urllib.request.Request', self.github_api_state_for_test_anno_prs.get_request_provider())
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_anno_prs))
 
         (
             self.repo_sandbox.new_branch("root")
@@ -74,11 +60,11 @@ class TestGitHubAnnoPRs(BaseTest):
                 .new_branch("hotfix/add-trigger")
                 .commit("HOTFIX Add the trigger")
                 .push()
-                .commit_amend("HOTFIX Add the trigger (amended)")
+                .amend_commit("HOTFIX Add the trigger (amended)")
                 .new_branch("ignore-trailing")
                 .commit("Ignore trailing data")
                 .sleep(1)
-                .commit_amend("Ignore trailing data (amended)")
+                .amend_commit("Ignore trailing data (amended)")
                 .push()
                 .reset_to("ignore-trailing@{1}")  # noqa: FS003
                 .delete_branch("root")
@@ -111,7 +97,7 @@ class TestGitHubAnnoPRs(BaseTest):
               |
               o-ignore-trailing *  PR #3 (some_other_user) rebase=no push=no (diverged from & older than origin)
 
-            develop
+            develop  PR #37 WRONG PR BASE or MACHETE PARENT? PR has master
             |
             x-allow-ownership-link  PR #7 (some_other_user) rebase=no (ahead of origin)
             | |
@@ -142,7 +128,7 @@ class TestGitHubAnnoPRs(BaseTest):
               |
               o-ignore-trailing *  PR #3 (some_other_user) rebase=no push=no (diverged from & older than origin)
 
-            develop
+            develop  PR #37 WRONG PR BASE or MACHETE PARENT? PR has master
             |
             x-allow-ownership-link  PR #7 (some_other_user) rebase=no (ahead of origin)
             | |
@@ -172,9 +158,8 @@ class TestGitHubAnnoPRs(BaseTest):
     )
 
     def test_github_anno_prs_local_branch_name_different_than_tracking_branch_name(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'urllib.request.Request',
-                          self.github_api_state_for_test_local_branch_name_different_than_tracking_branch_name.get_request_provider())
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen)
+        self.patch_symbol(mocker, 'urllib.request.urlopen',
+                          mock_urlopen(self.github_api_state_for_test_local_branch_name_different_than_tracking_branch_name))
 
         (
             self.repo_sandbox.new_branch("root")

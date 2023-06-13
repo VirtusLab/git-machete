@@ -1,13 +1,13 @@
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success,
-                      fixed_author_and_committer_date, launch_command)
+                      fixed_author_and_committer_date_in_past, launch_command)
 
 
 class TestSquash(BaseTest):
 
     def test_squash_no_commits(self) -> None:
-        with fixed_author_and_committer_date():
+        with fixed_author_and_committer_date_in_past():
             (
                 self.repo_sandbox
                 .new_branch("master")
@@ -22,7 +22,7 @@ class TestSquash(BaseTest):
         )
 
     def test_squash_single_commit(self) -> None:
-        with fixed_author_and_committer_date():
+        with fixed_author_and_committer_date_in_past():
             (
                 self.repo_sandbox
                 .new_branch("master")
@@ -64,7 +64,7 @@ class TestSquash(BaseTest):
              " from one succeeding the fork-point until tip of the branch.")
 
     def test_squash_with_invalid_fork_point(self) -> None:
-        with fixed_author_and_committer_date():
+        with fixed_author_and_committer_date_in_past():
             (
                 self.repo_sandbox.new_branch('branch-0')
                     .commit()

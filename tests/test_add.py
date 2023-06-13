@@ -2,8 +2,7 @@ from pytest_mock import MockerFixture
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, mock_input_returning,
-                      mock_input_returning_y, mock_run_cmd_and_discard_output,
-                      rewrite_definition_file)
+                      mock_input_returning_y, rewrite_definition_file)
 
 
 class TestAdd(BaseTest):
@@ -69,7 +68,6 @@ class TestAdd(BaseTest):
         """
         Verify the behaviour of a 'git machete add' command in the special case when a remote branch is checked out locally.
         """
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("master")

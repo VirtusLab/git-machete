@@ -21,9 +21,10 @@ from .git_operations import (HEAD, AnyBranchName, AnyRevision, BranchPair,
                              RemoteBranchShortName)
 from .github import (GitHubClient, GitHubPullRequest, GitHubToken,
                      RemoteAndOrganizationAndRepository, is_github_remote_url)
-from .utils import (AnsiEscapeCodes, SyncToParentStatus, bold, colored, debug,
-                    dim, excluding, flat_map, fmt, get_pretty_choices,
-                    get_second, sync_to_parent_status_to_edge_color_map,
+from .utils import (GITHUB_NEW_ISSUE_MESSAGE, AnsiEscapeCodes,
+                    SyncToParentStatus, bold, colored, debug, dim, excluding,
+                    flat_map, fmt, get_pretty_choices, get_second,
+                    sync_to_parent_status_to_edge_color_map,
                     sync_to_parent_status_to_junction_ascii_only_map, tupled,
                     underline, warn)
 
@@ -404,10 +405,9 @@ class MacheteClient:
         non_root_fixed_branches_by_last_checkout_timestamps: List[Tuple[int, LocalBranchShortName]] = sorted(
             (last_checkout_timestamps.get(branch, 0), branch) for branch in non_root_fixed_branches)
         if opt_checked_out_since:
-            threshold = self.__git.get_git_timespec_parsed_to_unix_timestamp(
-                opt_checked_out_since)
+            threshold = self.__git.get_git_timespec_parsed_to_unix_timestamp(opt_checked_out_since)
             stale_non_root_fixed_branches = [LocalBranchShortName.of(branch) for (timestamp, branch) in itertools.takewhile(
-                tupled(lambda timestamp, branch: timestamp < threshold),
+                tupled(lambda timestamp, _branch: timestamp < threshold),
                 non_root_fixed_branches_by_last_checkout_timestamps
             )]
         else:
@@ -855,6 +855,15 @@ class MacheteClient:
                     if s in (
                             SyncToRemoteStatuses.BEHIND_REMOTE,
                             SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE):
+                        # This case is extremely unlikely in practice.
+                        #
+                        # For a freshly rebased/merged branch to be behind its remote, would require a specially crafted scenario
+                        # (so that author/commit dates in the resulting rebased/merge commit align perfectly
+                        # with the commits already present in remote).
+                        #
+                        # For a freshly rebased/merged branch to be diverged from and older than remote,
+                        # would require a divergence in clocks between local and remote (so that the "physically older" commit in remote
+                        # is still considered "logically newer" than the "physically newer" rebased/merge commit).
                         needs_remote_sync = True
                     elif s in (
                             SyncToRemoteStatuses.UNTRACKED,
@@ -899,6 +908,8 @@ class MacheteClient:
                             opt_push_untracked=opt_push_untracked,
                             opt_push_tracked=opt_push_tracked,
                             opt_yes=opt_yes)
+                    else:  # pragma: no cover
+                        raise MacheteException(f"Unexpected SyncToRemoteStatus: {s}.\n" + GITHUB_NEW_ISSUE_MESSAGE)
                 except StopInteraction:
                     return
 
@@ -1302,11 +1313,9 @@ class MacheteClient:
                 elif upstream and \
                         self.__git.is_ancestor_or_equal(overridden_fp_hash, upstream.full_name()):
                     common_ancestor = self.__git.get_merge_base(upstream.full_name(), branch.full_name())
-                    if common_ancestor:
-                        return common_ancestor, []
-                    raise MacheteException(f"Fork point not found for branch <b>{branch}</b>; "
-                                           f"use `git machete fork-point {branch} --override-to...`")
-
+                    # We are sure that a common ancestor exists - `overridden_fp_hash` is an ancestor of both `branch` and `upstream`.
+                    assert common_ancestor is not None
+                    return common_ancestor, []
                 else:
                     debug(f"fork point of {branch} is overridden to {overridden_fp_hash}; skipping inference")
                     return overridden_fp_hash, []
@@ -1351,15 +1360,14 @@ class MacheteClient:
                     not self.__git.is_ancestor_or_equal(upstream.full_name(), branch.full_name()) and \
                     self.__git.is_ancestor_or_equal(fp_hash, upstream.full_name()):
 
+                # We are sure that a common ancestor exists - `fp_hash` is an ancestor of both `branch` and `upstream`.
                 common_ancestor_hash = self.__git.get_merge_base(upstream.full_name(), branch.full_name())
-                if common_ancestor_hash:
-                    debug(
-                        f"{upstream} is NOT an ancestor of its upstream {branch}, "
-                        f"but the inferred fork point commit {fp_hash} is an ancestor of {upstream}; "
-                        f"falling back to the common ancestor of {branch} and {upstream} (commit {common_ancestor_hash}) as fork point")
-                    return common_ancestor_hash, []
-                else:
-                    return fp_hash, []
+                assert common_ancestor_hash is not None
+                debug(
+                    f"{upstream} is NOT an ancestor of its upstream {branch}, "
+                    f"but the inferred fork point commit {fp_hash} is an ancestor of {upstream}; "
+                    f"falling back to the common ancestor of {branch} and {upstream} (commit {common_ancestor_hash}) as fork point")
+                return common_ancestor_hash, []
             else:
                 return fp_hash, containing_branch_pairs
 
@@ -1598,13 +1606,9 @@ class MacheteClient:
         debug('Current GitHub user is ' + (bold(current_user or '<none>')))
         all_open_prs: List[GitHubPullRequest] = github_client.derive_pull_requests()
         print(fmt('<green><b>OK</b></green>'))
-        self.__sync_annotations_to_definition_file(all_open_prs, current_user)
+        self.__sync_annotations_to_definition_file(all_open_prs, current_user, verbose=True)
 
-    def __sync_annotations_to_definition_file(self,
-                                              prs: List[GitHubPullRequest],
-                                              current_user: Optional[str] = None,
-                                              verbose: bool = True
-                                              ) -> None:
+    def __sync_annotations_to_definition_file(self, prs: List[GitHubPullRequest], current_user: Optional[str], verbose: bool) -> None:
         for pr in prs:
             if LocalBranchShortName.of(pr.head) in self.managed_branches:
                 debug(f'{pr} corresponds to a managed branch')
@@ -1663,13 +1667,10 @@ class MacheteClient:
             return [self.root_branch(branch, if_unmanaged=PICK_FIRST_ROOT)]
         elif param in ("u", "up"):
             return [self.up(branch, prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)]
-        else:
+        else:  # pragma: no cover; an unknown direction is handled by argparse
             raise MacheteException(f"Invalid direction: `{param}`; expected: {allowed_directions(allow_current)}")
 
     def __match_log_to_filtered_reflogs(self, branch: LocalBranchShortName) -> Iterator[Tuple[FullCommitHash, List[BranchPair]]]:
-
-        if branch not in self.__git.get_local_branches():
-            raise MacheteException(f"{bold(branch)} is not a local branch")
 
         if self.__branch_pairs_by_hash_in_reflog is None:
             def generate_entries() -> Iterator[Tuple[FullCommitHash, BranchPair]]:
@@ -1720,7 +1721,7 @@ class MacheteClient:
                 # order in which `generate_entries` iterated through the local branches).
                 branch_pairs: List[BranchPair] = self.__branch_pairs_by_hash_in_reflog[hash]
 
-                def lb_is_not_b(lb: str, lb_or_rb: str) -> bool:
+                def lb_is_not_b(lb: str, _lb_or_rb: str) -> bool:
                     return lb != branch
 
                 containing_branch_pairs = sorted(filter(tupled(lb_is_not_b), branch_pairs), key=get_second)
@@ -1762,16 +1763,9 @@ class MacheteClient:
         to_key = git_config_keys.override_fork_point_to(branch)
         to_value = self.__git.get_config_attr_or_none(to_key)
         if to_value and FullCommitHash.is_valid(value=to_value):
-            to = FullCommitHash.of(to_value)
+            return ForkPointOverrideData(FullCommitHash.of(to_value))
         else:
             return None
-
-        to_hash: Optional[FullCommitHash] = self.__git.get_commit_hash_by_revision(to)
-        if not to_hash:
-            warn(f"`{to_key}` config value {bold(to)} does not point to a valid commit")
-            return None
-
-        return ForkPointOverrideData(to_hash)
 
     def __get_overridden_fork_point(self, branch: LocalBranchShortName) -> Optional[FullCommitHash]:
         override_data = self.__get_fork_point_override_data(branch)
@@ -2066,7 +2060,6 @@ class MacheteClient:
                             all_opened_prs: bool = False,
                             my_opened_prs: bool = False,
                             opened_by: Optional[str] = None,
-                            verbose: bool = False,
                             fail_on_missing_current_user_for_my_opened_prs: bool = True
                             ) -> None:
         domain = self.__derive_github_domain()
@@ -2095,8 +2088,6 @@ class MacheteClient:
                                                                                       user=current_user)
 
         debug(f'organization is {remote_org_repo.organization}, repository is {remote_org_repo.repository}')
-        if verbose:
-            print(f"Fetching {bold(remote_org_repo.remote)}...")
         self.__git.fetch_remote(remote_org_repo.remote)
 
         pr: Optional[GitHubPullRequest] = None
@@ -2113,8 +2104,6 @@ class MacheteClient:
                     else:
                         remote_to_fetch = remote_already_added
                     if remote_org_repo.remote != remote_to_fetch:
-                        if verbose:
-                            print(f"Fetching {bold(remote_to_fetch)}...")
                         self.__git.fetch_remote(remote_to_fetch)
                     if '/'.join([remote_to_fetch, pr.head]) not in self.__git.get_remote_branches():
                         raise MacheteException(f"Could not check out PR #{bold(str(pr.number))} "
@@ -2123,8 +2112,6 @@ class MacheteClient:
             else:
                 warn(f'Pull request #{bold(str(pr.number))} comes from fork and its repository is already deleted. '
                      f'No remote tracking data will be set up for {bold(pr.head)} branch.')
-                if verbose:
-                    print(fmt(f"Checking out {bold(pr.head)} locally..."))
                 github_client.checkout_pr_refs(self.__git, remote_org_repo.remote, pr.number, LocalBranchShortName.of(pr.head))
                 self.flush_caches()
             if pr.state == 'closed':
@@ -2141,7 +2128,7 @@ class MacheteClient:
                             opt_as_root=True,
                             opt_onto=None,
                             opt_yes=True,
-                            verbose=verbose,
+                            verbose=False,
                             switch_head_if_new_branch=False)
                     else:
                         self.add(
@@ -2149,18 +2136,16 @@ class MacheteClient:
                             opt_onto=reversed_path[index - 1],
                             opt_as_root=False,
                             opt_yes=True,
-                            verbose=verbose,
+                            verbose=False,
                             switch_head_if_new_branch=False)
                     if pr not in checked_out_prs:
                         print(fmt(f"Pull request #{bold(str(pr.number))} checked out at local branch {bold(pr.head)}"))
                         checked_out_prs.append(pr)
 
         debug('Current GitHub user is ' + (current_user or '<none>'))
-        self.__sync_annotations_to_definition_file(all_open_prs, current_user=current_user, verbose=verbose)
+        self.__sync_annotations_to_definition_file(all_open_prs, current_user=current_user, verbose=False)
         if len(applicable_prs) == 1:
             self.__git.checkout(LocalBranchShortName.of(pr.head))
-            if verbose:
-                print(fmt(f"Switched to local branch {bold(pr.head)}"))
 
     @staticmethod
     def __get_path_from_pr_chain(current_pr: GitHubPullRequest, all_open_prs: List[GitHubPullRequest]) -> List[LocalBranchShortName]:
@@ -2403,11 +2388,13 @@ class MacheteClient:
                 github_client.add_reviewers_to_pull_request(pr.number, reviewers)
             except UnprocessableEntityHTTPError as e:
                 if 'Reviews may only be requested from collaborators.' in e.msg:
+                    print()
                     warn(f"There are some invalid reviewers in {self.__git.get_main_git_subpath('info', 'reviewers')} file.\n"
-                         "Skipping adding reviewers to pull request.")
+                         "Skipped adding reviewers to pull request.")
                 else:
                     raise e
-            print(fmt(ok_str))
+            else:
+                print(fmt(ok_str))
 
         self.__annotations[head] = Annotation(f'PR #{pr.number}')
         self.save_definition_file()

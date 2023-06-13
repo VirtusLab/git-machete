@@ -37,11 +37,11 @@ class TestShow(BaseTest):
             .new_branch("hotfix/add-trigger")
             .commit("HOTFIX Add the trigger")
             .push()
-            .commit_amend("HOTFIX Add the trigger (amended)")
+            .amend_commit("HOTFIX Add the trigger (amended)")
             .new_branch("ignore-trailing")
             .commit("Ignore trailing data")
             .sleep(1)
-            .commit_amend("Ignore trailing data (amended)")
+            .amend_commit("Ignore trailing data (amended)")
             .push()
             .reset_to("ignore-trailing@{1}")  # noqa: FS003
             .delete_branch("root")

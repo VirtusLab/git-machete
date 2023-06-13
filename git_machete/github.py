@@ -308,25 +308,18 @@ class GitHubClient:
     @staticmethod
     def __extract_failure_info_from_422(response: Any) -> str:
         if response['message'] != 'Validation Failed':
-            # This case is defensively included, we don't know if GitHub API can really behave this way.
-            return str(response['message'])  # pragma: no cover
+            return str(response['message'])
         ret: List[str] = []
-        if response.get('errors'):  # pragma: no branch
+        if response.get('errors'):
             for error in response['errors']:
-                if error.get('message'):  # pragma: no branch
+                if error.get('message'):
                     ret.append(error['message'])
         if ret:
             return '\n'.join(ret)
         else:
-            return str(response)  # pragma: no cover
+            return str(response)
 
-    def create_pull_request(self,
-                            head: str,
-                            base: str,
-                            title: str,
-                            description: str,
-                            draft: bool
-                            ) -> GitHubPullRequest:
+    def create_pull_request(self, head: str, base: str, title: str, description: str, draft: bool) -> GitHubPullRequest:
         request_body: Dict[str, Any] = {
             'head': head,
             'base': base,

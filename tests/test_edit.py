@@ -15,7 +15,7 @@ class TestEdit(BaseTest):
             launch_command("edit")
         assert self.repo_sandbox.read_file(".git/machete").strip() == "foo"
 
-    def test_edit_git_machete_editor_not_valid_executable(self, mocker: MockerFixture) -> None:
+    def test_edit_git_machete_editor_not_valid_executable(self) -> None:
         with overridden_environment(GIT_MACHETE_EDITOR="lolxd-this-doesnt-exist"):
             assert_failure(["edit"], "'$GIT_MACHETE_EDITOR' (lolxd-this-doesnt-exist) is not available")
 
@@ -44,7 +44,7 @@ class TestEdit(BaseTest):
         assert self.repo_sandbox.read_file(".git/machete").strip() == "foo"
 
     def test_edit_no_variant_matches(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, "git_machete.utils.find_executable", lambda executable: None)
+        self.patch_symbol(mocker, "git_machete.utils.find_executable", lambda _executable: None)
 
         with overridden_environment(GIT_MACHETE_EDITOR="  ", GIT_EDITOR="lolxd-this-doesnt-exist", VISUAL="", EDITOR=""):
             assert_failure(

@@ -130,14 +130,14 @@ jobs:
     steps:
       - checkout
       - run: pip install tox
-      - run: tox -e py311 -- -v
+      - run: tox -e py311 -- -vv
 
   "windows tests":
     executor: windows_executor
     steps:
       - checkout
       - run: pip install tox
-      - run: tox -e py311 -- -v
+      - run: tox -e py311 -- -vv
 
   "dry run deploy":
     executor: ubuntu_executor

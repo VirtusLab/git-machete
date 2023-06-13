@@ -2,10 +2,13 @@ import os
 
 from pytest_mock import MockerFixture
 
+from git_machete.exceptions import UnderlyingGitException
+
 from .base_test import BaseTest
-from .mockers import (assert_failure, assert_success, launch_command,
-                      mock_input_returning, mock_run_cmd_and_discard_output,
-                      rewrite_definition_file)
+from .mockers import (assert_failure, assert_success,
+                      fixed_author_and_committer_date_in_past, launch_command,
+                      mock_input_returning, mock_input_returning_y,
+                      overridden_environment, rewrite_definition_file)
 
 
 class TestTraverse(BaseTest):
@@ -41,11 +44,11 @@ class TestTraverse(BaseTest):
             .new_branch("hotfix/add-trigger")
             .commit("HOTFIX Add the trigger")
             .push()
-            .commit_amend("HOTFIX Add the trigger (amended)")
+            .amend_commit("HOTFIX Add the trigger (amended)")
             .new_branch("ignore-trailing")
             .commit("Ignore trailing data")
             .sleep(1)
-            .commit_amend("Ignore trailing data (amended)")
+            .amend_commit("Ignore trailing data (amended)")
             .push()
             .reset_to("ignore-trailing@{1}")  # noqa: FS003
             .delete_branch("root")
@@ -106,6 +109,21 @@ class TestTraverse(BaseTest):
             """
         rewrite_definition_file(body)
 
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("n"))
+        assert_success(
+            ["traverse"],
+            """
+            Branch develop is merged into master. Slide develop out of the tree of branch dependencies? (y, N, q, yq) 
+
+              master
+              |
+              m-develop *  PR #123
+                |
+                o-feature
+
+            No successor of develop needs to be slid out or synced with upstream branch or remote; nothing left to update
+            """
+        )
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
         assert_success(
             ["traverse"],
@@ -126,8 +144,7 @@ class TestTraverse(BaseTest):
             """
         )
 
-    def test_traverse_no_remotes(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+    def test_traverse_no_remotes(self) -> None:
         self.setup_standard_tree()
         self.repo_sandbox.remove_remote()
 
@@ -162,8 +179,7 @@ class TestTraverse(BaseTest):
             """
         )
 
-    def test_traverse_no_push(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+    def test_traverse_no_push(self) -> None:
         self.setup_standard_tree()
 
         launch_command("traverse", "-Wy", "--no-push")
@@ -197,8 +213,7 @@ class TestTraverse(BaseTest):
             """,
         )
 
-    def test_traverse_no_push_override(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+    def test_traverse_no_push_override(self) -> None:
         self.setup_standard_tree()
         self.repo_sandbox.check_out("hotfix/add-trigger")
         launch_command("t", "-Wy", "--no-push", "--push", "--start-from=here")
@@ -300,8 +315,7 @@ class TestTraverse(BaseTest):
             """,
         )
 
-    def test_traverse_no_push_untracked(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+    def test_traverse_no_push_untracked(self) -> None:
         self.setup_standard_tree()
 
         launch_command("traverse", "-Wy", "--no-push-untracked")
@@ -335,8 +349,7 @@ class TestTraverse(BaseTest):
             """,
         )
 
-    def test_traverse_push_config_key(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+    def test_traverse_push_config_key(self) -> None:
         self.setup_standard_tree()
         self.repo_sandbox.set_git_config_key('machete.traverse.push', 'false')
         launch_command("traverse", "-Wy")
@@ -370,8 +383,7 @@ class TestTraverse(BaseTest):
             """,
         )
 
-    def test_traverse_no_push_no_checkout(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+    def test_traverse_no_push_no_checkout(self) -> None:
         (
             self.repo_sandbox.new_branch("root")
                 .commit("root")
@@ -393,7 +405,7 @@ class TestTraverse(BaseTest):
                 .new_branch("hotfix/add-trigger")
                 .commit("HOTFIX Add the trigger")
                 .push()
-                .commit_amend("HOTFIX Add the trigger (amended)")
+                .amend_commit("HOTFIX Add the trigger (amended)")
                 .delete_branch("root")
         )
 
@@ -444,8 +456,7 @@ class TestTraverse(BaseTest):
         assert_success(["traverse", "-Wy", "--no-push"],
                        expected_result)
 
-    def test_traverse_and_squash(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+    def test_traverse_and_squash(self) -> None:
         self.setup_standard_tree()
 
         self.repo_sandbox.check_out("hotfix/add-trigger")
@@ -545,19 +556,19 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_with_merge(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         (
             self.repo_sandbox
+            .remove_remote()
             .new_branch("develop")
-            .commit("develop commit 1")
+            .commit()
             .new_branch('mars')
-            .commit('mars commit 1')
+            .commit()
             .new_branch('snickers')
-            .commit('snickers commit')
+            .commit()
             .check_out('mars')
-            .commit('mars commit 2')
+            .commit()
             .check_out('develop')
-            .commit('develop commit 2')
+            .commit()
         )
 
         body: str = \
@@ -567,20 +578,30 @@ class TestTraverse(BaseTest):
                     snickers
             """
         rewrite_definition_file(body)
-        launch_command("traverse", '-y', '-M', '--no-edit-merge')
+
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning("q"))
+        launch_command("traverse", "-M")
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning("n", "q"))
+        launch_command("traverse", "-M")
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning("yq"))
         assert_success(
-            ["status"],
+            ["traverse", "--start-from=root", "-M", "--no-edit-merge"],
             """
-            develop
-            |
-            o-mars
+            Checking out the root branch (develop)
+
+            Checking out mars
+
+              develop
               |
-              o-snickers *
+              x-mars *
+                |
+                x-snickers
+
+            Merge develop into mars? (y, N, q, yq) 
             """
         )
 
-    def test_traverse_qualifiers_no_push(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+    def test_traverse_qualifiers_no_push(self) -> None:
         self.setup_standard_tree()
 
         body: str = \
@@ -618,8 +639,7 @@ class TestTraverse(BaseTest):
             """,
         )
 
-    def test_traverse_qualifiers_no_rebase(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+    def test_traverse_qualifiers_no_rebase(self) -> None:
         self.setup_standard_tree()
 
         body: str = \
@@ -657,8 +677,7 @@ class TestTraverse(BaseTest):
             """,
         )
 
-    def test_traverse_qualifiers_no_rebase_no_push(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+    def test_traverse_qualifiers_no_rebase_no_push(self) -> None:
         self.setup_standard_tree()
 
         body: str = \
@@ -696,8 +715,7 @@ class TestTraverse(BaseTest):
             """,
         )
 
-    def test_traverse_qualifiers_no_slide_out(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+    def test_traverse_qualifiers_no_slide_out(self) -> None:
         self.setup_standard_tree()
 
         body: str = \
@@ -814,3 +832,92 @@ class TestTraverse(BaseTest):
                 f"the nearest existing parent directory is {self.repo_sandbox.local_path}\n"
             )
             assert os.path.split(os.getcwd())[-1] != "directory"
+
+    def test_traverse_reset_keep_failing(self) -> None:
+        (
+            self.repo_sandbox
+            .new_branch("master")
+            .add_file_and_commit(file_path="foo.txt", file_content="1")
+            .sleep(1)
+            .write_to_file(file_path="foo.txt", file_content="2")
+            .amend_commit()
+            .push()
+            .execute("git reset --keep HEAD@{1}")  # noqa: FS003
+            .write_to_file(file_path="foo.txt", file_content="3")
+        )
+
+        rewrite_definition_file("master")
+
+        assert_failure(
+            ["traverse", "--fetch", "-y", "--debug"],
+            "Cannot perform git reset --keep origin/master. This is most likely caused by local uncommitted changes.",
+            expected_exception=UnderlyingGitException
+        )
+
+    def test_traverse_with_stop_for_edit(self, mocker: MockerFixture) -> None:
+
+        (
+            self.repo_sandbox
+            .remove_remote()
+            .new_branch("branch-0")
+            .commit()
+            .new_branch("branch-1")
+            .commit()
+            .check_out("branch-0")
+            .commit()
+        )
+        rewrite_definition_file("branch-0\n\tbranch-1")
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
+        with overridden_environment(GIT_SEQUENCE_EDITOR="sed -i.bak '1s/^pick /edit /'"):
+            launch_command("traverse")
+
+        assert_success(
+            ["status"],
+            """
+            branch-0
+            |
+            x-REBASING branch-1 *
+            """
+        )
+
+    def test_reset_to_remote_after_rebase(self) -> None:
+        """Very unlikely case; can happen only in case of divergence of clocks between local and remote
+        (which is simulated in this test)."""
+        (
+            self.repo_sandbox
+            .new_branch("branch-0")
+            .commit()
+            .push()
+            .new_branch("branch-1")
+            .commit()
+            .push()
+            .check_out("branch-0")
+            .commit()
+        )
+        rewrite_definition_file("branch-0\n\tbranch-1")
+
+        with fixed_author_and_committer_date_in_past():
+            assert_success(
+                ["traverse", "-y"],
+                """
+                Pushing branch-0 to origin...
+
+                Checking out branch-1
+
+                  branch-0
+                  |
+                  x-branch-1 *
+
+                Rebasing branch-1 onto branch-0...
+
+                Branch branch-1 diverged from (and has older commits than) its remote counterpart origin/branch-1.
+                Resetting branch branch-1 to the commit pointed by origin/branch-1...
+
+                  branch-0
+                  |
+                  x-branch-1 *
+
+                Reached branch branch-1 which has no successor; nothing left to update
+                """
+            )

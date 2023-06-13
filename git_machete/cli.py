@@ -107,9 +107,9 @@ class MacheteHelpAction(argparse.Action):
     def __call__(
             self,
             parser: argparse.ArgumentParser,
-            namespace: argparse.Namespace,  # noqa: F841
-            values: Union[str, Sequence[Any], None],
-            option_string: Optional[str] = None  # noqa: F841
+            namespace: argparse.Namespace,  # noqa: F841, U100
+            values: Union[str, Sequence[Any], None],  # noqa: U100
+            option_string: Optional[str] = None  # noqa: F841, U100
     ) -> None:
         # parser name (prog) is expected to be `git machete` or `git machete <command>`
         command_name = parser.prog.replace('git machete', '').strip()
@@ -658,8 +658,7 @@ def launch(orig_args: List[str]) -> None:
                                                   ignore_if_missing=parsed_cli.ignore_if_missing if 'ignore_if_missing' in parsed_cli
                                                   else False)
             elif github_subcommand == "sync":  # pragma: no branch; an unknown subcommand is handled by argparse
-                machete_client.checkout_github_prs(pr_nos=[],
-                                                   my_opened_prs=True)
+                machete_client.checkout_github_prs(pr_nos=[], my_opened_prs=True)
                 machete_client.delete_unmanaged(opt_yes=False)
                 machete_client.delete_untracked(opt_yes=cli_opts.opt_yes)
         elif cmd == "is-managed":
@@ -724,23 +723,12 @@ def launch(orig_args: List[str]) -> None:
             machete_client.rebase(reapply_fork_point, reapply_fork_point, current_branch, cli_opts.opt_no_interactive_rebase)
         elif cmd == "show":
             direction = parsed_cli.direction
+            if direction == "current" and "branch" in parsed_cli:
+                raise MacheteException('`show current` with a `<branch>` argument does not make sense')
             branch = get_local_branch_short_name_from_arg_or_current_branch(cli_opts.opt_branch, git)
-            if direction == "current":
-                if 'branch' in parsed_cli:
-                    raise MacheteException(
-                        '`show current` with a `<branch>` argument does not make sense')
-                print(branch)
-            else:
-                machete_client.read_definition_file(perform_interactive_slide_out=should_perform_interactive_slide_out,
-                                                    verify_branches=False)
-                print(
-                    '\n'.join(machete_client.parse_direction(
-                        direction,
-                        branch,
-                        allow_current=True,
-                        down_pick_mode=False
-                    ))
-                )
+            machete_client.read_definition_file(perform_interactive_slide_out=should_perform_interactive_slide_out,
+                                                verify_branches=False)
+            print('\n'.join(machete_client.parse_direction(direction, branch, allow_current=True, down_pick_mode=False)))
         elif cmd == "slide-out":
             machete_client.read_definition_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             git.expect_no_operation_in_progress()

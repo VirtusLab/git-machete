@@ -1,21 +1,19 @@
-from pytest_mock import MockerFixture
 
 from .base_test import BaseTest
-from .mockers import (assert_success, fixed_author_and_committer_date,
-                      launch_command, mock_run_cmd_and_discard_output,
-                      overridden_environment, rewrite_definition_file)
+from .mockers import (assert_success, fixed_author_and_committer_date_in_past,
+                      launch_command, overridden_environment,
+                      rewrite_definition_file)
 
 
 class TestReapply(BaseTest):
 
-    def test_reapply(self, mocker: MockerFixture) -> None:
+    def test_reapply(self) -> None:
         """
         Verify that 'git machete reapply' performs
         'git rebase' to the fork point of the current branch.
         """
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
-        with fixed_author_and_committer_date():
+        with fixed_author_and_committer_date_in_past():
             (
                 self.repo_sandbox
                 .remove_remote()
@@ -62,7 +60,7 @@ class TestReapply(BaseTest):
         # Let's substitute the editor opened by git for interactive rebase to-do list
         # so that the test can run in a fully automated manner.
         with overridden_environment(GIT_SEQUENCE_EDITOR="sed -i.bak '2s/^pick /fixup /'"):
-            with fixed_author_and_committer_date():
+            with fixed_author_and_committer_date_in_past():
                 launch_command("reapply")
 
         assert_success(
@@ -84,7 +82,7 @@ class TestReapply(BaseTest):
         self.repo_sandbox.check_out("level-2-branch")
         assert launch_command("fork-point", "level-2-branch").strip() == "1b657a15fa4c619fcb4e871176d1471cdbce9093"
         with overridden_environment(GIT_SEQUENCE_EDITOR="sed -i.bak '2s/^pick /fixup /'"):
-            with fixed_author_and_committer_date():
+            with fixed_author_and_committer_date_in_past():
                 launch_command("reapply", "--fork-point=64f8913")
 
         assert_success(

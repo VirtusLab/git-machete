@@ -1,5 +1,4 @@
 from textwrap import dedent
-from typing import Any
 from unittest.mock import mock_open
 
 from pytest_mock import MockerFixture
@@ -8,9 +7,8 @@ from git_machete.github import (GitHubClient, GitHubToken,
                                 RemoteAndOrganizationAndRepository)
 from tests.base_test import BaseTest
 from tests.mockers import (assert_failure, assert_success, launch_command,
-                           mock_input_returning_y,
-                           mock_run_cmd_and_discard_output,
-                           overridden_environment, rewrite_definition_file)
+                           mock_input_returning_y, overridden_environment,
+                           rewrite_definition_file)
 from tests.mockers_github import (MockGitHubAPIState, mock_from_url,
                                   mock_github_token_for_domain_fake,
                                   mock_github_token_for_domain_none,
@@ -48,14 +46,12 @@ class TestGitHub(BaseTest):
         'state': 'open'
     } for i in range(PR_COUNT_FOR_TEST_GITHUB_API_PAGINATION)])
 
-    def test_github_api_pagination(self, mocker: MockerFixture, tmp_path: Any) -> None:
+    def test_github_api_pagination(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
         self.patch_symbol(mocker, 'git_machete.github.GitHubClient.MAX_PULLS_PER_PAGE_COUNT', 3)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
         self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
-        self.patch_symbol(mocker, 'urllib.request.Request', self.github_api_state_for_test_github_api_pagination.get_request_provider())
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_github_api_pagination))
 
         (
             self.repo_sandbox.new_branch("develop")
@@ -83,8 +79,7 @@ class TestGitHub(BaseTest):
     def test_github_enterprise_domain_unauthorized_without_token(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
         self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'urllib.request.Request', MockGitHubAPIState([]).get_request_provider())
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState([])))
 
         self.repo_sandbox.set_git_config_key('machete.github.domain', '403.example.org')
 
@@ -99,8 +94,7 @@ class TestGitHub(BaseTest):
     def test_github_enterprise_domain_unauthorized_with_token(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'urllib.request.Request', MockGitHubAPIState([]).get_request_provider())
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState([])))
 
         self.repo_sandbox.set_git_config_key('machete.github.domain', '403.example.org')
 
@@ -125,11 +119,9 @@ class TestGitHub(BaseTest):
     )
 
     def test_github_enterprise_domain(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'urllib.request.Request', self.github_api_state_for_test_github_enterprise_domain.get_request_provider())
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_github_enterprise_domain))
 
         github_enterprise_domain = 'git.example.org'
         (
@@ -147,10 +139,9 @@ class TestGitHub(BaseTest):
 
     def test_github_token_retrieval_order(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'os.path.isfile', lambda file: False)
+        self.patch_symbol(mocker, 'os.path.isfile', lambda _file: False)
         self.patch_symbol(mocker, 'shutil.which', mock_shutil_which(None))
-        self.patch_symbol(mocker, 'urllib.request.Request', self.github_api_state_for_test_github_enterprise_domain.get_request_provider())
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_github_enterprise_domain))
 
         (
             self.repo_sandbox.new_branch("develop")
@@ -194,7 +185,7 @@ class TestGitHub(BaseTest):
         _mock_open = mock_open(read_data=github_token_contents)
         _mock_open.return_value.readlines.return_value = github_token_contents.split('\n')
         self.patch_symbol(mocker, 'builtins.open', _mock_open)
-        self.patch_symbol(mocker, 'os.path.isfile', lambda file: True)
+        self.patch_symbol(mocker, 'os.path.isfile', lambda _file: True)
 
         domain = GitHubClient.DEFAULT_GITHUB_DOMAIN
         github_token = GitHubToken.for_domain(domain=domain)
@@ -213,7 +204,7 @@ class TestGitHub(BaseTest):
         assert github_token is None
 
     def test_github_get_token_from_gh(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'os.path.isfile', lambda file: False)
+        self.patch_symbol(mocker, 'os.path.isfile', lambda _file: False)
         self.patch_symbol(mocker, 'shutil.which', mock_shutil_which('/path/to/gh'))
 
         domain = 'git.example.com'

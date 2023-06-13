@@ -1,20 +1,18 @@
 import pytest
-from pytest_mock import MockerFixture
 
 from git_machete.exceptions import ExitCode
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
-                      mock_run_cmd_and_discard_output, rewrite_definition_file)
+                      rewrite_definition_file)
 
 
 class TestList(BaseTest):
 
-    def test_list(self, mocker: MockerFixture) -> None:
+    def test_list(self) -> None:
         """
         Verify behaviour of a 'git machete list' command.
         """
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("master")

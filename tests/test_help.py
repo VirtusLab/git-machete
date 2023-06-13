@@ -1,7 +1,6 @@
 from typing import List
 
 import pytest
-from pytest_mock import MockerFixture
 
 from git_machete.cli import commands_and_aliases
 from git_machete.exceptions import ExitCode
@@ -12,7 +11,7 @@ from .mockers import launch_command
 
 class TestHelp(BaseTest):
 
-    def test_help(self, mocker: MockerFixture) -> None:
+    def test_help(self) -> None:
         with pytest.raises(SystemExit) as e:
             launch_command()
         assert ExitCode.ARGUMENT_ERROR == e.value.code

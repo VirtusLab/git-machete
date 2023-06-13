@@ -1,19 +1,13 @@
-from pytest_mock import MockerFixture
 
 from git_machete.git_operations import (AnyRevision, FullCommitHash,
                                         GitContext, LocalBranchShortName)
 
 from .base_test import BaseTest
-from .mockers import mock_run_cmd_and_discard_output
 
 
 class TestGitOperations(BaseTest):
 
-    def test_run_git(self, mocker: MockerFixture) -> None:
-        """
-        Verify behaviour of a 'GitContext._run_git()' method
-        """
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+    def test_run_git(self) -> None:
         (
             self.repo_sandbox.new_branch("master")
                 .commit("master first commit")
@@ -25,9 +19,6 @@ class TestGitOperations(BaseTest):
         assert git._run_git("rev-parse", "HEAD") == 0
 
     def test_popen_git(self) -> None:
-        """
-        Verify behaviour of a 'GitContext._popen_git()' method
-        """
         (
             self.repo_sandbox.new_branch("master")
                 .commit("master first commit")

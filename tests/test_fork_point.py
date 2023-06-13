@@ -1,14 +1,14 @@
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success,
-                      fixed_author_and_committer_date, launch_command,
+                      fixed_author_and_committer_date_in_past, launch_command,
                       rewrite_definition_file)
 
 
 class TestForkPoint(BaseTest):
 
     def test_fork_point_get(self) -> None:
-        with fixed_author_and_committer_date():
+        with fixed_author_and_committer_date_in_past():
             (
                 self.repo_sandbox.new_branch("master")
                     .commit(message="master commit.")
@@ -49,7 +49,7 @@ class TestForkPoint(BaseTest):
         )
 
     def test_fork_point_override_to_non_ancestor_commit(self) -> None:
-        with fixed_author_and_committer_date():
+        with fixed_author_and_committer_date_in_past():
             (
                 self.repo_sandbox
                 .new_branch("master")
@@ -116,7 +116,7 @@ class TestForkPoint(BaseTest):
         assert_success(['fork-point', '--unset-override'], "")
 
     def test_fork_point_override_to_parent_and_inferred(self) -> None:
-        with fixed_author_and_committer_date():
+        with fixed_author_and_committer_date_in_past():
             (
                 self.repo_sandbox
                 .new_branch("master")
@@ -183,7 +183,7 @@ class TestForkPoint(BaseTest):
         )
 
     def test_fork_point_overridden_to_non_descendant_of_parent_while_branch_descendant_of_parent(self) -> None:
-        with fixed_author_and_committer_date():
+        with fixed_author_and_committer_date_in_past():
             (
                 self.repo_sandbox
                 .new_branch("branch-0")

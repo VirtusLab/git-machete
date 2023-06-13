@@ -116,6 +116,11 @@ def debug(msg: str) -> None:
         print(f"{function_name}{args_and_values_bold_str}: {dim(msg)}", file=sys.stderr)
 
 
+def _run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
+    # capture_output argument is only supported since Python 3.7
+    return subprocess.run([cmd] + list(args), stdout=None, stderr=None, **kwargs).returncode
+
+
 def run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
     chdir_upwards_until_current_directory_exists()
 
@@ -125,7 +130,7 @@ def run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
     elif verbose_mode:
         print(flat_cmd, file=sys.stderr)
 
-    exit_code: int = subprocess.call([cmd] + list(args), **kwargs)
+    exit_code: int = _run_cmd(cmd, *args, **kwargs)
 
     # Let's defensively assume that every command executed via run_cmd
     # (but not via popen_cmd) can make the current directory disappear.

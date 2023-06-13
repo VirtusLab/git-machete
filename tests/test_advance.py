@@ -1,11 +1,11 @@
+import pytest
 from pytest_mock import MockerFixture
 
 from git_machete.exceptions import UnderlyingGitException
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
-                      mock_input_returning, mock_run_cmd_and_discard_output,
-                      rewrite_definition_file)
+                      mock_input_returning, rewrite_definition_file)
 
 
 class TestAdvance(BaseTest):
@@ -57,14 +57,13 @@ class TestAdvance(BaseTest):
         self.patch_symbol(mocker, "builtins.input", mock_input_returning("n"))
         assert_success(["advance"], "Fast-forward master to match develop? (y, N) \n")
 
-    def test_advance_with_push_for_one_downstream_branch(self, mocker: MockerFixture) -> None:
+    def test_advance_with_push_for_one_downstream_branch(self) -> None:
         """
         Verify that when there is only one, rebased downstream branch of a
         current branch 'git machete advance' merges commits from that branch,
         pushes the current branch and slides out child branches of the downstream branch.
         Also, it modifies the branch layout to reflect new dependencies.
         """
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("root")
@@ -100,8 +99,7 @@ class TestAdvance(BaseTest):
              "from the git-machete tree and the structure of the git machete "
              "tree is updated.")
 
-    def test_advance_without_push_for_one_downstream_branch(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+    def test_advance_without_push_for_one_downstream_branch(self) -> None:
 
         (
             self.repo_sandbox
@@ -149,7 +147,6 @@ class TestAdvance(BaseTest):
         Verify that 'git machete advance -y' raises an error when current branch
         has more than one synchronized downstream branch and option '-y' is passed.
         """
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("root")
@@ -174,6 +171,19 @@ class TestAdvance(BaseTest):
         expected_error_message = "More than one downstream (child) branch of root " \
                                  "is connected to root with a green edge and -y/--yes option is specified"
         assert_failure(['advance', '-y'], expected_error_message)
+
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning(""))
+        with pytest.raises(SystemExit) as e:
+            assert launch_command("advance")
+        assert e.value.code == 0
+
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning("not-a-valid-number"))
+        with pytest.raises(SystemExit) as e:
+            assert launch_command("advance")
+        assert e.value.code == 1
+
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning("3"))
+        assert_failure(["advance"], "Invalid index: 3")
 
         self.patch_symbol(mocker, "builtins.input", mock_input_returning("1", "N", "n"))
         assert_success(

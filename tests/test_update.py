@@ -4,21 +4,18 @@ from git_machete.exceptions import UnderlyingGitException
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success,
-                      fixed_author_and_committer_date, launch_command,
+                      fixed_author_and_committer_date_in_past, launch_command,
                       mock_input_returning, mock_input_returning_y,
-                      mock_run_cmd_and_discard_output,
-                      mock_run_cmd_and_forward_output, overridden_environment,
-                      rewrite_definition_file)
+                      overridden_environment, rewrite_definition_file)
 
 
 class TestUpdate(BaseTest):
 
-    def test_update_with_fork_point_not_specified(self, mocker: MockerFixture) -> None:
+    def test_update_with_fork_point_not_specified(self) -> None:
         """
         Verify that 'git machete update --no-interactive-rebase' performs
         'git rebase' to the parent branch of the current branch.
         """
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox.new_branch("level-0-branch")
@@ -48,8 +45,7 @@ class TestUpdate(BaseTest):
              "'git rebase' to the parent branch of the current branch."
              )
 
-    def test_update_by_merge(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+    def test_update_by_merge(self) -> None:
 
         (
             self.repo_sandbox.new_branch("level-0-branch")
@@ -76,13 +72,12 @@ class TestUpdate(BaseTest):
         assert self.repo_sandbox.is_ancestor_or_equal(old_level_1_commit_hash, "level-1-branch")
         assert self.repo_sandbox.is_ancestor_or_equal("level-0-branch", "level-1-branch")
 
-    def test_update_drops_empty_commits(self, mocker: MockerFixture) -> None:
+    def test_update_drops_empty_commits(self) -> None:
         """
         Verify that 'git machete update' drops effectively-empty commits if the underlying git supports that behavior.
         """
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
-        with fixed_author_and_committer_date():
+        with fixed_author_and_committer_date_in_past():
             (
                 self.repo_sandbox.new_branch("level-0-branch")
                 .commit("Basic commit.")
@@ -110,7 +105,7 @@ class TestUpdate(BaseTest):
             if self.repo_sandbox.get_git_version() >= (2, 26, 0):
                 launch_command("update")
             else:
-                with fixed_author_and_committer_date():
+                with fixed_author_and_committer_date_in_past():
                     expected_error_message = "git rebase --interactive --onto refs/heads/level-0-branch " \
                                              "c0306cdd500fc39869505592200258055407bcc6 level-1-branch returned 1"
                     assert_failure(["update"], expected_error_message, expected_exception=UnderlyingGitException)
@@ -123,13 +118,12 @@ class TestUpdate(BaseTest):
         assert "level-1 commit" in branch_history
         assert "level-1 commit... but to be cherry-picked onto level-0-branch" not in branch_history
 
-    def test_update_with_fork_point_specified(self, mocker: MockerFixture) -> None:
+    def test_update_with_fork_point_specified(self) -> None:
         """
         Verify that 'git machete update --no-interactive-rebase -f <commit_hash>'
         performs 'git rebase' to the upstream branch and drops the commits until
         (included) fork point specified by the option '-f'.
         """
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         branchs_first_commit_msg = "First commit on branch."
         branchs_second_commit_msg = "Second commit on branch."
@@ -162,21 +156,18 @@ class TestUpdate(BaseTest):
 
         assert roots_second_commit_hash == new_fork_point_hash, \
             ("Verify that 'git machete update --no-interactive-rebase -f "
-             "<commit_hash>' performs 'git rebase' to the upstream branch."
-             )
+             "<commit_hash>' performs 'git rebase' to the upstream branch.")
         assert branchs_first_commit_msg not in branch_history, \
             ("Verify that 'git machete update --no-interactive-rebase -f "
              "<commit_hash>' drops the commits until (included) fork point "
-             "specified by the option '-f' from the current branch."
-             )
+             "specified by the option '-f' from the current branch.")
         assert branchs_second_commit_msg not in branch_history, \
             ("Verify that 'git machete update --no-interactive-rebase -f "
              "<commit_hash>' drops the commits until (included) fork point "
-             "specified by the option '-f' from the current branch."
-             )
+             "specified by the option '-f' from the current branch.")
 
-    def test_update_with_invalid_fork_point(self, mocker: MockerFixture) -> None:
-        with fixed_author_and_committer_date():
+    def test_update_with_invalid_fork_point(self) -> None:
+        with fixed_author_and_committer_date_in_past():
             (
                 self.repo_sandbox.new_branch('branch-0')
                     .commit("Commit on branch-0.")
@@ -202,8 +193,7 @@ class TestUpdate(BaseTest):
                                  "is not ancestor of or the tip of the branch-1b branch."
         assert_failure(['update', '-f', branch_1a_hash], expected_error_message)
 
-    def test_update_with_stop_for_edit(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
+    def test_update_with_stop_for_edit(self) -> None:
 
         (
             self.repo_sandbox
@@ -224,7 +214,6 @@ class TestUpdate(BaseTest):
             self.repo_sandbox.execute("git rebase --continue")
 
     def test_update_unmanaged_branch(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_discard_output)
 
         (
             self.repo_sandbox
@@ -264,10 +253,8 @@ class TestUpdate(BaseTest):
             "Branch branch-1 not found in the tree of branch dependencies and its upstream could not be inferred"
         )
 
-    def test_update_with_pre_rebase_hook(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_forward_output)
-
-        with fixed_author_and_committer_date():
+    def test_update_with_pre_rebase_hook(self) -> None:
+        with fixed_author_and_committer_date_in_past():
             (
                 self.repo_sandbox.new_branch('branch-0')
                 .commit()

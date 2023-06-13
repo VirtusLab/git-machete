@@ -13,12 +13,12 @@ git_machete.client.MacheteClient.is_stdout_a_tty
 git_machete.github.GitHubClient.MAX_PULLS_PER_PAGE_COUNT
 git_machete.github.GitHubToken.for_domain
 git_machete.github.RemoteAndOrganizationAndRepository.from_url
+git_machete.utils._run_cmd
 git_machete.utils.find_executable
-git_machete.utils.run_cmd
 os.path.isfile
 shutil.which
 subprocess.run
-urllib.request.Request
+sys.argv
 urllib.request.urlopen
 '
 actual_methods=$(git grep -Pho "(?<=self\.patch_symbol\(mocker, ['\"]).*?(?=['\"])" | sort -u)

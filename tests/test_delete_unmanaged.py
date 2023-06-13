@@ -1,17 +1,17 @@
 from pytest_mock import MockerFixture
 
 from .base_test import BaseTest
-from .mockers import (assert_success, fixed_author_and_committer_date,
-                      launch_command, mock_input_returning,
-                      mock_run_cmd_and_forward_output, rewrite_definition_file)
+from .mockers import (assert_success, fixed_author_and_committer_date_in_past,
+                      launch_command, mock__run_cmd_and_forward_stdout,
+                      mock_input_returning, rewrite_definition_file)
 
 
 class TestDeleteUnmanaged(BaseTest):
 
     def test_delete_unmanaged(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.utils.run_cmd', mock_run_cmd_and_forward_output)
+        self.patch_symbol(mocker, 'git_machete.utils._run_cmd', mock__run_cmd_and_forward_stdout)
 
-        with fixed_author_and_committer_date():
+        with fixed_author_and_committer_date_in_past():
             (
                 self.repo_sandbox.new_branch("master")
                     .commit("master commit.")
@@ -38,7 +38,6 @@ class TestDeleteUnmanaged(BaseTest):
             Skipping current branch feature
             Delete branch develop (merged to HEAD)? (y, N, q) 
             Deleted branch develop (was 03e727b).
-
             """
         )
 
@@ -53,7 +52,6 @@ class TestDeleteUnmanaged(BaseTest):
             Checking for unmanaged branches...
             Deleting branch feature (unmerged to HEAD)...
             Deleted branch feature (was 87e00e9).
-
             """
         )
 
