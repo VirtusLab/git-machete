@@ -39,6 +39,7 @@ class MacheteClient:
 
     def __init__(self, git: GitContext) -> None:
         self.__git: GitContext = git
+        git.owner = self
         self._definition_file_path: str = self.get_git_machete_definition_file_path()
         self.__init_state()
 
@@ -684,7 +685,6 @@ class MacheteClient:
                 print(f"Fetching {bold(rem)}...")
                 self.__git.fetch_remote(rem)
             if self.__git.get_remotes():
-                self.flush_caches()
                 print("")
 
         initial_branch = nearest_remaining_branch = self.__git.get_current_branch()
@@ -794,9 +794,6 @@ class MacheteClient:
                     self.__run_post_slide_out_hook(upstream, branch, dbb)
                     if ans == 'yq':
                         return
-                    # Even though the slide-out itself only changes machete branch layout and not git data,
-                    # let's still flush caches due to the changes that might've been performed by post-slide-out hook.
-                    self.flush_caches()
                     continue  # No need to sync branch 'branch' with remote since it just got removed from the tree of dependencies.
                 elif ans in ('q', 'quit'):
                     return
@@ -850,7 +847,6 @@ class MacheteClient:
                     if ans == 'yq':
                         return
 
-                    self.flush_caches()
                     s, remote = self.__git.get_combined_remote_sync_status(branch)
                     if s in (
                             SyncToRemoteStatuses.BEHIND_REMOTE,
@@ -1166,8 +1162,8 @@ class MacheteClient:
         else:
             return utils.popen_cmd(*args, **kwargs)
 
-    @staticmethod
-    def __run_hook(*args: str, **kwargs: Any) -> int:
+    def __run_hook(self, *args: str, **kwargs: Any) -> int:
+        self.__git.flush_caches()
         if sys.platform == "win32":
             return utils.run_cmd("sh", *args, **kwargs)  # pragma: no cover
         else:
@@ -1878,7 +1874,6 @@ class MacheteClient:
                     self.__git.push(new_remote, branch)
                     if ans == 'yq':
                         raise StopInteraction
-                    self.flush_caches()
                 elif can_pick_other_remote and ans in ('o', 'other'):
                     self.__pick_remote(
                         branch=branch,
@@ -1893,7 +1888,6 @@ class MacheteClient:
             else:
                 if ans in ('y', 'yes'):
                     self.__git.push(new_remote, branch)
-                    self.flush_caches()
                 elif can_pick_other_remote and ans in ('o', 'other'):
                     self.__pick_remote(
                         branch=branch,
@@ -1976,7 +1970,6 @@ class MacheteClient:
             yes_action()
             if ans == 'yq':
                 raise StopInteraction
-            self.flush_caches()
         elif can_pick_other_remote and ans in ('o', 'other'):
             self.__pick_remote(
                 branch=branch,
@@ -2043,7 +2036,6 @@ class MacheteClient:
 
     def flush_caches(self) -> None:
         self.__branch_pairs_by_hash_in_reflog = None
-        self.__git.flush_caches()
 
     def check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
             self, fork_point_hash: AnyRevision, branch: AnyBranchName) -> None:
@@ -2113,7 +2105,6 @@ class MacheteClient:
                 warn(f'Pull request #{bold(str(pr.number))} comes from fork and its repository is already deleted. '
                      f'No remote tracking data will be set up for {bold(pr.head)} branch.')
                 github_client.checkout_pr_refs(self.__git, remote_org_repo.remote, pr.number, LocalBranchShortName.of(pr.head))
-                self.flush_caches()
             if pr.state == 'closed':
                 warn(f'Pull request #{bold(str(pr.number))} is already closed.')
             debug(f'found {pr}')
@@ -2322,7 +2313,6 @@ class MacheteClient:
     ) -> None:
         # first make sure that head branch is synced with remote
         self.__sync_before_creating_pr(opt_onto=opt_onto, opt_yes=False)
-        self.flush_caches()
 
         base: Optional[LocalBranchShortName] = self.up_branch.get(LocalBranchShortName.of(head))
         if not base:
@@ -2423,7 +2413,6 @@ class MacheteClient:
             if ans == 'yq':
                 if is_called_from_traverse:
                     raise StopInteraction
-            self.flush_caches()
         elif ans in ('q', 'quit'):
             raise StopInteraction
 
@@ -2498,7 +2487,6 @@ class MacheteClient:
             self.__git.push(remote, current_branch)
             if ans == 'yq' and is_called_from_traverse:
                 raise StopInteraction
-            self.flush_caches()
         elif ans in ('q', 'quit'):
             raise StopInteraction
 
@@ -2516,7 +2504,6 @@ class MacheteClient:
             self.__git.reset_keep(remote_branch)
             if ans == 'yq':
                 raise StopInteraction
-            self.flush_caches()
         elif ans in ('q', 'quit'):
             raise StopInteraction
 
@@ -2533,7 +2520,6 @@ class MacheteClient:
             self.__git.pull_ff_only(remote, remote_branch)
             if ans == 'yq':
                 raise StopInteraction
-            self.flush_caches()
             print("")
         elif ans in ('q', 'quit'):
             raise StopInteraction

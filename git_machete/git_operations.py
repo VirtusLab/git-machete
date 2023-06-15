@@ -179,41 +179,52 @@ HEAD = AnyRevision.of("HEAD")
 class GitContext:
 
     def __init__(self) -> None:
+        self.owner: Optional[Any] = None
         self._git_version: Optional[Tuple[int, int, int]] = None
         self._root_dir: Optional[str] = None
         self._main_git_dir: Optional[str] = None
         self._worktree_git_dir: Optional[str] = None
-        self.__fetch_done_for: Set[str] = set()
+        self.__commit_hash_by_revision_cached: Optional[Dict[AnyRevision, Optional[FullCommitHash]]] = None
+        self.__committer_unix_timestamp_by_revision_cached: Optional[Dict[AnyRevision, int]] = None
         self.__config_cached: Optional[Dict[str, str]] = None
-        self.__remotes_cached: Optional[List[str]] = None
-        self.__counterparts_for_fetching_cached: Optional[
-            Dict[LocalBranchShortName, Optional[RemoteBranchShortName]]] = None  # TODO (#110): default dict with None
-        self.__short_commit_hash_by_revision_cached: Dict[AnyRevision, Optional[ShortCommitHash]] = {}
-        self.__tree_hash_by_commit_hash_cached: Optional[
-            Dict[FullCommitHash, Optional[FullTreeHash]]] = None  # TODO (#110): default dict with None
-        self.__commit_hash_by_revision_cached: Optional[
-            Dict[AnyRevision, Optional[FullCommitHash]]] = None  # TODO (#110): default dict with None
-        self.__committer_unix_timestamp_by_revision_cached: Optional[Dict[AnyRevision, int]] = None  # TODO (#110): default dict with 0
-        self.__local_branches_cached: Optional[List[LocalBranchShortName]] = None
-        self.__remote_branches_cached: Optional[List[RemoteBranchShortName]] = None
+        self.__counterparts_for_fetching_cached: Optional[Dict[LocalBranchShortName, Optional[RemoteBranchShortName]]] = None
+        self.__fetch_done_for: Set[str] = set()
         self.__initial_log_hashes_cached: Dict[FullCommitHash, List[FullCommitHash]] = {}
-        self.__remaining_log_hashes_cached: Dict[FullCommitHash, List[FullCommitHash]] = {}
-        self.__reflogs_cached: Optional[Dict[AnyBranchName, List[GitReflogEntry]]] = None
-        self.__merge_base_cached: Dict[Tuple[FullCommitHash, FullCommitHash], Optional[FullCommitHash]] = {}
         self.__is_equivalent_tree_reachable_cached: Dict[Tuple[FullCommitHash, FullCommitHash], bool] = {}
+        self.__local_branches_cached: Optional[List[LocalBranchShortName]] = None
+        self.__merge_base_cached: Dict[Tuple[FullCommitHash, FullCommitHash], Optional[FullCommitHash]] = {}
+        self.__reflogs_cached: Optional[Dict[AnyBranchName, List[GitReflogEntry]]] = None
+        self.__remaining_log_hashes_cached: Dict[FullCommitHash, List[FullCommitHash]] = {}
+        self.__remote_branches_cached: Optional[List[RemoteBranchShortName]] = None
+        self.__remotes_cached: Optional[List[str]] = None
+        self.__short_commit_hash_by_revision_cached: Dict[AnyRevision, Optional[ShortCommitHash]] = {}
+        self.__tree_hash_by_commit_hash_cached: Optional[Dict[FullCommitHash, Optional[FullTreeHash]]] = None
 
-    @staticmethod
-    def _run_git(git_cmd: str, *args: str, **kwargs: Any) -> int:
+    def flush_caches(self) -> None:
+        if self.owner:
+            self.owner.flush_caches()
+        self.__commit_hash_by_revision_cached = None
+        self.__committer_unix_timestamp_by_revision_cached = None
+        self.__config_cached = None
+        self.__counterparts_for_fetching_cached = None
+        self.__local_branches_cached = None
+        self.__reflogs_cached = None
+        self.__remote_branches_cached = None
+        self.__remotes_cached = None
+        self.__short_commit_hash_by_revision_cached = {}
+
+    def _run_git(self, git_cmd: str, *args: str, flush_caches: bool, **kwargs: Any) -> int:
         kwargs_ = kwargs.copy()
         allow_non_zero = kwargs_.pop("allow_non_zero", False)
         exit_code = utils.run_cmd("git", git_cmd, *args, **kwargs_)
+        if flush_caches:
+            self.flush_caches()
         if not allow_non_zero and exit_code != 0:
             raise UnderlyingGitException(
                 f"`{utils.get_cmd_shell_repr('git', git_cmd, *args, env=kwargs_.get('env'))}` returned {exit_code}")
         return exit_code
 
-    @staticmethod
-    def _popen_git(git_cmd: str, *args: str, **kwargs: Any) -> CommandResult:
+    def _popen_git(self, git_cmd: str, *args: str, **kwargs: Any) -> CommandResult:
         kwargs_ = kwargs.copy()
         allow_non_zero = kwargs_.pop("allow_non_zero", False)
         exit_code, stdout, stderr = utils.popen_cmd("git", git_cmd, *args, **kwargs_)
@@ -306,7 +317,7 @@ class GitContext:
         return None
 
     def set_config_attr(self, key: str, value: str) -> None:
-        self._run_git("config", "--", key, value)
+        self._run_git("config", "--", key, value, flush_caches=False)
         self.__ensure_config_loaded()
         assert self.__config_cached is not None
         self.__config_cached[key.lower()] = value
@@ -315,12 +326,11 @@ class GitContext:
         self.__ensure_config_loaded()
         assert self.__config_cached is not None
         if self.get_config_attr_or_none(key):
-            self._run_git("config", "--unset", key)
+            self._run_git("config", "--unset", key, flush_caches=False)
             del self.__config_cached[key.lower()]
 
     def add_remote(self, name: str, url: str) -> None:
-        self._run_git('remote', 'add', name, url)
-        self.flush_caches()
+        self._run_git('remote', 'add', name, url, flush_caches=True)
 
     def get_remotes(self) -> List[str]:
         if self.__remotes_cached is None:
@@ -334,21 +344,18 @@ class GitContext:
 
     def fetch_remote(self, remote: str) -> None:
         if remote not in self.__fetch_done_for:
-            self._run_git("fetch", remote, "--prune")  # --prune added to remove remote branches that are already deleted from remote
+            self._run_git("fetch", remote, "--prune", flush_caches=True)
             self.__fetch_done_for.add(remote)
-            self.flush_caches()
 
     def fetch_ref(self, remote: str, ref: str) -> None:
-        self._run_git("fetch", remote, ref)
-        self.flush_caches()
+        self._run_git("fetch", remote, ref, flush_caches=True)
 
     def set_upstream_to(self, remote_branch: RemoteBranchShortName) -> None:
-        self._run_git("branch", "--set-upstream-to", remote_branch)
-        self.flush_caches()
+        self._run_git("branch", "--set-upstream-to", remote_branch, flush_caches=True)
 
     def reset_keep(self, to_revision: AnyRevision) -> None:
         try:
-            self._run_git("reset", "--keep", to_revision)
+            self._run_git("reset", "--keep", to_revision, flush_caches=True)
         except UnderlyingGitException:
             raise UnderlyingGitException(
                 f"Cannot perform `git reset --keep {to_revision}`. This is most likely caused by local uncommitted changes.")
@@ -363,16 +370,14 @@ class GitContext:
         else:  # pragma: no cover
             opt_force = ["--force"]
         args = [remote, branch]
-        self._run_git("push", "--set-upstream", *(opt_force + args))
-        self.flush_caches()
+        self._run_git("push", "--set-upstream", *(opt_force + args), flush_caches=True)
 
     def pull_ff_only(self, remote: str, remote_branch: RemoteBranchShortName) -> None:
         self.fetch_remote(remote)
-        self._run_git("merge", "--ff-only", remote_branch)
+        self._run_git("merge", "--ff-only", remote_branch, flush_caches=True)
         # There's apparently no way to set remote automatically when doing 'git pull' (as opposed to 'git push'),
         # so a separate 'git branch --set-upstream-to' is needed.
         self.set_upstream_to(remote_branch)
-        self.flush_caches()
 
     def __find_short_commit_hash_by_revision(self, revision: AnyRevision) -> ShortCommitHash:
         return ShortCommitHash.of(self._popen_git("rev-parse", "--short", revision + "^{commit}").stdout.rstrip())  # noqa: FS003
@@ -494,8 +499,7 @@ class GitContext:
         return os.path.isfile(self.get_worktree_git_subpath("REVERT_HEAD"))
 
     def checkout(self, branch: LocalBranchShortName) -> None:
-        self._run_git("checkout", "--quiet", branch, "--")
-        self.flush_caches()
+        self._run_git("checkout", "--quiet", branch, "--", flush_caches=True)
 
     def get_local_branches(self) -> List[LocalBranchShortName]:
         if self.__local_branches_cached is None:
@@ -631,22 +635,9 @@ class GitContext:
             return self.__reflogs_cached[branch]
 
     def create_branch(self, branch: LocalBranchShortName, out_of_revision: AnyRevision, switch_head: bool) -> None:
-        self._run_git("branch", branch, out_of_revision)
+        self._run_git("branch", branch, out_of_revision, flush_caches=True)
         if switch_head:
-            self._run_git("checkout", branch)
-        self.flush_caches()  # the repository state has changed because of a successful branch creation,
-        # let's defensively flush all the caches
-
-    def flush_caches(self) -> None:
-        self.__config_cached = None
-        self.__remotes_cached = None
-        self.__counterparts_for_fetching_cached = None
-        self.__short_commit_hash_by_revision_cached = {}
-        self.__commit_hash_by_revision_cached = None
-        self.__committer_unix_timestamp_by_revision_cached = None
-        self.__local_branches_cached = None
-        self.__remote_branches_cached = None
-        self.__reflogs_cached = None
+            self._run_git("checkout", branch, flush_caches=True)
 
     def get_revision_repr(self, revision: AnyRevision) -> str:
         short_hash = self.get_short_commit_hash_by_revision_or_none(revision)
@@ -845,12 +836,10 @@ class GitContext:
         # We need to specify the message explicitly to avoid 'refs/heads/' prefix getting into the message...
         commit_message = f"Merge branch '{branch}' into {into}"
         # ...since we prepend 'refs/heads/' to the merged branch name for unambiguity.
-        self._run_git("merge", "-m", commit_message, branch.full_name(), *extra_params)
-        self.flush_caches()
+        self._run_git("merge", "-m", commit_message, branch.full_name(), *extra_params, flush_caches=True)
 
     def merge_fast_forward_only(self, branch: LocalBranchShortName) -> None:  # refs/heads/ prefix is assumed for 'branch'
-        self._run_git("merge", "--ff-only", branch.full_name())
-        self.flush_caches()
+        self._run_git("merge", "--ff-only", branch.full_name(), flush_caches=True)
 
     def rebase(self, onto: AnyRevision, from_exclusive: AnyRevision, branch: LocalBranchShortName,
                opt_no_interactive_rebase: bool, extra_rebase_opts: List[str]) -> None:
@@ -860,7 +849,7 @@ class GitContext:
                 rebase_opts.append("--interactive")
             if self.get_git_version() >= (2, 26, 0):  # pragma: no branch
                 rebase_opts.append("--empty=drop")
-            self._run_git("rebase", *rebase_opts, "--onto", onto, from_exclusive, branch)
+            self._run_git("rebase", *rebase_opts, "--onto", onto, from_exclusive, branch, flush_caches=True)
         finally:
             # https://public-inbox.org/git/317468c6-40cc-9f26-8ee3-3392c3908efb@talktalk.net/T
             # In our case, this can happen when git version invoked by git-machete to start the rebase
@@ -887,7 +876,6 @@ class GitContext:
                 fixed_lines = get_all_lines_fixed()  # must happen before we open for writing
                 # See https://github.com/VirtusLab/git-machete/issues/935 for why author-script needs to be saved in this manner
                 io.open(author_script, "w", newline="").write("".join(fixed_lines))
-            self.flush_caches()
 
     def get_commits_between(self, earliest_exclusive: AnyRevision, latest_inclusive: AnyRevision) -> List[GitLogEntry]:
         # Reverse the list, since `git log` by default returns the commits from the latest to earliest.
@@ -949,7 +937,7 @@ class GitContext:
         return self._popen_git("log", "-1", f"--format={pattern.value}", commit).stdout.strip()
 
     def display_branch_history_from_fork_point(self, branch: LocalBranchFullName, fork_point: FullCommitHash) -> int:
-        return self._run_git("log", f"^{fork_point}", branch)
+        return self._run_git("log", f"^{fork_point}", branch, flush_caches=False)
 
     def commit_tree_with_given_parent_and_message_and_env(
             self, parent_revision: AnyRevision, msg: str, env: Dict[str, str]) -> FullCommitHash:
@@ -958,9 +946,8 @@ class GitContext:
             "commit-tree", "HEAD^{tree}", "-p", parent_revision, "-m", msg, env=env).stdout.strip())  # noqa: FS003
 
     def delete_branch(self, branch_name: LocalBranchShortName, force: bool = False) -> int:
-        self.flush_caches()
         delete_option = '-D' if force else '-d'
-        return self._run_git("branch", delete_option, branch_name)
+        return self._run_git("branch", delete_option, branch_name, flush_caches=True)
 
     def display_diff(self, fork_point: AnyRevision, format_with_stat: bool, branch: Optional[LocalBranchShortName] = None) -> int:
         params = []
@@ -971,8 +958,7 @@ class GitContext:
             params.append(branch.full_name())
         params.append("--")
 
-        return self._run_git("diff", *params)
+        return self._run_git("diff", *params, flush_caches=False)
 
     def update_head_ref_to_new_hash_with_reflog_subject(self, hash: FullCommitHash, reflog_subject: str) -> int:
-        self.flush_caches()
-        return self._run_git("update-ref", "HEAD", hash, "-m", reflog_subject)
+        return self._run_git("update-ref", "HEAD", hash, "-m", reflog_subject, flush_caches=True)

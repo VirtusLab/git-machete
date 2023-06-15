@@ -15,8 +15,9 @@ class TestGitOperations(BaseTest):
         master_branch_first_commit_hash = self.repo_sandbox.get_current_commit_hash()
 
         git = GitContext()
-        assert git._run_git("rev-parse", "--verify", "--quiet", master_branch_first_commit_hash + "^{commit}", allow_non_zero=True) == 0  # noqa: FS003, E501
-        assert git._run_git("rev-parse", "HEAD") == 0
+        assert git._run_git("rev-parse", "--verify", "--quiet",
+                            master_branch_first_commit_hash + "^{commit}", allow_non_zero=True, flush_caches=False) == 0  # noqa: FS003
+        assert git._run_git("rev-parse", "HEAD", flush_caches=False) == 0
 
     def test_popen_git(self) -> None:
         (
@@ -34,7 +35,8 @@ class TestGitOperations(BaseTest):
         git = GitContext()
 
         def is_commit_present_in_repository(revision: AnyRevision) -> bool:
-            return git._popen_git("rev-parse", "--verify", "--quiet", revision + "^{commit}", allow_non_zero=True).exit_code == 0  # noqa: FS003, E501
+            return git._popen_git("rev-parse", "--verify", "--quiet",
+                                  revision + "^{commit}", allow_non_zero=True).exit_code == 0  # noqa: FS003
 
         assert is_commit_present_in_repository(revision=FullCommitHash(40 * 'a')) is False
         assert is_commit_present_in_repository(revision=AnyRevision(master_branch_first_commit_hash)) is True
