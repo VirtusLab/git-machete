@@ -1,3 +1,4 @@
+from tempfile import mkdtemp
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
@@ -118,6 +119,36 @@ class TestShow(BaseTest):
         assert 'level-0-branch' == launch_command("show", "u").strip(), \
             ("Verify that 'git machete show u' displays name of a parent/upstream "
              "branch one above current one.")
+
+    def test_show_up_inference_using_reflog_of_remote_branch(self) -> None:
+        origin_1_remote_path = mkdtemp()
+        origin_2_remote_path = mkdtemp()
+        self.repo_sandbox.new_repo(origin_1_remote_path, bare=True, switch_dir_to_new_repo=False)
+        self.repo_sandbox.new_repo(origin_2_remote_path, bare=True, switch_dir_to_new_repo=False)
+
+        (
+            self.repo_sandbox
+            .new_branch("master").commit().push()
+            .new_branch("develop").commit().push()
+            .chdir(self.repo_sandbox.remote_path)
+            .execute("git update-ref refs/heads/master develop")
+            .chdir(self.repo_sandbox.local_path)
+            .check_out("master").pull().check_out("develop")
+        )
+
+        assert_success(
+            ["show", "up"],
+            "Warn: branch develop not found in the tree of branch dependencies; the upstream has been inferred to master\n"
+            "master\n"
+        )
+
+        self.repo_sandbox.remove_directory(".git/logs/refs/heads/")
+
+        assert_success(
+            ["show", "up"],
+            "Warn: branch develop not found in the tree of branch dependencies; the upstream has been inferred to master\n"
+            "master\n"
+        )
 
     def test_show_down(self) -> None:
         """Verify behaviour of a 'git machete show down' command.

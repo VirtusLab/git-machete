@@ -123,7 +123,7 @@ class TestGitHubCreatePR(BaseTest):
         assert_success(
             ["github", "create-pr", "--draft"],
             """
-            Push untracked branch chore/fields to origin? (y, Q, o[ther-remote]) 
+            Push untracked branch chore/fields to origin? (y, Q) 
 
               master
               |
@@ -281,24 +281,6 @@ class TestGitHubCreatePR(BaseTest):
             "Branch master does not have a parent branch (it is a root), base branch for the PR cannot be established."
         )
 
-    def test_github_create_pr_for_branch_with_no_fork_point(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
-
-        (
-            self.repo_sandbox
-            .new_branch("master")
-            .commit()
-            .push()
-            .new_orphan_branch("develop")
-            .commit()
-            .push()
-        )
-        rewrite_definition_file("master\n  develop")
-        assert_failure(
-            ["github", "create-pr"],
-            "Fork point not found for branch develop; use git machete fork-point develop --override-to..."
-        )
-
     github_api_state_for_test_create_pr_missing_base_branch_on_remote = MockGitHubAPIState(
         [
             {
@@ -368,7 +350,6 @@ class TestGitHubCreatePR(BaseTest):
     )
 
     def test_github_create_pr_with_multiple_non_origin_remotes(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('1', 'y', 'y'))
         self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
         self.patch_symbol(mocker, 'urllib.request.urlopen',
@@ -381,7 +362,8 @@ class TestGitHubCreatePR(BaseTest):
 
         # branch feature present in each of the remotes, no branch tracking data, remote origin_1 picked manually via mock_input()
         (
-            self.repo_sandbox.remove_remote()
+            self.repo_sandbox
+                .remove_remote('origin')
                 .new_branch("root")
                 .add_remote('origin_1', origin_1_remote_path)
                 .add_remote('origin_2', origin_2_remote_path)
@@ -405,13 +387,38 @@ class TestGitHubCreatePR(BaseTest):
             """
         rewrite_definition_file(body)
 
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('q'))
+        expected_result = """
+        Branch feature is untracked and there's no origin repository.
+        [1] origin_1
+        [2] origin_2
+        Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request: 
+        """
+        assert_success(
+            ['github', 'create-pr'],
+            expected_result
+        )
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('3'))
+        assert_failure(
+            ['github', 'create-pr'],
+            "Invalid index: 3"
+        )
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('xd'))
+        assert_failure(
+            ['github', 'create-pr'],
+            "Could not establish remote repository, pull request creation interrupted."
+        )
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('1', 'y'))
         expected_result = """
         Branch feature is untracked and there's no origin repository.
         [1] origin_1
         [2] origin_2
         Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request: 
         Branch feature is untracked, but its remote counterpart candidate origin_1/feature already exists and both branches point to the same commit.
-        Set the remote of feature to origin_1 without pushing or pulling? (y, N, q, yq, o[ther-remote]) 
+        Set the remote of feature to origin_1 without pushing or pulling? (y, N, q, yq) 
 
           root
           |
@@ -435,6 +442,7 @@ class TestGitHubCreatePR(BaseTest):
                 .push(remote='origin_2')
         )
 
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('y'))
         expected_result = """
         Add feature_1 onto the inferred upstream (parent) branch feature? (y, N) 
         Added branch feature_1 onto feature
@@ -462,7 +470,7 @@ class TestGitHubCreatePR(BaseTest):
         [1] origin_1
         [2] origin_2
         Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request: 
-        Push untracked branch feature_2 to origin_1? (y, Q, o[ther-remote]) 
+        Push untracked branch feature_2 to origin_1? (y, Q) 
 
           root
           |

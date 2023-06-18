@@ -19,7 +19,7 @@ class MacheteException(Exception):
         return str(self.msg)
 
 
-class StopInteraction(Exception):
+class InteractionStopped(Exception):
     def __init__(self) -> None:
         pass
 

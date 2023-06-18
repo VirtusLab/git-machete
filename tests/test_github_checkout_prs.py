@@ -1,6 +1,5 @@
 import os
 from tempfile import mkdtemp
-from typing import Any
 
 from pytest_mock import MockerFixture
 
@@ -149,7 +148,7 @@ class TestGitHubCheckoutPRs(BaseTest):
         )
         for branch in ('chore/redundant_checks', 'restrict_access', 'allow-ownership-link', 'bugfix/feature', 'enhance/add_user',
                        'testing/add_user', 'chore/comments', 'bugfix/add_user'):
-            self.repo_sandbox.execute(f"git branch -D {branch}")
+            self.repo_sandbox.delete_branch(branch)
 
         body: str = \
             """
@@ -310,29 +309,31 @@ class TestGitHubCheckoutPRs(BaseTest):
         assert_success(['github', 'checkout-prs', '--by', 'tester'], expected_msg)
 
         # Check against closed pull request with head branch deleted from remote
-        local_path = mkdtemp()
+        other_local_path = mkdtemp()
         self.repo_sandbox.new_repo(GitRepositorySandbox.second_remote_path, bare=True)
-        (self.repo_sandbox.new_repo(local_path, bare=False)
-         .execute(f"git remote add origin {GitRepositorySandbox.second_remote_path}")
-         .execute('git config user.email "tester@test.com"')
-         .execute('git config user.name "Tester Test"')
-         .new_branch('main')
-         .commit('initial commit')
-         .push()
-         )
-        os.chdir(self.repo_sandbox.local_path)
+        (
+            self.repo_sandbox
+            .new_repo(other_local_path, bare=False)
+            .add_remote("origin", GitRepositorySandbox.second_remote_path)
+            .set_git_config_key("user.email", "tester@test.com")
+            .set_git_config_key("user.name", "Tester Test")
+            .new_branch('main')
+            .commit('initial commit')
+            .push()
+        )
 
         expected_error_message = "Could not check out PR #5 because its head branch bugfix/remove-n-option " \
                                  "is already deleted from testing."
         assert_failure(['github', 'checkout-prs', '5'], expected_error_message)
 
         # Check against pr come from fork
-        os.chdir(local_path)
-        (self.repo_sandbox
-         .new_branch('bugfix/remove-n-option')
-         .commit('first commit')
-         .push())
-        os.chdir(self.repo_sandbox.local_path)
+        (
+            self.repo_sandbox
+            .new_branch('bugfix/remove-n-option')
+            .commit('first commit')
+            .push()
+            .chdir(self.repo_sandbox.local_path)
+        )
 
         expected_msg = ("Checking for open GitHub PRs... OK\n"
                         "Warn: Pull request #5 is already closed.\n"
@@ -381,7 +382,7 @@ class TestGitHubCheckoutPRs(BaseTest):
         ]
     )
 
-    def test_github_checkout_prs_freshly_cloned(self, mocker: MockerFixture, tmp_path: Any) -> None:
+    def test_github_checkout_prs_freshly_cloned(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_github_checkout_prs_fresh_repo))
 
@@ -411,22 +412,22 @@ class TestGitHubCheckoutPRs(BaseTest):
             .push()
         )
         for branch in ('develop', 'chore/sync_to_docs', 'improve/refactor', 'comments/add_docstrings'):
-            self.repo_sandbox.execute(f"git branch -D {branch}")
-        local_path = tmp_path
-        os.chdir(local_path)
-        self.repo_sandbox.execute(f'git clone {self.repo_sandbox.remote_path}')
-        os.chdir(os.path.join(local_path, os.listdir()[0]))
+            self.repo_sandbox.delete_branch(branch)
+        local_path = mkdtemp()
+        self.repo_sandbox\
+            .chdir(local_path)\
+            .execute(f'git clone {self.repo_sandbox.remote_path}')\
+            .chdir(os.path.join(local_path, os.listdir()[0]))
 
         for branch in ('develop', 'chore/sync_to_docs', 'improve/refactor', 'comments/add_docstrings'):
-            self.repo_sandbox.execute(f"git branch -D -r origin/{branch}")
+            self.repo_sandbox.delete_remote_branch(f"origin/{branch}")
 
-        local_path = tmp_path
         self.repo_sandbox.new_repo(GitRepositorySandbox.second_remote_path, bare=True)
         (
             self.repo_sandbox.new_repo(local_path, bare=False)
-            .execute(f"git remote add origin {GitRepositorySandbox.second_remote_path}")
-            .execute('git config user.email "tester@test.com"')
-            .execute('git config user.name "Tester Test"')
+            .add_remote("origin", GitRepositorySandbox.second_remote_path)
+            .set_git_config_key("user.email", "tester@test.com")
+            .set_git_config_key("user.name", "Tester Test")
             .new_branch('feature')
             .commit('initial commit')
             .push()
@@ -454,7 +455,7 @@ class TestGitHubCheckoutPRs(BaseTest):
         )
 
         # Check against closed pull request
-        self.repo_sandbox.execute('git branch -D sphinx_export')
+        self.repo_sandbox.delete_branch('sphinx_export')
         expected_msg = ("Checking for open GitHub PRs... OK\n"
                         "Warn: Pull request #23 is already closed.\n"
                         "Pull request #23 checked out at local branch sphinx_export\n")
@@ -513,9 +514,10 @@ class TestGitHubCheckoutPRs(BaseTest):
             .push()
         )
 
-        os.chdir(self.repo_sandbox.remote_path)
-        self.repo_sandbox.execute("git branch pull/2/head develop")
-        os.chdir(self.repo_sandbox.local_path)
+        self.repo_sandbox \
+            .chdir(self.repo_sandbox.remote_path)\
+            .execute("git branch pull/2/head develop")\
+            .chdir(self.repo_sandbox.local_path)
 
         body: str = \
             """
@@ -674,7 +676,7 @@ class TestGitHubCheckoutPRs(BaseTest):
         )
         for branch in ('chore/redundant_checks', 'restrict_access', 'allow-ownership-link', 'bugfix/feature', 'enhance/add_user',
                        'testing/add_user', 'chore/comments', 'bugfix/add_user'):
-            self.repo_sandbox.execute(f"git branch -D {branch}")
+            self.repo_sandbox.delete_branch(branch)
 
         body: str = \
             """

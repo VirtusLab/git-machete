@@ -67,6 +67,10 @@ class GitRepositorySandbox:
             os.chdir(previous_dir)
         return self
 
+    def chdir(self, path: str) -> "GitRepositorySandbox":
+        os.chdir(path)
+        return self
+
     def new_branch(self, branch_name: str) -> "GitRepositorySandbox":
         self.execute(f"git checkout -b {branch_name}")
         return self
@@ -109,6 +113,10 @@ class GitRepositorySandbox:
         self.execute(f"git push {'--set-upstream' if set_upstream else ''} {remote} {branch}:{tracking_branch}")
         return self
 
+    def pull(self) -> "GitRepositorySandbox":
+        self.execute("git pull")
+        return self
+
     def merge(self, branch_name: str) -> "GitRepositorySandbox":
         self.execute(f'git merge {branch_name}')
         return self
@@ -118,7 +126,11 @@ class GitRepositorySandbox:
         return self
 
     def delete_branch(self, branch: str) -> "GitRepositorySandbox":
-        self.execute(f'git branch -d "{branch}"')
+        self.execute(f'git branch -D "{branch}"')
+        return self
+
+    def delete_remote_branch(self, branch: str) -> "GitRepositorySandbox":
+        self.execute(f'git branch -D -r "{branch}"')
         return self
 
     def add_remote(self, remote: str, url: str) -> "GitRepositorySandbox":
@@ -165,7 +177,7 @@ class GitRepositorySandbox:
             f.write(file_content)
         return self
 
-    def remove_file(self, file_path: str) -> "GitRepositorySandbox":
+    def remove_directory(self, file_path: str) -> "GitRepositorySandbox":
         self.execute(f'rm -rf "./{file_path}"')
         return self
 

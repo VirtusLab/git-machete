@@ -98,7 +98,7 @@ class TestTraverse(BaseTest):
             .new_branch("feature")
             .commit()
             .check_out("master")
-            .execute("git merge --ff-only develop")
+            .merge("develop")
             .check_out("develop")
         )
         body: str = \
@@ -141,6 +141,19 @@ class TestTraverse(BaseTest):
             |
             | Some commit message.
             o-feature
+            """
+        )
+
+        self.repo_sandbox.check_out("master").merge("feature").check_out("feature")
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("y"))
+        assert_success(
+            ["traverse"],
+            """
+            Branch feature is merged into master. Slide feature out of the tree of branch dependencies? (y, N, q, yq) 
+
+              master
+
+            Reached branch feature which has no successor; nothing left to update
             """
         )
 
@@ -921,3 +934,12 @@ class TestTraverse(BaseTest):
                 Reached branch branch-1 which has no successor; nothing left to update
                 """
             )
+
+    def test_quit_on_pushing_untracked(self, mocker: MockerFixture) -> None:
+        self.repo_sandbox.new_branch("master").commit()
+        rewrite_definition_file("master")
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
+        assert_success(
+            ["traverse"],
+            "Push untracked branch master to origin? (y, N, q, yq) \n"
+        )

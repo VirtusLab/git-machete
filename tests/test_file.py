@@ -33,8 +33,9 @@ class TestFile(BaseTest):
         if self.repo_sandbox.get_git_version() >= (2, 5):  # `git worktree` command was introduced in git version 2.5
             # check git machete definition file path when inside a worktree using the default `True` value
             # for the `machete.worktree.useTopLevelMacheteFile` key
-            self.repo_sandbox.execute("git worktree add -f -b snickers_feature snickers_worktree develop")
-            os.chdir('snickers_worktree')
+            self.repo_sandbox\
+                .execute("git worktree add -f -b snickers_feature snickers_worktree develop")\
+                .chdir('snickers_worktree')
             definition_file_full_path = launch_command("file")
             definition_file_path = Path(definition_file_full_path).parts
             definition_file_path_relative_to_git_dir = '/'.join(definition_file_path[-2:]).rstrip('\n')
@@ -42,17 +43,17 @@ class TestFile(BaseTest):
 
             # check git machete definition file path when inside a worktree
             # but with the `machete.worktree.useTopLevelMacheteFile` key set to `False`
-            self.repo_sandbox.set_git_config_key('machete.worktree.useTopLevelMacheteFile', 'false')
-            self.repo_sandbox.execute("git worktree add -f -b mars_feature mars_worktree develop")
-            os.chdir('mars_worktree')
+            self.repo_sandbox\
+                .set_git_config_key('machete.worktree.useTopLevelMacheteFile', 'false')\
+                .execute("git worktree add -f -b mars_feature mars_worktree develop")\
+                .chdir('mars_worktree')
             definition_file_full_path = launch_command("file")
             definition_file_path = Path(definition_file_full_path).parts
             definition_file_path_relative_to_git_dir = '/'.join(definition_file_path[-4:]).rstrip('\n')
             assert definition_file_path_relative_to_git_dir == '.git/worktrees/mars_worktree/machete'
 
     def test_file_outside_git_repo(self) -> None:
-        other_path = mkdtemp()
-        os.chdir(other_path)
+        os.chdir(mkdtemp())
         assert_failure(["file"], "Not a git repository", expected_exception=UnderlyingGitException)
 
     def test_file_when_git_machete_is_a_directory(self) -> None:

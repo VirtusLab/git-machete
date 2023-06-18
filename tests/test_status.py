@@ -1,4 +1,3 @@
-import os
 import re
 import sys
 import textwrap
@@ -375,7 +374,7 @@ class TestStatus(BaseTest):
             .execute("git commit -m squash_child")
             .execute("git push origin upstream_squash:develop")
             .check_out("child")
-            .execute("git branch -D upstream_squash")
+            .delete_branch("upstream_squash")
         )
 
         # status before fetch will show develop as out of date
@@ -409,14 +408,12 @@ class TestStatus(BaseTest):
             """,
         )
 
-    def test_inferring_counterpart_for_fetching_of_branch(self) -> None:
+    def test_status_inferring_counterpart_for_fetching_of_branch(self) -> None:
         origin_1_remote_path = mkdtemp()
-        self.repo_sandbox.new_repo(origin_1_remote_path, bare=True)
-
-        os.chdir(self.repo_sandbox.local_path)
-
         (
             self.repo_sandbox
+                .new_repo(origin_1_remote_path, bare=True)
+                .chdir(self.repo_sandbox.local_path)
                 .add_remote('origin_1', origin_1_remote_path)
                 .new_branch('master')
                 .commit()
@@ -507,7 +504,7 @@ class TestStatus(BaseTest):
             """
         rewrite_definition_file(body)
 
-        self.repo_sandbox.remove_file(".git/logs/")
+        self.repo_sandbox.remove_directory(".git/logs/")
 
         expected_status_output = (
             """

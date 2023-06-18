@@ -11,7 +11,7 @@ import git_machete.options
 from git_machete import __version__, git_config_keys, utils
 
 from .client import MacheteClient
-from .exceptions import (ExitCode, MacheteException, StopInteraction,
+from .exceptions import (ExitCode, InteractionStopped, MacheteException,
                          UnderlyingGitException)
 from .generated_docs import long_docs, short_docs
 from .git_operations import (AnyBranchName, AnyRevision, GitContext,
@@ -592,6 +592,7 @@ def launch(orig_args: List[str]) -> None:
         elif cmd == "fork-point":
             machete_client.read_definition_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             branch = get_local_branch_short_name_from_arg_or_current_branch(cli_opts.opt_branch, git)
+            machete_client.expect_in_local_branches(branch)
             if cli_opts.opt_inferred:
                 print(machete_client.fork_point(branch=branch, use_overrides=False))
             elif cli_opts.opt_override_to:
@@ -819,7 +820,7 @@ def main() -> None:
     except (MacheteException, UnderlyingGitException) as e:
         print(e, file=sys.stderr)
         sys.exit(ExitCode.MACHETE_EXCEPTION)
-    except StopInteraction:
+    except InteractionStopped:
         pass
 
 

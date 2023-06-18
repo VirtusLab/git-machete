@@ -66,7 +66,7 @@ class TestGitHub(BaseTest):
 
         self.repo_sandbox.check_out('develop')
         for i in range(self.PR_COUNT_FOR_TEST_GITHUB_API_PAGINATION):
-            self.repo_sandbox.execute(f"git branch -D feature_{i:02d}")
+            self.repo_sandbox.delete_branch(f"feature_{i:02d}")
         body = 'develop *\n'
         rewrite_definition_file(body)
 

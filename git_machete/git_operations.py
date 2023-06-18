@@ -180,10 +180,10 @@ class GitContext:
 
     def __init__(self) -> None:
         self.owner: Optional[Any] = None
-        self._git_version: Optional[Tuple[int, int, int]] = None
-        self._root_dir: Optional[str] = None
-        self._main_git_dir: Optional[str] = None
-        self._worktree_git_dir: Optional[str] = None
+        self.__git_version: Optional[Tuple[int, int, int]] = None
+        self.__root_dir: Optional[str] = None
+        self.__main_git_dir: Optional[str] = None
+        self.__worktree_git_dir: Optional[str] = None
         self.__commit_hash_by_revision_cached: Optional[Dict[AnyRevision, Optional[FullCommitHash]]] = None
         self.__committer_unix_timestamp_by_revision_cached: Optional[Dict[AnyRevision, int]] = None
         self.__config_cached: Optional[Dict[str, str]] = None
@@ -237,46 +237,46 @@ class GitContext:
         return CommandResult(stdout, stderr, exit_code)
 
     def get_git_version(self) -> Tuple[int, int, int]:
-        if not self._git_version:
+        if not self.__git_version:
             # We need to cut out the x.y.z part and not just take the result of 'git version' as is,
             # because the version string in certain distributions of git (esp. on OS X) has an extra suffix,
             # which is irrelevant for our purpose (checking whether certain git CLI features are available/bugs are fixed).
             raw = re.search(r"(\d+).(\d+).(\d+)", self._popen_git("version").stdout)
             if not raw:  # unlikely, never observed so far; mostly to satisfy mypy
                 return 0, 0, 0  # pragma: no cover
-            self._git_version = (int(raw.group(1)), int(raw.group(2)), int(raw.group(3)))
-        return self._git_version
+            self.__git_version = (int(raw.group(1)), int(raw.group(2)), int(raw.group(3)))
+        return self.__git_version
 
     def get_root_dir(self) -> str:
-        if not self._root_dir:
+        if not self.__root_dir:
             try:
-                self._root_dir = self._popen_git("rev-parse", "--show-toplevel").stdout.strip()
+                self.__root_dir = self._popen_git("rev-parse", "--show-toplevel").stdout.strip()
             except UnderlyingGitException:
                 raise UnderlyingGitException("Not a git repository")
-        return self._root_dir
+        return self.__root_dir
 
     def get_worktree_git_dir(self) -> str:
-        if not self._worktree_git_dir:
+        if not self.__worktree_git_dir:
             try:
-                self._worktree_git_dir = self._popen_git("rev-parse", "--git-dir").stdout.strip()
+                self.__worktree_git_dir = self._popen_git("rev-parse", "--git-dir").stdout.strip()
             except UnderlyingGitException:
                 raise UnderlyingGitException("Not a git repository")
-        return self._worktree_git_dir
+        return self.__worktree_git_dir
 
     def get_main_git_dir(self) -> str:
-        if not self._main_git_dir:
+        if not self.__main_git_dir:
             try:
                 git_dir: str = self._popen_git("rev-parse", "--git-dir").stdout.strip()
                 git_dir_parts = Path(git_dir).parts
                 if len(git_dir_parts) >= 3 and git_dir_parts[-3] == '.git' and git_dir_parts[-2] == 'worktrees':
-                    self._main_git_dir = os.path.join(*git_dir_parts[:-2])
+                    self.__main_git_dir = os.path.join(*git_dir_parts[:-2])
                     debug(f'git dir pointing to {git_dir} - we are in a worktree; '
-                          f'using {self._main_git_dir} as the effective git dir instead')
+                          f'using {self.__main_git_dir} as the effective git dir instead')
                 else:
-                    self._main_git_dir = git_dir
+                    self.__main_git_dir = git_dir
             except UnderlyingGitException:
                 raise UnderlyingGitException("Not a git repository")
-        return self._main_git_dir
+        return self.__main_git_dir
 
     def get_worktree_git_subpath(self, *fragments: str) -> str:
         return os.path.join(self.get_worktree_git_dir(), *fragments)

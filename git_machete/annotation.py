@@ -5,10 +5,10 @@ from git_machete import utils
 
 class Qualifiers:
     def __init__(self, annotation: str):
-        self._annotation_without_qualifiers: str = annotation
-        self._rebase_text: str = ''
-        self._push_text: str = ''
-        self._slide_out_text: str = ''
+        self.__annotation_without_qualifiers: str = annotation
+        self.__push_text: str = ''
+        self.__rebase_text: str = ''
+        self.__slide_out_text: str = ''
         self.rebase: bool = True
         self.push: bool = True
         self.slide_out: bool = True
@@ -22,26 +22,26 @@ class Qualifiers:
         rebase_match = re.match(match_pattern('rebase'), annotation)
         if rebase_match:
             self.rebase = False
-            self._rebase_text = 'rebase=no'
-            self._annotation_without_qualifiers = re.sub(sub_pattern('rebase'), ' ', self._annotation_without_qualifiers)
+            self.__rebase_text = 'rebase=no'
+            self.__annotation_without_qualifiers = re.sub(sub_pattern('rebase'), ' ', self.__annotation_without_qualifiers)
 
         push_match = re.match(match_pattern('push'), annotation)
         if push_match:
             self.push = False
-            self._push_text = 'push=no'
-            self._annotation_without_qualifiers = re.sub(sub_pattern('push'), ' ', self._annotation_without_qualifiers)
+            self.__push_text = 'push=no'
+            self.__annotation_without_qualifiers = re.sub(sub_pattern('push'), ' ', self.__annotation_without_qualifiers)
 
         slide_out_match = re.match(match_pattern('slide-out'), annotation)
         if slide_out_match:
             self.slide_out = False
-            self._slide_out_text = 'slide-out=no'
-            self._annotation_without_qualifiers = re.sub(sub_pattern('slide-out'), ' ', self._annotation_without_qualifiers)
+            self.__slide_out_text = 'slide-out=no'
+            self.__annotation_without_qualifiers = re.sub(sub_pattern('slide-out'), ' ', self.__annotation_without_qualifiers)
 
     def get_annotation_text_without_qualifiers(self) -> str:
-        return self._annotation_without_qualifiers.strip()
+        return self.__annotation_without_qualifiers.strip()
 
     def get_qualifiers_text(self) -> str:
-        return f'{self._rebase_text} {self._push_text} {self._slide_out_text}'.replace('  ', ' ').strip()
+        return f'{self.__rebase_text} {self.__push_text} {self.__slide_out_text}'.replace('  ', ' ').strip()
 
 
 class Annotation:

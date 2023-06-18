@@ -1,3 +1,4 @@
+from tempfile import mkdtemp
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success,
@@ -235,4 +236,39 @@ class TestForkPoint(BaseTest):
         assert_failure(
             ["fork-point"],
             "Fork point not found for branch branch-1; use git machete fork-point branch-1 --override-to..."
+        )
+
+    def test_fork_point_for_non_existent_branch(self) -> None:
+        assert_failure(
+            ["fork-point", "no-such-branch"],
+            "no-such-branch is not a local branch"
+        )
+
+    def test_fork_point_covering_reflog_of_remote_branch(self) -> None:
+        origin_1_remote_path = mkdtemp()
+        origin_2_remote_path = mkdtemp()
+        self.repo_sandbox.new_repo(origin_1_remote_path, bare=True, switch_dir_to_new_repo=False)
+        self.repo_sandbox.new_repo(origin_2_remote_path, bare=True, switch_dir_to_new_repo=False)
+
+        with fixed_author_and_committer_date_in_past():
+            (
+                self.repo_sandbox
+                .new_branch("master").commit().push()
+                .new_branch("develop").commit().push()
+                .chdir(self.repo_sandbox.remote_path)
+                .execute("git update-ref refs/heads/master develop")
+                .chdir(self.repo_sandbox.local_path)
+                .check_out("master").pull().check_out("develop")
+            )
+
+        assert_success(
+            ["fork-point"],
+            "dcd2db55125a1b67b367565e890a604639949a51\n"
+        )
+
+        self.repo_sandbox.remove_directory(".git/logs/refs/heads/")
+
+        assert_success(
+            ["fork-point"],
+            "dcd2db55125a1b67b367565e890a604639949a51\n"
         )

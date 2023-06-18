@@ -186,7 +186,7 @@ class TestDiscover(BaseTest):
             .new_branch("feature2")
             .commit()
             .check_out("master")
-            .execute("git merge --ff-only feature1")
+            .merge("feature1")
         )
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('n'))
