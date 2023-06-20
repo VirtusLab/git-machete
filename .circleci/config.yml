@@ -45,7 +45,7 @@ jobs:
           command: ci/checks/run-all-checks.sh
 
   # Earliest versions of python/git supported by git-machete
-  "python 3_6 git 1_8_10":
+  "python 3_6 git 1_8_0":
     executor: ubuntu_executor
     steps:
       - checkout
@@ -54,6 +54,9 @@ jobs:
           command: PYTHON_VERSION=3.6 GIT_VERSION=1.8.0  bash ci/tox/ci-run.sh
       - store_test_results:
           path: test-results/
+      - persist_to_workspace:
+          root: .
+          paths: [ .coverage.* ]
 
   "python 3_7 git 2_7_6":
     executor: ubuntu_executor
@@ -64,6 +67,9 @@ jobs:
           command: PYTHON_VERSION=3.7 GIT_VERSION=2.7.6  bash ci/tox/ci-run.sh
       - store_test_results:
           path: test-results/
+      - persist_to_workspace:
+          root: .
+          paths: [ .coverage.* ]
 
   "python 3_8 git 2_25_0":
     executor: ubuntu_executor
@@ -74,9 +80,25 @@ jobs:
           command: PYTHON_VERSION=3.8 GIT_VERSION=2.25.0  bash ci/tox/ci-run.sh
       - store_test_results:
           path: test-results/
+      - persist_to_workspace:
+          root: .
+          paths: [ .coverage.* ]
+
+  "python 3_9 git 2_30_1":
+    executor: ubuntu_executor
+    steps:
+      - checkout
+      - run:
+          name: Run tests against Python 3.9 and git 2.30.1
+          command: PYTHON_VERSION=3.9 GIT_VERSION=2.30.1  bash ci/tox/ci-run.sh
+      - store_test_results:
+          path: test-results/
+      - persist_to_workspace:
+          root: .
+          paths: [ .coverage.* ]
 
   # Note that there is no particular reason for the below assignment
-  # of PEP8/coverage/docs checks to Python version, other than:
+  # of PEP8/docs checks to Python version, other than:
   #  - Python 3.6 being EOLed and hence not supporting the versions of packages used for the checks,
   #  - https://github.com/VirtusLab/git-machete/issues/936 apparently forcing the use of Python 3.11 for Sphinx HTML docs.
   # Each of these checks needs to be run against just one Python version
@@ -84,27 +106,18 @@ jobs:
   # so let's spread these checks evenly across versions to reduce CI execution time
   # (when compared to the scenario where all checks are executed under the same Python version).
 
-  "pep8 and python 3_9 git 2_30_1":
+  "pep8 and python 3_10 git 2_33_1":
     executor: ubuntu_executor
     steps:
       - checkout
       - run:
-          name: Run tests against Python 3.9 and git 2.30.1 (with isort/PEP8/vulture check)
-          command: PYTHON_VERSION=3.9 GIT_VERSION=2.30.1 CHECK_PEP8=true  bash ci/tox/ci-run.sh
+          name: Run tests against Python 3.10 and git 2.33.1 (with isort/PEP8/vulture check)
+          command: PYTHON_VERSION=3.10 GIT_VERSION=2.33.1 CHECK_PEP8=true  bash ci/tox/ci-run.sh
       - store_test_results:
           path: test-results/
-
-  "coverage and python 3_10 git 2_33_1":
-    executor: ubuntu_executor
-    steps:
-      - checkout
-      - run:
-          name: Run tests against Python 3.10 and git 2.33.1 (with coverage report)
-          command: PYTHON_VERSION=3.10 GIT_VERSION=2.33.1 CHECK_COVERAGE=true  bash ci/tox/ci-run.sh
-      - store_test_results:
-          path: test-results/
-      - codecov/upload:
-          file: coverage.xml
+      - persist_to_workspace:
+          root: .
+          paths: [ .coverage.* ]
 
   # Note that if docs are ever to be built under a different Python version in CI,
   # this change needs to be reflected in tox.ini and .readthedocs.yaml as well
@@ -118,26 +131,47 @@ jobs:
           command: PYTHON_VERSION=3.11 GIT_VERSION=2.38.1 BUILD_SPHINX_HTML=true CHECK_DOCS_UP_TO_DATE=true  bash ci/tox/ci-run.sh
       - store_test_results:
           path: test-results/
+      - persist_to_workspace:
+          root: .
+          paths: [ .coverage.* ]
       - store_artifacts:
           path: docs/html/
           destination: docs
 
-  # Note the while we use Linux to test against specific Python&git version,
+  # Note the while we use Linux executor to test against specific Python&git version,
   # on macOS and Windows we're just checking compatibility with the OS itself,
   # relying on whatever recent versions of Python and git are provided in the image.
+
   "macos tests":
     executor: macos_executor
     steps:
       - checkout
       - run: pip install tox
-      - run: tox -e py311 -- -vv
+      - run: PYTHON_VERSION=3.11-macos  tox -e coverage-py311 -- -vv
+      - store_test_results:
+          path: test-results/
+      - persist_to_workspace:
+          root: .
+          paths: [ .coverage.* ]
 
   "windows tests":
     executor: windows_executor
     steps:
       - checkout
       - run: pip install tox
-      - run: tox -e py311 -- -vv
+      # We don't collect coverage on Windows as it massively extends execution time for some reason.
+      - run: tox -e testenv -- -vv
+
+  "coverage upload":
+    executor: ubuntu_executor
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: pip3 install tox
+      - run: tox -e coverage-combine
+      - codecov/upload:
+          file: coverage.xml
 
   "dry run deploy":
     executor: ubuntu_executor
@@ -238,11 +272,11 @@ jobs:
 # it's just to introduce a reusable anchor to be referenced from `requires`.
 mandatory_jobs: &mandatory_jobs
   - general checks
-  - python 3_6 git 1_8_10
+  - python 3_6 git 1_8_0
   - python 3_7 git 2_7_6
   - python 3_8 git 2_25_0
-  - pep8 and python 3_9 git 2_30_1
-  - coverage and python 3_10 git 2_33_1
+  - python 3_9 git 2_30_1
+  - pep8 and python 3_10 git 2_33_1
   - docs and python 3_11 git 2_38_1
   - macos tests
   - windows tests
@@ -252,14 +286,17 @@ workflows:
   build:
     jobs:
       - general checks
-      - python 3_6 git 1_8_10
+      - python 3_6 git 1_8_0
       - python 3_7 git 2_7_6
       - python 3_8 git 2_25_0
-      - pep8 and python 3_9 git 2_30_1
-      - coverage and python 3_10 git 2_33_1
+      - python 3_9 git 2_30_1
+      - pep8 and python 3_10 git 2_33_1
       - docs and python 3_11 git 2_38_1
       - macos tests
       - windows tests
+      - coverage upload:
+          requires:
+            *mandatory_jobs
       - dry run deploy:
           filters:
             branches:

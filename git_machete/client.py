@@ -2019,7 +2019,7 @@ class MacheteClient:
             return 'y'
         try:
             ans: str = input(fmt(msg) if apply_fmt else msg).lower()
-        except InterruptedError:  # pragma: no cover
+        except InterruptedError:
             sys.exit(1)
         return ans
 

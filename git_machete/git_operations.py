@@ -365,9 +365,9 @@ class GitContext:
             opt_force = []
         elif self.get_git_version() >= (2, 30, 0):  # earliest version of git to support 'push --force-with-lease --force-if-includes'
             opt_force = ["--force-with-lease", "--force-if-includes"]
-        elif self.get_git_version() >= (1, 8, 5):  # pragma: no cover; earliest version of git to support 'push --force-with-lease'
+        elif self.get_git_version() >= (1, 8, 5):  # earliest version of git to support 'push --force-with-lease'
             opt_force = ["--force-with-lease"]
-        else:  # pragma: no cover
+        else:
             opt_force = ["--force"]
         args = [remote, branch]
         self._run_git("push", "--set-upstream", *(opt_force + args), flush_caches=True)
@@ -620,7 +620,7 @@ class GitContext:
                 self.__load_all_reflogs()
             assert self.__reflogs_cached is not None
             return self.__reflogs_cached.get(branch, [])
-        else:  # pragma: no cover
+        else:
             if self.__reflogs_cached is None:
                 self.__reflogs_cached = {}
             if branch not in self.__reflogs_cached:
@@ -847,7 +847,7 @@ class GitContext:
         try:
             if not opt_no_interactive_rebase:
                 rebase_opts.append("--interactive")
-            if self.get_git_version() >= (2, 26, 0):  # pragma: no branch
+            if self.get_git_version() >= (2, 26, 0):
                 rebase_opts.append("--empty=drop")
             self._run_git("rebase", *rebase_opts, "--onto", onto, from_exclusive, branch, flush_caches=True)
         finally:

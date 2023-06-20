@@ -11,11 +11,8 @@ env | sort | head -4
 
 set -x
 
-if [[ $CHECK_COVERAGE = true ]]; then
-  TOX_ENV_LIST="mypy-py${PYTHON_VERSION/./},coverage"
-else
-  TOX_ENV_LIST="mypy-py${PYTHON_VERSION/./},py${PYTHON_VERSION/./}"
-fi
+suffix=py${PYTHON_VERSION/./}
+TOX_ENV_LIST="mypy-$suffix,coverage-$suffix"
 
 if [[ $BUILD_SPHINX_HTML = true ]]; then
   TOX_ENV_LIST="$TOX_ENV_LIST,sphinx-html"
