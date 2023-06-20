@@ -1,4 +1,5 @@
 import os
+from tempfile import mkdtemp
 
 from pytest_mock import MockerFixture
 
@@ -935,11 +936,57 @@ class TestTraverse(BaseTest):
                 """
             )
 
-    def test_quit_on_pushing_untracked(self, mocker: MockerFixture) -> None:
+    def test_traverse_quit_on_pushing_untracked(self, mocker: MockerFixture) -> None:
         self.repo_sandbox.new_branch("master").commit()
         rewrite_definition_file("master")
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
         assert_success(
             ["traverse"],
             "Push untracked branch master to origin? (y, N, q, yq) \n"
+        )
+
+    def test_traverse_multiple_remotes(self, mocker: MockerFixture) -> None:
+        origin_1_remote_path = mkdtemp()
+        origin_2_remote_path = mkdtemp()
+        (
+            self.repo_sandbox
+            .remove_remote("origin")
+            .new_repo(origin_1_remote_path, bare=True, switch_dir_to_new_repo=False)
+            .add_remote("origin_1", origin_1_remote_path)
+            .new_repo(origin_2_remote_path, bare=True, switch_dir_to_new_repo=False)
+            .add_remote("origin_2", origin_2_remote_path)
+        )
+
+        self.repo_sandbox.new_branch("master").commit()
+        rewrite_definition_file("master")
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("xd"))
+        assert_success(
+            ["traverse"],
+            """
+            Branch master is untracked and there's no origin repository.
+            [1] origin_1
+            [2] origin_2
+            Select number 1..2 to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse: 
+
+              master * (untracked)
+
+            Reached branch master which has no successor; nothing left to update
+            """
+        )
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("1", "o", "2", "yq"))
+        assert_success(
+            ["traverse"],
+            """
+            Branch master is untracked and there's no origin repository.
+            [1] origin_1
+            [2] origin_2
+            Select number 1..2 to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse: 
+            Push untracked branch master to origin_1? (y, N, q, yq, o[ther-remote]) 
+            [1] origin_1
+            [2] origin_2
+            Select number 1..2 to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse: 
+            Push untracked branch master to origin_2? (y, N, q, yq, o[ther-remote]) 
+            """
         )
