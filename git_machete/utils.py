@@ -80,9 +80,9 @@ def find_executable(executable: str) -> Optional[str]:
     base, ext = os.path.splitext(executable)
 
     if (sys.platform == 'win32' or os.name == 'os2') and (ext != '.exe'):
-        executable = f"{executable}.exe"  # pragma: no cover
+        executable += ".exe"  # pragma: no cover
 
-    if os.path.isfile(executable):
+    if os.path.isfile(executable) and is_executable(executable):
         return executable
 
     path = os.environ.get('PATH', os.defpath)

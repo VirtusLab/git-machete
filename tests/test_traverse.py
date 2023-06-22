@@ -114,7 +114,7 @@ class TestTraverse(BaseTest):
         assert_success(
             ["traverse"],
             """
-            Branch develop is merged into master. Slide develop out of the tree of branch dependencies? (y, N, q, yq) 
+            Branch develop is merged into master. Slide develop out of the tree of branch dependencies? (y, N, q, yq)
 
               master
               |
@@ -128,12 +128,12 @@ class TestTraverse(BaseTest):
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
         assert_success(
             ["traverse"],
-            "Branch develop is merged into master. Slide develop out of the tree of branch dependencies? (y, N, q, yq) \n"
+            "Branch develop is merged into master. Slide develop out of the tree of branch dependencies? (y, N, q, yq)\n"
         )
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("yq"))
         assert_success(
             ["traverse"],
-            "Branch develop is merged into master. Slide develop out of the tree of branch dependencies? (y, N, q, yq) \n"
+            "Branch develop is merged into master. Slide develop out of the tree of branch dependencies? (y, N, q, yq)\n"
         )
         assert_success(
             ["status", "-l"],
@@ -150,7 +150,7 @@ class TestTraverse(BaseTest):
         assert_success(
             ["traverse"],
             """
-            Branch feature is merged into master. Slide feature out of the tree of branch dependencies? (y, N, q, yq) 
+            Branch feature is merged into master. Slide feature out of the tree of branch dependencies? (y, N, q, yq)
 
               master
 
@@ -327,6 +327,137 @@ class TestTraverse(BaseTest):
               |
               o-ignore-trailing *
             """,
+        )
+
+    def test_traverse_ahead_of_remote_responses(self, mocker: MockerFixture) -> None:
+        self.repo_sandbox.new_branch("master").commit().push().commit()
+        rewrite_definition_file("master")
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
+        assert_success(["traverse"], "Push master to origin? (y, N, q, yq)\n")
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("n"))
+        assert_success(
+            ["traverse"],
+            """
+            Push master to origin? (y, N, q, yq)
+
+              master * (ahead of origin)
+
+            Reached branch master which has no successor; nothing left to update
+            """
+        )
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("yq"))
+        assert_success(["traverse"], "Push master to origin? (y, N, q, yq)\n")
+
+    def test_traverse_behind_remote_responses(self, mocker: MockerFixture) -> None:
+        self.repo_sandbox.new_branch("master")\
+            .commit().commit().push()\
+            .reset_to("HEAD~")
+        rewrite_definition_file("master")
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
+        assert_success(
+            ["traverse"],
+            """
+            Branch master is behind its remote counterpart origin/master.
+            Pull master (fast-forward only) from origin? (y, N, q, yq)
+            """
+        )
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("n"))
+        assert_success(
+            ["traverse"],
+            """
+            Branch master is behind its remote counterpart origin/master.
+            Pull master (fast-forward only) from origin? (y, N, q, yq)
+
+              master * (behind origin)
+
+            Reached branch master which has no successor; nothing left to update
+            """
+        )
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("yq"))
+        assert_success(
+            ["traverse"],
+            """
+            Branch master is behind its remote counterpart origin/master.
+            Pull master (fast-forward only) from origin? (y, N, q, yq)
+            """
+        )
+
+    def test_traverse_diverged_from_and_newer_responses(self, mocker: MockerFixture) -> None:
+        self.repo_sandbox.new_branch("master").commit().push().amend_commit("Different commit message")
+        rewrite_definition_file("master")
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
+        assert_success(
+            ["traverse"],
+            """
+            Branch master diverged from (and has newer commits than) its remote counterpart origin/master.
+            Push master with force-with-lease to origin? (y, N, q, yq)
+            """
+        )
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("n"))
+        assert_success(
+            ["traverse"],
+            """
+            Branch master diverged from (and has newer commits than) its remote counterpart origin/master.
+            Push master with force-with-lease to origin? (y, N, q, yq)
+
+              master * (diverged from origin)
+
+            Reached branch master which has no successor; nothing left to update
+            """
+        )
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("yq"))
+        assert_success(
+            ["traverse"],
+            """
+            Branch master diverged from (and has newer commits than) its remote counterpart origin/master.
+            Push master with force-with-lease to origin? (y, N, q, yq)
+            """
+        )
+
+    def test_traverse_diverged_from_and_older_responses(self, mocker: MockerFixture) -> None:
+        self.repo_sandbox.new_branch("master").commit().push()
+        with fixed_author_and_committer_date_in_past():
+            self.repo_sandbox.amend_commit()
+        rewrite_definition_file("master")
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
+        assert_success(
+            ["traverse"],
+            """
+            Branch master diverged from (and has older commits than) its remote counterpart origin/master.
+            Reset branch master to the commit pointed by origin/master? (y, N, q, yq)
+            """
+        )
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("n"))
+        assert_success(
+            ["traverse"],
+            """
+            Branch master diverged from (and has older commits than) its remote counterpart origin/master.
+            Reset branch master to the commit pointed by origin/master? (y, N, q, yq)
+
+              master * (diverged from & older than origin)
+
+            Reached branch master which has no successor; nothing left to update
+            """
+        )
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("yq"))
+        assert_success(
+            ["traverse"],
+            """
+            Branch master diverged from (and has older commits than) its remote counterpart origin/master.
+            Reset branch master to the commit pointed by origin/master? (y, N, q, yq)
+            """
         )
 
     def test_traverse_no_push_untracked(self) -> None:
@@ -611,7 +742,7 @@ class TestTraverse(BaseTest):
                 |
                 x-snickers
 
-            Merge develop into mars? (y, N, q, yq) 
+            Merge develop into mars? (y, N, q, yq)
             """
         )
 
@@ -856,7 +987,7 @@ class TestTraverse(BaseTest):
             .write_to_file(file_path="foo.txt", file_content="2")
             .amend_commit()
             .push()
-            .execute("git reset --keep HEAD@{1}")  # noqa: FS003
+            .reset_to("HEAD@{1}")  # noqa: FS003
             .write_to_file(file_path="foo.txt", file_content="3")
         )
 
@@ -942,7 +1073,7 @@ class TestTraverse(BaseTest):
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
         assert_success(
             ["traverse"],
-            "Push untracked branch master to origin? (y, N, q, yq) \n"
+            "Push untracked branch master to origin? (y, N, q, yq)\n"
         )
 
     def test_traverse_multiple_remotes(self, mocker: MockerFixture) -> None:
@@ -967,7 +1098,7 @@ class TestTraverse(BaseTest):
             Branch master is untracked and there's no origin repository.
             [1] origin_1
             [2] origin_2
-            Select number 1..2 to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse: 
+            Select number 1..2 to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse:
 
               master * (untracked)
 
@@ -982,11 +1113,77 @@ class TestTraverse(BaseTest):
             Branch master is untracked and there's no origin repository.
             [1] origin_1
             [2] origin_2
-            Select number 1..2 to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse: 
-            Push untracked branch master to origin_1? (y, N, q, yq, o[ther-remote]) 
+            Select number 1..2 to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse:
+            Push untracked branch master to origin_1? (y, N, q, yq, o[ther-remote])
             [1] origin_1
             [2] origin_2
-            Select number 1..2 to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse: 
-            Push untracked branch master to origin_2? (y, N, q, yq, o[ther-remote]) 
+            Select number 1..2 to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse:
+            Push untracked branch master to origin_2? (y, N, q, yq, o[ther-remote])
+            """
+        )
+
+    def test_traverse_yellow_edges(self, mocker: MockerFixture) -> None:
+        (
+            self.repo_sandbox
+            .remove_remote()
+            .new_branch("master")
+            .commit()
+            .new_branch("develop")
+            .commit()
+            .new_branch("feature-1")
+            .commit()
+            .check_out("develop")
+            .new_branch("feature-2")
+            .commit()
+        )
+        body: str = \
+            """
+            master
+                feature-1
+                feature-2
+            """
+        rewrite_definition_file(body)
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("n", "n"))
+        assert_success(
+            ["traverse", "-w"],
+            """
+            Checking out the first root branch (master)
+
+            Checking out feature-1
+
+              master
+              |
+              ?-feature-1 *
+              |
+              ?-feature-2
+
+            Warn: yellow edges indicate that fork points for feature-1, feature-2 are probably incorrectly inferred,
+            or that some extra branch should be added between each of these branches and its parent.
+
+            Run git machete status --list-commits or git machete status --list-commits-with-hashes to see more details.
+
+            Rebase feature-1 onto master? (y, N, q, yq)
+
+            Checking out feature-2
+
+              master
+              |
+              ?-feature-1
+              |
+              ?-feature-2 *
+
+
+            Rebase feature-2 onto master? (y, N, q, yq)
+
+              master
+              |
+              ?-feature-1
+              |
+              ?-feature-2 *
+
+
+            Reached branch feature-2 which has no successor; nothing left to update
+            Returned to the initial branch feature-2
             """
         )

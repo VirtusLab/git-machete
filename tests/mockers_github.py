@@ -76,7 +76,7 @@ class MockGitHubAPIState:
 
     def add_pull(self, pull: Dict[str, Any]) -> None:
         pull_numbers = [int(item['number']) for item in self.__pulls]
-        pull['number'] = str(max(pull_numbers) + 1)
+        pull['number'] = str(max(pull_numbers or [0]) + 1)
         self.__pulls.append(pull)
 
 

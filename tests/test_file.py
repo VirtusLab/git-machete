@@ -54,7 +54,7 @@ class TestFile(BaseTest):
 
     def test_file_outside_git_repo(self) -> None:
         os.chdir(mkdtemp())
-        assert_failure(["file"], "Not a git repository", expected_exception=UnderlyingGitException)
+        assert_failure(["file", "--debug"], "Not a git repository", expected_exception=UnderlyingGitException)
 
     def test_file_when_git_machete_is_a_directory(self) -> None:
         self.repo_sandbox.execute(f"mkdir .git{os.path.sep}machete")

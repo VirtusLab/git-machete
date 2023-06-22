@@ -1,5 +1,6 @@
 import io
 import os
+import re
 import subprocess
 import sys
 import textwrap
@@ -54,7 +55,7 @@ def assert_success(cmds: Iterable[str], expected_result: str) -> None:
         # removeprefix is only available since Python 3.9
         expected_result = expected_result[1:]
     expected_result = textwrap.dedent(expected_result)
-    actual_result = textwrap.dedent(launch_command(*cmds))
+    actual_result = re.sub(" +$", "", textwrap.dedent(launch_command(*cmds)), flags=re.MULTILINE)
     assert actual_result == expected_result
 
 
@@ -67,6 +68,7 @@ def assert_failure(cmds: Iterable[str], expected_result: str, expected_exception
     with pytest.raises(expected_exception) as e:
         launch_command(*cmds)
     error_message = e.value.msg  # type: ignore[attr-defined]
+    error_message = re.sub(" +$", "", error_message, flags=re.MULTILINE)
     if sys.platform == 'win32':
         error_message = error_message.replace('.git\\machete', '.git/machete')
     assert error_message == expected_result

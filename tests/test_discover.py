@@ -103,7 +103,7 @@ class TestDiscover(BaseTest):
 
               feature1
 
-            Save the above tree to .git/machete? (y, e[dit], N) 
+            Save the above tree to .git/machete? (y, e[dit], N)
             """
         )
 
@@ -209,7 +209,7 @@ class TestDiscover(BaseTest):
                   x-feature2
 
                 Save the above tree to .git/machete?
-                The existing definition file will be backed up as .git/machete~ (y, e[dit], N) 
+                The existing definition file will be backed up as .git/machete~ (y, e[dit], N)
                 """
             )
 

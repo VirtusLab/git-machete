@@ -55,7 +55,7 @@ class TestAdvance(BaseTest):
         rewrite_definition_file("master\n  develop")
 
         self.patch_symbol(mocker, "builtins.input", mock_input_returning("n"))
-        assert_success(["advance"], "Fast-forward master to match develop? (y, N) \n")
+        assert_success(["advance"], "Fast-forward master to match develop? (y, N)\n")
 
     def test_advance_with_push_for_one_downstream_branch(self) -> None:
         """
@@ -191,11 +191,11 @@ class TestAdvance(BaseTest):
             """
             [1] level-1a-branch
             [2] level-1b-branch
-            Specify downstream branch towards which root is to be fast-forwarded or hit <return> to skip: 
+            Specify downstream branch towards which root is to be fast-forwarded or hit <return> to skip:
 
-            Branch root is now fast-forwarded to match level-1a-branch. Push root to origin? (y, N) 
+            Branch root is now fast-forwarded to match level-1a-branch. Push root to origin? (y, N)
 
-            Branch root is now fast-forwarded to match level-1a-branch. Slide level-1a-branch out of the tree of branch dependencies? (y, N) 
+            Branch root is now fast-forwarded to match level-1a-branch. Slide level-1a-branch out of the tree of branch dependencies? (y, N)
             """
         )
 

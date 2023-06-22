@@ -302,11 +302,8 @@ class TestGitHubCheckoutPRs(BaseTest):
 
         assert_failure(['github', 'checkout-prs', '19', '100'], expected_error_message)
 
-        # check against user with no open pull requests
-        expected_msg = ("Checking for open GitHub PRs... OK\n"
-                        f"Warn: User tester has no open pull request in repository "
-                        f"{remote_org_repo.organization}/{remote_org_repo.repository}\n")
-        assert_success(['github', 'checkout-prs', '--by', 'tester'], expected_msg)
+        expected_msg = "Checking for open GitHub PRs... OK\n"
+        assert_success(['github', 'checkout-prs', '--by', 'some_other_user'], expected_msg)
 
         # Check against closed pull request with head branch deleted from remote
         other_local_path = mkdtemp()
@@ -766,4 +763,72 @@ class TestGitHubCheckoutPRs(BaseTest):
               |
               o-chore/comments  PR #24 (some_other_user) rebase=no push=no
             """
+        )
+
+    def test_github_checkout_prs_misc_failures_and_warns(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState([])))
+
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
+        assert_success(
+            ["github", "checkout-prs", "--all"],
+            """
+            Checking for open GitHub PRs... OK
+            Warn: Currently there are no pull requests opened in repository example-org/example-repo
+            """
+        )
+
+        assert_success(
+            ["github", "checkout-prs", "--by=github_user"],
+            """
+            Checking for open GitHub PRs... OK
+            Warn: User github_user has no open pull request in repository example-org/example-repo
+            """
+        )
+
+        assert_failure(
+            ["github", "checkout-prs", "--mine"],
+            """
+            Could not determine current user name, please check that the GitHub API token provided by one of the:
+            \t1. GITHUB_TOKEN environment variable
+            \t2. Content of the ~/.github-token file
+            \t3. Current auth token from the gh GitHub CLI
+            \t4. Current auth token from the hub GitHub CLI
+            is valid."""
+        )
+
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
+        assert_success(
+            ["github", "checkout-prs", "--mine"],
+            """
+            Checking for open GitHub PRs... OK
+            Warn: Current user github_user has no open pull request in repository example-org/example-repo
+            """
+        )
+
+    github_api_state_for_test_github_checkout_prs_remote_already_added = MockGitHubAPIState(
+        [
+            {
+                'head': {'ref': 'chore/redundant_checks', 'repo': mock_repository_info},
+                'user': {'login': 'some_other_user'},
+                'base': {'ref': 'restrict_access'},
+                'number': '18',
+                'html_url': 'www.github.com',
+                'state': 'open'
+            }
+        ]
+    )
+
+    def test_github_checkout_prs_remote_already_added(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.git_operations.GitContext.fetch_remote', lambda _self, _remote: None)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(
+            self.github_api_state_for_test_github_checkout_prs_remote_already_added))
+        (
+            self.repo_sandbox
+            .remove_remote("origin")
+            .add_remote("origin-1", mock_repository_info["html_url"])
+        )
+        assert_failure(
+            ["github", "checkout-prs", "--all"],
+            "Could not check out PR #18 because its head branch chore/redundant_checks is already deleted from origin-1."
         )

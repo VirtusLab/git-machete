@@ -10,6 +10,7 @@ whitelisted_methods='
 builtins.input
 builtins.open
 git_machete.client.MacheteClient.is_stdout_a_tty
+git_machete.git_operations.GitContext.fetch_remote
 git_machete.github.GitHubClient.MAX_PULLS_PER_PAGE_COUNT
 git_machete.github.GitHubToken.for_domain
 git_machete.github.RemoteAndOrganizationAndRepository.from_url

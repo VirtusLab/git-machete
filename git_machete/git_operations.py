@@ -45,7 +45,8 @@ class LocalBranchShortName(AnyBranchName):
     def of(value: str) -> "LocalBranchShortName":
         if value.startswith('refs/heads/') or value.startswith('refs/remotes/'):
             raise TypeError(  # pragma: no cover
-                f'LocalBranchShortName cannot accept `refs/heads` or `refs/remotes`. Given value: {value}.\n' + GITHUB_NEW_ISSUE_MESSAGE)
+                f'LocalBranchShortName cannot accept `refs/heads` or `refs/remotes`. '
+                f'Provided value: {value}.\n{GITHUB_NEW_ISSUE_MESSAGE}')
         else:
             return LocalBranchShortName(value)
 
@@ -60,8 +61,8 @@ class LocalBranchFullName(AnyBranchName):
             return LocalBranchFullName(value)
         else:
             raise TypeError(  # pragma: no cover
-                f'LocalBranchFullName needs to have `refs/heads` prefix before branch name. Given value: {value}.\n' +
-                GITHUB_NEW_ISSUE_MESSAGE)
+                f'LocalBranchFullName needs to have `refs/heads` prefix before branch name. '
+                f'Provided value: {value}.\n{GITHUB_NEW_ISSUE_MESSAGE}')
 
     @staticmethod
     def from_short_name(value: LocalBranchShortName) -> "LocalBranchFullName":
@@ -79,7 +80,8 @@ class RemoteBranchShortName(AnyBranchName):
     def of(value: str) -> "RemoteBranchShortName":
         if value and value.startswith('refs/heads/') or value.startswith('refs/remotes/'):
             raise TypeError(  # pragma: no cover
-                f'RemoteBranchShortName cannot accept `refs/heads` or `refs/remotes`. Given value: {value}.\n' + GITHUB_NEW_ISSUE_MESSAGE)
+                f'RemoteBranchShortName cannot accept `refs/heads` or `refs/remotes`. '
+                f'Provided value: {value}.\n{GITHUB_NEW_ISSUE_MESSAGE}')
         else:
             return RemoteBranchShortName(value)
 
@@ -94,8 +96,8 @@ class RemoteBranchFullName(AnyBranchName):
             return RemoteBranchFullName(value)
         else:
             raise TypeError(  # pragma: no cover
-                f'RemoteBranchFullName needs to have `refs/remotes` prefix before branch name. Given value: {value}.\n' +
-                GITHUB_NEW_ISSUE_MESSAGE)
+                f'RemoteBranchFullName needs to have `refs/remotes` prefix before branch name. '
+                f'Provided value: {value}.\n{GITHUB_NEW_ISSUE_MESSAGE}')
 
     @staticmethod
     def is_valid(value: str) -> bool:
@@ -119,7 +121,8 @@ class FullCommitHash(AnyRevision):
             return FullCommitHash(value)
         else:
             raise TypeError(  # pragma: no cover
-                f'FullCommitHash requires length of 40. Given value: "{value}".\n' + GITHUB_NEW_ISSUE_MESSAGE)
+                f'FullCommitHash requires length of 40. '
+                f'Provided value: "{value}".\n{GITHUB_NEW_ISSUE_MESSAGE}')
 
     @staticmethod
     def is_valid(value: str) -> bool:
@@ -136,8 +139,8 @@ class ShortCommitHash(AnyRevision):
             return ShortCommitHash(value)
         else:
             raise TypeError(  # pragma: no cover
-                f'ShortCommitHash requires length greater or equal to 7. Given value: "{value}".\n' +
-                GITHUB_NEW_ISSUE_MESSAGE)
+                f'ShortCommitHash requires length greater or equal to 7. '
+                f'Provided value: "{value}".\n{GITHUB_NEW_ISSUE_MESSAGE}')
 
     def full_name(self) -> "ShortCommitHash":
         return self
@@ -148,7 +151,7 @@ class FullTreeHash(str):
     def of(value: str) -> Optional["FullTreeHash"]:
         if not value:
             raise TypeError(  # pragma: no cover
-                f'FullTreeHash.of should not accept {value} as a param.\n' + GITHUB_NEW_ISSUE_MESSAGE)
+                f'FullTreeHash.of should not accept {value} as a param.\n{GITHUB_NEW_ISSUE_MESSAGE}')
         return FullTreeHash(value)
 
 
@@ -180,10 +183,12 @@ class GitContext:
 
     def __init__(self) -> None:
         self.owner: Optional[Any] = None
+
         self.__git_version: Optional[Tuple[int, int, int]] = None
         self.__root_dir: Optional[str] = None
         self.__main_git_dir: Optional[str] = None
         self.__worktree_git_dir: Optional[str] = None
+
         self.__commit_hash_by_revision_cached: Optional[Dict[AnyRevision, Optional[FullCommitHash]]] = None
         self.__committer_unix_timestamp_by_revision_cached: Optional[Dict[AnyRevision, int]] = None
         self.__config_cached: Optional[Dict[str, str]] = None

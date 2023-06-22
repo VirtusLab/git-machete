@@ -3,6 +3,7 @@ from pytest_mock import MockerFixture
 from .base_test import BaseTest
 from .mockers import (assert_success, launch_command, mock_input_returning_y,
                       rewrite_definition_file)
+from .mockers_github import mock_github_token_for_domain_none
 
 
 class TestClean(BaseTest):
@@ -43,7 +44,7 @@ class TestClean(BaseTest):
                     foo2
                 moo
                     moo2
-                mars
+            mars
             """
         rewrite_definition_file(body)
 
@@ -66,3 +67,22 @@ class TestClean(BaseTest):
         branches = self.repo_sandbox.get_local_branches()
         assert 'foo' in branches
         assert 'mars' not in branches
+
+    def test_clean_with_checkout_my_github_prs(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
+        self.repo_sandbox.remove_remote("origin").add_remote("new_origin", "https://github.com/user/repo.git")
+        assert_success(
+            ["clean", "--checkout-my-github-prs"],
+            """
+            Checking for open GitHub PRs... Warn: Could not determine current user name, please check that the GitHub API token provided by one of the:
+            \t1. GITHUB_TOKEN environment variable
+            \t2. Content of the ~/.github-token file
+            \t3. Current auth token from the gh GitHub CLI
+            \t4. Current auth token from the hub GitHub CLI
+            is valid.
+            Checking for unmanaged branches...
+            No branches to delete
+            Checking for untracked managed branches with no downstream...
+            No branches to delete
+            """  # noqa: E501
+        )

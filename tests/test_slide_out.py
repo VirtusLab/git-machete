@@ -143,7 +143,7 @@ class TestSlideOut(BaseTest):
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
         assert_success(
             ["slide-out", "-n", "--delete"],
-            "Delete branch child_d (unmerged to HEAD)? (y, N, q) \n"
+            "Delete branch child_d (unmerged to HEAD)? (y, N, q)\n"
         )
         assert "child_d" not in self.repo_sandbox.get_local_branches()
 

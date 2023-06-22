@@ -215,15 +215,15 @@ class TestGitHubRetargetPR(BaseTest):
 
         expected_error_message = ('GET https://api.github.com/repos/user/repo/pulls?head=user:branch-without-pr request '
                                   'ended up in 404 response from GitHub. A valid GitHub API token is required.\n'
-                                  'Provide a GitHub API token with repo access via one of the: \n'
-                                  '\t1. GITHUB_TOKEN environment variable.\n'
-                                  '\t2. Content of the ~/.github-token file.\n'
-                                  '\t3. Current auth token from the gh GitHub CLI.\n'
-                                  '\t4. Current auth token from the hub GitHub CLI.\n'
+                                  'Provide a GitHub API token with repo access via one of the:\n'
+                                  '\t1. GITHUB_TOKEN environment variable\n'
+                                  '\t2. Content of the ~/.github-token file\n'
+                                  '\t3. Current auth token from the gh GitHub CLI\n'
+                                  '\t4. Current auth token from the hub GitHub CLI\n'
                                   ' Visit https://github.com/settings/tokens to generate a new one.')
         assert_failure(["github", "retarget-pr", "--branch", "branch-without-pr"], expected_error_message)
 
-        launch_command('github', 'retarget-pr', '--debug', '--branch', 'branch-without-pr', '--ignore-if-missing')
+        launch_command('github', 'retarget-pr', '--branch', 'branch-without-pr', '--ignore-if-missing')
 
     def test_github_retarget_pr_multiple_non_origin_remotes(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
@@ -266,7 +266,7 @@ class TestGitHubRetargetPR(BaseTest):
         rewrite_definition_file(body)
 
         expected_error_message = (
-            "Multiple non-origin remotes correspond to GitHub in this repository: origin_1, origin_2 -> aborting. \n"
+            "Multiple non-origin remotes correspond to GitHub in this repository: origin_1, origin_2 -> aborting.\n"
             "You can also select the repository by providing some or all of git config keys: "
             "machete.github.{domain,remote,organization,repository}.\n"  # noqa: FS003
         )

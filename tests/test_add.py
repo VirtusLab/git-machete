@@ -32,7 +32,7 @@ class TestAdd(BaseTest):
         self.patch_symbol(mocker, "builtins.input", mock_input_returning("n"))
         assert_success(
             ['add'],
-            'Add bugfix/feature_fail onto the inferred upstream (parent) branch develop? (y, N) \n'
+            'Add bugfix/feature_fail onto the inferred upstream (parent) branch develop? (y, N)\n'
         )
         assert_success(
             ['add', '-y'],
@@ -81,7 +81,7 @@ class TestAdd(BaseTest):
         self.patch_symbol(mocker, "builtins.input", mock_input_returning("n"))
         assert_success(
             ['add', 'foo'],
-            'A local branch foo does not exist. Create out of the current HEAD? (y, N) \n'
+            'A local branch foo does not exist. Create out of the current HEAD? (y, N)\n'
         )
 
         assert_success(
@@ -94,7 +94,7 @@ class TestAdd(BaseTest):
         assert_success(
             ['add', '--as-root', 'feature/foo'],
             'A local branch feature/foo does not exist, but a remote branch origin/feature/foo exists.\n'
-            'Check out feature/foo locally? (y, N) \n'
+            'Check out feature/foo locally? (y, N)\n'
         )
 
         assert_success(
@@ -115,7 +115,7 @@ class TestAdd(BaseTest):
         self.patch_symbol(mocker, "builtins.input", mock_input_returning_y)
         assert_success(
             ['add', 'foo'],
-            "A local branch foo does not exist. Create out of the current HEAD? (y, N) \n"
+            "A local branch foo does not exist. Create out of the current HEAD? (y, N)\n"
             "Added branch foo onto master\n"
         )
 

@@ -236,7 +236,7 @@ class TestUpdate(BaseTest):
         assert_success(
             ["update", "--no-interactive-rebase"],
             "Branch branch-1 not found in the tree of branch dependencies. "
-            "Rebase onto the inferred upstream branch-0? (y, N) \n")
+            "Rebase onto the inferred upstream branch-0? (y, N)\n")
         assert self.repo_sandbox.is_ancestor_or_equal("branch-0", "branch-1")
 
     def test_update_unmanaged_branch_when_parent_cannot_be_inferred(self) -> None:

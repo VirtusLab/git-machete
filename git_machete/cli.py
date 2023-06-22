@@ -601,7 +601,7 @@ def launch(orig_args: List[str]) -> None:
                 fork_point = machete_client.fork_point(branch=branch, use_overrides=False)
                 machete_client.set_fork_point_override(branch, fork_point)
             elif cli_opts.opt_override_to_parent:
-                upstream = machete_client.up_branch.get(branch)
+                upstream = machete_client.up_branch_for(branch)
                 if upstream:
                     machete_client.set_fork_point_override(branch, upstream)
                 else:
@@ -645,7 +645,7 @@ def launch(orig_args: List[str]) -> None:
                                                    all_opened_prs=parsed_cli.all if 'all' in parsed_cli else False,
                                                    my_opened_prs=parsed_cli.mine if 'mine' in parsed_cli else False,
                                                    opened_by=parsed_cli.by if 'by' in parsed_cli else None,
-                                                   fail_on_missing_current_user_for_my_opened_prs=False)
+                                                   fail_on_missing_current_user_for_my_opened_prs=True)
             elif github_subcommand == "create-pr":
                 current_branch = git.get_current_branch()
                 machete_client.create_github_pr(

@@ -1,4 +1,6 @@
+import sys
 
+import pytest
 from pytest_mock import MockerFixture
 
 from .base_test import BaseTest
@@ -12,6 +14,12 @@ class TestEdit(BaseTest):
 
     def test_edit_git_machete_editor(self) -> None:
         with overridden_environment(GIT_MACHETE_EDITOR=dummy_editor):
+            launch_command("edit")
+        assert self.repo_sandbox.read_file(".git/machete").strip() == "foo"
+
+    @pytest.mark.skipif(sys.platform == "win32", reason="There isn't a /bin/ folder under Windows")
+    def test_edit_git_machete_editor_full_path(self) -> None:
+        with overridden_environment(GIT_MACHETE_EDITOR="/bin/" + dummy_editor):
             launch_command("edit")
         assert self.repo_sandbox.read_file(".git/machete").strip() == "foo"
 

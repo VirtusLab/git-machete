@@ -1,7 +1,7 @@
 from pytest_mock import MockerFixture
 
 from tests.base_test import BaseTest
-from tests.mockers import (assert_success, launch_command,
+from tests.mockers import (assert_failure, assert_success, launch_command,
                            rewrite_definition_file)
 from tests.mockers_github import (MockGitHubAPIState,
                                   mock_github_token_for_domain_fake,
@@ -87,7 +87,7 @@ class TestGitHubAnnoPRs(BaseTest):
         # is different than the current user, overwrite annotation text but doesn't overwrite existing qualifiers
         launch_command('anno', '-b=allow-ownership-link', 'rebase=no')
         launch_command('anno', '-b=build-chain', 'rebase=no push=no')
-        launch_command('github', 'anno-prs')
+        launch_command('github', 'anno-prs', '--debug')
         assert_success(
             ["status"],
             """
@@ -197,4 +197,32 @@ class TestGitHubAnnoPRs(BaseTest):
         assert_success(
             ['status'],
             expected_result=expected_status_output
+        )
+
+    def test_github_anno_prs_no_remotes(self) -> None:
+        assert_failure(
+            ["github", "anno-prs"],
+            """
+            Remotes are defined for this repository, but none of them seems to correspond to GitHub (see git remote -v for details).
+            It is possible that you are using a custom GitHub URL.
+            If that is the case, you can provide repository information explicitly via some or all of git config keys: machete.github.{domain,remote,organization,repository}.
+            """  # noqa: E501
+        )
+
+        self.repo_sandbox.remove_remote()
+        assert_failure(["github", "anno-prs"], "No remotes defined for this repository (see git remote)")
+
+    def test_github_anno_prs_multiple_non_origin_github_remotes(self) -> None:
+        (
+            self.repo_sandbox
+            .remove_remote("origin")
+            .add_remote("origin-1", "https://github.com/tester/repo_sandbox-1.git")
+            .add_remote("origin-2", "https://github.com/tester/repo_sandbox-2.git")
+        )
+        assert_failure(
+            ["github", "anno-prs"],
+            """
+            Multiple non-origin remotes correspond to GitHub in this repository: origin-1, origin-2 -> aborting.
+            You can also select the repository by providing some or all of git config keys: machete.github.{domain,remote,organization,repository}.
+            """  # noqa: E501
         )

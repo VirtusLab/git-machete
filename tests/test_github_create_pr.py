@@ -4,9 +4,10 @@ from tempfile import mkdtemp
 from pytest_mock import MockerFixture
 
 from tests.base_test import BaseTest
-from tests.mockers import (assert_failure, assert_success, launch_command,
-                           mock_input_returning, mock_input_returning_y,
-                           rewrite_definition_file)
+from tests.mockers import (assert_failure, assert_success,
+                           fixed_author_and_committer_date_in_past,
+                           launch_command, mock_input_returning,
+                           mock_input_returning_y, rewrite_definition_file)
 from tests.mockers_github import (MockGitHubAPIState, mock_from_url,
                                   mock_github_token_for_domain_fake,
                                   mock_github_token_for_domain_none,
@@ -123,7 +124,7 @@ class TestGitHubCreatePR(BaseTest):
         assert_success(
             ["github", "create-pr", "--draft"],
             """
-            Push untracked branch chore/fields to origin? (y, Q) 
+            Push untracked branch chore/fields to origin? (y, Q)
 
               master
               |
@@ -241,7 +242,7 @@ class TestGitHubCreatePR(BaseTest):
         assert_success(
             ["github", "create-pr"],
             f"""
-            Push allow-ownership-link to origin? (y, N, q) 
+            Push allow-ownership-link to origin? (y, N, q)
 
               master
               |
@@ -267,7 +268,7 @@ class TestGitHubCreatePR(BaseTest):
             Creating a PR from allow-ownership-link to develop... OK, see www.github.com
             Setting milestone of PR #7 to #42... OK
             Adding github_user as assignee to PR #7... OK
-            Adding invalid-user as reviewer to PR #7... 
+            Adding invalid-user as reviewer to PR #7...
             Warn: There are some invalid reviewers in .git{os.path.sep}info{os.path.sep}reviewers file.
             Skipped adding reviewers to pull request.
             """
@@ -324,7 +325,7 @@ class TestGitHubCreatePR(BaseTest):
 
         expected_msg = ("Fetching origin...\n"
                         "Warn: Base branch for this PR (feature/api_handling) is not found on remote, pushing...\n"
-                        "Push untracked branch feature/api_handling to origin? (y, Q) \n"
+                        "Push untracked branch feature/api_handling to origin? (y, Q)\n"
                         "Creating a PR from feature/api_exception_handling to feature/api_handling... OK, see www.github.com\n")
         assert_success(['github', 'create-pr'], expected_msg)
         assert_success(
@@ -360,7 +361,7 @@ class TestGitHubCreatePR(BaseTest):
         self.repo_sandbox.new_repo(origin_1_remote_path, bare=True, switch_dir_to_new_repo=False)
         self.repo_sandbox.new_repo(origin_2_remote_path, bare=True, switch_dir_to_new_repo=False)
 
-        # branch feature present in each of the remotes, no branch tracking data, remote origin_1 picked manually via mock_input()
+        # branch feature present in each of the remotes, no branch tracking data, remote origin_1 picked manually
         (
             self.repo_sandbox
                 .remove_remote('origin')
@@ -392,7 +393,7 @@ class TestGitHubCreatePR(BaseTest):
         Branch feature is untracked and there's no origin repository.
         [1] origin_1
         [2] origin_2
-        Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request: 
+        Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request:
         """
         assert_success(
             ['github', 'create-pr'],
@@ -411,14 +412,37 @@ class TestGitHubCreatePR(BaseTest):
             "Could not establish remote repository, pull request creation interrupted."
         )
 
+        expected_result = """
+        Branch feature is untracked and there's no origin repository.
+        [1] origin_1
+        [2] origin_2
+        Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request:
+        Branch feature is untracked, but its remote counterpart candidate origin_1/feature already exists and both branches point to the same commit.
+        Set the remote of feature to origin_1 without pushing or pulling? (y, N, q, yq)
+        """  # noqa: E501
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('1', 'q'))
+        assert_success(
+            ['github', 'create-pr'],
+            expected_result
+        )
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('1', 'yq'))
+        assert_success(
+            ['github', 'create-pr'],
+            expected_result
+        )
+
+        self.repo_sandbox.execute("git branch --unset-upstream feature")
+
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('1', 'y'))
         expected_result = """
         Branch feature is untracked and there's no origin repository.
         [1] origin_1
         [2] origin_2
-        Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request: 
+        Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request:
         Branch feature is untracked, but its remote counterpart candidate origin_1/feature already exists and both branches point to the same commit.
-        Set the remote of feature to origin_1 without pushing or pulling? (y, N, q, yq) 
+        Set the remote of feature to origin_1 without pushing or pulling? (y, N, q, yq)
 
           root
           |
@@ -428,11 +452,13 @@ class TestGitHubCreatePR(BaseTest):
 
         Fetching origin_1...
         Creating a PR from feature to branch-1... OK, see www.github.com
-        """  # noqa: W291, E501
+        """  # noqa: E501
+
         assert_success(
             ['github', 'create-pr'],
             expected_result
         )
+
         # branch feature_1 present in each of the remotes, tracking data present
         (
             self.repo_sandbox.check_out('feature')
@@ -442,9 +468,18 @@ class TestGitHubCreatePR(BaseTest):
                 .push(remote='origin_2')
         )
 
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('n'))
+        assert_failure(
+            ['github', 'create-pr'],
+            "Command github create-pr can NOT be executed on the branch that is not managed by git machete "
+            "(is not present in git machete definition file). "
+            "To successfully execute this command either add current branch to the file via commands add, discover or edit "
+            "or agree on adding the branch to the definition file during the execution of github create-pr command."
+        )
+
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('y'))
         expected_result = """
-        Add feature_1 onto the inferred upstream (parent) branch feature? (y, N) 
+        Add feature_1 onto the inferred upstream (parent) branch feature? (y, N)
         Added branch feature_1 onto feature
         Fetching origin_2...
         Creating a PR from feature_1 to feature... OK, see www.github.com
@@ -464,13 +499,13 @@ class TestGitHubCreatePR(BaseTest):
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('y', '1', 'y'))
 
         expected_result = """
-        Add feature_2 onto the inferred upstream (parent) branch feature? (y, N) 
+        Add feature_2 onto the inferred upstream (parent) branch feature? (y, N)
         Added branch feature_2 onto feature
         Branch feature_2 is untracked and there's no origin repository.
         [1] origin_1
         [2] origin_2
-        Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request: 
-        Push untracked branch feature_2 to origin_1? (y, Q) 
+        Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request:
+        Push untracked branch feature_2 to origin_1? (y, Q)
 
           root
           |
@@ -484,7 +519,7 @@ class TestGitHubCreatePR(BaseTest):
 
         Fetching origin_1...
         Creating a PR from feature_2 to feature... OK, see www.github.com
-        """  # noqa: W291
+        """
         assert_success(
             ['github', 'create-pr'],
             expected_result
@@ -500,7 +535,7 @@ class TestGitHubCreatePR(BaseTest):
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('y'))
         expected_result = """
-        Add feature_3 onto the inferred upstream (parent) branch feature_2? (y, N) 
+        Add feature_3 onto the inferred upstream (parent) branch feature_2? (y, N)
         Added branch feature_3 onto feature_2
         Fetching origin_1...
         Creating a PR from feature_3 to feature_2... OK, see www.github.com
@@ -520,11 +555,11 @@ class TestGitHubCreatePR(BaseTest):
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('y', 'y'))
         expected_result = """
-        Add feature_4 onto the inferred upstream (parent) branch feature_3? (y, N) 
+        Add feature_4 onto the inferred upstream (parent) branch feature_3? (y, N)
         Added branch feature_4 onto feature_3
         Fetching origin_2...
         Warn: Base branch for this PR (feature_3) is not found on remote, pushing...
-        Push untracked branch feature_3 to origin_2? (y, Q) 
+        Push untracked branch feature_3 to origin_2? (y, Q)
         Creating a PR from feature_4 to feature_3... OK, see www.github.com
         """
         assert_success(
@@ -543,14 +578,140 @@ class TestGitHubCreatePR(BaseTest):
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('y', 'y'))
         expected_result = """
-        Add feature_5 onto the inferred upstream (parent) branch feature_3? (y, N) 
+        Add feature_5 onto the inferred upstream (parent) branch feature_3? (y, N)
         Added branch feature_5 onto feature_3
         Fetching origin...
         Warn: Base branch for this PR (feature_3) is not found on remote, pushing...
-        Push untracked branch feature_3 to origin? (y, Q) 
+        Push untracked branch feature_3 to origin? (y, Q)
         Creating a PR from feature_5 to feature_3... OK, see www.github.com
         """
         assert_success(
             ['github', 'create-pr'],
             expected_result
+        )
+
+    def test_github_create_pr_for_no_push_qualifier(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState([])))
+
+        (
+            self.repo_sandbox
+            .new_branch("master").commit().push()
+            .new_branch("develop").commit()
+        )
+
+        rewrite_definition_file("master\n\tdevelop push=no")
+
+        assert_success(
+            ['github', 'create-pr'],
+            """
+            Fetching origin...
+            Creating a PR from develop to master... OK, see www.github.com
+            """
+        )
+
+    def test_github_create_pr_for_no_remotes(self) -> None:
+        (
+            self.repo_sandbox
+            .remove_remote()
+            .new_branch("master").commit()
+            .new_branch("develop").commit()
+        )
+
+        rewrite_definition_file("master\n\tdevelop")
+
+        assert_failure(
+            ['github', 'create-pr'],
+            "Could not create pull request - there are no remote repositories!"
+        )
+
+    def test_github_create_pr_for_branch_behind_remote(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState([])))
+
+        (
+            self.repo_sandbox
+            .new_branch("master").commit().push()
+            .new_branch("develop").commit().commit().push().reset_to("HEAD~")
+        )
+
+        rewrite_definition_file("master\n\tdevelop")
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('q'))
+        assert_failure(
+            ['github', 'create-pr'],
+            "Pull request creation interrupted."
+        )
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('y'))
+        assert_success(
+            ['github', 'create-pr'],
+            """
+            Warn: Branch develop is behind its remote counterpart. Consider using git pull.
+            Proceed with pull request creation? (y, Q)
+            Fetching origin...
+            Creating a PR from develop to master... OK, see www.github.com
+            """
+        )
+
+    def test_github_create_pr_for_untracked_branch(self, mocker: MockerFixture) -> None:
+        (
+            self.repo_sandbox
+            .new_branch("master").commit().push()
+            .new_branch("develop").commit()
+        )
+
+        rewrite_definition_file("master\n\tdevelop")
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('q'))
+        assert_success(
+            ['github', 'create-pr'],
+            "Push untracked branch develop to origin? (y, Q)\n"
+        )
+
+    def test_github_create_pr_for_branch_diverged_from_and_newer_than_remote(self, mocker: MockerFixture) -> None:
+        (
+            self.repo_sandbox
+            .new_branch("master").commit().push()
+            .new_branch("develop").commit().push()
+            .amend_commit("Different commit message")
+        )
+
+        rewrite_definition_file("master\n\tdevelop")
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('yq'))
+        assert_success(
+            ['github', 'create-pr'],
+            """
+            Branch develop diverged from (and has newer commits than) its remote counterpart origin/develop.
+            Push develop with force-with-lease to origin? (y, N, q)
+            """
+        )
+
+    def test_github_create_pr_for_branch_diverged_from_and_older_than_remote(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState([])))
+
+        (
+            self.repo_sandbox
+            .new_branch("master").commit().push()
+            .new_branch("develop").commit().push()
+        )
+        with fixed_author_and_committer_date_in_past():
+            self.repo_sandbox.amend_commit()
+
+        rewrite_definition_file("master\n\tdevelop")
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('y'))
+        assert_success(
+            ['github', 'create-pr'],
+            """
+            Warn: Branch develop is diverged from and older than its remote counterpart. Consider using git reset --keep.
+            Proceed with pull request creation? (y, Q)
+            Fetching origin...
+            Creating a PR from develop to master... OK, see www.github.com
+            """
         )

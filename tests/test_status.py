@@ -73,7 +73,7 @@ class TestStatus(BaseTest):
         rewrite_definition_file(body)
         expected_output = """
             Skipping foo which is not a local branch (perhaps it has been deleted?).
-            Slide it out from the definition file? (y, e[dit], N) 
+            Slide it out from the definition file? (y, e[dit], N)
               master *
         """
 
@@ -111,7 +111,7 @@ class TestStatus(BaseTest):
         rewrite_definition_file(body)
         expected_output = """
             Skipping foo, bar, qux, baz which are not local branches (perhaps they have been deleted?).
-            Slide them out from the definition file? (y, e[dit], N) 
+            Slide them out from the definition file? (y, e[dit], N)
               master
               |
               o-develop

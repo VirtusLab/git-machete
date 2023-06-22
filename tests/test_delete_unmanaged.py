@@ -36,7 +36,7 @@ class TestDeleteUnmanaged(BaseTest):
             """
             Checking for unmanaged branches...
             Skipping current branch feature
-            Delete branch develop (merged to HEAD)? (y, N, q) 
+            Delete branch develop (merged to HEAD)? (y, N, q)
             Deleted branch develop (was 03e727b).
             """
         )

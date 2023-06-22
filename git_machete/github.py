@@ -174,17 +174,17 @@ class GitHubToken(NamedTuple):
                     if line.rstrip() == domain + ":":
                         found_host = True
                     elif found_host and line.lstrip().startswith("oauth_token:"):
-                        result = re.sub(' *oauth_token:  *', '', line).rstrip().replace('"', '')
+                        result = re.sub(' *oauth_token: +', '', line).rstrip().replace('"', '')
                         return cls(value=result,
                                    provider=f'auth token for {domain} from `hub` GitHub CLI')
         return None
 
     @classmethod
     def get_possible_providers(cls) -> str:
-        return (f'\n\t1. `{GITHUB_TOKEN_ENV_VAR}` environment variable.\n'
-                '\t2. Content of the `~/.github-token` file.\n'
-                '\t3. Current auth token from the `gh` GitHub CLI.\n'
-                '\t4. Current auth token from the `hub` GitHub CLI.\n')
+        return (f'\n\t1. `{GITHUB_TOKEN_ENV_VAR}` environment variable\n'
+                '\t2. Content of the `~/.github-token` file\n'
+                '\t3. Current auth token from the `gh` GitHub CLI\n'
+                '\t4. Current auth token from the `hub` GitHub CLI\n')
 
 
 class GitHubClient:
