@@ -25,6 +25,10 @@ if [[ ${1-} == "--dry-run" || ${CIRCLE_BRANCH-} != "master" ]]; then
   if command -v git-machete; then exit 1; fi
   sudo snap install git-machete*.snap --dangerous --classic
   git machete version
+  if ! git machete completion bash | grep '#!.*bash'; then
+    echo "shell completion is not available in runtime, aborting"
+    exit 1
+  fi
   sudo snap remove git-machete
 else
   # Relying on SNAPCRAFT_STORE_CREDENTIALS, provided by the CI

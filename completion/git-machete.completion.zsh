@@ -1,16 +1,17 @@
 #compdef git-machete
 
 _git-machete() {
-  local ret=1
+  local common_flags=(
+    '(--debug)'--debug'[Log detailed diagnostic info, including outputs of the executed git commands]'
+    '(-h --help)'{-h,--help}'[Print help and exit]'
+    '(-v --verbose)'{-v,--verbose}'[Log the executed git commands]'
+  )
 
   _arguments -C \
     '1: :__git_machete_commands' \
     '*::arg:->args' \
-    '(--debug)'--debug'[Log detailed diagnostic info, including outputs of the executed git commands]' \
-    '(-h --help)'{-h,--help}'[Print help and exit]' \
-    '(-v --verbose)'{-v,--verbose}'[Log the executed git commands]' \
-    '(--version)'--version'[Print version and exit]' \
-  && ret=0
+    "${common_flags[@]}" \
+    '(--version)'--version'[Print version and exit]'
 
   case $state in
     (args)
@@ -21,35 +22,40 @@ _git-machete() {
             '(-o --onto)'{-o,--onto=}'[Specify the target parent branch to add the given branch onto]: :__git_machete_list_managed' \
             '(-R --as-root)'{-R,--as-root}'[Add the given branch as a new root]' \
             '(-y --yes)'{-y,--yes}'[Do not ask for confirmation whether to create the branch or whether to add onto the inferred upstream]' \
-          && ret=0
+            "${common_flags[@]}"
           ;;
         (advance)
           _arguments \
             '(-y --yes)'{-y,--yes}'[Do not ask for confirmation]' \
-          && ret=0
+            "${common_flags[@]}"
           ;;
         (anno)
           _arguments \
             '(-b --branch)'{-b,--branch=}'[Branch to set the annotation for]: :__git_machete_list_managed' \
             '(-H --sync-github-prs)'{-H,--sync-github-prs}'[Annotate with GitHub PR numbers and authors where applicable]' \
-          && ret=0
+            "${common_flags[@]}"
           ;;
         (clean)
           _arguments \
             '(-H --checkout-my-github-prs)'{-H,--checkout-my-github-prs}'[Checkout your open PRs into local branches]' \
             '(-y --yes)'{-y,--yes}'[Do not ask for confirmation when deleting unmanaged or untracked branches]' \
-          && ret=0
+            "${common_flags[@]}"
+          ;;
+        (completion)
+          _arguments \
+            '1:: :__git_machete_completion_shells' \
+            "${common_flags[@]}"
           ;;
         (delete-unmanaged)
           _arguments \
             '(-y --yes)'{-y,--yes}'[Do not ask for confirmation when deleting unmanaged branches]' \
-          && ret=0
+            "${common_flags[@]}"
           ;;
         (d|diff)
           _arguments \
             '1:: :__git_branch_names' \
             '(-s --stat)'{-s,--stat}'[Pass --stat option to git diff, so that only summary (diffstat) is printed]' \
-          && ret=0
+            "${common_flags[@]}"
           ;;
         (discover)
           # TODO (#111): complete the comma-separated list of roots
@@ -58,44 +64,53 @@ _git-machete() {
             '(-l --list-commits)'{-l,--list-commits}'[List the messages of commits introduced on each branch]' \
             '(-r --roots)'{-r,--roots=}'[Comma-separated list of branches to be considered roots of trees of branch dependencies (typically develop and/or master)]: :__git_branch_names' \
             '(-y --yes)'{-y,--yes}'[Do not ask for confirmation]' \
-          && ret=0
+            "${common_flags[@]}"
           ;;
         (e|edit|file)
+          _arguments "${common_flags[@]}"
           ;;
         (fork-point)
-          # TODO (#112): correctly suggest branches for `--unset-override`
           _arguments '1:: :__git_branch_names' \
             '(--inferred)'--inferred'[Display the fork point ignoring any potential override]' \
             '(--override-to)'--override-to='[Override fork point to the given revision]: :__git_references' \
             '(--override-to-inferred)'--override-to-inferred'[Override fork point to the inferred location]' \
             '(--override-to-parent)'--override-to-parent'[Override fork point to the upstream (parent) branch]' \
-            '(--unset-override)'--unset-override'[Unset fork point override by removing machete.overrideForkPoint.<branch>.* configs]' \
-          && ret=0
+            '(--unset-override)'--unset-override='[Unset fork point override by removing machete.overrideForkPoint.<branch>.* configs]: :__git_machete_list_with_overridden_fork_point' \
+            "${common_flags[@]}"
           ;;
         (g|go)
-          _arguments '1:: :__git_machete_directions_go' && ret=0
+          _arguments \
+            '1:: :__git_machete_directions_go' \
+            "${common_flags[@]}"
           ;;
         (github)
           __git_machete_github_subcommands
           ;;
         (help)
-          _arguments '1:: :__git_machete_help_topics' && ret=0
+          _arguments \
+            '1:: :__git_machete_help_topics' \
+            "${common_flags[@]}"
           ;;
         (is-managed|l|log)
-          _arguments '1:: :__git_branch_names' && ret=0
+          _arguments \
+            '1:: :__git_branch_names' \
+            "${common_flags[@]}"
           ;;
         (list)
-          _arguments '1:: :__git_machete_categories' && ret=0
+          _arguments \
+            '1:: :__git_machete_categories' \
+            "${common_flags[@]}"
           ;;
         (reapply)
           _arguments \
             '(-f --fork-point)'{-f,--fork-point=}'[Fork point commit after which the rebased part of history is meant to start]: :__git_references' \
-          && ret=0
+            "${common_flags[@]}"
           ;;
         (show)
-          _arguments '1:: :__git_machete_directions_show' \
+          _arguments \
+            '1:: :__git_machete_directions_show' \
             '2:: :__git_machete_list_managed' \
-            && ret=0
+            "${common_flags[@]}"
           ;;
         (slide-out)
           # TODO (#113): suggest further branches based on the previous specified branch (like in Bash completion script)
@@ -107,12 +122,12 @@ _git-machete() {
             '(-n)'-n'[If updating by rebase, equivalent to --no-interactive-rebase. If updating by merge, equivalent to --no-edit-merge]' \
             '(--no-edit-merge)'--no-edit-merge'[If updating by merge, pass --no-edit flag to underlying git merge]' \
             '(--no-interactive-rebase)'--no-interactive-rebase'[If updating by rebase, do NOT pass --interactive flag to underlying git rebase]' \
-          && ret=0
+            "${common_flags[@]}"
           ;;
         (squash)
           _arguments \
             '(-f --fork-point)'{-f,--fork-point=}'[Fork point commit after which the squashed part of history is meant to start]: :__git_references' \
-          && ret=0
+            "${common_flags[@]}"
           ;;
         (s|status)
           _arguments \
@@ -120,7 +135,7 @@ _git-machete() {
             '(-L --list-commits-with-hashes)'{-L,--list-commits-with-hashes}'[List the short hashes and messages of commits introduced on each branch]' \
             '(-l --list-commits)'{-l,--list-commits}'[List the messages of commits introduced on each branch]' \
             '(--no-detect-squash-merges)'--no-detect-squash-merges'[Only consider "strict" (fast-forward or 2-parent) merges, rather than rebase/squash merges, when detecting if a branch is merged into its upstream]' \
-          && ret=0
+            "${common_flags[@]}"
           ;;
         (t|traverse)
           _arguments \
@@ -140,7 +155,7 @@ _git-machete() {
             '(-w --whole)'{-w,--whole}'[Equivalent to -n --start-from=first-root --return-to=nearest-remaining]' \
             '(-W)'-W'[Equivalent to --fetch --whole]' \
             '(-y --yes)'{-y,--yes}'[Do not ask for any interactive input; implicates -n]' \
-          && ret=0
+            "${common_flags[@]}"
           ;;
          (update)
           _arguments \
@@ -149,7 +164,7 @@ _git-machete() {
             '(-n)'-n'[If updating by rebase, equivalent to --no-interactive-rebase. If updating by merge, equivalent to --no-edit-merge]' \
             '(--no-edit-merge)'--no-edit-merge'[If updating by merge, pass --no-edit flag to underlying git merge]' \
             '(--no-interactive-rebase)'--no-interactive-rebase'[If updating by rebase, do NOT pass --interactive flag to underlying git rebase]' \
-          && ret=0
+            "${common_flags[@]}"
           ;;
       esac
   esac
@@ -160,30 +175,41 @@ __git_machete_cmds=(
   'advance:Fast-forward the current branch to match one of its downstreams and subsequently slide out this downstream'
   'anno:Manage custom annotations'
   'clean:Delete untracked and unmanaged branches and optionally check out open GitHub PRs'
+  'completion:Print completion script for the given shell'
   'delete-unmanaged:Delete local branches that are not present in the branch layout file'
-  {diff,d}':Diff current working directory or a given branch against its fork point'
+  'diff:Diff current working directory or a given branch against its fork point'
   'discover:Automatically discover tree of branch dependencies'
-  {edit,e}':Edit the branch layout file'
+  'edit:Edit the branch layout file'
   'file:Display the location of the branch layout file'
   'fork-point:Display hash of the fork point commit of a branch'
-  {go,g}':Check out the branch relative to the position of the current branch'
-  'github:Creates, checks out and manages GitHub PRs while keeping them reflected in branch layout file'
+  'github:Creates, checks out and manages GitHub PRs while keeping them reflected in branch branch layout file'
+  'go:Check out the branch relative to the position of the current branch'
   'help:Display this overview, or detailed help for a specified command'
   'is-managed:Check if the current branch is managed by git-machete (mostly for scripts)'
   'list:List all branches that fall into one of pre-defined categories (mostly for internal use)'
-  {log,l}':Log the part of history specific to the given branch'
+  'log:Log the part of history specific to the given branch'
   'reapply:Rebase the current branch onto its own fork point'
   'show:Show name(s) of the branch(es) relative to the position of the current branch'
   'slide-out:Slide the current branch out and sync its downstream (child) branch with its upstream (parent) branch via rebase or merge'
   'squash:Squash the unique history of the current branch into a single commit'
-  {status,s}':Display formatted tree of branch dependencies, including info on their sync with upstream branch and with remote'
+  'status:Display formatted tree of branch dependencies, including info on their sync with upstream branch and with remote'
   'traverse:Walk through the tree of branch dependencies and rebase, merge, slide out, push and/or pull each branch one by one'
   'update:Sync the current branch with its upstream (parent) branch via rebase or merge'
   'version:Display version and exit'
 )
 
+__git_machete_directions=(
+  'down:child(ren) in tree of branch dependencies'
+  'first:first child of the current root branch'
+  'last:last branch located under current root branch'
+  'next:the one defined in the following line in .git/machete file'
+  'prev:the one defined in the preceding line in .git/machete file'
+  'root:root of the tree of branch dependencies where current branch belongs'
+  'up:parent in tree of branch dependencies'
+)
+
 __git_machete_commands() {
-  _describe -t __git_machete_cmds 'git machete command' __git_machete_cmds "$@"
+  _describe 'git machete command' __git_machete_cmds
 }
 
 __git_machete_help_topics() {
@@ -194,42 +220,23 @@ __git_machete_help_topics() {
     'format:Format of the .git/machete branch layout file'
     'hooks:Display docs for the extra hooks added by git machete'
   )
-  _describe -t topics 'git machete help topic' topics "$@"
+  _describe 'git machete help topic' topics
 }
 
 __git_machete_directions_go() {
-  local directions
-  directions=(
-    {d,down}':child(ren) in tree of branch dependencies'
-    {f,first}':first child of the current root branch'
-    {l,last}':last branch located under current root branch'
-    {n,next}':the one defined in the following line in .git/machete file'
-    {p,prev}':the one defined in the preceding line in .git/machete file'
-    {r,root}':root of the tree of branch dependencies where current branch belongs'
-    {u,up}':parent in tree of branch dependencies'
-  )
-  _describe -t directions 'direction' directions "$@"
+  _describe 'direction' __git_machete_directions
 }
 
-# TODO (#114): extract the part shared with __git_machete_go_directions
 __git_machete_directions_show() {
   local directions
   directions=(
-    {c,current}':the currently checked out branch'
-    {d,down}':child(ren) in tree of branch dependencies'
-    {f,first}':first child of the current root branch'
-    {l,last}':last branch located under current root branch'
-    {n,next}':the one defined in the following line in .git/machete file'
-    {p,prev}':the one defined in the preceding line in .git/machete file'
-    {r,root}':root of the tree of branch dependencies where current branch belongs'
-    {u,up}':parent in tree of branch dependencies'
+    'current'
+    "${__git_machete_directions[@]}"
   )
-  _describe -t directions 'direction' directions "$@"
+  _describe 'direction' directions
 }
 
-
-__git_machete_github_subcommands ()
-{
+__git_machete_github_subcommands() {
   local curcontext="$curcontext" state line
   typeset -A opt_args
 
@@ -248,26 +255,31 @@ __git_machete_github_subcommands ()
         'retarget-pr:set the base of the current branch PR to upstream (parent) branch'
         'sync:synchronize with the remote repository: checkout open PRs for the current user associated with the GitHub token, delete unmanaged branches and also delete untracked managed branches with no downstream branch'
       )
-      _describe -t commands 'subcommand' github_subcommands
+      _describe 'subcommand' github_subcommands
       ;;
 
     (options)
       case $line[1] in
 
-        (create-pr)
-          _arguments '(--draft)'--draft'[Creates the new PR as draft]'
-        ;;
-
         (checkout-prs)
           _arguments \
             '(--all)'--all'[Checkout all open PRs.]' \
-            '(--by)'--by'[Checkout open PRs authored by the given GitHub user]' \
-            '(--mine)'--mine'[Checkout open PRs for the current user associated with the GitHub token.]'
+            '(--by)'--by='[Checkout open PRs authored by the given GitHub user]' \
+            '(--mine)'--mine='[Checkout open PRs for the current user associated with the GitHub token.]' \
+            "${common_flags[@]}"
+        ;;
+
+        (create-pr)
+          _arguments \
+            '(--draft)'--draft'[Creates the new PR as draft]' \
+            "${common_flags[@]}"
         ;;
 
         (retarget-pr)
-          _arguments '(-b --branch)'{-b,--branch=}'[Specify the branch for which the associated PR base will be set to its upstream (parent) branch.]'
-          _arguments '(--ignore-if-missing)'--ignore-if-missing'[Ignore errors and quietly terminate execution if there is no PR opened for current (or specified) branch.]'
+          _arguments \
+            '(-b --branch)'{-b,--branch=}'[Specify the branch for which the associated PR base will be set to its upstream (parent) branch.]: :__git_machete_list_managed' \
+            '(--ignore-if-missing)'--ignore-if-missing'[Ignore errors and quietly terminate execution if there is no PR opened for current (or specified) branch.]' \
+            "${common_flags[@]}"
         ;;
       esac
     ;;
@@ -286,7 +298,7 @@ __git_machete_categories() {
     'unmanaged:all local branches that do not appear in the branch layout file'
     'with-overridden-fork-point:all local branches that have a fork point override config'
   )
-  _describe -t categories 'category' categories "$@"
+  _describe 'category' categories
 }
 
 __git_machete_opt_color_args() {
@@ -296,7 +308,7 @@ __git_machete_opt_color_args() {
     'auto:emits colors only when standard output is connected to a terminal'
     'never:colors are disabled'
   )
-  _describe -t opt_color_args 'color argument' opt_color_args "$@"
+  _describe 'color argument' opt_color_args
 }
 
 __git_machete_opt_return_to_args() {
@@ -306,7 +318,7 @@ __git_machete_opt_return_to_args() {
     'nearest-remaining:nearest remaining branch in case the "here" branch has been slid out by the traversal'
     'stay:the default - just stay wherever the traversal stops'
   )
-  _describe -t opt_return_to 'return-to argument' opt_return_to "$@"
+  _describe 'return-to argument' opt_return_to
 }
 
 __git_machete_opt_start_from_args() {
@@ -316,25 +328,37 @@ __git_machete_opt_start_from_args() {
     'root:root branch of the current branch, as in git machete show root'
     'first-root:first listed managed branch'
   )
-  _describe -t opt_start_from 'start-from argument' opt_start_from "$@"
+  _describe 'start-from argument' opt_start_from
 }
 
 __git_machete_list_addable() {
-  local list_addable
-  IFS=$'\n' list_addable=($(git machete list addable 2>/dev/null))
-  _describe -t list_addable 'addable branch' list_addable "$@"
+  local result
+  IFS=$'\n' result=($(git machete list addable 2>/dev/null))
+  _describe 'addable branch' result
 }
 
 __git_machete_list_managed() {
-  local list_managed
-  IFS=$'\n' list_managed=($(git machete list managed 2>/dev/null))
-  _describe -t list_managed 'managed branch' list_managed "$@"
+  local result
+  IFS=$'\n' result=($(git machete list managed 2>/dev/null))
+  _describe 'managed branch' result
 }
 
 __git_machete_list_slidable() {
-  local list_slidable
-  IFS=$'\n' list_slidable=($(git machete list slidable 2>/dev/null))
-  _describe -t list_slidable 'slidable branch' list_slidable "$@"
+  local result
+  IFS=$'\n' result=($(git machete list slidable 2>/dev/null))
+  _describe 'slidable branch' result
+}
+
+__git_machete_list_with_overridden_fork_point() {
+  local result
+  IFS=$'\n' result=($(git machete list with-overridden-fork-point 2>/dev/null))
+  _describe 'branch with overridden fork point' result
+}
+
+__git_machete_completion_shells() {
+  local shells
+  shells=(bash fish zsh)
+  _describe 'shell' shells
 }
 
 zstyle ':completion:*:*:git:*' user-commands machete:'organize your repo, instantly rebase/merge/push/pull and more'

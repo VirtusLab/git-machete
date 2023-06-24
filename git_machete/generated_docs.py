@@ -9,6 +9,7 @@ short_docs: Dict[str, str] = {
     "advance": "Fast-forward merge one of children to the current branch, push it and then slide out the child",
     "anno": "Manage custom annotations",
     "clean": "Delete untracked and unmanaged branches and also optionally check out user's open GitHub PRs",
+    "completion": "Print out completion script for bash/fish/zsh",
     "config": "Display docs for the git machete configuration keys and environment variables",
     "delete-unmanaged": "Delete local branches that are not present in the branch layout file",
     "diff": "Diff current working directory or a given branch against its computed fork point",
@@ -243,6 +244,33 @@ long_docs: Dict[str, str] = {
            `GITHUB_TOKEN`
               GitHub API token.
 
+   """,
+    "completion": """
+        <b>Usage:</b><b>
+           git machete completion <shell></b>
+
+        where `<shell>` is one of: `bash`, `fish`, `zsh`.
+
+        Prints out completion scripts.
+
+        <b>Supported shells:</b>
+
+        <b>bash</b>
+
+        Put the following into `~/.bashrc` or `~/.bash_profile`:<b>
+           eval "$(git machete completion bash)"  # or, if it doesn't work:
+           source <(git machete completion bash)</b>
+
+        <b>fish</b>
+
+        Put the following into `~/.config/fish/config.fish`:<b>
+           git machete completion fish | source</b>
+
+        <b>zsh</b>
+
+        Put the following into `~/.zshrc`:<b>
+           eval "$(git machete completion zsh)"  # or, if it doesn't work:
+           source <(git machete completion zsh)</b>
    """,
     "config": """
         Documentation about available `git machete` git config keys and environment variables that change the command's default behavior.

@@ -27,14 +27,15 @@ git machete commands and help topics:
 
 .. include:: learning_materials.rst
 
-Commands
-------------------
+Commands & help topics
+----------------------
 
 .. include:: cli/add.rst
 .. include:: cli/advance.rst
 .. include:: cli/anno.rst
 .. include:: cli/config.rst
 .. include:: cli/clean.rst
+.. include:: cli/completion.rst
 .. include:: cli/delete-unmanaged.rst
 .. include:: cli/diff.rst
 .. include:: cli/discover.rst

@@ -1,6 +1,7 @@
 # git-machete
 
 [![homebrew formula](https://img.shields.io/homebrew/v/git-machete)](https://formulae.brew.sh/formula/git-machete)
+[![homebrew formula monthly downloads](https://img.shields.io/homebrew/installs/dm/git-machete.svg)](https://formulae.brew.sh/formula/git-machete)
 [![PyPI package](https://img.shields.io/pypi/v/git-machete.svg)](https://pypi.org/project/git-machete)
 [![PyPI package monthly downloads](https://img.shields.io/pypi/dm/git-machete.svg)](https://pypistats.org/packages/git-machete)
 [![Conda package](https://img.shields.io/conda/vn/conda-forge/git-machete.svg)](https://anaconda.org/conda-forge/git-machete)
@@ -42,8 +43,6 @@ a port into a plugin for the IntelliJ Platform products, including PyCharm, WebS
 ## Install
 
 We provide a couple of alternative ways of installation. See [PACKAGES.md](PACKAGES.md) for the full list.
-
-**Instructions for installing bash, zsh, and fish completion scripts are provided in [completion/README.md](completion/README.md).**
 
 git-machete requires Python >= 3.6. Python 2.x is no longer supported.
 
@@ -181,8 +180,38 @@ This will be resolved from the first of:
 3. Auth token from the current [`gh`](https://cli.github.com/) configuration.
 4. Auth token from the current [`hub`](https://github.com/github/hub) configuration.
 
-<br/>
+### Shell completions
 
+When git-machete is installed via **Homebrew**, shell completions should be installed automatically. <br/>
+For any other package manager, or when your shell doesn't pick up the Homebrew-installed completion, use the following:
+
+#### Bash
+
+Put the following into `~/.bashrc` or `~/.bash_profile`:
+
+```shell script
+eval "$(git machete completion bash)"  # or, if it doesn't work:
+source <(git machete completion bash)
+```
+
+#### Fish
+
+Put the following into `~/.config/fish/config.fish`:
+
+```shell script
+git machete completion fish | source
+```
+
+#### Zsh
+
+Put the following into `~/.zshrc`:
+
+```shell script
+eval "$(git machete completion zsh)"  # or, if it doesn't work:
+source <(git machete completion zsh)
+```
+
+<br/>
 
 ## FAQ
 

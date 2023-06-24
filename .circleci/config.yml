@@ -30,10 +30,21 @@ jobs:
           name: Install dependencies
           # language=sh
           command: |
-            sudo apt-get update
+            set -x
 
-            # For enforce-completion-scripts-correct.sh
-            sudo apt-get install zsh fish
+            # For completion tests
+
+            # `add-apt-repository` was getting stuck on CI for some reason
+            echo 'deb     https://ppa.launchpadcontent.net/fish-shell/release-3/ubuntu jammy main' | sudo tee -a /etc/apt/sources.list
+            echo 'deb-src https://ppa.launchpadcontent.net/fish-shell/release-3/ubuntu jammy main' | sudo tee -a /etc/apt/sources.list
+            sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 59FDA1CE1B84B3FAD89366C027557F056DC33CA5
+            sudo apt-get update
+            sudo apt-get install fish
+            fish --version
+
+            sudo apt-get install zsh
+
+            pip3 install tox
 
             # For enforce-shell-scripts-pass-shellcheck.sh
             sudo apt-get install shellcheck
@@ -43,6 +54,11 @@ jobs:
       - run:
           name: Perform general checks
           command: ci/checks/run-all-checks.sh
+      - run:
+          name: Test shell completions
+          command: tox -e test-completions -- -vv
+      - store_test_results:
+          path: test-results/
 
   # Earliest versions of python/git supported by git-machete
   "python 3_6 git 1_8_0":
@@ -146,7 +162,10 @@ jobs:
     executor: macos_executor
     steps:
       - checkout
+      - run: brew install fish zsh
       - run: pip install tox
+      # TODO (#1005): make zsh completion tests pass on macOS machine on CI
+      - run: tox -e test-completions -- -vv -k "not zsh"
       - run: PYTHON_VERSION=3.11-macos  tox -e coverage -- -vv
       - store_test_results:
           path: test-results/
@@ -161,6 +180,8 @@ jobs:
       - run: pip install tox
       # We don't collect coverage on Windows as it massively extends execution time for some reason.
       - run: tox -e testenv -- -vv
+      - store_test_results:
+          path: test-results/
 
   "coverage upload":
     executor: ubuntu_executor

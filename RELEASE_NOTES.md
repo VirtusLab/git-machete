@@ -2,6 +2,9 @@
 
 ## New in git-machete 3.18.0
 
+- added: `git machete completion bash|fish|zsh` command
+- fixed: multiple glitches in the existing bash/fish/zsh completions
+
 ## New in git-machete 3.17.9
 
 - improved: layout of documentation at ReadTheDocs

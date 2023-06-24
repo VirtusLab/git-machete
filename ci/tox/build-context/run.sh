@@ -37,8 +37,16 @@ $PYTHON -m venv venv/bdist_wheel/
 
 . venv/sdist/bin/activate
 pip install dist/git-machete-*.tar.gz
-git machete --version
+git machete version
+if ! git machete completion fish | grep 'complete -c git-machete'; then
+  echo "shell completion is not available in runtime, aborting"
+  exit 1
+fi
 
 . venv/bdist_wheel/bin/activate
 pip install dist/git_machete-*.whl
-git machete --version
+git machete version
+if ! git machete completion zsh | grep '#compdef git-machete'; then
+  echo "shell completion is not available in runtime, aborting"
+  exit 1
+fi

@@ -51,6 +51,7 @@ cat ../python3-git-machete_*_source.buildinfo
 cat ../python3-git-machete_*_source.changes
 
 tar_output=$(tar tvf ../python3-git-machete_*.tar.gz)
+echo "$tar_output"
 grep completion/ <<< "$tar_output"
 grep docs/man/git-machete\.1 <<< "$tar_output"
 

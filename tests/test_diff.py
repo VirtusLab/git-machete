@@ -7,10 +7,7 @@ from .mockers import assert_success, mock__run_cmd_and_forward_stdout
 class TestDiff(BaseTest):
 
     def test_diff(self, mocker: MockerFixture) -> None:
-        """
-        Verify behaviour of a 'git machete diff' command.
-        """
-        self.patch_symbol(mocker, 'git_machete.utils._run_cmd', mock__run_cmd_and_forward_stdout)  # to hide git outputs in tests
+        self.patch_symbol(mocker, 'git_machete.utils._run_cmd', mock__run_cmd_and_forward_stdout)  # to capture `git diff` outputs
         (
             self.repo_sandbox.new_branch("master")
                 .add_file_and_commit(message='master commit1')

@@ -66,6 +66,8 @@ git machete commands and help topics:
 .IP \(bu 2
 \fI\%clean\fP            \-\- Delete untracked and unmanaged branches and also optionally check out user\(aqs open GitHub PRs
 .IP \(bu 2
+\fI\%completion\fP       \-\- Print out completion script for bash/fish/zsh
+.IP \(bu 2
 \fI\%config\fP           \-\- Display docs for the git machete configuration keys and environment variables
 .IP \(bu 2
 \fI\%delete\-unmanaged\fP \-\- Delete local branches that are not present in the branch layout file
@@ -622,6 +624,69 @@ Don\(aqt ask for confirmation when deleting branches from git.
 .TP
 .B \fBGITHUB_TOKEN\fP
 GitHub API token.
+.UNINDENT
+.SH COMPLETION
+.sp
+\fBUsage:\fP
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git machete completion <shell>
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+where \fB<shell>\fP is one of: \fBbash\fP, \fBfish\fP, \fBzsh\fP\&.
+.sp
+Prints out completion scripts.
+.sp
+\fBSupported shells:\fP
+.sp
+\fBbash\fP
+.sp
+Put the following into \fB~/.bashrc\fP or \fB~/.bash_profile\fP:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+eval \(dq$(git machete completion bash)\(dq  # or, if it doesn\(aqt work:
+source <(git machete completion bash)
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+\fBfish\fP
+.sp
+Put the following into \fB~/.config/fish/config.fish\fP:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git machete completion fish | source
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+\fBzsh\fP
+.sp
+Put the following into \fB~/.zshrc\fP:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+eval \(dq$(git machete completion zsh)\(dq  # or, if it doesn\(aqt work:
+source <(git machete completion zsh)
+.ft P
+.fi
+.UNINDENT
 .UNINDENT
 .SH DELETE-UNMANAGED
 .sp

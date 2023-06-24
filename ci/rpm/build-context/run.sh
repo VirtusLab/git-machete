@@ -10,3 +10,7 @@ fi
 python3 setup.py bdist_rpm
 rpm -i dist/git-machete-*.rpm
 git machete version
+if ! git machete completion bash | grep '#!.*bash'; then
+  echo "shell completion is not available in runtime, aborting"
+  exit 1
+fi

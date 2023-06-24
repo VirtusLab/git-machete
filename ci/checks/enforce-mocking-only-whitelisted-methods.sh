@@ -6,7 +6,7 @@ self_dir=$(cd "$(dirname "$0")" &>/dev/null; pwd -P)
 source "$self_dir"/utils.sh
 self_name=$(basename "$0")
 
-whitelisted_methods='
+whitelisted_methods="\
 builtins.input
 builtins.open
 git_machete.client.MacheteClient.is_stdout_a_tty
@@ -20,9 +20,8 @@ git_machete.utils.find_executable
 os.path.isfile
 shutil.which
 sys.argv
-urllib.request.urlopen
-'
-actual_methods=$(git grep -Pho "(?<=self\.patch_symbol\(mocker, ['\"]).*?(?=['\"])" | sort -u)
+urllib.request.urlopen"
+actual_methods=$(git grep -Pho "(?<=self\.patch_symbol\(mocker, ['\"]).*?(?=['\"])" | LC_COLLATE=C sort -u)
 
 # `comm -13` to list lines only present in the second input (actual methods) and not in the first (whitelisted methods)
 # `grep ''` to check if the output is non-empty (true if non-empty, false if empty)

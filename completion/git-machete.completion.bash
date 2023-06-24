@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 _git_machete() {
-  local cmds="add advance anno clean d delete-unmanaged diff discover e edit file fork-point g github go help is-managed l list log reapply s show slide-out squash status t traverse update version"
+  local cmds="add advance anno clean completion delete-unmanaged diff discover edit file fork-point github go help is-managed list log reapply show slide-out squash status traverse update version"
   local help_topics="$cmds config format hooks"
 
   local categories="addable childless managed slidable slidable-after unmanaged with-overridden-fork-point"
@@ -11,8 +11,9 @@ _git_machete() {
   local opt_color_args="always auto never"
   local opt_return_to_args="here nearest-remaining stay"
   local opt_start_from_args="here root first-root"
+  local shells="bash fish zsh"
 
-  local common_opts="--debug -h --help -v --verbose --version"
+  local common_opts="--debug -h --help -v --verbose"
   local add_opts="-o --onto= -R --as-root -y --yes"
   local advance_opts="-y --yes"
   local anno_opts="-b --branch= -H --sync-github-prs"
@@ -31,7 +32,7 @@ _git_machete() {
   local traverse_opts="-F --fetch -l --list-commits -M --merge -n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase --no-push --no-push-untracked --push --push-untracked --return-to= --start-from= -w --whole -W -y --yes"
   local update_opts="-f --fork-point= -M --merge -n --no-edit-merge --no-interactive-rebase"
 
-  # shellcheck disable=SC2154
+  cur=${COMP_WORDS[$COMP_CWORD]}
   case $cur in
     --branch=*|--onto=*) __gitcomp_nl "$(git machete list managed 2>/dev/null)" "" "${cur##--*=}" ;;
     --by=*|--checked-out-since=*) COMPREPLY=('');;
@@ -64,9 +65,14 @@ _git_machete() {
         slide-out) __gitcomp "$common_opts $slide_out_opts" ;;
         squash) __gitcomp "$common_opts $squash_opts" ;;
         s|status) __gitcomp "$common_opts $status_opts" ;;
-        traverse) __gitcomp "$common_opts $traverse_opts" ;;
+        t|traverse) __gitcomp "$common_opts $traverse_opts" ;;
         update) __gitcomp "$common_opts $update_opts" ;;
-        *) __gitcomp "$common_opts" ;;
+        *)
+          if [[ $COMP_CWORD -eq 2 ]]; then
+            __gitcomp "$common_opts --version"
+          else
+            __gitcomp "$common_opts"
+          fi ;;
       esac ;;
     *)
       if [[ $COMP_CWORD -eq 2 ]]; then
@@ -82,7 +88,7 @@ _git_machete() {
           --by=*|-C|--checked-out-since=*) COMPREPLY=('');;
           --color) __gitcomp "$opt_color_args" ;;
           -d|--down-fork-point|-f|--fork-point|--override-to) __gitcomp "$(__git_refs)" ;;
-          # TODO (#25): We don't complete --help since it's going to be captured by git anyway
+          # TODO (#895): we don't complete --help since it's going to be captured by git anyway
           # (and results in redirection to yet non-existent man for `git-machete`).
           -h) __gitcomp "$help_topics" ;;
           --return-to) __gitcomp "$opt_return_to_args" ;;
@@ -94,6 +100,8 @@ _git_machete() {
             case ${COMP_WORDS[2]} in
               add)
                 __gitcomp_nl "$(git machete list addable 2>/dev/null)" ;;
+              completion)
+                __gitcomp "$shells" ;;
               d|diff|fork-point|is-managed|l|log)
                 __gitcomp "$(__git_heads)" ;;
               g|go)

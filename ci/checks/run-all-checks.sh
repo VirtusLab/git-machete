@@ -10,7 +10,6 @@ PATH=./ci/checks:$PATH
 set -e -x
 
 enforce-bumped-version.sh
-enforce-completion-scripts-correct.sh
 enforce-consistent-style-for-fork-point.sh
 enforce-consistent-style-for-github.sh
 enforce-correct-shebangs.sh

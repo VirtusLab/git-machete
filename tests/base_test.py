@@ -47,8 +47,7 @@ class GitRepositorySandbox:
         self.file_counter = 0
 
     def popen(self, command: str) -> str:
-        with os.popen(command) as process:
-            return process.read().strip()
+        return subprocess.check_output(command, shell=True, timeout=5).decode("utf-8").strip()
 
     def execute(self, command: str) -> "GitRepositorySandbox":
         subprocess.check_call(command, shell=True)

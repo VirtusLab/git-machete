@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import pkgutil
 import re
 import sys
 import textwrap
@@ -16,7 +17,8 @@ from .exceptions import (ExitCode, InteractionStopped, MacheteException,
 from .generated_docs import long_docs, short_docs
 from .git_operations import (AnyBranchName, AnyRevision, GitContext,
                              LocalBranchShortName, RemoteBranchShortName)
-from .utils import bold, excluding, fmt, underline, warn
+from .utils import (GITHUB_NEW_ISSUE_MESSAGE, bold, excluding, fmt, underline,
+                    warn)
 
 T = TypeVar('T')
 
@@ -33,11 +35,11 @@ command_by_alias: Dict[str, str] = {v: k for k, v in alias_by_command.items()}
 
 command_groups: List[Tuple[str, List[str]]] = [
     ("General topics",
-     ["config", "file", "format", "help", "hooks", "version"]),
+     ["completion", "config", "file", "format", "help", "hooks", "version"]),
     ("Build, display and modify the tree of branch dependencies",
      ["add", "anno", "discover", "edit", "status"]),
     ("List, check out and delete branches",
-     ["clean", "delete-unmanaged", "go", "is-managed", "list", "show"]),
+     ["delete-unmanaged", "go", "is-managed", "list", "show"]),
     ("Determine changes specific to the given branch",
      ["diff", "fork-point", "log"]),
     ("Update git history in accordance with the tree of branch dependencies",
@@ -119,19 +121,19 @@ class MacheteHelpAction(argparse.Action):
 
 def create_cli_parser() -> argparse.ArgumentParser:
     common_args_parser = argparse.ArgumentParser(
-        prog='git machete', argument_default=argparse.SUPPRESS, add_help=False)
+        prog='git machete',
+        argument_default=argparse.SUPPRESS,
+        add_help=False)
     common_args_parser.add_argument('--debug', action='store_true')
     common_args_parser.add_argument('-h', '--help', action=MacheteHelpAction)
-    common_args_parser.add_argument(
-        '--version', action='version', version=f'git-machete version {__version__}')
+    common_args_parser.add_argument('--version', action='version', version=f'git-machete version {__version__}')
     common_args_parser.add_argument('-v', '--verbose', action='store_true')
 
     cli_parser = argparse.ArgumentParser(
         prog='git machete',
         argument_default=argparse.SUPPRESS,
         add_help=False,
-        parents=[common_args_parser]
-    )
+        parents=[common_args_parser])
 
     subparsers = cli_parser.add_subparsers(dest='command')
 
@@ -147,28 +149,44 @@ def create_cli_parser() -> argparse.ArgumentParser:
     add_parser.add_argument('-y', '--yes', action='store_true')
 
     advance_parser = subparsers.add_parser(
-        'advance', usage=argparse.SUPPRESS, add_help=False, parents=[common_args_parser])
+        'advance',
+        usage=argparse.SUPPRESS,
+        add_help=False,
+        parents=[common_args_parser])
     advance_parser.add_argument('-y', '--yes', action='store_true', default=argparse.SUPPRESS)
 
     anno_parser = subparsers.add_parser(
-        'anno', usage=argparse.SUPPRESS, add_help=False, parents=[common_args_parser])
+        'anno',
+        usage=argparse.SUPPRESS,
+        add_help=False,
+        parents=[common_args_parser])
     # possible values of 'annotation_text' include: [], [''], ['some_val'], ['text_1', 'text_2']
     anno_parser.add_argument('annotation_text', nargs='*')
     anno_parser.add_argument('-b', '--branch', default=argparse.SUPPRESS)
-    anno_parser.add_argument(
-        '-H', '--sync-github-prs', action='store_true', default=argparse.SUPPRESS)
+    anno_parser.add_argument('-H', '--sync-github-prs', action='store_true', default=argparse.SUPPRESS)
 
-    clean_parser = subparsers.add_parser('clean', usage=argparse.SUPPRESS, add_help=False, parents=[common_args_parser])
+    clean_parser = subparsers.add_parser(
+        'clean',
+        usage=argparse.SUPPRESS,
+        add_help=False,
+        parents=[common_args_parser])
     clean_parser.add_argument('-H', '--checkout-my-github-prs', action='store_true', default=argparse.SUPPRESS)
     clean_parser.add_argument('-y', '--yes', action='store_true', default=argparse.SUPPRESS)
+
+    completion_parser = subparsers.add_parser(
+        'completion',
+        argument_default=argparse.SUPPRESS,
+        usage=argparse.SUPPRESS,
+        add_help=False,
+        parents=[common_args_parser])
+    completion_parser.add_argument('shell', choices=['bash', 'fish', 'zsh'])
 
     delete_unmanaged_parser = subparsers.add_parser(
         'delete-unmanaged',
         usage=argparse.SUPPRESS,
         add_help=False,
         parents=[common_args_parser])
-    delete_unmanaged_parser.add_argument(
-        '-y', '--yes', action='store_true', default=argparse.SUPPRESS)
+    delete_unmanaged_parser.add_argument('-y', '--yes', action='store_true', default=argparse.SUPPRESS)
 
     diff_full_parser = subparsers.add_parser(
         'diff',
@@ -177,8 +195,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
         add_help=False,
         parents=[common_args_parser])
     diff_full_parser.add_argument('branch', nargs='?')
-    diff_full_parser.add_argument(
-        '-s', '--stat', action='store_true', default=argparse.SUPPRESS)
+    diff_full_parser.add_argument('-s', '--stat', action='store_true', default=argparse.SUPPRESS)
 
     discover_parser = subparsers.add_parser(
         'discover',
@@ -230,8 +247,8 @@ def create_cli_parser() -> argparse.ArgumentParser:
     github_parser.add_argument('--all', action='store_true')
     github_parser.add_argument('--by')
     github_parser.add_argument('--draft', action='store_true')
-    github_parser.add_argument('--mine', action='store_true')
     github_parser.add_argument('--ignore-if-missing', action='store_true')
+    github_parser.add_argument('--mine', action='store_true')
 
     go_parser = subparsers.add_parser(
         'go',
@@ -246,7 +263,10 @@ def create_cli_parser() -> argparse.ArgumentParser:
     )
 
     help_parser = subparsers.add_parser(
-        'help', add_help=False, usage=argparse.SUPPRESS, parents=[common_args_parser])
+        'help',
+        add_help=False,
+        usage=argparse.SUPPRESS,
+        parents=[common_args_parser])
     help_parser.add_argument('topic_or_cmd', nargs='?', choices=commands_and_aliases)
 
     is_managed_parser = subparsers.add_parser(
@@ -257,7 +277,10 @@ def create_cli_parser() -> argparse.ArgumentParser:
     is_managed_parser.add_argument('branch', nargs='?')
 
     list_parser = subparsers.add_parser(
-        'list', usage=argparse.SUPPRESS, add_help=False, parents=[common_args_parser])
+        'list',
+        usage=argparse.SUPPRESS,
+        add_help=False,
+        parents=[common_args_parser])
     list_parser.add_argument(
         'category',
         choices=[
@@ -275,11 +298,17 @@ def create_cli_parser() -> argparse.ArgumentParser:
     log_parser.add_argument('branch', nargs='?', default=argparse.SUPPRESS)
 
     reapply_parser = subparsers.add_parser(
-        'reapply', usage=argparse.SUPPRESS, add_help=False, parents=[common_args_parser])
+        'reapply',
+        usage=argparse.SUPPRESS,
+        add_help=False,
+        parents=[common_args_parser])
     reapply_parser.add_argument('-f', '--fork-point', default=argparse.SUPPRESS)
 
     show_parser = subparsers.add_parser(
-        'show', usage=argparse.SUPPRESS, add_help=False, parents=[common_args_parser])
+        'show',
+        usage=argparse.SUPPRESS,
+        add_help=False,
+        parents=[common_args_parser])
     show_parser.add_argument(
         'direction',
         choices=['c', 'current', 'd', 'down', 'f', 'first', 'l', 'last',
@@ -302,7 +331,10 @@ def create_cli_parser() -> argparse.ArgumentParser:
     slide_out_parser.add_argument('--no-interactive-rebase', action='store_true')
 
     squash_parser = subparsers.add_parser(
-        'squash', usage=argparse.SUPPRESS, add_help=False, parents=[common_args_parser])
+        'squash',
+        usage=argparse.SUPPRESS,
+        add_help=False,
+        parents=[common_args_parser])
     squash_parser.add_argument('-f', '--fork-point', default=argparse.SUPPRESS)
 
     status_parser = subparsers.add_parser(
@@ -354,7 +386,10 @@ def create_cli_parser() -> argparse.ArgumentParser:
     update_parser.add_argument('--no-interactive-rebase', action='store_true')
 
     subparsers.add_parser(
-        'version', usage=argparse.SUPPRESS, add_help=False, parents=[common_args_parser])
+        'version',
+        usage=argparse.SUPPRESS,
+        add_help=False,
+        parents=[common_args_parser])
 
     return cli_parser
 
@@ -366,8 +401,8 @@ def update_cli_options_using_parsed_args(
     # Since argparse is not typed, everything that comes from argparse.Namespace will be taken as Any :(
     # Even if we add type=LocalBranchShortName into argument parser for branch,
     # python debugger will see branch as LocalBranchShortName but mypy always will see it as Any,
-    # until you specifically tell mypy what is the exact type by casting (right now it's done this way below, but casting does not solve all
-    # of the problems).
+    # until you specifically tell mypy what is the exact type by casting
+    # (right now it's done this way below, but casting does not solve all of the problems).
     #
     # The reasonable solution here would be to use Typed Argument Parser
     # which is a wrapper over argparse with modernised solution for typing.
@@ -510,7 +545,24 @@ def launch(orig_args: List[str]) -> None:
 
         cmd = parsed_cli.command
 
-        if cmd == "help":
+        if cmd == "completion":
+            completion_shell = parsed_cli.shell
+
+            def print_completion_resource(name: str) -> None:
+                data = pkgutil.get_data("completion", name)
+                if not data:
+                    raise MacheteException(f"Completion file `{name}` not found. " + GITHUB_NEW_ISSUE_MESSAGE)  # pragma: no cover
+                print(data.decode())
+
+            # Deliberately using if/else instead of a dict - to measure coverage more accurately.
+            if completion_shell == "bash":
+                print_completion_resource("git-machete.completion.bash")
+            elif completion_shell == "fish":
+                print_completion_resource("git-machete.fish")
+            elif completion_shell == "zsh":  # pragma: no branch; an unknown shell is handled by argparse
+                print_completion_resource("git-machete.completion.zsh")
+            return
+        elif cmd == "help":
             print(get_help_description(display_help_topics=True, command=parsed_cli.topic_or_cmd))
             return
         elif cmd == "version":
@@ -688,7 +740,7 @@ def launch(orig_args: List[str]) -> None:
                 res = excluding(git.get_local_branches(), machete_client.managed_branches) + list(
                     map(strip_remote_name, qualifying_remote_branches))
             elif category == "childless":
-                res = machete_client.get_childless_branches()
+                res = machete_client.get_childless_managed_branches()
             elif category == "managed":
                 res = machete_client.managed_branches
             elif category == "slidable":

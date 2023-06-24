@@ -75,5 +75,10 @@ else
     echo "man page has not been installed, aborting"
     exit 1
   fi
+  if ! git machete completion bash | grep '#!.*bash'; then
+    echo "shell completion is not available in runtime, aborting"
+    exit 1
+  fi
+
   brew remove git-machete
 fi
