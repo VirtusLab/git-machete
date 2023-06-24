@@ -1,5 +1,8 @@
-include LICENSE
 
-# As for now, used just by the Homebrew formula
-recursive-include completion *
+# So that tests aren't included in sdist
+prune tests/
+
+# sdist could work with just these entries in MANIFEST.in;
+# bdist_wheel requires both these entries AND including them in `packages` in setup.py
+recursive-include completion/ *
 include           docs/man/git-machete.1

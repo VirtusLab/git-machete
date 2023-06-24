@@ -21,7 +21,9 @@ setup(
     url='https://github.com/VirtusLab/git-machete',
     license='MIT',
     keywords='git',
-    packages=['git_machete'],
+    # Non-python directories are only included in `packages` for the sake of bdist_wheel;
+    # they have apparently no effect on sdists (only MANIFEST.in matters).
+    packages=['git_machete', 'completion', 'docs/man'],
     entry_points={
         'console_scripts': [
             'git-machete = git_machete.bin:main'
@@ -38,6 +40,8 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent'
     ],
-    options={'bdist_wheel': {'universal': '1'}},
+    # This is a pure-Python but NOT universal wheel:
+    # https://realpython.com/python-wheels/#different-types-of-wheels
+    options={'bdist_wheel': {'universal': False}},
     include_package_data=True
 )

@@ -28,6 +28,18 @@ fi
 
 tox -e "$TOX_ENV_LIST"
 
-$PYTHON setup.py install --user
-PATH=$PATH:$HOME/.local/bin/
+$PYTHON setup.py sdist bdist_wheel
+
+tar tvf dist/git-machete-*.tar.gz | grep docs/man/git-machete.1
+unzip -v dist/git_machete-*.whl   | grep docs/man/git-machete.1
+
+$PYTHON -m venv venv/sdist/
+$PYTHON -m venv venv/bdist_wheel/
+
+. venv/sdist/bin/activate
+pip install dist/git-machete-*.tar.gz
+git machete --version
+
+. venv/bdist_wheel/bin/activate
+pip install dist/git_machete-*.whl
 git machete --version
