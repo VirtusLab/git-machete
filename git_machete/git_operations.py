@@ -206,7 +206,7 @@ class GitContext:
         self.__tree_hash_by_commit_hash_cached: Optional[Dict[FullCommitHash, Optional[FullTreeHash]]] = None
 
     def flush_caches(self) -> None:
-        if self.owner:
+        if self.owner:  # pragma: no branch
             self.owner.flush_caches()
         self.__commit_hash_by_revision_cached = None
         self.__committer_unix_timestamp_by_revision_cached = None

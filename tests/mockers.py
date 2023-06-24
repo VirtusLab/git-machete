@@ -102,12 +102,9 @@ def mock_input_returning_y(msg: str) -> str:
 
 
 def mock_input_returning(*answers: str) -> Callable[[str], str]:
-    class Wrapper(object):
-        def __init__(self) -> None:
-            self.gen = (ans for ans in answers)
+    gen = (ans for ans in answers)
 
-        def __call__(self, msg: str) -> str:
-            print(msg)
-            return next(self.gen)
-
-    return Wrapper()
+    def inner(msg: str) -> str:
+        print(msg)
+        return next(gen)
+    return inner
