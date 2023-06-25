@@ -14,11 +14,11 @@ git_machete.git_operations.GitContext.fetch_remote
 git_machete.github.GitHubClient.MAX_PULLS_PER_PAGE_COUNT
 git_machete.github.GitHubToken.for_domain
 git_machete.github.RemoteAndOrganizationAndRepository.from_url
+git_machete.utils._popen_cmd
 git_machete.utils._run_cmd
 git_machete.utils.find_executable
 os.path.isfile
 shutil.which
-subprocess.run
 sys.argv
 urllib.request.urlopen
 '

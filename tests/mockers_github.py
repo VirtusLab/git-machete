@@ -2,7 +2,6 @@ import json
 from collections import defaultdict
 from contextlib import AbstractContextManager, contextmanager
 from http import HTTPStatus
-from subprocess import CompletedProcess
 from typing import Any, Callable, Dict, Iterator, List, Optional, Union
 from urllib.error import HTTPError
 from urllib.parse import ParseResult, parse_qs, urlencode, urlparse
@@ -28,10 +27,6 @@ def mock_from_url(domain: str, url: str, remote: str) -> "RemoteAndOrganizationA
 
 def mock_shutil_which(path: Optional[str]) -> Callable[[Any], Optional[str]]:
     return lambda _cmd: path
-
-
-def mock_subprocess_run(returncode: int, stdout: str = '', stderr: str = '') -> Callable[..., CompletedProcess]:  # type: ignore[type-arg]
-    return lambda *args, **_kwargs: CompletedProcess(args, returncode, bytes(stdout, 'utf-8'), bytes(stderr, 'utf-8'))
 
 
 class MockGitHubAPIResponse:

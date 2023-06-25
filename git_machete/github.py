@@ -3,18 +3,17 @@ import json
 import os
 import re
 import shutil
-import subprocess
 import urllib.error
 # Deliberately NOT using much more convenient `requests` to avoid external dependencies in production code
 import urllib.request
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple, Optional
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 from git_machete import git_config_keys
 
 from .exceptions import MacheteException, UnprocessableEntityHTTPError
 from .git_operations import GitContext, LocalBranchShortName
-from .utils import bold, debug, fmt, warn
+from .utils import bold, debug, fmt, popen_cmd, warn
 
 
 class GitHubPullRequest(NamedTuple):
@@ -126,29 +125,46 @@ class GitHubToken(NamedTuple):
         if not gh:
             return None
 
-        # There is also `gh auth token`, but it's only been added in gh v2.17.0, in Oct 2022.
-        # Let's stick to the older `gh auth status --show-token` for compatibility.
-        proc = subprocess.run(
-            [gh, "auth", "status", "--hostname", domain, "--show-token"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-        if proc.returncode != 0:
+        gh_version_returncode, gh_version_stdout, _ = popen_cmd(gh, "--version")
+        if gh_version_returncode != 0:
             return None
 
-        # `gh auth status --show-token` outputs to stderr in the form:
+        # The stdout of `gh --version` looks like:
         #
-        # {domain}:
-        #   ✓ Logged in to {domain} as {username} ({config_path})
-        #   ✓ Git operations for {domain} configured to use {protocol} protocol.
-        #   ✓ Token: <token>
-        #
-        # with non-zero exit code on failure.
-        stderr = proc.stderr.decode()
-        match = re.search(r"Token: (\w+)", stderr)
-        if match:
-            return cls(value=match.group(1),
-                       provider=f'auth token for {domain} from `gh` GitHub CLI')
+        # gh version 2.18.0 (2022-10-18)
+        # https://github.com/cli/cli/releases/tag/v2.18.0
+
+        gh_version_match = re.search(r"gh version (\d+).(\d+).(\d+) ", gh_version_stdout)
+        gh_version: Optional[Tuple[int, int, int]] = None
+        if gh_version_match:  # pragma: no branch
+            gh_version = int(gh_version_match.group(1)), int(gh_version_match.group(2)), int(gh_version_match.group(3))
+
+        if gh_version and gh_version >= (2, 17, 0):
+            gh_token_returncode, gh_token_stdout, _ = \
+                popen_cmd(gh, "auth", "token", "--hostname", domain, hide_debug_output=True)
+            if gh_token_returncode != 0:
+                return None
+            if gh_token_stdout:
+                return cls(value=gh_token_stdout.strip(), provider=f'auth token for {domain} from `gh` GitHub CLI')
+        else:
+            gh_token_returncode, _, gh_token_stderr = \
+                popen_cmd(gh, "auth", "status", "--hostname", domain, "--show-token", hide_debug_output=True)
+            if gh_token_returncode != 0:
+                return None
+
+            # The stderr of `gh auth status --show-token` looks like:
+            #
+            # {domain}:
+            #   ✓ Logged in to {domain} as {username} ({config_path})
+            #   ✓ Git operations for {domain} configured to use {protocol} protocol.
+            #   ✓ Token: <token>
+            #
+            # with non-zero exit code on failure.
+            # Note that since v2.31.0 (https://github.com/cli/cli/pull/7540), this output goes to stdout instead.
+            # Still, we're only handling here the versions < 2.17.0 that don't provide `gh auth token` yet.
+            match = re.search(r"Token: (\w+)", gh_token_stderr)
+            if match:
+                return cls(value=match.group(1), provider=f'auth token for {domain} from `gh` GitHub CLI')
         return None
 
     @classmethod

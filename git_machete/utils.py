@@ -161,30 +161,50 @@ def chdir_upwards_until_current_directory_exists() -> None:
         current_directory_confirmed_to_exist = True
 
 
-def popen_cmd(cmd: str, *args: str, **kwargs: Any) -> Tuple[int, str, str]:
+class PopenResult(NamedTuple):
+    exit_code: int
+    stdout: str
+    stderr: str
+
+
+def _popen_cmd(cmd: str, *args: str, **kwargs: Any) -> PopenResult:
+    # capture_output argument is only supported since Python 3.7
+    process = subprocess.Popen([cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
+    stdout_bytes, stderr_bytes = process.communicate()
+    exit_code: int = process.returncode  # must be retrieved after process.communicate()
+    stdout: str = stdout_bytes.decode('utf-8')
+    stderr: str = stderr_bytes.decode('utf-8')
+    return PopenResult(exit_code, stdout, stderr)
+
+
+def popen_cmd(cmd: str, *args: str, **kwargs: Any) -> PopenResult:
     chdir_upwards_until_current_directory_exists()
 
-    flat_cmd = get_cmd_shell_repr(cmd, *args, env=kwargs.get('env'))
+    kwargs_ = kwargs.copy()
+    hide_debug_output = kwargs_.pop("hide_debug_output", False)
+    flat_cmd = get_cmd_shell_repr(cmd, *args, env=kwargs_.get('env'))
     if debug_mode:
         print(bold(f">>> {flat_cmd}"), file=sys.stderr)
     elif verbose_mode:
         print(flat_cmd, file=sys.stderr)
 
-    process = subprocess.Popen([cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
-    stdout_bytes, stderr_bytes = process.communicate()
-    stdout: str = stdout_bytes.decode('utf-8')
-    stderr: str = stderr_bytes.decode('utf-8')
-    exit_code: int = process.returncode
+    exit_code, stdout, stderr = result = _popen_cmd(cmd, *args, **kwargs_)
 
     if debug_mode:
         if exit_code != 0:
             print(colored(f"<exit code: {exit_code}>\n", AnsiEscapeCodes.RED), file=sys.stderr)
         if stdout:
-            print(f"{dim('<stdout>:')}\n{dim(stdout)}", file=sys.stderr)
+            if hide_debug_output:
+                print(f"{dim('<stdout>:')}\n{dim('<REDACTED>')}", file=sys.stderr)
+            else:
+                print(f"{dim('<stdout>:')}\n{dim(stdout)}", file=sys.stderr)
         if stderr:
-            print(f"{dim('<stderr>:')}\n{colored(stderr, AnsiEscapeCodes.RED)}", file=sys.stderr)
+            if hide_debug_output:
+                print(f"{dim('<stderr>:')}\n{dim('<REDACTED>')}", file=sys.stderr)
+            else:
+                print(f"{dim('<stderr>:')}\n{colored(stderr, AnsiEscapeCodes.RED)}", file=sys.stderr)
 
-    return exit_code, stdout, stderr
+    return result
 
 
 def get_cmd_shell_repr(cmd: str, *args: str, env: Optional[Dict[str, str]]) -> str:

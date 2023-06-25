@@ -21,7 +21,7 @@ from .git_operations import (HEAD, AnyBranchName, AnyRevision, BranchPair,
                              RemoteBranchShortName)
 from .github import (GitHubClient, GitHubPullRequest, GitHubToken,
                      RemoteAndOrganizationAndRepository, is_github_remote_url)
-from .utils import (GITHUB_NEW_ISSUE_MESSAGE, AnsiEscapeCodes,
+from .utils import (GITHUB_NEW_ISSUE_MESSAGE, AnsiEscapeCodes, PopenResult,
                     SyncToParentStatus, bold, colored, debug, dim, excluding,
                     flat_map, fmt, get_pretty_choices, get_second,
                     sync_to_parent_status_to_edge_color_map,
@@ -1146,7 +1146,7 @@ class MacheteClient:
             warn(f"{first_part}.\n\n{second_part}.")
 
     @staticmethod
-    def __popen_hook(*args: str, **kwargs: Any) -> Tuple[int, str, str]:
+    def __popen_hook(*args: str, **kwargs: Any) -> PopenResult:
         if sys.platform == "win32":
             # This is a poor-man's solution to the problem of Windows **not** recognizing Unix-style shebangs :/
             return utils.popen_cmd("sh", *args, **kwargs)  # pragma: no cover

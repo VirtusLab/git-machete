@@ -6,12 +6,13 @@ import sys
 import textwrap
 from contextlib import (AbstractContextManager, contextmanager,
                         redirect_stderr, redirect_stdout)
-from typing import Any, Callable, Iterable, Iterator, Type
+from typing import Any, Callable, Iterable, Iterator, Tuple, Type
 
 import pytest
 
 from git_machete import cli, utils
 from git_machete.exceptions import MacheteException
+from git_machete.utils import PopenResult
 
 
 @contextmanager
@@ -78,6 +79,14 @@ def rewrite_definition_file(new_body: str) -> None:
     new_body = textwrap.dedent(new_body)
     with open(".git/machete", 'w') as def_file:
         def_file.writelines(new_body)
+
+
+def mock__popen_cmd_with_fixed_results(*results: Tuple[int, str, str]) -> Callable[..., PopenResult]:
+    gen = (i for i in results)
+
+    def inner(*args: Any, **kwargs: Any) -> PopenResult:  # noqa: U100
+        return PopenResult(*next(gen))
+    return inner
 
 
 def mock__run_cmd_and_forward_stdout(cmd: str, *args: str, **kwargs: Any) -> int:
