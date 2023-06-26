@@ -116,21 +116,21 @@ def debug(msg: str) -> None:
         print(f"{function_name}{args_and_values_bold_str}: {dim(msg)}", file=sys.stderr)
 
 
-def _run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
+def _run_cmd(cmd: str, *args: str, cwd: Optional[str] = None, env: Optional[Dict[str, str]] = None) -> int:
     # capture_output argument is only supported since Python 3.7
-    return subprocess.run([cmd] + list(args), stdout=None, stderr=None, **kwargs).returncode
+    return subprocess.run([cmd] + list(args), stdout=None, stderr=None, cwd=cwd, env=env).returncode
 
 
-def run_cmd(cmd: str, *args: str, **kwargs: Any) -> int:
+def run_cmd(cmd: str, *args: str, cwd: Optional[str] = None, env: Optional[Dict[str, str]] = None) -> int:
     chdir_upwards_until_current_directory_exists()
 
-    flat_cmd: str = get_cmd_shell_repr(cmd, *args, env=kwargs.get('env'))
+    flat_cmd: str = get_cmd_shell_repr(cmd, *args, env=env)
     if debug_mode:
         print(bold(f">>> {flat_cmd}"), file=sys.stderr)
     elif verbose_mode:
         print(flat_cmd, file=sys.stderr)
 
-    exit_code: int = _run_cmd(cmd, *args, **kwargs)
+    exit_code: int = _run_cmd(cmd, *args, cwd=cwd, env=env)
 
     # Let's defensively assume that every command executed via run_cmd
     # (but not via popen_cmd) can make the current directory disappear.
@@ -167,9 +167,10 @@ class PopenResult(NamedTuple):
     stderr: str
 
 
-def _popen_cmd(cmd: str, *args: str, **kwargs: Any) -> PopenResult:
+def _popen_cmd(cmd: str, *args: str,
+               cwd: Optional[str] = None, env: Optional[Dict[str, str]] = None) -> PopenResult:
     # capture_output argument is only supported since Python 3.7
-    process = subprocess.Popen([cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
+    process = subprocess.Popen([cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd, env=env)
     stdout_bytes, stderr_bytes = process.communicate()
     exit_code: int = process.returncode  # must be retrieved after process.communicate()
     stdout: str = stdout_bytes.decode('utf-8')
@@ -177,18 +178,17 @@ def _popen_cmd(cmd: str, *args: str, **kwargs: Any) -> PopenResult:
     return PopenResult(exit_code, stdout, stderr)
 
 
-def popen_cmd(cmd: str, *args: str, **kwargs: Any) -> PopenResult:
+def popen_cmd(cmd: str, *args: str, cwd: Optional[str] = None,
+              env: Optional[Dict[str, str]] = None, hide_debug_output: bool = False) -> PopenResult:
     chdir_upwards_until_current_directory_exists()
 
-    kwargs_ = kwargs.copy()
-    hide_debug_output = kwargs_.pop("hide_debug_output", False)
-    flat_cmd = get_cmd_shell_repr(cmd, *args, env=kwargs_.get('env'))
+    flat_cmd = get_cmd_shell_repr(cmd, *args, env=env)
     if debug_mode:
         print(bold(f">>> {flat_cmd}"), file=sys.stderr)
     elif verbose_mode:
         print(flat_cmd, file=sys.stderr)
 
-    exit_code, stdout, stderr = result = _popen_cmd(cmd, *args, **kwargs_)
+    exit_code, stdout, stderr = result = _popen_cmd(cmd, *args, cwd=cwd, env=env)
 
     if debug_mode:
         if exit_code != 0:

@@ -16,9 +16,9 @@ class BaseTest:
             # Create the remote and sandbox repos, chdir into sandbox repo
             .new_repo(self.repo_sandbox.remote_path, bare=True)
             .new_repo(self.repo_sandbox.local_path, bare=False)
-            .execute(f"git remote add origin {self.repo_sandbox.remote_path}")
-            .execute('git config user.email "tester@test.com"')
-            .execute('git config user.name "Tester Test"')
+            .add_remote("origin", self.repo_sandbox.remote_path)
+            .set_git_config_key("user.email", "tester@test.com")
+            .set_git_config_key("user.name", "Tester Test")
         )
         self.expected_mock_methods: Set[str] = set()
 
@@ -162,7 +162,7 @@ class GitRepositorySandbox:
         return int(raw.group(1)), int(raw.group(2)), int(raw.group(3))
 
     def set_git_config_key(self, key: str, value: str) -> "GitRepositorySandbox":
-        self.execute(f'git config {key} {value}')
+        self.execute(f'git config {key} "{value}"')
         return self
 
     def read_file(self, file_name: str) -> str:

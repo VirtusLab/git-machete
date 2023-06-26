@@ -6,7 +6,7 @@ import shlex
 import shutil
 import sys
 from collections import OrderedDict
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
+from typing import Callable, Dict, Iterator, List, Optional, Tuple
 
 from . import git_config_keys, utils
 from .annotation import Annotation
@@ -1146,19 +1146,19 @@ class MacheteClient:
             warn(f"{first_part}.\n\n{second_part}.")
 
     @staticmethod
-    def __popen_hook(*args: str, **kwargs: Any) -> PopenResult:
+    def __popen_hook(*args: str, cwd: str, env: Dict[str, str]) -> PopenResult:
         if sys.platform == "win32":
             # This is a poor-man's solution to the problem of Windows **not** recognizing Unix-style shebangs :/
-            return utils.popen_cmd("sh", *args, **kwargs)  # pragma: no cover
+            return utils.popen_cmd("sh", *args, cwd=cwd, env=env)  # pragma: no cover
         else:
-            return utils.popen_cmd(*args, **kwargs)
+            return utils.popen_cmd(*args, cwd=cwd, env=env)
 
-    def __run_hook(self, *args: str, **kwargs: Any) -> int:
+    def __run_hook(self, *args: str, cwd: str) -> int:
         self.__git.flush_caches()
         if sys.platform == "win32":
-            return utils.run_cmd("sh", *args, **kwargs)  # pragma: no cover
+            return utils.run_cmd("sh", *args, cwd=cwd)  # pragma: no cover
         else:
-            return utils.run_cmd(*args, **kwargs)
+            return utils.run_cmd(*args, cwd=cwd)
 
     def rebase(self, onto: AnyRevision, from_exclusive: AnyRevision, branch: LocalBranchShortName, opt_no_interactive_rebase: bool) -> None:
         # Let's use `OPTS` suffix for consistency with git's built-in env var `GIT_DIFF_OPTS`

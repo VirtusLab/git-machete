@@ -218,23 +218,20 @@ class GitContext:
         self.__remotes_cached = None
         self.__short_commit_hash_by_revision_cached = {}
 
-    def _run_git(self, git_cmd: str, *args: str, flush_caches: bool, **kwargs: Any) -> int:
-        kwargs_ = kwargs.copy()
-        allow_non_zero = kwargs_.pop("allow_non_zero", False)
-        exit_code = utils.run_cmd("git", git_cmd, *args, **kwargs_)
+    def _run_git(self, git_cmd: str, *args: str, flush_caches: bool, allow_non_zero: bool = False) -> int:
+        exit_code = utils.run_cmd("git", git_cmd, *args)
         if flush_caches:
             self.flush_caches()
         if not allow_non_zero and exit_code != 0:
             raise UnderlyingGitException(
-                f"`{utils.get_cmd_shell_repr('git', git_cmd, *args, env=kwargs_.get('env'))}` returned {exit_code}")
+                f"`{utils.get_cmd_shell_repr('git', git_cmd, *args, env=None)}` returned {exit_code}")
         return exit_code
 
-    def _popen_git(self, git_cmd: str, *args: str, **kwargs: Any) -> CommandResult:
-        kwargs_ = kwargs.copy()
-        allow_non_zero = kwargs_.pop("allow_non_zero", False)
-        exit_code, stdout, stderr = utils.popen_cmd("git", git_cmd, *args, **kwargs_)
+    def _popen_git(self, git_cmd: str, *args: str,
+                   allow_non_zero: bool = False, env: Optional[Dict[str, str]] = None) -> CommandResult:
+        exit_code, stdout, stderr = utils.popen_cmd("git", git_cmd, *args, env=env)
         if not allow_non_zero and exit_code != 0:
-            exit_code_msg: str = fmt(f"`{utils.get_cmd_shell_repr('git', git_cmd, *args, env=kwargs_.get('env'))}` returned {exit_code}\n")
+            exit_code_msg: str = fmt(f"`{utils.get_cmd_shell_repr('git', git_cmd, *args, env=env)}` returned {exit_code}\n")
             stdout_msg: str = f"\n{utils.bold('stdout')}:\n{utils.dim(stdout)}" if stdout else ""
             stderr_msg: str = f"\n{utils.bold('stderr')}:\n{utils.dim(stderr)}" if stderr else ""
             # Not applying the formatter to avoid transforming whatever characters might be in the output of the command.

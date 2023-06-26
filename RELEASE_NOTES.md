@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.17.7
+
 ## New in git-machete 3.17.6
 
 - fixed: `git machete github` not being able to retrieve token used by `gh` for `gh` version >= 2.31.0 (reported by @domesticsimian)

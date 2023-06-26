@@ -1,7 +1,8 @@
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success,
-                      fixed_author_and_committer_date_in_past, launch_command)
+                      fixed_author_and_committer_date_in_past, launch_command,
+                      overridden_environment)
 
 
 class TestSquash(BaseTest):
@@ -38,17 +39,12 @@ class TestSquash(BaseTest):
         )
 
     def test_squash_with_valid_fork_point(self) -> None:
-        (
-            self.repo_sandbox.new_branch('branch-0')
-                .commit("First commit.")
-                .commit("Second commit.")
-        )
+        self.repo_sandbox.new_branch('branch-0').commit("First commit.").commit("Second commit.")
         fork_point = self.repo_sandbox.get_current_commit_hash()
 
-        (
+        with overridden_environment(GIT_AUTHOR_EMAIL="another@test.com"):
             self.repo_sandbox.commit("Third commit.")
-                .commit("Fourth commit.")
-        )
+        self.repo_sandbox.commit("Fourth commit.")
 
         launch_command('squash', '-f', fork_point)
 
@@ -62,6 +58,11 @@ class TestSquash(BaseTest):
         assert current_branch_log == expected_branch_log, \
             ("Verify that `git machete squash -f <fork-point>` squashes commit"
              " from one succeeding the fork-point until tip of the branch.")
+
+        squash_commit_author = self.repo_sandbox.popen('git log -1 --format=%aE')
+        assert squash_commit_author == "another@test.com"
+        squash_commit_committer = self.repo_sandbox.popen('git log -1 --format=%cE')
+        assert squash_commit_committer == "tester@test.com"
 
     def test_squash_with_invalid_fork_point(self) -> None:
         with fixed_author_and_committer_date_in_past():
