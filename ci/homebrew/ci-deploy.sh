@@ -2,7 +2,7 @@
 
 set -e -o pipefail -u -x
 
-HOMEBREW_VERSION=4.0.13
+HOMEBREW_VERSION=4.0.26
 
 NONINTERACTIVE=1 bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 # https://stackoverflow.com/questions/54912857/how-do-i-install-old-version-of-homebrew-itself-not-the-formula
@@ -69,6 +69,10 @@ else
   if [[ "$version" != "$(git machete version | cut -d' ' -f3)" ]]; then
     echo "Something went wrong during brew installation: installed version does not match version from formula."
     echo "Formula version: $version, installed version: $(git machete version | cut -d' ' -f3)"
+    exit 1
+  fi
+  if ! git machete --help | grep 'GIT-MACHETE(1)'; then
+    echo "man page has not been installed, aborting"
     exit 1
   fi
   brew remove git-machete

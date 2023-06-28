@@ -8,3 +8,5 @@ if ! ( [ -f setup.py ] && grep -q "name='git-machete'" setup.py ); then
 fi
 
 python3 setup.py bdist_rpm
+rpm -i dist/git-machete-*.rpm
+git machete version

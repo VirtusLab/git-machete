@@ -1,6 +1,9 @@
 *
 
+!completion/
+!docs/man/git-machete.1
 !git_machete/
+!LICENSE
 !MANIFEST.in
 !README.md
 !requirements.txt
