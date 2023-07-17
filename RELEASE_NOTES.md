@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.17.8
+
+- fixed: building the package for Ubuntu PPA
+
 ## New in git-machete 3.17.7
 
 - fixed: `fish` completion no longer prompts file names alongside commands/flags (contributed by @guyboltonking)

@@ -9,6 +9,7 @@ PATH=./ci/checks:$PATH
 # (rather than searching the right script by error message).
 set -e -x
 
+enforce-bumped-version.sh
 enforce-completion-scripts-correct.sh
 enforce-consistent-style-for-fork-point.sh
 enforce-consistent-style-for-github.sh
@@ -24,7 +25,6 @@ enforce-mocking-only-whitelisted-methods.sh
 enforce-newline-at-eof.sh
 enforce-release-notes-up-to-date.sh
 enforce-shell-scripts-pass-shellcheck.sh
-enforce-version-bumped.sh
 prohibit-bash-usages-from-python.sh
 prohibit-deploy-step-in-circleci.sh
 prohibit-double-backticks-in-python.sh
