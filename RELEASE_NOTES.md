@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.17.9
+
 ## New in git-machete 3.17.8
 
 - fixed: building the package for Ubuntu PPA

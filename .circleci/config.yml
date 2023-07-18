@@ -216,41 +216,58 @@ jobs:
           # Other than that, it just builds the package without publishing anything; there's no special dry-run mode
           command: bash ci/rpm/ci-run.sh
 
-  "deploy from master":
+  "deploy to pypi":
     executor: ubuntu_executor
     steps:
       - checkout
-
       - run:
           name: 'Deploy to PyPI'
           command: bash ci/pypi/ci-deploy.sh
+
+  "update homebrew formula":
+    executor: ubuntu_executor
+    steps:
+      - checkout
       - run:
           # See https://github.com/Homebrew/homebrew-core/pull/119200/commits/a4902911fadbdcf2c6b64ce691024ff97a516f1c
           # for a case where the package wasn't available right after the upload and Homebrew Core build failed.
           name: 'Wait up to 30 minutes for PyPI package to be available'
           command: bash ci/pypi/ci-wait-for-package.sh pypi.org 30
-
       - run:
           name: 'Update Homebrew formula'
-          # Prerequisites: artifacts must be released to PyPI first
           command: bash ci/homebrew/ci-deploy.sh
 
+  "publish image to docker hub":
+    executor: ubuntu_executor
+    steps:
+      - checkout
       - run:
           name: 'Publish image to Docker Hub'
           command: bash ci/docker/ci-deploy.sh
 
+  "build and upload deb package to ppa":
+    executor: ubuntu_executor
+    steps:
+      - checkout
       - run:
           name: 'Build & upload deb package to PPA'
           command: bash ci/deb-ppa-upload/ci-deploy.sh
 
+  "publish snap to the stable channel":
+    executor: ubuntu_executor
+    steps:
+      - checkout
       - run:
           name: 'Publish snap to the stable channel'
           command: bash ci/snap/ci-deploy.sh
 
+  "build rpm package and create github release":
+    executor: ubuntu_executor
+    steps:
+      - checkout
       - run:
           name: 'Build rpm package'
           command: bash ci/rpm/ci-run.sh
-
       # Let's do this at the very end to avoid opening a GH release (and notifying the watchers)
       # in case anything goes wrong in the previous steps.
       - run:
@@ -262,15 +279,10 @@ jobs:
             sudo apt-get install hub
             bash ci/github-releases/ci-deploy.sh
 
-      # Note: there are also releases happening outside of our CI:
-      # 1) every time a commit is pushed to `develop` or `master`, a build for docs (`latest` or `stable` version, respectively)
-      #    is triggered automatically via GitHub webhook on https://readthedocs.org/projects/git-machete/builds/,
-      # 2) every time a https://github.com/r-ryantm bot runs on NixOS/nixpkgs repository,
-      #    Nix git-machete package is updated with the fresh version/package hash according to the data from PyPI.
 
-# Note that this top-level key is NOT consumed by CircleCI,
-# it's just to introduce a reusable anchor to be referenced from `requires`.
-mandatory_jobs: &mandatory_jobs
+# Note that these top-level keys are NOT consumed by CircleCI,
+# they're just to introduce reusable anchors to be referenced further down the line.
+test_jobs: &test_jobs
   - general checks
   - python 3_6 git 1_8_0
   - python 3_7 git 2_7_6
@@ -280,6 +292,11 @@ mandatory_jobs: &mandatory_jobs
   - docs and python 3_11 git 2_38_1
   - macos tests
   - windows tests
+
+only_master: &only_master
+  filters:
+    branches:
+      only: "master"
 
 workflows:
   version: 2
@@ -296,18 +313,52 @@ workflows:
       - windows tests
       - coverage upload:
           requires:
-            *mandatory_jobs
+            *test_jobs
       - dry run deploy:
           filters:
             branches:
               only:
                 - "develop"
                 - "/hotfix.*/"
+                - "master"
           requires:
-            *mandatory_jobs
-      - deploy from master:
-          filters:
-            branches:
-              only: "master"
+            *test_jobs
+
+      # Let's keep each deployment in a separate job (rather than in separate step of a single job),
+      # so that CircleCI allows for re-running just the failed deployments in case of transient failure.
+      - deploy to pypi:
+          <<: *only_master
           requires:
-            *mandatory_jobs
+            - dry run deploy
+      - update homebrew formula:
+          <<: *only_master
+          requires:
+            - deploy to pypi
+      - publish image to docker hub:
+          <<: *only_master
+          requires:
+            - dry run deploy
+      - build and upload deb package to ppa:
+          <<: *only_master
+          requires:
+            - dry run deploy
+      - publish snap to the stable channel:
+          <<: *only_master
+          requires:
+            - dry run deploy
+      # Let's do this at the very end to avoid opening a GH release (and notifying the watchers)
+      # in case anything goes wrong in the previous steps.
+      - build rpm package and create github release:
+          <<: *only_master
+          requires:
+            - deploy to pypi
+            - update homebrew formula
+            - publish image to docker hub
+            - build and upload deb package to ppa
+            - publish snap to the stable channel
+
+      # Note: there are also releases happening outside of our CI:
+      # 1) every time a commit is pushed to `develop` or `master`, a build for docs (`latest` or `stable` version, respectively)
+      #    is triggered automatically via GitHub webhook on https://readthedocs.org/projects/git-machete/builds/,
+      # 2) every time a https://github.com/r-ryantm bot runs on NixOS/nixpkgs repository,
+      #    Nix git-machete package is updated with the fresh version/package hash according to the data from PyPI.
