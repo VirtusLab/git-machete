@@ -11,7 +11,7 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 ``machete.github.{domain,remote,organization,repository}``:
     When executing ``git machete github <subcommand>`` command, the following will happen:
 
-    .. include:: github_config_keys.rst
+    .. include:: github_access_config_keys.rst
         :start-line: 2
 
 ``machete.overrideForkPoint.<branch>.to``:
@@ -23,12 +23,10 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
     ``git machete fork-point`` with flags should be used instead.
 
 ``machete.status.extraSpaceBeforeBranchName``:
-    .. include:: status_config_key.rst
-        :start-line: 2
+    .. include:: status_extraSpaceBeforeBranchName_config_key.rst
 
 ``machete.traverse.push``:
-    .. include:: traverse_config_key.rst
-        :start-line: 2
+    .. include:: traverse_push_config_key.rst
 
 ``machete.worktree.useTopLevelMacheteFile``:
     The default value of this key is ``true``, which means that the path to branch layout file will be ``.git/machete``

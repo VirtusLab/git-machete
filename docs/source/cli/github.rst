@@ -13,16 +13,23 @@ where ``<subcommand>`` is one of: ``anno-prs``, ``checkout-prs``, ``create-pr``,
 Creates, checks out and manages GitHub PRs while keeping them reflected in branch layout file.
 
 .. include:: github_api_access.rst
-.. include:: github_config_keys.rst
+
+.. note::
+  See **Git config keys** below in case the target repository cannot be detected automatically (for example, in case of GitHub Enterprise).
 
 **Subcommands:**
 
-``anno-prs``:
+``anno-prs [--with-urls]``:
     Annotates the branches based on their corresponding GitHub PR numbers and authors.
     Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
     Equivalent to ``git machete anno --sync-github-prs``.
+
     When the current user is NOT the owner of the PR associated with that branch, adds ``rebase=no push=no`` branch qualifiers used by ``git machete traverse``,
     so that you don't rebase or push someone else's PR by accident (see help for :ref:`traverse`).
+
+    **Options:**
+
+    --with-urls                   Also include full PR URLs in the annotations (rather than just PR number).
 
 
 ``checkout-prs [--all | --by=<github-login> | --mine | <PR-number-1> ... <PR-number-N>]``:
@@ -30,6 +37,7 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
     also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally.
     Once the specified pull requests are checked out locally, annotate local branches with corresponding pull request numbers.
     If only one PR has been checked out, then switch the local repository's HEAD to its head branch.
+
     When the current user is NOT the owner of the PR associated with that branch, adds ``rebase=no push=no`` branch qualifiers used by ``git machete traverse``,
     so that you don't rebase or push someone else's PR by accident (see help for :ref:`traverse`).
 
@@ -95,6 +103,15 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
       3. deletes untracked managed branches that have no downstream branch.
 
     Equivalent of ``git machete clean --checkout-my-github-prs``.
+
+**Git config keys (all subcommands):**
+
+``machete.github.annotateWithUrls``:
+  .. include:: github_annotateWithUrls_config_key.rst
+
+``machete.github.{domain,remote,organization,repository}``:
+  .. include:: github_access_config_keys.rst
+      :start-line: 2
 
 **Environment variables (all subcommands):**
 

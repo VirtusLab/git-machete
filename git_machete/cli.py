@@ -249,6 +249,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
     github_parser.add_argument('--draft', action='store_true')
     github_parser.add_argument('--ignore-if-missing', action='store_true')
     github_parser.add_argument('--mine', action='store_true')
+    github_parser.add_argument('--with-urls', action='store_true')
 
     go_parser = subparsers.add_parser(
         'go',
@@ -475,6 +476,8 @@ def update_cli_options_using_parsed_args(
             cli_opts.opt_sync_github_prs = True
         elif opt == "unset_override":
             cli_opts.opt_unset_override = True
+        elif opt == "urls":
+            cli_opts.opt_with_urls = True
         elif opt == "W":
             cli_opts.opt_fetch = True
             cli_opts.opt_start_from = "first-root"
@@ -686,9 +689,11 @@ def launch(orig_args: List[str]) -> None:
                 raise MacheteException("`--branch` option is only valid with `retarget-pr` subcommand.")
             if 'ignore_if_missing' in parsed_cli and github_subcommand != 'retarget-pr':
                 raise MacheteException("`--ignore-if-missing` option is only valid with `retarget-pr` subcommand.")
+            if 'urls' in parsed_cli and github_subcommand != 'anno-prs':
+                raise MacheteException("`--with-urls` option is only valid with `anno-prs` subcommand.")
 
             if github_subcommand == "anno-prs":
-                machete_client.sync_annotations_to_github_prs()
+                machete_client.sync_annotations_to_github_prs(include_urls=cli_opts.opt_with_urls)
             elif github_subcommand == "checkout-prs":
                 if len(set(parsed_cli_as_dict.keys()).intersection({'all', 'by', 'mine', 'pr_no'})) != 1:
                     raise MacheteException("`checkout-prs` subcommand must take exactly one of the following options: "

@@ -102,7 +102,7 @@ class TestStatus(BaseTest):
             """
             master
             \t\tfoo
-            \t\t\t\tbar  PR #1
+            \t\t\t\tbar  PR #1 www.github.com
             \t\tqux
             \t\t\t\tdevelop
             baz

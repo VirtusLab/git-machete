@@ -17,5 +17,5 @@
     Only ``machete.github.organization`` and ``machete.github.repository`` must be specified together.
 
 ..
-    Text order in this file is relevant, if you want to change something, find each occurrence of ``.. include:: github_config_keys.rst``
+    Text order in this file is relevant, if you want to change something, find each occurrence of ``.. include:: github_access_config_keys.rst``
     and if this occurrence has ``start-line`` or ``end-line`` options provided, make sure that after changes the output text stays the same.

@@ -73,7 +73,7 @@ When colors are disabled, relation between branches is represented in the follow
     |
     m-<branch4>     # grey (merged to parent)
 
-.. include:: status_config_key.rst
+.. include:: status_extraSpaceBeforeBranchName_config_key.rst
 
 **Options:**
 
@@ -86,9 +86,9 @@ When colors are disabled, relation between branches is represented in the follow
 --no-detect-squash-merges         Only consider *strict* (fast-forward or 2-parent) merges, rather than rebase/squash merges,
                                   when detecting if a branch is merged into its upstream (parent).
 
-**Config keys:**
+**Git config keys:**
 
 ``machete.status.extraSpaceBeforeBranchName``
-    .. include:: status_config_key.rst
-        :start-line: 2
-        :end-line: 6
+
+  .. include:: status_extraSpaceBeforeBranchName_config_key.rst
+      :end-line: 3

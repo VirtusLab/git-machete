@@ -130,14 +130,13 @@ when the current user is NOT the owner of the PR associated with that branch.
 
 -y, --yes                    Don't ask for any interactive input, including confirmation of rebase/push/pull. Implies ``-n``.
 
-**Config keys:**
-
-``machete.traverse.push``
-    .. include:: traverse_config_key.rst
-        :start-line: 2
-
 **Environment variables:**
 
 ``GIT_MACHETE_REBASE_OPTS``
     Extra options to pass to the underlying ``git rebase`` invocations, space-separated.
     Example: ``GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete traverse``.
+
+**Git config keys:**
+
+``machete.traverse.push``
+    .. include:: traverse_push_config_key.rst

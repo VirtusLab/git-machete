@@ -22,6 +22,7 @@ _git_machete() {
   local diff_opts="-s --stat"
   local discover_opts="-C --checked-out-since= -l --list-commits -r --roots= -y --yes"
   local fork_point_opts="--inferred --override-to= --override-to-inferred --override-to-parent --unset-override"
+  local github_anno_prs_opts="--with-urls"
   local github_create_pr_opts="--draft"
   local github_checkout_prs_opts="--all --by= --mine"
   local github_retarget_pr_opts="-b --branch= --ignore-if-missing"
@@ -52,7 +53,9 @@ _git_machete() {
         discover) __gitcomp "$common_opts $discover_opts" ;;
         fork-point) __gitcomp "$common_opts $fork_point_opts" ;;
         github)
-          if [[ ${COMP_WORDS[3]} == "create-pr" ]]; then
+          if [[ ${COMP_WORDS[3]} == "anno-prs" ]]; then
+            __gitcomp "$common_opts $github_anno_prs_opts"
+          elif [[ ${COMP_WORDS[3]} == "create-pr" ]]; then
             __gitcomp "$common_opts $github_create_pr_opts"
           elif [[ ${COMP_WORDS[3]} == "checkout-prs" ]]; then
             __gitcomp "$common_opts $github_checkout_prs_opts"
@@ -114,6 +117,8 @@ _git_machete() {
               github)
                 if [[ $COMP_CWORD -eq 3 ]]; then
                   __gitcomp "$github_subcommands"
+                elif [[ ${COMP_WORDS[3]} == "anno-prs" ]]; then
+                  __gitcomp "$common_opts $github_anno_prs_opts"
                 elif [[ ${COMP_WORDS[3]} == "create-pr" ]]; then
                   __gitcomp "$common_opts $github_create_pr_opts"
                 elif [[ ${COMP_WORDS[3]} == "checkout-prs" ]]; then

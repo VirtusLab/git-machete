@@ -105,7 +105,7 @@ class TestTraverse(BaseTest):
         body: str = \
             """
             master
-                develop  PR #123
+                develop  PR #123 www.github.com
                     feature
             """
         rewrite_branch_layout_file(body)
@@ -118,7 +118,7 @@ class TestTraverse(BaseTest):
 
               master
               |
-              m-develop *  PR #123
+              m-develop *  PR #123 www.github.com
                 |
                 o-feature
 

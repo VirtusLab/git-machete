@@ -78,7 +78,7 @@ class TestGitHubSync(BaseTest):
               |
               o-moo (untracked)
               |
-              o-snickers *  PR #7
+              o-snickers *  PR #7 www.github.com
             """
         )
         assert_success(['status'], expected_status_output)

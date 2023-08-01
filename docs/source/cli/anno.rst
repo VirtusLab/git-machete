@@ -26,7 +26,7 @@ so that you don't rebase or push someone else's PR by accident (see help for :re
 Any existing annotations (except branch qualifiers) are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
 
 .. include:: github_api_access.rst
-.. include:: github_config_keys.rst
+.. include:: github_access_config_keys.rst
 
 In any other case, sets the annotation for the given/current branch to the given <annotation text>.
 If multiple <annotation text>'s are passed to the command, they are concatenated with a single space.

@@ -19,7 +19,7 @@ No branch will be deleted unless explicitly confirmed by the user (or unless ``-
 Equivalent of ``git machete github sync`` if invoked with ``-H`` or ``--checkout-my-github-prs``.
 
 .. include:: github_api_access.rst
-.. include:: github_config_keys.rst
+.. include:: github_access_config_keys.rst
 
 **Options:**
 

@@ -146,12 +146,12 @@ def skip_or_replace_unparseable_directives(rst_: str) -> str:
 def resolve_includes(rst_: str, docs_source_path_: str) -> str:
     matches = re.findall(r'(.*)\.\. include:: (.*)\n(.* :(.*): ([0-9]*)\n)?(.* :(.*): ([0-9]*)\n)?', rst_)
     # example matches:
-    #     .. include:: status_config_key.rst
+    #     .. include:: status_extraSpaceBeforeBranchName_config_key.rst
     #
-    #     .. include:: status_config_key.rst
+    #     .. include:: status_extraSpaceBeforeBranchName_config_key.rst
     #         :start-line: 2
     #
-    #     .. include:: status_config_key.rst
+    #     .. include:: status_extraSpaceBeforeBranchName_config_key.rst
     #         :start-line: 2
     #         :end-line: 6
     for indent_, match, option_1_str, option_1, option_1_value, option_2_str, option_2, option_2_value in matches:

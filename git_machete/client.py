@@ -1586,7 +1586,7 @@ class MacheteClient:
               f"and branch reset events irrelevant for fork point/upstream inference): {reflog}")
         return result
 
-    def sync_annotations_to_github_prs(self) -> None:
+    def sync_annotations_to_github_prs(self, include_urls: bool) -> None:
         domain = self.__derive_github_domain()
         org_repo_remote = self.__derive_org_repo_and_remote(domain=domain)
         github_client = GitHubClient(domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
@@ -1595,15 +1595,14 @@ class MacheteClient:
         debug('Current GitHub user is ' + (bold(current_user or '<none>')))
         all_open_prs: List[GitHubPullRequest] = github_client.get_open_pull_requests()
         print(fmt('<green><b>OK</b></green>'))
-        self.__sync_annotations_to_branch_layout_file(all_open_prs, current_user, verbose=True)
+        self.__sync_annotations_to_branch_layout_file(all_open_prs, current_user, include_urls=include_urls, verbose=True)
 
-    def __sync_annotations_to_branch_layout_file(self, prs: List[GitHubPullRequest], current_user: Optional[str], verbose: bool) -> None:
+    def __sync_annotations_to_branch_layout_file(self, prs: List[GitHubPullRequest], current_user: Optional[str],
+                                                 include_urls: bool, verbose: bool) -> None:
         for pr in prs:
             if LocalBranchShortName.of(pr.head) in self.managed_branches:
                 debug(f'{pr} corresponds to a managed branch')
-                anno: str = f'PR #{pr.number}'
-                if pr.user != current_user:
-                    anno += f' ({pr.user})'
+                anno: str = f'{pr.annotation(current_user)}'
                 upstream: Optional[LocalBranchShortName] = self.__up_branch.get(LocalBranchShortName.of(pr.head))
                 if upstream is not None:
                     counterpart = self.__git.get_combined_counterpart_for_fetching_of_branch(upstream)
@@ -2322,10 +2321,11 @@ class MacheteClient:
                 print(f'Base PR header in the description of PR #{bold(str(pr.number))} '
                       f'now points to PR #{bold(str(pr_number_for_base_branch))}')
 
+        current_user: Optional[str] = github_client.get_current_user_login()
         if self.__annotations.get(head) and self.__annotations[head].qualifiers_text:
-            self.__annotations[head] = Annotation(f'PR #{pr.number} ' + self.__annotations[head].qualifiers_text)
+            self.__annotations[head] = Annotation(f'{pr.annotation(current_user)} ' + self.__annotations[head].qualifiers_text)
         else:
-            self.__annotations[head] = Annotation(f'PR #{pr.number}')
+            self.__annotations[head] = Annotation(f'{pr.annotation(current_user)}')
         self.save_branch_layout_file()
 
     def __derive_github_domain(self) -> str:
@@ -2517,7 +2517,7 @@ class MacheteClient:
             else:
                 print(fmt(ok_str))
 
-        self.__annotations[head] = Annotation(f'PR #{pr.number}')
+        self.__annotations[head] = Annotation(f'{pr.annotation(current_user)}')
         self.save_branch_layout_file()
 
     def __handle_diverged_and_newer_state(

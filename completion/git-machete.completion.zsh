@@ -263,6 +263,12 @@ __git_machete_github_subcommands() {
     (options)
       case $line[1] in
 
+        (anno-prs) \
+          _arguments \
+            '(--with-urls)'--all'[Include PR URLs in the annotations.]' \
+            "${common_flags[@]}"
+        ;;
+
         (checkout-prs)
           _arguments \
             '(--all)'--all'[Checkout all open PRs.]' \

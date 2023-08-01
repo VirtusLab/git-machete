@@ -3,6 +3,7 @@
 ## New in git-machete 3.21.0
 
 - added: `--removed-from-remote` flag to `git machete slide-out` (contributed by @raylu)
+- add: `--with-urls` flag to `git machete github anno-prs` that also adds the URL of the PR to the annotation (contributed by @guyboltonking)
 - fixed: `git machete clean` and `git machete github sync` not only delete untracked branches, but also actually slide them out of branch layout
 
 ## New in git-machete 3.20.0
