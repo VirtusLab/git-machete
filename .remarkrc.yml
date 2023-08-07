@@ -1,6 +1,0 @@
-plugins:
-  lint-no-dead-urls:
-    gotOptions:
-      timeout:
-        request: 30000 # ms
-  validate-links: {}

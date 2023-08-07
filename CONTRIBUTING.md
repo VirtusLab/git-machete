@@ -41,7 +41,7 @@ the name of the `test_env_name` can specify Python version of the environment, e
 ### Terminal: venv
 
 To execute `git-machete` commands in terminal using current branch implementation, you must first have a virtual environment.
-You can create one named `venv` by executing `tox -e venv` or use existing environment (need to install requirements from [requirements.testenv.txt](requirements.testenv.txt)).
+You can create one named `venv` by executing `tox -e venv` or use existing environment (need to install requirements from [requirements/testenv.txt](requirements/testenv.txt)).
 You have to activate the environment, for the `venv` environment run `source .tox/venv/bin/activate` from `git-machete` root directory.
 Lastly, install `git-machete` in development mode with `pip install --editable .` --- codebase can now be edited in-place without reinstallation.
 
@@ -70,7 +70,7 @@ Re-installation will be needed after a modification, as `--editable` and `--user
 
 To execute tests in IDE (e.g. PyCharm -> right-clicking on the test file or clicking the green triangle on the left of the test case name),
 you must first have a virtual environment. You can create one named `venv` by executing `tox -e venv` or use existing environment
-(but then you need to install requirements from [requirements.testenv.txt](requirements.testenv.txt)).
+(but then you need to install requirements from [requirements/testenv.txt](requirements/testenv.txt)).
 Lastly, setup `python` interpreter for your project in the IDE, e.g. `.tox/venv/bin/python`.
 
 To run/debug `git-machete` commands directly in IDE you need to create custom *Run/Debug Configuration*: set *Script Path* e.g. to [`git_machete/cli.py`](git_machete/cli.py)
