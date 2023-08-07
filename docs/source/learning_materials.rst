@@ -1,13 +1,17 @@
 .. only:: html
 
-  .. _learning_materials:
-
   Learning Materials
-  ==================
+  ------------------
 
-  **git machete** is a handy tool for managing your git repositories and to make it easier to use,
-  the authors of the tool have prepared series of articles on various git machete related topics.
-  Check them for more information on how to use git machete or how to manage your own programming project using Docker and CI:
+  To get help via CLI run:
+
+  .. code-block::
+
+      git machete help
+      git machete help go
+      git machete go --help
+
+  Check the following blog posts for more information on how to use git machete or how to manage CI in your own project using Docker:
 
       * `Make your way through the git (rebase) jungle with Git Machete <https://medium.com/virtuslab/make-your-way-through-the-git-rebase-jungle-with-git-machete-e2ed4dbacd02>`_
       * `git machete strikes again! Traverse the git (rebase) jungle even faster <https://medium.com/virtuslab/git-machete-strikes-again-traverse-the-git-rebase-jungle-even-faster-with-v2-0-f43ebaf8abb0>`_

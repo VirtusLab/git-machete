@@ -1,7 +1,7 @@
 .. _clean:
 
 clean
------
+=====
 **Usage:**
 
 .. code-block:: shell

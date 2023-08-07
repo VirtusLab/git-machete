@@ -1,7 +1,7 @@
 .. _slide-out:
 
 slide-out
----------
+=========
 **Usage:**
 
 .. code-block:: shell

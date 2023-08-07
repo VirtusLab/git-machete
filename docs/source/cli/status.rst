@@ -13,7 +13,7 @@
 .. _status:
 
 status
-------
+======
 **Usage:**
 
 .. code-block:: shell

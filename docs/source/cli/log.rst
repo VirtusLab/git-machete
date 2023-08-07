@@ -1,7 +1,7 @@
 .. _log:
 
 log
----
+===
 **Usage:**
 
 .. code-block:: shell

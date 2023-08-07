@@ -1,7 +1,7 @@
 .. _diff:
 
 diff
-----
+====
 **Usage:**
 
 .. code-block:: shell

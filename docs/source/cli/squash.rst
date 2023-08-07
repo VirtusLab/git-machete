@@ -1,7 +1,7 @@
 .. _squash:
 
 squash
-------
+======
 **Usage:**
 
 .. code-block:: shell

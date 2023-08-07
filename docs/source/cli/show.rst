@@ -1,7 +1,7 @@
 .. _show:
 
 show
-----
+====
 **Usage:**
 
 .. code-block:: shell

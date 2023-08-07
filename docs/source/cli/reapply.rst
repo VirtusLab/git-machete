@@ -1,7 +1,7 @@
 .. _reapply:
 
 reapply
--------
+=======
 **Usage:**
 
 .. code-block:: shell

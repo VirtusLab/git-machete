@@ -1,7 +1,7 @@
 .. _discover:
 
 discover
---------
+========
 **Usage:**
 
 .. code-block:: shell

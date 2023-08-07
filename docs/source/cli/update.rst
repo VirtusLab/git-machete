@@ -1,7 +1,7 @@
 .. _update:
 
 update
-------
+======
 **Usage:**
 
 .. code-block:: shell

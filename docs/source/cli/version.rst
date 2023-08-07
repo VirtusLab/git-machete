@@ -1,7 +1,7 @@
 .. _version:
 
 version
--------
+=======
 **Usage:**
 
 .. code-block:: shell

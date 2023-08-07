@@ -1,7 +1,7 @@
 .. _add:
 
 add
----
+===
 **Usage:**
 
 .. code-block:: shell

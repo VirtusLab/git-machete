@@ -207,7 +207,7 @@ if __name__ == '__main__':
 
     # build long docs
     output_text += '\n\nlong_docs: Dict[str, str] = {\n'
-    path = docs_source_path + '/cli_help'
+    path = docs_source_path + '/cli'
     commands_and_file_paths = {f.split('.')[0]: join(path, f) for f in sorted(os.listdir(path)) if isfile(join(path, f))}
 
     for command, file in commands_and_file_paths.items():

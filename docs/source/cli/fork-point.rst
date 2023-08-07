@@ -10,7 +10,7 @@
 .. _fork-point:
 
 fork-point
-----------
+==========
 **Usage:**
 
 .. code-block:: shell

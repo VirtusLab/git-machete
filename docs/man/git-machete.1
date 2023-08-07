@@ -27,11 +27,9 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Jul 18, 2023" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Aug 07, 2023" "" "git-machete"
 .SH NAME
 git-machete \- git-machete 3.17.9
-.sp
-Probably the sharpest git repository organizer & rebase/merge workflow automation tool you\(aqve ever seen.
 .sp
 git machete is a robust tool that \fBsimplifies your git workflows\fP\&.
 .sp
@@ -113,20 +111,6 @@ git machete commands and help topics:
 \fI\%update\fP           \-\- Sync the current branch with its upstream (parent) branch via rebase or merge
 .IP \(bu 2
 \fI\%version\fP          \-\- Display the version and exit
-.UNINDENT
-.sp
-To get help via CLI run:
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-git machete help
-git machete help go
-git machete go \-\-help
-.ft P
-.fi
-.UNINDENT
 .UNINDENT
 .SH ADD
 .sp
@@ -1318,7 +1302,7 @@ Lists all branches that fall into one of the specified categories:
 .IP \(bu 2
 \fBaddable\fP: all branches (local or remote) than can be added to the definition file,
 .IP \(bu 2
-\fBchildless\fP: all branches that do not possess child branches,
+\fBchildless\fP: all managed branches that do not possess child branches,
 .IP \(bu 2
 \fBmanaged\fP: all branches that appear in the definition file,
 .IP \(bu 2

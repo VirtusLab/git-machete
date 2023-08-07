@@ -1,7 +1,7 @@
 .. _go:
 
 go
---
+==
 **Usage:**
 
 .. code-block:: shell

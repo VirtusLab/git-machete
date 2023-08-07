@@ -1,7 +1,7 @@
 .. _edit:
 
 edit
-----
+====
 **Usage:**
 
 .. code-block:: shell

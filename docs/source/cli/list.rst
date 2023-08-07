@@ -1,7 +1,7 @@
 .. _list:
 
 list
-----
+====
 **Usage:**
 
 .. code-block:: shell
@@ -13,7 +13,7 @@ where <category> is one of: ``addable``, ``childless``, ``managed``, ``slidable`
 Lists all branches that fall into one of the specified categories:
 
     * ``addable``: all branches (local or remote) than can be added to the definition file,
-    * ``childless``: all branches that do not possess child branches,
+    * ``childless``: all managed branches that do not possess child branches,
     * ``managed``: all branches that appear in the definition file,
     * ``slidable``: all managed branches that have an upstream and can be slid out with :ref:`slide-out` command
     * ``slidable-after <branch>``: the downstream branch of the <branch>, if it exists and is the only downstream of <branch>

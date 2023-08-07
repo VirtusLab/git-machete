@@ -1,7 +1,7 @@
 .. _file:
 
 file
-----
+====
 **Usage:**
 
 .. code-block:: shell

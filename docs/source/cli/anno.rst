@@ -1,7 +1,7 @@
 .. _anno:
 
 anno
-----
+====
 **Usage:**
 
 .. code-block:: shell

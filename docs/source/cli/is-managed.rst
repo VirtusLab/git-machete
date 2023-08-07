@@ -1,7 +1,7 @@
 .. _is-managed:
 
 is-managed
-----------
+==========
 **Usage:**
 
 .. code-block:: shell

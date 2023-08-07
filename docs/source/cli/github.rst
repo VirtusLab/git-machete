@@ -1,7 +1,7 @@
 .. _github:
 
 github
-------
+======
 **Usage:**
 
 .. code-block:: shell

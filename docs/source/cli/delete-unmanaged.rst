@@ -1,7 +1,7 @@
 .. _delete-unmanaged:
 
 delete-unmanaged
-----------------
+================
 **Usage:**
 
 .. code-block:: shell

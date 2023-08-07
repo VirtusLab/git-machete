@@ -1,7 +1,7 @@
 .. _help:
 
 help
-----
+====
 **Usage:**
 
 .. code-block:: awk

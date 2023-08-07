@@ -1,7 +1,7 @@
 .. _config:
 
 config
-------
+======
 Documentation about available ``git machete`` git config keys and environment variables that change the command's default behavior.
 
 Note: ``config`` is not a command as such, just a help topic (there is no ``git machete config`` command).

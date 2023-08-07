@@ -13,7 +13,7 @@
 .. _traverse:
 
 traverse
---------
+========
 **Usage:**
 
 .. code-block:: shell
