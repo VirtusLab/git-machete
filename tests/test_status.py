@@ -10,12 +10,12 @@ from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success,
                       fixed_author_and_committer_date_in_past, launch_command,
                       mock_input_returning, mock_input_returning_y,
-                      overridden_environment, rewrite_definition_file)
+                      overridden_environment, rewrite_branch_layout_file)
 
 
 class TestStatus(BaseTest):
 
-    def test_branch_reappears_in_definition(self) -> None:
+    def test_branch_reappears_in_branch_layout(self) -> None:
 
         body: str = \
             """
@@ -24,10 +24,10 @@ class TestStatus(BaseTest):
             \t\n
             develop
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
-        expected_error_message: str = '.git/machete, line 6: branch develop re-appears in the tree definition. ' \
-                                      'Edit the definition file manually with git machete edit'
+        expected_error_message: str = '.git/machete, line 6: branch develop re-appears in the branch layout. ' \
+                                      'Edit the branch layout file manually with git machete edit'
         assert_failure(['status'], expected_error_message)
 
     def test_indent_not_multiply_of_base_indent(self) -> None:
@@ -37,10 +37,10 @@ class TestStatus(BaseTest):
             \tdevelop
             \t foo
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         expected_error_message: str = '.git/machete, line 4: invalid indent <TAB><SPACE>, expected a multiply of <TAB>. ' \
-                                      'Edit the definition file manually with git machete edit'
+                                      'Edit the branch layout file manually with git machete edit'
         assert_failure(['status'], expected_error_message)
 
     def test_indent_too_deep(self) -> None:
@@ -50,10 +50,10 @@ class TestStatus(BaseTest):
             \tdevelop
             \t\t\tfoo
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         expected_error_message: str = '.git/machete, line 4: too much indent (level 3, expected at most 2) for the branch foo. ' \
-                                      'Edit the definition file manually with git machete edit'
+                                      'Edit the branch layout file manually with git machete edit'
         assert_failure(['status'], expected_error_message)
 
     def test_single_invalid_branch_interactive_slide_out(self, mocker: MockerFixture) -> None:
@@ -70,10 +70,10 @@ class TestStatus(BaseTest):
             master
             \t\tfoo
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
         expected_output = """
             Skipping foo which is not a local branch (perhaps it has been deleted?).
-            Slide it out from the definition file? (y, e[dit], N)
+            Slide it out from the branch layout file? (y, e[dit], N)
               master *
         """
 
@@ -108,10 +108,10 @@ class TestStatus(BaseTest):
             baz
             \t\tfeature
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
         expected_output = """
             Skipping foo, bar, qux, baz which are not local branches (perhaps they have been deleted?).
-            Slide them out from the definition file? (y, e[dit], N)
+            Slide them out from the branch layout file? (y, e[dit], N)
               master
               |
               o-develop
@@ -137,7 +137,7 @@ class TestStatus(BaseTest):
             master
               develop
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         self.repo_sandbox.write_to_file(".git/hooks/machete-status-branch", "#!/bin/sh\ngit ls-tree $1 | wc -l | sed 's/ *//'")
         assert_success(
@@ -177,7 +177,7 @@ class TestStatus(BaseTest):
 
               develop
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         self.repo_sandbox.write_to_file(".git/hooks/machete-status-branch", "#!/bin/sh\ngit ls-tree $1 | wc -l | sed 's/ *//'")
         self.repo_sandbox.set_file_executable(".git/hooks/machete-status-branch")
@@ -230,7 +230,7 @@ class TestStatus(BaseTest):
                 bar
                     foo
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         expected_status_output = (
             """
@@ -282,7 +282,7 @@ class TestStatus(BaseTest):
                     feature
                         child
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         assert_success(
             ["status", "-l"],
@@ -441,7 +441,7 @@ class TestStatus(BaseTest):
                         snickers
                             mars
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
         expected_status_output = (
             """
             master
@@ -474,7 +474,7 @@ class TestStatus(BaseTest):
                 foo
                     bar
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
         expected_status_output = (
             """
             master
@@ -502,7 +502,7 @@ class TestStatus(BaseTest):
             master
                 develop
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         self.repo_sandbox.remove_directory(".git/logs/")
 
@@ -537,7 +537,7 @@ class TestStatus(BaseTest):
                 feature-1
                 feature-2
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         expected_status_output = (
             """
@@ -595,7 +595,7 @@ class TestStatus(BaseTest):
                 feature-1
                 feature-2
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         expected_status_output = (
             """\
@@ -624,7 +624,7 @@ class TestStatus(BaseTest):
             master
                 develop
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         with overridden_environment(GIT_SEQUENCE_EDITOR="sed -i.bak '1s/^pick /edit /'"):
             launch_command("update")
@@ -658,7 +658,7 @@ class TestStatus(BaseTest):
             master
                 develop
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         # AM
 
@@ -740,7 +740,7 @@ class TestStatus(BaseTest):
             master
                 develop
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         assert_success(
             ["status", "-l"],

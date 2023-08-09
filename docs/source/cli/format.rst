@@ -4,7 +4,7 @@ format
 ======
 Note: there is no ``git machete format`` command as such; ``format`` is just a topic of ``git machete help``.
 
-The format of the definition file should be as follows:
+The format of the branch layout file should be as follows:
 
 .. code-block::
 

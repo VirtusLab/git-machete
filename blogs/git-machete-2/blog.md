@@ -24,7 +24,7 @@ This will serve as a dummy remote for the repo under `~/machete-sandbox`.
 More specifically, the script runs `git remote add origin ~/machete-sandbox-remote` from `~/machete-sandbox` directory
 so as to establish an actual local/remote relation between the repos, with similar push/pull capabilities that are available over HTTPS or SSH.
 
-The initial structure of branches in the demo (i.e., the contents of the `.git/machete` definition file, excluding custom annotations that will be covered soon) is as follows:
+The initial structure of branches in the demo (i.e., the contents of the `.git/machete` branch layout file, excluding custom annotations that will be covered soon) is as follows:
 
 ```
 develop
@@ -86,7 +86,7 @@ actually repeats pretty often in a daily work with `git machete`, especially whe
 To free yourself from thinking about what to check out/rebase/push next, you can turn to `git machete traverse` &mdash;
 a wizard that walks (or rather, traverses) the branch dependency tree and suggests what needs to be done to restore sync of branches with their parent branches and remotes.
 
-Let's check out the `develop` branch (which is listed first in the definition file) and then iterate through the branches.
+Let's check out the `develop` branch (which is listed first in the branch layout file) and then iterate through the branches.
 
 ![git machete traverse](traverse.png)
 
@@ -131,7 +131,7 @@ The stderr output warns that `drop-constraint` isn't present in `.git/machete` a
 If you take a look at the `sandbox-setup-2.sh`, `drop-constraint` was indeed originally checked out from `call-ws`, even though the branches are no longer in commit-wise sync.
 Analogically, the `go up` subcommand checked out the inferred upstream.
 
-Note that if `drop-constraint` was tracked in `.git/machete`, then the whole inference wouldn't happen since git machete would instead simply go for the upstream explicitly provided by the user in the definition file.
+Note that if `drop-constraint` was tracked in `.git/machete`, then the whole inference wouldn't happen since git machete would instead simply go for the upstream explicitly provided by the user in the branch layout file.
 Also, the inference doesn't happen for any other `show`/`go` direction (like `down` or `next`) since that behavior could be pretty confusing and generally of little practical use.
 
 ### `update`
@@ -140,7 +140,7 @@ Let's check out `drop-constraint` back again and, without changing anything in `
 
 ![git machete update](update-3.png)
 
-`update` couldn't find an entry for `drop-constraint` in the definition file, so it fell back to automatic inference.
+`update` couldn't find an entry for `drop-constraint` in the branch layout file, so it fell back to automatic inference.
 
 ### `add`
 
@@ -160,7 +160,7 @@ For demonstration purposes, let's now remove the `.git/machete` file (so as to m
 ![git machete discover](discover.png)
 
 `discover` gives the choice to either accept the discovered tree right away with `y[es]`, `e[dit]` it first, or reject it with `n[o]`.
-In the case of `yes`/`edit`, the old definition file (if it already exists) will be saved under `.git/machete~` (note the added tilde).
+In the case of `yes`/`edit`, the old branch layout file (if it already exists) will be saved under `.git/machete~` (note the added tilde).
 
 Under the hood, `discover` simply performed upstream inference (just as for `show up` etc.) for every single local branch independently,
 while applying some tricks (inspired by the [disjoint-set data structure](https://en.wikipedia.org/wiki/Disjoint-set_data_structure)) to make sure no cycles appear in the created graph.
@@ -169,7 +169,7 @@ The only thing that obviously could not be inferred were custom annotations.
 Also, if the tree structure has been changed in the meantime (so that e.g. `develop` became a child of `call-ws` instead of the inverse), `discover` can't be expected to exactly guess the changed structure.
 The inference is based on git reflogs and doesn't know anything about the current or previous state of the `.git/machete` file.
 
-At this point one can ask a question: why then is the definition file even needed since the upstreams could be always inferred on the fly?
+At this point one can ask a question: why then is the branch layout file even needed since the upstreams could be always inferred on the fly?
 The argument against such an approach is that it wouldn't be desirable if everything in the tool happened automagically/behind the scenes.
 The developer should keep a sensible amount of control while still being provided with some hints when they're in doubt.
 It seems much more reasonable than the inverse &mdash; inferring everything that's possible and only asking the human when the tool is in doubt.

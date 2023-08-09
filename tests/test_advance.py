@@ -5,14 +5,14 @@ from git_machete.exceptions import UnderlyingGitException
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
-                      mock_input_returning, rewrite_definition_file)
+                      mock_input_returning, rewrite_branch_layout_file)
 
 
 class TestAdvance(BaseTest):
 
     def test_advance_for_no_downstream_branches(self) -> None:
         self.repo_sandbox.new_branch("root").commit()
-        rewrite_definition_file("root")
+        rewrite_branch_layout_file("root")
 
         assert_failure(["advance"], "root does not have any downstream (child) branches to advance towards")
 
@@ -24,7 +24,7 @@ class TestAdvance(BaseTest):
             .new_branch("develop")
             .commit()
         )
-        rewrite_definition_file("master\n  develop")
+        rewrite_branch_layout_file("master\n  develop")
         self.repo_sandbox.check_out("HEAD~")
 
         assert_failure(["advance"], "Not currently on any branch", expected_exception=UnderlyingGitException)
@@ -39,7 +39,7 @@ class TestAdvance(BaseTest):
             .check_out("master")
             .commit()
         )
-        rewrite_definition_file("master\n  develop")
+        rewrite_branch_layout_file("master\n  develop")
 
         assert_failure(["advance"], "No downstream (child) branch of master is connected to master with a green edge")
 
@@ -52,7 +52,7 @@ class TestAdvance(BaseTest):
             .commit()
             .check_out("master")
         )
-        rewrite_definition_file("master\n  develop")
+        rewrite_branch_layout_file("master\n  develop")
 
         self.patch_symbol(mocker, "builtins.input", mock_input_returning("n"))
         assert_success(["advance"], "Fast-forward master to match develop? (y, N)\n")
@@ -76,7 +76,7 @@ class TestAdvance(BaseTest):
             root
                 level-1-branch
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
         level_1_commit_hash = self.repo_sandbox.get_current_commit_hash()
 
         self.repo_sandbox.check_out("root")
@@ -122,7 +122,7 @@ class TestAdvance(BaseTest):
                     level-2a-branch
                     level-2b-branch
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         self.repo_sandbox.check_out("root")
         launch_command("advance", "-y")
@@ -166,7 +166,7 @@ class TestAdvance(BaseTest):
                 level-1a-branch
                 level-1b-branch
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         expected_error_message = "More than one downstream (child) branch of root " \
                                  "is connected to root with a green edge and -y/--yes option is specified"

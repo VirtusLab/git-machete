@@ -1,5 +1,5 @@
 from .base_test import BaseTest
-from .mockers import assert_success, launch_command, rewrite_definition_file
+from .mockers import assert_success, launch_command, rewrite_branch_layout_file
 
 
 class TestAnno(BaseTest):
@@ -25,7 +25,7 @@ class TestAnno(BaseTest):
             develop
                 feature
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         # Test `git machete anno` without providing the branch name
         launch_command('anno', 'Custom annotation for `develop` branch')

@@ -7,7 +7,7 @@ from tests.base_test import BaseTest
 from tests.mockers import (assert_failure, assert_success,
                            fixed_author_and_committer_date_in_past,
                            launch_command, mock_input_returning,
-                           mock_input_returning_y, rewrite_definition_file)
+                           mock_input_returning_y, rewrite_branch_layout_file)
 from tests.mockers_github import (MockGitHubAPIState, mock_from_url,
                                   mock_github_token_for_domain_fake,
                                   mock_github_token_for_domain_none,
@@ -90,7 +90,7 @@ class TestGitHubCreatePR(BaseTest):
                 call-ws
                     drop-constraint
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         launch_command("github", "create-pr")
         # ahead of origin state, push is advised and accepted
@@ -226,7 +226,7 @@ class TestGitHubCreatePR(BaseTest):
                     drop-constraint
                 testing/endpoints
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         expected_error_message = "All commits in testing/endpoints branch are already included in develop branch.\n" \
                                  "Cannot create pull request."
@@ -276,7 +276,7 @@ class TestGitHubCreatePR(BaseTest):
 
     def test_github_create_pr_for_root_branch(self) -> None:
         self.repo_sandbox.new_branch("master").commit()
-        rewrite_definition_file("master")
+        rewrite_branch_layout_file("master")
         assert_failure(
             ["github", "create-pr"],
             "Branch master does not have a parent branch (it is a root), base branch for the PR cannot be established."
@@ -321,7 +321,7 @@ class TestGitHubCreatePR(BaseTest):
                 feature/api_handling
                     feature/api_exception_handling
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         expected_msg = ("Fetching origin...\n"
                         "Warn: Base branch for this PR (feature/api_handling) is not found on remote, pushing...\n"
@@ -386,7 +386,7 @@ class TestGitHubCreatePR(BaseTest):
                 branch-1
                     feature
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('q'))
         expected_result = """
@@ -472,9 +472,9 @@ class TestGitHubCreatePR(BaseTest):
         assert_failure(
             ['github', 'create-pr'],
             "Command github create-pr can NOT be executed on the branch that is not managed by git machete "
-            "(is not present in git machete definition file). "
+            "(is not present in branch layout file). "
             "To successfully execute this command either add current branch to the file via commands add, discover or edit "
-            "or agree on adding the branch to the definition file during the execution of github create-pr command."
+            "or agree on adding the branch to the branch layout file during the execution of github create-pr command."
         )
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('y'))
@@ -601,7 +601,7 @@ class TestGitHubCreatePR(BaseTest):
             .new_branch("develop").commit()
         )
 
-        rewrite_definition_file("master\n\tdevelop push=no")
+        rewrite_branch_layout_file("master\n\tdevelop push=no")
 
         assert_success(
             ['github', 'create-pr'],
@@ -619,7 +619,7 @@ class TestGitHubCreatePR(BaseTest):
             .new_branch("develop").commit()
         )
 
-        rewrite_definition_file("master\n\tdevelop")
+        rewrite_branch_layout_file("master\n\tdevelop")
 
         assert_failure(
             ['github', 'create-pr'],
@@ -637,7 +637,7 @@ class TestGitHubCreatePR(BaseTest):
             .new_branch("develop").commit().commit().push().reset_to("HEAD~")
         )
 
-        rewrite_definition_file("master\n\tdevelop")
+        rewrite_branch_layout_file("master\n\tdevelop")
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('q'))
         assert_failure(
@@ -663,7 +663,7 @@ class TestGitHubCreatePR(BaseTest):
             .new_branch("develop").commit()
         )
 
-        rewrite_definition_file("master\n\tdevelop")
+        rewrite_branch_layout_file("master\n\tdevelop")
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('q'))
         assert_success(
@@ -679,7 +679,7 @@ class TestGitHubCreatePR(BaseTest):
             .amend_commit("Different commit message")
         )
 
-        rewrite_definition_file("master\n\tdevelop")
+        rewrite_branch_layout_file("master\n\tdevelop")
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('yq'))
         assert_success(
@@ -703,7 +703,7 @@ class TestGitHubCreatePR(BaseTest):
         with fixed_author_and_committer_date_in_past():
             self.repo_sandbox.amend_commit()
 
-        rewrite_definition_file("master\n\tdevelop")
+        rewrite_branch_layout_file("master\n\tdevelop")
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('y'))
         assert_success(

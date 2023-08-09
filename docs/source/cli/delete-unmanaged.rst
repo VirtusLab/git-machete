@@ -8,7 +8,7 @@ delete-unmanaged
 
     git machete delete-unmanaged [-y|--yes]
 
-Goes one-by-one through all the local git branches that don't exist in the definition file,
+Goes one-by-one through all the local git branches that don't exist in the branch layout file,
 and ask to delete each of them (with ``git branch -d`` or ``git branch -D``) if confirmed by user.
 No branch will be deleted unless explicitly confirmed by the user (or unless ``-y/--yes`` option is passed).
 

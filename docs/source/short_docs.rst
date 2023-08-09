@@ -5,13 +5,13 @@
 * :ref:`anno`             -- Manage custom annotations
 * :ref:`clean`            -- Delete untracked and unmanaged branches and also optionally check out user's open GitHub PRs
 * :ref:`config`           -- Display docs for the git machete configuration keys and environment variables
-* :ref:`delete-unmanaged` -- Delete local branches that are not present in the definition file
+* :ref:`delete-unmanaged` -- Delete local branches that are not present in the branch layout file
 * :ref:`diff`             -- Diff current working directory or a given branch against its computed fork point
 * :ref:`discover`         -- Automatically discover tree of branch dependencies
-* :ref:`edit`             -- Edit the definition file
-* :ref:`file`             -- Display the location of the definition file
+* :ref:`edit`             -- Edit the branch layout file
+* :ref:`file`             -- Display the location of the branch layout file
 * :ref:`fork-point`       -- Display or override fork point for a branch
-* :ref:`format`           -- Display docs for the format of the definition file
+* :ref:`format`           -- Display docs for the format of the branch layout file
 * :ref:`github`           -- Create, check out and manage GitHub PRs while keeping them reflected in git machete
 * :ref:`go`               -- Check out the branch relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument
 * :ref:`help`             -- Display this overview, or detailed help for a specified command

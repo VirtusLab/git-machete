@@ -2,7 +2,8 @@
 
 ## New in git-machete 3.17.9
 
-- improved: documentation at ReadTheDocs
+- improved: layout of documentation at ReadTheDocs
+- improved: replaced `definition file` with `branch layout file` across the docs
 
 ## New in git-machete 3.17.8
 

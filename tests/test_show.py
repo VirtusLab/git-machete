@@ -2,7 +2,7 @@ from tempfile import mkdtemp
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
-                      rewrite_definition_file)
+                      rewrite_branch_layout_file)
 
 
 class TestShow(BaseTest):
@@ -59,7 +59,7 @@ class TestShow(BaseTest):
                 hotfix/add-trigger
                     ignore-trailing
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         assert_success(
             ["status"],
@@ -111,7 +111,7 @@ class TestShow(BaseTest):
             level-0-branch
                 level-1-branch
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         assert 'level-0-branch' == launch_command("show", "up").strip(), \
             ("Verify that 'git machete show up' displays name of a parent/upstream "
@@ -174,7 +174,7 @@ class TestShow(BaseTest):
                     level-2-branch
                 level-1b-branch
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         assert launch_command("show", "down").strip() == "level-1a-branch\nlevel-1b-branch"
         assert launch_command("show", "d").strip() == "level-1a-branch\nlevel-1b-branch"
@@ -221,7 +221,7 @@ class TestShow(BaseTest):
             a-additional-root
                 branch-from-a-additional-root
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         assert 'level-1a-branch' == launch_command("show", "first").strip(), \
             ("Verify that 'git machete show first' displays name of the first downstream "
@@ -266,7 +266,7 @@ class TestShow(BaseTest):
             x-additional-root
                 branch-from-x-additional-root
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         assert 'level-1b-branch' == launch_command("show", "last").strip(), \
             ("Verify that 'git machete show last' displays name of the last downstream "
@@ -304,7 +304,7 @@ class TestShow(BaseTest):
                     level-2a-branch
                 level-1b-branch
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         assert launch_command("show", "next").strip() == 'level-1b-branch'
         assert launch_command("show", "n").strip() == 'level-1b-branch'
@@ -336,7 +336,7 @@ class TestShow(BaseTest):
                     level-2a-branch
                 level-1b-branch
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         assert launch_command("show", "prev").strip() == 'level-2a-branch'
         assert launch_command("show", "p").strip() == 'level-2a-branch'
@@ -373,7 +373,7 @@ class TestShow(BaseTest):
             additional-root
                 branch-from-additional-root
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         assert 'level-0-branch' == launch_command("show", "root").strip(), \
             ("Verify that 'git machete show root' displays name of the root of "

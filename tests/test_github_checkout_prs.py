@@ -6,7 +6,7 @@ from pytest_mock import MockerFixture
 from git_machete.github import GitHubClient, RemoteAndOrganizationAndRepository
 from tests.base_test import BaseTest, GitRepositorySandbox
 from tests.mockers import (assert_failure, assert_success, launch_command,
-                           rewrite_definition_file)
+                           rewrite_branch_layout_file)
 from tests.mockers_github import (MockGitHubAPIState, mock_from_url,
                                   mock_github_token_for_domain_fake,
                                   mock_github_token_for_domain_none,
@@ -163,7 +163,7 @@ class TestGitHubCheckoutPRs(BaseTest):
                             restrict_access
                                 chore/redundant_checks
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         # not broken chain of pull requests (root found in dependency tree)
         launch_command('github', 'checkout-prs', '18')
@@ -430,7 +430,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             .push()
         )
         os.chdir(self.repo_sandbox.local_path)
-        rewrite_definition_file("master")
+        rewrite_branch_layout_file("master")
         expected_msg = ("Checking for open GitHub PRs... OK\n"
                         "Pull request #2 checked out at local branch comments/add_docstrings\n")
         assert_success(
@@ -521,7 +521,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             root
             develop
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
         expected_msg = ("Checking for open GitHub PRs... OK\n"
                         "Warn: Pull request #2 comes from fork and its repository is already deleted. "
                         "No remote tracking data will be set up for feature/allow_checkout branch.\n"
@@ -691,7 +691,7 @@ class TestGitHubCheckoutPRs(BaseTest):
                 testing/add_user
                     chore/comments
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         # test that `checkout-prs` add `rebase=no push=no` qualifiers to branches associated with the PRs whose owner
         # is different than the current user

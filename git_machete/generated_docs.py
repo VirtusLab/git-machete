@@ -10,13 +10,13 @@ short_docs: Dict[str, str] = {
     "anno": "Manage custom annotations",
     "clean": "Delete untracked and unmanaged branches and also optionally check out user's open GitHub PRs",
     "config": "Display docs for the git machete configuration keys and environment variables",
-    "delete-unmanaged": "Delete local branches that are not present in the definition file",
+    "delete-unmanaged": "Delete local branches that are not present in the branch layout file",
     "diff": "Diff current working directory or a given branch against its computed fork point",
     "discover": "Automatically discover tree of branch dependencies",
-    "edit": "Edit the definition file",
-    "file": "Display the location of the definition file",
+    "edit": "Edit the branch layout file",
+    "file": "Display the location of the branch layout file",
     "fork-point": "Display or override fork point for a branch",
-    "format": "Display docs for the format of the definition file",
+    "format": "Display docs for the format of the branch layout file",
     "github": "Create, check out and manage GitHub PRs while keeping them reflected in git machete",
     "go": "Check out the branch relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument",
     "help": "Display this overview, or detailed help for a specified command",
@@ -39,18 +39,18 @@ long_docs: Dict[str, str] = {
         <b>Usage:</b><b>
            git machete add [-o|--onto=<target-upstream-branch>] [-R|--as-root] [-y|--yes] [<branch>]</b>
 
-        Adds the provided <branch> (or the current branch, if none specified) to the definition file.
+        Adds the provided <branch> (or the current branch, if none specified) to the branch layout file.
         If <branch> is provided but no local branch with the given name exists:
            * if a remote branch of the same name exists in exactly one remote,
              then user is asked whether to check out this branch locally (as in `git checkout`),
            * otherwise, user is asked whether it should be created as a new local branch.
 
-        If the definition file is empty or `-R/--as-root` is provided, the branch will be added as a root of the tree of branch dependencies.
+        If the branch layout file is empty or `-R/--as-root` is provided, the branch will be added as a root of the tree of branch dependencies.
         Otherwise, the desired upstream (parent) branch can be specified with `-o/--onto`.
         Neither of these options is mandatory, however; if both are skipped, git machete will try to automatically infer the target upstream.
         If the upstream branch can be inferred, the user will be presented with inferred branch and asked to confirm.
 
-        Note: all the effects of `add` (except git branch creation) can as well be achieved by manually editing the definition file.
+        Note: all the effects of `add` (except git branch creation) can as well be achieved by manually editing the branch layout file.
 
         <b>Options:</b>
            <b>-o</b>, <b>--onto=<target-upstream-branch></b>
@@ -170,7 +170,7 @@ long_docs: Dict[str, str] = {
 
         Note: `anno` command is able to overwrite existing branch qualifiers.
 
-        Note: all the effects of `anno` can be always achieved by manually editing the definition file.
+        Note: all the effects of `anno` can be always achieved by manually editing the branch layout file.
 
         <b>Options:</b>
            <b>-b</b>, <b>--branch=<branch></b>
@@ -311,10 +311,10 @@ long_docs: Dict[str, str] = {
 
            `machete.worktree.useTopLevelMacheteFile`:
  
-              The default value of this key is `true`, which means that the path to machete definition file will be `.git/machete`
+              The default value of this key is `true`, which means that the path to branch layout file will be `.git/machete`
               for both regular directory and worktree.
 
-              If you want the worktree to have its own machete definition file (located under `.git/worktrees/.../machete`),
+              If you want the worktree to have its own branch layout file (located under `.git/worktrees/.../machete`),
               set `git config machete.worktree.useTopLevelMacheteFile false`.
 
         <b>Environment variables:</b>
@@ -334,7 +334,7 @@ long_docs: Dict[str, str] = {
         <b>Usage:</b><b>
            git machete delete-unmanaged [-y|--yes]</b>
 
-        Goes one-by-one through all the local git branches that don't exist in the definition file,
+        Goes one-by-one through all the local git branches that don't exist in the branch layout file,
         and ask to delete each of them (with `git branch -d` or `git branch -D`) if confirmed by user.
         No branch will be deleted unless explicitly confirmed by the user (or unless `-y/--yes` option is passed).
 
@@ -354,7 +354,7 @@ long_docs: Dict[str, str] = {
         of the current working tree against the fork point of the currently checked out branch.
         See help for `fork-point` for more details on the meaning of fork point.
 
-        Note: the branch in question does not need to occur in the definition file.
+        Note: the branch in question does not need to occur in the branch layout file.
 
         <b>Options:</b>
            <b>-s</b>, <b>--stat</b>
@@ -364,11 +364,11 @@ long_docs: Dict[str, str] = {
         <b>Usage:</b><b>
            git machete discover [-C|--checked-out-since=<date>] [-l|--list-commits] [-r|--roots=<branch1>,<branch2>,...] [-y|--yes]</b>
 
-        Discovers and displays tree of branch dependencies using a heuristic based on reflogs and asks whether to overwrite the existing definition
-        `file` with the new discovered tree.
-        If confirmed with a `y[es]` or `e[dit]` reply, backs up the current definition file (if it exists) as `$GIT_DIR/machete~`
+        Discovers and displays tree of branch dependencies using a heuristic based on reflogs
+        and asks whether to overwrite the existing branch layout `file` with the new discovered tree.
+        If confirmed with a `y[es]` or `e[dit]` reply, backs up the current branch layout file (if it exists) as `$GIT_DIR/machete~`
         and saves the new tree under the usual `$GIT_DIR/machete` path.
-        If the reply was `e[dit]`, additionally an editor is opened (as in: `git machete` `edit`) after saving the new definition file.
+        If the reply was `e[dit]`, additionally an editor is opened (as in: `git machete` `edit`) after saving the new branch layout file.
         `discover` retains the existing branch qualifiers used by `git machete traverse` (see help for `traverse`).
 
         <b>Options:</b>
@@ -391,7 +391,7 @@ long_docs: Dict[str, str] = {
         <b>Usage:</b><b>
            git machete e[dit]</b>
 
-        Opens an editor and lets you edit the definition file manually.
+        Opens an editor and lets you edit the branch layout file manually.
 
         The editor is determined by checking up the following locations:
            * `$GIT_MACHETE_EDITOR`
@@ -405,10 +405,10 @@ long_docs: Dict[str, str] = {
 
         and selecting the first one that is defined and points to an executable file accessible on `PATH`.
 
-        Note that the above editor selection only applies for editing the definition file,
+        Note that the above editor selection only applies for editing the branch layout file,
         but not for any other actions that may be indirectly triggered by git machete, including editing of rebase TODO list, commit messages etc.
 
-        The definition file can be always accessed and edited directly under the path returned by `git machete file`
+        The branch layout file can be always accessed and edited directly under the path returned by `git machete file`
         (usually `.git/machete`, unless worktrees or submodules are involved).
 
         <b>Environment variables:</b>
@@ -420,7 +420,7 @@ long_docs: Dict[str, str] = {
         <b>Usage:</b><b>
            git machete file</b>
 
-        Outputs the absolute path of machete definition file.
+        Outputs the absolute path of branch layout file.
         The file is always called `machete` and is located in the git directory of the project.
 
         Three cases are possible:
@@ -439,7 +439,7 @@ long_docs: Dict[str, str] = {
            git machete fork-point --unset-override [<branch>]</b>
 
         Note: in all three forms, if no `<branch>` is specified, the currently checked out branch is assumed.
-        The branch in question does not need to occur in the definition file.
+        The branch in question does not need to occur in the branch layout file.
 
         Without any option, displays full hash of the fork point commit for the `<branch>`.
         Fork point of the given `<branch>` is the commit at which the history of the `<branch>` diverges from history of any other branch.
@@ -489,7 +489,7 @@ long_docs: Dict[str, str] = {
     "format": """
         Note: there is no `git machete format` command as such; `format` is just a topic of `git machete help`.
 
-        The format of the definition file should be as follows:
+        The format of the branch layout file should be as follows:
         <dim>
           develop
               adjust-reads-prec PR #234 rebase=no push=no
@@ -520,7 +520,7 @@ long_docs: Dict[str, str] = {
 
         where `<subcommand>` is one of: `anno-prs`, `checkout-prs`, `create-pr`, `retarget-pr`.
 
-        Creates, checks out and manages GitHub PRs while keeping them reflected in branch definition file.
+        Creates, checks out and manages GitHub PRs while keeping them reflected in branch layout file.
 
         To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR,
         even in case of public repositories), a GitHub API token with `repo` scope is required, see https://github.com/settings/tokens.
@@ -648,10 +648,10 @@ long_docs: Dict[str, str] = {
            * `down`:    the direct children/downstream branch of the current branch.
            * `first`:   the first downstream of the root branch of the current branch (like `root` followed by `next`),
              or the root branch itself if the root has no downstream branches.
-           * `last`:    the last branch in the definition file that has the same root as the current branch;
+           * `last`:    the last branch in the branch layout file that has the same root as the current branch;
              can be the root branch itself if the root has no downstream branches.
-           * `next`:    the direct successor of the current branch in the definition file.
-           * `prev`:    the direct predecessor of the current branch in the definition file.
+           * `next`:    the direct successor of the current branch in the branch layout file.
+           * `prev`:    the direct predecessor of the current branch in the branch layout file.
            * `root`:    the root of the tree where the current branch is located.
              Note: this will typically be something like `develop` or `master`,
              since all branches are usually meant to be ultimately merged to one of those.
@@ -757,13 +757,13 @@ long_docs: Dict[str, str] = {
         where <category> is one of: `addable`, `childless`, `managed`, `slidable`, `slidable-after <branch>`, `unmanaged`, `with-overridden-fork-point`.
 
         Lists all branches that fall into one of the specified categories:
-           * `addable`: all branches (local or remote) than can be added to the definition file,
+           * `addable`: all branches (local or remote) than can be added to the branch layout file,
            * `childless`: all managed branches that do not possess child branches,
-           * `managed`: all branches that appear in the definition file,
+           * `managed`: all branches that appear in the branch layout file,
            * `slidable`: all managed branches that have an upstream and can be slid out with `slide-out` command
            * `slidable-after <branch>`: the downstream branch of the <branch>, if it exists and is the only downstream of <branch>
              (i.e. the one that can be slid out immediately following <branch>),
-           * `unmanaged`: all local branches that don't appear in the definition file,
+           * `unmanaged`: all local branches that don't appear in the branch layout file,
            * `with-overridden-fork-point`: all local branches that have a `fork point<fork-point>` override set up
              (even if this override does not affect the location of their fork point anymore).
 
@@ -776,7 +776,7 @@ long_docs: Dict[str, str] = {
         Runs `git log` for the range of commits from tip of the given branch (or current branch, if none specified) back to its fork point.
         See help for `fork-point` for more details on meaning of the fork point.
 
-        Note: the branch in question does not need to occur in the definition file.
+        Note: the branch in question does not need to occur in the branch layout file.
    """,
     "reapply": """
         <b>Usage:</b><b>
@@ -787,7 +787,7 @@ long_docs: Dict[str, str] = {
         but can also be set explicitly by `--fork-point`.
         See help for `fork-point` for more details on meaning of the fork point.
 
-        Note: the current reapplied branch does not need to occur in the definition file.
+        Note: the current reapplied branch does not need to occur in the branch layout file.
 
         Tip: `reapply` can be used for squashing the commits on the current branch to make history more condensed before push to the remote,
         but there is also dedicated `squash` command that achieves the same goal without running `git rebase`.
@@ -814,10 +814,10 @@ long_docs: Dict[str, str] = {
            * `down`:    the direct children/downstream branch of the given branch.
            * `first`:   the first downstream of the root branch of the given branch (like `root` followed by `next`),
              or the root branch itself if the root has no downstream branches.
-           * `last`:    the last branch in the definition file that has the same root as the given branch; can be the root branch itself
+           * `last`:    the last branch in the branch layout file that has the same root as the given branch; can be the root branch itself
              if the root has no downstream branches.
-           * `next`:    the direct successor of the given branch in the definition file.
-           * `prev`:    the direct predecessor of the given branch in the definition file.
+           * `next`:    the direct successor of the given branch in the branch layout file.
+           * `prev`:    the direct predecessor of the given branch in the branch layout file.
            * `root`:    the root of the tree where the given branch is located.
              Note: this will typically be something like `develop` or `master`,
              since all branches are usually meant to be ultimately merged to one of those.
@@ -827,7 +827,7 @@ long_docs: Dict[str, str] = {
         <b>Usage:</b><b>
            git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [--delete] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] [<branch> [<branch> [<branch> ...]]]</b>
 
-        Removes the given branch (or multiple branches) from the branch tree definition.  If no branch has been specified current branch is assumed as the only branch.
+        Removes the given branch (or multiple branches) from the branch layout.  If no branch has been specified current branch is assumed as the only branch.
         Then synchronizes the downstream (child) branches of the last specified branch on the top of the upstream (parent) branch of the first specified branch.
         Sync is performed either by rebase (default) or by merge (if `--merge` option passed).
 
@@ -897,7 +897,7 @@ long_docs: Dict[str, str] = {
         See help for `fork-point` for more details on meaning of the fork point.
         The message for the squashed is taken from the earliest squashed commit, i.e. the commit directly following the fork point.
 
-        Note: the current squashed branch does not need to occur in the definition file.
+        Note: the current squashed branch does not need to occur in the branch layout file.
 
         Tip: `squash` does NOT run `git rebase` under the hood. For more complex scenarios that require rewriting the history of current branch, see `reapply` and `update`.
 
@@ -909,9 +909,9 @@ long_docs: Dict[str, str] = {
         <b>Usage:</b><b>
            git machete s[tatus] [--color=WHEN] [-l|--list-commits] [-L|--list-commits-with-hashes] [--no-detect-squash-merges]</b>
 
-        Displays a tree-shaped status of the branches listed in the definition file.
+        Displays a tree-shaped status of the branches listed in the branch layout file.
 
-        Apart from simply ASCII-formatting the definition file, this also:
+        Apart from simply ASCII-formatting the branch layout file, this also:
            * colors the edges between upstream (parent) and downstream (children) branches:
               - <red>red edge</red> means that the downstream branch tip is not a direct descendant of the upstream branch tip,
               - <yellow>yellow edge</yellow> means that the downstream branch tip is a direct descendant of the upstream branch tip,
@@ -997,7 +997,7 @@ long_docs: Dict[str, str] = {
                                   [--[no-]push] [--[no-]push-untracked]
                                   [--return-to=WHERE] [--start-from=WHERE] [-w|--whole] [-W] [-y|--yes]</b>
 
-        Traverses the branch tree in pre-order (i.e. simply in the order as they occur in the definition file).
+        Traverses the branch tree in pre-order (i.e. simply in the order as they occur in the branch layout file).
         By default `traverse` starts from the current branch.
         This behavior can, however, be customized using options: `--start-from=`, `--whole` or `-w`, `-W`.
 

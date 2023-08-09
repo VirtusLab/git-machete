@@ -9,7 +9,7 @@ from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success,
                       fixed_author_and_committer_date_in_past, launch_command,
                       mock_input_returning, mock_input_returning_y,
-                      overridden_environment, rewrite_definition_file)
+                      overridden_environment, rewrite_branch_layout_file)
 
 
 class TestTraverse(BaseTest):
@@ -66,7 +66,7 @@ class TestTraverse(BaseTest):
                 hotfix/add-trigger
                     ignore-trailing
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
         assert_success(
             ["status"],
             """
@@ -108,7 +108,7 @@ class TestTraverse(BaseTest):
                 develop  PR #123
                     feature
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("n"))
         assert_success(
@@ -331,7 +331,7 @@ class TestTraverse(BaseTest):
 
     def test_traverse_ahead_of_remote_responses(self, mocker: MockerFixture) -> None:
         self.repo_sandbox.new_branch("master").commit().push().commit()
-        rewrite_definition_file("master")
+        rewrite_branch_layout_file("master")
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
         assert_success(["traverse"], "Push master to origin? (y, N, q, yq)\n")
@@ -355,7 +355,7 @@ class TestTraverse(BaseTest):
         self.repo_sandbox.new_branch("master")\
             .commit().commit().push()\
             .reset_to("HEAD~")
-        rewrite_definition_file("master")
+        rewrite_branch_layout_file("master")
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
         assert_success(
@@ -390,7 +390,7 @@ class TestTraverse(BaseTest):
 
     def test_traverse_diverged_from_and_newer_responses(self, mocker: MockerFixture) -> None:
         self.repo_sandbox.new_branch("master").commit().push().amend_commit("Different commit message")
-        rewrite_definition_file("master")
+        rewrite_branch_layout_file("master")
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
         assert_success(
@@ -427,7 +427,7 @@ class TestTraverse(BaseTest):
         self.repo_sandbox.new_branch("master").commit().push()
         with fixed_author_and_committer_date_in_past():
             self.repo_sandbox.amend_commit()
-        rewrite_definition_file("master")
+        rewrite_branch_layout_file("master")
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
         assert_success(
@@ -562,7 +562,7 @@ class TestTraverse(BaseTest):
             master
                 hotfix/add-trigger
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
         assert_success(
             ["status"],
             """
@@ -722,7 +722,7 @@ class TestTraverse(BaseTest):
                 mars
                     snickers
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         self.patch_symbol(mocker, "builtins.input", mock_input_returning("q"))
         launch_command("traverse", "-M")
@@ -760,7 +760,7 @@ class TestTraverse(BaseTest):
             \thotfix/add-trigger push=no
             \t\tignore-trailing
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         launch_command("traverse", "-Wy", "--no-push-untracked", "--push-untracked")
         assert_success(
@@ -798,7 +798,7 @@ class TestTraverse(BaseTest):
             \thotfix/add-trigger
             \t\tignore-trailing
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         launch_command("traverse", "-Wy")
         assert_success(
@@ -836,7 +836,7 @@ class TestTraverse(BaseTest):
             \thotfix/add-trigger
             \t\tignore-trailing
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         launch_command("traverse", "-Wy")
         assert_success(
@@ -874,7 +874,7 @@ class TestTraverse(BaseTest):
             \thotfix/add-trigger
             \t\tignore-trailing
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
         self.repo_sandbox.check_out('develop').merge('call-ws')
 
         launch_command("traverse", "-Wy")
@@ -933,7 +933,7 @@ class TestTraverse(BaseTest):
               with-directory
               without-directory
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         os.chdir("directory")
 
@@ -991,7 +991,7 @@ class TestTraverse(BaseTest):
             .write_to_file(file_path="foo.txt", file_content="3")
         )
 
-        rewrite_definition_file("master")
+        rewrite_branch_layout_file("master")
 
         assert_failure(
             ["traverse", "--fetch", "-y", "--debug"],
@@ -1011,7 +1011,7 @@ class TestTraverse(BaseTest):
             .check_out("branch-0")
             .commit()
         )
-        rewrite_definition_file("branch-0\n\tbranch-1")
+        rewrite_branch_layout_file("branch-0\n\tbranch-1")
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
         with overridden_environment(GIT_SEQUENCE_EDITOR="sed -i.bak '1s/^pick /edit /'"):
@@ -1040,7 +1040,7 @@ class TestTraverse(BaseTest):
             .check_out("branch-0")
             .commit()
         )
-        rewrite_definition_file("branch-0\n\tbranch-1")
+        rewrite_branch_layout_file("branch-0\n\tbranch-1")
 
         with fixed_author_and_committer_date_in_past():
             assert_success(
@@ -1069,7 +1069,7 @@ class TestTraverse(BaseTest):
 
     def test_traverse_quit_on_pushing_untracked(self, mocker: MockerFixture) -> None:
         self.repo_sandbox.new_branch("master").commit()
-        rewrite_definition_file("master")
+        rewrite_branch_layout_file("master")
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
         assert_success(
             ["traverse"],
@@ -1089,7 +1089,7 @@ class TestTraverse(BaseTest):
         )
 
         self.repo_sandbox.new_branch("master").commit()
-        rewrite_definition_file("master")
+        rewrite_branch_layout_file("master")
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("xd"))
         assert_success(
@@ -1142,7 +1142,7 @@ class TestTraverse(BaseTest):
                 feature-1
                 feature-2
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("n", "n"))
         assert_success(

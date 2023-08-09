@@ -7,7 +7,7 @@ from pytest_mock import MockerFixture
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
                       mock_input_returning, overridden_environment,
-                      rewrite_definition_file)
+                      rewrite_branch_layout_file)
 
 
 class TestDiscover(BaseTest):
@@ -39,7 +39,7 @@ class TestDiscover(BaseTest):
             feature2 annotation
             feature3 annotation rebase=no push=no
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
         launch_command('discover', '-y')
         assert os.path.exists(".git/machete~")
 
@@ -73,7 +73,7 @@ class TestDiscover(BaseTest):
                 o-feature4 * (untracked)
 
             Saving the above tree to .git/machete...
-            The existing definition file will be backed up as .git/machete~
+            The existing branch layout file will be backed up as .git/machete~
             """
         )
         assert_success(['discover', '--roots=feature1,master', '-y'], expected_discover_output)
@@ -193,7 +193,7 @@ class TestDiscover(BaseTest):
         launch_command("discover")
         assert self.repo_sandbox.read_file(".git/machete") == ""
 
-        rewrite_definition_file("master\n  feature1")
+        rewrite_branch_layout_file("master\n  feature1")
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('e'))
         with overridden_environment(GIT_MACHETE_EDITOR='cat'):
@@ -209,7 +209,7 @@ class TestDiscover(BaseTest):
                   x-feature2
 
                 Save the above tree to .git/machete?
-                The existing definition file will be backed up as .git/machete~ (y, e[dit], N)
+                The existing branch layout file will be backed up as .git/machete~ (y, e[dit], N)
                 """
             )
 

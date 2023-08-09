@@ -15,10 +15,10 @@ Checks out the branch specified by the given direction relative to the current b
     * ``down``:    the direct children/downstream branch of the current branch.
     * ``first``:   the first downstream of the root branch of the current branch (like ``root`` followed by ``next``),
       or the root branch itself if the root has no downstream branches.
-    * ``last``:    the last branch in the definition file that has the same root as the current branch;
+    * ``last``:    the last branch in the branch layout file that has the same root as the current branch;
       can be the root branch itself if the root has no downstream branches.
-    * ``next``:    the direct successor of the current branch in the definition file.
-    * ``prev``:    the direct predecessor of the current branch in the definition file.
+    * ``next``:    the direct successor of the current branch in the branch layout file.
+    * ``prev``:    the direct predecessor of the current branch in the branch layout file.
     * ``root``:    the root of the tree where the current branch is located.
       Note: this will typically be something like ``develop`` or ``master``,
       since all branches are usually meant to be ultimately merged to one of those.

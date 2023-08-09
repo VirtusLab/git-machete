@@ -6,7 +6,7 @@ from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success,
                       fixed_author_and_committer_date_in_past, launch_command,
                       mock_input_returning, mock_input_returning_y,
-                      overridden_environment, rewrite_definition_file)
+                      overridden_environment, rewrite_branch_layout_file)
 
 
 class TestUpdate(BaseTest):
@@ -33,7 +33,7 @@ class TestUpdate(BaseTest):
                 level-1-branch
                     level-2-branch
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         parents_new_commit_hash = self.repo_sandbox.get_current_commit_hash()
         self.repo_sandbox.check_out("level-1-branch")
@@ -63,7 +63,7 @@ class TestUpdate(BaseTest):
                 level-1-branch
                     level-2-branch
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         self.repo_sandbox.check_out("level-1-branch")
         old_level_1_commit_hash = self.repo_sandbox.get_current_commit_hash()
@@ -93,7 +93,7 @@ class TestUpdate(BaseTest):
             level-0-branch
                 level-1-branch
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         parents_new_commit_hash = self.repo_sandbox.get_current_commit_hash()
         self.repo_sandbox.check_out("level-1-branch")
@@ -147,7 +147,7 @@ class TestUpdate(BaseTest):
             root
                 branch-1
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         launch_command(
             "update", "--no-interactive-rebase", "-f", branch_second_commit_hash)
@@ -187,7 +187,7 @@ class TestUpdate(BaseTest):
                 branch-1a
                 branch-1b
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         expected_error_message = "Fork point 807bcd9f5e9c7e52e7866eedcb58c2e000526700 " \
                                  "is not ancestor of or the tip of the branch-1b branch."
@@ -202,7 +202,7 @@ class TestUpdate(BaseTest):
             .new_branch("branch-1")
             .commit()
         )
-        rewrite_definition_file("branch-0\n\tbranch-1")
+        rewrite_branch_layout_file("branch-0\n\tbranch-1")
 
         with overridden_environment(GIT_SEQUENCE_EDITOR="sed -i.bak '1s/^pick /edit /'"):
             launch_command("update")
@@ -225,7 +225,7 @@ class TestUpdate(BaseTest):
             .commit()
             .check_out("branch-1")
         )
-        rewrite_definition_file("branch-0")
+        rewrite_branch_layout_file("branch-0")
 
         original_branch_1_hash = self.repo_sandbox.get_commit_hash("branch-1")
         self.patch_symbol(mocker, "builtins.input", mock_input_returning(""))
@@ -267,7 +267,7 @@ class TestUpdate(BaseTest):
             branch-0
                 branch-1
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         self.repo_sandbox.write_to_file(".git/hooks/machete-pre-rebase", '#!/bin/sh\necho "$@" > machete-pre-rebase-output')
         self.repo_sandbox.set_file_executable(".git/hooks/machete-pre-rebase")
@@ -315,7 +315,7 @@ class TestUpdate(BaseTest):
             master
                 develop
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         # AM
 

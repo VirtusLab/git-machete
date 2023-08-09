@@ -75,7 +75,7 @@ def assert_failure(cmds: Iterable[str], expected_result: str, expected_exception
     assert error_message == expected_result
 
 
-def rewrite_definition_file(new_body: str) -> None:
+def rewrite_branch_layout_file(new_body: str) -> None:
     new_body = textwrap.dedent(new_body)
     with open(".git/machete", 'w') as def_file:
         def_file.writelines(new_body)

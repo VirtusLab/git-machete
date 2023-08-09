@@ -2,7 +2,7 @@ from pytest_mock import MockerFixture
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, mock_input_returning,
-                      mock_input_returning_y, rewrite_definition_file)
+                      mock_input_returning_y, rewrite_branch_layout_file)
 
 
 class TestAdd(BaseTest):
@@ -24,7 +24,7 @@ class TestAdd(BaseTest):
                 develop
                     feature
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         self.repo_sandbox.new_branch("bugfix/feature_fail")
 
@@ -110,7 +110,7 @@ class TestAdd(BaseTest):
             .commit()
         )
 
-        rewrite_definition_file("master")
+        rewrite_branch_layout_file("master")
 
         self.patch_symbol(mocker, "builtins.input", mock_input_returning_y)
         assert_success(
@@ -128,7 +128,7 @@ class TestAdd(BaseTest):
             .check_out("master")
         )
 
-        rewrite_definition_file("develop")
+        rewrite_branch_layout_file("develop")
 
         self.patch_symbol(mocker, "builtins.input", mock_input_returning_y)
         assert_failure(
@@ -138,7 +138,7 @@ class TestAdd(BaseTest):
             You can either:
             1) specify the desired upstream branch with --onto or
             2) pass --as-root to attach foo as a new root or
-            3) edit the definition file manually with git machete edit"""
+            3) edit the branch layout file manually with git machete edit"""
         )
 
     def test_add_already_managed_branch(self) -> None:
@@ -149,7 +149,7 @@ class TestAdd(BaseTest):
             .commit("develop commit.")
         )
 
-        rewrite_definition_file("master\n  develop")
+        rewrite_branch_layout_file("master\n  develop")
 
         assert_failure(['add', 'develop'], 'Branch develop already exists in the tree of branch dependencies')
 
@@ -161,7 +161,7 @@ class TestAdd(BaseTest):
             .commit("develop commit.")
         )
 
-        rewrite_definition_file("master")
+        rewrite_branch_layout_file("master")
 
         assert_failure(
             ['add', 'develop', '--onto', 'foo'],

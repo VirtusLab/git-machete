@@ -2,7 +2,7 @@ from pytest_mock import MockerFixture
 
 from tests.base_test import BaseTest
 from tests.mockers import (assert_success, launch_command,
-                           mock_input_returning_y, rewrite_definition_file)
+                           mock_input_returning_y, rewrite_branch_layout_file)
 from tests.mockers_github import (MockGitHubAPIState, mock_from_url,
                                   mock_github_token_for_domain_fake,
                                   mock_repository_info, mock_urlopen)
@@ -64,7 +64,7 @@ class TestGitHubSync(BaseTest):
                     moo2
                 snickers
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         (
             self.repo_sandbox
@@ -77,7 +77,7 @@ class TestGitHubSync(BaseTest):
 
         expected_status_output = (
             """
-            Warning: sliding invalid branches: bar2, foo2, moo2 out of the definition file
+            Warning: sliding invalid branches: bar2, foo2, moo2 out of the branch layout file
               master
               |
               o-bar (untracked)

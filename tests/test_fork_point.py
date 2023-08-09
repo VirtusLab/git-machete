@@ -3,7 +3,7 @@ from tempfile import mkdtemp
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success,
                       fixed_author_and_committer_date_in_past, launch_command,
-                      rewrite_definition_file)
+                      rewrite_branch_layout_file)
 
 
 class TestForkPoint(BaseTest):
@@ -25,7 +25,7 @@ class TestForkPoint(BaseTest):
             develop
                 feature
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         # Test `git machete fork-point` without providing the branch name
         # hash 67007ed30def3b9b658380b895a9f62b525286e0 corresponds to the commit on develop branch
@@ -80,7 +80,7 @@ class TestForkPoint(BaseTest):
             master
             develop
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         # invalid fork point with length not equal to 40
         self.repo_sandbox.set_git_config_key('machete.overrideForkPoint.develop.to', 39 * 'a')
@@ -133,7 +133,7 @@ class TestForkPoint(BaseTest):
             master
                 develop
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         assert launch_command("fork-point").strip() == "a71ffac2c1d41b8d1592a25f0056e4dfca829608"
         assert launch_command("fork-point", "--inferred").strip() == "a71ffac2c1d41b8d1592a25f0056e4dfca829608"
@@ -200,7 +200,7 @@ class TestForkPoint(BaseTest):
             branch-1
                 branch-2
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
         launch_command('fork-point', '--override-to=branch-0')
 
         assert launch_command("fork-point").strip() == self.repo_sandbox.get_commit_hash("branch-1")
@@ -219,7 +219,7 @@ class TestForkPoint(BaseTest):
             branch-1
                 branch-2
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         assert_failure(
             ["fork-point"],

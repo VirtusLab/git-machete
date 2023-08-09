@@ -8,7 +8,7 @@ edit
 
     git machete e[dit]
 
-Opens an editor and lets you edit the definition file manually.
+Opens an editor and lets you edit the branch layout file manually.
 
 The editor is determined by checking up the following locations:
 
@@ -23,10 +23,10 @@ The editor is determined by checking up the following locations:
 
 and selecting the first one that is defined and points to an executable file accessible on ``PATH``.
 
-Note that the above editor selection only applies for editing the definition file,
+Note that the above editor selection only applies for editing the branch layout file,
 but not for any other actions that may be indirectly triggered by git machete, including editing of rebase TODO list, commit messages etc.
 
-The definition file can be always accessed and edited directly under the path returned by ``git machete file``
+The branch layout file can be always accessed and edited directly under the path returned by ``git machete file``
 (usually ``.git/machete``, unless worktrees or submodules are involved).
 
 **Environment variables:**

@@ -4,7 +4,7 @@ from pytest_mock import MockerFixture
 
 from tests.base_test import BaseTest
 from tests.mockers import (assert_failure, assert_success, launch_command,
-                           rewrite_definition_file)
+                           rewrite_branch_layout_file)
 from tests.mockers_github import (MockGitHubAPIState, mock_from_url,
                                   mock_repository_info, mock_urlopen)
 
@@ -80,7 +80,7 @@ class TestGitHubRetargetPR(BaseTest):
                     feature
                     feature_4
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         launch_command("anno", "-H")
 
@@ -177,7 +177,7 @@ class TestGitHubRetargetPR(BaseTest):
                     feature
                 branch-without-pr
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
         launch_command("anno", "-H")
 
         expected_status_output = """
@@ -263,7 +263,7 @@ class TestGitHubRetargetPR(BaseTest):
                 branch-1
                     feature
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         expected_error_message = (
             "Multiple non-origin remotes correspond to GitHub in this repository: origin_1, origin_2 -> aborting.\n"
@@ -288,7 +288,7 @@ class TestGitHubRetargetPR(BaseTest):
                     feature
                         feature_1
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         assert_success(
             ['github', 'retarget-pr'],
@@ -310,7 +310,7 @@ class TestGitHubRetargetPR(BaseTest):
                         feature_1
                         feature_2
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         assert_failure(["github", "retarget-pr"], expected_error_message)
 
@@ -342,7 +342,7 @@ class TestGitHubRetargetPR(BaseTest):
                         feature_2
                             feature_3
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         assert_success(
             ['github', 'retarget-pr'],
@@ -361,10 +361,10 @@ class TestGitHubRetargetPR(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_retarget_pr_root_branch))
 
         self.repo_sandbox.new_branch("master").commit()
-        rewrite_definition_file("master")
+        rewrite_branch_layout_file("master")
 
         assert_failure(
             ['github', 'retarget-pr'],
             "Branch master does not have a parent branch (it is a root) even though there is an open PR #15 to root.\n"
-            "Consider modifying the branch definition file (git machete edit) so that master is a child of root."
+            "Consider modifying the branch layout file (git machete edit) so that master is a child of root."
         )

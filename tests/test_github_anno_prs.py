@@ -2,7 +2,7 @@ from pytest_mock import MockerFixture
 
 from tests.base_test import BaseTest
 from tests.mockers import (assert_failure, assert_success, launch_command,
-                           rewrite_definition_file)
+                           rewrite_branch_layout_file)
 from tests.mockers_github import (MockGitHubAPIState,
                                   mock_github_token_for_domain_fake,
                                   mock_repository_info, mock_urlopen)
@@ -81,7 +81,7 @@ class TestGitHubAnnoPRs(BaseTest):
                 call-ws
                     drop-constraint
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         # test that `anno-prs` add `rebase=no push=no` qualifiers to branches associated with the PRs whose owner
         # is different than the current user, overwrite annotation text but doesn't overwrite existing qualifiers
@@ -184,7 +184,7 @@ class TestGitHubAnnoPRs(BaseTest):
                 feature
                     feature_1
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
         launch_command("github", "anno-prs")
 
         expected_status_output = """

@@ -2,7 +2,7 @@
 from .base_test import BaseTest
 from .mockers import (assert_success, fixed_author_and_committer_date_in_past,
                       launch_command, overridden_environment,
-                      rewrite_definition_file)
+                      rewrite_branch_layout_file)
 
 
 class TestReapply(BaseTest):
@@ -37,7 +37,7 @@ class TestReapply(BaseTest):
                 level-1-branch
                     level-2-branch
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         self.repo_sandbox.check_out("level-1-branch")
         assert_success(

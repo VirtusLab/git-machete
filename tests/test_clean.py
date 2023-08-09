@@ -2,7 +2,7 @@ from pytest_mock import MockerFixture
 
 from .base_test import BaseTest
 from .mockers import (assert_success, launch_command, mock_input_returning_y,
-                      rewrite_definition_file)
+                      rewrite_branch_layout_file)
 from .mockers_github import mock_github_token_for_domain_none
 
 
@@ -46,13 +46,13 @@ class TestClean(BaseTest):
                     moo2
             mars
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         launch_command('clean')
 
         expected_status_output = (
             """
-            Warning: sliding invalid branches: bar2, foo2, moo2, mars out of the definition file
+            Warning: sliding invalid branches: bar2, foo2, moo2, mars out of the branch layout file
               master *
               |
               o-bar (untracked)

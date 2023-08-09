@@ -12,7 +12,7 @@ Runs ``git diff`` of the given branch tip against its fork point or, if none spe
 of the current working tree against the fork point of the currently checked out branch.
 See help for :ref:`fork-point` for more details on the meaning of *fork point*.
 
-Note: the branch in question does not need to occur in the definition file.
+Note: the branch in question does not need to occur in the branch layout file.
 
 **Options:**
 

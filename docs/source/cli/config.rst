@@ -31,10 +31,10 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
         :start-line: 2
 
 ``machete.worktree.useTopLevelMacheteFile``:
-    The default value of this key is ``true``, which means that the path to machete definition file will be ``.git/machete``
+    The default value of this key is ``true``, which means that the path to branch layout file will be ``.git/machete``
     for both regular directory and worktree.
 
-    If you want the worktree to have its own machete definition file (located under ``.git/worktrees/.../machete``),
+    If you want the worktree to have its own branch layout file (located under ``.git/worktrees/.../machete``),
     set ``git config machete.worktree.useTopLevelMacheteFile false``.
 
 

@@ -9,7 +9,7 @@ from tests.base_test import BaseTest
 from tests.mockers import (assert_failure, assert_success, launch_command,
                            mock__popen_cmd_with_fixed_results,
                            mock_input_returning_y, overridden_environment,
-                           rewrite_definition_file)
+                           rewrite_branch_layout_file)
 from tests.mockers_github import (MockGitHubAPIState, mock_from_url,
                                   mock_github_token_for_domain_fake,
                                   mock_github_token_for_domain_none,
@@ -63,13 +63,13 @@ class TestGitHub(BaseTest):
             self.repo_sandbox.check_out('develop').new_branch(f'feature_{i:02d}').commit().push()
         self.repo_sandbox.check_out('develop')
         body: str = 'develop *\n' + '\n'.join([f'feature_{i:02d}' for i in range(self.PR_COUNT_FOR_TEST_GITHUB_API_PAGINATION)]) + '\n'
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         self.repo_sandbox.check_out('develop')
         for i in range(self.PR_COUNT_FOR_TEST_GITHUB_API_PAGINATION):
             self.repo_sandbox.delete_branch(f"feature_{i:02d}")
         body = 'develop *\n'
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         launch_command('github', 'checkout-prs', '--all')
         launch_command('discover', '--checked-out-since=1 day ago')

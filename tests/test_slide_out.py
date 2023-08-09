@@ -3,7 +3,7 @@ from pytest_mock import MockerFixture
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success,
                       fixed_author_and_committer_date_in_past, launch_command,
-                      mock_input_returning_y, rewrite_definition_file)
+                      mock_input_returning_y, rewrite_branch_layout_file)
 
 
 class TestSlideOut(BaseTest):
@@ -42,7 +42,7 @@ class TestSlideOut(BaseTest):
                         child_c
                             child_d
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         assert_success(
             ["status", "-l"],
@@ -178,7 +178,7 @@ class TestSlideOut(BaseTest):
                 branch-1
                     branch-2
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         self.repo_sandbox.write_to_file(".git/hooks/machete-post-slide-out", '#!/bin/sh\necho "$@" > machete-post-slide-out-output')
         self.repo_sandbox.set_file_executable(".git/hooks/machete-post-slide-out")
@@ -211,7 +211,7 @@ class TestSlideOut(BaseTest):
                     branch-2
                         branch-3
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         assert_failure(
             ['slide-out', '-n', 'branch-1', 'branch-2', '-d', hash_of_commit_that_is_not_ancestor_of_branch_2],
@@ -232,7 +232,7 @@ class TestSlideOut(BaseTest):
             branch-0
                 branch-1
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         assert_failure(
             ['slide-out', '-d=@~', 'branch-1'],
@@ -261,7 +261,7 @@ class TestSlideOut(BaseTest):
                     branch-2
                         branch-3
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
         launch_command(
             'slide-out', '-n', 'branch-1', 'branch-2', '-d',
             hash_of_second_commit_on_branch_3)
@@ -299,7 +299,7 @@ class TestSlideOut(BaseTest):
                     branch-2a
                     branch-2b
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         assert_failure(
             ['slide-out', '-n', 'branch-1', '-d', hash_of_only_commit_on_branch_2b],
@@ -329,7 +329,7 @@ class TestSlideOut(BaseTest):
                         branch-3
                     branch-2b
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         assert_failure(
             ['slide-out', 'branch-0'],

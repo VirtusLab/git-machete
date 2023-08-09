@@ -33,7 +33,7 @@ If multiple <annotation text>'s are passed to the command, they are concatenated
 
 Note: ``anno`` command is able to overwrite existing branch qualifiers.
 
-Note: all the effects of ``anno`` can be always achieved by manually editing the definition file.
+Note: all the effects of ``anno`` can be always achieved by manually editing the branch layout file.
 
 **Options:**
 

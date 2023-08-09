@@ -50,7 +50,7 @@ Okey, let's get our hands dirty... first install `git-machete` with the sequence
 
 Once you have `git-machete` in your executable `PATH` (and thus git already recognizes the `machete` subcommand), let's specify how you would like to organize your branches &mdash; basically, what depends on what.
 Run `git machete edit` or simply open the `.git/machete` file with your favorite editor.
-Paste the following "branch tree" definition:
+Paste the following branch layout:
 ```
 develop
     adjust-reads-prec
@@ -147,7 +147,7 @@ Of course you'll still need to sync `edit-margin-not-allowed`, `full-load-gatlin
 As the cherry on top, let's now assume that you need to merge the `change-table` branch to `develop` as soon as possible
 and you can't wait for `adjust-reads-prec` and `block-cancel-order` to get merged first.
 Unfortunately, the two mentioned upstream branches introduced some nice helpers that you later used in `change-table`.
-To make the process as painless as possible, let's modify the definition file with `git machete edit`:
+To make the process as painless as possible, let's modify the branch layout file with `git machete edit`:
 
 ```
 develop
@@ -164,7 +164,7 @@ master
 
 ![git machete status](status-l-3.png)
 
-When you modified the definition file, `git machete status` marked the edge between `develop` and `change-table` as yellow.
+When you modified the branch layout file, `git machete status` marked the edge between `develop` and `change-table` as yellow.
 This means that the downstream branch (`change-table`) is still in sync with the upstream (`develop`), but the upstream branch tip isn't the fork point of the downstream branch.
 Translating from _git-ese_ to English, there are probably commits from some other branches on the way between `develop` and `change-table`;
 this is exactly the case now (there are indeed commits originating on `adjust-reads-prec` and `block-cancel-order`).
@@ -190,8 +190,8 @@ This will compare the current working directory to the fork point commit of the 
 You can also provide a branch parameter (`git machete diff <branch>`) to see the diff of the given branch against its fork point.
 
 `git machete add [--onto=<target-upstream>] [<branch>]` adds the specified branch (or the current one, if skipped) onto the given target upstream branch.
-The same effect can also be achieved by editing the definition file `.git/machete` manually e.g. with `git machete edit`.
-For example, if you run `git branch ignore-whitespace` and then `git machete add --onto=block-cancel-order ignore-whitespace`, you'll end up with the following definition file:
+The same effect can also be achieved by editing the branch layout file `.git/machete` manually e.g. with `git machete edit`.
+For example, if you run `git branch ignore-whitespace` and then `git machete add --onto=block-cancel-order ignore-whitespace`, you'll end up with the following branch layout file:
 
 ```
 develop
@@ -247,5 +247,5 @@ Anyway, the potentially undesired effects of `git machete` failing to find a cor
 
 More git-savvy users may argue that it should be enough to simply use the `--fork-point` option of `git rebase`, but the reality turns out to be harder than that.
 `git merge-base --fork-point` (and thus `git rebase` with the said option) only takes the reflog of the one provided upstream branch into account.
-This works fine as long as nobody disturbs the structure of the tree in the definition file (i.e. the upstream branch of any branch doesn't change).
+This works fine as long as nobody disturbs the structure of the tree in the branch layout file (i.e. the upstream branch of any branch doesn't change).
 Unfortunately, as mentioned before in this post, such tree structure modifications happen pretty often in real-life development, therefore a custom, more powerful way to find the fork point was necessary.

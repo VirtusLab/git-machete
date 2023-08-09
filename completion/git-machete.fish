@@ -42,7 +42,7 @@ complete -c git-machete -n "__fish_seen_subcommand_from clean; and not __fish_se
 
 
 # git machete delete-unmanaged
-complete -c git-machete -n "not __fish_seen_subcommand_from $__mcht_commands"                                           -f -a delete-unmanaged -d 'Delete local branches that are not present in the definition file'
+complete -c git-machete -n "not __fish_seen_subcommand_from $__mcht_commands"                                           -f -a delete-unmanaged -d 'Delete local branches that are not present in the branch layout file'
 complete -c git-machete -n "__fish_seen_subcommand_from delete-unmanaged; and not __fish_seen_subcommand_from --yes -y" -f -l yes -s y         -d 'Don\'t ask for confirmation'
 
 # git machete discover
@@ -57,10 +57,10 @@ complete -c git-machete -n "not __fish_seen_subcommand_from $__mcht_commands"   
 complete -c git-machete -n "__fish_seen_subcommand_from diff d; and not __fish_seen_subcommand_from --stat -s" -f -l stat -s s -d 'Makes git machete diff pass --stat option to git diff, so that only summary (diffstat) is printed'
 
 # git machete edit
-complete -c git-machete -n "not __fish_seen_subcommand_from $__mcht_commands" -f -a edit -d 'Edit the definition file'
+complete -c git-machete -n "not __fish_seen_subcommand_from $__mcht_commands" -f -a edit -d 'Edit the branch layout file'
 
 # git machete file
-complete -c git-machete -n "not __fish_seen_subcommand_from $__mcht_commands" -f -a file -d 'Display the location of the definition file'
+complete -c git-machete -n "not __fish_seen_subcommand_from $__mcht_commands" -f -a file -d 'Display the location of the branch layout file'
 
 # git machete fork-point
 complete -c git-machete -n "not __fish_seen_subcommand_from $__mcht_commands" -f -a fork-point -d 'Display or override fork point for a branch'
@@ -93,9 +93,9 @@ complete -c git-machete -n "__fish_seen_subcommand_from github; and __fish_seen_
 complete -c git-machete -n "not __fish_seen_subcommand_from $__mcht_commands" -f -a go -d 'Check out the branch relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument'
 complete -c git-machete -n "__fish_seen_subcommand_from go g; and not __fish_seen_subcommand_from down d first f last l next n prev p root r up u" -f -a down  -d 'the direct children/downstream branch of the current branch'
 complete -c git-machete -n "__fish_seen_subcommand_from go g; and not __fish_seen_subcommand_from down d first f last l next n prev p root r up u" -f -a first -d 'the first downstream of the root branch of the current branch (like root followed by next), or the root branch itself if the root has no downstream branches'
-complete -c git-machete -n "__fish_seen_subcommand_from go g; and not __fish_seen_subcommand_from down d first f last l next n prev p root r up u" -f -a last  -d 'the last branch in the definition file that has the same root as the current branch; can be the root branch itself if the root has no downstream branches'
-complete -c git-machete -n "__fish_seen_subcommand_from go g; and not __fish_seen_subcommand_from down d first f last l next n prev p root r up u" -f -a next  -d 'the direct successor of the current branch in the definition file'
-complete -c git-machete -n "__fish_seen_subcommand_from go g; and not __fish_seen_subcommand_from down d first f last l next n prev p root r up u" -f -a prev  -d 'the direct predecessor of the current branch in the definition file'
+complete -c git-machete -n "__fish_seen_subcommand_from go g; and not __fish_seen_subcommand_from down d first f last l next n prev p root r up u" -f -a last  -d 'the last branch in the branch layout file that has the same root as the current branch; can be the root branch itself if the root has no downstream branches'
+complete -c git-machete -n "__fish_seen_subcommand_from go g; and not __fish_seen_subcommand_from down d first f last l next n prev p root r up u" -f -a next  -d 'the direct successor of the current branch in the branch layout file'
+complete -c git-machete -n "__fish_seen_subcommand_from go g; and not __fish_seen_subcommand_from down d first f last l next n prev p root r up u" -f -a prev  -d 'the direct predecessor of the current branch in the branch layout file'
 complete -c git-machete -n "__fish_seen_subcommand_from go g; and not __fish_seen_subcommand_from down d first f last l next n prev p root r up u" -f -a root  -d 'the root of the tree where the current branch is located. Note: this will typically be something like develop or master, since all branches are usually meant to be ultimately merged to one of those'
 complete -c git-machete -n "__fish_seen_subcommand_from go g; and not __fish_seen_subcommand_from down d first f last l next n prev p root r up u" -f -a up    -d 'the direct parent/upstream branch of the current branch'
 
@@ -111,12 +111,12 @@ complete -c git-machete -n "__fish_seen_subcommand_from is-managed"           -f
 # git machete list
 complete -c git-machete -n "not __fish_seen_subcommand_from $__mcht_commands" -f -a list -d 'List all branches that fall into one of pre-defined categories (mostly for internal use)'
 complete -c git-machete -n "__fish_seen_subcommand_from list; and not __fish_seen_subcommand_from addable childless managed slidable slidable-after unmanaged with-overridden-fork-point" -f -a addable
-complete -c git-machete -n "__fish_seen_subcommand_from list; and not __fish_seen_subcommand_from addable childless managed slidable slidable-after unmanaged with-overridden-fork-point" -f -a childless                    -d 'all branches (local or remote) than can be added to the definition file'
-complete -c git-machete -n "__fish_seen_subcommand_from list; and not __fish_seen_subcommand_from addable childless managed slidable slidable-after unmanaged with-overridden-fork-point" -f -a managed                    -d 'all branches that appear in the definition file'
+complete -c git-machete -n "__fish_seen_subcommand_from list; and not __fish_seen_subcommand_from addable childless managed slidable slidable-after unmanaged with-overridden-fork-point" -f -a childless                    -d 'all branches (local or remote) than can be added to the branch layout file'
+complete -c git-machete -n "__fish_seen_subcommand_from list; and not __fish_seen_subcommand_from addable childless managed slidable slidable-after unmanaged with-overridden-fork-point" -f -a managed                    -d 'all branches that appear in the branch layout file'
 complete -c git-machete -n "__fish_seen_subcommand_from list; and not __fish_seen_subcommand_from addable childless managed slidable slidable-after unmanaged with-overridden-fork-point" -f -a slidable                   -d 'all managed branches that have an upstream and can be slid out with slide-out command'
 complete -c git-machete -n "__fish_seen_subcommand_from list; and not __fish_seen_subcommand_from addable childless managed slidable slidable-after unmanaged with-overridden-fork-point" -f -a slidable-after             -d 'the downstream branch of the <branch>, if it exists and is the only downstream of <branch> (i.e. the one that can be slid out immediately following <branch>)'
 complete -c git-machete -n "__fish_seen_subcommand_from list; and __fish_seen_subcommand_from slidable-after" -f -a '(__fish_git_local_branches)'
-complete -c git-machete -n "__fish_seen_subcommand_from list; and not __fish_seen_subcommand_from addable childless managed slidable slidable-after unmanaged with-overridden-fork-point" -f -a unmanaged                  -d 'all local branches that don\'t appear in the definition file'
+complete -c git-machete -n "__fish_seen_subcommand_from list; and not __fish_seen_subcommand_from addable childless managed slidable slidable-after unmanaged with-overridden-fork-point" -f -a unmanaged                  -d 'all local branches that don\'t appear in the branch layout file'
 complete -c git-machete -n "__fish_seen_subcommand_from list; and not __fish_seen_subcommand_from addable childless managed slidable slidable-after unmanaged with-overridden-fork-point" -f -a with-overridden-fork-point -d 'all local branches that have a fork point override set up (even if this override does not affect the location of their fork point anymore).'
 
 # git machete log
@@ -132,9 +132,9 @@ complete -c git-machete -n "not __fish_seen_subcommand_from $__mcht_commands" -f
 complete -c git-machete -n "__fish_seen_subcommand_from show; and not __fish_seen_subcommand_from current c down d first f last l next n prev p root r up u" -f -a 'current c' -d 'the current branch; exits with a non-zero status if none (detached HEAD)'
 complete -c git-machete -n "__fish_seen_subcommand_from show; and not __fish_seen_subcommand_from current c down d first f last l next n prev p root r up u" -f -a 'down d'    -d 'the direct children/downstream branch of the given branch'
 complete -c git-machete -n "__fish_seen_subcommand_from show; and not __fish_seen_subcommand_from current c down d first f last l next n prev p root r up u" -f -a 'first f'   -d 'the first downstream of the root branch of the given branch (like root followed by next), or the root branch itself if the root has no downstream branches'
-complete -c git-machete -n "__fish_seen_subcommand_from show; and not __fish_seen_subcommand_from current c down d first f last l next n prev p root r up u" -f -a 'last l'    -d 'the last branch in the definition file that has the same root as the given branch; can be the root branch itself if the root has no downstream branches'
-complete -c git-machete -n "__fish_seen_subcommand_from show; and not __fish_seen_subcommand_from current c down d first f last l next n prev p root r up u" -f -a 'next n'    -d 'the direct successor of the given branch in the definition file'
-complete -c git-machete -n "__fish_seen_subcommand_from show; and not __fish_seen_subcommand_from current c down d first f last l next n prev p root r up u" -f -a 'prev p'    -d 'the direct predecessor of the given branch in the definition file'
+complete -c git-machete -n "__fish_seen_subcommand_from show; and not __fish_seen_subcommand_from current c down d first f last l next n prev p root r up u" -f -a 'last l'    -d 'the last branch in the branch layout file that has the same root as the given branch; can be the root branch itself if the root has no downstream branches'
+complete -c git-machete -n "__fish_seen_subcommand_from show; and not __fish_seen_subcommand_from current c down d first f last l next n prev p root r up u" -f -a 'next n'    -d 'the direct successor of the given branch in the branch layout file'
+complete -c git-machete -n "__fish_seen_subcommand_from show; and not __fish_seen_subcommand_from current c down d first f last l next n prev p root r up u" -f -a 'prev p'    -d 'the direct predecessor of the given branch in the branch layout file'
 complete -c git-machete -n "__fish_seen_subcommand_from show; and not __fish_seen_subcommand_from current c down d first f last l next n prev p root r up u" -f -a 'root r'    -d 'the root of the tree where the given branch is located'
 complete -c git-machete -n "__fish_seen_subcommand_from show; and not __fish_seen_subcommand_from current c down d first f last l next n prev p root r up u" -f -a 'up u'      -d 'the direct parent/upstream branch of the given branch'
 

@@ -3,7 +3,7 @@ from pytest_mock import MockerFixture
 from .base_test import BaseTest
 from .mockers import (assert_success, fixed_author_and_committer_date_in_past,
                       launch_command, mock__run_cmd_and_forward_stdout,
-                      mock_input_returning, rewrite_definition_file)
+                      mock_input_returning, rewrite_branch_layout_file)
 
 
 class TestDeleteUnmanaged(BaseTest):
@@ -24,7 +24,7 @@ class TestDeleteUnmanaged(BaseTest):
             """
             master
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         self.patch_symbol(mocker, "builtins.input", mock_input_returning("q"))
         launch_command("delete-unmanaged", "-v")

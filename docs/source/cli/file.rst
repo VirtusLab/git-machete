@@ -8,7 +8,7 @@ file
 
     git machete file
 
-Outputs the absolute path of machete definition file.
+Outputs the absolute path of branch layout file.
 The file is always called ``machete`` and is located in the git directory of the project.
 
 Three cases are possible:

@@ -20,9 +20,9 @@ status
 
     git machete s[tatus] [--color=WHEN] [-l|--list-commits] [-L|--list-commits-with-hashes] [--no-detect-squash-merges]
 
-Displays a tree-shaped status of the branches listed in the definition file.
+Displays a tree-shaped status of the branches listed in the branch layout file.
 
-Apart from simply ASCII-formatting the definition file, this also:
+Apart from simply ASCII-formatting the branch layout file, this also:
 
     * colors the edges between upstream (parent) and downstream (children) branches:
 

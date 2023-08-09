@@ -23,7 +23,7 @@ traverse
                            [--[no-]push] [--[no-]push-untracked]
                            [--return-to=WHERE] [--start-from=WHERE] [-w|--whole] [-W] [-y|--yes]
 
-Traverses the branch tree in pre-order (i.e. simply in the order as they occur in the definition file).
+Traverses the branch tree in pre-order (i.e. simply in the order as they occur in the branch layout file).
 By default ``traverse`` starts from the current branch.
 This behavior can, however, be customized using options: ``--start-from=``, ``--whole`` or ``-w``, ``-W``.
 

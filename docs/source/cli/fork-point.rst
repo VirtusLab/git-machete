@@ -20,7 +20,7 @@ fork-point
   git machete fork-point --unset-override [<branch>]
 
 Note: in all three forms, if no ``<branch>`` is specified, the currently checked out branch is assumed.
-The branch in question does not need to occur in the definition file.
+The branch in question does not need to occur in the branch layout file.
 
 
 Without any option, displays full hash of the fork point commit for the ``<branch>``.

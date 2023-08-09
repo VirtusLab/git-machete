@@ -5,7 +5,7 @@ from git_machete.exceptions import ExitCode
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
-                      mock_input_returning, rewrite_definition_file)
+                      mock_input_returning, rewrite_branch_layout_file)
 
 
 class TestGo(BaseTest):
@@ -50,7 +50,7 @@ class TestGo(BaseTest):
             level-0-branch
                 level-1-branch
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         self.repo_sandbox.check_out("level-0-branch")
         assert_failure(["go", "up"], "Branch level-0-branch has no upstream branch")
@@ -101,7 +101,7 @@ class TestGo(BaseTest):
                     level-2a-branch
                     level-2b-branch
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         self.repo_sandbox.check_out("level-0-branch")
         launch_command("go", "down")
@@ -153,7 +153,7 @@ class TestGo(BaseTest):
             a-additional-root
                 branch-from-a-additional-root
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         self.repo_sandbox.check_out("level-3b-branch")
         launch_command("go", "first")
@@ -182,7 +182,7 @@ class TestGo(BaseTest):
             """
             level-0-branch
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
         launch_command("go", "first")
 
         assert 'level-0-branch' == launch_command("show", "current").strip(), \
@@ -229,7 +229,7 @@ class TestGo(BaseTest):
             x-additional-root
                 branch-from-x-additional-root
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         self.repo_sandbox.check_out("level-1a-branch")
         launch_command("go", "last", "--debug")
@@ -277,7 +277,7 @@ class TestGo(BaseTest):
                     level-2a-branch
                 level-1b-branch
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
         launch_command("go", "next")
 
         assert 'level-1b-branch' == launch_command("show", "current").strip(), \
@@ -316,7 +316,7 @@ class TestGo(BaseTest):
                 level-1-branch
             x-additional-root
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
         launch_command("go", "next")
 
         assert 'x-additional-root' == launch_command("show", "current").strip(), \
@@ -357,7 +357,7 @@ class TestGo(BaseTest):
                     level-2a-branch
                 level-1b-branch
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
         launch_command("go", "prev")
 
         assert 'level-2a-branch' == launch_command("show", "current").strip(), \
@@ -394,7 +394,7 @@ class TestGo(BaseTest):
             a-additional-root
             level-0-branch
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
         launch_command("go", "prev")
 
         assert 'a-additional-root' == launch_command("show", "current").strip(), \
@@ -441,7 +441,7 @@ class TestGo(BaseTest):
             additional-root
                 branch-from-additional-root
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
         launch_command("go", "root")
 
         assert 'level-0-branch' == launch_command("show", "current").strip(), \

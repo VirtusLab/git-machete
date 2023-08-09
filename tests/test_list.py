@@ -4,7 +4,7 @@ from git_machete.exceptions import ExitCode
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
-                      rewrite_definition_file)
+                      rewrite_branch_layout_file)
 
 
 class TestList(BaseTest):
@@ -43,7 +43,7 @@ class TestList(BaseTest):
                 feature_0_1
               feature_1
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         (
             self.repo_sandbox

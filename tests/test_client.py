@@ -5,14 +5,14 @@ from git_machete.client import MacheteClient
 from git_machete.git_operations import GitContext, LocalBranchShortName
 
 from .base_test import BaseTest
-from .mockers import rewrite_definition_file
+from .mockers import rewrite_branch_layout_file
 
 
 class TestClient(BaseTest):
 
-    def test_annotations_read_definition_file(self) -> None:
+    def test_annotations_read_branch_layout_file(self) -> None:
         """
-        Verify behaviour of a 'MacheteClient.read_definition_file()' method
+        Verify behaviour of a 'MacheteClient.read_branch_layout_file()' method
         """
         (
             self.repo_sandbox
@@ -56,9 +56,9 @@ class TestClient(BaseTest):
             feature8 annotation rebase=no push=no rebase=no push=no
             """
         self.repo_sandbox.new_branch("root")
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
         machete_client = MacheteClient(GitContext())
-        machete_client.read_definition_file(perform_interactive_slide_out=False)
+        machete_client.read_branch_layout_file(perform_interactive_slide_out=False)
         annotations: Dict[LocalBranchShortName, Annotation] = machete_client.annotations
 
         feature_2_branch = LocalBranchShortName.of('feature2')

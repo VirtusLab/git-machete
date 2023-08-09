@@ -160,14 +160,14 @@ __git_machete_cmds=(
   'advance:Fast-forward the current branch to match one of its downstreams and subsequently slide out this downstream'
   'anno:Manage custom annotations'
   'clean:Delete untracked and unmanaged branches and optionally check out open GitHub PRs'
-  'delete-unmanaged:Delete local branches that are not present in the definition file'
+  'delete-unmanaged:Delete local branches that are not present in the branch layout file'
   {diff,d}':Diff current working directory or a given branch against its fork point'
   'discover:Automatically discover tree of branch dependencies'
-  {edit,e}':Edit the definition file'
-  'file:Display the location of the definition file'
+  {edit,e}':Edit the branch layout file'
+  'file:Display the location of the branch layout file'
   'fork-point:Display hash of the fork point commit of a branch'
   {go,g}':Check out the branch relative to the position of the current branch'
-  'github:Creates, checks out and manages GitHub PRs while keeping them reflected in branch definition file'
+  'github:Creates, checks out and manages GitHub PRs while keeping them reflected in branch layout file'
   'help:Display this overview, or detailed help for a specified command'
   'is-managed:Check if the current branch is managed by git-machete (mostly for scripts)'
   'list:List all branches that fall into one of pre-defined categories (mostly for internal use)'
@@ -191,7 +191,7 @@ __git_machete_help_topics() {
   set -A topics ${__git_machete_cmds}
   topics+=(
     'config:Docs for the configuration keys and environment variables'
-    'format:Format of the .git/machete definition file'
+    'format:Format of the .git/machete branch layout file'
     'hooks:Display docs for the extra hooks added by git machete'
   )
   _describe -t topics 'git machete help topic' topics "$@"
@@ -278,12 +278,12 @@ __git_machete_categories() {
   local categories
   # TODO (#115): complete slidable-after's argument
   categories=(
-    'addable:all branches (local or remote) than can be added to the definition file'
+    'addable:all branches (local or remote) than can be added to the branch layout file'
     'childless:all branches that do not possess child branches'
-    'managed:all branches that appear in the definition file'
+    'managed:all branches that appear in the branch layout file'
     'slidable:all managed branches that have exactly one upstream and one downstream (i.e. the ones that can be slid out with slide-out command)'
     'slidable-after:the downstream branch of the given branch, if it exists and is its only downstream (i.e. the one that can be slid out immediately following <branch>)'
-    'unmanaged:all local branches that do not appear in the definition file'
+    'unmanaged:all local branches that do not appear in the branch layout file'
     'with-overridden-fork-point:all local branches that have a fork point override config'
   )
   _describe -t categories 'category' categories "$@"

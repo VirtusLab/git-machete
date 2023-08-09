@@ -1,7 +1,7 @@
 import pytest
 
 from .base_test import BaseTest
-from .mockers import launch_command, rewrite_definition_file
+from .mockers import launch_command, rewrite_branch_layout_file
 
 
 class TestIsManaged(BaseTest):
@@ -26,7 +26,7 @@ class TestIsManaged(BaseTest):
             develop
                 feature
             """
-        rewrite_definition_file(body)
+        rewrite_branch_layout_file(body)
 
         # Test `git machete is-managed` without providing the branch name
         launch_command('is-managed')

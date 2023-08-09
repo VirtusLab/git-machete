@@ -34,10 +34,10 @@ class MacheteClient:
     def __init__(self, git: GitContext) -> None:
         self.__git: GitContext = git
         git.owner = self
-        self.__definition_file_path: str = self.__get_git_machete_definition_file_path()
+        self.__branch_layout_file_path: str = self.__get_git_machete_branch_layout_file_path()
         self.__init_state()
 
-    def __get_git_machete_definition_file_path(self) -> str:
+    def __get_git_machete_branch_layout_file_path(self) -> str:
         use_top_level_machete_file = self.__git.get_boolean_config_attr(key=git_config_keys.WORKTREE_USE_TOP_LEVEL_MACHETE_FILE,
                                                                         default_value=True)
         machete_file_directory = self.__git.get_main_git_dir() if use_top_level_machete_file else self.__git.get_worktree_git_dir()
@@ -54,8 +54,8 @@ class MacheteClient:
         self.__branch_pairs_by_hash_in_reflog: Optional[Dict[FullCommitHash, List[BranchPair]]] = None
 
     @property
-    def definition_file_path(self) -> str:
-        return self.__definition_file_path
+    def branch_layout_file_path(self) -> str:
+        return self.__branch_layout_file_path
 
     @property
     def managed_branches(self) -> List[LocalBranchShortName]:
@@ -88,17 +88,17 @@ class MacheteClient:
 
     def __raise_no_branches_error(self) -> None:
         raise MacheteException(
-            f"No branches listed in {self.__definition_file_path}; use `git "
+            f"No branches listed in {self.__branch_layout_file_path}; use `git "
             f"machete discover` or `git machete edit`, or edit"
-            f" {self.__definition_file_path} manually.")
+            f" {self.__branch_layout_file_path} manually.")
 
-    def read_definition_file(self, perform_interactive_slide_out: bool, verify_branches: bool = True) -> None:
-        with open(self.__definition_file_path) as file:
+    def read_branch_layout_file(self, perform_interactive_slide_out: bool, verify_branches: bool = True) -> None:
+        with open(self.__branch_layout_file_path) as file:
             lines: List[str] = [line.rstrip() for line in file.readlines()]
 
         at_depth = {}
         last_depth = -1
-        hint = "Edit the definition file manually with `git machete edit`"
+        hint = "Edit the branch layout file manually with `git machete edit`"
 
         invalid_branches: List[LocalBranchShortName] = []
         for index, line in enumerate(lines):
@@ -115,8 +115,8 @@ class MacheteClient:
                 self.__annotations[branch] = Annotation(branch_and_maybe_annotation[1])
             if branch in self.managed_branches:
                 raise MacheteException(
-                    f"{self.__definition_file_path}, line {index + 1}: branch "
-                    f"{bold(branch)} re-appears in the tree definition. {hint}")
+                    f"{self.__branch_layout_file_path}, line {index + 1}: branch "
+                    f"{bold(branch)} re-appears in the branch layout. {hint}")
             if verify_branches and branch not in self.__git.get_local_branches():
                 invalid_branches += [branch]
             self.__managed_branches += [branch]
@@ -129,7 +129,7 @@ class MacheteClient:
                     prefix_expanded: str = "".join(mapping[c] for c in prefix)
                     indent_expanded: str = "".join(mapping[c] for c in self.__indent)
                     raise MacheteException(
-                        f"{self.__definition_file_path}, line {index + 1}: "
+                        f"{self.__branch_layout_file_path}, line {index + 1}: "
                         f"invalid indent {bold(prefix_expanded)}, expected a multiply"
                         f" of {bold(indent_expanded)}. {hint}")
             else:
@@ -137,7 +137,7 @@ class MacheteClient:
 
             if depth > last_depth + 1:
                 raise MacheteException(
-                    f"{self.__definition_file_path}, line {index + 1}: too much "
+                    f"{self.__branch_layout_file_path}, line {index + 1}: too much "
                     f"indent (level {depth}, expected at most {last_depth + 1}) "
                     f"for the branch {bold(branch)}. {hint}")
             last_depth = depth
@@ -161,17 +161,17 @@ class MacheteClient:
                 ans: str = self.ask_if(
                     f"Skipping {bold(invalid_branches[0])} " +
                     "which is not a local branch (perhaps it has been deleted?).\n" +
-                    "Slide it out from the definition file?" +
+                    "Slide it out from the branch layout file?" +
                     get_pretty_choices("y", "e[dit]", "N"), opt_yes_msg=None, opt_yes=False)
             else:
                 ans = self.ask_if(
                     f"Skipping {', '.join(f'{bold(branch)}' for branch in invalid_branches)}"
                     " which are not local branches (perhaps they have been deleted?).\n"
-                    "Slide them out from the definition file?" + get_pretty_choices("y", "e[dit]", "N"),
+                    "Slide them out from the branch layout file?" + get_pretty_choices("y", "e[dit]", "N"),
                     opt_yes_msg=None, opt_yes=False)
         else:
             print(f"Warning: sliding invalid branches: {', '.join(f'{bold(branch)}' for branch in invalid_branches)} "
-                  f"out of the definition file", file=sys.stderr)
+                  f"out of the branch layout file", file=sys.stderr)
             ans = 'y'
 
         def recursive_slide_out_invalid_branches(branch_: LocalBranchShortName) -> List[LocalBranchShortName]:
@@ -197,11 +197,11 @@ class MacheteClient:
         self.__roots = flat_map(recursive_slide_out_invalid_branches, self.__roots)
         self.__managed_branches = excluding(self.managed_branches, invalid_branches)
         if ans in ('y', 'yes'):
-            self.save_definition_file()
+            self.save_branch_layout_file()
         elif ans in ('e', 'edit'):
             self.edit()
             self.__init_state()
-            self.read_definition_file(verify_branches)
+            self.read_branch_layout_file(verify_branches)
 
     def render_tree(self) -> List[str]:
         if not self.__indent:
@@ -220,11 +220,11 @@ class MacheteClient:
             total += render_dfs(root, depth=0)
         return total
 
-    def back_up_definition_file(self) -> None:
-        shutil.copyfile(self.__definition_file_path, self.__definition_file_path + "~")
+    def back_up_branch_layout_file(self) -> None:
+        shutil.copyfile(self.__branch_layout_file_path, self.__branch_layout_file_path + "~")
 
-    def save_definition_file(self) -> None:
-        with open(self.__definition_file_path, "w") as file:
+    def save_branch_layout_file(self) -> None:
+        with open(self.__branch_layout_file_path, "w") as file:
             file.write("\n".join(self.render_tree()) + "\n")
 
     def add(self,
@@ -291,7 +291,7 @@ class MacheteClient:
                         "You can either:\n"
                         "1) specify the desired upstream branch with `--onto` or\n"
                         f"2) pass `--as-root` to attach {bold(branch)} as a new root or\n"
-                        "3) edit the definition file manually with `git machete edit`")
+                        "3) edit the branch layout file manually with `git machete edit`")
                 else:
                     msg = (f"Add {bold(branch)} onto the inferred upstream (parent) "
                            f"branch {bold(upstream)}?" + get_pretty_choices('y', 'N'))
@@ -312,7 +312,7 @@ class MacheteClient:
                 print(fmt(f"Added branch {bold(branch)} onto {bold(opt_onto)}"))
 
         self.__managed_branches += [branch]
-        self.save_definition_file()
+        self.save_branch_layout_file()
 
     def annotate(self, branch: LocalBranchShortName, words: List[str]) -> None:
 
@@ -320,7 +320,7 @@ class MacheteClient:
             del self.__annotations[branch]
         else:
             self.__annotations[branch] = Annotation(" ".join(words))
-        self.save_definition_file()
+        self.save_branch_layout_file()
 
     def print_annotation(self, branch: LocalBranchShortName) -> None:
         if branch in self.__annotations:
@@ -472,21 +472,21 @@ class MacheteClient:
             opt_list_commits_with_hashes=False,
             opt_no_detect_squash_merges=False)
         print("")
-        do_backup = os.path.isfile(self.__definition_file_path) and io.open(self.__definition_file_path).read().strip()
+        do_backup = os.path.isfile(self.__branch_layout_file_path) and io.open(self.__branch_layout_file_path).read().strip()
         backup_msg = (
-            f"\nThe existing definition file will be backed up as {self.__definition_file_path}~"
+            f"\nThe existing branch layout file will be backed up as {self.__branch_layout_file_path}~"
             if do_backup else "")
-        msg = f"Save the above tree to {self.__definition_file_path}?{backup_msg}" + get_pretty_choices('y', 'e[dit]', 'N')
-        opt_yes_msg = f"Saving the above tree to {self.__definition_file_path}...{backup_msg}"
+        msg = f"Save the above tree to {self.__branch_layout_file_path}?{backup_msg}" + get_pretty_choices('y', 'e[dit]', 'N')
+        opt_yes_msg = f"Saving the above tree to {self.__branch_layout_file_path}...{backup_msg}"
         ans = self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes)
         if ans in ('y', 'yes'):
             if do_backup:
-                self.back_up_definition_file()
-            self.save_definition_file()
+                self.back_up_branch_layout_file()
+            self.save_branch_layout_file()
         elif ans in ('e', 'edit'):
             if do_backup:
-                self.back_up_definition_file()
-            self.save_definition_file()
+                self.back_up_branch_layout_file()
+            self.save_branch_layout_file()
             self.edit()
 
     def slide_out(self,
@@ -555,7 +555,7 @@ class MacheteClient:
             self.__down_branches[new_upstream] += [new_downstream]
 
         # Update definition, fire post-hook, and perform the branch update
-        self.save_definition_file()
+        self.save_branch_layout_file()
         self.__run_post_slide_out_hook(new_upstream, branches_to_slide_out[-1], new_downstreams)
 
         self.__git.checkout(new_upstream)
@@ -640,7 +640,7 @@ class MacheteClient:
             self.__down_branches[branch] = flat_map(
                 lambda bd: dds if bd == down_branch else [bd],
                 self.__down_branches.get(branch) or [])
-            self.save_definition_file()
+            self.save_branch_layout_file()
             self.__run_post_slide_out_hook(branch, down_branch, dds)
 
     def __print_new_line(self, new_status: bool) -> None:
@@ -778,7 +778,7 @@ class MacheteClient:
                         self.__down_branches[upstream] or [])
                     if branch in self.__annotations:
                         del self.__annotations[branch]
-                    self.save_definition_file()
+                    self.save_branch_layout_file()
                     self.__run_post_slide_out_hook(upstream, branch, dbb)
                     if ans == 'yq':
                         return
@@ -1222,10 +1222,10 @@ class MacheteClient:
         if not default_editor_with_args:
             raise MacheteException(
                 f"Cannot determine editor. Set `GIT_MACHETE_EDITOR` environment "
-                f"variable or edit {self.__definition_file_path} directly.")
+                f"variable or edit {self.__branch_layout_file_path} directly.")
 
         command = default_editor_with_args[0]
-        args = default_editor_with_args[1:] + [self.__definition_file_path]
+        args = default_editor_with_args[1:] + [self.__branch_layout_file_path]
         return utils.run_cmd(command, *args)
 
     def __get_editor_with_args(self) -> List[str]:
@@ -1593,9 +1593,9 @@ class MacheteClient:
         debug('Current GitHub user is ' + (bold(current_user or '<none>')))
         all_open_prs: List[GitHubPullRequest] = github_client.derive_pull_requests()
         print(fmt('<green><b>OK</b></green>'))
-        self.__sync_annotations_to_definition_file(all_open_prs, current_user, verbose=True)
+        self.__sync_annotations_to_branch_layout_file(all_open_prs, current_user, verbose=True)
 
-    def __sync_annotations_to_definition_file(self, prs: List[GitHubPullRequest], current_user: Optional[str], verbose: bool) -> None:
+    def __sync_annotations_to_branch_layout_file(self, prs: List[GitHubPullRequest], current_user: Optional[str], verbose: bool) -> None:
         for pr in prs:
             if LocalBranchShortName.of(pr.head) in self.managed_branches:
                 debug(f'{pr} corresponds to a managed branch')
@@ -1629,7 +1629,7 @@ class MacheteClient:
                         if old_annotation_text is not None else Annotation(anno)
             else:
                 debug(f'{pr} does NOT correspond to a managed branch')
-        self.save_definition_file()
+        self.save_branch_layout_file()
 
     # Parse and evaluate direction against current branch for show/go commands
     def parse_direction(self,
@@ -2102,7 +2102,7 @@ class MacheteClient:
                         checked_out_prs.append(pr)
 
         debug('Current GitHub user is ' + (current_user or '<none>'))
-        self.__sync_annotations_to_definition_file(all_open_prs, current_user=current_user, verbose=False)
+        self.__sync_annotations_to_branch_layout_file(all_open_prs, current_user=current_user, verbose=False)
         if len(applicable_prs) == 1:
             self.__git.checkout(LocalBranchShortName.of(pr.head))
 
@@ -2205,7 +2205,7 @@ class MacheteClient:
             raise MacheteException(
                 f'Branch {bold(head)} does not have a parent branch (it is a root) '
                 f'even though there is an open PR #{bold(str(pr.number))} to {bold(pr.base)}.\n'
-                'Consider modifying the branch definition file (`git machete edit`)'
+                'Consider modifying the branch layout file (`git machete edit`)'
                 f' so that {bold(head)} is a child of {bold(pr.base)}.')
 
         if pr.base != new_base:
@@ -2218,7 +2218,7 @@ class MacheteClient:
             self.__annotations[head] = Annotation(f'PR #{pr.number} ' + self.__annotations[head].qualifiers_text)
         else:
             self.__annotations[head] = Annotation(f'PR #{pr.number}')
-        self.save_definition_file()
+        self.save_branch_layout_file()
 
     def __derive_github_domain(self) -> str:
         return self.__git.get_config_attr_or_none(key=git_config_keys.GITHUB_DOMAIN) or GitHubClient.DEFAULT_GITHUB_DOMAIN
@@ -2353,7 +2353,7 @@ class MacheteClient:
                 print(fmt(ok_str))
 
         self.__annotations[head] = Annotation(f'PR #{pr.number}')
-        self.save_definition_file()
+        self.save_branch_layout_file()
 
     def __handle_diverged_and_newer_state(
             self,
@@ -2496,11 +2496,11 @@ class MacheteClient:
             if current_branch not in self.managed_branches:
                 raise MacheteException(
                     "Command `github create-pr` can NOT be executed on the branch"
-                    " that is not managed by git machete (is not present in git "
-                    "machete definition file). To successfully execute this command "
+                    " that is not managed by git machete (is not present in branch layout file). "
+                    "To successfully execute this command "
                     "either add current branch to the file via commands `add`, "
                     "`discover` or `edit` or agree on adding the branch to the "
-                    "definition file during the execution of `github create-pr` command.")
+                    "branch layout file during the execution of `github create-pr` command.")
 
         up_branch: Optional[LocalBranchShortName] = self.__up_branch.get(current_branch)
         if not up_branch:
@@ -2589,7 +2589,7 @@ class MacheteClient:
                         del self.__up_branch[managed_branch]
 
         self.__delete_branches(branches_to_delete=branches_to_delete, opt_yes=opt_yes)
-        self.save_definition_file()
+        self.save_branch_layout_file()
 
     @staticmethod
     def is_stdout_a_tty() -> bool:
