@@ -147,7 +147,7 @@ jobs:
     steps:
       - checkout
       - run: pip install tox
-      - run: PYTHON_VERSION=3.11-macos  tox -e coverage-py311 -- -vv
+      - run: PYTHON_VERSION=3.11-macos  tox -e coverage -- -vv
       - store_test_results:
           path: test-results/
       - persist_to_workspace:
