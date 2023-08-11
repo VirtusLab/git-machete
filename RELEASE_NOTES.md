@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.18.0
+
 ## New in git-machete 3.17.9
 
 - improved: layout of documentation at ReadTheDocs
