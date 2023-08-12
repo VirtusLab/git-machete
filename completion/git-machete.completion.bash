@@ -89,7 +89,8 @@ _git_machete() {
           --color) __gitcomp "$opt_color_args" ;;
           -d|--down-fork-point|-f|--fork-point|--override-to) __gitcomp "$(__git_refs)" ;;
           # TODO (#895): we don't complete --help since it's going to be captured by git anyway
-          # (and results in redirection to yet non-existent man for `git-machete`).
+          # and results in redirection to man for `git-machete`,
+          # which is only properly installed by some package systems as for now (see PACKAGES.md).
           -h) __gitcomp "$help_topics" ;;
           --return-to) __gitcomp "$opt_return_to_args" ;;
           # TODO (#111): complete the comma-separated list of roots

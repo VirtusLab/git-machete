@@ -182,8 +182,9 @@ This will be resolved from the first of:
 
 ### Shell completions
 
-When git-machete is installed via **Homebrew**, shell completions should be installed automatically. <br/>
-For any other package manager, or when your shell doesn't pick up the Homebrew-installed completion, use the following:
+When git-machete is installed via **Homebrew** (and a few other supported package managers, see [PACKAGES.md](PACKAGES.md)),
+shell completions should be installed automatically. <br/>
+For other package managers (like **pip**), or when your shell doesn't pick up the Homebrew-installed completion, use the following:
 
 #### Bash
 
