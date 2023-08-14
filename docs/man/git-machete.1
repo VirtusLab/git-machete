@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Aug 14, 2023" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Aug 15, 2023" "" "git-machete"
 .SH NAME
 git-machete \- git-machete 3.18.1
 .sp
@@ -342,20 +342,18 @@ You can alter the default behavior by setting the following git config keys:
 .B GitHub Enterprise domain
 E.g. \fBgit config machete.github.domain git.example.org\fP
 .TP
-.B Remote name
+.B Remote name (as in \fBgit remote\fP)
 E.g. \fBgit config machete.github.remote origin\fP
 .TP
-.B Organization name
-E.g. \fBgit config machete.github.organization VirtusLab\fP
-.TP
-.B Repository name
-E.g. \fBgit config machete.github.repository git\-machete\fP
+.B Organization and repository name
+E.g. \fBgit config machete.github.organization VirtusLab; git config machete.github.repository git\-machete\fP
 .UNINDENT
 .UNINDENT
 .UNINDENT
 .sp
 Note that you do \fBnot\fP need to set all four keys at once.
 For example, in a typical usage of GitHub Enterprise, it should be enough to just set \fBmachete.github.domain\fP\&.
+Only \fBmachete.github.organization\fP and \fBmachete.github.repository\fP must be specified together.
 .UNINDENT
 .UNINDENT
 .sp
@@ -404,25 +402,23 @@ You can alter the default behavior by setting the following git config keys:
 .B GitHub Enterprise domain
 E.g. \fBgit config machete.github.domain git.example.org\fP
 .TP
-.B Remote name
+.B Remote name (as in \fBgit remote\fP)
 E.g. \fBgit config machete.github.remote origin\fP
 .TP
-.B Organization name
-E.g. \fBgit config machete.github.organization VirtusLab\fP
-.TP
-.B Repository name
-E.g. \fBgit config machete.github.repository git\-machete\fP
+.B Organization and repository name
+E.g. \fBgit config machete.github.organization VirtusLab; git config machete.github.repository git\-machete\fP
 .UNINDENT
 .UNINDENT
 .UNINDENT
 .sp
 Note that you do \fBnot\fP need to set all four keys at once.
 For example, in a typical usage of GitHub Enterprise, it should be enough to just set \fBmachete.github.domain\fP\&.
+Only \fBmachete.github.organization\fP and \fBmachete.github.repository\fP must be specified together.
 .UNINDENT
 .UNINDENT
 .TP
 .B \fBmachete.overrideForkPoint.<branch>.to\fP:
-Executing \fBgit machete fork\-point \-\-override\-to[\-parent|\-inferred|=<revision>] [<branch>]\fP sets up a fork point override for <branch>.
+Executing \fBgit machete fork\-point \-\-override\-to[\-parent|\-inferred|=<revision>] [<branch>]\fP sets up a fork point override for \fB<branch>\fP\&.
 .sp
 The override data is stored under \fBmachete.overrideForkPoint.<branch>.to\fP git config key.
 .sp
@@ -592,20 +588,18 @@ You can alter the default behavior by setting the following git config keys:
 .B GitHub Enterprise domain
 E.g. \fBgit config machete.github.domain git.example.org\fP
 .TP
-.B Remote name
+.B Remote name (as in \fBgit remote\fP)
 E.g. \fBgit config machete.github.remote origin\fP
 .TP
-.B Organization name
-E.g. \fBgit config machete.github.organization VirtusLab\fP
-.TP
-.B Repository name
-E.g. \fBgit config machete.github.repository git\-machete\fP
+.B Organization and repository name
+E.g. \fBgit config machete.github.organization VirtusLab; git config machete.github.repository git\-machete\fP
 .UNINDENT
 .UNINDENT
 .UNINDENT
 .sp
 Note that you do \fBnot\fP need to set all four keys at once.
 For example, in a typical usage of GitHub Enterprise, it should be enough to just set \fBmachete.github.domain\fP\&.
+Only \fBmachete.github.organization\fP and \fBmachete.github.repository\fP must be specified together.
 .UNINDENT
 .UNINDENT
 .sp
@@ -1060,20 +1054,18 @@ You can alter the default behavior by setting the following git config keys:
 .B GitHub Enterprise domain
 E.g. \fBgit config machete.github.domain git.example.org\fP
 .TP
-.B Remote name
+.B Remote name (as in \fBgit remote\fP)
 E.g. \fBgit config machete.github.remote origin\fP
 .TP
-.B Organization name
-E.g. \fBgit config machete.github.organization VirtusLab\fP
-.TP
-.B Repository name
-E.g. \fBgit config machete.github.repository git\-machete\fP
+.B Organization and repository name
+E.g. \fBgit config machete.github.organization VirtusLab; git config machete.github.repository git\-machete\fP
 .UNINDENT
 .UNINDENT
 .UNINDENT
 .sp
 Note that you do \fBnot\fP need to set all four keys at once.
 For example, in a typical usage of GitHub Enterprise, it should be enough to just set \fBmachete.github.domain\fP\&.
+Only \fBmachete.github.organization\fP and \fBmachete.github.repository\fP must be specified together.
 .UNINDENT
 .UNINDENT
 .sp

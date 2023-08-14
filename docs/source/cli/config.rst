@@ -15,7 +15,7 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
         :start-line: 2
 
 ``machete.overrideForkPoint.<branch>.to``:
-    Executing ``git machete fork-point --override-to[-parent|-inferred|=<revision>] [<branch>]`` sets up a fork point override for <branch>.
+    Executing ``git machete fork-point --override-to[-parent|-inferred|=<revision>] [<branch>]`` sets up a fork point override for ``<branch>``.
 
     The override data is stored under ``machete.overrideForkPoint.<branch>.to`` git config key.
 

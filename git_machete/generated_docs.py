@@ -155,16 +155,14 @@ long_docs: Dict[str, str] = {
            GitHub Enterprise domain
               E.g. `git config machete.github.domain git.example.org`
 
-           Remote name
+           Remote name (as in `git remote`)
               E.g. `git config machete.github.remote origin`
 
-           Organization name
-              E.g. `git config machete.github.organization VirtusLab`
-
-           Repository name
-              E.g. `git config machete.github.repository git-machete`
+           Organization and repository name
+              E.g. `git config machete.github.organization VirtusLab; git config machete.github.repository git-machete`
         Note that you do <b>not</b> need to set all four keys at once.
         For example, in a typical usage of GitHub Enterprise, it should be enough to just set `machete.github.domain`.
+        Only `machete.github.organization` and `machete.github.repository` must be specified together.
 
         In any other case, sets the annotation for the given/current branch to the given <annotation text>.
         If multiple <annotation text>'s are passed to the command, they are concatenated with a single space.
@@ -223,16 +221,14 @@ long_docs: Dict[str, str] = {
            GitHub Enterprise domain
               E.g. `git config machete.github.domain git.example.org`
 
-           Remote name
+           Remote name (as in `git remote`)
               E.g. `git config machete.github.remote origin`
 
-           Organization name
-              E.g. `git config machete.github.organization VirtusLab`
-
-           Repository name
-              E.g. `git config machete.github.repository git-machete`
+           Organization and repository name
+              E.g. `git config machete.github.organization VirtusLab; git config machete.github.repository git-machete`
         Note that you do <b>not</b> need to set all four keys at once.
         For example, in a typical usage of GitHub Enterprise, it should be enough to just set `machete.github.domain`.
+        Only `machete.github.organization` and `machete.github.repository` must be specified together.
 
         <b>Options:</b>
            <b>-c</b>, <b>--checkout-my-github-prs</b>
@@ -288,21 +284,19 @@ long_docs: Dict[str, str] = {
                  GitHub Enterprise domain
               E.g. `git config machete.github.domain git.example.org`
 
-                 Remote name
+                 Remote name (as in `git remote`)
               E.g. `git config machete.github.remote origin`
 
-                 Organization name
-              E.g. `git config machete.github.organization VirtusLab`
-
-                 Repository name
-              E.g. `git config machete.github.repository git-machete`
+                 Organization and repository name
+              E.g. `git config machete.github.organization VirtusLab; git config machete.github.repository git-machete`
 
               Note that you do <b>not</b> need to set all four keys at once.
               For example, in a typical usage of GitHub Enterprise, it should be enough to just set `machete.github.domain`.
+              Only `machete.github.organization` and `machete.github.repository` must be specified together.
 
            `machete.overrideForkPoint.<branch>.to`:
  
-              Executing `git machete fork-point --override-to[-parent|-inferred|=<revision>] [<branch>]` sets up a fork point override for <branch>.
+              Executing `git machete fork-point --override-to[-parent|-inferred|=<revision>] [<branch>]` sets up a fork point override for `<branch>`.
 
               The override data is stored under `machete.overrideForkPoint.<branch>.to` git config key.
 
@@ -576,16 +570,14 @@ long_docs: Dict[str, str] = {
            GitHub Enterprise domain
               E.g. `git config machete.github.domain git.example.org`
 
-           Remote name
+           Remote name (as in `git remote`)
               E.g. `git config machete.github.remote origin`
 
-           Organization name
-              E.g. `git config machete.github.organization VirtusLab`
-
-           Repository name
-              E.g. `git config machete.github.repository git-machete`
+           Organization and repository name
+              E.g. `git config machete.github.organization VirtusLab; git config machete.github.repository git-machete`
         Note that you do <b>not</b> need to set all four keys at once.
         For example, in a typical usage of GitHub Enterprise, it should be enough to just set `machete.github.domain`.
+        Only `machete.github.organization` and `machete.github.repository` must be specified together.
 
         <b>Subcommands:</b>
            `anno-prs`:

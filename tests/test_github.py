@@ -1,10 +1,12 @@
+from contextlib import contextmanager
 from textwrap import dedent
+from typing import Iterator
 from unittest.mock import mock_open
 
 from pytest_mock import MockerFixture
 
 from git_machete.github import (GitHubClient, GitHubToken,
-                                RemoteAndOrganizationAndRepository)
+                                OrganizationAndRepository)
 from tests.base_test import BaseTest
 from tests.mockers import (assert_failure, assert_success, launch_command,
                            mock__popen_cmd_with_fixed_results,
@@ -29,16 +31,15 @@ class TestGitHub(BaseTest):
         urls = urls + [url + '.git' for url in urls]
 
         for url in urls:
-            remote_and_organization_and_repository = RemoteAndOrganizationAndRepository.from_url(
-                domain=GitHubClient.DEFAULT_GITHUB_DOMAIN, url=url, remote='origin')
-            assert remote_and_organization_and_repository is not None
-            assert remote_and_organization_and_repository.organization == organization
-            assert remote_and_organization_and_repository.repository == repository
+            org_and_repo = OrganizationAndRepository.from_url(domain=GitHubClient.DEFAULT_GITHUB_DOMAIN, url=url)
+            assert org_and_repo is not None
+            assert org_and_repo.organization == organization
+            assert org_and_repo.repository == repository
 
     PR_COUNT_FOR_TEST_GITHUB_API_PAGINATION = 12
 
     github_api_state_for_test_github_api_pagination = MockGitHubAPIState([{
-        'head': {'ref': f'feature_{i:02d}', 'repo': {'full_name': 'testing/checkout_prs',
+        'head': {'ref': f'feature_{i:02d}', 'repo': {'full_name': 'tester/repo_sandbox',
                                                      'html_url': 'https://github.com/tester/repo_sandbox.git'}},
         'user': {'login': 'some_other_user'},
         'base': {'ref': 'develop'},
@@ -51,7 +52,7 @@ class TestGitHub(BaseTest):
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
         self.patch_symbol(mocker, 'git_machete.github.GitHubClient.MAX_PULLS_PER_PAGE_COUNT', 3)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
-        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_github_api_pagination))
 
         (
@@ -79,7 +80,7 @@ class TestGitHub(BaseTest):
 
     def test_github_enterprise_domain_unauthorized_without_token(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
-        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState([])))
 
         self.repo_sandbox.set_git_config_key('machete.github.domain', '403.example.org')
@@ -94,7 +95,7 @@ class TestGitHub(BaseTest):
 
     def test_github_enterprise_domain_unauthorized_with_token(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
-        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState([])))
 
         self.repo_sandbox.set_git_config_key('machete.github.domain', '403.example.org')
@@ -121,7 +122,7 @@ class TestGitHub(BaseTest):
 
     def test_github_enterprise_domain(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
-        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_github_enterprise_domain))
 
         github_enterprise_domain = 'git.example.org'
@@ -138,8 +139,47 @@ class TestGitHub(BaseTest):
         )
         launch_command('github', 'checkout-prs', '--all')
 
+    def test_github_invalid_config(self) -> None:
+        @contextmanager
+        def git_config_key(key: str, value: str) -> Iterator[None]:
+            self.repo_sandbox.set_git_config_key(key, value)
+            yield
+            self.repo_sandbox.unset_git_config_key(key)
+
+        with git_config_key('machete.github.organization', "example-org"):
+            assert_failure(
+                ['github', 'checkout-prs', '--all'],
+                "machete.github.organization git config key is present, but machete.github.repository is missing. "
+                "Both keys must be present to take effect")
+
+        with git_config_key('machete.github.repository', "example-repo"):
+            assert_failure(
+                ['github', 'checkout-prs', '--all'],
+                "machete.github.repository git config key is present, but machete.github.organization is missing. "
+                "Both keys must be present to take effect")
+
+        with git_config_key('machete.github.remote', "non-existent-remote"):
+            assert_failure(
+                ['github', 'checkout-prs', '--all'],
+                "machete.github.remote git config key points to non-existent-remote remote, but such remote does not exist")
+
+        with git_config_key('machete.github.organization', "example-org"):
+            with git_config_key('machete.github.repository', "example-repo"):
+                assert_failure(
+                    ['github', 'checkout-prs', '--all'],
+                    'Both machete.github.organization and machete.github.repository git config keys are defined, '
+                    'but no remote seems to correspond to example-org/example-repo (organization/repository) on GitHub.\n'
+                    'Consider pointing to the remote via machete.github.remote config key')
+
+        self.repo_sandbox.add_remote("new-origin", "https://gitlab.com/example-org/example-repo.git")  # not a valid GitHub repo URL
+        with git_config_key('machete.github.remote', "new-origin"):
+            assert_failure(
+                ['github', 'checkout-prs', '--all'],
+                'machete.github.remote git config key points to new-origin remote, '
+                'but its URL https://gitlab.com/example-org/example-repo.git does not correspond to a valid GitHub repository')
+
     def test_github_token_retrieval_order(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'os.path.isfile', lambda _file: False)
         self.patch_symbol(mocker, 'shutil.which', mock_shutil_which(None))
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_github_enterprise_domain))

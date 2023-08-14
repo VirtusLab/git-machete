@@ -3,7 +3,7 @@ from tempfile import mkdtemp
 
 from pytest_mock import MockerFixture
 
-from git_machete.github import GitHubClient, RemoteAndOrganizationAndRepository
+from git_machete.github import GitHubClient, OrganizationAndRepository
 from tests.base_test import BaseTest, GitRepositorySandbox
 from tests.mockers import (assert_failure, assert_success, launch_command,
                            rewrite_branch_layout_file)
@@ -81,7 +81,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             },
             {
                 'head': {'ref': 'bugfix/remove-n-option',
-                         'repo': {'full_name': 'testing/checkout_prs', 'html_url': GitRepositorySandbox.second_remote_path}},
+                         'repo': {'full_name': 'tester/repo_sandbox', 'html_url': GitRepositorySandbox.second_remote_path}},
                 'user': {'login': 'some_other_user'},
                 'base': {'ref': 'develop'},
                 'number': '5',
@@ -92,7 +92,7 @@ class TestGitHubCheckoutPRs(BaseTest):
     )
 
     def test_github_checkout_prs(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_checkout_prs))
 
@@ -292,12 +292,13 @@ class TestGitHubCheckoutPRs(BaseTest):
             """
         )
 
-        # check against wrong pr number
-        remote_org_repo = RemoteAndOrganizationAndRepository.from_url(domain=GitHubClient.DEFAULT_GITHUB_DOMAIN,
-                                                                      url=self.repo_sandbox.remote_path,
-                                                                      remote='origin')
-        assert remote_org_repo is not None
-        expected_error_message = f"PR #100 is not found in repository {remote_org_repo.organization}/{remote_org_repo.repository}"
+        # check against wrong PR number
+        org_repo = OrganizationAndRepository.from_url(
+            domain=GitHubClient.DEFAULT_GITHUB_DOMAIN,
+            url=self.repo_sandbox.remote_path)
+
+        assert org_repo is not None
+        expected_error_message = f"PR #100 is not found in repository {org_repo.organization}/{org_repo.repository}"
         assert_failure(['github', 'checkout-prs', '100'], expected_error_message)
 
         assert_failure(['github', 'checkout-prs', '19', '100'], expected_error_message)
@@ -320,10 +321,10 @@ class TestGitHubCheckoutPRs(BaseTest):
         )
 
         expected_error_message = "Could not check out PR #5 because its head branch bugfix/remove-n-option " \
-                                 "is already deleted from testing."
+                                 "is already deleted from tester."
         assert_failure(['github', 'checkout-prs', '5'], expected_error_message)
 
-        # Check against pr come from fork
+        # Check against PR coming from fork
         (
             self.repo_sandbox
             .new_branch('bugfix/remove-n-option')
@@ -369,7 +370,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             },
             {
                 'head': {'ref': 'sphinx_export',
-                         'repo': {'full_name': 'testing/checkout_prs', 'html_url': GitRepositorySandbox.second_remote_path}},
+                         'repo': {'full_name': 'tester/repo_sandbox', 'html_url': GitRepositorySandbox.second_remote_path}},
                 'user': {'login': 'some_other_user'},
                 'base': {'ref': 'comments/add_docstrings'},
                 'number': '23',
@@ -380,7 +381,7 @@ class TestGitHubCheckoutPRs(BaseTest):
     )
 
     def test_github_checkout_prs_freshly_cloned(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_github_checkout_prs_fresh_repo))
 
         (
@@ -498,7 +499,7 @@ class TestGitHubCheckoutPRs(BaseTest):
 
     def test_github_checkout_prs_from_fork_with_deleted_repo(self, mocker: MockerFixture) -> None:
         # need to mock fetch_ref due to underlying `git fetch pull/head` calls
-        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen',
                           mock_urlopen(self.github_api_state_for_test_github_checkout_prs_from_fork_with_deleted_repo))
 
@@ -605,7 +606,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             },
             {
                 'head': {'ref': 'bugfix/remove-n-option',
-                         'repo': {'full_name': 'testing/checkout_prs', 'html_url': GitRepositorySandbox.second_remote_path}},
+                         'repo': {'full_name': 'tester/repo_sandbox', 'html_url': GitRepositorySandbox.second_remote_path}},
                 'user': {'login': 'some_other_user'},
                 'base': {'ref': 'develop'},
                 'number': '5',
@@ -616,7 +617,7 @@ class TestGitHubCheckoutPRs(BaseTest):
     )
 
     def test_github_checkout_prs_of_current_user_and_other_users(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'urllib.request.urlopen',
                           mock_urlopen(self.github_api_state_for_test_github_checkout_prs_of_current_user_and_other_users))
@@ -766,7 +767,7 @@ class TestGitHubCheckoutPRs(BaseTest):
         )
 
     def test_github_checkout_prs_misc_failures_and_warns(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState([])))
 
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
@@ -806,12 +807,12 @@ class TestGitHubCheckoutPRs(BaseTest):
             """
         )
 
-    github_api_state_for_test_github_checkout_prs_remote_already_added = MockGitHubAPIState(
+    github_api_state_for_test_github_checkout_prs_single_pr = MockGitHubAPIState(
         [
             {
-                'head': {'ref': 'chore/redundant_checks', 'repo': mock_repository_info},
+                'head': {'ref': 'develop', 'repo': mock_repository_info},
                 'user': {'login': 'some_other_user'},
-                'base': {'ref': 'restrict_access'},
+                'base': {'ref': 'master'},
                 'number': '18',
                 'html_url': 'www.github.com',
                 'state': 'open'
@@ -822,7 +823,7 @@ class TestGitHubCheckoutPRs(BaseTest):
     def test_github_checkout_prs_remote_already_added(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.git_operations.GitContext.fetch_remote', lambda _self, _remote: None)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(
-            self.github_api_state_for_test_github_checkout_prs_remote_already_added))
+            self.github_api_state_for_test_github_checkout_prs_single_pr))
         (
             self.repo_sandbox
             .remove_remote("origin")
@@ -830,5 +831,54 @@ class TestGitHubCheckoutPRs(BaseTest):
         )
         assert_failure(
             ["github", "checkout-prs", "--all"],
-            "Could not check out PR #18 because its head branch chore/redundant_checks is already deleted from origin-1."
+            "Could not check out PR #18 because its head branch develop is already deleted from origin-1."
+        )
+
+        (
+            self.repo_sandbox
+            .remove_remote("origin-1")
+            .add_remote("tester", 'https://github.com/tester/lolxd.git')
+        )
+        assert_failure(
+            ["github", "checkout-prs", "--all"],
+            "Could not check out PR #18 because its head branch develop is already deleted from tester."
+        )
+
+    def test_github_checkout_prs_org_and_repo_from_config(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.git_operations.GitContext.fetch_remote', lambda _self, _remote: None)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(
+            self.github_api_state_for_test_github_checkout_prs_single_pr))
+
+        (
+            self.repo_sandbox
+            .new_branch("master").commit()
+            .new_branch("develop").commit().push()
+        )
+
+        self.repo_sandbox.set_remote_url("origin", "https://github.com/example-org/example-repo.git")
+        self.repo_sandbox.set_git_config_key('machete.github.organization', "example-org")
+        self.repo_sandbox.set_git_config_key('machete.github.repository', "example-repo")
+        assert_success(
+            ['github', 'checkout-prs', '--all'],
+            'Checking for open GitHub PRs... OK\n'
+            'Pull request #18 checked out at local branch develop\n'
+        )
+
+    def test_github_checkout_prs_remote_from_config(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.git_operations.GitContext.fetch_remote', lambda _self, _remote: None)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(
+            self.github_api_state_for_test_github_checkout_prs_single_pr))
+
+        (
+            self.repo_sandbox
+            .new_branch("master").commit()
+            .new_branch("develop").commit().push()
+        )
+
+        self.repo_sandbox.set_remote_url("origin", "https://github.com/example-org/example-repo.git")
+        self.repo_sandbox.set_git_config_key('machete.github.remote', "origin")
+        assert_success(
+            ['github', 'checkout-prs', '--all'],
+            'Checking for open GitHub PRs... OK\n'
+            'Pull request #18 checked out at local branch develop\n'
         )

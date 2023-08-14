@@ -226,7 +226,7 @@ class TestGitHubRetargetPR(BaseTest):
         launch_command('github', 'retarget-pr', '--branch', 'branch-without-pr', '--ignore-if-missing')
 
     def test_github_retarget_pr_multiple_non_origin_remotes(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_retarget_pr))
 
         branchs_first_commit_msg = "First commit on branch."
@@ -357,7 +357,7 @@ class TestGitHubRetargetPR(BaseTest):
     }])
 
     def test_github_retarget_pr_root_branch(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_retarget_pr_root_branch))
 
         self.repo_sandbox.new_branch("master").commit()

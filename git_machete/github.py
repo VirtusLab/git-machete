@@ -9,8 +9,6 @@ import urllib.request
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
-from git_machete import git_config_keys
-
 from .exceptions import MacheteException, UnprocessableEntityHTTPError
 from .git_operations import GitContext, LocalBranchShortName
 from .utils import bold, debug, fmt, popen_cmd, warn
@@ -43,32 +41,26 @@ class GitHubPullRequest(NamedTuple):
         return f"PR #{self.number} by {self.user}: {self.head} -> {self.base}"
 
 
-class RemoteAndOrganizationAndRepository(NamedTuple):
-    remote: str
+class OrganizationAndRepository(NamedTuple):
     organization: str
     repository: str
 
     @classmethod
-    def from_config(cls, git: GitContext) -> Optional["RemoteAndOrganizationAndRepository"]:
-        remote = git.get_config_attr_or_none(key=git_config_keys.GITHUB_REMOTE)
-        organization = git.get_config_attr_or_none(key=git_config_keys.GITHUB_ORGANIZATION)
-        repository = git.get_config_attr_or_none(key=git_config_keys.GITHUB_REPOSITORY)
-        if remote and organization and repository:
-            return cls(remote, organization, repository)
-        else:
-            return None
-
-    @classmethod
-    def from_url(cls, domain: str, url: str, remote: str) -> Optional["RemoteAndOrganizationAndRepository"]:
+    def from_url(cls, domain: str, url: str) -> Optional["OrganizationAndRepository"]:
+        url = url if url.endswith('.git') else url + '.git'
         for pattern in github_remote_url_patterns(domain):
             match = re.match(pattern, url)
             if match:
                 org = match.group(1)
                 repo = match.group(2)
-                return cls(remote=remote,
-                           organization=org,
-                           repository=repo if repo[-4:] != '.git' else repo[:-4])
+                return cls(organization=org, repository=repo if repo[-4:] != '.git' else repo[:-4])
         return None
+
+
+class OrganizationAndRepositoryAndRemote(NamedTuple):
+    organization: str
+    repository: str
+    remote: str
 
 
 GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
@@ -444,4 +436,5 @@ def github_remote_url_patterns(domain: str) -> List[str]:
 
 
 def is_github_remote_url(domain: str, url: str) -> bool:
+    url = url if url.endswith('.git') else url + '.git'
     return any((re.match(pattern, url) for pattern in github_remote_url_patterns(domain)))

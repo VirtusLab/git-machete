@@ -20,7 +20,8 @@ from .git_operations import (HEAD, AnyBranchName, AnyRevision, BranchPair,
                              GitLogEntry, LocalBranchShortName,
                              RemoteBranchShortName)
 from .github import (GitHubClient, GitHubPullRequest, GitHubToken,
-                     RemoteAndOrganizationAndRepository, is_github_remote_url)
+                     OrganizationAndRepository,
+                     OrganizationAndRepositoryAndRemote, is_github_remote_url)
 from .utils import (GITHUB_NEW_ISSUE_MESSAGE, AnsiEscapeCodes, PopenResult,
                     SyncToParentStatus, bold, colored, debug, dim, excluding,
                     flat_map, fmt, get_pretty_choices, get_second,
@@ -1586,8 +1587,8 @@ class MacheteClient:
 
     def sync_annotations_to_github_prs(self) -> None:
         domain = self.__derive_github_domain()
-        remote_org_repo = self.__derive_remote_and_github_org_and_repo(domain=domain)
-        github_client = GitHubClient(domain=domain, organization=remote_org_repo.organization, repository=remote_org_repo.repository)
+        org_repo_remote = self.__derive_org_repo_and_remote(domain=domain)
+        github_client = GitHubClient(domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
         print('Checking for open GitHub PRs... ', end='', flush=True)
         current_user: Optional[str] = github_client.derive_current_user_login()
         debug('Current GitHub user is ' + (bold(current_user or '<none>')))
@@ -2028,8 +2029,8 @@ class MacheteClient:
                             fail_on_missing_current_user_for_my_opened_prs: bool = False
                             ) -> None:
         domain = self.__derive_github_domain()
-        remote_org_repo = self.__derive_remote_and_github_org_and_repo(domain=domain)
-        github_client = GitHubClient(domain=domain, organization=remote_org_repo.organization, repository=remote_org_repo.repository)
+        org_repo_remote = self.__derive_org_repo_and_remote(domain=domain)
+        github_client = GitHubClient(domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
         print('Checking for open GitHub PRs... ', end='', flush=True)
 
         current_user: Optional[str] = github_client.derive_current_user_login()
@@ -2048,14 +2049,14 @@ class MacheteClient:
             pr_nos, all_opened_prs_from_github=all_open_prs, github_client=github_client,
             all=all_opened_prs, mine=my_opened_prs, by=opened_by, user=current_user)
 
-        debug(f'organization is {remote_org_repo.organization}, repository is {remote_org_repo.repository}')
-        self.__git.fetch_remote(remote_org_repo.remote)
+        debug(f'organization is {org_repo_remote.organization}, repository is {org_repo_remote.repository}')
+        self.__git.fetch_remote(org_repo_remote.remote)
 
         pr: Optional[GitHubPullRequest] = None
         checked_out_prs: List[GitHubPullRequest] = []
         for pr in sorted(applicable_prs, key=lambda x: x.number):
             if pr.full_repository_name:
-                if '/'.join([remote_org_repo.remote, pr.head]) not in self.__git.get_remote_branches():
+                if '/'.join([org_repo_remote.remote, pr.head]) not in self.__git.get_remote_branches():
                     remote_already_added: Optional[str] = self.__get_remote_name_for_repository_url(domain, pr.repository_url)
                     if remote_already_added:
                         remote_to_fetch = remote_already_added
@@ -2063,7 +2064,7 @@ class MacheteClient:
                         remote_to_fetch = pr.full_repository_name.split('/')[0]
                         if remote_to_fetch not in self.__git.get_remotes():
                             self.__git.add_remote(remote_to_fetch, pr.repository_url)
-                    if remote_org_repo.remote != remote_to_fetch:
+                    if org_repo_remote.remote != remote_to_fetch:
                         self.__git.fetch_remote(remote_to_fetch)
                     if '/'.join([remote_to_fetch, pr.head]) not in self.__git.get_remote_branches():
                         raise MacheteException(
@@ -2072,7 +2073,7 @@ class MacheteClient:
             else:
                 warn(f'Pull request #{bold(str(pr.number))} comes from fork and its repository is already deleted. '
                      f'No remote tracking data will be set up for {bold(pr.head)} branch.')
-                github_client.checkout_pr_refs(self.__git, remote_org_repo.remote, pr.number, LocalBranchShortName.of(pr.head))
+                github_client.checkout_pr_refs(self.__git, org_repo_remote.remote, pr.number, LocalBranchShortName.of(pr.head))
             if pr.state == 'closed':
                 warn(f'Pull request #{bold(str(pr.number))} is already closed.')
             debug(f'found {pr}')
@@ -2167,24 +2168,22 @@ class MacheteClient:
 
     def __get_remote_name_for_repository_url(self, github_domain: str, remote_url: str) -> Optional[str]:
         """
-        Check if remote is added locally by its url,
-        because it may happen that a remote is already added under a name different from the name of organization on GitHub
+        Check if the given remote (as identified by `remote_url`) is already added to local git remotes,
+        because it may happen that the local git remote's name is different from the name of organization on GitHub.
         """
         for remote, url in self.__get_url_for_remote().items():
-            url = url if url.endswith('.git') else url + '.git'
-            remote_url = remote_url if remote_url.endswith('.git') else remote_url + '.git'
             if is_github_remote_url(github_domain, url) and \
-                    RemoteAndOrganizationAndRepository.from_url(github_domain, url, remote) == \
-                    RemoteAndOrganizationAndRepository.from_url(github_domain, remote_url, remote):
+                    OrganizationAndRepository.from_url(github_domain, url) == \
+                    OrganizationAndRepository.from_url(github_domain, remote_url):
                 return remote
         return None
 
     def retarget_github_pr(self, head: LocalBranchShortName, ignore_if_missing: bool) -> None:
         domain = self.__derive_github_domain()
-        remote_org_repo = self.__derive_remote_and_github_org_and_repo(domain=domain, branch_used_for_tracking_data=head)
-        github_client = GitHubClient(domain=domain, organization=remote_org_repo.organization, repository=remote_org_repo.repository)
+        org_repo_remote = self.__derive_org_repo_and_remote(domain=domain, branch_used_for_tracking_data=head)
+        github_client = GitHubClient(domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
 
-        debug(f'organization is {remote_org_repo.organization}, repository is {remote_org_repo.repository}')
+        debug(f'organization is {org_repo_remote.organization}, repository is {org_repo_remote.repository}')
 
         try:
             prs: List[GitHubPullRequest] = github_client.derive_pull_requests_by_head(head)
@@ -2223,31 +2222,67 @@ class MacheteClient:
     def __derive_github_domain(self) -> str:
         return self.__git.get_config_attr_or_none(key=git_config_keys.GITHUB_DOMAIN) or GitHubClient.DEFAULT_GITHUB_DOMAIN
 
-    def __derive_remote_and_github_org_and_repo(self,
-                                                domain: str,
-                                                branch_used_for_tracking_data: Optional[LocalBranchShortName] = None
-                                                ) -> RemoteAndOrganizationAndRepository:
-        remote_and_organization_and_repository_from_config = RemoteAndOrganizationAndRepository.from_config(self.__git)
-        if remote_and_organization_and_repository_from_config:
-            return remote_and_organization_and_repository_from_config
+    def __derive_org_repo_and_remote(
+            self,
+            domain: str,
+            branch_used_for_tracking_data: Optional[LocalBranchShortName] = None
+    ) -> OrganizationAndRepositoryAndRemote:
+        remote_from_config = self.__git.get_config_attr_or_none(key=git_config_keys.GITHUB_REMOTE)
+        org_from_config = self.__git.get_config_attr_or_none(key=git_config_keys.GITHUB_ORGANIZATION)
+        repo_from_config = self.__git.get_config_attr_or_none(key=git_config_keys.GITHUB_REPOSITORY)
 
         url_for_remote: Dict[str, str] = self.__get_url_for_remote()
         if not url_for_remote:
-            raise MacheteException(fmt('No remotes defined for this repository (see `git remote`)'))
+            raise MacheteException('No remotes defined for this repository (see `git remote`)')
 
-        remote_and_organization_and_repository_from_urls: Dict[str, RemoteAndOrganizationAndRepository] = {
-            remote: ror for remote, ror in (
-                (remote, RemoteAndOrganizationAndRepository.from_url(domain, url, remote)) for remote, url in url_for_remote.items()
-            ) if ror
+        if org_from_config and not repo_from_config:
+            raise MacheteException('`machete.github.organization` git config key is present, '
+                                   'but `machete.github.repository` is missing. Both keys must be present to take effect')
+
+        if not org_from_config and repo_from_config:
+            raise MacheteException('`machete.github.repository` git config key is present, '
+                                   'but `machete.github.organization` is missing. Both keys must be present to take effect')
+
+        if remote_from_config:
+            if remote_from_config not in url_for_remote:
+                raise MacheteException(f'`machete.github.remote` git config key points to `{remote_from_config}` remote, '
+                                       'but such remote does not exist')
+
+        if remote_from_config and org_from_config and repo_from_config:
+            return OrganizationAndRepositoryAndRemote(org_from_config, repo_from_config, remote_from_config)
+
+        if remote_from_config:
+            url = url_for_remote[remote_from_config]
+            org_and_repo = OrganizationAndRepository.from_url(domain, url)
+            if not org_and_repo:
+                raise MacheteException(f'`machete.github.remote` git config key points to `{remote_from_config}` remote, '
+                                       f'but its URL `{url}` does not correspond to a valid GitHub repository')
+            return OrganizationAndRepositoryAndRemote(org_and_repo.organization, org_and_repo.repository, remote_from_config)
+
+        if org_from_config and repo_from_config:
+            for remote, url in self.__get_url_for_remote().items():
+                if is_github_remote_url(domain, url) and \
+                        OrganizationAndRepository.from_url(domain, url) == \
+                        OrganizationAndRepository(org_from_config, repo_from_config):
+                    return OrganizationAndRepositoryAndRemote(org_from_config, repo_from_config, remote)
+            raise MacheteException(
+                'Both `machete.github.organization` and `machete.github.repository` git config keys are defined, '
+                f'but no remote seems to correspond to `{org_from_config}/{repo_from_config}` (organization/repository) on GitHub.\n'
+                'Consider pointing to the remote via `machete.github.remote` config key')
+
+        remote_and_organization_and_repository_from_urls: Dict[str, OrganizationAndRepositoryAndRemote] = {
+            remote: OrganizationAndRepositoryAndRemote(oar.organization, oar.repository, remote) for remote, oar in (
+                (remote, OrganizationAndRepository.from_url(domain, url)) for remote, url in url_for_remote.items()
+            ) if oar
         }
 
         if not remote_and_organization_and_repository_from_urls:
             raise MacheteException(
-                fmt('Remotes are defined for this repository, but none of them '
-                    'seems to correspond to GitHub (see `git remote -v` for details).\n'
-                    'It is possible that you are using a custom GitHub URL.\n'
-                    'If that is the case, you can provide repository information explicitly via some or all of git config keys: '
-                    '`machete.github.{domain,remote,organization,repository}.`\n'))  # noqa: FS003
+                'Remotes are defined for this repository, but none of them '
+                'seems to correspond to GitHub (see `git remote -v` for details).\n'
+                'It is possible that you are using a custom GitHub URL.\n'
+                'If that is the case, you can provide repository information explicitly via some or all of git config keys: '
+                '`machete.github.{domain,remote,organization,repository}.`\n')  # noqa: FS003
 
         if len(remote_and_organization_and_repository_from_urls) == 1:
             return remote_and_organization_and_repository_from_urls[list(remote_and_organization_and_repository_from_urls.keys())[0]]
@@ -2286,15 +2321,15 @@ class MacheteClient:
             raise MacheteException(  # pragma: no cover; should never happen
                 f'Could not determine base branch for PR. Branch {bold(head)} is a root branch.' + GITHUB_NEW_ISSUE_MESSAGE)
         domain = self.__derive_github_domain()
-        remote_org_repo = self.__derive_remote_and_github_org_and_repo(domain=domain, branch_used_for_tracking_data=head)
-        github_client = GitHubClient(domain=domain, organization=remote_org_repo.organization, repository=remote_org_repo.repository)
-        print(f"Fetching {bold(remote_org_repo.remote)}...")
-        self.__git.fetch_remote(remote_org_repo.remote)
-        if '/'.join([remote_org_repo.remote, base]) not in self.__git.get_remote_branches():
+        org_repo_remote = self.__derive_org_repo_and_remote(domain=domain, branch_used_for_tracking_data=head)
+        github_client = GitHubClient(domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
+        print(f"Fetching {bold(org_repo_remote.remote)}...")
+        self.__git.fetch_remote(org_repo_remote.remote)
+        if '/'.join([org_repo_remote.remote, base]) not in self.__git.get_remote_branches():
             warn(f'Base branch for this PR ({bold(base)}) is not found on remote, pushing...')
             self.__handle_untracked_branch(
                 branch=base,
-                new_remote=remote_org_repo.remote,
+                new_remote=org_repo_remote.remote,
                 is_called_from_traverse=False,
                 is_called_from_create_pr=True,
                 opt_push_tracked=False,
@@ -2302,7 +2337,7 @@ class MacheteClient:
                 opt_yes=False)
 
         current_user: Optional[str] = github_client.derive_current_user_login()
-        debug(f'organization is {remote_org_repo.organization}, repository is {remote_org_repo.repository}')
+        debug(f'organization is {org_repo_remote.organization}, repository is {org_repo_remote.repository}')
         debug('current GitHub user is ' + (current_user or '<none>'))
 
         description_path = self.__git.get_main_git_subpath('info', 'description')

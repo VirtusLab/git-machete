@@ -12,8 +12,7 @@ import git_machete.options
 from git_machete import __version__, git_config_keys, utils
 
 from .client import MacheteClient
-from .exceptions import (ExitCode, InteractionStopped, MacheteException,
-                         UnderlyingGitException)
+from .exceptions import ExitCode, MacheteException, UnderlyingGitException
 from .generated_docs import long_docs, short_docs
 from .git_operations import (AnyBranchName, AnyRevision, GitContext,
                              LocalBranchShortName, RemoteBranchShortName)
@@ -865,15 +864,9 @@ def main() -> None:
         sys.exit(ExitCode.END_OF_FILE_SIGNAL)
     except KeyboardInterrupt:
         sys.exit(ExitCode.KEYBOARD_INTERRUPT)
-    except (argparse.ArgumentError, argparse.ArgumentTypeError) as e:
-        print(get_short_general_usage())
-        print(e, file=sys.stderr)
-        sys.exit(ExitCode.ARGUMENT_ERROR)
     except (MacheteException, UnderlyingGitException) as e:
         print(e, file=sys.stderr)
         sys.exit(ExitCode.MACHETE_EXCEPTION)
-    except InteractionStopped:
-        pass
 
 
 if __name__ == "__main__":

@@ -32,7 +32,7 @@ class TestGitHubCreatePR(BaseTest):
     def test_github_create_pr(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
-        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_create_pr))
 
         (
@@ -116,7 +116,7 @@ class TestGitHubCreatePR(BaseTest):
               x-drop-constraint (untracked)
             """,
         )
-        #  untracked state (can only create pr when branch is pushed)
+        # untracked state (can only create PR when branch is pushed)
         self.repo_sandbox.check_out('chore/fields')
 
         self.repo_sandbox.write_to_file(".git/info/milestone", "42")
@@ -297,7 +297,7 @@ class TestGitHubCreatePR(BaseTest):
 
     def test_github_create_pr_missing_base_branch_on_remote(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
-        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(
             self.github_api_state_for_test_create_pr_missing_base_branch_on_remote))
@@ -351,7 +351,7 @@ class TestGitHubCreatePR(BaseTest):
     )
 
     def test_github_create_pr_with_multiple_non_origin_remotes(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
         self.patch_symbol(mocker, 'urllib.request.urlopen',
                           mock_urlopen(self.github_api_state_for_test_github_create_pr_with_multiple_non_origin_remotes))
@@ -410,6 +410,14 @@ class TestGitHubCreatePR(BaseTest):
         assert_failure(
             ['github', 'create-pr'],
             "Could not establish remote repository, pull request creation interrupted."
+        )
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('1', 'n'))
+        assert_failure(
+            ['github', 'create-pr'],
+            "Multiple non-origin remotes correspond to GitHub in this repository: origin_1, origin_2 -> aborting.\n"
+            "You can also select the repository by providing some or all of git config keys: "
+            "machete.github.{domain,remote,organization,repository}.\n"  # noqa: FS003
         )
 
         expected_result = """
@@ -591,7 +599,7 @@ class TestGitHubCreatePR(BaseTest):
         )
 
     def test_github_create_pr_for_no_push_qualifier(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState([])))
 
@@ -627,7 +635,7 @@ class TestGitHubCreatePR(BaseTest):
         )
 
     def test_github_create_pr_for_branch_behind_remote(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState([])))
 
@@ -691,7 +699,7 @@ class TestGitHubCreatePR(BaseTest):
         )
 
     def test_github_create_pr_for_branch_diverged_from_and_older_than_remote(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.github.RemoteAndOrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState([])))
 

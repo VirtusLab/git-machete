@@ -7,9 +7,9 @@ from urllib.error import HTTPError
 from urllib.parse import ParseResult, parse_qs, urlencode, urlparse
 from urllib.request import Request
 
-from git_machete.github import GitHubToken, RemoteAndOrganizationAndRepository
+from git_machete.github import GitHubToken, OrganizationAndRepository
 
-mock_repository_info: Dict[str, str] = {'full_name': 'testing/checkout_prs',
+mock_repository_info: Dict[str, str] = {'full_name': 'tester/repo_sandbox',
                                         'html_url': 'https://github.com/tester/repo_sandbox.git'}
 
 
@@ -21,8 +21,8 @@ def mock_github_token_for_domain_fake(_domain: str) -> GitHubToken:
     return GitHubToken(value='ghp_dummy_token', provider='dummy_provider')
 
 
-def mock_from_url(domain: str, url: str, remote: str) -> "RemoteAndOrganizationAndRepository":  # noqa: U100
-    return RemoteAndOrganizationAndRepository(remote, "example-org", "example-repo")
+def mock_from_url(domain: str, url: str) -> "OrganizationAndRepository":  # noqa: U100
+    return OrganizationAndRepository("example-org", "example-repo")
 
 
 def mock_shutil_which(path: Optional[str]) -> Callable[[Any], Optional[str]]:

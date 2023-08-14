@@ -133,7 +133,11 @@ class GitRepositorySandbox:
         return self
 
     def add_remote(self, remote: str, url: str) -> "GitRepositorySandbox":
-        self.execute(f'git remote add {remote} {url}')
+        self.execute(f'git remote add {remote} "{url}"')
+        return self
+
+    def set_remote_url(self, remote: str, url: str) -> "GitRepositorySandbox":
+        self.execute(f'git remote set-url {remote} "{url}"')
         return self
 
     def remove_remote(self, remote: str = 'origin') -> "GitRepositorySandbox":
@@ -162,6 +166,10 @@ class GitRepositorySandbox:
 
     def set_git_config_key(self, key: str, value: str) -> "GitRepositorySandbox":
         self.execute(f'git config {key} "{value}"')
+        return self
+
+    def unset_git_config_key(self, key: str) -> "GitRepositorySandbox":
+        self.execute(f'git config --unset {key}')
         return self
 
     def read_file(self, file_name: str) -> str:

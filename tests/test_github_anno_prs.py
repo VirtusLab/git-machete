@@ -113,7 +113,7 @@ class TestGitHubAnnoPRs(BaseTest):
         (
             self.repo_sandbox
                 .remove_remote('new_origin')
-                .set_git_config_key('machete.github.remote', 'custom_origin')
+                .set_git_config_key('machete.github.remote', 'origin')
                 .set_git_config_key('machete.github.organization', 'custom_user')
                 .set_git_config_key('machete.github.repository', 'custom_repo')
         )
