@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.18.1
+
 ## New in git-machete 3.18.0
 
 - added: `git machete completion bash|fish|zsh` command
