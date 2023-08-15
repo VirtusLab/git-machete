@@ -54,7 +54,7 @@ else
   attempts=5
   i=1
   while true; do
-    if brew install --build-from-source --formula /home/linuxbrew/.linuxbrew/Homebrew/Library/Taps/homebrew/homebrew-core/Formula/git-machete.rb; then
+    if brew install --build-from-source --formula /home/linuxbrew/.linuxbrew/Homebrew/Library/Taps/homebrew/homebrew-core/Formula/g/git-machete.rb; then
       break
     elif (( i < attempts )); then
       echo "Retrying the installation..."

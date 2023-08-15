@@ -12,7 +12,8 @@ import git_machete.options
 from git_machete import __version__, git_config_keys, utils
 
 from .client import MacheteClient
-from .exceptions import ExitCode, MacheteException, UnderlyingGitException
+from .exceptions import (ExitCode, InteractionStopped, MacheteException,
+                         UnderlyingGitException)
 from .generated_docs import long_docs, short_docs
 from .git_operations import (AnyBranchName, AnyRevision, GitContext,
                              LocalBranchShortName, RemoteBranchShortName)
@@ -867,6 +868,8 @@ def main() -> None:
     except (MacheteException, UnderlyingGitException) as e:
         print(e, file=sys.stderr)
         sys.exit(ExitCode.MACHETE_EXCEPTION)
+    except InteractionStopped:  # pragma: no cover
+        pass
 
 
 if __name__ == "__main__":
