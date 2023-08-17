@@ -177,7 +177,7 @@ jobs:
     executor: windows_executor
     steps:
       - checkout
-      - run: pip install tox
+      - run: pip install tox==4.8.0
       # We don't collect coverage on Windows as it massively extends execution time for some reason.
       - run: tox -e testenv -- -vv
       - store_test_results:
