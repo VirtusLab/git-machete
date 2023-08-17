@@ -179,7 +179,8 @@ jobs:
       - checkout
       - run: pip install tox
       # We don't collect coverage on Windows as it massively extends execution time for some reason.
-      - run: tox -e testenv -- -vv
+      # See https://github.com/tox-dev/tox/issues/3092 for why `py` and not `testenv`.
+      - run: tox -e py -- -vv
       - store_test_results:
           path: test-results/
 
