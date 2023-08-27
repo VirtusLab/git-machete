@@ -14,7 +14,7 @@
 [![codecov](https://codecov.io/gh/VirtusLab/git-machete/branch/develop/graph/badge.svg)](https://codecov.io/gh/VirtusLab/git-machete)
 
 [//]: # (The image is referenced by its full URL to ensure it renders correctly on https://pypi.org/project/git-machete/)
-<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/graphics/logo_with_name.svg" style="width: 100%; display: block; margin-bottom: 10pt;" />
+<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/develop/graphics/logo/svg/with-name.svg" style="width: 100%; display: block; margin-bottom: 10pt;" />
 
 💪 git-machete is a robust tool that **simplifies your git workflows**.<br/>
 
