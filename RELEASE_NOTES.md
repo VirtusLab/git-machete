@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.18.2
+
 ## New in git-machete 3.18.1
 
 - fixed: `machete.github.remote` git config key can be specified independently from `machete.github.organization` and `machete.github.repository`
