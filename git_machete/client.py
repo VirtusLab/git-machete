@@ -2185,17 +2185,15 @@ class MacheteClient:
 
         debug(f'organization is {org_repo_remote.organization}, repository is {org_repo_remote.repository}')
 
-        try:
-            prs: List[GitHubPullRequest] = github_client.derive_pull_requests_by_head(head)
-        except MacheteException as err:
-            if ignore_if_missing:
-                prs = []
-            else:
-                raise MacheteException(err.msg)
+        prs: List[GitHubPullRequest] = github_client.derive_pull_requests_by_head(head)
         if not prs:
-            return
+            if ignore_if_missing:
+                warn(f"no PRs have `{head}` as its head")
+                return
+            else:
+                raise MacheteException(f"No PRs have `{head}` as its head")
         if len(prs) > 1:
-            raise MacheteException(f"Multiple PRs have {head} as its head: " + ", ".join(f"#{_pr.number}" for _pr in prs))
+            raise MacheteException(f"Multiple PRs have `{head}` as its head: " + ", ".join(f"#{_pr.number}" for _pr in prs))
         pr = prs[0]
         debug(f'found {pr}')
 

@@ -119,9 +119,8 @@ def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) 
             if full_head_name:
                 head: str = full_head_name.split(':')[1]
                 prs = github_api_state.get_pulls_by_head(head)
-                if prs:
-                    return MockGitHubAPIResponse(HTTPStatus.OK, prs)
-                raise error_404()
+                # If no matching PRs are found, the real GitHub returns 200 OK with an empty JSON array - not 404.
+                return MockGitHubAPIResponse(HTTPStatus.OK, prs)
             else:
                 pulls = github_api_state.get_open_pulls()
                 page_str = query_params.get('page')

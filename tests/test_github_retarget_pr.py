@@ -213,17 +213,13 @@ class TestGitHubRetargetPR(BaseTest):
             expected_result=expected_status_output
         )
 
-        expected_error_message = ('GET https://api.github.com/repos/user/repo/pulls?head=user:branch-without-pr request '
-                                  'ended up in 404 response from GitHub. A valid GitHub API token is required.\n'
-                                  'Provide a GitHub API token with repo access via one of the:\n'
-                                  '\t1. GITHUB_TOKEN environment variable\n'
-                                  '\t2. Content of the ~/.github-token file\n'
-                                  '\t3. Current auth token from the gh GitHub CLI\n'
-                                  '\t4. Current auth token from the hub GitHub CLI\n'
-                                  ' Visit https://github.com/settings/tokens to generate a new one.')
-        assert_failure(["github", "retarget-pr", "--branch", "branch-without-pr"], expected_error_message)
+        assert_failure(
+            ["github", "retarget-pr", "--branch", "branch-without-pr"],
+            "No PRs have branch-without-pr as its head")
 
-        launch_command('github', 'retarget-pr', '--branch', 'branch-without-pr', '--ignore-if-missing')
+        assert_success(
+            ['github', 'retarget-pr', '--branch', 'branch-without-pr', '--ignore-if-missing'],
+            "Warn: no PRs have branch-without-pr as its head\n")
 
     def test_github_retarget_pr_multiple_non_origin_remotes(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)

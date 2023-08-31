@@ -2,6 +2,7 @@
 
 ## New in git-machete 3.18.2
 
+- fixed: `git machete github retarget-pr`, when invoked without `--ignore-if-missing`, actually fails now if there is no PR for the branch
 - improved: GitHub tokens are automatically redacted from command outputs in `--debug` mode
 
 ## New in git-machete 3.18.1
