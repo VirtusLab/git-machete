@@ -1,3 +1,4 @@
+import itertools
 from contextlib import contextmanager
 from textwrap import dedent
 from typing import Iterator
@@ -204,7 +205,10 @@ class TestGitHub(BaseTest):
                            "__get_token_from_hub(cls=<class 'git_machete.github.GitHubToken'>, domain=github.com): "
                            "4. Trying to authenticate via `hub` GitHub CLI..."]
 
-        assert launch_command('github', 'anno-prs', '--debug').splitlines()[8:12] == expected_output
+        assert list(itertools.dropwhile(
+            lambda line: '__get_token_from_env' not in line,
+            launch_command('github', 'anno-prs', '--debug').splitlines()
+        ))[:4] == expected_output
 
     def test_github_get_token_from_env_var(self) -> None:
         with overridden_environment(GITHUB_TOKEN='github_token_from_env_var'):

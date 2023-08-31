@@ -10,8 +10,6 @@ class CommandLineOptions:
         self.opt_as_root: bool = False
         self.opt_branch: Optional[AnyBranchName] = None
         self.opt_checked_out_since: Optional[str] = None
-        self.opt_color: str = "auto"
-        self.opt_debug: bool = False
         self.opt_delete: bool = False
         self.opt_down_fork_point: Optional[AnyRevision] = None
         self.opt_draft: bool = False
@@ -37,7 +35,6 @@ class CommandLineOptions:
         self.opt_stat: bool = False
         self.opt_sync_github_prs: bool = False
         self.opt_unset_override: bool = False
-        self.opt_verbose: bool = False
         self.opt_yes: bool = False
 
     def validate(self) -> None:

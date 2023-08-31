@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.18.2
 
+- improved: GitHub tokens are automatically redacted from command outputs in `--debug` mode
+
 ## New in git-machete 3.18.1
 
 - fixed: `machete.github.remote` git config key can be specified independently from `machete.github.organization` and `machete.github.repository`

@@ -41,8 +41,6 @@ def launch_command(*args: str) -> str:
     with io.StringIO() as out:
         with redirect_stdout(out):
             with redirect_stderr(out):
-                utils.debug_mode = False
-                utils.verbose_mode = False
                 utils.displayed_warnings = set()
                 cli.launch(list(args))
         output = out.getvalue()

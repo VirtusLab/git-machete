@@ -409,18 +409,15 @@ def update_cli_options_using_parsed_args(
     # But it would add external dependency to git-machete, so let's stick to current casting.
 
     for opt, arg in vars(parsed_args).items():
+        # --color, --debug and --verbose are handled outside this method
         if opt == "branch":
             cli_opts.opt_branch = AnyBranchName.of(arg) if arg else None
         elif opt == "checked_out_since":
             cli_opts.opt_checked_out_since = arg
-        elif opt == "color":
-            cli_opts.opt_color = arg
         elif opt == "delete":
             cli_opts.opt_delete = True
         elif opt == "down_fork_point":
             cli_opts.opt_down_fork_point = AnyRevision.of(arg) if arg else None
-        elif opt == "debug":
-            cli_opts.opt_debug = True
         elif opt == "draft":
             cli_opts.opt_draft = True
         elif opt == "fetch":
@@ -475,8 +472,6 @@ def update_cli_options_using_parsed_args(
             cli_opts.opt_sync_github_prs = True
         elif opt == "unset_override":
             cli_opts.opt_unset_override = True
-        elif opt == "verbose":
-            cli_opts.opt_verbose = True
         elif opt == "W":
             cli_opts.opt_fetch = True
             cli_opts.opt_start_from = "first-root"
@@ -508,10 +503,11 @@ def update_cli_options_using_config_keys(
             cli_opts.opt_push_tracked, cli_opts.opt_push_untracked = False, False
 
 
-def set_utils_global_variables(cli_opts: git_machete.options.CommandLineOptions) -> None:
-    utils.ascii_only = cli_opts.opt_color == "never" or (cli_opts.opt_color == "auto" and not sys.stdout.isatty())
-    utils.debug_mode = cli_opts.opt_debug
-    utils.verbose_mode = cli_opts.opt_verbose
+def set_utils_global_variables(parsed_args: argparse.Namespace) -> None:
+    args = vars(parsed_args)
+    utils.ascii_only = args.get("color") == "never" or (args.get("color") in {None, "auto"} and not sys.stdout.isatty())
+    utils.debug_mode = "debug" in args
+    utils.verbose_mode = "verbose" in args
 
 
 def get_local_branch_short_name_from_arg_or_current_branch(
@@ -534,10 +530,11 @@ def launch(orig_args: List[str]) -> None:
         parsed_cli: argparse.Namespace = cli_parser.parse_args(orig_args)
         parsed_cli_as_dict: Dict[str, str] = vars(parsed_cli)
 
+        # Let's set up options like debug/verbose before we first start reading `git config`.
+        set_utils_global_variables(parsed_cli)
         update_cli_options_using_config_keys(cli_opts, git)
         update_cli_options_using_parsed_args(cli_opts, parsed_cli)
         cli_opts.validate()
-        set_utils_global_variables(cli_opts)
 
         if not orig_args:
             print(get_help_description(display_help_topics=False))

@@ -23,6 +23,10 @@ verbose_mode: bool = False
 
 GITHUB_NEW_ISSUE_MESSAGE = 'Consider posting an issue at https://github.com/VirtusLab/git-machete/issues/new'
 
+# https://github.blog/2021-04-05-behind-githubs-new-authentication-token-formats/
+GITHUB_TOKEN_PREFIXES = ['ghp_', 'gho_', 'ghu_', 'ghs_', 'ghr_']
+GITHUB_TOKEN_PREFIX_REGEX = '(' + '|'.join(GITHUB_TOKEN_PREFIXES) + ')'
+
 
 def excluding(iterable: Iterable[T], s: Iterable[T]) -> List[T]:
     return list(filter(lambda x: x not in s, iterable))
@@ -101,10 +105,8 @@ def debug(msg: str) -> None:
         args, _, _, values = inspect.getargvalues(inspect.stack()[1].frame)
 
         args_to_be_redacted = {'access_token', 'password', 'secret', 'token'}
-        # https://github.blog/2021-04-05-behind-githubs-new-authentication-token-formats/
-        values_to_be_redacted = ['ghp_', 'gho_', 'ghu_', 'ghs_', 'ghr_']
         for arg, value in values.items():
-            if arg in args_to_be_redacted or any(value_ in str(value) for value_ in values_to_be_redacted):
+            if arg in args_to_be_redacted or any(value_ in str(value) for value_ in GITHUB_TOKEN_PREFIXES):
                 values[arg] = '***'
 
         excluded_args = {'self'}
@@ -189,6 +191,13 @@ def popen_cmd(cmd: str, *args: str, cwd: Optional[str] = None,
         print(flat_cmd, file=sys.stderr)
 
     exit_code, stdout, stderr = result = _popen_cmd(cmd, *args, cwd=cwd, env=env)
+
+    # GitHub tokens are likely to appear e.g. in the output of `git config -l`:
+    # `https://<TOKEN>@github.com/org/repo.git` is a supported URL format for git remotes.
+    def redact_github_tokens(input: str) -> str:
+        return re.sub(GITHUB_TOKEN_PREFIX_REGEX + '[a-zA-Z0-9]+', '<REDACTED>', input)
+    stdout = redact_github_tokens(stdout)
+    stderr = redact_github_tokens(stderr)
 
     if debug_mode:
         if exit_code != 0:
