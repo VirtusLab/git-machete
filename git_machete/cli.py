@@ -615,7 +615,7 @@ def launch(orig_args: List[str]) -> None:
         elif cmd == "clean":
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             if 'checkout_my_github_prs' in parsed_cli:
-                machete_client.checkout_github_prs(pr_nos=[], my_opened_prs=True)
+                machete_client.checkout_github_prs(pr_numbers=[], mine=True)
             machete_client.delete_unmanaged(opt_yes=cli_opts.opt_yes)
             machete_client.delete_untracked(opt_yes=cli_opts.opt_yes)
         elif cmd == "delete-unmanaged":
@@ -690,10 +690,10 @@ def launch(orig_args: List[str]) -> None:
                 if len(set(parsed_cli_as_dict.keys()).intersection({'all', 'by', 'mine', 'pr_no'})) != 1:
                     raise MacheteException("`checkout-prs` subcommand must take exactly one of the following options: "
                                            f"{', '.join(['--all', '--by=...', '--mine', 'pr-number(s)'])}")
-                machete_client.checkout_github_prs(pr_nos=parsed_cli.pr_no if 'pr_no' in parsed_cli else [],
-                                                   all_opened_prs=parsed_cli.all if 'all' in parsed_cli else False,
-                                                   my_opened_prs=parsed_cli.mine if 'mine' in parsed_cli else False,
-                                                   opened_by=parsed_cli.by if 'by' in parsed_cli else None,
+                machete_client.checkout_github_prs(pr_numbers=parsed_cli.pr_no if 'pr_no' in parsed_cli else [],
+                                                   all=parsed_cli.all if 'all' in parsed_cli else False,
+                                                   mine=parsed_cli.mine if 'mine' in parsed_cli else False,
+                                                   by=parsed_cli.by if 'by' in parsed_cli else None,
                                                    fail_on_missing_current_user_for_my_opened_prs=True)
             elif github_subcommand == "create-pr":
                 current_branch = git.get_current_branch()
@@ -708,7 +708,7 @@ def launch(orig_args: List[str]) -> None:
                                                   ignore_if_missing=parsed_cli.ignore_if_missing if 'ignore_if_missing' in parsed_cli
                                                   else False)
             elif github_subcommand == "sync":  # pragma: no branch; an unknown subcommand is handled by argparse
-                machete_client.checkout_github_prs(pr_nos=[], my_opened_prs=True)
+                machete_client.checkout_github_prs(pr_numbers=[], mine=True)
                 machete_client.delete_unmanaged(opt_yes=False)
                 machete_client.delete_untracked(opt_yes=cli_opts.opt_yes)
         elif cmd == "is-managed":

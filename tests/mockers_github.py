@@ -1,4 +1,5 @@
 import json
+import re
 from collections import defaultdict
 from contextlib import AbstractContextManager, contextmanager
 from http import HTTPStatus
@@ -55,11 +56,11 @@ class MockGitHubAPIState:
                 return pull
         return None
 
-    def get_pulls_by_head(self, head: str) -> List[Dict[str, Any]]:
-        return [pull for pull in self.__pulls if pull['head']['ref'] == head]
+    def get_open_pulls_by_head(self, head: str) -> List[Dict[str, Any]]:
+        return [pull for pull in self.get_open_pulls() if pull['head']['ref'] == head]
 
-    def get_pull_by_head_and_base(self, head: str, base: str) -> Optional[Dict[str, Any]]:
-        for pull in self.__pulls:
+    def get_open_pull_by_head_and_base(self, head: str, base: str) -> Optional[Dict[str, Any]]:
+        for pull in self.get_open_pulls():
             pull_head: str = pull['head']['ref']
             pull_base: str = pull['base']['ref']
             if (head, base) == (pull_head, pull_base):
@@ -97,7 +98,7 @@ def mock_urlopen(github_api_state: MockGitHubAPIState) -> Callable[[Request], Ab
 def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) -> MockGitHubAPIResponse:
 
     parsed_url: ParseResult = urlparse(request.full_url)
-    url_segments: List[str] = [('pulls' if s == 'issues' else s) for s in parsed_url.path.split('/') if s]
+    url_segments: List[str] = [s for s in parsed_url.path.split('/') if s]
     query_params: Dict[str, str] = {k: v[0] for k, v in parse_qs(parsed_url.query).items()}
     json_data: Dict[str, Any] = request.data and json.loads(request.data)  # type: ignore
 
@@ -111,14 +112,18 @@ def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) 
         else:
             return MockGitHubAPIResponse(HTTPStatus.METHOD_NOT_ALLOWED, [])
 
+    def url_path_matches(pattern: str) -> bool:
+        regex = pattern.replace('*', '[^/]+')
+        return re.match('^(/api/v3)?' + regex + '$', parsed_url.path) is not None
+
     def handle_get() -> "MockGitHubAPIResponse":
-        if len(url_segments) == 2 and url_segments[1].isnumeric():
+        if url_path_matches('/repositories/[0-9]+'):
             return MockGitHubAPIResponse(HTTPStatus.OK, {"full_name": "example-org/example-repo"})
-        if 'pulls' == url_segments[-1]:
+        elif url_path_matches('/repos/*/*/pulls'):
             full_head_name: Optional[str] = query_params.get('head')
             if full_head_name:
                 head: str = full_head_name.split(':')[1]
-                prs = github_api_state.get_pulls_by_head(head)
+                prs = github_api_state.get_open_pulls_by_head(head)
                 # If no matching PRs are found, the real GitHub returns 200 OK with an empty JSON array - not 404.
                 return MockGitHubAPIResponse(HTTPStatus.OK, prs)
             else:
@@ -136,34 +141,36 @@ def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) 
                 else:
                     link_header = ''
                 return MockGitHubAPIResponse(HTTPStatus.OK, response_data=pulls[start:end], headers={'link': link_header})
-        elif 'pulls' in url_segments:
+        elif url_path_matches('/repos/*/*/pulls/[0-9]+'):
             number = url_segments[-1]
             prs_ = github_api_state.get_pull_by_number(number)
             if prs_:
                 return MockGitHubAPIResponse(HTTPStatus.OK, prs_)
             raise error_404()
-        elif url_segments[-1] == 'user':
+        elif url_path_matches('/user'):
             return MockGitHubAPIResponse(HTTPStatus.OK, {'login': 'github_user', 'type': 'User', 'company': 'VirtusLab'})
         else:
             raise error_404()
 
     def handle_patch() -> "MockGitHubAPIResponse":
         assert not query_params
-        if 'pulls' in url_segments:
+        if url_path_matches("/repos/*/*/(pulls|issues)/[0-9]+"):
+            return update_pull_request()
+        elif url_path_matches("/repositories/[0-9]+/(pulls|issues)/[0-9]+"):
             return update_pull_request()
         else:
             raise error_404()
 
     def handle_post() -> "MockGitHubAPIResponse":
         assert not query_params
-        if url_segments[-1] == 'pulls':
+        if url_path_matches("/repos/*/*/pulls"):
             head = json_data['head']
             base = json_data['base']
-            if github_api_state.get_pull_by_head_and_base(head, base) is not None:
+            if github_api_state.get_open_pull_by_head_and_base(head, base) is not None:
                 raise error_422({'message': 'Validation Failed', 'errors': [
                     {'message': f'A pull request already exists for test_repo:{head}.'}]})
             return create_pull_request()
-        elif 'pulls' in url_segments:
+        elif url_path_matches("/repos/*/*/(pulls|issues)/[0-9]+/*"):
             pull_no = url_segments[-2]  # e.g. /repos/example-org/example-repo/pulls/5/requested_reviewers
             pull = github_api_state.get_pull_by_number(pull_no)
             assert pull is not None

@@ -1592,7 +1592,7 @@ class MacheteClient:
         print('Checking for open GitHub PRs... ', end='', flush=True)
         current_user: Optional[str] = github_client.derive_current_user_login()
         debug('Current GitHub user is ' + (bold(current_user or '<none>')))
-        all_open_prs: List[GitHubPullRequest] = github_client.derive_pull_requests()
+        all_open_prs: List[GitHubPullRequest] = github_client.derive_open_pull_requests()
         print(fmt('<green><b>OK</b></green>'))
         self.__sync_annotations_to_branch_layout_file(all_open_prs, current_user, verbose=True)
 
@@ -2021,11 +2021,11 @@ class MacheteClient:
                 f"of the {bold(branch)} branch.")
 
     def checkout_github_prs(self,
-                            pr_nos: Optional[List[int]],
+                            pr_numbers: Optional[List[int]],
                             *,
-                            all_opened_prs: bool = False,
-                            my_opened_prs: bool = False,
-                            opened_by: Optional[str] = None,
+                            all: bool = False,
+                            mine: bool = False,
+                            by: Optional[str] = None,
                             fail_on_missing_current_user_for_my_opened_prs: bool = False
                             ) -> None:
         domain = self.__derive_github_domain()
@@ -2034,7 +2034,7 @@ class MacheteClient:
         print('Checking for open GitHub PRs... ', end='', flush=True)
 
         current_user: Optional[str] = github_client.derive_current_user_login()
-        if not current_user and my_opened_prs:
+        if not current_user and mine:
             msg = ("Could not determine current user name, please check that the GitHub API token provided by one of the: "
                    f"{GitHubToken.get_possible_providers()}is valid.")
             if fail_on_missing_current_user_for_my_opened_prs:
@@ -2042,12 +2042,12 @@ class MacheteClient:
             else:
                 warn(msg)
                 return
-        all_open_prs: List[GitHubPullRequest] = github_client.derive_pull_requests()
+        all_open_prs: List[GitHubPullRequest] = github_client.derive_open_pull_requests()
         print(fmt('<green><b>OK</b></green>'))
 
         applicable_prs: List[GitHubPullRequest] = self.__get_applicable_pull_requests(
-            pr_nos, all_opened_prs_from_github=all_open_prs, github_client=github_client,
-            all=all_opened_prs, mine=my_opened_prs, by=opened_by, user=current_user)
+            pr_numbers, all_opened_prs_from_github=all_open_prs, github_client=github_client,
+            all=all, mine=mine, by=by, user=current_user)
 
         debug(f'organization is {org_repo_remote.organization}, repository is {org_repo_remote.repository}')
         self.__git.fetch_remote(org_repo_remote.remote)
@@ -2185,7 +2185,7 @@ class MacheteClient:
 
         debug(f'organization is {org_repo_remote.organization}, repository is {org_repo_remote.repository}')
 
-        prs: List[GitHubPullRequest] = github_client.derive_pull_requests_by_head(head)
+        prs: List[GitHubPullRequest] = github_client.derive_open_pull_requests_by_head(head)
         if not prs:
             if ignore_if_missing:
                 warn(f"no PRs have `{head}` as its head")

@@ -200,11 +200,7 @@ class GitHubClient:
     # As of Dec 2022, GitHub API never returns more than 100 PRs, even if per_page query param is above 100.
     MAX_PULLS_PER_PAGE_COUNT = 100
 
-    def __init__(self,
-                 domain: str,
-                 organization: str,
-                 repository: str
-                 ) -> None:
+    def __init__(self, domain: str, organization: str, repository: str) -> None:
         self.__domain: str = domain
         self.__organization: str = organization
         self.__repository: str = repository
@@ -218,11 +214,7 @@ class GitHubClient:
     def repository(self) -> str:
         return self.__repository
 
-    def __fire_github_api_request(self,
-                                  method: str,
-                                  path: str,
-                                  request_body: Optional[Dict[str, Any]] = None
-                                  ) -> Any:
+    def __fire_github_api_request(self, method: str, path: str, request_body: Optional[Dict[str, Any]] = None) -> Any:
         headers: Dict[str, str] = {
             'Content-type': 'application/json',
             'User-Agent': 'git-machete',
@@ -340,10 +332,7 @@ class GitHubClient:
                                             request_body=request_body)
         return GitHubPullRequest.from_json(pr)
 
-    def add_assignees_to_pull_request(self,
-                                      number: int,
-                                      assignees: List[str]
-                                      ) -> None:
+    def add_assignees_to_pull_request(self, number: int, assignees: List[str]) -> None:
         request_body: Dict[str, List[str]] = {
             'assignees': assignees
         }
@@ -352,10 +341,7 @@ class GitHubClient:
                                        path=f'/repos/{self.__organization}/{self.__repository}/issues/{number}/assignees',
                                        request_body=request_body)
 
-    def add_reviewers_to_pull_request(self,
-                                      number: int,
-                                      reviewers: List[str]
-                                      ) -> None:
+    def add_reviewers_to_pull_request(self, number: int, reviewers: List[str]) -> None:
         request_body: Dict[str, List[str]] = {
             'reviewers': reviewers
         }
@@ -363,33 +349,25 @@ class GitHubClient:
                                        path=f'/repos/{self.__organization}/{self.__repository}/pulls/{number}/requested_reviewers',
                                        request_body=request_body)
 
-    def set_base_of_pull_request(self,
-                                 number: int,
-                                 base: LocalBranchShortName
-                                 ) -> None:
+    def set_base_of_pull_request(self, number: int, base: LocalBranchShortName) -> None:
         request_body: Dict[str, str] = {'base': base}
         self.__fire_github_api_request(method='PATCH',
                                        path=f'/repos/{self.__organization}/{self.__repository}/pulls/{number}',
                                        request_body=request_body)
 
-    def set_milestone_of_pull_request(self,
-                                      number: int,
-                                      milestone: str
-                                      ) -> None:
+    def set_milestone_of_pull_request(self, number: int, milestone: str) -> None:
         request_body: Dict[str, str] = {'milestone': milestone}
         # Setting milestone is only available via the Issues API, not PRs API.
         self.__fire_github_api_request(method='PATCH',
                                        path=f'/repos/{self.__organization}/{self.__repository}/issues/{number}',
                                        request_body=request_body)
 
-    def derive_pull_requests_by_head(self,
-                                     head: LocalBranchShortName
-                                     ) -> List[GitHubPullRequest]:
+    def derive_open_pull_requests_by_head(self, head: LocalBranchShortName) -> List[GitHubPullRequest]:
         path = f'/repos/{self.__organization}/{self.__repository}/pulls?head={self.__organization}:{head}'
         prs = self.__fire_github_api_request(method='GET', path=path)
         return [GitHubPullRequest.from_json(pr) for pr in prs]
 
-    def derive_pull_requests(self) -> List[GitHubPullRequest]:
+    def derive_open_pull_requests(self) -> List[GitHubPullRequest]:
         path = f'/repos/{self.__organization}/{self.__repository}/pulls?per_page={self.MAX_PULLS_PER_PAGE_COUNT}'
         prs = self.__fire_github_api_request(method='GET', path=path)
         return list(map(GitHubPullRequest.from_json, prs))
@@ -400,9 +378,7 @@ class GitHubClient:
         user = self.__fire_github_api_request(method='GET', path='/user')
         return str(user['login'])  # str() to satisfy mypy
 
-    def get_pull_request_by_number_or_none(self,
-                                           number: int
-                                           ) -> Optional[GitHubPullRequest]:
+    def get_pull_request_by_number_or_none(self, number: int) -> Optional[GitHubPullRequest]:
         try:
             path = f'/repos/{self.__organization}/{self.__repository}/pulls/{number}'
             pr_json: Dict[str, Any] = self.__fire_github_api_request(method='GET', path=path)
@@ -415,11 +391,7 @@ class GitHubClient:
         return str(repo['full_name'])
 
     @staticmethod
-    def checkout_pr_refs(git: GitContext,
-                         remote: str,
-                         pr_number: int,
-                         branch: LocalBranchShortName
-                         ) -> None:
+    def checkout_pr_refs(git: GitContext, remote: str, pr_number: int, branch: LocalBranchShortName) -> None:
         git.fetch_ref(remote, f'pull/{pr_number}/head:{branch}')
         git.checkout(branch)
 
