@@ -79,7 +79,7 @@ class GitHubToken(NamedTuple):
 
     @classmethod
     def __get_token_from_env(cls) -> Optional["GitHubToken"]:
-        debug(f"1. Trying to authenticate via `{GITHUB_TOKEN_ENV_VAR}` environment variable...")
+        debug(f"1. Trying to find token in `{GITHUB_TOKEN_ENV_VAR}` environment variable...")
         github_token = os.environ.get(GITHUB_TOKEN_ENV_VAR)
         if github_token:
             return cls(value=github_token,
@@ -88,12 +88,13 @@ class GitHubToken(NamedTuple):
 
     @classmethod
     def __get_token_from_file_in_home_directory(cls, domain: str) -> Optional["GitHubToken"]:
-        debug("2. Trying to authenticate via `~/.github-token`...")
+        debug("2. Trying to find token in `~/.github-token`...")
         required_file_name = '.github-token'
         provider = f'auth token for {domain} from `~/.github-token`'
         file_full_path = os.path.expanduser(f'~/{required_file_name}')
 
         if os.path.isfile(file_full_path):
+            debug(f"  File `{file_full_path}` exists")
             with open(file_full_path) as file:
                 # ~/.github-token is a file with a structure similar to:
                 #
@@ -102,7 +103,7 @@ class GitHubToken(NamedTuple):
                 # ghp_yetanothertoken_for_git_example_com git.example.com
 
                 for line in file.readlines():
-                    if line.endswith(" " + domain):
+                    if line.rstrip().endswith(" " + domain):
                         token = line.split(" ")[0]
                         return cls(value=token, provider=provider)
                     elif domain == GitHubClient.DEFAULT_GITHUB_DOMAIN and " " not in line.rstrip():
@@ -111,7 +112,7 @@ class GitHubToken(NamedTuple):
 
     @classmethod
     def __get_token_from_gh(cls, domain: str) -> Optional["GitHubToken"]:
-        debug("3. Trying to authenticate via `gh` GitHub CLI...")
+        debug("3. Trying to find token via `gh` GitHub CLI...")
         # Abort without error if `gh` isn't available
         gh = shutil.which('gh')
         if not gh:
@@ -161,7 +162,7 @@ class GitHubToken(NamedTuple):
 
     @classmethod
     def __get_token_from_hub(cls, domain: str) -> Optional["GitHubToken"]:
-        debug("4. Trying to authenticate via `hub` GitHub CLI...")
+        debug("4. Trying to find token via `hub` GitHub CLI...")
         home_path: str = str(Path.home())
         config_hub_path: str = os.path.join(home_path, ".config", "hub")
         if os.path.isfile(config_hub_path):

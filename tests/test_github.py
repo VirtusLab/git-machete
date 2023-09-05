@@ -197,13 +197,13 @@ class TestGitHub(BaseTest):
         )
 
         expected_output = ["__get_token_from_env(cls=<class 'git_machete.github.GitHubToken'>): "
-                           "1. Trying to authenticate via `GITHUB_TOKEN` environment variable...",
+                           "1. Trying to find token in `GITHUB_TOKEN` environment variable...",
                            "__get_token_from_file_in_home_directory(cls=<class 'git_machete.github.GitHubToken'>, domain=github.com): "
-                           "2. Trying to authenticate via `~/.github-token`...",
+                           "2. Trying to find token in `~/.github-token`...",
                            "__get_token_from_gh(cls=<class 'git_machete.github.GitHubToken'>, domain=github.com): "
-                           "3. Trying to authenticate via `gh` GitHub CLI...",
+                           "3. Trying to find token via `gh` GitHub CLI...",
                            "__get_token_from_hub(cls=<class 'git_machete.github.GitHubToken'>, domain=github.com): "
-                           "4. Trying to authenticate via `hub` GitHub CLI..."]
+                           "4. Trying to find token via `hub` GitHub CLI..."]
 
         assert list(itertools.dropwhile(
             lambda line: '__get_token_from_env' not in line,
@@ -227,9 +227,7 @@ class TestGitHub(BaseTest):
         github_token_contents = ('ghp_mytoken_for_github_com\n'
                                  'ghp_myothertoken_for_git_example_org git.example.org\n'
                                  'ghp_yetanothertoken_for_git_example_com git.example.com')
-        _mock_open = mock_open(read_data=github_token_contents)
-        _mock_open.return_value.readlines.return_value = github_token_contents.split('\n')
-        self.patch_symbol(mocker, 'builtins.open', _mock_open)
+        self.patch_symbol(mocker, 'builtins.open', mock_open(read_data=github_token_contents))
         self.patch_symbol(mocker, 'os.path.isfile', lambda _file: True)
 
         domain = GitHubClient.DEFAULT_GITHUB_DOMAIN
@@ -238,11 +236,19 @@ class TestGitHub(BaseTest):
         assert github_token.provider == f'auth token for {domain} from `~/.github-token`'
         assert github_token.value == 'ghp_mytoken_for_github_com'
 
+        # Line ends with \n
         domain = 'git.example.org'
         github_token = GitHubToken.for_domain(domain=domain)
         assert github_token is not None
         assert github_token.provider == f'auth token for {domain} from `~/.github-token`'
         assert github_token.value == 'ghp_myothertoken_for_git_example_org'
+
+        # Last line, doesn't end with \n
+        domain = 'git.example.com'
+        github_token = GitHubToken.for_domain(domain=domain)
+        assert github_token is not None
+        assert github_token.provider == f'auth token for {domain} from `~/.github-token`'
+        assert github_token.value == 'ghp_yetanothertoken_for_git_example_com'
 
         domain = 'git.example.net'
         github_token = GitHubToken.for_domain(domain=domain)
