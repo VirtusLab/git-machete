@@ -298,5 +298,3 @@ git-machete (since version 2.13.0) is compatible with git >= 1.8.0.
 ## Contributions
 
 Contributions are welcome! See [contributing guidelines](CONTRIBUTING.md) for details.
-Help would be especially appreciated with Python code style, refactoring and tests &mdash;
-so far more focus has been put on features, documentation and automating the distribution.

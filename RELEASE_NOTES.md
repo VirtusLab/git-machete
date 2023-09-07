@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.18.3
+
 ## New in git-machete 3.18.2
 
 - fixed: reading tokens from `~/.github-token` for GitHub Enterprise domains (reported by @mkondratek)
