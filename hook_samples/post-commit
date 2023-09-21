@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # That's a sample standard post-commit hook that checks if a current branch is already managed by git machete,
 # and if it isn't, suggests to add it onto its inferred upstream.

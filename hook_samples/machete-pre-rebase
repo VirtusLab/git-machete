@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # machete-pre-rebase hook is invoked before each rebase operation.
 # Unlike the standard 2-parameter pre-rebase it receives three parameters corresponding to the parameters of `git rebase --onto`.

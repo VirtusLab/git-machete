@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # machete-status-branch hook is invoked by 'git machete status' for each managed branch (and branch name is passed as a parameter).
 # Stdout of the hook is displayed at the end of line after custom annotation and remote sync-ness status.

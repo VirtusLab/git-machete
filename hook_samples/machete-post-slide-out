@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # machete-post-slide-out hook is invoked by 'git machete slide-out' and 'git machete traverse' after a branch
 # (or possibly multiple branches, in case of 'slide-out') of are slid out.
