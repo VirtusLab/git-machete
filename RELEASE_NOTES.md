@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.18.3
 
+- added: arm64 packages in Ubuntu PPA
+
 ## New in git-machete 3.18.2
 
 - fixed: reading tokens from `~/.github-token` for GitHub Enterprise domains (reported by @mkondratek)

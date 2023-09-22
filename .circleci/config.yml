@@ -3,7 +3,8 @@ version: 2.1
 executors:
   macos_executor:
     macos:
-      xcode: 14.2.0
+      xcode: 14.3.1
+    resource_class: macos.x86.medium.gen2
   ubuntu_executor:
     machine:
       image: ubuntu-2204:2022.10.2

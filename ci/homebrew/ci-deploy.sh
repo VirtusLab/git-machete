@@ -4,6 +4,8 @@ set -e -o pipefail -u -x
 
 HOMEBREW_VERSION=4.0.26
 
+export HOMEBREW_NO_AUTO_UPDATE=1
+
 NONINTERACTIVE=1 bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 # https://stackoverflow.com/questions/54912857/how-do-i-install-old-version-of-homebrew-itself-not-the-formula
 (cd /home/linuxbrew/.linuxbrew/Homebrew; git checkout $HOMEBREW_VERSION)
