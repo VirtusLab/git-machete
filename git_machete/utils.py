@@ -236,12 +236,9 @@ def warn(msg: str, apply_fmt: bool = True, end: str = '\n') -> None:
         displayed_warnings.add(msg)
 
 
-def slurp_file_or_empty(path: str) -> str:
-    try:
-        with open(path, 'r') as file:
-            return file.read()
-    except IOError:
-        return ''
+def slurp_file(path: str) -> str:
+    with open(path, 'r') as file:
+        return file.read()
 
 
 def is_terminal_fully_fledged() -> bool:

@@ -122,9 +122,9 @@ This tool is [semantically versioned](https://semver.org) with respect to all of
 
 * Python and Git version compatibility
 * command-line interface (commands and their options)
-* format of its specific files (currently just `machete` file within git directory)
-* hooks and their interface
-* output format of plumbing commands (see above for the list)
+* format of its specific files (like `.git/machete` but also e.g. `.git/info/description` and `~/.github-token`)
+* hooks and their command-line interface
+* output format of [plumbing commands](#command-propertiesclassification)
 * accepted environment variables
 
 Output format of any [non-plumbing command](#command-propertiesclassification) can change in a non-backward-compatible manner even between patch-level updates.

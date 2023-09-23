@@ -121,6 +121,7 @@ class TestGitHubCreatePR(BaseTest):
 
         self.repo_sandbox.write_to_file(".git/info/milestone", "42")
         self.repo_sandbox.write_to_file(".git/info/reviewers", "foo\n\nbar")
+        self.repo_sandbox.write_to_file(".github/pull_request_template.md", "# PR title\n## Summary\n##Test plan\n")
         assert_success(
             ["github", "create-pr", "--draft"],
             """
@@ -238,6 +239,7 @@ class TestGitHubCreatePR(BaseTest):
         assert_failure(["github", "create-pr"], expected_error_message)
 
         self.repo_sandbox.write_to_file(".git/info/reviewers", "invalid-user")
+        self.repo_sandbox.write_to_file(".git/info/description", "# PR title\n")
         self.repo_sandbox.check_out("allow-ownership-link")
         assert_success(
             ["github", "create-pr"],

@@ -6,7 +6,6 @@ import shlex
 import shutil
 import sys
 from collections import OrderedDict
-from pathlib import Path
 from typing import Callable, Dict, Iterator, List, Optional, Tuple
 
 from . import git_config_keys, utils
@@ -2339,13 +2338,15 @@ class MacheteClient:
         debug(f'organization is {org_repo_remote.organization}, repository is {org_repo_remote.repository}')
         debug('current GitHub user is ' + (current_user or '<none>'))
 
-        description_path = self.__git.get_main_git_subpath('info', 'description')
-        try:
-            description = Path(description_path).read_text()
-        except FileNotFoundError:
-            # https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/creating-a-pull-request-template-for-your-repository
-            pr_template = Path(self.__git.get_root_dir()).joinpath('.github', 'pull_request_template.md')
-            description = utils.slurp_file_or_empty(str(pr_template))
+        machete_description_path = self.__git.get_main_git_subpath('info', 'description')
+        # https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/creating-a-pull-request-template-for-your-repository
+        github_template_path = os.path.join(self.__git.get_root_dir(), '.github', 'pull_request_template.md')
+        if os.path.isfile(machete_description_path):
+            description = utils.slurp_file(machete_description_path)
+        elif os.path.isfile(github_template_path):
+            description = utils.slurp_file(github_template_path)
+        else:
+            description = ''
 
         fork_point = self.fork_point(head, use_overrides=True)
         commits: List[GitLogEntry] = self.__git.get_commits_between(fork_point, head)
@@ -2362,7 +2363,10 @@ class MacheteClient:
         print(fmt(f'{ok_str}, see `{pr.html_url}`'))
 
         milestone_path: str = self.__git.get_main_git_subpath('info', 'milestone')
-        milestone: str = utils.slurp_file_or_empty(milestone_path).strip()
+        if os.path.isfile(milestone_path):
+            milestone = utils.slurp_file(milestone_path).strip()
+        else:
+            milestone = None
         if milestone:
             print(f'Setting milestone of PR #{bold(str(pr.number))} to #{bold(milestone)}... ', end='', flush=True)
             github_client.set_milestone_of_pull_request(pr.number, milestone=milestone)
@@ -2374,7 +2378,10 @@ class MacheteClient:
             print(fmt(ok_str))
 
         reviewers_path = self.__git.get_main_git_subpath('info', 'reviewers')
-        reviewers: List[str] = utils.get_non_empty_lines(utils.slurp_file_or_empty(reviewers_path))
+        if os.path.isfile(reviewers_path):
+            reviewers = utils.get_non_empty_lines(utils.slurp_file(reviewers_path))
+        else:
+            reviewers = []
         if reviewers:
             print(f'Adding {", ".join(f"{bold(reviewer)}" for reviewer in reviewers)} '
                   f'as reviewer{"s" if len(reviewers) > 1 else ""} to PR #{bold(str(pr.number))}... ',
