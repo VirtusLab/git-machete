@@ -6,6 +6,7 @@ import shlex
 import shutil
 import sys
 from collections import OrderedDict
+from pathlib import Path
 from typing import Callable, Dict, Iterator, List, Optional, Tuple
 
 from . import git_config_keys, utils
@@ -2339,7 +2340,12 @@ class MacheteClient:
         debug('current GitHub user is ' + (current_user or '<none>'))
 
         description_path = self.__git.get_main_git_subpath('info', 'description')
-        description: str = utils.slurp_file_or_empty(description_path)
+        try:
+            description = Path(description_path).read_text()
+        except FileNotFoundError:
+            # https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/creating-a-pull-request-template-for-your-repository
+            pr_template = Path(self.__git.get_root_dir()).joinpath('.github', 'pull_request_template.md')
+            description = utils.slurp_file_or_empty(str(pr_template))
 
         fork_point = self.fork_point(head, use_overrides=True)
         commits: List[GitLogEntry] = self.__git.get_commits_between(fork_point, head)

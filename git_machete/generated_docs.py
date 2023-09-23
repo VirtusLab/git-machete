@@ -617,7 +617,7 @@ long_docs: Dict[str, str] = {
               Creates a PR for the current branch, using the upstream (parent) branch as the PR base.
               Once the PR is successfully created, annotates the current branch with the new PR's number.
 
-              If `.git/info/description` file is present, its contents are used as PR description.
+              If `.git/info/description` or `.github/pull_request_template.md` file is present, its contents are used as PR description.
               If `.git/info/milestone` file is present, its contents (a single number — milestone id) are used as milestone.
               If `.git/info/reviewers` file is present, its contents (one GitHub login per line) are used to set reviewers.
 
