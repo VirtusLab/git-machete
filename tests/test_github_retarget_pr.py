@@ -25,14 +25,14 @@ class TestGitHubRetargetPR(BaseTest):
                 'user': {'login': 'some_other_user'},
                 'base': {'ref': 'master'}, 'number': '20',
                 'html_url': 'www.github.com',
-                'body': '# Summary', 'state': 'open'
+                'body': '# Summary\n\n', 'state': 'open'
             },
             {
                 'head': {'ref': 'feature_2', 'repo': mock_repository_info},
                 'user': {'login': 'some_other_user'},
                 'base': {'ref': 'master'}, 'number': '25',
                 'html_url': 'www.github.com',
-                'body': '# Summary', 'state': 'open'
+                'body': None, 'state': 'open'
             },
             {
                 'head': {'ref': 'feature_3', 'repo': mock_repository_info},
@@ -111,7 +111,7 @@ class TestGitHubRetargetPR(BaseTest):
             It looks like the organization or repository name got changed recently and is outdated.
             New organization is example-org and new repository is example-repo.
             You can update your remote repository via: git remote set-url <remote_name> <new_repository_url>.
-            The base branch of PR #15 has been switched to develop
+            Base branch of PR #15 has been switched to develop
             """
         )
 
@@ -131,7 +131,7 @@ class TestGitHubRetargetPR(BaseTest):
 
         assert_success(
             ['github', 'retarget-pr'],
-            'The base branch of PR #15 is already develop\n'
+            'Base branch of PR #15 is already develop\n'
         )
 
         self.repo_sandbox.check_out("feature_4")
@@ -203,7 +203,7 @@ class TestGitHubRetargetPR(BaseTest):
 
         assert_success(
             ['github', 'retarget-pr', '--branch', 'feature'],
-            'The base branch of PR #15 has been switched to branch-1\n'
+            'Base branch of PR #15 has been switched to branch-1\n'
         )
 
         expected_status_output = """
@@ -295,8 +295,13 @@ class TestGitHubRetargetPR(BaseTest):
 
         assert_success(
             ['github', 'retarget-pr'],
-            'The base branch of PR #20 has been switched to feature\n'
+            'Base branch of PR #20 has been switched to feature\n'
+            'Base PR header in the description of PR #20 now points to PR #15\n'
         )
+        pr20 = self.github_api_state_for_test_retarget_pr.get_pull_by_number(20)
+        assert pr20 is not None
+        assert pr20['base']['ref'] == 'feature'
+        assert pr20['body'] == '# Based on PR #15\n\n# Summary\n\n'
 
         # branch feature_2 is not present in any of the remotes
         (
@@ -325,8 +330,13 @@ class TestGitHubRetargetPR(BaseTest):
 
         assert_success(
             ['github', 'retarget-pr'],
-            'The base branch of PR #25 has been switched to feature\n'
+            'Base branch of PR #25 has been switched to feature\n'
+            'Base PR header in the description of PR #25 now points to PR #15\n'
         )
+        pr25 = self.github_api_state_for_test_retarget_pr.get_pull_by_number(25)
+        assert pr25 is not None
+        assert pr25['base']['ref'] == 'feature'
+        assert pr25['body'] == '# Based on PR #15\n'
 
         # branch feature_3 present in only one remote: origin_1 and has tracking data
         (
@@ -349,8 +359,55 @@ class TestGitHubRetargetPR(BaseTest):
 
         assert_success(
             ['github', 'retarget-pr'],
-            'The base branch of PR #30 has been switched to feature_2\n'
+            'Base branch of PR #30 has been switched to feature_2\n'
+            'Base PR header in the description of PR #30 now points to PR #25\n'
         )
+        pr30 = self.github_api_state_for_test_retarget_pr.get_pull_by_number(30)
+        assert pr30 is not None
+        assert pr30['base']['ref'] == 'feature_2'
+        assert pr30['body'] == '# Based on PR #25\n\n# Summary'
+
+        body = \
+            """
+            root
+                branch-1
+                    feature
+                        feature_1
+                        feature_2
+                        feature_3
+            """
+        rewrite_branch_layout_file(body)
+
+        assert_success(
+            ['github', 'retarget-pr'],
+            'Base branch of PR #30 has been switched to feature\n'
+            'Base PR header in the description of PR #30 now points to PR #15\n'
+        )
+        pr30 = self.github_api_state_for_test_retarget_pr.get_pull_by_number(30)
+        assert pr30 is not None
+        assert pr30['base']['ref'] == 'feature'
+        assert pr30['body'] == '# Based on PR #15\n\n# Summary'
+
+        body = \
+            """
+            root
+                branch-1
+                    feature
+                        feature_1
+                        feature_2
+                feature_3
+            """
+        rewrite_branch_layout_file(body)
+
+        assert_success(
+            ['github', 'retarget-pr'],
+            'Base branch of PR #30 has been switched to root\n'
+            'Base PR header has been removed from the description of PR #30\n'
+        )
+        pr30 = self.github_api_state_for_test_retarget_pr.get_pull_by_number(30)
+        assert pr30 is not None
+        assert pr30['base']['ref'] == 'root'
+        assert pr30['body'] == '# Summary'
 
     github_api_state_for_test_retarget_pr_root_branch = MockGitHubAPIState([{
         'head': {'ref': 'master', 'repo': mock_repository_info},

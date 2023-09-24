@@ -1591,9 +1591,9 @@ class MacheteClient:
         org_repo_remote = self.__derive_org_repo_and_remote(domain=domain)
         github_client = GitHubClient(domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
         print('Checking for open GitHub PRs... ', end='', flush=True)
-        current_user: Optional[str] = github_client.derive_current_user_login()
+        current_user: Optional[str] = github_client.get_current_user_login()
         debug('Current GitHub user is ' + (bold(current_user or '<none>')))
-        all_open_prs: List[GitHubPullRequest] = github_client.derive_open_pull_requests()
+        all_open_prs: List[GitHubPullRequest] = github_client.get_open_pull_requests()
         print(fmt('<green><b>OK</b></green>'))
         self.__sync_annotations_to_branch_layout_file(all_open_prs, current_user, verbose=True)
 
@@ -2034,7 +2034,7 @@ class MacheteClient:
         github_client = GitHubClient(domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
         print('Checking for open GitHub PRs... ', end='', flush=True)
 
-        current_user: Optional[str] = github_client.derive_current_user_login()
+        current_user: Optional[str] = github_client.get_current_user_login()
         if not current_user and mine:
             msg = ("Could not determine current user name, please check that the GitHub API token provided by one of the: "
                    f"{GitHubToken.get_possible_providers()}is valid.")
@@ -2043,7 +2043,7 @@ class MacheteClient:
             else:
                 warn(msg)
                 return
-        all_open_prs: List[GitHubPullRequest] = github_client.derive_open_pull_requests()
+        all_open_prs: List[GitHubPullRequest] = github_client.get_open_pull_requests()
         print(fmt('<green><b>OK</b></green>'))
 
         applicable_prs: List[GitHubPullRequest] = self.__get_applicable_pull_requests(
@@ -2179,6 +2179,19 @@ class MacheteClient:
                 return remote
         return None
 
+    @staticmethod
+    def __get_updated_github_pr_description(old_description: Optional[str], pr_number_for_base_branch: Optional[int]) -> str:
+        def skip_leading_empty(strs: List[str]) -> List[str]:
+            return list(itertools.dropwhile(lambda line: line.strip() == '', strs))
+
+        lines = skip_leading_empty(old_description.split('\n')) if old_description else []
+        if lines and '# Based on PR #' in lines[0]:
+            lines = lines[1:]
+        lines = skip_leading_empty(lines)
+        if pr_number_for_base_branch:
+            lines = [f'# Based on PR #{pr_number_for_base_branch}', ''] + lines
+        return '\n'.join(lines)
+
     def retarget_github_pr(self, head: LocalBranchShortName, ignore_if_missing: bool) -> None:
         domain = self.__derive_github_domain()
         org_repo_remote = self.__derive_org_repo_and_remote(domain=domain, branch_used_for_tracking_data=head)
@@ -2186,7 +2199,7 @@ class MacheteClient:
 
         debug(f'organization is {org_repo_remote.organization}, repository is {org_repo_remote.repository}')
 
-        prs: List[GitHubPullRequest] = github_client.derive_open_pull_requests_by_head(head)
+        prs: List[GitHubPullRequest] = github_client.get_open_pull_requests_by_head(head)
         if not prs:
             if ignore_if_missing:
                 warn(f"no PRs have `{head}` as its head")
@@ -2208,9 +2221,22 @@ class MacheteClient:
 
         if pr.base != new_base:
             github_client.set_base_of_pull_request(pr.number, base=new_base)
-            print(f'The base branch of PR #{bold(str(pr.number))} has been switched to {bold(new_base)}')
+            print(f'Base branch of PR #{bold(str(pr.number))} has been switched to {bold(new_base)}')
         else:
-            print(f'The base branch of PR #{bold(str(pr.number))} is already {bold(new_base)}')
+            print(f'Base branch of PR #{bold(str(pr.number))} is already {bold(new_base)}')
+
+        pr_number_for_base_branch: Optional[int] = None
+        prs_for_base_branch = github_client.get_open_pull_requests_by_head(new_base)
+        if len(prs_for_base_branch) >= 1:
+            pr_number_for_base_branch = prs_for_base_branch[0].number
+        new_description = self.__get_updated_github_pr_description(pr.description, pr_number_for_base_branch)
+        if pr.description != new_description:
+            github_client.set_description_of_pull_request(pr.number, description=new_description)
+            if not pr_number_for_base_branch:
+                print(f'Base PR header has been removed from the description of PR #{bold(str(pr.number))}')
+            else:
+                print(f'Base PR header in the description of PR #{bold(str(pr.number))} '
+                      f'now points to PR #{bold(str(pr_number_for_base_branch))}')
 
         if self.__annotations.get(head) and self.__annotations[head].qualifiers_text:
             self.__annotations[head] = Annotation(f'PR #{pr.number} ' + self.__annotations[head].qualifiers_text)
@@ -2324,6 +2350,7 @@ class MacheteClient:
         github_client = GitHubClient(domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
         print(f"Fetching {bold(org_repo_remote.remote)}...")
         self.__git.fetch_remote(org_repo_remote.remote)
+        pr_number_for_base_branch: Optional[int] = None
         if '/'.join([org_repo_remote.remote, base]) not in self.__git.get_remote_branches():
             warn(f'Base branch for this PR ({bold(base)}) is not found on remote, pushing...')
             self.__handle_untracked_branch(
@@ -2334,8 +2361,12 @@ class MacheteClient:
                 opt_push_tracked=False,
                 opt_push_untracked=True,
                 opt_yes=False)
+        else:
+            prs_for_base_branch = github_client.get_open_pull_requests_by_head(base)
+            if len(prs_for_base_branch) >= 1:
+                pr_number_for_base_branch = prs_for_base_branch[0].number
 
-        current_user: Optional[str] = github_client.derive_current_user_login()
+        current_user: Optional[str] = github_client.get_current_user_login()
         debug(f'organization is {org_repo_remote.organization}, repository is {org_repo_remote.repository}')
         debug('current GitHub user is ' + (current_user or '<none>'))
 
@@ -2348,6 +2379,9 @@ class MacheteClient:
             description = utils.slurp_file(github_template_path)
         else:
             description = ''
+
+        if pr_number_for_base_branch:
+            description = f'# Based on PR #{pr_number_for_base_branch}\n\n' + description
 
         fork_point = self.fork_point(head, use_overrides=True)
         commits: List[GitLogEntry] = self.__git.get_commits_between(fork_point, head)

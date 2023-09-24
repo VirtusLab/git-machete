@@ -83,7 +83,7 @@ class TestGitHubCreatePR(BaseTest):
             """
             master
                 hotfix/add-trigger
-                    ignore-trailing
+                    ignore-trailing  PR #3
                         chore/fields
             develop
                 allow-ownership-link
@@ -102,7 +102,7 @@ class TestGitHubCreatePR(BaseTest):
             |
             o-hotfix/add-trigger (diverged from origin)
               |
-              o-ignore-trailing (diverged from & older than origin)
+              o-ignore-trailing  PR #3 (diverged from & older than origin)
                 |
                 o-chore/fields (untracked)
 
@@ -132,7 +132,7 @@ class TestGitHubCreatePR(BaseTest):
               |
               o-hotfix/add-trigger (diverged from origin)
                 |
-                o-ignore-trailing (diverged from & older than origin)
+                o-ignore-trailing  PR #3 (diverged from & older than origin)
                   |
                   o-chore/fields *
 
@@ -153,6 +153,14 @@ class TestGitHubCreatePR(BaseTest):
             Adding foo, bar as reviewers to PR #5... OK
             """
         )
+        pr = self.github_api_state_for_test_create_pr.get_pull_by_number(5)
+        assert pr is not None
+        assert pr['body'] == '# Based on PR #3\n\n# PR title\n## Summary\n##Test plan\n'
+        assert pr['draft'] is True
+        assert pr['milestone'] == '42'
+        assert pr['assignees'] == ['github_user']
+        assert pr['reviewers'] == ['foo', 'bar']
+
         assert_success(
             ['status'],
             """
@@ -160,7 +168,7 @@ class TestGitHubCreatePR(BaseTest):
             |
             o-hotfix/add-trigger (diverged from origin)
               |
-              o-ignore-trailing (diverged from & older than origin)
+              o-ignore-trailing  PR #3 (diverged from & older than origin)
                 |
                 o-chore/fields *  PR #5
 
@@ -191,7 +199,7 @@ class TestGitHubCreatePR(BaseTest):
             |
             o-hotfix/add-trigger *  PR #6
               |
-              x-ignore-trailing (diverged from & older than origin)
+              x-ignore-trailing  PR #3 (diverged from & older than origin)
                 |
                 o-chore/fields  PR #5
 

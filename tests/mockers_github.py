@@ -50,9 +50,9 @@ class MockGitHubAPIState:
     def __init__(self, pulls: List[Dict[str, Any]]) -> None:
         self.__pulls: List[Dict[str, Any]] = [dict(pull) for pull in pulls]
 
-    def get_pull_by_number(self, pull_no: str) -> Optional[Dict[str, Any]]:
+    def get_pull_by_number(self, pull_no: int) -> Optional[Dict[str, Any]]:
         for pull in self.__pulls:
-            if pull['number'] == pull_no:
+            if pull['number'] == str(pull_no):
                 return pull
         return None
 
@@ -142,10 +142,10 @@ def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) 
                     link_header = ''
                 return MockGitHubAPIResponse(HTTPStatus.OK, response_data=pulls[start:end], headers={'link': link_header})
         elif url_path_matches('/repos/*/*/pulls/[0-9]+'):
-            number = url_segments[-1]
-            prs_ = github_api_state.get_pull_by_number(number)
-            if prs_:
-                return MockGitHubAPIResponse(HTTPStatus.OK, prs_)
+            pull_no = int(url_segments[-1])
+            pull = github_api_state.get_pull_by_number(pull_no)
+            if pull:
+                return MockGitHubAPIResponse(HTTPStatus.OK, pull)
             raise error_404()
         elif url_path_matches('/user'):
             return MockGitHubAPIResponse(HTTPStatus.OK, {'login': 'github_user', 'type': 'User', 'company': 'VirtusLab'})
@@ -170,8 +170,8 @@ def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) 
                 raise error_422({'message': 'Validation Failed', 'errors': [
                     {'message': f'A pull request already exists for test_repo:{head}.'}]})
             return create_pull_request()
-        elif url_path_matches("/repos/*/*/(pulls|issues)/[0-9]+/*"):
-            pull_no = url_segments[-2]  # e.g. /repos/example-org/example-repo/pulls/5/requested_reviewers
+        elif url_path_matches("/repos/*/*/(pulls|issues)/[0-9]+/(assignees|requested_reviewers)"):
+            pull_no = int(url_segments[-2])
             pull = github_api_state.get_pull_by_number(pull_no)
             assert pull is not None
             if "invalid-user" in list(json_data.values())[0]:
@@ -186,7 +186,7 @@ def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) 
             raise error_404()
 
     def update_pull_request() -> "MockGitHubAPIResponse":
-        pull_no = url_segments[-1]
+        pull_no = int(url_segments[-1])
         pull = github_api_state.get_pull_by_number(pull_no)
         assert pull is not None
         fill_pull_request_from_json_data(pull)

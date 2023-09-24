@@ -49,9 +49,13 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
     Creates a PR for the current branch, using the upstream (parent) branch as the PR base.
     Once the PR is successfully created, annotates the current branch with the new PR's number.
 
-    If ``.git/info/description`` or ``.github/pull_request_template.md`` file is present, its contents are used as PR description.
     If ``.git/info/milestone`` file is present, its contents (a single number --- milestone id) are used as milestone.
     If ``.git/info/reviewers`` file is present, its contents (one GitHub login per line) are used to set reviewers.
+    If ``.git/info/description`` or ``.github/pull_request_template.md`` file is present, its contents are used as PR description.
+
+    If the newly-created PR is stacked atop another PR, the actual PR description posted to GitHub will be prepended with the following header:
+
+    ``# Based on PR #<number of PR for base branch>``
 
     **Options:**
 
@@ -59,6 +63,12 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 
 ``retarget-pr [-b|--branch=<branch>] [--ignore-if-missing]``:
     Sets the base of the current (or specified) branch's PR to upstream (parent) branch, as seen by git machete (see ``git machete show up``).
+
+    If after changing the base, the PR ends up stacked atop another PR, the PR description at GitHub will be prepended with the following header:
+
+    ``# Based on PR #<number of PR for base branch>``
+
+    This header will be updated or removed accordingly with the subsequent runs of ``retarget-pr``.
 
     **Options:**
 

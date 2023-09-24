@@ -358,6 +358,12 @@ class GitHubClient:
                                        path=f'/repos/{self.__organization}/{self.__repository}/pulls/{number}',
                                        request_body=request_body)
 
+    def set_description_of_pull_request(self, number: int, description: str) -> None:
+        request_body: Dict[str, str] = {'body': description}
+        self.__fire_github_api_request(method='PATCH',
+                                       path=f'/repos/{self.__organization}/{self.__repository}/pulls/{number}',
+                                       request_body=request_body)
+
     def set_milestone_of_pull_request(self, number: int, milestone: str) -> None:
         request_body: Dict[str, str] = {'milestone': milestone}
         # Setting milestone is only available via the Issues API, not PRs API.
@@ -365,17 +371,17 @@ class GitHubClient:
                                        path=f'/repos/{self.__organization}/{self.__repository}/issues/{number}',
                                        request_body=request_body)
 
-    def derive_open_pull_requests_by_head(self, head: LocalBranchShortName) -> List[GitHubPullRequest]:
+    def get_open_pull_requests_by_head(self, head: LocalBranchShortName) -> List[GitHubPullRequest]:
         path = f'/repos/{self.__organization}/{self.__repository}/pulls?head={self.__organization}:{head}'
         prs = self.__fire_github_api_request(method='GET', path=path)
         return [GitHubPullRequest.from_json(pr) for pr in prs]
 
-    def derive_open_pull_requests(self) -> List[GitHubPullRequest]:
+    def get_open_pull_requests(self) -> List[GitHubPullRequest]:
         path = f'/repos/{self.__organization}/{self.__repository}/pulls?per_page={self.MAX_PULLS_PER_PAGE_COUNT}'
         prs = self.__fire_github_api_request(method='GET', path=path)
         return list(map(GitHubPullRequest.from_json, prs))
 
-    def derive_current_user_login(self) -> Optional[str]:
+    def get_current_user_login(self) -> Optional[str]:
         if not self.__token:
             return None
         user = self.__fire_github_api_request(method='GET', path='/user')
