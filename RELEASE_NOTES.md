@@ -3,6 +3,7 @@
 ## New in git-machete 3.20.0
 
 - added: `git machete github create-pr` adds a comment linking the PR to its base PR; `github retarget-pr` keeps that comment up to date (suggested by @guyboltonking)
+- added: new subcommand `git machete github restack-pr`, which first marks the PR as draft, then (force-)pushes branch, then retargets PR, then marks as ready for review again (suggested by @raylu)
 
 ## New in git-machete 3.19.1
 

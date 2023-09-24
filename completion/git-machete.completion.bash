@@ -6,7 +6,7 @@ _git_machete() {
 
   local categories="addable childless managed slidable slidable-after unmanaged with-overridden-fork-point"
   local directions="down first last next prev root up"
-  local github_subcommands="anno-prs checkout-prs create-pr retarget-pr sync"
+  local github_subcommands="anno-prs checkout-prs create-pr restack-pr retarget-pr sync"
   local locations="current $directions"
   local opt_color_args="always auto never"
   local opt_return_to_args="here nearest-remaining stay"

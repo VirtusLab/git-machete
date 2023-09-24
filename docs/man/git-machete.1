@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Oct 19, 2023" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Oct 20, 2023" "" "git-machete"
 .SH NAME
 git-machete \- git-machete 3.20.0
 .sp
@@ -1120,6 +1120,16 @@ If the newly\-created PR is stacked atop another PR, the actual PR description p
 .B  \-\-draft
 Creates the new PR as a draft.
 .UNINDENT
+.TP
+.B \fBrestack\-pr\fP:
+Perform the following sequence of actions:
+1. If the PR for the current branch is ready for review, it gets converted to a draft.
+2. The branch is (force\-)pushed into remote.
+3. The PR is retargeted to its upstream (parent) branch, as in \fBretarget\-pr\fP\&.
+4. If the PR has been converted to draft in step 1, it\(aqs reverted to ready for review state.
+.sp
+The drafting/undrafting is useful in case the GitHub repository has set up \fI\%CODEOWNERS\fP\&.
+Draft PRs don\(aqt get code owners automatically added as reviewers.
 .TP
 .B \fBretarget\-pr [\-b|\-\-branch=<branch>] [\-\-ignore\-if\-missing]\fP:
 Sets the base of the current (or specified) branch\(aqs PR to upstream (parent) branch, as seen by git machete (see \fBgit machete show up\fP).

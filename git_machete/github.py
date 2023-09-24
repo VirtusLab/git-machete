@@ -11,7 +11,7 @@ from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 from .exceptions import MacheteException, UnprocessableEntityHTTPError
 from .git_operations import GitContext, LocalBranchShortName
-from .utils import bold, debug, fmt, popen_cmd, warn
+from .utils import bold, compact_dict, debug, fmt, popen_cmd, warn
 
 
 class GitHubPullRequest(NamedTuple):
@@ -228,6 +228,8 @@ class GitHubClient:
 
         if self.__domain == self.DEFAULT_GITHUB_DOMAIN:
             url_prefix = 'https://api.' + self.__domain
+        elif path == '/graphql':
+            url_prefix = 'https://' + self.__domain + '/api'
         else:
             url_prefix = 'https://' + self.__domain + '/api/v3'
 
@@ -235,7 +237,7 @@ class GitHubClient:
         json_body: Optional[str] = json.dumps(request_body) if request_body else None
         http_request = urllib.request.Request(url, headers=headers, data=json_body.encode() if json_body else None, method=method.upper())
         debug(f'firing a {method} request to {url} with {"a" if self.__token else "no"} '
-              f'bearer token and request body {json_body or "<none>"}')
+              f'bearer token and request body {compact_dict(request_body) if request_body else "<none>"}')
 
         try:
             with urllib.request.urlopen(http_request) as response:
@@ -308,6 +310,9 @@ class GitHubClient:
         except OSError as e:  # pragma: no cover
             raise MacheteException(f'Could not connect to {url_prefix}: {e}')
 
+    def __fire_github_graphql_api_request(self, query: str) -> Any:
+        return self.__fire_github_api_request(method='POST', path='/graphql', request_body={"query": query})
+
     @staticmethod
     def __extract_failure_info_from_422(response: Any) -> str:
         if response['message'] != 'Validation Failed':
@@ -370,6 +375,50 @@ class GitHubClient:
         self.__fire_github_api_request(method='PATCH',
                                        path=f'/repos/{self.__organization}/{self.__repository}/issues/{number}',
                                        request_body=request_body)
+
+    # As of September 2023, REST (v3) GitHub API does **not** allow for setting PR draft status,
+    # only for creating a draft PR or retrieving draft status on an existing PR.
+    # See https://docs.github.com/en/rest/pulls/pulls?apiVersion=2022-11-28#update-a-pull-request
+    # and https://github.com/orgs/community/discussions/45174.
+    # GraphQL (v4) API mutation needs to be used for that purpose.
+    def set_draft_status_of_pull_request(self, number: int, target_draft_status: bool) -> bool:
+        """Returns true if PR had a different draft status, and draft status has been toggled.
+        Returns false if PR already had the desired draft status, and hence draft status has NOT been toggled."""
+
+        # This query is required to get the GraphQL-specific id of the PR
+        query = f"""query {{
+            repository(owner: "{self.organization}", name: "{self.repository}") {{
+                pullRequest(number: {number}) {{
+                    id
+                    isDraft
+                }}
+            }}
+        }}"""
+        response = self.__fire_github_graphql_api_request(query)
+        debug(f"query response is {response}")
+        is_draft = response["data"]["repository"]["pullRequest"]["isDraft"]
+        if is_draft and target_draft_status is True:
+            debug(f"PR #{number} is already a draft")
+            return False
+        if not is_draft and target_draft_status is False:
+            debug(f"PR #{number} is already ready for review")
+            return False
+
+        # Ids are of the form "PR_kwDOB1DpPc5bDwiF"
+        graphql_id = response["data"]["repository"]["pullRequest"]["id"]
+
+        mutation = "convertPullRequestToDraft" if target_draft_status else "markPullRequestReadyForReview"
+        query = f"""mutation {{
+            {mutation}(input: {{pullRequestId: "{graphql_id}"}}) {{
+                pullRequest {{
+                    id
+                    isDraft
+                }}
+            }}
+        }}"""
+        response = self.__fire_github_graphql_api_request(query)
+        debug(f"mutation response is {response}")
+        return True
 
     def get_open_pull_requests_by_head(self, head: LocalBranchShortName) -> List[GitHubPullRequest]:
         path = f'/repos/{self.__organization}/{self.__repository}/pulls?head={self.__organization}:{head}'

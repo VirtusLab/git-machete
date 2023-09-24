@@ -252,6 +252,7 @@ __git_machete_github_subcommands() {
         'anno-prs:annotate the branches based on their corresponding GitHub PR numbers and authors'
         'checkout-prs:check out the given pull requests locally'
         'create-pr:create a PR for the current branch, using the upstream (parent) branch as the PR base'
+        'restack-pr:retarget and (force-)push the PR, without adding code owners as reviewers in the process'
         'retarget-pr:set the base of the current branch PR to upstream (parent) branch'
         'sync:synchronize with the remote repository: checkout open PRs for the current user associated with the GitHub token, delete unmanaged branches and also delete untracked managed branches with no downstream branch'
       )

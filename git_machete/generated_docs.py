@@ -628,6 +628,17 @@ long_docs: Dict[str, str] = {
                  <b>--draft</b>
               Creates the new PR as a draft.
 
+           `restack-pr`:
+ 
+              Perform the following sequence of actions:
+              1. If the PR for the current branch is ready for review, it gets converted to a draft.
+              2. The branch is (force-)pushed into remote.
+              3. The PR is retargeted to its upstream (parent) branch, as in `retarget-pr`.
+              4. If the PR has been converted to draft in step 1, it's reverted to ready for review state.
+
+              The drafting/undrafting is useful in case the GitHub repository has set up CODEOWNERS.
+              Draft PRs don't get code owners automatically added as reviewers.
+
            `retarget-pr [-b|--branch=<branch>] [--ignore-if-missing]`:
  
               Sets the base of the current (or specified) branch's PR to upstream (parent) branch, as seen by git machete (see `git machete show up`).

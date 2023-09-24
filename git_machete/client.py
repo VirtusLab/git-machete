@@ -2179,6 +2179,90 @@ class MacheteClient:
                 return remote
         return None
 
+    def restack_github_pr(self) -> None:
+        domain = self.__derive_github_domain()
+        head = self.__git.get_current_branch()
+        org_repo_remote = self.__derive_org_repo_and_remote(domain=domain, branch_used_for_tracking_data=head)
+        github_client = GitHubClient(domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
+
+        prs: List[GitHubPullRequest] = github_client.get_open_pull_requests_by_head(head)
+        if not prs:
+            raise MacheteException(f"No PRs have `{head}` as its head")
+        if len(prs) > 1:
+            raise MacheteException(f"Multiple PRs have `{head}` as its head: " + ", ".join(f"#{_pr.number}" for _pr in prs))
+        pr = prs[0]
+
+        self.__git.fetch_remote(org_repo_remote.remote)
+
+        self.__empty_line_status = True
+        current_branch = self.__git.get_current_branch()
+        s, remote = self.__git.get_combined_remote_sync_status(current_branch)
+        statuses_to_push = (
+            SyncToRemoteStatuses.UNTRACKED,
+            SyncToRemoteStatuses.AHEAD_OF_REMOTE,
+            SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE)
+        if s in statuses_to_push:
+            if current_branch in self.annotations and not self.annotations[current_branch].qualifiers.push:
+                warn(f'Branch <b>{current_branch}</b> is marked as `push=no`; skipping the push.\n'
+                     'Did you want to just use `git machete github retarget-pr`?\n')
+
+                self.retarget_github_pr(head, ignore_if_missing=False)
+            else:
+                converted_to_draft = github_client.set_draft_status_of_pull_request(pr.number, target_draft_status=True)
+                if converted_to_draft:
+                    print(f'PR #{bold(str(pr.number))} has been temporarily marked as draft')
+
+                if s == SyncToRemoteStatuses.AHEAD_OF_REMOTE:
+                    assert remote is not None
+                    self.__handle_ahead_state(
+                        current_branch=current_branch,
+                        remote=remote,
+                        is_called_from_traverse=False,
+                        opt_push_tracked=True,
+                        opt_yes=True)
+                elif s == SyncToRemoteStatuses.UNTRACKED:
+                    self.__handle_untracked_state(
+                        branch=current_branch,
+                        is_called_from_traverse=False,
+                        is_called_from_github=True,
+                        opt_push_tracked=True,
+                        opt_push_untracked=True,
+                        opt_yes=True)
+                elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:  # pragma: no branch
+                    assert remote is not None
+                    self.__handle_diverged_and_newer_state(
+                        current_branch=current_branch,
+                        remote=remote,
+                        is_called_from_traverse=False,
+                        opt_push_tracked=True,
+                        opt_yes=True)
+
+                self.__print_new_line(False)
+                self.status(
+                    warn_when_branch_in_sync_but_fork_point_off=True,
+                    opt_list_commits=False,
+                    opt_list_commits_with_hashes=False,
+                    opt_no_detect_squash_merges=False)
+                self.__print_new_line(False)
+
+                self.retarget_github_pr(head, ignore_if_missing=False)
+
+                if converted_to_draft:
+                    github_client.set_draft_status_of_pull_request(prs[0].number, target_draft_status=False)
+                    print(f'PR #{bold(str(pr.number))} has been marked as ready for review again')
+
+        else:
+            if s == SyncToRemoteStatuses.BEHIND_REMOTE:
+                warn(f"Branch {bold(current_branch)} is behind its remote counterpart. Consider using `git pull`.\n")
+            elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
+                warn(f"Branch {bold(current_branch)} is diverged from and older than its remote counterpart. "
+                     "Consider using `git reset --keep`.\n")
+            elif s == SyncToRemoteStatuses.NO_REMOTES:  # pragma: no cover; case handled elsewhere
+                raise MacheteException(
+                    "Could not retarget pull request - there are no remote repositories!")
+
+            self.retarget_github_pr(head, ignore_if_missing=False)
+
     @staticmethod
     def __get_updated_github_pr_description(old_description: Optional[str], pr_number_for_base_branch: Optional[int]) -> str:
         def skip_leading_empty(strs: List[str]) -> List[str]:

@@ -99,6 +99,10 @@ def find_executable(executable: str) -> Optional[str]:
     return None
 
 
+def compact_dict(d: Dict[str, Any]) -> Dict[str, str]:
+    return {k: re.sub('\n +', ' ', str(v), re.MULTILINE) for k, v in d.items()}
+
+
 def debug(msg: str) -> None:
     if debug_mode:
         function_name = bold(inspect.stack()[1].function)
@@ -108,10 +112,10 @@ def debug(msg: str) -> None:
         for arg, value in values.items():
             if arg in args_to_be_redacted or any(value_ in str(value) for value_ in GITHUB_TOKEN_PREFIXES):
                 values[arg] = '***'
+            if type(values[arg]) is dict:
+                values[arg] = compact_dict(values[arg])
 
-        excluded_args = {'self'}
-        allowed_args = excluding(args, excluded_args)
-        args_and_values_list = [arg + '=' + str(values[arg]) for arg in allowed_args]
+        args_and_values_list = [arg + '=' + str(values[arg]) for arg in excluding(args, {'self'})]
         args_and_values_str = ', '.join(args_and_values_list)
         args_and_values_bold_str = bold(f'({args_and_values_str})')
 

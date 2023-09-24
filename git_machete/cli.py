@@ -241,7 +241,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
         usage=argparse.SUPPRESS,
         add_help=False,
         parents=[common_args_parser])
-    github_parser.add_argument('subcommand', choices=['anno-prs', 'checkout-prs', 'create-pr', 'retarget-pr', 'sync'])
+    github_parser.add_argument('subcommand', choices=['anno-prs', 'checkout-prs', 'create-pr', 'restack-pr', 'retarget-pr', 'sync'])
     github_parser.add_argument('pr_no', nargs='*', type=int)
     github_parser.add_argument('-b', '--branch', default=argparse.SUPPRESS)
     github_parser.add_argument('--all', action='store_true')
@@ -701,6 +701,8 @@ def launch(orig_args: List[str]) -> None:
                     head=current_branch,
                     opt_draft=cli_opts.opt_draft,
                     opt_onto=cli_opts.opt_onto)
+            elif github_subcommand == "restack-pr":
+                machete_client.restack_github_pr()
             elif github_subcommand == "retarget-pr":
                 branch = parsed_cli.branch if 'branch' in parsed_cli else git.get_current_branch()
                 machete_client.expect_in_managed_branches(branch)

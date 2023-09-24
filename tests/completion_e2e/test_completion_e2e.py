@@ -57,7 +57,7 @@ test_cases: Dict[str, str] = {
     "git machete fork-point --unset-override ":
         "develop",
     "git machete github ":
-        "anno-prs checkout-prs create-pr retarget-pr sync",
+        "anno-prs checkout-prs create-pr restack-pr retarget-pr sync",
     "git machete github checkout-prs -":
         "--all --by --debug -h --help --mine -v --verbose",
     "git machete github create-pr -":

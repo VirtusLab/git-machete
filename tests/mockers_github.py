@@ -19,7 +19,8 @@ def mock_pr_json(head: str, base: str, number: int,
                  user: str = 'some_other_user',
                  html_url: str = 'www.github.com',
                  body: Optional[str] = '# Summary',
-                 state: str = 'open'
+                 state: str = 'open',
+                 draft: bool = False
                  ) -> Dict[str, Any]:
     return {
         'head': {'ref': head, 'repo': repo},
@@ -28,7 +29,8 @@ def mock_pr_json(head: str, base: str, number: int,
         'number': str(number),
         'html_url': html_url,
         'body': body,
-        'state': state
+        'state': state,
+        'draft': draft
     }
 
 
@@ -200,6 +202,30 @@ def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) 
             else:
                 fill_pull_request_from_json_data(pull)
                 return MockGitHubAPIResponse(HTTPStatus.OK, pull)
+        elif parsed_url.path in ("/api/graphql", "/graphql"):  # /api/graphql for Enterprise domains
+            query_or_mutation = json_data['query']
+            if 'query {' in query_or_mutation:
+                match = re.search(r'pullRequest\(number: ([0-9]+)\)', query_or_mutation)
+                assert match is not None
+                pr_number = int(match.group(1))
+                pr = github_api_state.get_pull_by_number(pr_number)
+                assert pr is not None
+                pr_is_draft: bool = pr.get("draft") is True
+                return MockGitHubAPIResponse(HTTPStatus.OK, {
+                    # Let's just use PR number as PR GraphQL id, for simplicity
+                    'data': {'repository': {'pullRequest': {'id': str(pr_number), 'isDraft': pr_is_draft}}}
+                })
+            else:
+                match = re.search(r'([a-zA-Z]+)\(input: \{pullRequestId: "([0-9]+)"}\)', query_or_mutation)
+                assert match is not None
+                target_draft_state = match.group(1) == "convertPullRequestToDraft"
+                pr_number = int(match.group(2))
+                pr = github_api_state.get_pull_by_number(pr_number)
+                assert pr is not None
+                pr['draft'] = target_draft_state
+                return MockGitHubAPIResponse(HTTPStatus.OK, {
+                    'data': {'repository': {'pullRequest': {'id': str(pr_number), 'isDraft': target_draft_state}}}
+                })
         else:
             raise error_404()
 
