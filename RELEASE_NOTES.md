@@ -2,6 +2,7 @@
 
 ## New in git-machete 3.19.0
 
+- added: support for Python 3.12
 - improved: `git machete github create-pr` also checks for `.github/pull_request_template.md` for description (contributed by @raylu)
 
 ## New in git-machete 3.18.3
