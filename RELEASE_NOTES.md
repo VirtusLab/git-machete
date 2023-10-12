@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.19.1
+
 ## New in git-machete 3.19.0
 
 - added: support for Python 3.12
