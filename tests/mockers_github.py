@@ -195,6 +195,7 @@ def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) 
     def create_pull_request() -> "MockGitHubAPIResponse":
         pull = {'user': {'login': 'some_other_user'},
                 'html_url': 'www.github.com',
+                'body': '# Summary',
                 'state': 'open',
                 'head': {'ref': "", 'repo': {'full_name': 'testing:checkout_prs', 'html_url': 'https:/example.org/pull/1234'}},
                 'base': {'ref': ""}}

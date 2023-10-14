@@ -24,6 +24,7 @@ class TestGitHubCreatePR(BaseTest):
                 'base': {'ref': 'hotfix/add-trigger'},
                 'number': '3',
                 'html_url': 'www.github.com',
+                'body': '# Summary',
                 'state': 'open'
             }
         ]
@@ -292,6 +293,7 @@ class TestGitHubCreatePR(BaseTest):
                 'base': {'ref': 'restrict_access'},
                 'number': '18',
                 'html_url': 'www.github.com',
+                'body': '# Summary',
                 'state': 'open'
             }
         ]
@@ -347,7 +349,8 @@ class TestGitHubCreatePR(BaseTest):
                 'head': {'ref': 'branch-1', 'repo': mock_repository_info},
                 'user': {'login': 'some_other_user'},
                 'base': {'ref': 'root'}, 'number': '15',
-                'html_url': 'www.github.com', 'state': 'open'
+                'html_url': 'www.github.com',
+                'body': '# Summary', 'state': 'open'
             }
         ]
     )

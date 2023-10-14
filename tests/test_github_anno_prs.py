@@ -17,6 +17,7 @@ class TestGitHubAnnoPRs(BaseTest):
             'base': {'ref': base},
             'number': str(number),
             'html_url': 'www.github.com',
+            'body': '# Summary',
             'state': 'open'
         } for (number, user, head, base) in (
             (3, 'some_other_user', 'ignore-trailing', 'hotfix/add-trigger'),
@@ -146,13 +147,15 @@ class TestGitHubAnnoPRs(BaseTest):
                 'head': {'ref': 'feature_repo', 'repo': mock_repository_info},
                 'user': {'login': 'some_other_user'},
                 'base': {'ref': 'root'}, 'number': '15',
-                'html_url': 'www.github.com', 'state': 'open'
+                'html_url': 'www.github.com',
+                'body': '# Summary', 'state': 'open'
             },
             {
                 'head': {'ref': 'feature_1', 'repo': mock_repository_info},
                 'user': {'login': 'some_other_user'},
                 'base': {'ref': 'feature_repo'}, 'number': '20',
-                'html_url': 'www.github.com', 'state': 'open'
+                'html_url': 'www.github.com',
+                'body': '# Summary', 'state': 'open'
             }
         ]
     )

@@ -18,6 +18,7 @@ class TestGitHubSync(BaseTest):
                 'base': {'ref': 'master'},
                 'number': '7',
                 'html_url': 'www.github.com',
+                'body': '# Summary',
                 'state': 'open'
             }
         ]

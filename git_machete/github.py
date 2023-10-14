@@ -21,6 +21,7 @@ class GitHubPullRequest(NamedTuple):
     head: str
     html_url: str
     state: str
+    description: Optional[str]
     full_repository_name: str
     repository_url: str
 
@@ -34,6 +35,7 @@ class GitHubPullRequest(NamedTuple):
                    head=pr_json['head']['ref'],
                    html_url=pr_json['html_url'],
                    state=pr_json['state'],
+                   description=pr_json['body'],
                    full_repository_name=pr_json['head']['repo']['full_name'] if pr_json['head']['repo'] else None,
                    repository_url=pr_json['head']['repo']['html_url'] if pr_json['head']['repo'] else None)
 

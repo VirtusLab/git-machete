@@ -46,6 +46,7 @@ class TestGitHub(BaseTest):
         'base': {'ref': 'develop'},
         'number': str(i),
         'html_url': 'www.github.com',
+        'body': '# Summary',
         'state': 'open'
     } for i in range(PR_COUNT_FOR_TEST_GITHUB_API_PAGINATION)])
 
@@ -116,6 +117,7 @@ class TestGitHub(BaseTest):
                 'base': {'ref': 'develop'},
                 'number': '7',
                 'html_url': 'www.github.com',
+                'body': '# Summary',
                 'state': 'open'
             }
         ]

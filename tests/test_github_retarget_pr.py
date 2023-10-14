@@ -17,38 +17,44 @@ class TestGitHubRetargetPR(BaseTest):
                 'head': {'ref': 'feature', 'repo': mock_repository_info},
                 'user': {'login': 'some_other_user'},
                 'base': {'ref': 'master'}, 'number': '15',
-                'html_url': 'www.github.com', 'state': 'open'
+                'html_url': 'www.github.com',
+                'body': '# Summary', 'state': 'open'
             },
             {
                 'head': {'ref': 'feature_1', 'repo': mock_repository_info},
                 'user': {'login': 'some_other_user'},
                 'base': {'ref': 'master'}, 'number': '20',
-                'html_url': 'www.github.com', 'state': 'open'
+                'html_url': 'www.github.com',
+                'body': '# Summary', 'state': 'open'
             },
             {
                 'head': {'ref': 'feature_2', 'repo': mock_repository_info},
                 'user': {'login': 'some_other_user'},
                 'base': {'ref': 'master'}, 'number': '25',
-                'html_url': 'www.github.com', 'state': 'open'
+                'html_url': 'www.github.com',
+                'body': '# Summary', 'state': 'open'
             },
             {
                 'head': {'ref': 'feature_3', 'repo': mock_repository_info},
                 'user': {'login': 'some_other_user'},
                 'base': {'ref': 'master'}, 'number': '30',
-                'html_url': 'www.github.com', 'state': 'open'
+                'html_url': 'www.github.com',
+                'body': '# Summary', 'state': 'open'
             },
             {
                 'head': {'ref': 'feature_4', 'repo': mock_repository_info},
                 'user': {'login': 'some_other_user'},
                 'base': {'ref': 'feature'}, 'number': '35',
-                'html_url': 'www.github.com', 'state': 'open'
+                'html_url': 'www.github.com',
+                'body': '# Summary', 'state': 'open'
             },
             # Let's include another PR for `feature_2`, but with a different base branch
             {
                 'head': {'ref': 'feature_4', 'repo': mock_repository_info},
                 'user': {'login': 'some_other_user'},
                 'base': {'ref': 'feature'}, 'number': '40',
-                'html_url': 'www.github.com', 'state': 'open'
+                'html_url': 'www.github.com',
+                'body': '# Summary', 'state': 'open'
             },
         ]
     )
@@ -141,7 +147,8 @@ class TestGitHubRetargetPR(BaseTest):
                 'head': {'ref': 'feature', 'repo': mock_repository_info},
                 'user': {'login': 'some_other_user'},
                 'base': {'ref': 'root'}, 'number': '15',
-                'html_url': 'www.github.com', 'state': 'open'
+                'html_url': 'www.github.com',
+                'body': '# Summary', 'state': 'open'
             }
         ]
     )
@@ -349,7 +356,7 @@ class TestGitHubRetargetPR(BaseTest):
         'head': {'ref': 'master', 'repo': mock_repository_info},
         'user': {'login': 'some_other_user'},
         'base': {'ref': 'root'}, 'number': '15',
-        'html_url': 'www.github.com', 'state': 'open'
+        'html_url': 'www.github.com', 'body': '# Summary', 'state': 'open'
     }])
 
     def test_github_retarget_pr_root_branch(self, mocker: MockerFixture) -> None:

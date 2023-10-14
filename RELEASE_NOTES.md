@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.20.0
+
 ## New in git-machete 3.19.1
 
 - improved: when running `git machete squash` against a root branch, the error message suggests using `--fork-point=...` flag (suggested by @levinotik)

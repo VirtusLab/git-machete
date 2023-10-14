@@ -22,6 +22,7 @@ class TestGitHubCheckoutPRs(BaseTest):
                 'base': {'ref': 'restrict_access'},
                 'number': '18',
                 'html_url': 'www.github.com',
+                'body': '# Summary',
                 'state': 'open'
             },
             {
@@ -30,6 +31,7 @@ class TestGitHubCheckoutPRs(BaseTest):
                 'base': {'ref': 'allow-ownership-link'},
                 'number': '17',
                 'html_url': 'www.github.com',
+                'body': '# Summary',
                 'state': 'open'
             },
             {
@@ -38,6 +40,7 @@ class TestGitHubCheckoutPRs(BaseTest):
                 'base': {'ref': 'bugfix/feature'},
                 'number': '12',
                 'html_url': 'www.github.com',
+                'body': '# Summary',
                 'state': 'open'
             },
             {
@@ -46,6 +49,7 @@ class TestGitHubCheckoutPRs(BaseTest):
                 'base': {'ref': 'enhance/feature'},
                 'number': '6',
                 'html_url': 'www.github.com',
+                'body': '# Summary',
                 'state': 'open'
             },
             {
@@ -54,6 +58,7 @@ class TestGitHubCheckoutPRs(BaseTest):
                 'base': {'ref': 'develop'},
                 'number': '19',
                 'html_url': 'www.github.com',
+                'body': '# Summary',
                 'state': 'open'
             },
             {
@@ -62,21 +67,25 @@ class TestGitHubCheckoutPRs(BaseTest):
                 'base': {'ref': 'bugfix/add_user'},
                 'number': '22',
                 'html_url': 'www.github.com',
+                'body': '# Summary',
                 'state': 'open'
             },
-            {'head': {'ref': 'chore/comments', 'repo': mock_repository_info},
-             'user': {'login': 'some_other_user'},
-             'base': {'ref': 'testing/add_user'},
-             'number': '24',
-             'html_url': 'www.github.com',
-             'state': 'open'
-             },
+            {
+                'head': {'ref': 'chore/comments', 'repo': mock_repository_info},
+                'user': {'login': 'some_other_user'},
+                'base': {'ref': 'testing/add_user'},
+                'number': '24',
+                'html_url': 'www.github.com',
+                'body': '# Summary',
+                'state': 'open'
+            },
             {
                 'head': {'ref': 'ignore-trailing', 'repo': mock_repository_info},
                 'user': {'login': 'some_other_user'},
                 'base': {'ref': 'hotfix/add-trigger'},
                 'number': '3',
                 'html_url': 'www.github.com',
+                'body': '# Summary',
                 'state': 'open'
             },
             {
@@ -86,6 +95,7 @@ class TestGitHubCheckoutPRs(BaseTest):
                 'base': {'ref': 'develop'},
                 'number': '5',
                 'html_url': 'www.github.com',
+                'body': '# Summary',
                 'state': 'closed'
             }
         ]
@@ -350,6 +360,7 @@ class TestGitHubCheckoutPRs(BaseTest):
                 'base': {'ref': 'improve/refactor'},
                 'number': '2',
                 'html_url': 'www.github.com',
+                'body': '# Summary',
                 'state': 'open'
             },
             {
@@ -358,6 +369,7 @@ class TestGitHubCheckoutPRs(BaseTest):
                 'base': {'ref': 'allow-ownership-link'},
                 'number': '17',
                 'html_url': 'www.github.com',
+                'body': '# Summary',
                 'state': 'open'
             },
             {
@@ -366,6 +378,7 @@ class TestGitHubCheckoutPRs(BaseTest):
                 'base': {'ref': 'chore/sync_to_docs'},
                 'number': '1',
                 'html_url': 'www.github.com',
+                'body': '# Summary',
                 'state': 'open'
             },
             {
@@ -375,6 +388,7 @@ class TestGitHubCheckoutPRs(BaseTest):
                 'base': {'ref': 'comments/add_docstrings'},
                 'number': '23',
                 'html_url': 'www.github.com',
+                'body': '# Summary',
                 'state': 'closed'
             }
         ]
@@ -485,6 +499,7 @@ class TestGitHubCheckoutPRs(BaseTest):
                 'base': {'ref': 'develop'},
                 'number': '2',
                 'html_url': 'www.github.com',
+                'body': '# Summary',
                 'state': 'closed'
             },
             {
@@ -493,6 +508,7 @@ class TestGitHubCheckoutPRs(BaseTest):
                 'base': {'ref': 'develop'},
                 'number': '3',
                 'html_url': 'www.github.com',
+                'body': '# Summary',
                 'state': 'open'}
         ]
     )
@@ -546,6 +562,7 @@ class TestGitHubCheckoutPRs(BaseTest):
                 'base': {'ref': 'restrict_access'},
                 'number': '18',
                 'html_url': 'www.github.com',
+                'body': '# Summary',
                 'state': 'open'
             },
             {
@@ -554,6 +571,7 @@ class TestGitHubCheckoutPRs(BaseTest):
                 'base': {'ref': 'allow-ownership-link'},
                 'number': '17',
                 'html_url': 'www.github.com',
+                'body': '# Summary',
                 'state': 'open'
             },
             {
@@ -562,6 +580,7 @@ class TestGitHubCheckoutPRs(BaseTest):
                 'base': {'ref': 'bugfix/feature'},
                 'number': '12',
                 'html_url': 'www.github.com',
+                'body': '# Summary',
                 'state': 'open'
             },
             {
@@ -570,6 +589,7 @@ class TestGitHubCheckoutPRs(BaseTest):
                 'base': {'ref': 'enhance/feature'},
                 'number': '6',
                 'html_url': 'www.github.com',
+                'body': '# Summary',
                 'state': 'open'
             },
             {
@@ -578,6 +598,7 @@ class TestGitHubCheckoutPRs(BaseTest):
                 'base': {'ref': 'develop'},
                 'number': '19',
                 'html_url': 'www.github.com',
+                'body': '# Summary',
                 'state': 'open'
             },
             {
@@ -586,6 +607,7 @@ class TestGitHubCheckoutPRs(BaseTest):
                 'base': {'ref': 'bugfix/add_user'},
                 'number': '22',
                 'html_url': 'www.github.com',
+                'body': '# Summary',
                 'state': 'open'
             },
             {
@@ -594,6 +616,7 @@ class TestGitHubCheckoutPRs(BaseTest):
                 'base': {'ref': 'testing/add_user'},
                 'number': '24',
                 'html_url': 'www.github.com',
+                'body': '# Summary',
                 'state': 'open'
             },
             {
@@ -602,6 +625,7 @@ class TestGitHubCheckoutPRs(BaseTest):
                 'base': {'ref': 'hotfix/add-trigger'},
                 'number': '3',
                 'html_url': 'www.github.com',
+                'body': '# Summary',
                 'state': 'open'
             },
             {
@@ -611,6 +635,7 @@ class TestGitHubCheckoutPRs(BaseTest):
                 'base': {'ref': 'develop'},
                 'number': '5',
                 'html_url': 'www.github.com',
+                'body': '# Summary',
                 'state': 'closed'
             }
         ]
@@ -815,6 +840,7 @@ class TestGitHubCheckoutPRs(BaseTest):
                 'base': {'ref': 'master'},
                 'number': '18',
                 'html_url': 'www.github.com',
+                'body': '# Summary',
                 'state': 'open'
             }
         ]
