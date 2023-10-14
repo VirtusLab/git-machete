@@ -1359,13 +1359,15 @@ class MacheteClient:
             else:
                 return fp_hash, containing_branch_pairs
 
-    def fork_point(
-            self,
-            branch: LocalBranchShortName,
-            use_overrides: bool
-    ) -> FullCommitHash:
+    def fork_point(self, branch: LocalBranchShortName, use_overrides: bool) -> FullCommitHash:
         hash, containing_branch_pairs = self.__fork_point_and_containing_branch_pairs(branch, use_overrides)
         return FullCommitHash.of(hash)
+
+    def fork_point_or_none(self, branch: LocalBranchShortName, use_overrides: bool) -> Optional[FullCommitHash]:
+        try:
+            return self.fork_point(branch, use_overrides)
+        except MacheteException:
+            return None
 
     def diff(self, *, branch: Optional[LocalBranchShortName], opt_stat: bool) -> None:
         diff_branch = branch or self.__git.get_current_branch()
@@ -1497,8 +1499,7 @@ class MacheteClient:
                 raise MacheteException(f"The machete-post-slide-out hook exited with {exit_code}, aborting.")
 
     def squash(self, *, current_branch: LocalBranchShortName, opt_fork_point: AnyRevision) -> None:
-        commits: List[GitLogEntry] = self.__git.get_commits_between(
-            opt_fork_point, current_branch)
+        commits: List[GitLogEntry] = self.__git.get_commits_between(opt_fork_point, current_branch)
         if not commits:
             raise MacheteException(
                 "No commits to squash. Use `-f` or `--fork-point` to specify the "

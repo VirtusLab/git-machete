@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Oct 12, 2023" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Oct 15, 2023" "" "git-machete"
 .SH NAME
 git-machete \- git-machete 3.19.1
 .sp
@@ -1600,11 +1600,13 @@ Squashes the commits belonging uniquely to the current branch into a single comm
 The chunk of the history to be squashed starts at the automatically computed fork point of the current branch by default,
 but can also be set explicitly by \fB\-\-fork\-point\fP\&.
 See help for \fI\%fork\-point\fP for more details on meaning of the \fIfork point\fP\&.
-The message for the squashed is taken from the earliest squashed commit, i.e. the commit directly following the fork point.
+The message for the resulting commit is taken from the earliest squashed commit (the commit directly following the fork point).
 .sp
-Note: the current squashed branch does not need to occur in the branch layout file.
+To simply squash the most recent N commits, use \fB\-\-fork\-point=HEAD~<N>\fP,
+for example \fBgit machete squash \-\-fork\-point=HEAD~3\fP\&.
 .sp
-Tip: \fBsquash\fP does NOT run \fBgit rebase\fP under the hood. For more complex scenarios that require rewriting the history of current branch, see \fBreapply\fP and \fBupdate\fP\&.
+Tip: \fBsquash\fP does NOT run \fBgit rebase\fP under the hood.
+For more complex scenarios that require rewriting the history of current branch, see \fBreapply\fP and \fBupdate\fP\&.
 .sp
 \fBOptions:\fP
 .INDENT 0.0

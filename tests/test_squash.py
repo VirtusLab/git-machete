@@ -7,14 +7,18 @@ from .mockers import (assert_failure, assert_success,
 
 class TestSquash(BaseTest):
 
+    def test_squash_root_branch(self) -> None:
+        self.repo_sandbox.new_branch("master").commit().commit()
+
+        assert_failure(
+            ["squash"],
+            "git-machete cannot determine the range of commits unique to branch master.\n"
+            "Use git machete squash --fork-point=... to select the commit after which the commits of master start.\n"
+            "For example, if you want to squash 3 latest commits, use git machete squash --fork-point=HEAD~3."
+        )
+
     def test_squash_no_commits(self) -> None:
-        with fixed_author_and_committer_date_in_past():
-            (
-                self.repo_sandbox
-                .new_branch("master")
-                .commit()
-                .new_branch("develop")
-            )
+        self.repo_sandbox.new_branch("master").commit().new_branch("develop")
 
         assert_failure(
             ["squash"],

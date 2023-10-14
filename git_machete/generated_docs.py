@@ -915,11 +915,13 @@ long_docs: Dict[str, str] = {
         The chunk of the history to be squashed starts at the automatically computed fork point of the current branch by default,
         but can also be set explicitly by `--fork-point`.
         See help for `fork-point` for more details on meaning of the fork point.
-        The message for the squashed is taken from the earliest squashed commit, i.e. the commit directly following the fork point.
+        The message for the resulting commit is taken from the earliest squashed commit (the commit directly following the fork point).
 
-        Note: the current squashed branch does not need to occur in the branch layout file.
+        To simply squash the most recent N commits, use `--fork-point=HEAD~<N>`,
+        for example `git machete squash --fork-point=HEAD~3`.
 
-        Tip: `squash` does NOT run `git rebase` under the hood. For more complex scenarios that require rewriting the history of current branch, see `reapply` and `update`.
+        Tip: `squash` does NOT run `git rebase` under the hood.
+        For more complex scenarios that require rewriting the history of current branch, see `reapply` and `update`.
 
         <b>Options:</b>
            <b>-f</b>, <b>--fork-point=<fork-point-commit></b>

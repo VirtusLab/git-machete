@@ -798,7 +798,14 @@ def launch(orig_args: List[str]) -> None:
                 machete_client.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
                     fork_point_hash=cli_opts.opt_fork_point, branch=current_branch)
 
-            squash_fork_point = cli_opts.opt_fork_point or machete_client.fork_point(branch=current_branch, use_overrides=True)
+            squash_fork_point = cli_opts.opt_fork_point or machete_client.fork_point_or_none(branch=current_branch, use_overrides=True)
+            if squash_fork_point is None:
+                raise MacheteException(
+                    f"git-machete cannot determine the range of commits unique to branch <b>{current_branch}</b>.\n"
+                    f"Use `git machete squash --fork-point=...` to select the commit "
+                    f"after which the commits of <b>{current_branch}</b> start.\n"
+                    "For example, if you want to squash 3 latest commits, use `git machete squash --fork-point=HEAD~3`."
+                )
             machete_client.squash(current_branch=current_branch, opt_fork_point=squash_fork_point)
         elif cmd in {"status", alias_by_command["status"]}:
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
