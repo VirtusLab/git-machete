@@ -23,8 +23,8 @@ traverse
                            [--[no-]push] [--[no-]push-untracked]
                            [--return-to=WHERE] [--start-from=WHERE] [-w|--whole] [-W] [-y|--yes]
 
-Traverses the branch tree in pre-order (i.e. simply in the order as they occur in the branch layout file).
-By default ``traverse`` starts from the current branch.
+Traverses the branches in the order as they occur in branch layout file.
+By default, ``traverse`` starts from the current branch.
 This behavior can, however, be customized using options: ``--start-from=``, ``--whole`` or ``-w``, ``-W``.
 
 For each branch, the command:
@@ -32,42 +32,42 @@ For each branch, the command:
     * detects if the branch is merged (:grey:`grey` edge) to its parent (aka upstream):
 
       - by commit equivalency (default), or by strict detection of merge commits (if ``--no-detect-squash-merges`` passed),
-      - if so, asks the user whether to slide out the branch from the dependency tree (typically branches are no longer needed after they're merged);
+      - if so, asks the user whether to **slide out** the branch from the dependency tree (typically branches are no longer needed after they're merged);
 
     * otherwise, if the branch has a :red:`red` or :yellow:`yellow` edge to its parent/upstream (see help for :ref:`status`):
 
-      - asks the user whether to rebase (default) or merge (if ``--merge`` passed) the branch onto into its upstream branch
-        --- equivalent to ``git machete update`` with no ``--fork-point`` option passed;
+      - asks the user whether to **rebase** (default) or merge (if ``--merge`` passed) the branch onto into its upstream branch
+        --- equivalent to ``git machete update``;
 
     * if the branch is not tracked on a remote, is ahead of its remote counterpart, or diverged from the counterpart &
       has newer head commit than the counterpart:
 
-      - asks the user whether to push the branch (possibly with ``--force-with-lease`` if the branches diverged);
+      - asks the user whether to **push** the branch (possibly with ``--force-with-lease`` if the branches diverged);
 
     * otherwise, if the branch diverged from the remote counterpart & has older head commit than the counterpart:
 
-      - asks the user whether to ``git reset --keep`` the branch to its remote counterpart
+      - asks the user whether to **reset** (``git reset --keep``) the branch to its remote counterpart
 
     * otherwise, if the branch is behind its remote counterpart:
 
-      - asks the user whether to pull the branch;
+      - asks the user whether to **pull** the branch;
 
     * and finally, if any of the above operations has been successfully completed:
 
       - prints the updated ``status``.
 
-By default ``traverse`` asks if the branch should be pushed, this behavior can, however, be changed with the ``machete.traverse.push`` configuration key.
+By default ``traverse`` asks if the branch should be pushed. This behavior can, however, be changed with the ``machete.traverse.push`` configuration key.
 It can also be customized using options: ``--[no-]push`` or ``--[no-]push-untracked`` --- the order of the flags defines their precedence over each other
 (the one on the right overriding the ones on the left). More on them in the **Options** section below.
 
 If the traverse flow is stopped (typically due to merge/rebase conflicts), just run ``git machete traverse`` after the merge/rebase is finished.
-It will pick up the walk from the current branch (unless ``--start-from=`` or ``-w`` etc. is passed).
-Unlike with e.g. ``git rebase``, there is no special ``--continue`` flag, as ``traverse`` is stateless
-(doesn't keep a state of its own like ``git rebase`` does in ``.git/rebase-apply/``).
+It will pick up the walk from the current branch.
+Unlike with ``git rebase`` or ``git cherry-pick``, there is no special ``--continue`` flag, as ``traverse`` is stateless.
+``traverse`` doesn't keep a state of its own like ``git rebase`` does in ``.git/rebase-apply/``.
 
 The rebase, push and slide-out behaviors of ``traverse`` can also be customized for each branch separately using *branch qualifiers*.
-There are ``rebase=no``, ``push=no`` and ``slide-out=no`` qualifiers that can be used to opt out of default behavior (rebasing, pushing and sliding the branch out of the dependency tree).
-The qualifier can appear anywhere in the annotation but needs to be separated by a whitespace from any other character, e.g. ``some_annotation_text rebase=no push=no slide-out=no``.
+There are ``push=no``, ``rebase=no`` and ``slide-out=no`` qualifiers that can be used to opt out of default behavior (rebasing, pushing and sliding the branch out).
+The qualifier can appear anywhere in the annotation, but needs to be separated by a whitespace from any other character, as in: ``some_annotation_text rebase=no push=no slide-out=no``.
 Qualifiers can only be overwritten by manually editing ``.git/machete`` file or modifying it with ``git machete e[dit]``, or by updating annotations with ``git machete anno``.
 Example machete file with branch qualifiers:
 
@@ -80,7 +80,7 @@ Example machete file with branch qualifiers:
         branch-for-local-experiments  push=no
 
 Operations like ``git machete github anno-prs`` and ``git machete github checkout-prs`` add ``rebase=no push=no`` branch qualifiers
-when the current user is **not** the owner of the PR associated with that branch. ``git machete discover`` doesn't modify the qualifiers.
+when the current user is NOT the owner of the PR associated with that branch.
 
 
 **Options:**
@@ -97,7 +97,7 @@ when the current user is **not** the owner of the PR associated with that branch
                              when detecting if a branch is merged into its upstream (parent).
 
 --no-edit-merge              If updating by merge, skip opening the editor for merge commit message while doing ``git merge``
-                             (i.e. pass ``--no-edit`` flag to the underlying ``git merge``). Not allowed if updating by rebase.
+                             (that is, pass ``--no-edit`` flag to the underlying ``git merge``). Not allowed if updating by rebase.
 
 --no-interactive-rebase      If updating by rebase, run ``git rebase`` in non-interactive mode (without ``-i/--interactive`` flag).
                              Not allowed if updating by merge.

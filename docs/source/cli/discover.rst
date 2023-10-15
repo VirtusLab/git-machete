@@ -18,7 +18,7 @@ If the reply was ``e[dit]``, additionally an editor is opened (as in: ``git mach
 **Options:**
 
 -C, --checked-out-since=<date>   Only consider branches checked out at least once since the given date.
-                                 <date> can be e.g. ``2 weeks ago`` or ``2020-06-01``, as in ``git log --since=<date>``.
+                                 ``<date>`` can be, for example, ``2 weeks ago`` or ``2020-06-01``, as in ``git log --since=<date>``.
                                  If not present, the date is selected automatically so that around 10 branches are included.
 
 -l, --list-commits               When printing the discovered tree, additionally lists the messages of commits introduced on each branch

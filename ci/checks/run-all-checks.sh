@@ -26,6 +26,8 @@ enforce-release-notes-up-to-date.sh
 enforce-shell-scripts-pass-shellcheck.sh
 prohibit-bash-usages-from-python.sh
 prohibit-deploy-step-in-circleci.sh
+prohibit-exempli-gratia-in-rst.sh
+prohibit-id-est-in-rst.sh
 prohibit-double-backticks-in-python.sh
 prohibit-markdown-links-in-rst.sh
 prohibit-single-backtick-in-rst.sh

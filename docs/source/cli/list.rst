@@ -17,7 +17,7 @@ Lists all branches that fall into one of the specified categories:
     * ``managed``: all branches that appear in the branch layout file,
     * ``slidable``: all managed branches that have an upstream and can be slid out with :ref:`slide-out` command
     * ``slidable-after <branch>``: the downstream branch of the <branch>, if it exists and is the only downstream of <branch>
-      (i.e. the one that can be slid out immediately following <branch>),
+      (and thus can be slid out immediately following <branch>),
     * ``unmanaged``: all local branches that don't appear in the branch layout file,
     * ``with-overridden-fork-point``: all local branches that have a :ref:`fork point<fork-point>` override set up
       (even if this override does not affect the location of their fork point anymore).

@@ -8,16 +8,9 @@ slide-out
 
     git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [--delete] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] [<branch> [<branch> [<branch> ...]]]
 
-Removes the given branch (or multiple branches) from the branch layout.  If no branch has been specified current branch is assumed as the only branch.
+Removes the given branch (or multiple branches) from the branch layout. If no branch has been specified, current branch is removed.
 Then synchronizes the downstream (child) branches of the last specified branch on the top of the upstream (parent) branch of the first specified branch.
 Sync is performed either by rebase (default) or by merge (if ``--merge`` option passed).
-
-The most common use is to slide out a single branch whose upstream was a ``develop``/``master`` branch and that has been recently merged.
-
-Since this tool is designed to perform only one single rebase/merge at the end, provided branches must form a chain, i.e. all of the following conditions must be met:
-
-    * for i=1..N-1, (i+1)-th branch must be the only downstream (child) branch of the i-th branch,
-    * all provided branches must have an upstream branch (so, in other words, roots of branch dependency tree cannot be slid out).
 
 For example, let's assume the following dependency tree:
 
@@ -30,7 +23,6 @@ For example, let's assume the following dependency tree:
                     drop-location-type
                 add-notification
 
-And now let's assume that ``adjust-reads-prec`` and later ``block-cancel-order`` were merged to develop.
 After running ``git machete slide-out adjust-reads-prec block-cancel-order`` the tree will be reduced to:
 
 .. code-block::
@@ -41,6 +33,13 @@ After running ``git machete slide-out adjust-reads-prec block-cancel-order`` the
         add-notification
 
 and ``change-table`` and ``add-notification`` will be rebased onto develop (fork point for this rebase is configurable, see ``-d`` option below).
+
+The most common use is to slide out a single branch whose upstream was a ``develop``/``master`` branch and that has been recently merged.
+
+The provided branches must form a chain --- all of the following conditions must be met:
+
+    * for i=1..N-1, (i+1)-th branch must be the only downstream (child) branch of the i-th branch,
+    * all provided branches must have an upstream branch (so, in other words, roots of branch dependency tree cannot be slid out).
 
 Note: This command doesn't delete any branches from git, just removes them from the tree of branch dependencies.
 
@@ -59,7 +58,7 @@ Note: This command doesn't delete any branches from git, just removes them from 
                                                   If updating by merge, equivalent to ``--no-edit-merge``.
 
 --no-edit-merge                                   If updating by merge, skip opening the editor for merge commit message while doing
-                                                  ``git merge`` (i.e. pass ``--no-edit`` flag to underlying ``git merge``).
+                                                  ``git merge`` (that is, pass ``--no-edit`` flag to the underlying ``git merge``).
                                                   Not allowed if updating by rebase.
 
 --no-interactive-rebase                           If updating by rebase, run ``git rebase`` in non-interactive mode (without ``-i/--interactive`` flag).

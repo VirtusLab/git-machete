@@ -8,7 +8,7 @@ is-managed
 
     git machete is-managed [<branch>]
 
-Returns with zero exit code if the given branch (or current branch, if none specified) is managed by git machete (i.e. listed in .git/machete).
+Returns with zero exit code if the given branch (or current branch, if none specified) is **managed** by git machete (that is, listed in .git/machete).
 
 Returns with a non-zero exit code in case:
 

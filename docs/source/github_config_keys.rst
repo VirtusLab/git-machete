@@ -12,7 +12,7 @@
         Organization and repository name
             E.g. ``git config machete.github.organization VirtusLab; git config machete.github.repository git-machete``
 
-    Note that you do **not** need to set all four keys at once.
+    Note that you do NOT need to set all four keys at once.
     For example, in a typical usage of GitHub Enterprise, it should be enough to just set ``machete.github.domain``.
     Only ``machete.github.organization`` and ``machete.github.repository`` must be specified together.
 

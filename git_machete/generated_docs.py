@@ -125,7 +125,7 @@ long_docs: Dict[str, str] = {
         then clears the annotation for the current branch (or a branch specified with `-b/--branch`).
 
         If invoked with `-H` or `--sync-github-prs`, annotates the branches based on their corresponding GitHub PR numbers and authors.
-        When the current user is <b>not</b> the owner of the PR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
+        When the current user is NOT the owner of the PR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
         so that you don't rebase or push someone else's PR by accident (see help for `traverse`).
         Any existing annotations (except branch qualifiers) are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
 
@@ -160,7 +160,7 @@ long_docs: Dict[str, str] = {
 
            Organization and repository name
               E.g. `git config machete.github.organization VirtusLab; git config machete.github.repository git-machete`
-        Note that you do <b>not</b> need to set all four keys at once.
+        Note that you do NOT need to set all four keys at once.
         For example, in a typical usage of GitHub Enterprise, it should be enough to just set `machete.github.domain`.
         Only `machete.github.organization` and `machete.github.repository` must be specified together.
 
@@ -226,7 +226,7 @@ long_docs: Dict[str, str] = {
 
            Organization and repository name
               E.g. `git config machete.github.organization VirtusLab; git config machete.github.repository git-machete`
-        Note that you do <b>not</b> need to set all four keys at once.
+        Note that you do NOT need to set all four keys at once.
         For example, in a typical usage of GitHub Enterprise, it should be enough to just set `machete.github.domain`.
         Only `machete.github.organization` and `machete.github.repository` must be specified together.
 
@@ -290,7 +290,7 @@ long_docs: Dict[str, str] = {
                  Organization and repository name
               E.g. `git config machete.github.organization VirtusLab; git config machete.github.repository git-machete`
 
-              Note that you do <b>not</b> need to set all four keys at once.
+              Note that you do NOT need to set all four keys at once.
               For example, in a typical usage of GitHub Enterprise, it should be enough to just set `machete.github.domain`.
               Only `machete.github.organization` and `machete.github.repository` must be specified together.
 
@@ -306,7 +306,7 @@ long_docs: Dict[str, str] = {
            `machete.status.extraSpaceBeforeBranchName`:
 
               To make it easier to select branch name from the `status` output on certain terminals
-              (e.g. Alacritty), you can add an extra space between └─ and `branch name`
+              (like Alacritty), you can add an extra space between └─ and `branch name`
               by setting `git config machete.status.extraSpaceBeforeBranchName true`.
 
               For example, by default the status is displayed as:
@@ -396,7 +396,7 @@ long_docs: Dict[str, str] = {
         <b>Options:</b>
            <b>-C</b>, <b>--checked-out-since=<date></b>
               Only consider branches checked out at least once since the given date.
-              <date> can be e.g. `2 weeks ago` or `2020-06-01`, as in `git log --since=<date>`.
+              `<date>` can be, for example, `2 weeks ago` or `2020-06-01`, as in `git log --since=<date>`.
               If not present, the date is selected automatically so that around 10 branches are included.
            <b>-l</b>, <b>--list-commits</b>
               When printing the discovered tree, additionally lists the messages of commits introduced on each branch
@@ -463,7 +463,7 @@ long_docs: Dict[str, str] = {
         Note: in all three forms, if no `<branch>` is specified, the currently checked out branch is assumed.
         The branch in question does not need to occur in the branch layout file.
 
-        Without any option, displays full hash of the fork point commit for the `<branch>`.
+        Without any option, `git machete fork-point` displays full hash of the fork point commit for the `<branch>`.
         Fork point of the given `<branch>` is the commit at which the history of the `<branch>` diverges from history of any other branch.
 
         Fork point is assumed by many `git machete` commands as the place where the unique history of the `<branch>` starts.
@@ -473,27 +473,25 @@ long_docs: Dict[str, str] = {
            * provided to `git diff`/`log` by `git machete` `diff`/`log`.
 
         `git machete` assumes fork point of `<branch>` is the most recent commit in the log of `<branch>` that has NOT been introduced on that very branch,
-        but instead occurs on a reflog (see help for `git reflog`) of some other, usually chronologically earlier, branch.
+        but instead occurs on a reflog (see help for `git reflog`) of some other branch.
         This yields a correct result in typical cases, but there are some situations
         (esp. when some local branches have been deleted) where the fork point might not be determined correctly.
         Thus, all rebase-involving operations (`reapply`, `slide-out`, `traverse` and `update`) run `git rebase` in the interactive mode by default,
-        unless told explicitly not to do so by `--no-interactive-rebase` flag, so that the suggested commit range can be inspected before the rebase commences.
+        unless told explicitly not to do so by `--no-interactive-rebase` flag. This way, the suggested commit range can be inspected before the rebase starts.
         Also, `reapply`, `slide-out`, `squash`, and `update` allow to specify the fork point explicitly by a command-line option.
 
         `git machete fork-point` is different (and more powerful) than `git merge-base --fork-point`,
         since the latter takes into account only the reflog of the one provided upstream branch,
         while the former scans reflogs of all local branches and their remote tracking branches.
-        This makes git machete's `fork-point` more resilient to modifications of `.git/machete` `file` where certain branches are re-attached under new parents (upstreams).
+        This makes git machete's `fork-point` more resilient to modifications of `.git/machete` `file` when certain branches are re-attached under new parents (upstreams).
 
         With `--override-to=<revision>`, sets up a fork point override for `<branch>`.
         Fork point for `<branch>` will be overridden to the provided <revision> (commit) as long as the `<branch>` still points to (or is descendant of) that commit.
-        Even if revision is a symbolic name (e.g. other branch name or `HEAD~3)` and not explicit commit hash (like `a1b2c3ff`),
-        it's still resolved to a specific commit hash at the moment the override is set up (and not later when the override is actually used).
         The override data is stored under `machete.overrideForkPoint.<branch>.to` git config key.
-        Note: the provided fork point <revision> must be an ancestor of the current `<branch>` commit.
+        Note: the provided fork point `<revision>` must be an ancestor of the current `<branch>` commit.
 
         With `--override-to-parent`, overrides fork point of the `<branch>` to the commit currently pointed by `<branch>`'s parent in the branch dependency tree.
-        Note: this will only work if `<branch>` has a parent at all (i.e. is not a root) and parent of `<branch>` is an ancestor of current `<branch>` commit.
+        Note: this will only work if `<branch>` has a parent at all (is not a root branch) and parent of `<branch>` is an ancestor of current `<branch>` commit.
 
         With `--inferred`, displays the commit that `git machete fork-point` infers to be the fork point of `<branch>`.
         If there is NO fork point override for `<branch>`, this is identical to the output of `git machete fork-point`.
@@ -529,12 +527,12 @@ long_docs: Dict[str, str] = {
         Branches `adjust-reads-prec`, `edit-margin-not-allowed` and `grep-errors-script` are direct downstream branches for `develop`.
         `block-cancel-order` is a downstream branch of `adjust-reads-prec`, `change-table` is a downstream branch of `block-cancel-order` and so on.
 
-        Every branch name can be followed (after a single space as a delimiter) by a custom annotation, e.g. `PR #234 rebase=no push=no`, `PR #235 rebase=no` or `push=no`.
-        Annotations might contain underlined branch qualifiers (`rebase=no`, `push=no`) that control rebase and push behavior of `traverse` (see help for `traverse`).
+        Every branch name can be followed (after a single space as a delimiter) by a custom annotation, for example `PR #234 rebase=no push=no`, `PR #235 rebase=no` or `push=no`.
+        These annotations might contain branch qualifiers (`push=no`, `rebase=no`, `slide-out=no`) that control the behavior of `traverse` (see help for `traverse`).
         Also see help for `anno` command.
 
         Tabs or any number of spaces can be used as indentation.
-        It's only important to be consistent wrt. the sequence of characters used for indentation between all lines.
+        It's only important to use indentation characters consistently between all lines.
    """,
     "github": """
         <b>Usage:</b><b>
@@ -575,7 +573,7 @@ long_docs: Dict[str, str] = {
 
            Organization and repository name
               E.g. `git config machete.github.organization VirtusLab; git config machete.github.repository git-machete`
-        Note that you do <b>not</b> need to set all four keys at once.
+        Note that you do NOT need to set all four keys at once.
         For example, in a typical usage of GitHub Enterprise, it should be enough to just set `machete.github.domain`.
         Only `machete.github.organization` and `machete.github.repository` must be specified together.
 
@@ -584,7 +582,7 @@ long_docs: Dict[str, str] = {
               Annotates the branches based on their corresponding GitHub PR numbers and authors.
               Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
               Equivalent to `git machete anno --sync-github-prs`.
-              When the current user is <b>not</b> the owner of the PR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
+              When the current user is NOT the owner of the PR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
               so that you don't rebase or push someone else's PR by accident (see help for `traverse`).
 
            `checkout-prs [--all | --by=<github-login> | --mine | <PR-number-1> ... <PR-number-N>]`:
@@ -593,7 +591,7 @@ long_docs: Dict[str, str] = {
               also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally.
               Once the specified pull requests are checked out locally, annotate local branches with corresponding pull request numbers.
               If only one PR has been checked out, then switch the local repository's HEAD to its head branch.
-              When the current user is <b>not</b> the owner of the PR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
+              When the current user is NOT the owner of the PR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
               so that you don't rebase or push someone else's PR by accident (see help for `traverse`).
 
               <b>Options:</b>
@@ -717,8 +715,8 @@ long_docs: Dict[str, str] = {
 
                  * zero or more times during `traverse` (every time a slide-out operation is confirmed).
 
-              If the hook returns a non-zero exit code, then an error is raised and the execution of the command is aborted,
-              i.e. `slide-out` won't attempt rebase of the new downstream branches and `traverse` won't continue the traversal.
+              If the hook returns a non-zero exit code, then an error is raised and the execution of the command is aborted —
+              `slide-out` won't attempt rebase of the new downstream branches and `traverse` won't continue the traversal.
               In case of `advance` there is no difference (other than exit code of the entire `advance` command being non-zero),
               since slide-out is the last operation that happens within `advance`.
 
@@ -753,7 +751,7 @@ long_docs: Dict[str, str] = {
               are ignored, and printing the status continues as usual.
 
               Note: the hook is always invoked with `ASCII_ONLY` variable passed into the environment.
-              If `status` runs in ASCII-only mode (i.e. if `--color=auto` and stdout is not a terminal, or if `--color=never`),
+              If `status` runs in ASCII-only mode (if `--color=auto` and stdout is NOT a terminal, or if `--color=never`),
               then `ASCII_ONLY=true`, otherwise `ASCII_ONLY=false`.
 
         Please see hook_samples directory in git-machete project for examples.
@@ -763,7 +761,7 @@ long_docs: Dict[str, str] = {
         <b>Usage:</b><b>
            git machete is-managed [<branch>]</b>
 
-        Returns with zero exit code if the given branch (or current branch, if none specified) is managed by git machete (i.e. listed in .git/machete).
+        Returns with zero exit code if the given branch (or current branch, if none specified) is <b>managed</b> by git machete (that is, listed in .git/machete).
 
         Returns with a non-zero exit code in case:
            * the <branch> is provided but isn't managed (or doesn't exist), or
@@ -782,7 +780,7 @@ long_docs: Dict[str, str] = {
            * `managed`: all branches that appear in the branch layout file,
            * `slidable`: all managed branches that have an upstream and can be slid out with `slide-out` command
            * `slidable-after <branch>`: the downstream branch of the <branch>, if it exists and is the only downstream of <branch>
-             (i.e. the one that can be slid out immediately following <branch>),
+             (and thus can be slid out immediately following <branch>),
            * `unmanaged`: all local branches that don't appear in the branch layout file,
            * `with-overridden-fork-point`: all local branches that have a `fork point<fork-point>` override set up
              (even if this override does not affect the location of their fork point anymore).
@@ -847,15 +845,9 @@ long_docs: Dict[str, str] = {
         <b>Usage:</b><b>
            git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [--delete] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] [<branch> [<branch> [<branch> ...]]]</b>
 
-        Removes the given branch (or multiple branches) from the branch layout.  If no branch has been specified current branch is assumed as the only branch.
+        Removes the given branch (or multiple branches) from the branch layout. If no branch has been specified, current branch is removed.
         Then synchronizes the downstream (child) branches of the last specified branch on the top of the upstream (parent) branch of the first specified branch.
         Sync is performed either by rebase (default) or by merge (if `--merge` option passed).
-
-        The most common use is to slide out a single branch whose upstream was a `develop`/`master` branch and that has been recently merged.
-
-        Since this tool is designed to perform only one single rebase/merge at the end, provided branches must form a chain, i.e. all of the following conditions must be met:
-           * for i=1..N-1, (i+1)-th branch must be the only downstream (child) branch of the i-th branch,
-           * all provided branches must have an upstream branch (so, in other words, roots of branch dependency tree cannot be slid out).
 
         For example, let's assume the following dependency tree:
         <dim>
@@ -867,7 +859,6 @@ long_docs: Dict[str, str] = {
                       add-notification
         </dim>
 
-        And now let's assume that `adjust-reads-prec` and later `block-cancel-order` were merged to develop.
         After running `git machete slide-out adjust-reads-prec block-cancel-order` the tree will be reduced to:
         <dim>
           develop
@@ -877,6 +868,12 @@ long_docs: Dict[str, str] = {
         </dim>
 
         and `change-table` and `add-notification` will be rebased onto develop (fork point for this rebase is configurable, see `-d` option below).
+
+        The most common use is to slide out a single branch whose upstream was a `develop`/`master` branch and that has been recently merged.
+
+        The provided branches must form a chain — all of the following conditions must be met:
+           * for i=1..N-1, (i+1)-th branch must be the only downstream (child) branch of the i-th branch,
+           * all provided branches must have an upstream branch (so, in other words, roots of branch dependency tree cannot be slid out).
 
         Note: This command doesn't delete any branches from git, just removes them from the tree of branch dependencies.
 
@@ -895,7 +892,7 @@ long_docs: Dict[str, str] = {
               If updating by merge, equivalent to `--no-edit-merge`.
            <b>--no-edit-merge</b>
               If updating by merge, skip opening the editor for merge commit message while doing
-              `git merge` (i.e. pass `--no-edit` flag to underlying `git merge`).
+              `git merge` (that is, pass `--no-edit` flag to the underlying `git merge`).
               Not allowed if updating by rebase.
            <b>--no-interactive-rebase</b>
               If updating by rebase, run `git rebase` in non-interactive mode (without `-i/--interactive` flag).
@@ -935,31 +932,32 @@ long_docs: Dict[str, str] = {
 
         Apart from simply ASCII-formatting the branch layout file, this also:
            * colors the edges between upstream (parent) and downstream (children) branches:
-              - <red>red edge</red> means that the downstream branch tip is not a direct descendant of the upstream branch tip,
-              - <yellow>yellow edge</yellow> means that the downstream branch tip is a direct descendant of the upstream branch tip,
-                but the `fork point<fork-point>` of the downstream branch is not equal to the upstream branch tip,
-              - <green>green edge</green> means that the downstream branch tip is a direct descendant of the upstream branch tip
-                and the fork point of the downstream branch is equal to the upstream branch tip,
-              - grey/dimmed edge means that the downstream branch has been merged to the upstream branch,
+              - <red>red edge</red> means not in sync. The downstream branch is NOT a direct descendant of the upstream branch.
+              - <yellow>yellow edge</yellow> means in sync but fork point off. The downstream branch is a direct descendant of the upstream branch,
+                but the `fork point<fork-point>` of the downstream branch is NOT equal to the upstream branch.
+              - <green>green edge</green> means in sync. The downstream branch is a direct descendant of the upstream branch
+                and the fork point of the downstream branch is equal to the upstream branch.
+              - grey/dimmed edge means merged. The downstream branch has been merged to the upstream branch,
                 detected by commit equivalency (default), or by strict detection of merge commits (if `--no-detect-squash-merges` passed).
            * prints (`untracked`/`ahead of <remote>`/`behind <remote>`/`diverged from [& older than] <remote>`) message if the branch
              is not in sync with its remote counterpart;
            * displays the custom annotations (see help for `format` and `anno`) next to each branch, if present. Annotations might contain underlined branch
-             qualifiers (`rebase=no`, `push=no`) that control rebase and push behavior of `traverse` (see help for `traverse`);
+             qualifiers (`push=no`, `rebase=no`, `slide-out=no`) that control rebase and push behavior of `traverse` (see help for `traverse`);
            * displays the output of `machete-status-branch hook` (see help for `hooks`), if present;
            * optionally lists commits introduced on each branch if `-l/--list-commits` or `-L/--list-commits-with-hashes` is supplied.
 
         Name of the currently checked-out branch is underlined (or shown in blue on terminals that don't support underline).
 
         In case of <yellow>yellow edge</yellow>, use `-l` or `-L` flag to show the exact location of the inferred fork point
-        (which indicates e.g. what range of commits is going to be rebased when the branch is updated).
+        (which indicates, among other things, what range of commits is going to be rebased when the branch is updated).
         The inferred fork point can be always overridden manually, see help for `fork-point`.
 
         Grey/dimmed edge suggests that the downstream branch can be slid out (see help for `slide-out` and `traverse`).
 
-        Using colors can be disabled with a `--color` flag set to `never`.
-        With `--color=always`, git machete always emits colors and with `--color=auto`, it emits colors only when standard output is connected to a terminal.
-        `--color=auto` is the default. When colors are disabled, relation between branches is represented in the following way (not including the hash-comments):
+        Use of colors can be disabled with a `--color` flag set to `never`.
+        With `--color=always`, git machete always emits colors.
+        With `--color=auto` (the default), it emits colors only when standard output is connected to a terminal.
+        When colors are disabled, relation between branches is represented in the following way (not including the hash-comments):
         <dim>
           <branch0>
           |
@@ -973,7 +971,7 @@ long_docs: Dict[str, str] = {
         </dim>
 
         To make it easier to select branch name from the `status` output on certain terminals
-        (e.g. Alacritty), you can add an extra space between └─ and `branch name`
+        (like Alacritty), you can add an extra space between └─ and `branch name`
         by setting `git config machete.status.extraSpaceBeforeBranchName true`.
 
         For example, by default the status is displayed as:
@@ -996,7 +994,7 @@ long_docs: Dict[str, str] = {
 
         <b>Options:</b>
            <b>--color=WHEN</b>
-              Colorize the output; WHEN can be `always`, `auto` (default; i.e. only if stdout is a terminal), or `never`.
+              Colorize the output; WHEN can be `always`, `auto` (default: colorize only if stdout is a terminal), or `never`.
            <b>-l</b>, <b>--list-commits</b>
               Additionally list the commits introduced on each branch.
            <b>-L</b>, <b>--list-commits-with-hashes</b>
@@ -1008,7 +1006,7 @@ long_docs: Dict[str, str] = {
         <b>Config keys:</b>
            `machete.status.extraSpaceBeforeBranchName`
               To make it easier to select branch name from the `status` output on certain terminals
-              (e.g. Alacritty), you can add an extra space between └─ and `branch name`
+              (like Alacritty), you can add an extra space between └─ and `branch name`
               by setting `git config machete.status.extraSpaceBeforeBranchName true`.
 
    """,
@@ -1019,39 +1017,39 @@ long_docs: Dict[str, str] = {
                                   [--[no-]push] [--[no-]push-untracked]
                                   [--return-to=WHERE] [--start-from=WHERE] [-w|--whole] [-W] [-y|--yes]</b>
 
-        Traverses the branch tree in pre-order (i.e. simply in the order as they occur in the branch layout file).
-        By default `traverse` starts from the current branch.
+        Traverses the branches in the order as they occur in branch layout file.
+        By default, `traverse` starts from the current branch.
         This behavior can, however, be customized using options: `--start-from=`, `--whole` or `-w`, `-W`.
 
         For each branch, the command:
            * detects if the branch is merged (grey edge) to its parent (aka upstream):
               - by commit equivalency (default), or by strict detection of merge commits (if `--no-detect-squash-merges` passed),
-              - if so, asks the user whether to slide out the branch from the dependency tree (typically branches are no longer needed after they're merged);
+              - if so, asks the user whether to <b>slide out</b> the branch from the dependency tree (typically branches are no longer needed after they're merged);
            * otherwise, if the branch has a <red>red</red> or <yellow>yellow</yellow> edge to its parent/upstream (see help for `status`):
-              - asks the user whether to rebase (default) or merge (if `--merge` passed) the branch onto into its upstream branch
-                — equivalent to `git machete update` with no `--fork-point` option passed;
+              - asks the user whether to <b>rebase</b> (default) or merge (if `--merge` passed) the branch onto into its upstream branch
+                — equivalent to `git machete update`;
            * if the branch is not tracked on a remote, is ahead of its remote counterpart, or diverged from the counterpart &
              has newer head commit than the counterpart:
-              - asks the user whether to push the branch (possibly with `--force-with-lease` if the branches diverged);
+              - asks the user whether to <b>push</b> the branch (possibly with `--force-with-lease` if the branches diverged);
            * otherwise, if the branch diverged from the remote counterpart & has older head commit than the counterpart:
-              - asks the user whether to `git reset --keep` the branch to its remote counterpart
+              - asks the user whether to <b>reset</b> (`git reset --keep`) the branch to its remote counterpart
            * otherwise, if the branch is behind its remote counterpart:
-              - asks the user whether to pull the branch;
+              - asks the user whether to <b>pull</b> the branch;
            * and finally, if any of the above operations has been successfully completed:
               - prints the updated `status`.
 
-        By default `traverse` asks if the branch should be pushed, this behavior can, however, be changed with the `machete.traverse.push` configuration key.
+        By default `traverse` asks if the branch should be pushed. This behavior can, however, be changed with the `machete.traverse.push` configuration key.
         It can also be customized using options: `--[no-]push` or `--[no-]push-untracked` — the order of the flags defines their precedence over each other
         (the one on the right overriding the ones on the left). More on them in the <b>Options</b> section below.
 
         If the traverse flow is stopped (typically due to merge/rebase conflicts), just run `git machete traverse` after the merge/rebase is finished.
-        It will pick up the walk from the current branch (unless `--start-from=` or `-w` etc. is passed).
-        Unlike with e.g. `git rebase`, there is no special `--continue` flag, as `traverse` is stateless
-        (doesn't keep a state of its own like `git rebase` does in `.git/rebase-apply/`).
+        It will pick up the walk from the current branch.
+        Unlike with `git rebase` or `git cherry-pick`, there is no special `--continue` flag, as `traverse` is stateless.
+        `traverse` doesn't keep a state of its own like `git rebase` does in `.git/rebase-apply/`.
 
         The rebase, push and slide-out behaviors of `traverse` can also be customized for each branch separately using branch qualifiers.
-        There are `rebase=no`, `push=no` and `slide-out=no` qualifiers that can be used to opt out of default behavior (rebasing, pushing and sliding the branch out of the dependency tree).
-        The qualifier can appear anywhere in the annotation but needs to be separated by a whitespace from any other character, e.g. `some_annotation_text rebase=no push=no slide-out=no`.
+        There are `push=no`, `rebase=no` and `slide-out=no` qualifiers that can be used to opt out of default behavior (rebasing, pushing and sliding the branch out).
+        The qualifier can appear anywhere in the annotation, but needs to be separated by a whitespace from any other character, as in: `some_annotation_text rebase=no push=no slide-out=no`.
         Qualifiers can only be overwritten by manually editing `.git/machete` file or modifying it with `git machete e[dit]`, or by updating annotations with `git machete anno`.
         Example machete file with branch qualifiers:
         <dim>
@@ -1063,7 +1061,7 @@ long_docs: Dict[str, str] = {
         </dim>
 
         Operations like `git machete github anno-prs` and `git machete github checkout-prs` add `rebase=no push=no` branch qualifiers
-        when the current user is <b>not</b> the owner of the PR associated with that branch. `git machete discover` doesn't modify the qualifiers.
+        when the current user is NOT the owner of the PR associated with that branch.
 
         <b>Options:</b>
            <b>-F</b>, <b>--fetch</b>
@@ -1079,7 +1077,7 @@ long_docs: Dict[str, str] = {
               when detecting if a branch is merged into its upstream (parent).
            <b>--no-edit-merge</b>
               If updating by merge, skip opening the editor for merge commit message while doing `git merge`
-              (i.e. pass `--no-edit` flag to the underlying `git merge`). Not allowed if updating by rebase.
+              (that is, pass `--no-edit` flag to the underlying `git merge`). Not allowed if updating by rebase.
            <b>--no-interactive-rebase</b>
               If updating by rebase, run `git rebase` in non-interactive mode (without `-i/--interactive` flag).
               Not allowed if updating by merge.
@@ -1149,7 +1147,7 @@ long_docs: Dict[str, str] = {
               If updating by merge, equivalent to `--no-edit-merge`.
            <b>--no-edit-merge</b>
               If updating by merge, skip opening the editor for merge commit message while doing `git merge`
-              (i.e. pass `--no-edit` flag to underlying `git merge`). Not allowed if updating by rebase.
+              (that is, pass `--no-edit` flag to underlying `git merge`). Not allowed if updating by rebase.
            <b>--no-interactive-rebase</b>
               If updating by rebase, run `git rebase` in non-interactive mode (without `-i/--interactive` flag).
               Not allowed if updating by merge.

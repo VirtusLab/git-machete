@@ -28,7 +28,7 @@ If updating by merge, merges the upstream (parent) branch into the current branc
                                         If updating by merge, equivalent to ``--no-edit-merge``.
 
 --no-edit-merge                         If updating by merge, skip opening the editor for merge commit message while doing ``git merge``
-                                        (i.e. pass ``--no-edit`` flag to underlying ``git merge``). Not allowed if updating by rebase.
+                                        (that is, pass ``--no-edit`` flag to underlying ``git merge``). Not allowed if updating by rebase.
 
 --no-interactive-rebase                 If updating by rebase, run ``git rebase`` in non-interactive mode (without ``-i/--interactive`` flag).
                                         Not allowed if updating by merge.

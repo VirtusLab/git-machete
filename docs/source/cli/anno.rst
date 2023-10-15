@@ -21,7 +21,7 @@ If invoked with a single empty string <annotation text>, like:
 then clears the annotation for the current branch (or a branch specified with ``-b/--branch``).
 
 If invoked with ``-H`` or ``--sync-github-prs``, annotates the branches based on their corresponding GitHub PR numbers and authors.
-When the current user is **not** the owner of the PR associated with that branch, adds ``rebase=no push=no`` branch qualifiers used by ``git machete traverse``,
+When the current user is NOT the owner of the PR associated with that branch, adds ``rebase=no push=no`` branch qualifiers used by ``git machete traverse``,
 so that you don't rebase or push someone else's PR by accident (see help for :ref:`traverse`).
 Any existing annotations (except branch qualifiers) are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
 

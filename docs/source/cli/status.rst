@@ -26,15 +26,15 @@ Apart from simply ASCII-formatting the branch layout file, this also:
 
     * colors the edges between upstream (parent) and downstream (children) branches:
 
-      - :red:`red edge` means that the downstream branch tip is not a direct descendant of the upstream branch tip,
+      - :red:`red edge` means *not in sync*. The downstream branch is NOT a direct descendant of the upstream branch.
 
-      - :yellow:`yellow edge` means that the downstream branch tip is a direct descendant of the upstream branch tip,
-        but the :ref:`fork point<fork-point>` of the downstream branch is not equal to the upstream branch tip,
+      - :yellow:`yellow edge` means *in sync but fork point off*. The downstream branch is a direct descendant of the upstream branch,
+        but the :ref:`fork point<fork-point>` of the downstream branch is NOT equal to the upstream branch.
 
-      - :green:`green edge` means that the downstream branch tip is a direct descendant of the upstream branch tip
-        and the fork point of the downstream branch is equal to the upstream branch tip,
+      - :green:`green edge` means *in sync*. The downstream branch is a direct descendant of the upstream branch
+        and the fork point of the downstream branch is equal to the upstream branch.
 
-      - :grey:`grey/dimmed edge` means that the downstream branch has been merged to the upstream branch,
+      - :grey:`grey/dimmed edge` means *merged*. The downstream branch has been merged to the upstream branch,
         detected by commit equivalency (default), or by strict detection of merge commits (if ``--no-detect-squash-merges`` passed).
 
 
@@ -42,7 +42,7 @@ Apart from simply ASCII-formatting the branch layout file, this also:
       is not in sync with its remote counterpart;
 
     * displays the custom annotations (see help for :ref:`format` and :ref:`anno`) next to each branch, if present. Annotations might contain underlined branch
-      qualifiers (``rebase=no``, ``push=no``) that control rebase and push behavior of ``traverse`` (see help for :ref:`traverse`);
+      qualifiers (``push=no``, ``rebase=no``, ``slide-out=no``) that control rebase and push behavior of ``traverse`` (see help for :ref:`traverse`);
 
     * displays the output of ``machete-status-branch hook`` (see help for :ref:`hooks`), if present;
 
@@ -51,14 +51,15 @@ Apart from simply ASCII-formatting the branch layout file, this also:
 Name of the currently checked-out branch is underlined (or shown in blue on terminals that don't support underline).
 
 In case of :yellow:`yellow edge`, use ``-l`` or ``-L`` flag to show the exact location of the inferred fork point
-(which indicates e.g. what range of commits is going to be rebased when the branch is updated).
+(which indicates, among other things, what range of commits is going to be rebased when the branch is updated).
 The inferred fork point can be always overridden manually, see help for :ref:`fork-point`.
 
 :grey:`Grey/dimmed edge` suggests that the downstream branch can be slid out (see help for :ref:`slide-out` and :ref:`traverse`).
 
-Using colors can be disabled with a ``--color`` flag set to ``never``.
-With ``--color=always``, git machete always emits colors and with ``--color=auto``, it emits colors only when standard output is connected to a terminal.
-``--color=auto`` is the default. When colors are disabled, relation between branches is represented in the following way (not including the hash-comments):
+Use of colors can be disabled with a ``--color`` flag set to ``never``.
+With ``--color=always``, git machete always emits colors.
+With ``--color=auto`` (the default), it emits colors only when standard output is connected to a terminal.
+When colors are disabled, relation between branches is represented in the following way (not including the hash-comments):
 
 .. code-block::
 
@@ -76,7 +77,7 @@ With ``--color=always``, git machete always emits colors and with ``--color=auto
 
 **Options:**
 
---color=WHEN                      Colorize the output; WHEN can be ``always``, ``auto`` (default; i.e. only if stdout is a terminal), or ``never``.
+--color=WHEN                      Colorize the output; WHEN can be ``always``, ``auto`` (default: colorize only if stdout is a terminal), or ``never``.
 
 -l, --list-commits                Additionally list the commits introduced on each branch.
 
