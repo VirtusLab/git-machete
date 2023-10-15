@@ -406,7 +406,7 @@ class TestGitHubCreatePR(BaseTest):
         Branch feature is untracked and there's no origin repository.
         [1] origin_1
         [2] origin_2
-        Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request:
+        Select number 1..2 to specify the destination remote repository, or 'q' to quit the operation:
         """
         assert_success(
             ['github', 'create-pr'],
@@ -422,7 +422,7 @@ class TestGitHubCreatePR(BaseTest):
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('xd'))
         assert_failure(
             ['github', 'create-pr'],
-            "Could not establish remote repository, pull request creation interrupted."
+            "Could not establish remote repository, operation interrupted."
         )
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('1', 'n'))
@@ -437,7 +437,7 @@ class TestGitHubCreatePR(BaseTest):
         Branch feature is untracked and there's no origin repository.
         [1] origin_1
         [2] origin_2
-        Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request:
+        Select number 1..2 to specify the destination remote repository, or 'q' to quit the operation:
         Branch feature is untracked, but its remote counterpart candidate origin_1/feature already exists and both branches point to the same commit.
         Set the remote of feature to origin_1 without pushing or pulling? (y, N, q, yq)
         """  # noqa: E501
@@ -461,7 +461,7 @@ class TestGitHubCreatePR(BaseTest):
         Branch feature is untracked and there's no origin repository.
         [1] origin_1
         [2] origin_2
-        Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request:
+        Select number 1..2 to specify the destination remote repository, or 'q' to quit the operation:
         Branch feature is untracked, but its remote counterpart candidate origin_1/feature already exists and both branches point to the same commit.
         Set the remote of feature to origin_1 without pushing or pulling? (y, N, q, yq)
 
@@ -525,7 +525,7 @@ class TestGitHubCreatePR(BaseTest):
         Branch feature_2 is untracked and there's no origin repository.
         [1] origin_1
         [2] origin_2
-        Select number 1..2 to specify the destination remote repository, or 'q' to quit creating pull request:
+        Select number 1..2 to specify the destination remote repository, or 'q' to quit the operation:
         Push untracked branch feature_2 to origin_1? (y, Q)
 
           root

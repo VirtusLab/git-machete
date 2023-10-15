@@ -892,7 +892,7 @@ class MacheteClient:
                         self.__handle_untracked_state(
                             branch=current_branch,
                             is_called_from_traverse=True,
-                            is_called_from_create_pr=False,
+                            is_called_from_github=False,
                             opt_push_untracked=opt_push_untracked,
                             opt_push_tracked=opt_push_tracked,
                             opt_yes=opt_yes)
@@ -1803,7 +1803,7 @@ class MacheteClient:
             *,
             branch: LocalBranchShortName,
             is_called_from_traverse: bool,
-            is_called_from_create_pr: bool,
+            is_called_from_github: bool,
             opt_push_untracked: bool,
             opt_push_tracked: bool,
             opt_yes: bool
@@ -1814,7 +1814,7 @@ class MacheteClient:
               "repository, or 'n' to skip this branch, or " \
               "'q' to quit the traverse: " if is_called_from_traverse \
             else f"Select number 1..{len(rems)} to specify the destination remote " \
-                 "repository, or 'q' to quit creating pull request: "
+                 "repository, or 'q' to quit the operation: "
 
         ans = input(msg).lower()
         if ans in ('q', 'quit'):
@@ -1827,13 +1827,13 @@ class MacheteClient:
                 new_remote=rems[index],
                 branch=branch,
                 is_called_from_traverse=is_called_from_traverse,
-                is_called_from_create_pr=is_called_from_create_pr,
+                is_called_from_github=is_called_from_github,
                 opt_push_untracked=opt_push_untracked,
                 opt_push_tracked=opt_push_tracked,
                 opt_yes=opt_yes)
         except ValueError:
-            if is_called_from_create_pr:
-                raise MacheteException('Could not establish remote repository, pull request creation interrupted.')
+            if is_called_from_github:
+                raise MacheteException('Could not establish remote repository, operation interrupted.')
 
     def __handle_untracked_branch(
             self,
@@ -1841,7 +1841,7 @@ class MacheteClient:
             new_remote: str,
             branch: LocalBranchShortName,
             is_called_from_traverse: bool,
-            is_called_from_create_pr: bool,
+            is_called_from_github: bool,
             opt_push_untracked: bool,
             opt_push_tracked: bool,
             opt_yes: bool
@@ -1869,7 +1869,7 @@ class MacheteClient:
                     self.__pick_remote(
                         branch=branch,
                         is_called_from_traverse=is_called_from_traverse,
-                        is_called_from_create_pr=is_called_from_create_pr,
+                        is_called_from_github=is_called_from_github,
                         opt_push_untracked=opt_push_untracked,
                         opt_push_tracked=opt_push_tracked,
                         opt_yes=opt_yes)
@@ -2357,7 +2357,7 @@ class MacheteClient:
                 branch=base,
                 new_remote=org_repo_remote.remote,
                 is_called_from_traverse=False,
-                is_called_from_create_pr=True,
+                is_called_from_github=True,
                 opt_push_tracked=False,
                 opt_push_untracked=True,
                 opt_yes=False)
@@ -2467,7 +2467,7 @@ class MacheteClient:
             *,
             branch: LocalBranchShortName,
             is_called_from_traverse: bool,
-            is_called_from_create_pr: bool,
+            is_called_from_github: bool,
             opt_push_tracked: bool,
             opt_push_untracked: bool,
             opt_yes: bool
@@ -2479,7 +2479,7 @@ class MacheteClient:
                 new_remote=remotes[0],
                 branch=branch,
                 is_called_from_traverse=is_called_from_traverse,
-                is_called_from_create_pr=is_called_from_create_pr,
+                is_called_from_github=is_called_from_github,
                 opt_push_untracked=opt_push_untracked,
                 opt_push_tracked=opt_push_tracked,
                 opt_yes=opt_yes)
@@ -2488,7 +2488,7 @@ class MacheteClient:
                 new_remote="origin",
                 branch=branch,
                 is_called_from_traverse=is_called_from_traverse,
-                is_called_from_create_pr=is_called_from_create_pr,
+                is_called_from_github=is_called_from_github,
                 opt_push_untracked=opt_push_untracked,
                 opt_push_tracked=opt_push_tracked,
                 opt_yes=opt_yes)
@@ -2498,7 +2498,7 @@ class MacheteClient:
             self.__pick_remote(
                 branch=branch,
                 is_called_from_traverse=is_called_from_traverse,
-                is_called_from_create_pr=is_called_from_create_pr,
+                is_called_from_github=is_called_from_github,
                 opt_push_untracked=opt_push_untracked,
                 opt_push_tracked=opt_push_tracked,
                 opt_yes=opt_yes)
@@ -2613,7 +2613,7 @@ class MacheteClient:
                     self.__handle_untracked_state(
                         branch=current_branch,
                         is_called_from_traverse=False,
-                        is_called_from_create_pr=True,
+                        is_called_from_github=True,
                         opt_push_tracked=True,
                         opt_push_untracked=True,
                         opt_yes=opt_yes)
