@@ -11,23 +11,13 @@ from tests.mockers import (assert_failure, assert_success,
 from tests.mockers_github import (MockGitHubAPIState, mock_from_url,
                                   mock_github_token_for_domain_fake,
                                   mock_github_token_for_domain_none,
-                                  mock_repository_info, mock_urlopen)
+                                  mock_pr_json, mock_urlopen)
 
 
 class TestGitHubCreatePR(BaseTest):
 
     github_api_state_for_test_create_pr = MockGitHubAPIState(
-        [
-            {
-                'head': {'ref': 'ignore-trailing', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'hotfix/add-trigger'},
-                'number': '3',
-                'html_url': 'www.github.com',
-                'body': '# Summary',
-                'state': 'open'
-            }
-        ]
+        mock_pr_json(head='ignore-trailing', base='hotfix/add-trigger', number=3)
     )
 
     def test_github_create_pr(self, mocker: MockerFixture) -> None:
@@ -294,17 +284,7 @@ class TestGitHubCreatePR(BaseTest):
         )
 
     github_api_state_for_test_create_pr_missing_base_branch_on_remote = MockGitHubAPIState(
-        [
-            {
-                'head': {'ref': 'chore/redundant_checks', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'restrict_access'},
-                'number': '18',
-                'html_url': 'www.github.com',
-                'body': '# Summary',
-                'state': 'open'
-            }
-        ]
+        mock_pr_json(head='chore/redundant_checks', base='restrict_access', number=18)
     )
 
     def test_github_create_pr_missing_base_branch_on_remote(self, mocker: MockerFixture) -> None:
@@ -352,15 +332,7 @@ class TestGitHubCreatePR(BaseTest):
         )
 
     github_api_state_for_test_github_create_pr_with_multiple_non_origin_remotes = MockGitHubAPIState(
-        [
-            {
-                'head': {'ref': 'branch-1', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'root'}, 'number': '15',
-                'html_url': 'www.github.com',
-                'body': '# Summary', 'state': 'open'
-            }
-        ]
+        mock_pr_json(head='branch-1', base='root', number=15)
     )
 
     def test_github_create_pr_with_multiple_non_origin_remotes(self, mocker: MockerFixture) -> None:
@@ -614,7 +586,7 @@ class TestGitHubCreatePR(BaseTest):
     def test_github_create_pr_for_no_push_qualifier(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState([])))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState()))
 
         (
             self.repo_sandbox
@@ -650,7 +622,7 @@ class TestGitHubCreatePR(BaseTest):
     def test_github_create_pr_for_branch_behind_remote(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState([])))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState()))
 
         (
             self.repo_sandbox
@@ -714,7 +686,7 @@ class TestGitHubCreatePR(BaseTest):
     def test_github_create_pr_for_branch_diverged_from_and_older_than_remote(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState([])))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState()))
 
         (
             self.repo_sandbox

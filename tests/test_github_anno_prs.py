@@ -5,26 +5,16 @@ from tests.mockers import (assert_failure, assert_success, launch_command,
                            rewrite_branch_layout_file)
 from tests.mockers_github import (MockGitHubAPIState,
                                   mock_github_token_for_domain_fake,
-                                  mock_repository_info, mock_urlopen)
+                                  mock_pr_json, mock_urlopen)
 
 
 class TestGitHubAnnoPRs(BaseTest):
 
     github_api_state_for_test_anno_prs = MockGitHubAPIState(
-        [{
-            'head': {'ref': head, 'repo': mock_repository_info},
-            'user': {'login': user},
-            'base': {'ref': base},
-            'number': str(number),
-            'html_url': 'www.github.com',
-            'body': '# Summary',
-            'state': 'open'
-        } for (number, user, head, base) in (
-            (3, 'some_other_user', 'ignore-trailing', 'hotfix/add-trigger'),
-            (7, 'some_other_user', 'allow-ownership-link', 'develop'),
-            (31, 'github_user', 'call-ws', 'develop'),
-            (37, 'github_user', 'develop', 'master'),
-        )]
+        mock_pr_json(number=3, user='some_other_user', head='ignore-trailing', base='hotfix/add-trigger'),
+        mock_pr_json(number=7, user='some_other_user', head='allow-ownership-link', base='develop'),
+        mock_pr_json(number=31, user='github_user', head='call-ws', base='develop'),
+        mock_pr_json(number=37, user='github_user', head='develop', base='master')
     )
 
     def test_github_anno_prs(self, mocker: MockerFixture) -> None:
@@ -142,22 +132,8 @@ class TestGitHubAnnoPRs(BaseTest):
         )
 
     github_api_state_for_test_local_branch_name_different_than_tracking_branch_name = MockGitHubAPIState(
-        [
-            {
-                'head': {'ref': 'feature_repo', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'root'}, 'number': '15',
-                'html_url': 'www.github.com',
-                'body': '# Summary', 'state': 'open'
-            },
-            {
-                'head': {'ref': 'feature_1', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'feature_repo'}, 'number': '20',
-                'html_url': 'www.github.com',
-                'body': '# Summary', 'state': 'open'
-            }
-        ]
+        mock_pr_json(head='feature_repo', base='root', number=15),
+        mock_pr_json(head='feature_1', base='feature_repo', number=20)
     )
 
     def test_github_anno_prs_local_branch_name_different_than_tracking_branch_name(self, mocker: MockerFixture) -> None:

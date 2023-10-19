@@ -10,95 +10,22 @@ from tests.mockers import (assert_failure, assert_success, launch_command,
 from tests.mockers_github import (MockGitHubAPIState, mock_from_url,
                                   mock_github_token_for_domain_fake,
                                   mock_github_token_for_domain_none,
-                                  mock_repository_info, mock_urlopen)
+                                  mock_pr_json, mock_repository_info,
+                                  mock_urlopen)
 
 
 class TestGitHubCheckoutPRs(BaseTest):
     github_api_state_for_test_checkout_prs = MockGitHubAPIState(
-        [
-            {
-                'head': {'ref': 'chore/redundant_checks', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'restrict_access'},
-                'number': '18',
-                'html_url': 'www.github.com',
-                'body': '# Summary',
-                'state': 'open'
-            },
-            {
-                'head': {'ref': 'restrict_access', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'allow-ownership-link'},
-                'number': '17',
-                'html_url': 'www.github.com',
-                'body': '# Summary',
-                'state': 'open'
-            },
-            {
-                'head': {'ref': 'allow-ownership-link', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'bugfix/feature'},
-                'number': '12',
-                'html_url': 'www.github.com',
-                'body': '# Summary',
-                'state': 'open'
-            },
-            {
-                'head': {'ref': 'bugfix/feature', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'enhance/feature'},
-                'number': '6',
-                'html_url': 'www.github.com',
-                'body': '# Summary',
-                'state': 'open'
-            },
-            {
-                'head': {'ref': 'enhance/add_user', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'develop'},
-                'number': '19',
-                'html_url': 'www.github.com',
-                'body': '# Summary',
-                'state': 'open'
-            },
-            {
-                'head': {'ref': 'testing/add_user', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'bugfix/add_user'},
-                'number': '22',
-                'html_url': 'www.github.com',
-                'body': '# Summary',
-                'state': 'open'
-            },
-            {
-                'head': {'ref': 'chore/comments', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'testing/add_user'},
-                'number': '24',
-                'html_url': 'www.github.com',
-                'body': '# Summary',
-                'state': 'open'
-            },
-            {
-                'head': {'ref': 'ignore-trailing', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'hotfix/add-trigger'},
-                'number': '3',
-                'html_url': 'www.github.com',
-                'body': '# Summary',
-                'state': 'open'
-            },
-            {
-                'head': {'ref': 'bugfix/remove-n-option',
-                         'repo': {'full_name': 'tester/repo_sandbox', 'html_url': GitRepositorySandbox.second_remote_path}},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'develop'},
-                'number': '5',
-                'html_url': 'www.github.com',
-                'body': '# Summary',
-                'state': 'closed'
-            }
-        ]
+        mock_pr_json(head='chore/redundant_checks', base='restrict_access', number=18),
+        mock_pr_json(head='restrict_access', base='allow-ownership-link', number=17),
+        mock_pr_json(head='allow-ownership-link', base='bugfix/feature', number=12),
+        mock_pr_json(head='bugfix/feature', base='enhance/feature', number=6),
+        mock_pr_json(head='enhance/add_user', base='develop', number=19),
+        mock_pr_json(head='testing/add_user', base='bugfix/add_user', number=22),
+        mock_pr_json(head='chore/comments', base='testing/add_user', number=24),
+        mock_pr_json(head='ignore-trailing', base='hotfix/add-trigger', number=3),
+        mock_pr_json(head='bugfix/remove-n-option', base='develop', number=5, state='closed',
+                     repo={'full_name': 'tester/repo_sandbox', 'html_url': GitRepositorySandbox.second_remote_path})
     )
 
     def test_github_checkout_prs(self, mocker: MockerFixture) -> None:
@@ -353,45 +280,11 @@ class TestGitHubCheckoutPRs(BaseTest):
         assert_success(['github', 'checkout-prs', '3', '12'], expected_msg)
 
     github_api_state_for_test_github_checkout_prs_fresh_repo = MockGitHubAPIState(
-        [
-            {
-                'head': {'ref': 'comments/add_docstrings', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'improve/refactor'},
-                'number': '2',
-                'html_url': 'www.github.com',
-                'body': '# Summary',
-                'state': 'open'
-            },
-            {
-                'head': {'ref': 'restrict_access', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'allow-ownership-link'},
-                'number': '17',
-                'html_url': 'www.github.com',
-                'body': '# Summary',
-                'state': 'open'
-            },
-            {
-                'head': {'ref': 'improve/refactor', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'chore/sync_to_docs'},
-                'number': '1',
-                'html_url': 'www.github.com',
-                'body': '# Summary',
-                'state': 'open'
-            },
-            {
-                'head': {'ref': 'sphinx_export',
-                         'repo': {'full_name': 'tester/repo_sandbox', 'html_url': GitRepositorySandbox.second_remote_path}},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'comments/add_docstrings'},
-                'number': '23',
-                'html_url': 'www.github.com',
-                'body': '# Summary',
-                'state': 'closed'
-            }
-        ]
+        mock_pr_json(head='comments/add_docstrings', base='improve/refactor', number=2),
+        mock_pr_json(head='restrict_access', base='allow-ownership-link', number=17),
+        mock_pr_json(head='improve/refactor', base='chore/sync_to_docs', number=1),
+        mock_pr_json(head='sphinx_export', base='comments/add_docstrings', number=23, state='closed',
+                     repo={'full_name': 'tester/repo_sandbox', 'html_url': GitRepositorySandbox.second_remote_path})
     )
 
     def test_github_checkout_prs_freshly_cloned(self, mocker: MockerFixture) -> None:
@@ -492,25 +385,8 @@ class TestGitHubCheckoutPRs(BaseTest):
         )
 
     github_api_state_for_test_github_checkout_prs_from_fork_with_deleted_repo = MockGitHubAPIState(
-        [
-            {
-                'head': {'ref': 'feature/allow_checkout', 'repo': None},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'develop'},
-                'number': '2',
-                'html_url': 'www.github.com',
-                'body': '# Summary',
-                'state': 'closed'
-            },
-            {
-                'head': {'ref': 'bugfix/allow_checkout', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'develop'},
-                'number': '3',
-                'html_url': 'www.github.com',
-                'body': '# Summary',
-                'state': 'open'}
-        ]
+        mock_pr_json(head='feature/allow_checkout', base='develop', number=2, repo=None, state='closed'),
+        mock_pr_json(head='bugfix/allow_checkout', base='develop', number=3)
     )
 
     def test_github_checkout_prs_from_fork_with_deleted_repo(self, mocker: MockerFixture) -> None:
@@ -555,90 +431,16 @@ class TestGitHubCheckoutPRs(BaseTest):
              )
 
     github_api_state_for_test_github_checkout_prs_of_current_user_and_other_users = MockGitHubAPIState(
-        [
-            {
-                'head': {'ref': 'chore/redundant_checks', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'restrict_access'},
-                'number': '18',
-                'html_url': 'www.github.com',
-                'body': '# Summary',
-                'state': 'open'
-            },
-            {
-                'head': {'ref': 'restrict_access', 'repo': mock_repository_info},
-                'user': {'login': 'github_user'},
-                'base': {'ref': 'allow-ownership-link'},
-                'number': '17',
-                'html_url': 'www.github.com',
-                'body': '# Summary',
-                'state': 'open'
-            },
-            {
-                'head': {'ref': 'allow-ownership-link', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'bugfix/feature'},
-                'number': '12',
-                'html_url': 'www.github.com',
-                'body': '# Summary',
-                'state': 'open'
-            },
-            {
-                'head': {'ref': 'bugfix/feature', 'repo': mock_repository_info},
-                'user': {'login': 'github_user'},
-                'base': {'ref': 'enhance/feature'},
-                'number': '6',
-                'html_url': 'www.github.com',
-                'body': '# Summary',
-                'state': 'open'
-            },
-            {
-                'head': {'ref': 'enhance/add_user', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'develop'},
-                'number': '19',
-                'html_url': 'www.github.com',
-                'body': '# Summary',
-                'state': 'open'
-            },
-            {
-                'head': {'ref': 'testing/add_user', 'repo': mock_repository_info},
-                'user': {'login': 'github_user'},
-                'base': {'ref': 'bugfix/add_user'},
-                'number': '22',
-                'html_url': 'www.github.com',
-                'body': '# Summary',
-                'state': 'open'
-            },
-            {
-                'head': {'ref': 'chore/comments', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'testing/add_user'},
-                'number': '24',
-                'html_url': 'www.github.com',
-                'body': '# Summary',
-                'state': 'open'
-            },
-            {
-                'head': {'ref': 'ignore-trailing', 'repo': mock_repository_info},
-                'user': {'login': 'github_user'},
-                'base': {'ref': 'hotfix/add-trigger'},
-                'number': '3',
-                'html_url': 'www.github.com',
-                'body': '# Summary',
-                'state': 'open'
-            },
-            {
-                'head': {'ref': 'bugfix/remove-n-option',
-                         'repo': {'full_name': 'tester/repo_sandbox', 'html_url': GitRepositorySandbox.second_remote_path}},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'develop'},
-                'number': '5',
-                'html_url': 'www.github.com',
-                'body': '# Summary',
-                'state': 'closed'
-            }
-        ]
+        mock_pr_json(head='chore/redundant_checks', base='restrict_access', number=18),
+        mock_pr_json(head='restrict_access', base='allow-ownership-link', number=17, user='github_user'),
+        mock_pr_json(head='allow-ownership-link', base='bugfix/feature', number=12),
+        mock_pr_json(head='bugfix/feature', base='enhance/feature', number=6, user='github_user'),
+        mock_pr_json(head='enhance/add_user', base='develop', number=19),
+        mock_pr_json(head='testing/add_user', base='bugfix/add_user', number=22, user='github_user'),
+        mock_pr_json(head='chore/comments', base='testing/add_user', number=24),
+        mock_pr_json(head='ignore-trailing', base='hotfix/add-trigger', number=3, user='github_user'),
+        mock_pr_json(head='bugfix/remove-n-option', base='develop', number=5, state='closed',
+                     repo={'full_name': 'tester/repo_sandbox', 'html_url': GitRepositorySandbox.second_remote_path})
     )
 
     def test_github_checkout_prs_of_current_user_and_other_users(self, mocker: MockerFixture) -> None:
@@ -793,7 +595,7 @@ class TestGitHubCheckoutPRs(BaseTest):
 
     def test_github_checkout_prs_misc_failures_and_warns(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState([])))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState()))
 
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
         assert_success(
@@ -833,17 +635,7 @@ class TestGitHubCheckoutPRs(BaseTest):
         )
 
     github_api_state_for_test_github_checkout_prs_single_pr = MockGitHubAPIState(
-        [
-            {
-                'head': {'ref': 'develop', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'master'},
-                'number': '18',
-                'html_url': 'www.github.com',
-                'body': '# Summary',
-                'state': 'open'
-            }
-        ]
+        mock_pr_json(head='develop', base='master', number=18)
     )
 
     def test_github_checkout_prs_remote_already_added(self, mocker: MockerFixture) -> None:

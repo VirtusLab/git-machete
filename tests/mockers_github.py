@@ -14,6 +14,24 @@ mock_repository_info: Dict[str, str] = {'full_name': 'tester/repo_sandbox',
                                         'html_url': 'https://github.com/tester/repo_sandbox.git'}
 
 
+def mock_pr_json(head: str, base: str, number: int,
+                 repo: Optional[Dict[str, str]] = mock_repository_info,
+                 user: str = 'some_other_user',
+                 html_url: str = 'www.github.com',
+                 body: Optional[str] = '# Summary',
+                 state: str = 'open'
+                 ) -> Dict[str, Any]:
+    return {
+        'head': {'ref': head, 'repo': repo},
+        'user': {'login': user},
+        'base': {'ref': base},
+        'number': str(number),
+        'html_url': html_url,
+        'body': body,
+        'state': state
+    }
+
+
 def mock_github_token_for_domain_none(_domain: str) -> None:
     return None
 
@@ -47,7 +65,7 @@ class MockGitHubAPIResponse:
 
 
 class MockGitHubAPIState:
-    def __init__(self, pulls: List[Dict[str, Any]]) -> None:
+    def __init__(self, *pulls: Dict[str, Any]) -> None:
         self.__pulls: List[Dict[str, Any]] = [dict(pull) for pull in pulls]
 
     def get_pull_by_number(self, pull_no: int) -> Optional[Dict[str, Any]]:

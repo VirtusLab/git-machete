@@ -5,23 +5,13 @@ from tests.mockers import (assert_success, launch_command,
                            mock_input_returning_y, rewrite_branch_layout_file)
 from tests.mockers_github import (MockGitHubAPIState, mock_from_url,
                                   mock_github_token_for_domain_fake,
-                                  mock_repository_info, mock_urlopen)
+                                  mock_pr_json, mock_urlopen)
 
 
 class TestGitHubSync(BaseTest):
 
     github_api_state_for_test_github_sync = MockGitHubAPIState(
-        [
-            {
-                'head': {'ref': 'snickers', 'repo': mock_repository_info},
-                'user': {'login': 'github_user'},
-                'base': {'ref': 'master'},
-                'number': '7',
-                'html_url': 'www.github.com',
-                'body': '# Summary',
-                'state': 'open'
-            }
-        ]
+        mock_pr_json(head='snickers', base='master', number=7, user='github_user')
     )
 
     def test_github_sync(self, mocker: MockerFixture) -> None:

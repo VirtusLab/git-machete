@@ -6,57 +6,19 @@ from tests.base_test import BaseTest
 from tests.mockers import (assert_failure, assert_success, launch_command,
                            rewrite_branch_layout_file)
 from tests.mockers_github import (MockGitHubAPIState, mock_from_url,
-                                  mock_repository_info, mock_urlopen)
+                                  mock_pr_json, mock_urlopen)
 
 
 class TestGitHubRetargetPR(BaseTest):
 
     github_api_state_for_test_retarget_pr = MockGitHubAPIState(
-        [
-            {
-                'head': {'ref': 'feature', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'master'}, 'number': '15',
-                'html_url': 'www.github.com',
-                'body': '# Summary', 'state': 'open'
-            },
-            {
-                'head': {'ref': 'feature_1', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'master'}, 'number': '20',
-                'html_url': 'www.github.com',
-                'body': '# Summary\n\n', 'state': 'open'
-            },
-            {
-                'head': {'ref': 'feature_2', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'master'}, 'number': '25',
-                'html_url': 'www.github.com',
-                'body': None, 'state': 'open'
-            },
-            {
-                'head': {'ref': 'feature_3', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'master'}, 'number': '30',
-                'html_url': 'www.github.com',
-                'body': '# Summary', 'state': 'open'
-            },
-            {
-                'head': {'ref': 'feature_4', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'feature'}, 'number': '35',
-                'html_url': 'www.github.com',
-                'body': '# Summary', 'state': 'open'
-            },
-            # Let's include another PR for `feature_2`, but with a different base branch
-            {
-                'head': {'ref': 'feature_4', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'feature'}, 'number': '40',
-                'html_url': 'www.github.com',
-                'body': '# Summary', 'state': 'open'
-            },
-        ]
+        mock_pr_json(head='feature', base='master', number=15),
+        mock_pr_json(head='feature_1', base='master', number=20, body='# Summary\n\n'),
+        mock_pr_json(head='feature_2', base='master', number=25, body=None),
+        mock_pr_json(head='feature_3', base='master', number=30),
+        mock_pr_json(head='feature_4', base='feature', number=35),
+        # Let's include another PR for `feature_2`, but with a different base branch
+        mock_pr_json(head='feature_4', base='feature', number=40),
     )
 
     def test_github_retarget_pr(self, mocker: MockerFixture) -> None:
@@ -142,15 +104,7 @@ class TestGitHubRetargetPR(BaseTest):
         )
 
     github_api_state_for_test_github_retarget_pr_explicit_branch = MockGitHubAPIState(
-        [
-            {
-                'head': {'ref': 'feature', 'repo': mock_repository_info},
-                'user': {'login': 'some_other_user'},
-                'base': {'ref': 'root'}, 'number': '15',
-                'html_url': 'www.github.com',
-                'body': '# Summary', 'state': 'open'
-            }
-        ]
+        mock_pr_json(head='feature', base='root', number=15)
     )
 
     def test_github_retarget_pr_explicit_branch(self, mocker: MockerFixture) -> None:
@@ -409,12 +363,9 @@ class TestGitHubRetargetPR(BaseTest):
         assert pr30['base']['ref'] == 'root'
         assert pr30['body'] == '# Summary'
 
-    github_api_state_for_test_retarget_pr_root_branch = MockGitHubAPIState([{
-        'head': {'ref': 'master', 'repo': mock_repository_info},
-        'user': {'login': 'some_other_user'},
-        'base': {'ref': 'root'}, 'number': '15',
-        'html_url': 'www.github.com', 'body': '# Summary', 'state': 'open'
-    }])
+    github_api_state_for_test_retarget_pr_root_branch = MockGitHubAPIState(
+        mock_pr_json(head='master', base='root', number=15)
+    )
 
     def test_github_retarget_pr_root_branch(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
