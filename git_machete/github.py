@@ -401,6 +401,8 @@ class GitHubClient:
             debug(f"PR #{number} is already a draft")
             return False
         if not is_draft and target_draft_status is False:
+            # This case is not covered by tests since there's currently no scenario
+            # in `git machete github restack-pr` that could reach here.
             debug(f"PR #{number} is already ready for review")
             return False
 

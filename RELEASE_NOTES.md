@@ -3,10 +3,7 @@
 ## New in git-machete 3.20.0
 
 - added: `git machete github create-pr` adds a comment linking the PR to its base PR; `github retarget-pr` keeps that comment up to date (suggested by @guyboltonking)
-- added: new subcommand `git machete github restack-pr`, which first marks the PR as draft, then (force-)pushes branch, then retargets PR, then marks as ready for review again (suggested by @raylu)
-
-## New in git-machete 3.19.1
-
+- added: new subcommand `git machete github restack-pr`, which (force-)pushes and retargets the PR, without adding code owners as reviewers in the process (suggested by @raylu)
 - improved: when running `git machete squash` against a root branch, the error message suggests using `--fork-point=...` flag (suggested by @levinotik)
 - improved: simplified & clarified docs in multiple places (partly suggested by @kgadek)
 
