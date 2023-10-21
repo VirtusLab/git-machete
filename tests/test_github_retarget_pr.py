@@ -11,18 +11,20 @@ from tests.mockers_github import (MockGitHubAPIState, mock_from_url,
 
 class TestGitHubRetargetPR(BaseTest):
 
-    github_api_state_for_test_retarget_pr = MockGitHubAPIState(
-        mock_pr_json(head='feature', base='master', number=15),
-        mock_pr_json(head='feature_1', base='master', number=20, body='# Summary\n\n'),
-        mock_pr_json(head='feature_2', base='master', number=25, body=None),
-        mock_pr_json(head='feature_3', base='master', number=30),
-        mock_pr_json(head='feature_4', base='feature', number=35),
-        # Let's include another PR for `feature_2`, but with a different base branch
-        mock_pr_json(head='feature_4', base='feature', number=40),
-    )
+    @staticmethod
+    def github_api_state_for_test_retarget_pr() -> MockGitHubAPIState:
+        return MockGitHubAPIState(
+            mock_pr_json(head='feature', base='master', number=15),
+            mock_pr_json(head='feature_1', base='master', number=20, body='# Summary\n\n'),
+            mock_pr_json(head='feature_2', base='master', number=25, body=None),
+            mock_pr_json(head='feature_3', base='master', number=30),
+            mock_pr_json(head='feature_4', base='feature', number=35),
+            # Let's include another PR for `feature_2`, but with a different base branch
+            mock_pr_json(head='feature_4', base='feature', number=40),
+        )
 
     def test_github_retarget_pr(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_retarget_pr))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_retarget_pr()))
 
         (
             self.repo_sandbox.new_branch("master")
@@ -103,13 +105,15 @@ class TestGitHubRetargetPR(BaseTest):
             'Multiple PRs have feature_4 as its head: #35, #40'
         )
 
-    github_api_state_for_test_github_retarget_pr_explicit_branch = MockGitHubAPIState(
-        mock_pr_json(head='feature', base='root', number=15)
-    )
+    @staticmethod
+    def github_api_state_for_test_github_retarget_pr_explicit_branch() -> MockGitHubAPIState:
+        return MockGitHubAPIState(
+            mock_pr_json(head='feature', base='root', number=15)
+        )
 
     def test_github_retarget_pr_explicit_branch(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'urllib.request.urlopen',
-                          mock_urlopen(self.github_api_state_for_test_github_retarget_pr_explicit_branch))
+                          mock_urlopen(self.github_api_state_for_test_github_retarget_pr_explicit_branch()))
 
         branchs_first_commit_msg = "First commit on branch."
         branchs_second_commit_msg = "Second commit on branch."
@@ -184,7 +188,8 @@ class TestGitHubRetargetPR(BaseTest):
 
     def test_github_retarget_pr_multiple_non_origin_remotes(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_retarget_pr))
+        github_api_state = self.github_api_state_for_test_retarget_pr()
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
         branchs_first_commit_msg = "First commit on branch."
         branchs_second_commit_msg = "Second commit on branch."
@@ -252,7 +257,7 @@ class TestGitHubRetargetPR(BaseTest):
             'Base branch of PR #20 has been switched to feature\n'
             'Base PR header in the description of PR #20 now points to PR #15\n'
         )
-        pr20 = self.github_api_state_for_test_retarget_pr.get_pull_by_number(20)
+        pr20 = github_api_state.get_pull_by_number(20)
         assert pr20 is not None
         assert pr20['base']['ref'] == 'feature'
         assert pr20['body'] == '# Based on PR #15\n\n# Summary\n\n'
@@ -287,7 +292,7 @@ class TestGitHubRetargetPR(BaseTest):
             'Base branch of PR #25 has been switched to feature\n'
             'Base PR header in the description of PR #25 now points to PR #15\n'
         )
-        pr25 = self.github_api_state_for_test_retarget_pr.get_pull_by_number(25)
+        pr25 = github_api_state.get_pull_by_number(25)
         assert pr25 is not None
         assert pr25['base']['ref'] == 'feature'
         assert pr25['body'] == '# Based on PR #15\n'
@@ -316,7 +321,7 @@ class TestGitHubRetargetPR(BaseTest):
             'Base branch of PR #30 has been switched to feature_2\n'
             'Base PR header in the description of PR #30 now points to PR #25\n'
         )
-        pr30 = self.github_api_state_for_test_retarget_pr.get_pull_by_number(30)
+        pr30 = github_api_state.get_pull_by_number(30)
         assert pr30 is not None
         assert pr30['base']['ref'] == 'feature_2'
         assert pr30['body'] == '# Based on PR #25\n\n# Summary'
@@ -337,7 +342,7 @@ class TestGitHubRetargetPR(BaseTest):
             'Base branch of PR #30 has been switched to feature\n'
             'Base PR header in the description of PR #30 now points to PR #15\n'
         )
-        pr30 = self.github_api_state_for_test_retarget_pr.get_pull_by_number(30)
+        pr30 = github_api_state.get_pull_by_number(30)
         assert pr30 is not None
         assert pr30['base']['ref'] == 'feature'
         assert pr30['body'] == '# Based on PR #15\n\n# Summary'
@@ -358,18 +363,20 @@ class TestGitHubRetargetPR(BaseTest):
             'Base branch of PR #30 has been switched to root\n'
             'Base PR header has been removed from the description of PR #30\n'
         )
-        pr30 = self.github_api_state_for_test_retarget_pr.get_pull_by_number(30)
+        pr30 = github_api_state.get_pull_by_number(30)
         assert pr30 is not None
         assert pr30['base']['ref'] == 'root'
         assert pr30['body'] == '# Summary'
 
-    github_api_state_for_test_retarget_pr_root_branch = MockGitHubAPIState(
-        mock_pr_json(head='master', base='root', number=15)
-    )
+    @staticmethod
+    def github_api_state_for_test_retarget_pr_root_branch() -> MockGitHubAPIState:
+        return MockGitHubAPIState(
+            mock_pr_json(head='master', base='root', number=15)
+        )
 
     def test_github_retarget_pr_root_branch(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_retarget_pr_root_branch))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_retarget_pr_root_branch()))
 
         self.repo_sandbox.new_branch("master").commit()
         rewrite_branch_layout_file("master")

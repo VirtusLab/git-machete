@@ -10,15 +10,17 @@ from tests.mockers_github import (MockGitHubAPIState, mock_from_url,
 
 class TestGitHubSync(BaseTest):
 
-    github_api_state_for_test_github_sync = MockGitHubAPIState(
-        mock_pr_json(head='snickers', base='master', number=7, user='github_user')
-    )
+    @staticmethod
+    def github_api_state_for_test_github_sync() -> MockGitHubAPIState:
+        return MockGitHubAPIState(
+            mock_pr_json(head='snickers', base='master', number=7, user='github_user')
+        )
 
     def test_github_sync(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_github_sync))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_github_sync()))
 
         (
             self.repo_sandbox

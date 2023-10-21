@@ -39,18 +39,20 @@ class TestGitHub(BaseTest):
 
     PR_COUNT_FOR_TEST_GITHUB_API_PAGINATION = 12
 
-    github_api_state_for_test_github_api_pagination = MockGitHubAPIState(*[
-        mock_pr_json(
-            head=f'feature_{i:02d}', base='develop', number=i,
-            repo={'full_name': 'tester/repo_sandbox', 'html_url': 'https://github.com/tester/repo_sandbox.git'}
-        ) for i in range(PR_COUNT_FOR_TEST_GITHUB_API_PAGINATION)])
+    @staticmethod
+    def github_api_state_for_test_github_api_pagination() -> MockGitHubAPIState:
+        return MockGitHubAPIState(*[
+            mock_pr_json(
+                head=f'feature_{i:02d}', base='develop', number=i,
+                repo={'full_name': 'tester/repo_sandbox', 'html_url': 'https://github.com/tester/repo_sandbox.git'}
+            ) for i in range(TestGitHub.PR_COUNT_FOR_TEST_GITHUB_API_PAGINATION)])
 
     def test_github_api_pagination(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
         self.patch_symbol(mocker, 'git_machete.github.GitHubClient.MAX_PULLS_PER_PAGE_COUNT', 3)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_github_api_pagination))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_github_api_pagination()))
 
         (
             self.repo_sandbox.new_branch("develop")
@@ -104,14 +106,16 @@ class TestGitHub(BaseTest):
             "You can also use a different token provider, available providers can be found via git machete help github.")
         assert_failure(['github', 'checkout-prs', '--all'], expected_error_message)
 
-    github_api_state_for_test_github_enterprise_domain = MockGitHubAPIState(
-        mock_pr_json(head='snickers', base='develop', number=7, user='github_user')
-    )
+    @staticmethod
+    def github_api_state_for_test_github_enterprise_domain() -> MockGitHubAPIState:
+        return MockGitHubAPIState(
+            mock_pr_json(head='snickers', base='develop', number=7, user='github_user')
+        )
 
     def test_github_enterprise_domain(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_github_enterprise_domain))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_github_enterprise_domain()))
 
         github_enterprise_domain = 'git.example.org'
         (
@@ -170,7 +174,7 @@ class TestGitHub(BaseTest):
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'os.path.isfile', lambda _file: False)
         self.patch_symbol(mocker, 'shutil.which', mock_shutil_which(None))
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_github_enterprise_domain))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_github_enterprise_domain()))
 
         (
             self.repo_sandbox.new_branch("develop")

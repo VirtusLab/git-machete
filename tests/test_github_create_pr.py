@@ -16,15 +16,18 @@ from tests.mockers_github import (MockGitHubAPIState, mock_from_url,
 
 class TestGitHubCreatePR(BaseTest):
 
-    github_api_state_for_test_create_pr = MockGitHubAPIState(
-        mock_pr_json(head='ignore-trailing', base='hotfix/add-trigger', number=3)
-    )
+    @staticmethod
+    def github_api_state_for_test_create_pr() -> MockGitHubAPIState:
+        return MockGitHubAPIState(
+            mock_pr_json(head='ignore-trailing', base='hotfix/add-trigger', number=3)
+        )
 
     def test_github_create_pr(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_create_pr))
+        github_api_state = self.github_api_state_for_test_create_pr()
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
         (
             self.repo_sandbox.new_branch("root")
@@ -143,7 +146,7 @@ class TestGitHubCreatePR(BaseTest):
             Adding foo, bar as reviewers to PR #5... OK
             """
         )
-        pr = self.github_api_state_for_test_create_pr.get_pull_by_number(5)
+        pr = github_api_state.get_pull_by_number(5)
         assert pr is not None
         assert pr['body'] == '# Based on PR #3\n\n# PR title\n## Summary\n##Test plan\n'
         assert pr['draft'] is True
@@ -283,16 +286,18 @@ class TestGitHubCreatePR(BaseTest):
             "Branch master does not have a parent branch (it is a root), base branch for the PR cannot be established."
         )
 
-    github_api_state_for_test_create_pr_missing_base_branch_on_remote = MockGitHubAPIState(
-        mock_pr_json(head='chore/redundant_checks', base='restrict_access', number=18)
-    )
+    @staticmethod
+    def github_api_state_for_test_create_pr_missing_base_branch_on_remote() -> MockGitHubAPIState:
+        return MockGitHubAPIState(
+            mock_pr_json(head='chore/redundant_checks', base='restrict_access', number=18)
+        )
 
     def test_github_create_pr_missing_base_branch_on_remote(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(
-            self.github_api_state_for_test_create_pr_missing_base_branch_on_remote))
+            self.github_api_state_for_test_create_pr_missing_base_branch_on_remote()))
 
         (
             self.repo_sandbox.new_branch("root")
@@ -331,15 +336,17 @@ class TestGitHubCreatePR(BaseTest):
             """,
         )
 
-    github_api_state_for_test_github_create_pr_with_multiple_non_origin_remotes = MockGitHubAPIState(
-        mock_pr_json(head='branch-1', base='root', number=15)
-    )
+    @staticmethod
+    def github_api_state_for_test_github_create_pr_with_multiple_non_origin_remotes() -> MockGitHubAPIState:
+        return MockGitHubAPIState(
+            mock_pr_json(head='branch-1', base='root', number=15)
+        )
 
     def test_github_create_pr_with_multiple_non_origin_remotes(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
         self.patch_symbol(mocker, 'urllib.request.urlopen',
-                          mock_urlopen(self.github_api_state_for_test_github_create_pr_with_multiple_non_origin_remotes))
+                          mock_urlopen(self.github_api_state_for_test_github_create_pr_with_multiple_non_origin_remotes()))
 
         origin_1_remote_path = mkdtemp()
         origin_2_remote_path = mkdtemp()

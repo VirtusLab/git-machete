@@ -12,9 +12,9 @@ from tests.mockers_github import (MockGitHubAPIState, mock_from_url,
 
 class TestGitHubRestackPR(BaseTest):
 
-    def setup_method(self) -> None:
-        super().setup_method()
-        self.github_api_state_for_test_restack_pr = MockGitHubAPIState(
+    @staticmethod
+    def github_api_state_for_test_restack_pr() -> MockGitHubAPIState:
+        return MockGitHubAPIState(
             mock_pr_json(head='feature_1', base='develop', number=14, draft=True),
             mock_pr_json(head='feature', base='develop', number=15, body='# Based on PR #14\n# Summary'),
             mock_pr_json(head='multiple-pr-branch', base='develop', number=16),
@@ -24,7 +24,7 @@ class TestGitHubRestackPR(BaseTest):
     def test_github_restack_pr_no_prs_or_multiple_prs(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_restack_pr))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_restack_pr()))
 
         self.repo_sandbox.new_branch("develop").commit()
 
@@ -42,7 +42,8 @@ class TestGitHubRestackPR(BaseTest):
     def test_github_restack_pr_branch_in_sync(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_restack_pr))
+        github_api_state = self.github_api_state_for_test_restack_pr()
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
         (
             self.repo_sandbox.new_branch("master")
@@ -70,7 +71,7 @@ class TestGitHubRestackPR(BaseTest):
             Base PR header has been removed from the description of PR #15
             """
         )
-        pr = self.github_api_state_for_test_restack_pr.get_pull_by_number(15)
+        pr = github_api_state.get_pull_by_number(15)
         assert pr is not None
         assert pr['draft'] is False
         assert pr['base']['ref'] == 'master'
@@ -79,7 +80,8 @@ class TestGitHubRestackPR(BaseTest):
     def test_github_restack_pr_branch_untracked(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_restack_pr))
+        github_api_state = self.github_api_state_for_test_restack_pr()
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
         (
             self.repo_sandbox.new_branch("master")
@@ -106,7 +108,7 @@ class TestGitHubRestackPR(BaseTest):
             Base branch of PR #14 has been switched to master
             """
         )
-        pr = self.github_api_state_for_test_restack_pr.get_pull_by_number(14)
+        pr = github_api_state.get_pull_by_number(14)
         assert pr is not None
         assert pr['draft'] is True
         assert pr['base']['ref'] == 'master'
@@ -114,7 +116,8 @@ class TestGitHubRestackPR(BaseTest):
     def test_github_restack_pr_branch_diverged_and_newer(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_restack_pr))
+        github_api_state = self.github_api_state_for_test_restack_pr()
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
         with fixed_author_and_committer_date_in_past():
             (
@@ -148,7 +151,7 @@ class TestGitHubRestackPR(BaseTest):
             PR #15 has been marked as ready for review again
             """
         )
-        pr = self.github_api_state_for_test_restack_pr.get_pull_by_number(15)
+        pr = github_api_state.get_pull_by_number(15)
         assert pr is not None
         assert pr['draft'] is False
         assert pr['base']['ref'] == 'master'
@@ -156,7 +159,8 @@ class TestGitHubRestackPR(BaseTest):
     def test_github_restack_pr_branch_ahead(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_restack_pr))
+        github_api_state = self.github_api_state_for_test_restack_pr()
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
         (
             self.repo_sandbox.new_branch("master")
@@ -189,7 +193,7 @@ class TestGitHubRestackPR(BaseTest):
             PR #15 has been marked as ready for review again
             """
         )
-        pr = self.github_api_state_for_test_restack_pr.get_pull_by_number(15)
+        pr = github_api_state.get_pull_by_number(15)
         assert pr is not None
         assert pr['draft'] is False
         assert pr['base']['ref'] == 'master'
@@ -197,7 +201,8 @@ class TestGitHubRestackPR(BaseTest):
     def test_github_restack_pr_branch_ahead_push_no(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_restack_pr))
+        github_api_state = self.github_api_state_for_test_restack_pr()
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
         (
             self.repo_sandbox.new_branch("master")
@@ -224,7 +229,7 @@ class TestGitHubRestackPR(BaseTest):
             Base PR header has been removed from the description of PR #15
             """
         )
-        pr = self.github_api_state_for_test_restack_pr.get_pull_by_number(15)
+        pr = github_api_state.get_pull_by_number(15)
         assert pr is not None
         assert pr['draft'] is False
         assert pr['base']['ref'] == 'master'
@@ -232,7 +237,7 @@ class TestGitHubRestackPR(BaseTest):
     def test_github_restack_pr_branch_no_behind(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_restack_pr))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_restack_pr()))
 
         (
             self.repo_sandbox.new_branch("master")
@@ -262,7 +267,8 @@ class TestGitHubRestackPR(BaseTest):
     def test_github_restack_pr_branch_diverged_and_older(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_restack_pr))
+        github_api_state = self.github_api_state_for_test_restack_pr()
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
         (
             self.repo_sandbox.new_branch("master")
@@ -290,7 +296,7 @@ class TestGitHubRestackPR(BaseTest):
             Base PR header has been removed from the description of PR #15
             """
         )
-        pr = self.github_api_state_for_test_restack_pr.get_pull_by_number(15)
+        pr = github_api_state.get_pull_by_number(15)
         assert pr is not None
         assert pr['draft'] is False
         assert pr['base']['ref'] == 'master'

@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.20.1
+
 ## New in git-machete 3.20.0
 
 - added: `git machete github create-pr` adds a comment linking the PR to its base PR; `github retarget-pr` keeps that comment up to date (suggested by @guyboltonking)

@@ -10,16 +10,18 @@ from tests.mockers_github import (MockGitHubAPIState,
 
 class TestGitHubAnnoPRs(BaseTest):
 
-    github_api_state_for_test_anno_prs = MockGitHubAPIState(
-        mock_pr_json(number=3, user='some_other_user', head='ignore-trailing', base='hotfix/add-trigger'),
-        mock_pr_json(number=7, user='some_other_user', head='allow-ownership-link', base='develop'),
-        mock_pr_json(number=31, user='github_user', head='call-ws', base='develop'),
-        mock_pr_json(number=37, user='github_user', head='develop', base='master')
-    )
+    @staticmethod
+    def github_api_state_for_test_anno_prs() -> MockGitHubAPIState:
+        return MockGitHubAPIState(
+            mock_pr_json(number=3, user='some_other_user', head='ignore-trailing', base='hotfix/add-trigger'),
+            mock_pr_json(number=7, user='some_other_user', head='allow-ownership-link', base='develop'),
+            mock_pr_json(number=31, user='github_user', head='call-ws', base='develop'),
+            mock_pr_json(number=37, user='github_user', head='develop', base='master')
+        )
 
     def test_github_anno_prs(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_anno_prs))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_anno_prs()))
 
         (
             self.repo_sandbox.new_branch("root")
@@ -131,14 +133,16 @@ class TestGitHubAnnoPRs(BaseTest):
             """,
         )
 
-    github_api_state_for_test_local_branch_name_different_than_tracking_branch_name = MockGitHubAPIState(
-        mock_pr_json(head='feature_repo', base='root', number=15),
-        mock_pr_json(head='feature_1', base='feature_repo', number=20)
-    )
+    @staticmethod
+    def github_api_state_for_test_local_branch_name_different_than_tracking_branch_name() -> MockGitHubAPIState:
+        return MockGitHubAPIState(
+            mock_pr_json(head='feature_repo', base='root', number=15),
+            mock_pr_json(head='feature_1', base='feature_repo', number=20)
+        )
 
     def test_github_anno_prs_local_branch_name_different_than_tracking_branch_name(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'urllib.request.urlopen',
-                          mock_urlopen(self.github_api_state_for_test_local_branch_name_different_than_tracking_branch_name))
+                          mock_urlopen(self.github_api_state_for_test_local_branch_name_different_than_tracking_branch_name()))
 
         (
             self.repo_sandbox.new_branch("root")

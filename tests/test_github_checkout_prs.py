@@ -15,23 +15,25 @@ from tests.mockers_github import (MockGitHubAPIState, mock_from_url,
 
 
 class TestGitHubCheckoutPRs(BaseTest):
-    github_api_state_for_test_checkout_prs = MockGitHubAPIState(
-        mock_pr_json(head='chore/redundant_checks', base='restrict_access', number=18),
-        mock_pr_json(head='restrict_access', base='allow-ownership-link', number=17),
-        mock_pr_json(head='allow-ownership-link', base='bugfix/feature', number=12),
-        mock_pr_json(head='bugfix/feature', base='enhance/feature', number=6),
-        mock_pr_json(head='enhance/add_user', base='develop', number=19),
-        mock_pr_json(head='testing/add_user', base='bugfix/add_user', number=22),
-        mock_pr_json(head='chore/comments', base='testing/add_user', number=24),
-        mock_pr_json(head='ignore-trailing', base='hotfix/add-trigger', number=3),
-        mock_pr_json(head='bugfix/remove-n-option', base='develop', number=5, state='closed',
-                     repo={'full_name': 'tester/repo_sandbox', 'html_url': GitRepositorySandbox.second_remote_path})
-    )
+    @staticmethod
+    def github_api_state_for_test_checkout_prs() -> MockGitHubAPIState:
+        return MockGitHubAPIState(
+            mock_pr_json(head='chore/redundant_checks', base='restrict_access', number=18),
+            mock_pr_json(head='restrict_access', base='allow-ownership-link', number=17),
+            mock_pr_json(head='allow-ownership-link', base='bugfix/feature', number=12),
+            mock_pr_json(head='bugfix/feature', base='enhance/feature', number=6),
+            mock_pr_json(head='enhance/add_user', base='develop', number=19),
+            mock_pr_json(head='testing/add_user', base='bugfix/add_user', number=22),
+            mock_pr_json(head='chore/comments', base='testing/add_user', number=24),
+            mock_pr_json(head='ignore-trailing', base='hotfix/add-trigger', number=3),
+            mock_pr_json(head='bugfix/remove-n-option', base='develop', number=5, state='closed',
+                         repo={'full_name': 'tester/repo_sandbox', 'html_url': GitRepositorySandbox.second_remote_path})
+        )
 
     def test_github_checkout_prs(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_checkout_prs))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_checkout_prs()))
 
         (
             self.repo_sandbox.new_branch("root")
@@ -279,17 +281,19 @@ class TestGitHubCheckoutPRs(BaseTest):
         expected_msg = 'Checking for open GitHub PRs... OK\n'
         assert_success(['github', 'checkout-prs', '3', '12'], expected_msg)
 
-    github_api_state_for_test_github_checkout_prs_fresh_repo = MockGitHubAPIState(
-        mock_pr_json(head='comments/add_docstrings', base='improve/refactor', number=2),
-        mock_pr_json(head='restrict_access', base='allow-ownership-link', number=17),
-        mock_pr_json(head='improve/refactor', base='chore/sync_to_docs', number=1),
-        mock_pr_json(head='sphinx_export', base='comments/add_docstrings', number=23, state='closed',
-                     repo={'full_name': 'tester/repo_sandbox', 'html_url': GitRepositorySandbox.second_remote_path})
-    )
+    @staticmethod
+    def github_api_state_for_test_github_checkout_prs_fresh_repo() -> MockGitHubAPIState:
+        return MockGitHubAPIState(
+            mock_pr_json(head='comments/add_docstrings', base='improve/refactor', number=2),
+            mock_pr_json(head='restrict_access', base='allow-ownership-link', number=17),
+            mock_pr_json(head='improve/refactor', base='chore/sync_to_docs', number=1),
+            mock_pr_json(head='sphinx_export', base='comments/add_docstrings', number=23, state='closed',
+                         repo={'full_name': 'tester/repo_sandbox', 'html_url': GitRepositorySandbox.second_remote_path})
+        )
 
     def test_github_checkout_prs_freshly_cloned(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_github_checkout_prs_fresh_repo))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_github_checkout_prs_fresh_repo()))
 
         (
             self.repo_sandbox.new_branch("root")
@@ -384,16 +388,18 @@ class TestGitHubCheckoutPRs(BaseTest):
             """
         )
 
-    github_api_state_for_test_github_checkout_prs_from_fork_with_deleted_repo = MockGitHubAPIState(
-        mock_pr_json(head='feature/allow_checkout', base='develop', number=2, repo=None, state='closed'),
-        mock_pr_json(head='bugfix/allow_checkout', base='develop', number=3)
-    )
+    @staticmethod
+    def github_api_state_for_test_github_checkout_prs_from_fork_with_deleted_repo() -> MockGitHubAPIState:
+        return MockGitHubAPIState(
+            mock_pr_json(head='feature/allow_checkout', base='develop', number=2, repo=None, state='closed'),
+            mock_pr_json(head='bugfix/allow_checkout', base='develop', number=3)
+        )
 
     def test_github_checkout_prs_from_fork_with_deleted_repo(self, mocker: MockerFixture) -> None:
         # need to mock fetch_ref due to underlying `git fetch pull/head` calls
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen',
-                          mock_urlopen(self.github_api_state_for_test_github_checkout_prs_from_fork_with_deleted_repo))
+                          mock_urlopen(self.github_api_state_for_test_github_checkout_prs_from_fork_with_deleted_repo()))
 
         (
             self.repo_sandbox.new_branch("root")
@@ -430,24 +436,26 @@ class TestGitHubCheckoutPRs(BaseTest):
              "the head branch of given pull request."
              )
 
-    github_api_state_for_test_github_checkout_prs_of_current_user_and_other_users = MockGitHubAPIState(
-        mock_pr_json(head='chore/redundant_checks', base='restrict_access', number=18),
-        mock_pr_json(head='restrict_access', base='allow-ownership-link', number=17, user='github_user'),
-        mock_pr_json(head='allow-ownership-link', base='bugfix/feature', number=12),
-        mock_pr_json(head='bugfix/feature', base='enhance/feature', number=6, user='github_user'),
-        mock_pr_json(head='enhance/add_user', base='develop', number=19),
-        mock_pr_json(head='testing/add_user', base='bugfix/add_user', number=22, user='github_user'),
-        mock_pr_json(head='chore/comments', base='testing/add_user', number=24),
-        mock_pr_json(head='ignore-trailing', base='hotfix/add-trigger', number=3, user='github_user'),
-        mock_pr_json(head='bugfix/remove-n-option', base='develop', number=5, state='closed',
-                     repo={'full_name': 'tester/repo_sandbox', 'html_url': GitRepositorySandbox.second_remote_path})
-    )
+    @staticmethod
+    def github_api_state_for_test_github_checkout_prs_of_current_user_and_other_users() -> MockGitHubAPIState:
+        return MockGitHubAPIState(
+            mock_pr_json(head='chore/redundant_checks', base='restrict_access', number=18),
+            mock_pr_json(head='restrict_access', base='allow-ownership-link', number=17, user='github_user'),
+            mock_pr_json(head='allow-ownership-link', base='bugfix/feature', number=12),
+            mock_pr_json(head='bugfix/feature', base='enhance/feature', number=6, user='github_user'),
+            mock_pr_json(head='enhance/add_user', base='develop', number=19),
+            mock_pr_json(head='testing/add_user', base='bugfix/add_user', number=22, user='github_user'),
+            mock_pr_json(head='chore/comments', base='testing/add_user', number=24),
+            mock_pr_json(head='ignore-trailing', base='hotfix/add-trigger', number=3, user='github_user'),
+            mock_pr_json(head='bugfix/remove-n-option', base='develop', number=5, state='closed',
+                         repo={'full_name': 'tester/repo_sandbox', 'html_url': GitRepositorySandbox.second_remote_path})
+        )
 
     def test_github_checkout_prs_of_current_user_and_other_users(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'urllib.request.urlopen',
-                          mock_urlopen(self.github_api_state_for_test_github_checkout_prs_of_current_user_and_other_users))
+                          mock_urlopen(self.github_api_state_for_test_github_checkout_prs_of_current_user_and_other_users()))
 
         (
             self.repo_sandbox.new_branch("root")
@@ -634,14 +642,16 @@ class TestGitHubCheckoutPRs(BaseTest):
             """
         )
 
-    github_api_state_for_test_github_checkout_prs_single_pr = MockGitHubAPIState(
-        mock_pr_json(head='develop', base='master', number=18)
-    )
+    @staticmethod
+    def github_api_state_for_test_github_checkout_prs_single_pr() -> MockGitHubAPIState:
+        return MockGitHubAPIState(
+            mock_pr_json(head='develop', base='master', number=18)
+        )
 
     def test_github_checkout_prs_remote_already_added(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.git_operations.GitContext.fetch_remote', lambda _self, _remote: None)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(
-            self.github_api_state_for_test_github_checkout_prs_single_pr))
+            self.github_api_state_for_test_github_checkout_prs_single_pr()))
         (
             self.repo_sandbox
             .remove_remote("origin")
@@ -665,7 +675,7 @@ class TestGitHubCheckoutPRs(BaseTest):
     def test_github_checkout_prs_org_and_repo_from_config(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.git_operations.GitContext.fetch_remote', lambda _self, _remote: None)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(
-            self.github_api_state_for_test_github_checkout_prs_single_pr))
+            self.github_api_state_for_test_github_checkout_prs_single_pr()))
 
         (
             self.repo_sandbox
@@ -685,7 +695,7 @@ class TestGitHubCheckoutPRs(BaseTest):
     def test_github_checkout_prs_remote_from_config(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.git_operations.GitContext.fetch_remote', lambda _self, _remote: None)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(
-            self.github_api_state_for_test_github_checkout_prs_single_pr))
+            self.github_api_state_for_test_github_checkout_prs_single_pr()))
 
         (
             self.repo_sandbox
