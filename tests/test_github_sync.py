@@ -70,7 +70,6 @@ class TestGitHubSync(BaseTest):
 
         expected_status_output = (
             """
-            Warning: sliding invalid branches: bar2, foo2, moo2 out of the branch layout file
               master
               |
               o-bar (untracked)

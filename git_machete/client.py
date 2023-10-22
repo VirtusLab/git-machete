@@ -2743,15 +2743,21 @@ class MacheteClient:
     def delete_untracked(self, opt_yes: bool) -> None:
         print(bold('Checking for untracked managed branches with no downstream...'))
         branches_to_delete: List[LocalBranchShortName] = []
-        # TODO (#453): Consider switching to immutable collections for keeping the state (managed_branches etc.).
-        for managed_branch in self.managed_branches.copy():
-            status, _ = self.__git.get_combined_remote_sync_status(managed_branch)
-            if status == SyncToRemoteStatuses.UNTRACKED:
-                if not self.__down_branches.get(managed_branch):
-                    branches_to_delete.append(managed_branch)
-                    self.managed_branches.remove(managed_branch)
-                    if managed_branch in self.__up_branch:
-                        del self.__up_branch[managed_branch]
+        for branch in self.managed_branches.copy():
+            status, _ = self.__git.get_combined_remote_sync_status(branch)
+            if status == SyncToRemoteStatuses.UNTRACKED and not self.__down_branches.get(branch):
+                branches_to_delete.append(branch)
+                self.managed_branches.remove(branch)
+                if branch in self.__annotations:
+                    del self.__annotations[branch]
+                if branch in self.__up_branch:
+                    upstream = self.__up_branch[branch]
+                    del self.__up_branch[branch]
+                    self.__down_branches[upstream] = [
+                        b for b in (self.__down_branches.get(upstream) or []) if b != branch
+                    ]
+                else:
+                    self.__roots.remove(branch)
 
         self.__delete_branches(branches_to_delete=branches_to_delete, opt_yes=opt_yes)
         self.save_branch_layout_file()

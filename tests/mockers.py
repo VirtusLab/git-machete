@@ -73,6 +73,11 @@ def assert_failure(cmds: Iterable[str], expected_result: str, expected_exception
     assert error_message == expected_result
 
 
+def read_branch_layout_file() -> str:
+    with open(".git/machete") as def_file:
+        return def_file.read()
+
+
 def rewrite_branch_layout_file(new_body: str) -> None:
     new_body = textwrap.dedent(new_body)
     with open(".git/machete", 'w') as def_file:
