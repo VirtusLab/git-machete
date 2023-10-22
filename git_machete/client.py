@@ -269,10 +269,21 @@ class MacheteClient:
                 if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
                     # If `--onto` hasn't been explicitly specified, let's try to
                     # assess if the current branch would be a good `onto`.
-                    if self.__roots and not opt_onto:
+                    if not opt_onto:
                         current_branch = self.__git.get_current_branch_or_none()
-                        if current_branch and current_branch in self.managed_branches:
-                            opt_onto = current_branch
+                        if self.__roots:
+                            if current_branch and current_branch in self.managed_branches:
+                                opt_onto = current_branch
+                        else:
+                            if current_branch:
+                                # In this case (empty .git/machete, creating a new branch with `git machete add`)
+                                # it's usually pretty obvious that the current branch needs to be added as root first.
+                                # Let's skip interactive questions so as not to confuse new users.
+                                self.__roots = [current_branch]
+                                self.__managed_branches = [current_branch]
+                                if verbose:
+                                    print(fmt(f"Added branch {bold(current_branch)} as a new root"))
+                                opt_onto = current_branch
                     self.__git.create_branch(branch, out_of, switch_head=switch_head_if_new_branch)
                 else:
                     return

@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.22.0
 
+- fixed: if `.git/machete` doesn't exist, `git machete add <branch>` adds both current branch and the newly-added `<branch>` (not just the latter)
+
 ## New in git-machete 3.21.0
 
 - added: `--removed-from-remote` flag to `git machete slide-out` (contributed by @raylu)

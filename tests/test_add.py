@@ -2,7 +2,8 @@ from pytest_mock import MockerFixture
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, mock_input_returning,
-                      mock_input_returning_y, rewrite_branch_layout_file)
+                      mock_input_returning_y, read_branch_layout_file,
+                      rewrite_branch_layout_file)
 
 
 class TestAdd(BaseTest):
@@ -87,7 +88,8 @@ class TestAdd(BaseTest):
         assert_success(
             ['add', '-y', 'foo'],
             'A local branch foo does not exist. Creating out of the current HEAD\n'
-            'Added branch foo as a new root\n'
+            'Added branch master as a new root\n'
+            'Added branch foo onto master\n'
         )
 
         self.patch_symbol(mocker, "builtins.input", mock_input_returning("n"))
@@ -168,6 +170,30 @@ class TestAdd(BaseTest):
             "Branch foo not found in the tree of branch dependencies.\n"
             "Use git machete add foo or git machete edit."
         )
+
+    def test_add_new_branch_onto_master_for_fresh_start_with_yes(self) -> None:
+        self.repo_sandbox.new_branch("master").commit("master commit.")
+        assert_success(
+            ['add', '--yes', 'foo'],
+            """
+            A local branch foo does not exist. Creating out of the current HEAD
+            Added branch master as a new root
+            Added branch foo onto master
+            """)
+        assert read_branch_layout_file() == "master\n  foo\n"
+
+    def test_add_new_branch_onto_master_for_fresh_start_without_yes(self, mocker: MockerFixture) -> None:
+        self.repo_sandbox.new_branch("master").commit("master commit.")
+
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning_y)
+        assert_success(
+            ['add', 'foo'],
+            """
+            A local branch foo does not exist. Create out of the current HEAD? (y, N)
+            Added branch master as a new root
+            Added branch foo onto master
+            """)
+        assert read_branch_layout_file() == "master\n  foo\n"
 
     def test_add_as_root_with_onto(self) -> None:
         assert_failure(
