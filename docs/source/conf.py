@@ -37,6 +37,9 @@ html_theme_options = {
         "image_dark": "../../graphics/logo/svg/512x512-dark.svg",
         "text": "git-machete v" + release,
     },
+    # See https://github.com/pydata/pydata-sphinx-theme/issues/1492.
+    # Mostly added to avoid a warning coming from pydata-sphinx-theme==0.14.2.
+    "navigation_with_keys": False,
 }
 
 # To make sure the dark logo is included in _static/ directory in the generated docs
