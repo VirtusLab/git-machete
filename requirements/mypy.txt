@@ -1,6 +1,6 @@
 mypy==0.971; python_version <= '3.6'
 mypy==1.4.1; python_version >= '3.7' and python_version < '3.8'
-mypy==1.6.1; python_version >= '3.8'
+mypy==1.7.0; python_version >= '3.8'
 
 pytest==7.0.1; python_version <= '3.6'
 pytest==7.4.3; python_version >= '3.7'
