@@ -25,6 +25,7 @@ short_docs: Dict[str, str] = {
     "is-managed": "Check if the current branch is managed by git machete (mostly for scripts)",
     "list": "List all branches that fall into one of pre-defined categories (mostly for internal use)",
     "log": "Log the part of history specific to the given branch",
+    "prune": "Delete local branches that have been deleted remotely",
     "reapply": "Rebase the current branch onto its computed fork point",
     "show": "Show name(s) of the branch(es) relative to the position of a branch, accepts down/first/last/next/root/prev/up argument",
     "slide-out": "Slide out the current branch and sync its downstream (child) branches with its upstream (parent) branch via rebase or merge",
@@ -816,6 +817,23 @@ long_docs: Dict[str, str] = {
         See help for `fork-point` for more details on meaning of the fork point.
 
         Note: the branch in question does not need to occur in the branch layout file.
+   """,
+    "prune": """
+        <b>Usage:</b><b>
+           git machete prune [-y|--yes]</b>
+
+        Delete managed branches whose remote tracking branches have been deleted and have no downstreams.
+        In other words, this deletes all branches except
+           * those that are unmanaged,
+           * those that have no remote tracking branch set (unpushed),
+           * those whose remote tracking branches still exist (not deleted remotely),
+           * those that have a downstream branch (are still part of a stack).
+
+        No branch will be deleted unless explicitly confirmed by the user (or unless `-y/--yes` option is passed).
+
+        <b>Options:</b>
+           <b>-y</b>, <b>--yes</b>
+              Don't ask for confirmation when deleting branches from git.
    """,
     "reapply": """
         <b>Usage:</b><b>
