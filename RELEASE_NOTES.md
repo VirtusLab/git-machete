@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.21.0
+
+- improved: `git machete github anno-prs` adds the URL of the PR
+
 ## New in git-machete 3.20.1
 
 - fixed: `git machete clean` and `git machete github sync` not only delete untracked branches, but also actually slide them out of branch layout
