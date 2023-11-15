@@ -39,7 +39,7 @@ command_groups: List[Tuple[str, List[str]]] = [
     ("Build, display and modify the tree of branch dependencies",
      ["add", "anno", "discover", "edit", "status"]),
     ("List, check out and delete branches",
-     ["delete-unmanaged", "go", "is-managed", "list", "show"]),
+     ["clean", "delete-unmanaged", "go", "is-managed", "list", "prune", "show"]),
     ("Determine changes specific to the given branch",
      ["diff", "fork-point", "log"]),
     ("Update git history in accordance with the tree of branch dependencies",
@@ -296,6 +296,13 @@ def create_cli_parser() -> argparse.ArgumentParser:
         add_help=False,
         parents=[common_args_parser])
     log_parser.add_argument('branch', nargs='?', default=argparse.SUPPRESS)
+
+    prune_parser = subparsers.add_parser(
+        'prune',
+        usage=argparse.SUPPRESS,
+        add_help=False,
+        parents=[common_args_parser])
+    prune_parser.add_argument('-y', '--yes', action='store_true', default=argparse.SUPPRESS)
 
     reapply_parser = subparsers.add_parser(
         'reapply',
@@ -763,6 +770,9 @@ def launch(orig_args: List[str]) -> None:
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             branch = get_local_branch_short_name_from_arg_or_current_branch(cli_opts.opt_branch, git)
             machete_client.log(branch)
+        elif cmd == "prune":
+            machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
+            machete_client.prune(opt_yes=cli_opts.opt_yes)
         elif cmd == "reapply":
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             git.expect_no_operation_in_progress()
