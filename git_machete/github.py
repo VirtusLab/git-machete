@@ -45,7 +45,7 @@ class GitHubPullRequest(NamedTuple):
     def annotation(self, current_user: Optional[str]) -> str:
         anno = f"PR #{self.number}"
         if current_user != self.user:
-            anno += f" {self.user}"
+            anno += f" ({self.user})"
         anno += f" {self.html_url}"
         return anno
 
