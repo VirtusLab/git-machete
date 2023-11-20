@@ -39,7 +39,7 @@ command_groups: List[Tuple[str, List[str]]] = [
     ("Build, display and modify the tree of branch dependencies",
      ["add", "anno", "discover", "edit", "status"]),
     ("List, check out and delete branches",
-     ["clean", "delete-unmanaged", "go", "is-managed", "list", "prune", "show"]),
+     ["delete-unmanaged", "go", "is-managed", "list", "prune", "show"]),
     ("Determine changes specific to the given branch",
      ["diff", "fork-point", "log"]),
     ("Update git history in accordance with the tree of branch dependencies",
