@@ -198,7 +198,7 @@ class GitContext:
         self.__is_equivalent_tree_reachable_cached: Dict[Tuple[FullCommitHash, FullCommitHash], bool] = {}
         self.__local_branches_cached: Optional[List[LocalBranchShortName]] = None
         self.__merge_base_cached: Dict[Tuple[FullCommitHash, FullCommitHash], Optional[FullCommitHash]] = {}
-        self.__missing_tracking_branch: Optional[set[str]] = None
+        self.__missing_tracking_branch: Optional[Set[str]] = None
         self.__reflogs_cached: Optional[Dict[AnyBranchName, List[GitReflogEntry]]] = None
         self.__remaining_log_hashes_cached: Dict[FullCommitHash, List[FullCommitHash]] = {}
         self.__remote_branches_cached: Optional[List[RemoteBranchShortName]] = None
