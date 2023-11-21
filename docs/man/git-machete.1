@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Nov 17, 2023" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Nov 21, 2023" "" "git-machete"
 .SH NAME
 git-machete \- git-machete 3.20.1
 .sp
@@ -97,8 +97,6 @@ git machete commands and help topics:
 \fI\%list\fP             \-\- List all branches that fall into one of pre\-defined categories (mostly for internal use)
 .IP \(bu 2
 \fI\%log\fP              \-\- Log the part of history specific to the given branch
-.IP \(bu 2
-\fI\%prune\fP            \-\- Delete local branches that have been deleted remotely
 .IP \(bu 2
 \fI\%reapply\fP          \-\- Rebase the current branch onto its computed fork point
 .IP \(bu 2
@@ -1415,45 +1413,6 @@ Runs \fBgit log\fP for the range of commits from tip of the given branch (or cur
 See help for \fI\%fork\-point\fP for more details on meaning of the \fIfork point\fP\&.
 .sp
 Note: the branch in question does not need to occur in the branch layout file.
-.SH PRUNE
-.sp
-\fBUsage:\fP
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-git machete prune [\-y|\-\-yes]
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.sp
-Delete managed branches whose remote tracking branches have been deleted and have no downstreams.
-In other words, this deletes all branches except
-.INDENT 0.0
-.INDENT 3.5
-.INDENT 0.0
-.IP 1. 3
-those that are unmanaged,
-.IP 2. 3
-those that have no remote tracking branch set (unpushed),
-.IP 3. 3
-those whose remote tracking branches still exist (not deleted remotely),
-.IP 4. 3
-those that have a downstream branch (are still part of a stack).
-.UNINDENT
-.UNINDENT
-.UNINDENT
-.sp
-No branch will be deleted unless explicitly confirmed by the user (or unless \fB\-y/\-\-yes\fP option is passed).
-.sp
-\fBOptions:\fP
-.INDENT 0.0
-.TP
-.B  \-y\fP,\fB  \-\-yes
-Don\(aqt ask for confirmation when deleting branches from git.
-.UNINDENT
 .SH REAPPLY
 .sp
 \fBUsage:\fP
@@ -1544,13 +1503,15 @@ since all branches are usually meant to be ultimately merged to one of those.
 .sp
 .nf
 .ft C
-git machete slide\-out [\-d|\-\-down\-fork\-point=<down\-fork\-point\-commit>] [\-\-delete] [\-M|\-\-merge] [\-n|\-\-no\-edit\-merge|\-\-no\-interactive\-rebase] [<branch> [<branch> [<branch> ...]]]
+git machete slide\-out [\-d|\-\-down\-fork\-point=<down\-fork\-point\-commit>] [\-\-delete] [\-\-all\-merged] [\-M|\-\-merge] [\-n|\-\-no\-edit\-merge|\-\-no\-interactive\-rebase] [<branch> [<branch> [<branch> ...]]]
 .ft P
 .fi
 .UNINDENT
 .UNINDENT
 .sp
-Removes the given branch (or multiple branches) from the branch layout. If no branch has been specified, current branch is removed.
+Removes the given branch (or multiple branches) from the branch layout.
+If no branch has been specified, current branch is removed.
+If \-\-all\-merged is specified, all branches that have been deleted remotely are removed.
 Then synchronizes the downstream (child) branches of the last specified branch on the top of the upstream (parent) branch of the first specified branch.
 Sync is performed either by rebase (default) or by merge (if \fB\-\-merge\fP option passed).
 .sp
@@ -1615,6 +1576,14 @@ Not allowed if updating by merge.
 .TP
 .B  \-\-delete
 Delete the slid\-out branches.
+.TP
+.B  \-\-all\-merged
+Delete managed branches whose remote tracking branches have been deleted and that have no downstreams.
+In other words, this deletes all branches except
+1. those that are unmanaged,
+2. those that have no remote tracking branch set (unpushed),
+3. those whose remote tracking branches still exist (not deleted remotely),
+4. those that have a downstream branch (are still part of a stack).
 .TP
 .B  \-M\fP,\fB  \-\-merge
 Update the downstream branch by merge rather than by rebase.

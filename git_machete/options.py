@@ -7,6 +7,7 @@ from .git_operations import AnyBranchName, AnyRevision, LocalBranchShortName
 class CommandLineOptions:
 
     def __init__(self) -> None:
+        self.opt_all_merged: bool = False
         self.opt_as_root: bool = False
         self.opt_branch: Optional[AnyBranchName] = None
         self.opt_checked_out_since: Optional[str] = None
@@ -57,3 +58,7 @@ class CommandLineOptions:
             raise MacheteException(
                 "Option `-f/--fork-point` only makes sense when using rebase and"
                 " cannot be specified together with `-M/--merge`.")
+
+    def __repr__(self) -> str:
+        attrs = ", ".join(f"{k}={v!r}" for k, v in self.__dict__.items())
+        return f"{self.__class__.__module__}.{self.__class__.__qualname__}({attrs})"
