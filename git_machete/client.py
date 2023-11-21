@@ -1182,23 +1182,6 @@ class MacheteClient:
         branches_to_delete = excluding(self.__git.get_local_branches(), self.managed_branches)
         self.__delete_branches(branches_to_delete=branches_to_delete, opt_yes=opt_yes)
 
-    def __delete_branches_rearrange_layout(self, branches_to_delete: List[LocalBranchShortName], opt_yes: bool) -> None:
-        for branch in branches_to_delete:
-            self.managed_branches.remove(branch)
-            if branch in self.__annotations:
-                del self.__annotations[branch]
-            if branch in self.__up_branch:
-                upstream = self.__up_branch[branch]
-                del self.__up_branch[branch]
-                self.__down_branches[upstream] = [
-                    b for b in (self.__down_branches.get(upstream) or []) if b != branch
-                ]
-            else:
-                self.__roots.remove(branch)
-
-        self.__delete_branches(branches_to_delete, opt_yes)
-        self.save_branch_layout_file()
-
     def __delete_branches(self, branches_to_delete: List[LocalBranchShortName], opt_yes: bool) -> None:
         current_branch = self.__git.get_current_branch_or_none()
         if current_branch and current_branch in branches_to_delete:
@@ -2765,16 +2748,35 @@ class MacheteClient:
             if status == SyncToRemoteStatuses.UNTRACKED and not self.__down_branches.get(branch):
                 branches_to_delete.append(branch)
 
-        self.__delete_branches_rearrange_layout(branches_to_delete, opt_yes)
+        self.__remove_branches_from_layout(branches_to_delete)
+        self.__delete_branches(branches_to_delete, opt_yes)
 
-    def prune(self, opt_yes: bool) -> None:
+    def slide_out_all_merged(self, opt_delete: bool) -> None:
         print(bold('Checking for managed branches with missing tracking branches and no downstream...'))
         branches_to_delete: List[LocalBranchShortName] = []
         for branch in self.managed_branches.copy():
             if self.__git.is_missing_tracking_branch(branch) and not self.__down_branches.get(branch):
                 branches_to_delete.append(branch)
 
-        self.__delete_branches_rearrange_layout(branches_to_delete, opt_yes)
+        self.__remove_branches_from_layout(branches_to_delete)
+        if opt_delete:
+            self.__delete_branches(branches_to_delete, opt_yes=True)
+
+    def __remove_branches_from_layout(self, branches_to_delete: List[LocalBranchShortName]) -> None:
+        for branch in branches_to_delete:
+            self.managed_branches.remove(branch)
+            if branch in self.__annotations:
+                del self.__annotations[branch]
+            if branch in self.__up_branch:
+                upstream = self.__up_branch[branch]
+                del self.__up_branch[branch]
+                self.__down_branches[upstream] = [
+                    b for b in (self.__down_branches.get(upstream) or []) if b != branch
+                ]
+            else:
+                self.__roots.remove(branch)
+
+        self.save_branch_layout_file()
 
     @staticmethod
     def is_stdout_a_tty() -> bool:

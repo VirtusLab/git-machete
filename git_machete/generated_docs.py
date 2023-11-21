@@ -25,7 +25,6 @@ short_docs: Dict[str, str] = {
     "is-managed": "Check if the current branch is managed by git machete (mostly for scripts)",
     "list": "List all branches that fall into one of pre-defined categories (mostly for internal use)",
     "log": "Log the part of history specific to the given branch",
-    "prune": "Delete local branches that have been deleted remotely",
     "reapply": "Rebase the current branch onto its computed fork point",
     "show": "Show name(s) of the branch(es) relative to the position of a branch, accepts down/first/last/next/root/prev/up argument",
     "slide-out": "Slide out the current branch and sync its downstream (child) branches with its upstream (parent) branch via rebase or merge",
@@ -818,23 +817,6 @@ long_docs: Dict[str, str] = {
 
         Note: the branch in question does not need to occur in the branch layout file.
    """,
-    "prune": """
-        <b>Usage:</b><b>
-           git machete prune [-y|--yes]</b>
-
-        Delete managed branches whose remote tracking branches have been deleted and have no downstreams.
-        In other words, this deletes all branches except
-           * those that are unmanaged,
-           * those that have no remote tracking branch set (unpushed),
-           * those whose remote tracking branches still exist (not deleted remotely),
-           * those that have a downstream branch (are still part of a stack).
-
-        No branch will be deleted unless explicitly confirmed by the user (or unless `-y/--yes` option is passed).
-
-        <b>Options:</b>
-           <b>-y</b>, <b>--yes</b>
-              Don't ask for confirmation when deleting branches from git.
-   """,
     "reapply": """
         <b>Usage:</b><b>
            git machete reapply [-f|--fork-point=<fork-point-commit>]</b>
@@ -882,9 +864,11 @@ long_docs: Dict[str, str] = {
    """,
     "slide-out": """
         <b>Usage:</b><b>
-           git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [--delete] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] [<branch> [<branch> [<branch> ...]]]</b>
+           git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [--delete] [--all-merged] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] [<branch> [<branch> [<branch> ...]]]</b>
 
-        Removes the given branch (or multiple branches) from the branch layout. If no branch has been specified, current branch is removed.
+        Removes the given branch (or multiple branches) from the branch layout.
+        If no branch has been specified, current branch is removed.
+        If --all-merged is specified, all branches that have been deleted remotely are removed.
         Then synchronizes the downstream (child) branches of the last specified branch on the top of the upstream (parent) branch of the first specified branch.
         Sync is performed either by rebase (default) or by merge (if `--merge` option passed).
 
@@ -924,6 +908,13 @@ long_docs: Dict[str, str] = {
               Not allowed if updating by merge.
            <b>--delete</b>
               Delete the slid-out branches.
+           <b>--all-merged</b>
+              Delete managed branches whose remote tracking branches have been deleted and that have no downstreams.
+              In other words, this deletes all branches except
+              1. those that are unmanaged,
+              2. those that have no remote tracking branch set (unpushed),
+              3. those whose remote tracking branches still exist (not deleted remotely),
+              4. those that have a downstream branch (are still part of a stack).
            <b>-M</b>, <b>--merge</b>
               Update the downstream branch by merge rather than by rebase.
            <b>-n</b>

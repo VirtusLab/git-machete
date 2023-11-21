@@ -6,9 +6,11 @@ slide-out
 
 .. code-block:: shell
 
-    git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [--delete] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] [<branch> [<branch> [<branch> ...]]]
+    git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [--delete] [--all-merged] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] [<branch> [<branch> [<branch> ...]]]
 
-Removes the given branch (or multiple branches) from the branch layout. If no branch has been specified, current branch is removed.
+Removes the given branch (or multiple branches) from the branch layout.
+If no branch has been specified, current branch is removed.
+If --all-merged is specified, all branches that have been deleted remotely are removed.
 Then synchronizes the downstream (child) branches of the last specified branch on the top of the upstream (parent) branch of the first specified branch.
 Sync is performed either by rebase (default) or by merge (if ``--merge`` option passed).
 
@@ -51,6 +53,13 @@ Note: This command doesn't delete any branches from git, just removes them from 
                                                   Not allowed if updating by merge.
 
 --delete                                          Delete the slid-out branches.
+
+--all-merged                                      Delete managed branches whose remote tracking branches have been deleted and that have no downstreams.
+                                                  In other words, this deletes all branches except
+                                                  1. those that are unmanaged,
+                                                  2. those that have no remote tracking branch set (unpushed),
+                                                  3. those whose remote tracking branches still exist (not deleted remotely),
+                                                  4. those that have a downstream branch (are still part of a stack).
 
 -M, --merge                                       Update the downstream branch by merge rather than by rebase.
 

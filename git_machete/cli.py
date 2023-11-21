@@ -39,7 +39,7 @@ command_groups: List[Tuple[str, List[str]]] = [
     ("Build, display and modify the tree of branch dependencies",
      ["add", "anno", "discover", "edit", "status"]),
     ("List, check out and delete branches",
-     ["delete-unmanaged", "go", "is-managed", "list", "prune", "show"]),
+     ["delete-unmanaged", "go", "is-managed", "list", "show"]),
     ("Determine changes specific to the given branch",
      ["diff", "fork-point", "log"]),
     ("Update git history in accordance with the tree of branch dependencies",
@@ -297,13 +297,6 @@ def create_cli_parser() -> argparse.ArgumentParser:
         parents=[common_args_parser])
     log_parser.add_argument('branch', nargs='?', default=argparse.SUPPRESS)
 
-    prune_parser = subparsers.add_parser(
-        'prune',
-        usage=argparse.SUPPRESS,
-        add_help=False,
-        parents=[common_args_parser])
-    prune_parser.add_argument('-y', '--yes', action='store_true', default=argparse.SUPPRESS)
-
     reapply_parser = subparsers.add_parser(
         'reapply',
         usage=argparse.SUPPRESS,
@@ -332,6 +325,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
     slide_out_parser.add_argument('branches', nargs='*')
     slide_out_parser.add_argument('-d', '--down-fork-point')
     slide_out_parser.add_argument('--delete', action='store_true')
+    slide_out_parser.add_argument('--all-merged', action='store_true')
     slide_out_parser.add_argument('-M', '--merge', action='store_true')
     slide_out_parser.add_argument('-n', action='store_true')
     slide_out_parser.add_argument('--no-edit-merge', action='store_true')
@@ -460,6 +454,8 @@ def update_cli_options_using_parsed_args(
             cli_opts.opt_override_to_inferred = True
         elif opt == "override_to_parent":
             cli_opts.opt_override_to_parent = True
+        elif opt == "all_merged":
+            cli_opts.opt_all_merged = True
         elif opt == "push":
             cli_opts.opt_push_tracked = True
             cli_opts.opt_push_untracked = True
@@ -770,9 +766,6 @@ def launch(orig_args: List[str]) -> None:
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             branch = get_local_branch_short_name_from_arg_or_current_branch(cli_opts.opt_branch, git)
             machete_client.log(branch)
-        elif cmd == "prune":
-            machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
-            machete_client.prune(opt_yes=cli_opts.opt_yes)
         elif cmd == "reapply":
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             git.expect_no_operation_in_progress()
@@ -794,14 +787,19 @@ def launch(orig_args: List[str]) -> None:
         elif cmd == "slide-out":
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             git.expect_no_operation_in_progress()
-            branches = parsed_cli_as_dict.get('branches', [git.get_current_branch()])
-            machete_client.slide_out(
-                branches_to_slide_out=list(map(LocalBranchShortName.of, branches)),
-                opt_delete=cli_opts.opt_delete,
-                opt_down_fork_point=cli_opts.opt_down_fork_point,
-                opt_merge=cli_opts.opt_merge,
-                opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
-                opt_no_edit_merge=cli_opts.opt_no_edit_merge)
+            if cli_opts.opt_all_merged:
+                if any(arg not in {'command', 'all_merged', 'delete'} for arg in parsed_cli_as_dict):
+                    raise MacheteException("Only --delete can be passed with --all-merged")
+                machete_client.slide_out_all_merged(opt_delete=cli_opts.opt_delete)
+            else:
+                branches = parsed_cli_as_dict.get('branches', [git.get_current_branch()])
+                machete_client.slide_out(
+                    branches_to_slide_out=list(map(LocalBranchShortName.of, branches)),
+                    opt_delete=cli_opts.opt_delete,
+                    opt_down_fork_point=cli_opts.opt_down_fork_point,
+                    opt_merge=cli_opts.opt_merge,
+                    opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
+                    opt_no_edit_merge=cli_opts.opt_no_edit_merge)
         elif cmd == "squash":
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             git.expect_no_operation_in_progress()
