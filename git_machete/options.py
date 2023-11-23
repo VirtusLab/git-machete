@@ -59,6 +59,6 @@ class CommandLineOptions:
                 "Option `-f/--fork-point` only makes sense when using rebase and"
                 " cannot be specified together with `-M/--merge`.")
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> str:  # pragma: no cover; debug only
         attrs = ", ".join(f"{k}={v!r}" for k, v in self.__dict__.items())
         return f"{self.__class__.__module__}.{self.__class__.__qualname__}({attrs})"

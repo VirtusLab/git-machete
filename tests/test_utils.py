@@ -1,12 +1,10 @@
 from git_machete import utils
+from git_machete.utils import hex_repr
 
 
 class TestUtils:
 
     def test_fmt(self) -> None:
-        """
-        Verify behaviour of a Utils fmt() function
-        """
 
         utils.ascii_only = False
         utils.AnsiEscapeCodes.UNDERLINE = '\033[4m'
@@ -20,3 +18,6 @@ class TestUtils:
         ansi_string = utils.fmt(input_string)
 
         assert ansi_string == expected_ansi_string
+
+    def test_hex_repr(self) -> None:
+        assert hex_repr("Hello, world!") == "48:65:6c:6c:6f:2c:20:77:6f:72:6c:64:21"

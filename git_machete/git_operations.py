@@ -10,9 +10,9 @@ from typing import (Any, Dict, Iterator, List, Match, NamedTuple, Optional,
 from . import utils
 from .constants import (MAX_COUNT_FOR_INITIAL_LOG, GitFormatPatterns,
                         SyncToRemoteStatuses)
-from .exceptions import UnderlyingGitException, MacheteException
+from .exceptions import MacheteException, UnderlyingGitException
 from .utils import (GITHUB_NEW_ISSUE_MESSAGE, AnsiEscapeCodes, CommandResult,
-                    colored, debug, fmt)
+                    colored, debug, fmt, hex_repr)
 
 
 class AnyRevision(str):
@@ -538,7 +538,9 @@ class GitContext:
         for line in raw_remote:
             values = line.split("\t")
             if len(values) != 4:
-                raise MacheteException(f"`git for-each-ref` returned more than 4 values for `refs/remotes`: {values}\n\n" + GITHUB_NEW_ISSUE_MESSAGE)  # pragma: no cover
+                raise MacheteException(
+                    "`git for-each-ref` returned more than 4 values for `refs/remotes`: "
+                    f"{values} ({hex_repr(line)})\n\n" + GITHUB_NEW_ISSUE_MESSAGE)  # pragma: no cover
             branch, commit_hash, tree_hash, committer_unix_timestamp_and_time_zone = values
             b_stripped_remote = RemoteBranchFullName.of(branch).to_short_name()
             self.__remote_branches_cached += [b_stripped_remote]
@@ -554,7 +556,9 @@ class GitContext:
         for line in raw_local:
             values = line.split("\t")
             if len(values) != 5:
-                raise MacheteException(f"`git for-each-ref` returned more than 5 values for `refs/heads`: {values}\n\n" + GITHUB_NEW_ISSUE_MESSAGE)  # pragma: no cover
+                raise MacheteException(
+                    "`git for-each-ref` returned more than 5 values for `refs/heads`: "
+                    f"{values} ({hex_repr(line)})\n\n" + GITHUB_NEW_ISSUE_MESSAGE)  # pragma: no cover
             branch, commit_hash, tree_hash, committer_unix_timestamp_and_time_zone, fetch_counterpart = values
             b_stripped_local = LocalBranchFullName.of(branch).to_short_name()
             # fetch_counterpart might be empty, or might even point to a local branch

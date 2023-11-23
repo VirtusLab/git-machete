@@ -27,9 +27,9 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Nov 21, 2023" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Nov 23, 2023" "" "git-machete"
 .SH NAME
-git-machete \- git-machete 3.20.1
+git-machete \- git-machete 3.21.0
 .sp
 git machete is a robust tool that \fBsimplifies your git workflows\fP\&.
 .sp
@@ -1503,16 +1503,19 @@ since all branches are usually meant to be ultimately merged to one of those.
 .sp
 .nf
 .ft C
-git machete slide\-out [\-d|\-\-down\-fork\-point=<down\-fork\-point\-commit>] [\-\-delete] [\-\-all\-merged] [\-M|\-\-merge] [\-n|\-\-no\-edit\-merge|\-\-no\-interactive\-rebase] [<branch> [<branch> [<branch> ...]]]
+git machete slide\-out \-\-all\-merged [\-\-delete]
+git machete slide\-out [\-d|\-\-down\-fork\-point=<down\-fork\-point\-commit>] [\-\-delete] [\-M|\-\-merge] [\-n|\-\-no\-edit\-merge|\-\-no\-interactive\-rebase] [<branch> [<branch> [<branch> ...]]]
 .ft P
 .fi
 .UNINDENT
 .UNINDENT
 .sp
 Removes the given branch (or multiple branches) from the branch layout.
-If no branch has been specified, current branch is removed.
-If \-\-all\-merged is specified, all branches that have been deleted remotely are removed.
-Then synchronizes the downstream (child) branches of the last specified branch on the top of the upstream (parent) branch of the first specified branch.
+If no branch has been specified, current branch is slid out.
+If \fB\-\-all\-merged\fP is specified, all branches that have been removed from the remote are slid out instead.
+.sp
+Also, if the last branch in the specified chain of \fB[<branch> [<branch>]]\fP had any children,
+these children are synced to the parent of the first specified branch.
 Sync is performed either by rebase (default) or by merge (if \fB\-\-merge\fP option passed).
 .sp
 For example, let\(aqs assume the following dependency tree:
@@ -1563,10 +1566,28 @@ all provided branches must have an upstream branch (so, in other words, roots of
 .UNINDENT
 .UNINDENT
 .sp
-Note: This command doesn\(aqt delete any branches from git, just removes them from the tree of branch dependencies.
+Note: Unless \fB\-\-delete\fP is passed, this command doesn\(aqt delete any branches from git, just removes them from the tree of branch dependencies.
 .sp
 \fBOptions:\fP
 .INDENT 0.0
+.TP
+.B  \-\-all\-merged
+Slide out managed branches whose remote tracking branches have been deleted and that have no downstreams.
+In other words, this deletes all branches except:
+.INDENT 7.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+those that are unmanaged,
+.IP \(bu 2
+those that have no remote tracking branch set (unpushed),
+.IP \(bu 2
+those whose remote tracking branches still exist (not deleted remotely),
+.IP \(bu 2
+those that have at least one downstream (child) branch.
+.UNINDENT
+.UNINDENT
+.UNINDENT
 .TP
 .BI \-d\fP,\fB  \-\-down\-fork\-point\fB= <down\-fork\-point\-commit>
 If updating by rebase, specifies the alternative fork point for downstream branches for the operation.
@@ -1575,15 +1596,7 @@ See also doc for \fB\-\-fork\-point\fP option in \fBgit machete help reapply\fP 
 Not allowed if updating by merge.
 .TP
 .B  \-\-delete
-Delete the slid\-out branches.
-.TP
-.B  \-\-all\-merged
-Delete managed branches whose remote tracking branches have been deleted and that have no downstreams.
-In other words, this deletes all branches except
-1. those that are unmanaged,
-2. those that have no remote tracking branch set (unpushed),
-3. those whose remote tracking branches still exist (not deleted remotely),
-4. those that have a downstream branch (are still part of a stack).
+Delete the branches after sliding them out.
 .TP
 .B  \-M\fP,\fB  \-\-merge
 Update the downstream branch by merge rather than by rebase.

@@ -255,6 +255,10 @@ def is_terminal_fully_fledged() -> bool:
     return number_of_supported_colors >= 256
 
 
+def hex_repr(input: str) -> str:
+    return ':'.join(hex(ord(char))[2:] for char in input)
+
+
 class AnsiEscapeCodes:
 
     __is_terminal_fully_fledged = is_terminal_fully_fledged()

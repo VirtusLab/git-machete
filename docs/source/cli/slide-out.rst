@@ -11,10 +11,10 @@ slide-out
 
 Removes the given branch (or multiple branches) from the branch layout.
 If no branch has been specified, current branch is slid out.
-If ``--all-merged`` is specified, all branches that have been removed from the remote are slid out.
+If ``--all-merged`` is specified, all branches that have been removed from the remote are slid out instead.
 
 Also, if the last branch in the specified chain of ``[<branch> [<branch>]]`` had any children,
-these child branches are synced to the parent of the first specified branch.
+these children are synced to the parent of the first specified branch.
 Sync is performed either by rebase (default) or by merge (if ``--merge`` option passed).
 
 For example, let's assume the following dependency tree:
@@ -52,10 +52,11 @@ Note: Unless ``--delete`` is passed, this command doesn't delete any branches fr
 
 --all-merged                                      Slide out managed branches whose remote tracking branches have been deleted and that have no downstreams.
                                                   In other words, this deletes all branches except:
-                                                  1. those that are unmanaged,
-                                                  2. those that have no remote tracking branch set (unpushed),
-                                                  3. those whose remote tracking branches still exist (not deleted remotely),
-                                                  4. those that have at least one downstream (child) branch.
+
+                                                      * those that are unmanaged,
+                                                      * those that have no remote tracking branch set (unpushed),
+                                                      * those whose remote tracking branches still exist (not deleted remotely),
+                                                      * those that have at least one downstream (child) branch.
 
 -d, --down-fork-point=<down-fork-point-commit>    If updating by rebase, specifies the alternative fork point for downstream branches for the operation.
                                                   ``git machete fork-point`` overrides for downstream branches are recommended over use of this option.
