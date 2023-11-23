@@ -256,6 +256,7 @@ def is_terminal_fully_fledged() -> bool:
 
 
 def hex_repr(input: str) -> str:
+    # Skip the first two `0x` characters.
     return ':'.join(hex(ord(char))[2:] for char in input)
 
 

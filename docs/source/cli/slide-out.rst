@@ -46,7 +46,7 @@ The provided branches must form a chain --- all of the following conditions must
     * for i=1..N-1, (i+1)-th branch must be the only downstream (child) branch of the i-th branch,
     * all provided branches must have an upstream branch (so, in other words, roots of branch dependency tree cannot be slid out).
 
-Note: Unless ``--delete`` is passed, this command doesn't delete any branches from git, just removes them from the tree of branch dependencies.
+Note: Unless ``--delete`` is passed, ``slide-out`` doesn't delete any branches from git, just removes them from the tree of branch dependencies.
 
 **Options:**
 

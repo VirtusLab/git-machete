@@ -5,7 +5,6 @@ from git_machete.utils import hex_repr
 class TestUtils:
 
     def test_fmt(self) -> None:
-
         utils.ascii_only = False
         utils.AnsiEscapeCodes.UNDERLINE = '\033[4m'
         utils.AnsiEscapeCodes.RED = '\033[91m'
