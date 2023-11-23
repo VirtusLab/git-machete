@@ -531,7 +531,7 @@ def launch(orig_args: List[str]) -> None:
 
         cli_parser: argparse.ArgumentParser = create_cli_parser()
         parsed_cli: argparse.Namespace = cli_parser.parse_args(orig_args)
-        parsed_cli_as_dict: Dict[str, str] = vars(parsed_cli)
+        parsed_cli_as_dict: Dict[str, Any] = vars(parsed_cli)
 
         # Let's set up options like debug/verbose before we first start reading `git config`.
         set_utils_global_variables(parsed_cli)
@@ -787,14 +787,14 @@ def launch(orig_args: List[str]) -> None:
         elif cmd == "slide-out":
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             git.expect_no_operation_in_progress()
+            branches_to_slide_out: Optional[List[str]] = parsed_cli_as_dict.get('branches')
             if cli_opts.opt_all_merged:
-                if any(arg not in {'command', 'all_merged', 'delete'} for arg in parsed_cli_as_dict):
-                    raise MacheteException("Only --delete can be passed with --all-merged")
+                if branches_to_slide_out or cli_opts.opt_down_fork_point or cli_opts.opt_merge or cli_opts.opt_no_interactive_rebase:
+                    raise MacheteException("Only `--delete` can be passed with `--all-merged`")
                 machete_client.slide_out_all_merged(opt_delete=cli_opts.opt_delete)
             else:
-                branches = parsed_cli_as_dict.get('branches', [git.get_current_branch()])
                 machete_client.slide_out(
-                    branches_to_slide_out=list(map(LocalBranchShortName.of, branches)),
+                    branches_to_slide_out=list(map(LocalBranchShortName.of, branches_to_slide_out or [git.get_current_branch()])),
                     opt_delete=cli_opts.opt_delete,
                     opt_down_fork_point=cli_opts.opt_down_fork_point,
                     opt_merge=cli_opts.opt_merge,

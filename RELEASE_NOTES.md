@@ -1,7 +1,8 @@
 # Release notes
 
-## New in git-machete 3.20.1
+## New in git-machete 3.21.0
 
+- added: `--all-merged` flag to `git machete slide-out` (contributed by @raylu)
 - fixed: `git machete clean` and `git machete github sync` not only delete untracked branches, but also actually slide them out of branch layout
 
 ## New in git-machete 3.20.0

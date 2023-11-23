@@ -116,8 +116,9 @@ _git-machete() {
           # TODO (#113): suggest further branches based on the previous specified branch (like in Bash completion script)
           _arguments \
             '*:: :__git_machete_list_slidable' \
+            '(--all-merged)'--all-merged'[Slide out all branches removed from the remote]' \
             '(-d --down-fork-point)'{-d,--down-fork-point=}'[If updating by rebase, specify fork point commit after which the rebased part of history of the downstream branch is meant to start]: :__git_references' \
-            '(--delete)'--delete'[Delete slid-out branches]' \
+            '(--delete)'--delete'[Delete branches after sliding them out]' \
             '(-M --merge)'{-M,--merge}'[Update by merge rather than by rebase]' \
             '(-n)'-n'[If updating by rebase, equivalent to --no-interactive-rebase. If updating by merge, equivalent to --no-edit-merge]' \
             '(--no-edit-merge)'--no-edit-merge'[If updating by merge, pass --no-edit flag to underlying git merge]' \

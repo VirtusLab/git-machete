@@ -1,3 +1,4 @@
+import pytest
 from pytest_mock import MockerFixture
 
 from .base_test import BaseTest
@@ -391,7 +392,7 @@ class TestSlideOut(BaseTest):
                 not_deleted_remotely
                 has_downstream
                     downstream
-                should_be_pruned
+                should_be_pruned PR #123
             """
         rewrite_branch_layout_file(body)
 
@@ -421,8 +422,16 @@ class TestSlideOut(BaseTest):
         assert 'has_downstream' in branches
         assert 'should_be_pruned' not in branches
 
-    def test_slide_out_all_merged_with_extra_args(self) -> None:
+        self.repo_sandbox.delete_remote_branch('origin/not_deleted_remotely')
+        launch_command('slide-out', '--all-merged', '--verbose')
+
+        assert read_branch_layout_file() == "main\n    unpushed\n    has_downstream\n        downstream\n"
+        branches = self.repo_sandbox.get_local_branches()
+        assert 'not_deleted_remotely' in branches
+
+    @pytest.mark.parametrize('extra_arg', ['foo', '-d=foo', '--down-fork-point=foo', '-M', '--merge', '-n', '--no-interactive-rebase'])
+    def test_slide_out_all_merged_with_extra_args(self, extra_arg: str) -> None:
         assert_failure(
-            ['slide-out', '--all-merged', 'foo'],
-            "Only --delete can be passed with --all-merged"
+            ['slide-out', '--all-merged', extra_arg],
+            "Only --delete can be passed with --all-merged",
         )
