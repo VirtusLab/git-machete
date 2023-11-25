@@ -91,8 +91,8 @@ test_cases: Dict[str, str] = {
         "current down first last next prev root up",
     "git machete slide-out ":
         "develop",
-    "git machete slide-out --a":
-        "--all-merged",
+    "git machete slide-out --r":
+        "--removed-from-remote",
     "git machete slide-out --down-fork-point=":
         "HEAD develop feature master",
     "git machete squash -":

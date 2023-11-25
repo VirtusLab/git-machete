@@ -864,12 +864,12 @@ long_docs: Dict[str, str] = {
    """,
     "slide-out": """
         <b>Usage:</b><b>
-           git machete slide-out --all-merged [--delete]
+           git machete slide-out --removed-from-remote [--delete]
            git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [--delete] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] [<branch> [<branch> [<branch> ...]]]</b>
 
         Removes the given branch (or multiple branches) from the branch layout.
         If no branch has been specified, current branch is slid out.
-        If `--all-merged` is specified, all branches that have been removed from the remote are slid out instead.
+        If `--removed-from-remote` is specified, all branches that have been removed from the remote are slid out instead.
 
         Also, if the last branch in the specified chain of `[<branch> [<branch>]]` had any children,
         these children are synced to the parent of the first specified branch.
@@ -904,19 +904,6 @@ long_docs: Dict[str, str] = {
         Note: Unless `--delete` is passed, `slide-out` doesn't delete any branches from git, just removes them from the tree of branch dependencies.
 
         <b>Options:</b>
-           <b>--all-merged</b>
- 
-              Slide out managed branches whose remote tracking branches have been deleted and that have no downstreams.
-              In other words, this deletes all branches except:
-
-                 * those that are unmanaged,
-
-                 * those that have no remote tracking branch set (unpushed),
-
-                 * those whose remote tracking branches still exist (not deleted remotely),
-
-                 * those that have at least one downstream (child) branch.
-
            <b>-d</b>, <b>--down-fork-point=<down-fork-point-commit></b>
               If updating by rebase, specifies the alternative fork point for downstream branches for the operation.
               `git machete fork-point` overrides for downstream branches are recommended over use of this option.
@@ -936,6 +923,18 @@ long_docs: Dict[str, str] = {
            <b>--no-interactive-rebase</b>
               If updating by rebase, run `git rebase` in non-interactive mode (without `-i/--interactive` flag).
               Not allowed if updating by merge.
+           <b>--removed-from-remote</b>
+ 
+              Slide out managed branches whose remote tracking branches have been deleted and that have no downstreams.
+              In other words, this deletes all branches except:
+
+                 * those that are unmanaged,
+
+                 * those that have no remote tracking branch set (unpushed),
+
+                 * those whose remote tracking branches still exist (not deleted remotely),
+
+                 * those that have at least one downstream (child) branch.
 
         <b>Environment variables:</b>
            `GIT_MACHETE_REBASE_OPTS`

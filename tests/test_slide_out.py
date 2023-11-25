@@ -194,15 +194,15 @@ class TestSlideOut(BaseTest):
         with fixed_author_and_committer_date_in_past():
             (
                 self.repo_sandbox.new_branch('branch-0')
-                    .commit()
-                    .new_branch('branch-1')
-                    .commit()
-                    .new_branch('branch-2')
-                    .commit()
-                    .new_branch('branch-3')
-                    .commit()
-                    .check_out('branch-2')
-                    .commit('Commit that is not ancestor of branch-3.')
+                .commit()
+                .new_branch('branch-1')
+                .commit()
+                .new_branch('branch-2')
+                .commit()
+                .new_branch('branch-3')
+                .commit()
+                .check_out('branch-2')
+                .commit('Commit that is not ancestor of branch-3.')
             )
         hash_of_commit_that_is_not_ancestor_of_branch_2 = self.repo_sandbox.get_current_commit_hash()
 
@@ -244,14 +244,14 @@ class TestSlideOut(BaseTest):
     def test_slide_out_with_down_fork_point_and_single_child_of_last_branch(self) -> None:
         (
             self.repo_sandbox.new_branch('branch-0')
-                .commit()
-                .new_branch('branch-1')
-                .commit()
-                .new_branch('branch-2')
-                .commit()
-                .new_branch('branch-3')
-                .commit()
-                .commit('Second commit on branch-3.')
+            .commit()
+            .new_branch('branch-1')
+            .commit()
+            .new_branch('branch-2')
+            .commit()
+            .new_branch('branch-3')
+            .commit()
+            .commit('Second commit on branch-3.')
         )
         hash_of_second_commit_on_branch_3 = self.repo_sandbox.get_current_commit_hash()
         self.repo_sandbox.commit("Third commit on branch-3.")
@@ -282,14 +282,14 @@ class TestSlideOut(BaseTest):
     def test_slide_out_with_down_fork_point_and_multiple_children_of_last_branch(self) -> None:
         (
             self.repo_sandbox.new_branch('branch-0')
-                .commit()
-                .new_branch('branch-1')
-                .commit()
-                .new_branch('branch-2a')
-                .commit()
-                .check_out('branch-1')
-                .new_branch('branch-2b')
-                .commit()
+            .commit()
+            .new_branch('branch-1')
+            .commit()
+            .new_branch('branch-2a')
+            .commit()
+            .check_out('branch-1')
+            .new_branch('branch-2b')
+            .commit()
         )
 
         hash_of_only_commit_on_branch_2b = self.repo_sandbox.get_current_commit_hash()
@@ -311,16 +311,16 @@ class TestSlideOut(BaseTest):
     def test_slide_out_with_invalid_sequence_of_branches(self) -> None:
         (
             self.repo_sandbox.new_branch('branch-0')
-                .commit()
-                .new_branch('branch-1')
-                .commit()
-                .new_branch('branch-2a')
-                .commit()
-                .new_branch('branch-3')
-                .commit()
-                .check_out('branch-1')
-                .new_branch('branch-2b')
-                .commit()
+            .commit()
+            .new_branch('branch-1')
+            .commit()
+            .new_branch('branch-2a')
+            .commit()
+            .new_branch('branch-3')
+            .commit()
+            .check_out('branch-1')
+            .new_branch('branch-2b')
+            .commit()
         )
 
         body: str = \
@@ -356,33 +356,33 @@ class TestSlideOut(BaseTest):
             "Option -d/--down-fork-point only makes sense when using rebase and cannot be specified together with -M/--merge."
         )
 
-    def test_slide_out_all_merged(self) -> None:
+    def test_slide_out_removed_from_remote(self) -> None:
         (
             self.repo_sandbox.new_branch('main')
-                .commit()
-                .push()
-                .new_branch('unmanaged')
-                .commit()
-                .push()
-                .check_out('main')
-                .new_branch('unpushed')
-                .commit()
-                .check_out('main')
-                .new_branch('not_deleted_remotely')
-                .commit()
-                .push()
-                .check_out('main')
-                .new_branch('has_downstream')
-                .commit()
-                .push()
-                .new_branch('downstream')
-                .commit()
-                .check_out('main')
-                .new_branch('should_be_pruned')
-                .commit()
-                .push()
-                .delete_remote_branch('origin/should_be_pruned')
-                .check_out('main')
+            .commit()
+            .push()
+            .new_branch('unmanaged')
+            .commit()
+            .push()
+            .check_out('main')
+            .new_branch('unpushed')
+            .commit()
+            .check_out('main')
+            .new_branch('not_deleted_remotely')
+            .commit()
+            .push()
+            .check_out('main')
+            .new_branch('has_downstream')
+            .commit()
+            .push()
+            .new_branch('downstream')
+            .commit()
+            .check_out('main')
+            .new_branch('should_be_pruned')
+            .commit()
+            .push()
+            .delete_remote_branch('origin/should_be_pruned')
+            .check_out('main')
         )
 
         body: str = \
@@ -396,7 +396,9 @@ class TestSlideOut(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        launch_command('slide-out', '--all-merged', '--delete')
+        assert_success(
+            ['slide-out', '--removed-from-remote', '--delete'],
+            "Sliding out should_be_pruned\nDeleting branch should_be_pruned (unmerged to HEAD)...\n")
 
         assert read_branch_layout_file() == "main\n    unpushed\n    not_deleted_remotely\n    has_downstream\n        downstream\n"
 
@@ -423,15 +425,15 @@ class TestSlideOut(BaseTest):
         assert 'should_be_pruned' not in branches
 
         self.repo_sandbox.delete_remote_branch('origin/not_deleted_remotely')
-        launch_command('slide-out', '--all-merged', '--verbose')
+        launch_command('slide-out', '--removed-from-remote', '--verbose')
 
         assert read_branch_layout_file() == "main\n    unpushed\n    has_downstream\n        downstream\n"
         branches = self.repo_sandbox.get_local_branches()
         assert 'not_deleted_remotely' in branches
 
     @pytest.mark.parametrize('extra_arg', ['foo', '-d=foo', '--down-fork-point=foo', '-M', '--merge', '-n', '--no-interactive-rebase'])
-    def test_slide_out_all_merged_with_extra_args(self, extra_arg: str) -> None:
+    def test_slide_out_removed_from_remote_with_extra_args(self, extra_arg: str) -> None:
         assert_failure(
-            ['slide-out', '--all-merged', extra_arg],
-            "Only --delete can be passed with --all-merged",
+            ['slide-out', '--removed-from-remote', extra_arg],
+            "Only --delete can be passed with --removed-from-remote",
         )

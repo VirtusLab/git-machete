@@ -2751,16 +2751,16 @@ class MacheteClient:
         self.__remove_branches_from_layout(branches_to_delete)
         self.__delete_branches(branches_to_delete, opt_yes)
 
-    def slide_out_all_merged(self, opt_delete: bool) -> None:
-        print(bold('Checking for managed branches with missing tracking branches and no downstream...'))
-        branches_to_delete: List[LocalBranchShortName] = []
+    def slide_out_removed_from_remote(self, opt_delete: bool) -> None:
+        slid_out_branches: List[LocalBranchShortName] = []
         for branch in self.managed_branches.copy():
             if self.__git.is_missing_tracking_branch(branch) and not self.__down_branches.get(branch):
-                branches_to_delete.append(branch)
+                print(fmt(f"Sliding out <b>{branch}</b>"))
+                slid_out_branches.append(branch)
 
-        self.__remove_branches_from_layout(branches_to_delete)
+        self.__remove_branches_from_layout(slid_out_branches)
         if opt_delete:
-            self.__delete_branches(branches_to_delete, opt_yes=True)
+            self.__delete_branches(slid_out_branches, opt_yes=True)
 
     def __remove_branches_from_layout(self, branches_to_delete: List[LocalBranchShortName]) -> None:
         for branch in branches_to_delete:

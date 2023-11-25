@@ -7,7 +7,6 @@ from .git_operations import AnyBranchName, AnyRevision, LocalBranchShortName
 class CommandLineOptions:
 
     def __init__(self) -> None:
-        self.opt_all_merged: bool = False
         self.opt_as_root: bool = False
         self.opt_branch: Optional[AnyBranchName] = None
         self.opt_checked_out_since: Optional[str] = None
@@ -30,6 +29,7 @@ class CommandLineOptions:
         self.opt_override_to_parent: bool = False
         self.opt_push_tracked: bool = True
         self.opt_push_untracked: bool = True
+        self.opt_removed_from_remote: bool = False
         self.opt_return_to: str = "stay"
         self.opt_roots: List[LocalBranchShortName] = list()
         self.opt_start_from: str = "here"

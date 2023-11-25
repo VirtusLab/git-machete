@@ -26,7 +26,7 @@ _git_machete() {
   local github_checkout_prs_opts="--all --by= --mine"
   local github_retarget_pr_opts="-b --branch= --ignore-if-missing"
   local reapply_opts="-f --fork-point="
-  local slide_out_opts="--all-merged -d --down-fork-point= --delete -M --merge -n --no-edit-merge --no-interactive-rebase"
+  local slide_out_opts="-d --down-fork-point= --delete -M --merge -n --no-edit-merge --no-interactive-rebase --removed-from-remote"
   local squash_opts="-f --fork-point="
   local status_opts="--color= -L --list-commits-with-hashes -l --list-commits --no-detect-squash-merges"
   local traverse_opts="-F --fetch -l --list-commits -M --merge -n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase --no-push --no-push-untracked --push --push-untracked --return-to= --start-from= -w --whole -W -y --yes"

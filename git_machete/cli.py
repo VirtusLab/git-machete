@@ -325,11 +325,11 @@ def create_cli_parser() -> argparse.ArgumentParser:
     slide_out_parser.add_argument('branches', nargs='*')
     slide_out_parser.add_argument('-d', '--down-fork-point')
     slide_out_parser.add_argument('--delete', action='store_true')
-    slide_out_parser.add_argument('--all-merged', action='store_true')
     slide_out_parser.add_argument('-M', '--merge', action='store_true')
     slide_out_parser.add_argument('-n', action='store_true')
     slide_out_parser.add_argument('--no-edit-merge', action='store_true')
     slide_out_parser.add_argument('--no-interactive-rebase', action='store_true')
+    slide_out_parser.add_argument('--removed-from-remote', action='store_true')
 
     squash_parser = subparsers.add_parser(
         'squash',
@@ -411,7 +411,9 @@ def update_cli_options_using_parsed_args(
 
     for opt, arg in vars(parsed_args).items():
         # --color, --debug and --verbose are handled outside this method
-        if opt == "branch":
+        if opt == "as_root":
+            cli_opts.opt_as_root = True
+        elif opt == "branch":
             cli_opts.opt_branch = AnyBranchName.of(arg) if arg else None
         elif opt == "checked_out_since":
             cli_opts.opt_checked_out_since = arg
@@ -427,10 +429,10 @@ def update_cli_options_using_parsed_args(
             cli_opts.opt_fork_point = AnyRevision.of(arg) if arg else None
         elif opt == "inferred":
             cli_opts.opt_inferred = True
-        elif opt == "list_commits_with_hashes":
-            cli_opts.opt_list_commits = cli_opts.opt_list_commits_with_hashes = True
         elif opt == "list_commits":
             cli_opts.opt_list_commits = True
+        elif opt == "list_commits_with_hashes":
+            cli_opts.opt_list_commits = cli_opts.opt_list_commits_with_hashes = True
         elif opt == "merge":
             cli_opts.opt_merge = True
         elif opt == "n":
@@ -454,23 +456,21 @@ def update_cli_options_using_parsed_args(
             cli_opts.opt_override_to_inferred = True
         elif opt == "override_to_parent":
             cli_opts.opt_override_to_parent = True
-        elif opt == "all_merged":
-            cli_opts.opt_all_merged = True
         elif opt == "push":
             cli_opts.opt_push_tracked = True
             cli_opts.opt_push_untracked = True
         elif opt == "push_untracked":
             cli_opts.opt_push_untracked = True
-        elif opt == "as_root":
-            cli_opts.opt_as_root = True
-        elif opt == "roots":
-            cli_opts.opt_roots = list(map(LocalBranchShortName.of, filter(None, arg.split(","))))
+        elif opt == "removed_from_remote":
+            cli_opts.opt_removed_from_remote = True
         elif opt == "return_to":
             cli_opts.opt_return_to = arg
-        elif opt == "stat":
-            cli_opts.opt_stat = True
+        elif opt == "roots":
+            cli_opts.opt_roots = list(map(LocalBranchShortName.of, filter(None, arg.split(","))))
         elif opt == "start_from":
             cli_opts.opt_start_from = arg
+        elif opt == "stat":
+            cli_opts.opt_stat = True
         elif opt == "sync_github_prs":
             cli_opts.opt_sync_github_prs = True
         elif opt == "unset_override":
@@ -788,10 +788,10 @@ def launch(orig_args: List[str]) -> None:
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             git.expect_no_operation_in_progress()
             branches_to_slide_out: Optional[List[str]] = parsed_cli_as_dict.get('branches')
-            if cli_opts.opt_all_merged:
+            if cli_opts.opt_removed_from_remote:
                 if branches_to_slide_out or cli_opts.opt_down_fork_point or cli_opts.opt_merge or cli_opts.opt_no_interactive_rebase:
-                    raise MacheteException("Only `--delete` can be passed with `--all-merged`")
-                machete_client.slide_out_all_merged(opt_delete=cli_opts.opt_delete)
+                    raise MacheteException("Only `--delete` can be passed with `--removed-from-remote`")
+                machete_client.slide_out_removed_from_remote(opt_delete=cli_opts.opt_delete)
             else:
                 machete_client.slide_out(
                     branches_to_slide_out=list(map(LocalBranchShortName.of, branches_to_slide_out or [git.get_current_branch()])),
