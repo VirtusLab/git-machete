@@ -265,7 +265,7 @@ __git_machete_github_subcommands() {
 
         (anno-prs) \
           _arguments \
-            '(--with-urls)'--all'[Include PR URLs in the annotations.]' \
+            '(--with-urls)'--with-urls'[Include PR URLs in the annotations.]' \
             "${common_flags[@]}"
         ;;
 

@@ -59,7 +59,7 @@ test_cases: Dict[str, str] = {
     "git machete github ":
         "anno-prs checkout-prs create-pr restack-pr retarget-pr sync",
     "git machete github anno-prs -":
-        "--debug -h --help --with-urls -v --verbose",
+        "--debug -h --help -v --verbose --with-urls",
     "git machete github checkout-prs -":
         "--all --by --debug -h --help --mine -v --verbose",
     "git machete github create-pr -":
