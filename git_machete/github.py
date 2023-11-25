@@ -42,13 +42,6 @@ class GitHubPullRequest(NamedTuple):
     def __repr__(self) -> str:
         return f"PR #{self.number} by {self.user}: {self.head} -> {self.base}"
 
-    def annotation(self, current_user: Optional[str]) -> str:
-        anno = f"PR #{self.number}"
-        if current_user != self.user:
-            anno += f" ({self.user})"
-        anno += f" {self.html_url}"
-        return anno
-
 
 class OrganizationAndRepository(NamedTuple):
     organization: str

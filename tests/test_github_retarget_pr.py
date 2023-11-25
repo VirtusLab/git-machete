@@ -59,9 +59,9 @@ class TestGitHubRetargetPR(BaseTest):
         |
         o-develop
           |
-          o-feature *  PR #15 (some_other_user) www.github.com WRONG PR BASE or MACHETE PARENT? PR has master rebase=no push=no
+          o-feature *  PR #15 (some_other_user) WRONG PR BASE or MACHETE PARENT? PR has master rebase=no push=no
           |
-          o-feature_4  PR #40 (some_other_user) www.github.com WRONG PR BASE or MACHETE PARENT? PR has feature rebase=no push=no
+          o-feature_4  PR #40 (some_other_user) WRONG PR BASE or MACHETE PARENT? PR has feature rebase=no push=no
         """
         assert_success(
             ['status'],
@@ -84,9 +84,9 @@ class TestGitHubRetargetPR(BaseTest):
         |
         o-develop
           |
-          o-feature *  PR #15 (some_other_user) www.github.com rebase=no push=no
+          o-feature *  PR #15 (some_other_user) rebase=no push=no
           |
-          o-feature_4  PR #40 (some_other_user) www.github.com WRONG PR BASE or MACHETE PARENT? PR has feature rebase=no push=no
+          o-feature_4  PR #40 (some_other_user) WRONG PR BASE or MACHETE PARENT? PR has feature rebase=no push=no
         """
         assert_success(
             ['status'],
@@ -150,7 +150,7 @@ class TestGitHubRetargetPR(BaseTest):
         |
         o-branch-1
         | |
-        | o-feature  PR #15 (some_other_user) www.github.com WRONG PR BASE or MACHETE PARENT? PR has root rebase=no push=no
+        | o-feature  PR #15 (some_other_user) WRONG PR BASE or MACHETE PARENT? PR has root rebase=no push=no
         |
         o-branch-without-pr
         """
@@ -169,7 +169,7 @@ class TestGitHubRetargetPR(BaseTest):
         |
         o-branch-1
         | |
-        | o-feature  PR #15 (some_other_user) www.github.com rebase=no push=no
+        | o-feature  PR #15 (some_other_user) rebase=no push=no
         |
         o-branch-without-pr
         """

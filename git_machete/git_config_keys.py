@@ -1,3 +1,4 @@
+GITHUB_ANNOTATE_WITH_URLS = 'machete.github.annotateWithUrls'
 GITHUB_DOMAIN = 'machete.github.domain'
 GITHUB_REMOTE = 'machete.github.remote'
 GITHUB_ORGANIZATION = 'machete.github.organization'

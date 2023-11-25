@@ -304,7 +304,7 @@ long_docs: Dict[str, str] = {
               `git machete fork-point` with flags should be used instead.
 
            `machete.status.extraSpaceBeforeBranchName`:
-
+ 
               To make it easier to select branch name from the `status` output on certain terminals
               (like Alacritty), you can add an extra space between └─ and `branch name`
               by setting `git config machete.status.extraSpaceBeforeBranchName true`.
@@ -326,9 +326,10 @@ long_docs: Dict[str, str] = {
               └─ feature_branch2
 
            `machete.traverse.push`:
-
+ 
               To change the behavior of `git machete traverse` command so that it doesn't push branches by default,
               you need to set config key `git config machete.traverse.push false`.
+
               Configuration key value can be overridden by the presence of the `--push` or `--push-untracked` flags.
 
            `machete.worktree.useTopLevelMacheteFile`:
@@ -561,29 +562,22 @@ long_docs: Dict[str, str] = {
           ghp_mytoken_for_github_com
           ghp_myothertoken_for_git_example_org git.example.org
           ghp_yetanothertoken_for_git_example_com git.example.com
-        </dim>
-
-        GitHub API server URL will be inferred from `git remote`.
-        You can alter the default behavior by setting the following git config keys:
-           GitHub Enterprise domain
-              E.g. `git config machete.github.domain git.example.org`
-
-           Remote name (as in `git remote`)
-              E.g. `git config machete.github.remote origin`
-
-           Organization and repository name
-              E.g. `git config machete.github.organization VirtusLab; git config machete.github.repository git-machete`
-        Note that you do NOT need to set all four keys at once.
-        For example, in a typical usage of GitHub Enterprise, it should be enough to just set `machete.github.domain`.
-        Only `machete.github.organization` and `machete.github.repository` must be specified together.
+        </dim>See <b>Git config keys</b> below in case the target repository cannot be detected automatically (for example, in case of GitHub Enterprise).
 
         <b>Subcommands:</b>
-           `anno-prs`:
+           `anno-prs [--with-urls]`:
+ 
               Annotates the branches based on their corresponding GitHub PR numbers and authors.
               Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
               Equivalent to `git machete anno --sync-github-prs`.
+
               When the current user is NOT the owner of the PR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
               so that you don't rebase or push someone else's PR by accident (see help for `traverse`).
+
+              <b>Options:</b>
+
+                 <b>--with-urls</b>
+              Also include full PR URLs in the annotations (rather than just PR number).
 
            `checkout-prs [--all | --by=<github-login> | --mine | <PR-number-1> ... <PR-number-N>]`:
  
@@ -591,6 +585,7 @@ long_docs: Dict[str, str] = {
               also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally.
               Once the specified pull requests are checked out locally, annotate local branches with corresponding pull request numbers.
               If only one PR has been checked out, then switch the local repository's HEAD to its head branch.
+
               When the current user is NOT the owner of the PR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
               so that you don't rebase or push someone else's PR by accident (see help for `traverse`).
 
@@ -671,6 +666,33 @@ long_docs: Dict[str, str] = {
                  * deletes untracked managed branches that have no downstream branch.
 
               Equivalent of `git machete clean --checkout-my-github-prs`.
+
+        <b>Git config keys (all subcommands):</b>
+           `machete.github.annotateWithUrls`:
+ 
+              Setting this config key to `true` will cause all commands that write GitHub PR numbers into annotations
+              to not only include PR number and author (if different from the current user), but also the full URL of the PR.
+
+              The affected (sub)commands clearly include `anno --sync-github-prs` and `github anno-prs`,
+              but also `github checkout-prs`, `github create-pr`, `github retarget-pr` and `github restack-pr`.
+
+           `machete.github.{domain,remote,organization,repository}`:
+
+              GitHub API server URL will be inferred from `git remote`.
+              You can alter the default behavior by setting the following git config keys:
+
+                 GitHub Enterprise domain
+              E.g. `git config machete.github.domain git.example.org`
+
+                 Remote name (as in `git remote`)
+              E.g. `git config machete.github.remote origin`
+
+                 Organization and repository name
+              E.g. `git config machete.github.organization VirtusLab; git config machete.github.repository git-machete`
+
+              Note that you do NOT need to set all four keys at once.
+              For example, in a typical usage of GitHub Enterprise, it should be enough to just set `machete.github.domain`.
+              Only `machete.github.organization` and `machete.github.repository` must be specified together.
 
         <b>Environment variables (all subcommands):</b>
            `GITHUB_TOKEN`
@@ -1041,12 +1063,31 @@ long_docs: Dict[str, str] = {
               Only consider strict (fast-forward or 2-parent) merges, rather than rebase/squash merges,
               when detecting if a branch is merged into its upstream (parent).
 
-        <b>Config keys:</b>
-           `machete.status.extraSpaceBeforeBranchName`
-              To make it easier to select branch name from the `status` output on certain terminals
-              (like Alacritty), you can add an extra space between └─ and `branch name`
-              by setting `git config machete.status.extraSpaceBeforeBranchName true`.
+        <b>Git config keys:</b>
 
+        `machete.status.extraSpaceBeforeBranchName`
+
+        To make it easier to select branch name from the `status` output on certain terminals
+        (like Alacritty), you can add an extra space between └─ and `branch name`
+        by setting `git config machete.status.extraSpaceBeforeBranchName true`.
+
+        For example, by default the status is displayed as:
+        <dim>
+          develop
+          │
+          ├─feature_branch1
+          │
+          └─feature_branch2
+        </dim>
+
+        With `machete.status.extraSpaceBeforeBranchName` config set to `true`:
+        <dim>
+          develop
+          │
+          ├─ feature_branch1
+          │
+          └─ feature_branch2
+        </dim>
    """,
     "traverse": """
         <b>Usage:</b><b>
@@ -1148,17 +1189,18 @@ long_docs: Dict[str, str] = {
            <b>-y</b>, <b>--yes</b>
               Don't ask for any interactive input, including confirmation of rebase/push/pull. Implies `-n`.
 
-        <b>Config keys:</b>
-           `machete.traverse.push`
-
-              To change the behavior of `git machete traverse` command so that it doesn't push branches by default,
-              you need to set config key `git config machete.traverse.push false`.
-              Configuration key value can be overridden by the presence of the `--push` or `--push-untracked` flags.
-
         <b>Environment variables:</b>
            `GIT_MACHETE_REBASE_OPTS`
               Extra options to pass to the underlying `git rebase` invocations, space-separated.
               Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete traverse`.
+
+        <b>Git config keys:</b>
+           `machete.traverse.push`
+ 
+              To change the behavior of `git machete traverse` command so that it doesn't push branches by default,
+              you need to set config key `git config machete.traverse.push false`.
+
+              Configuration key value can be overridden by the presence of the `--push` or `--push-untracked` flags.
 
    """,
     "update": """

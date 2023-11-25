@@ -610,7 +610,7 @@ def launch(orig_args: List[str]) -> None:
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out,
                                                    verify_branches=False)
             if cli_opts.opt_sync_github_prs:
-                machete_client.sync_annotations_to_github_prs()
+                machete_client.sync_annotations_to_github_prs(include_urls=False)
             else:
                 branch = get_local_branch_short_name_from_arg_or_current_branch(cli_opts.opt_branch, git)
                 machete_client.expect_in_managed_branches(branch)

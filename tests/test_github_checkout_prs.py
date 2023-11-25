@@ -113,7 +113,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-hotfix/add-trigger
               |
-              o-ignore-trailing  PR #3 (some_other_user) www.github.com rebase=no push=no
+              o-ignore-trailing  PR #3 (some_other_user) rebase=no push=no
                 |
                 o-chore/fields
 
@@ -121,13 +121,13 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-enhance/feature
               |
-              o-bugfix/feature  PR #6 (some_other_user) www.github.com rebase=no push=no
+              o-bugfix/feature  PR #6 (some_other_user) rebase=no push=no
                 |
-                o-allow-ownership-link  PR #12 (some_other_user) www.github.com rebase=no push=no
+                o-allow-ownership-link  PR #12 (some_other_user) rebase=no push=no
                   |
-                  o-restrict_access  PR #17 (some_other_user) www.github.com rebase=no push=no
+                  o-restrict_access  PR #17 (some_other_user) rebase=no push=no
                     |
-                    o-chore/redundant_checks *  PR #18 (some_other_user) www.github.com rebase=no push=no
+                    o-chore/redundant_checks *  PR #18 (some_other_user) rebase=no push=no
             """
         )
         # broken chain of pull requests (add new root)
@@ -139,7 +139,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-hotfix/add-trigger
               |
-              o-ignore-trailing  PR #3 (some_other_user) www.github.com rebase=no push=no
+              o-ignore-trailing  PR #3 (some_other_user) rebase=no push=no
                 |
                 o-chore/fields
 
@@ -147,19 +147,19 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-enhance/feature
               |
-              o-bugfix/feature  PR #6 (some_other_user) www.github.com rebase=no push=no
+              o-bugfix/feature  PR #6 (some_other_user) rebase=no push=no
                 |
-                o-allow-ownership-link  PR #12 (some_other_user) www.github.com rebase=no push=no
+                o-allow-ownership-link  PR #12 (some_other_user) rebase=no push=no
                   |
-                  o-restrict_access  PR #17 (some_other_user) www.github.com rebase=no push=no
+                  o-restrict_access  PR #17 (some_other_user) rebase=no push=no
                     |
-                    o-chore/redundant_checks  PR #18 (some_other_user) www.github.com rebase=no push=no
+                    o-chore/redundant_checks  PR #18 (some_other_user) rebase=no push=no
 
             bugfix/add_user
             |
-            o-testing/add_user  PR #22 (some_other_user) www.github.com rebase=no push=no
+            o-testing/add_user  PR #22 (some_other_user) rebase=no push=no
               |
-              o-chore/comments *  PR #24 (some_other_user) www.github.com rebase=no push=no
+              o-chore/comments *  PR #24 (some_other_user) rebase=no push=no
             """
         )
 
@@ -172,7 +172,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-hotfix/add-trigger
               |
-              o-ignore-trailing  PR #3 (some_other_user) www.github.com rebase=no push=no
+              o-ignore-trailing  PR #3 (some_other_user) rebase=no push=no
                 |
                 o-chore/fields
 
@@ -180,19 +180,19 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-enhance/feature
               |
-              o-bugfix/feature  PR #6 (some_other_user) www.github.com rebase=no push=no
+              o-bugfix/feature  PR #6 (some_other_user) rebase=no push=no
                 |
-                o-allow-ownership-link  PR #12 (some_other_user) www.github.com rebase=no push=no
+                o-allow-ownership-link  PR #12 (some_other_user) rebase=no push=no
                   |
-                  o-restrict_access  PR #17 (some_other_user) www.github.com rebase=no push=no
+                  o-restrict_access  PR #17 (some_other_user) rebase=no push=no
                     |
-                    o-chore/redundant_checks  PR #18 (some_other_user) www.github.com rebase=no push=no
+                    o-chore/redundant_checks  PR #18 (some_other_user) rebase=no push=no
 
             bugfix/add_user
             |
-            o-testing/add_user  PR #22 (some_other_user) www.github.com rebase=no push=no
+            o-testing/add_user  PR #22 (some_other_user) rebase=no push=no
               |
-              o-chore/comments *  PR #24 (some_other_user) www.github.com rebase=no push=no
+              o-chore/comments *  PR #24 (some_other_user) rebase=no push=no
             """
         )
 
@@ -205,7 +205,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-hotfix/add-trigger
               |
-              o-ignore-trailing  PR #3 (some_other_user) www.github.com rebase=no push=no
+              o-ignore-trailing  PR #3 (some_other_user) rebase=no push=no
                 |
                 o-chore/fields
 
@@ -213,21 +213,21 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-enhance/feature
             | |
-            | o-bugfix/feature  PR #6 (some_other_user) www.github.com rebase=no push=no
+            | o-bugfix/feature  PR #6 (some_other_user) rebase=no push=no
             |   |
-            |   o-allow-ownership-link  PR #12 (some_other_user) www.github.com rebase=no push=no
+            |   o-allow-ownership-link  PR #12 (some_other_user) rebase=no push=no
             |     |
-            |     o-restrict_access  PR #17 (some_other_user) www.github.com rebase=no push=no
+            |     o-restrict_access  PR #17 (some_other_user) rebase=no push=no
             |       |
-            |       o-chore/redundant_checks  PR #18 (some_other_user) www.github.com rebase=no push=no
+            |       o-chore/redundant_checks  PR #18 (some_other_user) rebase=no push=no
             |
-            o-enhance/add_user  PR #19 (some_other_user) www.github.com rebase=no push=no
+            o-enhance/add_user  PR #19 (some_other_user) rebase=no push=no
 
             bugfix/add_user
             |
-            o-testing/add_user  PR #22 (some_other_user) www.github.com rebase=no push=no
+            o-testing/add_user  PR #22 (some_other_user) rebase=no push=no
               |
-              o-chore/comments *  PR #24 (some_other_user) www.github.com rebase=no push=no
+              o-chore/comments *  PR #24 (some_other_user) rebase=no push=no
             """
         )
 
@@ -357,9 +357,9 @@ class TestGitHubCheckoutPRs(BaseTest):
 
             chore/sync_to_docs
             |
-            o-improve/refactor  PR #1 (some_other_user) www.github.com rebase=no push=no
+            o-improve/refactor  PR #1 (some_other_user) rebase=no push=no
               |
-              o-comments/add_docstrings *  PR #2 (some_other_user) www.github.com rebase=no push=no
+              o-comments/add_docstrings *  PR #2 (some_other_user) rebase=no push=no
             """
         )
 
@@ -380,9 +380,9 @@ class TestGitHubCheckoutPRs(BaseTest):
 
             chore/sync_to_docs
             |
-            o-improve/refactor  PR #1 (some_other_user) www.github.com rebase=no push=no
+            o-improve/refactor  PR #1 (some_other_user) rebase=no push=no
               |
-              o-comments/add_docstrings  PR #2 (some_other_user) www.github.com rebase=no push=no
+              o-comments/add_docstrings  PR #2 (some_other_user) rebase=no push=no
                 |
                 o-sphinx_export *
             """
@@ -539,7 +539,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-hotfix/add-trigger
               |
-              o-ignore-trailing  PR #3 www.github.com
+              o-ignore-trailing  PR #3
                 |
                 o-chore/fields
 
@@ -547,21 +547,21 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-enhance/feature
             | |
-            | o-bugfix/feature  PR #6 www.github.com
+            | o-bugfix/feature  PR #6
             |   |
-            |   o-allow-ownership-link  PR #12 (some_other_user) www.github.com rebase=no push=no
+            |   o-allow-ownership-link  PR #12 (some_other_user) rebase=no push=no
             |     |
-            |     o-restrict_access  PR #17 www.github.com
+            |     o-restrict_access  PR #17
             |       |
-            |       o-chore/redundant_checks  PR #18 (some_other_user) www.github.com rebase=no push=no
+            |       o-chore/redundant_checks  PR #18 (some_other_user) rebase=no push=no
             |
-            o-enhance/add_user  PR #19 (some_other_user) www.github.com rebase=no push=no
+            o-enhance/add_user  PR #19 (some_other_user) rebase=no push=no
 
             bugfix/add_user
             |
-            o-testing/add_user  PR #22 www.github.com
+            o-testing/add_user  PR #22
               |
-              o-chore/comments  PR #24 (some_other_user) www.github.com rebase=no push=no
+              o-chore/comments  PR #24 (some_other_user) rebase=no push=no
             """
         )
 
@@ -575,7 +575,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-hotfix/add-trigger
               |
-              o-ignore-trailing  PR #3 www.github.com
+              o-ignore-trailing  PR #3
                 |
                 o-chore/fields
 
@@ -583,21 +583,21 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-enhance/feature
             | |
-            | o-bugfix/feature  PR #6 www.github.com
+            | o-bugfix/feature  PR #6
             |   |
-            |   o-allow-ownership-link  PR #12 (some_other_user) www.github.com rebase=no
+            |   o-allow-ownership-link  PR #12 (some_other_user) rebase=no
             |     |
-            |     o-restrict_access  PR #17 www.github.com
+            |     o-restrict_access  PR #17
             |       |
-            |       o-chore/redundant_checks  PR #18 (some_other_user) www.github.com rebase=no push=no
+            |       o-chore/redundant_checks  PR #18 (some_other_user) rebase=no push=no
             |
-            o-enhance/add_user  PR #19 (some_other_user) www.github.com rebase=no push=no
+            o-enhance/add_user  PR #19 (some_other_user) rebase=no push=no
 
             bugfix/add_user
             |
-            o-testing/add_user  PR #22 www.github.com
+            o-testing/add_user  PR #22
               |
-              o-chore/comments  PR #24 (some_other_user) www.github.com rebase=no push=no
+              o-chore/comments  PR #24 (some_other_user) rebase=no push=no
             """
         )
 

@@ -76,7 +76,7 @@ class TestGitHubCreatePR(BaseTest):
             """
             master
                 hotfix/add-trigger
-                    ignore-trailing  PR #3 www.github.com
+                    ignore-trailing  PR #3
                         chore/fields
             develop
                 allow-ownership-link
@@ -95,7 +95,7 @@ class TestGitHubCreatePR(BaseTest):
             |
             o-hotfix/add-trigger (diverged from origin)
               |
-              o-ignore-trailing  PR #3 www.github.com (diverged from & older than origin)
+              o-ignore-trailing  PR #3 (diverged from & older than origin)
                 |
                 o-chore/fields (untracked)
 
@@ -105,7 +105,7 @@ class TestGitHubCreatePR(BaseTest):
             | |
             | x-build-chain (untracked)
             |
-            o-call-ws *  PR #4 (some_other_user) www.github.com
+            o-call-ws *  PR #4 (some_other_user)
               |
               x-drop-constraint (untracked)
             """,
@@ -125,7 +125,7 @@ class TestGitHubCreatePR(BaseTest):
               |
               o-hotfix/add-trigger (diverged from origin)
                 |
-                o-ignore-trailing  PR #3 www.github.com (diverged from & older than origin)
+                o-ignore-trailing  PR #3 (diverged from & older than origin)
                   |
                   o-chore/fields *
 
@@ -135,7 +135,7 @@ class TestGitHubCreatePR(BaseTest):
               | |
               | x-build-chain (untracked)
               |
-              o-call-ws  PR #4 (some_other_user) www.github.com
+              o-call-ws  PR #4 (some_other_user)
                 |
                 x-drop-constraint (untracked)
 
@@ -161,9 +161,9 @@ class TestGitHubCreatePR(BaseTest):
             |
             o-hotfix/add-trigger (diverged from origin)
               |
-              o-ignore-trailing  PR #3 www.github.com (diverged from & older than origin)
+              o-ignore-trailing  PR #3 (diverged from & older than origin)
                 |
-                o-chore/fields *  PR #5 (some_other_user) www.github.com
+                o-chore/fields *  PR #5 (some_other_user)
 
             develop
             |
@@ -171,7 +171,7 @@ class TestGitHubCreatePR(BaseTest):
             | |
             | x-build-chain (untracked)
             |
-            o-call-ws  PR #4 (some_other_user) www.github.com
+            o-call-ws  PR #4 (some_other_user)
               |
               x-drop-constraint (untracked)
             """,
@@ -190,11 +190,11 @@ class TestGitHubCreatePR(BaseTest):
             """
             master
             |
-            o-hotfix/add-trigger *  PR #6 (some_other_user) www.github.com
+            o-hotfix/add-trigger *  PR #6 (some_other_user)
               |
-              x-ignore-trailing  PR #3 www.github.com (diverged from & older than origin)
+              x-ignore-trailing  PR #3 (diverged from & older than origin)
                 |
-                o-chore/fields  PR #5 (some_other_user) www.github.com
+                o-chore/fields  PR #5 (some_other_user)
 
             develop
             |
@@ -202,7 +202,7 @@ class TestGitHubCreatePR(BaseTest):
             | |
             | x-build-chain (untracked)
             |
-            o-call-ws  PR #4 (some_other_user) www.github.com
+            o-call-ws  PR #4 (some_other_user)
               |
               x-drop-constraint (untracked)
             """,
@@ -332,7 +332,7 @@ class TestGitHubCreatePR(BaseTest):
             |
             o-feature/api_handling
               |
-              o-feature/api_exception_handling *  PR #19 (some_other_user) www.github.com
+              o-feature/api_exception_handling *  PR #19 (some_other_user)
             """,
         )
 
@@ -511,9 +511,9 @@ class TestGitHubCreatePR(BaseTest):
           |
           o-branch-1
             |
-            o-feature  PR #16 (some_other_user) www.github.com
+            o-feature  PR #16 (some_other_user)
               |
-              o-feature_1  PR #17 (some_other_user) www.github.com
+              o-feature_1  PR #17 (some_other_user)
               |
               o-feature_2 *
 

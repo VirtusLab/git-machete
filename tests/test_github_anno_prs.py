@@ -88,15 +88,15 @@ class TestGitHubAnnoPRs(BaseTest):
             |
             o-hotfix/add-trigger (diverged from origin)
               |
-              o-ignore-trailing *  PR #3 (some_other_user) www.github.com rebase=no push=no (diverged from & older than origin)
+              o-ignore-trailing *  PR #3 (some_other_user) rebase=no push=no (diverged from & older than origin)
 
-            develop  PR #37 www.github.com WRONG PR BASE or MACHETE PARENT? PR has master
+            develop  PR #37 WRONG PR BASE or MACHETE PARENT? PR has master
             |
-            x-allow-ownership-link  PR #7 (some_other_user) www.github.com rebase=no (ahead of origin)
+            x-allow-ownership-link  PR #7 (some_other_user) rebase=no (ahead of origin)
             | |
             | x-build-chain  rebase=no push=no (untracked)
             |
-            o-call-ws  PR #31 www.github.com (ahead of origin)
+            o-call-ws  PR #31 (ahead of origin)
               |
               x-drop-constraint (untracked)
             """
@@ -119,15 +119,15 @@ class TestGitHubAnnoPRs(BaseTest):
             |
             o-hotfix/add-trigger (diverged from origin)
               |
-              o-ignore-trailing *  PR #3 (some_other_user) www.github.com rebase=no push=no (diverged from & older than origin)
+              o-ignore-trailing *  PR #3 (some_other_user) rebase=no push=no (diverged from & older than origin)
 
-            develop  PR #37 www.github.com WRONG PR BASE or MACHETE PARENT? PR has master
+            develop  PR #37 WRONG PR BASE or MACHETE PARENT? PR has master
             |
-            x-allow-ownership-link  PR #7 (some_other_user) www.github.com rebase=no (ahead of origin)
+            x-allow-ownership-link  PR #7 (some_other_user) rebase=no (ahead of origin)
             | |
             | x-build-chain  rebase=no push=no (untracked)
             |
-            o-call-ws  PR #31 www.github.com (ahead of origin)
+            o-call-ws  PR #31 (ahead of origin)
               |
               x-drop-constraint (untracked)
             """,
@@ -175,7 +175,7 @@ class TestGitHubAnnoPRs(BaseTest):
         |
         o-feature
           |
-          o-feature_1 *  PR #20 (some_other_user) www.github.com rebase=no push=no
+          o-feature_1 *  PR #20 (some_other_user) rebase=no push=no
         """
         assert_success(
             ['status'],
