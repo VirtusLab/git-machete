@@ -2,7 +2,7 @@
 
 set -e -o pipefail -u -x
 
-HOMEBREW_VERSION=4.0.26
+HOMEBREW_VERSION=4.1.21
 
 export HOMEBREW_NO_AUTO_UPDATE=1
 
