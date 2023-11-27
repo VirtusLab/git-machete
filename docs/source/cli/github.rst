@@ -53,7 +53,7 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 
     ``<PR-number-1> ... <PR-number-N>``    Pull request numbers to checkout.
 
-``create-pr [--draft]``:
+``create-pr [--draft] [--title=<title>]``:
     Creates a PR for the current branch, using the upstream (parent) branch as the PR base.
     Once the PR is successfully created, annotates the current branch with the new PR's number.
 
@@ -67,7 +67,9 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 
     **Options:**
 
-    --draft    Creates the new PR as a draft.
+    --draft            Create the new PR as a draft.
+
+    --title=<title>    Set the PR title explicitly (the default is to use the first included commit's message as the title).
 
 ``restack-pr``:
     Perform the following sequence of actions:

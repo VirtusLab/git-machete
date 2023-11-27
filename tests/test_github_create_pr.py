@@ -148,6 +148,7 @@ class TestGitHubCreatePR(BaseTest):
         )
         pr = github_api_state.get_pull_by_number(5)
         assert pr is not None
+        assert pr['title'] == 'remove outdated fields'
         assert pr['body'] == '# Based on PR #3\n\n# PR title\n## Summary\n##Test plan\n'
         assert pr['draft'] is True
         assert pr['milestone'] == '42'
@@ -244,7 +245,7 @@ class TestGitHubCreatePR(BaseTest):
         self.repo_sandbox.write_to_file(".git/info/description", "# PR title\n")
         self.repo_sandbox.check_out("allow-ownership-link")
         assert_success(
-            ["github", "create-pr"],
+            ["github", "create-pr", "--title=PR title set explicitly"],
             f"""
             Push allow-ownership-link to origin? (y, N, q)
 
@@ -277,6 +278,10 @@ class TestGitHubCreatePR(BaseTest):
             Skipped adding reviewers to pull request.
             """
         )
+
+        pr = github_api_state.get_pull_by_number(7)
+        assert pr is not None
+        assert pr['title'] == 'PR title set explicitly'
 
     def test_github_create_pr_for_root_branch(self) -> None:
         self.repo_sandbox.new_branch("master").commit()

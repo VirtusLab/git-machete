@@ -3,6 +3,7 @@
 ## New in git-machete 3.21.0
 
 - added: `--removed-from-remote` flag to `git machete slide-out` (contributed by @raylu)
+- added: `--title` flag to `git machete github create-pr` that allows for setting PR title explicitly (suggested by @mjgigli)
 - added: `--with-urls` flag to `git machete github anno-prs` and `machete.github.annotateWithUrls` git config key that allow for adding the URL of the PR to the annotations (contributed by @guyboltonking)
 - deprecated: `git machete clean` and `git machete github sync`; use `github checkout-prs --mine`, `delete-unmanaged` and `slide-out --removed-from-remote` instead
 - fixed: PR author is now always added to annotation if different from current user (contributed by @guyboltonking)

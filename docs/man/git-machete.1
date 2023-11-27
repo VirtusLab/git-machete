@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Nov 28, 2023" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Nov 30, 2023" "" "git-machete"
 .SH NAME
 git-machete \- git-machete 3.21.0
 .sp
@@ -1091,7 +1091,7 @@ Checkout open PRs for the current user associated with the GitHub token.
 .sp
 \fB<PR\-number\-1> ... <PR\-number\-N>\fP    Pull request numbers to checkout.
 .TP
-.B \fBcreate\-pr [\-\-draft]\fP:
+.B \fBcreate\-pr [\-\-draft] [\-\-title=<title>]\fP:
 Creates a PR for the current branch, using the upstream (parent) branch as the PR base.
 Once the PR is successfully created, annotates the current branch with the new PR\(aqs number.
 .sp
@@ -1107,7 +1107,10 @@ If the newly\-created PR is stacked atop another PR, the actual PR description p
 .INDENT 7.0
 .TP
 .B  \-\-draft
-Creates the new PR as a draft.
+Create the new PR as a draft.
+.TP
+.BI \-\-title\fB= <title>
+Set the PR title explicitly (the default is to use the first included commit\(aqs message as the title).
 .UNINDENT
 .TP
 .B \fBrestack\-pr\fP:

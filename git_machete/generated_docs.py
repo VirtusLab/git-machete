@@ -612,7 +612,7 @@ long_docs: Dict[str, str] = {
 
               `<PR-number-1> ... <PR-number-N>`    Pull request numbers to checkout.
 
-           `create-pr [--draft]`:
+           `create-pr [--draft] [--title=<title>]`:
  
               Creates a PR for the current branch, using the upstream (parent) branch as the PR base.
               Once the PR is successfully created, annotates the current branch with the new PR's number.
@@ -628,7 +628,11 @@ long_docs: Dict[str, str] = {
               <b>Options:</b>
 
                  <b>--draft</b>
-              Creates the new PR as a draft.
+              Create the new PR as a draft.
+
+                 <b>--title=<title></b>
+
+              Set the PR title explicitly (the default is to use the first included commit's message as the title).
 
            `restack-pr`:
  

@@ -141,10 +141,10 @@ _git-machete() {
             '(--no-detect-squash-merges)'--no-detect-squash-merges'[Only consider "strict" (fast-forward or 2-parent) merges, rather than rebase/squash merges, when detecting if a branch is merged into its upstream]' \
             '(--no-edit-merge)'--no-edit-merge'[If updating by merge, pass --no-edit flag to underlying git merge]' \
             '(--no-interactive-rebase)'--no-interactive-rebase'[If updating by rebase, do NOT pass --interactive flag to underlying git rebase]' \
-            '(--no-push)'--no-push'[Do not push any (neither tracked nor untracked) branches to remote.]' \
-            '(--no-push-untracked)'--no-push-untracked'[Do not push untracked branches to remote.]' \
-            '(--push)'--push'[Push all (both tracked and untracked) branches to remote (default behavior).]' \
-            '(--push-untracked)'--push-untracked'[Push untracked branches to remote (default behavior).]' \
+            '(--no-push)'--no-push'[Do not push any (neither tracked nor untracked) branches to remote]' \
+            '(--no-push-untracked)'--no-push-untracked'[Do not push untracked branches to remote]' \
+            '(--push)'--push'[Push all (both tracked and untracked) branches to remote (default behavior)]' \
+            '(--push-untracked)'--push-untracked'[Push untracked branches to remote (default behavior)]' \
             '(--return-to)'--return-to='[The branch to return after traversal is successfully completed; argument can be "here", "nearest-remaining", or "stay"]: :__git_machete_opt_return_to_args' \
             '(--start-from)'--start-from='[The branch to  to start the traversal from; argument can be "here", "root", or "first-root"]: :__git_machete_opt_start_from_args' \
             '(-w --whole)'{-w,--whole}'[Equivalent to -n --start-from=first-root --return-to=nearest-remaining]' \
@@ -257,28 +257,29 @@ __git_machete_github_subcommands() {
 
         (anno-prs) \
           _arguments \
-            '(--with-urls)'--with-urls'[Include PR URLs in the annotations.]' \
+            '(--with-urls)'--with-urls'[Include PR URLs in the annotations]' \
             "${common_flags[@]}"
         ;;
 
         (checkout-prs)
           _arguments \
-            '(--all)'--all'[Checkout all open PRs.]' \
+            '(--all)'--all'[Checkout all open PRs]' \
             '(--by)'--by='[Checkout open PRs authored by the given GitHub user]' \
-            '(--mine)'--mine='[Checkout open PRs for the current user associated with the GitHub token.]' \
+            '(--mine)'--mine='[Checkout open PRs for the current user associated with the GitHub token]' \
             "${common_flags[@]}"
         ;;
 
         (create-pr)
           _arguments \
-            '(--draft)'--draft'[Creates the new PR as draft]' \
+            '(--draft)'--draft'[Create the new PR as draft]' \
+            '(--title)'--title='[Set the title for new PR explicitly]' \
             "${common_flags[@]}"
         ;;
 
         (retarget-pr)
           _arguments \
-            '(-b --branch)'{-b,--branch=}'[Specify the branch for which the associated PR base will be set to its upstream (parent) branch.]: :__git_machete_list_managed' \
-            '(--ignore-if-missing)'--ignore-if-missing'[Ignore errors and quietly terminate execution if there is no PR opened for current (or specified) branch.]' \
+            '(-b --branch)'{-b,--branch=}'[Specify the branch for which the associated PR base will be set to its upstream (parent) branch]: :__git_machete_list_managed' \
+            '(--ignore-if-missing)'--ignore-if-missing'[Ignore errors and quietly terminate execution if there is no PR opened for current (or specified) branch]' \
             "${common_flags[@]}"
         ;;
       esac

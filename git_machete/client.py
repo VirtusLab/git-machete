@@ -2428,7 +2428,8 @@ class MacheteClient:
             *,
             head: LocalBranchShortName,
             opt_draft: bool,
-            opt_onto: Optional[LocalBranchShortName]
+            opt_onto: Optional[LocalBranchShortName],
+            opt_title: Optional[str]
     ) -> None:
         # first make sure that head branch is synced with remote
         try:
@@ -2480,10 +2481,13 @@ class MacheteClient:
 
         fork_point = self.fork_point(head, use_overrides=True)
         commits: List[GitLogEntry] = self.__git.get_commits_between(fork_point, head)
-        # git-machete can still see an empty range of unique commits (e.g. in case of yellow edge)
-        # even though GitHub sees a non-empty range.
-        # Let's use branch name as a fallback for PR title in such case.
-        title = commits[0].subject if commits else head
+        if opt_title:
+            title = opt_title
+        else:
+            # git-machete can still see an empty range of unique commits (e.g. in case of yellow edge)
+            # even though GitHub sees a non-empty range.
+            # Let's use branch name as a fallback for PR title in such case.
+            title = commits[0].subject if commits else head
 
         ok_str = '<green><b>OK</b></green>'
         print(f'Creating a {"draft " if opt_draft else ""}PR from {bold(head)} to {bold(base)}... ', end='', flush=True)

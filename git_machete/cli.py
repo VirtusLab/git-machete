@@ -242,12 +242,13 @@ def create_cli_parser() -> argparse.ArgumentParser:
         parents=[common_args_parser])
     github_parser.add_argument('subcommand', choices=['anno-prs', 'checkout-prs', 'create-pr', 'restack-pr', 'retarget-pr', 'sync'])
     github_parser.add_argument('pr_no', nargs='*', type=int)
-    github_parser.add_argument('-b', '--branch', default=argparse.SUPPRESS)
+    github_parser.add_argument('-b', '--branch')
     github_parser.add_argument('--all', action='store_true')
     github_parser.add_argument('--by')
     github_parser.add_argument('--draft', action='store_true')
     github_parser.add_argument('--ignore-if-missing', action='store_true')
     github_parser.add_argument('--mine', action='store_true')
+    github_parser.add_argument('--title')
     github_parser.add_argument('--with-urls', action='store_true')
 
     go_parser = subparsers.add_parser(
@@ -473,6 +474,8 @@ def update_cli_options_using_parsed_args(
             cli_opts.opt_stat = True
         elif opt == "sync_github_prs":
             cli_opts.opt_sync_github_prs = True
+        elif opt == "title":
+            cli_opts.opt_title = arg
         elif opt == "unset_override":
             cli_opts.opt_unset_override = True
         elif opt == "W":
@@ -679,17 +682,19 @@ def launch(orig_args: List[str]) -> None:
             github_subcommand = parsed_cli.subcommand
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
 
-            if 'draft' in parsed_cli and github_subcommand != 'create-pr':
-                raise MacheteException("`--draft` option is only valid with `create-pr` subcommand.")
+            if 'pr_no' in parsed_cli and github_subcommand != 'checkout-prs':
+                raise MacheteException("`pr_no` option is only valid with `checkout-prs` subcommand.")
             for command in ('all', 'by', 'mine'):
                 if command in parsed_cli and github_subcommand != 'checkout-prs':
                     raise MacheteException(f"`--{command}` option is only valid with `checkout-prs` subcommand.")
-            if 'pr_no' in parsed_cli and github_subcommand != 'checkout-prs':
-                raise MacheteException("`pr_no` option is only valid with `checkout-prs` subcommand.")
             if 'branch' in parsed_cli and github_subcommand != 'retarget-pr':
                 raise MacheteException("`--branch` option is only valid with `retarget-pr` subcommand.")
+            if 'draft' in parsed_cli and github_subcommand != 'create-pr':
+                raise MacheteException("`--draft` option is only valid with `create-pr` subcommand.")
             if 'ignore_if_missing' in parsed_cli and github_subcommand != 'retarget-pr':
                 raise MacheteException("`--ignore-if-missing` option is only valid with `retarget-pr` subcommand.")
+            if 'title' in parsed_cli and github_subcommand != 'create-pr':
+                raise MacheteException("`--title` option is only valid with `create-pr` subcommand.")
             if 'with_urls' in parsed_cli and github_subcommand != 'anno-prs':
                 raise MacheteException("`--with-urls` option is only valid with `anno-prs` subcommand.")
 
@@ -709,7 +714,8 @@ def launch(orig_args: List[str]) -> None:
                 machete_client.create_github_pr(
                     head=current_branch,
                     opt_draft=cli_opts.opt_draft,
-                    opt_onto=cli_opts.opt_onto)
+                    opt_onto=cli_opts.opt_onto,
+                    opt_title=cli_opts.opt_title)
             elif github_subcommand == "restack-pr":
                 machete_client.restack_github_pr()
             elif github_subcommand == "retarget-pr":

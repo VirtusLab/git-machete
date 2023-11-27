@@ -35,6 +35,7 @@ class CommandLineOptions:
         self.opt_start_from: str = "here"
         self.opt_stat: bool = False
         self.opt_sync_github_prs: bool = False
+        self.opt_title: Optional[str] = None
         self.opt_unset_override: bool = False
         self.opt_with_urls: bool = False
         self.opt_yes: bool = False
