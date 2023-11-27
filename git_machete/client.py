@@ -166,12 +166,12 @@ class MacheteClient:
                     get_pretty_choices("y", "e[dit]", "N"), opt_yes_msg=None, opt_yes=False)
             else:
                 ans = self.ask_if(
-                    f"Skipping {', '.join(f'{bold(branch)}' for branch in invalid_branches)}"
+                    f"Skipping {', '.join(bold(branch) for branch in invalid_branches)}"
                     " which are not local branches (perhaps they have been deleted?).\n"
                     "Slide them out from the branch layout file?" + get_pretty_choices("y", "e[dit]", "N"),
                     opt_yes_msg=None, opt_yes=False)
         else:
-            print(f"Warning: sliding invalid branches: {', '.join(f'{bold(branch)}' for branch in invalid_branches)} "
+            print(f"Warning: sliding invalid branches: {', '.join(bold(branch) for branch in invalid_branches)} "
                   f"out of the branch layout file", file=sys.stderr)
             ans = 'y'
 
@@ -260,7 +260,7 @@ class MacheteClient:
                 # specified via `--onto`, we'll try to infer it now.
             else:
                 out_of = LocalBranchShortName.of(opt_onto).full_name() if opt_onto else HEAD
-                out_of_str = f"{bold(opt_onto)}" if opt_onto else "the current HEAD"
+                out_of_str = bold(opt_onto) if opt_onto else "the current HEAD"
                 msg = (f"A local branch {bold(branch)} does not exist. Create out "
                        f"of {out_of_str}?" + get_pretty_choices('y', 'N'))
                 opt_yes_msg = (f"A local branch {bold(branch)} does not exist. "
@@ -454,7 +454,7 @@ class MacheteClient:
             warn(
                 "skipping %s since %s merged to another branch and would not "
                 "have any downstream branches.\n"
-                % (", ".join(f"{bold(branch)}" for branch in merged_branches_to_skip),
+                % (", ".join(bold(branch) for branch in merged_branches_to_skip),
                    "it's" if len(merged_branches_to_skip) == 1 else "they're"))
             self.__managed_branches = excluding(self.managed_branches, merged_branches_to_skip)
             for branch in merged_branches_to_skip:
@@ -528,7 +528,7 @@ class MacheteClient:
             if not dbs or len(dbs) == 0:
                 raise MacheteException(f"No downstream branch defined for {bold(bu)}, cannot slide out")
             elif len(dbs) > 1:
-                flat_dbs = ", ".join(f"{bold(x)}" for x in dbs)
+                flat_dbs = ", ".join(bold(x) for x in dbs)
                 raise MacheteException(
                     f"Multiple downstream branches defined for {bold(bu)}: {flat_dbs}; cannot slide out")
             elif dbs != [bd]:
@@ -1039,8 +1039,7 @@ class MacheteClient:
                             fp_suffix = ''
                         print_line_prefix(branch, utils.get_vertical_bar())
                         out.write(f' {f"{dim(commit.short_hash)}  " if opt_list_commits_with_hashes else ""}'
-                                  f'{dim(commit.subject)}'
-                                  f'{fp_suffix}\n')
+                                  f'{dim(commit.subject)}{fp_suffix}\n')
 
                 junction: str
                 if utils.ascii_only:
@@ -1124,12 +1123,11 @@ class MacheteClient:
             if len(branches_in_sync_but_fork_point_off) == 1:
                 first_part = (f"yellow edge indicates that fork point for {bold(str(yellow_edge_branch))} "
                               f"is probably incorrectly inferred,\nor that some extra branch should be between "
-                              f"{bold(str(self.__up_branch[yellow_edge_branch]))} and "
-                              f"{bold(str(yellow_edge_branch))}")
+                              f"{bold(str(self.__up_branch[yellow_edge_branch]))} and {bold(str(yellow_edge_branch))}")
             else:
-                affected_branches = ", ".join(map(lambda x: f"{bold(x)}", branches_in_sync_but_fork_point_off))
+                affected_branches = ", ".join(map(bold, branches_in_sync_but_fork_point_off))
                 first_part = f"yellow edges indicate that fork points for {affected_branches} are probably incorrectly inferred,\n" \
-                             f"or that some extra branch should be added between each of these branches and its parent"
+                             "or that some extra branch should be added between each of these branches and its parent"
 
             if not opt_list_commits:
                 second_part = "Run `git machete status --list-commits` or " \
@@ -2334,7 +2332,7 @@ class MacheteClient:
             self.__annotations[head] = Annotation(f'{self.__github_pr_annotation(pr, current_user)} ' +
                                                   self.__annotations[head].qualifiers_text)
         else:
-            self.__annotations[head] = Annotation(f'{self.__github_pr_annotation(pr, current_user)}')
+            self.__annotations[head] = Annotation(self.__github_pr_annotation(pr, current_user))
         self.save_branch_layout_file()
 
     def __derive_github_domain(self) -> str:
@@ -2511,7 +2509,7 @@ class MacheteClient:
         else:
             reviewers = []
         if reviewers:
-            print(f'Adding {", ".join(f"{bold(reviewer)}" for reviewer in reviewers)} '
+            print(f'Adding {", ".join(bold(reviewer) for reviewer in reviewers)} '
                   f'as reviewer{"s" if len(reviewers) > 1 else ""} to PR #{bold(str(pr.number))}... ',
                   end='', flush=True)
             try:

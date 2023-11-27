@@ -33,5 +33,6 @@ prohibit-markdown-links-in-rst.sh
 prohibit-single-backtick-in-rst.sh
 prohibit-strings-split-without-delimiter.sh
 prohibit-strings-with-backslash-continuation.sh
+prohibit-strings-with-useless-interpolations.sh
 prohibit-tab-character.sh
 prohibit-trailing-whitespace.sh

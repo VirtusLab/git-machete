@@ -696,8 +696,8 @@ def launch(orig_args: List[str]) -> None:
                 machete_client.sync_annotations_to_github_prs(include_urls=cli_opts.opt_with_urls)
             elif github_subcommand == "checkout-prs":
                 if len(set(parsed_cli_as_dict.keys()).intersection({'all', 'by', 'mine', 'pr_no'})) != 1:
-                    raise MacheteException("`checkout-prs` subcommand must take exactly one of the following options: "
-                                           f"{', '.join(['--all', '--by=...', '--mine', 'pr-number(s)'])}")
+                    raise MacheteException("`checkout-prs` subcommand must take exactly one of the following options: " +
+                                           ', '.join(['--all', '--by=...', '--mine', 'pr-number(s)']))
                 machete_client.checkout_github_prs(pr_numbers=parsed_cli.pr_no if 'pr_no' in parsed_cli else [],
                                                    all=parsed_cli.all if 'all' in parsed_cli else False,
                                                    mine=parsed_cli.mine if 'mine' in parsed_cli else False,
@@ -874,7 +874,7 @@ def launch(orig_args: List[str]) -> None:
                 nearest_existing_parent_directory = os.path.join(
                     nearest_existing_parent_directory, os.path.pardir)
             warn(f"current directory {initial_current_directory} no longer exists, "
-                 "the nearest existing parent directory is " f"{os.path.abspath(nearest_existing_parent_directory)}")
+                 f"the nearest existing parent directory is {os.path.abspath(nearest_existing_parent_directory)}")
 
 
 def main() -> None:

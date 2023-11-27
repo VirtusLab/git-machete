@@ -164,7 +164,7 @@ def resolve_includes(rst_: str, docs_source_path_: str) -> str:
             text_to_replace += f'\n{option_1_str}'
         if option_2 == 'end-line':
             end_line = int(option_2_value)
-            text_to_replace += f'{option_2_str}'
+            text_to_replace += option_2_str
         include_text = include_text[start_line:end_line]
         rst_ = rst_.replace(text_to_replace, indent(dedent(''.join(include_text)), indent_), 1)
     return rst_
