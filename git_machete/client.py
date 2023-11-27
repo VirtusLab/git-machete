@@ -1610,7 +1610,7 @@ class MacheteClient:
         for pr in prs:
             if LocalBranchShortName.of(pr.head) in self.managed_branches:
                 debug(f'{pr} corresponds to a managed branch')
-                anno: str = f'{self.__github_pr_annotation(pr, current_user, include_urls)}'
+                anno: str = self.__github_pr_annotation(pr, current_user, include_urls)
                 upstream: Optional[LocalBranchShortName] = self.__up_branch.get(LocalBranchShortName.of(pr.head))
                 if upstream is not None:
                     counterpart = self.__git.get_combined_counterpart_for_fetching_of_branch(upstream)
@@ -2521,8 +2521,8 @@ class MacheteClient:
                     print()
                     warn(f"There are some invalid reviewers in {self.__git.get_main_git_subpath('info', 'reviewers')} file.\n"
                          "Skipped adding reviewers to pull request.")
-                else:
-                    raise e
+                else:  # pragma: no cover
+                    raise MacheteException(f"{e}\n\n{GITHUB_NEW_ISSUE_MESSAGE}")
             else:
                 print(fmt(ok_str))
 

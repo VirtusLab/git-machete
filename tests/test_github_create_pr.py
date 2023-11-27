@@ -324,6 +324,8 @@ class TestGitHubCreatePR(BaseTest):
                         "Warn: Base branch for this PR (feature/api_handling) is not found on remote, pushing...\n"
                         "Push untracked branch feature/api_handling to origin? (y, Q)\n"
                         "Creating a PR from feature/api_exception_handling to feature/api_handling... OK, see www.github.com\n")
+
+        self.repo_sandbox.set_git_config_key("machete.github.annotateWithUrls", "true")
         assert_success(['github', 'create-pr'], expected_msg)
         assert_success(
             ['status'],
@@ -332,7 +334,7 @@ class TestGitHubCreatePR(BaseTest):
             |
             o-feature/api_handling
               |
-              o-feature/api_exception_handling *  PR #19 (some_other_user)
+              o-feature/api_exception_handling *  PR #19 (some_other_user) www.github.com
             """,
         )
 

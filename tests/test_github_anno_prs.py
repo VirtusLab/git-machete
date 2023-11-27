@@ -168,14 +168,14 @@ class TestGitHubAnnoPRs(BaseTest):
                     feature_1
             """
         rewrite_branch_layout_file(body)
-        launch_command("github", "anno-prs")
+        launch_command("github", "anno-prs", "--with-urls")
 
         expected_status_output = """
         root
         |
         o-feature
           |
-          o-feature_1 *  PR #20 (some_other_user) rebase=no push=no
+          o-feature_1 *  PR #20 (some_other_user) www.github.com rebase=no push=no
         """
         assert_success(
             ['status'],

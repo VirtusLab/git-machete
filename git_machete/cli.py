@@ -476,8 +476,6 @@ def update_cli_options_using_parsed_args(
             cli_opts.opt_sync_github_prs = True
         elif opt == "unset_override":
             cli_opts.opt_unset_override = True
-        elif opt == "urls":
-            cli_opts.opt_with_urls = True
         elif opt == "W":
             cli_opts.opt_fetch = True
             cli_opts.opt_start_from = "first-root"
@@ -487,6 +485,8 @@ def update_cli_options_using_parsed_args(
             cli_opts.opt_start_from = "first-root"
             cli_opts.opt_n = True
             cli_opts.opt_return_to = "nearest-remaining"
+        elif opt == "with_urls":
+            cli_opts.opt_with_urls = True
         elif opt == "yes":
             cli_opts.opt_yes = True
 
@@ -689,7 +689,7 @@ def launch(orig_args: List[str]) -> None:
                 raise MacheteException("`--branch` option is only valid with `retarget-pr` subcommand.")
             if 'ignore_if_missing' in parsed_cli and github_subcommand != 'retarget-pr':
                 raise MacheteException("`--ignore-if-missing` option is only valid with `retarget-pr` subcommand.")
-            if 'urls' in parsed_cli and github_subcommand != 'anno-prs':
+            if 'with_urls' in parsed_cli and github_subcommand != 'anno-prs':
                 raise MacheteException("`--with-urls` option is only valid with `anno-prs` subcommand.")
 
             if github_subcommand == "anno-prs":

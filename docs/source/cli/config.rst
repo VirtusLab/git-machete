@@ -8,11 +8,12 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 
 **Git config keys:**
 
-``machete.github.{domain,remote,organization,repository}``:
-    When executing ``git machete github <subcommand>`` command, the following will happen:
+``machete.github.annotateWithUrls``:
+  .. include:: github_annotateWithUrls_config_key.rst
 
-    .. include:: github_access_config_keys.rst
-        :start-line: 2
+``machete.github.{domain,remote,organization,repository}``:
+  .. include:: github_access_config_keys.rst
+      :start-line: 3
 
 ``machete.overrideForkPoint.<branch>.to``:
     Executing ``git machete fork-point --override-to[-parent|-inferred|=<revision>] [<branch>]`` sets up a fork point override for ``<branch>``.
@@ -43,8 +44,8 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 
 ``GIT_MACHETE_REBASE_OPTS``
     Used to pass extra options to the underlying ``git rebase`` invocation (called by the executed command,
-    such as: ``reapply``, ``slide-out``, ``traverse``, ``update``)
+    such as: ``reapply``, ``slide-out``, ``traverse``, ``update``).
     Example: ``GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete update``.
 
 ``GITHUB_TOKEN``
-    Used to store GitHub API token. Used by commands such as: ``anno``, ``clean``, ``github``.
+    Used to store GitHub API token. Used by commands such as: ``anno --sync-github-prs``, ``clean``, ``github``.

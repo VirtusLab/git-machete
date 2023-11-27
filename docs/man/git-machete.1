@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Nov 25, 2023" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Nov 27, 2023" "" "git-machete"
 .SH NAME
 git-machete \- git-machete 3.21.0
 .sp
@@ -389,11 +389,16 @@ Note: \fBconfig\fP is not a command as such, just a help topic (there is no \fBg
 \fBGit config keys:\fP
 .INDENT 0.0
 .TP
+.B \fBmachete.github.annotateWithUrls\fP:
+Setting this config key to \fBtrue\fP will cause all commands that write GitHub PR numbers into annotations
+to not only include PR number and author (if different from the current user), but also the full URL of the PR.
+.sp
+The affected (sub)commands clearly include \fBanno \-\-sync\-github\-prs\fP and \fBgithub anno\-prs\fP,
+but also \fBgithub checkout\-prs\fP, \fBgithub create\-pr\fP, \fBgithub retarget\-pr\fP and \fBgithub restack\-pr\fP\&.
+.TP
 .B \fBmachete.github.{domain,remote,organization,repository}\fP:
-When executing \fBgit machete github <subcommand>\fP command, the following will happen:
 .INDENT 7.0
 .INDENT 3.5
-GitHub API server URL will be inferred from \fBgit remote\fP\&.
 You can alter the default behavior by setting the following git config keys:
 .INDENT 0.0
 .INDENT 3.5
@@ -484,11 +489,11 @@ Name of the editor used by \fBgit machete e[dit]\fP, example: \fBvim\fP or \fBna
 .TP
 .B \fBGIT_MACHETE_REBASE_OPTS\fP
 Used to pass extra options to the underlying \fBgit rebase\fP invocation (called by the executed command,
-such as: \fBreapply\fP, \fBslide\-out\fP, \fBtraverse\fP, \fBupdate\fP)
+such as: \fBreapply\fP, \fBslide\-out\fP, \fBtraverse\fP, \fBupdate\fP).
 Example: \fBGIT_MACHETE_REBASE_OPTS=\(dq\-\-keep\-empty \-\-rebase\-merges\(dq git machete update\fP\&.
 .TP
 .B \fBGITHUB_TOKEN\fP
-Used to store GitHub API token. Used by commands such as: \fBanno\fP, \fBclean\fP, \fBgithub\fP\&.
+Used to store GitHub API token. Used by commands such as: \fBanno \-\-sync\-github\-prs\fP, \fBclean\fP, \fBgithub\fP\&.
 .UNINDENT
 .SH CLEAN
 .sp

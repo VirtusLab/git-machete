@@ -274,11 +274,16 @@ long_docs: Dict[str, str] = {
         Note: `config` is not a command as such, just a help topic (there is no `git machete config` command).
 
         <b>Git config keys:</b>
-           `machete.github.{domain,remote,organization,repository}`:
+           `machete.github.annotateWithUrls`:
  
-              When executing `git machete github <subcommand>` command, the following will happen:
+              Setting this config key to `true` will cause all commands that write GitHub PR numbers into annotations
+              to not only include PR number and author (if different from the current user), but also the full URL of the PR.
 
-              GitHub API server URL will be inferred from `git remote`.
+              The affected (sub)commands clearly include `anno --sync-github-prs` and `github anno-prs`,
+              but also `github checkout-prs`, `github create-pr`, `github retarget-pr` and `github restack-pr`.
+
+           `machete.github.{domain,remote,organization,repository}`:
+
               You can alter the default behavior by setting the following git config keys:
 
                  GitHub Enterprise domain
@@ -346,11 +351,11 @@ long_docs: Dict[str, str] = {
 
            `GIT_MACHETE_REBASE_OPTS`
               Used to pass extra options to the underlying `git rebase` invocation (called by the executed command,
-              such as: `reapply`, `slide-out`, `traverse`, `update`)
+              such as: `reapply`, `slide-out`, `traverse`, `update`).
               Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete update`.
 
            `GITHUB_TOKEN`
-              Used to store GitHub API token. Used by commands such as: `anno`, `clean`, `github`.
+              Used to store GitHub API token. Used by commands such as: `anno --sync-github-prs`, `clean`, `github`.
 
    """,
     "delete-unmanaged": """
@@ -1087,6 +1092,8 @@ long_docs: Dict[str, str] = {
           ├─ feature_branch1
           │
           └─ feature_branch2
+
+           :end-line: 3
         </dim>
    """,
     "traverse": """
