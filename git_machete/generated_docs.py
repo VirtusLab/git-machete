@@ -186,6 +186,8 @@ long_docs: Dict[str, str] = {
         <b>Usage:</b><b>
            git machete clean [-c|--checkout-my-github-prs] [-y|--yes]</b>
 
+        <b>Deprecated.</b> Use `github checkout-prs --mine`, `delete-unmanaged` and `slide-out --removed-from-remote`.
+
         Synchronizes with the remote repository:
            * if invoked with `-H` or `--checkout-my-github-prs`, checks out open PRs for the current user associated with the GitHub token
              and also traverses the chain of pull requests upwards, adding branches one by one to git-machete and checks them out locally as well,
@@ -355,7 +357,7 @@ long_docs: Dict[str, str] = {
               Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete update`.
 
            `GITHUB_TOKEN`
-              Used to store GitHub API token. Used by commands such as: `anno --sync-github-prs`, `clean`, `github`.
+              Used to store GitHub API token. Used by commands such as `anno --sync-github-prs` and `github`.
 
    """,
     "delete-unmanaged": """
@@ -661,6 +663,8 @@ long_docs: Dict[str, str] = {
 
            `sync`:
  
+              <b>Deprecated.</b> Use `github checkout-prs --mine`, `delete-unmanaged` and `slide-out --removed-from-remote`.
+
               Synchronizes with the remote repository:
 
                  * checks out open PRs for the current user associated with the GitHub token and also traverses the chain of pull requests upwards,
@@ -669,8 +673,6 @@ long_docs: Dict[str, str] = {
                  * deletes unmanaged branches,
 
                  * deletes untracked managed branches that have no downstream branch.
-
-              Equivalent of `git machete clean --checkout-my-github-prs`.
 
         <b>Git config keys (all subcommands):</b>
            `machete.github.annotateWithUrls`:

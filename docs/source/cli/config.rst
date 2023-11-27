@@ -48,4 +48,4 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
     Example: ``GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete update``.
 
 ``GITHUB_TOKEN``
-    Used to store GitHub API token. Used by commands such as: ``anno --sync-github-prs``, ``clean``, ``github``.
+    Used to store GitHub API token. Used by commands such as ``anno --sync-github-prs`` and ``github``.

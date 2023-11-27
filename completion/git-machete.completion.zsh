@@ -35,12 +35,6 @@ _git-machete() {
             '(-H --sync-github-prs)'{-H,--sync-github-prs}'[Annotate with GitHub PR numbers and authors where applicable]' \
             "${common_flags[@]}"
           ;;
-        (clean)
-          _arguments \
-            '(-H --checkout-my-github-prs)'{-H,--checkout-my-github-prs}'[Checkout your open PRs into local branches]' \
-            '(-y --yes)'{-y,--yes}'[Do not ask for confirmation when deleting unmanaged or untracked branches]' \
-            "${common_flags[@]}"
-          ;;
         (completion)
           _arguments \
             '1:: :__git_machete_completion_shells' \
@@ -175,7 +169,6 @@ __git_machete_cmds=(
   'add:Add a branch to the tree of branch dependencies'
   'advance:Fast-forward the current branch to match one of its downstreams and subsequently slide out this downstream'
   'anno:Manage custom annotations'
-  'clean:Delete untracked and unmanaged branches and optionally check out open GitHub PRs'
   'completion:Print completion script for the given shell'
   'delete-unmanaged:Delete local branches that are not present in the branch layout file'
   'diff:Diff current working directory or a given branch against its fork point'
@@ -255,7 +248,6 @@ __git_machete_github_subcommands() {
         'create-pr:create a PR for the current branch, using the upstream (parent) branch as the PR base'
         'restack-pr:(force-)push and retarget the PR, without adding code owners as reviewers in the process'
         'retarget-pr:set the base of the current branch PR to upstream (parent) branch'
-        'sync:synchronize with the remote repository: checkout open PRs for the current user associated with the GitHub token, delete unmanaged branches and also delete untracked managed branches with no downstream branch'
       )
       _describe 'subcommand' github_subcommands
       ;;

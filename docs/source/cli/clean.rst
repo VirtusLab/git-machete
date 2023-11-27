@@ -8,6 +8,8 @@ clean
 
     git machete clean [-c|--checkout-my-github-prs] [-y|--yes]
 
+**Deprecated.** Use ``github checkout-prs --mine``, ``delete-unmanaged`` and ``slide-out --removed-from-remote``.
+
 Synchronizes with the remote repository:
 
     1. if invoked with ``-H`` or ``--checkout-my-github-prs``, checks out open PRs for the current user associated with the GitHub token

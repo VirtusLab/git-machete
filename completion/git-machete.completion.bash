@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
 _git_machete() {
-  local cmds="add advance anno clean completion delete-unmanaged diff discover edit file fork-point github go help is-managed list log reapply show slide-out squash status traverse update version"
+  local cmds="add advance anno completion delete-unmanaged diff discover edit file fork-point github go help is-managed list log reapply show slide-out squash status traverse update version"
   local help_topics="$cmds config format hooks"
 
   local categories="addable childless managed slidable slidable-after unmanaged with-overridden-fork-point"
   local directions="down first last next prev root up"
-  local github_subcommands="anno-prs checkout-prs create-pr restack-pr retarget-pr sync"
+  local github_subcommands="anno-prs checkout-prs create-pr restack-pr retarget-pr"
   local locations="current $directions"
   local opt_color_args="always auto never"
   local opt_return_to_args="here nearest-remaining stay"
@@ -17,7 +17,6 @@ _git_machete() {
   local add_opts="-o --onto= -R --as-root -y --yes"
   local advance_opts="-y --yes"
   local anno_opts="-b --branch= -H --sync-github-prs"
-  local clean_opts="-H --checkout-my-github-prs -y --yes"
   local delete_unmanaged_opts="-y --yes"
   local diff_opts="-s --stat"
   local discover_opts="-C --checked-out-since= -l --list-commits -r --roots= -y --yes"
@@ -47,7 +46,6 @@ _git_machete() {
         add) __gitcomp "$common_opts $add_opts" ;;
         advance) __gitcomp "$common_opts $advance_opts" ;;
         anno) __gitcomp "$common_opts $anno_opts" ;;
-        clean) __gitcomp "$common_opts $clean_opts" ;;
         d|diff) __gitcomp "$common_opts $diff_opts" ;;
         delete-unmanaged) __gitcomp "$common_opts $delete_unmanaged_opts" ;;
         discover) __gitcomp "$common_opts $discover_opts" ;;

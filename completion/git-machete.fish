@@ -1,7 +1,7 @@
 # git.fish completions will provide all __fish_git_* functions referenced from this script
 
 set -l __machete_help_topics config format hooks
-set -l __machete_commands_long add advance anno clean completion delete-unmanaged diff discover edit file fork-point \
+set -l __machete_commands_long add advance anno completion delete-unmanaged diff discover edit file fork-point \
   github go help is-managed list log reapply show slide-out squash status traverse update version
 set -l __machete_commands_short d e g l s t
 set -l __machete_commands $__machete_commands_long $__machete_commands_short
@@ -48,11 +48,6 @@ complete -c git-machete -n "__fish_seen_subcommand_from advance; and not __fish_
 complete -c git-machete -n "not __fish_seen_subcommand_from $__machete_commands"                                        -f                         -a anno                           -d 'Manage custom annotations'
 complete -c git-machete -n "__fish_seen_subcommand_from anno"                                                           -x -l branch          -s b -a '(__machete_managed_branches)' -d 'Branch to set the annotation for'
 complete -c git-machete -n "__fish_seen_subcommand_from anno; and not __fish_seen_subcommand_from --sync-github-prs -H" -f -l sync-github-prs -s H                                   -d 'Annotate with GitHub PR numbers and authors where applicable'
-
-# git machete clean
-complete -c git-machete -n "not __fish_seen_subcommand_from $__machete_commands"                                                  -f -a clean                       -d 'Delete untracked and unmanaged branches, and optionally check out open GitHub PRs'
-complete -c git-machete -n "__fish_seen_subcommand_from clean; and not __fish_seen_subcommand_from --checkout-my-github-prs -H"   -f -l checkout-my-github-prs -s H -d 'Checkout open PRs for the current user associated with the GitHub token'
-complete -c git-machete -n "__fish_seen_subcommand_from clean; and not __fish_seen_subcommand_from --yes -y"                      -f -l yes                    -s y -d 'Do not ask for confirmation'
 
 # git machete completion
 complete -c git-machete -n "not __fish_seen_subcommand_from $__machete_commands"                                       -f -a completion -d 'Print completion script for the given shell'
@@ -102,7 +97,6 @@ complete -c git-machete -n "__fish_seen_subcommand_from github; and not __fish_s
 complete -c git-machete -n "__fish_seen_subcommand_from github; and not __fish_seen_subcommand_from anno-prs checkout-prs create-pr restack-pr retarget-pr sync"          -f -a create-pr                                            -d 'Creates a PR for the current branch, using the upstream (parent) branch as the PR base'
 complete -c git-machete -n "__fish_seen_subcommand_from github; and not __fish_seen_subcommand_from anno-prs checkout-prs create-pr restack-pr retarget-pr sync"          -f -a restack-pr                                           -d '(Force-)pushes and retargets the PR, without adding code owners as reviewers in the process'
 complete -c git-machete -n "__fish_seen_subcommand_from github; and not __fish_seen_subcommand_from anno-prs checkout-prs create-pr restack-pr retarget-pr sync"          -f -a retarget-pr                                          -d 'Sets the base of PR for the current branch to upstream (parent) branch, as seen by git machete (see git machete show up)'
-complete -c git-machete -n "__fish_seen_subcommand_from github; and not __fish_seen_subcommand_from anno-prs checkout-prs create-pr restack-pr retarget-pr sync"          -f -a sync                                                 -d 'Synchronize with the remote repository: checkout open PRs for the current user associated with the GitHub token, delete unmanaged branches and also delete untracked managed branches with no downstream branch'
 complete -c git-machete -n "__fish_seen_subcommand_from github; and __fish_seen_subcommand_from anno-prs;     and not __fish_seen_subcommand_from --with-urls"            -f -l with-urls                                            -d 'Include PR URLs in the annotations'
 complete -c git-machete -n "__fish_seen_subcommand_from github; and __fish_seen_subcommand_from checkout-prs; and not __fish_seen_subcommand_from --all"                  -f -l all                                                  -d 'Checkout all open PRs'
 complete -c git-machete -n "__fish_seen_subcommand_from github; and __fish_seen_subcommand_from checkout-prs; and not __fish_seen_subcommand_from --by"                   -x -l by                                                   -d "Checkout someone's open PRs"

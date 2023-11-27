@@ -8,7 +8,7 @@ from tests.mockers import rewrite_branch_layout_file
 
 test_cases: Dict[str, str] = {
     "git machete ":
-        "add advance anno clean completion delete-unmanaged diff discover edit file fork-point github go "
+        "add advance anno completion delete-unmanaged diff discover edit file fork-point github go "
         "help is-managed list log reapply show slide-out squash status traverse update version",
     "git machete -":
         "--debug -h --help -v --verbose --version",
@@ -30,8 +30,6 @@ test_cases: Dict[str, str] = {
         "develop master",
     "git machete anno --branch=":
         "develop master",
-    "git machete clean -":
-        "-H --checkout-my-github-prs --debug -h --help -v --verbose -y --yes",
     "git machete completion ":
         "bash fish zsh",
     "git machete delete-unmanaged -":
@@ -57,7 +55,7 @@ test_cases: Dict[str, str] = {
     "git machete fork-point --unset-override ":
         "develop",
     "git machete github ":
-        "anno-prs checkout-prs create-pr restack-pr retarget-pr sync",
+        "anno-prs checkout-prs create-pr restack-pr retarget-pr",
     "git machete github anno-prs -":
         "--debug -h --help -v --verbose --with-urls",
     "git machete github checkout-prs -":
@@ -73,7 +71,7 @@ test_cases: Dict[str, str] = {
     "git machete go ":
         "down first last next prev root up",
     "git machete help ":
-        "add advance anno clean completion config delete-unmanaged diff discover edit file fork-point format github go "
+        "add advance anno completion config delete-unmanaged diff discover edit file fork-point format github go "
         "help hooks is-managed list log reapply show slide-out squash status traverse update version",
     "git machete is-managed ":
         "develop feature master",

@@ -95,14 +95,14 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
     --ignore-if-missing       Ignore errors and quietly terminate execution if there is no PR opened for current (or specified) branch.
 
 ``sync``:
+    **Deprecated.** Use ``github checkout-prs --mine``, ``delete-unmanaged`` and ``slide-out --removed-from-remote``.
+
     Synchronizes with the remote repository:
 
       1. checks out open PRs for the current user associated with the GitHub token and also traverses the chain of pull requests upwards,
          adding branches one by one to git-machete and checks them out locally as well,
       2. deletes unmanaged branches,
       3. deletes untracked managed branches that have no downstream branch.
-
-    Equivalent of ``git machete clean --checkout-my-github-prs``.
 
 **Git config keys (all subcommands):**
 
