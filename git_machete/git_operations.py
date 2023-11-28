@@ -10,17 +10,16 @@ from typing import (Any, Dict, Iterator, List, Match, NamedTuple, Optional,
 from . import utils
 from .constants import (MAX_COUNT_FOR_INITIAL_LOG, GitFormatPatterns,
                         SyncToRemoteStatuses)
-from .exceptions import MacheteException, UnderlyingGitException
-from .utils import (GITHUB_NEW_ISSUE_MESSAGE, AnsiEscapeCodes, CommandResult,
-                    colored, debug, fmt, hex_repr)
+from .exceptions import UnderlyingGitException, UnexpectedMacheteException
+from .utils import (AnsiEscapeCodes, CommandResult, colored, debug, fmt,
+                    hex_repr)
 
 
 class AnyRevision(str):
     @staticmethod
     def of(value: str) -> "AnyRevision":
         if not value:
-            raise TypeError(  # pragma: no cover
-                f'AnyRevision.of should not accept {value} as a param.\n' + GITHUB_NEW_ISSUE_MESSAGE)
+            raise UnexpectedMacheteException(f'AnyRevision.of should not accept {value} as a param.')
 
         return AnyRevision(value)
 
@@ -32,8 +31,7 @@ class AnyBranchName(AnyRevision):
     @staticmethod
     def of(value: str) -> "AnyBranchName":
         if not value:
-            raise TypeError(  # pragma: no cover
-                f'AnyBranchName.of should not accept {value} as a param.\n' + GITHUB_NEW_ISSUE_MESSAGE)
+            raise UnexpectedMacheteException(f'AnyBranchName.of should not accept {value} as a param.')
         return AnyBranchName(value)
 
     def full_name(self) -> "AnyBranchName":
@@ -44,9 +42,8 @@ class LocalBranchShortName(AnyBranchName):
     @staticmethod
     def of(value: str) -> "LocalBranchShortName":
         if value.startswith('refs/heads/') or value.startswith('refs/remotes/'):
-            raise TypeError(  # pragma: no cover
-                f'LocalBranchShortName cannot accept `refs/heads` or `refs/remotes`. '
-                f'Provided value: {value}.\n{GITHUB_NEW_ISSUE_MESSAGE}')
+            raise UnexpectedMacheteException(
+                f'LocalBranchShortName cannot accept `refs/heads` or `refs/remotes`. Provided value: {value}.')
         else:
             return LocalBranchShortName(value)
 
@@ -60,9 +57,8 @@ class LocalBranchFullName(AnyBranchName):
         if value and value.startswith('refs/heads/'):
             return LocalBranchFullName(value)
         else:
-            raise TypeError(  # pragma: no cover
-                f'LocalBranchFullName needs to have `refs/heads` prefix before branch name. '
-                f'Provided value: {value}.\n{GITHUB_NEW_ISSUE_MESSAGE}')
+            raise UnexpectedMacheteException(
+                f'LocalBranchFullName needs to have `refs/heads` prefix before branch name. Provided value: {value}.')
 
     @staticmethod
     def from_short_name(value: LocalBranchShortName) -> "LocalBranchFullName":
@@ -79,9 +75,8 @@ class RemoteBranchShortName(AnyBranchName):
     @staticmethod
     def of(value: str) -> "RemoteBranchShortName":
         if value and value.startswith('refs/heads/') or value.startswith('refs/remotes/'):
-            raise TypeError(  # pragma: no cover
-                f'RemoteBranchShortName cannot accept `refs/heads` or `refs/remotes`. '
-                f'Provided value: {value}.\n{GITHUB_NEW_ISSUE_MESSAGE}')
+            raise UnexpectedMacheteException(
+                f'RemoteBranchShortName cannot accept `refs/heads` or `refs/remotes`. Provided value: {value}.')
         else:
             return RemoteBranchShortName(value)
 
@@ -95,9 +90,8 @@ class RemoteBranchFullName(AnyBranchName):
         if value and value.startswith('refs/remotes/'):
             return RemoteBranchFullName(value)
         else:
-            raise TypeError(  # pragma: no cover
-                f'RemoteBranchFullName needs to have `refs/remotes` prefix before branch name. '
-                f'Provided value: {value}.\n{GITHUB_NEW_ISSUE_MESSAGE}')
+            raise UnexpectedMacheteException(
+                f'RemoteBranchFullName needs to have `refs/remotes` prefix before branch name. Provided value: {value}.')
 
     @staticmethod
     def is_valid(value: str) -> bool:
@@ -120,9 +114,8 @@ class FullCommitHash(AnyRevision):
         if value and len(value) == 40:
             return FullCommitHash(value)
         else:
-            raise TypeError(  # pragma: no cover
-                f'FullCommitHash requires length of 40. '
-                f'Provided value: "{value}".\n{GITHUB_NEW_ISSUE_MESSAGE}')
+            raise UnexpectedMacheteException(
+                f'FullCommitHash requires length of 40. Provided value: "{value}".')
 
     @staticmethod
     def is_valid(value: str) -> bool:
@@ -138,9 +131,9 @@ class ShortCommitHash(AnyRevision):
         if value and len(value) >= 7:
             return ShortCommitHash(value)
         else:
-            raise TypeError(  # pragma: no cover
+            raise UnexpectedMacheteException(
                 f'ShortCommitHash requires length greater or equal to 7. '
-                f'Provided value: "{value}".\n{GITHUB_NEW_ISSUE_MESSAGE}')
+                f'Provided value: "{value}".')
 
     def full_name(self) -> "ShortCommitHash":
         return self
@@ -150,8 +143,8 @@ class FullTreeHash(str):
     @staticmethod
     def of(value: str) -> Optional["FullTreeHash"]:
         if not value:
-            raise TypeError(  # pragma: no cover
-                f'FullTreeHash.of should not accept {value} as a param.\n{GITHUB_NEW_ISSUE_MESSAGE}')
+            raise UnexpectedMacheteException(
+                f'FullTreeHash.of should not accept {value} as a param.')
         return FullTreeHash(value)
 
 
@@ -245,9 +238,10 @@ class GitContext:
             # We need to cut out the x.y.z part and not just take the result of 'git version' as is,
             # because the version string in certain distributions of git (esp. on OS X) has an extra suffix,
             # which is irrelevant for our purpose (checking whether certain git CLI features are available/bugs are fixed).
-            raw = re.search(r"(\d+).(\d+).(\d+)", self._popen_git("version").stdout)
-            if not raw:  # unlikely, never observed so far; mostly to satisfy mypy
-                return 0, 0, 0  # pragma: no cover
+            version_stdout = self._popen_git("version").stdout
+            raw = re.search(r"(\d+).(\d+).(\d+)", version_stdout)
+            if not raw:
+                raise UnexpectedMacheteException(f"Could not parse output of `git version`: `{version_stdout}`")
             self.__git_version = (int(raw.group(1)), int(raw.group(2)), int(raw.group(3)))
         return self.__git_version
 
@@ -292,17 +286,19 @@ class GitContext:
         try:
             return int(self._popen_git("rev-parse", "--since=" + date).stdout.replace("--max-age=", "").strip())
         # Apparently `git rev-parse --since` always prints out a result, even for gibberish inputs
-        except (UnderlyingGitException, ValueError):  # pragma: no cover
-            raise UnderlyingGitException(f"Cannot parse timespec: `{date}`")
+        except (UnderlyingGitException, ValueError):
+            raise UnexpectedMacheteException(f"Cannot parse timespec: `{date}`")
 
     def __ensure_config_loaded(self) -> None:
         if self.__config_cached is None:
             self.__config_cached = {}
             for config_line in utils.get_non_empty_lines(self._popen_git("config", "--list").stdout):
                 k_v = config_line.split("=", 1)
-                if len(k_v) == 2:  # pragma: no branch; should always be true
+                if len(k_v) == 2:
                     k, v = k_v
                     self.__config_cached[k.lower()] = v
+                else:
+                    raise UnexpectedMacheteException(f"Cannot parse config line: {config_line}.")
 
     def get_config_attr_or_none(self, key: str) -> Optional[str]:
         self.__ensure_config_loaded()
@@ -538,9 +534,9 @@ class GitContext:
         for line in raw_remote:
             values = line.split("\t")
             if len(values) != 4:
-                raise MacheteException(
-                    "`git for-each-ref` returned more than 4 values for `refs/remotes`: "
-                    f"{values} ({hex_repr(line)})\n\n" + GITHUB_NEW_ISSUE_MESSAGE)  # pragma: no cover
+                raise UnexpectedMacheteException(
+                    "`git for-each-ref` did not return exactly 4 values for `refs/remotes`: "
+                    f"`{values}` ({hex_repr(line)}).")
             branch, commit_hash, tree_hash, committer_unix_timestamp_and_time_zone = values
             b_stripped_remote = RemoteBranchFullName.of(branch).to_short_name()
             self.__remote_branches_cached += [b_stripped_remote]
@@ -556,9 +552,9 @@ class GitContext:
         for line in raw_local:
             values = line.split("\t")
             if len(values) != 5:
-                raise MacheteException(
-                    "`git for-each-ref` returned more than 5 values for `refs/heads`: "
-                    f"{values} ({hex_repr(line)})\n\n" + GITHUB_NEW_ISSUE_MESSAGE)  # pragma: no cover
+                raise UnexpectedMacheteException(
+                    "`git for-each-ref` did not return exactly 5 values for `refs/heads`: "
+                    f"`{values}` ({hex_repr(line)})")
             branch, commit_hash, tree_hash, committer_unix_timestamp_and_time_zone, fetch_counterpart = values
             b_stripped_local = LocalBranchFullName.of(branch).to_short_name()
             # fetch_counterpart might be empty, or might even point to a local branch
@@ -618,11 +614,13 @@ class GitContext:
         for entry in entries:
             values = entry.split("\t")
             if len(values) != 3:
-                continue  # pragma: no cover; invalid, shouldn't happen
+                raise UnexpectedMacheteException(
+                    f"`git reflog` did not return exactly 3 values: `{values}` ({hex_repr(entry)})")
             selector, hash, subject = values
             branch_and_index = selector.split("@")
             if len(branch_and_index) != 2:
-                continue  # pragma: no cover; invalid, shouldn't happen
+                raise UnexpectedMacheteException(
+                    f"`git reflog` did not return exactly 2 values: `{values}` ({hex_repr(entry)})")
             branch, _ = branch_and_index
             any_branch_name = AnyBranchName.of(branch)
             if any_branch_name not in self.__reflogs_cached:
@@ -820,7 +818,7 @@ class GitContext:
                     utils.get_non_empty_lines(
                         self._popen_git("for-each-ref", "--format=%(refname)", "--merged", "HEAD", "refs/heads").stdout)))
         else:
-            return list(  # pragma: no cover
+            return list(
                 filter(lambda branch: self.is_ancestor_or_equal(branch, AnyRevision.of('HEAD')),
                        map(lambda branch: LocalBranchFullName.of(branch).to_short_name(),
                            utils.get_non_empty_lines(
@@ -947,9 +945,9 @@ class GitContext:
 
     def get_commit_data(self, commit: AnyRevision, pattern: GitFormatPatterns) -> str:
         if pattern not in GitFormatPatterns:
-            raise UnderlyingGitException(  # pragma: no cover
+            raise UnexpectedMacheteException(
                 f"Retrieving {pattern} from commit is not supported. "
-                f"The currently supported patterns are: {', '.join(GitFormatPatterns._member_names_)}.\n" + GITHUB_NEW_ISSUE_MESSAGE)
+                f"The currently supported patterns are: {', '.join(GitFormatPatterns._member_names_)}.")
 
         return self._popen_git("log", "-1", f"--format={pattern.value}", commit).stdout.strip()
 

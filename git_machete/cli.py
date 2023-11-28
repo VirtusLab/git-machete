@@ -13,12 +13,11 @@ from git_machete import __version__, git_config_keys, utils
 
 from .client import MacheteClient
 from .exceptions import (ExitCode, InteractionStopped, MacheteException,
-                         UnderlyingGitException)
+                         UnderlyingGitException, UnexpectedMacheteException)
 from .generated_docs import long_docs, short_docs
 from .git_operations import (AnyBranchName, AnyRevision, GitContext,
                              LocalBranchShortName, RemoteBranchShortName)
-from .utils import (GITHUB_NEW_ISSUE_MESSAGE, bold, excluding, fmt, underline,
-                    warn)
+from .utils import bold, excluding, fmt, underline, warn
 
 T = TypeVar('T')
 
@@ -554,7 +553,7 @@ def launch(orig_args: List[str]) -> None:
             def print_completion_resource(name: str) -> None:
                 data = pkgutil.get_data("completion", name)
                 if not data:
-                    raise MacheteException(f"Completion file `{name}` not found. " + GITHUB_NEW_ISSUE_MESSAGE)  # pragma: no cover
+                    raise UnexpectedMacheteException(f"Completion file `{name}` not found.")
                 print(data.decode())
 
             # Deliberately using if/else instead of a dict - to measure coverage more accurately.
@@ -562,8 +561,10 @@ def launch(orig_args: List[str]) -> None:
                 print_completion_resource("git-machete.completion.bash")
             elif completion_shell == "fish":
                 print_completion_resource("git-machete.fish")
-            elif completion_shell == "zsh":  # pragma: no branch; an unknown shell is handled by argparse
+            elif completion_shell == "zsh":  # an unknown shell is handled by argparse
                 print_completion_resource("git-machete.completion.zsh")
+            else:  # an unknown shell is handled by argparse
+                raise UnexpectedMacheteException(f"Unknown shell: `{completion_shell}`")
             return
         elif cmd == "help":
             print(get_help_description(display_help_topics=True, command=parsed_cli.topic_or_cmd))
@@ -717,10 +718,12 @@ def launch(orig_args: List[str]) -> None:
                 machete_client.retarget_github_pr(head=branch,
                                                   ignore_if_missing=parsed_cli.ignore_if_missing if 'ignore_if_missing' in parsed_cli
                                                   else False)
-            elif github_subcommand == "sync":  # pragma: no branch; an unknown subcommand is handled by argparse
+            elif github_subcommand == "sync":
                 machete_client.checkout_github_prs(pr_numbers=[], mine=True)
                 machete_client.delete_unmanaged(opt_yes=False)
                 machete_client.delete_untracked(opt_yes=cli_opts.opt_yes)
+            else:  # an unknown subcommand is handled by argparse
+                raise UnexpectedMacheteException(f"Unknown subcommand: `{github_subcommand}`")
         elif cmd == "is-managed":
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             branch = get_local_branch_short_name_from_arg_or_current_branch(cli_opts.opt_branch, git)
@@ -762,8 +765,8 @@ def launch(orig_args: List[str]) -> None:
                     filter(
                         lambda _branch: machete_client.has_any_fork_point_override_config(_branch),
                         git.get_local_branches()))
-            else:  # pragma: no cover; an unknown category is handled by argparse
-                raise MacheteException(f"Invalid category: `{category}`")
+            else:  # an unknown category is handled by argparse
+                raise UnexpectedMacheteException(f"Invalid category: `{category}`")
 
             if res:
                 print("\n".join(res))
@@ -853,7 +856,7 @@ def launch(orig_args: List[str]) -> None:
                 opt_return_to=cli_opts.opt_return_to,
                 opt_start_from=cli_opts.opt_start_from,
                 opt_yes=cli_opts.opt_yes)
-        elif cmd == "update":  # pragma: no branch; an unknown command is handled by argparse
+        elif cmd == "update":
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             git.expect_no_operation_in_progress()
             if "fork_point" in parsed_cli and cli_opts.opt_fork_point:
@@ -864,6 +867,8 @@ def launch(orig_args: List[str]) -> None:
                 opt_no_edit_merge=cli_opts.opt_no_edit_merge,
                 opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
                 opt_fork_point=cli_opts.opt_fork_point)
+        else:  # an unknown command is handled by argparse
+            raise UnexpectedMacheteException(f"Unknown command: `{cmd}`")
     finally:
         # Note that this problem (current directory no longer existing due to e.g. underlying git checkouts)
         # has been fixed in git itself as of 2.35.0:

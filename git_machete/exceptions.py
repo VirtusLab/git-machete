@@ -19,6 +19,11 @@ class MacheteException(Exception):
         return str(self.msg)
 
 
+class UnexpectedMacheteException(MacheteException):
+    def __init__(self, msg: str) -> None:
+        super().__init__(f"{msg}\n\nConsider posting an issue at https://github.com/VirtusLab/git-machete/issues/new")
+
+
 class InteractionStopped(Exception):
     def __init__(self) -> None:
         pass

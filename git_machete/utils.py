@@ -21,8 +21,6 @@ ascii_only: bool = not sys.stdout.isatty()
 debug_mode: bool = False
 verbose_mode: bool = False
 
-GITHUB_NEW_ISSUE_MESSAGE = 'Consider posting an issue at https://github.com/VirtusLab/git-machete/issues/new'
-
 # https://github.blog/2021-04-05-behind-githubs-new-authentication-token-formats/
 GITHUB_TOKEN_PREFIXES = ['ghp_', 'gho_', 'ghu_', 'ghs_', 'ghr_']
 GITHUB_TOKEN_PREFIX_REGEX = '(' + '|'.join(GITHUB_TOKEN_PREFIXES) + ')'
@@ -84,7 +82,7 @@ def find_executable(executable: str) -> Optional[str]:
     base, ext = os.path.splitext(executable)
 
     if (sys.platform == 'win32' or os.name == 'os2') and (ext != '.exe'):
-        executable += ".exe"  # pragma: no cover
+        executable += ".exe"  # pragma: no cover; we don't collect coverage on Windows due to poor performance
 
     if os.path.isfile(executable) and is_executable(executable):
         return executable

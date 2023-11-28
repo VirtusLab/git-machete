@@ -14,6 +14,7 @@ from .constants import (DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, PICK_FIRST_ROOT,
                         PICK_LAST_ROOT, GitFormatPatterns,
                         SyncToRemoteStatuses)
 from .exceptions import (InteractionStopped, MacheteException,
+                         UnexpectedMacheteException,
                          UnprocessableEntityHTTPError)
 from .git_operations import (HEAD, AnyBranchName, AnyRevision, BranchPair,
                              ForkPointOverrideData, FullCommitHash, GitContext,
@@ -22,9 +23,9 @@ from .git_operations import (HEAD, AnyBranchName, AnyRevision, BranchPair,
 from .github import (GitHubClient, GitHubPullRequest, GitHubToken,
                      OrganizationAndRepository,
                      OrganizationAndRepositoryAndRemote, is_github_remote_url)
-from .utils import (GITHUB_NEW_ISSUE_MESSAGE, AnsiEscapeCodes, PopenResult,
-                    SyncToParentStatus, bold, colored, debug, dim, excluding,
-                    flat_map, fmt, get_pretty_choices, get_second,
+from .utils import (AnsiEscapeCodes, PopenResult, SyncToParentStatus, bold,
+                    colored, debug, dim, excluding, flat_map, fmt,
+                    get_pretty_choices, get_second,
                     sync_to_parent_status_to_edge_color_map,
                     sync_to_parent_status_to_junction_ascii_only_map, tupled,
                     underline, warn)
@@ -896,8 +897,8 @@ class MacheteClient:
                             opt_push_untracked=opt_push_untracked,
                             opt_push_tracked=opt_push_tracked,
                             opt_yes=opt_yes)
-                    else:  # pragma: no cover
-                        raise MacheteException(f"Unexpected SyncToRemoteStatus: {s}.\n" + GITHUB_NEW_ISSUE_MESSAGE)
+                    else:
+                        raise UnexpectedMacheteException(f"Unexpected SyncToRemoteStatus: {s}.")
                 except InteractionStopped:
                     return
 
@@ -1148,14 +1149,14 @@ class MacheteClient:
     def __popen_hook(*args: str, cwd: str, env: Dict[str, str]) -> PopenResult:
         if sys.platform == "win32":
             # This is a poor-man's solution to the problem of Windows **not** recognizing Unix-style shebangs :/
-            return utils.popen_cmd("sh", *args, cwd=cwd, env=env)  # pragma: no cover
+            return utils.popen_cmd("sh", *args, cwd=cwd, env=env)  # pragma: no cover; coverage not measured on Windows
         else:
             return utils.popen_cmd(*args, cwd=cwd, env=env)
 
     def __run_hook(self, *args: str, cwd: str) -> int:
         self.__git.flush_caches()
         if sys.platform == "win32":
-            return utils.run_cmd("sh", *args, cwd=cwd)  # pragma: no cover
+            return utils.run_cmd("sh", *args, cwd=cwd)  # pragma: no cover; coverage not measured on Windows
         else:
             return utils.run_cmd(*args, cwd=cwd)
 
@@ -1661,8 +1662,8 @@ class MacheteClient:
             return [self.root_branch(branch, if_unmanaged=PICK_FIRST_ROOT)]
         elif param in ("u", "up"):
             return [self.up(branch, prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)]
-        else:  # pragma: no cover; an unknown direction is handled by argparse
-            raise MacheteException(f"Invalid direction: `{param}`.\n" + GITHUB_NEW_ISSUE_MESSAGE)
+        else:  # an unknown direction is handled by argparse
+            raise UnexpectedMacheteException(f"Invalid direction: `{param}`.")
 
     def __match_log_to_filtered_reflogs(self, branch: LocalBranchShortName) -> Iterator[Tuple[FullCommitHash, List[BranchPair]]]:
 
@@ -2165,7 +2166,7 @@ class MacheteClient:
                      f"{bold(github_client.organization)}/{bold(github_client.repository)}")
                 return []
             return result
-        return []  # pragma: no cover; should never happen
+        raise UnexpectedMacheteException("All params passed to __get_applicable_pull_requests are empty.")
 
     def __get_url_for_remote(self) -> Dict[str, str]:
         return {
@@ -2233,7 +2234,7 @@ class MacheteClient:
                         opt_push_tracked=True,
                         opt_push_untracked=True,
                         opt_yes=True)
-                elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:  # pragma: no branch
+                elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
                     assert remote is not None
                     self.__handle_diverged_and_newer_state(
                         current_branch=current_branch,
@@ -2241,6 +2242,8 @@ class MacheteClient:
                         is_called_from_traverse=False,
                         opt_push_tracked=True,
                         opt_yes=True)
+                else:
+                    raise UnexpectedMacheteException(f"Invalid sync to remote status: {s}.")
 
                 self.__print_new_line(False)
                 self.status(
@@ -2262,9 +2265,10 @@ class MacheteClient:
             elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
                 warn(f"Branch {bold(current_branch)} is diverged from and older than its remote counterpart. "
                      "Consider using `git reset --keep`.\n")
-            elif s == SyncToRemoteStatuses.NO_REMOTES:  # pragma: no cover; case handled elsewhere
-                raise MacheteException(
-                    "Could not retarget pull request - there are no remote repositories!")
+            elif s == SyncToRemoteStatuses.IN_SYNC_WITH_REMOTE:
+                pass
+            else:  # case handled elsewhere
+                raise UnexpectedMacheteException(f"Could not retarget pull request: invalid sync-to-remote status `{s}`.")
 
             self.retarget_github_pr(head, ignore_if_missing=False)
 
@@ -2434,8 +2438,8 @@ class MacheteClient:
 
         base: Optional[LocalBranchShortName] = self.__up_branch.get(LocalBranchShortName.of(head))
         if not base:
-            raise MacheteException(  # pragma: no cover; should never happen
-                f'Could not determine base branch for PR. Branch {bold(head)} is a root branch.' + GITHUB_NEW_ISSUE_MESSAGE)
+            raise UnexpectedMacheteException(f'Could not determine base branch for PR. Branch {bold(head)} is a root branch.')
+
         domain = self.__derive_github_domain()
         org_repo_remote = self.__derive_org_repo_and_remote(domain=domain, branch_used_for_tracking_data=head)
         github_client = GitHubClient(domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
@@ -2519,8 +2523,8 @@ class MacheteClient:
                     print()
                     warn(f"There are some invalid reviewers in {self.__git.get_main_git_subpath('info', 'reviewers')} file.\n"
                          "Skipped adding reviewers to pull request.")
-                else:  # pragma: no cover
-                    raise MacheteException(f"{e}\n\n{GITHUB_NEW_ISSUE_MESSAGE}")
+                else:
+                    raise UnexpectedMacheteException(str(e))
             else:
                 print(fmt(ok_str))
 
@@ -2708,7 +2712,7 @@ class MacheteClient:
                         opt_push_tracked=True,
                         opt_push_untracked=True,
                         opt_yes=opt_yes)
-                elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:  # pragma: no branch
+                elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
                     assert remote is not None
                     self.__handle_diverged_and_newer_state(
                         current_branch=current_branch,
@@ -2716,6 +2720,8 @@ class MacheteClient:
                         is_called_from_traverse=False,
                         opt_push_tracked=True,
                         opt_yes=opt_yes)
+                else:
+                    raise UnexpectedMacheteException(f"Invalid sync to remote status: `{s}`.")
 
                 self.__print_new_line(False)
                 self.status(

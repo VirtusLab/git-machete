@@ -9,9 +9,10 @@ import urllib.request
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
-from .exceptions import MacheteException, UnprocessableEntityHTTPError
+from .exceptions import (MacheteException, UnexpectedMacheteException,
+                         UnprocessableEntityHTTPError)
 from .git_operations import GitContext, LocalBranchShortName
-from .utils import bold, compact_dict, debug, fmt, popen_cmd, warn
+from .utils import bold, compact_dict, debug, popen_cmd, warn
 
 
 class GitHubPullRequest(NamedTuple):
@@ -131,8 +132,10 @@ class GitHubToken(NamedTuple):
 
         gh_version_match = re.search(r"gh version (\d+).(\d+).(\d+) ", gh_version_stdout)
         gh_version: Optional[Tuple[int, int, int]] = None
-        if gh_version_match:  # pragma: no branch
+        if gh_version_match:
             gh_version = int(gh_version_match.group(1)), int(gh_version_match.group(2)), int(gh_version_match.group(3))
+        else:
+            raise UnexpectedMacheteException(f"Could not parse output of `gh --version`: `{gh_version_stdout}`")
 
         if gh_version and gh_version >= (2, 17, 0):
             gh_token_returncode, gh_token_stdout, _ = \
@@ -247,10 +250,12 @@ class GitHubClient:
                 if link_header:
                     url_prefix_regex = re.escape(url_prefix)
                     match = re.search(f'<{url_prefix_regex}(/[^>]+)>; rel="next"', link_header)
-                    if match:  # pragma: no branch; there should always be a match
+                    if match:
                         next_page_path = match.group(1)
                         debug(f'there is more data to retrieve under {next_page_path}')
                         return parsed_response_body + self.__fire_github_api_request(method, next_page_path, request_body)
+                    else:
+                        raise UnexpectedMacheteException(f"Cannot parse Link header: `{link_header}`.")
                 return parsed_response_body
         except urllib.error.HTTPError as err:
             if err.code == http.HTTPStatus.UNPROCESSABLE_ENTITY:
@@ -282,31 +287,30 @@ class GitHubClient:
                 # err.headers is a case-insensitive dict of class Message with the `__getitem__` and `get` functions implemented in
                 # https://github.com/python/cpython/blob/3.10/Lib/email/message.py
                 location = err.headers['Location']
-                new_repo_and_org = None
                 if location is not None:
                     # The URL returned in the `Location` header is of the form "https://api.github.com/repositories/453977473".
                     # It doesn't contain the info about the new org/repo name, which we'd like to display to the user in a warning.
                     match = re.search('/repositories/([0-9]+)/', location)
-                    if match:  # pragma: no branch
-                        new_repo_and_org = self.get_repo_and_org_names_by_id(match.group(1))
-                else:  # pragma: no cover; unlikely to ever happen
-                    first_line = fmt(f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`\n')
-                    raise MacheteException(
-                        first_line + 'It looks like the organization or repository name got changed recently and is outdated.\n'
-                                     'Update your remote repository manually via: `git remote set-url <remote_name> <new_repository_url>`.')
+                    if match:
+                        new_org_and_repo = self.get_org_and_repo_names_by_id(match.group(1))
+                    else:
+                        raise UnexpectedMacheteException(
+                            f"Could not extract organization and repository from Location header: `{location}`.")
+                else:
+                    raise UnexpectedMacheteException(
+                        f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`.\n'
+                        'It looks like the organization or repository name got changed recently and is outdated.\n'
+                        'Update your remote repository manually via: `git remote set-url <remote_name> <new_repository_url>`.')
                 new_path = re.sub("https://[^/]+", "", location)
                 result = self.__fire_github_api_request(method=method, path=new_path, request_body=request_body)
-                if new_repo_and_org:  # pragma: no branch
-                    warn(f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`.\n'
-                         'It looks like the organization or repository name got changed recently and is outdated.\n'
-                         f'New organization is {bold(new_repo_and_org.split("/")[0])} and '
-                         f'new repository is {bold(new_repo_and_org.split("/")[1])}.\n'
-                         'You can update your remote repository via: `git remote set-url <remote_name> <new_repository_url>`.')
+                warn(f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`.\n'
+                     'It looks like the organization or repository name got changed recently and is outdated.\n'
+                     f'New organization is {bold(new_org_and_repo.split("/")[0])} and '
+                     f'new repository is {bold(new_org_and_repo.split("/")[1])}.\n'
+                     'You can update your remote repository via: `git remote set-url <remote_name> <new_repository_url>`.')
                 return result
-            else:  # pragma: no cover
-                first_line = fmt(f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`\n')
-                raise MacheteException(first_line + "Please open an issue regarding this topic under link: "
-                                                    "https://github.com/VirtusLab/git-machete/issues/new")
+            else:
+                raise UnexpectedMacheteException(f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`.')
         except OSError as e:  # pragma: no cover
             raise MacheteException(f'Could not connect to {url_prefix}: {e}')
 
@@ -446,7 +450,7 @@ class GitHubClient:
         except MacheteException:
             return None
 
-    def get_repo_and_org_names_by_id(self, repo_id: str) -> str:
+    def get_org_and_repo_names_by_id(self, repo_id: str) -> str:
         repo = self.__fire_github_api_request(method='GET', path=f'/repositories/{repo_id}')
         return str(repo['full_name'])
 
