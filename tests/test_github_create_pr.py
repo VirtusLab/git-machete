@@ -298,7 +298,6 @@ class TestGitHubCreatePR(BaseTest):
         )
 
     def test_github_create_pr_missing_base_branch_on_remote(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(
@@ -327,11 +326,11 @@ class TestGitHubCreatePR(BaseTest):
 
         expected_msg = ("Fetching origin...\n"
                         "Warn: Base branch for this PR (feature/api_handling) is not found on remote, pushing...\n"
-                        "Push untracked branch feature/api_handling to origin? (y, Q)\n"
+                        "Pushing untracked branch feature/api_handling to origin...\n"
                         "Creating a PR from feature/api_exception_handling to feature/api_handling... OK, see www.github.com\n")
 
         self.repo_sandbox.set_git_config_key("machete.github.annotateWithUrls", "true")
-        assert_success(['github', 'create-pr'], expected_msg)
+        assert_success(['github', 'create-pr', '--yes'], expected_msg)
         assert_success(
             ['status'],
             """

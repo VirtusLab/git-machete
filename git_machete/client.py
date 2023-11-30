@@ -2429,11 +2429,12 @@ class MacheteClient:
             head: LocalBranchShortName,
             opt_draft: bool,
             opt_onto: Optional[LocalBranchShortName],
-            opt_title: Optional[str]
+            opt_title: Optional[str],
+            opt_yes: bool
     ) -> None:
         # first make sure that head branch is synced with remote
         try:
-            self.__sync_before_creating_pr(opt_onto=opt_onto, opt_yes=False)
+            self.__sync_before_creating_pr(opt_onto=opt_onto, opt_yes=opt_yes)
         except InteractionStopped:
             return
 
@@ -2456,7 +2457,7 @@ class MacheteClient:
                 is_called_from_github=True,
                 opt_push_tracked=False,
                 opt_push_untracked=True,
-                opt_yes=False)
+                opt_yes=opt_yes)
         else:
             prs_for_base_branch = github_client.get_open_pull_requests_by_head(base)
             if len(prs_for_base_branch) >= 1:

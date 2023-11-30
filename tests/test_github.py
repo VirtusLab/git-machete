@@ -341,5 +341,9 @@ class TestGitHub(BaseTest):
                        "--ignore-if-missing option is only valid with retarget-pr subcommand.")
         assert_failure(["github", "checkout-prs", "--all", "--mine"],
                        "checkout-prs subcommand must take exactly one of the following options: --all, --by=..., --mine, pr-number(s)")
+        assert_failure(["github", "checkout-prs", "--title=foo"],
+                       "--title option is only valid with create-pr subcommand.")
         assert_failure(["github", "restack-pr", "--with-urls"],
                        "--with-urls option is only valid with anno-prs subcommand.")
+        assert_failure(["github", "restack-pr", "--yes"],
+                       "--yes option is only valid with create-pr subcommand.")

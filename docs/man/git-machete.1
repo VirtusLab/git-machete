@@ -1091,7 +1091,7 @@ Checkout open PRs for the current user associated with the GitHub token.
 .sp
 \fB<PR\-number\-1> ... <PR\-number\-N>\fP    Pull request numbers to checkout.
 .TP
-.B \fBcreate\-pr [\-\-draft] [\-\-title=<title>]\fP:
+.B \fBcreate\-pr [\-\-draft] [\-\-title=<title>] [\-\-yes]\fP:
 Creates a PR for the current branch, using the upstream (parent) branch as the PR base.
 Once the PR is successfully created, annotates the current branch with the new PR\(aqs number.
 .sp
@@ -1111,6 +1111,9 @@ Create the new PR as a draft.
 .TP
 .BI \-\-title\fB= <title>
 Set the PR title explicitly (the default is to use the first included commit\(aqs message as the title).
+.TP
+.B  \-\-yes
+Do not ask for confirmation whether to push the branch.
 .UNINDENT
 .TP
 .B \fBrestack\-pr\fP:
