@@ -343,3 +343,5 @@ class TestGitHub(BaseTest):
                        "checkout-prs subcommand must take exactly one of the following options: --all, --by=..., --mine, pr-number(s)")
         assert_failure(["github", "restack-pr", "--with-urls"],
                        "--with-urls option is only valid with anno-prs subcommand.")
+        assert_failure(["github", "restack-pr", "--yes"],
+                       "--yes option is only valid with create-pr subcommand.")

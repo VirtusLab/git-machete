@@ -273,6 +273,7 @@ __git_machete_github_subcommands() {
           _arguments \
             '(--draft)'--draft'[Create the new PR as draft]' \
             '(--title)'--title='[Set the title for new PR explicitly]' \
+            '(--yes)'--yes'[Do not ask for confirmation whether to push the branch]' \
             "${common_flags[@]}"
         ;;
 

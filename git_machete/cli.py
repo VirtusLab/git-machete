@@ -250,6 +250,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
     github_parser.add_argument('--mine', action='store_true')
     github_parser.add_argument('--title')
     github_parser.add_argument('--with-urls', action='store_true')
+    github_parser.add_argument('--yes', action='store_true')
 
     go_parser = subparsers.add_parser(
         'go',
@@ -697,6 +698,8 @@ def launch(orig_args: List[str]) -> None:
                 raise MacheteException("`--title` option is only valid with `create-pr` subcommand.")
             if 'with_urls' in parsed_cli and github_subcommand != 'anno-prs':
                 raise MacheteException("`--with-urls` option is only valid with `anno-prs` subcommand.")
+            if 'yes' in parsed_cli and github_subcommand != 'create-pr':
+                raise MacheteException("`--yes` option is only valid with `create-pr` subcommand.")
 
             if github_subcommand == "anno-prs":
                 machete_client.sync_annotations_to_github_prs(include_urls=cli_opts.opt_with_urls)
@@ -715,7 +718,8 @@ def launch(orig_args: List[str]) -> None:
                     head=current_branch,
                     opt_draft=cli_opts.opt_draft,
                     opt_onto=cli_opts.opt_onto,
-                    opt_title=cli_opts.opt_title)
+                    opt_title=cli_opts.opt_title,
+                    opt_yes=cli_opts.opt_yes)
             elif github_subcommand == "restack-pr":
                 machete_client.restack_github_pr()
             elif github_subcommand == "retarget-pr":
