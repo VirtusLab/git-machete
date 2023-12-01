@@ -138,7 +138,7 @@ def html2txt(html_: str):
     return text
 
 
-def skip_or_replace_unparseable_directives(rst_: str) -> str:
+def skip_or_replace_unparsable_directives(rst_: str) -> str:
     rst_ = rst_.replace(':ref:', '')
     return rst_
 
@@ -196,7 +196,7 @@ if __name__ == '__main__':
     short_docs_rst_file = docs_source_path + '/short_docs.rst'
     with open(short_docs_rst_file, 'r') as f:
         rst = f.read()
-    rst = skip_or_replace_unparseable_directives(rst)
+    rst = skip_or_replace_unparsable_directives(rst)
     html = rst2html(rst)
     plain_text = html2txt(html)
     plain_text = skip_prefix_new_lines(plain_text)
@@ -214,7 +214,7 @@ if __name__ == '__main__':
         with open(file, 'r') as f:
             rst = f.read()
 
-        rst = skip_or_replace_unparseable_directives(rst)
+        rst = skip_or_replace_unparsable_directives(rst)
         rst = resolve_includes(rst_=rst, docs_source_path_=docs_source_path)
 
         html = rst2html(rst)

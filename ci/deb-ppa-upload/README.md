@@ -16,7 +16,7 @@ gpg --default-new-key-algo rsa4096 --gen-key
 # Specify a password, add the password to password manager and CI (GPG_PRIVATE_KEY_PASSPHRASE env var).
 
 gpg --armor --export-secret-key <key-id> | pbcopy
-# Add to password manager (directly) & CI (base64-endcoded, GPG_PRIVATE_KEY_CONTENTS_BASE64 env var).
+# Add to password manager (directly) & CI (base64-encoded, GPG_PRIVATE_KEY_CONTENTS_BASE64 env var).
 
 gpg --send-keys --keyserver keyserver.ubuntu.com <key-id>
 # Check if the key has been uploaded correctly via https://keyserver.ubuntu.com/.
