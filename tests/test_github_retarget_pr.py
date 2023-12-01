@@ -115,14 +115,14 @@ class TestGitHubRetargetPR(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen',
                           mock_urlopen(self.github_api_state_for_test_github_retarget_pr_explicit_branch()))
 
-        branchs_first_commit_msg = "First commit on branch."
-        branchs_second_commit_msg = "Second commit on branch."
+        branch_first_commit_msg = "First commit on branch."
+        branch_second_commit_msg = "Second commit on branch."
         (
             self.repo_sandbox.new_branch("root")
                 .commit("First commit on root.")
                 .new_branch("branch-1")
-                .commit(branchs_first_commit_msg)
-                .commit(branchs_second_commit_msg)
+                .commit(branch_first_commit_msg)
+                .commit(branch_second_commit_msg)
                 .push()
                 .new_branch('feature')
                 .commit('introduce feature')
@@ -191,8 +191,8 @@ class TestGitHubRetargetPR(BaseTest):
         github_api_state = self.github_api_state_for_test_retarget_pr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
-        branchs_first_commit_msg = "First commit on branch."
-        branchs_second_commit_msg = "Second commit on branch."
+        branch_first_commit_msg = "First commit on branch."
+        branch_second_commit_msg = "Second commit on branch."
 
         origin_1_remote_path = mkdtemp()
         origin_2_remote_path = mkdtemp()
@@ -209,8 +209,8 @@ class TestGitHubRetargetPR(BaseTest):
                 .push(remote='origin_1')
                 .push(remote='origin_2')
                 .new_branch("branch-1")
-                .commit(branchs_first_commit_msg)
-                .commit(branchs_second_commit_msg)
+                .commit(branch_first_commit_msg)
+                .commit(branch_second_commit_msg)
                 .push(remote='origin_1')
                 .push(remote='origin_2')
                 .new_branch('feature')

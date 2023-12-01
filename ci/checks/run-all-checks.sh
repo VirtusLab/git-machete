@@ -36,3 +36,6 @@ prohibit-strings-with-backslash-continuation.sh
 prohibit-strings-with-useless-interpolations.sh
 prohibit-tab-character.sh
 prohibit-trailing-whitespace.sh
+if command -v typos &>/dev/null; then
+  prohibit-typos.sh
+fi

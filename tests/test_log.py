@@ -15,16 +15,16 @@ class TestLog(BaseTest):
 
         self.repo_sandbox.new_branch('child')
         self.repo_sandbox.commit()
-        childs_first_commit_hash = self.repo_sandbox.get_current_commit_hash()
+        child_first_commit_hash = self.repo_sandbox.get_current_commit_hash()
         self.repo_sandbox.commit()
-        childs_second_commit_hash = self.repo_sandbox.get_current_commit_hash()
+        child_second_commit_hash = self.repo_sandbox.get_current_commit_hash()
 
         log_contents = [launch_command('log'), launch_command('log', 'child'), launch_command('log', 'refs/heads/child')]
 
-        assert all(childs_first_commit_hash in log_content for log_content in log_contents), \
+        assert all(child_first_commit_hash in log_content for log_content in log_contents), \
             ("Verify that oldest commit from current branch is visible when "
              "executing `git machete log`.")
-        assert all(childs_second_commit_hash in log_content for log_content in log_contents), \
+        assert all(child_second_commit_hash in log_content for log_content in log_contents), \
             ("Verify that youngest commit from current branch is visible when "
              "executing `git machete log`.")
         assert all(roots_only_commit_hash not in log_content for log_content in log_contents), \

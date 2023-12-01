@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.22.0
+
 ## New in git-machete 3.21.0
 
 - added: `--removed-from-remote` flag to `git machete slide-out` (contributed by @raylu)

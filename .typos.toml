@@ -1,0 +1,8 @@
+[files]
+extend-exclude = [
+  "graphics/*.cast",
+  "graphics/generate-asciinema-gif",
+]
+
+[default.extend-words]
+ther = "ther"  # to allow for `o[ther]`

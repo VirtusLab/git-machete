@@ -125,14 +125,14 @@ class TestUpdate(BaseTest):
         (included) fork point specified by the option '-f'.
         """
 
-        branchs_first_commit_msg = "First commit on branch."
-        branchs_second_commit_msg = "Second commit on branch."
+        branch_first_commit_msg = "First commit on branch."
+        branch_second_commit_msg = "Second commit on branch."
         (
             self.repo_sandbox.new_branch("root")
             .commit("First commit on root.")
             .new_branch("branch-1")
-            .commit(branchs_first_commit_msg)
-            .commit(branchs_second_commit_msg)
+            .commit(branch_first_commit_msg)
+            .commit(branch_second_commit_msg)
         )
         branch_second_commit_hash = self.repo_sandbox.get_current_commit_hash()
         (
@@ -157,11 +157,11 @@ class TestUpdate(BaseTest):
         assert roots_second_commit_hash == new_fork_point_hash, \
             ("Verify that 'git machete update --no-interactive-rebase -f "
              "<commit_hash>' performs 'git rebase' to the upstream branch.")
-        assert branchs_first_commit_msg not in branch_history, \
+        assert branch_first_commit_msg not in branch_history, \
             ("Verify that 'git machete update --no-interactive-rebase -f "
              "<commit_hash>' drops the commits until (included) fork point "
              "specified by the option '-f' from the current branch.")
-        assert branchs_second_commit_msg not in branch_history, \
+        assert branch_second_commit_msg not in branch_history, \
             ("Verify that 'git machete update --no-interactive-rebase -f "
              "<commit_hash>' drops the commits until (included) fork point "
              "specified by the option '-f' from the current branch.")

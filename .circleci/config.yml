@@ -45,7 +45,7 @@ jobs:
 
             sudo apt-get install zsh
 
-            pip3 install tox
+            pip3 install tox typos
 
             # For enforce-shell-scripts-pass-shellcheck.sh
             sudo apt-get install shellcheck
