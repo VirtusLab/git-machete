@@ -284,6 +284,10 @@ long_docs: Dict[str, str] = {
               The affected (sub)commands clearly include `anno --sync-github-prs` and `github anno-prs`,
               but also `github checkout-prs`, `github create-pr`, `github retarget-pr` and `github restack-pr`.
 
+           `machete.github.forceDescriptionFromCommitMessage`:
+              Setting this config key to `true` will force `git machete github create-pr` to take PR description
+              from the message body of the first unique commit of the branch, even if `.git/info/description` and/or `.github/pull_request_template.md` is present.
+
            `machete.github.{domain,remote,organization,repository}`:
 
               You can alter the default behavior by setting the following git config keys:
@@ -619,7 +623,10 @@ long_docs: Dict[str, str] = {
 
               If `.git/info/milestone` file is present, its contents (a single number — milestone id) are used as milestone.
               If `.git/info/reviewers` file is present, its contents (one GitHub login per line) are used to set reviewers.
+
+              The subject of the first unique commit of the branch is used as PR title.
               If `.git/info/description` or `.github/pull_request_template.md` file is present, its contents are used as PR description.
+              Otherwise (or if `machete.github.forceDescriptionFromCommitMessage`) is set, PR description is taken from message body of the first unique commit of the branch.
 
               If the newly-created PR is stacked atop another PR, the actual PR description posted to GitHub will be prepended with the following header:
 
@@ -681,8 +688,8 @@ long_docs: Dict[str, str] = {
 
                  * deletes untracked managed branches that have no downstream branch.
 
-        <b>Git config keys (all subcommands):</b>
-           `machete.github.annotateWithUrls`:
+        <b>Git config keys:</b>
+           `machete.github.annotateWithUrls` (all subcommands):
  
               Setting this config key to `true` will cause all commands that write GitHub PR numbers into annotations
               to not only include PR number and author (if different from the current user), but also the full URL of the PR.
@@ -690,7 +697,11 @@ long_docs: Dict[str, str] = {
               The affected (sub)commands clearly include `anno --sync-github-prs` and `github anno-prs`,
               but also `github checkout-prs`, `github create-pr`, `github retarget-pr` and `github restack-pr`.
 
-           `machete.github.{domain,remote,organization,repository}`:
+           `machete.github.forceDescriptionFromCommitMessage` (`create-pr` only):
+              Setting this config key to `true` will force `git machete github create-pr` to take PR description
+              from the message body of the first unique commit of the branch, even if `.git/info/description` and/or `.github/pull_request_template.md` is present.
+
+           `machete.github.{domain,remote,organization,repository}` (all subcommands):
 
               GitHub API server URL will be inferred from `git remote`.
               You can alter the default behavior by setting the following git config keys:

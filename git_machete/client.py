@@ -16,6 +16,7 @@ from .constants import (DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, PICK_FIRST_ROOT,
 from .exceptions import (InteractionStopped, MacheteException,
                          UnexpectedMacheteException,
                          UnprocessableEntityHTTPError)
+from .git_config_keys import GITHUB_FORCE_DESCRIPTION_FROM_COMMIT_MESSAGE
 from .git_operations import (HEAD, AnyBranchName, AnyRevision, BranchPair,
                              ForkPointOverrideData, FullCommitHash, GitContext,
                              GitLogEntry, LocalBranchShortName,
@@ -1520,8 +1521,7 @@ class MacheteClient:
             return
 
         earliest_commit = commits[0]
-        earliest_full_body = self.__git.get_commit_data(FullCommitHash.of(earliest_commit.hash), GitFormatPatterns.RAW_BODY).strip()
-        # %ai for ISO-8601 format; %aE/%aN for respecting .mailmap; see `git rev-list --help`
+        earliest_full_message = self.__git.get_commit_data(FullCommitHash.of(earliest_commit.hash), GitFormatPatterns.FULL_MESSAGE).strip()
         earliest_author_date = self.__git.get_commit_data(FullCommitHash.of(earliest_commit.hash),
                                                           GitFormatPatterns.AUTHOR_DATE).strip()
         earliest_author_email = self.__git.get_commit_data(FullCommitHash.of(earliest_commit.hash),
@@ -1541,7 +1541,7 @@ class MacheteClient:
         # otherwise the entire `commit-tree` will fail on some ancient supported
         # versions of git (at least on v1.7.10).
         squashed_hash = FullCommitHash.of(self.__git.commit_tree_with_given_parent_and_message_and_env(
-            opt_fork_point, earliest_full_body, author_env).strip())
+            opt_fork_point, earliest_full_message, author_env).strip())
 
         # This can't be done with `git reset` since it doesn't allow for a custom reflog message.
         # Even worse, reset's reflog message would be filtered out in our fork point algorithm,
@@ -1611,7 +1611,7 @@ class MacheteClient:
         anno = f"PR #{pr.number}"
         if current_user != pr.user:
             anno += f" ({pr.user})"
-        if include_url or self.__git.get_boolean_config_attr_or_none(key=git_config_keys.GITHUB_ANNOTATE_WITH_URLS):
+        if include_url or self.__git.get_boolean_config_attr(key=git_config_keys.GITHUB_ANNOTATE_WITH_URLS, default_value=False):
             anno += f" {pr.html_url}"
         return anno
 
@@ -2478,21 +2478,9 @@ class MacheteClient:
         debug(f'organization is {org_repo_remote.organization}, repository is {org_repo_remote.repository}')
         debug('current GitHub user is ' + (current_user or '<none>'))
 
-        machete_description_path = self.__git.get_main_git_subpath('info', 'description')
-        # https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/creating-a-pull-request-template-for-your-repository
-        github_template_path = os.path.join(self.__git.get_root_dir(), '.github', 'pull_request_template.md')
-        if os.path.isfile(machete_description_path):
-            description = utils.slurp_file(machete_description_path)
-        elif os.path.isfile(github_template_path):
-            description = utils.slurp_file(github_template_path)
-        else:
-            description = ''
-
-        if pr_number_for_base_branch:
-            description = f'# Based on PR #{pr_number_for_base_branch}\n\n' + description
-
         fork_point = self.fork_point(head, use_overrides=True)
         commits: List[GitLogEntry] = self.__git.get_commits_between(fork_point, head)
+
         if opt_title:
             title = opt_title
         else:
@@ -2500,6 +2488,24 @@ class MacheteClient:
             # even though GitHub sees a non-empty range.
             # Let's use branch name as a fallback for PR title in such case.
             title = commits[0].subject if commits else head
+
+        force_description_from_commit_message = self.__git.get_boolean_config_attr(
+            key=GITHUB_FORCE_DESCRIPTION_FROM_COMMIT_MESSAGE, default_value=False)
+        if force_description_from_commit_message:
+            description = self.__git.get_commit_data(commits[0].hash, GitFormatPatterns.MESSAGE_BODY) if commits else ''
+        else:
+            machete_description_path = self.__git.get_main_git_subpath('info', 'description')
+            # https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/creating-a-pull-request-template-for-your-repository
+            github_template_path = os.path.join(self.__git.get_root_dir(), '.github', 'pull_request_template.md')
+            if os.path.isfile(machete_description_path):
+                description = utils.slurp_file(machete_description_path)
+            elif os.path.isfile(github_template_path):
+                description = utils.slurp_file(github_template_path)
+            else:
+                description = self.__git.get_commit_data(commits[0].hash, GitFormatPatterns.MESSAGE_BODY) if commits else ''
+
+        if pr_number_for_base_branch:
+            description = f'# Based on PR #{pr_number_for_base_branch}\n\n' + description
 
         ok_str = '<green><b>OK</b></green>'
         print(f'Creating a {"draft " if opt_draft else ""}PR from {bold(head)} to {bold(base)}... ', end='', flush=True)

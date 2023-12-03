@@ -11,6 +11,9 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 ``machete.github.annotateWithUrls``:
   .. include:: github_annotateWithUrls_config_key.rst
 
+``machete.github.forceDescriptionFromCommitMessage``:
+  .. include:: github_forceDescriptionFromCommitMessage_config_key.rst
+
 ``machete.github.{domain,remote,organization,repository}``:
   .. include:: github_access_config_keys.rst
       :start-line: 3

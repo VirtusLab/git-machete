@@ -59,7 +59,10 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 
     If ``.git/info/milestone`` file is present, its contents (a single number --- milestone id) are used as milestone.
     If ``.git/info/reviewers`` file is present, its contents (one GitHub login per line) are used to set reviewers.
+
+    The subject of the first unique commit of the branch is used as PR title.
     If ``.git/info/description`` or ``.github/pull_request_template.md`` file is present, its contents are used as PR description.
+    Otherwise (or if ``machete.github.forceDescriptionFromCommitMessage``) is set, PR description is taken from message body of the first unique commit of the branch.
 
     If the newly-created PR is stacked atop another PR, the actual PR description posted to GitHub will be prepended with the following header:
 
@@ -108,12 +111,15 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
       2. deletes unmanaged branches,
       3. deletes untracked managed branches that have no downstream branch.
 
-**Git config keys (all subcommands):**
+**Git config keys:**
 
-``machete.github.annotateWithUrls``:
+``machete.github.annotateWithUrls`` (all subcommands):
   .. include:: github_annotateWithUrls_config_key.rst
 
-``machete.github.{domain,remote,organization,repository}``:
+``machete.github.forceDescriptionFromCommitMessage`` (``create-pr`` only):
+  .. include:: github_forceDescriptionFromCommitMessage_config_key.rst
+
+``machete.github.{domain,remote,organization,repository}`` (all subcommands):
   .. include:: github_access_config_keys.rst
       :start-line: 2
 

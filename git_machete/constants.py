@@ -18,7 +18,12 @@ class SyncToRemoteStatuses(IntEnum):
 
 
 class GitFormatPatterns(Enum):
-    AUTHOR_NAME = "%aN"
-    AUTHOR_EMAIL = "%aE"
+    # %ai for ISO-8601 format
     AUTHOR_DATE = "%ai"
-    RAW_BODY = "%B"
+    # %aE/%aN (rather than %ae/%an) for respecting .mailmap; see `git rev-list --help`
+    AUTHOR_EMAIL = "%aE"
+    AUTHOR_NAME = "%aN"
+    # subject and body
+    FULL_MESSAGE = "%B"
+    # subject NOT included
+    MESSAGE_BODY = "%b"

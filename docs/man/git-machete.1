@@ -396,6 +396,10 @@ to not only include PR number and author (if different from the current user), b
 The affected (sub)commands clearly include \fBanno \-\-sync\-github\-prs\fP and \fBgithub anno\-prs\fP,
 but also \fBgithub checkout\-prs\fP, \fBgithub create\-pr\fP, \fBgithub retarget\-pr\fP and \fBgithub restack\-pr\fP\&.
 .TP
+.B \fBmachete.github.forceDescriptionFromCommitMessage\fP:
+Setting this config key to \fBtrue\fP will force \fBgit machete github create\-pr\fP to take PR description
+from the message body of the first unique commit of the branch, even if \fB\&.git/info/description\fP and/or \fB\&.github/pull_request_template.md\fP is present.
+.TP
 .B \fBmachete.github.{domain,remote,organization,repository}\fP:
 .INDENT 7.0
 .INDENT 3.5
@@ -1097,7 +1101,10 @@ Once the PR is successfully created, annotates the current branch with the new P
 .sp
 If \fB\&.git/info/milestone\fP file is present, its contents (a single number \-\-\- milestone id) are used as milestone.
 If \fB\&.git/info/reviewers\fP file is present, its contents (one GitHub login per line) are used to set reviewers.
+.sp
+The subject of the first unique commit of the branch is used as PR title.
 If \fB\&.git/info/description\fP or \fB\&.github/pull_request_template.md\fP file is present, its contents are used as PR description.
+Otherwise (or if \fBmachete.github.forceDescriptionFromCommitMessage\fP) is set, PR description is taken from message body of the first unique commit of the branch.
 .sp
 If the newly\-created PR is stacked atop another PR, the actual PR description posted to GitHub will be prepended with the following header:
 .sp
@@ -1164,17 +1171,21 @@ deletes untracked managed branches that have no downstream branch.
 .UNINDENT
 .UNINDENT
 .sp
-\fBGit config keys (all subcommands):\fP
+\fBGit config keys:\fP
 .INDENT 0.0
 .TP
-.B \fBmachete.github.annotateWithUrls\fP:
+.B \fBmachete.github.annotateWithUrls\fP (all subcommands):
 Setting this config key to \fBtrue\fP will cause all commands that write GitHub PR numbers into annotations
 to not only include PR number and author (if different from the current user), but also the full URL of the PR.
 .sp
 The affected (sub)commands clearly include \fBanno \-\-sync\-github\-prs\fP and \fBgithub anno\-prs\fP,
 but also \fBgithub checkout\-prs\fP, \fBgithub create\-pr\fP, \fBgithub retarget\-pr\fP and \fBgithub restack\-pr\fP\&.
 .TP
-.B \fBmachete.github.{domain,remote,organization,repository}\fP:
+.B \fBmachete.github.forceDescriptionFromCommitMessage\fP (\fBcreate\-pr\fP only):
+Setting this config key to \fBtrue\fP will force \fBgit machete github create\-pr\fP to take PR description
+from the message body of the first unique commit of the branch, even if \fB\&.git/info/description\fP and/or \fB\&.github/pull_request_template.md\fP is present.
+.TP
+.B \fBmachete.github.{domain,remote,organization,repository}\fP (all subcommands):
 .INDENT 7.0
 .INDENT 3.5
 GitHub API server URL will be inferred from \fBgit remote\fP\&.

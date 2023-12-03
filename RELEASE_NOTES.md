@@ -1,5 +1,10 @@
 # Release notes
 
+## New in git-machete 3.22.0
+
+- improved: if neither `.git/info/description` nor `.github/pull_request_template.md` is present, `git machete github create-pr` now uses message body of the first unique commit as PR description (suggested by @kamaradclimber)
+- added: `machete.github.forceDescriptionFromCommitMessage` git config key that forces `git machete github create-pr` to use message body of the first unique commit as PR description (suggested by @kamaradclimber)
+
 ## New in git-machete 3.21.1
 
 - fixed: `Cannot parse Link header` error in `git machete github` subcommands when there are more than 100 PRs in the given repository (reported by @domesticsimian)
