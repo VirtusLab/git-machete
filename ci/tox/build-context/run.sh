@@ -22,7 +22,7 @@ if [[ $CHECK_DOCS_UP_TO_DATE = true ]]; then
 fi
 
 if [[ $CHECK_PEP8 = true ]]; then
-  TOX_ENV_LIST="$TOX_ENV_LIST,isort-check,pep8-check,vulture-check"
+  TOX_ENV_LIST="$TOX_ENV_LIST,isort-check,pep8-check,vulture-check,typos-check"
 fi
 
 tox -e "$TOX_ENV_LIST"

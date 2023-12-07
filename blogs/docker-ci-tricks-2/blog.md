@@ -89,7 +89,7 @@ docker-compose pull $image_name || {
 ```
 
 Once we've got the directory hash, we check (`docker-compose pull`) whether the image with the given tag is already present
-in the [virtuslab/git-machete-ci-tox repository on Docker Hub](https://hub.docker.com/r/virtuslab/git-machete-ci-tox/tags).
+in the [virtuslab/git-machete-ci-tox repository on Docker Hub](https://hub.docker.com/r/gitmachete/ci-tox/tags).
 
 If there is no previous build for the given combination of Git version, Python version and contents of ci/tox directory,
 `docker-compose pull` would return a non-zero exit code, although this can also mean a failure of the pull operation.

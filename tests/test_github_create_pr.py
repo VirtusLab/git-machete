@@ -110,6 +110,7 @@ class TestGitHubCreatePR(BaseTest):
               x-drop-constraint (untracked)
             """,
         )
+
         # untracked state (can only create PR when branch is pushed)
         self.repo_sandbox.check_out('chore/fields')
 
@@ -300,8 +301,8 @@ class TestGitHubCreatePR(BaseTest):
     def test_github_create_pr_missing_base_branch_on_remote(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(
-            self.github_api_state_for_test_create_pr_missing_base_branch_on_remote()))
+        github_api_state = self.github_api_state_for_test_create_pr_missing_base_branch_on_remote()
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
         (
             self.repo_sandbox.new_branch("root")
@@ -312,7 +313,7 @@ class TestGitHubCreatePR(BaseTest):
                 .new_branch("feature/api_handling")
                 .commit("Introduce GET and POST methods on API")
                 .new_branch("feature/api_exception_handling")
-                .commit("catch exceptions coming from API")
+                .commit("catch exceptions coming from API\n\ncommit body\nanother line")
                 .push()
                 .delete_branch("root")
         )
@@ -341,6 +342,9 @@ class TestGitHubCreatePR(BaseTest):
               o-feature/api_exception_handling *  PR #19 (some_other_user) www.github.com
             """,
         )
+        pr = github_api_state.get_pull_by_number(19)
+        assert pr is not None
+        assert pr['body'] == 'commit body\nanother line'
 
     @staticmethod
     def github_api_state_for_test_github_create_pr_with_multiple_non_origin_remotes() -> MockGitHubAPIState:
@@ -351,8 +355,8 @@ class TestGitHubCreatePR(BaseTest):
     def test_github_create_pr_with_multiple_non_origin_remotes(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
-        self.patch_symbol(mocker, 'urllib.request.urlopen',
-                          mock_urlopen(self.github_api_state_for_test_github_create_pr_with_multiple_non_origin_remotes()))
+        github_api_state = self.github_api_state_for_test_github_create_pr_with_multiple_non_origin_remotes()
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
         origin_1_remote_path = mkdtemp()
         origin_2_remote_path = mkdtemp()
@@ -374,7 +378,7 @@ class TestGitHubCreatePR(BaseTest):
                 .push(remote='origin_1')
                 .push(remote='origin_2')
                 .new_branch('feature')
-                .commit('introduce feature')
+                .commit('introduce feature\n\ncommit body')
                 .push(remote='origin_1', set_upstream=False)
                 .push(remote='origin_2', set_upstream=False)
         )
@@ -460,10 +464,15 @@ class TestGitHubCreatePR(BaseTest):
         Creating a PR from feature to branch-1... OK, see www.github.com
         """  # noqa: E501
 
+        self.repo_sandbox.write_to_file(".git/info/description", "overridden description")
+        self.repo_sandbox.set_git_config_key("machete.github.forceDescriptionFromCommitMessage", "true")
         assert_success(
             ['github', 'create-pr'],
             expected_result
         )
+        pr = github_api_state.get_pull_by_number(16)
+        assert pr is not None
+        assert pr['body'] == '# Based on PR #15\n\ncommit body'
 
         # branch feature_1 present in each of the remotes, tracking data present
         (
