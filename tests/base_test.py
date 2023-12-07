@@ -87,7 +87,9 @@ class GitRepositorySandbox:
         self.file_counter += 1
         self.execute(f"touch {f}")
         self.execute(f"git add {f}")
-        self.execute(f'git commit -m "{message}"')
+        self.write_to_file(".git/commit-message", message)
+        # Not passing the message directly via `-m` so that multiline messages can be handled correctly on Windows.
+        self.execute('git commit --file=.git/commit-message')
         return self
 
     def commit_n_times(self, count: int) -> "GitRepositorySandbox":
