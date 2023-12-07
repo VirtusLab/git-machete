@@ -626,7 +626,7 @@ long_docs: Dict[str, str] = {
 
               The subject of the first unique commit of the branch is used as PR title.
               If `.git/info/description` or `.github/pull_request_template.md` file is present, its contents are used as PR description.
-              Otherwise (or if `machete.github.forceDescriptionFromCommitMessage`) is set, PR description is taken from message body of the first unique commit of the branch.
+              Otherwise (or if `machete.github.forceDescriptionFromCommitMessage` is set), PR description is taken from message body of the first unique commit of the branch.
 
               If the newly-created PR is stacked atop another PR, the actual PR description posted to GitHub will be prepended with the following header:
 

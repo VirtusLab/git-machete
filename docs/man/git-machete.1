@@ -1104,7 +1104,7 @@ If \fB\&.git/info/reviewers\fP file is present, its contents (one GitHub login p
 .sp
 The subject of the first unique commit of the branch is used as PR title.
 If \fB\&.git/info/description\fP or \fB\&.github/pull_request_template.md\fP file is present, its contents are used as PR description.
-Otherwise (or if \fBmachete.github.forceDescriptionFromCommitMessage\fP) is set, PR description is taken from message body of the first unique commit of the branch.
+Otherwise (or if \fBmachete.github.forceDescriptionFromCommitMessage\fP is set), PR description is taken from message body of the first unique commit of the branch.
 .sp
 If the newly\-created PR is stacked atop another PR, the actual PR description posted to GitHub will be prepended with the following header:
 .sp
