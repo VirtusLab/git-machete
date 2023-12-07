@@ -136,6 +136,10 @@ def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) 
         regex = pattern.replace('*', '[^/]+')
         return re.match('^(/api/v3)?' + regex + '$', parsed_url.path) is not None
 
+    def url_with_query_params(**new_params: Any) -> str:
+        new_query_string: str = urlencode({**query_params, **new_params})
+        return parsed_url._replace(query=new_query_string).geturl()
+
     def handle_get() -> "MockGitHubAPIResponse":
         if url_path_matches('/repositories/[0-9]+'):
             return MockGitHubAPIResponse(HTTPStatus.OK, {"full_name": "example-org/example-repo"})
@@ -154,13 +158,12 @@ def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) 
                 start = (page - 1) * per_page
                 end = page * per_page
                 if end < len(pulls):
-                    new_query_params: Dict[str, Any] = {**query_params, 'page': page + 1}
-                    new_query_string: str = urlencode(new_query_params)
-                    new_url: str = parsed_url._replace(query=new_query_string).geturl()
-                    link_header = f'<{new_url}>; rel="next"'
-                else:
-                    link_header = ''
-                return MockGitHubAPIResponse(HTTPStatus.OK, response_data=pulls[start:end], headers={'link': link_header})
+                    headers = {'link': f'<{url_with_query_params(page=page + 1)}>; rel="next"'}
+                elif page == 1:  # we're at the first page, and there are no more pages
+                    headers = {}
+                else:  # we're at the final page, and there were some pages before
+                    headers = {'link': f'<{url_with_query_params(page=1)}>; rel="first"'}
+                return MockGitHubAPIResponse(HTTPStatus.OK, response_data=pulls[start:end], headers=headers)
         elif url_path_matches('/repos/*/*/pulls/[0-9]+'):
             pull_no = int(url_segments[-1])
             pull = github_api_state.get_pull_by_number(pull_no)

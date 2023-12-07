@@ -252,10 +252,10 @@ class GitHubClient:
                     match = re.search(f'<{url_prefix_regex}(/[^>]+)>; rel="next"', link_header)
                     if match:
                         next_page_path = match.group(1)
-                        debug(f'there is more data to retrieve under {next_page_path}')
+                        debug(f'link header is present in the response, and there is more data to retrieve under {next_page_path}')
                         return parsed_response_body + self.__fire_github_api_request(method, next_page_path, request_body)
                     else:
-                        raise UnexpectedMacheteException(f"Cannot parse Link header: `{link_header}`.")
+                        debug('link header is present in the response, but there is no more data to retrieve')
                 return parsed_response_body
         except urllib.error.HTTPError as err:
             if err.code == http.HTTPStatus.UNPROCESSABLE_ENTITY:

@@ -1,7 +1,8 @@
 # Release notes
 
-## New in git-machete 3.22.0
+## New in git-machete 3.21.1
 
+- fixed: `Cannot parse Link header` error in `git machete github` subcommands when there are more than 100 PRs in the given repository (reported by @domesticsimian)
 - fixed: if `.git/machete` doesn't exist, `git machete add <branch>` adds both current branch and the newly-added `<branch>` (not just the latter)
 
 ## New in git-machete 3.21.0
