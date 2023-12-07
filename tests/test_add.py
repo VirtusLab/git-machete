@@ -182,6 +182,38 @@ class TestAdd(BaseTest):
             """)
         assert read_branch_layout_file() == "master\n  foo\n"
 
+    def test_add_new_branch_with_onto(self) -> None:
+        self.repo_sandbox\
+            .new_branch("master").commit()\
+            .new_branch("develop").commit()
+
+        body: str = \
+            """
+            master
+              develop
+            """
+        rewrite_branch_layout_file(body)
+
+        assert_success(
+            ['add', '--onto=master', '--yes', 'foo'],
+            """
+            A local branch foo does not exist. Creating out of master
+            Added branch foo onto master
+            """)
+        assert read_branch_layout_file() == "master\n  develop\n  foo\n"
+        assert self.repo_sandbox.get_commit_hash("master") == self.repo_sandbox.get_commit_hash("foo")
+
+    def test_add_new_branch_when_detached_head_for_fresh_start(self) -> None:
+        self.repo_sandbox.new_branch("master").commit("master commit.")\
+            .check_out(self.repo_sandbox.get_current_commit_hash())
+        assert_success(
+            ['add', '--yes', 'foo'],
+            """
+            A local branch foo does not exist. Creating out of the current HEAD
+            Added branch foo as a new root
+            """)
+        assert read_branch_layout_file() == "foo\n"
+
     def test_add_new_branch_onto_master_for_fresh_start_without_yes(self, mocker: MockerFixture) -> None:
         self.repo_sandbox.new_branch("master").commit("master commit.")
 

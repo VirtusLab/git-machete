@@ -282,7 +282,8 @@ class MacheteClient:
                                 # Let's skip interactive questions so as not to confuse new users.
                                 self.__roots = [current_branch]
                                 self.__managed_branches = [current_branch]
-                                if verbose:
+                                # This section of code is only ever executed in verbose mode, but let's leave the `if` for consistency
+                                if verbose:  # pragma: no branch
                                     print(fmt(f"Added branch {bold(current_branch)} as a new root"))
                                 opt_onto = current_branch
                     self.__git.create_branch(branch, out_of, switch_head=switch_head_if_new_branch)
