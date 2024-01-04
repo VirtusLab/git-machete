@@ -6,7 +6,7 @@ updates:
   - package-ecosystem: "pip"
     directory: "/requirements/"
     schedule:
-      interval: daily
+      interval: weekly
     reviewers:
       - PawelLipski
     target-branch: develop

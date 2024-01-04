@@ -326,6 +326,8 @@ class GitHubClient:
             for error in response['errors']:
                 if error.get('message'):
                     ret.append(error['message'])
+                else:
+                    ret.append(str(error))
         if ret:
             return '\n'.join(ret)
         else:
