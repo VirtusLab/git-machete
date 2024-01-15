@@ -24,16 +24,16 @@ parts:
     plugin: python
     source: .
     # See https://github.com/canonical/rockcraft/issues/225#issuecomment-1597025315
-    stage-packages: [python3.10-minimal]
+    #stage-packages: [python3.10-minimal]
     # We're setting the version via scriptlet rather than using `version: git`
     # since only pushing commits to master (and not pushing tags) triggers Snapcraft builds.
     # language=sh
-    override-build: |
-      PS4='$0.$LINENO:'
-      set -x
-      craftctl default
-      version=$(python3 setup.py --version)
-      craftctl set version="$version"
+#    override-build: |
+#      PS4='$0.$LINENO:'
+#      set -x
+#      craftctl default
+#      version=$(python3 setup.py --version)
+#      craftctl set version="$version"
 
 apps:
   git-machete:
