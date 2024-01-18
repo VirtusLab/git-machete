@@ -39,4 +39,4 @@ apps:
   git-machete:
     command: bin/git-machete
     environment:
-      PYTHONPATH: ./lib/python3.10/site-packages
+      PYTHONPATH: /snap/git-machete/x1/lib/python3.10/site-packages
