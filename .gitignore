@@ -24,6 +24,7 @@ test-results/
 venv/
 
 # Snapcraft
+.fuse_hidden*
 parts/
 prime/
 *.snap
