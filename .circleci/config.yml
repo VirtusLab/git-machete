@@ -214,43 +214,43 @@ jobs:
     steps:
       - checkout
 
-#      - run:
-#          name: '[Dry run] Deploy to PyPI'
-#          # Side effects: does an actual release, but to the test PyPI
-#          command: bash ci/pypi/ci-deploy.sh --dry-run
-#      - run:
-#          name: '[Dry run] Wait up to 30 minutes for PyPI package to be available'
-#          command: bash ci/pypi/ci-wait-for-package.sh test.pypi.org 30
-#
-#      - run:
-#          name: '[Dry run] Update Homebrew with local installation test'
-#          # Prerequisites: artifacts must be released to test PyPI first
-#          command: bash ci/homebrew/ci-deploy.sh --dry-run
-#
-#      - run:
-#          name: '[Dry run] Publish image to Docker Hub'
-#          command: bash ci/docker/ci-deploy.sh --dry-run
-#
-#      - run:
-#          name: '[Dry run] Build & upload deb package to PPA'
-#          # Side effects: potentially pushes a regenerated Docker image
-#          command: bash ci/deb-ppa-upload/ci-deploy.sh --dry-run
-#
-#      - run:
-#          name: '[Dry run] Build Nix package'
-#          # Side effects: potentially pushes a regenerated Docker image
-#          # Other than that, it just builds the package without publishing anything; there's no special dry-run mode
-#          command: bash ci/nixpkgs-build/ci-run.sh
+      - run:
+          name: '[Dry run] Deploy to PyPI'
+          # Side effects: does an actual release, but to the test PyPI
+          command: bash ci/pypi/ci-deploy.sh --dry-run
+      - run:
+          name: '[Dry run] Wait up to 30 minutes for PyPI package to be available'
+          command: bash ci/pypi/ci-wait-for-package.sh test.pypi.org 30
+
+      - run:
+          name: '[Dry run] Update Homebrew with local installation test'
+          # Prerequisites: artifacts must be released to test PyPI first
+          command: bash ci/homebrew/ci-deploy.sh --dry-run
+
+      - run:
+          name: '[Dry run] Publish image to Docker Hub'
+          command: bash ci/docker/ci-deploy.sh --dry-run
+
+      - run:
+          name: '[Dry run] Build & upload deb package to PPA'
+          # Side effects: potentially pushes a regenerated Docker image
+          command: bash ci/deb-ppa-upload/ci-deploy.sh --dry-run
+
+      - run:
+          name: '[Dry run] Build Nix package'
+          # Side effects: potentially pushes a regenerated Docker image
+          # Other than that, it just builds the package without publishing anything; there's no special dry-run mode
+          command: bash ci/nixpkgs-build/ci-run.sh
 
       - run:
           name: '[Dry run] Build snap'
           command: bash ci/snap/ci-deploy.sh --dry-run
 
-#      - run:
-#          name: '[Dry run] Build rpm package'
-#          # Side effects: potentially pushes a regenerated Docker image
-#          # Other than that, it just builds the package without publishing anything; there's no special dry-run mode
-#          command: bash ci/rpm/ci-run.sh
+      - run:
+          name: '[Dry run] Build rpm package'
+          # Side effects: potentially pushes a regenerated Docker image
+          # Other than that, it just builds the package without publishing anything; there's no special dry-run mode
+          command: bash ci/rpm/ci-run.sh
 
   "deploy to pypi":
     executor: ubuntu_executor
@@ -339,60 +339,60 @@ workflows:
   version: 2
   build:
     jobs:
-#      - general checks
-#      - python 3_6 git 1_8_0
-#      - python 3_7 git 2_7_6
-#      - python 3_8 git 2_25_0
-#      - python 3_9 git 2_30_1
-#      - pep8 and python 3_10 git 2_33_1
-#      - docs and python 3_11 git 2_38_1
-#      - python 3_12 git 2_42_0
-#      - macos tests
-#      - windows tests
-#      - coverage upload:
-#          requires:
-#            *test_jobs
-      - dry run deploy #:
-#          filters:
-#            branches:
-#              only:
-#                - "develop"
-#                - "/hotfix.*/"
-#                - "master"
-#          requires:
-#            *test_jobs
+      - general checks
+      - python 3_6 git 1_8_0
+      - python 3_7 git 2_7_6
+      - python 3_8 git 2_25_0
+      - python 3_9 git 2_30_1
+      - pep8 and python 3_10 git 2_33_1
+      - docs and python 3_11 git 2_38_1
+      - python 3_12 git 2_42_0
+      - macos tests
+      - windows tests
+      - coverage upload:
+          requires:
+            *test_jobs
+      - dry run deploy:
+          filters:
+            branches:
+              only:
+                - "develop"
+                - "/hotfix.*/"
+                - "master"
+          requires:
+            *test_jobs
 
       # Let's keep each deployment in a separate job (rather than in separate step of a single job),
       # so that CircleCI allows for re-running just the failed deployments in case of transient failure.
-#      - deploy to pypi:
-#          <<: *only_master
-#          requires:
-#            - dry run deploy
-#      - update homebrew formula:
-#          <<: *only_master
-#          requires:
-#            - deploy to pypi
-#      - publish image to docker hub:
-#          <<: *only_master
-#          requires:
-#            - dry run deploy
-#      - build and upload deb package to ppa:
-#          <<: *only_master
-#          requires:
-#            - dry run deploy
-#      - publish snap to the stable channel:
-#          <<: *only_master
-#          requires:
-#            - dry run deploy
-#      # Let's do this at the very end to avoid opening a GH release (and notifying the watchers)
-#      # in case anything goes wrong in the previous steps.
-#      - build rpm package and create github release:
-#          <<: *only_master
-#          requires:
-#            - deploy to pypi
-#            - update homebrew formula
-#            - publish image to docker hub
-#            - build and upload deb package to ppa
-#            - publish snap to the stable channel
-#
-#      # Note: there are also releases happening outside of our CI, see PACKAGES.md
+      - deploy to pypi:
+          <<: *only_master
+          requires:
+            - dry run deploy
+      - update homebrew formula:
+          <<: *only_master
+          requires:
+            - deploy to pypi
+      - publish image to docker hub:
+          <<: *only_master
+          requires:
+            - dry run deploy
+      - build and upload deb package to ppa:
+          <<: *only_master
+          requires:
+            - dry run deploy
+      - publish snap to the stable channel:
+          <<: *only_master
+          requires:
+            - dry run deploy
+      # Let's do this at the very end to avoid opening a GH release (and notifying the watchers)
+      # in case anything goes wrong in the previous steps.
+      - build rpm package and create github release:
+          <<: *only_master
+          requires:
+            - deploy to pypi
+            - update homebrew formula
+            - publish image to docker hub
+            - build and upload deb package to ppa
+            - publish snap to the stable channel
+
+      # Note: there are also releases happening outside of our CI, see PACKAGES.md

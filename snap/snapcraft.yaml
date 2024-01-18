@@ -38,5 +38,6 @@ parts:
 apps:
   git-machete:
     command: bin/git-machete
+    # Workaround for https://github.com/VirtusLab/git-machete/issues/1150
     environment:
       PYTHONPATH: /snap/git-machete/x1/lib/python3.10/site-packages

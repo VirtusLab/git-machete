@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-
-import os
 import sys
 
 # Since this shim needs to be compatible with Python 2,
@@ -8,8 +5,6 @@ import sys
 
 
 def main():  # type: ignore
-    print("path = " + str(sys.path))
-    os.system("pwd")
     def validate_python_version():  # type: ignore
         if sys.version_info[:2] < (3, 6):
             # String interpolations were only introduced in Python 3.6
@@ -21,8 +16,6 @@ def main():  # type: ignore
 
     validate_python_version()  # type: ignore
 
-    from git_machete import cli
+    from . import cli
 
     cli.main()
-
-main()

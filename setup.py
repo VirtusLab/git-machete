@@ -24,12 +24,11 @@ setup(
     # Non-python directories are only included in `packages` for the sake of bdist_wheel;
     # they have apparently no effect on sdists (only MANIFEST.in matters).
     packages=['git_machete', 'completion', 'docs/man'],
-    scripts=['git-machete'],
-    # entry_points={
-    #     'console_scripts': [
-    #         'git-machete = git_machete.bin:main'
-    #     ]
-    # },
+    entry_points={
+        'console_scripts': [
+            'git-machete = git_machete.bin:main'
+        ]
+    },
     python_requires='>=3.6, <4',
     classifiers=[
         'Programming Language :: Python',
