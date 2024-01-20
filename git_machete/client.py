@@ -2097,29 +2097,28 @@ class MacheteClient:
                 warn(f'Pull request #{bold(str(pr.number))} is already closed.')
             debug(f'found {pr}')
 
-            path: List[LocalBranchShortName] = self.__get_path_from_pr_chain(pr, all_open_prs)
-            reversed_path: List[LocalBranchShortName] = path[::-1]  # need to add from root downwards
-            for index, branch in enumerate(reversed_path):
-                if branch not in self.managed_branches:
-                    if index == 0:
-                        self.add(
-                            branch=branch,
-                            opt_as_root=True,
-                            opt_onto=None,
-                            opt_yes=True,
-                            verbose=False,
-                            switch_head_if_new_branch=False)
-                    else:
-                        self.add(
-                            branch=branch,
-                            opt_onto=reversed_path[index - 1],
-                            opt_as_root=False,
-                            opt_yes=True,
-                            verbose=False,
-                            switch_head_if_new_branch=False)
-                    if pr not in checked_out_prs:
-                        print(fmt(f"Pull request #{bold(str(pr.number))} checked out at local branch {bold(pr.head)}"))
-                        checked_out_prs.append(pr)
+            path: List[GitHubPullRequest] = self.__get_path_from_pr_chain(pr.head, pr.base, all_open_prs)
+            reversed_path: List[GitHubPullRequest] = path[::-1] + [pr]  # need to add from root downwards
+            if reversed_path[0].base not in self.managed_branches:
+                self.add(
+                    branch=LocalBranchShortName.of(reversed_path[0].base),
+                    opt_as_root=True,
+                    opt_onto=None,
+                    opt_yes=True,
+                    verbose=False,
+                    switch_head_if_new_branch=False)
+            for pr_on_path in reversed_path:
+                if pr_on_path.head not in self.managed_branches:
+                    self.add(
+                        branch=LocalBranchShortName.of(pr_on_path.head),
+                        opt_onto=LocalBranchShortName.of(pr_on_path.base),
+                        opt_as_root=False,
+                        opt_yes=True,
+                        verbose=False,
+                        switch_head_if_new_branch=False)
+                    if pr_on_path not in checked_out_prs:
+                        print(fmt(f"Pull request #{bold(str(pr_on_path.number))} checked out at local branch {bold(pr_on_path.head)}"))
+                        checked_out_prs.append(pr_on_path)
 
         debug('Current GitHub user is ' + (current_user or '<none>'))
         self.__sync_annotations_to_branch_layout_file(all_open_prs, current_user=current_user, include_urls=False, verbose=False)
@@ -2127,24 +2126,33 @@ class MacheteClient:
             self.__git.checkout(LocalBranchShortName.of(pr.head))
 
     @staticmethod
-    def __get_path_from_pr_chain(current_pr: GitHubPullRequest, all_open_prs: List[GitHubPullRequest]) -> List[LocalBranchShortName]:
-        path: List[LocalBranchShortName] = [LocalBranchShortName.of(current_pr.head)]
-        pr: Optional[GitHubPullRequest] = current_pr
-        while pr:
-            if LocalBranchShortName.of(pr.base) in path:
-                raise MacheteException("There is a cycle between GitHub PRs: " + " -> ".join(path + [LocalBranchShortName.of(pr.base)]))
-            path.append(LocalBranchShortName.of(pr.base))
-            pr = utils.find_or_none(lambda x: x.head == pr.base, all_open_prs)  # type: ignore[union-attr]
+    def __get_path_from_pr_chain(
+            current_pr_head: str,
+            current_pr_base: str,
+            all_open_prs: List[GitHubPullRequest]
+    ) -> List[GitHubPullRequest]:
+        visited_head_branches: List[str] = [current_pr_head]
+        path: List[GitHubPullRequest] = []
+        pr_base: Optional[str] = current_pr_base
+        while pr_base:
+            if pr_base in visited_head_branches:
+                raise MacheteException("There is a cycle between GitHub PRs: " + " -> ".join(visited_head_branches + [pr_base]))
+            visited_head_branches += [pr_base]
+            pr = utils.find_or_none(lambda x: x.head == pr_base, all_open_prs)
+            path = (path + [pr]) if pr else path
+            pr_base = pr.base if pr else None
         return path
 
     @staticmethod
-    def __get_applicable_pull_requests(prs_list: Optional[List[int]],
-                                       all_opened_prs_from_github: List[GitHubPullRequest],
-                                       github_client: GitHubClient,
-                                       all: bool,
-                                       mine: bool,
-                                       by: Optional[str],
-                                       user: Optional[str]) -> List[GitHubPullRequest]:
+    def __get_applicable_pull_requests(
+            prs_list: Optional[List[int]],
+            all_opened_prs_from_github: List[GitHubPullRequest],
+            github_client: GitHubClient,
+            all: bool,
+            mine: bool,
+            by: Optional[str],
+            user: Optional[str]
+    ) -> List[GitHubPullRequest]:
         result: List[GitHubPullRequest] = []
         if prs_list:
             for pr_no in prs_list:

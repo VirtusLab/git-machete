@@ -344,6 +344,7 @@ class TestGitHubCheckoutPRs(BaseTest):
         os.chdir(self.repo_sandbox.local_path)
         rewrite_branch_layout_file("master")
         expected_msg = ("Checking for open GitHub PRs... OK\n"
+                        "Pull request #1 checked out at local branch improve/refactor\n"
                         "Pull request #2 checked out at local branch comments/add_docstrings\n")
         assert_success(
             ['github', 'checkout-prs', '2'],

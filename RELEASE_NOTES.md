@@ -2,7 +2,8 @@
 
 ## New in git-machete 3.22.1
 
-- fixed: in the unlikely case of a cycle between GitHub PRs, `git machete github checkout-pr` aborts with an error rather than falling into an infinite loop
+- fixed: in the unlikely case of a cycle between GitHub PRs, `git machete github checkout-prs` aborts with an error rather than falling into an infinite loop
+- fixed: when checking out longer PR chains, `git machete github checkout-prs` prints out all checked out branches correctly
 
 ## New in git-machete 3.22.0
 
