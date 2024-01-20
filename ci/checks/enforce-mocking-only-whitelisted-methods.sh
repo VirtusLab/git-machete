@@ -17,6 +17,7 @@ git_machete.github.OrganizationAndRepository.from_url
 git_machete.utils._popen_cmd
 git_machete.utils._run_cmd
 git_machete.utils.find_executable
+git_machete.utils.get_current_date
 os.path.isfile
 shutil.which
 sys.argv

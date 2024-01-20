@@ -27,9 +27,9 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Jan 20, 2024" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Feb 04, 2024" "" "git-machete"
 .SH NAME
-git-machete \- git-machete 3.22.1
+git-machete \- git-machete 3.23.0
 .sp
 git machete is a robust tool that \fBsimplifies your git workflows\fP\&.
 .sp
@@ -1106,9 +1106,8 @@ The subject of the first unique commit of the branch is used as PR title.
 If \fB\&.git/info/description\fP or \fB\&.github/pull_request_template.md\fP file is present, its contents are used as PR description.
 Otherwise (or if \fBmachete.github.forceDescriptionFromCommitMessage\fP is set), PR description is taken from message body of the first unique commit of the branch.
 .sp
-If the newly\-created PR is stacked atop another PR, the actual PR description posted to GitHub will be prepended with the following header:
-.sp
-\fB# Based on PR #<number of PR for base branch>\fP
+If the newly\-created PR is stacked atop another PR, the actual PR description posted to GitHub will be prepended with a section
+listing the entire related chain of PRs.
 .sp
 \fBOptions:\fP
 .INDENT 7.0
@@ -1136,9 +1135,8 @@ Draft PRs don\(aqt get code owners automatically added as reviewers.
 .B \fBretarget\-pr [\-b|\-\-branch=<branch>] [\-\-ignore\-if\-missing]\fP:
 Sets the base of the current (or specified) branch\(aqs PR to upstream (parent) branch, as seen by git machete (see \fBgit machete show up\fP).
 .sp
-If after changing the base, the PR ends up stacked atop another PR, the PR description at GitHub will be prepended with the following header:
-.sp
-\fB# Based on PR #<number of PR for base branch>\fP
+If after changing the base the PR ends up stacked atop another PR, the PR description posted to GitHub will be prepended with a section
+listing the entire related chain of PRs.
 .sp
 This header will be updated or removed accordingly with the subsequent runs of \fBretarget\-pr\fP\&.
 .sp

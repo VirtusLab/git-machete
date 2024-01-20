@@ -11,7 +11,7 @@ from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 from .exceptions import (MacheteException, UnexpectedMacheteException,
                          UnprocessableEntityHTTPError)
-from .git_operations import GitContext, LocalBranchShortName
+from .git_operations import LocalBranchShortName
 from .utils import bold, compact_dict, debug, popen_cmd, warn
 
 
@@ -20,11 +20,11 @@ class GitHubPullRequest(NamedTuple):
     user: str
     base: str
     head: str
-    html_url: str
     state: str
     description: Optional[str]
-    full_repository_name: str
+    html_url: str
     repository_url: str
+    full_repository_name: str
 
     @classmethod
     def from_json(cls,
@@ -455,11 +455,6 @@ class GitHubClient:
     def get_org_and_repo_names_by_id(self, repo_id: str) -> str:
         repo = self.__fire_github_api_request(method='GET', path=f'/repositories/{repo_id}')
         return str(repo['full_name'])
-
-    @staticmethod
-    def checkout_pr_refs(git: GitContext, remote: str, pr_number: int, branch: LocalBranchShortName) -> None:
-        git.fetch_ref(remote, f'pull/{pr_number}/head:{branch}')
-        git.checkout(branch)
 
 
 def github_remote_url_patterns(domain: str) -> List[str]:

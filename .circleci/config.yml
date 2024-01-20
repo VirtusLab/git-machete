@@ -20,7 +20,7 @@ executors:
     resource_class: windows.medium
 
 orbs:
-  codecov: codecov/codecov@3.2.2
+  codecov: codecov/codecov@4.0.0
 
 jobs:
   "general checks":

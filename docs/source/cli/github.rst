@@ -64,9 +64,8 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
     If ``.git/info/description`` or ``.github/pull_request_template.md`` file is present, its contents are used as PR description.
     Otherwise (or if ``machete.github.forceDescriptionFromCommitMessage`` is set), PR description is taken from message body of the first unique commit of the branch.
 
-    If the newly-created PR is stacked atop another PR, the actual PR description posted to GitHub will be prepended with the following header:
-
-    ``# Based on PR #<number of PR for base branch>``
+    If the newly-created PR is stacked atop another PR, the actual PR description posted to GitHub will be prepended with a section
+    listing the entire related chain of PRs.
 
     **Options:**
 
@@ -89,9 +88,8 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 ``retarget-pr [-b|--branch=<branch>] [--ignore-if-missing]``:
     Sets the base of the current (or specified) branch's PR to upstream (parent) branch, as seen by git machete (see ``git machete show up``).
 
-    If after changing the base, the PR ends up stacked atop another PR, the PR description at GitHub will be prepended with the following header:
-
-    ``# Based on PR #<number of PR for base branch>``
+    If after changing the base the PR ends up stacked atop another PR, the PR description posted to GitHub will be prepended with a section
+    listing the entire related chain of PRs.
 
     This header will be updated or removed accordingly with the subsequent runs of ``retarget-pr``.
 

@@ -1,3 +1,4 @@
+import textwrap
 from tempfile import mkdtemp
 
 from pytest_mock import MockerFixture
@@ -190,6 +191,7 @@ class TestGitHubRetargetPR(BaseTest):
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         github_api_state = self.github_api_state_for_test_retarget_pr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
+        self.patch_symbol(mocker, 'git_machete.utils.get_current_date', lambda: '2023-12-31')
 
         branch_first_commit_msg = "First commit on branch."
         branch_second_commit_msg = "Second commit on branch."
@@ -255,12 +257,26 @@ class TestGitHubRetargetPR(BaseTest):
         assert_success(
             ['github', 'retarget-pr'],
             'Base branch of PR #20 has been switched to feature\n'
-            'Base PR header in the description of PR #20 now points to PR #15\n'
+            'Description of PR #20 has been updated\n'
         )
         pr20 = github_api_state.get_pull_by_number(20)
         assert pr20 is not None
         assert pr20['base']['ref'] == 'feature'
-        assert pr20['body'] == '# Based on PR #15\n\n# Summary\n\n'
+        assert pr20['body'] == textwrap.dedent('''
+            <!-- start git-machete generated -->
+
+            # Based on PR #15
+
+            ## Full chain of PRs as of 2023-12-31
+
+            * PR #20: `feature_1` ➔ `feature`
+            * PR #15: `feature` ➔ `master`
+
+            <!-- end git-machete generated -->
+
+            # Summary
+
+        ''')[1:]
 
         # branch feature_2 is not present in any of the remotes
         (
@@ -290,12 +306,23 @@ class TestGitHubRetargetPR(BaseTest):
         assert_success(
             ['github', 'retarget-pr'],
             'Base branch of PR #25 has been switched to feature\n'
-            'Base PR header in the description of PR #25 now points to PR #15\n'
+            'Description of PR #25 has been updated\n'
         )
         pr25 = github_api_state.get_pull_by_number(25)
         assert pr25 is not None
         assert pr25['base']['ref'] == 'feature'
-        assert pr25['body'] == '# Based on PR #15\n'
+        assert pr25['body'] == textwrap.dedent('''
+            <!-- start git-machete generated -->
+
+            # Based on PR #15
+
+            ## Full chain of PRs as of 2023-12-31
+
+            * PR #25: `feature_2` ➔ `feature`
+            * PR #15: `feature` ➔ `master`
+
+            <!-- end git-machete generated -->
+        ''')[1:]
 
         # branch feature_3 present in only one remote: origin_1 and has tracking data
         (
@@ -319,12 +346,25 @@ class TestGitHubRetargetPR(BaseTest):
         assert_success(
             ['github', 'retarget-pr'],
             'Base branch of PR #30 has been switched to feature_2\n'
-            'Base PR header in the description of PR #30 now points to PR #25\n'
+            'Description of PR #30 has been updated\n'
         )
         pr30 = github_api_state.get_pull_by_number(30)
         assert pr30 is not None
         assert pr30['base']['ref'] == 'feature_2'
-        assert pr30['body'] == '# Based on PR #25\n\n# Summary'
+        assert pr30['body'] == textwrap.dedent('''
+            <!-- start git-machete generated -->
+
+            # Based on PR #25
+
+            ## Full chain of PRs as of 2023-12-31
+
+            * PR #30: `feature_3` ➔ `feature_2`
+            * PR #25: `feature_2` ➔ `feature`
+            * PR #15: `feature` ➔ `master`
+
+            <!-- end git-machete generated -->
+
+            # Summary''')[1:]
 
         body = \
             """
@@ -340,12 +380,24 @@ class TestGitHubRetargetPR(BaseTest):
         assert_success(
             ['github', 'retarget-pr'],
             'Base branch of PR #30 has been switched to feature\n'
-            'Base PR header in the description of PR #30 now points to PR #15\n'
+            'Description of PR #30 has been updated\n'
         )
         pr30 = github_api_state.get_pull_by_number(30)
         assert pr30 is not None
         assert pr30['base']['ref'] == 'feature'
-        assert pr30['body'] == '# Based on PR #15\n\n# Summary'
+        assert pr30['body'] == textwrap.dedent('''
+            <!-- start git-machete generated -->
+
+            # Based on PR #15
+
+            ## Full chain of PRs as of 2023-12-31
+
+            * PR #30: `feature_3` ➔ `feature`
+            * PR #15: `feature` ➔ `master`
+
+            <!-- end git-machete generated -->
+
+            # Summary''')[1:]
 
         body = \
             """
@@ -361,7 +413,7 @@ class TestGitHubRetargetPR(BaseTest):
         assert_success(
             ['github', 'retarget-pr'],
             'Base branch of PR #30 has been switched to root\n'
-            'Base PR header has been removed from the description of PR #30\n'
+            'Description of PR #30 has been updated\n'
         )
         pr30 = github_api_state.get_pull_by_number(30)
         assert pr30 is not None

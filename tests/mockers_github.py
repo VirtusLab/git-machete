@@ -116,7 +116,6 @@ def mock_urlopen(github_api_state: MockGitHubAPIState) -> Callable[[Request], Ab
 
 
 def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) -> MockGitHubAPIResponse:
-
     parsed_url: ParseResult = urlparse(request.full_url)
     url_segments: List[str] = [s for s in parsed_url.path.split('/') if s]
     query_params: Dict[str, str] = {k: v[0] for k, v in parse_qs(parsed_url.query).items()}

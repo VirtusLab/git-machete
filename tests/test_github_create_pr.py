@@ -1,4 +1,5 @@
 import os
+import textwrap
 from tempfile import mkdtemp
 
 from pytest_mock import MockerFixture
@@ -116,7 +117,7 @@ class TestGitHubCreatePR(BaseTest):
 
         self.repo_sandbox.write_to_file(".git/info/milestone", "42")
         self.repo_sandbox.write_to_file(".git/info/reviewers", "foo\n\nbar")
-        self.repo_sandbox.write_to_file(".github/pull_request_template.md", "# PR title\n## Summary\n##Test plan\n")
+        self.repo_sandbox.write_to_file(".github/pull_request_template.md", "# PR title\n## Summary\n## Test plan\n")
         assert_success(
             ["github", "create-pr", "--draft"],
             """
@@ -142,6 +143,7 @@ class TestGitHubCreatePR(BaseTest):
 
             Fetching origin...
             Creating a draft PR from chore/fields to ignore-trailing... OK, see www.github.com
+            Updating description of PR #5 to include the chain of PRs... OK
             Setting milestone of PR #5 to #42... OK
             Adding github_user as assignee to PR #5... OK
             Adding foo, bar as reviewers to PR #5... OK
@@ -150,7 +152,22 @@ class TestGitHubCreatePR(BaseTest):
         pr = github_api_state.get_pull_by_number(5)
         assert pr is not None
         assert pr['title'] == 'remove outdated fields'
-        assert pr['body'] == '# Based on PR #3\n\n# PR title\n## Summary\n##Test plan\n'
+        assert pr['body'] == textwrap.dedent('''
+            <!-- start git-machete generated -->
+
+            # Based on PR #3
+
+            ## Full chain of PRs as of 2024-02-04
+
+            * PR #5: `chore/fields` ➔ `ignore-trailing`
+            * PR #3: `ignore-trailing` ➔ `hotfix/add-trigger`
+
+            <!-- end git-machete generated -->
+
+            # PR title
+            ## Summary
+            ## Test plan
+        ''')[1:]
         assert pr['draft'] is True
         assert pr['milestone'] == '42'
         assert pr['assignees'] == ['github_user']
@@ -291,6 +308,89 @@ class TestGitHubCreatePR(BaseTest):
             ["github", "create-pr"],
             "Branch master does not have a parent branch (it is a root), base branch for the PR cannot be established."
         )
+
+    @staticmethod
+    def github_api_state_for_test_create_pr_for_chain_in_description() -> MockGitHubAPIState:
+        return MockGitHubAPIState(
+            mock_pr_json(head='allow-ownership-link', base='develop', number=1),
+            mock_pr_json(head='build-chain', base='allow-ownership-link', number=2)
+        )
+
+    def test_github_create_pr_for_chain_in_description(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
+        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
+        github_api_state = self.github_api_state_for_test_create_pr_for_chain_in_description()
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
+        self.patch_symbol(mocker, 'git_machete.utils.get_current_date', lambda: '2023-12-31')
+
+        (
+            self.repo_sandbox
+            .new_branch("develop")
+            .commit("first commit")
+            .new_branch("allow-ownership-link")
+            .commit("Enable ownership links")
+            .push()
+            .new_branch("build-chain")
+            .commit("Build arbitrarily long chains of PRs")
+            .push()
+            .new_branch("call-ws")
+            .commit("Call web service")
+            .push()
+            .new_branch("drop-constraint")
+            .commit("Drop unneeded SQL constraints")
+            .push()
+        )
+        body: str = \
+            """
+            develop
+                allow-ownership-link  PR #1
+                    build-chain  PR #2
+                        call-ws
+                            drop-constraint
+            """
+        rewrite_branch_layout_file(body)
+
+        self.repo_sandbox.check_out("call-ws")
+        launch_command("github", "create-pr")
+        pr = github_api_state.get_pull_by_number(3)
+        assert pr is not None
+        assert pr['body'] == textwrap.dedent('''
+            <!-- start git-machete generated -->
+
+            # Based on PR #2
+
+            ## Full chain of PRs as of 2023-12-31
+
+            * PR #3: `call-ws` ➔ `build-chain`
+            * PR #2: `build-chain` ➔ `allow-ownership-link`
+            * PR #1: `allow-ownership-link` ➔ `develop`
+
+            <!-- end git-machete generated -->
+        ''')[1:]
+
+        self.repo_sandbox.write_to_file(".github/pull_request_template.md", "# PR title\n## Summary\n## Test plan\n")
+        self.repo_sandbox.check_out("drop-constraint")
+        launch_command("github", "create-pr", "--yes")
+        pr = github_api_state.get_pull_by_number(4)
+        assert pr is not None
+        assert pr['body'] == textwrap.dedent('''
+            <!-- start git-machete generated -->
+
+            # Based on PR #3
+
+            ## Full chain of PRs as of 2023-12-31
+
+            * PR #4: `drop-constraint` ➔ `call-ws`
+            * PR #3: `call-ws` ➔ `build-chain`
+            * PR #2: `build-chain` ➔ `allow-ownership-link`
+            * PR #1: `allow-ownership-link` ➔ `develop`
+
+            <!-- end git-machete generated -->
+
+            # PR title
+            ## Summary
+            ## Test plan
+        ''')[1:]
 
     @staticmethod
     def github_api_state_for_test_create_pr_missing_base_branch_on_remote() -> MockGitHubAPIState:
@@ -462,6 +562,7 @@ class TestGitHubCreatePR(BaseTest):
 
         Fetching origin_1...
         Creating a PR from feature to branch-1... OK, see www.github.com
+        Updating description of PR #16 to include the chain of PRs... OK
         """  # noqa: E501
 
         self.repo_sandbox.write_to_file(".git/info/description", "overridden description")
@@ -472,7 +573,19 @@ class TestGitHubCreatePR(BaseTest):
         )
         pr = github_api_state.get_pull_by_number(16)
         assert pr is not None
-        assert pr['body'] == '# Based on PR #15\n\ncommit body'
+        assert pr['body'] == textwrap.dedent('''
+            <!-- start git-machete generated -->
+
+            # Based on PR #15
+
+            ## Full chain of PRs as of 2024-02-04
+
+            * PR #16: `feature` ➔ `branch-1`
+            * PR #15: `branch-1` ➔ `root`
+
+            <!-- end git-machete generated -->
+
+            commit body''')[1:]
 
         # branch feature_1 present in each of the remotes, tracking data present
         (
@@ -498,6 +611,7 @@ class TestGitHubCreatePR(BaseTest):
         Added branch feature_1 onto feature
         Fetching origin_2...
         Creating a PR from feature_1 to feature... OK, see www.github.com
+        Updating description of PR #17 to include the chain of PRs... OK
         """
         assert_success(
             ['github', 'create-pr'],
@@ -534,6 +648,7 @@ class TestGitHubCreatePR(BaseTest):
 
         Fetching origin_1...
         Creating a PR from feature_2 to feature... OK, see www.github.com
+        Updating description of PR #18 to include the chain of PRs... OK
         """
         assert_success(
             ['github', 'create-pr'],
@@ -554,6 +669,7 @@ class TestGitHubCreatePR(BaseTest):
         Added branch feature_3 onto feature_2
         Fetching origin_1...
         Creating a PR from feature_3 to feature_2... OK, see www.github.com
+        Updating description of PR #19 to include the chain of PRs... OK
         """  # noqa: E501
         assert_success(
             ['github', 'create-pr'],

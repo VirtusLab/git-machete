@@ -13,9 +13,11 @@
 [![CircleCI](https://circleci.com/gh/VirtusLab/git-machete/tree/master.svg?style=shield)](https://app.circleci.com/pipelines/github/VirtusLab/git-machete?branch=master)
 [![codecov](https://codecov.io/gh/VirtusLab/git-machete/branch/develop/graph/badge.svg)](https://codecov.io/gh/VirtusLab/git-machete)
 
-[//]: # (The image is referenced by its full URL to ensure it renders correctly on https://pypi.org/project/git-machete/)
-<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/graphics/logo/svg/with-name.svg#gh-light-mode-only"     style="width: 100%; display: block; margin-bottom: 10pt;" />
-<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/graphics/logo/svg/with-name-dark.svg#gh-dark-mode-only" style="width: 100%; display: block; margin-bottom: 10pt;" />
+[//]: # (The images are referenced by full URLs to ensure they render correctly on https://pypi.org/project/git-machete/)
+<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/graphics/logo/svg/with-name.svg#gh-light-mode-only"
+     style="width: 100%; display: block; margin-bottom: 10pt;" />
+<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/graphics/logo/svg/with-name-dark.svg#gh-dark-mode-only"
+     style="width: 100%; display: block; margin-bottom: 10pt;" />
 
 💪 git-machete is a robust tool that **simplifies your git workflows**.<br/>
 
@@ -174,12 +176,17 @@ Create the PR, using the upstream (parent) branch from `.git/machete` as the bas
 git machete github create-pr [--draft]
 ```
 
-**Note**: for private repositories, a GitHub API token with `repo` access is required.
-This will be resolved from the first of:
-1. `GITHUB_TOKEN` env var.
-2. Contents of the `.github-token` file in the home directory (`~`). This file has to be manually created by the user.
-3. Auth token from the current [`gh`](https://cli.github.com/) configuration.
-4. Auth token from the current [`hub`](https://github.com/github/hub) configuration.
+The entire chain of PRs will be posted in the PR description: <br/>
+
+[//]: # (The image is referenced by its full URL to ensure it renders correctly on https://pypi.org/project/git-machete/)
+
+<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/feature/1093-pr-chain-in-pr-desc/graphics/pr-chain-github-screenshot.png"
+     alt="PR chain on GitHub"
+     width="75%" />
+
+**Note**: for private repositories (or side-effecting operations like `create-pr` on public repositories),
+a GitHub API token with `repo` access is required.
+See the [docs](https://git-machete.readthedocs.io/#github) for how to provide the token.
 
 ### Shell completions
 

@@ -6,6 +6,7 @@ import shlex
 import shutil
 import sys
 from collections import OrderedDict
+from enum import Enum, auto
 from typing import Callable, Dict, Iterator, List, Optional, Tuple
 
 from . import git_config_keys, utils
@@ -24,12 +25,9 @@ from .git_operations import (HEAD, AnyBranchName, AnyRevision, BranchPair,
 from .github import (GitHubClient, GitHubPullRequest, GitHubToken,
                      OrganizationAndRepository,
                      OrganizationAndRepositoryAndRemote, is_github_remote_url)
-from .utils import (AnsiEscapeCodes, PopenResult, SyncToParentStatus, bold,
-                    colored, debug, dim, excluding, flat_map, fmt,
-                    get_pretty_choices, get_second,
-                    sync_to_parent_status_to_edge_color_map,
-                    sync_to_parent_status_to_junction_ascii_only_map, tupled,
-                    underline, warn)
+from .utils import (AnsiEscapeCodes, PopenResult, bold, colored, debug, dim,
+                    excluding, flat_map, fmt, get_pretty_choices, get_second,
+                    tupled, underline, warn)
 
 
 class MacheteClient:
@@ -1061,14 +1059,14 @@ class MacheteClient:
                 else:
                     next_sibling_of_branch: Optional[LocalBranchShortName] = next_sibling_of_ancestor[-1]
                     if next_sibling_of_branch and sync_to_parent_status[next_sibling_of_branch] == sync_to_parent_status[branch]:
-                        junction = u"├─"
+                        junction = "├─"
                     else:
                         # The three-legged turnstile looks pretty bad when the upward and rightward leg
                         # have a different color than the downward leg.
                         # It's better to use a two-legged elbow
                         # in case `sync_to_parent_status[next_sibling_of_branch] != sync_to_parent_status[branch]`,
                         # at the expense of a little gap to the elbow/turnstile below.
-                        junction = u"└─"
+                        junction = "└─"
                 print_line_prefix(branch, junction + maybe_space_before_branch_name)
             else:
                 if branch != self.__roots[0]:
@@ -2072,7 +2070,6 @@ class MacheteClient:
         self.__git.fetch_remote(org_repo_remote.remote)
 
         pr: Optional[GitHubPullRequest] = None
-        checked_out_prs: List[GitHubPullRequest] = []
         for pr in sorted(applicable_prs, key=lambda x: x.number):
             if pr.full_repository_name:
                 if '/'.join([org_repo_remote.remote, pr.head]) not in self.__git.get_remote_branches():
@@ -2092,13 +2089,14 @@ class MacheteClient:
             else:
                 warn(f'Pull request #{bold(str(pr.number))} comes from fork and its repository is already deleted. '
                      f'No remote tracking data will be set up for {bold(pr.head)} branch.')
-                github_client.checkout_pr_refs(self.__git, org_repo_remote.remote, pr.number, LocalBranchShortName.of(pr.head))
+                self.__git.fetch_ref(org_repo_remote.remote, f'pull/{pr.number}/head:{pr.head}')
+                self.__git.checkout(LocalBranchShortName.of(pr.head))
             if pr.state == 'closed':
                 warn(f'Pull request #{bold(str(pr.number))} is already closed.')
             debug(f'found {pr}')
 
-            path: List[GitHubPullRequest] = self.__get_path_from_pr_chain(pr.head, pr.base, all_open_prs)
-            reversed_path: List[GitHubPullRequest] = path[::-1] + [pr]  # need to add from root downwards
+            path: List[GitHubPullRequest] = self.__get_path_from_pr_chain(pr, all_open_prs)
+            reversed_path: List[GitHubPullRequest] = path[::-1]  # need to add from root downwards
             if reversed_path[0].base not in self.managed_branches:
                 self.add(
                     branch=LocalBranchShortName.of(reversed_path[0].base),
@@ -2116,9 +2114,7 @@ class MacheteClient:
                         opt_yes=True,
                         verbose=False,
                         switch_head_if_new_branch=False)
-                    if pr_on_path not in checked_out_prs:
-                        print(fmt(f"Pull request #{bold(str(pr_on_path.number))} checked out at local branch {bold(pr_on_path.head)}"))
-                        checked_out_prs.append(pr_on_path)
+                    print(fmt(f"Pull request #{bold(str(pr_on_path.number))} checked out at local branch {bold(pr_on_path.head)}"))
 
         debug('Current GitHub user is ' + (current_user or '<none>'))
         self.__sync_annotations_to_branch_layout_file(all_open_prs, current_user=current_user, include_urls=False, verbose=False)
@@ -2126,14 +2122,10 @@ class MacheteClient:
             self.__git.checkout(LocalBranchShortName.of(pr.head))
 
     @staticmethod
-    def __get_path_from_pr_chain(
-            current_pr_head: str,
-            current_pr_base: str,
-            all_open_prs: List[GitHubPullRequest]
-    ) -> List[GitHubPullRequest]:
-        visited_head_branches: List[str] = [current_pr_head]
-        path: List[GitHubPullRequest] = []
-        pr_base: Optional[str] = current_pr_base
+    def __get_path_from_pr_chain(original_pr: GitHubPullRequest, all_open_prs: List[GitHubPullRequest]) -> List[GitHubPullRequest]:
+        visited_head_branches: List[str] = [original_pr.head]
+        path: List[GitHubPullRequest] = [original_pr]
+        pr_base: Optional[str] = original_pr.base
         while pr_base:
             if pr_base in visited_head_branches:
                 raise MacheteException("There is a cycle between GitHub PRs: " + " -> ".join(visited_head_branches + [pr_base]))
@@ -2294,17 +2286,26 @@ class MacheteClient:
 
             self.retarget_github_pr(head, ignore_if_missing=False)
 
-    @staticmethod
-    def __get_updated_github_pr_description(old_description: Optional[str], pr_number_for_base_branch: Optional[int]) -> str:
+    def __get_updated_github_pr_description(self, github_client: GitHubClient,
+                                            pr: GitHubPullRequest, old_description: Optional[str]) -> str:
         def skip_leading_empty(strs: List[str]) -> List[str]:
             return list(itertools.dropwhile(lambda line: line.strip() == '', strs))
 
         lines = skip_leading_empty(old_description.split('\n')) if old_description else []
-        if lines and '# Based on PR #' in lines[0]:
-            lines = lines[1:]
-        lines = skip_leading_empty(lines)
-        if pr_number_for_base_branch:
-            lines = [f'# Based on PR #{pr_number_for_base_branch}', ''] + lines
+        text_to_prepend = self.__generate_text_to_prepend_to_pr_description(github_client, pr)
+        lines_to_prepend = text_to_prepend.split('\n') if text_to_prepend else []
+        if self.START_GIT_MACHETE_GENERATED_COMMENT in lines and self.END_GIT_MACHETE_GENERATED_COMMENT in lines:
+            start_index = lines.index(self.START_GIT_MACHETE_GENERATED_COMMENT)
+            end_index = lines.index(self.END_GIT_MACHETE_GENERATED_COMMENT)
+            if lines_to_prepend == []:
+                if lines[end_index + 1:] and lines[end_index + 1] == '':
+                    lines = lines[:start_index] + lines[end_index + 2:]
+                else:
+                    lines = lines[:start_index] + lines[end_index + 1:]
+            else:
+                lines = lines[:start_index] + lines_to_prepend[:-1] + lines[end_index + 1:]
+        else:
+            lines = lines_to_prepend + lines
         return '\n'.join(lines)
 
     def retarget_github_pr(self, head: LocalBranchShortName, ignore_if_missing: bool) -> None:
@@ -2337,21 +2338,14 @@ class MacheteClient:
         if pr.base != new_base:
             github_client.set_base_of_pull_request(pr.number, base=new_base)
             print(f'Base branch of PR #{bold(str(pr.number))} has been switched to {bold(new_base)}')
+            pr = pr._replace(base=new_base)
         else:
             print(f'Base branch of PR #{bold(str(pr.number))} is already {bold(new_base)}')
 
-        pr_number_for_base_branch: Optional[int] = None
-        prs_for_base_branch = github_client.get_open_pull_requests_by_head(new_base)
-        if len(prs_for_base_branch) >= 1:
-            pr_number_for_base_branch = prs_for_base_branch[0].number
-        new_description = self.__get_updated_github_pr_description(pr.description, pr_number_for_base_branch)
+        new_description = self.__get_updated_github_pr_description(github_client, pr, pr.description)
         if pr.description != new_description:
             github_client.set_description_of_pull_request(pr.number, description=new_description)
-            if not pr_number_for_base_branch:
-                print(f'Base PR header has been removed from the description of PR #{bold(str(pr.number))}')
-            else:
-                print(f'Base PR header in the description of PR #{bold(str(pr.number))} '
-                      f'now points to PR #{bold(str(pr_number_for_base_branch))}')
+            print(f'Description of PR #{bold(str(pr.number))} has been updated')
 
         current_user: Optional[str] = github_client.get_current_user_login()
         if self.__annotations.get(head) and self.__annotations[head].qualifiers_text:
@@ -2445,6 +2439,32 @@ class MacheteClient:
             f'You can also select the repository by providing some or all of git config keys: '
             '`machete.github.{domain,remote,organization,repository}`.\n')  # noqa: FS003
 
+    START_GIT_MACHETE_GENERATED_COMMENT = '<!-- start git-machete generated -->'
+    END_GIT_MACHETE_GENERATED_COMMENT = '<!-- end git-machete generated -->'
+
+    def __generate_text_to_prepend_to_pr_description(self, github_client: GitHubClient, pr: GitHubPullRequest) -> str:
+
+        prs_for_base_branch = github_client.get_open_pull_requests_by_head(LocalBranchShortName(pr.base))
+        if len(prs_for_base_branch) < 1:
+            return ''
+        pr_number_for_base_branch = prs_for_base_branch[0].number
+        # For determining the PR chain, we need to fetch all PRs from the repo.
+        # We could just fetch them straight away... but this list can be quite long for commercial monorepos,
+        # esp. given that GitHub limits the single page to 100 PRs (so multiple HTTP requests would be needed).
+        # As a slight optimization, let's fetch the full PR list only if the current PR has a base PR at all.
+        all_open_prs: List[GitHubPullRequest] = github_client.get_open_pull_requests()
+        pr_path = self.__get_path_from_pr_chain(pr, all_open_prs)
+
+        prepend = f'{self.START_GIT_MACHETE_GENERATED_COMMENT}\n\n'
+        prepend += f'# Based on PR #{pr_number_for_base_branch}\n\n'
+        current_date = utils.get_current_date()
+        prepend += f'## Full chain of PRs as of {current_date}\n\n'
+        for ancestor_pr in pr_path:
+            prepend += f'* PR #{ancestor_pr.number}: `{ancestor_pr.head}` ➔ `{ancestor_pr.base}`\n'
+        prepend += '\n'
+        prepend += f'{self.END_GIT_MACHETE_GENERATED_COMMENT}\n'
+        return prepend
+
     def create_github_pr(
             self,
             *,
@@ -2469,8 +2489,9 @@ class MacheteClient:
         github_client = GitHubClient(domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
         print(f"Fetching {bold(org_repo_remote.remote)}...")
         self.__git.fetch_remote(org_repo_remote.remote)
-        pr_number_for_base_branch: Optional[int] = None
+        base_branch_found_on_remote: bool = True
         if '/'.join([org_repo_remote.remote, base]) not in self.__git.get_remote_branches():
+            base_branch_found_on_remote = False
             warn(f'Base branch for this PR ({bold(base)}) is not found on remote, pushing...')
             self.__handle_untracked_branch(
                 branch=base,
@@ -2480,10 +2501,6 @@ class MacheteClient:
                 opt_push_tracked=False,
                 opt_push_untracked=True,
                 opt_yes=opt_yes)
-        else:
-            prs_for_base_branch = github_client.get_open_pull_requests_by_head(base)
-            if len(prs_for_base_branch) >= 1:
-                pr_number_for_base_branch = prs_for_base_branch[0].number
 
         current_user: Optional[str] = github_client.get_current_user_login()
         debug(f'organization is {org_repo_remote.organization}, repository is {org_repo_remote.repository}')
@@ -2515,15 +2532,26 @@ class MacheteClient:
             else:
                 description = self.__git.get_commit_data(commits[0].hash, GitFormatPatterns.MESSAGE_BODY) if commits else ''
 
-        if pr_number_for_base_branch:
-            description = f'# Based on PR #{pr_number_for_base_branch}\n\n' + description
-
         ok_str = '<green><b>OK</b></green>'
         print(f'Creating a {"draft " if opt_draft else ""}PR from {bold(head)} to {bold(base)}... ', end='', flush=True)
 
         pr: GitHubPullRequest = github_client.create_pull_request(head=head, base=base, title=title,
                                                                   description=description, draft=opt_draft)
         print(fmt(f'{ok_str}, see `{pr.html_url}`'))
+
+        # If base branch has not originally been found on the remote,
+        # we can be sure that a longer chain of PRs above the newly-created PR doesn't exist
+        if base_branch_found_on_remote:
+            # As the description may include the reference to this PR itself (in case of a chain of >=2 PRs),
+            # let's update the PR description after it's already created (so that we know the current PR's number).
+            prepend = self.__generate_text_to_prepend_to_pr_description(github_client, pr)
+            if prepend:
+                if description:
+                    prepend += '\n'
+                description = prepend + description
+                print(f'Updating description of PR #{bold(str(pr.number))} to include the chain of PRs... ', end='', flush=True)
+                github_client.set_description_of_pull_request(pr.number, description)
+                print(fmt(ok_str))
 
         milestone_path: str = self.__git.get_main_git_subpath('info', 'milestone')
         if os.path.isfile(milestone_path):
@@ -2832,3 +2860,25 @@ class MacheteClient:
     def should_perform_interactive_slide_out(cmd: str) -> bool:
         interactive_slide_out_safe_commands = {'traverse', 'status'}
         return MacheteClient.is_stdout_a_tty() and cmd in interactive_slide_out_safe_commands
+
+
+class SyncToParentStatus(Enum):
+    InSync = auto()
+    MergedToParent = auto()
+    InSyncButForkPointOff = auto()
+    OutOfSync = auto()
+
+
+sync_to_parent_status_to_edge_color_map: Dict[SyncToParentStatus, str] = {
+    SyncToParentStatus.MergedToParent: AnsiEscapeCodes.DIM,
+    SyncToParentStatus.InSync: AnsiEscapeCodes.GREEN,
+    SyncToParentStatus.InSyncButForkPointOff: AnsiEscapeCodes.YELLOW,
+    SyncToParentStatus.OutOfSync: AnsiEscapeCodes.RED
+}
+
+sync_to_parent_status_to_junction_ascii_only_map: Dict[SyncToParentStatus, str] = {
+    SyncToParentStatus.MergedToParent: "m-",
+    SyncToParentStatus.InSync: "o-",
+    SyncToParentStatus.InSyncButForkPointOff: "?-",
+    SyncToParentStatus.OutOfSync: "x-"
+}

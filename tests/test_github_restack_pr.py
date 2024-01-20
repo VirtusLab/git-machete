@@ -1,3 +1,4 @@
+import textwrap
 
 from pytest_mock import MockerFixture
 
@@ -14,9 +15,16 @@ class TestGitHubRestackPR(BaseTest):
 
     @staticmethod
     def github_api_state_for_test_restack_pr() -> MockGitHubAPIState:
+        body = textwrap.dedent('''
+            <!-- start git-machete generated -->
+
+            # Based on PR #14
+
+            <!-- end git-machete generated -->
+            # Summary''')[1:]
         return MockGitHubAPIState(
             mock_pr_json(head='feature_1', base='develop', number=14, draft=True),
-            mock_pr_json(head='feature', base='develop', number=15, body='# Based on PR #14\n# Summary'),
+            mock_pr_json(head='feature', base='develop', number=15, body=body),
             mock_pr_json(head='multiple-pr-branch', base='develop', number=16),
             mock_pr_json(head='multiple-pr-branch', base='feature', number=17),
         )
@@ -68,7 +76,7 @@ class TestGitHubRestackPR(BaseTest):
             ['github', 'restack-pr'],
             """
             Base branch of PR #15 has been switched to master
-            Base PR header has been removed from the description of PR #15
+            Description of PR #15 has been updated
             """
         )
         pr = github_api_state.get_pull_by_number(15)
@@ -147,7 +155,7 @@ class TestGitHubRestackPR(BaseTest):
               o-feature *
 
             Base branch of PR #15 has been switched to master
-            Base PR header has been removed from the description of PR #15
+            Description of PR #15 has been updated
             PR #15 has been marked as ready for review again
             """
         )
@@ -189,7 +197,7 @@ class TestGitHubRestackPR(BaseTest):
               o-feature *
 
             Base branch of PR #15 has been switched to master
-            Base PR header has been removed from the description of PR #15
+            Description of PR #15 has been updated
             PR #15 has been marked as ready for review again
             """
         )
@@ -226,7 +234,7 @@ class TestGitHubRestackPR(BaseTest):
             Did you want to just use git machete github retarget-pr?
 
             Base branch of PR #15 has been switched to master
-            Base PR header has been removed from the description of PR #15
+            Description of PR #15 has been updated
             """
         )
         pr = github_api_state.get_pull_by_number(15)
@@ -260,7 +268,7 @@ class TestGitHubRestackPR(BaseTest):
             Warn: Branch feature is behind its remote counterpart. Consider using git pull.
 
             Base branch of PR #15 has been switched to master
-            Base PR header has been removed from the description of PR #15
+            Description of PR #15 has been updated
             """
         )
 
@@ -293,7 +301,7 @@ class TestGitHubRestackPR(BaseTest):
             Warn: Branch feature is diverged from and older than its remote counterpart. Consider using git reset --keep.
 
             Base branch of PR #15 has been switched to master
-            Base PR header has been removed from the description of PR #15
+            Description of PR #15 has been updated
             """
         )
         pr = github_api_state.get_pull_by_number(15)

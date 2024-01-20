@@ -1,9 +1,9 @@
+import datetime
 import inspect
 import os
 import re
 import subprocess
 import sys
-from enum import Enum, auto
 from typing import (Any, Callable, Dict, Iterable, List, NamedTuple, Optional,
                     Set, Tuple, TypeVar)
 
@@ -323,11 +323,11 @@ def fmt(*parts: str) -> str:
 
 
 def get_vertical_bar() -> str:
-    return "|" if ascii_only else u"│"
+    return "|" if ascii_only else "│"
 
 
 def get_right_arrow() -> str:
-    return "->" if ascii_only else u"➔"
+    return "->" if ascii_only else "➔"
 
 
 def get_pretty_choices(*choices: str) -> str:
@@ -346,26 +346,8 @@ def get_pretty_choices(*choices: str) -> str:
     return f" ({', '.join(map_truthy_only(format_choice, choices))}) "
 
 
-class SyncToParentStatus(Enum):
-    InSync = auto()
-    MergedToParent = auto()
-    InSyncButForkPointOff = auto()
-    OutOfSync = auto()
-
-
-sync_to_parent_status_to_edge_color_map: Dict[SyncToParentStatus, str] = {
-    SyncToParentStatus.MergedToParent: AnsiEscapeCodes.DIM,
-    SyncToParentStatus.InSync: AnsiEscapeCodes.GREEN,
-    SyncToParentStatus.InSyncButForkPointOff: AnsiEscapeCodes.YELLOW,
-    SyncToParentStatus.OutOfSync: AnsiEscapeCodes.RED
-}
-
-sync_to_parent_status_to_junction_ascii_only_map: Dict[SyncToParentStatus, str] = {
-    SyncToParentStatus.MergedToParent: "m-",
-    SyncToParentStatus.InSync: "o-",
-    SyncToParentStatus.InSyncButForkPointOff: "?-",
-    SyncToParentStatus.OutOfSync: "x-"
-}
+def get_current_date() -> str:
+    return datetime.datetime.now().strftime("%Y-%m-%d")
 
 
 class CommandResult(NamedTuple):
