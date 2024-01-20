@@ -2131,6 +2131,8 @@ class MacheteClient:
         path: List[LocalBranchShortName] = [LocalBranchShortName.of(current_pr.head)]
         pr: Optional[GitHubPullRequest] = current_pr
         while pr:
+            if LocalBranchShortName.of(pr.base) in path:
+                raise MacheteException("There is a cycle between GitHub PRs: " + " -> ".join(path + [LocalBranchShortName.of(pr.base)]))
             path.append(LocalBranchShortName.of(pr.base))
             pr = utils.find_or_none(lambda x: x.head == pr.base, all_open_prs)  # type: ignore[union-attr]
         return path

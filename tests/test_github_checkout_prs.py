@@ -643,6 +643,41 @@ class TestGitHubCheckoutPRs(BaseTest):
         )
 
     @staticmethod
+    def github_api_state_with_pr_cycle() -> MockGitHubAPIState:
+        return MockGitHubAPIState(
+            mock_pr_json(head='bugfix/feature', base='chore/redundant_checks', number=6),
+            mock_pr_json(head='chore/redundant_checks', base='restrict_access', number=18),
+            mock_pr_json(head='restrict_access', base='allow-ownership-link', number=17),
+            mock_pr_json(head='allow-ownership-link', base='chore/redundant_checks', number=12)
+        )
+
+    def test_github_checkout_prs_forming_a_cycle(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_with_pr_cycle()))
+
+        (
+            self.repo_sandbox
+            .new_branch("bugfix/feature")
+            .commit("bugs removed")
+            .push()
+            .new_branch("allow-ownership-link")
+            .commit("fixes")
+            .push()
+            .new_branch('restrict_access')
+            .commit('authorized users only')
+            .push()
+            .new_branch("chore/redundant_checks")
+            .commit('remove some checks')
+            .push()
+        )
+
+        assert_failure(
+            ['github', 'checkout-prs', '--all'],
+            'There is a cycle between GitHub PRs: '
+            'bugfix/feature -> chore/redundant_checks -> restrict_access -> allow-ownership-link -> chore/redundant_checks'
+        )
+
+    @staticmethod
     def github_api_state_for_test_github_checkout_prs_single_pr() -> MockGitHubAPIState:
         return MockGitHubAPIState(
             mock_pr_json(head='develop', base='master', number=18)

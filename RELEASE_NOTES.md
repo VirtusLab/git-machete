@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.22.1
 
+- fixed: in the unlikely case of a cycle between GitHub PRs, `git machete github checkout-pr` aborts with an error rather than falling into an infinite loop
+
 ## New in git-machete 3.22.0
 
 - improved: if neither `.git/info/description` nor `.github/pull_request_template.md` is present, `git machete github create-pr` now uses message body of the first unique commit as PR description (suggested by @kamaradclimber)
