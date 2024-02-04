@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.23.1
+
 ## New in git-machete 3.23.0
 
 - added: full chain of PRs (and not just a link to the base PR) is added to/updated in PR description by `git machete github create-pr`/`retarget-pr`/`restack-pr` (suggested by @mjgigli)

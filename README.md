@@ -179,7 +179,7 @@ git machete github create-pr [--draft]
 The entire chain of PRs will be posted in the PR description: <br/>
 
 [//]: # (The image is referenced by its full URL to ensure it renders correctly on https://pypi.org/project/git-machete/)
-<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/develop/graphics/pr-chain-github-screenshot.png"
+<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/graphics/pr-chain-github-screenshot.png"
      alt="PR chain on GitHub"
      width="75%" />
 
