@@ -27,6 +27,7 @@ class TestGitHubCreatePR(BaseTest):
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.utils.get_current_date', lambda: '2023-12-31')
         github_api_state = self.github_api_state_for_test_create_pr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
@@ -157,7 +158,7 @@ class TestGitHubCreatePR(BaseTest):
 
             # Based on PR #3
 
-            ## Full chain of PRs as of 2024-02-04
+            ## Full chain of PRs as of 2023-12-31
 
             * PR #5: `chore/fields` ➔ `ignore-trailing`
             * PR #3: `ignore-trailing` ➔ `hotfix/add-trigger`
@@ -455,6 +456,7 @@ class TestGitHubCreatePR(BaseTest):
     def test_github_create_pr_with_multiple_non_origin_remotes(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
+        self.patch_symbol(mocker, 'git_machete.utils.get_current_date', lambda: '2023-12-31')
         github_api_state = self.github_api_state_for_test_github_create_pr_with_multiple_non_origin_remotes()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
@@ -578,7 +580,7 @@ class TestGitHubCreatePR(BaseTest):
 
             # Based on PR #15
 
-            ## Full chain of PRs as of 2024-02-04
+            ## Full chain of PRs as of 2023-12-31
 
             * PR #16: `feature` ➔ `branch-1`
             * PR #15: `branch-1` ➔ `root`

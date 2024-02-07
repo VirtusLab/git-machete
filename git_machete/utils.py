@@ -4,6 +4,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from typing import (Any, Callable, Dict, Iterable, List, NamedTuple, Optional,
                     Set, Tuple, TypeVar)
 
@@ -19,6 +20,7 @@ current_directory_confirmed_to_exist: bool = False
 
 ascii_only: bool = not sys.stdout.isatty()
 debug_mode: bool = False
+measure_command_time: bool = os.environ.get('GIT_MACHETE_MEASURE_COMMAND_TIME') == 'true'  # undocumented, internal
 verbose_mode: bool = False
 
 # https://github.blog/2021-04-05-behind-githubs-new-authentication-token-formats/
@@ -129,12 +131,24 @@ def run_cmd(cmd: str, *args: str, cwd: Optional[str] = None, env: Optional[Dict[
     chdir_upwards_until_current_directory_exists()
 
     flat_cmd: str = get_cmd_shell_repr(cmd, *args, env=env)
-    if debug_mode:
-        print(bold(f">>> {flat_cmd}"), file=sys.stderr)
-    elif verbose_mode:
-        print(flat_cmd, file=sys.stderr)
 
+    def print_command(cmd: str) -> None:
+        if measure_command_time:  # pragma: no cover
+            print(cmd + " ... ", file=sys.stderr, end='', flush=True)
+        else:
+            print(cmd, file=sys.stderr)
+
+    if debug_mode:
+        print_command(bold(f">>> {flat_cmd}"))
+    elif verbose_mode:
+        print_command(flat_cmd)
+
+    start = time.time()
     exit_code: int = _run_cmd(cmd, *args, cwd=cwd, env=env)
+    if measure_command_time:  # pragma: no cover
+        end = time.time()
+        elapsed_ms = int((end - start) * 1e3)
+        print(f"{elapsed_ms} ms")
 
     # Let's defensively assume that every command executed via run_cmd
     # (but not via popen_cmd) can make the current directory disappear.
@@ -187,12 +201,24 @@ def popen_cmd(cmd: str, *args: str, cwd: Optional[str] = None,
     chdir_upwards_until_current_directory_exists()
 
     flat_cmd = get_cmd_shell_repr(cmd, *args, env=env)
-    if debug_mode:
-        print(bold(f">>> {flat_cmd}"), file=sys.stderr)
-    elif verbose_mode:
-        print(flat_cmd, file=sys.stderr)
 
+    def print_command(cmd: str) -> None:
+        if measure_command_time:  # pragma: no cover
+            print(cmd + " ... ", file=sys.stderr, end='', flush=True)
+        else:
+            print(cmd, file=sys.stderr)
+
+    if debug_mode:
+        print_command(bold(f">>> {flat_cmd}"))
+    elif verbose_mode:
+        print_command(flat_cmd)
+
+    start = time.time()
     exit_code, stdout, stderr = result = _popen_cmd(cmd, *args, cwd=cwd, env=env)
+    if measure_command_time:  # pragma: no cover
+        end = time.time()
+        elapsed_ms = int((end - start) * 1e3)
+        print(f"{elapsed_ms} ms")
 
     # GitHub tokens are likely to appear e.g. in the output of `git config -l`:
     # `https://<TOKEN>@github.com/org/repo.git` is a supported URL format for git remotes.
