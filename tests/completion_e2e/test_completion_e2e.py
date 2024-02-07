@@ -132,8 +132,6 @@ class TestCompletionEndToEnd:
             .new_repo(cls.repo_sandbox.remote_path, bare=True)
             .new_repo(cls.repo_sandbox.local_path, bare=False)
             .add_remote("origin", cls.repo_sandbox.remote_path)
-            .set_git_config_key("user.email", "tester@test.com")
-            .set_git_config_key("user.name", "Tester Test")
             .new_branch("master")
             .commit()
             .new_branch("develop")

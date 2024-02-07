@@ -245,16 +245,11 @@ class TestForkPoint(BaseTest):
         )
 
     def test_fork_point_covering_reflog_of_remote_branch(self) -> None:
-        origin_1_remote_path = mkdtemp()
-        origin_2_remote_path = mkdtemp()
-        self.repo_sandbox.new_repo(origin_1_remote_path, bare=True, switch_dir_to_new_repo=False)
-        self.repo_sandbox.new_repo(origin_2_remote_path, bare=True, switch_dir_to_new_repo=False)
-
         with fixed_author_and_committer_date_in_past():
             (
                 self.repo_sandbox
                 .new_branch("master").commit().push()
-                .new_branch("develop").commit().push()
+                .new_branch("develop").commit().push()  # commit dcd2db5
                 .chdir(self.repo_sandbox.remote_path)
                 .execute("git update-ref refs/heads/master develop")
                 .chdir(self.repo_sandbox.local_path)
@@ -266,9 +261,59 @@ class TestForkPoint(BaseTest):
             "dcd2db55125a1b67b367565e890a604639949a51\n"
         )
 
+        # Let's remove reflogs for local branches.
+        # Fork point should be inferred based on reflog of origin/master.
         self.repo_sandbox.remove_directory(".git/logs/refs/heads/")
-
         assert_success(
             ["fork-point"],
             "dcd2db55125a1b67b367565e890a604639949a51\n"
+        )
+
+    def test_fork_point_reachable_from_master_but_not_on_its_reflog(self) -> None:
+        other_local_path = mkdtemp()
+        self.repo_sandbox.new_repo(other_local_path, bare=False, switch_dir_to_new_repo=False)
+
+        with fixed_author_and_committer_date_in_past():
+            (
+                self.repo_sandbox
+                .new_branch("master").commit().push()
+            )
+            first_master_commit = self.repo_sandbox.get_current_commit_hash()
+            (
+                self.repo_sandbox
+                .chdir(other_local_path)
+                .add_remote("origin", self.repo_sandbox.remote_path)
+                .fetch()
+                .check_out("master").commit().push()
+            )
+            second_master_commit = self.repo_sandbox.get_current_commit_hash()
+            (
+                self.repo_sandbox
+                .new_branch("feature").commit().push()
+                .check_out("master").commit().push()
+            )
+            (
+                self.repo_sandbox.chdir(self.repo_sandbox.local_path)
+                .check_out("master").pull()
+                .check_out("feature")
+            )
+
+        assert_success(
+            ["fork-point"],
+            second_master_commit + "\n"
+        )
+
+        # This is an unlikely scenario, devised to cover the case
+        # when there's no merge base between `feature` branch and a branch containing its un-improved fork point.
+        with fixed_author_and_committer_date_in_past():
+            (
+                self.repo_sandbox
+                .new_orphan_branch("develop").commit()
+                .check_out("master").reset_to("develop")
+                .check_out("feature")
+            )
+
+        assert_success(
+            ["fork-point"],
+            first_master_commit + "\n"
         )

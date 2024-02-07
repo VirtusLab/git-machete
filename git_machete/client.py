@@ -1296,30 +1296,30 @@ class MacheteClient:
         upstream_hash = self.__git.get_commit_hash_by_revision(upstream) if upstream else None
 
         if use_overrides:
-            overridden_fp_hash = self.__get_overridden_fork_point(branch)
-            if overridden_fp_hash:
+            overridden_fork_point = self.__get_overridden_fork_point(branch)
+            if overridden_fork_point:
                 if upstream and upstream_hash and \
                         self.__git.is_ancestor_or_equal(upstream.full_name(), branch.full_name()) and \
-                        not self.__git.is_ancestor_or_equal(upstream.full_name(), overridden_fp_hash):
+                        not self.__git.is_ancestor_or_equal(upstream.full_name(), overridden_fork_point):
                     # We need to handle the case when branch is a descendant of upstream,
                     # but the fork point of branch is overridden to a commit that is NOT a descendant of upstream.
-                    # In this case it's more reasonable to assume that upstream (and not overridden_fp_hash) is the fork point.
+                    # In this case it's more reasonable to assume that upstream (and not overridden_fork_point) is the fork point.
                     debug(
-                        f"{branch} is descendant of its upstream {upstream}, but overridden fork point commit {overridden_fp_hash} "
+                        f"{branch} is descendant of its upstream {upstream}, but overridden fork point commit {overridden_fork_point} "
                         f"is NOT a descendant of {upstream}; falling back to {upstream} as fork point")
                     return upstream_hash, []
                 elif upstream and \
-                        self.__git.is_ancestor_or_equal(overridden_fp_hash, upstream.full_name()):
+                        self.__git.is_ancestor_or_equal(overridden_fork_point, upstream.full_name()):
                     common_ancestor = self.__git.get_merge_base(upstream.full_name(), branch.full_name())
-                    # We are sure that a common ancestor exists - `overridden_fp_hash` is an ancestor of both `branch` and `upstream`.
+                    # We are sure that a common ancestor exists - `overridden_fork_point` is an ancestor of both `branch` and `upstream`.
                     assert common_ancestor is not None
                     return common_ancestor, []
                 else:
-                    debug(f"fork point of {branch} is overridden to {overridden_fp_hash}; skipping inference")
-                    return overridden_fp_hash, []
+                    debug(f"fork point of {branch} is overridden to {overridden_fork_point}; skipping inference")
+                    return overridden_fork_point, []
 
         try:
-            fp_hash, containing_branch_pairs = next(self.__match_log_to_filtered_reflogs(branch))
+            computed_fork_point, containing_branch_pairs = next(self.__match_log_to_filtered_reflogs(branch))
         except StopIteration:
             if upstream and upstream_hash:
                 if self.__git.is_ancestor_or_equal(upstream.full_name(), branch.full_name()):
@@ -1337,13 +1337,13 @@ class MacheteClient:
             raise MacheteException(f"Fork point not found for branch <b>{branch}</b>; "
                                    f"use `git machete fork-point {branch} --override-to...`")
         else:
-            debug(f"commit {fp_hash} is the most recent point in history of {branch} to occur on "
+            debug(f"commit {computed_fork_point} is the most recent point in history of {branch} to occur on "
                   "filtered reflog of any other branch or its remote counterpart "
                   f"(specifically: {' and '.join(map(utils.get_second, containing_branch_pairs))})")
 
             if upstream and upstream_hash and \
                     self.__git.is_ancestor_or_equal(upstream.full_name(), branch.full_name()) and \
-                    not self.__git.is_ancestor_or_equal(upstream.full_name(), fp_hash):
+                    not self.__git.is_ancestor_or_equal(upstream.full_name(), computed_fork_point):
                 # That happens very rarely in practice (typically current head
                 # of any branch, including upstream, should occur on the reflog
                 # of this branch, thus is_ancestor(upstream, branch) should imply
@@ -1351,23 +1351,35 @@ class MacheteClient:
                 # case reflog of upstream is incomplete for whatever reason.
                 debug(
                     f"{upstream} is an ancestor of its upstream {branch}, "
-                    f"but the inferred fork point commit {fp_hash} is NOT a descendant of {upstream}; "
+                    f"but the inferred fork point commit {computed_fork_point} is NOT a descendant of {upstream}; "
                     f"falling back to {upstream} as fork point")
                 return upstream_hash, []
             elif upstream and \
                     not self.__git.is_ancestor_or_equal(upstream.full_name(), branch.full_name()) and \
-                    self.__git.is_ancestor_or_equal(fp_hash, upstream.full_name()):
+                    self.__git.is_ancestor_or_equal(computed_fork_point, upstream.full_name()):
 
-                # We are sure that a common ancestor exists - `fp_hash` is an ancestor of both `branch` and `upstream`.
+                # We are sure that a common ancestor exists - `computed_fork_point` is an ancestor of both `branch` and `upstream`.
                 common_ancestor_hash = self.__git.get_merge_base(upstream.full_name(), branch.full_name())
                 assert common_ancestor_hash is not None
                 debug(
                     f"{upstream} is NOT an ancestor of its upstream {branch}, "
-                    f"but the inferred fork point commit {fp_hash} is an ancestor of {upstream}; "
+                    f"but the inferred fork point commit {computed_fork_point} is an ancestor of {upstream}; "
                     f"falling back to the common ancestor of {branch} and {upstream} (commit {common_ancestor_hash}) as fork point")
                 return common_ancestor_hash, []
             else:
-                return fp_hash, containing_branch_pairs
+                improved_fork_point = computed_fork_point
+                improved_containing_branch_pairs = containing_branch_pairs
+                for candidate_branch, original_matched_branch in containing_branch_pairs:
+                    merge_base = self.__git.get_merge_base(original_matched_branch, branch)
+                    debug(f"improving fork point {improved_fork_point} "
+                          f"by checking for merge_base({original_matched_branch}, {branch}) = {merge_base}")
+                    if merge_base:
+                        if self.__git.is_ancestor(improved_fork_point, merge_base):
+                            debug(f"improving fork point {improved_fork_point} to {merge_base}")
+                            improved_fork_point = merge_base
+                            improved_containing_branch_pairs = [BranchPair(candidate_branch, original_matched_branch)]
+                debug(f"effective fork point of {branch} is {improved_fork_point}")
+                return improved_fork_point, improved_containing_branch_pairs
 
     def fork_point(self, branch: LocalBranchShortName, use_overrides: bool) -> FullCommitHash:
         hash, containing_branch_pairs = self.__fork_point_and_containing_branch_pairs(branch, use_overrides)
@@ -1545,7 +1557,7 @@ class MacheteClient:
         # This can't be done with `git reset` since it doesn't allow for a custom reflog message.
         # Even worse, reset's reflog message would be filtered out in our fork point algorithm,
         # so the squashed commit would not even be considered to "belong"
-        # (in the FP sense) to the current branch's history.
+        # (in the fork-point sense) to the current branch's history.
         self.__git.update_head_ref_to_new_hash_with_reflog_subject(
             squashed_hash, f"squash: {earliest_commit.subject}")
 
@@ -1805,7 +1817,7 @@ class MacheteClient:
         self.__git.set_config_attr(to_key, to_hash)
 
         # Let's still set the now-deprecated `whileDescendantOf` key to maintain compatibility with older git-machete clients
-        # (esp. IntelliJ plugin) that still require that key for an override to apply.
+        # that still require that key for an override to apply.
         while_descendant_of_key = git_config_keys.override_fork_point_while_descendant_of(branch)
         self.__git.set_config_attr(while_descendant_of_key, to_hash)
 

@@ -17,8 +17,6 @@ class BaseTest:
             .new_repo(self.repo_sandbox.remote_path, bare=True)
             .new_repo(self.repo_sandbox.local_path, bare=False)
             .add_remote("origin", self.repo_sandbox.remote_path)
-            .set_git_config_key("user.email", "tester@test.com")
-            .set_git_config_key("user.name", "Tester Test")
         )
         self.expected_mock_methods: Set[str] = set()
 
@@ -62,6 +60,9 @@ class GitRepositorySandbox:
         os.chdir(directory)
         bare_opt = '--bare' if bare else ''
         self.execute(f'git init --quiet "{directory}" {bare_opt}')
+        if not bare:
+            self.set_git_config_key("user.email", "tester@test.com")
+            self.set_git_config_key("user.name", "Tester Test")
         if not switch_dir_to_new_repo:
             os.chdir(previous_dir)
         return self
@@ -116,6 +117,10 @@ class GitRepositorySandbox:
 
     def pull(self) -> "GitRepositorySandbox":
         self.execute("git pull")
+        return self
+
+    def fetch(self) -> "GitRepositorySandbox":
+        self.execute("git fetch")
         return self
 
     def merge(self, branch_name: str) -> "GitRepositorySandbox":

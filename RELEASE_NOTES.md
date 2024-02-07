@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.23.2
+
+- fixed: make fork-point also take into account common ancestors (and not only reflogs) in more cases
+
 ## New in git-machete 3.23.1
 
 - fixed: if a PR has a pre-v3.23.0 `Based on PR #...` header, then it's removed by `git machete github retarget-pr` in favor of the new extended PR chain

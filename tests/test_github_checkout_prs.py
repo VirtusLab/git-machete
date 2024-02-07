@@ -252,8 +252,6 @@ class TestGitHubCheckoutPRs(BaseTest):
             self.repo_sandbox
             .new_repo(other_local_path, bare=False)
             .add_remote("origin", GitRepositorySandbox.second_remote_path)
-            .set_git_config_key("user.email", "tester@test.com")
-            .set_git_config_key("user.name", "Tester Test")
             .new_branch('main')
             .commit('initial commit')
             .push()
@@ -335,8 +333,6 @@ class TestGitHubCheckoutPRs(BaseTest):
         (
             self.repo_sandbox.new_repo(local_path, bare=False)
             .add_remote("origin", GitRepositorySandbox.second_remote_path)
-            .set_git_config_key("user.email", "tester@test.com")
-            .set_git_config_key("user.name", "Tester Test")
             .new_branch('feature')
             .commit('initial commit')
             .push()

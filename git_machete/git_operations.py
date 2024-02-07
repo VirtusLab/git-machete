@@ -747,16 +747,19 @@ class GitContext:
 
     # Note: the 'git rev-parse --verify' validation is not performed in case for either of earlier/later
     # if the corresponding prefix is empty AND the revision is a 40 hex digit hash.
-    def is_ancestor_or_equal(
-            self,
-            earlier_revision: AnyRevision,
-            later_revision: AnyRevision,
-    ) -> bool:
+    def is_ancestor_or_equal(self, earlier_revision: AnyRevision, later_revision: AnyRevision) -> bool:
         earlier_hash = self.get_commit_hash_by_revision(earlier_revision)
         later_hash = self.get_commit_hash_by_revision(later_revision)
         if not earlier_hash or not later_hash:
             return False
         return self.__get_merge_base_for_commit_hashes(earlier_hash, later_hash) == earlier_hash
+
+    def is_ancestor(self, earlier_revision: AnyRevision, later_revision: AnyRevision) -> bool:
+        earlier_hash = self.get_commit_hash_by_revision(earlier_revision)
+        later_hash = self.get_commit_hash_by_revision(later_revision)
+        if not earlier_hash or not later_hash or earlier_hash == later_hash:
+            return False
+        return self.is_ancestor_or_equal(earlier_hash, later_hash)
 
     def get_merge_base(
             self,
