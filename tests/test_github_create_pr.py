@@ -144,6 +144,7 @@ class TestGitHubCreatePR(BaseTest):
 
             Fetching origin...
             Creating a draft PR from chore/fields to ignore-trailing... OK, see www.github.com
+            Checking for open GitHub PRs (to determine PR chain)... OK
             Updating description of PR #5 to include the chain of PRs... OK
             Setting milestone of PR #5 to #42... OK
             Adding github_user as assignee to PR #5... OK
@@ -564,6 +565,7 @@ class TestGitHubCreatePR(BaseTest):
 
         Fetching origin_1...
         Creating a PR from feature to branch-1... OK, see www.github.com
+        Checking for open GitHub PRs (to determine PR chain)... OK
         Updating description of PR #16 to include the chain of PRs... OK
         """  # noqa: E501
 
@@ -613,6 +615,7 @@ class TestGitHubCreatePR(BaseTest):
         Added branch feature_1 onto feature
         Fetching origin_2...
         Creating a PR from feature_1 to feature... OK, see www.github.com
+        Checking for open GitHub PRs (to determine PR chain)... OK
         Updating description of PR #17 to include the chain of PRs... OK
         """
         assert_success(
@@ -650,6 +653,7 @@ class TestGitHubCreatePR(BaseTest):
 
         Fetching origin_1...
         Creating a PR from feature_2 to feature... OK, see www.github.com
+        Checking for open GitHub PRs (to determine PR chain)... OK
         Updating description of PR #18 to include the chain of PRs... OK
         """
         assert_success(
@@ -671,6 +675,7 @@ class TestGitHubCreatePR(BaseTest):
         Added branch feature_3 onto feature_2
         Fetching origin_1...
         Creating a PR from feature_3 to feature_2... OK, see www.github.com
+        Checking for open GitHub PRs (to determine PR chain)... OK
         Updating description of PR #19 to include the chain of PRs... OK
         """  # noqa: E501
         assert_success(

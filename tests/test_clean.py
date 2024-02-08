@@ -75,7 +75,7 @@ class TestClean(BaseTest):
         assert_success(
             ["clean", "--checkout-my-github-prs"],
             """
-            Checking for open GitHub PRs... Warn: Could not determine current user name, please check that the GitHub API token provided by one of the:
+            Warn: Could not determine current user name, please check that the GitHub API token provided by one of the:
             \t1. GITHUB_TOKEN environment variable
             \t2. Content of the ~/.github-token file
             \t3. Current auth token from the gh GitHub CLI

@@ -2048,7 +2048,6 @@ class MacheteClient:
         domain = self.__derive_github_domain()
         org_repo_remote = self.__derive_org_repo_and_remote(domain=domain)
         github_client = GitHubClient(domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
-        print('Checking for open GitHub PRs... ', end='', flush=True)
 
         current_user: Optional[str] = github_client.get_current_user_login()
         if not current_user and mine:
@@ -2059,6 +2058,7 @@ class MacheteClient:
             else:
                 warn(msg)
                 return
+        print('Checking for open GitHub PRs... ', end='', flush=True)
         all_open_prs: List[GitHubPullRequest] = github_client.get_open_pull_requests()
         print(fmt('<green><b>OK</b></green>'))
 
@@ -2452,7 +2452,9 @@ class MacheteClient:
         # We could just fetch them straight away... but this list can be quite long for commercial monorepos,
         # esp. given that GitHub limits the single page to 100 PRs (so multiple HTTP requests would be needed).
         # As a slight optimization, let's fetch the full PR list only if the current PR has a base PR at all.
+        print('Checking for open GitHub PRs (to determine PR chain)... ', end='', flush=True)
         all_open_prs: List[GitHubPullRequest] = github_client.get_open_pull_requests()
+        print(fmt('<green><b>OK</b></green>'))
         pr_path = self.__get_path_from_pr_chain(pr, all_open_prs)
 
         prepend = f'{self.START_GIT_MACHETE_GENERATED_COMMENT}\n\n'
@@ -2539,8 +2541,8 @@ class MacheteClient:
                                                                   description=description, draft=opt_draft)
         print(fmt(f'{ok_str}, see `{pr.html_url}`'))
 
-        # If base branch has not originally been found on the remote,
-        # we can be sure that a longer chain of PRs above the newly-created PR doesn't exist
+        # If base branch has NOT originally been found on the remote,
+        # we can be sure that a longer chain of PRs above the newly-created PR does NOT exist
         if base_branch_found_on_remote:
             # As the description may include the reference to this PR itself (in case of a chain of >=2 PRs),
             # let's update the PR description after it's already created (so that we know the current PR's number).

@@ -257,6 +257,7 @@ class TestGitHubRetargetPR(BaseTest):
         assert_success(
             ['github', 'retarget-pr'],
             'Base branch of PR #20 has been switched to feature\n'
+            'Checking for open GitHub PRs (to determine PR chain)... OK\n'
             'Description of PR #20 has been updated\n'
         )
         pr20 = github_api_state.get_pull_by_number(20)
@@ -306,6 +307,7 @@ class TestGitHubRetargetPR(BaseTest):
         assert_success(
             ['github', 'retarget-pr'],
             'Base branch of PR #25 has been switched to feature\n'
+            'Checking for open GitHub PRs (to determine PR chain)... OK\n'
             'Description of PR #25 has been updated\n'
         )
         pr25 = github_api_state.get_pull_by_number(25)
@@ -346,6 +348,7 @@ class TestGitHubRetargetPR(BaseTest):
         assert_success(
             ['github', 'retarget-pr'],
             'Base branch of PR #30 has been switched to feature_2\n'
+            'Checking for open GitHub PRs (to determine PR chain)... OK\n'
             'Description of PR #30 has been updated\n'
         )
         pr30 = github_api_state.get_pull_by_number(30)
@@ -380,6 +383,7 @@ class TestGitHubRetargetPR(BaseTest):
         assert_success(
             ['github', 'retarget-pr'],
             'Base branch of PR #30 has been switched to feature\n'
+            'Checking for open GitHub PRs (to determine PR chain)... OK\n'
             'Description of PR #30 has been updated\n'
         )
         pr30 = github_api_state.get_pull_by_number(30)
