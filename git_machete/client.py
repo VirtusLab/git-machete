@@ -2305,6 +2305,9 @@ class MacheteClient:
             else:
                 lines = lines[:start_index] + lines_to_prepend[:-1] + lines[end_index + 1:]
         else:
+            # For compatibility with pre-v3.23.0 format
+            if lines and '# Based on PR #' in lines[0]:
+                lines = skip_leading_empty(lines[1:])
             lines = lines_to_prepend + lines
         return '\n'.join(lines)
 
@@ -2546,11 +2549,11 @@ class MacheteClient:
         if base_branch_found_on_remote:
             # As the description may include the reference to this PR itself (in case of a chain of >=2 PRs),
             # let's update the PR description after it's already created (so that we know the current PR's number).
-            prepend = self.__generate_text_to_prepend_to_pr_description(github_client, pr)
-            if prepend:
+            text_to_prepend = self.__generate_text_to_prepend_to_pr_description(github_client, pr)
+            if text_to_prepend:
                 if description:
-                    prepend += '\n'
-                description = prepend + description
+                    text_to_prepend += '\n'
+                description = text_to_prepend + description
                 print(f'Updating description of PR #{bold(str(pr.number))} to include the chain of PRs... ', end='', flush=True)
                 github_client.set_description_of_pull_request(pr.number, description)
                 print(fmt(ok_str))

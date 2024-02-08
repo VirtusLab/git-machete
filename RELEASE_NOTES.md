@@ -2,6 +2,10 @@
 
 ## New in git-machete 3.23.1
 
+## New in git-machete 3.23.1
+
+- fixed: if a PR has a pre-v3.23.0 `Based on PR #...` header, then it's removed by `git machete github retarget-pr` in favor of the new extended PR chain
+
 ## New in git-machete 3.23.0
 
 - added: full chain of PRs (and not just a link to the base PR) is added to/updated in PR description by `git machete github create-pr`/`retarget-pr`/`restack-pr` (suggested by @mjgigli)

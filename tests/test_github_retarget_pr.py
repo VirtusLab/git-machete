@@ -16,7 +16,7 @@ class TestGitHubRetargetPR(BaseTest):
     def github_api_state_for_test_retarget_pr() -> MockGitHubAPIState:
         return MockGitHubAPIState(
             mock_pr_json(head='feature', base='master', number=15),
-            mock_pr_json(head='feature_1', base='master', number=20, body='# Summary\n\n'),
+            mock_pr_json(head='feature_1', base='master', number=20, body='# Based on PR #10\n\n# Summary'),
             mock_pr_json(head='feature_2', base='master', number=25, body=None),
             mock_pr_json(head='feature_3', base='master', number=30),
             mock_pr_json(head='feature_4', base='feature', number=35),
@@ -275,9 +275,7 @@ class TestGitHubRetargetPR(BaseTest):
 
             <!-- end git-machete generated -->
 
-            # Summary
-
-        ''')[1:]
+            # Summary''')[1:]
 
         # branch feature_2 is not present in any of the remotes
         (
