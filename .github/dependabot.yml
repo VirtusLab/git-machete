@@ -10,3 +10,7 @@ updates:
     reviewers:
       - PawelLipski
     target-branch: develop
+    groups:
+      deps:
+        patterns:
+          - "*"

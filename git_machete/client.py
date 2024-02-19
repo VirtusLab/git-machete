@@ -1350,7 +1350,7 @@ class MacheteClient:
                 # is_ancestor(upstream, FP(branch)), but it's still possible in
                 # case reflog of upstream is incomplete for whatever reason.
                 debug(
-                    f"{upstream} is an ancestor of its upstream {branch}, "
+                    f"{upstream} is an ancestor of {branch}, "
                     f"but the inferred fork point commit {computed_fork_point} is NOT a descendant of {upstream}; "
                     f"falling back to {upstream} as fork point")
                 return upstream_hash, []
@@ -1362,7 +1362,7 @@ class MacheteClient:
                 common_ancestor_hash = self.__git.get_merge_base(upstream.full_name(), branch.full_name())
                 assert common_ancestor_hash is not None
                 debug(
-                    f"{upstream} is NOT an ancestor of its upstream {branch}, "
+                    f"{upstream} is NOT an ancestor of {branch}, "
                     f"but the inferred fork point commit {computed_fork_point} is an ancestor of {upstream}; "
                     f"falling back to the common ancestor of {branch} and {upstream} (commit {common_ancestor_hash}) as fork point")
                 return common_ancestor_hash, []
