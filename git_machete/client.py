@@ -234,6 +234,7 @@ class MacheteClient:
             opt_onto: Optional[LocalBranchShortName],
             opt_as_root: bool,
             opt_yes: bool,
+            opt_first: bool,
             verbose: bool,
             switch_head_if_new_branch: bool
             ) -> None:
@@ -317,10 +318,12 @@ class MacheteClient:
 
             self.__up_branch[branch] = opt_onto
 
-            if opt_onto in self.__down_branches:
-                self.__down_branches[opt_onto] += [branch]
+            existing_down_branches = __down_branches[opt_onto] if opt_onto in self.__down_branches else []
+            if opt_first:
+                down_branches = [branch] + existing_down_branches
             else:
-                self.__down_branches[opt_onto] = [branch]
+                down_branches = existing_down_branches + [branch]
+            self.__down_branches[opt_onto] = down_branches
             if verbose:
                 print(fmt(f"Added branch {bold(branch)} onto {bold(opt_onto)}"))
 
@@ -2103,6 +2106,7 @@ class MacheteClient:
                     opt_as_root=True,
                     opt_onto=None,
                     opt_yes=True,
+                    opt_first=False,
                     verbose=False,
                     switch_head_if_new_branch=False)
             for pr_on_path in reversed_path:
@@ -2112,6 +2116,7 @@ class MacheteClient:
                         opt_onto=LocalBranchShortName.of(pr_on_path.base),
                         opt_as_root=False,
                         opt_yes=True,
+                        opt_first=False,
                         verbose=False,
                         switch_head_if_new_branch=False)
                     print(fmt(f"Pull request #{bold(str(pr_on_path.number))} checked out at local branch {bold(pr_on_path.head)}"))
@@ -2733,6 +2738,7 @@ class MacheteClient:
                      opt_onto=opt_onto,
                      opt_as_root=False,
                      opt_yes=opt_yes,
+                     opt_first=False,
                      verbose=True,
                      switch_head_if_new_branch=True)
             if current_branch not in self.managed_branches:

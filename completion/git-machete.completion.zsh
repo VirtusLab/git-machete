@@ -19,6 +19,7 @@ _git-machete() {
         (add)
           _arguments \
             '1:: :__git_machete_list_addable' \
+            '(-f --first)'{-f,--first}'[Add the given branch first in the list of the parent's child branches]' \
             '(-o --onto)'{-o,--onto=}'[Specify the target parent branch to add the given branch onto]: :__git_machete_list_managed' \
             '(-R --as-root)'{-R,--as-root}'[Add the given branch as a new root]' \
             '(-y --yes)'{-y,--yes}'[Do not ask for confirmation whether to create the branch or whether to add onto the inferred upstream]' \
