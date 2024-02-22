@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.23.3
+
 ## New in git-machete 3.23.2
 
 - fixed: make fork-point also take into account common ancestors (and not only reflogs) in more cases
