@@ -34,12 +34,12 @@ function __machete_with_overridden_fork_point_branches
 end
 
 # git machete add
-complete -c git-machete -n "not __fish_seen_subcommand_from $__machete_commands"                                          -f                        -a add                            -d 'Add a branch to the tree of branch dependencies'
-complete -c git-machete -n "__fish_seen_subcommand_from add"                                                              -f                        -a '(__machete_addable_branches)'
-complete -c git-machete -n "__fish_seen_subcommand_from add; and not __fish_seen_subcommand_from --as-root -R --first -f" -f -l as-first-child -s f                                   -d 'Add the given branch as the first (instead of last) child of its parent'
-complete -c git-machete -n "__fish_seen_subcommand_from add; and not __fish_seen_subcommand_from --as-root -R"            -x -l onto           -s o -a '(__machete_managed_branches)' -d 'Specifies the target parent branch to add the given branch onto. Cannot be specified together with -R/--as-root'
-complete -c git-machete -n "__fish_seen_subcommand_from add; and not __fish_seen_subcommand_from --onto -o --as-root -R"  -f -l as-root        -s R                                   -d 'Add the given branch as a new root (and not onto any other branch). Cannot be specified together with -o/--onto'
-complete -c git-machete -n "__fish_seen_subcommand_from add; and not __fish_seen_subcommand_from --yes -y"                -f -l yes            -s y                                   -d 'Do not ask for confirmation whether to create the branch or whether to add onto the inferred upstream'
+complete -c git-machete -n "not __fish_seen_subcommand_from $__machete_commands"                                                   -f                        -a add                            -d 'Add a branch to the tree of branch dependencies'
+complete -c git-machete -n "__fish_seen_subcommand_from add"                                                                       -f                        -a '(__machete_addable_branches)'
+complete -c git-machete -n "__fish_seen_subcommand_from add; and not __fish_seen_subcommand_from --as-first-child -f --as-root -R" -f -l as-first-child -s f                                   -d 'Add the given branch as the first (instead of last) child of its parent'
+complete -c git-machete -n "__fish_seen_subcommand_from add; and not __fish_seen_subcommand_from --as-root -R"                     -x -l onto           -s o -a '(__machete_managed_branches)' -d 'Specifies the target parent branch to add the given branch onto. Cannot be specified together with -R/--as-root'
+complete -c git-machete -n "__fish_seen_subcommand_from add; and not __fish_seen_subcommand_from --onto -o --as-root -R"           -f -l as-root        -s R                                   -d 'Add the given branch as a new root (and not onto any other branch). Cannot be specified together with -o/--onto'
+complete -c git-machete -n "__fish_seen_subcommand_from add; and not __fish_seen_subcommand_from --yes -y"                         -f -l yes            -s y                                   -d 'Do not ask for confirmation whether to create the branch or whether to add onto the inferred upstream'
 
 # git machete advance
 complete -c git-machete -n "not __fish_seen_subcommand_from $__machete_commands"                               -f -a advance  -d 'Fast-forward merge one of children to the current branch and then slide out this child'

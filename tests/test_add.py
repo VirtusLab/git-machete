@@ -250,3 +250,9 @@ class TestAdd(BaseTest):
             ['add', '--onto', 'foo', '--as-root'],
             "Option -R/--as-root cannot be specified together with -o/--onto."
         )
+
+    def test_add_as_root_with_as_first_child(self) -> None:
+        assert_failure(
+            ['add', '--as-first-child', '--as-root'],
+            "Option -R/--as-root cannot be specified together with -f/--as-first-child."
+        )

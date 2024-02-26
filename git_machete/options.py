@@ -47,7 +47,7 @@ class CommandLineOptions:
                 "Option `-R/--as-root` cannot be specified together with `-o/--onto`.")
         if self.opt_as_root and self.opt_as_first_child:
             raise MacheteException(
-                "Option `-R/--as-root` cannot be specified together with `-f/--first`.")
+                "Option `-R/--as-root` cannot be specified together with `-f/--as-first-child`.")
         if self.opt_no_edit_merge and not self.opt_merge:
             raise MacheteException(
                 "Option `--no-edit-merge` only makes sense when using merge and "
