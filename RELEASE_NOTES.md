@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.24.3
 
+- added: Scoop package for Windows (suggested by @ppasieka)
+
 ## New in git-machete 3.24.2
 
 - fixed: automatic updates of Homebrew formula

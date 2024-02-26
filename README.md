@@ -77,6 +77,12 @@ sudo -H pip install git-machete  # system-wide install
 conda install -c conda-forge git-machete
 ```
 
+### Using Scoop (Windows)
+
+```shell script
+scoop install git-machete
+```
+
 ### Using snap (most Linux distributions)
 
 **Tip:** check the [guide on installing snapd](https://snapcraft.io/docs/installing-snapd) if you don't have Snap support set up yet in your system.
