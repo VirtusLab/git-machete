@@ -14,7 +14,7 @@ _git_machete() {
   local shells="bash fish zsh"
 
   local common_opts="--debug -h --help -v --verbose"
-  local add_opts="-f --first -o --onto= -R --as-root -y --yes"
+  local add_opts="-f --as-first-child -o --onto= -R --as-root -y --yes"
   local advance_opts="-y --yes"
   local anno_opts="-b --branch= -H --sync-github-prs"
   local delete_unmanaged_opts="-y --yes"

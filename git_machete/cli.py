@@ -143,7 +143,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
         add_help=False,
         parents=[common_args_parser])
     add_parser.add_argument('branch', nargs='?')
-    add_parser.add_argument('-f', '--first', action='store_true')
+    add_parser.add_argument('-f', '--as-first-child', action='store_true')
     add_parser.add_argument('-o', '--onto')
     add_parser.add_argument('-R', '--as-root', action='store_true')
     add_parser.add_argument('-y', '--yes', action='store_true')
@@ -414,7 +414,9 @@ def update_cli_options_using_parsed_args(
 
     for opt, arg in vars(parsed_args).items():
         # --color, --debug and --verbose are handled outside this method
-        if opt == "as_root":
+        if opt == "as_first_child":
+            cli_opts.opt_as_first_child = True
+        elif opt == "as_root":
             cli_opts.opt_as_root = True
         elif opt == "branch":
             cli_opts.opt_branch = AnyBranchName.of(arg) if arg else None
@@ -428,8 +430,6 @@ def update_cli_options_using_parsed_args(
             cli_opts.opt_draft = True
         elif opt == "fetch":
             cli_opts.opt_fetch = True
-        elif opt == "first":
-            cli_opts.opt_first = True
         elif opt == "fork_point":
             cli_opts.opt_fork_point = AnyRevision.of(arg) if arg else None
         elif opt == "inferred":
@@ -604,9 +604,9 @@ def launch(orig_args: List[str]) -> None:
             machete_client.add(
                 branch=branch,
                 opt_onto=cli_opts.opt_onto,
+                opt_as_first_child=cli_opts.opt_as_first_child,
                 opt_as_root=cli_opts.opt_as_root,
                 opt_yes=cli_opts.opt_yes,
-                opt_first=cli_opts.opt_first,
                 verbose=True,
                 switch_head_if_new_branch=True)
         elif cmd == "advance":

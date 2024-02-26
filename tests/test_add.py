@@ -10,7 +10,9 @@ class TestAdd(BaseTest):
 
     def test_add(self, mocker: MockerFixture) -> None:
         (
-            self.repo_sandbox.new_branch("master")
+            self.repo_sandbox
+                .remove_remote("origin")
+                .new_branch("master")
                 .commit("master commit.")
                 .new_branch("develop")
                 .commit("develop commit.")
@@ -52,7 +54,7 @@ class TestAdd(BaseTest):
         self.repo_sandbox.check_out('develop')
         self.repo_sandbox.new_branch("bugfix/another_feature")
         assert_success(
-            ['add', '-y', 'refs/heads/bugfix/another_feature'],
+            ['add', '--as-first-child', '-y', 'refs/heads/bugfix/another_feature'],
             'Adding bugfix/another_feature onto the inferred upstream (parent) branch develop\n'
             'Added branch bugfix/another_feature onto develop\n'
         )
@@ -64,6 +66,22 @@ class TestAdd(BaseTest):
             ['add', '--onto=feature'],
             'Added branch chore/remove_indentation onto feature\n'
         )
+
+        assert_success(["status"], """
+            master
+            |
+            o-develop
+              |
+              o-bugfix/another_feature
+              |
+              x-feature
+              | |
+              | x-chore/remove_indentation *
+              |
+              o-bugfix/feature_fail
+              |
+              o-bugfix/some_feature
+        """)
 
     def test_add_check_out_remote_branch(self, mocker: MockerFixture) -> None:
         """

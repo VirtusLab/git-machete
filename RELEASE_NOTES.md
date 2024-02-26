@@ -1,6 +1,8 @@
 # Release notes
 
-## New in git-machete 3.23.3
+## New in git-machete 3.24.0
+
+- added: `-f`/`--as-first-child` flag to `git machete add` (contributed by @matthalp)
 
 ## New in git-machete 3.23.2
 

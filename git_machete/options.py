@@ -7,6 +7,7 @@ from .git_operations import AnyBranchName, AnyRevision, LocalBranchShortName
 class CommandLineOptions:
 
     def __init__(self) -> None:
+        self.opt_as_first_child: bool = False
         self.opt_as_root: bool = False
         self.opt_branch: Optional[AnyBranchName] = None
         self.opt_checked_out_since: Optional[str] = None
@@ -14,7 +15,6 @@ class CommandLineOptions:
         self.opt_down_fork_point: Optional[AnyRevision] = None
         self.opt_draft: bool = False
         self.opt_fetch: bool = False
-        self.opt_first: bool = False
         self.opt_fork_point: Optional[AnyRevision] = None
         self.opt_inferred: bool = False
         self.opt_list_commits: bool = False
@@ -45,7 +45,7 @@ class CommandLineOptions:
         if self.opt_as_root and self.opt_onto:
             raise MacheteException(
                 "Option `-R/--as-root` cannot be specified together with `-o/--onto`.")
-        if self.opt_as_root and self.first:
+        if self.opt_as_root and self.opt_as_first_child:
             raise MacheteException(
                 "Option `-R/--as-root` cannot be specified together with `-f/--first`.")
         if self.opt_no_edit_merge and not self.opt_merge:

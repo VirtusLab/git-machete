@@ -24,6 +24,9 @@ Note: all the effects of ``add`` (except git branch creation) can as well be ach
 
 **Options:**
 
+-f, --as-first-child                   Add the given branch as the first (instead of last) child of its parent.
+                                       Cannot be specified together with ``-R/--as-root``.
+
 -o, --onto=<target-upstream-branch>    Specifies the target parent branch to add the given branch onto.
                                        Cannot be specified together with ``-R/--as-root``.
 

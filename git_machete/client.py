@@ -232,9 +232,9 @@ class MacheteClient:
             *,
             branch: LocalBranchShortName,
             opt_onto: Optional[LocalBranchShortName],
+            opt_as_first_child: bool,
             opt_as_root: bool,
             opt_yes: bool,
-            opt_first: bool,
             verbose: bool,
             switch_head_if_new_branch: bool
             ) -> None:
@@ -318,8 +318,8 @@ class MacheteClient:
 
             self.__up_branch[branch] = opt_onto
 
-            existing_down_branches = __down_branches[opt_onto] if opt_onto in self.__down_branches else []
-            if opt_first:
+            existing_down_branches = self.__down_branches[opt_onto] if opt_onto in self.__down_branches else []
+            if opt_as_first_child:
                 down_branches = [branch] + existing_down_branches
             else:
                 down_branches = existing_down_branches + [branch]
@@ -2115,10 +2115,10 @@ class MacheteClient:
             if reversed_path[0].base not in self.managed_branches:
                 self.add(
                     branch=LocalBranchShortName.of(reversed_path[0].base),
+                    opt_as_first_child=False,
                     opt_as_root=True,
                     opt_onto=None,
                     opt_yes=True,
-                    opt_first=False,
                     verbose=False,
                     switch_head_if_new_branch=False)
             for pr_on_path in reversed_path:
@@ -2126,9 +2126,9 @@ class MacheteClient:
                     self.add(
                         branch=LocalBranchShortName.of(pr_on_path.head),
                         opt_onto=LocalBranchShortName.of(pr_on_path.base),
+                        opt_as_first_child=False,
                         opt_as_root=False,
                         opt_yes=True,
-                        opt_first=False,
                         verbose=False,
                         switch_head_if_new_branch=False)
                     print(fmt(f"Pull request #{bold(str(pr_on_path.number))} checked out at local branch {bold(pr_on_path.head)}"))
@@ -2748,9 +2748,9 @@ class MacheteClient:
         if current_branch not in self.managed_branches:
             self.add(branch=current_branch,
                      opt_onto=opt_onto,
+                     opt_as_first_child=False,
                      opt_as_root=False,
                      opt_yes=opt_yes,
-                     opt_first=False,
                      verbose=True,
                      switch_head_if_new_branch=True)
             if current_branch not in self.managed_branches:

@@ -16,6 +16,8 @@ test_cases: Dict[str, str] = {
         "add advance anno",
     "git machete add ":
         "feature",
+    "git machete add -":
+        "-R --as-first-child --as-root --debug -f -h --help -o --onto -v --verbose -y --yes",
     "git machete add -o ":
         "develop master",
     "git machete add --onto ":

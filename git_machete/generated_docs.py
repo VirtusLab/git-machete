@@ -54,6 +54,9 @@ long_docs: Dict[str, str] = {
         Note: all the effects of `add` (except git branch creation) can as well be achieved by manually editing the branch layout file.
 
         <b>Options:</b>
+           <b>-f</b>, <b>--as-first-child</b>
+              Add the given branch as the first (instead of last) child of its parent.
+              Cannot be specified together with `-R/--as-root`.
            <b>-o</b>, <b>--onto=<target-upstream-branch></b>
               Specifies the target parent branch to add the given branch onto.
               Cannot be specified together with `-R/--as-root`.
