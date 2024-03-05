@@ -29,11 +29,12 @@ class InteractionStopped(Exception):
         pass
 
 
-class UnprocessableEntityHTTPError(MacheteException):
-    """This exception is raised when GitHub API returns HTTP status code 422 - Unprocessable Entity.
-    Such a situation occurs when trying to do something not allowed by GitHub,
+class UnprocessableEntityOrConflictHTTPError(MacheteException):
+    """This exception is raised when GitHub API returns HTTP status code 422 - Unprocessable Entity,
+    or when GitLab returns HTTP status code 409 - Conflict.
+    Such a situation occurs when trying to do something not allowed by GitHub/GitLab,
     e.g. assigning someone from outside organization as a reviewer
-    or creating a pull request for a branch that already has a PR.
+    or creating a PR/MR for a branch that already has a PR/MR.
     """
 
     def __init__(self, msg: str) -> None:

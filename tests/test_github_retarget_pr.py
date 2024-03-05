@@ -6,8 +6,8 @@ from pytest_mock import MockerFixture
 from tests.base_test import BaseTest
 from tests.mockers import (assert_failure, assert_success, launch_command,
                            rewrite_branch_layout_file)
-from tests.mockers_github import (MockGitHubAPIState, mock_from_url,
-                                  mock_pr_json, mock_urlopen)
+from tests.mockers_code_hosting import mock_from_url
+from tests.mockers_github import MockGitHubAPIState, mock_pr_json, mock_urlopen
 
 
 class TestGitHubRetargetPR(BaseTest):
@@ -103,7 +103,7 @@ class TestGitHubRetargetPR(BaseTest):
 
         assert_failure(
             ['github', 'retarget-pr'],
-            'Multiple PRs have feature_4 as its head: #35, #40'
+            'Multiple PRs have feature_4 as its head branch: #35, #40'
         )
 
     @staticmethod
@@ -144,7 +144,7 @@ class TestGitHubRetargetPR(BaseTest):
                 branch-without-pr
             """
         rewrite_branch_layout_file(body)
-        launch_command("anno", "-H")
+        launch_command("anno", "--sync-github-prs")
 
         expected_status_output = """
         root * (untracked)
@@ -181,14 +181,14 @@ class TestGitHubRetargetPR(BaseTest):
 
         assert_failure(
             ["github", "retarget-pr", "--branch", "branch-without-pr"],
-            "No PRs have branch-without-pr as its head")
+            "No PRs have branch-without-pr as its head branch")
 
         assert_success(
             ['github', 'retarget-pr', '--branch', 'branch-without-pr', '--ignore-if-missing'],
-            "Warn: no PRs have branch-without-pr as its head\n")
+            "Warn: no PRs have branch-without-pr as its head branch\n")
 
     def test_github_retarget_pr_multiple_non_origin_remotes(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         github_api_state = self.github_api_state_for_test_retarget_pr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
         self.patch_symbol(mocker, 'git_machete.utils.get_current_date', lambda: '2023-12-31')
@@ -231,8 +231,8 @@ class TestGitHubRetargetPR(BaseTest):
 
         expected_error_message = (
             "Multiple non-origin remotes correspond to GitHub in this repository: origin_1, origin_2 -> aborting.\n"
-            "You can also select the repository by providing some or all of git config keys: "
-            "machete.github.{domain,remote,organization,repository}.\n"  # noqa: FS003
+            "You can select the repository by providing some or all of git config keys:\n"
+            "machete.github.domain, machete.github.organization, machete.github.repository, machete.github.remote\n"
         )
         assert_failure(["github", "retarget-pr"], expected_error_message)
 
@@ -425,7 +425,7 @@ class TestGitHubRetargetPR(BaseTest):
         )
 
     def test_github_retarget_pr_root_branch(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_retarget_pr_root_branch()))
 
         self.repo_sandbox.new_branch("master").commit()

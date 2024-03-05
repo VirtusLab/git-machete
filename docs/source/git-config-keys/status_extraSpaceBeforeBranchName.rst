@@ -21,3 +21,7 @@ With ``machete.status.extraSpaceBeforeBranchName`` config set to ``true``:
    ├─ feature_branch1
    │
    └─ feature_branch2
+
+..
+    Text order in this file is relevant, if you want to change something, find each occurrence of ``.. include:: git-config-keys/status_extraSpaceBeforeBranchName.rst``
+    and if this occurrence has ``start-line`` or ``end-line`` options provided, make sure that after changes the output text stays the same.

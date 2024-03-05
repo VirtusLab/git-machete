@@ -8,8 +8,8 @@ from tests.mockers import rewrite_branch_layout_file
 
 test_cases: Dict[str, str] = {
     "git machete ":
-        "add advance anno completion delete-unmanaged diff discover edit file fork-point github go "
-        "help is-managed list log reapply show slide-out squash status traverse update version",
+        "add advance anno completion delete-unmanaged diff discover edit file fork-point github gitlab "
+        "go help is-managed list log reapply show slide-out squash status traverse update version",
     "git machete -":
         "--debug -h --help -v --verbose --version",
     "git machete a":
@@ -26,6 +26,8 @@ test_cases: Dict[str, str] = {
         "develop master",
     "git machete advance -":
         "--debug -h --help -v --verbose -y --yes",
+    "git machete anno -":
+        "-H -L -b --branch --debug -h --help --sync-github-prs --sync-gitlab-mrs -v --verbose",
     "git machete anno -b ":
         "develop master",
     "git machete anno --branch ":
@@ -68,13 +70,25 @@ test_cases: Dict[str, str] = {
         "--branch --debug --help --ignore-if-missing --verbose",
     "git machete github retarget-pr -b ":
         "develop master",
+    "git machete gitlab ":
+        "anno-mrs checkout-mrs create-mr restack-mr retarget-mr",
+    "git machete gitlab anno-mrs -":
+        "--debug -h --help -v --verbose --with-urls",
+    "git machete gitlab checkout-mrs -":
+        "--all --by --debug -h --help --mine -v --verbose",
+    "git machete gitlab create-mr -":
+        "--debug --draft -h --help --title -v --verbose --yes",
+    "git machete gitlab retarget-mr --":
+        "--branch --debug --help --ignore-if-missing --verbose",
+    "git machete gitlab retarget-mr -b ":
+        "develop master",
     "git machete g ":
         "down first last next prev root up",
     "git machete go ":
         "down first last next prev root up",
     "git machete help ":
-        "add advance anno completion config delete-unmanaged diff discover edit file fork-point format github go "
-        "help hooks is-managed list log reapply show slide-out squash status traverse update version",
+        "add advance anno completion config delete-unmanaged diff discover edit file fork-point format github gitlab "
+        "go help hooks is-managed list log reapply show slide-out squash status traverse update version",
     "git machete is-managed ":
         "develop feature master",
     "git machete list ":

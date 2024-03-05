@@ -32,14 +32,17 @@ class BaseTest:
             mocker.patch(symbol, target)
 
     def teardown_method(self) -> None:
-        if self.expected_mock_methods:
-            raise Exception("Patched method(s) have never been called: " + ", ".join(self.expected_mock_methods))
+        if len(self.expected_mock_methods) == 1:
+            raise Exception("Patched method has never been called: " + list(self.expected_mock_methods)[0])
+        elif len(self.expected_mock_methods) > 1:
+            raise Exception("Patched methods have never been called: " + ", ".join(self.expected_mock_methods))
 
 
 class GitRepositorySandbox:
-    second_remote_path = mkdtemp()
+    second_remote_path: str
 
     def __init__(self) -> None:
+        GitRepositorySandbox.second_remote_path = mkdtemp()
         self.remote_path = mkdtemp()
         self.local_path = mkdtemp()
         self.file_counter = 0

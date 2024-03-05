@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 
 _git_machete() {
-  local cmds="add advance anno completion delete-unmanaged diff discover edit file fork-point github go help is-managed list log reapply show slide-out squash status traverse update version"
+  local cmds="add advance anno completion delete-unmanaged diff discover edit file fork-point github gitlab go help is-managed list log reapply show slide-out squash status traverse update version"
   local help_topics="$cmds config format hooks"
 
   local categories="addable childless managed slidable slidable-after unmanaged with-overridden-fork-point"
   local directions="down first last next prev root up"
   local github_subcommands="anno-prs checkout-prs create-pr restack-pr retarget-pr"
+  local gitlab_subcommands="anno-mrs checkout-mrs create-mr restack-mr retarget-mr"
   local locations="current $directions"
   local opt_color_args="always auto never"
   local opt_return_to_args="here nearest-remaining stay"
@@ -16,7 +17,7 @@ _git_machete() {
   local common_opts="--debug -h --help -v --verbose"
   local add_opts="-f --as-first-child -o --onto= -R --as-root -y --yes"
   local advance_opts="-y --yes"
-  local anno_opts="-b --branch= -H --sync-github-prs"
+  local anno_opts="-b --branch= -H -L --sync-github-prs --sync-gitlab-mrs"
   local delete_unmanaged_opts="-y --yes"
   local diff_opts="-s --stat"
   local discover_opts="-C --checked-out-since= -l --list-commits -r --roots= -y --yes"
@@ -25,6 +26,10 @@ _git_machete() {
   local github_create_pr_opts="--draft --title= --yes"
   local github_checkout_prs_opts="--all --by= --mine"
   local github_retarget_pr_opts="-b --branch= --ignore-if-missing"
+  local gitlab_anno_mrs_opts="--with-urls"
+  local gitlab_create_mr_opts="--draft --title= --yes"
+  local gitlab_checkout_mrs_opts="--all --by= --mine"
+  local gitlab_retarget_mr_opts="-b --branch= --ignore-if-missing"
   local reapply_opts="-f --fork-point="
   local slide_out_opts="-d --down-fork-point= --delete -M --merge -n --no-edit-merge --no-interactive-rebase --removed-from-remote"
   local squash_opts="-f --fork-point="
@@ -59,6 +64,18 @@ _git_machete() {
             __gitcomp "$common_opts $github_checkout_prs_opts"
           elif [[ ${COMP_WORDS[3]} == "retarget-pr" ]]; then
             __gitcomp "$common_opts $github_retarget_pr_opts"
+          else
+            __gitcomp "$common_opts"
+          fi ;;
+        gitlab)
+          if [[ ${COMP_WORDS[3]} == "anno-mrs" ]]; then
+            __gitcomp "$common_opts $gitlab_anno_mrs_opts"
+          elif [[ ${COMP_WORDS[3]} == "create-mr" ]]; then
+            __gitcomp "$common_opts $gitlab_create_mr_opts"
+          elif [[ ${COMP_WORDS[3]} == "checkout-mrs" ]]; then
+            __gitcomp "$common_opts $gitlab_checkout_mrs_opts"
+          elif [[ ${COMP_WORDS[3]} == "retarget-mr" ]]; then
+            __gitcomp "$common_opts $gitlab_retarget_mr_opts"
           else
             __gitcomp "$common_opts"
           fi ;;
@@ -123,6 +140,20 @@ _git_machete() {
                   __gitcomp "$common_opts $github_checkout_prs_opts"
                 elif [[ ${COMP_WORDS[3]} == "retarget-pr" ]]; then
                   __gitcomp "$common_opts $github_retarget_pr_opts"
+                else
+                  COMPREPLY=('')
+                fi ;;
+              gitlab)
+                if [[ $COMP_CWORD -eq 3 ]]; then
+                  __gitcomp "$gitlab_subcommands"
+                elif [[ ${COMP_WORDS[3]} == "anno-mrs" ]]; then
+                  __gitcomp "$common_opts $gitlab_anno_mrs_opts"
+                elif [[ ${COMP_WORDS[3]} == "create-mr" ]]; then
+                  __gitcomp "$common_opts $gitlab_create_mr_opts"
+                elif [[ ${COMP_WORDS[3]} == "checkout-mrs" ]]; then
+                  __gitcomp "$common_opts $gitlab_checkout_mrs_opts"
+                elif [[ ${COMP_WORDS[3]} == "retarget-mr" ]]; then
+                  __gitcomp "$common_opts $gitlab_retarget_mr_opts"
                 else
                   COMPREPLY=('')
                 fi ;;

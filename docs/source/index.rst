@@ -19,7 +19,8 @@ A look at a ``git machete status`` gives an instant answer to the questions:
 
 ``git machete traverse`` semi-automatically traverses the branches, helping you effortlessly rebase, merge, push and pull.
 
-When git-machete is installed, it adds ``machete`` command to ``git``, so it can be called from command line: ``git machete <command> <options>``. git machete comes with a wide variety of customizable commands and in this site you can find their documentation.
+When git-machete is installed, it adds ``machete`` command to ``git``, so it can be called from command line: ``git machete <command> <options>``.
+git machete comes with a wide variety of customizable commands and in this site you can find their documentation.
 
 git machete commands and help topics:
 
@@ -44,6 +45,7 @@ Commands & help topics
 .. include:: cli/fork-point.rst
 .. include:: cli/format.rst
 .. include:: cli/github.rst
+.. include:: cli/gitlab.rst
 .. include:: cli/go.rst
 .. include:: cli/help.rst
 .. include:: cli/hooks.rst

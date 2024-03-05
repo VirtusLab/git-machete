@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Mar 26, 2024" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Apr 14, 2024" "" "git-machete"
 .SH NAME
 git-machete \- git-machete 3.25.0
 .sp
@@ -53,7 +53,8 @@ What is going to be merged (rebased/pushed/pulled) and to what?
 .sp
 \fBgit machete traverse\fP semi\-automatically traverses the branches, helping you effortlessly rebase, merge, push and pull.
 .sp
-When git\-machete is installed, it adds \fBmachete\fP command to \fBgit\fP, so it can be called from command line: \fBgit machete <command> <options>\fP\&. git machete comes with a wide variety of customizable commands and in this site you can find their documentation.
+When git\-machete is installed, it adds \fBmachete\fP command to \fBgit\fP, so it can be called from command line: \fBgit machete <command> <options>\fP\&.
+git machete comes with a wide variety of customizable commands and in this site you can find their documentation.
 .sp
 git machete commands and help topics:
 .INDENT 0.0
@@ -85,6 +86,8 @@ git machete commands and help topics:
 \fI\%format\fP           \-\- Display docs for the format of the branch layout file
 .IP \(bu 2
 \fI\%github\fP           \-\- Create, check out and manage GitHub PRs while keeping them reflected in git machete
+.IP \(bu 2
+\fI\%gitlab\fP           \-\- Create, check out and manage GitLab MRs while keeping them reflected in git machete
 .IP \(bu 2
 \fI\%go\fP               \-\- Check out the branch relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument
 .IP \(bu 2
@@ -260,6 +263,7 @@ Fails if the current branch has more than one green\-edge downstream branch.
 .ft C
 git machete anno [\-b|\-\-branch=<branch>] [<annotation text>]
 git machete anno \-H|\-\-sync\-github\-prs
+git machete anno \-L|\-\-sync\-gitlab\-mrs
 .ft P
 .fi
 .UNINDENT
@@ -282,64 +286,56 @@ $ git machete anno \(aq\(aq
 .sp
 then clears the annotation for the current branch (or a branch specified with \fB\-b/\-\-branch\fP).
 .sp
-If invoked with \fB\-H\fP or \fB\-\-sync\-github\-prs\fP, annotates the branches based on their corresponding GitHub PR numbers and authors.
-When the current user is NOT the owner of the PR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
-so that you don\(aqt rebase or push someone else\(aqs PR by accident (see help for \fI\%traverse\fP).
-Any existing annotations (except branch qualifiers) are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
+If invoked with \fB\-H\fP/\fB\-\-sync\-github\-prs\fP (for GitHub) or \fB\-L\fP/\fB\-\-sync\-gitlab\-mrs\fP (for GitLab),
+annotates the branches based on their corresponding GitHub PR/GitLab MR numbers and authors.
+When the current user is NOT the author of the PR/MR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
+so that you don\(aqt rebase or push someone else\(aqs PR/MR by accident (see help for \fI\%traverse\fP).
+Any existing annotations (except branch qualifiers) are overwritten for the branches that have an opened PR/MR;
+annotations for the other branches remain untouched.
 .sp
 \fBNOTE:\fP
 .INDENT 0.0
 .INDENT 3.5
-To allow GitHub API access for private repositories (and also to perform side\-effecting actions like opening a PR,
-even in case of public repositories), a GitHub API token with \fBrepo\fP scope is required, see \fI\%https://github.com/settings/tokens\fP\&.
-This will be resolved from the first of:
-.INDENT 0.0
-.INDENT 3.5
-.INDENT 0.0
-.IP 1. 3
-\fBGITHUB_TOKEN\fP env var,
-.IP 2. 3
-content of the \fB\&.github\-token\fP file in the home directory (\fB~\fP),
-.IP 3. 3
-current auth token from the \fBgh\fP GitHub CLI,
-.IP 4. 3
-current auth token from the \fBhub\fP GitHub CLI.
-.UNINDENT
+See the help for \fI\%github\fP for how to configure GitHub API access.
+TL;DR: \fBGITHUB_TOKEN\fP env var or \fB~/.github\-token\fP file or \fBgh\fP/\fBhub\fP CLI configs if exist.
+.sp
+See the help for \fI\%gitlab\fP for how to configure GitLab API access.
+TL;DR: \fBGITLAB_TOKEN\fP env var or \fB~/.gitlab\-token\fP file or \fBglab\fP CLI config if exists.
+.sp
+For enterprise domains, non\-standard URLs etc., check git config keys in either command\(aqs help.
 .UNINDENT
 .UNINDENT
 .sp
-GitHub Enterprise domains are supported.
+In any other case, sets the annotation for the given/current branch to the given <annotation text>.
+If multiple <annotation text>\(aqs are passed to the command, they are concatenated with a single space.
 .sp
-\fBGITHUB_TOKEN\fP is used indiscriminately for any domain, both github.com and Enterprise.
+Note: \fBanno\fP command is able to overwrite the existing branch qualifiers, for example with \fBgit machete anno \(dqrebase=no push=no\(dq\fP\&.
 .sp
-\fBgh\fP and \fBhub\fP have their own built\-in support for Enterprise domains, which is honored by git\-machete.
+Note: all the effects of \fBanno\fP can be always achieved by manually editing the branch layout file.
 .sp
-\fB\&.github\-token\fP can have multiple per\-domain entries in the format:
+\fBOptions:\fP
 .INDENT 0.0
-.INDENT 3.5
-.INDENT 0.0
-.INDENT 3.5
+.TP
+.BI \-b\fP,\fB  \-\-branch\fB= <branch>
+Branch to set the annotation for.
+.TP
+.B  \-H\fP,\fB  \-\-sync\-github\-prs
+Annotate with GitHub PR numbers and author logins where applicable.
+.TP
+.B  \-L\fP,\fB  \-\-sync\-gitlab\-mrs
+Annotate with GitLab MR numbers and author logins where applicable.
+.UNINDENT
+.SH CONFIG
 .sp
-.nf
-.ft C
-ghp_mytoken_for_github_com
-ghp_myothertoken_for_git_example_org git.example.org
-ghp_yetanothertoken_for_git_example_com git.example.com
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.UNINDENT
-.UNINDENT
-.UNINDENT
-.UNINDENT
+Documentation about available \fBgit machete\fP git config keys and environment variables that change the command\(aqs default behavior.
 .sp
-\fBNOTE:\fP
+Note: \fBconfig\fP is not a command as such, just a help topic (there is no \fBgit machete config\fP command).
+.sp
+\fBGit config keys:\fP
 .INDENT 0.0
-.INDENT 3.5
-GitHub API server URL will be inferred from \fBgit remote\fP\&.
-You can alter the default behavior by setting the following git config keys:
-.INDENT 0.0
+.TP
+.B \fBmachete.github.{domain,remote,organization,repository}\fP:
+.INDENT 7.0
 .INDENT 3.5
 .INDENT 0.0
 .TP
@@ -355,43 +351,9 @@ E.g. \fBgit config machete.github.organization VirtusLab; git config machete.git
 .UNINDENT
 .UNINDENT
 .sp
-Note that you do NOT need to set all four keys at once.
+Note that you do \fBnot\fP need to set all four keys at once.
 For example, in a typical usage of GitHub Enterprise, it should be enough to just set \fBmachete.github.domain\fP\&.
 Only \fBmachete.github.organization\fP and \fBmachete.github.repository\fP must be specified together.
-.UNINDENT
-.UNINDENT
-.sp
-In any other case, sets the annotation for the given/current branch to the given <annotation text>.
-If multiple <annotation text>\(aqs are passed to the command, they are concatenated with a single space.
-.sp
-Note: \fBanno\fP command is able to overwrite existing branch qualifiers.
-.sp
-Note: all the effects of \fBanno\fP can be always achieved by manually editing the branch layout file.
-.sp
-\fBOptions:\fP
-.INDENT 0.0
-.TP
-.BI \-b\fP,\fB  \-\-branch\fB= <branch>
-Branch to set the annotation for.
-.TP
-.B  \-H\fP,\fB  \-\-sync\-github\-prs
-Annotate with GitHub PR numbers and authors where applicable.
-.UNINDENT
-.sp
-\fBEnvironment variables:\fP
-.INDENT 0.0
-.TP
-.B \fBGITHUB_TOKEN\fP
-GitHub API token.
-.UNINDENT
-.SH CONFIG
-.sp
-Documentation about available \fBgit machete\fP git config keys and environment variables that change the command\(aqs default behavior.
-.sp
-Note: \fBconfig\fP is not a command as such, just a help topic (there is no \fBgit machete config\fP command).
-.sp
-\fBGit config keys:\fP
-.INDENT 0.0
 .TP
 .B \fBmachete.github.annotateWithUrls\fP:
 Setting this config key to \fBtrue\fP will cause all commands that write GitHub PR numbers into annotations
@@ -404,31 +366,37 @@ but also \fBgithub checkout\-prs\fP, \fBgithub create\-pr\fP, \fBgithub retarget
 Setting this config key to \fBtrue\fP will force \fBgit machete github create\-pr\fP to take PR description
 from the message body of the first unique commit of the branch, even if \fB\&.git/info/description\fP and/or \fB\&.github/pull_request_template.md\fP is present.
 .TP
-.B \fBmachete.github.{domain,remote,organization,repository}\fP:
+.B \fBmachete.gitlab.{domain,remote,namespace,project}\fP:
 .INDENT 7.0
 .INDENT 3.5
-You can alter the default behavior by setting the following git config keys:
-.INDENT 0.0
-.INDENT 3.5
 .INDENT 0.0
 .TP
-.B GitHub Enterprise domain
-E.g. \fBgit config machete.github.domain git.example.org\fP
+.B GitLab self\-managed domain
+E.g. \fBgit config machete.gitlab.domain git.example.org\fP
 .TP
 .B Remote name (as in \fBgit remote\fP)
-E.g. \fBgit config machete.github.remote origin\fP
+E.g. \fBgit config machete.gitlab.remote origin\fP
 .TP
-.B Organization and repository name
-E.g. \fBgit config machete.github.organization VirtusLab; git config machete.github.repository git\-machete\fP
+.B Namespace and project name
+E.g. \fBgit config machete.gitlab.namespace foo/bar; git config machete.gitlab.project hello\-world\fP
 .UNINDENT
 .UNINDENT
 .UNINDENT
 .sp
-Note that you do NOT need to set all four keys at once.
-For example, in a typical usage of GitHub Enterprise, it should be enough to just set \fBmachete.github.domain\fP\&.
-Only \fBmachete.github.organization\fP and \fBmachete.github.repository\fP must be specified together.
-.UNINDENT
-.UNINDENT
+Note that you do \fBnot\fP need to set all four keys at once.
+For example, in a typical usage for GitLab self\-managed instance, it should be enough to just set \fBmachete.gitlab.domain\fP\&.
+Only \fBmachete.gitlab.namespace\fP and \fBmachete.gitlab.project\fP must be specified together.
+.TP
+.B \fBmachete.gitlab.annotateWithUrls\fP:
+Setting this config key to \fBtrue\fP will cause all commands that write GitLab MR numbers into annotations
+to not only include MR number and author (if different from the current user), but also the full URL of the MR.
+.sp
+The affected (sub)commands clearly include \fBanno \-\-sync\-gitlab\-mrs\fP and \fBgitlab anno\-mrs\fP,
+but also \fBgitlab checkout\-mrs\fP, \fBgitlab create\-mr\fP, \fBgitlab retarget\-mr\fP and \fBgitlab restack\-mr\fP\&.
+.TP
+.B \fBmachete.gitlab.forceDescriptionFromCommitMessage\fP:
+Setting this config key to \fBtrue\fP will force \fBgit machete gitlab create\-mr\fP to take MR description
+from the message body of the first unique commit of the branch, even if \fB\&.git/info/description\fP and/or \fB\&.gitlab/merge_request_templates/Default.md\fP is present.
 .TP
 .B \fBmachete.overrideForkPoint.<branch>.to\fP:
 Executing \fBgit machete fork\-point \-\-override\-to[\-parent|\-inferred|=<revision>] [<branch>]\fP sets up a fork point override for \fB<branch>\fP\&.
@@ -521,8 +489,6 @@ git machete clean [\-c|\-\-checkout\-my\-github\-prs] [\-y|\-\-yes]
 .sp
 Synchronizes with the remote repository:
 .INDENT 0.0
-.INDENT 3.5
-.INDENT 0.0
 .IP 1. 3
 if invoked with \fB\-H\fP or \fB\-\-checkout\-my\-github\-prs\fP, checks out open PRs for the current user associated with the GitHub token
 and also traverses the chain of pull requests upwards, adding branches one by one to git\-machete and checks them out locally as well,
@@ -531,8 +497,6 @@ deletes unmanaged branches,
 .IP 3. 3
 deletes untracked managed branches that have no downstream branch.
 .UNINDENT
-.UNINDENT
-.UNINDENT
 .sp
 No branch will be deleted unless explicitly confirmed by the user (or unless \fB\-y/\-\-yes\fP option is passed).
 Equivalent of \fBgit machete github sync\fP if invoked with \fB\-H\fP or \fB\-\-checkout\-my\-github\-prs\fP\&.
@@ -540,74 +504,9 @@ Equivalent of \fBgit machete github sync\fP if invoked with \fB\-H\fP or \fB\-\-
 \fBNOTE:\fP
 .INDENT 0.0
 .INDENT 3.5
-To allow GitHub API access for private repositories (and also to perform side\-effecting actions like opening a PR,
-even in case of public repositories), a GitHub API token with \fBrepo\fP scope is required, see \fI\%https://github.com/settings/tokens\fP\&.
-This will be resolved from the first of:
-.INDENT 0.0
-.INDENT 3.5
-.INDENT 0.0
-.IP 1. 3
-\fBGITHUB_TOKEN\fP env var,
-.IP 2. 3
-content of the \fB\&.github\-token\fP file in the home directory (\fB~\fP),
-.IP 3. 3
-current auth token from the \fBgh\fP GitHub CLI,
-.IP 4. 3
-current auth token from the \fBhub\fP GitHub CLI.
-.UNINDENT
-.UNINDENT
-.UNINDENT
-.sp
-GitHub Enterprise domains are supported.
-.sp
-\fBGITHUB_TOKEN\fP is used indiscriminately for any domain, both github.com and Enterprise.
-.sp
-\fBgh\fP and \fBhub\fP have their own built\-in support for Enterprise domains, which is honored by git\-machete.
-.sp
-\fB\&.github\-token\fP can have multiple per\-domain entries in the format:
-.INDENT 0.0
-.INDENT 3.5
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-ghp_mytoken_for_github_com
-ghp_myothertoken_for_git_example_org git.example.org
-ghp_yetanothertoken_for_git_example_com git.example.com
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.UNINDENT
-.UNINDENT
-.UNINDENT
-.UNINDENT
-.sp
-\fBNOTE:\fP
-.INDENT 0.0
-.INDENT 3.5
-GitHub API server URL will be inferred from \fBgit remote\fP\&.
-You can alter the default behavior by setting the following git config keys:
-.INDENT 0.0
-.INDENT 3.5
-.INDENT 0.0
-.TP
-.B GitHub Enterprise domain
-E.g. \fBgit config machete.github.domain git.example.org\fP
-.TP
-.B Remote name (as in \fBgit remote\fP)
-E.g. \fBgit config machete.github.remote origin\fP
-.TP
-.B Organization and repository name
-E.g. \fBgit config machete.github.organization VirtusLab; git config machete.github.repository git\-machete\fP
-.UNINDENT
-.UNINDENT
-.UNINDENT
-.sp
-Note that you do NOT need to set all four keys at once.
-For example, in a typical usage of GitHub Enterprise, it should be enough to just set \fBmachete.github.domain\fP\&.
-Only \fBmachete.github.organization\fP and \fBmachete.github.repository\fP must be specified together.
+See the help for \fI\%github\fP for how to configure GitHub API access.
+TL;DR: \fBGITHUB_TOKEN\fP env var or \fB~/.github\-token\fP file or \fBgh\fP/\fBhub\fP CLI configs if exist.
+For enterprise domains, non\-standard URLs etc., check git config keys in \fBgithub\fP help.
 .UNINDENT
 .UNINDENT
 .sp
@@ -1008,8 +907,6 @@ To allow GitHub API access for private repositories (and also to perform side\-e
 even in case of public repositories), a GitHub API token with \fBrepo\fP scope is required, see \fI\%https://github.com/settings/tokens\fP\&.
 This will be resolved from the first of:
 .INDENT 0.0
-.INDENT 3.5
-.INDENT 0.0
 .IP 1. 3
 \fBGITHUB_TOKEN\fP env var,
 .IP 2. 3
@@ -1018,8 +915,6 @@ content of the \fB\&.github\-token\fP file in the home directory (\fB~\fP),
 current auth token from the \fBgh\fP GitHub CLI,
 .IP 4. 3
 current auth token from the \fBhub\fP GitHub CLI.
-.UNINDENT
-.UNINDENT
 .UNINDENT
 .sp
 GitHub Enterprise domains are supported.
@@ -1031,8 +926,6 @@ GitHub Enterprise domains are supported.
 \fB\&.github\-token\fP can have multiple per\-domain entries in the format:
 .INDENT 0.0
 .INDENT 3.5
-.INDENT 0.0
-.INDENT 3.5
 .sp
 .nf
 .ft C
@@ -1041,8 +934,6 @@ ghp_myothertoken_for_git_example_org git.example.org
 ghp_yetanothertoken_for_git_example_com git.example.com
 .ft P
 .fi
-.UNINDENT
-.UNINDENT
 .UNINDENT
 .UNINDENT
 .UNINDENT
@@ -1063,7 +954,7 @@ Annotates the branches based on their corresponding GitHub PR numbers and author
 Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
 Equivalent to \fBgit machete anno \-\-sync\-github\-prs\fP\&.
 .sp
-When the current user is NOT the owner of the PR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
+When the current user is NOT the author of the PR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
 so that you don\(aqt rebase or push someone else\(aqs PR by accident (see help for \fI\%traverse\fP).
 .sp
 \fBOptions:\fP
@@ -1079,7 +970,7 @@ also traverse chain of pull requests upwards, adding branches one by one to git\
 Once the specified pull requests are checked out locally, annotate local branches with corresponding pull request numbers.
 If only one PR has been checked out, then switch the local repository\(aqs HEAD to its head branch.
 .sp
-When the current user is NOT the owner of the PR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
+When the current user is NOT the author of the PR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
 so that you don\(aqt rebase or push someone else\(aqs PR by accident (see help for \fI\%traverse\fP).
 .sp
 \fBOptions:\fP
@@ -1128,10 +1019,16 @@ Do not ask for confirmation whether to push the branch.
 .TP
 .B \fBrestack\-pr\fP:
 Perform the following sequence of actions:
-1. If the PR for the current branch is ready for review, it gets converted to a draft.
-2. The branch is (force\-)pushed into remote.
-3. The PR is retargeted to its upstream (parent) branch, as in \fBretarget\-pr\fP\&.
-4. If the PR has been converted to draft in step 1, it\(aqs reverted to ready for review state.
+.INDENT 7.0
+.IP 1. 3
+If the PR for the current branch is ready for review, it gets converted to a draft.
+.IP 2. 3
+The branch is (force\-)pushed into remote.
+.IP 3. 3
+The PR is retargeted to its upstream (parent) branch, as in \fBretarget\-pr\fP\&.
+.IP 4. 3
+If the PR has been converted to draft in step 1, it\(aqs reverted to ready for review state.
+.UNINDENT
 .sp
 The drafting/undrafting is useful in case the GitHub repository has set up \fI\%CODEOWNERS\fP\&.
 Draft PRs don\(aqt get code owners automatically added as reviewers.
@@ -1159,8 +1056,6 @@ Ignore errors and quietly terminate execution if there is no PR opened for curre
 .sp
 Synchronizes with the remote repository:
 .INDENT 7.0
-.INDENT 3.5
-.INDENT 0.0
 .IP 1. 3
 checks out open PRs for the current user associated with the GitHub token and also traverses the chain of pull requests upwards,
 adding branches one by one to git\-machete and checks them out locally as well,
@@ -1170,29 +1065,14 @@ deletes unmanaged branches,
 deletes untracked managed branches that have no downstream branch.
 .UNINDENT
 .UNINDENT
-.UNINDENT
-.UNINDENT
 .sp
 \fBGit config keys:\fP
 .INDENT 0.0
 .TP
-.B \fBmachete.github.annotateWithUrls\fP (all subcommands):
-Setting this config key to \fBtrue\fP will cause all commands that write GitHub PR numbers into annotations
-to not only include PR number and author (if different from the current user), but also the full URL of the PR.
-.sp
-The affected (sub)commands clearly include \fBanno \-\-sync\-github\-prs\fP and \fBgithub anno\-prs\fP,
-but also \fBgithub checkout\-prs\fP, \fBgithub create\-pr\fP, \fBgithub retarget\-pr\fP and \fBgithub restack\-pr\fP\&.
-.TP
-.B \fBmachete.github.forceDescriptionFromCommitMessage\fP (\fBcreate\-pr\fP only):
-Setting this config key to \fBtrue\fP will force \fBgit machete github create\-pr\fP to take PR description
-from the message body of the first unique commit of the branch, even if \fB\&.git/info/description\fP and/or \fB\&.github/pull_request_template.md\fP is present.
-.TP
 .B \fBmachete.github.{domain,remote,organization,repository}\fP (all subcommands):
-.INDENT 7.0
-.INDENT 3.5
 GitHub API server URL will be inferred from \fBgit remote\fP\&.
 You can alter the default behavior by setting the following git config keys:
-.INDENT 0.0
+.INDENT 7.0
 .INDENT 3.5
 .INDENT 0.0
 .TP
@@ -1208,11 +1088,20 @@ E.g. \fBgit config machete.github.organization VirtusLab; git config machete.git
 .UNINDENT
 .UNINDENT
 .sp
-Note that you do NOT need to set all four keys at once.
+Note that you do \fBnot\fP need to set all four keys at once.
 For example, in a typical usage of GitHub Enterprise, it should be enough to just set \fBmachete.github.domain\fP\&.
 Only \fBmachete.github.organization\fP and \fBmachete.github.repository\fP must be specified together.
-.UNINDENT
-.UNINDENT
+.TP
+.B \fBmachete.github.annotateWithUrls\fP (all subcommands):
+Setting this config key to \fBtrue\fP will cause all commands that write GitHub PR numbers into annotations
+to not only include PR number and author (if different from the current user), but also the full URL of the PR.
+.sp
+The affected (sub)commands clearly include \fBanno \-\-sync\-github\-prs\fP and \fBgithub anno\-prs\fP,
+but also \fBgithub checkout\-prs\fP, \fBgithub create\-pr\fP, \fBgithub retarget\-pr\fP and \fBgithub restack\-pr\fP\&.
+.TP
+.B \fBmachete.github.forceDescriptionFromCommitMessage\fP (\fBcreate\-pr\fP only):
+Setting this config key to \fBtrue\fP will force \fBgit machete github create\-pr\fP to take PR description
+from the message body of the first unique commit of the branch, even if \fB\&.git/info/description\fP and/or \fB\&.github/pull_request_template.md\fP is present.
 .UNINDENT
 .sp
 \fBEnvironment variables (all subcommands):\fP
@@ -1220,6 +1109,220 @@ Only \fBmachete.github.organization\fP and \fBmachete.github.repository\fP must 
 .TP
 .B \fBGITHUB_TOKEN\fP
 GitHub API token.
+.UNINDENT
+.SH GITLAB
+.sp
+\fBUsage:\fP
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git machete gitlab <subcommand>
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+where \fB<subcommand>\fP is one of: \fBanno\-mrs\fP, \fBcheckout\-mrs\fP, \fBcreate\-mr\fP, \fBretarget\-mr\fP\&.
+.sp
+Creates, checks out and manages GitLab MRs while keeping them reflected in branch layout file.
+.sp
+\fBNOTE:\fP
+.INDENT 0.0
+.INDENT 3.5
+To allow GitLab API access for private repositories (and also to perform side\-effecting actions like opening a PR,
+even in case of public projects), a GitLab API token with \fBapi\fP scope is required, see \fI\%https://gitlab.com/\-/user_settings/personal_access_tokens\fP\&.
+This will be resolved from the first of:
+.INDENT 0.0
+.IP 1. 3
+\fBGITLAB_TOKEN\fP env var,
+.IP 2. 3
+content of the \fB\&.gitlab\-token\fP file in the home directory (\fB~\fP),
+.IP 3. 3
+current auth token from the \fBglab\fP GitLab CLI.
+.UNINDENT
+.sp
+Self\-managed GitLab domains are supported.
+.sp
+\fBGITLAB_TOKEN\fP is used indiscriminately for any domain, both for gitlab.com and a self\-managed instance.
+.sp
+\fBglab\fP has its own built\-in support for non\-gitlab.com domains, which is honored by git\-machete.
+.sp
+\fB\&.gitlab\-token\fP can have multiple per\-domain entries in the format:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+glpat\-mytoken_for_gitlab_com
+glpat\-myothertoken_for_git_example_org git.example.org
+glpat\-yetanothertoken_for_git_example_com git.example.com
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+\fBNOTE:\fP
+.INDENT 0.0
+.INDENT 3.5
+See \fBGit config keys\fP below in case the target project cannot be detected automatically (for example, in case of GitLab self\-managed instance).
+.UNINDENT
+.UNINDENT
+.sp
+\fBSubcommands:\fP
+.INDENT 0.0
+.TP
+.B \fBanno\-mrs [\-\-with\-urls]\fP:
+Annotates the branches based on their corresponding GitLab MR numbers and authors.
+Any existing annotations are overwritten for the branches that have an opened MR; annotations for the other branches remain untouched.
+Equivalent to \fBgit machete anno \-\-sync\-gitlab\-mrs\fP\&.
+.sp
+When the current user is NOT the author of the MR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
+so that you don\(aqt rebase or push someone else\(aqs MR by accident (see help for \fI\%traverse\fP).
+.sp
+\fBOptions:\fP
+.INDENT 7.0
+.TP
+.B  \-\-with\-urls
+Also include full MR URLs in the annotations (rather than just MR number).
+.UNINDENT
+.TP
+.B \fBcheckout\-mrs [\-\-all | \-\-by=<gitlab\-login> | \-\-mine | <MR\-number\-1> ... <MR\-number\-N>]\fP:
+Check out the source branch of the given pull requests (specified by numbers or by a flag),
+also traverse chain of pull requests upwards, adding branches one by one to git\-machete and check them out locally.
+Once the specified pull requests are checked out locally, annotate local branches with corresponding pull request numbers.
+If only one MR has been checked out, then switch the local repository\(aqs HEAD to its source branch.
+.sp
+When the current user is NOT the author of the MR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
+so that you don\(aqt rebase or push someone else\(aqs MR by accident (see help for \fI\%traverse\fP).
+.sp
+\fBOptions:\fP
+.INDENT 7.0
+.TP
+.B  \-\-all
+Checkout all open MRs.
+.TP
+.BI \-\-by\fB= <gitlab\-login>
+Checkout open MRs authored by the given GitLab user, where \fB<gitlab\-login>\fP is the GitLab account name.
+.TP
+.B  \-\-mine
+Checkout open MRs for the current user associated with the GitLab token.
+.UNINDENT
+.sp
+\fBParameters:\fP
+.sp
+\fB<MR\-number\-1> ... <MR\-number\-N>\fP    Pull request numbers to checkout.
+.TP
+.B \fBcreate\-mr [\-\-draft] [\-\-title=<title>] [\-\-yes]\fP:
+Creates a MR for the current branch, using the upstream (parent) branch as the MR source branch.
+Once the MR is successfully created, annotates the current branch with the new MR\(aqs number.
+.sp
+If \fB\&.git/info/milestone\fP file is present, its contents (a single number \-\-\- milestone id) are used as milestone.
+Note that you need to use a global (not per\-project) milestone id. Look for something like \fBMilestone ID: 4489529\fP on milestone web page.
+.sp
+If \fB\&.git/info/reviewers\fP file is present, its contents (one GitLab login per line) are used to set reviewers.
+.sp
+The subject of the first unique commit of the branch is used as MR title.
+If \fB\&.git/info/description\fP or \fB\&.gitlab/merge_request_templates/Default.md\fP file is present, its contents are used as MR description.
+Otherwise (or if \fBmachete.gitlab.forceDescriptionFromCommitMessage\fP is set), MR description is taken from message body of the first unique commit of the branch.
+.sp
+If the newly\-created MR is stacked atop another MR, the actual MR description posted to GitLab will be prepended with a section
+listing the entire related chain of MRs.
+.sp
+\fBOptions:\fP
+.INDENT 7.0
+.TP
+.B  \-\-draft
+Create the new MR as a draft.
+.TP
+.BI \-\-title\fB= <title>
+Set the MR title explicitly (the default is to use the first included commit\(aqs message as the title).
+.TP
+.B  \-\-yes
+Do not ask for confirmation whether to push the branch.
+.UNINDENT
+.TP
+.B \fBrestack\-mr\fP:
+Perform the following sequence of actions:
+.INDENT 7.0
+.IP 1. 3
+If the MR for the current branch is ready for review, it gets converted to a draft.
+.IP 2. 3
+The branch is (force\-)pushed into remote.
+.IP 3. 3
+The MR is retargeted to its upstream (parent) branch, as in \fBretarget\-mr\fP\&.
+.IP 4. 3
+If the MR has been converted to draft in step 1, it\(aqs reverted to ready for review state.
+.UNINDENT
+.sp
+The drafting/undrafting is useful in case the GitLab project has set up \fI\%code owners\fP\&.
+Draft MRs don\(aqt get code owners automatically added as reviewers.
+.TP
+.B \fBretarget\-mr [\-b|\-\-branch=<branch>] [\-\-ignore\-if\-missing]\fP:
+Sets the target of the current (or specified) branch\(aqs MR to upstream (parent) branch, as seen by git machete (see \fBgit machete show up\fP).
+.sp
+If after changing the target the MR ends up stacked atop another MR, the MR description posted to GitLab will be prepended with a section
+listing the entire related chain of MRs.
+.sp
+This header will be updated or removed accordingly with the subsequent runs of \fBretarget\-mr\fP\&.
+.sp
+\fBOptions:\fP
+.INDENT 7.0
+.TP
+.BI \-b\fP,\fB  \-\-branch\fB= <branch>
+Specify the branch for which the associated MR source branch will be set to its upstream (parent) branch. The current branch is used if the option is absent.
+.TP
+.B  \-\-ignore\-if\-missing
+Ignore errors and quietly terminate execution if there is no MR opened for current (or specified) branch.
+.UNINDENT
+.UNINDENT
+.sp
+\fBGit config keys:\fP
+.INDENT 0.0
+.TP
+.B \fBmachete.gitlab.{domain,remote,namespace,project}\fP (all subcommands):
+GitLab API server URL will be inferred from \fBgit remote\fP\&.
+You can alter the default behavior by setting the following git config keys:
+.INDENT 7.0
+.INDENT 3.5
+.INDENT 0.0
+.TP
+.B GitLab self\-managed domain
+E.g. \fBgit config machete.gitlab.domain git.example.org\fP
+.TP
+.B Remote name (as in \fBgit remote\fP)
+E.g. \fBgit config machete.gitlab.remote origin\fP
+.TP
+.B Namespace and project name
+E.g. \fBgit config machete.gitlab.namespace foo/bar; git config machete.gitlab.project hello\-world\fP
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+Note that you do \fBnot\fP need to set all four keys at once.
+For example, in a typical usage for GitLab self\-managed instance, it should be enough to just set \fBmachete.gitlab.domain\fP\&.
+Only \fBmachete.gitlab.namespace\fP and \fBmachete.gitlab.project\fP must be specified together.
+.TP
+.B \fBmachete.gitlab.annotateWithUrls\fP (all subcommands):
+Setting this config key to \fBtrue\fP will cause all commands that write GitLab MR numbers into annotations
+to not only include MR number and author (if different from the current user), but also the full URL of the MR.
+.sp
+The affected (sub)commands clearly include \fBanno \-\-sync\-gitlab\-mrs\fP and \fBgitlab anno\-mrs\fP,
+but also \fBgitlab checkout\-mrs\fP, \fBgitlab create\-mr\fP, \fBgitlab retarget\-mr\fP and \fBgitlab restack\-mr\fP\&.
+.TP
+.B \fBmachete.gitlab.forceDescriptionFromCommitMessage\fP (\fBcreate\-mr\fP only):
+Setting this config key to \fBtrue\fP will force \fBgit machete gitlab create\-mr\fP to take MR description
+from the message body of the first unique commit of the branch, even if \fB\&.git/info/description\fP and/or \fB\&.gitlab/merge_request_templates/Default.md\fP is present.
+.UNINDENT
+.sp
+\fBEnvironment variables (all subcommands):\fP
+.INDENT 0.0
+.TP
+.B \fBGITLAB_TOKEN\fP
+GitLab API token.
 .UNINDENT
 .SH GO
 .sp
@@ -1339,16 +1442,12 @@ Note that it is NOT executed by \fBsquash\fP (despite its similarity to \fBreapp
 .sp
 The parameters are exactly the three revisions that are passed to \fBgit rebase \-\-onto\fP:
 .INDENT 7.0
-.INDENT 3.5
-.INDENT 0.0
 .IP 1. 3
 what is going to be the new base for the rebased commits,
 .IP 2. 3
 what is the fork point \-\-\- the place where the rebased history diverges from the upstream history,
 .IP 3. 3
 what branch is rebased.
-.UNINDENT
-.UNINDENT
 .UNINDENT
 .sp
 If the hook returns a non\-zero exit code, an error is raised and the entire rebase is aborted.
@@ -1834,14 +1933,12 @@ when detecting if a branch is merged into its upstream (parent).
 .UNINDENT
 .sp
 \fBGit config keys:\fP
-.sp
-\fBmachete.status.extraSpaceBeforeBranchName\fP
 .INDENT 0.0
-.INDENT 3.5
+.TP
+.B \fBmachete.status.extraSpaceBeforeBranchName\fP
 To make it easier to select branch name from the \fBstatus\fP output on certain terminals
 (like \fI\%Alacritty\fP), you can add an extra space between └─ and \fBbranch name\fP
 by setting \fBgit config machete.status.extraSpaceBeforeBranchName true\fP\&.
-.UNINDENT
 .UNINDENT
 .SH TRAVERSE
 .sp
@@ -1941,8 +2038,9 @@ master
 .UNINDENT
 .UNINDENT
 .sp
-Operations like \fBgit machete github anno\-prs\fP and \fBgit machete github checkout\-prs\fP add \fBrebase=no push=no\fP branch qualifiers
-when the current user is NOT the owner of the PR associated with that branch.
+Operations like \fBgit machete github anno\-prs\fP (\fBgit machete gitlab anno\-mrs\fP)
+and \fBgit machete github checkout\-prs\fP (\fBgit machete gitlab checkout\-mrs\fP) add \fBrebase=no push=no\fP branch qualifiers
+when the current user is NOT the author of the PR/MR associated with that branch.
 .sp
 \fBOptions:\fP
 .INDENT 0.0

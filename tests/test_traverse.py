@@ -1139,7 +1139,7 @@ class TestTraverse(BaseTest):
         assert_success(
             ["traverse"],
             """
-            Branch master is untracked and there's no origin repository.
+            Branch master is untracked and there's no origin remote.
             [1] origin_1
             [2] origin_2
             Select number 1..2 to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse:
@@ -1154,7 +1154,7 @@ class TestTraverse(BaseTest):
         assert_success(
             ["traverse"],
             """
-            Branch master is untracked and there's no origin repository.
+            Branch master is untracked and there's no origin remote.
             [1] origin_1
             [2] origin_2
             Select number 1..2 to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse:

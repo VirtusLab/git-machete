@@ -73,7 +73,7 @@ When colors are disabled, relation between branches is represented in the follow
     |
     m-<branch4>     # grey (merged to parent)
 
-.. include:: status_extraSpaceBeforeBranchName_config_key.rst
+.. include:: git-config-keys/status_extraSpaceBeforeBranchName.rst
 
 **Options:**
 
@@ -89,6 +89,5 @@ When colors are disabled, relation between branches is represented in the follow
 **Git config keys:**
 
 ``machete.status.extraSpaceBeforeBranchName``
-
-  .. include:: status_extraSpaceBeforeBranchName_config_key.rst
+  .. include:: git-config-keys/status_extraSpaceBeforeBranchName.rst
       :end-line: 3

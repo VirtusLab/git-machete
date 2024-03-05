@@ -3,25 +3,25 @@ from pytest_mock import MockerFixture
 from tests.base_test import BaseTest
 from tests.mockers import (assert_failure, assert_success, launch_command,
                            rewrite_branch_layout_file)
-from tests.mockers_github import (MockGitHubAPIState,
-                                  mock_github_token_for_domain_fake,
-                                  mock_pr_json, mock_urlopen)
+from tests.mockers_gitlab import (MockGitLabAPIState,
+                                  mock_gitlab_token_for_domain_fake,
+                                  mock_mr_json, mock_urlopen)
 
 
-class TestGitHubAnnoPRs(BaseTest):
+class TestGitLabAnnoMRs(BaseTest):
 
     @staticmethod
-    def github_api_state_for_test_anno_prs() -> MockGitHubAPIState:
-        return MockGitHubAPIState(
-            mock_pr_json(number=3, user='some_other_user', head='ignore-trailing', base='hotfix/add-trigger'),
-            mock_pr_json(number=7, user='some_other_user', head='allow-ownership-link', base='develop'),
-            mock_pr_json(number=31, user='github_user', head='call-ws', base='develop'),
-            mock_pr_json(number=37, user='github_user', head='develop', base='master')
+    def gitlab_api_state_for_test_anno_mrs() -> MockGitLabAPIState:
+        return MockGitLabAPIState(
+            mock_mr_json(number=3, user='some_other_user', head='ignore-trailing', base='hotfix/add-trigger'),
+            mock_mr_json(number=7, user='some_other_user', head='allow-ownership-link', base='develop'),
+            mock_mr_json(number=31, user='gitlab_user', head='call-ws', base='develop'),
+            mock_mr_json(number=37, user='gitlab_user', head='develop', base='master')
         )
 
-    def test_github_anno_prs(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_anno_prs()))
+    def test_gitlab_anno_mrs(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.gitlab_api_state_for_test_anno_mrs()))
 
         (
             self.repo_sandbox.new_branch("root")
@@ -61,7 +61,7 @@ class TestGitHubAnnoPRs(BaseTest):
                 .push()
                 .reset_to("ignore-trailing@{1}")  # noqa: FS003
                 .delete_branch("root")
-                .add_remote('new_origin', 'https://github.com/user/repo.git')
+                .add_remote('new_origin', 'https://gitlab.com/user/repo.git')
         )
         body: str = \
             """
@@ -76,11 +76,11 @@ class TestGitHubAnnoPRs(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        # test that `anno-prs` add `rebase=no push=no` qualifiers to branches associated with the PRs whose owner
+        # test that `anno-mrs` add `rebase=no push=no` qualifiers to branches associated with the MRs whose owner
         # is different than the current user, overwrite annotation text but doesn't overwrite existing qualifiers
         launch_command('anno', '-b=allow-ownership-link', 'rebase=no')
         launch_command('anno', '-b=build-chain', 'rebase=no push=no')
-        launch_command('github', 'anno-prs', '--debug')
+        launch_command('gitlab', 'anno-mrs', '--debug')
         assert_success(
             ["status"],
             """
@@ -88,30 +88,30 @@ class TestGitHubAnnoPRs(BaseTest):
             |
             o-hotfix/add-trigger (diverged from origin)
               |
-              o-ignore-trailing *  PR #3 (some_other_user) rebase=no push=no (diverged from & older than origin)
+              o-ignore-trailing *  MR !3 (some_other_user) rebase=no push=no (diverged from & older than origin)
 
-            develop  PR #37 WRONG PR BASE or MACHETE PARENT? PR has master
+            develop  MR !37 WRONG MR TARGET or MACHETE PARENT? MR has master
             |
-            x-allow-ownership-link  PR #7 (some_other_user) rebase=no (ahead of origin)
+            x-allow-ownership-link  MR !7 (some_other_user) rebase=no (ahead of origin)
             | |
             | x-build-chain  rebase=no push=no (untracked)
             |
-            o-call-ws  PR #31 (ahead of origin)
+            o-call-ws  MR !31 (ahead of origin)
               |
               x-drop-constraint (untracked)
             """
         )
 
-        # Test anno-prs using custom remote URL provided by git config keys
+        # Test anno-mrs using custom remote URL provided by git config keys
         (
             self.repo_sandbox
                 .remove_remote('new_origin')
-                .set_git_config_key('machete.github.remote', 'origin')
-                .set_git_config_key('machete.github.organization', 'custom_user')
-                .set_git_config_key('machete.github.repository', 'custom_repo')
+                .set_git_config_key('machete.gitlab.remote', 'origin')
+                .set_git_config_key('machete.gitlab.namespace', 'custom_user')
+                .set_git_config_key('machete.gitlab.project', 'custom_repo')
         )
 
-        launch_command('github', 'anno-prs')
+        launch_command('gitlab', 'anno-mrs')
         assert_success(
             ["status"],
             """
@@ -119,30 +119,30 @@ class TestGitHubAnnoPRs(BaseTest):
             |
             o-hotfix/add-trigger (diverged from origin)
               |
-              o-ignore-trailing *  PR #3 (some_other_user) rebase=no push=no (diverged from & older than origin)
+              o-ignore-trailing *  MR !3 (some_other_user) rebase=no push=no (diverged from & older than origin)
 
-            develop  PR #37 WRONG PR BASE or MACHETE PARENT? PR has master
+            develop  MR !37 WRONG MR TARGET or MACHETE PARENT? MR has master
             |
-            x-allow-ownership-link  PR #7 (some_other_user) rebase=no (ahead of origin)
+            x-allow-ownership-link  MR !7 (some_other_user) rebase=no (ahead of origin)
             | |
             | x-build-chain  rebase=no push=no (untracked)
             |
-            o-call-ws  PR #31 (ahead of origin)
+            o-call-ws  MR !31 (ahead of origin)
               |
               x-drop-constraint (untracked)
             """,
         )
 
     @staticmethod
-    def github_api_state_for_test_local_branch_name_different_than_tracking_branch_name() -> MockGitHubAPIState:
-        return MockGitHubAPIState(
-            mock_pr_json(head='feature_repo', base='root', number=15),
-            mock_pr_json(head='feature_1', base='feature_repo', number=20)
+    def gitlab_api_state_for_test_local_branch_name_different_than_tracking_branch_name() -> MockGitLabAPIState:
+        return MockGitLabAPIState(
+            mock_mr_json(head='feature_repo', base='root', number=15),
+            mock_mr_json(head='feature_1', base='feature_repo', number=20)
         )
 
-    def test_github_anno_prs_local_branch_name_different_than_tracking_branch_name(self, mocker: MockerFixture) -> None:
+    def test_gitlab_anno_mrs_local_branch_name_different_than_tracking_branch_name(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'urllib.request.urlopen',
-                          mock_urlopen(self.github_api_state_for_test_local_branch_name_different_than_tracking_branch_name()))
+                          mock_urlopen(self.gitlab_api_state_for_test_local_branch_name_different_than_tracking_branch_name()))
 
         (
             self.repo_sandbox.new_branch("root")
@@ -158,7 +158,7 @@ class TestGitHubAnnoPRs(BaseTest):
             .commit('introduce feature')
             .push()
             .delete_branch('feature_repo')
-            .add_remote('new_origin', 'https://github.com/user/repo.git')
+            .add_remote('new_origin', 'https://gitlab.com/user/repo.git')
         )
 
         body: str = \
@@ -168,46 +168,46 @@ class TestGitHubAnnoPRs(BaseTest):
                     feature_1
             """
         rewrite_branch_layout_file(body)
-        launch_command("github", "anno-prs", "--with-urls")
+        launch_command("gitlab", "anno-mrs", "--with-urls")
 
         expected_status_output = """
         root
         |
         o-feature
           |
-          o-feature_1 *  PR #20 (some_other_user) www.github.com rebase=no push=no
+          o-feature_1 *  MR !20 (some_other_user) www.gitlab.com rebase=no push=no
         """
         assert_success(
             ['status'],
             expected_result=expected_status_output
         )
 
-    def test_github_anno_prs_no_remotes(self) -> None:
+    def test_gitlab_anno_mrs_no_remotes(self) -> None:
         assert_failure(
-            ["github", "anno-prs"],
+            ["gitlab", "anno-mrs"],
             """
-            Remotes are defined for this repository, but none of them seems to correspond to GitHub (see git remote -v for details).
-            It is possible that you are using a custom GitHub URL.
-            If that is the case, you can provide repository information explicitly via some or all of git config keys:
-            machete.github.domain, machete.github.organization, machete.github.repository, machete.github.remote
+            Remotes are defined for this repository, but none of them seems to correspond to GitLab (see git remote -v for details).
+            It is possible that you are using a custom GitLab URL.
+            If that is the case, you can provide project information explicitly via some or all of git config keys:
+            machete.gitlab.domain, machete.gitlab.namespace, machete.gitlab.project, machete.gitlab.remote
             """
         )
 
         self.repo_sandbox.remove_remote()
-        assert_failure(["github", "anno-prs"], "No remotes defined for this repository (see git remote)")
+        assert_failure(["gitlab", "anno-mrs"], "No remotes defined for this repository (see git remote)")
 
-    def test_github_anno_prs_multiple_non_origin_github_remotes(self) -> None:
+    def test_gitlab_anno_mrs_multiple_non_origin_gitlab_remotes(self) -> None:
         (
             self.repo_sandbox
             .remove_remote("origin")
-            .add_remote("origin-1", "https://github.com/tester/repo_sandbox-1.git")
-            .add_remote("origin-2", "https://github.com/tester/repo_sandbox-2.git")
+            .add_remote("origin-1", "https://gitlab.com/tester/repo_sandbox-1.git")
+            .add_remote("origin-2", "https://gitlab.com/tester/repo_sandbox-2.git")
         )
         assert_failure(
-            ["github", "anno-prs"],
+            ["gitlab", "anno-mrs"],
             """
-            Multiple non-origin remotes correspond to GitHub in this repository: origin-1, origin-2 -> aborting.
-            You can select the repository by providing some or all of git config keys:
-            machete.github.domain, machete.github.organization, machete.github.repository, machete.github.remote
-            """
+            Multiple non-origin remotes correspond to GitLab in this repository: origin-1, origin-2 -> aborting.
+            You can select the project by providing some or all of git config keys:
+            machete.gitlab.domain, machete.gitlab.namespace, machete.gitlab.project, machete.gitlab.remote
+            """  # noqa: E501
         )

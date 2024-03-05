@@ -2,7 +2,7 @@
 
 set -l __machete_help_topics config format hooks
 set -l __machete_commands_long add advance anno completion delete-unmanaged diff discover edit file fork-point \
-  github go help is-managed list log reapply show slide-out squash status traverse update version
+  github gitlab go help is-managed list log reapply show slide-out squash status traverse update version
 set -l __machete_commands_short d e g l s t
 set -l __machete_commands $__machete_commands_long $__machete_commands_short
 
@@ -46,9 +46,10 @@ complete -c git-machete -n "not __fish_seen_subcommand_from $__machete_commands"
 complete -c git-machete -n "__fish_seen_subcommand_from advance; and not __fish_seen_subcommand_from --yes -y" -f -l yes -s y -d 'Do not ask for confirmation whether to fast-forward the current branch or whether to slide-out the downstream. Fails if the current branch has more than one green-edge downstream branch'
 
 # git machete anno
-complete -c git-machete -n "not __fish_seen_subcommand_from $__machete_commands"                                        -f                         -a anno                           -d 'Manage custom annotations'
-complete -c git-machete -n "__fish_seen_subcommand_from anno"                                                           -x -l branch          -s b -a '(__machete_managed_branches)' -d 'Branch to set the annotation for'
-complete -c git-machete -n "__fish_seen_subcommand_from anno; and not __fish_seen_subcommand_from --sync-github-prs -H" -f -l sync-github-prs -s H                                   -d 'Annotate with GitHub PR numbers and authors where applicable'
+complete -c git-machete -n "not __fish_seen_subcommand_from $__machete_commands"                                                             -f                         -a anno                           -d 'Manage custom annotations'
+complete -c git-machete -n "__fish_seen_subcommand_from anno"                                                                                -x -l branch          -s b -a '(__machete_managed_branches)' -d 'Branch to set the annotation for'
+complete -c git-machete -n "__fish_seen_subcommand_from anno; and not __fish_seen_subcommand_from -H --sync-github-prs -L --sync-gitlab-mrs" -f -l sync-github-prs -s H                                   -d 'Annotate with GitHub PR numbers and author logins where applicable'
+complete -c git-machete -n "__fish_seen_subcommand_from anno; and not __fish_seen_subcommand_from -H --sync-github-prs -L --sync-gitlab-mrs" -f -l sync-gitlab-mrs -s L                                   -d 'Annotate with GitLab MR numbers and author logins where applicable'
 
 # git machete completion
 complete -c git-machete -n "not __fish_seen_subcommand_from $__machete_commands"                                       -f -a completion -d 'Print completion script for the given shell'
@@ -107,6 +108,23 @@ complete -c git-machete -n "__fish_seen_subcommand_from github; and __fish_seen_
 complete -c git-machete -n "__fish_seen_subcommand_from github; and __fish_seen_subcommand_from create-pr;    and not __fish_seen_subcommand_from --yes"                  -f -l yes                                                  -d 'Do not ask for confirmation whether to push the branch'
 complete -c git-machete -n "__fish_seen_subcommand_from github; and __fish_seen_subcommand_from retarget-pr;  and not __fish_seen_subcommand_from --branch"               -x -l branch -s b       -a '(__machete_managed_branches)'  -d 'Specify the branch for which the associated PR base will be set to its upstream (parent) branch'
 complete -c git-machete -n "__fish_seen_subcommand_from github; and __fish_seen_subcommand_from retarget-pr;  and not __fish_seen_subcommand_from --ignore-if-missing"    -f -l ignore-if-missing                                    -d 'Ignore errors and quietly terminate execution if there is no PR opened for current (or specified) branch'
+
+# git machete gitlab
+complete -c git-machete -n "not __fish_seen_subcommand_from $__machete_commands"                                                                                          -f -a gitlab                                               -d 'Create, check out and manage GitLab MRs while keeping them reflected in git machete'
+complete -c git-machete -n "__fish_seen_subcommand_from gitlab; and not __fish_seen_subcommand_from anno-mrs checkout-mrs create-mr restack-mr retarget-mr sync"          -f -a anno-mrs                                             -d 'Annotate the branches based on their corresponding GitLab MR numbers and authors'
+complete -c git-machete -n "__fish_seen_subcommand_from gitlab; and not __fish_seen_subcommand_from anno-mrs checkout-mrs create-mr restack-mr retarget-mr sync"          -x -a checkout-mrs                                         -d 'Check out the head branch of the given merge requests (specified by number), also traverse chain of merge requests upwards, adding branches one by one to git-machete and check them out locally'
+complete -c git-machete -n "__fish_seen_subcommand_from gitlab; and not __fish_seen_subcommand_from anno-mrs checkout-mrs create-mr restack-mr retarget-mr sync"          -f -a create-mr                                            -d 'Create a MR for the current branch, using the upstream (parent) branch as the MR source branch'
+complete -c git-machete -n "__fish_seen_subcommand_from gitlab; and not __fish_seen_subcommand_from anno-mrs checkout-mrs create-mr restack-mr retarget-mr sync"          -f -a restack-mr                                           -d '(Force-)pushes and retargets the MR, without adding code owners as reviewers in the process'
+complete -c git-machete -n "__fish_seen_subcommand_from gitlab; and not __fish_seen_subcommand_from anno-mrs checkout-mrs create-mr restack-mr retarget-mr sync"          -f -a retarget-mr                                          -d 'Sets the base of MR for the current branch to upstream (parent) branch, as seen by git machete (see git machete show up)'
+complete -c git-machete -n "__fish_seen_subcommand_from gitlab; and __fish_seen_subcommand_from anno-mrs;     and not __fish_seen_subcommand_from --with-urls"            -f -l with-urls                                            -d 'Include MR URLs in the annotations'
+complete -c git-machete -n "__fish_seen_subcommand_from gitlab; and __fish_seen_subcommand_from checkout-mrs; and not __fish_seen_subcommand_from --all"                  -f -l all                                                  -d 'Checkout all open MRs'
+complete -c git-machete -n "__fish_seen_subcommand_from gitlab; and __fish_seen_subcommand_from checkout-mrs; and not __fish_seen_subcommand_from --by"                   -x -l by                                                   -d "Checkout someone's open MRs"
+complete -c git-machete -n "__fish_seen_subcommand_from gitlab; and __fish_seen_subcommand_from checkout-mrs; and not __fish_seen_subcommand_from --mine"                 -x -l mine                                                 -d 'Checkout open MRs for the current user associated with the GitLab token'
+complete -c git-machete -n "__fish_seen_subcommand_from gitlab; and __fish_seen_subcommand_from create-mr;    and not __fish_seen_subcommand_from --draft"                -f -l draft                                                -d 'Create the new MR as a draft'
+complete -c git-machete -n "__fish_seen_subcommand_from gitlab; and __fish_seen_subcommand_from create-mr;    and not __fish_seen_subcommand_from --title"                -x -l title                                                -d 'Set the title for new MR explicitly'
+complete -c git-machete -n "__fish_seen_subcommand_from gitlab; and __fish_seen_subcommand_from create-mr;    and not __fish_seen_subcommand_from --yes"                  -f -l yes                                                  -d 'Do not ask for confirmation whether to push the branch'
+complete -c git-machete -n "__fish_seen_subcommand_from gitlab; and __fish_seen_subcommand_from retarget-mr;  and not __fish_seen_subcommand_from --branch"               -x -l branch -s b       -a '(__machete_managed_branches)'  -d 'Specify the branch for which the associated MR source branch will be set to its upstream (parent) branch'
+complete -c git-machete -n "__fish_seen_subcommand_from gitlab; and __fish_seen_subcommand_from retarget-mr;  and not __fish_seen_subcommand_from --ignore-if-missing"    -f -l ignore-if-missing                                    -d 'Ignore errors and quietly terminate execution if there is no MR opened for current (or specified) branch'
 
 # git machete go
 complete -c git-machete -n "not __fish_seen_subcommand_from $__machete_commands"                                                                   -f -a go    -d 'Check out the branch relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument'

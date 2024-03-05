@@ -95,19 +95,19 @@ Run [`graphics/setup-sandbox`](graphics/setup-sandbox) script to set up a test r
 
 Deprecated commands are excluded.
 
-| Property                                                          | Commands                                                                                                                   |
-|-------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
-| can accept interactive input on stdin                             | `add`, `advance`, `delete-unmanaged`, `discover`,`github`<sup>[1]</sup>, `go`, `traverse`, `update`                        |
-| can display status (and run `machete-status-branch` hook)         | `discover`, `github`<sup>[1]</sup>, `status`, `traverse`                                                                   |
-| can modify the .git/machete file                                  | `add`, `advance`, `anno`, `discover`, `edit`, `github`, `slide-out`, `traverse`                                            |
-| can modify the git repository (excluding .git/machete)            | `add`, `advance`, `delete-unmanaged`, `github`<sup>[1]</sup>, `go`, `reapply`, `slide-out`, `squash`, `traverse`, `update` |
-| can run merge                                                     | `advance`<sup>[2]</sup>, `slide-out`, `traverse`, `update`                                                                 |
-| can run rebase (and run `machete-pre-rebase` hook)                | `reapply`<sup>[3]</sup>, `slide-out`, `traverse`, `update`                                                                 |
-| can slide out a branch (and run `machete-post-slide-out` hook)    | `advance`, `slide-out`, `traverse`                                                                                         |
-| expects no ongoing rebase/merge/cherry-pick/revert/am             | `advance`, `go`, `reapply`, `slide-out`, `squash`, `traverse`, `update`                                                    |
-| has stable output format across minor versions (plumbing command) | `file`, `fork-point`<sup>[4]</sup>, `is-managed`, `list`, `show`, `version`                                                |
+| Property                                                          | Commands                                                                                                                                           |
+|-------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
+| can accept interactive input on stdin                             | `add`, `advance`, `delete-unmanaged`, `discover`, `github`<sup>[1]</sup>, `gitlab`<sup>[1]</sup>, `go`, `traverse`, `update`                       |
+| can display status (and run `machete-status-branch` hook)         | `discover`, `github`<sup>[1]</sup>, `gitlab`<sup>[1]</sup>, `status`, `traverse`                                                                   |
+| can modify the .git/machete file                                  | `add`, `advance`, `anno`, `discover`, `edit`, `github`, `gitlab`, `slide-out`, `traverse`                                                          |
+| can modify the git repository (excluding .git/machete)            | `add`, `advance`, `delete-unmanaged`, `github`<sup>[1]</sup>, `gitlab`<sup>[1]</sup>, `go`, `reapply`, `slide-out`, `squash`, `traverse`, `update` |
+| can run merge                                                     | `advance`<sup>[2]</sup>, `slide-out`, `traverse`, `update`                                                                                         |
+| can run rebase (and run `machete-pre-rebase` hook)                | `reapply`<sup>[3]</sup>, `slide-out`, `traverse`, `update`                                                                                         |
+| can slide out a branch (and run `machete-post-slide-out` hook)    | `advance`, `slide-out`, `traverse`                                                                                                                 |
+| expects no ongoing rebase/merge/cherry-pick/revert/am             | `advance`, `go`, `reapply`, `slide-out`, `squash`, `traverse`, `update`                                                                            |
+| has stable output format across minor versions (plumbing command) | `file`, `fork-point`<sup>[4]</sup>, `is-managed`, `list`, `show`, `version`                                                                        |
 
-[1]: `github` can only display status, accept interactive mode or modify git repository when `create-pr` or `checkout-prs` subcommand is passed.
+[1]: `github`/`gitlab` can only display status, accept interactive mode or modify git repository when `create-{pr,mr}`, `checkout-{pr,mr}s` or `restack-{pr,mr}` subcommand is executed.
 
 [2]: `advance` can only run fast-forward merge (`git merge --ff-only`).
 

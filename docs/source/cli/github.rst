@@ -12,7 +12,30 @@ where ``<subcommand>`` is one of: ``anno-prs``, ``checkout-prs``, ``create-pr``,
 
 Creates, checks out and manages GitHub PRs while keeping them reflected in branch layout file.
 
-.. include:: github_api_access.rst
+.. note::
+
+    To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR,
+    even in case of public repositories), a GitHub API token with ``repo`` scope is required, see https://github.com/settings/tokens.
+    This will be resolved from the first of:
+
+    #. ``GITHUB_TOKEN`` env var,
+    #. content of the ``.github-token`` file in the home directory (``~``),
+    #. current auth token from the ``gh`` GitHub CLI,
+    #. current auth token from the ``hub`` GitHub CLI.
+
+    GitHub Enterprise domains are supported.
+
+    ``GITHUB_TOKEN`` is used indiscriminately for any domain, both github.com and Enterprise.
+
+    ``gh`` and ``hub`` have their own built-in support for Enterprise domains, which is honored by git-machete.
+
+    ``.github-token`` can have multiple per-domain entries in the format:
+
+    .. code-block::
+
+      ghp_mytoken_for_github_com
+      ghp_myothertoken_for_git_example_org git.example.org
+      ghp_yetanothertoken_for_git_example_com git.example.com
 
 .. note::
   See **Git config keys** below in case the target repository cannot be detected automatically (for example, in case of GitHub Enterprise).
@@ -24,7 +47,7 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
     Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
     Equivalent to ``git machete anno --sync-github-prs``.
 
-    When the current user is NOT the owner of the PR associated with that branch, adds ``rebase=no push=no`` branch qualifiers used by ``git machete traverse``,
+    When the current user is NOT the author of the PR associated with that branch, adds ``rebase=no push=no`` branch qualifiers used by ``git machete traverse``,
     so that you don't rebase or push someone else's PR by accident (see help for :ref:`traverse`).
 
     **Options:**
@@ -38,7 +61,7 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
     Once the specified pull requests are checked out locally, annotate local branches with corresponding pull request numbers.
     If only one PR has been checked out, then switch the local repository's HEAD to its head branch.
 
-    When the current user is NOT the owner of the PR associated with that branch, adds ``rebase=no push=no`` branch qualifiers used by ``git machete traverse``,
+    When the current user is NOT the author of the PR associated with that branch, adds ``rebase=no push=no`` branch qualifiers used by ``git machete traverse``,
     so that you don't rebase or push someone else's PR by accident (see help for :ref:`traverse`).
 
     **Options:**
@@ -77,10 +100,11 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 
 ``restack-pr``:
     Perform the following sequence of actions:
-    1. If the PR for the current branch is ready for review, it gets converted to a draft.
-    2. The branch is (force-)pushed into remote.
-    3. The PR is retargeted to its upstream (parent) branch, as in ``retarget-pr``.
-    4. If the PR has been converted to draft in step 1, it's reverted to ready for review state.
+
+    #. If the PR for the current branch is ready for review, it gets converted to a draft.
+    #. The branch is (force-)pushed into remote.
+    #. The PR is retargeted to its upstream (parent) branch, as in ``retarget-pr``.
+    #. If the PR has been converted to draft in step 1, it's reverted to ready for review state.
 
     The drafting/undrafting is useful in case the GitHub repository has set up `CODEOWNERS <https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners>`_.
     Draft PRs don't get code owners automatically added as reviewers.
@@ -104,22 +128,21 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 
     Synchronizes with the remote repository:
 
-      1. checks out open PRs for the current user associated with the GitHub token and also traverses the chain of pull requests upwards,
-         adding branches one by one to git-machete and checks them out locally as well,
-      2. deletes unmanaged branches,
-      3. deletes untracked managed branches that have no downstream branch.
+    #. checks out open PRs for the current user associated with the GitHub token and also traverses the chain of pull requests upwards,
+       adding branches one by one to git-machete and checks them out locally as well,
+    #. deletes unmanaged branches,
+    #. deletes untracked managed branches that have no downstream branch.
 
 **Git config keys:**
 
+``machete.github.{domain,remote,organization,repository}`` (all subcommands):
+  .. include:: git-config-keys/github_access.rst
+
 ``machete.github.annotateWithUrls`` (all subcommands):
-  .. include:: github_annotateWithUrls_config_key.rst
+  .. include:: git-config-keys/github_annotateWithUrls.rst
 
 ``machete.github.forceDescriptionFromCommitMessage`` (``create-pr`` only):
-  .. include:: github_forceDescriptionFromCommitMessage_config_key.rst
-
-``machete.github.{domain,remote,organization,repository}`` (all subcommands):
-  .. include:: github_access_config_keys.rst
-      :start-line: 2
+  .. include:: git-config-keys/github_forceDescriptionFromCommitMessage.rst
 
 **Environment variables (all subcommands):**
 

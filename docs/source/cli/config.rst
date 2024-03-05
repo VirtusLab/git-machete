@@ -8,15 +8,25 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 
 **Git config keys:**
 
+``machete.github.{domain,remote,organization,repository}``:
+  .. include:: git-config-keys/github_access.rst
+      :start-line: 3
+
 ``machete.github.annotateWithUrls``:
-  .. include:: github_annotateWithUrls_config_key.rst
+  .. include:: git-config-keys/github_annotateWithUrls.rst
 
 ``machete.github.forceDescriptionFromCommitMessage``:
-  .. include:: github_forceDescriptionFromCommitMessage_config_key.rst
+  .. include:: git-config-keys/github_forceDescriptionFromCommitMessage.rst
 
-``machete.github.{domain,remote,organization,repository}``:
-  .. include:: github_access_config_keys.rst
+``machete.gitlab.{domain,remote,namespace,project}``:
+  .. include:: git-config-keys/gitlab_access.rst
       :start-line: 3
+
+``machete.gitlab.annotateWithUrls``:
+  .. include:: git-config-keys/gitlab_annotateWithUrls.rst
+
+``machete.gitlab.forceDescriptionFromCommitMessage``:
+  .. include:: git-config-keys/gitlab_forceDescriptionFromCommitMessage.rst
 
 ``machete.overrideForkPoint.<branch>.to``:
     Executing ``git machete fork-point --override-to[-parent|-inferred|=<revision>] [<branch>]`` sets up a fork point override for ``<branch>``.
@@ -27,10 +37,10 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
     ``git machete fork-point`` with flags should be used instead.
 
 ``machete.status.extraSpaceBeforeBranchName``:
-    .. include:: status_extraSpaceBeforeBranchName_config_key.rst
+    .. include:: git-config-keys/status_extraSpaceBeforeBranchName.rst
 
 ``machete.traverse.push``:
-    .. include:: traverse_push_config_key.rst
+    .. include:: git-config-keys/traverse_push.rst
 
 ``machete.worktree.useTopLevelMacheteFile``:
     The default value of this key is ``true``, which means that the path to branch layout file will be ``.git/machete``

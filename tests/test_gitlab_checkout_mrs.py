@@ -4,37 +4,36 @@ from tempfile import mkdtemp
 from pytest_mock import MockerFixture
 
 from git_machete.code_hosting import OrganizationAndRepository
-from git_machete.github import GitHubClient
+from git_machete.gitlab import GitLabClient
 from tests.base_test import BaseTest, GitRepositorySandbox
 from tests.mockers import (assert_failure, assert_success, launch_command,
                            rewrite_branch_layout_file)
 from tests.mockers_code_hosting import mock_from_url
-from tests.mockers_github import (MockGitHubAPIState,
-                                  mock_github_token_for_domain_fake,
-                                  mock_github_token_for_domain_none,
-                                  mock_pr_json, mock_repositories,
-                                  mock_urlopen)
+from tests.mockers_gitlab import (MockGitLabAPIState,
+                                  mock_gitlab_token_for_domain_fake,
+                                  mock_gitlab_token_for_domain_none,
+                                  mock_mr_json, mock_projects, mock_urlopen)
 
 
-class TestGitHubCheckoutPRs(BaseTest):
+class TestGitLabCheckoutMRs(BaseTest):
     @staticmethod
-    def github_api_state_for_test_checkout_prs() -> MockGitHubAPIState:
-        return MockGitHubAPIState(
-            mock_pr_json(head='chore/redundant_checks', base='restrict_access', number=18),
-            mock_pr_json(head='restrict_access', base='allow-ownership-link', number=17),
-            mock_pr_json(head='allow-ownership-link', base='bugfix/feature', number=12),
-            mock_pr_json(head='bugfix/feature', base='enhance/feature', number=6),
-            mock_pr_json(head='enhance/add_user', base='develop', number=19),
-            mock_pr_json(head='testing/add_user', base='bugfix/add_user', number=22),
-            mock_pr_json(head='chore/comments', base='testing/add_user', number=24),
-            mock_pr_json(head='ignore-trailing', base='hotfix/add-trigger', number=3),
-            mock_pr_json(head='bugfix/remove-n-option', base='develop', number=5, state='closed', repo_id=2)
+    def gitlab_api_state_for_test_checkout_mrs() -> MockGitLabAPIState:
+        return MockGitLabAPIState(
+            mock_mr_json(head='chore/redundant_checks', base='restrict_access', number=18),
+            mock_mr_json(head='restrict_access', base='allow-ownership-link', number=17),
+            mock_mr_json(head='allow-ownership-link', base='bugfix/feature', number=12),
+            mock_mr_json(head='bugfix/feature', base='enhance/feature', number=6),
+            mock_mr_json(head='enhance/add_user', base='develop', number=19),
+            mock_mr_json(head='testing/add_user', base='bugfix/add_user', number=22),
+            mock_mr_json(head='chore/comments', base='testing/add_user', number=24),
+            mock_mr_json(head='ignore-trailing', base='hotfix/add-trigger', number=3),
+            mock_mr_json(head='bugfix/remove-n-option', base='develop', number=5, state='closed', repo_id=2)
         )
 
-    def test_github_checkout_prs(self, mocker: MockerFixture) -> None:
+    def test_gitlab_checkout_mrs(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_checkout_prs()))
+        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.gitlab_api_state_for_test_checkout_mrs()))
 
         (
             self.repo_sandbox.new_branch("root")
@@ -106,7 +105,7 @@ class TestGitHubCheckoutPRs(BaseTest):
         rewrite_branch_layout_file(body)
 
         # not broken chain of pull requests (root found in dependency tree)
-        launch_command('github', 'checkout-prs', '18')
+        launch_command('gitlab', 'checkout-mrs', '18')
         assert_success(
             ["status"],
             """
@@ -114,7 +113,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-hotfix/add-trigger
               |
-              o-ignore-trailing  PR #3 (some_other_user) rebase=no push=no
+              o-ignore-trailing  MR !3 (some_other_user) rebase=no push=no
                 |
                 o-chore/fields
 
@@ -122,17 +121,17 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-enhance/feature
               |
-              o-bugfix/feature  PR #6 (some_other_user) rebase=no push=no
+              o-bugfix/feature  MR !6 (some_other_user) rebase=no push=no
                 |
-                o-allow-ownership-link  PR #12 (some_other_user) rebase=no push=no
+                o-allow-ownership-link  MR !12 (some_other_user) rebase=no push=no
                   |
-                  o-restrict_access  PR #17 (some_other_user) rebase=no push=no
+                  o-restrict_access  MR !17 (some_other_user) rebase=no push=no
                     |
-                    o-chore/redundant_checks *  PR #18 (some_other_user) rebase=no push=no
+                    o-chore/redundant_checks *  MR !18 (some_other_user) rebase=no push=no
             """
         )
         # broken chain of pull requests (add new root)
-        launch_command('github', 'checkout-prs', '24')
+        launch_command('gitlab', 'checkout-mrs', '24')
         assert_success(
             ["status"],
             """
@@ -140,7 +139,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-hotfix/add-trigger
               |
-              o-ignore-trailing  PR #3 (some_other_user) rebase=no push=no
+              o-ignore-trailing  MR !3 (some_other_user) rebase=no push=no
                 |
                 o-chore/fields
 
@@ -148,24 +147,24 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-enhance/feature
               |
-              o-bugfix/feature  PR #6 (some_other_user) rebase=no push=no
+              o-bugfix/feature  MR !6 (some_other_user) rebase=no push=no
                 |
-                o-allow-ownership-link  PR #12 (some_other_user) rebase=no push=no
+                o-allow-ownership-link  MR !12 (some_other_user) rebase=no push=no
                   |
-                  o-restrict_access  PR #17 (some_other_user) rebase=no push=no
+                  o-restrict_access  MR !17 (some_other_user) rebase=no push=no
                     |
-                    o-chore/redundant_checks  PR #18 (some_other_user) rebase=no push=no
+                    o-chore/redundant_checks  MR !18 (some_other_user) rebase=no push=no
 
             bugfix/add_user
             |
-            o-testing/add_user  PR #22 (some_other_user) rebase=no push=no
+            o-testing/add_user  MR !22 (some_other_user) rebase=no push=no
               |
-              o-chore/comments *  PR #24 (some_other_user) rebase=no push=no
+              o-chore/comments *  MR !24 (some_other_user) rebase=no push=no
             """
         )
 
         # broken chain of pull requests (branches already added)
-        launch_command('github', 'checkout-prs', '24')
+        launch_command('gitlab', 'checkout-mrs', '24')
         assert_success(
             ["status"],
             """
@@ -173,7 +172,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-hotfix/add-trigger
               |
-              o-ignore-trailing  PR #3 (some_other_user) rebase=no push=no
+              o-ignore-trailing  MR !3 (some_other_user) rebase=no push=no
                 |
                 o-chore/fields
 
@@ -181,24 +180,24 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-enhance/feature
               |
-              o-bugfix/feature  PR #6 (some_other_user) rebase=no push=no
+              o-bugfix/feature  MR !6 (some_other_user) rebase=no push=no
                 |
-                o-allow-ownership-link  PR #12 (some_other_user) rebase=no push=no
+                o-allow-ownership-link  MR !12 (some_other_user) rebase=no push=no
                   |
-                  o-restrict_access  PR #17 (some_other_user) rebase=no push=no
+                  o-restrict_access  MR !17 (some_other_user) rebase=no push=no
                     |
-                    o-chore/redundant_checks  PR #18 (some_other_user) rebase=no push=no
+                    o-chore/redundant_checks  MR !18 (some_other_user) rebase=no push=no
 
             bugfix/add_user
             |
-            o-testing/add_user  PR #22 (some_other_user) rebase=no push=no
+            o-testing/add_user  MR !22 (some_other_user) rebase=no push=no
               |
-              o-chore/comments *  PR #24 (some_other_user) rebase=no push=no
+              o-chore/comments *  MR !24 (some_other_user) rebase=no push=no
             """
         )
 
-        # all PRs
-        launch_command('github', 'checkout-prs', '--all')
+        # all MRs
+        launch_command('gitlab', 'checkout-mrs', '--all')
         assert_success(
             ["status"],
             """
@@ -206,7 +205,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-hotfix/add-trigger
               |
-              o-ignore-trailing  PR #3 (some_other_user) rebase=no push=no
+              o-ignore-trailing  MR !3 (some_other_user) rebase=no push=no
                 |
                 o-chore/fields
 
@@ -214,39 +213,39 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-enhance/feature
             | |
-            | o-bugfix/feature  PR #6 (some_other_user) rebase=no push=no
+            | o-bugfix/feature  MR !6 (some_other_user) rebase=no push=no
             |   |
-            |   o-allow-ownership-link  PR #12 (some_other_user) rebase=no push=no
+            |   o-allow-ownership-link  MR !12 (some_other_user) rebase=no push=no
             |     |
-            |     o-restrict_access  PR #17 (some_other_user) rebase=no push=no
+            |     o-restrict_access  MR !17 (some_other_user) rebase=no push=no
             |       |
-            |       o-chore/redundant_checks  PR #18 (some_other_user) rebase=no push=no
+            |       o-chore/redundant_checks  MR !18 (some_other_user) rebase=no push=no
             |
-            o-enhance/add_user  PR #19 (some_other_user) rebase=no push=no
+            o-enhance/add_user  MR !19 (some_other_user) rebase=no push=no
 
             bugfix/add_user
             |
-            o-testing/add_user  PR #22 (some_other_user) rebase=no push=no
+            o-testing/add_user  MR !22 (some_other_user) rebase=no push=no
               |
-              o-chore/comments *  PR #24 (some_other_user) rebase=no push=no
+              o-chore/comments *  MR !24 (some_other_user) rebase=no push=no
             """
         )
 
-        # check against wrong PR number
+        # check against wrong MR number
         org_repo = OrganizationAndRepository.from_url(
-            domain=GitHubClient.DEFAULT_GITHUB_DOMAIN,
+            domain=GitLabClient.DEFAULT_GITLAB_DOMAIN,
             url=self.repo_sandbox.remote_path)
 
         assert org_repo is not None
-        expected_error_message = f"PR #100 is not found in repository {org_repo.organization}/{org_repo.repository}"
-        assert_failure(['github', 'checkout-prs', '100'], expected_error_message)
+        expected_error_message = f"MR !100 is not found in project {org_repo.organization}/{org_repo.repository}"
+        assert_failure(['gitlab', 'checkout-mrs', '100'], expected_error_message)
 
-        assert_failure(['github', 'checkout-prs', '19', '100'], expected_error_message)
+        assert_failure(['gitlab', 'checkout-mrs', '19', '100'], expected_error_message)
 
-        expected_msg = "Checking for open GitHub PRs... OK\n"
-        assert_success(['github', 'checkout-prs', '--by', 'some_other_user'], expected_msg)
+        expected_msg = "Checking for open GitLab MRs... OK\n"
+        assert_success(['gitlab', 'checkout-mrs', '--by', 'some_other_user'], expected_msg)
 
-        # Check against closed pull request with head branch deleted from remote
+        # Check against closed pull request with source branch deleted from remote
         other_local_path = mkdtemp()
         self.repo_sandbox.new_repo(GitRepositorySandbox.second_remote_path, bare=True)
         (
@@ -258,11 +257,11 @@ class TestGitHubCheckoutPRs(BaseTest):
             .push()
         )
 
-        expected_error_message = "Could not check out PR #5 because branch bugfix/remove-n-option " \
+        expected_error_message = "Could not check out MR !5 because branch bugfix/remove-n-option " \
                                  "is already deleted from tester."
-        assert_failure(['github', 'checkout-prs', '5'], expected_error_message)
+        assert_failure(['gitlab', 'checkout-mrs', '5'], expected_error_message)
 
-        # Check against PR coming from fork
+        # Check against MR coming from fork
         (
             self.repo_sandbox
             .new_branch('bugfix/remove-n-option')
@@ -271,27 +270,27 @@ class TestGitHubCheckoutPRs(BaseTest):
             .chdir(self.repo_sandbox.local_path)
         )
 
-        expected_msg = ("Checking for open GitHub PRs... OK\n"
-                        "Warn: PR #5 is already closed.\n"
-                        "PR #5 checked out at local branch bugfix/remove-n-option\n")
-        assert_success(['github', 'checkout-prs', '5'], expected_msg)
+        expected_msg = ("Checking for open GitLab MRs... OK\n"
+                        "Warn: MR !5 is already closed.\n"
+                        "MR !5 checked out at local branch bugfix/remove-n-option\n")
+        assert_success(['gitlab', 'checkout-mrs', '5'], expected_msg)
 
-        # Check against multiple PRs
-        expected_msg = 'Checking for open GitHub PRs... OK\n'
-        assert_success(['github', 'checkout-prs', '3', '12'], expected_msg)
+        # Check against multiple MRs
+        expected_msg = 'Checking for open GitLab MRs... OK\n'
+        assert_success(['gitlab', 'checkout-mrs', '3', '12'], expected_msg)
 
     @staticmethod
-    def github_api_state_for_test_github_checkout_prs_fresh_repo() -> MockGitHubAPIState:
-        return MockGitHubAPIState(
-            mock_pr_json(head='comments/add_docstrings', base='improve/refactor', number=2),
-            mock_pr_json(head='restrict_access', base='allow-ownership-link', number=17),
-            mock_pr_json(head='improve/refactor', base='chore/sync_to_docs', number=1),
-            mock_pr_json(head='sphinx_export', base='comments/add_docstrings', number=23, state='closed', repo_id=2)
+    def gitlab_api_state_for_test_gitlab_checkout_mrs_fresh_repo() -> MockGitLabAPIState:
+        return MockGitLabAPIState(
+            mock_mr_json(head='comments/add_docstrings', base='improve/refactor', number=2),
+            mock_mr_json(head='restrict_access', base='allow-ownership-link', number=17),
+            mock_mr_json(head='improve/refactor', base='chore/sync_to_docs', number=1),
+            mock_mr_json(head='sphinx_export', base='comments/add_docstrings', number=23, state='closed', repo_id=2)
         )
 
-    def test_github_checkout_prs_freshly_cloned(self, mocker: MockerFixture) -> None:
+    def test_gitlab_checkout_mrs_freshly_cloned(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_github_checkout_prs_fresh_repo()))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.gitlab_api_state_for_test_gitlab_checkout_mrs_fresh_repo()))
 
         (
             self.repo_sandbox.new_branch("root")
@@ -339,11 +338,11 @@ class TestGitHubCheckoutPRs(BaseTest):
         )
         os.chdir(self.repo_sandbox.local_path)
         rewrite_branch_layout_file("master")
-        expected_msg = ("Checking for open GitHub PRs... OK\n"
-                        "PR #1 checked out at local branch improve/refactor\n"
-                        "PR #2 checked out at local branch comments/add_docstrings\n")
+        expected_msg = ("Checking for open GitLab MRs... OK\n"
+                        "MR !1 checked out at local branch improve/refactor\n"
+                        "MR !2 checked out at local branch comments/add_docstrings\n")
         assert_success(
-            ['github', 'checkout-prs', '2'],
+            ['gitlab', 'checkout-mrs', '2'],
             expected_msg
         )
 
@@ -354,20 +353,20 @@ class TestGitHubCheckoutPRs(BaseTest):
 
             chore/sync_to_docs
             |
-            o-improve/refactor  PR #1 (some_other_user) rebase=no push=no
+            o-improve/refactor  MR !1 (some_other_user) rebase=no push=no
               |
-              o-comments/add_docstrings *  PR #2 (some_other_user) rebase=no push=no
+              o-comments/add_docstrings *  MR !2 (some_other_user) rebase=no push=no
             """
         )
 
         # Check against closed pull request
         self.repo_sandbox.delete_branch('sphinx_export')
-        expected_msg = ("Checking for open GitHub PRs... OK\n"
-                        "Warn: PR #23 is already closed.\n"
-                        "PR #23 checked out at local branch sphinx_export\n")
+        expected_msg = ("Checking for open GitLab MRs... OK\n"
+                        "Warn: MR !23 is already closed.\n"
+                        "MR !23 checked out at local branch sphinx_export\n")
 
         assert_success(
-            ['github', 'checkout-prs', '23'],
+            ['gitlab', 'checkout-mrs', '23'],
             expected_msg
         )
         assert_success(
@@ -377,25 +376,25 @@ class TestGitHubCheckoutPRs(BaseTest):
 
             chore/sync_to_docs
             |
-            o-improve/refactor  PR #1 (some_other_user) rebase=no push=no
+            o-improve/refactor  MR !1 (some_other_user) rebase=no push=no
               |
-              o-comments/add_docstrings  PR #2 (some_other_user) rebase=no push=no
+              o-comments/add_docstrings  MR !2 (some_other_user) rebase=no push=no
                 |
                 o-sphinx_export *
             """
         )
 
     @staticmethod
-    def github_api_state_for_test_github_checkout_prs_from_fork_with_deleted_repo() -> MockGitHubAPIState:
-        return MockGitHubAPIState(
-            mock_pr_json(head='feature/allow_checkout', base='develop', number=2, repo_id=0, state='closed'),
-            mock_pr_json(head='bugfix/allow_checkout', base='develop', number=3)
+    def gitlab_api_state_for_test_gitlab_checkout_mrs_from_fork_with_deleted_repo() -> MockGitLabAPIState:
+        return MockGitLabAPIState(
+            mock_mr_json(head='feature/allow_checkout', base='develop', number=2, repo_id=0, state='closed'),
+            mock_mr_json(head='bugfix/allow_checkout', base='develop', number=3)
         )
 
-    def test_github_checkout_prs_from_fork_with_deleted_repo(self, mocker: MockerFixture) -> None:
+    def test_gitlab_checkout_mrs_from_fork_with_deleted_repo(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen',
-                          mock_urlopen(self.github_api_state_for_test_github_checkout_prs_from_fork_with_deleted_repo()))
+                          mock_urlopen(self.gitlab_api_state_for_test_gitlab_checkout_mrs_from_fork_with_deleted_repo()))
 
         (
             self.repo_sandbox.new_branch("root")
@@ -408,7 +407,7 @@ class TestGitHubCheckoutPRs(BaseTest):
 
         self.repo_sandbox \
             .chdir(self.repo_sandbox.remote_path)\
-            .execute("git branch pull/2/head develop")\
+            .execute("git branch merge-requests/2/head develop")\
             .chdir(self.repo_sandbox.local_path)
 
         body: str = \
@@ -417,39 +416,39 @@ class TestGitHubCheckoutPRs(BaseTest):
             develop
             """
         rewrite_branch_layout_file(body)
-        expected_msg = ("Checking for open GitHub PRs... OK\n"
-                        "Warn: PR #2 comes from fork and its repository is already deleted. "
+        expected_msg = ("Checking for open GitLab MRs... OK\n"
+                        "Warn: MR !2 comes from fork and its project is already deleted. "
                         "No remote tracking data will be set up for feature/allow_checkout branch.\n"
-                        "Warn: PR #2 is already closed.\n"
-                        "PR #2 checked out at local branch feature/allow_checkout\n")
+                        "Warn: MR !2 is already closed.\n"
+                        "MR !2 checked out at local branch feature/allow_checkout\n")
         assert_success(
-            ['github', 'checkout-prs', '2'],
+            ['gitlab', 'checkout-mrs', '2'],
             expected_msg
         )
 
         assert 'feature/allow_checkout' == launch_command("show", "current").strip(), \
-            ("Verify that 'git machete github checkout-prs' performs 'git checkout' to "
-             "the head branch of given pull request.")
+            ("Verify that 'git machete gitlab checkout-mrs' performs 'git checkout' to "
+             "the source branch of given merge request.")
 
     @staticmethod
-    def github_api_state_for_test_github_checkout_prs_of_current_user_and_other_users() -> MockGitHubAPIState:
-        return MockGitHubAPIState(
-            mock_pr_json(head='chore/redundant_checks', base='restrict_access', number=18),
-            mock_pr_json(head='restrict_access', base='allow-ownership-link', number=17, user='github_user'),
-            mock_pr_json(head='allow-ownership-link', base='bugfix/feature', number=12),
-            mock_pr_json(head='bugfix/feature', base='enhance/feature', number=6, user='github_user'),
-            mock_pr_json(head='enhance/add_user', base='develop', number=19),
-            mock_pr_json(head='testing/add_user', base='bugfix/add_user', number=22, user='github_user'),
-            mock_pr_json(head='chore/comments', base='testing/add_user', number=24),
-            mock_pr_json(head='ignore-trailing', base='hotfix/add-trigger', number=3, user='github_user'),
-            mock_pr_json(head='bugfix/remove-n-option', base='develop', number=5, state='closed', repo_id=2)
+    def gitlab_api_state_for_test_gitlab_checkout_mrs_of_current_user_and_other_users() -> MockGitLabAPIState:
+        return MockGitLabAPIState(
+            mock_mr_json(head='chore/redundant_checks', base='restrict_access', number=18),
+            mock_mr_json(head='restrict_access', base='allow-ownership-link', number=17, user='gitlab_user'),
+            mock_mr_json(head='allow-ownership-link', base='bugfix/feature', number=12),
+            mock_mr_json(head='bugfix/feature', base='enhance/feature', number=6, user='gitlab_user'),
+            mock_mr_json(head='enhance/add_user', base='develop', number=19),
+            mock_mr_json(head='testing/add_user', base='bugfix/add_user', number=22, user='gitlab_user'),
+            mock_mr_json(head='chore/comments', base='testing/add_user', number=24),
+            mock_mr_json(head='ignore-trailing', base='hotfix/add-trigger', number=3, user='gitlab_user'),
+            mock_mr_json(head='bugfix/remove-n-option', base='develop', number=5, state='closed', repo_id=2)
         )
 
-    def test_github_checkout_prs_of_current_user_and_other_users(self, mocker: MockerFixture) -> None:
+    def test_gitlab_checkout_mrs_of_current_user_and_other_users(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
+        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
         self.patch_symbol(mocker, 'urllib.request.urlopen',
-                          mock_urlopen(self.github_api_state_for_test_github_checkout_prs_of_current_user_and_other_users()))
+                          mock_urlopen(self.gitlab_api_state_for_test_gitlab_checkout_mrs_of_current_user_and_other_users()))
 
         (
             self.repo_sandbox.new_branch("root")
@@ -523,9 +522,9 @@ class TestGitHubCheckoutPRs(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        # test that `checkout-prs` add `rebase=no push=no` qualifiers to branches associated with the PRs whose owner
+        # test that `checkout-mrs` add `rebase=no push=no` qualifiers to branches associated with the MRs whose owner
         # is different than the current user
-        launch_command('github', 'checkout-prs', '--all')
+        launch_command('gitlab', 'checkout-mrs', '--all')
         assert_success(
             ["status"],
             """
@@ -533,7 +532,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-hotfix/add-trigger
               |
-              o-ignore-trailing  PR #3
+              o-ignore-trailing  MR !3
                 |
                 o-chore/fields
 
@@ -541,27 +540,27 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-enhance/feature
             | |
-            | o-bugfix/feature  PR #6
+            | o-bugfix/feature  MR !6
             |   |
-            |   o-allow-ownership-link  PR #12 (some_other_user) rebase=no push=no
+            |   o-allow-ownership-link  MR !12 (some_other_user) rebase=no push=no
             |     |
-            |     o-restrict_access  PR #17
+            |     o-restrict_access  MR !17
             |       |
-            |       o-chore/redundant_checks  PR #18 (some_other_user) rebase=no push=no
+            |       o-chore/redundant_checks  MR !18 (some_other_user) rebase=no push=no
             |
-            o-enhance/add_user  PR #19 (some_other_user) rebase=no push=no
+            o-enhance/add_user  MR !19 (some_other_user) rebase=no push=no
 
             bugfix/add_user
             |
-            o-testing/add_user  PR #22
+            o-testing/add_user  MR !22
               |
-              o-chore/comments  PR #24 (some_other_user) rebase=no push=no
+              o-chore/comments  MR !24 (some_other_user) rebase=no push=no
             """
         )
 
-        # test that `checkout-prs` doesn't overwrite annotation qualifiers but overwrites annotation text
+        # test that `checkout-mrs` doesn't overwrite annotation qualifiers but overwrites annotation text
         launch_command('anno', '-b=allow-ownership-link', 'branch_annotation rebase=no')
-        launch_command('github', 'checkout-prs', '--all')
+        launch_command('gitlab', 'checkout-mrs', '--all')
         assert_success(
             ["status"],
             """
@@ -569,7 +568,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-hotfix/add-trigger
               |
-              o-ignore-trailing  PR #3
+              o-ignore-trailing  MR !3
                 |
                 o-chore/fields
 
@@ -577,77 +576,76 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-enhance/feature
             | |
-            | o-bugfix/feature  PR #6
+            | o-bugfix/feature  MR !6
             |   |
-            |   o-allow-ownership-link  PR #12 (some_other_user) rebase=no
+            |   o-allow-ownership-link  MR !12 (some_other_user) rebase=no
             |     |
-            |     o-restrict_access  PR #17
+            |     o-restrict_access  MR !17
             |       |
-            |       o-chore/redundant_checks  PR #18 (some_other_user) rebase=no push=no
+            |       o-chore/redundant_checks  MR !18 (some_other_user) rebase=no push=no
             |
-            o-enhance/add_user  PR #19 (some_other_user) rebase=no push=no
+            o-enhance/add_user  MR !19 (some_other_user) rebase=no push=no
 
             bugfix/add_user
             |
-            o-testing/add_user  PR #22
+            o-testing/add_user  MR !22
               |
-              o-chore/comments  PR #24 (some_other_user) rebase=no push=no
+              o-chore/comments  MR !24 (some_other_user) rebase=no push=no
             """
         )
 
-    def test_github_checkout_prs_misc_failures_and_warns(self, mocker: MockerFixture) -> None:
+    def test_gitlab_checkout_mrs_misc_failures_and_warns(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState()))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState()))
 
-        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
+        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
         assert_success(
-            ["github", "checkout-prs", "--all"],
+            ["gitlab", "checkout-mrs", "--all"],
             """
-            Checking for open GitHub PRs... OK
-            Warn: Currently there are no pull requests opened in repository example-org/example-repo
+            Checking for open GitLab MRs... OK
+            Warn: Currently there are no merge requests opened in project example-org/example-repo
             """
         )
 
         assert_success(
-            ["github", "checkout-prs", "--by=github_user"],
+            ["gitlab", "checkout-mrs", "--by=gitlab_user"],
             """
-            Checking for open GitHub PRs... OK
-            Warn: User github_user has no open pull request in repository example-org/example-repo
+            Checking for open GitLab MRs... OK
+            Warn: User gitlab_user has no open merge request in project example-org/example-repo
             """
         )
 
         assert_failure(
-            ["github", "checkout-prs", "--mine"],
+            ["gitlab", "checkout-mrs", "--mine"],
             """
-            Could not determine current user name, please check that the GitHub API token provided by one of the:
-            \t1. GITHUB_TOKEN environment variable
-            \t2. Content of the ~/.github-token file
-            \t3. Current auth token from the gh GitHub CLI
-            \t4. Current auth token from the hub GitHub CLI
+            Could not determine current user name, please check that the GitLab API token provided by one of the:
+            \t1. GITLAB_TOKEN environment variable
+            \t2. Content of the ~/.gitlab-token file
+            \t3. Current auth token from the glab GitLab CLI
             is valid."""
         )
 
-        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
+        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
         assert_success(
-            ["github", "checkout-prs", "--mine"],
+            ["gitlab", "checkout-mrs", "--mine"],
             """
-            Checking for open GitHub PRs... OK
-            Warn: Current user github_user has no open pull request in repository example-org/example-repo
+            Checking for open GitLab MRs... OK
+            Warn: Current user gitlab_user has no open merge request in project example-org/example-repo
             """
         )
 
     @staticmethod
-    def github_api_state_with_pr_cycle() -> MockGitHubAPIState:
-        return MockGitHubAPIState(
-            mock_pr_json(head='bugfix/feature', base='chore/redundant_checks', number=6),
-            mock_pr_json(head='chore/redundant_checks', base='restrict_access', number=18),
-            mock_pr_json(head='restrict_access', base='allow-ownership-link', number=17),
-            mock_pr_json(head='allow-ownership-link', base='chore/redundant_checks', number=12)
+    def gitlab_api_state_with_mr_cycle() -> MockGitLabAPIState:
+        return MockGitLabAPIState(
+            mock_mr_json(head='bugfix/feature', base='chore/redundant_checks', number=6),
+            mock_mr_json(head='chore/redundant_checks', base='restrict_access', number=18),
+            mock_mr_json(head='restrict_access', base='allow-ownership-link', number=17),
+            mock_mr_json(head='allow-ownership-link', base='chore/redundant_checks', number=12)
         )
 
-    def test_github_checkout_prs_forming_a_cycle(self, mocker: MockerFixture) -> None:
+    def test_gitlab_checkout_mrs_forming_a_cycle(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_with_pr_cycle()))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.gitlab_api_state_with_mr_cycle()))
 
         (
             self.repo_sandbox
@@ -666,45 +664,45 @@ class TestGitHubCheckoutPRs(BaseTest):
         )
 
         assert_failure(
-            ['github', 'checkout-prs', '--all'],
-            'There is a cycle between GitHub PRs: '
+            ['gitlab', 'checkout-mrs', '--all'],
+            'There is a cycle between GitLab MRs: '
             'bugfix/feature -> chore/redundant_checks -> restrict_access -> allow-ownership-link -> chore/redundant_checks'
         )
 
     @staticmethod
-    def github_api_state_for_test_github_checkout_prs_single_pr() -> MockGitHubAPIState:
-        return MockGitHubAPIState(
-            mock_pr_json(head='develop', base='master', number=18)
+    def gitlab_api_state_for_test_gitlab_checkout_mrs_single_mr() -> MockGitLabAPIState:
+        return MockGitLabAPIState(
+            mock_mr_json(head='develop', base='master', number=18)
         )
 
-    def test_github_checkout_prs_remote_already_added(self, mocker: MockerFixture) -> None:
+    def test_gitlab_checkout_mrs_remote_already_added(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.git_operations.GitContext.fetch_remote', lambda _self, _remote: None)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(
-            self.github_api_state_for_test_github_checkout_prs_single_pr()))
+            self.gitlab_api_state_for_test_gitlab_checkout_mrs_single_mr()))
         (
             self.repo_sandbox
             .remove_remote("origin")
-            .add_remote("origin-1", mock_repositories()[1]['clone_url'])
+            .add_remote("origin-1", mock_projects()[1]['http_url_to_repo'])
         )
         assert_failure(
-            ["github", "checkout-prs", "--all"],
-            "Could not check out PR #18 because branch develop is already deleted from origin-1."
+            ["gitlab", "checkout-mrs", "--all"],
+            "Could not check out MR !18 because branch develop is already deleted from origin-1."
         )
 
         (
             self.repo_sandbox
             .remove_remote("origin-1")
-            .add_remote("tester", 'https://github.com/tester/lolxd.git')
+            .add_remote("tester", 'https://gitlab.com/tester/lolxd.git')
         )
         assert_failure(
-            ["github", "checkout-prs", "--all"],
-            "Could not check out PR #18 because branch develop is already deleted from tester."
+            ["gitlab", "checkout-mrs", "--all"],
+            "Could not check out MR !18 because branch develop is already deleted from tester/tester."
         )
 
-    def test_github_checkout_prs_org_and_repo_from_config(self, mocker: MockerFixture) -> None:
+    def test_gitlab_checkout_mrs_org_and_repo_from_config(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.git_operations.GitContext.fetch_remote', lambda _self, _remote: None)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(
-            self.github_api_state_for_test_github_checkout_prs_single_pr()))
+            self.gitlab_api_state_for_test_gitlab_checkout_mrs_single_mr()))
 
         (
             self.repo_sandbox
@@ -712,19 +710,19 @@ class TestGitHubCheckoutPRs(BaseTest):
             .new_branch("develop").commit().push()
         )
 
-        self.repo_sandbox.set_remote_url("origin", "https://github.com/example-org/example-repo.git")
-        self.repo_sandbox.set_git_config_key('machete.github.organization', "example-org")
-        self.repo_sandbox.set_git_config_key('machete.github.repository', "example-repo")
+        self.repo_sandbox.set_remote_url("origin", "https://gitlab.com/example-org/example-repo.git")
+        self.repo_sandbox.set_git_config_key('machete.gitlab.organization', "example-org")
+        self.repo_sandbox.set_git_config_key('machete.gitlab.repository', "example-repo")
         assert_success(
-            ['github', 'checkout-prs', '--all'],
-            'Checking for open GitHub PRs... OK\n'
-            'PR #18 checked out at local branch develop\n'
+            ['gitlab', 'checkout-mrs', '--all'],
+            'Checking for open GitLab MRs... OK\n'
+            'MR !18 checked out at local branch develop\n'
         )
 
-    def test_github_checkout_prs_remote_from_config(self, mocker: MockerFixture) -> None:
+    def test_gitlab_checkout_mrs_remote_from_config(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.git_operations.GitContext.fetch_remote', lambda _self, _remote: None)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(
-            self.github_api_state_for_test_github_checkout_prs_single_pr()))
+            self.gitlab_api_state_for_test_gitlab_checkout_mrs_single_mr()))
 
         (
             self.repo_sandbox
@@ -732,10 +730,10 @@ class TestGitHubCheckoutPRs(BaseTest):
             .new_branch("develop").commit().push()
         )
 
-        self.repo_sandbox.set_remote_url("origin", "https://github.com/example-org/example-repo.git")
-        self.repo_sandbox.set_git_config_key('machete.github.remote', "origin")
+        self.repo_sandbox.set_remote_url("origin", "https://gitlab.com/example-org/example-repo.git")
+        self.repo_sandbox.set_git_config_key('machete.gitlab.remote', "origin")
         assert_success(
-            ['github', 'checkout-prs', '--all'],
-            'Checking for open GitHub PRs... OK\n'
-            'PR #18 checked out at local branch develop\n'
+            ['gitlab', 'checkout-mrs', '--all'],
+            'Checking for open GitLab MRs... OK\n'
+            'MR !18 checked out at local branch develop\n'
         )

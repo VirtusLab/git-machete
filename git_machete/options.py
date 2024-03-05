@@ -36,6 +36,7 @@ class CommandLineOptions:
         self.opt_start_from: str = "here"
         self.opt_stat: bool = False
         self.opt_sync_github_prs: bool = False
+        self.opt_sync_gitlab_mrs: bool = False
         self.opt_title: Optional[str] = None
         self.opt_unset_override: bool = False
         self.opt_with_urls: bool = False
@@ -60,6 +61,9 @@ class CommandLineOptions:
             raise MacheteException(
                 "Option `-f/--fork-point` only makes sense when using rebase and"
                 " cannot be specified together with `-M/--merge`.")
+        if self.opt_sync_github_prs and self.opt_sync_gitlab_mrs:
+            raise MacheteException(
+                "Option `-H/--sync-github-prs` cannot be specified together with `-L/--sync-gitlab-mrs`.")
 
     def __repr__(self) -> str:  # pragma: no cover; debug only
         attrs = ", ".join(f"{k}={v!r}" for k, v in self.__dict__.items())

@@ -164,28 +164,31 @@ git machete advance
 
 Useful for merging the child branch to the current branch in a linear fashion (without creating a merge commit).
 
-### GitHub integration
+### GitHub & GitLab integration
 
 Check out the given PRs into local branches, also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally as well: <br/>
 ```shell script
 git machete github checkout-prs [--all | --by=<github-login> | --mine | <PR-number-1> ... <PR-number-N>]
+git machete gitlab checkout-mrs [--all | --by=<gitlab-login> | --mine | <MR-number-1> ... <MR-number-N>]
 ```
 
-Create the PR, using the upstream (parent) branch from `.git/machete` as the base: <br/>
+Create the PR/MR, using the upstream (parent) branch from `.git/machete` as the base: <br/>
 ```shell script
 git machete github create-pr [--draft]
+git machete gitlab create-mr [--draft]
 ```
 
-The entire chain of PRs will be posted in the PR description: <br/>
+The entire chain of PRs/MRs will be posted in the PR/MR description (example for GitHub): <br/>
 
 [//]: # (The image is referenced by its full URL to ensure it renders correctly on https://pypi.org/project/git-machete/)
 <img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/graphics/pr-chain-github-screenshot.png"
      alt="PR chain on GitHub"
      width="75%" />
 
-**Note**: for private repositories (or side-effecting operations like `create-pr` on public repositories),
-a GitHub API token with `repo` access is required.
-See the [docs](https://git-machete.readthedocs.io/#github) for how to provide the token.
+**Note**: for private repositories (or side-effecting operations like `create-pr`/`create-mr` on public repositories),
+a GitHub API token with `repo` access or a GitLab API token with `api` access is required.
+See the docs for [`github`](https://git-machete.readthedocs.io/#github)
+or [`gitlab`](https://git-machete.readthedocs.io/#gitlab) for how to provide the token.
 
 ### Shell completions
 
@@ -235,7 +238,8 @@ Just run [`git machete edit`](https://git-machete.readthedocs.io/en/stable/#edit
 If you're working on JetBrains IDEs, you can use [git-machete IntelliJ plugin](https://github.com/VirtusLab/git-machete-intellij-plugin#git-machete-intellij-plugin)
 to have branch name completion when editing `.git/machete` file.
 
-Also, consider [`git machete github checkout-prs`](#github-integration) instead of `git machete discover` if you already have GitHub PRs opened.
+Also, consider [`git machete github checkout-prs` or `git machete gitlab checkout-mrs`](#github--gitlab-integration)
+instead of `git machete discover` if you already have GitHub PRs/GitLab MRs opened.
 
 <br/>
 

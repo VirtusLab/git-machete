@@ -43,9 +43,9 @@ Note: ``hooks`` is not a command as such, just a help topic (there is no ``git m
 
     The parameters are exactly the three revisions that are passed to ``git rebase --onto``:
 
-        1. what is going to be the new base for the rebased commits,
-        2. what is the fork point --- the place where the rebased history diverges from the upstream history,
-        3. what branch is rebased.
+    #. what is going to be the new base for the rebased commits,
+    #. what is the fork point --- the place where the rebased history diverges from the upstream history,
+    #. what branch is rebased.
 
     If the hook returns a non-zero exit code, an error is raised and the entire rebase is aborted.
 

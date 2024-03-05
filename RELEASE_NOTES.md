@@ -2,10 +2,10 @@
 
 ## New in git-machete 3.25.0
 
+- added: GitLab support via `git machete gitlab` (first suggested by @mikeynap, partly contributed by @max-nicholson)
+- added: `git machete anno -L`/`--sync-gitlab-mrs` flag
+- fixed: checking out GitHub PRs where head branch comes from an already deleted fork
 - added: qualifier `update=merge` allows selecting merge strategy per branch (contributed by @gjulianm)
-
-## New in git-machete 3.24.3
-
 - added: Scoop package for Windows (suggested by @ppasieka)
 
 ## New in git-machete 3.24.2

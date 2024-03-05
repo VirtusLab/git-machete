@@ -1,21 +1,27 @@
 import json
 import re
-from collections import defaultdict
 from contextlib import AbstractContextManager, contextmanager
 from http import HTTPStatus
-from typing import Any, Callable, Dict, Iterator, List, Optional, Union
+from typing import Any, Callable, Dict, Iterator, List, Optional
 from urllib.error import HTTPError
 from urllib.parse import ParseResult, parse_qs, urlencode, urlparse
 from urllib.request import Request
 
-from git_machete.github import GitHubToken, OrganizationAndRepository
+from git_machete.github import GitHubToken
+from tests.base_test import GitRepositorySandbox
+from tests.mockers_code_hosting import MockAPIResponse, MockHTTPError
 
-mock_repository_info: Dict[str, str] = {'full_name': 'tester/repo_sandbox',
-                                        'html_url': 'https://github.com/tester/repo_sandbox.git'}
+
+def mock_repositories() -> Dict[int, Dict[str, Any]]:
+    return {
+        1: {'owner': {'login': 'tester'}, 'name': 'repo_sandbox', 'clone_url': 'https://github.com/tester/repo_sandbox.git'},
+        2: {'owner': {'login': 'tester'}, 'name': 'repo_sandbox', 'clone_url': GitRepositorySandbox.second_remote_path},
+        3: {'owner': {'login': 'example-org'}, 'name': 'example-repo', 'clone_url': 'https://github.com/example-org/example-repo.git'},
+    }
 
 
 def mock_pr_json(head: str, base: str, number: int,
-                 repo: Optional[Dict[str, str]] = mock_repository_info,
+                 repo_id: int = 1,
                  user: str = 'some_other_user',
                  html_url: str = 'www.github.com',
                  body: Optional[str] = '# Summary',
@@ -23,7 +29,7 @@ def mock_pr_json(head: str, base: str, number: int,
                  draft: bool = False
                  ) -> Dict[str, Any]:
     return {
-        'head': {'ref': head, 'repo': repo},
+        'head': {'ref': head, 'repo': {'id': repo_id}},
         'user': {'login': user},
         'base': {'ref': base},
         'number': str(number),
@@ -40,30 +46,6 @@ def mock_github_token_for_domain_none(_domain: str) -> None:
 
 def mock_github_token_for_domain_fake(_domain: str) -> GitHubToken:
     return GitHubToken(value='ghp_dummy_token', provider='dummy_provider')
-
-
-def mock_from_url(domain: str, url: str) -> "OrganizationAndRepository":  # noqa: U100
-    return OrganizationAndRepository("example-org", "example-repo")
-
-
-def mock_shutil_which(path: Optional[str]) -> Callable[[Any], Optional[str]]:
-    return lambda _cmd: path
-
-
-class MockGitHubAPIResponse:
-    def __init__(self,
-                 status_code: int,
-                 response_data: Union[List[Dict[str, Any]], Dict[str, Any]],
-                 headers: Dict[str, Any] = {}) -> None:
-        self.status_code = status_code
-        self.response_data = response_data
-        self.headers = headers
-
-    def read(self) -> bytes:
-        return json.dumps(self.response_data).encode()
-
-    def info(self) -> Dict[str, Any]:
-        return defaultdict(lambda: "", self.headers)
 
 
 class MockGitHubAPIState:
@@ -96,32 +78,21 @@ class MockGitHubAPIState:
         self.__pulls.append(pull)
 
 
-class MockHTTPError(HTTPError):
-    from email.message import Message
-
-    def __init__(self, url: str, code: int, msg: Any, hdrs: Message, fp: Any) -> None:
-        super().__init__(url, code, msg, hdrs, fp)
-        self.msg = msg
-
-    def read(self, _n: int = 1) -> bytes:  # noqa: F841
-        return json.dumps(self.msg).encode()
-
-
-# Not including [MockGitHubAPIResponse] type argument to maintain compatibility with Python <= 3.8
+# Not including [MockAPIResponse] type argument to maintain compatibility with Python <= 3.8
 def mock_urlopen(github_api_state: MockGitHubAPIState) -> Callable[[Request], AbstractContextManager]:  # type: ignore[type-arg]
     @contextmanager
-    def inner(request: Request) -> Iterator[MockGitHubAPIResponse]:
+    def inner(request: Request) -> Iterator[MockAPIResponse]:
         yield __mock_urlopen_impl(github_api_state, request)
     return inner
 
 
-def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) -> MockGitHubAPIResponse:
+def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) -> MockAPIResponse:
     parsed_url: ParseResult = urlparse(request.full_url)
     url_segments: List[str] = [s for s in parsed_url.path.split('/') if s]
     query_params: Dict[str, str] = {k: v[0] for k, v in parse_qs(parsed_url.query).items()}
     json_data: Dict[str, Any] = request.data and json.loads(request.data)  # type: ignore
 
-    def handle_method() -> "MockGitHubAPIResponse":
+    def handle_method() -> "MockAPIResponse":
         if request.method == "GET":
             return handle_get()
         elif request.method == "PATCH":
@@ -129,7 +100,7 @@ def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) 
         elif request.method == "POST":
             return handle_post()
         else:
-            return MockGitHubAPIResponse(HTTPStatus.METHOD_NOT_ALLOWED, [])
+            return MockAPIResponse(HTTPStatus.METHOD_NOT_ALLOWED, [])
 
     def url_path_matches(pattern: str) -> bool:
         regex = pattern.replace('*', '[^/]+')
@@ -139,16 +110,21 @@ def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) 
         new_query_string: str = urlencode({**query_params, **new_params})
         return parsed_url._replace(query=new_query_string).geturl()
 
-    def handle_get() -> "MockGitHubAPIResponse":
+    def handle_get() -> "MockAPIResponse":
         if url_path_matches('/repositories/[0-9]+'):
-            return MockGitHubAPIResponse(HTTPStatus.OK, {"full_name": "example-org/example-repo"})
+            repo_no = int(url_segments[-1])
+
+            mock_repos = mock_repositories()
+            if repo_no in mock_repos:
+                return MockAPIResponse(HTTPStatus.OK, mock_repos[repo_no])
+            raise error_404()
         elif url_path_matches('/repos/*/*/pulls'):
             full_head_name: Optional[str] = query_params.get('head')
             if full_head_name:
                 head: str = full_head_name.split(':')[1]
                 prs = github_api_state.get_open_pulls_by_head(head)
                 # If no matching PRs are found, the real GitHub returns 200 OK with an empty JSON array - not 404.
-                return MockGitHubAPIResponse(HTTPStatus.OK, prs)
+                return MockAPIResponse(HTTPStatus.OK, prs)
             else:
                 pulls = github_api_state.get_open_pulls()
                 page_str = query_params.get('page')
@@ -162,19 +138,19 @@ def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) 
                     headers = {}
                 else:  # we're at the final page, and there were some pages before
                     headers = {'link': f'<{url_with_query_params(page=1)}>; rel="first"'}
-                return MockGitHubAPIResponse(HTTPStatus.OK, response_data=pulls[start:end], headers=headers)
+                return MockAPIResponse(HTTPStatus.OK, response_data=pulls[start:end], headers=headers)
         elif url_path_matches('/repos/*/*/pulls/[0-9]+'):
             pull_no = int(url_segments[-1])
             pull = github_api_state.get_pull_by_number(pull_no)
             if pull:
-                return MockGitHubAPIResponse(HTTPStatus.OK, pull)
+                return MockAPIResponse(HTTPStatus.OK, pull)
             raise error_404()
         elif url_path_matches('/user'):
-            return MockGitHubAPIResponse(HTTPStatus.OK, {'login': 'github_user', 'type': 'User', 'company': 'VirtusLab'})
+            return MockAPIResponse(HTTPStatus.OK, {'login': 'github_user', 'type': 'User', 'company': 'VirtusLab'})
         else:
             raise error_404()
 
-    def handle_patch() -> "MockGitHubAPIResponse":
+    def handle_patch() -> "MockAPIResponse":
         assert not query_params
         if url_path_matches("/repos/*/*/(pulls|issues)/[0-9]+"):
             return update_pull_request()
@@ -183,7 +159,7 @@ def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) 
         else:
             raise error_404()
 
-    def handle_post() -> "MockGitHubAPIResponse":
+    def handle_post() -> "MockAPIResponse":
         assert not query_params
         if url_path_matches("/repos/*/*/pulls"):
             head = json_data['head']
@@ -203,7 +179,7 @@ def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) 
                                 "of the example-org/example-repo repository."})
             else:
                 fill_pull_request_from_json_data(pull)
-                return MockGitHubAPIResponse(HTTPStatus.OK, pull)
+                return MockAPIResponse(HTTPStatus.OK, pull)
         elif parsed_url.path in ("/api/graphql", "/graphql"):  # /api/graphql for Enterprise domains
             query_or_mutation = json_data['query']
             if 'query {' in query_or_mutation:
@@ -213,7 +189,7 @@ def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) 
                 pr = github_api_state.get_pull_by_number(pr_number)
                 assert pr is not None
                 pr_is_draft: bool = pr.get("draft") is True
-                return MockGitHubAPIResponse(HTTPStatus.OK, {
+                return MockAPIResponse(HTTPStatus.OK, {
                     # Let's just use PR number as PR GraphQL id, for simplicity
                     'data': {'repository': {'pullRequest': {'id': str(pr_number), 'isDraft': pr_is_draft}}}
                 })
@@ -225,29 +201,29 @@ def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) 
                 pr = github_api_state.get_pull_by_number(pr_number)
                 assert pr is not None
                 pr['draft'] = target_draft_state
-                return MockGitHubAPIResponse(HTTPStatus.OK, {
+                return MockAPIResponse(HTTPStatus.OK, {
                     'data': {'repository': {'pullRequest': {'id': str(pr_number), 'isDraft': target_draft_state}}}
                 })
         else:
             raise error_404()
 
-    def update_pull_request() -> "MockGitHubAPIResponse":
+    def update_pull_request() -> "MockAPIResponse":
         pull_no = int(url_segments[-1])
         pull = github_api_state.get_pull_by_number(pull_no)
         assert pull is not None
         fill_pull_request_from_json_data(pull)
-        return MockGitHubAPIResponse(HTTPStatus.OK, pull)
+        return MockAPIResponse(HTTPStatus.OK, pull)
 
-    def create_pull_request() -> "MockGitHubAPIResponse":
+    def create_pull_request() -> "MockAPIResponse":
         pull = {'user': {'login': 'some_other_user'},
                 'html_url': 'www.github.com',
                 'body': '# Summary',
                 'state': 'open',
-                'head': {'ref': "", 'repo': {'full_name': 'testing:checkout_prs', 'html_url': 'https:/example.org/pull/1234'}},
-                'base': {'ref': ""}}
+                'head': {'ref': "<TO-BE-FILLED>", 'repo': {'id': 1}},
+                'base': {'ref': "<TO-BE-FILLED>"}}
         fill_pull_request_from_json_data(pull)
         github_api_state.add_pull(pull)
-        return MockGitHubAPIResponse(HTTPStatus.CREATED, pull)
+        return MockAPIResponse(HTTPStatus.CREATED, pull)
 
     def fill_pull_request_from_json_data(pull: Dict[str, Any]) -> None:
         for key in json_data.keys():
@@ -271,7 +247,7 @@ def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) 
 
     if request.method != "GET" and url_segments[:3] == ["repos", "example-org", "old-example-repo"]:
         original_path = parsed_url.path
-        new_path = original_path.replace("/repos/example-org/old-example-repo", "/repositories/123456789")
+        new_path = original_path.replace("/repos/example-org/old-example-repo", "/repositories/3")
         location = parsed_url._replace(path=new_path).geturl()
         raise redirect_307(location)
 

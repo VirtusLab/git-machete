@@ -33,7 +33,8 @@ _git-machete() {
         (anno)
           _arguments \
             '(-b --branch)'{-b,--branch=}'[Branch to set the annotation for]: :__git_machete_list_managed' \
-            '(-H --sync-github-prs)'{-H,--sync-github-prs}'[Annotate with GitHub PR numbers and authors where applicable]' \
+            '(-H --sync-github-prs)'{-H,--sync-github-prs}'[Annotate with GitHub PR numbers and author logins where applicable]' \
+            '(-L --sync-gitlab-mrs)'{-L,--sync-gitlab-mrs}'[Annotate with GitLab MR numbers and author logins where applicable]' \
             "${common_flags[@]}"
           ;;
         (completion)
@@ -80,6 +81,9 @@ _git-machete() {
           ;;
         (github)
           __git_machete_github_subcommands
+          ;;
+        (gitlab)
+          __git_machete_gitlab_subcommands
           ;;
         (help)
           _arguments \
@@ -177,7 +181,8 @@ __git_machete_cmds=(
   'edit:Edit the branch layout file'
   'file:Display the location of the branch layout file'
   'fork-point:Display hash of the fork point commit of a branch'
-  'github:Creates, checks out and manages GitHub PRs while keeping them reflected in branch branch layout file'
+  'github:Creates, checks out and manages GitHub PRs while keeping them reflected in branch layout file'
+  'gitlab:Creates, checks out and manages GitLab MRs while keeping them reflected in branch layout file'
   'go:Check out the branch relative to the position of the current branch'
   'help:Display this overview, or detailed help for a specified command'
   'is-managed:Check if the current branch is managed by git-machete (mostly for scripts)'
@@ -282,6 +287,64 @@ __git_machete_github_subcommands() {
           _arguments \
             '(-b --branch)'{-b,--branch=}'[Specify the branch for which the associated PR base will be set to its upstream (parent) branch]: :__git_machete_list_managed' \
             '(--ignore-if-missing)'--ignore-if-missing'[Ignore errors and quietly terminate execution if there is no PR opened for current (or specified) branch]' \
+            "${common_flags[@]}"
+        ;;
+      esac
+    ;;
+  esac
+}
+
+__git_machete_gitlab_subcommands() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  _arguments -C \
+    ':command:->command' \
+    '*::options:->options'
+
+  case $state in
+    (command)
+
+      local -a gitlab_subcommands
+      gitlab_subcommands=(
+        'anno-mrs:annotate the branches based on their corresponding GitLab MR numbers and authors'
+        'checkout-mrs:check out the given merge requests locally'
+        'create-mr:create a MR for the current branch, using the upstream (parent) branch as the MR source branch'
+        'restack-mr:(force-)push and retarget the MR, without adding code owners as reviewers in the process'
+        'retarget-mr:set the source branch of the current branch MR to upstream (parent) branch'
+      )
+      _describe 'subcommand' gitlab_subcommands
+      ;;
+
+    (options)
+      case $line[1] in
+
+        (anno-mrs) \
+          _arguments \
+            '(--with-urls)'--with-urls'[Include MR URLs in the annotations]' \
+            "${common_flags[@]}"
+        ;;
+
+        (checkout-mrs)
+          _arguments \
+            '(--all)'--all'[Checkout all open MRs]' \
+            '(--by)'--by='[Checkout open MRs authored by the given GitLab user]' \
+            '(--mine)'--mine='[Checkout open MRs for the current user associated with the GitLab token]' \
+            "${common_flags[@]}"
+        ;;
+
+        (create-mr)
+          _arguments \
+            '(--draft)'--draft'[Create the new MR as draft]' \
+            '(--title)'--title='[Set the title for new MR explicitly]' \
+            '(--yes)'--yes'[Do not ask for confirmation whether to push the branch]' \
+            "${common_flags[@]}"
+        ;;
+
+        (retarget-mr)
+          _arguments \
+            '(-b --branch)'{-b,--branch=}'[Specify the branch for which the associated MR source branch will be set to its upstream (parent) branch]: :__git_machete_list_managed' \
+            '(--ignore-if-missing)'--ignore-if-missing'[Ignore errors and quietly terminate execution if there is no MR opened for current (or specified) branch]' \
             "${common_flags[@]}"
         ;;
       esac

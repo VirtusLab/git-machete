@@ -11,20 +11,20 @@ from typing import Callable, Dict, Iterator, List, Optional, Tuple
 
 from . import git_config_keys, utils
 from .annotation import Annotation
+from .code_hosting import (CodeHostingClient, CodeHostingSpec,
+                           OrganizationAndRepository,
+                           OrganizationAndRepositoryAndRemote, PullRequest,
+                           is_matching_remote_url)
 from .constants import (DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, PICK_FIRST_ROOT,
                         PICK_LAST_ROOT, GitFormatPatterns,
                         SyncToRemoteStatuses)
 from .exceptions import (InteractionStopped, MacheteException,
                          UnexpectedMacheteException,
-                         UnprocessableEntityHTTPError)
-from .git_config_keys import GITHUB_FORCE_DESCRIPTION_FROM_COMMIT_MESSAGE
+                         UnprocessableEntityOrConflictHTTPError)
 from .git_operations import (HEAD, AnyBranchName, AnyRevision, BranchPair,
                              ForkPointOverrideData, FullCommitHash, GitContext,
                              GitLogEntry, LocalBranchShortName,
                              RemoteBranchShortName)
-from .github import (GitHubClient, GitHubPullRequest, GitHubToken,
-                     OrganizationAndRepository,
-                     OrganizationAndRepositoryAndRemote, is_github_remote_url)
 from .utils import (AnsiEscapeCodes, PopenResult, bold, colored, debug, dim,
                     excluding, flat_map, fmt, get_pretty_choices, get_second,
                     tupled, underline, warn)
@@ -911,7 +911,7 @@ class MacheteClient:
                         self.__handle_untracked_state(
                             branch=current_branch,
                             is_called_from_traverse=True,
-                            is_called_from_github=False,
+                            is_called_from_code_hosting=False,
                             opt_push_untracked=opt_push_untracked,
                             opt_push_tracked=opt_push_tracked,
                             opt_yes=opt_yes)
@@ -1614,31 +1614,34 @@ class MacheteClient:
               f"and branch reset events irrelevant for fork point/upstream inference): {reflog}")
         return result
 
-    def sync_annotations_to_github_prs(self, include_urls: bool) -> None:
-        domain = self.__derive_github_domain()
-        org_repo_remote = self.__derive_org_repo_and_remote(domain=domain)
-        github_client = GitHubClient(domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
-        print('Checking for open GitHub PRs... ', end='', flush=True)
-        current_user: Optional[str] = github_client.get_current_user_login()
-        debug('Current GitHub user is ' + (bold(current_user or '<none>')))
-        all_open_prs: List[GitHubPullRequest] = github_client.get_open_pull_requests()
+    def sync_annotations_to_prs(self, spec: CodeHostingSpec, include_urls: bool) -> None:
+        domain = self.__derive_code_hosting_domain(spec)
+        org_repo_remote = self.__derive_org_repo_and_remote(spec, domain=domain)
+        code_hosting_client = spec.create_client(
+            domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
+        print(f'Checking for open {spec.display_name} {spec.pr_short_name}s... ', end='', flush=True)
+        current_user: Optional[str] = code_hosting_client.get_current_user_login()
+        debug(f'Current {spec.display_name} user is ' + (bold(current_user or '<none>')))
+        all_open_prs: List[PullRequest] = code_hosting_client.get_open_pull_requests()
         print(fmt('<green><b>OK</b></green>'))
-        self.__sync_annotations_to_branch_layout_file(all_open_prs, current_user, include_urls=include_urls, verbose=True)
+        self.__sync_annotations_to_branch_layout_file(spec, all_open_prs, current_user, include_urls=include_urls, verbose=True)
 
-    def __github_pr_annotation(self, pr: GitHubPullRequest, current_user: Optional[str], include_url: bool = False) -> str:
-        anno = f"PR #{pr.number}"
+    def __pull_request_annotation(self, spec: CodeHostingSpec,
+                                  pr: PullRequest, current_user: Optional[str], include_url: bool = False) -> str:
+        anno = pr.display_text(fmt=False)
         if current_user != pr.user:
             anno += f" ({pr.user})"
-        if include_url or self.__git.get_boolean_config_attr(key=git_config_keys.GITHUB_ANNOTATE_WITH_URLS, default_value=False):
+        config_key = spec.git_config_keys.annotate_with_urls
+        if include_url or self.__git.get_boolean_config_attr(key=config_key, default_value=False):
             anno += f" {pr.html_url}"
         return anno
 
-    def __sync_annotations_to_branch_layout_file(self, prs: List[GitHubPullRequest], current_user: Optional[str],
+    def __sync_annotations_to_branch_layout_file(self, spec: CodeHostingSpec, prs: List[PullRequest], current_user: Optional[str],
                                                  include_urls: bool, verbose: bool) -> None:
         for pr in prs:
             if LocalBranchShortName.of(pr.head) in self.managed_branches:
                 debug(f'{pr} corresponds to a managed branch')
-                anno: str = self.__github_pr_annotation(pr, current_user, include_urls)
+                anno: str = self.__pull_request_annotation(spec, pr, current_user, include_urls)
                 upstream: Optional[LocalBranchShortName] = self.__up_branch.get(LocalBranchShortName.of(pr.head))
                 if upstream is not None:
                     counterpart = self.__git.get_combined_counterpart_for_fetching_of_branch(upstream)
@@ -1647,9 +1650,10 @@ class MacheteClient:
                 upstream_tracking_branch = upstream if counterpart is None else '/'.join(counterpart.split('/')[1:])
 
                 if pr.base != upstream_tracking_branch:
-                    warn(f'branch {bold(pr.head)} has a different base in PR #{bold(str(pr.number))} ({bold(pr.base)}) '
+                    warn(f'branch {bold(pr.head)} has a different base in {pr.display_text()} ({bold(pr.base)}) '
                          f'than in machete file ({bold(upstream) if upstream else "<none, is a root>"})')
-                    anno += f" WRONG PR BASE or MACHETE PARENT? PR has {pr.base}"
+                    anno += (f" WRONG {spec.pr_short_name} {spec.base_branch_name.upper()} or MACHETE PARENT? "
+                             f"{spec.pr_short_name} has {pr.base}")
                 old_annotation_text, old_annotation_qualifiers_text = '', ''
                 if LocalBranchShortName.of(pr.head) in self.__annotations:
                     old_annotation_text = self.__annotations[LocalBranchShortName.of(pr.head)].text_without_qualifiers
@@ -1838,7 +1842,7 @@ class MacheteClient:
             *,
             branch: LocalBranchShortName,
             is_called_from_traverse: bool,
-            is_called_from_github: bool,
+            is_called_from_code_hosting: bool,
             opt_push_untracked: bool,
             opt_push_tracked: bool,
             opt_yes: bool
@@ -1862,12 +1866,12 @@ class MacheteClient:
                 new_remote=rems[index],
                 branch=branch,
                 is_called_from_traverse=is_called_from_traverse,
-                is_called_from_github=is_called_from_github,
+                is_called_from_code_hosting=is_called_from_code_hosting,
                 opt_push_untracked=opt_push_untracked,
                 opt_push_tracked=opt_push_tracked,
                 opt_yes=opt_yes)
         except ValueError:
-            if is_called_from_github:
+            if is_called_from_code_hosting:
                 raise MacheteException('Could not establish remote repository, operation interrupted.')
 
     def __handle_untracked_branch(
@@ -1876,7 +1880,7 @@ class MacheteClient:
             new_remote: str,
             branch: LocalBranchShortName,
             is_called_from_traverse: bool,
-            is_called_from_github: bool,
+            is_called_from_code_hosting: bool,
             opt_push_untracked: bool,
             opt_push_tracked: bool,
             opt_yes: bool
@@ -1904,7 +1908,7 @@ class MacheteClient:
                     self.__pick_remote(
                         branch=branch,
                         is_called_from_traverse=is_called_from_traverse,
-                        is_called_from_github=is_called_from_github,
+                        is_called_from_code_hosting=is_called_from_code_hosting,
                         opt_push_untracked=opt_push_untracked,
                         opt_push_tracked=opt_push_tracked,
                         opt_yes=opt_yes)
@@ -2056,66 +2060,73 @@ class MacheteClient:
                 f"Fork point {bold(fork_point_hash)} is not ancestor of or the tip "
                 f"of the {bold(branch)} branch.")
 
-    def checkout_github_prs(self,
-                            pr_numbers: Optional[List[int]],
-                            *,
-                            all: bool = False,
-                            mine: bool = False,
-                            by: Optional[str] = None,
-                            fail_on_missing_current_user_for_my_opened_prs: bool = False
-                            ) -> None:
-        domain = self.__derive_github_domain()
-        org_repo_remote = self.__derive_org_repo_and_remote(domain=domain)
-        github_client = GitHubClient(domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
+    def checkout_pull_requests(self,
+                               spec: CodeHostingSpec,
+                               pr_numbers: Optional[List[int]],
+                               *,
+                               all: bool = False,
+                               mine: bool = False,
+                               by: Optional[str] = None,
+                               fail_on_missing_current_user_for_my_opened_prs: bool = False
+                               ) -> None:
+        domain = self.__derive_code_hosting_domain(spec)
+        org_repo_remote = self.__derive_org_repo_and_remote(spec, domain=domain)
+        code_hosting_client = spec.create_client(domain=domain, organization=org_repo_remote.organization,
+                                                 repository=org_repo_remote.repository)
 
-        current_user: Optional[str] = github_client.get_current_user_login()
+        current_user: Optional[str] = code_hosting_client.get_current_user_login()
         if not current_user and mine:
-            msg = ("Could not determine current user name, please check that the GitHub API token provided by one of the: "
-                   f"{GitHubToken.get_possible_providers()}is valid.")
+            msg = (f"Could not determine current user name, please check that the {spec.display_name} API token provided by one of the: "
+                   f"{spec.token_providers_message}is valid.")
             if fail_on_missing_current_user_for_my_opened_prs:
                 raise MacheteException(msg)
             else:
                 warn(msg)
                 return
-        print('Checking for open GitHub PRs... ', end='', flush=True)
-        all_open_prs: List[GitHubPullRequest] = github_client.get_open_pull_requests()
+        print(f'Checking for open {spec.display_name} {spec.pr_short_name}s... ', end='', flush=True)
+        all_open_prs: List[PullRequest] = code_hosting_client.get_open_pull_requests()
         print(fmt('<green><b>OK</b></green>'))
 
-        applicable_prs: List[GitHubPullRequest] = self.__get_applicable_pull_requests(
-            pr_numbers, all_opened_prs_from_github=all_open_prs, github_client=github_client,
+        applicable_prs: List[PullRequest] = self.__get_applicable_pull_requests(
+            pr_numbers, all_opened_prs=all_open_prs, code_hosting_client=code_hosting_client,
             all=all, mine=mine, by=by, user=current_user)
 
         debug(f'organization is {org_repo_remote.organization}, repository is {org_repo_remote.repository}')
         self.__git.fetch_remote(org_repo_remote.remote)
 
-        pr: Optional[GitHubPullRequest] = None
+        pr: Optional[PullRequest] = None
         for pr in sorted(applicable_prs, key=lambda x: x.number):
-            if pr.full_repository_name:
+            head_org_repo_and_git_url = code_hosting_client.get_org_repo_and_git_url_by_repo_id_or_none(pr.head_repo_id)
+            if head_org_repo_and_git_url:
+                head_org = head_org_repo_and_git_url.organization  # explicit access to attributes to satisfy vulture
+                head_repo = head_org_repo_and_git_url.repository
+                head_repo_git_url = head_org_repo_and_git_url.git_url
+                head_org_and_repo = OrganizationAndRepository(head_org, head_repo)
                 if '/'.join([org_repo_remote.remote, pr.head]) not in self.__git.get_remote_branches():
-                    remote_already_added: Optional[str] = self.__get_remote_name_for_repository_url(domain, pr.repository_url)
+                    remote_already_added: Optional[str] = self.__get_remote_name_for_org_and_repo(domain, head_org_and_repo)
                     if remote_already_added:
                         remote_to_fetch = remote_already_added
                     else:
-                        remote_to_fetch = pr.full_repository_name.split('/')[0]
+                        remote_to_fetch = head_org
                         if remote_to_fetch not in self.__git.get_remotes():
-                            self.__git.add_remote(remote_to_fetch, pr.repository_url)
+                            self.__git.add_remote(remote_to_fetch, head_repo_git_url)
                     if org_repo_remote.remote != remote_to_fetch:
                         self.__git.fetch_remote(remote_to_fetch)
                     if '/'.join([remote_to_fetch, pr.head]) not in self.__git.get_remote_branches():
                         raise MacheteException(
-                            f"Could not check out PR #{bold(str(pr.number))} "
-                            f"because its head branch {bold(pr.head)} is already deleted from {bold(remote_to_fetch)}.")
+                            f"Could not check out {pr.display_text()} "
+                            f"because branch {bold(pr.head)} is already deleted from {bold(remote_to_fetch)}.")
             else:
-                warn(f'Pull request #{bold(str(pr.number))} comes from fork and its repository is already deleted. '
+                warn(f'{pr.display_text()} comes from fork and its {spec.repository_name} is already deleted. '
                      f'No remote tracking data will be set up for {bold(pr.head)} branch.')
-                self.__git.fetch_ref(org_repo_remote.remote, f'pull/{pr.number}/head:{pr.head}')
+                self.__git.fetch_ref(org_repo_remote.remote, f'{code_hosting_client.get_ref_name_for_pull_request(pr.number)}:{pr.head}')
                 self.__git.checkout(LocalBranchShortName.of(pr.head))
-            if pr.state == 'closed':
-                warn(f'Pull request #{bold(str(pr.number))} is already closed.')
+            if pr.state in ('closed', 'merged'):
+                warn(f'{pr.display_text()} is already closed.')
             debug(f'found {pr}')
 
-            path: List[GitHubPullRequest] = self.__get_path_from_pr_chain(pr, all_open_prs)
-            reversed_path: List[GitHubPullRequest] = path[::-1]  # need to add from root downwards
+            path: List[PullRequest] = self.__get_path_from_pr_chain(spec, pr, all_open_prs)
+            reversed_path: List[PullRequest] = path[::-1]  # need to add from root downwards
             if reversed_path[0].base not in self.managed_branches:
                 self.add(
                     branch=LocalBranchShortName.of(reversed_path[0].base),
@@ -2135,21 +2146,22 @@ class MacheteClient:
                         opt_yes=True,
                         verbose=False,
                         switch_head_if_new_branch=False)
-                    print(fmt(f"Pull request #{bold(str(pr_on_path.number))} checked out at local branch {bold(pr_on_path.head)}"))
+                    print(fmt(f"{pr_on_path.display_text()} checked out at local branch {bold(pr_on_path.head)}"))
 
-        debug('Current GitHub user is ' + (current_user or '<none>'))
-        self.__sync_annotations_to_branch_layout_file(all_open_prs, current_user=current_user, include_urls=False, verbose=False)
+        debug(f'Current {spec.display_name} user is ' + (current_user or '<none>'))
+        self.__sync_annotations_to_branch_layout_file(spec, all_open_prs, current_user=current_user, include_urls=False, verbose=False)
         if len(applicable_prs) == 1:
             self.__git.checkout(LocalBranchShortName.of(pr.head))
 
     @staticmethod
-    def __get_path_from_pr_chain(original_pr: GitHubPullRequest, all_open_prs: List[GitHubPullRequest]) -> List[GitHubPullRequest]:
+    def __get_path_from_pr_chain(spec: CodeHostingSpec, original_pr: PullRequest, all_open_prs: List[PullRequest]) -> List[PullRequest]:
         visited_head_branches: List[str] = [original_pr.head]
-        path: List[GitHubPullRequest] = [original_pr]
+        path: List[PullRequest] = [original_pr]
         pr_base: Optional[str] = original_pr.base
         while pr_base:
             if pr_base in visited_head_branches:
-                raise MacheteException("There is a cycle between GitHub PRs: " + " -> ".join(visited_head_branches + [pr_base]))
+                raise MacheteException(f"There is a cycle between {spec.display_name} {spec.pr_short_name}s: " +
+                                       " -> ".join(visited_head_branches + [pr_base]))
             visited_head_branches += [pr_base]
             pr = utils.find_or_none(lambda x: x.head == pr_base, all_open_prs)
             path = (path + [pr]) if pr else path
@@ -2158,47 +2170,49 @@ class MacheteClient:
 
     @staticmethod
     def __get_applicable_pull_requests(
-            prs_list: Optional[List[int]],
-            all_opened_prs_from_github: List[GitHubPullRequest],
-            github_client: GitHubClient,
+            pr_numbers: Optional[List[int]],
+            all_opened_prs: List[PullRequest],
+            code_hosting_client: CodeHostingClient,
             all: bool,
             mine: bool,
             by: Optional[str],
             user: Optional[str]
-    ) -> List[GitHubPullRequest]:
-        result: List[GitHubPullRequest] = []
-        if prs_list:
-            for pr_no in prs_list:
-                _pr: Optional[GitHubPullRequest] = utils.find_or_none(lambda x: x.number == pr_no,
-                                                                      all_opened_prs_from_github)
-                if _pr:
-                    result.append(_pr)
+    ) -> List[PullRequest]:
+        result: List[PullRequest] = []
+        spec = code_hosting_client._spec
+        if pr_numbers:
+            for pr_number in pr_numbers:
+                pr: Optional[PullRequest] = utils.find_or_none(lambda x: x.number == pr_number, all_opened_prs)
+                if pr:
+                    result.append(pr)
                 else:
-                    pr_from_github = github_client.get_pull_request_by_number_or_none(pr_no)
-                    if pr_from_github:
-                        result.append(pr_from_github)
+                    pr = code_hosting_client.get_pull_request_by_number_or_none(pr_number)
+                    if pr:
+                        result.append(pr)
                     else:
-                        raise MacheteException(f"PR #{bold(str(pr_no))} is not found in repository "
-                                               f"{bold(github_client.organization)}/{bold(github_client.repository)}")
+
+                        raise MacheteException(f"{spec.pr_short_name} {spec.pr_ordinal_char}{bold(str(pr_number))} "
+                                               f"is not found in {spec.repository_name} "
+                                               f"{bold(code_hosting_client.organization)}/{bold(code_hosting_client.repository)}")
             return result
         if all:
-            if not all_opened_prs_from_github:
-                warn(f"Currently there are no pull requests opened in repository "
-                     f"{bold(github_client.organization)}/{bold(github_client.repository)}")
+            if not all_opened_prs:
+                warn(f"Currently there are no {spec.pr_full_name}s opened in {spec.repository_name} "
+                     f"{bold(code_hosting_client.organization)}/{bold(code_hosting_client.repository)}")
                 return []
-            return all_opened_prs_from_github
+            return all_opened_prs
         elif mine and user:
-            result = [pr for pr in all_opened_prs_from_github if pr.user == user]
+            result = [pr for pr in all_opened_prs if pr.user == user]
             if not result:
-                warn(f"Current user {bold(user)} has no open pull request in repository "
-                     f"{bold(github_client.organization)}/{bold(github_client.repository)}")
+                warn(f"Current user {bold(user)} has no open {spec.pr_full_name} in {spec.repository_name} "
+                     f"{bold(code_hosting_client.organization)}/{bold(code_hosting_client.repository)}")
                 return []
             return result
         elif by:
-            result = [pr for pr in all_opened_prs_from_github if pr.user == by]
+            result = [pr for pr in all_opened_prs if pr.user == by]
             if not result:
-                warn(f"User {bold(by)} has no open pull request in repository "
-                     f"{bold(github_client.organization)}/{bold(github_client.repository)}")
+                warn(f"User {bold(by)} has no open {spec.pr_full_name} in {spec.repository_name} "
+                     f"{bold(code_hosting_client.organization)}/{bold(code_hosting_client.repository)}")
                 return []
             return result
         raise UnexpectedMacheteException("All params passed to __get_applicable_pull_requests are empty.")
@@ -2208,29 +2222,29 @@ class MacheteClient:
             remote: url for remote, url in ((remote_, self.__git.get_url_of_remote(remote_)) for remote_ in self.__git.get_remotes()) if url
         }
 
-    def __get_remote_name_for_repository_url(self, github_domain: str, remote_url: str) -> Optional[str]:
+    def __get_remote_name_for_org_and_repo(self, domain: str, org_and_repo: OrganizationAndRepository) -> Optional[str]:
         """
         Check if the given remote (as identified by `remote_url`) is already added to local git remotes,
-        because it may happen that the local git remote's name is different from the name of organization on GitHub.
+        because it may happen that the local git remote's name is different from the name of organization on code hosting site.
         """
         for remote, url in self.__get_url_for_remote().items():
-            if is_github_remote_url(github_domain, url) and \
-                    OrganizationAndRepository.from_url(github_domain, url) == \
-                    OrganizationAndRepository.from_url(github_domain, remote_url):
+            if is_matching_remote_url(domain, url) and OrganizationAndRepository.from_url(domain, url) == org_and_repo:
                 return remote
         return None
 
-    def restack_github_pr(self) -> None:
-        domain = self.__derive_github_domain()
+    def restack_pull_request(self, spec: CodeHostingSpec) -> None:
+        domain = self.__derive_code_hosting_domain(spec)
         head = self.__git.get_current_branch()
-        org_repo_remote = self.__derive_org_repo_and_remote(domain=domain, branch_used_for_tracking_data=head)
-        github_client = GitHubClient(domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
+        org_repo_remote = self.__derive_org_repo_and_remote(spec, domain=domain, branch_used_for_tracking_data=head)
+        code_hosting_client = spec.create_client(
+            domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
 
-        prs: List[GitHubPullRequest] = github_client.get_open_pull_requests_by_head(head)
+        prs: List[PullRequest] = code_hosting_client.get_open_pull_requests_by_head(head)
         if not prs:
-            raise MacheteException(f"No PRs have `{head}` as its head")
+            raise MacheteException(f"No {spec.pr_short_name}s have `{head}` as its {spec.head_branch_name} branch")
         if len(prs) > 1:
-            raise MacheteException(f"Multiple PRs have `{head}` as its head: " + ", ".join(f"#{_pr.number}" for _pr in prs))
+            raise MacheteException(f"Multiple {spec.pr_short_name}s have `{head}` as its {spec.head_branch_name} branch: " +
+                                   ", ".join(_pr.short_display_text() for _pr in prs))
         pr = prs[0]
 
         self.__git.fetch_remote(org_repo_remote.remote)
@@ -2244,14 +2258,15 @@ class MacheteClient:
             SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE)
         if s in statuses_to_push:
             if current_branch in self.annotations and not self.annotations[current_branch].qualifiers.push:
+                subcommand = "retarget-" + spec.pr_short_name.lower()
                 warn(f'Branch <b>{current_branch}</b> is marked as `push=no`; skipping the push.\n'
-                     'Did you want to just use `git machete github retarget-pr`?\n')
+                     f'Did you want to just use `git machete {spec.git_machete_command} {subcommand}`?\n')
 
-                self.retarget_github_pr(head, ignore_if_missing=False)
+                self.retarget_pr(spec, head, ignore_if_missing=False)
             else:
-                converted_to_draft = github_client.set_draft_status_of_pull_request(pr.number, target_draft_status=True)
+                converted_to_draft = code_hosting_client.set_draft_status_of_pull_request(pr.number, target_draft_status=True)
                 if converted_to_draft:
-                    print(f'PR #{bold(str(pr.number))} has been temporarily marked as draft')
+                    print(f'{pr.display_text()} has been temporarily marked as draft')
 
                 if s == SyncToRemoteStatuses.AHEAD_OF_REMOTE:
                     assert remote is not None
@@ -2265,7 +2280,7 @@ class MacheteClient:
                     self.__handle_untracked_state(
                         branch=current_branch,
                         is_called_from_traverse=False,
-                        is_called_from_github=True,
+                        is_called_from_code_hosting=True,
                         opt_push_tracked=True,
                         opt_push_untracked=True,
                         opt_yes=True)
@@ -2288,11 +2303,11 @@ class MacheteClient:
                     opt_no_detect_squash_merges=False)
                 self.__print_new_line(False)
 
-                self.retarget_github_pr(head, ignore_if_missing=False)
+                self.retarget_pr(spec, head, ignore_if_missing=False)
 
                 if converted_to_draft:
-                    github_client.set_draft_status_of_pull_request(prs[0].number, target_draft_status=False)
-                    print(f'PR #{bold(str(pr.number))} has been marked as ready for review again')
+                    code_hosting_client.set_draft_status_of_pull_request(prs[0].number, target_draft_status=False)
+                    print(f'{pr.display_text()} has been marked as ready for review again')
 
         else:
             if s == SyncToRemoteStatuses.BEHIND_REMOTE:
@@ -2303,45 +2318,47 @@ class MacheteClient:
             elif s == SyncToRemoteStatuses.IN_SYNC_WITH_REMOTE:
                 pass
             else:  # case handled elsewhere
-                raise UnexpectedMacheteException(f"Could not retarget pull request: invalid sync-to-remote status `{s}`.")
+                raise UnexpectedMacheteException(f"Could not retarget {spec.pr_full_name}: invalid sync-to-remote status `{s}`.")
 
-            self.retarget_github_pr(head, ignore_if_missing=False)
+            self.retarget_pr(spec, head, ignore_if_missing=False)
 
-    def __get_updated_github_pr_description(self, github_client: GitHubClient,
-                                            pr: GitHubPullRequest, old_description: Optional[str]) -> str:
+    def __get_updated_pull_request_description(self, code_hosting_client: CodeHostingClient,
+                                               pr: PullRequest, old_description: Optional[str]) -> str:
         def skip_leading_empty(strs: List[str]) -> List[str]:
             return list(itertools.dropwhile(lambda line: line.strip() == '', strs))
 
         lines = skip_leading_empty(old_description.splitlines()) if old_description else []
-        text_to_prepend = self.__generate_text_to_prepend_to_pr_description(github_client, pr)
+        text_to_prepend = self.__generate_text_to_prepend_to_pr_description(code_hosting_client, pr)
         lines_to_prepend = text_to_prepend.splitlines() if text_to_prepend else []
         if self.START_GIT_MACHETE_GENERATED_COMMENT in lines and self.END_GIT_MACHETE_GENERATED_COMMENT in lines:
             start_index = lines.index(self.START_GIT_MACHETE_GENERATED_COMMENT)
             end_index = lines.index(self.END_GIT_MACHETE_GENERATED_COMMENT)
             lines = lines[:start_index] + lines_to_prepend + lines[end_index + 1:]
         else:
-            # For compatibility with pre-v3.23.0 format
+            # For compatibility with pre-v3.23.0 format; only affects GitHub
             if lines and '# Based on PR #' in lines[0]:
                 lines = skip_leading_empty(lines[1:])
             lines = lines_to_prepend + lines
         return '\n'.join(lines)
 
-    def retarget_github_pr(self, head: LocalBranchShortName, ignore_if_missing: bool) -> None:
-        domain = self.__derive_github_domain()
-        org_repo_remote = self.__derive_org_repo_and_remote(domain=domain, branch_used_for_tracking_data=head)
-        github_client = GitHubClient(domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
+    def retarget_pr(self, spec: CodeHostingSpec, head: LocalBranchShortName, ignore_if_missing: bool) -> None:
+        domain = self.__derive_code_hosting_domain(spec)
+        org_repo_remote = self.__derive_org_repo_and_remote(spec, domain=domain, branch_used_for_tracking_data=head)
+        code_hosting_client = spec.create_client(
+            domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
 
         debug(f'organization is {org_repo_remote.organization}, repository is {org_repo_remote.repository}')
 
-        prs: List[GitHubPullRequest] = github_client.get_open_pull_requests_by_head(head)
+        prs: List[PullRequest] = code_hosting_client.get_open_pull_requests_by_head(head)
         if not prs:
             if ignore_if_missing:
-                warn(f"no PRs have `{head}` as its head")
+                warn(f"no {spec.pr_short_name}s have `{head}` as its {spec.head_branch_name} branch")
                 return
             else:
-                raise MacheteException(f"No PRs have `{head}` as its head")
+                raise MacheteException(f"No {spec.pr_short_name}s have `{head}` as its {spec.head_branch_name} branch")
         if len(prs) > 1:
-            raise MacheteException(f"Multiple PRs have `{head}` as its head: " + ", ".join(f"#{_pr.number}" for _pr in prs))
+            raise MacheteException(f"Multiple {spec.pr_short_name}s have `{head}` as its {spec.head_branch_name} branch: " +
+                                   ", ".join(_pr.short_display_text() for _pr in prs))
         pr = prs[0]
         debug(f'found {pr}')
 
@@ -2349,57 +2366,62 @@ class MacheteClient:
         if not new_base:
             raise MacheteException(
                 f'Branch {bold(head)} does not have a parent branch (it is a root) '
-                f'even though there is an open PR #{bold(str(pr.number))} to {bold(pr.base)}.\n'
+                f'even though there is an open {pr.display_text()} to {bold(pr.base)}.\n'
                 'Consider modifying the branch layout file (`git machete edit`)'
                 f' so that {bold(head)} is a child of {bold(pr.base)}.')
 
         if pr.base != new_base:
-            github_client.set_base_of_pull_request(pr.number, base=new_base)
-            print(f'Base branch of PR #{bold(str(pr.number))} has been switched to {bold(new_base)}')
+            code_hosting_client.set_base_of_pull_request(pr.number, base=new_base)
+            print(f'{spec.base_branch_name.capitalize()} branch of {pr.display_text()} has been switched to {bold(new_base)}')
             pr = pr._replace(base=new_base)
         else:
-            print(f'Base branch of PR #{bold(str(pr.number))} is already {bold(new_base)}')
+            print(f'{spec.base_branch_name.capitalize()} branch of {pr.display_text()} is already {bold(new_base)}')
 
-        new_description = self.__get_updated_github_pr_description(github_client, pr, pr.description)
+        new_description = self.__get_updated_pull_request_description(code_hosting_client, pr, pr.description)
         if pr.description != new_description:
-            github_client.set_description_of_pull_request(pr.number, description=new_description)
-            print(f'Description of PR #{bold(str(pr.number))} has been updated')
+            code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
+            print(f'Description of {pr.display_text()} has been updated')
 
-        current_user: Optional[str] = github_client.get_current_user_login()
+        current_user: Optional[str] = code_hosting_client.get_current_user_login()
         if self.__annotations.get(head) and self.__annotations[head].qualifiers_text:
-            self.__annotations[head] = Annotation(f'{self.__github_pr_annotation(pr, current_user)} ' +
+            self.__annotations[head] = Annotation(f'{self.__pull_request_annotation(spec, pr, current_user)} ' +
                                                   self.__annotations[head].qualifiers_text)
         else:
-            self.__annotations[head] = Annotation(self.__github_pr_annotation(pr, current_user))
+            self.__annotations[head] = Annotation(self.__pull_request_annotation(spec, pr, current_user))
         self.save_branch_layout_file()
 
-    def __derive_github_domain(self) -> str:
-        return self.__git.get_config_attr_or_none(key=git_config_keys.GITHUB_DOMAIN) or GitHubClient.DEFAULT_GITHUB_DOMAIN
+    def __derive_code_hosting_domain(self, spec: CodeHostingSpec) -> str:
+        return self.__git.get_config_attr_or_none(key=spec.git_config_keys.domain) or spec.default_domain
 
     def __derive_org_repo_and_remote(
             self,
+            spec: CodeHostingSpec,
             domain: str,
             branch_used_for_tracking_data: Optional[LocalBranchShortName] = None
     ) -> OrganizationAndRepositoryAndRemote:
-        remote_from_config = self.__git.get_config_attr_or_none(key=git_config_keys.GITHUB_REMOTE)
-        org_from_config = self.__git.get_config_attr_or_none(key=git_config_keys.GITHUB_ORGANIZATION)
-        repo_from_config = self.__git.get_config_attr_or_none(key=git_config_keys.GITHUB_REPOSITORY)
+        remote_config_key = spec.git_config_keys.remote
+        organization_config_key = spec.git_config_keys.organization
+        repository_config_key = spec.git_config_keys.repository
+
+        remote_from_config = self.__git.get_config_attr_or_none(key=remote_config_key)
+        org_from_config = self.__git.get_config_attr_or_none(key=organization_config_key)
+        repo_from_config = self.__git.get_config_attr_or_none(key=repository_config_key)
 
         url_for_remote: Dict[str, str] = self.__get_url_for_remote()
         if not url_for_remote:
             raise MacheteException('No remotes defined for this repository (see `git remote`)')
 
         if org_from_config and not repo_from_config:
-            raise MacheteException('`machete.github.organization` git config key is present, '
-                                   'but `machete.github.repository` is missing. Both keys must be present to take effect')
+            raise MacheteException(f'`{organization_config_key}` git config key is present, '
+                                   f'but `{repository_config_key}` is missing. Both keys must be present to take effect')
 
         if not org_from_config and repo_from_config:
-            raise MacheteException('`machete.github.repository` git config key is present, '
-                                   'but `machete.github.organization` is missing. Both keys must be present to take effect')
+            raise MacheteException(f'`{repository_config_key}` git config key is present, '
+                                   f'but `{organization_config_key}` is missing. Both keys must be present to take effect')
 
         if remote_from_config:
             if remote_from_config not in url_for_remote:
-                raise MacheteException(f'`machete.github.remote` git config key points to `{remote_from_config}` remote, '
+                raise MacheteException(f'`{remote_config_key}` git config key points to `{remote_from_config}` remote, '
                                        'but such remote does not exist')
 
         if remote_from_config and org_from_config and repo_from_config:
@@ -2409,20 +2431,21 @@ class MacheteClient:
             url = url_for_remote[remote_from_config]
             org_and_repo = OrganizationAndRepository.from_url(domain, url)
             if not org_and_repo:
-                raise MacheteException(f'`machete.github.remote` git config key points to `{remote_from_config}` remote, '
-                                       f'but its URL `{url}` does not correspond to a valid GitHub repository')
+                raise MacheteException(f'`{remote_config_key}` git config key points to `{remote_from_config}` remote, '
+                                       f'but its URL `{url}` does not correspond to a valid {spec.display_name} {spec.repository_name}')
             return OrganizationAndRepositoryAndRemote(org_and_repo.organization, org_and_repo.repository, remote_from_config)
 
         if org_from_config and repo_from_config:
             for remote, url in self.__get_url_for_remote().items():
-                if is_github_remote_url(domain, url) and \
+                if is_matching_remote_url(domain, url) and \
                         OrganizationAndRepository.from_url(domain, url) == \
                         OrganizationAndRepository(org_from_config, repo_from_config):
                     return OrganizationAndRepositoryAndRemote(org_from_config, repo_from_config, remote)
             raise MacheteException(
-                'Both `machete.github.organization` and `machete.github.repository` git config keys are defined, '
-                f'but no remote seems to correspond to `{org_from_config}/{repo_from_config}` (organization/repository) on GitHub.\n'
-                'Consider pointing to the remote via `machete.github.remote` config key')
+                f'Both `{organization_config_key}` and `{repository_config_key}` git config keys are defined, '
+                f'but no remote seems to correspond to `{org_from_config}/{repo_from_config}` '
+                f'({spec.organization_name}/{spec.repository_name}) on {spec.display_name}.\n'
+                f'Consider pointing to the remote via `{remote_config_key}` config key')
 
         remote_and_organization_and_repository_from_urls: Dict[str, OrganizationAndRepositoryAndRemote] = {
             remote: OrganizationAndRepositoryAndRemote(oar.organization, oar.repository, remote) for remote, oar in (
@@ -2433,10 +2456,11 @@ class MacheteClient:
         if not remote_and_organization_and_repository_from_urls:
             raise MacheteException(
                 'Remotes are defined for this repository, but none of them '
-                'seems to correspond to GitHub (see `git remote -v` for details).\n'
-                'It is possible that you are using a custom GitHub URL.\n'
-                'If that is the case, you can provide repository information explicitly via some or all of git config keys: '
-                '`machete.github.{domain,remote,organization,repository}.`\n')  # noqa: FS003
+                f'seems to correspond to {spec.display_name} (see `git remote -v` for details).\n'
+                f'It is possible that you are using a custom {spec.display_name} URL.\n'
+                f'If that is the case, you can provide {spec.repository_name} information explicitly '
+                f'via some or all of git config keys: \n'
+                f'{spec.git_config_keys.for_locating_repo_message()}\n')
 
         if len(remote_and_organization_and_repository_from_urls) == 1:
             return remote_and_organization_and_repository_from_urls[list(remote_and_organization_and_repository_from_urls.keys())[0]]
@@ -2452,41 +2476,44 @@ class MacheteClient:
                 return remote_and_organization_and_repository_from_urls[remote_for_fetching_of_branch]
 
         raise MacheteException(
-            f'Multiple non-origin remotes correspond to GitHub in this repository: '
+            f'Multiple non-origin remotes correspond to {spec.display_name} in this repository: '
             f'{", ".join(remote_and_organization_and_repository_from_urls.keys())} -> aborting. \n'
-            f'You can also select the repository by providing some or all of git config keys: '
-            '`machete.github.{domain,remote,organization,repository}`.\n')  # noqa: FS003
+            f'You can select the {spec.repository_name} by providing some or all of git config keys:\n'
+            f'{spec.git_config_keys.for_locating_repo_message()}\n')
 
     START_GIT_MACHETE_GENERATED_COMMENT = '<!-- start git-machete generated -->'
     END_GIT_MACHETE_GENERATED_COMMENT = '<!-- end git-machete generated -->'
 
-    def __generate_text_to_prepend_to_pr_description(self, github_client: GitHubClient, pr: GitHubPullRequest) -> str:
+    def __generate_text_to_prepend_to_pr_description(self, code_hosting_client: CodeHostingClient, pr: PullRequest) -> str:
 
-        prs_for_base_branch = github_client.get_open_pull_requests_by_head(LocalBranchShortName(pr.base))
+        prs_for_base_branch = code_hosting_client.get_open_pull_requests_by_head(LocalBranchShortName(pr.base))
         if len(prs_for_base_branch) < 1:
             return ''
-        pr_number_for_base_branch = prs_for_base_branch[0].number
         # For determining the PR chain, we need to fetch all PRs from the repo.
         # We could just fetch them straight away... but this list can be quite long for commercial monorepos,
-        # esp. given that GitHub limits the single page to 100 PRs (so multiple HTTP requests would be needed).
+        # esp. given that GitHub and GitLab limit the single page to 100 PRs (so multiple HTTP requests would be needed).
         # As a slight optimization, let's fetch the full PR list only if the current PR has a base PR at all.
-        print('Checking for open GitHub PRs (to determine PR chain)... ', end='', flush=True)
-        all_open_prs: List[GitHubPullRequest] = github_client.get_open_pull_requests()
+        config = code_hosting_client._spec
+        display_name = config.display_name
+        pr_short_name = config.pr_short_name
+        print(f'Checking for open {display_name} {pr_short_name}s (to determine {pr_short_name} chain)... ', end='', flush=True)
+        all_open_prs: List[PullRequest] = code_hosting_client.get_open_pull_requests()
         print(fmt('<green><b>OK</b></green>'))
-        pr_path = self.__get_path_from_pr_chain(pr, all_open_prs)
+        pr_path = self.__get_path_from_pr_chain(config, pr, all_open_prs)
 
         prepend = f'{self.START_GIT_MACHETE_GENERATED_COMMENT}\n\n'
-        prepend += f'# Based on PR #{pr_number_for_base_branch}\n\n'
+        prepend += f'# Based on {prs_for_base_branch[0].display_text(fmt=False)}\n\n'
         current_date = utils.get_current_date()
-        prepend += f'## Full chain of PRs as of {current_date}\n\n'
+        prepend += f'## Full chain of {pr_short_name}s as of {current_date}\n\n'
         for ancestor_pr in pr_path:
-            prepend += f'* PR #{ancestor_pr.number}: `{ancestor_pr.head}` ➔ `{ancestor_pr.base}`\n'
+            prepend += f'* {ancestor_pr.display_text(fmt=False)}: `{ancestor_pr.head}` ➔ `{ancestor_pr.base}`\n'
         prepend += '\n'
         prepend += f'{self.END_GIT_MACHETE_GENERATED_COMMENT}\n'
         return prepend
 
-    def create_github_pr(
+    def create_pull_request(
             self,
+            spec: CodeHostingSpec,
             *,
             head: LocalBranchShortName,
             opt_draft: bool,
@@ -2496,35 +2523,37 @@ class MacheteClient:
     ) -> None:
         # first make sure that head branch is synced with remote
         try:
-            self.__sync_before_creating_pr(opt_onto=opt_onto, opt_yes=opt_yes)
+            self.__sync_before_creating_pr(spec, opt_onto=opt_onto, opt_yes=opt_yes)
         except InteractionStopped:
             return
 
         base: Optional[LocalBranchShortName] = self.__up_branch.get(LocalBranchShortName.of(head))
         if not base:
-            raise UnexpectedMacheteException(f'Could not determine base branch for PR. Branch {bold(head)} is a root branch.')
+            raise UnexpectedMacheteException(f'Could not determine {spec.base_branch_name} branch for {spec.pr_short_name}. '
+                                             f'Branch {bold(head)} is a root branch.')
 
-        domain = self.__derive_github_domain()
-        org_repo_remote = self.__derive_org_repo_and_remote(domain=domain, branch_used_for_tracking_data=head)
-        github_client = GitHubClient(domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
+        domain = self.__derive_code_hosting_domain(spec)
+        org_repo_remote = self.__derive_org_repo_and_remote(spec, domain=domain, branch_used_for_tracking_data=head)
+        code_hosting_client = spec.create_client(domain=domain, organization=org_repo_remote.organization,
+                                                 repository=org_repo_remote.repository)
         print(f"Fetching {bold(org_repo_remote.remote)}...")
         self.__git.fetch_remote(org_repo_remote.remote)
         base_branch_found_on_remote: bool = True
         if '/'.join([org_repo_remote.remote, base]) not in self.__git.get_remote_branches():
             base_branch_found_on_remote = False
-            warn(f'Base branch for this PR ({bold(base)}) is not found on remote, pushing...')
+            warn(f'{spec.base_branch_name} branch for this {spec.pr_short_name} ({bold(base)}) is not found on remote, pushing...')
             self.__handle_untracked_branch(
                 branch=base,
                 new_remote=org_repo_remote.remote,
                 is_called_from_traverse=False,
-                is_called_from_github=True,
+                is_called_from_code_hosting=True,
                 opt_push_tracked=False,
                 opt_push_untracked=True,
                 opt_yes=opt_yes)
 
-        current_user: Optional[str] = github_client.get_current_user_login()
+        current_user: Optional[str] = code_hosting_client.get_current_user_login()
         debug(f'organization is {org_repo_remote.organization}, repository is {org_repo_remote.repository}')
-        debug('current GitHub user is ' + (current_user or '<none>'))
+        debug(f'current {spec.display_name} user is ' + (current_user or '<none>'))
 
         fork_point = self.fork_point(head, use_overrides=True)
         commits: List[GitLogEntry] = self.__git.get_commits_between(fork_point, head)
@@ -2533,29 +2562,28 @@ class MacheteClient:
             title = opt_title
         else:
             # git-machete can still see an empty range of unique commits (e.g. in case of yellow edge)
-            # even though GitHub sees a non-empty range.
+            # even though code hosting may see a non-empty range.
             # Let's use branch name as a fallback for PR title in such case.
             title = commits[0].subject if commits else head
 
         force_description_from_commit_message = self.__git.get_boolean_config_attr(
-            key=GITHUB_FORCE_DESCRIPTION_FROM_COMMIT_MESSAGE, default_value=False)
+            key=spec.git_config_keys.force_description_from_commit_message, default_value=False)
         if force_description_from_commit_message:
             description = self.__git.get_commit_data(commits[0].hash, GitFormatPatterns.MESSAGE_BODY) if commits else ''
         else:
             machete_description_path = self.__git.get_main_git_subpath('info', 'description')
-            # https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/creating-a-pull-request-template-for-your-repository
-            github_template_path = os.path.join(self.__git.get_root_dir(), '.github', 'pull_request_template.md')
+            pr_description_path = os.path.join(self.__git.get_root_dir(), *spec.pr_description_path)
             if os.path.isfile(machete_description_path):
                 description = utils.slurp_file(machete_description_path)
-            elif os.path.isfile(github_template_path):
-                description = utils.slurp_file(github_template_path)
+            elif os.path.isfile(pr_description_path):
+                description = utils.slurp_file(pr_description_path)
             else:
                 description = self.__git.get_commit_data(commits[0].hash, GitFormatPatterns.MESSAGE_BODY) if commits else ''
 
         ok_str = '<green><b>OK</b></green>'
-        print(f'Creating a {"draft " if opt_draft else ""}PR from {bold(head)} to {bold(base)}... ', end='', flush=True)
+        print(f'Creating a {"draft " if opt_draft else ""}{spec.pr_short_name} from {bold(head)} to {bold(base)}... ', end='', flush=True)
 
-        pr: GitHubPullRequest = github_client.create_pull_request(head=head, base=base, title=title,
+        pr: PullRequest = code_hosting_client.create_pull_request(head=head, base=base, title=title,
                                                                   description=description, draft=opt_draft)
         print(fmt(f'{ok_str}, see `{pr.html_url}`'))
 
@@ -2564,13 +2592,14 @@ class MacheteClient:
         if base_branch_found_on_remote:
             # As the description may include the reference to this PR itself (in case of a chain of >=2 PRs),
             # let's update the PR description after it's already created (so that we know the current PR's number).
-            text_to_prepend = self.__generate_text_to_prepend_to_pr_description(github_client, pr)
+            text_to_prepend = self.__generate_text_to_prepend_to_pr_description(code_hosting_client, pr)
             if text_to_prepend:
                 if description:
                     text_to_prepend += '\n'
                 description = text_to_prepend + description
-                print(f'Updating description of PR #{bold(str(pr.number))} to include the chain of PRs... ', end='', flush=True)
-                github_client.set_description_of_pull_request(pr.number, description)
+                print(f'Updating description of {pr.display_text()} to include '
+                      f'the chain of {spec.pr_short_name}s... ', end='', flush=True)
+                code_hosting_client.set_description_of_pull_request(pr.number, description)
                 print(fmt(ok_str))
 
         milestone_path: str = self.__git.get_main_git_subpath('info', 'milestone')
@@ -2579,13 +2608,13 @@ class MacheteClient:
         else:
             milestone = None
         if milestone:
-            print(f'Setting milestone of PR #{bold(str(pr.number))} to #{bold(milestone)}... ', end='', flush=True)
-            github_client.set_milestone_of_pull_request(pr.number, milestone=milestone)
+            print(f'Setting milestone of {pr.display_text()} to {bold(milestone)}... ', end='', flush=True)
+            code_hosting_client.set_milestone_of_pull_request(pr.number, milestone=milestone)
             print(fmt(ok_str))
 
         if current_user:
-            print(f'Adding {bold(current_user)} as assignee to PR #{bold(str(pr.number))}... ', end='', flush=True)
-            github_client.add_assignees_to_pull_request(pr.number, [current_user])
+            print(f'Adding {bold(current_user)} as assignee to {pr.display_text()}... ', end='', flush=True)
+            code_hosting_client.add_assignees_to_pull_request(pr.number, [current_user])
             print(fmt(ok_str))
 
         reviewers_path = self.__git.get_main_git_subpath('info', 'reviewers')
@@ -2595,21 +2624,21 @@ class MacheteClient:
             reviewers = []
         if reviewers:
             print(f'Adding {", ".join(bold(reviewer) for reviewer in reviewers)} '
-                  f'as reviewer{"s" if len(reviewers) > 1 else ""} to PR #{bold(str(pr.number))}... ',
+                  f'as reviewer{"s" if len(reviewers) > 1 else ""} to {pr.display_text()}... ',
                   end='', flush=True)
             try:
-                github_client.add_reviewers_to_pull_request(pr.number, reviewers)
-            except UnprocessableEntityHTTPError as e:
+                code_hosting_client.add_reviewers_to_pull_request(pr.number, reviewers)
+            except UnprocessableEntityOrConflictHTTPError as e:
                 if 'Reviews may only be requested from collaborators.' in e.msg:
                     print()
                     warn(f"There are some invalid reviewers in {self.__git.get_main_git_subpath('info', 'reviewers')} file.\n"
-                         "Skipped adding reviewers to pull request.")
+                         f"Skipped adding reviewers to {spec.pr_full_name}.")
                 else:
                     raise UnexpectedMacheteException(str(e))
             else:
                 print(fmt(ok_str))
 
-        self.__annotations[head] = Annotation(self.__github_pr_annotation(pr, current_user))
+        self.__annotations[head] = Annotation(self.__pull_request_annotation(spec, pr, current_user))
         self.save_branch_layout_file()
 
     def __handle_diverged_and_newer_state(
@@ -2643,7 +2672,7 @@ class MacheteClient:
             *,
             branch: LocalBranchShortName,
             is_called_from_traverse: bool,
-            is_called_from_github: bool,
+            is_called_from_code_hosting: bool,
             opt_push_tracked: bool,
             opt_push_untracked: bool,
             opt_yes: bool
@@ -2655,7 +2684,7 @@ class MacheteClient:
                 new_remote=remotes[0],
                 branch=branch,
                 is_called_from_traverse=is_called_from_traverse,
-                is_called_from_github=is_called_from_github,
+                is_called_from_code_hosting=is_called_from_code_hosting,
                 opt_push_untracked=opt_push_untracked,
                 opt_push_tracked=opt_push_tracked,
                 opt_yes=opt_yes)
@@ -2664,17 +2693,17 @@ class MacheteClient:
                 new_remote="origin",
                 branch=branch,
                 is_called_from_traverse=is_called_from_traverse,
-                is_called_from_github=is_called_from_github,
+                is_called_from_code_hosting=is_called_from_code_hosting,
                 opt_push_untracked=opt_push_untracked,
                 opt_push_tracked=opt_push_tracked,
                 opt_yes=opt_yes)
         else:
             # We know that there is at least 1 remote, otherwise sync-to-remote state would be NO_REMOTES and not UNTRACKED
-            print(f"Branch {bold(branch)} is untracked and there's no {bold('origin')} repository.")
+            print(f"Branch {bold(branch)} is untracked and there's no {bold('origin')} remote.")
             self.__pick_remote(
                 branch=branch,
                 is_called_from_traverse=is_called_from_traverse,
-                is_called_from_github=is_called_from_github,
+                is_called_from_code_hosting=is_called_from_code_hosting,
                 opt_push_untracked=opt_push_untracked,
                 opt_push_tracked=opt_push_tracked,
                 opt_yes=opt_yes)
@@ -2737,7 +2766,7 @@ class MacheteClient:
         elif ans in ('q', 'quit'):
             raise InteractionStopped
 
-    def __sync_before_creating_pr(self, *, opt_onto: Optional[LocalBranchShortName], opt_yes: bool) -> None:
+    def __sync_before_creating_pr(self, spec: CodeHostingSpec, *, opt_onto: Optional[LocalBranchShortName], opt_yes: bool) -> None:
 
         self.expect_at_least_one_managed_branch()
         self.__empty_line_status = True
@@ -2752,24 +2781,25 @@ class MacheteClient:
                      verbose=True,
                      switch_head_if_new_branch=True)
             if current_branch not in self.managed_branches:
+                subcommand = "create-" + spec.pr_short_name.lower()
                 raise MacheteException(
-                    "Command `github create-pr` can NOT be executed on the branch"
-                    " that is not managed by git machete (is not present in branch layout file). "
+                    f"Subcommand `{subcommand}` can NOT be executed on the branch"
+                    " that is not managed by git machete (is not present in branch layout file).\n"
                     "To successfully execute this command "
                     "either add current branch to the file via commands `add`, "
                     "`discover` or `edit` or agree on adding the branch to the "
-                    "branch layout file during the execution of `github create-pr` command.")
+                    f"branch layout file during the execution of `{subcommand}` subcommand.")
 
         up_branch: Optional[LocalBranchShortName] = self.__up_branch.get(current_branch)
         if not up_branch:
             raise MacheteException(
                 f'Branch {bold(current_branch)} does not have a parent branch (it is a root), '
-                'base branch for the PR cannot be established.')
+                f'{spec.base_branch_name} branch for the {spec.pr_short_name} cannot be established.')
 
         if self.__git.is_ancestor_or_equal(current_branch.full_name(), up_branch.full_name()):
             raise MacheteException(
                 f'All commits in {bold(current_branch)} branch are already included in {bold(up_branch)} branch.\n'
-                f'Cannot create pull request.')
+                f'Cannot create {spec.pr_full_name}.')
 
         s, remote = self.__git.get_combined_remote_sync_status(current_branch)
         statuses_to_push = (
@@ -2790,7 +2820,7 @@ class MacheteClient:
                     self.__handle_untracked_state(
                         branch=current_branch,
                         is_called_from_traverse=False,
-                        is_called_from_github=True,
+                        is_called_from_code_hosting=True,
                         opt_push_tracked=True,
                         opt_push_untracked=True,
                         opt_yes=opt_yes)
@@ -2817,23 +2847,23 @@ class MacheteClient:
             if s == SyncToRemoteStatuses.BEHIND_REMOTE:
                 warn(f"Branch {bold(current_branch)} is behind its remote counterpart. Consider using `git pull`.")
                 self.__print_new_line(False)
-                ans = self.ask_if("Proceed with pull request creation?" + get_pretty_choices('y', 'Q'),
-                                  "Proceeding with pull request creation...", opt_yes=opt_yes)
+                ans = self.ask_if(f"Proceed with creating {spec.pr_full_name}?" + get_pretty_choices('y', 'Q'),
+                                  f"Proceeding with {spec.pr_full_name} creation...", opt_yes=opt_yes)
             elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
                 warn(f"Branch {bold(current_branch)} is diverged from and older than its remote counterpart. "
                      "Consider using `git reset --keep`.")
                 self.__print_new_line(False)
-                ans = self.ask_if("Proceed with pull request creation?" + get_pretty_choices('y', 'Q'),
-                                  "Proceeding with pull request creation...", opt_yes=opt_yes)
+                ans = self.ask_if(f"Proceed with creating {spec.pr_full_name}?" + get_pretty_choices('y', 'Q'),
+                                  f"Proceeding with {spec.pr_full_name} creation...", opt_yes=opt_yes)
             elif s == SyncToRemoteStatuses.NO_REMOTES:
                 raise MacheteException(
-                    "Could not create pull request - there are no remote repositories!")
+                    f"Could not create {spec.pr_full_name} - there are no remote repositories!")
             else:
                 ans = 'y'  # only IN SYNC status is left
 
             if ans in ('y', 'yes'):
                 return
-            raise MacheteException('Pull request creation interrupted.')
+            raise MacheteException(f'Interrupted creating {spec.pr_full_name}.')
 
     def delete_untracked(self, opt_yes: bool) -> None:
         print(bold('Checking for untracked managed branches with no downstream...'))
