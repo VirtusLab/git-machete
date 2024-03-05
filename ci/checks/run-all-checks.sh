@@ -12,6 +12,7 @@ set -e -x
 enforce-bumped-version.sh
 enforce-consistent-style-for-fork-point.sh
 enforce-consistent-style-for-github.sh
+enforce-consistent-style-for-gitlab.sh
 enforce-correct-shebangs.sh
 enforce-indent-two-spaces-outside-python.sh
 enforce-issue-number-for-todos.sh

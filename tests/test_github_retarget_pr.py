@@ -144,7 +144,7 @@ class TestGitHubRetargetPR(BaseTest):
                 branch-without-pr
             """
         rewrite_branch_layout_file(body)
-        launch_command("anno", "-H")
+        launch_command("anno", "--sync-github-prs")
 
         expected_status_output = """
         root * (untracked)
@@ -188,7 +188,7 @@ class TestGitHubRetargetPR(BaseTest):
             "Warn: no PRs have branch-without-pr as its head\n")
 
     def test_github_retarget_pr_multiple_non_origin_remotes(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         github_api_state = self.github_api_state_for_test_retarget_pr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
         self.patch_symbol(mocker, 'git_machete.utils.get_current_date', lambda: '2023-12-31')
@@ -425,7 +425,7 @@ class TestGitHubRetargetPR(BaseTest):
         )
 
     def test_github_retarget_pr_root_branch(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_retarget_pr_root_branch()))
 
         self.repo_sandbox.new_branch("master").commit()

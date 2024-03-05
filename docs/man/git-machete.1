@@ -27,9 +27,9 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Mar 11, 2024" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Mar 20, 2024" "" "git-machete"
 .SH NAME
-git-machete \- git-machete 3.24.3
+git-machete \- git-machete 3.25.0
 .sp
 git machete is a robust tool that \fBsimplifies your git workflows\fP\&.
 .sp
@@ -85,6 +85,8 @@ git machete commands and help topics:
 \fI\%format\fP           \-\- Display docs for the format of the branch layout file
 .IP \(bu 2
 \fI\%github\fP           \-\- Create, check out and manage GitHub PRs while keeping them reflected in git machete
+.IP \(bu 2
+\fI\%gitlab\fP           \-\- Create, check out and manage GitLab MRs while keeping them reflected in git machete
 .IP \(bu 2
 \fI\%go\fP               \-\- Check out the branch relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument
 .IP \(bu 2
@@ -260,6 +262,7 @@ Fails if the current branch has more than one green\-edge downstream branch.
 .ft C
 git machete anno [\-b|\-\-branch=<branch>] [<annotation text>]
 git machete anno \-H|\-\-sync\-github\-prs
+git machete anno \-\-sync\-gitlab\-mrs
 .ft P
 .fi
 .UNINDENT
@@ -282,10 +285,12 @@ $ git machete anno \(aq\(aq
 .sp
 then clears the annotation for the current branch (or a branch specified with \fB\-b/\-\-branch\fP).
 .sp
-If invoked with \fB\-H\fP or \fB\-\-sync\-github\-prs\fP, annotates the branches based on their corresponding GitHub PR numbers and authors.
-When the current user is NOT the owner of the PR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
-so that you don\(aqt rebase or push someone else\(aqs PR by accident (see help for \fI\%traverse\fP).
-Any existing annotations (except branch qualifiers) are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
+If invoked with \fB\-H\fP or \fB\-\-sync\-github\-prs\fP (for GitHub) or \fB\-\-sync\-gitlab\-mrs\fP (for GitLab),
+annotates the branches based on their corresponding GitHub PR/GitLab MR numbers and authors.
+When the current user is NOT the author of the PR/MR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
+so that you don\(aqt rebase or push someone else\(aqs PR/MR by accident (see help for \fI\%traverse\fP).
+Any existing annotations (except branch qualifiers) are overwritten for the branches that have an opened PR/MR;
+annotations for the other branches remain untouched.
 .sp
 \fBNOTE:\fP
 .INDENT 0.0
@@ -375,7 +380,10 @@ Note: all the effects of \fBanno\fP can be always achieved by manually editing t
 Branch to set the annotation for.
 .TP
 .B  \-H\fP,\fB  \-\-sync\-github\-prs
-Annotate with GitHub PR numbers and authors where applicable.
+Annotate with GitHub PR numbers and author logins where applicable.
+.TP
+.B  \-\-sync\-gitlab\-mrs
+Annotate with GitLab MR numbers and author logins where applicable.
 .UNINDENT
 .sp
 \fBEnvironment variables:\fP
@@ -1063,7 +1071,7 @@ Annotates the branches based on their corresponding GitHub PR numbers and author
 Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
 Equivalent to \fBgit machete anno \-\-sync\-github\-prs\fP\&.
 .sp
-When the current user is NOT the owner of the PR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
+When the current user is NOT the author of the PR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
 so that you don\(aqt rebase or push someone else\(aqs PR by accident (see help for \fI\%traverse\fP).
 .sp
 \fBOptions:\fP
@@ -1079,7 +1087,7 @@ also traverse chain of pull requests upwards, adding branches one by one to git\
 Once the specified pull requests are checked out locally, annotate local branches with corresponding pull request numbers.
 If only one PR has been checked out, then switch the local repository\(aqs HEAD to its head branch.
 .sp
-When the current user is NOT the owner of the PR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
+When the current user is NOT the author of the PR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
 so that you don\(aqt rebase or push someone else\(aqs PR by accident (see help for \fI\%traverse\fP).
 .sp
 \fBOptions:\fP
@@ -1220,6 +1228,186 @@ Only \fBmachete.github.organization\fP and \fBmachete.github.repository\fP must 
 .TP
 .B \fBGITHUB_TOKEN\fP
 GitHub API token.
+.UNINDENT
+.SH GITLAB
+.sp
+\fBUsage:\fP
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+git machete gitlab <subcommand>
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+where \fB<subcommand>\fP is one of: \fBanno\-mrs\fP, \fBcheckout\-mrs\fP, \fBcreate\-mr\fP, \fBretarget\-mr\fP\&.
+.sp
+Creates, checks out and manages GitLab MRs while keeping them reflected in branch layout file.
+.sp
+\fBNOTE:\fP
+.INDENT 0.0
+.INDENT 3.5
+To allow GitLab API access for private repositories (and also to perform side\-effecting actions like opening a PR,
+even in case of public repositories), a GitLab API token with \fBrepo\fP scope is required, see \fI\%https://gitlab.com/settings/tokens\fP\&.
+This will be resolved from the first of:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP 1. 3
+\fBGITLAB_TOKEN\fP env var,
+.IP 2. 3
+content of the \fB\&.gitlab\-token\fP file in the home directory (\fB~\fP),
+.IP 3. 3
+current auth token from the \fBglab\fP GitLab CLI.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+GitLab Enterprise domains are supported.
+.sp
+\fBGITLAB_TOKEN\fP is used indiscriminately for any domain, both gitlab.com and Enterprise.
+.sp
+\fBglab\fP has its own built\-in support for Enterprise domains, which is honored by git\-machete.
+.sp
+\fB\&.gitlab\-token\fP can have multiple per\-domain entries in the format:
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+glpat\-mytoken_for_gitlab_com
+glpat\-myothertoken_for_git_example_org git.example.org
+glpat\-yetanothertoken_for_git_example_com git.example.com
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+\fBNOTE:\fP
+.INDENT 0.0
+.INDENT 3.5
+See \fBGit config keys\fP below in case the target repository cannot be detected automatically (for example, in case of GitLab Enterprise).
+.UNINDENT
+.UNINDENT
+.sp
+\fBSubcommands:\fP
+.INDENT 0.0
+.TP
+.B \fBanno\-mrs [\-\-with\-urls]\fP:
+Annotates the branches based on their corresponding GitLab MR numbers and authors.
+Any existing annotations are overwritten for the branches that have an opened MR; annotations for the other branches remain untouched.
+Equivalent to \fBgit machete anno \-\-sync\-gitlab\-mrs\fP\&.
+.sp
+When the current user is NOT the author of the MR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
+so that you don\(aqt rebase or push someone else\(aqs MR by accident (see help for \fI\%traverse\fP).
+.sp
+\fBOptions:\fP
+.INDENT 7.0
+.TP
+.B  \-\-with\-urls
+Also include full MR URLs in the annotations (rather than just MR number).
+.UNINDENT
+.TP
+.B \fBcheckout\-mrs [\-\-all | \-\-by=<gitlab\-login> | \-\-mine | <MR\-number\-1> ... <MR\-number\-N>]\fP:
+Check out the head branch of the given pull requests (specified by numbers or by a flag),
+also traverse chain of pull requests upwards, adding branches one by one to git\-machete and check them out locally.
+Once the specified pull requests are checked out locally, annotate local branches with corresponding pull request numbers.
+If only one MR has been checked out, then switch the local repository\(aqs HEAD to its head branch.
+.sp
+When the current user is NOT the author of the MR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
+so that you don\(aqt rebase or push someone else\(aqs MR by accident (see help for \fI\%traverse\fP).
+.sp
+\fBOptions:\fP
+.INDENT 7.0
+.TP
+.B  \-\-all
+Checkout all open MRs.
+.TP
+.BI \-\-by\fB= <gitlab\-login>
+Checkout open MRs authored by the given GitLab user, where \fB<gitlab\-login>\fP is the GitLab account name.
+.TP
+.B  \-\-mine
+Checkout open MRs for the current user associated with the GitLab token.
+.UNINDENT
+.sp
+\fBParameters:\fP
+.sp
+\fB<MR\-number\-1> ... <MR\-number\-N>\fP    Pull request numbers to checkout.
+.TP
+.B \fBcreate\-mr [\-\-draft] [\-\-title=<title>] [\-\-yes]\fP:
+Creates a MR for the current branch, using the upstream (parent) branch as the MR base.
+Once the MR is successfully created, annotates the current branch with the new MR\(aqs number.
+.sp
+If \fB\&.git/info/milestone\fP file is present, its contents (a single number \-\-\- milestone id) are used as milestone.
+If \fB\&.git/info/reviewers\fP file is present, its contents (one GitLab login per line) are used to set reviewers.
+.sp
+The subject of the first unique commit of the branch is used as MR title.
+If \fB\&.git/info/description\fP or \fB\&.gitlab/pull_request_template.md\fP file is present, its contents are used as MR description.
+Otherwise (or if \fBmachete.gitlab.forceDescriptionFromCommitMessage\fP is set), MR description is taken from message body of the first unique commit of the branch.
+.sp
+If the newly\-created MR is stacked atop another MR, the actual MR description posted to GitLab will be prepended with a section
+listing the entire related chain of MRs.
+.sp
+\fBOptions:\fP
+.INDENT 7.0
+.TP
+.B  \-\-draft
+Create the new MR as a draft.
+.TP
+.BI \-\-title\fB= <title>
+Set the MR title explicitly (the default is to use the first included commit\(aqs message as the title).
+.TP
+.B  \-\-yes
+Do not ask for confirmation whether to push the branch.
+.UNINDENT
+.TP
+.B \fBrestack\-mr\fP:
+Perform the following sequence of actions:
+1. If the MR for the current branch is ready for review, it gets converted to a draft.
+2. The branch is (force\-)pushed into remote.
+3. The MR is retargeted to its upstream (parent) branch, as in \fBretarget\-mr\fP\&.
+4. If the MR has been converted to draft in step 1, it\(aqs reverted to ready for review state.
+.sp
+The drafting/undrafting is useful in case the GitLab repository has set up ????????.
+Draft MRs don\(aqt get code owners automatically added as reviewers.
+.TP
+.B \fBretarget\-mr [\-b|\-\-branch=<branch>] [\-\-ignore\-if\-missing]\fP:
+Sets the base of the current (or specified) branch\(aqs MR to upstream (parent) branch, as seen by git machete (see \fBgit machete show up\fP).
+.sp
+If after changing the base the MR ends up stacked atop another MR, the MR description posted to GitLab will be prepended with a section
+listing the entire related chain of MRs.
+.sp
+This header will be updated or removed accordingly with the subsequent runs of \fBretarget\-mr\fP\&.
+.sp
+\fBOptions:\fP
+.INDENT 7.0
+.TP
+.BI \-b\fP,\fB  \-\-branch\fB= <branch>
+Specify the branch for which the associated MR base will be set to its upstream (parent) branch. The current branch is used if the option is absent.
+.TP
+.B  \-\-ignore\-if\-missing
+Ignore errors and quietly terminate execution if there is no MR opened for current (or specified) branch.
+.UNINDENT
+.UNINDENT
+.sp
+\fBGit config keys:\fP
+.sp
+FILL UP!!!!!!!!
+.sp
+\fBEnvironment variables (all subcommands):\fP
+.INDENT 0.0
+.TP
+.B \fBGITLAB_TOKEN\fP
+GitLab API token.
 .UNINDENT
 .SH GO
 .sp
@@ -1941,8 +2129,9 @@ master
 .UNINDENT
 .UNINDENT
 .sp
-Operations like \fBgit machete github anno\-prs\fP and \fBgit machete github checkout\-prs\fP add \fBrebase=no push=no\fP branch qualifiers
-when the current user is NOT the owner of the PR associated with that branch.
+Operations like \fBgit machete github anno\-prs\fP (\fBgit machete gitlab anno\-mrs\fP)
+and \fBgit machete github checkout\-prs\fP (\fBgit machete gitlab checkout\-mrs\fP) add \fBrebase=no push=no\fP branch qualifiers
+when the current user is NOT the author of the PR/MR associated with that branch.
 .sp
 \fBOptions:\fP
 .INDENT 0.0
