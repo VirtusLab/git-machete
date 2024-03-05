@@ -46,9 +46,10 @@ complete -c git-machete -n "not __fish_seen_subcommand_from $__machete_commands"
 complete -c git-machete -n "__fish_seen_subcommand_from advance; and not __fish_seen_subcommand_from --yes -y" -f -l yes -s y -d 'Do not ask for confirmation whether to fast-forward the current branch or whether to slide-out the downstream. Fails if the current branch has more than one green-edge downstream branch'
 
 # git machete anno
-complete -c git-machete -n "not __fish_seen_subcommand_from $__machete_commands"                                        -f                         -a anno                           -d 'Manage custom annotations'
-complete -c git-machete -n "__fish_seen_subcommand_from anno"                                                           -x -l branch          -s b -a '(__machete_managed_branches)' -d 'Branch to set the annotation for'
-complete -c git-machete -n "__fish_seen_subcommand_from anno; and not __fish_seen_subcommand_from --sync-github-prs -H" -f -l sync-github-prs -s H                                   -d 'Annotate with GitHub PR numbers and authors where applicable'
+complete -c git-machete -n "not __fish_seen_subcommand_from $__machete_commands"                                                          -f                         -a anno                           -d 'Manage custom annotations'
+complete -c git-machete -n "__fish_seen_subcommand_from anno"                                                                             -x -l branch          -s b -a '(__machete_managed_branches)' -d 'Branch to set the annotation for'
+complete -c git-machete -n "__fish_seen_subcommand_from anno; and not __fish_seen_subcommand_from -H --sync-github-prs --sync-gitlab-mrs" -f -l sync-github-prs -s H                                   -d 'Annotate with GitHub PR numbers and author logins where applicable'
+complete -c git-machete -n "__fish_seen_subcommand_from anno; and not __fish_seen_subcommand_from -H --sync-github-prs --sync-gitlab-mrs" -f -l sync-gitlab-mrs                                        -d 'Annotate with GitLab MR numbers and author logins where applicable'
 
 # git machete completion
 complete -c git-machete -n "not __fish_seen_subcommand_from $__machete_commands"                                       -f -a completion -d 'Print completion script for the given shell'

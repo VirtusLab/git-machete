@@ -19,6 +19,7 @@ short_docs: Dict[str, str] = {
     "fork-point": "Display or override fork point for a branch",
     "format": "Display docs for the format of the branch layout file",
     "github": "Create, check out and manage GitHub PRs while keeping them reflected in git machete",
+    "gitlab": "Create, check out and manage GitLab MRs while keeping them reflected in git machete",
     "go": "Check out the branch relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument",
     "help": "Display this overview, or detailed help for a specified command",
     "hooks": "Display docs for the extra hooks added by git machete",
@@ -117,7 +118,8 @@ long_docs: Dict[str, str] = {
     "anno": """
         <b>Usage:</b><b>
            git machete anno [-b|--branch=<branch>] [<annotation text>]
-           git machete anno -H|--sync-github-prs</b>
+           git machete anno -H|--sync-github-prs
+           git machete anno --sync-gitlab-mrs</b>
 
         If invoked without any <annotation text>, prints out the custom annotation for the given branch
         (or current branch, if none specified with `-b/--branch`).
@@ -127,10 +129,12 @@ long_docs: Dict[str, str] = {
 
         then clears the annotation for the current branch (or a branch specified with `-b/--branch`).
 
-        If invoked with `-H` or `--sync-github-prs`, annotates the branches based on their corresponding GitHub PR numbers and authors.
-        When the current user is NOT the owner of the PR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
-        so that you don't rebase or push someone else's PR by accident (see help for `traverse`).
-        Any existing annotations (except branch qualifiers) are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
+        If invoked with `-H` or `--sync-github-prs` (for GitHub) or `--sync-gitlab-mrs` (for GitLab),
+        annotates the branches based on their corresponding GitHub PR/GitLab MR numbers and authors.
+        When the current user is NOT the author of the PR/MR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
+        so that you don't rebase or push someone else's PR/MR by accident (see help for `traverse`).
+        Any existing annotations (except branch qualifiers) are overwritten for the branches that have an opened PR/MR;
+        annotations for the other branches remain untouched.
 
         To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR,
         even in case of public repositories), a GitHub API token with `repo` scope is required, see https://github.com/settings/tokens.
@@ -178,7 +182,9 @@ long_docs: Dict[str, str] = {
            <b>-b</b>, <b>--branch=<branch></b>
               Branch to set the annotation for.
            <b>-H</b>, <b>--sync-github-prs</b>
-              Annotate with GitHub PR numbers and authors where applicable.
+              Annotate with GitHub PR numbers and author logins where applicable.
+           <b>--sync-gitlab-mrs</b>
+              Annotate with GitLab MR numbers and author logins where applicable.
 
         <b>Environment variables:</b>
            `GITHUB_TOKEN`
@@ -585,7 +591,7 @@ long_docs: Dict[str, str] = {
               Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
               Equivalent to `git machete anno --sync-github-prs`.
 
-              When the current user is NOT the owner of the PR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
+              When the current user is NOT the author of the PR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
               so that you don't rebase or push someone else's PR by accident (see help for `traverse`).
 
               <b>Options:</b>
@@ -600,7 +606,7 @@ long_docs: Dict[str, str] = {
               Once the specified pull requests are checked out locally, annotate local branches with corresponding pull request numbers.
               If only one PR has been checked out, then switch the local repository's HEAD to its head branch.
 
-              When the current user is NOT the owner of the PR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
+              When the current user is NOT the author of the PR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
               so that you don't rebase or push someone else's PR by accident (see help for `traverse`).
 
               <b>Options:</b>
@@ -723,6 +729,141 @@ long_docs: Dict[str, str] = {
         <b>Environment variables (all subcommands):</b>
            `GITHUB_TOKEN`
               GitHub API token.
+
+   """,
+    "gitlab": """
+        <b>Usage:</b><b>
+           git machete gitlab <subcommand></b>
+
+        where `<subcommand>` is one of: `anno-mrs`, `checkout-mrs`, `create-mr`, `retarget-mr`.
+
+        Creates, checks out and manages GitLab MRs while keeping them reflected in branch layout file.
+
+        To allow GitLab API access for private repositories (and also to perform side-effecting actions like opening a PR,
+        even in case of public repositories), a GitLab API token with `repo` scope is required, see https://gitlab.com/settings/tokens.
+        This will be resolved from the first of:
+           * `GITLAB_TOKEN` env var,
+           * content of the `.gitlab-token` file in the home directory (`~`),
+           * current auth token from the `glab` GitLab CLI.
+
+        GitLab Enterprise domains are supported.
+
+        `GITLAB_TOKEN` is used indiscriminately for any domain, both gitlab.com and Enterprise.
+
+        `glab` has its own built-in support for Enterprise domains, which is honored by git-machete.
+
+        `.gitlab-token` can have multiple per-domain entries in the format:
+        <dim>
+          glpat-mytoken_for_gitlab_com
+          glpat-myothertoken_for_git_example_org git.example.org
+          glpat-yetanothertoken_for_git_example_com git.example.com
+        </dim>See <b>Git config keys</b> below in case the target repository cannot be detected automatically (for example, in case of GitLab Enterprise).
+
+        <b>Subcommands:</b>
+           `anno-mrs [--with-urls]`:
+ 
+              Annotates the branches based on their corresponding GitLab MR numbers and authors.
+              Any existing annotations are overwritten for the branches that have an opened MR; annotations for the other branches remain untouched.
+              Equivalent to `git machete anno --sync-gitlab-mrs`.
+
+              When the current user is NOT the author of the MR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
+              so that you don't rebase or push someone else's MR by accident (see help for `traverse`).
+
+              <b>Options:</b>
+
+                 <b>--with-urls</b>
+              Also include full MR URLs in the annotations (rather than just MR number).
+
+           `checkout-mrs [--all | --by=<gitlab-login> | --mine | <MR-number-1> ... <MR-number-N>]`:
+ 
+              Check out the head branch of the given pull requests (specified by numbers or by a flag),
+              also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally.
+              Once the specified pull requests are checked out locally, annotate local branches with corresponding pull request numbers.
+              If only one MR has been checked out, then switch the local repository's HEAD to its head branch.
+
+              When the current user is NOT the author of the MR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
+              so that you don't rebase or push someone else's MR by accident (see help for `traverse`).
+
+              <b>Options:</b>
+
+                 <b>--all</b>
+              Checkout all open MRs.
+
+                 <b>--by=<gitlab-login></b>
+
+              Checkout open MRs authored by the given GitLab user, where `<gitlab-login>` is the GitLab account name.
+
+                 <b>--mine</b>
+              Checkout open MRs for the current user associated with the GitLab token.
+
+              <b>Parameters:</b>
+
+              `<MR-number-1> ... <MR-number-N>`    Pull request numbers to checkout.
+
+           `create-mr [--draft] [--title=<title>] [--yes]`:
+ 
+              Creates a MR for the current branch, using the upstream (parent) branch as the MR base.
+              Once the MR is successfully created, annotates the current branch with the new MR's number.
+
+              If `.git/info/milestone` file is present, its contents (a single number — milestone id) are used as milestone.
+              If `.git/info/reviewers` file is present, its contents (one GitLab login per line) are used to set reviewers.
+
+              The subject of the first unique commit of the branch is used as MR title.
+              If `.git/info/description` or `.gitlab/merge_request_templates/Default.md` file is present, its contents are used as MR description.
+              Otherwise (or if `machete.gitlab.forceDescriptionFromCommitMessage` is set), MR description is taken from message body of the first unique commit of the branch.
+
+              If the newly-created MR is stacked atop another MR, the actual MR description posted to GitLab will be prepended with a section
+              listing the entire related chain of MRs.
+
+              <b>Options:</b>
+
+                 <b>--draft</b>
+              Create the new MR as a draft.
+
+                 <b>--title=<title></b>
+
+              Set the MR title explicitly (the default is to use the first included commit's message as the title).
+
+                 <b>--yes</b>
+              Do not ask for confirmation whether to push the branch.
+
+           `restack-mr`:
+ 
+              Perform the following sequence of actions:
+              1. If the MR for the current branch is ready for review, it gets converted to a draft.
+              2. The branch is (force-)pushed into remote.
+              3. The MR is retargeted to its upstream (parent) branch, as in `retarget-mr`.
+              4. If the MR has been converted to draft in step 1, it's reverted to ready for review state.
+
+              The drafting/undrafting is useful in case the GitLab repository has set up ????????.
+              Draft MRs don't get code owners automatically added as reviewers.
+
+           `retarget-mr [-b|--branch=<branch>] [--ignore-if-missing]`:
+ 
+              Sets the base of the current (or specified) branch's MR to upstream (parent) branch, as seen by git machete (see `git machete show up`).
+
+              If after changing the base the MR ends up stacked atop another MR, the MR description posted to GitLab will be prepended with a section
+              listing the entire related chain of MRs.
+
+              This header will be updated or removed accordingly with the subsequent runs of `retarget-mr`.
+
+              <b>Options:</b>
+
+                 <b>-b</b>, <b>--branch=<branch></b>
+
+              Specify the branch for which the associated MR base will be set to its upstream (parent) branch. The current branch is used if the option is absent.
+
+                 <b>--ignore-if-missing</b>
+
+              Ignore errors and quietly terminate execution if there is no MR opened for current (or specified) branch.
+
+        <b>Git config keys:</b>
+
+        FILL UP!!!!!!!!
+
+        <b>Environment variables (all subcommands):</b>
+           `GITLAB_TOKEN`
+              GitLab API token.
 
    """,
     "go": """
@@ -1167,8 +1308,9 @@ long_docs: Dict[str, str] = {
               branch-for-local-experiments  push=no
         </dim>
 
-        Operations like `git machete github anno-prs` and `git machete github checkout-prs` add `rebase=no push=no` branch qualifiers
-        when the current user is NOT the owner of the PR associated with that branch.
+        Operations like `git machete github anno-prs` (`git machete gitlab anno-mrs`)
+        and `git machete github checkout-prs` (`git machete gitlab checkout-mrs`) add `rebase=no push=no` branch qualifiers
+        when the current user is NOT the author of the PR/MR associated with that branch.
 
         <b>Options:</b>
            <b>-F</b>, <b>--fetch</b>

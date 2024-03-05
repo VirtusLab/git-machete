@@ -44,6 +44,7 @@ Commands & help topics
 .. include:: cli/fork-point.rst
 .. include:: cli/format.rst
 .. include:: cli/github.rst
+.. include:: cli/gitlab.rst
 .. include:: cli/go.rst
 .. include:: cli/help.rst
 .. include:: cli/hooks.rst

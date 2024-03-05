@@ -24,8 +24,9 @@ measure_command_time: bool = os.environ.get('GIT_MACHETE_MEASURE_COMMAND_TIME') 
 verbose_mode: bool = False
 
 # https://github.blog/2021-04-05-behind-githubs-new-authentication-token-formats/
-GITHUB_TOKEN_PREFIXES = ['ghp_', 'gho_', 'ghu_', 'ghs_', 'ghr_']
-GITHUB_TOKEN_PREFIX_REGEX = '(' + '|'.join(GITHUB_TOKEN_PREFIXES) + ')'
+# https://docs.gitlab.com/ee/security/token_overview.html#gitlab-tokens
+CODE_HOSTING_TOKEN_PREFIXES = ['ghp_', 'gho_', 'ghu_', 'ghs_', 'ghr_', 'glpat-']
+CODE_HOSTING_TOKEN_PREFIX_REGEX = '(' + '|'.join(CODE_HOSTING_TOKEN_PREFIXES) + ')'
 
 
 def excluding(iterable: Iterable[T], s: Iterable[T]) -> List[T]:
@@ -110,7 +111,7 @@ def debug(msg: str) -> None:
 
         args_to_be_redacted = {'access_token', 'password', 'secret', 'token'}
         for arg, value in values.items():
-            if arg in args_to_be_redacted or any(value_ in str(value) for value_ in GITHUB_TOKEN_PREFIXES):
+            if arg in args_to_be_redacted or any(value_ in str(value) for value_ in CODE_HOSTING_TOKEN_PREFIXES):
                 values[arg] = '***'
             if type(values[arg]) is dict:
                 values[arg] = compact_dict(values[arg])
@@ -222,10 +223,10 @@ def popen_cmd(cmd: str, *args: str, cwd: Optional[str] = None,
 
     # GitHub tokens are likely to appear e.g. in the output of `git config -l`:
     # `https://<TOKEN>@github.com/org/repo.git` is a supported URL format for git remotes.
-    def redact_github_tokens(input: str) -> str:
-        return re.sub(GITHUB_TOKEN_PREFIX_REGEX + '[a-zA-Z0-9]+', '<REDACTED>', input)
-    stdout = redact_github_tokens(stdout)
-    stderr = redact_github_tokens(stderr)
+    def redact_tokens(input: str) -> str:
+        return re.sub(CODE_HOSTING_TOKEN_PREFIX_REGEX + '[a-zA-Z0-9]+', '<REDACTED>', input)
+    stdout = redact_tokens(stdout)
+    stderr = redact_tokens(stderr)
 
     if debug_mode:
         if exit_code != 0:
