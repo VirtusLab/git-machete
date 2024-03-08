@@ -3,6 +3,7 @@
 ## New in git-machete 3.24.0
 
 - added: `-f`/`--as-first-child` flag to `git machete add` (contributed by @matthalp)
+- fixed: `git machete github retarget-pr` not updating description of PR due to stray `\r` characters
 
 ## New in git-machete 3.23.2
 

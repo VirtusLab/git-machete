@@ -3,21 +3,25 @@ version: 2.1
 executors:
   macos_executor:
     macos:
-      xcode: 14.3.1
+      # https://circleci.com/docs/using-macos/#supported-xcode-versions-intel
+      xcode: 15.2.0
+    # https://circleci.com/docs/using-macos/#available-resource-classes
+    # As of Feb 2024, M1 runners are unavailable in free tier :/
     resource_class: macos.x86.medium.gen2
   ubuntu_executor:
     machine:
-      image: ubuntu-2204:2022.10.2
+      # https://circleci.com/developer/images?imageType=machine
+      image: ubuntu-2204:2023.10.1
     environment:
       # Needed to avoid warning: https://superuser.com/questions/575844/warning-terminal-is-not-fully-functional
       TERM: ansi
     resource_class: large
   windows_executor:
     machine:
-      image: windows-server-2022-gui:2023.03.1
+      # https://circleci.com/developer/images?imageType=machine
+      image: windows-server-2022-gui:2023.11.1
       shell: bash.exe
-    # Jobs using windows.large sometimes get stuck on `Preparing environment` :/
-    resource_class: windows.medium
+    resource_class: windows.large
 
 orbs:
   codecov: codecov/codecov@4.0.1

@@ -120,6 +120,7 @@ class TestGitHubRestackPR(BaseTest):
         assert pr is not None
         assert pr['draft'] is True
         assert pr['base']['ref'] == 'master'
+        assert pr['body'] == '# Summary'
 
     def test_github_restack_pr_branch_diverged_and_newer(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)

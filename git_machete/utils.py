@@ -45,7 +45,7 @@ def map_truthy_only(func: Callable[[T], Optional[U]], iterable: Iterable[T]) -> 
 
 
 def get_non_empty_lines(s: str) -> List[str]:
-    return list(filter(None, s.split("\n")))
+    return list(filter(None, s.splitlines()))
 
 
 # Converts a lambda accepting N arguments to a lambda accepting one argument, an N-element tuple.
