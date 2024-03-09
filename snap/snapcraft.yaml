@@ -32,7 +32,7 @@ parts:
       PS4='$0.$LINENO:'
       set -x
       craftctl default
-      version=$(cut -d\' -f2 git_machete/__init__.py)
+      version=$(python3 setup.py --version)
       craftctl set version="$version"
 
 apps:

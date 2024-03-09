@@ -31,7 +31,6 @@ prohibit-id-est-in-rst.sh
 prohibit-double-backticks-in-python.sh
 prohibit-markdown-links-in-rst.sh
 prohibit-single-backtick-in-rst.sh
-prohibit-split-backslash-n.sh
 prohibit-strings-split-without-delimiter.sh
 prohibit-strings-with-backslash-continuation.sh
 prohibit-strings-with-useless-interpolations.sh

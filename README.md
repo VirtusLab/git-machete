@@ -13,10 +13,11 @@
 [![CircleCI](https://circleci.com/gh/VirtusLab/git-machete/tree/master.svg?style=shield)](https://app.circleci.com/pipelines/github/VirtusLab/git-machete?branch=master)
 [![codecov](https://codecov.io/gh/VirtusLab/git-machete/branch/develop/graph/badge.svg)](https://codecov.io/gh/VirtusLab/git-machete)
 
-[//]: # (These images are referenced by full URLs to ensure they render correctly on https://pypi.org/project/git-machete/)
-[//]: # (In fact, only the light-mode image is used in PyPI, the other one is cropped out when publishing the package. Still, using the same format for consistency)
-<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/graphics/logo/svg/with-name.svg#gh-light-mode-only"     style="width: 100%; display: block; margin-bottom: 10pt;" />
-<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/graphics/logo/svg/with-name-dark.svg#gh-dark-mode-only" style="width: 100%; display: block; margin-bottom: 10pt;" />
+[//]: # (The images are referenced by full URLs to ensure they render correctly on https://pypi.org/project/git-machete/)
+<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/graphics/logo/svg/with-name.svg#gh-light-mode-only"
+     style="width: 100%; display: block; margin-bottom: 10pt;" />
+<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/graphics/logo/svg/with-name-dark.svg#gh-dark-mode-only"
+     style="width: 100%; display: block; margin-bottom: 10pt;" />
 
 💪 git-machete is a robust tool that **simplifies your git workflows**.<br/>
 
@@ -54,20 +55,25 @@ git-machete requires Python >= 3.6. Python 2.x is no longer supported.
 brew install git-machete
 ```
 
-### Using pip
+### Using pip with sudo (system-wide install)
 
 You need to have Python and `pip` installed from system packages.
 
-**For user-wide install:**
+```shell script
+sudo -H pip install git-machete
+```
+
+**Tip:** pass an extra `-U` flag to `pip install` to upgrade an already installed version.
+
+### Using pip without sudo (user-wide install)
+
+You need to have Python and `pip` installed from system packages.
+
 ```shell script
 pip install --user git-machete
 ```
-Please verify that your `PATH` variable has `${HOME}/.local/bin/` included.
 
-**For system-wide install:**
-```shell script
-sudo -H pip install git-machete  # system-wide install
-```
+Please verify that your `PATH` variable has `${HOME}/.local/bin/` included.
 
 **Tip:** pass an extra `-U` flag to `pip install` to upgrade an already installed version.
 
@@ -87,7 +93,7 @@ sudo snap install --classic git-machete
 
 It can also be installed via Ubuntu Software (simply search for `git-machete`).
 
-**Note:** classic confinement is necessary to ensure access to the editor installed in the system (to edit e.g. `.git/machete` file or rebase TODO list).
+**Note:** classic confinement is necessary to ensure access to the editor installed in the system (to edit e.g. .git/machete file or rebase TODO list).
 
 ### Using apt-get via PPA (Ubuntu)
 

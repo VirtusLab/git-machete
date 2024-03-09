@@ -274,6 +274,7 @@ class TestGitHubRetargetPR(BaseTest):
             * PR #15: `feature` ➔ `master`
 
             <!-- end git-machete generated -->
+
             # Summary''')[1:]
 
         # branch feature_2 is not present in any of the remotes
@@ -320,7 +321,8 @@ class TestGitHubRetargetPR(BaseTest):
             * PR #25: `feature_2` ➔ `feature`
             * PR #15: `feature` ➔ `master`
 
-            <!-- end git-machete generated -->''')[1:]
+            <!-- end git-machete generated -->
+        ''')[1:]
 
         # branch feature_3 present in only one remote: origin_1 and has tracking data
         (
@@ -362,6 +364,7 @@ class TestGitHubRetargetPR(BaseTest):
             * PR #15: `feature` ➔ `master`
 
             <!-- end git-machete generated -->
+
             # Summary''')[1:]
 
         body = \
@@ -395,6 +398,7 @@ class TestGitHubRetargetPR(BaseTest):
             * PR #15: `feature` ➔ `master`
 
             <!-- end git-machete generated -->
+
             # Summary''')[1:]
 
         body = \

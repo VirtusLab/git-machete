@@ -2308,13 +2308,19 @@ class MacheteClient:
         def skip_leading_empty(strs: List[str]) -> List[str]:
             return list(itertools.dropwhile(lambda line: line.strip() == '', strs))
 
-        lines = skip_leading_empty(old_description.splitlines()) if old_description else []
+        lines = skip_leading_empty(old_description.split('\n')) if old_description else []
         text_to_prepend = self.__generate_text_to_prepend_to_pr_description(github_client, pr)
-        lines_to_prepend = text_to_prepend.splitlines() if text_to_prepend else []
+        lines_to_prepend = text_to_prepend.split('\n') if text_to_prepend else []
         if self.START_GIT_MACHETE_GENERATED_COMMENT in lines and self.END_GIT_MACHETE_GENERATED_COMMENT in lines:
             start_index = lines.index(self.START_GIT_MACHETE_GENERATED_COMMENT)
             end_index = lines.index(self.END_GIT_MACHETE_GENERATED_COMMENT)
-            lines = lines[:start_index] + lines_to_prepend + lines[end_index + 1:]
+            if lines_to_prepend == []:
+                if lines[end_index + 1:] and lines[end_index + 1] == '':
+                    lines = lines[:start_index] + lines[end_index + 2:]
+                else:
+                    lines = lines[:start_index] + lines[end_index + 1:]
+            else:
+                lines = lines[:start_index] + lines_to_prepend[:-1] + lines[end_index + 1:]
         else:
             # For compatibility with pre-v3.23.0 format
             if lines and '# Based on PR #' in lines[0]:
