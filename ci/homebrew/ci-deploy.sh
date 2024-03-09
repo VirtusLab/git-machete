@@ -28,6 +28,12 @@ sha256=$(
   curl -s https://$pypi_host/pypi/git-machete/"$version"/json \
   | jq --raw-output '.urls | map(select(.packagetype == "sdist")) | .[0].digests.sha256')
 
+# We need to run `brew tap homebrew/core` manually because:
+# 1. the formula files need to be present at ~/.linuxbrew/Homebrew/Library/Taps/... - otherwise, `brew bump-formula-pr` will fail due to missing formula AND
+# 2. since Homebrew 4.0.0 it is no longer done by default when installing `brew`; see https://brew.sh/2023/02/16/homebrew-4.0.0/
+# Also, we can't use `--shallow` here (even though it'd save us ~3 minutes), this option is no longer supported (see https://stackoverflow.com/a/65243764).
+brew tap --force homebrew/core
+
 echo "Bump Homebrew formula"
 brew developer on
 if [[ $do_push == true ]]; then
@@ -46,8 +52,10 @@ if [[ $do_push == true ]]; then
   brew bump-formula-pr --force --no-browse --verbose --url "$url" --sha256 "$sha256" git-machete
 else
   echo "Refraining from push since it's a dry run"
-  git clone --depth=1 git@github.com:Homebrew/homebrew-core.git ~/homebrew-core
-  formula_file=~/homebrew-core/Formula/g/git-machete.rb
+  # homebrew-core has been fetched by `brew tap` above
+  formula_file=/home/linuxbrew/.linuxbrew/Homebrew/Library/Taps/homebrew/homebrew-core/Formula/g/git-machete.rb
+
+  # TODO (#1198): run `brew bump-formula-pr --write-only` here, rather than patching with `sed`
   sed -i "s!^  url .*\$!  url \"$url\"!"          $formula_file
   sed -i "s!^  sha256 .*\$!  sha256 \"$sha256\"!" $formula_file
 
