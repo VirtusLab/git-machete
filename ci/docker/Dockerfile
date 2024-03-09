@@ -7,7 +7,7 @@ WORKDIR /tmp/input/
 RUN find . | sort
 RUN \
     export PYTHONDONTWRITEBYTECODE=1; \
-    pip install -e .; \
+    python setup.py install; \
     git machete --version; \
     rm -rf /tmp/input/
 
