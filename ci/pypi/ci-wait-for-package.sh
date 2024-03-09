@@ -4,7 +4,7 @@ set -e -o pipefail -u
 
 host=$1
 timeout_minutes=${2-30}
-version=$(python3 setup.py --version)
+version=$(cut -d\' -f2 git_machete/__init__.py)
 url=https://$host/packages/source/g/git-machete/git-machete-$version.tar.gz
 
 # Typically just 2 minutes of waiting are enough.

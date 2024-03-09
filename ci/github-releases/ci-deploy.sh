@@ -2,7 +2,7 @@
 
 set -e -o pipefail -u -x
 
-tag=v$(python3 setup.py --version)
+tag=v$(cut -d\' -f2 git_machete/__init__.py)
 # Note that this will also create a git tag on the remote
 # (since apparently all non-draft releases on GitHub must have a corresponding git tag).
 hub release create "$tag" \

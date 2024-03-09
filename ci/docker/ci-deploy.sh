@@ -8,7 +8,7 @@ else
   do_push=true
 fi
 
-version=$(python3 setup.py --version)
+version=$(cut -d\' -f2 git_machete/__init__.py)
 
 docker build \
   -t gitmachete/git-machete:$version \

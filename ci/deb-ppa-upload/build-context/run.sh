@@ -15,7 +15,7 @@ echo "$SSH_PRIVATE_KEY_CONTENTS_BASE64" | base64 -d > ~/.ssh/id_rsa
 chmod 400 ~/.ssh/id_rsa
 
 set -x
-VERSION=$(python3 setup.py --version)
+VERSION=$(cut -d\' -f2 git_machete/__init__.py)
 export VERSION
 envsubst '$VERSION' < debian/files.envsubst > debian/files
 cp LICENSE debian/copyright

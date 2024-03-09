@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.24.1
+
+- fixed: deployment issues
+
 ## New in git-machete 3.24.0
 
 - added: `-f`/`--as-first-child` flag to `git machete add` (contributed by @matthalp)

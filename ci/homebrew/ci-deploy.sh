@@ -22,7 +22,7 @@ else
   pypi_host=pypi.org
 fi
 
-version=$(python3 setup.py --version)
+version=$(cut -d\' -f2 git_machete/__init__.py)
 url="https://$pypi_host/packages/source/g/git-machete/git-machete-$version.tar.gz"
 sha256=$(
   curl -s https://$pypi_host/pypi/git-machete/"$version"/json \
