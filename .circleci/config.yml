@@ -4,14 +4,14 @@ executors:
   macos_executor:
     macos:
       # https://circleci.com/docs/using-macos/#supported-xcode-versions-intel
-      xcode: 15.2.0
+      xcode: 15.3.0
     # https://circleci.com/docs/using-macos/#available-resource-classes
     # As of Feb 2024, M1 runners are unavailable in free tier :/
     resource_class: macos.x86.medium.gen2
   ubuntu_executor:
     machine:
       # https://circleci.com/developer/images?imageType=machine
-      image: ubuntu-2204:2023.10.1
+      image: ubuntu-2204:2024.01.1
     environment:
       # Needed to avoid warning: https://superuser.com/questions/575844/warning-terminal-is-not-fully-functional
       TERM: ansi
