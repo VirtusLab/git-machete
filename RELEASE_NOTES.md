@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.24.3
+
 ## New in git-machete 3.24.2
 
 - fixed: automatic updates of Homebrew formula
