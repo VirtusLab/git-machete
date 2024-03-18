@@ -1,2 +1,2 @@
-autoflake==2.3.0
+autoflake==2.3.1
 isort==5.13.2
