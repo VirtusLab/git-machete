@@ -16,7 +16,7 @@ _git_machete() {
   local common_opts="--debug -h --help -v --verbose"
   local add_opts="-f --as-first-child -o --onto= -R --as-root -y --yes"
   local advance_opts="-y --yes"
-  local anno_opts="-b --branch= -H --sync-github-prs"
+  local anno_opts="-b --branch= -H --sync-github-prs --sync-gitlab-mrs"
   local delete_unmanaged_opts="-y --yes"
   local diff_opts="-s --stat"
   local discover_opts="-C --checked-out-since= -l --list-commits -r --roots= -y --yes"

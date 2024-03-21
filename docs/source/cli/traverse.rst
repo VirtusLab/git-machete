@@ -79,8 +79,9 @@ Example machete file with branch qualifiers:
         someone-elses-branch  PR #124 rebase=no push=no
         branch-for-local-experiments  push=no
 
-Operations like ``git machete github anno-prs`` and ``git machete github checkout-prs`` add ``rebase=no push=no`` branch qualifiers
-when the current user is NOT the owner of the PR associated with that branch.
+Operations like ``git machete github anno-prs`` (``git machete gitlab anno-mrs``)
+and ``git machete github checkout-prs`` (``git machete gitlab checkout-mrs``) add ``rebase=no push=no`` branch qualifiers
+when the current user is NOT the author of the PR/MR associated with that branch.
 
 
 **Options:**

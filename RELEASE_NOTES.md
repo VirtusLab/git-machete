@@ -1,5 +1,11 @@
 # Release notes
 
+## New in git-machete 3.25.0
+
+- added: GitLab support via `git machete gitlab` (first suggested by @mikeynap, partly contributed by @max-nicholson)
+- added: `git machete anno --sync-gitlab-mrs` flag for consistency
+- fixed: checking out GitHub PRs where head branch comes from an already deleted fork
+
 ## New in git-machete 3.24.3
 
 - added: Scoop package for Windows (suggested by @ppasieka)

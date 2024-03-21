@@ -31,7 +31,7 @@ class TestGitHubRestackPR(BaseTest):
 
     def test_github_restack_pr_no_prs_or_multiple_prs(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
-        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_restack_pr()))
 
         self.repo_sandbox.new_branch("develop").commit()
@@ -49,7 +49,7 @@ class TestGitHubRestackPR(BaseTest):
 
     def test_github_restack_pr_branch_in_sync(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
-        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         github_api_state = self.github_api_state_for_test_restack_pr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
@@ -87,7 +87,7 @@ class TestGitHubRestackPR(BaseTest):
 
     def test_github_restack_pr_branch_untracked(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
-        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         github_api_state = self.github_api_state_for_test_restack_pr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
@@ -124,7 +124,7 @@ class TestGitHubRestackPR(BaseTest):
 
     def test_github_restack_pr_branch_diverged_and_newer(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
-        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         github_api_state = self.github_api_state_for_test_restack_pr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
@@ -167,7 +167,7 @@ class TestGitHubRestackPR(BaseTest):
 
     def test_github_restack_pr_branch_ahead(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
-        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         github_api_state = self.github_api_state_for_test_restack_pr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
@@ -209,7 +209,7 @@ class TestGitHubRestackPR(BaseTest):
 
     def test_github_restack_pr_branch_ahead_push_no(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
-        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         github_api_state = self.github_api_state_for_test_restack_pr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
@@ -245,7 +245,7 @@ class TestGitHubRestackPR(BaseTest):
 
     def test_github_restack_pr_branch_no_behind(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
-        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_restack_pr()))
 
         (
@@ -275,7 +275,7 @@ class TestGitHubRestackPR(BaseTest):
 
     def test_github_restack_pr_branch_diverged_and_older(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
-        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         github_api_state = self.github_api_state_for_test_restack_pr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 

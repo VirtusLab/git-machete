@@ -26,6 +26,8 @@ test_cases: Dict[str, str] = {
         "develop master",
     "git machete advance -":
         "--debug -h --help -v --verbose -y --yes",
+    "git machete anno -":
+        "-H -b --branch --debug -h --help --sync-github-prs --sync-gitlab-mrs -v --verbose",
     "git machete anno -b ":
         "develop master",
     "git machete anno --branch ":
