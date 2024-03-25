@@ -39,11 +39,11 @@ class Qualifiers:
             self.__slide_out_text = 'slide-out=no'
             self.__annotation_without_qualifiers = re.sub(sub_pattern('slide-out'), ' ', self.__annotation_without_qualifiers)
 
-        merge_match = re.match(match_pattern("merge", value="yes"), annotation)
+        merge_match = re.match(match_pattern("update", value="merge"), annotation)
         if merge_match:
             self.merge = True
-            self.__merge_text = "merge=yes"
-            self.__annotation_without_qualifiers = re.sub(sub_pattern('merge', value='yes'), ' ', self.__annotation_without_qualifiers)
+            self.__merge_text = "update=merge"
+            self.__annotation_without_qualifiers = re.sub(sub_pattern('update', value='merge'), ' ', self.__annotation_without_qualifiers)
 
     def get_annotation_text_without_qualifiers(self) -> str:
         return self.__annotation_without_qualifiers.strip()

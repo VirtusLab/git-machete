@@ -763,7 +763,7 @@ class TestTraverse(BaseTest):
 
         body: str = """
             develop
-                mars merge=yes
+                mars update=merge
                     snickers
             """
         rewrite_branch_layout_file(body)
@@ -782,7 +782,7 @@ class TestTraverse(BaseTest):
 
               develop
               |
-              x-mars *  merge=yes
+              x-mars *  update=merge
                 |
                 x-snickers
 
