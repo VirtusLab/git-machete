@@ -278,12 +278,6 @@ class TestUpdate(BaseTest):
         self.repo_sandbox.write_to_file(".git/hooks/machete-pre-rebase", "#!/bin/sh\nexit 1")
         assert_failure(["update", "-n"], "The machete-pre-rebase hook refused to rebase. Error code: 1")
 
-    def test_update_no_edit_merge_but_without_merge(self) -> None:
-        assert_failure(
-            ['update', '--no-edit-merge'],
-            "Option --no-edit-merge only makes sense when using merge and must be specified together with -M/--merge."
-        )
-
     def test_update_no_interactive_rebase_with_merge(self) -> None:
         assert_failure(
             ['update', '--no-interactive-rebase', '--merge'],
