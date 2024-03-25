@@ -346,7 +346,8 @@ class MacheteClient:
             self, *, opt_merge: bool, opt_no_edit_merge: bool,
             opt_no_interactive_rebase: bool, opt_fork_point: Optional[AnyRevision]) -> None:
         current_branch = self.__git.get_current_branch()
-        if opt_merge:
+        use_merge = opt_merge or (current_branch in self.annotations and self.annotations[current_branch].qualifiers.merge)
+        if use_merge:
             with_branch = self.up(
                 current_branch,
                 prompt_if_inferred_msg=("Branch <b>%s</b> not found in the tree of branch dependencies. "
@@ -577,7 +578,8 @@ class MacheteClient:
         self.__git.checkout(new_upstream)
         for new_downstream in new_downstreams:
             self.__git.checkout(new_downstream)
-            if opt_merge:
+            use_merge = opt_merge or (new_downstream in self.annotations and self.annotations[new_downstream].qualifiers.merge)
+            if use_merge:
                 print(f"Merging {bold(new_upstream)} into {bold(new_downstream)}...")
                 self.__git.merge(new_upstream, new_downstream, opt_no_edit_merge)
             else:
@@ -735,6 +737,8 @@ class MacheteClient:
             else:
                 needs_remote_sync = False
 
+            use_merge = opt_merge or (branch in self.annotations and self.annotations[branch].qualifiers.merge)
+
             if needs_slide_out:
                 # Avoid unnecessary fork point check if we already know that the
                 # branch qualifies for slide out;
@@ -745,7 +749,7 @@ class MacheteClient:
                 # branch qualifies for resetting to remote counterpart;
                 # neither rebase nor merge will be suggested in such case anyway.
                 needs_parent_sync = False
-            elif opt_merge:
+            elif use_merge:
                 needs_parent_sync = bool(
                     upstream and not self.__git.is_ancestor_or_equal(upstream.full_name(), branch.full_name()))
             else:  # using rebase
@@ -809,14 +813,14 @@ class MacheteClient:
                 any_action_suggested = True
                 self.__print_new_line(False)
                 assert upstream is not None
-                if opt_merge:
+                if use_merge:
                     ans = self.ask_if(f"Merge {bold(upstream)} into {bold(branch)}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
                                       f"Merging {bold(upstream)} into {bold(branch)}...", opt_yes=opt_yes)
                 else:
                     ans = self.ask_if(f"Rebase {bold(branch)} onto {bold(upstream)}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
                                       f"Rebasing {bold(branch)} onto {bold(upstream)}...", opt_yes=opt_yes)
                 if ans in ('y', 'yes', 'yq'):
-                    if opt_merge:
+                    if use_merge:
                         self.__git.merge(upstream, branch, opt_no_edit_merge)
                         # It's clearly possible that merge can be in progress
                         # after 'git merge' returned non-zero exit code;

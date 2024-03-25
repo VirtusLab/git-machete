@@ -48,10 +48,6 @@ class CommandLineOptions:
         if self.opt_as_root and self.opt_as_first_child:
             raise MacheteException(
                 "Option `-R/--as-root` cannot be specified together with `-f/--as-first-child`.")
-        if self.opt_no_edit_merge and not self.opt_merge:
-            raise MacheteException(
-                "Option `--no-edit-merge` only makes sense when using merge and "
-                "must be specified together with `-M/--merge`.")
         if self.opt_no_interactive_rebase and self.opt_merge:
             raise MacheteException(
                 "Option `--no-interactive-rebase` only makes sense when using "

@@ -9,15 +9,17 @@ class Qualifiers:
         self.__push_text: str = ''
         self.__rebase_text: str = ''
         self.__slide_out_text: str = ''
+        self.__merge_text: str = ""
         self.rebase: bool = True
         self.push: bool = True
         self.slide_out: bool = True
+        self.merge: bool = False
 
-        def match_pattern(text: str) -> str:
-            return f'.*\\b{text}=no\\b.*'
+        def match_pattern(text: str, value: str = "no") -> str:
+            return f".*\\b{text}={value}\\b.*"
 
-        def sub_pattern(text: str) -> str:
-            return f'[ ]?{text}=no[ ]?'
+        def sub_pattern(text: str, value: str = "no") -> str:
+            return f"[ ]?{text}={value}[ ]?"
 
         rebase_match = re.match(match_pattern('rebase'), annotation)
         if rebase_match:
@@ -37,11 +39,17 @@ class Qualifiers:
             self.__slide_out_text = 'slide-out=no'
             self.__annotation_without_qualifiers = re.sub(sub_pattern('slide-out'), ' ', self.__annotation_without_qualifiers)
 
+        merge_match = re.match(match_pattern("merge", value="yes"), annotation)
+        if merge_match:
+            self.merge = True
+            self.__merge_text = "merge=yes"
+            self.__annotation_without_qualifiers = re.sub(sub_pattern('merge', value='yes'), ' ', self.__annotation_without_qualifiers)
+
     def get_annotation_text_without_qualifiers(self) -> str:
         return self.__annotation_without_qualifiers.strip()
 
     def get_qualifiers_text(self) -> str:
-        return f'{self.__rebase_text} {self.__push_text} {self.__slide_out_text}'.replace('  ', ' ').strip()
+        return f'{self.__rebase_text} {self.__push_text} {self.__slide_out_text} {self.__merge_text}'.replace('  ', ' ').strip()
 
 
 class Annotation:
