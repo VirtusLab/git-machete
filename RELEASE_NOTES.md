@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.25.0
+
+- added: Annotation `update=merge` allows selecting merge strategy per branch (contributed by @gjulianm)
+
 ## New in git-machete 3.24.3
 
 - added: Scoop package for Windows (suggested by @ppasieka)
