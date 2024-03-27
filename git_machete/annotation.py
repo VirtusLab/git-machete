@@ -9,39 +9,52 @@ class Qualifiers:
         self.__push_text: str = ''
         self.__rebase_text: str = ''
         self.__slide_out_text: str = ''
+        self.__merge_text: str = ""
         self.rebase: bool = True
         self.push: bool = True
         self.slide_out: bool = True
+        self.merge: bool = False
 
-        def match_pattern(text: str) -> str:
-            return f'.*\\b{text}=no\\b.*'
+        def match_pattern(pattern: str) -> str:
+            return f".*\\b{pattern}\\b.*"
 
-        def sub_pattern(text: str) -> str:
-            return f'[ ]?{text}=no[ ]?'
+        def sub_pattern(pattern: str) -> str:
+            return f"[ ]?{pattern}[ ]?"
 
-        rebase_match = re.match(match_pattern('rebase'), annotation)
+        rebase_anno = 'rebase=no'
+        rebase_match = re.match(match_pattern(rebase_anno), annotation)
         if rebase_match:
             self.rebase = False
-            self.__rebase_text = 'rebase=no'
-            self.__annotation_without_qualifiers = re.sub(sub_pattern('rebase'), ' ', self.__annotation_without_qualifiers)
+            self.__rebase_text = rebase_anno
+            self.__annotation_without_qualifiers = re.sub(sub_pattern(rebase_anno), ' ', self.__annotation_without_qualifiers)
 
-        push_match = re.match(match_pattern('push'), annotation)
+        push_anno = 'push=no'
+        push_match = re.match(match_pattern(push_anno), annotation)
         if push_match:
             self.push = False
-            self.__push_text = 'push=no'
-            self.__annotation_without_qualifiers = re.sub(sub_pattern('push'), ' ', self.__annotation_without_qualifiers)
+            self.__push_text = push_anno
+            self.__annotation_without_qualifiers = re.sub(sub_pattern(push_anno), ' ', self.__annotation_without_qualifiers)
 
-        slide_out_match = re.match(match_pattern('slide-out'), annotation)
+        slide_out_anno = 'slide-out=no'
+        slide_out_match = re.match(match_pattern(slide_out_anno), annotation)
         if slide_out_match:
             self.slide_out = False
-            self.__slide_out_text = 'slide-out=no'
-            self.__annotation_without_qualifiers = re.sub(sub_pattern('slide-out'), ' ', self.__annotation_without_qualifiers)
+            self.__slide_out_text = slide_out_anno
+            self.__annotation_without_qualifiers = re.sub(sub_pattern(slide_out_anno), ' ', self.__annotation_without_qualifiers)
+
+        merge_anno = 'update=merge'
+        merge_match = re.match(match_pattern(merge_anno), annotation)
+        if merge_match:
+            self.merge = True
+            self.__merge_text = merge_anno
+            self.__annotation_without_qualifiers = re.sub(sub_pattern(merge_anno), ' ', self.__annotation_without_qualifiers)
 
     def get_annotation_text_without_qualifiers(self) -> str:
         return self.__annotation_without_qualifiers.strip()
 
     def get_qualifiers_text(self) -> str:
-        return f'{self.__rebase_text} {self.__push_text} {self.__slide_out_text}'.replace('  ', ' ').strip()
+        text = f'{self.__rebase_text} {self.__push_text} {self.__slide_out_text} {self.__merge_text}'
+        return re.sub(' +', ' ', text).strip()
 
 
 class Annotation:

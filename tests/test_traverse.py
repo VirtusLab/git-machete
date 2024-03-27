@@ -746,6 +746,50 @@ class TestTraverse(BaseTest):
             """
         )
 
+    def test_traverse_with_merge_annotation(self, mocker: MockerFixture) -> None:
+        (
+            self.repo_sandbox.remove_remote()
+            .new_branch("develop")
+            .commit()
+            .new_branch("mars")
+            .commit()
+            .new_branch("snickers")
+            .commit()
+            .check_out("mars")
+            .commit()
+            .check_out("develop")
+            .commit()
+        )
+
+        body: str = """
+            develop
+                mars update=merge
+                    snickers
+            """
+        rewrite_branch_layout_file(body)
+
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning("q"))
+        launch_command("traverse")
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning("n", "q"))
+        launch_command("traverse")
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning("yq"))
+        assert_success(
+            ["traverse", "--start-from=root", "--no-edit-merge"],
+            """
+            Checking out the root branch (develop)
+
+            Checking out mars
+
+              develop
+              |
+              x-mars *  update=merge
+                |
+                x-snickers
+
+            Merge develop into mars? (y, N, q, yq)
+            """,
+        )
+
     def test_traverse_qualifiers_no_push(self) -> None:
         self.setup_standard_tree()
 
