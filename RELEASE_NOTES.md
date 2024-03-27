@@ -2,7 +2,7 @@
 
 ## New in git-machete 3.25.0
 
-- added: Annotation `update=merge` allows selecting merge strategy per branch (contributed by @gjulianm)
+- added: qualifier `update=merge` allows selecting merge strategy per branch (contributed by @gjulianm)
 
 ## New in git-machete 3.24.3
 
