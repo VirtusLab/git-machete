@@ -905,11 +905,11 @@ class GitContext:
         ))))
 
     def get_relation_to_remote_counterpart(self, branch: LocalBranchShortName, remote_branch: RemoteBranchShortName) -> int:
-        b_is_anc_of_rb = self.is_ancestor_or_equal(branch.full_name(), remote_branch.full_name())
-        rb_is_anc_of_b = self.is_ancestor_or_equal(remote_branch.full_name(), branch.full_name())
-        if b_is_anc_of_rb:
-            return SyncToRemoteStatuses.IN_SYNC_WITH_REMOTE if rb_is_anc_of_b else SyncToRemoteStatuses.BEHIND_REMOTE
-        elif rb_is_anc_of_b:
+        b_is_ancestor_of_rb = self.is_ancestor_or_equal(branch.full_name(), remote_branch.full_name())
+        rb_is_ancestor_of_b = self.is_ancestor_or_equal(remote_branch.full_name(), branch.full_name())
+        if b_is_ancestor_of_rb:
+            return SyncToRemoteStatuses.IN_SYNC_WITH_REMOTE if rb_is_ancestor_of_b else SyncToRemoteStatuses.BEHIND_REMOTE
+        elif rb_is_ancestor_of_b:
             return SyncToRemoteStatuses.AHEAD_OF_REMOTE
         else:
             b_t = self.get_committer_unix_timestamp_by_revision(branch)
