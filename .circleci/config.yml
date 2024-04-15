@@ -359,6 +359,7 @@ workflows:
             branches:
               only:
                 - "develop"
+                - "/.*dry-run.*/"
                 - "/hotfix.*/"
                 - "master"
           requires:
