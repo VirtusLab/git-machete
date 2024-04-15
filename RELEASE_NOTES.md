@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.25.1
+
 ## New in git-machete 3.25.0
 
 - added: GitLab support via `git machete gitlab` (first suggested by @mikeynap, partly contributed by @max-nicholson)
