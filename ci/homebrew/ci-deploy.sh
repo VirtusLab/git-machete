@@ -12,20 +12,23 @@ NONINTERACTIVE=1 bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebre
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 brew --version
 
+version=$(cut -d\' -f2 git_machete/__init__.py)
+json=$(curl -s https://$pypi_host/pypi/git-machete/"$version"/json | jq '.urls | map(select(.packagetype == "sdist")) | .[0]')
+
 if [[ ${1-} == "--dry-run" || ${CIRCLE_BRANCH-} != "master" ]]; then
   do_push=false
   pypi_host=test.pypi.org
+  # For some reason, sometimes the package doesn't get advertised under .../packages/source/g/git-machete/... URL within a reasonable time.
+  url=$(echo "$json" | jq --raw-output .url)
 else
   do_push=true
   pypi_host=pypi.org
+  # Do not use https://*files.pythonhosted.org/... URLs (the ones coming from the JSON above) for actual formula updates,
+  # see https://github.com/orgs/Homebrew/discussions/5193
+  url="https://$pypi_host/packages/source/g/git-machete/git-machete-$version.tar.gz"
 fi
 
-version=$(cut -d\' -f2 git_machete/__init__.py)
-# Do not use https://*files.pythonhosted.org/... URLs, see https://github.com/orgs/Homebrew/discussions/5193
-url="https://$pypi_host/packages/source/g/git-machete/git-machete-$version.tar.gz"
-sha256=$(
-  curl -s https://$pypi_host/pypi/git-machete/"$version"/json \
-  | jq --raw-output '.urls | map(select(.packagetype == "sdist")) | .[0].digests.sha256')
+sha256=$(echo "$json" | jq --raw-output .digests.sha256)
 
 # We need to run `brew tap homebrew/core` manually because:
 # 1. the formula files need to be present at .../.linuxbrew/Homebrew/Library/Taps/... -

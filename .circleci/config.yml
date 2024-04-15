@@ -184,7 +184,7 @@ jobs:
       - run: pip install tox
       # TODO (#1005): make zsh completion tests pass on macOS machine on CI
       - run: tox -e test-completions -- -vv -k "not zsh"
-      - run: PYTHON_VERSION=3.12-macos  tox -e coverage -- -vv
+      - run: PYTHON_VERSION=3-macos  tox -e coverage -- -vv
       - store_test_results:
           path: test-results/
       - persist_to_workspace:
@@ -196,11 +196,12 @@ jobs:
     steps:
       - checkout
       - run: pip install tox
-      # We don't collect coverage on Windows as it massively extends execution time for some reason.
-      # See https://github.com/tox-dev/tox/issues/3092 for why `py` and not `testenv`.
-      - run: tox -e py -- -vv
+      - run: PYTHON_VERSION=3-windows tox -e coverage -- -vv
       - store_test_results:
           path: test-results/
+      - persist_to_workspace:
+          root: .
+          paths: [ .coverage.* ]
 
   "coverage upload":
     executor: ubuntu_executor
@@ -222,9 +223,6 @@ jobs:
           name: '[Dry run] Deploy to PyPI'
           # Side effects: does an actual release, but to the test PyPI
           command: bash ci/pypi/ci-deploy.sh --dry-run
-      - run:
-          name: '[Dry run] Wait up to 30 minutes for PyPI package to be available'
-          command: bash ci/pypi/ci-wait-for-package.sh test.pypi.org 30
 
       - run:
           name: '[Dry run] Update Homebrew with local installation test'

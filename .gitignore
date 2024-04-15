@@ -6,7 +6,8 @@
 AUTHORS
 ChangeLog
 build/
-.coverage*
+.coverage
+.coverage.*
 coverage.xml
 dist/
 docs/html/

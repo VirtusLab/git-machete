@@ -10,7 +10,7 @@ from git_machete import __version__
 this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, 'README.md'), mode="r", encoding="utf-8") as f:
     # PyPI webpage seems to be always served with white background, let's remove the GitHub-specific dark variants of images.
-    long_description = re.sub("^.*#gh-dark-mode-only.*$", "", f.read())
+    long_description = re.sub("(?m)^.*#gh-dark-mode-only.*\n", "", f.read())
 
 setup(
     name='git-machete',
