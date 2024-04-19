@@ -103,8 +103,8 @@ Creates, checks out and manages GitLab MRs while keeping them reflected in branc
     Perform the following sequence of actions:
 
     #. If the MR for the current branch is ready for review, it gets converted to a draft.
-    #. The branch is (force-)pushed into remote.
     #. The MR is retargeted to its upstream (parent) branch, as in ``retarget-mr``.
+    #. The branch is (force-)pushed into remote.
     #. If the MR has been converted to draft in step 1, it's reverted to ready for review state.
 
     The drafting/undrafting is useful in case the GitLab project has set up `code owners <https://docs.gitlab.com/ee/user/project/codeowners/>`_.

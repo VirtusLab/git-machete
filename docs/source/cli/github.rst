@@ -102,8 +102,8 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
     Perform the following sequence of actions:
 
     #. If the PR for the current branch is ready for review, it gets converted to a draft.
-    #. The branch is (force-)pushed into remote.
     #. The PR is retargeted to its upstream (parent) branch, as in ``retarget-pr``.
+    #. The branch is (force-)pushed into remote.
     #. If the PR has been converted to draft in step 1, it's reverted to ready for review state.
 
     The drafting/undrafting is useful in case the GitHub repository has set up `CODEOWNERS <https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners>`_.

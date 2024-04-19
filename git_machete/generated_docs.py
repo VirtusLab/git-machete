@@ -616,9 +616,9 @@ long_docs: Dict[str, str] = {
 
                  * If the PR for the current branch is ready for review, it gets converted to a draft.
 
-                 * The branch is (force-)pushed into remote.
-
                  * The PR is retargeted to its upstream (parent) branch, as in `retarget-pr`.
+
+                 * The branch is (force-)pushed into remote.
 
                  * If the PR has been converted to draft in step 1, it's reverted to ready for review state.
 
@@ -797,9 +797,9 @@ long_docs: Dict[str, str] = {
 
                  * If the MR for the current branch is ready for review, it gets converted to a draft.
 
-                 * The branch is (force-)pushed into remote.
-
                  * The MR is retargeted to its upstream (parent) branch, as in `retarget-mr`.
+
+                 * The branch is (force-)pushed into remote.
 
                  * If the MR has been converted to draft in step 1, it's reverted to ready for review state.
 
