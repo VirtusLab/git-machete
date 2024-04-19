@@ -108,13 +108,13 @@ class TestGitHubRestackPR(BaseTest):
         assert_success(
             ['github', 'restack-pr'],
             """
+            Base branch of PR #14 has been switched to master
             Pushing untracked branch feature_1 to origin...
 
               master (untracked)
               |
-              o-feature_1 *
+              o-feature_1 *  PR #14 (some_other_user)
 
-            Base branch of PR #14 has been switched to master
             """
         )
         pr = github_api_state.get_pull_by_number(14)
@@ -149,15 +149,15 @@ class TestGitHubRestackPR(BaseTest):
             ['github', 'restack-pr'],
             """
             PR #15 has been temporarily marked as draft
+            Base branch of PR #15 has been switched to master
+            Description of PR #15 has been updated
             Branch feature diverged from (and has newer commits than) its remote counterpart origin/feature.
             Pushing feature with force-with-lease to origin...
 
               master (untracked)
               |
-              o-feature *
+              o-feature *  PR #15 (some_other_user)
 
-            Base branch of PR #15 has been switched to master
-            Description of PR #15 has been updated
             PR #15 has been marked as ready for review again
             """
         )
@@ -192,14 +192,14 @@ class TestGitHubRestackPR(BaseTest):
             ['github', 'restack-pr'],
             """
             PR #15 has been temporarily marked as draft
+            Base branch of PR #15 has been switched to master
+            Description of PR #15 has been updated
             Pushing feature to origin...
 
               master (untracked)
               |
-              o-feature *
+              o-feature *  PR #15 (some_other_user)
 
-            Base branch of PR #15 has been switched to master
-            Description of PR #15 has been updated
             PR #15 has been marked as ready for review again
             """
         )

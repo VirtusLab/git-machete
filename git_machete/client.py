@@ -2268,6 +2268,9 @@ class MacheteClient:
                 if converted_to_draft:
                     print(f'{pr.display_text()} has been temporarily marked as draft')
 
+                # Note that retarget should happen BEFORE push, see issue #1222
+                self.retarget_pr(spec, head, ignore_if_missing=False)
+
                 if s == SyncToRemoteStatuses.AHEAD_OF_REMOTE:
                     assert remote is not None
                     self.__handle_ahead_state(
@@ -2302,8 +2305,6 @@ class MacheteClient:
                     opt_list_commits_with_hashes=False,
                     opt_no_detect_squash_merges=False)
                 self.__print_new_line(False)
-
-                self.retarget_pr(spec, head, ignore_if_missing=False)
 
                 if converted_to_draft:
                     code_hosting_client.set_draft_status_of_pull_request(prs[0].number, target_draft_status=False)

@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.25.1
 
+- fixed: `git machete git{hub,lab} restack-{pr,mr}` now first retargets, then pushes (so that certain CIs see the correct base branch in env vars)
+
 ## New in git-machete 3.25.0
 
 - added: GitLab support via `git machete gitlab` (first suggested by @mikeynap, partly contributed by @max-nicholson)

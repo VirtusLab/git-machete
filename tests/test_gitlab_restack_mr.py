@@ -108,13 +108,13 @@ class TestGitLabRestackMR(BaseTest):
         assert_success(
             ['gitlab', 'restack-mr'],
             """
+            Target branch of MR !14 has been switched to master
             Pushing untracked branch feature_1 to origin...
 
               master (untracked)
               |
-              o-feature_1 *
+              o-feature_1 *  MR !14 (some_other_user)
 
-            Target branch of MR !14 has been switched to master
             """
         )
         mr = gitlab_api_state.get_pull_by_number(14)
@@ -152,15 +152,15 @@ class TestGitLabRestackMR(BaseTest):
             ['gitlab', 'restack-mr'],
             """
             MR !15 has been temporarily marked as draft
+            Target branch of MR !15 has been switched to master
+            Description of MR !15 has been updated
             Branch feature diverged from (and has newer commits than) its remote counterpart origin/feature.
             Pushing feature with force-with-lease to origin...
 
               master (untracked)
               |
-              o-feature *
+              o-feature *  MR !15 (some_other_user)
 
-            Target branch of MR !15 has been switched to master
-            Description of MR !15 has been updated
             MR !15 has been marked as ready for review again
             """
         )
@@ -196,14 +196,14 @@ class TestGitLabRestackMR(BaseTest):
             ['gitlab', 'restack-mr'],
             """
             MR !15 has been temporarily marked as draft
+            Target branch of MR !15 has been switched to master
+            Description of MR !15 has been updated
             Pushing feature to origin...
 
               master (untracked)
               |
-              o-feature *
+              o-feature *  MR !15 (some_other_user)
 
-            Target branch of MR !15 has been switched to master
-            Description of MR !15 has been updated
             MR !15 has been marked as ready for review again
             """
         )
