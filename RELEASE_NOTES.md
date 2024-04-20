@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.25.2
+
+- fixed: Homebrew deploys
+
 ## New in git-machete 3.25.1
 
 - fixed: `git machete git{hub,lab} restack-{pr,mr}` now first retargets, then pushes (so that certain CIs see the correct base branch in env vars)
