@@ -101,7 +101,7 @@ def find_executable(executable: str) -> Optional[str]:
 
 
 def compact_dict(d: Dict[str, Any]) -> Dict[str, str]:
-    return {k: re.sub('\n +', ' ', str(v), re.MULTILINE) for k, v in d.items()}
+    return {k: re.sub('\n +', ' ', str(v)) for k, v in d.items()}
 
 
 def debug(msg: str) -> None:
