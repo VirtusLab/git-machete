@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.25.3
+
 ## New in git-machete 3.25.2
 
 - fixed: Homebrew deploys
