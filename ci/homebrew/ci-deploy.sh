@@ -53,12 +53,18 @@ if [[ $do_push == true ]]; then
   brew bump-formula-pr --force      "${flags[@]}" git-machete
 else
   echo "Refraining from push since it's a dry run"
-  brew bump-formula-pr --write-only "${flags[@]}" git-machete
 
   # homebrew-core has been fetched by `brew tap` above
   tap_repo=/home/linuxbrew/.linuxbrew/Homebrew/Library/Taps/homebrew/homebrew-core
+  formula_file=$tap_repo/Formula/g/git-machete.rb
+
+  # Workaround for https://github.com/orgs/Homebrew/discussions/5193
+  sed -i 's/files.pythonhosted.org/test-files.pythonhosted.org/' $formula_file
+
+  brew bump-formula-pr --write-only "${flags[@]}" git-machete
+
   (cd $tap_repo; GIT_PAGER="cat" git diff)
-  brew install --build-from-source --formula $tap_repo/Formula/g/git-machete.rb
+  brew install --build-from-source --formula $formula_file
 
   if [[ "$version" != "$(git machete version | cut -d' ' -f3)" ]]; then
     echo "Something went wrong during brew installation: installed version does not match version from formula."
