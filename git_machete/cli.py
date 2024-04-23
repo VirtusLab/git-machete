@@ -510,7 +510,8 @@ def update_cli_options_using_parsed_args(
         elif opt == "yes":
             cli_opts.opt_yes = True
 
-    if cli_opts.opt_n and cli_opts.opt_merge:
+    if cli_opts.opt_n or cli_opts.opt_yes:
+        # Set no-edit-merge as the default, as some branches might have a merge strategy even without --merge set
         cli_opts.opt_no_edit_merge = True
     if not cli_opts.opt_merge:
         if cli_opts.opt_yes or cli_opts.opt_n:
