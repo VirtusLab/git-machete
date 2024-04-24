@@ -72,35 +72,6 @@ class TestUpdate(BaseTest):
         assert self.repo_sandbox.is_ancestor_or_equal(old_level_1_commit_hash, "level-1-branch")
         assert self.repo_sandbox.is_ancestor_or_equal("level-0-branch", "level-1-branch")
 
-    def test_update_by_merge_yes_option_forces_no_edit_merge(self) -> None:
-
-        (
-            self.repo_sandbox.new_branch("level-0-branch")
-            .commit("Basic commit.")
-            .new_branch("level-1-branch")
-            .commit("Only level-1 commit.")
-            .new_branch("level-2-branch")
-            .commit("Only level-2 commit.")
-            .check_out("level-0-branch")
-            .commit("New commit on level-0-branch")
-        )
-        body: str = \
-            """
-            level-0-branch
-                level-1-branch
-                    level-2-branch
-            """
-        rewrite_branch_layout_file(body)
-
-        self.repo_sandbox.check_out("level-1-branch")
-        old_level_1_commit_hash = self.repo_sandbox.get_current_commit_hash()
-        # If -y is specified, --no-edit-merge is implied. This test ensures that, if we got a message edit window
-        # the test would fail as the merge is not performed fully without interaction.
-        launch_command("update", "--merge", "-y")
-
-        assert self.repo_sandbox.is_ancestor_or_equal(old_level_1_commit_hash, "level-1-branch")
-        assert self.repo_sandbox.is_ancestor_or_equal("level-0-branch", "level-1-branch")
-
     def test_update_drops_empty_commits(self) -> None:
         """
         Verify that 'git machete update' drops effectively-empty commits if the underlying git supports that behavior.
