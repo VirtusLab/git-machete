@@ -790,7 +790,7 @@ class TestTraverse(BaseTest):
             """,
         )
 
-    def test_traverse_with_merge_annotation_and_yes_option(self, mocker: MockerFixture) -> None:
+    def test_traverse_with_merge_annotation_and_yes_option(self) -> None:
         (
             self.repo_sandbox.remove_remote()
             .new_branch("develop")
@@ -812,11 +812,10 @@ class TestTraverse(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        self.patch_symbol(mocker, "builtins.input", mock_input_returning("q"))
-        launch_command("traverse")
-        self.patch_symbol(mocker, "builtins.input", mock_input_returning("n", "q"))
-        launch_command("traverse")
-        launch_command("traverse", "--start-from=root", "--yes"),  # --yes should imply --no-edit-merge, if it doesn't the command will fail
+        with overridden_environment(GIT_EDITOR='false'):
+            # --yes should imply --no-edit-merge, if it doesn't then the command will fail due to a non-zero exit code from the editor
+            launch_command("traverse", "--start-from=root", "--yes"),
+
         assert_success(
             ["status"],
             """
