@@ -817,7 +817,8 @@ class TestTraverse(BaseTest):
         self.patch_symbol(mocker, "builtins.input", mock_input_returning("n", "q"))
         launch_command("traverse")
         launch_command("traverse", "--start-from=root", "--yes"),  # --yes should imply --no-edit-merge, if it doesn't the command will fail
-        assert_success(["status"],
+        assert_success(
+            ["status"],
             """
             develop
             |
