@@ -790,6 +790,43 @@ class TestTraverse(BaseTest):
             """,
         )
 
+    def test_traverse_with_merge_annotation_and_yes_option(self) -> None:
+        (
+            self.repo_sandbox.remove_remote()
+            .new_branch("develop")
+            .commit()
+            .new_branch("mars")
+            .commit()
+            .new_branch("snickers")
+            .commit()
+            .check_out("mars")
+            .commit()
+            .check_out("develop")
+            .commit()
+        )
+
+        body: str = """
+            develop
+                mars update=merge
+                    snickers
+            """
+        rewrite_branch_layout_file(body)
+
+        with overridden_environment(GIT_EDITOR='false'):
+            # --yes should imply --no-edit-merge, if it doesn't then the command will fail due to a non-zero exit code from the editor
+            launch_command("traverse", "--start-from=root", "--yes"),
+
+        assert_success(
+            ["status"],
+            """
+            develop
+            |
+            o-mars  update=merge
+              |
+              o-snickers *
+            """,
+        )
+
     def test_traverse_qualifiers_no_push(self) -> None:
         self.setup_standard_tree()
 

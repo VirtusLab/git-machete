@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.25.3
 
+- fixed: `-y` option in `git machete traverse` automatically sets `--no-edit-merge` flag, to retain behavior when the `update=merge` qualifier is set (contributed by @gjulianm)
+
 ## New in git-machete 3.25.2
 
 - fixed: Homebrew deploys
