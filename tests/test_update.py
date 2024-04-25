@@ -193,6 +193,24 @@ class TestUpdate(BaseTest):
                                  "is not ancestor of or the tip of the branch-1b branch."
         assert_failure(['update', '-f', branch_1a_hash], expected_error_message)
 
+    def test_update_with_rebase_no_qualifier(self) -> None:
+        with fixed_author_and_committer_date_in_past():
+            (
+                self.repo_sandbox.new_branch('branch-0')
+                .commit("Commit on branch-0.")
+                .new_branch("branch-1")
+                .commit("Commit on branch-1.")
+            )
+
+        body: str = \
+            """
+            branch-0
+                branch-1 rebase=no
+            """
+        rewrite_branch_layout_file(body)
+
+        assert_success(['update', '-n'], "Warn: branch branch-1 is marked with rebase=no qualifier\n")
+
     def test_update_with_stop_for_edit(self) -> None:
 
         (

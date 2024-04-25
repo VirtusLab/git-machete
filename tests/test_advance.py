@@ -5,7 +5,8 @@ from git_machete.exceptions import UnderlyingGitException
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
-                      mock_input_returning, rewrite_branch_layout_file)
+                      mock_input_returning, mock_input_returning_y,
+                      rewrite_branch_layout_file)
 
 
 class TestAdvance(BaseTest):
@@ -207,5 +208,77 @@ class TestAdvance(BaseTest):
             m-level-1a-branch (untracked)
             |
             x-level-1b-branch (untracked)
+            """
+        )
+
+    def test_advance_when_push_no_qualifier_present(self, mocker: MockerFixture) -> None:
+        (
+            self.repo_sandbox
+            .new_branch("root")
+            .commit()
+            .push()
+            .new_branch("level-1-branch")
+            .commit()
+            .check_out("root")
+        )
+
+        body: str = \
+            """
+            root  push=no
+                level-1-branch
+            """
+        rewrite_branch_layout_file(body)
+
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning_y)
+        assert_success(
+            ["advance"],
+            """
+            Fast-forward root to match level-1-branch? (y, N)
+
+            Branch root is now fast-forwarded to match level-1-branch. Slide level-1-branch out of the tree of branch dependencies? (y, N)
+            """
+        )
+
+        assert_success(
+            ["status"],
+            """
+            root *  push=no (ahead of origin)
+            """
+        )
+
+    def test_advance_when_slide_out_no_qualifier_present(self, mocker: MockerFixture) -> None:
+        (
+            self.repo_sandbox
+            .new_branch("root")
+            .commit()
+            .push()
+            .new_branch("level-1-branch")
+            .commit()
+            .check_out("root")
+        )
+
+        body: str = \
+            """
+            root
+                level-1-branch  slide-out=no
+            """
+        rewrite_branch_layout_file(body)
+
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning_y)
+        assert_success(
+            ["advance"],
+            """
+            Fast-forward root to match level-1-branch? (y, N)
+
+            Branch root is now fast-forwarded to match level-1-branch. Push root to origin? (y, N)
+            """
+        )
+
+        assert_success(
+            ["status"],
+            """
+            root *
+            |
+            m-level-1-branch  slide-out=no (untracked)
             """
         )

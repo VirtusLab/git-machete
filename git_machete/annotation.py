@@ -9,11 +9,11 @@ class Qualifiers:
         self.__push_text: str = ''
         self.__rebase_text: str = ''
         self.__slide_out_text: str = ''
-        self.__merge_text: str = ""
+        self.__update_with_merge_text: str = ""
         self.rebase: bool = True
         self.push: bool = True
         self.slide_out: bool = True
-        self.merge: bool = False
+        self.update_with_merge: bool = False
 
         def match_pattern(pattern: str) -> str:
             return f".*\\b{pattern}\\b.*"
@@ -42,18 +42,18 @@ class Qualifiers:
             self.__slide_out_text = slide_out_anno
             self.__annotation_without_qualifiers = re.sub(sub_pattern(slide_out_anno), ' ', self.__annotation_without_qualifiers)
 
-        merge_anno = 'update=merge'
-        merge_match = re.match(match_pattern(merge_anno), annotation)
-        if merge_match:
-            self.merge = True
-            self.__merge_text = merge_anno
-            self.__annotation_without_qualifiers = re.sub(sub_pattern(merge_anno), ' ', self.__annotation_without_qualifiers)
+        update_with_merge_anno = 'update=merge'
+        update_with_merge_match = re.match(match_pattern(update_with_merge_anno), annotation)
+        if update_with_merge_match:
+            self.update_with_merge = True
+            self.__update_with_merge_text = update_with_merge_anno
+            self.__annotation_without_qualifiers = re.sub(sub_pattern(update_with_merge_anno), ' ', self.__annotation_without_qualifiers)
 
     def get_annotation_text_without_qualifiers(self) -> str:
         return self.__annotation_without_qualifiers.strip()
 
     def get_qualifiers_text(self) -> str:
-        text = f'{self.__rebase_text} {self.__push_text} {self.__slide_out_text} {self.__merge_text}'
+        text = f'{self.__rebase_text} {self.__push_text} {self.__slide_out_text} {self.__update_with_merge_text}'
         return re.sub(' +', ' ', text).strip()
 
 

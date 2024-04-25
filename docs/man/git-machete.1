@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Apr 24, 2024" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Apr 25, 2024" "" "git-machete"
 .SH NAME
 git-machete \- git-machete 3.25.3
 .sp
@@ -245,6 +245,10 @@ o\-develop *
 .UNINDENT
 .sp
 Note that the current branch after the operation is still \fBdevelop\fP, just pointing to \fBfeature/add\-from\-remote\fP\(aqs tip now.
+.sp
+If the current branch \fBC\fP is annotated with \fBpush=no\fP qualifier, the push is not performed.
+If the downstream branch \fBD\fP is annotated with \fBslide\-out=no\fP qualifier, the slide\-out is not performed.
+See help for \fI\%traverse\fP for more details on the qualifiers.
 .sp
 \fBOptions:\fP
 .INDENT 0.0
@@ -1706,12 +1710,15 @@ The provided branches must form a chain \-\-\- all of the following conditions m
 .IP \(bu 2
 for i=1..N\-1, (i+1)\-th branch must be the only downstream (child) branch of the i\-th branch,
 .IP \(bu 2
-all provided branches must have an upstream branch (so, in other words, roots of branch dependency tree cannot be slid out).
+all provided branches must have an upstream branch (so, in other words, roots of branch layout cannot be slid out).
 .UNINDENT
 .UNINDENT
 .UNINDENT
 .sp
 Note: Unless \fB\-\-delete\fP is passed, \fBslide\-out\fP doesn\(aqt delete any branches from git, just removes them from the tree of branch dependencies.
+.sp
+Note: if a child branch is annotated with \fBrebase=no\fP qualifier, the rebase is not performed.
+See help for \fI\%traverse\fP for more details on the qualifiers.
 .sp
 \fBOptions:\fP
 .INDENT 0.0

@@ -346,7 +346,7 @@ class MacheteClient:
             self, *, opt_merge: bool, opt_no_edit_merge: bool,
             opt_no_interactive_rebase: bool, opt_fork_point: Optional[AnyRevision]) -> None:
         current_branch = self.__git.get_current_branch()
-        use_merge = opt_merge or (current_branch in self.annotations and self.annotations[current_branch].qualifiers.merge)
+        use_merge = opt_merge or (current_branch in self.annotations and self.annotations[current_branch].qualifiers.update_with_merge)
         if use_merge:
             with_branch = self.up(
                 current_branch,
@@ -518,6 +518,9 @@ class MacheteClient:
         # Verify that all branches exist, are managed, and have an upstream.
         for branch in branches_to_slide_out:
             self.expect_in_managed_branches(branch)
+            anno = self.annotations.get(branch)
+            if anno and not anno.qualifiers.slide_out:
+                warn(f"branch {branch} is marked with `slide-out=no` qualifier")
             new_upstream = self.__up_branch.get(branch)
             if not new_upstream:
                 raise MacheteException(f"No upstream branch defined for {bold(branch)}, cannot slide out")
@@ -577,12 +580,15 @@ class MacheteClient:
 
         self.__git.checkout(new_upstream)
         for new_downstream in new_downstreams:
-            self.__git.checkout(new_downstream)
-            use_merge = opt_merge or (new_downstream in self.annotations and self.annotations[new_downstream].qualifiers.merge)
+            anno = self.annotations.get(new_downstream)
+            use_merge = opt_merge or (anno and anno.qualifiers.update_with_merge)
+            use_rebase = not use_merge and (not anno or anno.qualifiers.rebase)
+            if use_merge or use_rebase:
+                self.__git.checkout(new_downstream)
             if use_merge:
                 print(f"Merging {bold(new_upstream)} into {bold(new_downstream)}...")
                 self.__git.merge(new_upstream, new_downstream, opt_no_edit_merge)
-            else:
+            elif use_rebase:
                 print(f"Rebasing {bold(new_downstream)} onto {bold(new_upstream)}...")
                 down_fork_point = opt_down_fork_point or self.fork_point(new_downstream, use_overrides=True)
                 self.rebase(
@@ -633,12 +639,13 @@ class MacheteClient:
                 return
 
         remote = self.__git.get_combined_remote_for_fetching_of_branch(branch)
-        if remote:
-            ans = self.ask_if(f"\nBranch {bold(branch)} is now fast-forwarded to match {bold(down_branch)}. "
-                              f"Push {bold(branch)} to {bold(remote)}?" + get_pretty_choices('y', 'N'),
-                              f"\nBranch {bold(branch)} is now fast-forwarded to match {bold(down_branch)}. "
-                              f"Pushing {bold(branch)} to {bold(remote)}...",
-                              opt_yes=opt_yes)
+        anno = self.annotations.get(branch)
+        if remote and (not anno or anno.qualifiers.push):
+            push_msg = f"\nBranch {bold(branch)} is now fast-forwarded to match {bold(down_branch)}. " \
+                f"Push {bold(branch)} to {bold(remote)}?" + get_pretty_choices('y', 'N')
+            opt_yes_push_msg = f"\nBranch {bold(branch)} is now fast-forwarded to match {bold(down_branch)}. " \
+                f"Pushing {bold(branch)} to {bold(remote)}..."
+            ans = self.ask_if(push_msg, opt_yes_push_msg, opt_yes=opt_yes)
             if ans in ('y', 'yes'):
                 self.__git.push(remote, branch)
                 branch_pushed_or_fast_forwarded_msg = f"\nBranch {bold(branch)} is now pushed to {bold(remote)}."
@@ -647,19 +654,22 @@ class MacheteClient:
         else:
             branch_pushed_or_fast_forwarded_msg = f"\nBranch {bold(branch)} is now fast-forwarded to match {bold(down_branch)}."
 
-        ans = self.ask_if(f"{branch_pushed_or_fast_forwarded_msg} Slide {bold(down_branch)} out of the tree of branch dependencies?" +
-                          get_pretty_choices('y', 'N'),
-                          f"{branch_pushed_or_fast_forwarded_msg} Sliding {bold(down_branch)} out of the tree of branch dependencies...",
-                          opt_yes=opt_yes)
-        if ans in ('y', 'yes'):
-            dds = self.__down_branches.get(LocalBranchShortName.of(down_branch)) or []
-            for dd in dds:
-                self.__up_branch[dd] = branch
-            self.__down_branches[branch] = flat_map(
-                lambda bd: dds if bd == down_branch else [bd],
-                self.__down_branches.get(branch) or [])
-            self.save_branch_layout_file()
-            self.__run_post_slide_out_hook(branch, down_branch, dds)
+        down_anno = self.annotations.get(down_branch)
+        if not down_anno or down_anno.qualifiers.slide_out:
+            slide_out_msg = (f"{branch_pushed_or_fast_forwarded_msg} Slide {bold(down_branch)} out "
+                             f"of the tree of branch dependencies?{get_pretty_choices('y', 'N')}")
+            slide_out_opt_yes_msg = (f"{branch_pushed_or_fast_forwarded_msg} Sliding {bold(down_branch)} out "
+                                     "of the tree of branch dependencies...")
+            ans = self.ask_if(slide_out_msg, slide_out_opt_yes_msg, opt_yes=opt_yes)
+            if ans in ('y', 'yes'):
+                dds = self.__down_branches.get(LocalBranchShortName.of(down_branch)) or []
+                for dd in dds:
+                    self.__up_branch[dd] = branch
+                self.__down_branches[branch] = flat_map(
+                    lambda bd: dds if bd == down_branch else [bd],
+                    self.__down_branches.get(branch) or [])
+                self.save_branch_layout_file()
+                self.__run_post_slide_out_hook(branch, down_branch, dds)
 
     def __print_new_line(self, new_status: bool) -> None:
         if not self.__empty_line_status:
@@ -737,7 +747,7 @@ class MacheteClient:
             else:
                 needs_remote_sync = False
 
-            use_merge = opt_merge or (branch in self.annotations and self.annotations[branch].qualifiers.merge)
+            use_merge = opt_merge or (branch in self.annotations and self.annotations[branch].qualifiers.update_with_merge)
 
             if needs_slide_out:
                 # Avoid unnecessary fork point check if we already know that the
@@ -1167,18 +1177,21 @@ class MacheteClient:
     def __popen_hook(*args: str, cwd: str, env: Dict[str, str]) -> PopenResult:
         if sys.platform == "win32":
             # This is a poor-man's solution to the problem of Windows **not** recognizing Unix-style shebangs :/
-            return utils.popen_cmd("sh", *args, cwd=cwd, env=env)  # pragma: no cover; coverage not measured on Windows
+            return utils.popen_cmd("sh", *args, cwd=cwd, env=env)
         else:
             return utils.popen_cmd(*args, cwd=cwd, env=env)
 
     def __run_hook(self, *args: str, cwd: str) -> int:
         self.__git.flush_caches()
         if sys.platform == "win32":
-            return utils.run_cmd("sh", *args, cwd=cwd)  # pragma: no cover; coverage not measured on Windows
+            return utils.run_cmd("sh", *args, cwd=cwd)
         else:
             return utils.run_cmd(*args, cwd=cwd)
 
     def rebase(self, onto: AnyRevision, from_exclusive: AnyRevision, branch: LocalBranchShortName, opt_no_interactive_rebase: bool) -> None:
+        anno = self.annotations.get(branch)
+        if anno and not anno.qualifiers.rebase:
+            warn(f"branch {branch} is marked with `rebase=no` qualifier")
         # Let's use `OPTS` suffix for consistency with git's built-in env var `GIT_DIFF_OPTS`
         extra_rebase_opts = os.environ.get('GIT_MACHETE_REBASE_OPTS', '').split()
 

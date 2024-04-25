@@ -279,6 +279,45 @@ class TestSlideOut(BaseTest):
 
         assert_success(['status', '-l'], expected_status_output)
 
+    def test_slide_out_with_qualifiers(self, mocker: MockerFixture) -> None:
+        (
+            self.repo_sandbox
+            .remove_remote('origin')
+            .new_branch('branch-0')
+            .commit()
+            .new_branch('branch-1')
+            .commit()
+            .new_branch('branch-2')
+            .commit('Commit on branch-2.')
+            .check_out('branch-0')
+            .amend_commit('New commit message')
+        )
+        body: str = \
+            """
+            branch-0
+                branch-1  slide-out=no
+                    branch-2  rebase=no
+            """
+        rewrite_branch_layout_file(body)
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
+        assert_success(
+            ['slide-out', '-n', 'branch-1', '--delete'],
+            "Warn: branch branch-1 is marked with slide-out=no qualifier\n"
+            "Delete branch branch-1 (unmerged to HEAD)? (y, N, q)\n"
+        )
+
+        expected_status_output = (
+            """
+            branch-0 *
+            |
+            | Some commit message.
+            | Commit on branch-2.
+            x-branch-2  rebase=no
+            """
+        )
+        assert_success(['status', '-l'], expected_status_output)
+
     def test_slide_out_with_down_fork_point_and_multiple_children_of_last_branch(self) -> None:
         (
             self.repo_sandbox.new_branch('branch-0')

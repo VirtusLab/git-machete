@@ -3,6 +3,8 @@
 ## New in git-machete 3.25.3
 
 - fixed: `-y` option in `git machete traverse` automatically sets `--no-edit-merge` flag, to retain behavior when the `update=merge` qualifier is set (contributed by @gjulianm)
+- fixed: `push=no` and `slide-out=no` qualifiers now work in `git machete advance` now
+- fixed: `rebase=no` qualifier now works in `git machete slide-out`
 
 ## New in git-machete 3.25.2
 

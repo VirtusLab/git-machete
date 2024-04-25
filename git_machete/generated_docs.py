@@ -110,6 +110,10 @@ long_docs: Dict[str, str] = {
 
         Note that the current branch after the operation is still `develop`, just pointing to `feature/add-from-remote`'s tip now.
 
+        If the current branch `C` is annotated with `push=no` qualifier, the push is not performed.
+        If the downstream branch `D` is annotated with `slide-out=no` qualifier, the slide-out is not performed.
+        See help for `traverse` for more details on the qualifiers.
+
         <b>Options:</b>
            <b>-y</b>, <b>--yes</b>
               Don't ask for confirmation whether to fast-forward the current branch or whether to slide-out the downstream.
@@ -1083,9 +1087,12 @@ long_docs: Dict[str, str] = {
 
         The provided branches must form a chain — all of the following conditions must be met:
            * for i=1..N-1, (i+1)-th branch must be the only downstream (child) branch of the i-th branch,
-           * all provided branches must have an upstream branch (so, in other words, roots of branch dependency tree cannot be slid out).
+           * all provided branches must have an upstream branch (so, in other words, roots of branch layout cannot be slid out).
 
         Note: Unless `--delete` is passed, `slide-out` doesn't delete any branches from git, just removes them from the tree of branch dependencies.
+
+        Note: if a child branch is annotated with `rebase=no` qualifier, the rebase is not performed.
+        See help for `traverse` for more details on the qualifiers.
 
         <b>Options:</b>
            <b>-d</b>, <b>--down-fork-point=<down-fork-point-commit></b>

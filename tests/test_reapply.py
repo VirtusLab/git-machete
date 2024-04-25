@@ -1,4 +1,3 @@
-
 from .base_test import BaseTest
 from .mockers import (assert_success, fixed_author_and_committer_date_in_past,
                       launch_command, overridden_environment,
@@ -99,3 +98,26 @@ class TestReapply(BaseTest):
             """
         )
         assert launch_command("fork-point", "level-2-branch").strip() == "1b657a15fa4c619fcb4e871176d1471cdbce9093"
+
+    def test_reapply_with_rebase_no_qualifier(self) -> None:
+        (
+            self.repo_sandbox
+            .remove_remote()
+            .new_branch("level-0-branch")
+            .commit("Basic commit.")
+            .new_branch("level-1-branch")
+            .commit("First level-1 commit.")
+            .commit("Second level-1 commit.")
+        )
+
+        body: str = \
+            """
+            level-0-branch
+                level-1-branch  rebase=no
+            """
+        rewrite_branch_layout_file(body)
+
+        with overridden_environment(GIT_SEQUENCE_EDITOR="sed -i.bak '2s/^pick /fixup /'"):
+            assert_success(
+                ["reapply"],
+                "Warn: branch level-1-branch is marked with rebase=no qualifier\n")
