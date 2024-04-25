@@ -170,15 +170,15 @@ class TestUpdate(BaseTest):
         with fixed_author_and_committer_date_in_past():
             (
                 self.repo_sandbox.new_branch('branch-0')
-                    .commit("Commit on branch-0.")
-                    .new_branch("branch-1a")
-                    .commit("Commit on branch-1a.")
+                .commit("Commit on branch-0.")
+                .new_branch("branch-1a")
+                .commit("Commit on branch-1a.")
             )
             branch_1a_hash = self.repo_sandbox.get_current_commit_hash()
             (
                 self.repo_sandbox.check_out('branch-0')
-                    .new_branch("branch-1b")
-                    .commit("Commit on branch-1b.")
+                .new_branch("branch-1b")
+                .commit("Commit on branch-1b.")
             )
 
         body: str = \
@@ -209,7 +209,11 @@ class TestUpdate(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        assert_success(['update', '-n'], "Warn: branch branch-1 is marked with rebase=no qualifier\n")
+        assert_failure(
+            ['update'],
+            "Branch branch-1 is annotated with rebase=no qualifier, aborting.\n"
+            "Remove the qualifier using git machete anno or edit branch layout file directly."
+        )
 
     def test_update_with_stop_for_edit(self) -> None:
 

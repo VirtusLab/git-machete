@@ -515,12 +515,13 @@ class MacheteClient:
                   opt_no_interactive_rebase: bool,
                   opt_no_edit_merge: bool
                   ) -> None:
-        # Verify that all branches exist, are managed, and have an upstream.
+        # Verify that all branches exist, are managed, have an upstream and are NOT annotated with slide-out=no qualifier.
         for branch in branches_to_slide_out:
             self.expect_in_managed_branches(branch)
             anno = self.annotations.get(branch)
             if anno and not anno.qualifiers.slide_out:
-                warn(f"branch {branch} is marked with `slide-out=no` qualifier")
+                raise MacheteException(f"Branch `{branch}` is annotated with `slide-out=no` qualifier, aborting.\n"
+                                       f"Remove the qualifier using `git machete anno` or edit branch layout file directly.")
             new_upstream = self.__up_branch.get(branch)
             if not new_upstream:
                 raise MacheteException(f"No upstream branch defined for {bold(branch)}, cannot slide out")
@@ -1191,7 +1192,8 @@ class MacheteClient:
     def rebase(self, onto: AnyRevision, from_exclusive: AnyRevision, branch: LocalBranchShortName, opt_no_interactive_rebase: bool) -> None:
         anno = self.annotations.get(branch)
         if anno and not anno.qualifiers.rebase:
-            warn(f"branch {branch} is marked with `rebase=no` qualifier")
+            raise MacheteException(f"Branch `{branch}` is annotated with `rebase=no` qualifier, aborting.\n"
+                                   f"Remove the qualifier using `git machete anno` or edit branch layout file directly.")
         # Let's use `OPTS` suffix for consistency with git's built-in env var `GIT_DIFF_OPTS`
         extra_rebase_opts = os.environ.get('GIT_MACHETE_REBASE_OPTS', '').split()
 

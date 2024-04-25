@@ -279,7 +279,7 @@ class TestSlideOut(BaseTest):
 
         assert_success(['status', '-l'], expected_status_output)
 
-    def test_slide_out_with_qualifiers(self, mocker: MockerFixture) -> None:
+    def test_slide_out_with_rebase_no_qualifier(self, mocker: MockerFixture) -> None:
         (
             self.repo_sandbox
             .remove_remote('origin')
@@ -295,7 +295,7 @@ class TestSlideOut(BaseTest):
         body: str = \
             """
             branch-0
-                branch-1  slide-out=no
+                branch-1
                     branch-2  rebase=no
             """
         rewrite_branch_layout_file(body)
@@ -303,7 +303,6 @@ class TestSlideOut(BaseTest):
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
         assert_success(
             ['slide-out', '-n', 'branch-1', '--delete'],
-            "Warn: branch branch-1 is marked with slide-out=no qualifier\n"
             "Delete branch branch-1 (unmerged to HEAD)? (y, N, q)\n"
         )
 
@@ -317,6 +316,31 @@ class TestSlideOut(BaseTest):
             """
         )
         assert_success(['status', '-l'], expected_status_output)
+
+    def test_slide_out_with_slide_out_no_qualifier(self) -> None:
+        (
+            self.repo_sandbox
+            .remove_remote('origin')
+            .new_branch('branch-0')
+            .commit()
+            .new_branch('branch-1')
+            .commit()
+            .new_branch('branch-2')
+            .commit()
+        )
+        body: str = \
+            """
+            branch-0
+                branch-1  slide-out=no
+                    branch-2
+            """
+        rewrite_branch_layout_file(body)
+
+        assert_failure(
+            ['slide-out', 'branch-1'],
+            "Branch branch-1 is annotated with slide-out=no qualifier, aborting.\n"
+            "Remove the qualifier using git machete anno or edit branch layout file directly."
+        )
 
     def test_slide_out_with_down_fork_point_and_multiple_children_of_last_branch(self) -> None:
         (

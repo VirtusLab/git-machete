@@ -1,7 +1,7 @@
 from .base_test import BaseTest
-from .mockers import (assert_success, fixed_author_and_committer_date_in_past,
-                      launch_command, overridden_environment,
-                      rewrite_branch_layout_file)
+from .mockers import (assert_failure, assert_success,
+                      fixed_author_and_committer_date_in_past, launch_command,
+                      overridden_environment, rewrite_branch_layout_file)
 
 
 class TestReapply(BaseTest):
@@ -118,6 +118,7 @@ class TestReapply(BaseTest):
         rewrite_branch_layout_file(body)
 
         with overridden_environment(GIT_SEQUENCE_EDITOR="sed -i.bak '2s/^pick /fixup /'"):
-            assert_success(
+            assert_failure(
                 ["reapply"],
-                "Warn: branch level-1-branch is marked with rebase=no qualifier\n")
+                "Branch level-1-branch is annotated with rebase=no qualifier, aborting.\n"
+                "Remove the qualifier using git machete anno or edit branch layout file directly.")
