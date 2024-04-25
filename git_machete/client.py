@@ -2134,7 +2134,8 @@ class MacheteClient:
             else:
                 warn(f'{pr.display_text()} comes from fork and its {spec.repository_name} is already deleted. '
                      f'No remote tracking data will be set up for {bold(pr.head)} branch.')
-                self.__git.fetch_ref(org_repo_remote.remote, f'{code_hosting_client.get_ref_name_for_pull_request(pr.number)}:{pr.head}')
+                refspec = f'{code_hosting_client.get_ref_name_for_pull_request(pr.number)}:{pr.head}'
+                self.__git.fetch_refspec(org_repo_remote.remote, refspec)
                 self.__git.checkout(LocalBranchShortName.of(pr.head))
             if pr.state in ('closed', 'merged'):
                 warn(f'{pr.display_text()} is already closed.')
@@ -2552,12 +2553,17 @@ class MacheteClient:
         org_repo_remote = self.__derive_org_repo_and_remote(spec, domain=domain, branch_used_for_tracking_data=head)
         code_hosting_client = spec.create_client(domain=domain, organization=org_repo_remote.organization,
                                                  repository=org_repo_remote.repository)
-        print(f"Fetching {bold(org_repo_remote.remote)}...")
-        self.__git.fetch_remote(org_repo_remote.remote)
-        base_branch_found_on_remote: bool = True
-        if '/'.join([org_repo_remote.remote, base]) not in self.__git.get_remote_branches():
-            base_branch_found_on_remote = False
-            warn(f'{spec.base_branch_name} branch for this {spec.pr_short_name} ({bold(base)}) is not found on remote, pushing...')
+
+        remote_branch = RemoteBranchShortName(f"{org_repo_remote.remote}/{base}")
+        remote_base_branch_exists_locally = remote_branch in self.__git.get_remote_branches()
+        print(f"Checking if {spec.base_branch_name} branch {bold(base)} "
+              f"exists on {bold(org_repo_remote.remote)} remote... ", end='', flush=True)
+        base_branch_found_on_remote = self.__git.does_remote_branch_exist(org_repo_remote.remote, base)
+        print(fmt('<green><b>YES</b></green>' if base_branch_found_on_remote else '<red><b>NO</b></red>'))
+        if not base_branch_found_on_remote and remote_base_branch_exists_locally:
+            self.__git.delete_remote_branch(remote_branch)
+
+        if not base_branch_found_on_remote:
             self.__handle_untracked_branch(
                 branch=base,
                 new_remote=org_repo_remote.remote,

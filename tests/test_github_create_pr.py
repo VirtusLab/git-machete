@@ -143,7 +143,7 @@ class TestGitHubCreatePR(BaseTest):
                 |
                 x-drop-constraint (untracked)
 
-            Fetching origin...
+            Checking if base branch ignore-trailing exists on origin remote... YES
             Creating a draft PR from chore/fields to ignore-trailing... OK, see www.github.com
             Checking for open GitHub PRs (to determine PR chain)... OK
             Updating description of PR #5 to include the chain of PRs... OK
@@ -290,7 +290,7 @@ class TestGitHubCreatePR(BaseTest):
               |
               o-testing/endpoints
 
-            Fetching origin...
+            Checking if base branch develop exists on origin remote... YES
             Creating a PR from allow-ownership-link to develop... OK, see www.github.com
             Setting milestone of PR #7 to 42... OK
             Adding github_user as assignee to PR #7... OK
@@ -428,8 +428,7 @@ class TestGitHubCreatePR(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        expected_msg = ("Fetching origin...\n"
-                        "Warn: base branch for this PR (feature/api_handling) is not found on remote, pushing...\n"
+        expected_msg = ("Checking if base branch feature/api_handling exists on origin remote... NO\n"
                         "Pushing untracked branch feature/api_handling to origin...\n"
                         "Creating a PR from feature/api_exception_handling to feature/api_handling... OK, see www.github.com\n")
 
@@ -564,7 +563,7 @@ class TestGitHubCreatePR(BaseTest):
             |
             o-feature *
 
-        Fetching origin_1...
+        Checking if base branch branch-1 exists on origin_1 remote... YES
         Creating a PR from feature to branch-1... OK, see www.github.com
         Checking for open GitHub PRs (to determine PR chain)... OK
         Updating description of PR #16 to include the chain of PRs... OK
@@ -615,7 +614,7 @@ class TestGitHubCreatePR(BaseTest):
         expected_result = """
         Add feature_1 onto the inferred upstream (parent) branch feature? (y, N)
         Added branch feature_1 onto feature
-        Fetching origin_2...
+        Checking if base branch feature exists on origin_2 remote... YES
         Creating a PR from feature_1 to feature... OK, see www.github.com
         Checking for open GitHub PRs (to determine PR chain)... OK
         Updating description of PR #17 to include the chain of PRs... OK
@@ -653,7 +652,7 @@ class TestGitHubCreatePR(BaseTest):
               |
               o-feature_2 *
 
-        Fetching origin_1...
+        Checking if base branch feature exists on origin_1 remote... YES
         Creating a PR from feature_2 to feature... OK, see www.github.com
         Checking for open GitHub PRs (to determine PR chain)... OK
         Updating description of PR #18 to include the chain of PRs... OK
@@ -675,7 +674,7 @@ class TestGitHubCreatePR(BaseTest):
         expected_result = """
         Add feature_3 onto the inferred upstream (parent) branch feature_2? (y, N)
         Added branch feature_3 onto feature_2
-        Fetching origin_1...
+        Checking if base branch feature_2 exists on origin_1 remote... YES
         Creating a PR from feature_3 to feature_2... OK, see www.github.com
         Checking for open GitHub PRs (to determine PR chain)... OK
         Updating description of PR #19 to include the chain of PRs... OK
@@ -697,8 +696,7 @@ class TestGitHubCreatePR(BaseTest):
         expected_result = """
         Add feature_4 onto the inferred upstream (parent) branch feature_3? (y, N)
         Added branch feature_4 onto feature_3
-        Fetching origin_2...
-        Warn: base branch for this PR (feature_3) is not found on remote, pushing...
+        Checking if base branch feature_3 exists on origin_2 remote... NO
         Push untracked branch feature_3 to origin_2? (y, Q)
         Creating a PR from feature_4 to feature_3... OK, see www.github.com
         """
@@ -720,8 +718,7 @@ class TestGitHubCreatePR(BaseTest):
         expected_result = """
         Add feature_5 onto the inferred upstream (parent) branch feature_3? (y, N)
         Added branch feature_5 onto feature_3
-        Fetching origin...
-        Warn: base branch for this PR (feature_3) is not found on remote, pushing...
+        Checking if base branch feature_3 exists on origin remote... NO
         Push untracked branch feature_3 to origin? (y, Q)
         Creating a PR from feature_5 to feature_3... OK, see www.github.com
         """
@@ -746,7 +743,7 @@ class TestGitHubCreatePR(BaseTest):
         assert_success(
             ['github', 'create-pr'],
             """
-            Fetching origin...
+            Checking if base branch master exists on origin remote... YES
             Creating a PR from develop to master... OK, see www.github.com
             """
         )
@@ -791,7 +788,7 @@ class TestGitHubCreatePR(BaseTest):
             """
             Warn: Branch develop is behind its remote counterpart. Consider using git pull.
             Proceed with creating pull request? (y, Q)
-            Fetching origin...
+            Checking if base branch master exists on origin remote... YES
             Creating a PR from develop to master... OK, see www.github.com
             """
         )
@@ -851,7 +848,56 @@ class TestGitHubCreatePR(BaseTest):
             """
             Warn: Branch develop is diverged from and older than its remote counterpart. Consider using git reset --keep.
             Proceed with creating pull request? (y, Q)
-            Fetching origin...
+            Checking if base branch master exists on origin remote... YES
             Creating a PR from develop to master... OK, see www.github.com
+            """
+        )
+
+    def test_github_create_pr_when_base_branch_disappeared_from_remote(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState()))
+
+        (
+            self.repo_sandbox
+            .new_branch("develop").commit().push()
+            .new_branch("feature").commit().push()
+        )
+        (
+            self.repo_sandbox
+            .chdir(self.repo_sandbox.remote_path)
+            .delete_branch("develop")
+            .chdir(self.repo_sandbox.local_path)
+        )
+
+        rewrite_branch_layout_file("develop\n\tfeature")
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('y'))
+        assert_success(
+            ['github', 'create-pr'],
+            """
+            Checking if base branch develop exists on origin remote... NO
+            Push untracked branch develop to origin? (y, Q)
+            Creating a PR from feature to develop... OK, see www.github.com
+            """
+        )
+
+    def test_github_create_pr_when_base_branch_appeared_on_remote(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState()))
+
+        (
+            self.repo_sandbox
+            .new_branch("develop").commit().push()
+            .delete_remote_branch("origin/develop")
+            .new_branch("feature").commit().push()
+        )
+
+        rewrite_branch_layout_file("develop\n\tfeature")
+        assert_success(
+            ['github', 'create-pr'],
+            """
+            Checking if base branch develop exists on origin remote... YES
+            Creating a PR from feature to develop... OK, see www.github.com
             """
         )

@@ -347,8 +347,16 @@ class GitContext:
             self._run_git("fetch", remote, "--prune", flush_caches=True)
             self.__fetch_done_for.add(remote)
 
-    def fetch_ref(self, remote: str, ref: str) -> None:
-        self._run_git("fetch", remote, ref, flush_caches=True)
+    def fetch_refspec(self, remote: str, refspec: str) -> int:
+        return self._run_git("fetch", "--prune", remote, refspec, flush_caches=True)
+
+    def does_remote_branch_exist(self, remote: str, branch: LocalBranchShortName) -> bool:
+        # `--heads` is passed here to avoid checking for `refs/pulls/...`,
+        # which can take a lot of time in large repos (since they're present even for closed PRs).
+        # Even when a branch name or glob is passed to `git ls-remote`,
+        # data on all `refs/...` (or all `refs/heads/...`, with `--heads`) is still fetched.
+        result = self._popen_git("ls-remote", "--heads", remote, branch.full_name())
+        return result.stdout != ''
 
     def set_upstream_to(self, remote_branch: RemoteBranchShortName) -> None:
         self._run_git("branch", "--set-upstream-to", remote_branch, flush_caches=True)
@@ -962,9 +970,12 @@ class GitContext:
         return FullCommitHash.of(self._popen_git(
             "commit-tree", "HEAD^{tree}", "-p", parent_revision, "-m", msg, env=env).stdout.strip())  # noqa: FS003
 
-    def delete_branch(self, branch_name: LocalBranchShortName, force: bool = False) -> int:
+    def delete_branch(self, branch_name: LocalBranchShortName, force: bool) -> int:
         delete_option = '-D' if force else '-d'
-        return self._run_git("branch", delete_option, branch_name, flush_caches=True)
+        return self._run_git('branch', delete_option, branch_name, flush_caches=True)
+
+    def delete_remote_branch(self, branch_name: RemoteBranchShortName) -> int:
+        return self._run_git('branch', '-d', '-r', branch_name, flush_caches=True)
 
     def display_diff(self, fork_point: AnyRevision, format_with_stat: bool, branch: Optional[LocalBranchShortName] = None) -> int:
         params = []
