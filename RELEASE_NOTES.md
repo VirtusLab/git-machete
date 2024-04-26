@@ -6,6 +6,7 @@
 - fixed: `push=no` and `slide-out=no` qualifiers now work in `git machete advance` now
 - fixed: `rebase=no` qualifier now works in `git machete slide-out`
 - improved: in `git machete github create-pr`/`gitlab create-mr`, check whether base/target branch for PR/MR exists in remote, instead of fetching the entire remote
+- fixed: better detection of squash merges and rebases when there are commits between the fork point and the merge/rebase. Option controlled by argument `--squash-merge-detection` and config key `machete.squashMergeDetection` (contributed by @gjulianm)
 
 ## New in git-machete 3.25.2
 

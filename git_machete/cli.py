@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, TypeVar, Union
 
 import git_machete.options
 from git_machete import __version__, git_config_keys, utils
+from git_machete.constants import SquashMergeDetection
 from git_machete.github import GitHubClient
 from git_machete.gitlab import GitLabClient
 
@@ -70,7 +71,7 @@ def get_help_description(display_help_topics: bool, command: Optional[str] = Non
             usage_str += underline(hdr) + '\n\n'
             for cm in cmds:
                 alias = f", {alias_by_command[cm]}" if cm in alias_by_command else ""
-                usage_str += f'    {bold(cm + alias) : <{18 if utils.ascii_only else 27}}{short_docs[cm]}'
+                usage_str += f'    {bold(cm + alias): <{18 if utils.ascii_only else 27}}{short_docs[cm]}'
                 usage_str += '\n'
             usage_str += '\n'
         usage_str += fmt(textwrap.dedent("""
@@ -364,6 +365,9 @@ def create_cli_parser() -> argparse.ArgumentParser:
     status_parser.add_argument('-l', '--list-commits', action='store_true')
     status_parser.add_argument('-L', '--list-commits-with-hashes', action='store_true')
     status_parser.add_argument('--no-detect-squash-merges', action='store_true')
+    status_parser.add_argument('--squash-merge-detection',
+                               choices=list(SquashMergeDetection), default=None,
+                               type=SquashMergeDetection.from_string)
 
     traverse_parser = subparsers.add_parser(
         'traverse',
@@ -379,6 +383,9 @@ def create_cli_parser() -> argparse.ArgumentParser:
     traverse_parser.add_argument('--no-edit-merge', action='store_true')
     traverse_parser.add_argument('--no-interactive-rebase', action='store_true')
     traverse_parser.add_argument('--no-detect-squash-merges', action='store_true')
+    traverse_parser.add_argument('--squash-merge-detection',
+                                 choices=list(SquashMergeDetection), default=None,
+                                 type=SquashMergeDetection.from_string)
     traverse_parser.add_argument('--push', action='store_true')
     traverse_parser.add_argument('--no-push', action='store_true')
     traverse_parser.add_argument('--push-untracked', action='store_true')
@@ -455,7 +462,10 @@ def update_cli_options_using_parsed_args(
         elif opt == "n":
             cli_opts.opt_n = True
         elif opt == "no_detect_squash_merges":
-            cli_opts.opt_no_detect_squash_merges = True
+            print("--no-detect-squash-merges is deprecated, use --squash-merge-detection=none")
+            cli_opts.opt_squash_merge_detection = SquashMergeDetection.NONE
+        elif opt == "squash_merge_detection" and arg is not None:  # If the value is None it means the user did not provide any value
+            cli_opts.opt_squash_merge_detection = arg  # Already a SquashMergeDetection enum
         elif opt == "no_edit_merge":
             cli_opts.opt_no_edit_merge = True
         elif opt == "no_interactive_rebase":
@@ -528,6 +538,10 @@ def update_cli_options_using_config_keys(
             cli_opts.opt_push_tracked, cli_opts.opt_push_untracked = True, True
         else:
             cli_opts.opt_push_tracked, cli_opts.opt_push_untracked = False, False
+
+    squash_merge_detection = git.get_config_attr_or_none(key=git_config_keys.SQUASH_MERGE_DETECTION)
+    if squash_merge_detection is not None:
+        cli_opts.opt_squash_merge_detection = SquashMergeDetection.from_string(squash_merge_detection)
 
 
 def set_utils_global_variables(parsed_args: argparse.Namespace) -> None:
@@ -867,7 +881,7 @@ def launch(orig_args: List[str]) -> None:
                 warn_when_branch_in_sync_but_fork_point_off=True,
                 opt_list_commits=cli_opts.opt_list_commits,
                 opt_list_commits_with_hashes=cli_opts.opt_list_commits_with_hashes,
-                opt_no_detect_squash_merges=cli_opts.opt_no_detect_squash_merges)
+                opt_squash_merge_detection=cli_opts.opt_squash_merge_detection)
         elif cmd in {"traverse", alias_by_command["traverse"]}:
             if cli_opts.opt_start_from not in {"here", "root", "first-root"}:
                 raise MacheteException(
@@ -883,7 +897,7 @@ def launch(orig_args: List[str]) -> None:
                 opt_fetch=cli_opts.opt_fetch,
                 opt_list_commits=cli_opts.opt_list_commits,
                 opt_merge=cli_opts.opt_merge,
-                opt_no_detect_squash_merges=cli_opts.opt_no_detect_squash_merges,
+                opt_squash_merge_detection=cli_opts.opt_squash_merge_detection,
                 opt_no_edit_merge=cli_opts.opt_no_edit_merge,
                 opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
                 opt_push_tracked=cli_opts.opt_push_tracked,

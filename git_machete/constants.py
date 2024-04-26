@@ -2,6 +2,7 @@ from enum import Enum, IntEnum
 
 MAX_COUNT_FOR_INITIAL_LOG = 10
 DISCOVER_DEFAULT_FRESH_BRANCH_COUNT = 10
+MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION = 1000
 
 PICK_FIRST_ROOT: int = 0
 PICK_LAST_ROOT: int = -1
@@ -27,3 +28,19 @@ class GitFormatPatterns(Enum):
     FULL_MESSAGE = "%B"
     # subject NOT included
     MESSAGE_BODY = "%b"
+
+
+class SquashMergeDetection(Enum):
+    NONE = "none"
+    SIMPLE = "simple"
+    EXACT = "exact"
+
+    @staticmethod
+    def from_string(value: str) -> 'SquashMergeDetection':
+        if value == "none":
+            return SquashMergeDetection.NONE
+        if value == "simple":
+            return SquashMergeDetection.SIMPLE
+        if value == "exact":
+            return SquashMergeDetection.EXACT
+        raise ValueError(f"Unknown value '{value}' for SquashMergeDetection")

@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "May 08, 2024" "" "git-machete"
+.TH "GIT-MACHETE" "1" "May 20, 2024" "" "git-machete"
 .SH NAME
 git-machete \- git-machete 3.25.3
 .sp
@@ -459,6 +459,12 @@ for both regular directory and worktree.
 .sp
 If you want the worktree to have its own branch layout file (located under \fB\&.git/worktrees/.../machete\fP),
 set \fBgit config machete.worktree.useTopLevelMacheteFile false\fP\&.
+.TP
+.B \fBmachete.squashMergeDetection\fP:
+Controls the algorithm used to detect squash merges. Possible values are:
+* \fBnone\fP: No squash merge/rebase detection.
+* \fBsimple\fP: Compares the tree state of the merge commit with the tree state of the upstream branch. This detects squash merges/rebases as long as there was not any commit on the upstream branch since the last common commit.
+* \fBexact\fP: Compares the patch that would be applied by the merge commit with the commits that ocurred on the upstream branch since the last common commit. This detects squash merges/rebases even if there were commits on the upstream branch since the last common commit. However, it might have a performance impact as it requires listing all the commits in the upstream.
 .UNINDENT
 .sp
 \fBEnvironment variables:\fP

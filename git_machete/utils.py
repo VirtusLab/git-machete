@@ -187,10 +187,13 @@ class PopenResult(NamedTuple):
 
 
 def _popen_cmd(cmd: str, *args: str,
-               cwd: Optional[str] = None, env: Optional[Dict[str, str]] = None) -> PopenResult:
+               cwd: Optional[str] = None, env: Optional[Dict[str, str]] = None, input: Optional[str] = None) -> PopenResult:
+    stdin = subprocess.PIPE if input is not None else None
+    input_bytes = input.encode('utf-8') if input else None
+
     # capture_output argument is only supported since Python 3.7
-    process = subprocess.Popen([cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd, env=env)
-    stdout_bytes, stderr_bytes = process.communicate()
+    process = subprocess.Popen([cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=stdin, cwd=cwd, env=env)
+    stdout_bytes, stderr_bytes = process.communicate(input_bytes)
     exit_code: int = process.returncode  # must be retrieved after process.communicate()
     stdout: str = stdout_bytes.decode('utf-8')
     stderr: str = stderr_bytes.decode('utf-8')
@@ -198,7 +201,7 @@ def _popen_cmd(cmd: str, *args: str,
 
 
 def popen_cmd(cmd: str, *args: str, cwd: Optional[str] = None,
-              env: Optional[Dict[str, str]] = None, hide_debug_output: bool = False) -> PopenResult:
+              env: Optional[Dict[str, str]] = None, hide_debug_output: bool = False, input: Optional[str] = None) -> PopenResult:
     chdir_upwards_until_current_directory_exists()
 
     flat_cmd = get_cmd_shell_repr(cmd, *args, env=env)
@@ -215,7 +218,7 @@ def popen_cmd(cmd: str, *args: str, cwd: Optional[str] = None,
         print_command(flat_cmd)
 
     start = time.time()
-    exit_code, stdout, stderr = result = _popen_cmd(cmd, *args, cwd=cwd, env=env)
+    exit_code, stdout, stderr = result = _popen_cmd(cmd, *args, cwd=cwd, env=env, input=input)
     if measure_command_time:  # pragma: no cover
         end = time.time()
         elapsed_ms = int((end - start) * 1e3)

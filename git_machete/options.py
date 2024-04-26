@@ -1,5 +1,7 @@
 from typing import List, Optional
 
+from git_machete.constants import SquashMergeDetection
+
 from .exceptions import MacheteException
 from .git_operations import AnyBranchName, AnyRevision, LocalBranchShortName
 
@@ -21,7 +23,7 @@ class CommandLineOptions:
         self.opt_list_commits_with_hashes: bool = False
         self.opt_merge: bool = False
         self.opt_n: bool = False
-        self.opt_no_detect_squash_merges: bool = False
+        self.opt_squash_merge_detection: SquashMergeDetection = SquashMergeDetection.SIMPLE
         self.opt_no_edit_merge: bool = False
         self.opt_no_interactive_rebase: bool = False
         self.opt_onto: Optional[LocalBranchShortName] = None
@@ -64,6 +66,10 @@ class CommandLineOptions:
         if self.opt_sync_github_prs and self.opt_sync_gitlab_mrs:
             raise MacheteException(
                 "Option `-H/--sync-github-prs` cannot be specified together with `-L/--sync-gitlab-mrs`.")
+        if not isinstance(self.opt_squash_merge_detection, SquashMergeDetection):
+            valid_values = ', '.join(e.value for e in SquashMergeDetection)
+            raise MacheteException(
+                f"Invalid value `{self.opt_squash_merge_detection}` for `--squash-merge-detection`, valid values are {valid_values}.")
 
     def __repr__(self) -> str:  # pragma: no cover; debug only
         attrs = ", ".join(f"{k}={v!r}" for k, v in self.__dict__.items())

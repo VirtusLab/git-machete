@@ -380,7 +380,7 @@ class TestStatus(BaseTest):
 
         # but under --no-detect-squash-merges, feature is detected as "x" (behind) develop
         assert_success(
-            ["status", "-l", "--no-detect-squash-merges"],
+            ["status", "-l", "--squash-merge-detection=none"],
             """
             root
             |

@@ -8,8 +8,9 @@ from typing import (Any, Dict, Iterator, List, Match, NamedTuple, Optional,
                     Set, Tuple)
 
 from . import utils
-from .constants import (MAX_COUNT_FOR_INITIAL_LOG, GitFormatPatterns,
-                        SyncToRemoteStatuses)
+from .constants import (MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION,
+                        MAX_COUNT_FOR_INITIAL_LOG, GitFormatPatterns,
+                        SquashMergeDetection, SyncToRemoteStatuses)
 from .exceptions import UnderlyingGitException, UnexpectedMacheteException
 from .utils import (AnsiEscapeCodes, CommandResult, colored, debug, fmt,
                     hex_repr)
@@ -188,7 +189,7 @@ class GitContext:
         self.__counterparts_for_fetching_cached: Optional[Dict[LocalBranchShortName, Optional[RemoteBranchShortName]]] = None
         self.__fetch_done_for: Set[str] = set()
         self.__initial_log_hashes_cached: Dict[FullCommitHash, List[FullCommitHash]] = {}
-        self.__is_equivalent_tree_reachable_cached: Dict[Tuple[FullCommitHash, FullCommitHash], bool] = {}
+        self.__is_equivalent_tree_reachable_cached: Dict[Tuple[FullCommitHash, FullCommitHash], Tuple[SquashMergeDetection, bool]] = {}
         self.__local_branches_cached: Optional[List[LocalBranchShortName]] = None
         self.__merge_base_cached: Dict[Tuple[FullCommitHash, FullCommitHash], Optional[FullCommitHash]] = {}
         self.__missing_tracking_branch: Optional[Set[str]] = None
@@ -223,8 +224,8 @@ class GitContext:
         return exit_code
 
     def _popen_git(self, git_cmd: str, *args: str,
-                   allow_non_zero: bool = False, env: Optional[Dict[str, str]] = None) -> CommandResult:
-        exit_code, stdout, stderr = utils.popen_cmd("git", git_cmd, *args, env=env)
+                   allow_non_zero: bool = False, env: Optional[Dict[str, str]] = None, input: Optional[str] = None) -> CommandResult:
+        exit_code, stdout, stderr = utils.popen_cmd("git", git_cmd, *args, env=env, input=input)
         if not allow_non_zero and exit_code != 0:
             exit_code_msg: str = fmt(f"`{utils.get_cmd_shell_repr('git', git_cmd, *args, env=env)}` returned {exit_code}\n")
             stdout_msg: str = f"\n{utils.bold('stdout')}:\n{utils.dim(stdout)}" if stdout else ""
@@ -786,6 +787,7 @@ class GitContext:
             self,
             equivalent_to: AnyRevision,
             reachable_from: AnyRevision,
+            opt_squash_merge_detection: SquashMergeDetection
     ) -> bool:
         equivalent_to_commit_hash = self.get_commit_hash_by_revision(equivalent_to)
         reachable_from_commit_hash = self.get_commit_hash_by_revision(reachable_from)
@@ -796,7 +798,12 @@ class GitContext:
             return True
 
         if (equivalent_to_commit_hash, reachable_from_commit_hash) in self.__is_equivalent_tree_reachable_cached:
-            return self.__is_equivalent_tree_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash]
+            prev_mode, prev_result = self.__is_equivalent_tree_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash]
+
+            # Only return cached result if we're using the same mode or if we already checked with the
+            # most exact mode possible
+            if prev_mode == opt_squash_merge_detection or prev_mode == SquashMergeDetection.EXACT:
+                return prev_result
 
         earlier_tree_hash = self.get_tree_hash_by_commit_hash(equivalent_to_commit_hash)
 
@@ -812,9 +819,47 @@ class GitContext:
         )
 
         result = earlier_tree_hash in intermediate_tree_hashes
-        debug(f"result = {result}")
-        self.__is_equivalent_tree_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash] = result
+        debug(f"intermediate tree hashes result = {result}")
+
+        if result or opt_squash_merge_detection != SquashMergeDetection.EXACT:
+            cache_value = (opt_squash_merge_detection, result)
+            self.__is_equivalent_tree_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash] = cache_value
+            return result
+
+        # Let's try another way, a little more complex but takes into account the possibility
+        # that there were other commits between the common ancestor of the two branches and the squashed merge.
+        common_ancestor = self.get_merge_base(reachable_from_commit_hash, equivalent_to_commit_hash)
+        if not common_ancestor:
+            return False
+
+        equivalent_changeset = self._popen_git(
+            "diff",
+            common_ancestor,
+            equivalent_to_commit_hash
+        ).stdout
+        if equivalent_changeset.strip() == '':
+            # Empty changeset means the branches are identical, so the tree is equivalent.
+            cache_value = (opt_squash_merge_detection, True)
+            self.__is_equivalent_tree_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash] = cache_value
+            return cache_value[1]
+
+        equivalent_patch_id = self.get_patch_id(equivalent_changeset)
+        patchmap = self.get_patch_ids_for_commits_between(
+            common_ancestor, reachable_from_commit_hash, MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION)
+        patch_ids = set(patchmap.values())
+        result = equivalent_patch_id in patch_ids
+
+        debug(f"patch id result = {result}")
+        cache_value = (opt_squash_merge_detection, result)
+        self.__is_equivalent_tree_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash] = cache_value
         return result
+
+    def get_patch_id(self, patch_contents: str) -> Optional[str]:
+        out = utils.get_non_empty_lines(self._popen_git("patch-id", input=patch_contents).stdout)
+
+        if len(out) == 0:
+            return None
+        return out[0].split(' ')[0]  # patch-id output is "<patch-id> <commit-hash>", we only care about the patch-id
 
     def get_sole_remote_branch(self, branch: LocalBranchShortName) -> Optional[RemoteBranchShortName]:
         remote_branches = self.get_remote_branches()
@@ -910,6 +955,22 @@ class GitContext:
                                   subject=x.split(":", 2)[2]),
             utils.get_non_empty_lines(self._popen_git("log", "--format=%H:%h:%s", f"^{earliest_exclusive}", latest_inclusive, "--").stdout)
         ))))
+
+    def get_patch_ids_for_commits_between(self,
+                                          earliest_exclusive: AnyRevision,
+                                          latest_inclusive: AnyRevision,
+                                          max_commits: int
+                                          ) -> Dict[FullCommitHash, str]:
+        # Returns a dictionary of git hashes and their diffs between two revisions
+        patches = self._popen_git("log", "--patch", f"^{earliest_exclusive}", latest_inclusive, f"-{max_commits}", "--").stdout
+        patch_ids = self._popen_git("patch-id", input=patches).stdout
+
+        diffmap: Dict[FullCommitHash, str] = {}
+        for line in patch_ids.splitlines():
+            patch_id, hash = line.strip().split(" ", 1)
+            diffmap[FullCommitHash.of(hash)] = patch_id
+
+        return diffmap
 
     def get_relation_to_remote_counterpart(self, branch: LocalBranchShortName, remote_branch: RemoteBranchShortName) -> int:
         b_is_ancestor_of_rb = self.is_ancestor_or_equal(branch.full_name(), remote_branch.full_name())
