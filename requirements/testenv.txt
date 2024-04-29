@@ -7,4 +7,5 @@ pytest-mock==3.11.1; python_version >= '3.7' and python_version < '3.8'
 pytest-mock==3.14.0; python_version >= '3.8'
 
 pytest-xdist==2.4.0; python_version <= '3.6'
-pytest-xdist==3.6.1; python_version >= '3.7'
+pytest-xdist==3.5.0; python_version >= '3.7' and python_version < '3.8'
+pytest-xdist==3.6.1; python_version >= '3.8'
