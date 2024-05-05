@@ -528,7 +528,7 @@ class MacheteClient:
             self.expect_in_managed_branches(branch)
             anno = self.annotations.get(branch)
             if anno and not anno.qualifiers.slide_out:
-                raise MacheteException(f"Branch `{branch}` is annotated with `slide-out=no` qualifier, aborting.\n"
+                raise MacheteException(f"Branch {bold(branch)} is annotated with `slide-out=no` qualifier, aborting.\n"
                                        f"Remove the qualifier using `git machete anno` or edit branch layout file directly.")
             new_upstream = self.__up_branch.get(branch)
             if not new_upstream:
@@ -1200,7 +1200,7 @@ class MacheteClient:
     def rebase(self, onto: AnyRevision, from_exclusive: AnyRevision, branch: LocalBranchShortName, opt_no_interactive_rebase: bool) -> None:
         anno = self.annotations.get(branch)
         if anno and not anno.qualifiers.rebase:
-            raise MacheteException(f"Branch `{branch}` is annotated with `rebase=no` qualifier, aborting.\n"
+            raise MacheteException(f"Branch {bold(branch)} is annotated with `rebase=no` qualifier, aborting.\n"
                                    f"Remove the qualifier using `git machete anno` or edit branch layout file directly.")
         # Let's use `OPTS` suffix for consistency with git's built-in env var `GIT_DIFF_OPTS`
         extra_rebase_opts = os.environ.get('GIT_MACHETE_REBASE_OPTS', '').split()
@@ -2287,9 +2287,11 @@ class MacheteClient:
 
         prs: List[PullRequest] = code_hosting_client.get_open_pull_requests_by_head(head)
         if not prs:
-            raise MacheteException(f"No {spec.pr_short_name}s have `{head}` as its {spec.head_branch_name} branch")
+            raise MacheteException(f"No {spec.pr_short_name}s in <b>{org_repo_remote.extract_org_and_repo()}</b> "
+                                   f"have <b>{head}</b> as its {spec.head_branch_name} branch")
         if len(prs) > 1:
-            raise MacheteException(f"Multiple {spec.pr_short_name}s have `{head}` as its {spec.head_branch_name} branch: " +
+            raise MacheteException(f"Multiple {spec.pr_short_name}s in <b>{org_repo_remote.extract_org_and_repo()}</b> "
+                                   f"have <b>{head}</b> as its {spec.head_branch_name} branch: " +
                                    ", ".join(_pr.short_display_text() for _pr in prs))
         pr = prs[0]
 
@@ -2398,12 +2400,15 @@ class MacheteClient:
         prs: List[PullRequest] = code_hosting_client.get_open_pull_requests_by_head(head)
         if not prs:
             if ignore_if_missing:
-                warn(f"no {spec.pr_short_name}s have `{head}` as its {spec.head_branch_name} branch")
+                warn(f"no {spec.pr_short_name}s in <b>{org_repo_remote.extract_org_and_repo()}</b> "
+                     f"have <b>{head}</b> as its {spec.head_branch_name} branch")
                 return
             else:
-                raise MacheteException(f"No {spec.pr_short_name}s have `{head}` as its {spec.head_branch_name} branch")
+                raise MacheteException(f"No {spec.pr_short_name}s in <b>{org_repo_remote.extract_org_and_repo()}</b> "
+                                       f"have <b>{head}</b> as its {spec.head_branch_name} branch")
         if len(prs) > 1:
-            raise MacheteException(f"Multiple {spec.pr_short_name}s have `{head}` as its {spec.head_branch_name} branch: " +
+            raise MacheteException(f"Multiple {spec.pr_short_name}s in <b>{org_repo_remote.extract_org_and_repo()}</b> "
+                                   f"have <b>{head}</b> as its {spec.head_branch_name} branch: " +
                                    ", ".join(_pr.short_display_text() for _pr in prs))
         pr = prs[0]
         debug(f'found {pr}')
@@ -2498,6 +2503,7 @@ class MacheteClient:
                 (remote, OrganizationAndRepository.from_url(domain, url)) for remote, url in url_for_remote.items()
             ) if oar
         }
+        debug(f"remote_and_organization_and_repository_from_urls = {remote_and_organization_and_repository_from_urls}")
 
         if not remote_and_organization_and_repository_from_urls:
             raise MacheteException(
@@ -2511,15 +2517,15 @@ class MacheteClient:
         if len(remote_and_organization_and_repository_from_urls) == 1:
             return remote_and_organization_and_repository_from_urls[list(remote_and_organization_and_repository_from_urls.keys())[0]]
 
-        if 'origin' in remote_and_organization_and_repository_from_urls:
-            return remote_and_organization_and_repository_from_urls['origin']
-
         if len(remote_and_organization_and_repository_from_urls) > 1 and branch_used_for_tracking_data is not None:
             remote_for_fetching_of_branch = self.__git.get_combined_remote_for_fetching_of_branch(
                 branch=branch_used_for_tracking_data,
                 remotes=list(remote_and_organization_and_repository_from_urls.keys()))
             if remote_for_fetching_of_branch is not None:
                 return remote_and_organization_and_repository_from_urls[remote_for_fetching_of_branch]
+
+        if 'origin' in remote_and_organization_and_repository_from_urls:
+            return remote_and_organization_and_repository_from_urls['origin']
 
         raise MacheteException(
             f'Multiple non-origin remotes correspond to {spec.display_name} in this repository: '
@@ -2580,31 +2586,50 @@ class MacheteClient:
                                              f'Branch {bold(head)} is a root branch.')
 
         domain = self.__derive_code_hosting_domain(spec)
-        org_repo_remote = self.__derive_org_repo_and_remote(spec, domain=domain, branch_used_for_tracking_data=head)
-        code_hosting_client = spec.create_client(domain=domain, organization=org_repo_remote.organization,
-                                                 repository=org_repo_remote.repository)
+        head_org_repo_remote = self.__derive_org_repo_and_remote(spec, domain=domain, branch_used_for_tracking_data=head)
+        base_org_repo_remote = self.__derive_org_repo_and_remote(spec, domain=domain, branch_used_for_tracking_data=base)
+        debug(f"head_org_repo_remote={head_org_repo_remote}, base_org_repo_remote={base_org_repo_remote}")
 
-        remote_branch = RemoteBranchShortName(f"{org_repo_remote.remote}/{base}")
-        remote_base_branch_exists_locally = remote_branch in self.__git.get_remote_branches()
+        base_org_repo = base_org_repo_remote.extract_org_and_repo()
+        head_org_repo = head_org_repo_remote.extract_org_and_repo()
+        if base_org_repo != head_org_repo:
+            arrow = utils.get_right_arrow()
+            warn(f"{spec.base_branch_name.capitalize()} branch <b>{base}</b> lives in <b>{base_org_repo}</b> {spec.repository_name},\n"
+                 f"while {spec.head_branch_name} branch <b>{head}</b> lives in <b>{head_org_repo}</b> {spec.repository_name}.\n"
+                 f"git-machete will now attempt to create {spec.pr_short_name_article} {spec.pr_short_name} in <b>{base_org_repo}</b>.\n"
+                 "\n"
+                 f"Note that due to the limitations of {spec.display_name}'s {spec.pr_short_name} model, "
+                 f"it is <b>not</b> possible to cleanly create stacked {spec.pr_short_name}s from forks.\n"
+                 f"For example, in a hypothetical chain <b>some-other-branch</b> {arrow} <b>{head}</b> {arrow} <b>{base}</b>, "
+                 f"{spec.pr_short_name_article} {spec.pr_short_name} from <b>some-other-branch</b> to <b>{head}</b>\n"
+                 f"could <b>not</b> be created in <b>{base_org_repo}</b>, "
+                 f"since its {spec.head_branch_name} branch <b>{head}</b> lives in <b>{head_org_repo}</b>.\n"
+                 f"Generally, {spec.pr_short_name}s need to be created "
+                 f"in whatever {spec.repository_name} the {spec.base_branch_name} branch lives.\n")
+
+        base_remote_branch = RemoteBranchShortName(f"{base_org_repo_remote.remote}/{base}")
+        remote_base_branch_exists_locally = base_remote_branch in self.__git.get_remote_branches()
         print(f"Checking if {spec.base_branch_name} branch {bold(base)} "
-              f"exists in {bold(org_repo_remote.remote)} remote... ", end='', flush=True)
-        base_branch_found_on_remote = self.__git.does_remote_branch_exist(org_repo_remote.remote, base)
+              f"exists in {bold(base_org_repo_remote.remote)} remote... ", end='', flush=True)
+        base_branch_found_on_remote = self.__git.does_remote_branch_exist(base_org_repo_remote.remote, base)
         print(fmt('<green><b>YES</b></green>' if base_branch_found_on_remote else '<red><b>NO</b></red>'))
         if not base_branch_found_on_remote and remote_base_branch_exists_locally:
-            self.__git.delete_remote_branch(remote_branch)
+            self.__git.delete_remote_branch(base_remote_branch)
 
         if not base_branch_found_on_remote:
             self.__handle_untracked_branch(
                 branch=base,
-                new_remote=org_repo_remote.remote,
+                new_remote=base_org_repo_remote.remote,
                 is_called_from_traverse=False,
                 is_called_from_code_hosting=True,
                 opt_push_tracked=False,
                 opt_push_untracked=True,
                 opt_yes=opt_yes)
 
+        code_hosting_client = spec.create_client(domain=domain, organization=base_org_repo_remote.organization,
+                                                 repository=base_org_repo_remote.repository)
         current_user: Optional[str] = code_hosting_client.get_current_user_login()
-        debug(f'organization is {org_repo_remote.organization}, repository is {org_repo_remote.repository}')
+        debug(f'organization is {base_org_repo_remote.organization}, repository is {base_org_repo_remote.repository}')
         debug(f'current {spec.display_name} user is ' + (current_user or '<none>'))
 
         fork_point = self.fork_point(head, use_overrides=True)
@@ -2635,8 +2660,9 @@ class MacheteClient:
         ok_str = '<green><b>OK</b></green>'
         print(f'Creating a {"draft " if opt_draft else ""}{spec.pr_short_name} from {bold(head)} to {bold(base)}... ', end='', flush=True)
 
-        pr: PullRequest = code_hosting_client.create_pull_request(head=head, base=base, title=title,
-                                                                  description=description, draft=opt_draft)
+        pr: PullRequest = code_hosting_client.create_pull_request(
+            head=head, head_org_repo=head_org_repo, base=base,
+            title=title, description=description, draft=opt_draft)
         print(fmt(f'{ok_str}, see `{pr.html_url}`'))
 
         # If base branch has NOT originally been found on the remote,

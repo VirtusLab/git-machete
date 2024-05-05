@@ -12,6 +12,7 @@ from typing import Any, Dict, List, NamedTuple, Optional
 from git_machete.code_hosting import (CodeHostingClient,
                                       CodeHostingGitConfigKeys,
                                       CodeHostingSpec,
+                                      OrganizationAndRepository,
                                       OrganizationAndRepositoryAndGitUrl,
                                       PullRequest)
 from git_machete.exceptions import MacheteException, UnexpectedMacheteException
@@ -119,6 +120,7 @@ class GitLabClient(CodeHostingClient):
             pr_full_name='merge request',
             pr_ordinal_char='!',
             pr_short_name='MR',
+            pr_short_name_article='an',
             repository_name='project',
             token_providers_message=(
                 f'\n\t1. `{GITLAB_TOKEN_ENV_VAR}` environment variable\n'
@@ -135,7 +137,8 @@ class GitLabClient(CodeHostingClient):
             )
         )
 
-    def __get_merge_request_from_json(self, mr_json: Dict[str, Any]) -> PullRequest:
+    @staticmethod
+    def __get_merge_request_from_json(mr_json: Dict[str, Any]) -> PullRequest:
         return PullRequest(
             number=int(mr_json['iid']),
             display_prefix='MR !',
@@ -225,8 +228,12 @@ class GitLabClient(CodeHostingClient):
         except OSError as e:  # pragma: no cover
             raise MacheteException(f'Could not connect to {url_prefix}: {e}')
 
+    @staticmethod
+    def __url_encode_project_name(organization: str, repository: str) -> str:
+        return urllib.parse.quote(f"{organization}/{repository}", safe='')  # `safe` empty, so that `/` is encoded as well
+
     def __fire_gitlab_api_project_request(self, method: str, path_suffix: str, request_body: Optional[Dict[str, Any]] = None) -> Any:
-        project = urllib.parse.quote(f"{self.organization}/{self.repository}", safe='')  # `safe` empty, so that `/` is encoded as well
+        project = self.__url_encode_project_name(self.organization, self.repository)
         path = f'/projects/{project}{path_suffix}'
         return self.__fire_gitlab_api_request(method=method, path=path, request_body=request_body)
 
@@ -240,14 +247,25 @@ class GitLabClient(CodeHostingClient):
         else:
             return str(response)
 
-    def create_pull_request(self, head: str, base: str, title: str, description: str, draft: bool) -> PullRequest:
+    def __get_repo_id_by_org_repo(self) -> int:
+        project = self.__url_encode_project_name(self.organization, self.repository)
+        return int(self.__fire_gitlab_api_request(method='GET', path=f'/projects/{project}')['id'])  # cast to int to satisfy mypy
+
+    def create_pull_request(self, head: str, head_org_repo: OrganizationAndRepository,
+                            base: str, title: str, description: str, draft: bool) -> PullRequest:
+        # The GitLab API for creating MRs across projects is somewhat confusing:
+        # URL path needs to point to the source project, but the MR is still created in the target project,
+        # which needs to pointed to by `target_project_id` JSON property.
         request_body: Dict[str, Any] = {
             'source_branch': head,
             'target_branch': base,
+            'target_project_id': self.__get_repo_id_by_org_repo(),
             'title': ('Draft: ' if draft else '') + title,
             'description': description,
         }
-        mr = self.__fire_gitlab_api_project_request(method='POST', path_suffix='/merge_requests', request_body=request_body)
+        head_project = self.__url_encode_project_name(head_org_repo.organization, head_org_repo.repository)
+        path = f'/projects/{head_project}/merge_requests'
+        mr = self.__fire_gitlab_api_request(method='POST', path=path, request_body=request_body)
         return self.__get_merge_request_from_json(mr)
 
     def __get_user_id_by_username(self, username: str) -> Optional[int]:

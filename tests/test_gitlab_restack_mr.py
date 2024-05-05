@@ -39,13 +39,13 @@ class TestGitLabRestackMR(BaseTest):
 
         assert_failure(
             ['gitlab', 'restack-mr'],
-            "No MRs have develop as its source branch"
+            "No MRs in example-org/example-repo have develop as its source branch"
         )
 
         self.repo_sandbox.new_branch("multiple-mr-branch").commit()
         assert_failure(
             ['gitlab', 'restack-mr'],
-            "Multiple MRs have multiple-mr-branch as its source branch: !16, !17"
+            "Multiple MRs in example-org/example-repo have multiple-mr-branch as its source branch: !16, !17"
         )
 
     def test_gitlab_restack_mr_branch_in_sync(self, mocker: MockerFixture) -> None:

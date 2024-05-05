@@ -580,17 +580,7 @@ class TestGitLabCheckoutMRs(BaseTest):
         )
         assert_failure(
             ["gitlab", "checkout-mrs", "--all"],
-            "Could not check out MR !18 because branch develop is already deleted from origin-1."
-        )
-
-        (
-            self.repo_sandbox
-            .remove_remote("origin-1")
-            .add_remote("tester", 'https://gitlab.com/tester/lolxd.git')
-        )
-        assert_failure(
-            ["gitlab", "checkout-mrs", "--all"],
-            "Could not check out MR !18 because branch develop is already deleted from tester/tester."
+            "Could not check out MR !18 because branch develop is already deleted from tester/tester/repo_sandbox."
         )
 
     def test_gitlab_checkout_mrs_org_and_repo_from_config(self, mocker: MockerFixture) -> None:

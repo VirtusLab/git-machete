@@ -565,7 +565,16 @@ class TestGitLabCreateMR(BaseTest):
             |
             o-feature *
 
-        Checking if target branch branch-1 exists in origin_1 remote... YES
+        Warn: Target branch branch-1 lives in example-org/example-repo-2 project,
+        while source branch feature lives in example-org/example-repo-1 project.
+        git-machete will now attempt to create an MR in example-org/example-repo-2.
+
+        Note that due to the limitations of GitLab's MR model, it is not possible to cleanly create stacked MRs from forks.
+        For example, in a hypothetical chain some-other-branch -> feature -> branch-1, an MR from some-other-branch to feature
+        could not be created in example-org/example-repo-2, since its source branch feature lives in example-org/example-repo-1.
+        Generally, MRs need to be created in whatever project the target branch lives.
+
+        Checking if target branch branch-1 exists in origin_2 remote... YES
         Creating a MR from feature to branch-1... OK, see www.gitlab.com
         Checking for open GitLab MRs (to determine MR chain)... OK
         Updating description of MR !16 to include the chain of MRs... OK
@@ -618,7 +627,16 @@ class TestGitLabCreateMR(BaseTest):
         expected_result = """
         Add feature_1 onto the inferred upstream (parent) branch feature? (y, N)
         Added branch feature_1 onto feature
-        Checking if target branch feature exists in origin_2 remote... YES
+        Warn: Target branch feature lives in example-org/example-repo-1 project,
+        while source branch feature_1 lives in example-org/example-repo-2 project.
+        git-machete will now attempt to create an MR in example-org/example-repo-1.
+
+        Note that due to the limitations of GitLab's MR model, it is not possible to cleanly create stacked MRs from forks.
+        For example, in a hypothetical chain some-other-branch -> feature_1 -> feature, an MR from some-other-branch to feature_1
+        could not be created in example-org/example-repo-1, since its source branch feature_1 lives in example-org/example-repo-2.
+        Generally, MRs need to be created in whatever project the target branch lives.
+
+        Checking if target branch feature exists in origin_1 remote... YES
         Creating a MR from feature_1 to feature... OK, see www.gitlab.com
         Checking for open GitLab MRs (to determine MR chain)... OK
         Updating description of MR !17 to include the chain of MRs... OK
@@ -700,9 +718,19 @@ class TestGitLabCreateMR(BaseTest):
         expected_result = """
         Add feature_4 onto the inferred upstream (parent) branch feature_3? (y, N)
         Added branch feature_4 onto feature_3
-        Checking if target branch feature_3 exists in origin_2 remote... NO
-        Push untracked branch feature_3 to origin_2? (y, Q)
+        Warn: Target branch feature_3 lives in example-org/example-repo-1 project,
+        while source branch feature_4 lives in example-org/example-repo-2 project.
+        git-machete will now attempt to create an MR in example-org/example-repo-1.
+
+        Note that due to the limitations of GitLab's MR model, it is not possible to cleanly create stacked MRs from forks.
+        For example, in a hypothetical chain some-other-branch -> feature_4 -> feature_3, an MR from some-other-branch to feature_4
+        could not be created in example-org/example-repo-1, since its source branch feature_4 lives in example-org/example-repo-2.
+        Generally, MRs need to be created in whatever project the target branch lives.
+
+        Checking if target branch feature_3 exists in origin_1 remote... YES
         Creating a MR from feature_4 to feature_3... OK, see www.gitlab.com
+        Checking for open GitLab MRs (to determine MR chain)... OK
+        Updating description of MR !20 to include the chain of MRs... OK
         """
         assert_success(
             ['gitlab', 'create-mr'],
@@ -722,9 +750,19 @@ class TestGitLabCreateMR(BaseTest):
         expected_result = """
         Add feature_5 onto the inferred upstream (parent) branch feature_3? (y, N)
         Added branch feature_5 onto feature_3
-        Checking if target branch feature_3 exists in origin remote... NO
-        Push untracked branch feature_3 to origin? (y, Q)
+        Warn: Target branch feature_3 lives in example-org/example-repo-1 project,
+        while source branch feature_5 lives in example-org/example-repo-2 project.
+        git-machete will now attempt to create an MR in example-org/example-repo-1.
+
+        Note that due to the limitations of GitLab's MR model, it is not possible to cleanly create stacked MRs from forks.
+        For example, in a hypothetical chain some-other-branch -> feature_5 -> feature_3, an MR from some-other-branch to feature_5
+        could not be created in example-org/example-repo-1, since its source branch feature_5 lives in example-org/example-repo-2.
+        Generally, MRs need to be created in whatever project the target branch lives.
+
+        Checking if target branch feature_3 exists in origin_1 remote... YES
         Creating a MR from feature_5 to feature_3... OK, see www.gitlab.com
+        Checking for open GitLab MRs (to determine MR chain)... OK
+        Updating description of MR !21 to include the chain of MRs... OK
         """
         assert_success(
             ['gitlab', 'create-mr'],

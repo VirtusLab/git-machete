@@ -102,7 +102,7 @@ class TestGitHubRetargetPR(BaseTest):
 
         assert_failure(
             ['github', 'retarget-pr'],
-            'Multiple PRs have feature_4 as its head branch: #35, #40'
+            'Multiple PRs in example-org/old-example-repo have feature_4 as its head branch: #35, #40'
         )
 
     @staticmethod
@@ -180,11 +180,11 @@ class TestGitHubRetargetPR(BaseTest):
 
         assert_failure(
             ["github", "retarget-pr", "--branch", "branch-without-pr"],
-            "No PRs have branch-without-pr as its head branch")
+            "No PRs in user/repo have branch-without-pr as its head branch")
 
         assert_success(
             ['github', 'retarget-pr', '--branch', 'branch-without-pr', '--ignore-if-missing'],
-            "Warn: no PRs have branch-without-pr as its head branch\n")
+            "Warn: no PRs in user/repo have branch-without-pr as its head branch\n")
 
     def test_github_retarget_pr_multiple_non_origin_remotes(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)

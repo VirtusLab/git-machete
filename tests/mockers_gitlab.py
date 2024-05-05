@@ -1,5 +1,6 @@
 import json
 import re
+import urllib
 from contextlib import AbstractContextManager, contextmanager
 from http import HTTPStatus
 from typing import Any, Callable, Dict, Iterator, List, Optional
@@ -55,10 +56,14 @@ class MockGitLabAPIState:
     @staticmethod
     def with_mrs(*mrs: Dict[str, Any]) -> "MockGitLabAPIState":
         projects = {
-            1: {'namespace': {'full_path': 'tester/tester'}, 'name': 'repo_sandbox',
+            1: {'id': 1, 'namespace': {'full_path': 'tester/tester/repo_sandbox'}, 'name': 'repo_sandbox',
                 'http_url_to_repo': 'https://gitlab.com/tester/tester/repo_sandbox.git'},
-            2: {'namespace': {'full_path': 'example-org'}, 'name': 'example-repo',
-                'http_url_to_repo': 'https://github.com/example-org/example-repo.git'},
+            2: {'id': 2, 'namespace': {'full_path': 'example-org/example-repo'}, 'name': 'example-repo',
+                'http_url_to_repo': 'https://gitlab.com/example-org/example-repo.git'},
+            3: {'id': 3, 'namespace': {'full_path': 'example-org/example-repo-1'}, 'name': 'example-repo-1',
+                'http_url_to_repo': 'https://gitlab.com/example-org/example-repo-1.git'},
+            4: {'id': 4, 'namespace': {'full_path': 'example-org/example-repo-2'}, 'name': 'example-repo-2',
+                'http_url_to_repo': 'https://gitlab.com/example-org/example-repo-2.git'},
         }
         return MockGitLabAPIState(projects, *mrs)
 
@@ -125,6 +130,12 @@ def __mock_urlopen_impl(gitlab_api_state: MockGitLabAPIState, request: Request) 
             repo_no = int(url_segments[-1])
             if repo_no in gitlab_api_state.projects:
                 return MockAPIResponse(HTTPStatus.OK, gitlab_api_state.projects[repo_no])
+            raise error_404()
+        elif url_path_matches('/projects/*'):
+            repo_name = urllib.parse.unquote(url_segments[-1])
+            for project in gitlab_api_state.projects.values():
+                if project['namespace']['full_path'] == repo_name:
+                    return MockAPIResponse(HTTPStatus.OK, project)
             raise error_404()
         elif url_path_matches('/projects/*/merge_requests'):
             head: Optional[str] = query_params.get('source_branch')

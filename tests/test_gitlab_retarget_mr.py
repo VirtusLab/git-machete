@@ -108,7 +108,7 @@ class TestGitLabRetargetMR(BaseTest):
 
         assert_failure(
             ['gitlab', 'retarget-mr'],
-            'Multiple MRs have feature_4 as its source branch: !35, !40'
+            'Multiple MRs in example-org/example-repo have feature_4 as its source branch: !35, !40'
         )
 
     @staticmethod
@@ -186,11 +186,11 @@ class TestGitLabRetargetMR(BaseTest):
 
         assert_failure(
             ["gitlab", "retarget-mr", "--branch", "branch-without-mr"],
-            "No MRs have branch-without-mr as its source branch")
+            "No MRs in user/repo have branch-without-mr as its source branch")
 
         assert_success(
             ['gitlab', 'retarget-mr', '--branch', 'branch-without-mr', '--ignore-if-missing'],
-            "Warn: no MRs have branch-without-mr as its source branch\n")
+            "Warn: no MRs in user/repo have branch-without-mr as its source branch\n")
 
     def test_gitlab_retarget_mr_multiple_non_origin_remotes(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)

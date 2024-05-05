@@ -543,7 +543,7 @@ long_docs: Dict[str, str] = {
         <b>Usage:</b><b>
            git machete github <subcommand></b>
 
-        where `<subcommand>` is one of: `anno-prs`, `checkout-prs`, `create-pr`, `retarget-pr`.
+        where `<subcommand>` is one of: `anno-prs`, `checkout-prs`, `create-pr`, `retarget-pr` or `restack-pr`.
 
         Creates, checks out and manages GitHub PRs while keeping them reflected in branch layout file.
 
@@ -723,7 +723,7 @@ long_docs: Dict[str, str] = {
         <b>Usage:</b><b>
            git machete gitlab <subcommand></b>
 
-        where `<subcommand>` is one of: `anno-mrs`, `checkout-mrs`, `create-mr`, `retarget-mr`.
+        where `<subcommand>` is one of: `anno-mrs`, `checkout-mrs`, `create-mr`, `retarget-mr` or `restack-mr`.
 
         Creates, checks out and manages GitLab MRs while keeping them reflected in branch layout file.
 

@@ -39,13 +39,13 @@ class TestGitHubRestackPR(BaseTest):
 
         assert_failure(
             ['github', 'restack-pr'],
-            "No PRs have develop as its head branch"
+            "No PRs in example-org/example-repo have develop as its head branch"
         )
 
         self.repo_sandbox.new_branch("multiple-pr-branch").commit()
         assert_failure(
             ['github', 'restack-pr'],
-            "Multiple PRs have multiple-pr-branch as its head branch: #16, #17"
+            "Multiple PRs in example-org/example-repo have multiple-pr-branch as its head branch: #16, #17"
         )
 
     def test_github_restack_pr_branch_in_sync(self, mocker: MockerFixture) -> None:

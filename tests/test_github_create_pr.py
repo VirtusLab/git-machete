@@ -570,7 +570,16 @@ class TestGitHubCreatePR(BaseTest):
             |
             o-feature *
 
-        Checking if base branch branch-1 exists in origin_1 remote... YES
+        Warn: Base branch branch-1 lives in example-org/example-repo-2 repository,
+        while head branch feature lives in example-org/example-repo-1 repository.
+        git-machete will now attempt to create a PR in example-org/example-repo-2.
+
+        Note that due to the limitations of GitHub's PR model, it is not possible to cleanly create stacked PRs from forks.
+        For example, in a hypothetical chain some-other-branch -> feature -> branch-1, a PR from some-other-branch to feature
+        could not be created in example-org/example-repo-2, since its head branch feature lives in example-org/example-repo-1.
+        Generally, PRs need to be created in whatever repository the base branch lives.
+
+        Checking if base branch branch-1 exists in origin_2 remote... YES
         Creating a PR from feature to branch-1... OK, see www.github.com
         Checking for open GitHub PRs (to determine PR chain)... OK
         Updating description of PR #16 to include the chain of PRs... OK
@@ -623,7 +632,16 @@ class TestGitHubCreatePR(BaseTest):
         expected_result = """
         Add feature_1 onto the inferred upstream (parent) branch feature? (y, N)
         Added branch feature_1 onto feature
-        Checking if base branch feature exists in origin_2 remote... YES
+        Warn: Base branch feature lives in example-org/example-repo-1 repository,
+        while head branch feature_1 lives in example-org/example-repo-2 repository.
+        git-machete will now attempt to create a PR in example-org/example-repo-1.
+
+        Note that due to the limitations of GitHub's PR model, it is not possible to cleanly create stacked PRs from forks.
+        For example, in a hypothetical chain some-other-branch -> feature_1 -> feature, a PR from some-other-branch to feature_1
+        could not be created in example-org/example-repo-1, since its head branch feature_1 lives in example-org/example-repo-2.
+        Generally, PRs need to be created in whatever repository the base branch lives.
+
+        Checking if base branch feature exists in origin_1 remote... YES
         Creating a PR from feature_1 to feature... OK, see www.github.com
         Checking for open GitHub PRs (to determine PR chain)... OK
         Updating description of PR #17 to include the chain of PRs... OK
@@ -705,9 +723,19 @@ class TestGitHubCreatePR(BaseTest):
         expected_result = """
         Add feature_4 onto the inferred upstream (parent) branch feature_3? (y, N)
         Added branch feature_4 onto feature_3
-        Checking if base branch feature_3 exists in origin_2 remote... NO
-        Push untracked branch feature_3 to origin_2? (y, Q)
+        Warn: Base branch feature_3 lives in example-org/example-repo-1 repository,
+        while head branch feature_4 lives in example-org/example-repo-2 repository.
+        git-machete will now attempt to create a PR in example-org/example-repo-1.
+
+        Note that due to the limitations of GitHub's PR model, it is not possible to cleanly create stacked PRs from forks.
+        For example, in a hypothetical chain some-other-branch -> feature_4 -> feature_3, a PR from some-other-branch to feature_4
+        could not be created in example-org/example-repo-1, since its head branch feature_4 lives in example-org/example-repo-2.
+        Generally, PRs need to be created in whatever repository the base branch lives.
+
+        Checking if base branch feature_3 exists in origin_1 remote... YES
         Creating a PR from feature_4 to feature_3... OK, see www.github.com
+        Checking for open GitHub PRs (to determine PR chain)... OK
+        Updating description of PR #20 to include the chain of PRs... OK
         """
         assert_success(
             ['github', 'create-pr'],
@@ -727,9 +755,19 @@ class TestGitHubCreatePR(BaseTest):
         expected_result = """
         Add feature_5 onto the inferred upstream (parent) branch feature_3? (y, N)
         Added branch feature_5 onto feature_3
-        Checking if base branch feature_3 exists in origin remote... NO
-        Push untracked branch feature_3 to origin? (y, Q)
+        Warn: Base branch feature_3 lives in example-org/example-repo-1 repository,
+        while head branch feature_5 lives in example-org/example-repo-2 repository.
+        git-machete will now attempt to create a PR in example-org/example-repo-1.
+
+        Note that due to the limitations of GitHub's PR model, it is not possible to cleanly create stacked PRs from forks.
+        For example, in a hypothetical chain some-other-branch -> feature_5 -> feature_3, a PR from some-other-branch to feature_5
+        could not be created in example-org/example-repo-1, since its head branch feature_5 lives in example-org/example-repo-2.
+        Generally, PRs need to be created in whatever repository the base branch lives.
+
+        Checking if base branch feature_3 exists in origin_1 remote... YES
         Creating a PR from feature_5 to feature_3... OK, see www.github.com
+        Checking for open GitHub PRs (to determine PR chain)... OK
+        Updating description of PR #21 to include the chain of PRs... OK
         """
         assert_success(
             ['github', 'create-pr'],

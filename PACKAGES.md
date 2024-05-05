@@ -45,7 +45,7 @@ the **edge-most** channel that corresponds to the **released** versions of git-m
 
 ## [Repology](https://repology.org/project/git-machete/versions)
 
-May duplicate badges already included in the above table,
+Duplicates some badges already included in the above table,
 but may also include newly-added packages that we're not aware of yet.
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/git-machete.svg)](https://repology.org/project/git-machete/versions)

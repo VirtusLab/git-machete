@@ -33,6 +33,9 @@ class OrganizationAndRepository(NamedTuple):
     organization: str
     repository: str
 
+    def __str__(self) -> str:
+        return f"{self.organization}/{self.repository}"
+
     @classmethod
     def from_url(cls, domain: str, url: str) -> Optional["OrganizationAndRepository"]:
         url = url if url.endswith('.git') else url + '.git'
@@ -49,6 +52,9 @@ class OrganizationAndRepositoryAndRemote(NamedTuple):
     organization: str
     repository: str
     remote: str
+
+    def extract_org_and_repo(self) -> OrganizationAndRepository:
+        return OrganizationAndRepository(organization=self.organization, repository=self.repository)
 
 
 class OrganizationAndRepositoryAndGitUrl(NamedTuple):
@@ -98,6 +104,7 @@ class CodeHostingSpec(NamedTuple):
     pr_description_path: List[str]
     pr_full_name: str
     pr_ordinal_char: str
+    pr_short_name_article: str
     pr_short_name: str
     repository_name: str
     token_providers_message: str
@@ -121,7 +128,8 @@ class CodeHostingClient(metaclass=ABCMeta):  # pragma: no cover
         self.__org_repo_and_git_url_by_repo_id: Dict[int, Optional[OrganizationAndRepositoryAndGitUrl]] = {}
 
     @abstractmethod
-    def create_pull_request(self, head: str, base: str, title: str, description: str, draft: bool) -> PullRequest:
+    def create_pull_request(self, head: str, head_org_repo: OrganizationAndRepository,
+                            base: str, title: str, description: str, draft: bool) -> PullRequest:
         pass
 
     @abstractmethod
