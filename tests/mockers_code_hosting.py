@@ -1,4 +1,5 @@
 import json
+import os
 from collections import defaultdict
 from typing import Any, Callable, Dict, List, Optional, Union
 from urllib.error import HTTPError
@@ -34,7 +35,16 @@ class MockAPIResponse:
 
 
 def mock_from_url(domain: str, url: str) -> "OrganizationAndRepository":  # noqa: U100
-    return OrganizationAndRepository("example-org", "example-repo")
+    if url[:8] == "https://":
+        return OrganizationAndRepository(url.split("/")[3], url.split("/")[4].replace(".git", ""))
+    dir_to_repo = {
+        "remote": "example-repo",
+        "remote-1": "example-repo-1",
+        "remote-2": "example-repo-2",
+        "second-remote": "second-example-repo",
+    }
+    dir = url.split(os.path.sep)[-1]
+    return OrganizationAndRepository("example-org", dir_to_repo[dir])
 
 
 def mock_shutil_which(path: Optional[str]) -> Callable[[Any], Optional[str]]:

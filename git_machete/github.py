@@ -10,8 +10,8 @@ from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 from .code_hosting import (CodeHostingClient, CodeHostingGitConfigKeys,
-                           CodeHostingSpec, OrganizationAndRepositoryAndGitUrl,
-                           PullRequest)
+                           CodeHostingSpec, OrganizationAndRepository,
+                           OrganizationAndRepositoryAndGitUrl, PullRequest)
 from .exceptions import MacheteException, UnexpectedMacheteException
 from .git_operations import LocalBranchShortName
 from .utils import bold, compact_dict, debug, popen_cmd, warn
@@ -323,9 +323,11 @@ class GitHubClient(CodeHostingClient):
         else:
             return str(response)
 
-    def create_pull_request(self, head: str, base: str, title: str, description: str, draft: bool) -> PullRequest:
+    def create_pull_request(self, head: str, head_repo: OrganizationAndRepository,
+                            base: str, title: str, description: str, draft: bool) -> PullRequest:
         request_body: Dict[str, Any] = {
             'head': head,
+            'head_repo': f'{head_repo.organization}/{head_repo.repository}',
             'base': base,
             'title': title,
             'body': description,

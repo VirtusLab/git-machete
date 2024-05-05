@@ -50,6 +50,9 @@ class OrganizationAndRepositoryAndRemote(NamedTuple):
     repository: str
     remote: str
 
+    def extract_org_and_repo(self) -> OrganizationAndRepository:
+        return OrganizationAndRepository(organization=self.organization, repository=self.repository)
+
 
 class OrganizationAndRepositoryAndGitUrl(NamedTuple):
     organization: str
@@ -121,7 +124,8 @@ class CodeHostingClient(metaclass=ABCMeta):  # pragma: no cover
         self.__org_repo_and_git_url_by_repo_id: Dict[int, Optional[OrganizationAndRepositoryAndGitUrl]] = {}
 
     @abstractmethod
-    def create_pull_request(self, head: str, base: str, title: str, description: str, draft: bool) -> PullRequest:
+    def create_pull_request(self, head: str, head_repo: OrganizationAndRepository,
+                            base: str, title: str, description: str, draft: bool) -> PullRequest:
         pass
 
     @abstractmethod
