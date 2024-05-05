@@ -8,16 +8,7 @@ from urllib.parse import ParseResult, parse_qs, urlencode, urlparse
 from urllib.request import Request
 
 from git_machete.github import GitHubToken
-from tests.base_test import GitRepositorySandbox
 from tests.mockers_code_hosting import MockAPIResponse, MockHTTPError
-
-
-def mock_repositories() -> Dict[int, Dict[str, Any]]:
-    return {
-        1: {'owner': {'login': 'tester'}, 'name': 'repo_sandbox', 'clone_url': 'https://github.com/tester/repo_sandbox.git'},
-        2: {'owner': {'login': 'tester'}, 'name': 'repo_sandbox', 'clone_url': GitRepositorySandbox.second_remote_path},
-        3: {'owner': {'login': 'example-org'}, 'name': 'example-repo', 'clone_url': 'https://github.com/example-org/example-repo.git'},
-    }
 
 
 def mock_pr_json(head: str, base: str, number: int,
@@ -49,8 +40,17 @@ def mock_github_token_for_domain_fake(_domain: str) -> GitHubToken:
 
 
 class MockGitHubAPIState:
-    def __init__(self, *pulls: Dict[str, Any]) -> None:
+    def __init__(self, repositories: Dict[int, Dict[str, Any]], *pulls: Dict[str, Any]) -> None:
+        self.repositories: Dict[int, Dict[str, Any]] = repositories
         self.__pulls: List[Dict[str, Any]] = [dict(pull) for pull in pulls]
+
+    @staticmethod
+    def with_prs(*pulls: Dict[str, Any]) -> "MockGitHubAPIState":
+        repositories = {
+            1: {'owner': {'login': 'tester'}, 'name': 'repo_sandbox', 'clone_url': 'https://github.com/tester/repo_sandbox.git'},
+            2: {'owner': {'login': 'example-org'}, 'name': 'example-repo', 'clone_url': 'https://github.com/example-org/example-repo.git'},
+        }
+        return MockGitHubAPIState(repositories, *pulls)
 
     def get_pull_by_number(self, pull_no: int) -> Optional[Dict[str, Any]]:
         for pull in self.__pulls:
@@ -113,10 +113,8 @@ def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) 
     def handle_get() -> "MockAPIResponse":
         if url_path_matches('/repositories/[0-9]+'):
             repo_no = int(url_segments[-1])
-
-            mock_repos = mock_repositories()
-            if repo_no in mock_repos:
-                return MockAPIResponse(HTTPStatus.OK, mock_repos[repo_no])
+            if repo_no in github_api_state.repositories:
+                return MockAPIResponse(HTTPStatus.OK, github_api_state.repositories[repo_no])
             raise error_404()
         elif url_path_matches('/repos/*/*/pulls'):
             full_head_name: Optional[str] = query_params.get('head')
@@ -247,7 +245,7 @@ def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) 
 
     if request.method != "GET" and url_segments[:3] == ["repos", "example-org", "old-example-repo"]:
         original_path = parsed_url.path
-        new_path = original_path.replace("/repos/example-org/old-example-repo", "/repositories/3")
+        new_path = original_path.replace("/repos/example-org/old-example-repo", "/repositories/2")
         location = parsed_url._replace(path=new_path).geturl()
         raise redirect_307(location)
 

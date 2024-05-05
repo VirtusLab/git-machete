@@ -1,4 +1,3 @@
-from tempfile import mkdtemp
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success,
@@ -270,8 +269,7 @@ class TestForkPoint(BaseTest):
         )
 
     def test_fork_point_reachable_from_master_but_not_on_its_reflog(self) -> None:
-        other_local_path = mkdtemp()
-        self.repo_sandbox.new_repo(other_local_path, bare=False, switch_dir_to_new_repo=False)
+        other_local_path = self.repo_sandbox.create_repo("other-local", bare=False)
 
         with fixed_author_and_committer_date_in_past():
             (

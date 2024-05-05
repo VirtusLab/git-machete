@@ -1,6 +1,5 @@
 import os
 import textwrap
-from tempfile import mkdtemp
 
 from pytest_mock import MockerFixture
 
@@ -20,7 +19,7 @@ class TestGitHubCreatePR(BaseTest):
 
     @staticmethod
     def github_api_state_for_test_create_pr() -> MockGitHubAPIState:
-        return MockGitHubAPIState(
+        return MockGitHubAPIState.with_prs(
             mock_pr_json(head='ignore-trailing', base='hotfix/add-trigger', number=3)
         )
 
@@ -314,7 +313,7 @@ class TestGitHubCreatePR(BaseTest):
 
     @staticmethod
     def github_api_state_for_test_create_pr_for_chain_in_description() -> MockGitHubAPIState:
-        return MockGitHubAPIState(
+        return MockGitHubAPIState.with_prs(
             mock_pr_json(head='allow-ownership-link', base='develop', number=1),
             mock_pr_json(head='build-chain', base='allow-ownership-link', number=2)
         )
@@ -397,7 +396,7 @@ class TestGitHubCreatePR(BaseTest):
 
     @staticmethod
     def github_api_state_for_test_create_pr_missing_base_branch_on_remote() -> MockGitHubAPIState:
-        return MockGitHubAPIState(
+        return MockGitHubAPIState.with_prs(
             mock_pr_json(head='chore/redundant_checks', base='restrict_access', number=18)
         )
 
@@ -450,7 +449,7 @@ class TestGitHubCreatePR(BaseTest):
 
     @staticmethod
     def github_api_state_for_test_github_create_pr_with_multiple_non_origin_remotes() -> MockGitHubAPIState:
-        return MockGitHubAPIState(
+        return MockGitHubAPIState.with_prs(
             mock_pr_json(head='branch-1', base='root', number=15)
         )
 
@@ -461,10 +460,8 @@ class TestGitHubCreatePR(BaseTest):
         github_api_state = self.github_api_state_for_test_github_create_pr_with_multiple_non_origin_remotes()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
-        origin_1_remote_path = mkdtemp()
-        origin_2_remote_path = mkdtemp()
-        self.repo_sandbox.new_repo(origin_1_remote_path, bare=True, switch_dir_to_new_repo=False)
-        self.repo_sandbox.new_repo(origin_2_remote_path, bare=True, switch_dir_to_new_repo=False)
+        origin_1_remote_path = self.repo_sandbox.create_repo("remote-1", bare=True)
+        origin_2_remote_path = self.repo_sandbox.create_repo("remote-2", bare=True)
 
         # branch feature present in each of the remotes, no branch tracking data, remote origin_1 picked manually
         (
@@ -730,7 +727,7 @@ class TestGitHubCreatePR(BaseTest):
     def test_github_create_pr_for_no_push_qualifier(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState()))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState.with_prs()))
 
         (
             self.repo_sandbox
@@ -766,7 +763,7 @@ class TestGitHubCreatePR(BaseTest):
     def test_github_create_pr_for_branch_behind_remote(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState()))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState.with_prs()))
 
         (
             self.repo_sandbox
@@ -830,7 +827,7 @@ class TestGitHubCreatePR(BaseTest):
     def test_github_create_pr_for_branch_diverged_from_and_older_than_remote(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState()))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState.with_prs()))
 
         (
             self.repo_sandbox
@@ -856,7 +853,7 @@ class TestGitHubCreatePR(BaseTest):
     def test_github_create_pr_when_base_branch_disappeared_from_remote(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState()))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState.with_prs()))
 
         (
             self.repo_sandbox
@@ -884,7 +881,7 @@ class TestGitHubCreatePR(BaseTest):
     def test_github_create_pr_when_base_branch_appeared_on_remote(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState()))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState.with_prs()))
 
         (
             self.repo_sandbox

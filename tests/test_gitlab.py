@@ -44,7 +44,7 @@ class TestGitLab(BaseTest):
 
     @staticmethod
     def gitlab_api_state_for_test_gitlab_api_pagination() -> MockGitLabAPIState:
-        return MockGitLabAPIState(*[
+        return MockGitLabAPIState.with_mrs(*[
             mock_mr_json(
                 head=f'feature_{i:02d}', base='develop', number=i
             ) for i in range(TestGitLab.PR_COUNT_FOR_TEST_GITLAB_API_PAGINATION)])
@@ -82,7 +82,7 @@ class TestGitLab(BaseTest):
     def test_gitlab_enterprise_domain_unauthorized_without_token(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState()))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState.with_mrs()))
 
         self.repo_sandbox.set_git_config_key('machete.gitlab.domain', '403.example.org')
 
@@ -97,7 +97,7 @@ class TestGitLab(BaseTest):
     def test_gitlab_enterprise_domain_unauthorized_with_token(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState()))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState.with_mrs()))
 
         self.repo_sandbox.set_git_config_key('machete.gitlab.domain', '403.example.org')
 
@@ -110,7 +110,7 @@ class TestGitLab(BaseTest):
 
     @staticmethod
     def gitlab_api_state_for_test_gitlab_enterprise_domain() -> MockGitLabAPIState:
-        return MockGitLabAPIState(
+        return MockGitLabAPIState.with_mrs(
             mock_mr_json(head='snickers', base='develop', number=7, user='gitlab_user')
         )
 

@@ -1,5 +1,4 @@
 import os
-from tempfile import mkdtemp
 
 from pytest_mock import MockerFixture
 
@@ -1158,14 +1157,12 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_multiple_remotes(self, mocker: MockerFixture) -> None:
-        origin_1_remote_path = mkdtemp()
-        origin_2_remote_path = mkdtemp()
+        origin_1_remote_path = self.repo_sandbox.create_repo("remote-1", bare=True)
+        origin_2_remote_path = self.repo_sandbox.create_repo("remote-2", bare=True)
         (
             self.repo_sandbox
             .remove_remote("origin")
-            .new_repo(origin_1_remote_path, bare=True, switch_dir_to_new_repo=False)
             .add_remote("origin_1", origin_1_remote_path)
-            .new_repo(origin_2_remote_path, bare=True, switch_dir_to_new_repo=False)
             .add_remote("origin_2", origin_2_remote_path)
         )
 

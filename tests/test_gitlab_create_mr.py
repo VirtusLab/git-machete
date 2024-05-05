@@ -1,5 +1,4 @@
 import textwrap
-from tempfile import mkdtemp
 
 from pytest_mock import MockerFixture
 
@@ -19,7 +18,7 @@ class TestGitLabCreateMR(BaseTest):
 
     @staticmethod
     def gitlab_api_state_for_test_create_mr() -> MockGitLabAPIState:
-        return MockGitLabAPIState(
+        return MockGitLabAPIState.with_mrs(
             mock_mr_json(head='ignore-trailing', base='hotfix/add-trigger', number=3)
         )
 
@@ -310,7 +309,7 @@ class TestGitLabCreateMR(BaseTest):
 
     @staticmethod
     def gitlab_api_state_for_test_create_mr_for_chain_in_description() -> MockGitLabAPIState:
-        return MockGitLabAPIState(
+        return MockGitLabAPIState.with_mrs(
             mock_mr_json(head='allow-ownership-link', base='develop', number=1),
             mock_mr_json(head='build-chain', base='allow-ownership-link', number=2)
         )
@@ -393,7 +392,7 @@ class TestGitLabCreateMR(BaseTest):
 
     @staticmethod
     def gitlab_api_state_for_test_create_mr_missing_base_branch_on_remote() -> MockGitLabAPIState:
-        return MockGitLabAPIState(
+        return MockGitLabAPIState.with_mrs(
             mock_mr_json(head='chore/redundant_checks', base='restrict_access', number=18)
         )
 
@@ -446,7 +445,7 @@ class TestGitLabCreateMR(BaseTest):
 
     @staticmethod
     def gitlab_api_state_for_test_gitlab_create_mr_with_multiple_non_origin_remotes() -> MockGitLabAPIState:
-        return MockGitLabAPIState(
+        return MockGitLabAPIState.with_mrs(
             mock_mr_json(head='branch-1', base='root', number=15)
         )
 
@@ -457,10 +456,8 @@ class TestGitLabCreateMR(BaseTest):
         gitlab_api_state = self.gitlab_api_state_for_test_gitlab_create_mr_with_multiple_non_origin_remotes()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
 
-        origin_1_remote_path = mkdtemp()
-        origin_2_remote_path = mkdtemp()
-        self.repo_sandbox.new_repo(origin_1_remote_path, bare=True, switch_dir_to_new_repo=False)
-        self.repo_sandbox.new_repo(origin_2_remote_path, bare=True, switch_dir_to_new_repo=False)
+        origin_1_remote_path = self.repo_sandbox.create_repo("remote-1", bare=True)
+        origin_2_remote_path = self.repo_sandbox.create_repo("remote-2", bare=True)
 
         # branch feature present in each of the remotes, no branch tracking data, remote origin_1 picked manually
         (
@@ -726,7 +723,7 @@ class TestGitLabCreateMR(BaseTest):
     def test_gitlab_create_mr_for_no_push_qualifier(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState()))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState.with_mrs()))
 
         (
             self.repo_sandbox
@@ -762,7 +759,7 @@ class TestGitLabCreateMR(BaseTest):
     def test_gitlab_create_mr_for_branch_behind_remote(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState()))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState.with_mrs()))
 
         (
             self.repo_sandbox
@@ -826,7 +823,7 @@ class TestGitLabCreateMR(BaseTest):
     def test_gitlab_create_mr_for_branch_diverged_from_and_older_than_remote(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState()))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState.with_mrs()))
 
         (
             self.repo_sandbox
@@ -852,7 +849,7 @@ class TestGitLabCreateMR(BaseTest):
     def test_gitlab_create_mr_when_target_branch_disappeared_from_remote(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState()))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState.with_mrs()))
 
         (
             self.repo_sandbox
@@ -880,7 +877,7 @@ class TestGitLabCreateMR(BaseTest):
     def test_gitlab_create_mr_when_target_branch_appeared_on_remote(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState()))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState.with_mrs()))
 
         (
             self.repo_sandbox

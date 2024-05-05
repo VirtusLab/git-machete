@@ -144,10 +144,6 @@ class TestCompletionEndToEnd:
     def setup_class(cls) -> None:
         (
             cls.repo_sandbox
-            # Create the remote and sandbox repos, chdir into sandbox repo
-            .new_repo(cls.repo_sandbox.remote_path, bare=True)
-            .new_repo(cls.repo_sandbox.local_path, bare=False)
-            .add_remote("origin", cls.repo_sandbox.remote_path)
             .new_branch("master")
             .commit()
             .new_branch("develop")

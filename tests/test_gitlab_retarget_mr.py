@@ -1,5 +1,4 @@
 import textwrap
-from tempfile import mkdtemp
 
 from pytest_mock import MockerFixture
 
@@ -14,7 +13,7 @@ class TestGitLabRetargetMR(BaseTest):
 
     @staticmethod
     def gitlab_api_state_for_test_retarget_mr() -> MockGitLabAPIState:
-        return MockGitLabAPIState(
+        return MockGitLabAPIState.with_mrs(
             mock_mr_json(head='feature', base='master', number=15),
             mock_mr_json(head='feature_1', base='master', number=20),
             mock_mr_json(head='feature_2', base='master', number=25, body=None),
@@ -114,7 +113,7 @@ class TestGitLabRetargetMR(BaseTest):
 
     @staticmethod
     def gitlab_api_state_for_test_gitlab_retarget_mr_explicit_branch() -> MockGitLabAPIState:
-        return MockGitLabAPIState(
+        return MockGitLabAPIState.with_mrs(
             mock_mr_json(head='feature', base='root', number=15)
         )
 
@@ -202,10 +201,8 @@ class TestGitLabRetargetMR(BaseTest):
         branch_first_commit_msg = "First commit on branch."
         branch_second_commit_msg = "Second commit on branch."
 
-        origin_1_remote_path = mkdtemp()
-        origin_2_remote_path = mkdtemp()
-        self.repo_sandbox.new_repo(origin_1_remote_path, bare=True, switch_dir_to_new_repo=False)
-        self.repo_sandbox.new_repo(origin_2_remote_path, bare=True, switch_dir_to_new_repo=False)
+        origin_1_remote_path = self.repo_sandbox.create_repo("remote-1", bare=True)
+        origin_2_remote_path = self.repo_sandbox.create_repo("remote-2", bare=True)
 
         # branch feature present in each remote, no branch tracking data
         (
@@ -426,7 +423,7 @@ class TestGitLabRetargetMR(BaseTest):
 
     @staticmethod
     def gitlab_api_state_for_test_retarget_mr_root_branch() -> MockGitLabAPIState:
-        return MockGitLabAPIState(
+        return MockGitLabAPIState.with_mrs(
             mock_mr_json(head='master', base='root', number=15)
         )
 

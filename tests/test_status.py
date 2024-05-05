@@ -1,7 +1,6 @@
 import re
 import sys
 import textwrap
-from tempfile import mkdtemp
 
 import pytest
 from pytest_mock import MockerFixture
@@ -409,11 +408,9 @@ class TestStatus(BaseTest):
         )
 
     def test_status_inferring_counterpart_for_fetching_of_branch(self) -> None:
-        origin_1_remote_path = mkdtemp()
+        origin_1_remote_path = self.repo_sandbox.create_repo("remote-1", bare=True)
         (
             self.repo_sandbox
-                .new_repo(origin_1_remote_path, bare=True)
-                .chdir(self.repo_sandbox.local_path)
                 .add_remote('origin_1', origin_1_remote_path)
                 .new_branch('master')
                 .commit()

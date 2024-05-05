@@ -2,6 +2,7 @@ import os
 import re
 import subprocess
 import time
+from os import mkdir
 from tempfile import mkdtemp
 from typing import Any, List, Optional, Set, Tuple
 
@@ -11,13 +12,6 @@ from pytest_mock import MockerFixture
 class BaseTest:
     def setup_method(self) -> None:
         self.repo_sandbox = GitRepositorySandbox()
-        (
-            self.repo_sandbox
-            # Create the remote and sandbox repos, chdir into sandbox repo
-            .new_repo(self.repo_sandbox.remote_path, bare=True)
-            .new_repo(self.repo_sandbox.local_path, bare=False)
-            .add_remote("origin", self.repo_sandbox.remote_path)
-        )
         self.expected_mock_methods: Set[str] = set()
 
     def patch_symbol(self, mocker: MockerFixture, symbol: str, target: Any) -> None:
@@ -39,13 +33,18 @@ class BaseTest:
 
 
 class GitRepositorySandbox:
-    second_remote_path: str
-
     def __init__(self) -> None:
-        GitRepositorySandbox.second_remote_path = mkdtemp()
-        self.remote_path = mkdtemp()
-        self.local_path = mkdtemp()
+        self.__sandbox_dir = mkdtemp()
+        self.remote_path = self.create_repo("remote", bare=True)
+        self.local_path = self.create_repo("local", bare=False, switch_dir_to_new_repo=True)
+        self.add_remote("origin", self.remote_path)
         self.file_counter = 0
+
+    def create_repo(self, name: str, bare: bool, switch_dir_to_new_repo: bool = False) -> str:
+        path = os.path.join(self.__sandbox_dir, name)
+        mkdir(path)
+        self.init_repo(path, bare, switch_dir_to_new_repo)
+        return path
 
     def popen(self, command: str) -> str:
         return subprocess.check_output(command, shell=True, timeout=5).decode("utf-8").strip()
@@ -58,7 +57,7 @@ class GitRepositorySandbox:
         subprocess.call(command, shell=True)
         return self
 
-    def new_repo(self, directory: str, bare: bool, switch_dir_to_new_repo: bool = True) -> "GitRepositorySandbox":
+    def init_repo(self, directory: str, bare: bool, switch_dir_to_new_repo: bool) -> "GitRepositorySandbox":
         previous_dir = os.getcwd()
         os.chdir(directory)
         bare_opt = '--bare' if bare else ''

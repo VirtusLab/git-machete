@@ -13,7 +13,7 @@ class TestGitHubSync(BaseTest):
 
     @staticmethod
     def github_api_state_for_test_github_sync() -> MockGitHubAPIState:
-        return MockGitHubAPIState(
+        return MockGitHubAPIState.with_prs(
             mock_pr_json(head='snickers', base='master', number=7, user='github_user')
         )
 

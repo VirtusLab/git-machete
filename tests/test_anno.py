@@ -118,7 +118,7 @@ class TestAnno(BaseTest):
 
     @staticmethod
     def github_api_state_for_test_anno_prs() -> MockGitHubAPIState:
-        return MockGitHubAPIState(
+        return MockGitHubAPIState.with_prs(
             mockers_github.mock_pr_json(number=1, user='github_user', base='master', head='develop'),
             mockers_github.mock_pr_json(number=2, user='github_user', base='develop', head='feature')
         )
@@ -166,7 +166,7 @@ class TestAnno(BaseTest):
 
     @staticmethod
     def gitlab_api_state_for_test_anno_mrs() -> MockGitLabAPIState:
-        return MockGitLabAPIState(
+        return MockGitLabAPIState.with_mrs(
             mockers_gitlab.mock_mr_json(number=1, user='gitlab_user', base='master', head='develop'),
             mockers_gitlab.mock_mr_json(number=2, user='gitlab_user', base='develop', head='feature')
         )

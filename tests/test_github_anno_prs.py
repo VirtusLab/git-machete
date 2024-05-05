@@ -12,7 +12,7 @@ class TestGitHubAnnoPRs(BaseTest):
 
     @staticmethod
     def github_api_state_for_test_anno_prs() -> MockGitHubAPIState:
-        return MockGitHubAPIState(
+        return MockGitHubAPIState.with_prs(
             mock_pr_json(number=3, user='some_other_user', head='ignore-trailing', base='hotfix/add-trigger'),
             mock_pr_json(number=7, user='some_other_user', head='allow-ownership-link', base='develop'),
             mock_pr_json(number=31, user='github_user', head='call-ws', base='develop'),
@@ -135,7 +135,7 @@ class TestGitHubAnnoPRs(BaseTest):
 
     @staticmethod
     def github_api_state_for_test_local_branch_name_different_than_tracking_branch_name() -> MockGitHubAPIState:
-        return MockGitHubAPIState(
+        return MockGitHubAPIState.with_prs(
             mock_pr_json(head='feature_repo', base='root', number=15),
             mock_pr_json(head='feature_1', base='feature_repo', number=20)
         )

@@ -8,20 +8,7 @@ from urllib.parse import ParseResult, parse_qs, urlencode, urlparse
 from urllib.request import Request
 
 from git_machete.gitlab import GitLabToken
-from tests.base_test import GitRepositorySandbox
 from tests.mockers_code_hosting import MockAPIResponse, MockHTTPError
-
-
-def mock_projects() -> Dict[int, Dict[str, Any]]:
-    return {
-        1: {'namespace': {'full_path': 'tester/tester'}, 'name': 'repo_sandbox',
-            'http_url_to_repo': 'https://gitlab.com/tester/tester/repo_sandbox.git'},
-        2: {'namespace': {'full_path': 'tester'}, 'name': 'repo_sandbox',
-            'http_url_to_repo': GitRepositorySandbox.second_remote_path},
-        3: {'namespace': {'full_path': 'example-org'}, 'name': 'example-repo',
-            'http_url_to_repo': 'https://github.com/example-org/example-repo.git'},
-    }
-
 
 mock_user_ids = {
     "gitlab_user": 123456,
@@ -61,8 +48,19 @@ def mock_gitlab_token_for_domain_fake(_domain: str) -> GitLabToken:
 
 
 class MockGitLabAPIState:
-    def __init__(self, *pulls: Dict[str, Any]) -> None:
+    def __init__(self, projects: Dict[int, Dict[str, Any]], *pulls: Dict[str, Any]) -> None:
+        self.projects: Dict[int, Dict[str, Any]] = projects
         self.__pulls: List[Dict[str, Any]] = [dict(pull) for pull in pulls]
+
+    @staticmethod
+    def with_mrs(*mrs: Dict[str, Any]) -> "MockGitLabAPIState":
+        projects = {
+            1: {'namespace': {'full_path': 'tester/tester'}, 'name': 'repo_sandbox',
+                'http_url_to_repo': 'https://gitlab.com/tester/tester/repo_sandbox.git'},
+            2: {'namespace': {'full_path': 'example-org'}, 'name': 'example-repo',
+                'http_url_to_repo': 'https://github.com/example-org/example-repo.git'},
+        }
+        return MockGitLabAPIState(projects, *mrs)
 
     def get_pull_by_number(self, pull_no: int) -> Optional[Dict[str, Any]]:
         for pull in self.__pulls:
@@ -125,9 +123,8 @@ def __mock_urlopen_impl(gitlab_api_state: MockGitLabAPIState, request: Request) 
     def handle_get() -> "MockAPIResponse":
         if url_path_matches('/projects/[0-9]+'):
             repo_no = int(url_segments[-1])
-            mock_projs = mock_projects()
-            if repo_no in mock_projs:
-                return MockAPIResponse(HTTPStatus.OK, mock_projs[repo_no])
+            if repo_no in gitlab_api_state.projects:
+                return MockAPIResponse(HTTPStatus.OK, gitlab_api_state.projects[repo_no])
             raise error_404()
         elif url_path_matches('/projects/*/merge_requests'):
             head: Optional[str] = query_params.get('source_branch')

@@ -23,7 +23,7 @@ class TestGitHubRestackPR(BaseTest):
 
             <!-- end git-machete generated -->
             # Summary''')[1:]
-        return MockGitHubAPIState(
+        return MockGitHubAPIState.with_prs(
             mock_pr_json(head='feature_1', base='develop', number=14, draft=True),
             mock_pr_json(head='feature', base='develop', number=15, body=body),
             mock_pr_json(head='multiple-pr-branch', base='develop', number=16),

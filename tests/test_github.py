@@ -45,7 +45,7 @@ class TestGitHub(BaseTest):
 
     @staticmethod
     def github_api_state_for_test_github_api_pagination() -> MockGitHubAPIState:
-        return MockGitHubAPIState(*[
+        return MockGitHubAPIState.with_prs(*[
             mock_pr_json(
                 head=f'feature_{i:02d}', base='develop', number=i
             ) for i in range(TestGitHub.PR_COUNT_FOR_TEST_GITHUB_API_PAGINATION)])
@@ -83,7 +83,7 @@ class TestGitHub(BaseTest):
     def test_github_enterprise_domain_unauthorized_without_token(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState()))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState.with_prs()))
 
         self.repo_sandbox.set_git_config_key('machete.github.domain', '403.example.org')
 
@@ -98,7 +98,7 @@ class TestGitHub(BaseTest):
     def test_github_enterprise_domain_unauthorized_with_token(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState()))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState.with_prs()))
 
         self.repo_sandbox.set_git_config_key('machete.github.domain', '403.example.org')
 
@@ -111,7 +111,7 @@ class TestGitHub(BaseTest):
 
     @staticmethod
     def github_api_state_for_test_github_enterprise_domain() -> MockGitHubAPIState:
-        return MockGitHubAPIState(
+        return MockGitHubAPIState.with_prs(
             mock_pr_json(head='snickers', base='develop', number=7, user='github_user')
         )
 

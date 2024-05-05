@@ -23,7 +23,7 @@ class TestGitLabRestackMR(BaseTest):
 
             <!-- end git-machete generated -->
             # Summary''')[1:]
-        return MockGitLabAPIState(
+        return MockGitLabAPIState.with_mrs(
             mock_mr_json(head='feature_1', base='develop', number=14, draft=True),
             mock_mr_json(head='feature', base='develop', number=15, body=body),
             mock_mr_json(head='multiple-mr-branch', base='develop', number=16),

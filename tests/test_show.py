@@ -1,4 +1,3 @@
-from tempfile import mkdtemp
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
@@ -121,11 +120,6 @@ class TestShow(BaseTest):
              "branch one above current one.")
 
     def test_show_up_inference_using_reflog_of_remote_branch(self) -> None:
-        origin_1_remote_path = mkdtemp()
-        origin_2_remote_path = mkdtemp()
-        self.repo_sandbox.new_repo(origin_1_remote_path, bare=True, switch_dir_to_new_repo=False)
-        self.repo_sandbox.new_repo(origin_2_remote_path, bare=True, switch_dir_to_new_repo=False)
-
         (
             self.repo_sandbox
             .new_branch("master").commit().push()
@@ -155,7 +149,6 @@ class TestShow(BaseTest):
 
         Verify that 'git machete show down' displays name of a
         child/downstream branch one below current one.
-
         """
         (
             self.repo_sandbox
@@ -187,7 +180,6 @@ class TestShow(BaseTest):
         Verify that 'git machete show first' displays name of the first downstream
         branch of a root branch of the current branch in the config file if root
         branch has any downstream branches.
-
         """
         (
             self.repo_sandbox.new_branch("level-0-branch")

@@ -1,5 +1,4 @@
 import textwrap
-from tempfile import mkdtemp
 
 from pytest_mock import MockerFixture
 
@@ -14,7 +13,7 @@ class TestGitHubRetargetPR(BaseTest):
 
     @staticmethod
     def github_api_state_for_test_retarget_pr() -> MockGitHubAPIState:
-        return MockGitHubAPIState(
+        return MockGitHubAPIState.with_prs(
             mock_pr_json(head='feature', base='master', number=15),
             mock_pr_json(head='feature_1', base='master', number=20, body='# Based on PR #10\n\n# Summary'),
             mock_pr_json(head='feature_2', base='master', number=25, body=None),
@@ -108,7 +107,7 @@ class TestGitHubRetargetPR(BaseTest):
 
     @staticmethod
     def github_api_state_for_test_github_retarget_pr_explicit_branch() -> MockGitHubAPIState:
-        return MockGitHubAPIState(
+        return MockGitHubAPIState.with_prs(
             mock_pr_json(head='feature', base='root', number=15)
         )
 
@@ -196,10 +195,8 @@ class TestGitHubRetargetPR(BaseTest):
         branch_first_commit_msg = "First commit on branch."
         branch_second_commit_msg = "Second commit on branch."
 
-        origin_1_remote_path = mkdtemp()
-        origin_2_remote_path = mkdtemp()
-        self.repo_sandbox.new_repo(origin_1_remote_path, bare=True, switch_dir_to_new_repo=False)
-        self.repo_sandbox.new_repo(origin_2_remote_path, bare=True, switch_dir_to_new_repo=False)
+        origin_1_remote_path = self.repo_sandbox.create_repo("remote-1", bare=True)
+        origin_2_remote_path = self.repo_sandbox.create_repo("remote-2", bare=True)
 
         # branch feature present in each remote, no branch tracking data
         (
@@ -420,7 +417,7 @@ class TestGitHubRetargetPR(BaseTest):
 
     @staticmethod
     def github_api_state_for_test_retarget_pr_root_branch() -> MockGitHubAPIState:
-        return MockGitHubAPIState(
+        return MockGitHubAPIState.with_prs(
             mock_pr_json(head='master', base='root', number=15)
         )
 

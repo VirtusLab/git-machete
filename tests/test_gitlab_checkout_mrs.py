@@ -1,24 +1,25 @@
 import os
 from tempfile import mkdtemp
+from typing import Any, Dict, List
 
 from pytest_mock import MockerFixture
 
 from git_machete.code_hosting import OrganizationAndRepository
 from git_machete.gitlab import GitLabClient
-from tests.base_test import BaseTest, GitRepositorySandbox
+from tests.base_test import BaseTest
 from tests.mockers import (assert_failure, assert_success, launch_command,
                            rewrite_branch_layout_file)
 from tests.mockers_code_hosting import mock_from_url
 from tests.mockers_gitlab import (MockGitLabAPIState,
                                   mock_gitlab_token_for_domain_fake,
                                   mock_gitlab_token_for_domain_none,
-                                  mock_mr_json, mock_projects, mock_urlopen)
+                                  mock_mr_json, mock_urlopen)
 
 
 class TestGitLabCheckoutMRs(BaseTest):
     @staticmethod
-    def gitlab_api_state_for_test_checkout_mrs() -> MockGitLabAPIState:
-        return MockGitLabAPIState(
+    def mrs_for_test_checkout_mrs() -> List[Dict[str, Any]]:
+        return [
             mock_mr_json(head='chore/redundant_checks', base='restrict_access', number=18),
             mock_mr_json(head='restrict_access', base='allow-ownership-link', number=17),
             mock_mr_json(head='allow-ownership-link', base='bugfix/feature', number=12),
@@ -28,12 +29,25 @@ class TestGitLabCheckoutMRs(BaseTest):
             mock_mr_json(head='chore/comments', base='testing/add_user', number=24),
             mock_mr_json(head='ignore-trailing', base='hotfix/add-trigger', number=3),
             mock_mr_json(head='bugfix/remove-n-option', base='develop', number=5, state='closed', repo_id=2)
-        )
+        ]
+
+    @staticmethod
+    def projects_for_test_gitlab_checkout_prs(second_remote_path: str) -> Dict[int, Dict[str, Any]]:
+        return {
+            1: {'namespace': {'full_path': 'tester/tester'}, 'name': 'repo_sandbox',
+                'http_url_to_repo': 'https://gitlab.com/tester/tester/repo_sandbox.git'},
+            2: {'namespace': {'full_path': 'tester'}, 'name': 'repo_sandbox',
+                'http_url_to_repo': second_remote_path},
+        }
 
     def test_gitlab_checkout_mrs(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.gitlab_api_state_for_test_checkout_mrs()))
+        second_remote_path = self.repo_sandbox.create_repo("second-remote", bare=True)
+        gitlab_api_state = MockGitLabAPIState(
+            self.projects_for_test_gitlab_checkout_prs(second_remote_path),
+            *self.mrs_for_test_checkout_mrs())
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
 
         (
             self.repo_sandbox.new_branch("root")
@@ -246,12 +260,10 @@ class TestGitLabCheckoutMRs(BaseTest):
         assert_success(['gitlab', 'checkout-mrs', '--by', 'some_other_user'], expected_msg)
 
         # Check against closed pull request with source branch deleted from remote
-        other_local_path = mkdtemp()
-        self.repo_sandbox.new_repo(GitRepositorySandbox.second_remote_path, bare=True)
+        self.repo_sandbox.create_repo("other-local", bare=False, switch_dir_to_new_repo=True)
         (
             self.repo_sandbox
-            .new_repo(other_local_path, bare=False)
-            .add_remote("origin", GitRepositorySandbox.second_remote_path)
+            .add_remote("origin", second_remote_path)
             .new_branch('main')
             .commit('initial commit')
             .push()
@@ -280,17 +292,30 @@ class TestGitLabCheckoutMRs(BaseTest):
         assert_success(['gitlab', 'checkout-mrs', '3', '12'], expected_msg)
 
     @staticmethod
-    def gitlab_api_state_for_test_gitlab_checkout_mrs_fresh_repo() -> MockGitLabAPIState:
-        return MockGitLabAPIState(
+    def mrs_for_test_gitlab_checkout_mrs_fresh_repo() -> List[Dict[str, Any]]:
+        return [
             mock_mr_json(head='comments/add_docstrings', base='improve/refactor', number=2),
             mock_mr_json(head='restrict_access', base='allow-ownership-link', number=17),
             mock_mr_json(head='improve/refactor', base='chore/sync_to_docs', number=1),
             mock_mr_json(head='sphinx_export', base='comments/add_docstrings', number=23, state='closed', repo_id=2)
-        )
+        ]
+
+    @staticmethod
+    def projects_for_test_gitlab_checkout_mrs_freshly_cloned(second_remote_path: str) -> Dict[int, Dict[str, Any]]:
+        return {
+            1: {'namespace': {'full_path': 'tester/tester'}, 'name': 'repo_sandbox',
+                'http_url_to_repo': 'https://gitlab.com/tester/tester/repo_sandbox.git'},
+            2: {'namespace': {'full_path': 'tester'}, 'name': 'repo_sandbox',
+                'http_url_to_repo': second_remote_path},
+        }
 
     def test_gitlab_checkout_mrs_freshly_cloned(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.gitlab_api_state_for_test_gitlab_checkout_mrs_fresh_repo()))
+        second_remote_path = self.repo_sandbox.create_repo("second-remote", bare=True)
+        gitlab_api_state = MockGitLabAPIState(
+            self.projects_for_test_gitlab_checkout_mrs_freshly_cloned(second_remote_path),
+            *self.mrs_for_test_gitlab_checkout_mrs_fresh_repo())
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
 
         (
             self.repo_sandbox.new_branch("root")
@@ -328,10 +353,9 @@ class TestGitLabCheckoutMRs(BaseTest):
         for branch in ('develop', 'chore/sync_to_docs', 'improve/refactor', 'comments/add_docstrings'):
             self.repo_sandbox.delete_remote_branch(f"origin/{branch}")
 
-        self.repo_sandbox.new_repo(GitRepositorySandbox.second_remote_path, bare=True)
         (
-            self.repo_sandbox.new_repo(local_path, bare=False)
-            .add_remote("origin", GitRepositorySandbox.second_remote_path)
+            self.repo_sandbox.init_repo(local_path, bare=False, switch_dir_to_new_repo=True)
+            .add_remote("origin", second_remote_path)
             .new_branch('feature')
             .commit('initial commit')
             .push()
@@ -386,7 +410,7 @@ class TestGitLabCheckoutMRs(BaseTest):
 
     @staticmethod
     def gitlab_api_state_for_test_gitlab_checkout_mrs_from_fork_with_deleted_repo() -> MockGitLabAPIState:
-        return MockGitLabAPIState(
+        return MockGitLabAPIState.with_mrs(
             mock_mr_json(head='feature/allow_checkout', base='develop', number=2, repo_id=0, state='closed'),
             mock_mr_json(head='bugfix/allow_checkout', base='develop', number=3)
         )
@@ -432,7 +456,7 @@ class TestGitLabCheckoutMRs(BaseTest):
 
     @staticmethod
     def gitlab_api_state_for_test_gitlab_checkout_mrs_of_current_user_and_other_users() -> MockGitLabAPIState:
-        return MockGitLabAPIState(
+        return MockGitLabAPIState.with_mrs(
             mock_mr_json(head='chore/redundant_checks', base='restrict_access', number=18),
             mock_mr_json(head='restrict_access', base='allow-ownership-link', number=17, user='gitlab_user'),
             mock_mr_json(head='allow-ownership-link', base='bugfix/feature', number=12),
@@ -596,7 +620,7 @@ class TestGitLabCheckoutMRs(BaseTest):
 
     def test_gitlab_checkout_mrs_misc_failures_and_warns(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState()))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState.with_mrs()))
 
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
         assert_success(
@@ -636,7 +660,7 @@ class TestGitLabCheckoutMRs(BaseTest):
 
     @staticmethod
     def gitlab_api_state_with_mr_cycle() -> MockGitLabAPIState:
-        return MockGitLabAPIState(
+        return MockGitLabAPIState.with_mrs(
             mock_mr_json(head='bugfix/feature', base='chore/redundant_checks', number=6),
             mock_mr_json(head='chore/redundant_checks', base='restrict_access', number=18),
             mock_mr_json(head='restrict_access', base='allow-ownership-link', number=17),
@@ -671,18 +695,18 @@ class TestGitLabCheckoutMRs(BaseTest):
 
     @staticmethod
     def gitlab_api_state_for_test_gitlab_checkout_mrs_single_mr() -> MockGitLabAPIState:
-        return MockGitLabAPIState(
+        return MockGitLabAPIState.with_mrs(
             mock_mr_json(head='develop', base='master', number=18)
         )
 
     def test_gitlab_checkout_mrs_remote_already_added(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.git_operations.GitContext.fetch_remote', lambda _self, _remote: None)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(
-            self.gitlab_api_state_for_test_gitlab_checkout_mrs_single_mr()))
+        gitlab_api_state = self.gitlab_api_state_for_test_gitlab_checkout_mrs_single_mr()
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
         (
             self.repo_sandbox
             .remove_remote("origin")
-            .add_remote("origin-1", mock_projects()[1]['http_url_to_repo'])
+            .add_remote("origin-1", gitlab_api_state.projects[1]['http_url_to_repo'])
         )
         assert_failure(
             ["gitlab", "checkout-mrs", "--all"],
