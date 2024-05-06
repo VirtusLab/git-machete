@@ -5,4 +5,5 @@ extend-exclude = [
 ]
 
 [default.extend-words]
+tatus = "tatus"  # to allow for `s[tatus]`
 ther = "ther"  # to allow for `o[ther]`
