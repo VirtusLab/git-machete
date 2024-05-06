@@ -141,7 +141,7 @@ def run_cmd(cmd: str, *args: str, cwd: Optional[str] = None, env: Optional[Dict[
 
     if debug_mode:
         print_command(bold(f">>> {flat_cmd}"))
-    elif verbose_mode:
+    elif verbose_mode or measure_command_time:
         print_command(flat_cmd)
 
     start = time.time()
@@ -211,7 +211,7 @@ def popen_cmd(cmd: str, *args: str, cwd: Optional[str] = None,
 
     if debug_mode:
         print_command(bold(f">>> {flat_cmd}"))
-    elif verbose_mode:
+    elif verbose_mode or measure_command_time:
         print_command(flat_cmd)
 
     start = time.time()
