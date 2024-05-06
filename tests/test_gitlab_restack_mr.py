@@ -80,7 +80,7 @@ class TestGitLabRestackMR(BaseTest):
             Description of MR !15 has been updated
             """
         )
-        mr = gitlab_api_state.get_pull_by_number(15)
+        mr = gitlab_api_state.get_mr_by_number(15)
         assert mr is not None
         assert mr['draft'] is False
         assert mr['target_branch'] == 'master'
@@ -117,7 +117,7 @@ class TestGitLabRestackMR(BaseTest):
 
             """
         )
-        mr = gitlab_api_state.get_pull_by_number(14)
+        mr = gitlab_api_state.get_mr_by_number(14)
         assert mr is not None
         assert mr['draft'] is True
         assert mr['target_branch'] == 'master'
@@ -145,7 +145,7 @@ class TestGitLabRestackMR(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        mr = gitlab_api_state.get_pull_by_number(15)
+        mr = gitlab_api_state.get_mr_by_number(15)
         assert mr is not None
         original_title = mr['title']
         assert_success(
@@ -164,7 +164,7 @@ class TestGitLabRestackMR(BaseTest):
             MR !15 has been marked as ready for review again
             """
         )
-        mr = gitlab_api_state.get_pull_by_number(15)
+        mr = gitlab_api_state.get_mr_by_number(15)
         assert mr is not None
         assert mr['draft'] is False
         assert mr['title'] == original_title
@@ -207,7 +207,7 @@ class TestGitLabRestackMR(BaseTest):
             MR !15 has been marked as ready for review again
             """
         )
-        mr = gitlab_api_state.get_pull_by_number(15)
+        mr = gitlab_api_state.get_mr_by_number(15)
         assert mr is not None
         assert mr['draft'] is False
         assert mr['target_branch'] == 'master'
@@ -243,7 +243,7 @@ class TestGitLabRestackMR(BaseTest):
             Description of MR !15 has been updated
             """
         )
-        mr = gitlab_api_state.get_pull_by_number(15)
+        mr = gitlab_api_state.get_mr_by_number(15)
         assert mr is not None
         assert mr['draft'] is False
         assert mr['target_branch'] == 'master'
@@ -310,7 +310,7 @@ class TestGitLabRestackMR(BaseTest):
             Description of MR !15 has been updated
             """
         )
-        mr = gitlab_api_state.get_pull_by_number(15)
+        mr = gitlab_api_state.get_mr_by_number(15)
         assert mr is not None
         assert mr['draft'] is False
         assert mr['target_branch'] == 'master'

@@ -263,7 +263,7 @@ class TestGitLabRetargetMR(BaseTest):
             'Checking for open GitLab MRs (to determine MR chain)... OK\n'
             'Description of MR !20 has been updated\n'
         )
-        mr20 = gitlab_api_state.get_pull_by_number(20)
+        mr20 = gitlab_api_state.get_mr_by_number(20)
         assert mr20 is not None
         assert mr20['target_branch'] == 'feature'
         assert mr20['description'] == textwrap.dedent('''
@@ -310,7 +310,7 @@ class TestGitLabRetargetMR(BaseTest):
             'Checking for open GitLab MRs (to determine MR chain)... OK\n'
             'Description of MR !25 has been updated\n'
         )
-        mr25 = gitlab_api_state.get_pull_by_number(25)
+        mr25 = gitlab_api_state.get_mr_by_number(25)
         assert mr25 is not None
         assert mr25['target_branch'] == 'feature'
         assert mr25['description'] == textwrap.dedent('''
@@ -350,7 +350,7 @@ class TestGitLabRetargetMR(BaseTest):
             'Checking for open GitLab MRs (to determine MR chain)... OK\n'
             'Description of MR !30 has been updated\n'
         )
-        mr30 = gitlab_api_state.get_pull_by_number(30)
+        mr30 = gitlab_api_state.get_mr_by_number(30)
         assert mr30 is not None
         assert mr30['target_branch'] == 'feature_2'
         assert mr30['description'] == textwrap.dedent('''
@@ -384,7 +384,7 @@ class TestGitLabRetargetMR(BaseTest):
             'Checking for open GitLab MRs (to determine MR chain)... OK\n'
             'Description of MR !30 has been updated\n'
         )
-        mr30 = gitlab_api_state.get_pull_by_number(30)
+        mr30 = gitlab_api_state.get_mr_by_number(30)
         assert mr30 is not None
         assert mr30['target_branch'] == 'feature'
         assert mr30['description'] == textwrap.dedent('''
@@ -416,7 +416,7 @@ class TestGitLabRetargetMR(BaseTest):
             'Target branch of MR !30 has been switched to root\n'
             'Description of MR !30 has been updated\n'
         )
-        mr30 = gitlab_api_state.get_pull_by_number(30)
+        mr30 = gitlab_api_state.get_mr_by_number(30)
         assert mr30 is not None
         assert mr30['target_branch'] == 'root'
         assert mr30['description'] == '# Summary'

@@ -150,7 +150,7 @@ class TestGitLabCreateMR(BaseTest):
             Adding foo, bar as reviewers to MR !5... OK
             """
         )
-        pr = gitlab_api_state.get_pull_by_number(5)
+        pr = gitlab_api_state.get_mr_by_number(5)
         assert pr is not None
         assert pr['title'] == 'Draft: remove outdated fields'
         assert pr['description'] == textwrap.dedent('''
@@ -295,7 +295,7 @@ class TestGitLabCreateMR(BaseTest):
             """
         )
 
-        pr = gitlab_api_state.get_pull_by_number(7)
+        pr = gitlab_api_state.get_mr_by_number(7)
         assert pr is not None
         assert pr['title'] == 'MR title set explicitly'
 
@@ -350,7 +350,7 @@ class TestGitLabCreateMR(BaseTest):
 
         self.repo_sandbox.check_out("call-ws")
         launch_command("gitlab", "create-mr")
-        pr = gitlab_api_state.get_pull_by_number(3)
+        pr = gitlab_api_state.get_mr_by_number(3)
         assert pr is not None
         assert pr['description'] == textwrap.dedent('''
             <!-- start git-machete generated -->
@@ -369,7 +369,7 @@ class TestGitLabCreateMR(BaseTest):
         self.repo_sandbox.write_to_file(".gitlab/merge_request_templates/Default.md", "# MR title\n## Summary\n## Test plan\n")
         self.repo_sandbox.check_out("drop-constraint")
         launch_command("gitlab", "create-mr", "--yes")
-        pr = gitlab_api_state.get_pull_by_number(4)
+        pr = gitlab_api_state.get_mr_by_number(4)
         assert pr is not None
         assert pr['description'] == textwrap.dedent('''
             <!-- start git-machete generated -->
@@ -439,7 +439,7 @@ class TestGitLabCreateMR(BaseTest):
               o-feature/api_exception_handling *  MR !19 (some_other_user) www.gitlab.com
             """,
         )
-        pr = gitlab_api_state.get_pull_by_number(19)
+        pr = gitlab_api_state.get_mr_by_number(19)
         assert pr is not None
         assert pr['description'] == 'commit body\nanother line'
 
@@ -568,7 +568,7 @@ class TestGitLabCreateMR(BaseTest):
             ['gitlab', 'create-mr'],
             expected_result
         )
-        pr = gitlab_api_state.get_pull_by_number(16)
+        pr = gitlab_api_state.get_mr_by_number(16)
         assert pr is not None
         assert pr['description'] == textwrap.dedent('''
             <!-- start git-machete generated -->

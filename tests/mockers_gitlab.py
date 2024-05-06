@@ -48,9 +48,9 @@ def mock_gitlab_token_for_domain_fake(_domain: str) -> GitLabToken:
 
 
 class MockGitLabAPIState:
-    def __init__(self, projects: Dict[int, Dict[str, Any]], *pulls: Dict[str, Any]) -> None:
+    def __init__(self, projects: Dict[int, Dict[str, Any]], *mrs: Dict[str, Any]) -> None:
         self.projects: Dict[int, Dict[str, Any]] = projects
-        self.__pulls: List[Dict[str, Any]] = [dict(pull) for pull in pulls]
+        self.__mrs: List[Dict[str, Any]] = [dict(mr) for mr in mrs]
 
     @staticmethod
     def with_mrs(*mrs: Dict[str, Any]) -> "MockGitLabAPIState":
@@ -62,30 +62,30 @@ class MockGitLabAPIState:
         }
         return MockGitLabAPIState(projects, *mrs)
 
-    def get_pull_by_number(self, pull_no: int) -> Optional[Dict[str, Any]]:
-        for pull in self.__pulls:
-            if pull['iid'] == str(pull_no):
-                return pull
+    def get_mr_by_number(self, mr_number: int) -> Optional[Dict[str, Any]]:
+        for mr in self.__mrs:
+            if mr['iid'] == str(mr_number):
+                return mr
         return None
 
-    def get_open_pulls_by_head(self, head: str) -> List[Dict[str, Any]]:
-        return [pull for pull in self.get_open_pulls() if pull['source_branch'] == head]
+    def get_open_mrs_by_head(self, head: str) -> List[Dict[str, Any]]:
+        return [mr for mr in self.get_open_mrs() if mr['source_branch'] == head]
 
-    def get_open_pull_by_head_and_base(self, head: str, base: str) -> Optional[Dict[str, Any]]:
-        for pull in self.get_open_pulls():
-            pull_head: str = pull['source_branch']
-            pull_base: str = pull['target_branch']
-            if (head, base) == (pull_head, pull_base):
-                return pull
+    def get_open_mr_by_head_and_base(self, head: str, base: str) -> Optional[Dict[str, Any]]:
+        for mr in self.get_open_mrs():
+            mr_head: str = mr['source_branch']
+            mr_base: str = mr['target_branch']
+            if (head, base) == (mr_head, mr_base):
+                return mr
         return None
 
-    def get_open_pulls(self) -> List[Dict[str, Any]]:
-        return [pull for pull in self.__pulls if pull['state'] == 'open']
+    def get_open_mrs(self) -> List[Dict[str, Any]]:
+        return [mr for mr in self.__mrs if mr['state'] == 'open']
 
-    def add_pull(self, pull: Dict[str, Any]) -> None:
-        pull_numbers = [int(item['iid']) for item in self.__pulls]
-        pull['iid'] = str(max(pull_numbers or [0]) + 1)
-        self.__pulls.append(pull)
+    def add_mr(self, mr: Dict[str, Any]) -> None:
+        mr_numbers = [int(item['iid']) for item in self.__mrs]
+        mr['iid'] = str(max(mr_numbers or [0]) + 1)
+        self.__mrs.append(mr)
 
 
 # Not including [MockGitLabAPIResponse] type argument to maintain compatibility with Python <= 3.8
@@ -129,29 +129,29 @@ def __mock_urlopen_impl(gitlab_api_state: MockGitLabAPIState, request: Request) 
         elif url_path_matches('/projects/*/merge_requests'):
             head: Optional[str] = query_params.get('source_branch')
             if head:
-                prs = gitlab_api_state.get_open_pulls_by_head(head)
+                mrs = gitlab_api_state.get_open_mrs_by_head(head)
                 # If no matching PRs are found, the real GitLab returns 200 OK with an empty JSON array - not 404.
-                return MockAPIResponse(HTTPStatus.OK, prs)
+                return MockAPIResponse(HTTPStatus.OK, mrs)
             else:
-                pulls = gitlab_api_state.get_open_pulls()
+                mrs = gitlab_api_state.get_open_mrs()
                 page_str = query_params.get('page')
                 page = int(page_str) if page_str else 1
                 per_page_str = query_params.get('per_page')
-                per_page = int(per_page_str) if per_page_str else len(pulls)
+                per_page = int(per_page_str) if per_page_str else len(mrs)
                 start = (page - 1) * per_page
                 end = page * per_page
-                if end < len(pulls):
+                if end < len(mrs):
                     headers = {'link': f'<{url_with_query_params(page=page + 1)}>; rel="next"'}
                 elif page == 1:  # we're at the first page, and there are no more pages
                     headers = {}
                 else:  # we're at the final page, and there were some pages before
                     headers = {'link': f'<{url_with_query_params(page=1)}>; rel="first"'}
-                return MockAPIResponse(HTTPStatus.OK, response_data=pulls[start:end], headers=headers)
+                return MockAPIResponse(HTTPStatus.OK, response_data=mrs[start:end], headers=headers)
         elif url_path_matches('/projects/*/merge_requests/[0-9]+'):
-            pull_no = int(url_segments[-1])
-            pull = gitlab_api_state.get_pull_by_number(pull_no)
-            if pull:
-                return MockAPIResponse(HTTPStatus.OK, pull)
+            mr_number = int(url_segments[-1])
+            mr = gitlab_api_state.get_mr_by_number(mr_number)
+            if mr:
+                return MockAPIResponse(HTTPStatus.OK, mr)
             raise error_404()
         elif url_path_matches('/user'):
             return MockAPIResponse(HTTPStatus.OK, {'username': 'gitlab_user'})
@@ -168,7 +168,7 @@ def __mock_urlopen_impl(gitlab_api_state: MockGitLabAPIState, request: Request) 
     def handle_put() -> "MockAPIResponse":
         assert not query_params
         if url_path_matches("/projects/*/merge_requests/[0-9]+"):
-            return update_pull_request()
+            return update_merge_request()
         else:
             raise error_404()
 
@@ -177,37 +177,37 @@ def __mock_urlopen_impl(gitlab_api_state: MockGitLabAPIState, request: Request) 
         if url_path_matches("/projects/*/merge_requests"):
             head = json_data['source_branch']
             base = json_data['target_branch']
-            existing_pr = gitlab_api_state.get_open_pull_by_head_and_base(head, base)
-            if existing_pr is not None:
-                message = f"Another open merge request already exists for this source branch: !{existing_pr['iid']}"
+            existing_mr = gitlab_api_state.get_open_mr_by_head_and_base(head, base)
+            if existing_mr is not None:
+                message = f"Another open merge request already exists for this source branch: !{existing_mr['iid']}"
                 raise error_409({'message': [message]})
-            return create_pull_request()
+            return create_merge_request()
         else:
             raise error_404()
 
-    def update_pull_request() -> "MockAPIResponse":
-        pull_no = int(url_segments[-1])
-        pull = gitlab_api_state.get_pull_by_number(pull_no)
-        assert pull is not None
-        fill_pull_request_from_json_data(pull)
-        return MockAPIResponse(HTTPStatus.OK, pull)
+    def update_merge_request() -> "MockAPIResponse":
+        mr_number = int(url_segments[-1])
+        mr = gitlab_api_state.get_mr_by_number(mr_number)
+        assert mr is not None
+        fill_merge_request_from_json_data(mr)
+        return MockAPIResponse(HTTPStatus.OK, mr)
 
-    def create_pull_request() -> "MockAPIResponse":
-        pull = {'author': {'username': 'some_other_user'},
-                'web_url': 'www.gitlab.com',
-                'description': '# Summary',
-                'state': 'open',
-                'source_branch': "<TO-BE-FILLED>",
-                'source_project_id': 1,
-                'target_branch': "<TO-BE-FILLED>"}
-        fill_pull_request_from_json_data(pull)
-        gitlab_api_state.add_pull(pull)
-        return MockAPIResponse(HTTPStatus.CREATED, pull)
+    def create_merge_request() -> "MockAPIResponse":
+        mr = {'author': {'username': 'some_other_user'},
+              'web_url': 'www.gitlab.com',
+              'description': '# Summary',
+              'state': 'open',
+              'source_branch': "<TO-BE-FILLED>",
+              'source_project_id': 1,
+              'target_branch': "<TO-BE-FILLED>"}
+        fill_merge_request_from_json_data(mr)
+        gitlab_api_state.add_mr(mr)
+        return MockAPIResponse(HTTPStatus.CREATED, mr)
 
-    def fill_pull_request_from_json_data(pull: Dict[str, Any]) -> None:
+    def fill_merge_request_from_json_data(mr: Dict[str, Any]) -> None:
         for key in json_data.keys():
-            pull[key] = json_data[key]
-        pull['draft'] = pull['title'][:5] == 'Draft'
+            mr[key] = json_data[key]
+        mr['draft'] = mr['title'][:5] == 'Draft'
 
     def error_404() -> HTTPError:
         return HTTPError(parsed_url.hostname, 404, 'Not found', None, None)  # type: ignore[arg-type]
