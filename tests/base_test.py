@@ -43,7 +43,15 @@ class GitRepositorySandbox:
     def create_repo(self, name: str, bare: bool, switch_dir_to_new_repo: bool = False) -> str:
         path = os.path.join(self.__sandbox_dir, name)
         mkdir(path)
-        self.init_repo(path, bare, switch_dir_to_new_repo)
+        previous_dir = os.getcwd()
+        os.chdir(path)
+        bare_opt = '--bare' if bare else ''
+        self.execute(f'git init --quiet "{path}" {bare_opt}')
+        if not bare:
+            self.set_git_config_key("user.email", "tester@test.com")
+            self.set_git_config_key("user.name", "Tester Test")
+        if not switch_dir_to_new_repo:
+            os.chdir(previous_dir)
         return path
 
     def popen(self, command: str) -> str:
@@ -55,18 +63,6 @@ class GitRepositorySandbox:
 
     def execute_ignoring_exit_code(self, command: str) -> "GitRepositorySandbox":
         subprocess.call(command, shell=True)
-        return self
-
-    def init_repo(self, directory: str, bare: bool, switch_dir_to_new_repo: bool) -> "GitRepositorySandbox":
-        previous_dir = os.getcwd()
-        os.chdir(directory)
-        bare_opt = '--bare' if bare else ''
-        self.execute(f'git init --quiet "{directory}" {bare_opt}')
-        if not bare:
-            self.set_git_config_key("user.email", "tester@test.com")
-            self.set_git_config_key("user.name", "Tester Test")
-        if not switch_dir_to_new_repo:
-            os.chdir(previous_dir)
         return self
 
     def chdir(self, path: str) -> "GitRepositorySandbox":
