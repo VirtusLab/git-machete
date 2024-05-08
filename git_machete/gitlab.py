@@ -14,9 +14,7 @@ from git_machete.code_hosting import (CodeHostingClient,
                                       CodeHostingSpec,
                                       OrganizationAndRepositoryAndGitUrl,
                                       PullRequest)
-from git_machete.exceptions import (MacheteException,
-                                    UnexpectedMacheteException,
-                                    UnprocessableEntityOrConflictHTTPError)
+from git_machete.exceptions import MacheteException, UnexpectedMacheteException
 from git_machete.git_operations import LocalBranchShortName
 from git_machete.utils import compact_dict, debug, map_truthy_only, popen_cmd
 
@@ -182,7 +180,11 @@ class GitLabClient(CodeHostingClient):
             if err.code == http.HTTPStatus.CONFLICT:
                 error_response = json.loads(err.read().decode())
                 error_reason: str = self.__extract_failure_info_from_409(error_response)
-                raise UnprocessableEntityOrConflictHTTPError(error_reason)
+                if 'Another open merge request already exists for this source branch:' in error_reason:
+                    raise MacheteException(error_reason)
+                else:
+                    raise UnexpectedMacheteException(
+                        f'GitLab API returned 409 (Conflict) HTTP status with error message: `{error_reason}`.')
             elif err.code in (http.HTTPStatus.UNAUTHORIZED, http.HTTPStatus.FORBIDDEN):
                 first_line = f'GitLab API returned `{err.code}` HTTP status with error message: `{err.reason}`\n'
                 last_line = 'You can also use a different token provider - see `git machete help gitlab` for details.'

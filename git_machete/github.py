@@ -12,8 +12,7 @@ from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 from .code_hosting import (CodeHostingClient, CodeHostingGitConfigKeys,
                            CodeHostingSpec, OrganizationAndRepositoryAndGitUrl,
                            PullRequest)
-from .exceptions import (MacheteException, UnexpectedMacheteException,
-                         UnprocessableEntityOrConflictHTTPError)
+from .exceptions import MacheteException, UnexpectedMacheteException
 from .git_operations import LocalBranchShortName
 from .utils import bold, compact_dict, debug, popen_cmd, warn
 
@@ -239,7 +238,15 @@ class GitHubClient(CodeHostingClient):
             if err.code == http.HTTPStatus.UNPROCESSABLE_ENTITY:
                 error_response = json.loads(err.read().decode())
                 error_reason: str = self.__extract_failure_info_from_422(error_response)
-                raise UnprocessableEntityOrConflictHTTPError(error_reason)
+                if 'A pull request already exists for' in error_reason:
+                    raise MacheteException(error_reason)
+                elif 'Reviews may only be requested from collaborators.' in error_reason:
+                    print()
+                    warn(f"There are some invalid reviewers (non-collaborators) in .git{os.path.sep}info{os.path.sep}reviewers file.\n"
+                         "Skipped adding reviewers to the pull request.")
+                else:
+                    raise UnexpectedMacheteException(
+                        f'GitLab API returned 422 (Unprocessable Entity) HTTP status with error message: `{error_reason}`.')
             elif err.code in (http.HTTPStatus.UNAUTHORIZED, http.HTTPStatus.FORBIDDEN):
                 first_line = f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`\n'
                 last_line = 'You can also use a different token provider - see `git machete help github` for details.'

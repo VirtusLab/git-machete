@@ -19,8 +19,7 @@ from .constants import (DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, PICK_FIRST_ROOT,
                         PICK_LAST_ROOT, GitFormatPatterns,
                         SyncToRemoteStatuses)
 from .exceptions import (InteractionStopped, MacheteException,
-                         UnexpectedMacheteException,
-                         UnprocessableEntityOrConflictHTTPError)
+                         UnexpectedMacheteException)
 from .git_operations import (HEAD, AnyBranchName, AnyRevision, BranchPair,
                              ForkPointOverrideData, FullCommitHash, GitContext,
                              GitLogEntry, LocalBranchShortName,
@@ -2651,17 +2650,8 @@ class MacheteClient:
             print(f'Adding {", ".join(bold(reviewer) for reviewer in reviewers)} '
                   f'as reviewer{"s" if len(reviewers) > 1 else ""} to {pr.display_text()}... ',
                   end='', flush=True)
-            try:
-                code_hosting_client.add_reviewers_to_pull_request(pr.number, reviewers)
-            except UnprocessableEntityOrConflictHTTPError as e:
-                if 'Reviews may only be requested from collaborators.' in e.msg:
-                    print()
-                    warn(f"There are some invalid reviewers in {self.__git.get_main_git_subpath('info', 'reviewers')} file.\n"
-                         f"Skipped adding reviewers to {spec.pr_full_name}.")
-                else:
-                    raise UnexpectedMacheteException(str(e))
-            else:
-                print(fmt(ok_str))
+            code_hosting_client.add_reviewers_to_pull_request(pr.number, reviewers)
+            print(fmt(ok_str))
 
         self.__annotations[head] = Annotation(self.__pull_request_annotation(spec, pr, current_user))
         self.save_branch_layout_file()

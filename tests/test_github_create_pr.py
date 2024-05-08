@@ -294,8 +294,9 @@ class TestGitHubCreatePR(BaseTest):
             Setting milestone of PR #7 to 42... OK
             Adding github_user as assignee to PR #7... OK
             Adding invalid-user as reviewer to PR #7...
-            Warn: There are some invalid reviewers in .git{os.path.sep}info{os.path.sep}reviewers file.
-            Skipped adding reviewers to pull request.
+            Warn: There are some invalid reviewers (non-collaborators) in .git{os.path.sep}info{os.path.sep}reviewers file.
+            Skipped adding reviewers to the pull request.
+            OK
             """
         )
 
