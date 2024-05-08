@@ -7,7 +7,7 @@
 git machete show current >/dev/null 2>/dev/null || exit 0
 
 # If the branch is already managed, do nothing.
-git machete is-managed 2>/dev/null && exit 0
+git machete is-managed >/dev/null 2>/dev/null && exit 0
 
 # Hooks are run by git with stdin set to /dev/null which would make it impossible for 'git machete add' to collect interactive input,
 # hence the redirect from /dev/tty.

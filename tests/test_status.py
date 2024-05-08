@@ -120,6 +120,57 @@ class TestStatus(BaseTest):
         self.patch_symbol(mocker, "builtins.input", mock_input_returning_y)
         assert_success(["status"], expected_output)
 
+    def test_single_invalid_branch_non_interactive_slide_out(self) -> None:
+        (
+            self.repo_sandbox
+            .remove_remote()
+            .new_branch('master')
+            .commit()
+        )
+        body: str = \
+            """
+            master
+            \t\tfoo
+            """
+        rewrite_branch_layout_file(body)
+        expected_output = """
+            Warning: sliding invalid branch foo out of the branch layout file
+              master *
+        """
+        assert_success(["status"], expected_output)
+
+    def test_multiple_invalid_branches_non_interactive_slide_out(self) -> None:
+        (
+            self.repo_sandbox
+            .remove_remote()
+            .new_branch('master')
+            .commit()
+            .new_branch('develop')
+            .commit()
+            .new_branch('feature')
+            .commit()
+        )
+        body: str = \
+            """
+            master
+            \t\tfoo
+            \t\t\t\tbar  PR #1
+            \t\tqux
+            \t\t\t\tdevelop
+            baz
+            \t\tfeature
+            """
+        rewrite_branch_layout_file(body)
+        expected_output = """
+            Warning: sliding invalid branches foo, bar, qux, baz out of the branch layout file
+              master
+              |
+              o-develop
+
+              feature *
+        """
+        assert_success(["status"], expected_output)
+
     @pytest.mark.skipif(sys.platform == "win32", reason="Windows doesn't distinguish between executable and non-executable files")
     def test_status_advice_ignored_non_executable_hook(self) -> None:
         (

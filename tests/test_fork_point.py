@@ -315,3 +315,16 @@ class TestForkPoint(BaseTest):
             ["fork-point"],
             first_master_commit + "\n"
         )
+
+    def test_fork_point_fallback_to_parent(self) -> None:
+        (
+            self.repo_sandbox
+            .new_branch("master").commit().push()
+            .new_branch("develop").commit().push()
+            .delete_branch("master")
+            .check_out("master")  # out of remote branch
+        )
+        rewrite_branch_layout_file("master\n\tdevelop")
+        master_commit = self.repo_sandbox.get_commit_hash("master")
+        develop_fork_point = launch_command("fork-point", "develop").rstrip()
+        assert develop_fork_point == master_commit

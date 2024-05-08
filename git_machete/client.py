@@ -171,8 +171,11 @@ class MacheteClient:
                     "Slide them out from the branch layout file?" + get_pretty_choices("y", "e[dit]", "N"),
                     opt_yes_msg=None, opt_yes=False)
         else:
-            print(f"Warning: sliding invalid branches: {', '.join(bold(branch) for branch in invalid_branches)} "
-                  f"out of the branch layout file", file=sys.stderr)
+            if len(invalid_branches) == 1:
+                what = f"invalid branch {bold(invalid_branches[0])}"
+            else:
+                what = f"invalid branches {', '.join(bold(branch) for branch in invalid_branches)}"
+            print(f"Warning: sliding {what} out of the branch layout file", file=sys.stderr)
             ans = 'y'
 
         def recursive_slide_out_invalid_branches(branch_: LocalBranchShortName) -> List[LocalBranchShortName]:

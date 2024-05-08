@@ -109,10 +109,6 @@ class TestGitLabCheckoutMRs(BaseTest):
                         chore/fields
             develop
                 enhance/feature
-                    bugfix/feature
-                        allow-ownership-link
-                            restrict_access
-                                chore/redundant_checks
             """
         rewrite_branch_layout_file(body)
 
@@ -417,13 +413,6 @@ class TestGitLabCheckoutMRs(BaseTest):
                         chore/fields
             develop
                 enhance/feature
-                    bugfix/feature
-                        allow-ownership-link
-                            restrict_access
-                                chore/redundant_checks
-            bugfix/add_user
-                testing/add_user
-                    chore/comments
             """
         rewrite_branch_layout_file(body)
 

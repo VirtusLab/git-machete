@@ -37,35 +37,35 @@ def fixed_author_and_committer_date_in_past() -> AbstractContextManager:  # type
     )
 
 
-def launch_command(*args: str) -> str:
+def launch_command(*cmd_and_args: str) -> str:
     with io.StringIO() as out:
         with redirect_stdout(out):
             with redirect_stderr(out):
                 utils.displayed_warnings = set()
-                cli.launch(list(args))
+                cli.launch(list(cmd_and_args))
         output = out.getvalue()
         if sys.platform == 'win32':
             output = output.replace('.git\\machete', '.git/machete')
         return output
 
 
-def assert_success(cmds: Iterable[str], expected_result: str) -> None:
+def assert_success(cmd_and_args: Iterable[str], expected_result: str) -> None:
     if expected_result.startswith("\n"):
         # removeprefix is only available since Python 3.9
         expected_result = expected_result[1:]
     expected_result = textwrap.dedent(expected_result)
-    actual_result = re.sub(" +$", "", textwrap.dedent(launch_command(*cmds)), flags=re.MULTILINE)
+    actual_result = re.sub(" +$", "", textwrap.dedent(launch_command(*cmd_and_args)), flags=re.MULTILINE)
     assert actual_result == expected_result
 
 
-def assert_failure(cmds: Iterable[str], expected_result: str, expected_exception: Type[Exception] = MacheteException) -> None:
+def assert_failure(cmd_and_args: Iterable[str], expected_result: str, expected_exception: Type[Exception] = MacheteException) -> None:
     if expected_result.startswith("\n"):
         # removeprefix is only available since Python 3.9
         expected_result = expected_result[1:]
     expected_result = textwrap.dedent(expected_result)
 
     with pytest.raises(expected_exception) as e:
-        launch_command(*cmds)
+        launch_command(*cmd_and_args)
     error_message = e.value.msg  # type: ignore[attr-defined]
     error_message = re.sub(" +$", "", error_message, flags=re.MULTILINE)
     if sys.platform == 'win32':
