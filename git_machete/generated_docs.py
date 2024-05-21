@@ -326,7 +326,7 @@ long_docs: Dict[str, str] = {
               Controls the algorithm used to detect squash merges. Possible values are:
               * `none`: No squash merge/rebase detection.
               * `simple`: Compares the tree state of the merge commit with the tree state of the upstream branch. This detects squash merges/rebases as long as there was not any commit on the upstream branch since the last common commit.
-              * `exact`: Compares the patch that would be applied by the merge commit with the commits that ocurred on the upstream branch since the last common commit. This detects squash merges/rebases even if there were commits on the upstream branch since the last common commit. However, it might have a performance impact as it requires listing all the commits in the upstream.
+              * `exact`: Compares the patch that would be applied by the merge commit with the commits that occurred on the upstream branch since the last common commit. This detects squash merges/rebases even if there were commits on the upstream branch since the last common commit. However, it might have a performance impact as it requires listing all the commits in the upstream.
 
         <b>Environment variables:</b>
            `GIT_MACHETE_EDITOR`

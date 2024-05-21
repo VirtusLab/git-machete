@@ -956,11 +956,9 @@ class GitContext:
             utils.get_non_empty_lines(self._popen_git("log", "--format=%H:%h:%s", f"^{earliest_exclusive}", latest_inclusive, "--").stdout)
         ))))
 
-    def get_patch_ids_for_commits_between(self,
-                                          earliest_exclusive: AnyRevision,
-                                          latest_inclusive: AnyRevision,
-                                          max_commits: int
-                                          ) -> Dict[FullCommitHash, str]:
+    def get_patch_ids_for_commits_between(
+        self, earliest_exclusive: AnyRevision, latest_inclusive: AnyRevision, max_commits: int
+    ) -> Dict[FullCommitHash, str]:
         # Returns a dictionary of git hashes and their diffs between two revisions
         patches = self._popen_git("log", "--patch", f"^{earliest_exclusive}", latest_inclusive, f"-{max_commits}", "--").stdout
         patch_ids = self._popen_git("patch-id", input=patches).stdout
