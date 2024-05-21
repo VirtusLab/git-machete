@@ -225,15 +225,6 @@ jobs:
           command: bash ci/pypi/ci-deploy.sh --dry-run
 
       - run:
-          name: 'Wait up to 10 minutes for Test PyPI package to be available'
-          command: bash ci/pypi/ci-wait-for-package.sh test.pypi.org 10
-
-      - run:
-          name: '[Dry run] Update Homebrew with local installation test'
-          # Prerequisites: artifacts must be released to test PyPI first
-          command: bash ci/homebrew/ci-deploy.sh --dry-run
-
-      - run:
           name: '[Dry run] Publish image to Docker Hub'
           command: bash ci/docker/ci-deploy.sh --dry-run
 
@@ -265,19 +256,6 @@ jobs:
       - run:
           name: 'Deploy to PyPI'
           command: bash ci/pypi/ci-deploy.sh
-
-  "update homebrew formula":
-    executor: ubuntu_executor
-    steps:
-      - checkout
-      - run:
-          # See https://github.com/Homebrew/homebrew-core/pull/119200/commits/a4902911fadbdcf2c6b64ce691024ff97a516f1c
-          # for a case where the package wasn't available right after the upload and Homebrew Core build failed.
-          name: 'Wait up to 10 minutes for PyPI package to be available'
-          command: bash ci/pypi/ci-wait-for-package.sh pypi.org 10
-      - run:
-          name: 'Update Homebrew formula'
-          command: bash ci/homebrew/ci-deploy.sh
 
   "publish image to docker hub":
     executor: ubuntu_executor
@@ -375,10 +353,6 @@ workflows:
           <<: *only_master
           requires:
             - dry run deploy
-      - update homebrew formula:
-          <<: *only_master
-          requires:
-            - deploy to pypi
       - publish image to docker hub:
           <<: *only_master
           requires:
@@ -397,7 +371,6 @@ workflows:
           <<: *only_master
           requires:
             - deploy to pypi
-            - update homebrew formula
             - publish image to docker hub
             - build and upload deb package to ppa
             - publish snap to the stable channel
