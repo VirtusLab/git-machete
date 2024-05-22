@@ -464,7 +464,7 @@ def update_cli_options_using_parsed_args(
         elif opt == "no_detect_squash_merges":
             print("--no-detect-squash-merges is deprecated, use --squash-merge-detection=none")
             cli_opts.opt_squash_merge_detection = SquashMergeDetection.NONE
-        elif opt == "squash_merge_detection" and arg is not None:  # If the value is None it means the user did not provide any value
+        elif opt == "squash_merge_detection" and arg is not None:  # If the value is None it means the user did not provide any value, which is forbidden by argparse
             cli_opts.opt_squash_merge_detection = arg  # Already a SquashMergeDetection enum
         elif opt == "no_edit_merge":
             cli_opts.opt_no_edit_merge = True
