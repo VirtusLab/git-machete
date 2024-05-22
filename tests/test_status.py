@@ -306,7 +306,7 @@ class TestStatus(BaseTest):
         )
         assert_success(['status'], expected_status_output)
 
-    def test_squashed_branch_recognized_as_merged_with_traverse(self) -> None:
+    def test_status_squashed_branch_recognized_as_merged_with_traverse(self) -> None:
 
         (
             self.repo_sandbox.new_branch("root")
@@ -378,10 +378,8 @@ class TestStatus(BaseTest):
             """,
         )
 
-        # but under --no-detect-squash-merges, feature is detected as "x" (behind) develop
-        assert_success(
-            ["status", "-l", "--squash-merge-detection=none"],
-            """
+        # under --squash-merge-detection=none, feature is detected as "x" (out of sync) with develop
+        expected_output_detection_none = """
             root
             |
             | develop
@@ -395,8 +393,22 @@ class TestStatus(BaseTest):
                 | child_1
                 | child_2
                 o-child *
-            """,
+            """
+        assert_success(
+            ["status", "-l", "--no-detect-squash-merges"],
+            "          Warn: --no-detect-squash-merges is deprecated, "
+            "use --squash-merge-detection=none instead\n" + expected_output_detection_none
         )
+        assert_success(
+            ["status", "-l", "--squash-merge-detection=none"],
+            expected_output_detection_none
+        )
+        self.repo_sandbox.set_git_config_key('machete.squashMergeDetection', 'none')
+        assert_success(
+            ["status", "-l"],
+            expected_output_detection_none
+        )
+        self.repo_sandbox.unset_git_config_key('machete.squashMergeDetection')
 
         # traverse then slide out the feature branch
         launch_command("traverse", "-w", "-y")
@@ -460,7 +472,9 @@ class TestStatus(BaseTest):
 
     def test_status_for_squash_merge_and_commits_in_between(self) -> None:
         (
-            self.repo_sandbox.new_branch("master")
+            self.repo_sandbox
+            .new_branch("master")
+            .remove_remote("origin")
             .commit("master first commit")
             .new_branch("feature")
             .commit("feature commit")
@@ -481,7 +495,7 @@ class TestStatus(BaseTest):
         # there's no tree hash in master that matches the tree hash of feature
         expected_status_output_simple = (
             """
-            master
+            master *
             |
             x-feature
             """
@@ -490,7 +504,7 @@ class TestStatus(BaseTest):
         assert_success(['status', '--squash-merge-detection=simple'], expected_status_output_simple)
         expected_status_output_exact = (
             """
-            master
+            master *
             |
             m-feature
             """
