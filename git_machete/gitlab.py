@@ -12,6 +12,7 @@ from typing import Any, Dict, List, NamedTuple, Optional
 from git_machete.code_hosting import (CodeHostingClient,
                                       CodeHostingGitConfigKeys,
                                       CodeHostingSpec,
+                                      OrganizationAndRepository,
                                       OrganizationAndRepositoryAndGitUrl,
                                       PullRequest)
 from git_machete.exceptions import MacheteException, UnexpectedMacheteException
@@ -237,7 +238,8 @@ class GitLabClient(CodeHostingClient):
         else:
             return str(response)
 
-    def create_pull_request(self, head: str, base: str, title: str, description: str, draft: bool) -> PullRequest:
+    def create_pull_request(self, head: str, head_repo: OrganizationAndRepository,
+                            base: str, title: str, description: str, draft: bool) -> PullRequest:
         request_body: Dict[str, Any] = {
             'source_branch': head,
             'target_branch': base,

@@ -645,9 +645,9 @@ class MacheteClient:
         anno = self.annotations.get(branch)
         if remote and (not anno or anno.qualifiers.push):
             push_msg = f"\nBranch {bold(branch)} is now fast-forwarded to match {bold(down_branch)}. " \
-                f"Push {bold(branch)} to {bold(remote)}?" + get_pretty_choices('y', 'N')
+                       f"Push {bold(branch)} to {bold(remote)}?" + get_pretty_choices('y', 'N')
             opt_yes_push_msg = f"\nBranch {bold(branch)} is now fast-forwarded to match {bold(down_branch)}. " \
-                f"Pushing {bold(branch)} to {bold(remote)}..."
+                               f"Pushing {bold(branch)} to {bold(remote)}..."
             ans = self.ask_if(push_msg, opt_yes_push_msg, opt_yes=opt_yes)
             if ans in ('y', 'yes'):
                 self.__git.push(remote, branch)
@@ -2471,6 +2471,7 @@ class MacheteClient:
                 (remote, OrganizationAndRepository.from_url(domain, url)) for remote, url in url_for_remote.items()
             ) if oar
         }
+        debug(f"remote_and_organization_and_repository_from_urls = {remote_and_organization_and_repository_from_urls}")
 
         if not remote_and_organization_and_repository_from_urls:
             raise MacheteException(
@@ -2484,15 +2485,15 @@ class MacheteClient:
         if len(remote_and_organization_and_repository_from_urls) == 1:
             return remote_and_organization_and_repository_from_urls[list(remote_and_organization_and_repository_from_urls.keys())[0]]
 
-        if 'origin' in remote_and_organization_and_repository_from_urls:
-            return remote_and_organization_and_repository_from_urls['origin']
-
         if len(remote_and_organization_and_repository_from_urls) > 1 and branch_used_for_tracking_data is not None:
             remote_for_fetching_of_branch = self.__git.get_combined_remote_for_fetching_of_branch(
                 branch=branch_used_for_tracking_data,
                 remotes=list(remote_and_organization_and_repository_from_urls.keys()))
             if remote_for_fetching_of_branch is not None:
                 return remote_and_organization_and_repository_from_urls[remote_for_fetching_of_branch]
+
+        if 'origin' in remote_and_organization_and_repository_from_urls:
+            return remote_and_organization_and_repository_from_urls['origin']
 
         raise MacheteException(
             f'Multiple non-origin remotes correspond to {spec.display_name} in this repository: '
@@ -2552,31 +2553,37 @@ class MacheteClient:
                                              f'Branch {bold(head)} is a root branch.')
 
         domain = self.__derive_code_hosting_domain(spec)
-        org_repo_remote = self.__derive_org_repo_and_remote(spec, domain=domain, branch_used_for_tracking_data=head)
-        code_hosting_client = spec.create_client(domain=domain, organization=org_repo_remote.organization,
-                                                 repository=org_repo_remote.repository)
+        head_org_repo_remote = self.__derive_org_repo_and_remote(spec, domain=domain, branch_used_for_tracking_data=head)
+        base_org_repo_remote = self.__derive_org_repo_and_remote(spec, domain=domain, branch_used_for_tracking_data=base)
+        debug(f"head_org_repo_remote={head_org_repo_remote}, base_org_repo_remote={base_org_repo_remote}")
 
-        remote_branch = RemoteBranchShortName(f"{org_repo_remote.remote}/{base}")
-        remote_base_branch_exists_locally = remote_branch in self.__git.get_remote_branches()
+        if base_org_repo_remote.extract_org_and_repo() != head_org_repo_remote.extract_org_and_repo():
+            warn(f"{base} branch lives on {base_org_repo_remote.extract_org_and_repo()} "
+                 f"!= {head_org_repo_remote.extract_org_and_repo()}")
+
+        base_remote_branch = RemoteBranchShortName(f"{base_org_repo_remote.remote}/{base}")
+        remote_base_branch_exists_locally = base_remote_branch in self.__git.get_remote_branches()
         print(f"Checking if {spec.base_branch_name} branch {bold(base)} "
-              f"exists on {bold(org_repo_remote.remote)} remote... ", end='', flush=True)
-        base_branch_found_on_remote = self.__git.does_remote_branch_exist(org_repo_remote.remote, base)
+              f"exists on {bold(base_org_repo_remote.remote)} remote... ", end='', flush=True)
+        base_branch_found_on_remote = self.__git.does_remote_branch_exist(base_org_repo_remote.remote, base)
         print(fmt('<green><b>YES</b></green>' if base_branch_found_on_remote else '<red><b>NO</b></red>'))
         if not base_branch_found_on_remote and remote_base_branch_exists_locally:
-            self.__git.delete_remote_branch(remote_branch)
+            self.__git.delete_remote_branch(base_remote_branch)
 
         if not base_branch_found_on_remote:
             self.__handle_untracked_branch(
                 branch=base,
-                new_remote=org_repo_remote.remote,
+                new_remote=base_org_repo_remote.remote,
                 is_called_from_traverse=False,
                 is_called_from_code_hosting=True,
                 opt_push_tracked=False,
                 opt_push_untracked=True,
                 opt_yes=opt_yes)
 
+        code_hosting_client = spec.create_client(domain=domain, organization=base_org_repo_remote.organization,
+                                                 repository=base_org_repo_remote.repository)
         current_user: Optional[str] = code_hosting_client.get_current_user_login()
-        debug(f'organization is {org_repo_remote.organization}, repository is {org_repo_remote.repository}')
+        debug(f'organization is {base_org_repo_remote.organization}, repository is {base_org_repo_remote.repository}')
         debug(f'current {spec.display_name} user is ' + (current_user or '<none>'))
 
         fork_point = self.fork_point(head, use_overrides=True)
@@ -2607,8 +2614,9 @@ class MacheteClient:
         ok_str = '<green><b>OK</b></green>'
         print(f'Creating a {"draft " if opt_draft else ""}{spec.pr_short_name} from {bold(head)} to {bold(base)}... ', end='', flush=True)
 
-        pr: PullRequest = code_hosting_client.create_pull_request(head=head, base=base, title=title,
-                                                                  description=description, draft=opt_draft)
+        pr: PullRequest = code_hosting_client.create_pull_request(
+            head=head, head_repo=head_org_repo_remote.extract_org_and_repo(), base=base,
+            title=title, description=description, draft=opt_draft)
         print(fmt(f'{ok_str}, see `{pr.html_url}`'))
 
         # If base branch has NOT originally been found on the remote,
