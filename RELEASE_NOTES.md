@@ -2,7 +2,11 @@
 
 ## New in git-machete 3.26.0
 
-- added: better detection of squash merges and rebases, controlled by argument `--squash-merge-detection={none,simple,exact}` and git config key `machete.squashMergeDetection` (contributed by @gjulianm)
+- added: better detection of squash merges and rebases, controlled by flag `--squash-merge-detection={none,simple,exact}` (`status` and `traverse`) and git config key `machete.squashMergeDetection` (contributed by @gjulianm)
+- deprecated: `--no-detect-squash-merges` flag in `status` and `traverse` &mdash; use `--squash-merge-detection=none` instead (contributed by @gjulianm)
+
+## New in git-machete 3.25.3
+
 - fixed: `-y` option in `git machete traverse` automatically sets `--no-edit-merge` flag, to retain behavior when the `update=merge` qualifier is set (contributed by @gjulianm)
 - fixed: `push=no` and `slide-out=no` qualifiers now work in `git machete advance` now
 - fixed: `rebase=no` qualifier now works in `git machete slide-out`

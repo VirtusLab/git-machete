@@ -458,6 +458,47 @@ class TestStatus(BaseTest):
             """,
         )
 
+    def test_status_for_squash_merge_and_commits_in_between(self) -> None:
+        (
+            self.repo_sandbox.new_branch("master")
+            .commit("master first commit")
+            .new_branch("feature")
+            .commit("feature commit")
+            .check_out("master")
+            .commit("extra commit")
+            .execute("git merge --squash feature")
+            .execute("git commit -m squashed")
+        )
+
+        body: str = \
+            """
+            master
+                feature
+            """
+        rewrite_branch_layout_file(body)
+
+        # Here the simple method will not detect the squash merge, as there are commits in master before we merged feature so
+        # there's no tree hash in master that matches the tree hash of feature
+        expected_status_output_simple = (
+            """
+            master
+            |
+            x-feature
+            """
+        )
+        assert_success(['status'], expected_status_output_simple)
+        assert_success(['status', '--squash-merge-detection=simple'], expected_status_output_simple)
+        expected_status_output_exact = (
+            """
+            master
+            |
+            m-feature
+            """
+        )
+        assert_success(['status', '--squash-merge-detection=exact'], expected_status_output_exact)
+        self.repo_sandbox.set_git_config_key('machete.squashMergeDetection', 'exact')
+        assert_success(['status'], expected_status_output_exact)
+
     def test_status_inferring_counterpart_for_fetching_of_branch(self) -> None:
         origin_1_remote_path = self.repo_sandbox.create_repo("remote-1", bare=True)
         (
