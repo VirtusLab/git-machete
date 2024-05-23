@@ -685,12 +685,12 @@ class MacheteClient:
             opt_fetch: bool,
             opt_list_commits: bool,
             opt_merge: bool,
-            opt_squash_merge_detection: SquashMergeDetection,
             opt_no_edit_merge: bool,
             opt_no_interactive_rebase: bool,
             opt_push_tracked: bool,
             opt_push_untracked: bool,
             opt_return_to: str,
+            opt_squash_merge_detection: SquashMergeDetection,
             opt_start_from: str,
             opt_yes: bool
     ) -> None:

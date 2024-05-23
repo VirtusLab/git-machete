@@ -149,6 +149,15 @@ class FullTreeHash(str):
         return FullTreeHash(value)
 
 
+class FullPatchId(str):
+    @staticmethod
+    def of(value: str) -> Optional["FullPatchId"]:
+        if not value:
+            raise UnexpectedMacheteException(
+                f'FullPatchId.of should not accept {value} as a param.')
+        return FullPatchId(value)
+
+
 class ForkPointOverrideData:
     def __init__(self, to_hash: FullCommitHash):
         self.to_hash: FullCommitHash = to_hash
@@ -843,23 +852,36 @@ class GitContext:
             self.__is_equivalent_tree_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash] = cache_value
             return cache_value[1]
 
-        equivalent_patch_id = self.get_patch_id(equivalent_changeset)
-        patchmap = self.get_patch_ids_for_commits_between(
+        equivalent_patch_id = self.get_patch_id_for_diff(equivalent_changeset)
+        patch_id_for_commits = self.get_patch_ids_for_commits_between(
             common_ancestor, reachable_from_commit_hash, MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION)
-        patch_ids = set(patchmap.values())
+        patch_ids = set(patch_id_for_commits.values())
         result = equivalent_patch_id in patch_ids
 
-        debug(f"patch id result = {result}")
+        debug(f"equivalent_patch_id in patch_ids = {result}")
         cache_value = (opt_squash_merge_detection, result)
         self.__is_equivalent_tree_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash] = cache_value
         return result
 
-    def get_patch_id(self, patch_contents: str) -> Optional[str]:
+    def get_patch_id_for_diff(self, patch_contents: str) -> Optional[FullPatchId]:
         out = utils.get_non_empty_lines(self._popen_git("patch-id", input=patch_contents).stdout)
 
         if len(out) == 0:
             return None
-        return out[0].split(' ')[0]  # patch-id output is "<patch-id> <commit-hash>", we only care about the patch-id
+        return FullPatchId.of(out[0].split(' ')[0])  # patch-id output is "<patch-id> <commit-hash>", we only care about the patch-id
+
+    def get_patch_ids_for_commits_between(
+            self, earliest_exclusive: AnyRevision, latest_inclusive: AnyRevision, max_commits: int
+    ) -> Dict[FullCommitHash, FullPatchId]:
+        patches = self._popen_git("log", "--patch", f"^{earliest_exclusive}", latest_inclusive, f"-{max_commits}", "--").stdout
+        patch_ids = self._popen_git("patch-id", input=patches).stdout
+
+        patch_id_for_commit: Dict[FullCommitHash, FullPatchId] = {}
+        for line in patch_ids.splitlines():
+            patch_id, commit_hash = line.strip().split(" ", 1)
+            patch_id_for_commit[FullCommitHash.of(commit_hash)] = FullPatchId(patch_id)
+
+        return patch_id_for_commit
 
     def get_sole_remote_branch(self, branch: LocalBranchShortName) -> Optional[RemoteBranchShortName]:
         remote_branches = self.get_remote_branches()
@@ -955,20 +977,6 @@ class GitContext:
                                   subject=x.split(":", 2)[2]),
             utils.get_non_empty_lines(self._popen_git("log", "--format=%H:%h:%s", f"^{earliest_exclusive}", latest_inclusive, "--").stdout)
         ))))
-
-    def get_patch_ids_for_commits_between(
-        self, earliest_exclusive: AnyRevision, latest_inclusive: AnyRevision, max_commits: int
-    ) -> Dict[FullCommitHash, str]:
-        # Returns a dictionary of git hashes and their diffs between two revisions
-        patches = self._popen_git("log", "--patch", f"^{earliest_exclusive}", latest_inclusive, f"-{max_commits}", "--").stdout
-        patch_ids = self._popen_git("patch-id", input=patches).stdout
-
-        diffmap: Dict[FullCommitHash, str] = {}
-        for line in patch_ids.splitlines():
-            patch_id, hash = line.strip().split(" ", 1)
-            diffmap[FullCommitHash.of(hash)] = patch_id
-
-        return diffmap
 
     def get_relation_to_remote_counterpart(self, branch: LocalBranchShortName, remote_branch: RemoteBranchShortName) -> int:
         b_is_ancestor_of_rb = self.is_ancestor_or_equal(branch.full_name(), remote_branch.full_name())

@@ -1,5 +1,7 @@
 from enum import Enum, IntEnum
 
+from git_machete.exceptions import MacheteException
+
 MAX_COUNT_FOR_INITIAL_LOG = 10
 DISCOVER_DEFAULT_FRESH_BRANCH_COUNT = 10
 MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION = 1000
@@ -43,4 +45,5 @@ class SquashMergeDetection(Enum):
             return SquashMergeDetection.SIMPLE
         if value == "exact":
             return SquashMergeDetection.EXACT
-        raise ValueError(f"Unknown value '{value}' for SquashMergeDetection")
+        valid_values = ', '.join(e.value for e in SquashMergeDetection)
+        raise MacheteException(f"Invalid value `{value}` for squash merge detection. Valid values are `{valid_values}`")

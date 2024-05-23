@@ -986,7 +986,6 @@ class TestTraverse(BaseTest):
         assert_failure(["traverse"], expected_error_message)
 
     def test_traverse_invalid_flag_values(self) -> None:
-        self.setup_standard_tree()
         assert_failure(["traverse", "--start-from=nowhere"],
                        "Invalid argument for --start-from. Valid arguments: here|root|first-root.")
         assert_failure(["traverse", "--return-to=dunno-where"],

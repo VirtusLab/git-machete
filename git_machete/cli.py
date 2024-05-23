@@ -365,9 +365,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
     status_parser.add_argument('-l', '--list-commits', action='store_true')
     status_parser.add_argument('-L', '--list-commits-with-hashes', action='store_true')
     status_parser.add_argument('--no-detect-squash-merges', action='store_true')
-    status_parser.add_argument('--squash-merge-detection',
-                               choices=list(SquashMergeDetection), default=None,
-                               type=SquashMergeDetection.from_string)
+    status_parser.add_argument('--squash-merge-detection')
 
     traverse_parser = subparsers.add_parser(
         'traverse',
@@ -383,9 +381,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
     traverse_parser.add_argument('--no-edit-merge', action='store_true')
     traverse_parser.add_argument('--no-interactive-rebase', action='store_true')
     traverse_parser.add_argument('--no-detect-squash-merges', action='store_true')
-    traverse_parser.add_argument('--squash-merge-detection',
-                                 choices=list(SquashMergeDetection), default=None,
-                                 type=SquashMergeDetection.from_string)
+    traverse_parser.add_argument('--squash-merge-detection')
     traverse_parser.add_argument('--push', action='store_true')
     traverse_parser.add_argument('--no-push', action='store_true')
     traverse_parser.add_argument('--push-untracked', action='store_true')
@@ -465,8 +461,7 @@ def update_cli_options_using_parsed_args(
             warn("`--no-detect-squash-merges` is deprecated, use `--squash-merge-detection=none` instead", end="\n\n")
             cli_opts.opt_squash_merge_detection = SquashMergeDetection.NONE
         elif opt == "squash_merge_detection" and arg is not None:
-            # If the value is None it means the user did not provide any value, which is forbidden by argparse
-            cli_opts.opt_squash_merge_detection = arg  # already a SquashMergeDetection enum
+            cli_opts.opt_squash_merge_detection = SquashMergeDetection.from_string(arg)
         elif opt == "no_edit_merge":
             cli_opts.opt_no_edit_merge = True
         elif opt == "no_interactive_rebase":
