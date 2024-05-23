@@ -147,3 +147,20 @@ class TestGitOperations(BaseTest):
 
         assert git.is_equivalent_tree_reachable(equivalent_to=feature, reachable_from=master) is False
         assert git.is_equivalent_patch_reachable(equivalent_to=feature, reachable_from=master) is True
+        # To cover retrieval of the result from cache
+        assert git.is_equivalent_patch_reachable(equivalent_to=feature, reachable_from=master) is True
+
+    def test_is_equivalent_tree_or_patch_reachable_when_no_common_ancestor(self) -> None:
+        (
+            self.repo_sandbox.new_branch("master")
+            .commit("master first commit")
+            .new_orphan_branch("feature")
+            .commit("feature commit")
+        )
+
+        git = GitContext()
+        feature = AnyRevision("feature")
+        master = AnyRevision("master")
+
+        assert git.is_equivalent_tree_reachable(equivalent_to=feature, reachable_from=master) is False
+        assert git.is_equivalent_patch_reachable(equivalent_to=feature, reachable_from=master) is False

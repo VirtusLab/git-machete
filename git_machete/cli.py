@@ -461,7 +461,7 @@ def update_cli_options_using_parsed_args(
             warn("`--no-detect-squash-merges` is deprecated, use `--squash-merge-detection=none` instead", end="\n\n")
             cli_opts.opt_squash_merge_detection = SquashMergeDetection.NONE
         elif opt == "squash_merge_detection" and arg is not None:
-            cli_opts.opt_squash_merge_detection = SquashMergeDetection.from_string(arg)
+            cli_opts.opt_squash_merge_detection = SquashMergeDetection.from_string(value=arg, from_where="`--squash-merge-detection` flag")
         elif opt == "no_edit_merge":
             cli_opts.opt_no_edit_merge = True
         elif opt == "no_interactive_rebase":
@@ -537,7 +537,9 @@ def update_cli_options_using_config_keys(
 
     squash_merge_detection = git.get_config_attr_or_none(key=git_config_keys.SQUASH_MERGE_DETECTION)
     if squash_merge_detection is not None:
-        cli_opts.opt_squash_merge_detection = SquashMergeDetection.from_string(squash_merge_detection)
+        cli_opts.opt_squash_merge_detection = SquashMergeDetection.from_string(
+            value=squash_merge_detection,
+            from_where=f"`{git_config_keys.SQUASH_MERGE_DETECTION}` git config key")
 
 
 def set_utils_global_variables(parsed_args: argparse.Namespace) -> None:

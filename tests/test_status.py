@@ -408,6 +408,11 @@ class TestStatus(BaseTest):
             ["status", "-l"],
             expected_output_detection_none
         )
+        self.repo_sandbox.set_git_config_key('machete.squashMergeDetection', 'lolxd')
+        assert_failure(
+            ["status", "-l"],
+            "Invalid value for machete.squashMergeDetection git config key: lolxd. Valid values are none, simple, exact"
+        )
         self.repo_sandbox.unset_git_config_key('machete.squashMergeDetection')
 
         # traverse then slide out the feature branch
@@ -515,9 +520,9 @@ class TestStatus(BaseTest):
 
     def test_status_invalid_squash_merge_detection(self) -> None:
         assert_failure(["status", "--squash-merge-detection=invalid"],
-                       "Invalid value invalid for squash merge detection. Valid values are none, simple, exact")
+                       "Invalid value for --squash-merge-detection flag: invalid. Valid values are none, simple, exact")
         assert_failure(["status", "--squash-merge-detection=none", "--squash-merge-detection=invalid"],
-                       "Invalid value invalid for squash merge detection. Valid values are none, simple, exact")
+                       "Invalid value for --squash-merge-detection flag: invalid. Valid values are none, simple, exact")
 
     def test_status_inferring_counterpart_for_fetching_of_branch(self) -> None:
         origin_1_remote_path = self.repo_sandbox.create_repo("remote-1", bare=True)

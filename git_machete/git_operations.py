@@ -801,6 +801,8 @@ class GitContext:
         equivalent_to_commit_hash = self.get_commit_hash_by_revision(equivalent_to)
         reachable_from_commit_hash = self.get_commit_hash_by_revision(reachable_from)
         if not equivalent_to_commit_hash or not reachable_from_commit_hash:
+            # Case not covered by tests, unlikely to be reached by actual execution.
+            # Mostly here to satisfy mypy.
             return False
 
         if equivalent_to_commit_hash == reachable_from_commit_hash:
@@ -835,6 +837,8 @@ class GitContext:
         equivalent_to_commit_hash = self.get_commit_hash_by_revision(equivalent_to)
         reachable_from_commit_hash = self.get_commit_hash_by_revision(reachable_from)
         if not equivalent_to_commit_hash or not reachable_from_commit_hash:
+            # Case not covered by tests, unlikely to be reached by actual execution.
+            # Mostly here to satisfy mypy.
             return False
 
         if equivalent_to_commit_hash == reachable_from_commit_hash:

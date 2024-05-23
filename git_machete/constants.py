@@ -38,7 +38,7 @@ class SquashMergeDetection(Enum):
     EXACT = "exact"
 
     @staticmethod
-    def from_string(value: str) -> 'SquashMergeDetection':
+    def from_string(value: str, from_where: str) -> 'SquashMergeDetection':
         if value == "none":
             return SquashMergeDetection.NONE
         if value == "simple":
@@ -46,4 +46,4 @@ class SquashMergeDetection(Enum):
         if value == "exact":
             return SquashMergeDetection.EXACT
         valid_values = ', '.join(e.value for e in SquashMergeDetection)
-        raise MacheteException(f"Invalid value `{value}` for squash merge detection. Valid values are `{valid_values}`")
+        raise MacheteException(f"Invalid value for {from_where}: `{value}`. Valid values are `{valid_values}`")
