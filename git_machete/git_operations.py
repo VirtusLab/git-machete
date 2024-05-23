@@ -10,7 +10,7 @@ from typing import (Any, Dict, Iterator, List, Match, NamedTuple, Optional,
 from . import utils
 from .constants import (MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION,
                         MAX_COUNT_FOR_INITIAL_LOG, GitFormatPatterns,
-                        SquashMergeDetection, SyncToRemoteStatuses)
+                        SyncToRemoteStatuses)
 from .exceptions import UnderlyingGitException, UnexpectedMacheteException
 from .utils import (AnsiEscapeCodes, CommandResult, colored, debug, fmt,
                     hex_repr)
@@ -809,11 +809,11 @@ class GitContext:
         if (equivalent_to_commit_hash, reachable_from_commit_hash) in self.__is_equivalent_tree_reachable_cached:
             return self.__is_equivalent_tree_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash]
 
-        earlier_tree_hash = self.get_tree_hash_by_commit_hash(equivalent_to_commit_hash)
+        tree_hash_for_equivalent_to = self.get_tree_hash_by_commit_hash(equivalent_to_commit_hash)
 
         # `git log ^equivalent_to_commit_hash reachable_from_commit_hash`
         # shows all commits reachable from reachable_from_commit_hash but NOT from equivalent_to_commit_hash
-        intermediate_tree_hashes = utils.get_non_empty_lines(
+        tree_hashes_for_reachable_from = utils.get_non_empty_lines(
             self._popen_git(
                 "log",
                 "--format=%T",  # full commit's tree hash
@@ -822,13 +822,11 @@ class GitContext:
             ).stdout
         )
 
-        result = earlier_tree_hash in intermediate_tree_hashes
-        debug(f"earlier_tree_hash in intermediate_tree_hashes = {result}")
+        result = tree_hash_for_equivalent_to in tree_hashes_for_reachable_from
+        debug(f"tree_hash_for_equivalent_to in tree_hashes_for_reachable_from = {result}")
         self.__is_equivalent_tree_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash] = result
         return result
 
-    # Let's try another way, a little more complex but takes into account the possibility
-    # that there were other commits between the common ancestor of the two branches and the squashed merge.
     def is_equivalent_patch_reachable(
             self,
             equivalent_to: AnyRevision,
@@ -849,23 +847,21 @@ class GitContext:
         if not common_ancestor:
             return False
 
-        equivalent_changeset = self._popen_git(
+        changes_of_equivalent_to = self._popen_git(
             "diff",
             common_ancestor,
             equivalent_to_commit_hash
         ).stdout
-        if equivalent_changeset.strip() == '':
+        if changes_of_equivalent_to.strip() == '':
             # Empty changeset means the branches are identical, so the tree is equivalent.
             self.__is_equivalent_patch_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash] = True
             return True
 
-        equivalent_patch_id = self.get_patch_id_for_diff(equivalent_changeset)
-        patch_id_for_commits = self.get_patch_ids_for_commits_between(
-            common_ancestor, reachable_from_commit_hash, MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION)
-        patch_ids = set(patch_id_for_commits.values())
-        result = equivalent_patch_id in patch_ids
-
-        debug(f"equivalent_patch_id in patch_ids = {result}")
+        patch_id_for_changes_of_equivalent_to: Optional[FullPatchId] = self.get_patch_id_for_diff(changes_of_equivalent_to)
+        patch_ids_for_commits_of_reachable_from: Set[FullPatchId] = set(self.get_patch_ids_for_commits_between(
+            common_ancestor, reachable_from_commit_hash, MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION).values())
+        result = patch_id_for_changes_of_equivalent_to in patch_ids_for_commits_of_reachable_from
+        debug(f"patch_id_for_changes_of_equivalent_to in patch_ids_for_commits_of_reachable_from = {result}")
         self.__is_equivalent_patch_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash] = result
         return result
 

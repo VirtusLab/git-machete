@@ -2034,6 +2034,8 @@ class MacheteClient:
             # then branch may have been squashed or rebase-merged into upstream.
             return self.__git.is_equivalent_tree_reachable(branch, upstream)
         else:  # SquashMergeDetection.EXACT
+            # Let's try another way, a little more complex but takes into account the possibility
+            # that there were other commits between the common ancestor of the two branches and the squashed merge.
             return self.__git.is_equivalent_tree_reachable(branch, upstream) or self.__git.is_equivalent_patch_reachable(branch, upstream)
 
     @staticmethod
