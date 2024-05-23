@@ -64,13 +64,15 @@ class TestGitOperations(BaseTest):
         assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
                                                 reachable_from=AnyRevision("master"),
                                                 opt_squash_merge_detection=SquashMergeDetection.SIMPLE) is True
+        git.flush_caches()
         assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
                                                 reachable_from=AnyRevision("master"),
                                                 opt_squash_merge_detection=SquashMergeDetection.EXACT) is True
-        git.flush_caches()  # Ensure we have no old information
+        git.flush_caches()
         assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
                                                 reachable_from=AnyRevision("master"),
                                                 opt_squash_merge_detection=SquashMergeDetection.SIMPLE) is True
+        git.flush_caches()
         assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
                                                 reachable_from=AnyRevision("master"),
                                                 opt_squash_merge_detection=SquashMergeDetection.EXACT) is True
@@ -94,14 +96,16 @@ class TestGitOperations(BaseTest):
         assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
                                                 reachable_from=AnyRevision("master"),
                                                 opt_squash_merge_detection=SquashMergeDetection.SIMPLE) is False
+        git.flush_caches()
         assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
                                                 reachable_from=AnyRevision("master"),
                                                 opt_squash_merge_detection=SquashMergeDetection.EXACT) is True
         self.repo_sandbox.check_out("master").commit("another master commit")
-        git.flush_caches()  # Ensure we have no old information
+        git.flush_caches()
         assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
                                                 reachable_from=AnyRevision("master"),
                                                 opt_squash_merge_detection=SquashMergeDetection.SIMPLE) is False
+        git.flush_caches()
         assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
                                                 reachable_from=AnyRevision("master"),
                                                 opt_squash_merge_detection=SquashMergeDetection.EXACT) is True
@@ -122,16 +126,18 @@ class TestGitOperations(BaseTest):
         assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
                                                 reachable_from=AnyRevision("master"),
                                                 opt_squash_merge_detection=SquashMergeDetection.SIMPLE) is True
+        git.flush_caches()
         assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
                                                 reachable_from=AnyRevision("master"),
                                                 opt_squash_merge_detection=SquashMergeDetection.EXACT) is True
         self.repo_sandbox.check_out("master").commit("another master commit")
-        git.flush_caches()  # Ensure we have no old information
+        git.flush_caches()
         # Simple method fails if there are commits after the rebase, as this case is covered by the "is ancestor"
         # check in the is_merged_to method in client.py
         assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
                                                 reachable_from=AnyRevision("master"),
                                                 opt_squash_merge_detection=SquashMergeDetection.SIMPLE) is False
+        git.flush_caches()
         assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
                                                 reachable_from=AnyRevision("master"),
                                                 opt_squash_merge_detection=SquashMergeDetection.EXACT) is True
@@ -154,14 +160,16 @@ class TestGitOperations(BaseTest):
         assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
                                                 reachable_from=AnyRevision("master"),
                                                 opt_squash_merge_detection=SquashMergeDetection.SIMPLE) is False
+        git.flush_caches()
         assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
                                                 reachable_from=AnyRevision("master"),
                                                 opt_squash_merge_detection=SquashMergeDetection.EXACT) is True
         self.repo_sandbox.check_out("master").commit("another master commit")
-        git.flush_caches()  # Ensure we have no old information
+        git.flush_caches()
         assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
                                                 reachable_from=AnyRevision("master"),
                                                 opt_squash_merge_detection=SquashMergeDetection.SIMPLE) is False
+        git.flush_caches()
         assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
                                                 reachable_from=AnyRevision("master"),
                                                 opt_squash_merge_detection=SquashMergeDetection.EXACT) is True

@@ -198,7 +198,7 @@ class GitContext:
         self.__counterparts_for_fetching_cached: Optional[Dict[LocalBranchShortName, Optional[RemoteBranchShortName]]] = None
         self.__fetch_done_for: Set[str] = set()
         self.__initial_log_hashes_cached: Dict[FullCommitHash, List[FullCommitHash]] = {}
-        self.__is_equivalent_tree_reachable_cached: Dict[Tuple[FullCommitHash, FullCommitHash], Tuple[SquashMergeDetection, bool]] = {}
+        self.__is_equivalent_tree_reachable_cached: Dict[Tuple[FullCommitHash, FullCommitHash], bool] = {}
         self.__local_branches_cached: Optional[List[LocalBranchShortName]] = None
         self.__merge_base_cached: Dict[Tuple[FullCommitHash, FullCommitHash], Optional[FullCommitHash]] = {}
         self.__missing_tracking_branch: Optional[Set[str]] = None
@@ -807,12 +807,7 @@ class GitContext:
             return True
 
         if (equivalent_to_commit_hash, reachable_from_commit_hash) in self.__is_equivalent_tree_reachable_cached:
-            prev_mode, prev_result = self.__is_equivalent_tree_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash]
-
-            # Only return cached result if we're using the same mode or if we already checked with the
-            # most exact mode possible
-            if prev_mode == opt_squash_merge_detection or prev_mode == SquashMergeDetection.EXACT:
-                return prev_result
+            return self.__is_equivalent_tree_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash]
 
         earlier_tree_hash = self.get_tree_hash_by_commit_hash(equivalent_to_commit_hash)
 
@@ -831,8 +826,7 @@ class GitContext:
         debug(f"intermediate tree hashes result = {result}")
 
         if result or opt_squash_merge_detection != SquashMergeDetection.EXACT:
-            cache_value = (opt_squash_merge_detection, result)
-            self.__is_equivalent_tree_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash] = cache_value
+            self.__is_equivalent_tree_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash] = result
             return result
 
         # Let's try another way, a little more complex but takes into account the possibility
@@ -848,9 +842,8 @@ class GitContext:
         ).stdout
         if equivalent_changeset.strip() == '':
             # Empty changeset means the branches are identical, so the tree is equivalent.
-            cache_value = (opt_squash_merge_detection, True)
-            self.__is_equivalent_tree_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash] = cache_value
-            return cache_value[1]
+            self.__is_equivalent_tree_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash] = True
+            return True
 
         equivalent_patch_id = self.get_patch_id_for_diff(equivalent_changeset)
         patch_id_for_commits = self.get_patch_ids_for_commits_between(
@@ -859,14 +852,14 @@ class GitContext:
         result = equivalent_patch_id in patch_ids
 
         debug(f"equivalent_patch_id in patch_ids = {result}")
-        cache_value = (opt_squash_merge_detection, result)
-        self.__is_equivalent_tree_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash] = cache_value
+        self.__is_equivalent_tree_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash] = result
         return result
 
     def get_patch_id_for_diff(self, patch_contents: str) -> Optional[FullPatchId]:
         out = utils.get_non_empty_lines(self._popen_git("patch-id", input=patch_contents).stdout)
 
         if len(out) == 0:
+            # Line uncovered as we actually always pass a non-empty patch to this method.
             return None
         return FullPatchId.of(out[0].split(' ')[0])  # patch-id output is "<patch-id> <commit-hash>", we only care about the patch-id
 
