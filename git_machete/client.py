@@ -2028,11 +2028,13 @@ class MacheteClient:
             return bool(self.filtered_reflog(branch))
         elif opt_squash_merge_detection == SquashMergeDetection.NONE:
             return False
-        else:
+        elif opt_squash_merge_detection == SquashMergeDetection.SIMPLE:
             # In the default mode.
             # If a commit with an identical tree state to branch is reachable from upstream,
             # then branch may have been squashed or rebase-merged into upstream.
-            return self.__git.is_equivalent_tree_reachable(branch, upstream, opt_squash_merge_detection=opt_squash_merge_detection)
+            return self.__git.is_equivalent_tree_reachable(branch, upstream)
+        else:  # SquashMergeDetection.EXACT
+            return self.__git.is_equivalent_tree_reachable(branch, upstream) or self.__git.is_equivalent_patch_reachable(branch, upstream)
 
     @staticmethod
     def ask_if(

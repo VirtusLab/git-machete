@@ -198,6 +198,7 @@ class GitContext:
         self.__counterparts_for_fetching_cached: Optional[Dict[LocalBranchShortName, Optional[RemoteBranchShortName]]] = None
         self.__fetch_done_for: Set[str] = set()
         self.__initial_log_hashes_cached: Dict[FullCommitHash, List[FullCommitHash]] = {}
+        self.__is_equivalent_patch_reachable_cached: Dict[Tuple[FullCommitHash, FullCommitHash], bool] = {}
         self.__is_equivalent_tree_reachable_cached: Dict[Tuple[FullCommitHash, FullCommitHash], bool] = {}
         self.__local_branches_cached: Optional[List[LocalBranchShortName]] = None
         self.__merge_base_cached: Dict[Tuple[FullCommitHash, FullCommitHash], Optional[FullCommitHash]] = {}
@@ -796,7 +797,6 @@ class GitContext:
             self,
             equivalent_to: AnyRevision,
             reachable_from: AnyRevision,
-            opt_squash_merge_detection: SquashMergeDetection
     ) -> bool:
         equivalent_to_commit_hash = self.get_commit_hash_by_revision(equivalent_to)
         reachable_from_commit_hash = self.get_commit_hash_by_revision(reachable_from)
@@ -823,14 +823,28 @@ class GitContext:
         )
 
         result = earlier_tree_hash in intermediate_tree_hashes
-        debug(f"intermediate tree hashes result = {result}")
+        debug(f"earlier_tree_hash in intermediate_tree_hashes = {result}")
+        self.__is_equivalent_tree_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash] = result
+        return result
 
-        if result or opt_squash_merge_detection != SquashMergeDetection.EXACT:
-            self.__is_equivalent_tree_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash] = result
-            return result
+    # Let's try another way, a little more complex but takes into account the possibility
+    # that there were other commits between the common ancestor of the two branches and the squashed merge.
+    def is_equivalent_patch_reachable(
+            self,
+            equivalent_to: AnyRevision,
+            reachable_from: AnyRevision
+    ) -> bool:
+        equivalent_to_commit_hash = self.get_commit_hash_by_revision(equivalent_to)
+        reachable_from_commit_hash = self.get_commit_hash_by_revision(reachable_from)
+        if not equivalent_to_commit_hash or not reachable_from_commit_hash:
+            return False
 
-        # Let's try another way, a little more complex but takes into account the possibility
-        # that there were other commits between the common ancestor of the two branches and the squashed merge.
+        if equivalent_to_commit_hash == reachable_from_commit_hash:
+            return True
+
+        if (equivalent_to_commit_hash, reachable_from_commit_hash) in self.__is_equivalent_patch_reachable_cached:
+            return self.__is_equivalent_patch_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash]
+
         common_ancestor = self.get_merge_base(reachable_from_commit_hash, equivalent_to_commit_hash)
         if not common_ancestor:
             return False
@@ -842,7 +856,7 @@ class GitContext:
         ).stdout
         if equivalent_changeset.strip() == '':
             # Empty changeset means the branches are identical, so the tree is equivalent.
-            self.__is_equivalent_tree_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash] = True
+            self.__is_equivalent_patch_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash] = True
             return True
 
         equivalent_patch_id = self.get_patch_id_for_diff(equivalent_changeset)
@@ -852,7 +866,7 @@ class GitContext:
         result = equivalent_patch_id in patch_ids
 
         debug(f"equivalent_patch_id in patch_ids = {result}")
-        self.__is_equivalent_tree_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash] = result
+        self.__is_equivalent_patch_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash] = result
         return result
 
     def get_patch_id_for_diff(self, patch_contents: str) -> Optional[FullPatchId]:

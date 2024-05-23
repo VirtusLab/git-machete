@@ -62,20 +62,9 @@ class TestGitOperations(BaseTest):
 
         # Both methods should return True, as there are no commits in master before we merged feature
         assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
-                                                reachable_from=AnyRevision("master"),
-                                                opt_squash_merge_detection=SquashMergeDetection.SIMPLE) is True
-        git.flush_caches()
-        assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
-                                                reachable_from=AnyRevision("master"),
-                                                opt_squash_merge_detection=SquashMergeDetection.EXACT) is True
-        git.flush_caches()
-        assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
-                                                reachable_from=AnyRevision("master"),
-                                                opt_squash_merge_detection=SquashMergeDetection.SIMPLE) is True
-        git.flush_caches()
-        assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
-                                                reachable_from=AnyRevision("master"),
-                                                opt_squash_merge_detection=SquashMergeDetection.EXACT) is True
+                                                reachable_from=AnyRevision("master")) is True
+        assert git.is_equivalent_patch_reachable(equivalent_to=AnyRevision("feature"),
+                                                reachable_from=AnyRevision("master")) is True
 
     def test_is_equivalent_tree_reachable_with_squash_merge_and_commits_in_between(self) -> None:
         (
@@ -94,21 +83,15 @@ class TestGitOperations(BaseTest):
         # Here the simple method will not detect the squash merge, as there are commits in master before we merged feature so
         # there's no tree hash in master that matches the tree hash of feature
         assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
-                                                reachable_from=AnyRevision("master"),
-                                                opt_squash_merge_detection=SquashMergeDetection.SIMPLE) is False
-        git.flush_caches()
-        assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
-                                                reachable_from=AnyRevision("master"),
-                                                opt_squash_merge_detection=SquashMergeDetection.EXACT) is True
+                                                reachable_from=AnyRevision("master")) is False
+        assert git.is_equivalent_patch_reachable(equivalent_to=AnyRevision("feature"),
+                                                reachable_from=AnyRevision("master")) is True
+
         self.repo_sandbox.check_out("master").commit("another master commit")
-        git.flush_caches()
         assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
-                                                reachable_from=AnyRevision("master"),
-                                                opt_squash_merge_detection=SquashMergeDetection.SIMPLE) is False
-        git.flush_caches()
-        assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
-                                                reachable_from=AnyRevision("master"),
-                                                opt_squash_merge_detection=SquashMergeDetection.EXACT) is True
+                                                reachable_from=AnyRevision("master")) is False
+        assert git.is_equivalent_patch_reachable(equivalent_to=AnyRevision("feature"),
+                                                reachable_from=AnyRevision("master")) is True
 
     def test_is_equivalent_tree_reachable_with_rebase(self) -> None:
         (
@@ -124,23 +107,17 @@ class TestGitOperations(BaseTest):
 
         # Same as merge example, both methods should return True as there are no commits in master before we rebased feature
         assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
-                                                reachable_from=AnyRevision("master"),
-                                                opt_squash_merge_detection=SquashMergeDetection.SIMPLE) is True
-        git.flush_caches()
-        assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
-                                                reachable_from=AnyRevision("master"),
-                                                opt_squash_merge_detection=SquashMergeDetection.EXACT) is True
+                                                reachable_from=AnyRevision("master")) is True
+        assert git.is_equivalent_patch_reachable(equivalent_to=AnyRevision("feature"),
+                                                reachable_from=AnyRevision("master")) is True
+
         self.repo_sandbox.check_out("master").commit("another master commit")
-        git.flush_caches()
         # Simple method fails if there are commits after the rebase, as this case is covered by the "is ancestor"
         # check in the is_merged_to method in client.py
         assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
-                                                reachable_from=AnyRevision("master"),
-                                                opt_squash_merge_detection=SquashMergeDetection.SIMPLE) is False
-        git.flush_caches()
-        assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
-                                                reachable_from=AnyRevision("master"),
-                                                opt_squash_merge_detection=SquashMergeDetection.EXACT) is True
+                                                reachable_from=AnyRevision("master")) is False
+        assert git.is_equivalent_patch_reachable(equivalent_to=AnyRevision("feature"),
+                                                reachable_from=AnyRevision("master")) is True
 
     def test_is_equivalent_tree_reachable_with_rebase_and_commits_in_between(self) -> None:
         (
@@ -158,18 +135,12 @@ class TestGitOperations(BaseTest):
         # Same as the merge example, the simple method will not detect the rebase, as there are commits
         # in master before we rebased feature and tree hashes are always different
         assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
-                                                reachable_from=AnyRevision("master"),
-                                                opt_squash_merge_detection=SquashMergeDetection.SIMPLE) is False
-        git.flush_caches()
-        assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
-                                                reachable_from=AnyRevision("master"),
-                                                opt_squash_merge_detection=SquashMergeDetection.EXACT) is True
+                                                reachable_from=AnyRevision("master")) is False
+        assert git.is_equivalent_patch_reachable(equivalent_to=AnyRevision("feature"),
+                                                reachable_from=AnyRevision("master")) is True
+        
         self.repo_sandbox.check_out("master").commit("another master commit")
-        git.flush_caches()
         assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
-                                                reachable_from=AnyRevision("master"),
-                                                opt_squash_merge_detection=SquashMergeDetection.SIMPLE) is False
-        git.flush_caches()
-        assert git.is_equivalent_tree_reachable(equivalent_to=AnyRevision("feature"),
-                                                reachable_from=AnyRevision("master"),
-                                                opt_squash_merge_detection=SquashMergeDetection.EXACT) is True
+                                                reachable_from=AnyRevision("master")) is False
+        assert git.is_equivalent_patch_reachable(equivalent_to=AnyRevision("feature"),
+                                                reachable_from=AnyRevision("master")) is True
