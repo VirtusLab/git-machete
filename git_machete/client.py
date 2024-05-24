@@ -2572,7 +2572,7 @@ class MacheteClient:
         remote_branch = RemoteBranchShortName(f"{org_repo_remote.remote}/{base}")
         remote_base_branch_exists_locally = remote_branch in self.__git.get_remote_branches()
         print(f"Checking if {spec.base_branch_name} branch {bold(base)} "
-              f"exists on {bold(org_repo_remote.remote)} remote... ", end='', flush=True)
+              f"exists in {bold(org_repo_remote.remote)} remote... ", end='', flush=True)
         base_branch_found_on_remote = self.__git.does_remote_branch_exist(org_repo_remote.remote, base)
         print(fmt('<green><b>YES</b></green>' if base_branch_found_on_remote else '<red><b>NO</b></red>'))
         if not base_branch_found_on_remote and remote_base_branch_exists_locally:

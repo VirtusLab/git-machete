@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.26.1
+
 ## New in git-machete 3.26.0
 
 - added: better detection of squash merges and rebases, controlled by flag `--squash-merge-detection={none,simple,exact}` (`status` and `traverse`) and git config key `machete.squashMergeDetection` (contributed by @gjulianm)
