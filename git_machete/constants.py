@@ -1,4 +1,5 @@
 from enum import Enum, IntEnum
+from typing import Optional
 
 from git_machete.exceptions import MacheteException
 
@@ -38,12 +39,10 @@ class SquashMergeDetection(Enum):
     EXACT = "exact"
 
     @staticmethod
-    def from_string(value: str, from_where: str) -> 'SquashMergeDetection':
-        if value == "none":
-            return SquashMergeDetection.NONE
-        if value == "simple":
-            return SquashMergeDetection.SIMPLE
-        if value == "exact":
-            return SquashMergeDetection.EXACT
-        valid_values = ', '.join(e.value for e in SquashMergeDetection)
-        raise MacheteException(f"Invalid value for {from_where}: `{value}`. Valid values are `{valid_values}`")
+    def from_string(value: str, from_where: Optional[str]) -> 'SquashMergeDetection':
+        try:
+            return SquashMergeDetection[value.upper()]
+        except KeyError:
+            valid_values = ', '.join(e.value for e in SquashMergeDetection)
+            prefix = f"Invalid value for {from_where}" if from_where else "Invalid value"
+            raise MacheteException(f"{prefix}: `{value}`. Valid values are `{valid_values}`")

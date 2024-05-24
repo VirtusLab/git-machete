@@ -16,7 +16,7 @@ class TestHelp(BaseTest):
             launch_command()
         assert ExitCode.ARGUMENT_ERROR == e.value.code
 
-        assert "Usage:" in launch_command("help")
+        assert "--verbose" in launch_command("help")
 
         with pytest.raises(SystemExit) as e:
             launch_command("help", "no-such-command")

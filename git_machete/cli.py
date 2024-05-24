@@ -459,9 +459,10 @@ def update_cli_options_using_parsed_args(
             cli_opts.opt_n = True
         elif opt == "no_detect_squash_merges":
             warn("`--no-detect-squash-merges` is deprecated, use `--squash-merge-detection=none` instead", end="\n\n")
-            cli_opts.opt_squash_merge_detection = SquashMergeDetection.NONE
-        elif opt == "squash_merge_detection" and arg is not None:
-            cli_opts.opt_squash_merge_detection = SquashMergeDetection.from_string(value=arg, from_where="`--squash-merge-detection` flag")
+            cli_opts.opt_squash_merge_detection_string = "none"
+        elif opt == "squash_merge_detection" and arg is not None:  # if no arg is passed, argparse will fail anyway
+            cli_opts.opt_squash_merge_detection_string = arg
+            cli_opts.opt_squash_merge_detection_origin = "`--squash-merge-detection` flag"
         elif opt == "no_edit_merge":
             cli_opts.opt_no_edit_merge = True
         elif opt == "no_interactive_rebase":
@@ -537,9 +538,10 @@ def update_cli_options_using_config_keys(
 
     squash_merge_detection = git.get_config_attr_or_none(key=git_config_keys.SQUASH_MERGE_DETECTION)
     if squash_merge_detection is not None:
-        cli_opts.opt_squash_merge_detection = SquashMergeDetection.from_string(
-            value=squash_merge_detection,
-            from_where=f"`{git_config_keys.SQUASH_MERGE_DETECTION}` git config key")
+        # Let's defer the validation until the value is actually used in `status` or `traverse`.
+        # Otherwise, if an invalid value ends up in git config, `git machete help` will instantly fail.
+        cli_opts.opt_squash_merge_detection_string = squash_merge_detection
+        cli_opts.opt_squash_merge_detection_origin = f"`{git_config_keys.SQUASH_MERGE_DETECTION}` git config key"
 
 
 def set_utils_global_variables(parsed_args: argparse.Namespace) -> None:
@@ -873,13 +875,16 @@ def launch(orig_args: List[str]) -> None:
                 )
             machete_client.squash(current_branch=current_branch, opt_fork_point=squash_fork_point)
         elif cmd in {"status", alias_by_command["status"]}:
+            opt_squash_merge_detection = SquashMergeDetection.from_string(
+                cli_opts.opt_squash_merge_detection_string, cli_opts.opt_squash_merge_detection_origin)
+
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             machete_client.expect_at_least_one_managed_branch()
             machete_client.status(
                 warn_when_branch_in_sync_but_fork_point_off=True,
                 opt_list_commits=cli_opts.opt_list_commits,
                 opt_list_commits_with_hashes=cli_opts.opt_list_commits_with_hashes,
-                opt_squash_merge_detection=cli_opts.opt_squash_merge_detection)
+                opt_squash_merge_detection=opt_squash_merge_detection)
         elif cmd in {"traverse", alias_by_command["traverse"]}:
             if cli_opts.opt_return_to not in {"here", "nearest-remaining", "stay"}:
                 raise MacheteException(f"Invalid value for `--return-to` flag: `{cli_opts.opt_return_to}`. "
@@ -887,18 +892,21 @@ def launch(orig_args: List[str]) -> None:
             if cli_opts.opt_start_from not in {"here", "root", "first-root"}:
                 raise MacheteException(f"Invalid value for `--start-from` flag: `{cli_opts.opt_start_from}`. "
                                        "Valid values are here, root, first-root")
+            opt_squash_merge_detection = SquashMergeDetection.from_string(
+                cli_opts.opt_squash_merge_detection_string, cli_opts.opt_squash_merge_detection_origin)
+
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             git.expect_no_operation_in_progress()
             machete_client.traverse(
                 opt_fetch=cli_opts.opt_fetch,
                 opt_list_commits=cli_opts.opt_list_commits,
                 opt_merge=cli_opts.opt_merge,
-                opt_squash_merge_detection=cli_opts.opt_squash_merge_detection,
                 opt_no_edit_merge=cli_opts.opt_no_edit_merge,
                 opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
                 opt_push_tracked=cli_opts.opt_push_tracked,
                 opt_push_untracked=cli_opts.opt_push_untracked,
                 opt_return_to=cli_opts.opt_return_to,
+                opt_squash_merge_detection=opt_squash_merge_detection,
                 opt_start_from=cli_opts.opt_start_from,
                 opt_yes=cli_opts.opt_yes)
         elif cmd == "update":

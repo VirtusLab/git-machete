@@ -2033,7 +2033,7 @@ class MacheteClient:
             # If a commit with an identical tree state to branch is reachable from upstream,
             # then branch may have been squashed or rebase-merged into upstream.
             return self.__git.is_equivalent_tree_reachable(branch, upstream)
-        else:  # SquashMergeDetection.EXACT
+        elif opt_squash_merge_detection == SquashMergeDetection.EXACT:  # pragma: no branch
             # Let's try another way, a little more complex but takes into account the possibility
             # that there were other commits between the common ancestor of the two branches and the squashed merge.
             return self.__git.is_equivalent_tree_reachable(branch, upstream) or self.__git.is_equivalent_patch_reachable(branch, upstream)

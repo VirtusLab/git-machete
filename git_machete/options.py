@@ -1,6 +1,5 @@
 from typing import List, Optional
 
-from .constants import SquashMergeDetection
 from .exceptions import MacheteException
 from .git_operations import AnyBranchName, AnyRevision, LocalBranchShortName
 
@@ -22,7 +21,8 @@ class CommandLineOptions:
         self.opt_list_commits_with_hashes: bool = False
         self.opt_merge: bool = False
         self.opt_n: bool = False
-        self.opt_squash_merge_detection: SquashMergeDetection = SquashMergeDetection.SIMPLE
+        self.opt_squash_merge_detection_string: str = "simple"
+        self.opt_squash_merge_detection_origin: Optional[str] = None
         self.opt_no_edit_merge: bool = False
         self.opt_no_interactive_rebase: bool = False
         self.opt_onto: Optional[LocalBranchShortName] = None
