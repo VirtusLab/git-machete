@@ -61,7 +61,7 @@ def get_help_description(display_help_topics: bool, command: Optional[str] = Non
         usage_str += fmt(textwrap.dedent(long_docs[command_by_alias[command]]))
     else:
         usage_str += get_short_general_usage() + '\n' + fmt(
-            "\n<u>TL;DR tip</u>\n\n"
+            "\n<u>Quick start tip</u>\n\n"
             "    Get familiar with the help for <b>format</b>, <b>edit</b>,"
             " <b>status</b> and <b>update</b>, in this order.\n\n")
         for hdr, cmds in command_groups:

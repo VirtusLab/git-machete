@@ -29,32 +29,32 @@ This behavior can, however, be customized using options: ``--start-from=``, ``--
 
 For each branch, the command:
 
-    * detects if the branch is merged (:grey:`grey` edge) to its parent (aka upstream):
+* detects if the branch is merged (:grey:`grey` edge) to its parent (aka upstream):
 
-      - by commit equivalency (default), or by strict detection of merge commits (if ``--no-detect-squash-merges`` passed),
-      - if so, asks the user whether to **slide out** the branch from the dependency tree (typically branches are no longer needed after they're merged);
+  - by commit equivalency (default), or by strict detection of merge commits (if ``--no-detect-squash-merges`` passed),
+  - if so, asks the user whether to **slide out** the branch from the dependency tree (typically branches are no longer needed after they're merged);
 
-    * otherwise, if the branch has a :red:`red` or :yellow:`yellow` edge to its parent/upstream (see help for :ref:`status`):
+* otherwise, if the branch has a :red:`red` or :yellow:`yellow` edge to its parent/upstream (see help for :ref:`status`):
 
-      - asks the user whether to **rebase** (default) or merge (if ``--merge`` passed) the branch onto into its upstream branch
-        --- equivalent to ``git machete update``;
+  - asks the user whether to **rebase** (default) or merge (if ``--merge`` passed) the branch onto into its upstream branch
+    --- equivalent to ``git machete update``;
 
-    * if the branch is not tracked on a remote, is ahead of its remote counterpart, or diverged from the counterpart &
-      has newer head commit than the counterpart:
+* if the branch is not tracked on a remote, is ahead of its remote counterpart, or diverged from the counterpart &
+  has newer head commit than the counterpart:
 
-      - asks the user whether to **push** the branch (possibly with ``--force-with-lease`` if the branches diverged);
+  - asks the user whether to **push** the branch (possibly with ``--force-with-lease`` if the branches diverged);
 
-    * otherwise, if the branch diverged from the remote counterpart & has older head commit than the counterpart:
+* otherwise, if the branch diverged from the remote counterpart & has older head commit than the counterpart:
 
-      - asks the user whether to **reset** (``git reset --keep``) the branch to its remote counterpart
+  - asks the user whether to **reset** (``git reset --keep``) the branch to its remote counterpart
 
-    * otherwise, if the branch is behind its remote counterpart:
+* otherwise, if the branch is behind its remote counterpart:
 
-      - asks the user whether to **pull** the branch;
+  - asks the user whether to **pull** the branch;
 
-    * and finally, if any of the above operations has been successfully completed:
+* and finally, if any of the above operations has been successfully completed:
 
-      - prints the updated ``status``.
+  - prints the updated ``status``.
 
 By default ``traverse`` asks if the branch should be pushed. This behavior can, however, be changed with the ``machete.traverse.push`` configuration key.
 It can also be customized using options: ``--[no-]push`` or ``--[no-]push-untracked`` --- the order of the flags defines their precedence over each other

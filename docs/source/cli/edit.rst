@@ -12,14 +12,14 @@ Opens an editor and lets you edit the branch layout file manually.
 
 The editor is determined by checking up the following locations:
 
-    * ``$GIT_MACHETE_EDITOR``
-    * ``$GIT_EDITOR``
-    * ``$(git config core.editor)``
-    * ``$VISUAL``
-    * ``$EDITOR``
-    * ``editor``
-    * ``nano``
-    * ``vi``
+* ``$GIT_MACHETE_EDITOR``
+* ``$GIT_EDITOR``
+* ``$(git config core.editor)``
+* ``$VISUAL``
+* ``$EDITOR``
+* ``editor``
+* ``nano``
+* ``vi``
 
 and selecting the first one that is defined and points to an executable file accessible on ``PATH``.
 

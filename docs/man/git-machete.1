@@ -41,14 +41,10 @@ Using this tool, you can maintain \fBsmall, focused, easy\-to\-review pull reque
 .sp
 A look at a \fBgit machete status\fP gives an instant answer to the questions:
 .INDENT 0.0
-.INDENT 3.5
-.INDENT 0.0
 .IP \(bu 2
 What branches are in this repository?
 .IP \(bu 2
 What is going to be merged (rebased/pushed/pulled) and to what?
-.UNINDENT
-.UNINDENT
 .UNINDENT
 .sp
 \fBgit machete traverse\fP semi\-automatically traverses the branches, helping you effortlessly rebase, merge, push and pull.
@@ -117,6 +113,20 @@ git machete commands and help topics:
 .IP \(bu 2
 \fI\%version\fP          \-\- Display the version and exit
 .UNINDENT
+.INDENT 0.0
+.TP
+.B  \-\-debug
+Log detailed diagnostic info, including outputs of the executed git commands.
+.TP
+.B  \-h\fP,\fB  \-\-help
+Print help and exit.
+.TP
+.B  \-v\fP,\fB  \-\-verbose
+Log the executed git commands.
+.TP
+.B  \-\-version
+Print version and exit.
+.UNINDENT
 .SH ADD
 .sp
 \fBUsage:\fP
@@ -134,15 +144,11 @@ git machete add [\-o|\-\-onto=<target\-upstream\-branch>] [\-R|\-\-as\-root] [\-
 Adds the provided <branch> (or the current branch, if none specified) to the branch layout file.
 If <branch> is provided but no local branch with the given name exists:
 .INDENT 0.0
-.INDENT 3.5
-.INDENT 0.0
 .IP \(bu 2
 if a remote branch of the same name exists in exactly one remote,
 then user is asked whether to check out this branch locally (as in \fBgit checkout\fP),
 .IP \(bu 2
 otherwise, user is asked whether it should be created as a new local branch.
-.UNINDENT
-.UNINDENT
 .UNINDENT
 .sp
 If the branch layout file is empty or \fB\-R/\-\-as\-root\fP is provided, the branch will be added as a root of the tree of branch dependencies.
@@ -189,8 +195,6 @@ and subsequently slides out \fBD\fP\&. All three steps require manual confirmati
 .sp
 The downstream \fBD\fP is selected according to the following criteria:
 .INDENT 0.0
-.INDENT 3.5
-.INDENT 0.0
 .IP \(bu 2
 if \fBC\fP has exactly one downstream (child) branch \fBd\fP connected with a green edge (see help for \fI\%status\fP) to \fBC\fP
 or is overridden, then \fBd\fP is selected as \fBD\fP,
@@ -200,8 +204,6 @@ if \fBC\fP has no downstream branches connected with a green edge to \fBC\fP, th
 if \fBC\fP has more than one downstream branch connected with a green edge to \fBC\fP,
 then user is asked to pick the branch to fast\-forward merge into (similarly to what happens in \fBgit machete go down\fP).
 If \fB\-\-yes\fP is specified, then \fBadvance\fP fails.
-.UNINDENT
-.UNINDENT
 .UNINDENT
 .sp
 As an example, if \fBgit machete status \-\-color=never \-\-list\-commits\fP is as follows:
@@ -732,8 +734,6 @@ Opens an editor and lets you edit the branch layout file manually.
 .sp
 The editor is determined by checking up the following locations:
 .INDENT 0.0
-.INDENT 3.5
-.INDENT 0.0
 .IP \(bu 2
 \fB$GIT_MACHETE_EDITOR\fP
 .IP \(bu 2
@@ -750,8 +750,6 @@ The editor is determined by checking up the following locations:
 \fBnano\fP
 .IP \(bu 2
 \fBvi\fP
-.UNINDENT
-.UNINDENT
 .UNINDENT
 .sp
 and selecting the first one that is defined and points to an executable file accessible on \fBPATH\fP\&.
@@ -787,8 +785,6 @@ The file is always called \fBmachete\fP and is located in the git directory of t
 .sp
 Three cases are possible:
 .INDENT 0.0
-.INDENT 3.5
-.INDENT 0.0
 .IP \(bu 2
 if \fBgit machete\fP is executed from a regular working directory (not a worktree or submodule),
 the file is located under \fB\&.git/machete\fP,
@@ -803,8 +799,6 @@ if \fBmachete.worktree.useTopLevelMacheteFile\fP is false, the file is located u
 .UNINDENT
 .IP \(bu 2
 if \fBgit machete\fP is executed from a \fBsubmodule\fP, this file is located in the git folder of the submodule itself under \fB\&.git/modules/.../machete\fP\&.
-.UNINDENT
-.UNINDENT
 .UNINDENT
 .SH FORK-POINT
 .sp
@@ -831,16 +825,12 @@ Fork point of the given \fB<branch>\fP is the commit at which the history of the
 Fork point is assumed by many \fBgit machete\fP commands as the place where the unique history of the \fB<branch>\fP starts.
 The range of commits between the fork point and the tip of the given branch is, for instance:
 .INDENT 0.0
-.INDENT 3.5
-.INDENT 0.0
 .IP \(bu 2
 listed for each branch by \fBgit machete status \-\-list\-commits\fP
 .IP \(bu 2
 passed to \fBgit rebase\fP by \fBgit machete\fP \fBreapply\fP/\fBslide\-out\fP/\fBtraverse\fP/\fBupdate\fP
 .IP \(bu 2
 provided to \fBgit diff\fP/\fBlog\fP by \fBgit machete\fP \fBdiff\fP/\fBlog\fP\&.
-.UNINDENT
-.UNINDENT
 .UNINDENT
 .sp
 \fBgit machete\fP assumes fork point of \fB<branch>\fP is the most recent commit in the log of \fB<branch>\fP that has NOT been introduced on that very branch,
@@ -1371,8 +1361,6 @@ where <direction> is one of: \fBd[own]\fP, \fBf[irst]\fP, \fBl[ast]\fP, \fBn[ext
 .sp
 Checks out the branch specified by the given direction relative to the current branch:
 .INDENT 0.0
-.INDENT 3.5
-.INDENT 0.0
 .IP \(bu 2
 \fBdown\fP:    the direct children/downstream branch of the current branch.
 .IP \(bu 2
@@ -1391,8 +1379,6 @@ Note: this will typically be something like \fBdevelop\fP or \fBmaster\fP,
 since all branches are usually meant to be ultimately merged to one of those.
 .IP \(bu 2
 \fBup\fP:      the direct parent/upstream branch of the current branch.
-.UNINDENT
-.UNINDENT
 .UNINDENT
 .sp
 Roughly equivalent to \fBgit checkout $(git machete show <direction>)\fP\&.
@@ -1427,8 +1413,6 @@ is slid out by \fBadvance\fP, \fBslide\-out\fP or \fBtraverse\fP\&.
 .sp
 At least two parameters (branch names) are passed to the hook:
 .INDENT 7.0
-.INDENT 3.5
-.INDENT 0.0
 .IP \(bu 2
 <new\-upstream> is the upstream of the branch that has been slid out, or in case of multiple branches being slid out
 \-\-\- the upstream of the highest slid out branch;
@@ -1438,23 +1422,17 @@ At least two parameters (branch names) are passed to the hook:
 <new\-downstreams> are all the following (possibly zero) parameters, which correspond to all original downstreams
 of <lowest\-slid\-out\-branch>, now reattached as the downstreams of <new\-upstream>.
 .UNINDENT
-.UNINDENT
-.UNINDENT
 .sp
 Note that this may be zero, one, or multiple branches.
 .sp
 Note: the hook, if present, is executed:
 .INDENT 7.0
-.INDENT 3.5
-.INDENT 0.0
 .IP \(bu 2
 zero or once during a \fBadvance\fP execution (depending on whether the slide\-out has been confirmed or not),
 .IP \(bu 2
 exactly once during a \fBslide\-out\fP execution (even if multiple branches are slid out),
 .IP \(bu 2
 zero or more times during \fBtraverse\fP (every time a slide\-out operation is confirmed).
-.UNINDENT
-.UNINDENT
 .UNINDENT
 .sp
 If the hook returns a non\-zero exit code, then an error is raised and the execution of the command is aborted \-\-\-
@@ -1517,16 +1495,12 @@ Returns with zero exit code if the given branch (or current branch, if none spec
 .sp
 Returns with a non\-zero exit code in case:
 .INDENT 0.0
-.INDENT 3.5
-.INDENT 0.0
 .IP \(bu 2
 the <branch> is provided but isn\(aqt managed (or doesn\(aqt exist), or
 .IP \(bu 2
 the <branch> isn\(aqt provided and the current branch isn\(aqt managed, or
 .IP \(bu 2
 the <branch> isn\(aqt provided and there\(aqs no current branch (detached HEAD).
-.UNINDENT
-.UNINDENT
 .UNINDENT
 .SH LIST
 .sp
@@ -1546,8 +1520,6 @@ where <category> is one of: \fBaddable\fP, \fBchildless\fP, \fBmanaged\fP, \fBsl
 .sp
 Lists all branches that fall into one of the specified categories:
 .INDENT 0.0
-.INDENT 3.5
-.INDENT 0.0
 .IP \(bu 2
 \fBaddable\fP: all branches (local or remote) than can be added to the branch layout file,
 .IP \(bu 2
@@ -1564,8 +1536,6 @@ Lists all branches that fall into one of the specified categories:
 .IP \(bu 2
 \fBwith\-overridden\-fork\-point\fP: all local branches that have a \fI\%fork point\fP override set up
 (even if this override does not affect the location of their fork point anymore).
-.UNINDENT
-.UNINDENT
 .UNINDENT
 .sp
 This command is generally not meant for a day\-to\-day use, it\(aqs mostly needed for the sake of branch name completion in shell.
@@ -1644,8 +1614,6 @@ displayed relative to given <branch>, or the current checked out branch if <bran
 .sp
 Outputs name of the branch (or possibly multiple branches, in case of \fBdown\fP) that is:
 .INDENT 0.0
-.INDENT 3.5
-.INDENT 0.0
 .IP \(bu 2
 \fBcurrent\fP: the current branch; exits with a non\-zero status if none (detached HEAD)
 .IP \(bu 2
@@ -1666,8 +1634,6 @@ Note: this will typically be something like \fBdevelop\fP or \fBmaster\fP,
 since all branches are usually meant to be ultimately merged to one of those.
 .IP \(bu 2
 \fBup\fP:      the direct parent/upstream branch of the given branch.
-.UNINDENT
-.UNINDENT
 .UNINDENT
 .SH SLIDE-OUT
 .sp
@@ -1779,8 +1745,6 @@ Not allowed if updating by merge.
 Slide out managed branches whose remote tracking branches have been deleted and that have no downstreams.
 In other words, this deletes all branches except:
 .INDENT 7.0
-.INDENT 3.5
-.INDENT 0.0
 .IP \(bu 2
 those that are unmanaged,
 .IP \(bu 2
@@ -1789,8 +1753,6 @@ those that have no remote tracking branch set (unpushed),
 those whose remote tracking branches still exist (not deleted remotely),
 .IP \(bu 2
 those that have at least one downstream (child) branch.
-.UNINDENT
-.UNINDENT
 .UNINDENT
 .UNINDENT
 .sp
@@ -1853,8 +1815,6 @@ Displays a tree\-shaped status of the branches listed in the branch layout file.
 .sp
 Apart from simply ASCII\-formatting the branch layout file, this also:
 .INDENT 0.0
-.INDENT 3.5
-.INDENT 0.0
 .IP \(bu 2
 colors the edges between upstream (parent) and downstream (children) branches:
 .INDENT 2.0
@@ -1880,8 +1840,6 @@ qualifiers (\fBpush=no\fP, \fBrebase=no\fP, \fBslide\-out=no\fP) that control re
 displays the output of \fBmachete\-status\-branch hook\fP (see help for \fI\%hooks\fP), if present;
 .IP \(bu 2
 optionally lists commits introduced on each branch if \fB\-l/\-\-list\-commits\fP or \fB\-L/\-\-list\-commits\-with\-hashes\fP is supplied.
-.UNINDENT
-.UNINDENT
 .UNINDENT
 .sp
 Name of the currently checked\-out branch is underlined (or shown in blue on terminals that don\(aqt support underline).
@@ -2027,8 +1985,6 @@ This behavior can, however, be customized using options: \fB\-\-start\-from=\fP,
 .sp
 For each branch, the command:
 .INDENT 0.0
-.INDENT 3.5
-.INDENT 0.0
 .IP \(bu 2
 detects if the branch is merged (grey edge) to its parent (aka upstream):
 .INDENT 2.0
@@ -2068,8 +2024,6 @@ and finally, if any of the above operations has been successfully completed:
 .INDENT 2.0
 .IP \(bu 2
 prints the updated \fBstatus\fP\&.
-.UNINDENT
-.UNINDENT
 .UNINDENT
 .UNINDENT
 .sp

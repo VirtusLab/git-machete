@@ -26,29 +26,29 @@ Displays a tree-shaped status of the branches listed in the branch layout file.
 
 Apart from simply ASCII-formatting the branch layout file, this also:
 
-    * colors the edges between upstream (parent) and downstream (children) branches:
+* colors the edges between upstream (parent) and downstream (children) branches:
 
-      - :red:`red edge` means *not in sync*. The downstream branch is NOT a direct descendant of the upstream branch.
+  - :red:`red edge` means *not in sync*. The downstream branch is NOT a direct descendant of the upstream branch.
 
-      - :yellow:`yellow edge` means *in sync but fork point off*. The downstream branch is a direct descendant of the upstream branch,
-        but the :ref:`fork point<fork-point>` of the downstream branch is NOT equal to the upstream branch.
+  - :yellow:`yellow edge` means *in sync but fork point off*. The downstream branch is a direct descendant of the upstream branch,
+    but the :ref:`fork point<fork-point>` of the downstream branch is NOT equal to the upstream branch.
 
-      - :green:`green edge` means *in sync*. The downstream branch is a direct descendant of the upstream branch
-        and the fork point of the downstream branch is equal to the upstream branch.
+  - :green:`green edge` means *in sync*. The downstream branch is a direct descendant of the upstream branch
+    and the fork point of the downstream branch is equal to the upstream branch.
 
-      - :grey:`grey/dimmed edge` means *merged*. The downstream branch has been merged to the upstream branch,
-        detected by commit equivalency (default), or by strict detection of merge commits (if ``--no-detect-squash-merges`` passed).
+  - :grey:`grey/dimmed edge` means *merged*. The downstream branch has been merged to the upstream branch,
+    detected by commit equivalency (default), or by strict detection of merge commits (if ``--no-detect-squash-merges`` passed).
 
 
-    * prints (``untracked``/``ahead of <remote>``/``behind <remote>``/``diverged from [& older than] <remote>``) message if the branch
-      is not in sync with its remote counterpart;
+* prints (``untracked``/``ahead of <remote>``/``behind <remote>``/``diverged from [& older than] <remote>``) message if the branch
+  is not in sync with its remote counterpart;
 
-    * displays the custom annotations (see help for :ref:`format` and :ref:`anno`) next to each branch, if present. Annotations might contain underlined branch
-      qualifiers (``push=no``, ``rebase=no``, ``slide-out=no``) that control rebase and push behavior of ``traverse`` (see help for :ref:`traverse`);
+* displays the custom annotations (see help for :ref:`format` and :ref:`anno`) next to each branch, if present. Annotations might contain underlined branch
+  qualifiers (``push=no``, ``rebase=no``, ``slide-out=no``) that control rebase and push behavior of ``traverse`` (see help for :ref:`traverse`);
 
-    * displays the output of ``machete-status-branch hook`` (see help for :ref:`hooks`), if present;
+* displays the output of ``machete-status-branch hook`` (see help for :ref:`hooks`), if present;
 
-    * optionally lists commits introduced on each branch if ``-l/--list-commits`` or ``-L/--list-commits-with-hashes`` is supplied.
+* optionally lists commits introduced on each branch if ``-l/--list-commits`` or ``-L/--list-commits-with-hashes`` is supplied.
 
 Name of the currently checked-out branch is underlined (or shown in blue on terminals that don't support underline).
 

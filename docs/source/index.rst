@@ -14,8 +14,8 @@ Using this tool, you can maintain **small, focused, easy-to-review pull requests
 
 A look at a ``git machete status`` gives an instant answer to the questions:
 
-    * What branches are in this repository?
-    * What is going to be merged (rebased/pushed/pulled) and to what?
+* What branches are in this repository?
+* What is going to be merged (rebased/pushed/pulled) and to what?
 
 ``git machete traverse`` semi-automatically traverses the branches, helping you effortlessly rebase, merge, push and pull.
 
@@ -27,6 +27,14 @@ git machete commands and help topics:
 .. include:: short_docs.rst
 
 .. include:: learning_materials.rst
+
+General options
+---------------
+
+--debug           Log detailed diagnostic info, including outputs of the executed git commands.
+-h, --help        Print help and exit.
+-v, --verbose     Log the executed git commands.
+--version         Print version and exit.
 
 Commands & help topics
 ----------------------

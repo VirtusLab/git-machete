@@ -11,9 +11,9 @@ add
 Adds the provided <branch> (or the current branch, if none specified) to the branch layout file.
 If <branch> is provided but no local branch with the given name exists:
 
-    * if a remote branch of the same name exists in exactly one remote,
-      then user is asked whether to check out this branch locally (as in ``git checkout``),
-    * otherwise, user is asked whether it should be created as a new local branch.
+* if a remote branch of the same name exists in exactly one remote,
+  then user is asked whether to check out this branch locally (as in ``git checkout``),
+* otherwise, user is asked whether it should be created as a new local branch.
 
 If the branch layout file is empty or ``-R/--as-root`` is provided, the branch will be added as a root of the tree of branch dependencies.
 Otherwise, the desired upstream (parent) branch can be specified with ``-o/--onto``.

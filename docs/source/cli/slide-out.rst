@@ -77,10 +77,10 @@ See help for :ref:`traverse` for more details on the qualifiers.
 --removed-from-remote                             Slide out managed branches whose remote tracking branches have been deleted and that have no downstreams.
                                                   In other words, this deletes all branches except:
 
-                                                      * those that are unmanaged,
-                                                      * those that have no remote tracking branch set (unpushed),
-                                                      * those whose remote tracking branches still exist (not deleted remotely),
-                                                      * those that have at least one downstream (child) branch.
+                                                  * those that are unmanaged,
+                                                  * those that have no remote tracking branch set (unpushed),
+                                                  * those whose remote tracking branches still exist (not deleted remotely),
+                                                  * those that have at least one downstream (child) branch.
 
 **Environment variables:**
 
