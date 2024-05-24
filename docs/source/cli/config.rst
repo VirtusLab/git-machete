@@ -36,6 +36,9 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
     There should be **no** need for the user to interact with this key directly,
     ``git machete fork-point`` with flags should be used instead.
 
+``machete.squashMergeDetection``:
+    .. include:: git-config-keys/squashMergeDetection.rst
+
 ``machete.status.extraSpaceBeforeBranchName``:
     .. include:: git-config-keys/status_extraSpaceBeforeBranchName.rst
 
@@ -49,13 +52,6 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
     If you want the worktree to have its own branch layout file (located under ``.git/worktrees/.../machete``),
     set ``git config machete.worktree.useTopLevelMacheteFile false``.
 
-``machete.squashMergeDetection``:
-    Controls the algorithm used to detect squash merges. Possible values are:
-    * ``none``: No squash merge/rebase detection.
-    * ``simple``: Compares the tree state of the merge commit with the tree state of the upstream branch. This detects squash merges/rebases as long as there was no commit on the upstream branch since the last common commit.
-    * ``exact``: Compares the patch that would be applied by the merge commit with the commits that occurred on the upstream branch since the last common commit. This detects squash merges/rebases even if there were commits on the upstream branch since the last common commit. However, it might have a performance impact as it requires computing patches for commits in the upstream.
-
-
 **Environment variables:**
 
 ``GIT_MACHETE_EDITOR``
@@ -68,3 +64,6 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 
 ``GITHUB_TOKEN``
     Used to store GitHub API token. Used by commands such as ``anno --sync-github-prs`` and ``github``.
+
+``GITLAB_TOKEN``
+    Used to store GitLab API token. Used by commands such as ``anno --sync-gitlab-prs`` and ``gitlab``.

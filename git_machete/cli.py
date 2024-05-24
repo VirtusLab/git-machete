@@ -881,14 +881,12 @@ def launch(orig_args: List[str]) -> None:
                 opt_list_commits_with_hashes=cli_opts.opt_list_commits_with_hashes,
                 opt_squash_merge_detection=cli_opts.opt_squash_merge_detection)
         elif cmd in {"traverse", alias_by_command["traverse"]}:
+            if cli_opts.opt_return_to not in {"here", "nearest-remaining", "stay"}:
+                raise MacheteException(f"Invalid value for `--return-to` flag: `{cli_opts.opt_return_to}`. "
+                                       "Valid values are here, nearest-remaining, stay")
             if cli_opts.opt_start_from not in {"here", "root", "first-root"}:
-                raise MacheteException(
-                    "Invalid argument for `--start-from`. "
-                    "Valid arguments: `here|root|first-root`.")
-            if cli_opts.opt_return_to not in ("here", "nearest-remaining", "stay"):
-                raise MacheteException(
-                    "Invalid argument for `--return-to`. "
-                    "Valid arguments: `here|nearest-remaining|stay`.")
+                raise MacheteException(f"Invalid value for `--start-from` flag: `{cli_opts.opt_start_from}`. "
+                                       "Valid values are here, root, first-root")
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             git.expect_no_operation_in_progress()
             machete_client.traverse(
