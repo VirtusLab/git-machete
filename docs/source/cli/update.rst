@@ -6,7 +6,7 @@ update
 
 .. code-block:: shell
 
-    git machete update [-f|--fork-point=] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase]
+    git machete update [-f|--fork-point=<fork-point-commit>] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase]
 
 Synchronizes the current branch with its upstream (parent) branch either by rebase (default) or by merge (if ``--merge`` option passed).
 

@@ -986,11 +986,12 @@ class TestTraverse(BaseTest):
         assert_failure(["traverse"], expected_error_message)
 
     def test_traverse_invalid_flag_values(self) -> None:
-        self.setup_standard_tree()
-        assert_failure(["traverse", "--start-from=nowhere"],
-                       "Invalid argument for --start-from. Valid arguments: here|root|first-root.")
         assert_failure(["traverse", "--return-to=dunno-where"],
-                       "Invalid argument for --return-to. Valid arguments: here|nearest-remaining|stay.")
+                       "Invalid value for --return-to flag: dunno-where. Valid values are here, nearest-remaining, stay")
+        assert_failure(["traverse", "--squash-merge-detection=lolxd"],
+                       "Invalid value for --squash-merge-detection flag: lolxd. Valid values are none, simple, exact")
+        assert_failure(["traverse", "--start-from=nowhere"],
+                       "Invalid value for --start-from flag: nowhere. Valid values are here, root, first-root")
 
     def test_traverse_removes_current_directory(self) -> None:
         (

@@ -36,6 +36,9 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
     There should be **no** need for the user to interact with this key directly,
     ``git machete fork-point`` with flags should be used instead.
 
+``machete.squashMergeDetection``:
+    .. include:: git-config-keys/squashMergeDetection.rst
+
 ``machete.status.extraSpaceBeforeBranchName``:
     .. include:: git-config-keys/status_extraSpaceBeforeBranchName.rst
 
@@ -49,7 +52,6 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
     If you want the worktree to have its own branch layout file (located under ``.git/worktrees/.../machete``),
     set ``git config machete.worktree.useTopLevelMacheteFile false``.
 
-
 **Environment variables:**
 
 ``GIT_MACHETE_EDITOR``
@@ -62,3 +64,6 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 
 ``GITHUB_TOKEN``
     Used to store GitHub API token. Used by commands such as ``anno --sync-github-prs`` and ``github``.
+
+``GITLAB_TOKEN``
+    Used to store GitLab API token. Used by commands such as ``anno --sync-gitlab-prs`` and ``gitlab``.

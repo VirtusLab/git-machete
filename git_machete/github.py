@@ -253,7 +253,7 @@ class GitHubClient(CodeHostingClient):
                 if self.__token:
                     raise MacheteException(
                         first_line + f'Make sure that the GitHub API token provided by {self.__token.provider} '
-                                     f'is valid and allows for access to `{method.upper()}` `{url_prefix}{path}`.\n' + last_line)
+                        f'is valid and allows for access to `{method.upper()}` `{url_prefix}{path}`.\n' + last_line)
                 else:
                     raise MacheteException(
                         first_line + 'You might not have the required permissions for this repository.\n'

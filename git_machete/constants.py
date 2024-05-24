@@ -1,7 +1,11 @@
 from enum import Enum, IntEnum
+from typing import Optional
 
-MAX_COUNT_FOR_INITIAL_LOG = 10
+from git_machete.exceptions import MacheteException
+
 DISCOVER_DEFAULT_FRESH_BRANCH_COUNT = 10
+MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION = 1000
+MAX_COUNT_FOR_INITIAL_LOG = 10
 
 PICK_FIRST_ROOT: int = 0
 PICK_LAST_ROOT: int = -1
@@ -27,3 +31,18 @@ class GitFormatPatterns(Enum):
     FULL_MESSAGE = "%B"
     # subject NOT included
     MESSAGE_BODY = "%b"
+
+
+class SquashMergeDetection(Enum):
+    NONE = "none"
+    SIMPLE = "simple"
+    EXACT = "exact"
+
+    @staticmethod
+    def from_string(value: str, from_where: Optional[str]) -> 'SquashMergeDetection':
+        try:
+            return SquashMergeDetection[value.upper()]
+        except KeyError:
+            valid_values = ', '.join(e.value for e in SquashMergeDetection)
+            prefix = f"Invalid value for {from_where}" if from_where else "Invalid value"
+            raise MacheteException(f"{prefix}: `{value}`. Valid values are `{valid_values}`")

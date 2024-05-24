@@ -7,7 +7,9 @@ slide-out
 .. code-block:: shell
 
     git machete slide-out --removed-from-remote [--delete]
-    git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [--delete] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] [<branch> [<branch> [<branch> ...]]]
+    git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [--delete]
+                          [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase]
+                          [<branch> [<branch> [<branch> ...]]]
 
 Removes the given branch (or multiple branches) from the branch layout.
 If no branch has been specified, current branch is slid out.

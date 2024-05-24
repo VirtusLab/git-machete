@@ -18,7 +18,9 @@ status
 
 .. code-block:: shell
 
-    git machete s[tatus] [--color=WHEN] [-l|--list-commits] [-L|--list-commits-with-hashes] [--no-detect-squash-merges]
+    git machete s[tatus] [--color=WHEN]
+                         [-l|--list-commits] [-L|--list-commits-with-hashes]
+                         [--squash-merge-detection=MODE]
 
 Displays a tree-shaped status of the branches listed in the branch layout file.
 
@@ -83,10 +85,18 @@ When colors are disabled, relation between branches is represented in the follow
 
 -L, --list-commits-with-hashes    Additionally list the short hashes and messages of commits introduced on each branch.
 
---no-detect-squash-merges         Only consider *strict* (fast-forward or 2-parent) merges, rather than rebase/squash merges,
+--no-detect-squash-merges         **Deprecated**, use ``--squash-merge-detection=none`` instead.
+                                  Only consider *strict* (fast-forward or 2-parent) merges, rather than rebase/squash merges,
                                   when detecting if a branch is merged into its upstream (parent).
 
+--squash-merge-detection=MODE     Specify the mode for detection of rebase/squash merges (grey edges).
+                                  ``MODE`` can be ``none`` (fastest, no squash merges are detected), ``simple`` (default) or ``exact`` (slowest).
+                                  See the below paragraph on ``machete.squashMergeDetection`` git config key for more details.
+
 **Git config keys:**
+
+``machete.squashMergeDetection``:
+    .. include:: git-config-keys/squashMergeDetection.rst
 
 ``machete.status.extraSpaceBeforeBranchName``
   .. include:: git-config-keys/status_extraSpaceBeforeBranchName.rst

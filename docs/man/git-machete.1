@@ -27,9 +27,9 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "May 08, 2024" "" "git-machete"
+.TH "GIT-MACHETE" "1" "May 24, 2024" "" "git-machete"
 .SH NAME
-git-machete \- git-machete 3.25.3
+git-machete \- git-machete 3.26.0
 .sp
 git machete is a robust tool that \fBsimplifies your git workflows\fP\&.
 .sp
@@ -410,6 +410,28 @@ The override data is stored under \fBmachete.overrideForkPoint.<branch>.to\fP gi
 There should be \fBno\fP need for the user to interact with this key directly,
 \fBgit machete fork\-point\fP with flags should be used instead.
 .TP
+.B \fBmachete.squashMergeDetection\fP:
+Controls the algorithm used to detect squash merges. Possible values are:
+.INDENT 7.0
+.IP \(bu 2
+\fBnone\fP: Fastest mode, with no squash merge/rebase detection. Only \fIstrict\fP (fast\-forward or 2\-parent) merges are detected.
+.IP \(bu 2
+\fBsimple\fP (default): Compares the tree (files & directories in the commit) of the downstream branch with the trees of the upstream branch.
+This detects squash merges/rebases as long as there exists a squash/rebase commit in the upstream that has the identical tree to what\(aqs in the downstream branch.
+.IP \(bu 2
+\fBexact\fP: Compares the patch (diff introduced by the commits) of the downstream branch with the patches of the upstream branch.
+This detects squash merges in more cases than \fBsimple\fP mode.
+However, it might have a significant performance impact on large repositories as it requires computing patches for commits in the upstream branch.
+.UNINDENT
+.sp
+This has an impact on:
+.INDENT 7.0
+.IP \(bu 2
+whether a grey edge is displayed in \fBstatus\fP,
+.IP \(bu 2
+whether \fBtraverse\fP suggests to slide out the branch.
+.UNINDENT
+.TP
 .B \fBmachete.status.extraSpaceBeforeBranchName\fP:
 To make it easier to select branch name from the \fBstatus\fP output on certain terminals
 (like \fI\%Alacritty\fP), you can add an extra space between └─ and \fBbranch name\fP
@@ -474,6 +496,9 @@ Example: \fBGIT_MACHETE_REBASE_OPTS=\(dq\-\-keep\-empty \-\-rebase\-merges\(dq g
 .TP
 .B \fBGITHUB_TOKEN\fP
 Used to store GitHub API token. Used by commands such as \fBanno \-\-sync\-github\-prs\fP and \fBgithub\fP\&.
+.TP
+.B \fBGITLAB_TOKEN\fP
+Used to store GitLab API token. Used by commands such as \fBanno \-\-sync\-gitlab\-prs\fP and \fBgitlab\fP\&.
 .UNINDENT
 .SH CLEAN
 .sp
@@ -1653,7 +1678,9 @@ since all branches are usually meant to be ultimately merged to one of those.
 .nf
 .ft C
 git machete slide\-out \-\-removed\-from\-remote [\-\-delete]
-git machete slide\-out [\-d|\-\-down\-fork\-point=<down\-fork\-point\-commit>] [\-\-delete] [\-M|\-\-merge] [\-n|\-\-no\-edit\-merge|\-\-no\-interactive\-rebase] [<branch> [<branch> [<branch> ...]]]
+git machete slide\-out [\-d|\-\-down\-fork\-point=<down\-fork\-point\-commit>] [\-\-delete]
+                      [\-M|\-\-merge] [\-n|\-\-no\-edit\-merge|\-\-no\-interactive\-rebase]
+                      [<branch> [<branch> [<branch> ...]]]
 .ft P
 .fi
 .UNINDENT
@@ -1814,7 +1841,9 @@ Specifies the alternative fork point commit after which the squashed part of his
 .sp
 .nf
 .ft C
-git machete s[tatus] [\-\-color=WHEN] [\-l|\-\-list\-commits] [\-L|\-\-list\-commits\-with\-hashes] [\-\-no\-detect\-squash\-merges]
+git machete s[tatus] [\-\-color=WHEN]
+                     [\-l|\-\-list\-commits] [\-L|\-\-list\-commits\-with\-hashes]
+                     [\-\-squash\-merge\-detection=MODE]
 .ft P
 .fi
 .UNINDENT
@@ -1935,12 +1964,40 @@ Additionally list the commits introduced on each branch.
 Additionally list the short hashes and messages of commits introduced on each branch.
 .TP
 .B  \-\-no\-detect\-squash\-merges
+\fBDeprecated\fP, use \fB\-\-squash\-merge\-detection=none\fP instead.
 Only consider \fIstrict\fP (fast\-forward or 2\-parent) merges, rather than rebase/squash merges,
 when detecting if a branch is merged into its upstream (parent).
+.TP
+.BI \-\-squash\-merge\-detection\fB= MODE
+Specify the mode for detection of rebase/squash merges (grey edges).
+\fBMODE\fP can be \fBnone\fP (fastest, no squash merges are detected), \fBsimple\fP (default) or \fBexact\fP (slowest).
+See the below paragraph on \fBmachete.squashMergeDetection\fP git config key for more details.
 .UNINDENT
 .sp
 \fBGit config keys:\fP
 .INDENT 0.0
+.TP
+.B \fBmachete.squashMergeDetection\fP:
+Controls the algorithm used to detect squash merges. Possible values are:
+.INDENT 7.0
+.IP \(bu 2
+\fBnone\fP: Fastest mode, with no squash merge/rebase detection. Only \fIstrict\fP (fast\-forward or 2\-parent) merges are detected.
+.IP \(bu 2
+\fBsimple\fP (default): Compares the tree (files & directories in the commit) of the downstream branch with the trees of the upstream branch.
+This detects squash merges/rebases as long as there exists a squash/rebase commit in the upstream that has the identical tree to what\(aqs in the downstream branch.
+.IP \(bu 2
+\fBexact\fP: Compares the patch (diff introduced by the commits) of the downstream branch with the patches of the upstream branch.
+This detects squash merges in more cases than \fBsimple\fP mode.
+However, it might have a significant performance impact on large repositories as it requires computing patches for commits in the upstream branch.
+.UNINDENT
+.sp
+This has an impact on:
+.INDENT 7.0
+.IP \(bu 2
+whether a grey edge is displayed in \fBstatus\fP,
+.IP \(bu 2
+whether \fBtraverse\fP suggests to slide out the branch.
+.UNINDENT
 .TP
 .B \fBmachete.status.extraSpaceBeforeBranchName\fP
 To make it easier to select branch name from the \fBstatus\fP output on certain terminals
@@ -1956,9 +2013,9 @@ by setting \fBgit config machete.status.extraSpaceBeforeBranchName true\fP\&.
 .nf
 .ft C
 git machete t[raverse] [\-F|\-\-fetch] [\-l|\-\-list\-commits] [\-M|\-\-merge]
-                       [\-n|\-\-no\-edit\-merge|\-\-no\-interactive\-rebase] [\-\-no\-detect\-squash\-merges]
-                       [\-\-[no\-]push] [\-\-[no\-]push\-untracked]
-                       [\-\-return\-to=WHERE] [\-\-start\-from=WHERE] [\-w|\-\-whole] [\-W] [\-y|\-\-yes]
+                       [\-n|\-\-no\-edit\-merge|\-\-no\-interactive\-rebase] [\-\-[no\-]push] [\-\-[no\-]push\-untracked]
+                       [\-\-return\-to=WHERE] [\-\-start\-from=WHERE] [\-\-squash\-merge\-detection=MODE]
+                       [\-w|\-\-whole] [\-W] [\-y|\-\-yes]
 .ft P
 .fi
 .UNINDENT
@@ -2023,7 +2080,7 @@ It can also be customized using options: \fB\-\-[no\-]push\fP or \fB\-\-[no\-]pu
 If the traverse flow is stopped (typically due to merge/rebase conflicts), just run \fBgit machete traverse\fP after the merge/rebase is finished.
 It will pick up the walk from the current branch.
 Unlike with \fBgit rebase\fP or \fBgit cherry\-pick\fP, there is no special \fB\-\-continue\fP flag, as \fBtraverse\fP is stateless.
-\fBtraverse\fP doesn\(aqt keep a state of its own like \fBgit rebase\fP does in \fB\&.git/rebase\-apply/\fP\&.
+\fBtraverse\fP does \fBnot\fP keep a state of its own like \fBgit rebase\fP does in \fB\&.git/rebase\-apply/\fP\&.
 .sp
 The rebase, push and slide\-out behaviors of \fBtraverse\fP can also be customized for each branch separately using \fIbranch qualifiers\fP\&.
 There are \fBpush=no\fP, \fBrebase=no\fP and \fBslide\-out=no\fP qualifiers that can be used to opt out of default behavior (rebasing, pushing and sliding the branch out).
@@ -2065,6 +2122,7 @@ Update by merge rather than by rebase.
 If updating by rebase, equivalent to \fB\-\-no\-interactive\-rebase\fP\&. If updating by merge, equivalent to \fB\-\-no\-edit\-merge\fP\&.
 .TP
 .B  \-\-no\-detect\-squash\-merges
+\fBDeprecated\fP, use \fB\-\-squash\-merge\-detection=none\fP instead.
 Only consider \fIstrict\fP (fast\-forward or 2\-parent) merges, rather than rebase/squash merges,
 when detecting if a branch is merged into its upstream (parent).
 .TP
@@ -2097,6 +2155,11 @@ WHERE can be \fBhere\fP (the current branch at the moment when traversal starts)
 \fBstay\fP (the default \-\-\- just stay wherever the traversal stops). Note: when user quits by \fBq\fP/\fByq\fP
 or when traversal is stopped because one of git actions fails, the behavior is always \fBstay\fP\&.
 .TP
+.BI \-\-squash\-merge\-detection\fB= MODE
+Specifies the mode for detection of rebase/squash merges (grey edges).
+\fBMODE\fP can be \fBnone\fP (fastest, no squash merges are detected), \fBsimple\fP (default) or \fBexact\fP (slowest).
+See the below paragraph on \fBmachete.squashMergeDetection\fP git config key for more details.
+.TP
 .BI \-\-start\-from\fB= WHERE
 Specifies the branch to start the traversal from; WHERE can be \fBhere\fP
 (the default \-\-\- current branch, must be managed by git machete), \fBroot\fP (root branch of the current branch,
@@ -2125,6 +2188,28 @@ Example: \fBGIT_MACHETE_REBASE_OPTS=\(dq\-\-keep\-empty \-\-rebase\-merges\(dq g
 \fBGit config keys:\fP
 .INDENT 0.0
 .TP
+.B \fBmachete.squashMergeDetection\fP:
+Controls the algorithm used to detect squash merges. Possible values are:
+.INDENT 7.0
+.IP \(bu 2
+\fBnone\fP: Fastest mode, with no squash merge/rebase detection. Only \fIstrict\fP (fast\-forward or 2\-parent) merges are detected.
+.IP \(bu 2
+\fBsimple\fP (default): Compares the tree (files & directories in the commit) of the downstream branch with the trees of the upstream branch.
+This detects squash merges/rebases as long as there exists a squash/rebase commit in the upstream that has the identical tree to what\(aqs in the downstream branch.
+.IP \(bu 2
+\fBexact\fP: Compares the patch (diff introduced by the commits) of the downstream branch with the patches of the upstream branch.
+This detects squash merges in more cases than \fBsimple\fP mode.
+However, it might have a significant performance impact on large repositories as it requires computing patches for commits in the upstream branch.
+.UNINDENT
+.sp
+This has an impact on:
+.INDENT 7.0
+.IP \(bu 2
+whether a grey edge is displayed in \fBstatus\fP,
+.IP \(bu 2
+whether \fBtraverse\fP suggests to slide out the branch.
+.UNINDENT
+.TP
 .B \fBmachete.traverse.push\fP
 To change the behavior of \fBgit machete traverse\fP command so that it doesn\(aqt push branches by default,
 you need to set config key \fBgit config machete.traverse.push false\fP\&.
@@ -2139,7 +2224,7 @@ Configuration key value can be overridden by the presence of the \fB\-\-push\fP 
 .sp
 .nf
 .ft C
-git machete update [\-f|\-\-fork\-point=] [\-M|\-\-merge] [\-n|\-\-no\-edit\-merge|\-\-no\-interactive\-rebase]
+git machete update [\-f|\-\-fork\-point=<fork\-point\-commit>] [\-M|\-\-merge] [\-n|\-\-no\-edit\-merge|\-\-no\-interactive\-rebase]
 .ft P
 .fi
 .UNINDENT

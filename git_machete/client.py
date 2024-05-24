@@ -17,7 +17,7 @@ from .code_hosting import (CodeHostingClient, CodeHostingSpec,
                            is_matching_remote_url)
 from .constants import (DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, PICK_FIRST_ROOT,
                         PICK_LAST_ROOT, GitFormatPatterns,
-                        SyncToRemoteStatuses)
+                        SquashMergeDetection, SyncToRemoteStatuses)
 from .exceptions import (InteractionStopped, MacheteException,
                          UnexpectedMacheteException)
 from .git_operations import (HEAD, AnyBranchName, AnyRevision, BranchPair,
@@ -463,7 +463,7 @@ class MacheteClient:
                 if self.is_merged_to(
                         branch=branch,
                         upstream=upstream,
-                        opt_no_detect_squash_merges=False
+                        opt_squash_merge_detection=SquashMergeDetection.NONE
                 ):
                     debug(f"inferred upstream of {branch} is {upstream}, but "
                           f"{branch} is merged to {upstream}; skipping {branch} from discovered tree")
@@ -489,7 +489,7 @@ class MacheteClient:
             warn_when_branch_in_sync_but_fork_point_off=False,
             opt_list_commits=opt_list_commits,
             opt_list_commits_with_hashes=False,
-            opt_no_detect_squash_merges=False)
+            opt_squash_merge_detection=SquashMergeDetection.NONE)
         print("")
         do_backup = os.path.isfile(self.__branch_layout_file_path) and io.open(self.__branch_layout_file_path).read().strip()
         backup_msg = (
@@ -611,7 +611,7 @@ class MacheteClient:
 
         def connected_with_green_edge(bd: LocalBranchShortName) -> bool:
             return bool(
-                not self.__is_merged_to_upstream(bd, opt_no_detect_squash_merges=False) and
+                not self.__is_merged_to_upstream(bd, opt_squash_merge_detection=SquashMergeDetection.NONE) and
                 self.__git.is_ancestor_or_equal(branch.full_name(), bd.full_name()) and
                 (self.__get_overridden_fork_point(bd) or
                  self.__git.get_commit_hash_by_revision(branch) == self.fork_point(bd, use_overrides=False)))
@@ -685,12 +685,12 @@ class MacheteClient:
             opt_fetch: bool,
             opt_list_commits: bool,
             opt_merge: bool,
-            opt_no_detect_squash_merges: bool,
             opt_no_edit_merge: bool,
             opt_no_interactive_rebase: bool,
             opt_push_tracked: bool,
             opt_push_untracked: bool,
             opt_return_to: str,
+            opt_squash_merge_detection: SquashMergeDetection,
             opt_start_from: str,
             opt_yes: bool
     ) -> None:
@@ -730,7 +730,7 @@ class MacheteClient:
             upstream = self.__up_branch.get(branch)
 
             needs_slide_out: bool = self.__is_merged_to_upstream(
-                branch, opt_no_detect_squash_merges=opt_no_detect_squash_merges)
+                branch, opt_squash_merge_detection=opt_squash_merge_detection)
             if needs_slide_out and branch in self.annotations:
                 needs_slide_out = self.annotations[branch].qualifiers.slide_out
             s, remote = self.__git.get_combined_remote_sync_status(branch)
@@ -785,7 +785,7 @@ class MacheteClient:
                     warn_when_branch_in_sync_but_fork_point_off=True,
                     opt_list_commits=opt_list_commits,
                     opt_list_commits_with_hashes=False,
-                    opt_no_detect_squash_merges=opt_no_detect_squash_merges)
+                    opt_squash_merge_detection=opt_squash_merge_detection)
                 self.__print_new_line(True)
             if needs_slide_out:
                 any_action_suggested = True
@@ -944,7 +944,7 @@ class MacheteClient:
             warn_when_branch_in_sync_but_fork_point_off=True,
             opt_list_commits=opt_list_commits,
             opt_list_commits_with_hashes=False,
-            opt_no_detect_squash_merges=opt_no_detect_squash_merges)
+            opt_squash_merge_detection=opt_squash_merge_detection)
         print("")
         if current_branch == self.managed_branches[-1]:
             msg: str = f"Reached branch {bold(current_branch)} which has no successor"
@@ -969,7 +969,7 @@ class MacheteClient:
             warn_when_branch_in_sync_but_fork_point_off: bool,
             opt_list_commits: bool,
             opt_list_commits_with_hashes: bool,
-            opt_no_detect_squash_merges: bool
+            opt_squash_merge_detection: SquashMergeDetection
     ) -> None:
         next_sibling_of_ancestor_by_branch: OrderedDict[LocalBranchShortName, List[Optional[LocalBranchShortName]]] = OrderedDict()
 
@@ -1009,7 +1009,7 @@ class MacheteClient:
             if self.is_merged_to(
                     branch=branch,
                     upstream=parent_branch,
-                    opt_no_detect_squash_merges=opt_no_detect_squash_merges):
+                    opt_squash_merge_detection=opt_squash_merge_detection):
                 sync_to_parent_status[branch] = SyncToParentStatus.MergedToParent
             elif not self.__git.is_ancestor_or_equal(parent_branch.full_name(), branch.full_name()):
                 sync_to_parent_status[branch] = SyncToParentStatus.OutOfSync
@@ -1065,8 +1065,8 @@ class MacheteClient:
                             right_arrow = colored(utils.get_right_arrow(), AnsiEscapeCodes.RED)
                             fork_point_str = colored("fork point ???", AnsiEscapeCodes.RED)
                             fp_suffix: str = f' {right_arrow} {fork_point_str} ' + \
-                                             ("this commit" if opt_list_commits_with_hashes else f"commit {commit.short_hash}") + \
-                                             f' seems to be a part of the unique history of {fp_branches_formatted}'
+                                ("this commit" if opt_list_commits_with_hashes else f"commit {commit.short_hash}") + \
+                                f' seems to be a part of the unique history of {fp_branches_formatted}'
                         else:
                             fp_suffix = ''
                         print_line_prefix(branch, utils.get_vertical_bar())
@@ -1159,7 +1159,7 @@ class MacheteClient:
             else:
                 affected_branches = ", ".join(map(bold, branches_in_sync_but_fork_point_off))
                 first_part = f"yellow edges indicate that fork points for {affected_branches} are probably incorrectly inferred,\n" \
-                             "or that some extra branch should be added between each of these branches and its parent"
+                    "or that some extra branch should be added between each of these branches and its parent"
 
             if not opt_list_commits:
                 second_part = "Run `git machete status --list-commits` or " \
@@ -1527,11 +1527,11 @@ class MacheteClient:
         return []
 
     def __is_merged_to_upstream(
-            self, branch: LocalBranchShortName, *, opt_no_detect_squash_merges: bool) -> bool:
+            self, branch: LocalBranchShortName, *, opt_squash_merge_detection: SquashMergeDetection) -> bool:
         upstream = self.__up_branch.get(branch)
         if not upstream:
             return False
-        return self.is_merged_to(branch, upstream, opt_no_detect_squash_merges=opt_no_detect_squash_merges)
+        return self.is_merged_to(branch, upstream, opt_squash_merge_detection=opt_squash_merge_detection)
 
     def __run_post_slide_out_hook(self, new_upstream: LocalBranchShortName, slid_out_branch: LocalBranchShortName,
                                   new_downstreams: List[LocalBranchShortName]) -> None:
@@ -1866,11 +1866,13 @@ class MacheteClient:
     ) -> None:
         rems = self.__git.get_remotes()
         print("\n".join(f"[{index + 1}] {rem}" for index, rem in enumerate(rems)))
-        msg = f"Select number 1..{len(rems)} to specify the destination remote " \
-              "repository, or 'n' to skip this branch, or " \
-              "'q' to quit the traverse: " if is_called_from_traverse \
-            else f"Select number 1..{len(rems)} to specify the destination remote " \
-                 "repository, or 'q' to quit the operation: "
+        if is_called_from_traverse:
+            msg = f"Select number 1..{len(rems)} to specify the destination remote " \
+                "repository, or 'n' to skip this branch, or " \
+                "'q' to quit the traverse: "
+        else:
+            msg = f"Select number 1..{len(rems)} to specify the destination remote " \
+                "repository, or 'q' to quit the operation: "
 
         ans = input(msg).lower()
         if ans in ('q', 'quit'):
@@ -2012,7 +2014,12 @@ class MacheteClient:
         elif ans in ('q', 'quit'):
             raise InteractionStopped
 
-    def is_merged_to(self, branch: LocalBranchShortName, upstream: AnyBranchName, *, opt_no_detect_squash_merges: bool) -> bool:
+    def is_merged_to(
+            self,
+            branch: LocalBranchShortName,
+            upstream: AnyBranchName,
+            opt_squash_merge_detection: SquashMergeDetection
+    ) -> bool:
         if self.__git.is_ancestor_or_equal(branch.full_name(), upstream.full_name()):
             # If branch is ancestor of or equal to the upstream, we need to distinguish between the
             # case of branch being "recently" created from the upstream and the case of
@@ -2021,13 +2028,19 @@ class MacheteClient:
             # (reflog stripped of trivial events like branch creation, reset etc.)
             # is non-empty.
             return bool(self.filtered_reflog(branch))
-        elif opt_no_detect_squash_merges:
+        elif opt_squash_merge_detection == SquashMergeDetection.NONE:
             return False
-        else:
+        elif opt_squash_merge_detection == SquashMergeDetection.SIMPLE:
             # In the default mode.
             # If a commit with an identical tree state to branch is reachable from upstream,
             # then branch may have been squashed or rebase-merged into upstream.
             return self.__git.is_equivalent_tree_reachable(branch, upstream)
+        elif opt_squash_merge_detection == SquashMergeDetection.EXACT:
+            # Let's try another way, a little more complex but takes into account the possibility
+            # that there were other commits between the common ancestor of the two branches and the squashed merge.
+            return self.__git.is_equivalent_tree_reachable(branch, upstream) or self.__git.is_equivalent_patch_reachable(branch, upstream)
+        else:  # pragma: no cover
+            raise UnexpectedMacheteException(f"Invalid squash merged detection mode: {opt_squash_merge_detection}.")
 
     @staticmethod
     def ask_if(
@@ -2321,7 +2334,7 @@ class MacheteClient:
                     warn_when_branch_in_sync_but_fork_point_off=True,
                     opt_list_commits=False,
                     opt_list_commits_with_hashes=False,
-                    opt_no_detect_squash_merges=False)
+                    opt_squash_merge_detection=SquashMergeDetection.NONE)
                 self.__print_new_line(False)
 
                 if converted_to_draft:
@@ -2855,7 +2868,7 @@ class MacheteClient:
                     warn_when_branch_in_sync_but_fork_point_off=True,
                     opt_list_commits=False,
                     opt_list_commits_with_hashes=False,
-                    opt_no_detect_squash_merges=False)
+                    opt_squash_merge_detection=SquashMergeDetection.NONE)
                 self.__print_new_line(False)
 
         else:

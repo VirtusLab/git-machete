@@ -285,6 +285,25 @@ long_docs: Dict[str, str] = {
               There should be <b>no</b> need for the user to interact with this key directly,
               `git machete fork-point` with flags should be used instead.
 
+           `machete.squashMergeDetection`:
+ 
+              Controls the algorithm used to detect squash merges. Possible values are:
+
+                 * `none`: Fastest mode, with no squash merge/rebase detection. Only strict (fast-forward or 2-parent) merges are detected.
+
+                 * `simple` (default): Compares the tree (files & directories in the commit) of the downstream branch with the trees of the upstream branch.
+                   This detects squash merges/rebases as long as there exists a squash/rebase commit in the upstream that has the identical tree to what's in the downstream branch.
+
+                 * `exact`: Compares the patch (diff introduced by the commits) of the downstream branch with the patches of the upstream branch.
+                   This detects squash merges in more cases than `simple` mode.
+                   However, it might have a significant performance impact on large repositories as it requires computing patches for commits in the upstream branch.
+
+              This has an impact on:
+
+                 * whether a grey edge is displayed in `status`,
+
+                 * whether `traverse` suggests to slide out the branch.
+
            `machete.status.extraSpaceBeforeBranchName`:
  
               To make it easier to select branch name from the `status` output on certain terminals
@@ -333,6 +352,9 @@ long_docs: Dict[str, str] = {
 
            `GITHUB_TOKEN`
               Used to store GitHub API token. Used by commands such as `anno --sync-github-prs` and `github`.
+
+           `GITLAB_TOKEN`
+              Used to store GitLab API token. Used by commands such as `anno --sync-gitlab-prs` and `gitlab`.
 
    """,
     "delete-unmanaged": """
@@ -1053,7 +1075,9 @@ long_docs: Dict[str, str] = {
     "slide-out": """
         <b>Usage:</b><b>
            git machete slide-out --removed-from-remote [--delete]
-           git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [--delete] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] [<branch> [<branch> [<branch> ...]]]</b>
+           git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [--delete]
+                                 [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase]
+                                 [<branch> [<branch> [<branch> ...]]]</b>
 
         Removes the given branch (or multiple branches) from the branch layout.
         If no branch has been specified, current branch is slid out.
@@ -1155,7 +1179,9 @@ long_docs: Dict[str, str] = {
    """,
     "status": """
         <b>Usage:</b><b>
-           git machete s[tatus] [--color=WHEN] [-l|--list-commits] [-L|--list-commits-with-hashes] [--no-detect-squash-merges]</b>
+           git machete s[tatus] [--color=WHEN]
+                                [-l|--list-commits] [-L|--list-commits-with-hashes]
+                                [--squash-merge-detection=MODE]</b>
 
         Displays a tree-shaped status of the branches listed in the branch layout file.
 
@@ -1229,10 +1255,34 @@ long_docs: Dict[str, str] = {
            <b>-L</b>, <b>--list-commits-with-hashes</b>
               Additionally list the short hashes and messages of commits introduced on each branch.
            <b>--no-detect-squash-merges</b>
+              <b>Deprecated</b>, use `--squash-merge-detection=none` instead.
               Only consider strict (fast-forward or 2-parent) merges, rather than rebase/squash merges,
               when detecting if a branch is merged into its upstream (parent).
+           <b>--squash-merge-detection=MODE</b>
+              Specify the mode for detection of rebase/squash merges (grey edges).
+              `MODE` can be `none` (fastest, no squash merges are detected), `simple` (default) or `exact` (slowest).
+              See the below paragraph on `machete.squashMergeDetection` git config key for more details.
 
         <b>Git config keys:</b>
+           `machete.squashMergeDetection`:
+ 
+              Controls the algorithm used to detect squash merges. Possible values are:
+
+                 * `none`: Fastest mode, with no squash merge/rebase detection. Only strict (fast-forward or 2-parent) merges are detected.
+
+                 * `simple` (default): Compares the tree (files & directories in the commit) of the downstream branch with the trees of the upstream branch.
+                   This detects squash merges/rebases as long as there exists a squash/rebase commit in the upstream that has the identical tree to what's in the downstream branch.
+
+                 * `exact`: Compares the patch (diff introduced by the commits) of the downstream branch with the patches of the upstream branch.
+                   This detects squash merges in more cases than `simple` mode.
+                   However, it might have a significant performance impact on large repositories as it requires computing patches for commits in the upstream branch.
+
+              This has an impact on:
+
+                 * whether a grey edge is displayed in `status`,
+
+                 * whether `traverse` suggests to slide out the branch.
+
            `machete.status.extraSpaceBeforeBranchName`
  
               To make it easier to select branch name from the `status` output on certain terminals
@@ -1259,9 +1309,9 @@ long_docs: Dict[str, str] = {
     "traverse": """
         <b>Usage:</b><b>
            git machete t[raverse] [-F|--fetch] [-l|--list-commits] [-M|--merge]
-                                  [-n|--no-edit-merge|--no-interactive-rebase] [--no-detect-squash-merges]
-                                  [--[no-]push] [--[no-]push-untracked]
-                                  [--return-to=WHERE] [--start-from=WHERE] [-w|--whole] [-W] [-y|--yes]</b>
+                                  [-n|--no-edit-merge|--no-interactive-rebase] [--[no-]push] [--[no-]push-untracked]
+                                  [--return-to=WHERE] [--start-from=WHERE] [--squash-merge-detection=MODE]
+                                  [-w|--whole] [-W] [-y|--yes]</b>
 
         Traverses the branches in the order as they occur in branch layout file.
         By default, `traverse` starts from the current branch.
@@ -1291,7 +1341,7 @@ long_docs: Dict[str, str] = {
         If the traverse flow is stopped (typically due to merge/rebase conflicts), just run `git machete traverse` after the merge/rebase is finished.
         It will pick up the walk from the current branch.
         Unlike with `git rebase` or `git cherry-pick`, there is no special `--continue` flag, as `traverse` is stateless.
-        `traverse` doesn't keep a state of its own like `git rebase` does in `.git/rebase-apply/`.
+        `traverse` does <b>not</b> keep a state of its own like `git rebase` does in `.git/rebase-apply/`.
 
         The rebase, push and slide-out behaviors of `traverse` can also be customized for each branch separately using branch qualifiers.
         There are `push=no`, `rebase=no` and `slide-out=no` qualifiers that can be used to opt out of default behavior (rebasing, pushing and sliding the branch out).
@@ -1320,6 +1370,7 @@ long_docs: Dict[str, str] = {
            <b>-n</b>
               If updating by rebase, equivalent to `--no-interactive-rebase`. If updating by merge, equivalent to `--no-edit-merge`.
            <b>--no-detect-squash-merges</b>
+              <b>Deprecated</b>, use `--squash-merge-detection=none` instead.
               Only consider strict (fast-forward or 2-parent) merges, rather than rebase/squash merges,
               when detecting if a branch is merged into its upstream (parent).
            <b>--no-edit-merge</b>
@@ -1344,6 +1395,10 @@ long_docs: Dict[str, str] = {
               (nearest remaining branch in case the `here` branch has been slid out by the traversal) or
               `stay` (the default — just stay wherever the traversal stops). Note: when user quits by `q`/`yq`
               or when traversal is stopped because one of git actions fails, the behavior is always `stay`.
+           <b>--squash-merge-detection=MODE</b>
+              Specifies the mode for detection of rebase/squash merges (grey edges).
+              `MODE` can be `none` (fastest, no squash merges are detected), `simple` (default) or `exact` (slowest).
+              See the below paragraph on `machete.squashMergeDetection` git config key for more details.
            <b>--start-from=WHERE</b>
               Specifies the branch to start the traversal from; WHERE can be `here`
               (the default — current branch, must be managed by git machete), `root` (root branch of the current branch,
@@ -1363,6 +1418,25 @@ long_docs: Dict[str, str] = {
               Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete traverse`.
 
         <b>Git config keys:</b>
+           `machete.squashMergeDetection`:
+ 
+              Controls the algorithm used to detect squash merges. Possible values are:
+
+                 * `none`: Fastest mode, with no squash merge/rebase detection. Only strict (fast-forward or 2-parent) merges are detected.
+
+                 * `simple` (default): Compares the tree (files & directories in the commit) of the downstream branch with the trees of the upstream branch.
+                   This detects squash merges/rebases as long as there exists a squash/rebase commit in the upstream that has the identical tree to what's in the downstream branch.
+
+                 * `exact`: Compares the patch (diff introduced by the commits) of the downstream branch with the patches of the upstream branch.
+                   This detects squash merges in more cases than `simple` mode.
+                   However, it might have a significant performance impact on large repositories as it requires computing patches for commits in the upstream branch.
+
+              This has an impact on:
+
+                 * whether a grey edge is displayed in `status`,
+
+                 * whether `traverse` suggests to slide out the branch.
+
            `machete.traverse.push`
  
               To change the behavior of `git machete traverse` command so that it doesn't push branches by default,
@@ -1373,7 +1447,7 @@ long_docs: Dict[str, str] = {
    """,
     "update": """
         <b>Usage:</b><b>
-           git machete update [-f|--fork-point=] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase]</b>
+           git machete update [-f|--fork-point=<fork-point-commit>] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase]</b>
 
         Synchronizes the current branch with its upstream (parent) branch either by rebase (default) or by merge (if `--merge` option passed).
 
