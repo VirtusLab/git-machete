@@ -3,9 +3,9 @@ from typing import Optional
 
 from git_machete.exceptions import MacheteException
 
-MAX_COUNT_FOR_INITIAL_LOG = 10
 DISCOVER_DEFAULT_FRESH_BRANCH_COUNT = 10
 MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION = 1000
+MAX_COUNT_FOR_INITIAL_LOG = 10
 
 PICK_FIRST_ROOT: int = 0
 PICK_LAST_ROOT: int = -1

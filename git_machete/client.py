@@ -1866,11 +1866,13 @@ class MacheteClient:
     ) -> None:
         rems = self.__git.get_remotes()
         print("\n".join(f"[{index + 1}] {rem}" for index, rem in enumerate(rems)))
-        msg = f"Select number 1..{len(rems)} to specify the destination remote " \
-            "repository, or 'n' to skip this branch, or " \
-            "'q' to quit the traverse: " if is_called_from_traverse \
-            else f"Select number 1..{len(rems)} to specify the destination remote " \
-            "repository, or 'q' to quit the operation: "
+        if is_called_from_traverse:
+            msg = f"Select number 1..{len(rems)} to specify the destination remote " \
+                "repository, or 'n' to skip this branch, or " \
+                "'q' to quit the traverse: "
+        else:
+            msg = f"Select number 1..{len(rems)} to specify the destination remote " \
+                "repository, or 'q' to quit the operation: "
 
         ans = input(msg).lower()
         if ans in ('q', 'quit'):
@@ -2033,10 +2035,12 @@ class MacheteClient:
             # If a commit with an identical tree state to branch is reachable from upstream,
             # then branch may have been squashed or rebase-merged into upstream.
             return self.__git.is_equivalent_tree_reachable(branch, upstream)
-        elif opt_squash_merge_detection == SquashMergeDetection.EXACT:  # pragma: no branch
+        elif opt_squash_merge_detection == SquashMergeDetection.EXACT:
             # Let's try another way, a little more complex but takes into account the possibility
             # that there were other commits between the common ancestor of the two branches and the squashed merge.
             return self.__git.is_equivalent_tree_reachable(branch, upstream) or self.__git.is_equivalent_patch_reachable(branch, upstream)
+        else:  # pragma: no cover
+            raise UnexpectedMacheteException(f"Invalid squash merged detection mode: {opt_squash_merge_detection}.")
 
     @staticmethod
     def ask_if(

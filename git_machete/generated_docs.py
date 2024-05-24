@@ -1396,7 +1396,7 @@ long_docs: Dict[str, str] = {
               `stay` (the default — just stay wherever the traversal stops). Note: when user quits by `q`/`yq`
               or when traversal is stopped because one of git actions fails, the behavior is always `stay`.
            <b>--squash-merge-detection=MODE</b>
-              Specify the mode for detection of rebase/squash merges (grey edges).
+              Specifies the mode for detection of rebase/squash merges (grey edges).
               `MODE` can be `none` (fastest, no squash merges are detected), `simple` (default) or `exact` (slowest).
               See the below paragraph on `machete.squashMergeDetection` git config key for more details.
            <b>--start-from=WHERE</b>

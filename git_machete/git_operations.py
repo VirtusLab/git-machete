@@ -861,15 +861,15 @@ class GitContext:
             self.__is_equivalent_patch_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash] = True
             return True
 
-        patch_id_for_changes_of_equivalent_to: Optional[FullPatchId] = self.get_patch_id_for_diff(changes_of_equivalent_to)
-        patch_ids_for_commits_of_reachable_from: Set[FullPatchId] = set(self.get_patch_ids_for_commits_between(
+        patch_id_for_changes_of_equivalent_to: Optional[FullPatchId] = self.__get_patch_id_for_diff(changes_of_equivalent_to)
+        patch_ids_for_commits_of_reachable_from: Set[FullPatchId] = set(self.__get_patch_ids_for_commits_between(
             common_ancestor, reachable_from_commit_hash, MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION).values())
         result = patch_id_for_changes_of_equivalent_to in patch_ids_for_commits_of_reachable_from
         debug(f"patch_id_for_changes_of_equivalent_to in patch_ids_for_commits_of_reachable_from = {result}")
         self.__is_equivalent_patch_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash] = result
         return result
 
-    def get_patch_id_for_diff(self, patch_contents: str) -> Optional[FullPatchId]:
+    def __get_patch_id_for_diff(self, patch_contents: str) -> Optional[FullPatchId]:
         out = utils.get_non_empty_lines(self._popen_git("patch-id", input=patch_contents).stdout)
 
         if len(out) == 0:
@@ -877,7 +877,7 @@ class GitContext:
             return None
         return FullPatchId.of(out[0].split(' ')[0])  # patch-id output is "<patch-id> <commit-hash>", we only care about the patch-id
 
-    def get_patch_ids_for_commits_between(
+    def __get_patch_ids_for_commits_between(
             self, earliest_exclusive: AnyRevision, latest_inclusive: AnyRevision, max_commits: int
     ) -> Dict[FullCommitHash, FullPatchId]:
         patches = self._popen_git("log", "--patch", f"^{earliest_exclusive}", latest_inclusive, f"-{max_commits}", "--").stdout
