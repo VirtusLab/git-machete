@@ -295,6 +295,8 @@ class GitHubClient(CodeHostingClient):
                      f'New organization is {bold(new_org)} and new repository is {bold(new_repo)}.\n'
                      'You can update your remote repository via: `git remote set-url <remote_name> <new_repository_url>`.')
                 return result
+            elif err.code >= 500:
+                raise MacheteException(f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`.')
             else:
                 raise UnexpectedMacheteException(f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`.')
         except OSError as e:  # pragma: no cover

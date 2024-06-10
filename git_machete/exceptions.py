@@ -2,6 +2,8 @@ from enum import IntEnum
 
 from git_machete import utils
 
+NEW_ISSUE_LINK = "https://github.com/VirtusLab/git-machete/issues/new"
+
 
 class InteractionStopped(Exception):
     def __init__(self) -> None:
@@ -25,8 +27,8 @@ class MacheteException(Exception):
 
 
 class UnexpectedMacheteException(MacheteException):
-    def __init__(self, msg: str, apply_fmt: bool = False) -> None:
-        super().__init__(f"{msg}\n\nConsider posting an issue at https://github.com/VirtusLab/git-machete/issues/new", apply_fmt=apply_fmt)
+    def __init__(self, msg: str, apply_fmt: bool = True) -> None:
+        super().__init__(f"{msg}\n\nConsider posting an issue at `{NEW_ISSUE_LINK}`", apply_fmt=apply_fmt)
 
 
 class ExitCode(IntEnum):

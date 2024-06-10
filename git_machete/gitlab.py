@@ -217,6 +217,8 @@ class GitLabClient(CodeHostingClient):
                 else:
                     UnexpectedMacheteException(
                         f'GitLab API returned 405 (Method Not Allowed) HTTP status with error message: `{err.reason}`.')
+            elif err.code >= 500:
+                raise MacheteException(f'GitLab API returned `{err.code}` HTTP status with error message: `{err.reason}`.')
             else:
                 raise UnexpectedMacheteException(f'GitLab API returned `{err.code}` HTTP status with error message: `{err.reason}`.')
         except OSError as e:  # pragma: no cover
