@@ -161,8 +161,10 @@ class TestGitHubCreatePR(BaseTest):
 
             ## Full chain of PRs as of 2023-12-31
 
-            * PR #5: `chore/fields` ➔ `ignore-trailing`
-            * PR #3: `ignore-trailing` ➔ `hotfix/add-trigger`
+            * PR #5:
+              `chore/fields` ➔ `ignore-trailing`
+            * PR #3:
+              `ignore-trailing` ➔ `hotfix/add-trigger`
 
             <!-- end git-machete generated -->
 
@@ -364,9 +366,12 @@ class TestGitHubCreatePR(BaseTest):
 
             ## Full chain of PRs as of 2023-12-31
 
-            * PR #3: `call-ws` ➔ `build-chain`
-            * PR #2: `build-chain` ➔ `allow-ownership-link`
-            * PR #1: `allow-ownership-link` ➔ `develop`
+            * PR #3:
+              `call-ws` ➔ `build-chain`
+            * PR #2:
+              `build-chain` ➔ `allow-ownership-link`
+            * PR #1:
+              `allow-ownership-link` ➔ `develop`
 
             <!-- end git-machete generated -->
         ''')[1:]
@@ -383,10 +388,14 @@ class TestGitHubCreatePR(BaseTest):
 
             ## Full chain of PRs as of 2023-12-31
 
-            * PR #4: `drop-constraint` ➔ `call-ws`
-            * PR #3: `call-ws` ➔ `build-chain`
-            * PR #2: `build-chain` ➔ `allow-ownership-link`
-            * PR #1: `allow-ownership-link` ➔ `develop`
+            * PR #4:
+              `drop-constraint` ➔ `call-ws`
+            * PR #3:
+              `call-ws` ➔ `build-chain`
+            * PR #2:
+              `build-chain` ➔ `allow-ownership-link`
+            * PR #1:
+              `allow-ownership-link` ➔ `develop`
 
             <!-- end git-machete generated -->
 
@@ -582,8 +591,10 @@ class TestGitHubCreatePR(BaseTest):
 
             ## Full chain of PRs as of 2023-12-31
 
-            * PR #16: `feature` ➔ `branch-1`
-            * PR #15: `branch-1` ➔ `root`
+            * PR #16:
+              `feature` ➔ `branch-1`
+            * PR #15:
+              `branch-1` ➔ `root`
 
             <!-- end git-machete generated -->
 

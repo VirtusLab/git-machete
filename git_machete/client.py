@@ -2538,7 +2538,8 @@ class MacheteClient:
         current_date = utils.get_current_date()
         prepend += f'## Full chain of {pr_short_name}s as of {current_date}\n\n'
         for ancestor_pr in pr_path:
-            prepend += f'* {ancestor_pr.display_text(fmt=False)}: `{ancestor_pr.head}` ➔ `{ancestor_pr.base}`\n'
+            prepend += f'* {ancestor_pr.display_text(fmt=False)}:\n'
+            prepend += f'  `{ancestor_pr.head}` ➔ `{ancestor_pr.base}`\n'
         prepend += '\n'
         prepend += f'{self.END_GIT_MACHETE_GENERATED_COMMENT}\n'
         return prepend

@@ -273,8 +273,10 @@ class TestGitLabRetargetMR(BaseTest):
 
             ## Full chain of MRs as of 2023-12-31
 
-            * MR !20: `feature_1` ➔ `feature`
-            * MR !15: `feature` ➔ `master`
+            * MR !20:
+              `feature_1` ➔ `feature`
+            * MR !15:
+              `feature` ➔ `master`
 
             <!-- end git-machete generated -->
             # Summary''')[1:]
@@ -320,8 +322,10 @@ class TestGitLabRetargetMR(BaseTest):
 
             ## Full chain of MRs as of 2023-12-31
 
-            * MR !25: `feature_2` ➔ `feature`
-            * MR !15: `feature` ➔ `master`
+            * MR !25:
+              `feature_2` ➔ `feature`
+            * MR !15:
+              `feature` ➔ `master`
 
             <!-- end git-machete generated -->''')[1:]
 
@@ -360,9 +364,12 @@ class TestGitLabRetargetMR(BaseTest):
 
             ## Full chain of MRs as of 2023-12-31
 
-            * MR !30: `feature_3` ➔ `feature_2`
-            * MR !25: `feature_2` ➔ `feature`
-            * MR !15: `feature` ➔ `master`
+            * MR !30:
+              `feature_3` ➔ `feature_2`
+            * MR !25:
+              `feature_2` ➔ `feature`
+            * MR !15:
+              `feature` ➔ `master`
 
             <!-- end git-machete generated -->
             # Summary''')[1:]
@@ -394,8 +401,10 @@ class TestGitLabRetargetMR(BaseTest):
 
             ## Full chain of MRs as of 2023-12-31
 
-            * MR !30: `feature_3` ➔ `feature`
-            * MR !15: `feature` ➔ `master`
+            * MR !30:
+              `feature_3` ➔ `feature`
+            * MR !15:
+              `feature` ➔ `master`
 
             <!-- end git-machete generated -->
             # Summary''')[1:]

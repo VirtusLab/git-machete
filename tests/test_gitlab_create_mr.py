@@ -160,8 +160,10 @@ class TestGitLabCreateMR(BaseTest):
 
             ## Full chain of MRs as of 2023-12-31
 
-            * MR !5: `chore/fields` ➔ `ignore-trailing`
-            * MR !3: `ignore-trailing` ➔ `hotfix/add-trigger`
+            * MR !5:
+              `chore/fields` ➔ `ignore-trailing`
+            * MR !3:
+              `ignore-trailing` ➔ `hotfix/add-trigger`
 
             <!-- end git-machete generated -->
 
@@ -359,9 +361,12 @@ class TestGitLabCreateMR(BaseTest):
 
             ## Full chain of MRs as of 2023-12-31
 
-            * MR !3: `call-ws` ➔ `build-chain`
-            * MR !2: `build-chain` ➔ `allow-ownership-link`
-            * MR !1: `allow-ownership-link` ➔ `develop`
+            * MR !3:
+              `call-ws` ➔ `build-chain`
+            * MR !2:
+              `build-chain` ➔ `allow-ownership-link`
+            * MR !1:
+              `allow-ownership-link` ➔ `develop`
 
             <!-- end git-machete generated -->
         ''')[1:]
@@ -378,10 +383,14 @@ class TestGitLabCreateMR(BaseTest):
 
             ## Full chain of MRs as of 2023-12-31
 
-            * MR !4: `drop-constraint` ➔ `call-ws`
-            * MR !3: `call-ws` ➔ `build-chain`
-            * MR !2: `build-chain` ➔ `allow-ownership-link`
-            * MR !1: `allow-ownership-link` ➔ `develop`
+            * MR !4:
+              `drop-constraint` ➔ `call-ws`
+            * MR !3:
+              `call-ws` ➔ `build-chain`
+            * MR !2:
+              `build-chain` ➔ `allow-ownership-link`
+            * MR !1:
+              `allow-ownership-link` ➔ `develop`
 
             <!-- end git-machete generated -->
 
@@ -577,8 +586,10 @@ class TestGitLabCreateMR(BaseTest):
 
             ## Full chain of MRs as of 2023-12-31
 
-            * MR !16: `feature` ➔ `branch-1`
-            * MR !15: `branch-1` ➔ `root`
+            * MR !16:
+              `feature` ➔ `branch-1`
+            * MR !15:
+              `branch-1` ➔ `root`
 
             <!-- end git-machete generated -->
 

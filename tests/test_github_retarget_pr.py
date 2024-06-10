@@ -267,8 +267,10 @@ class TestGitHubRetargetPR(BaseTest):
 
             ## Full chain of PRs as of 2023-12-31
 
-            * PR #20: `feature_1` ➔ `feature`
-            * PR #15: `feature` ➔ `master`
+            * PR #20:
+              `feature_1` ➔ `feature`
+            * PR #15:
+              `feature` ➔ `master`
 
             <!-- end git-machete generated -->
             # Summary''')[1:]
@@ -314,8 +316,10 @@ class TestGitHubRetargetPR(BaseTest):
 
             ## Full chain of PRs as of 2023-12-31
 
-            * PR #25: `feature_2` ➔ `feature`
-            * PR #15: `feature` ➔ `master`
+            * PR #25:
+              `feature_2` ➔ `feature`
+            * PR #15:
+              `feature` ➔ `master`
 
             <!-- end git-machete generated -->''')[1:]
 
@@ -354,9 +358,12 @@ class TestGitHubRetargetPR(BaseTest):
 
             ## Full chain of PRs as of 2023-12-31
 
-            * PR #30: `feature_3` ➔ `feature_2`
-            * PR #25: `feature_2` ➔ `feature`
-            * PR #15: `feature` ➔ `master`
+            * PR #30:
+              `feature_3` ➔ `feature_2`
+            * PR #25:
+              `feature_2` ➔ `feature`
+            * PR #15:
+              `feature` ➔ `master`
 
             <!-- end git-machete generated -->
             # Summary''')[1:]
@@ -388,8 +395,10 @@ class TestGitHubRetargetPR(BaseTest):
 
             ## Full chain of PRs as of 2023-12-31
 
-            * PR #30: `feature_3` ➔ `feature`
-            * PR #15: `feature` ➔ `master`
+            * PR #30:
+              `feature_3` ➔ `feature`
+            * PR #15:
+              `feature` ➔ `master`
 
             <!-- end git-machete generated -->
             # Summary''')[1:]
