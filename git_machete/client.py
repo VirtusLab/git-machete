@@ -2290,56 +2290,55 @@ class MacheteClient:
         if s in statuses_to_push:
             if current_branch in self.annotations and not self.annotations[current_branch].qualifiers.push:
                 subcommand = "retarget-" + spec.pr_short_name.lower()
-                warn(f'Branch <b>{current_branch}</b> is marked as `push=no`; skipping the push.\n'
-                     f'Did you want to just use `git machete {spec.git_machete_command} {subcommand}`?\n')
+                raise MacheteException(
+                    f'Branch <b>{current_branch}</b> is marked as `push=no`; aborting the restack.\n'
+                    f'Did you want to just use `git machete {spec.git_machete_command} {subcommand}`?\n')
 
-                self.retarget_pr(spec, head, ignore_if_missing=False)
+            converted_to_draft = code_hosting_client.set_draft_status_of_pull_request(pr.number, target_draft_status=True)
+            if converted_to_draft:
+                print(f'{pr.display_text()} has been temporarily marked as draft')
+
+            # Note that retarget should happen BEFORE push, see issue #1222
+            self.retarget_pr(spec, head, ignore_if_missing=False)
+
+            if s == SyncToRemoteStatuses.AHEAD_OF_REMOTE:
+                assert remote is not None
+                self.__handle_ahead_state(
+                    current_branch=current_branch,
+                    remote=remote,
+                    is_called_from_traverse=False,
+                    opt_push_tracked=True,
+                    opt_yes=True)
+            elif s == SyncToRemoteStatuses.UNTRACKED:
+                self.__handle_untracked_state(
+                    branch=current_branch,
+                    is_called_from_traverse=False,
+                    is_called_from_code_hosting=True,
+                    opt_push_tracked=True,
+                    opt_push_untracked=True,
+                    opt_yes=True)
+            elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
+                assert remote is not None
+                self.__handle_diverged_and_newer_state(
+                    current_branch=current_branch,
+                    remote=remote,
+                    is_called_from_traverse=False,
+                    opt_push_tracked=True,
+                    opt_yes=True)
             else:
-                converted_to_draft = code_hosting_client.set_draft_status_of_pull_request(pr.number, target_draft_status=True)
-                if converted_to_draft:
-                    print(f'{pr.display_text()} has been temporarily marked as draft')
+                raise UnexpectedMacheteException(f"Invalid sync to remote status: {s}.")
 
-                # Note that retarget should happen BEFORE push, see issue #1222
-                self.retarget_pr(spec, head, ignore_if_missing=False)
+            self.__print_new_line(False)
+            self.status(
+                warn_when_branch_in_sync_but_fork_point_off=True,
+                opt_list_commits=False,
+                opt_list_commits_with_hashes=False,
+                opt_squash_merge_detection=SquashMergeDetection.NONE)
+            self.__print_new_line(False)
 
-                if s == SyncToRemoteStatuses.AHEAD_OF_REMOTE:
-                    assert remote is not None
-                    self.__handle_ahead_state(
-                        current_branch=current_branch,
-                        remote=remote,
-                        is_called_from_traverse=False,
-                        opt_push_tracked=True,
-                        opt_yes=True)
-                elif s == SyncToRemoteStatuses.UNTRACKED:
-                    self.__handle_untracked_state(
-                        branch=current_branch,
-                        is_called_from_traverse=False,
-                        is_called_from_code_hosting=True,
-                        opt_push_tracked=True,
-                        opt_push_untracked=True,
-                        opt_yes=True)
-                elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
-                    assert remote is not None
-                    self.__handle_diverged_and_newer_state(
-                        current_branch=current_branch,
-                        remote=remote,
-                        is_called_from_traverse=False,
-                        opt_push_tracked=True,
-                        opt_yes=True)
-                else:
-                    raise UnexpectedMacheteException(f"Invalid sync to remote status: {s}.")
-
-                self.__print_new_line(False)
-                self.status(
-                    warn_when_branch_in_sync_but_fork_point_off=True,
-                    opt_list_commits=False,
-                    opt_list_commits_with_hashes=False,
-                    opt_squash_merge_detection=SquashMergeDetection.NONE)
-                self.__print_new_line(False)
-
-                if converted_to_draft:
-                    code_hosting_client.set_draft_status_of_pull_request(prs[0].number, target_draft_status=False)
-                    print(f'{pr.display_text()} has been marked as ready for review again')
+            if converted_to_draft:
+                code_hosting_client.set_draft_status_of_pull_request(prs[0].number, target_draft_status=False)
+                print(f'{pr.display_text()} has been marked as ready for review again')
 
         else:
             if s == SyncToRemoteStatuses.BEHIND_REMOTE:
