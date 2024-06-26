@@ -296,7 +296,8 @@ class GitHubClient(CodeHostingClient):
                      'You can update your remote repository via: `git remote set-url <remote_name> <new_repository_url>`.')
                 return result
             elif err.code >= 500:
-                raise MacheteException(f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`.')
+                raise MacheteException(f'GitHub API returned `{err.code}` '
+                                       f'HTTP status with error message: `{err.reason}`.')  # pragma: no cover
             else:
                 raise UnexpectedMacheteException(f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`.')
         except OSError as e:  # pragma: no cover
