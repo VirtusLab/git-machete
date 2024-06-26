@@ -340,6 +340,7 @@ workflows:
           filters:
             branches:
               only:
+                - "/dependabot.pip.*/"
                 - "develop"
                 - "/.*dry-run.*/"
                 - "/hotfix.*/"
