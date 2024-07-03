@@ -164,3 +164,8 @@ class TestGitOperations(BaseTest):
 
         assert git.is_equivalent_tree_reachable(equivalent_to=feature, reachable_from=master) is False
         assert git.is_equivalent_patch_reachable(equivalent_to=feature, reachable_from=master) is False
+
+    def test_git_config_with_newlines(self) -> None:
+        self.repo_sandbox.write_to_file(".git/config", '[foo]\n  bar = "hello\\nworld"')
+        git = GitContext()
+        assert git.get_config_attr_or_none("foo.bar") == "hello\nworld"

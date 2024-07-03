@@ -303,13 +303,15 @@ class GitContext:
     def __ensure_config_loaded(self) -> None:
         if self.__config_cached is None:
             self.__config_cached = {}
-            for config_line in utils.get_non_empty_lines(self._popen_git("config", "--list").stdout):
-                k_v = config_line.split("=", 1)
-                if len(k_v) == 2:
-                    k, v = k_v
-                    self.__config_cached[k.lower()] = v
+            git_config_stdout = self._popen_git("config", "--list", "--null").stdout
+            for config_entry in filter(None, git_config_stdout.split("\0")):
+                # Apparently, even on Windows, this command uses just \n (and not \r\n) to separate config key from value.
+                key_and_value_lines = config_entry.split('\n', 1)
+                if len(key_and_value_lines) == 2:
+                    key, value_lines = key_and_value_lines
+                    self.__config_cached[key.lower()] = value_lines
                 else:
-                    raise UnexpectedMacheteException(f"Cannot parse config line: {config_line}.")
+                    raise UnexpectedMacheteException(f"Cannot parse config entry: {config_entry}.")
 
     def get_config_attr_or_none(self, key: str) -> Optional[str]:
         self.__ensure_config_loaded()
