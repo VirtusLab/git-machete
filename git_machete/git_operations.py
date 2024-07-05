@@ -9,8 +9,7 @@ from typing import (Any, Dict, Iterator, List, Match, NamedTuple, Optional,
 
 from . import utils
 from .constants import (MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION,
-                        MAX_COUNT_FOR_INITIAL_LOG, GitFormatPatterns,
-                        SyncToRemoteStatuses)
+                        GitFormatPatterns, SyncToRemoteStatuses)
 from .exceptions import UnderlyingGitException, UnexpectedMacheteException
 from .utils import (AnsiEscapeCodes, CommandResult, colored, debug, fmt,
                     hex_repr)
@@ -598,18 +597,20 @@ class GitContext:
         return list(map(FullCommitHash.of, utils.get_non_empty_lines(self._popen_git("log", *opts).stdout)))
 
     # Since getting the full history of a branch can be an expensive operation for large repositories
-    # (compared to all other underlying git operations), there's a simple optimization in place:
-    # we first fetch only a couple of first commits in the history, and only fetch the rest if needed.
-    def spoonfeed_log_hashes(self, branch_full_hash: FullCommitHash) -> Iterator[FullCommitHash]:
+    # (compared to all other underlying git operations), there are two optimizations in place:
+    # 1. we first fetch only a couple of first commits in the history,
+    # 2. if these first commits aren't enough for the purpose, we fetch more, but only up to the hard limit,
+    #    to avoid time-unbounded operations on really large repos.
+    def spoonfeed_log_hashes(self, branch_full_hash: FullCommitHash, initial_count: int, total_count: int) -> Iterator[FullCommitHash]:
         if branch_full_hash not in self.__initial_log_hashes_cached:
-            self.__initial_log_hashes_cached[branch_full_hash] = self.__get_log_hashes(branch_full_hash,
-                                                                                       max_count=MAX_COUNT_FOR_INITIAL_LOG)
+            self.__initial_log_hashes_cached[branch_full_hash] = \
+                self.__get_log_hashes(branch_full_hash, max_count=initial_count)
         for hash in self.__initial_log_hashes_cached[branch_full_hash]:
             yield FullCommitHash.of(hash)
 
         if branch_full_hash not in self.__remaining_log_hashes_cached:
-            self.__remaining_log_hashes_cached[branch_full_hash] = self.__get_log_hashes(branch_full_hash,
-                                                                                         max_count=None)[MAX_COUNT_FOR_INITIAL_LOG:]
+            self.__remaining_log_hashes_cached[branch_full_hash] = \
+                self.__get_log_hashes(branch_full_hash, max_count=total_count)[initial_count:]
         for hash in self.__remaining_log_hashes_cached[branch_full_hash]:
             yield FullCommitHash.of(hash)
 

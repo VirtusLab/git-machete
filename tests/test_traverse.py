@@ -981,8 +981,12 @@ class TestTraverse(BaseTest):
 
     def test_traverse_no_managed_branches(self) -> None:
 
-        expected_error_message = "No branches listed in .git/machete; " \
-                                 "use git machete discover or git machete edit, or edit .git/machete manually."
+        expected_error_message = """
+          No branches listed in .git/machete. Consider one of:
+          * git machete discover
+          * git machete edit or edit .git/machete manually
+          * git machete github checkout-prs --mine
+          * git machete gitlab checkout-mrs --mine"""
         assert_failure(["traverse"], expected_error_message)
 
     def test_traverse_invalid_flag_values(self) -> None:

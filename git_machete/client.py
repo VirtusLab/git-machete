@@ -5,6 +5,7 @@ import os
 import shlex
 import shutil
 import sys
+import textwrap
 from collections import OrderedDict
 from enum import Enum, auto
 from typing import Callable, Dict, Iterator, List, Optional, Tuple
@@ -15,9 +16,11 @@ from .code_hosting import (CodeHostingClient, CodeHostingSpec,
                            OrganizationAndRepository,
                            OrganizationAndRepositoryAndRemote, PullRequest,
                            is_matching_remote_url)
-from .constants import (DISCOVER_DEFAULT_FRESH_BRANCH_COUNT, PICK_FIRST_ROOT,
-                        PICK_LAST_ROOT, GitFormatPatterns,
-                        SquashMergeDetection, SyncToRemoteStatuses)
+from .constants import (DISCOVER_DEFAULT_FRESH_BRANCH_COUNT,
+                        INITIAL_COMMIT_COUNT_FOR_LOG, PICK_FIRST_ROOT,
+                        PICK_LAST_ROOT, TOTAL_COMMIT_COUNT_FOR_LOG,
+                        GitFormatPatterns, SquashMergeDetection,
+                        SyncToRemoteStatuses)
 from .exceptions import (InteractionStopped, MacheteException,
                          UnexpectedMacheteException)
 from .git_operations import (HEAD, AnyBranchName, AnyRevision, BranchPair,
@@ -88,9 +91,12 @@ class MacheteClient:
 
     def __raise_no_branches_error(self) -> None:
         raise MacheteException(
-            f"No branches listed in {self.__branch_layout_file_path}; use `git "
-            f"machete discover` or `git machete edit`, or edit"
-            f" {self.__branch_layout_file_path} manually.")
+            textwrap.dedent(f"""
+                No branches listed in {self.__branch_layout_file_path}. Consider one of:
+                * `git machete discover`
+                * `git machete edit` or edit {self.__branch_layout_file_path} manually
+                * `git machete github checkout-prs --mine`
+                * `git machete gitlab checkout-mrs --mine`"""[1:]))
 
     def read_branch_layout_file(self, perform_interactive_slide_out: bool, verify_branches: bool = True) -> None:
         with open(self.__branch_layout_file_path) as file:
@@ -1759,7 +1765,9 @@ class MacheteClient:
         if not branch_full_hash:
             return
 
-        for hash in self.__git.spoonfeed_log_hashes(branch_full_hash):
+        for hash in self.__git.spoonfeed_log_hashes(branch_full_hash,
+                                                    initial_count=INITIAL_COMMIT_COUNT_FOR_LOG,
+                                                    total_count=TOTAL_COMMIT_COUNT_FOR_LOG):
             if hash in self.__branch_pairs_by_hash_in_reflog:
                 # The entries must be sorted by lb_or_rb to make sure the
                 # upstream inference is deterministic (and does not depend on the
