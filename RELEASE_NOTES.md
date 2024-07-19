@@ -1,5 +1,10 @@
 # Release notes
 
+## New in git-machete 3.26.3
+
+- improved: performance of listing commits for red-edge branches on large repos
+- improved: message in case of missing `.git/machete` file suggests to use `git machete git{hub,lab} checkout-{prs,mrs}`
+
 ## New in git-machete 3.26.2
 
 - fixed: parsing of multiline git config keys (reported by @saveman71)

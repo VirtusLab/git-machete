@@ -456,8 +456,10 @@ class TestGo(BaseTest):
              "the root of the current branch.")
 
     def test_go_root_no_branches(self) -> None:
-        assert_failure(
-            ["g", "root"],
-            "No branches listed in .git/machete; use git machete discover "
-            "or git machete edit, or edit .git/machete manually."
-        )
+        expected_error_message = """
+          No branches listed in .git/machete. Consider one of:
+          * git machete discover
+          * git machete edit or edit .git/machete manually
+          * git machete github checkout-prs --mine
+          * git machete gitlab checkout-mrs --mine"""
+        assert_failure(["g", "root"], expected_error_message)
