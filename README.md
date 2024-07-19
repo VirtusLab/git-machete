@@ -131,7 +131,7 @@ Stable channels may lag behind; see [repology](https://repology.org/project/git-
 
 ### Using Pex
 
-The [Pex tool](https://github.com/pex-tool/pex) (short for Python EXecutable) allows you to build "pex" files which are executable Python environments in a single file. 
+The [Pex tool](https://github.com/pex-tool/pex) (short for Python EXecutable) allows you to build "pex" files which are executable Python environments in a single file.
 
 Assuming you have already installed the `pex` utility, you can build git-machete as a pex:
 
