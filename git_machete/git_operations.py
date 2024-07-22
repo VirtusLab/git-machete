@@ -593,7 +593,7 @@ class GitContext:
                 self.__missing_tracking_branch.add(b_stripped_local)
 
     def __get_log_hashes(self, revision: AnyRevision, max_count: Optional[int]) -> List[FullCommitHash]:
-        opts = ([f"--max-count={str(max_count)}"] if max_count else []) + ["--format=%H", revision.full_name()]
+        opts = ([f"--max-count={str(max_count)}"] if max_count else []) + ["--no-show-signature", "--format=%H", revision.full_name()]
         return list(map(FullCommitHash.of, utils.get_non_empty_lines(self._popen_git("log", *opts).stdout)))
 
     # Since getting the full history of a branch can be an expensive operation for large repositories
@@ -630,7 +630,7 @@ class GitContext:
         all_branches: List[str] = local_branches + counterpart_branches
 
         # The trailing '--' is necessary to avoid ambiguity in case there is a file called just exactly like one of the branches.
-        entries = utils.get_non_empty_lines(self._popen_git("reflog", "show", "--format=%gD\t%H\t%gs", *(all_branches + ["--"])).stdout)
+        entries = utils.get_non_empty_lines(self._popen_git("reflog", "show", "--no-show-signature", "--format=%gD\t%H\t%gs", *(all_branches + ["--"])).stdout)
         self.__reflogs_cached = {}
         for entry in entries:
             values = entry.split("\t")
@@ -666,7 +666,7 @@ class GitContext:
                                                          [entry.split(":", 1) for entry in utils.get_non_empty_lines(
                                                              # The trailing '--' is necessary to avoid ambiguity in case there is a file
                                                              # called just exactly like the branch 'branch'.
-                                                             self._popen_git("reflog", "show", "--format=%H:%gs", branch, "--").stdout)]
+                                                             self._popen_git("reflog", "show", "--no-show-signature", "--format=%H:%gs", branch, "--").stdout)]
                                                          ))
             return self.__reflogs_cached[branch]
 
@@ -821,6 +821,7 @@ class GitContext:
         tree_hashes_for_reachable_from = utils.get_non_empty_lines(
             self._popen_git(
                 "log",
+                "--no-show-signature",
                 "--format=%T",  # full commit's tree hash
                 "^" + equivalent_to_commit_hash,
                 reachable_from_commit_hash
@@ -883,7 +884,7 @@ class GitContext:
     def __get_patch_ids_for_commits_between(
             self, earliest_exclusive: AnyRevision, latest_inclusive: AnyRevision, max_commits: int
     ) -> Dict[FullCommitHash, FullPatchId]:
-        patches = self._popen_git("log", "--patch", f"^{earliest_exclusive}", latest_inclusive, f"-{max_commits}", "--").stdout
+        patches = self._popen_git("log", "--no-show-signature", "--patch", f"^{earliest_exclusive}", latest_inclusive, f"-{max_commits}", "--").stdout
         patch_ids = self._popen_git("patch-id", input=patches).stdout
 
         patch_id_for_commit: Dict[FullCommitHash, FullPatchId] = {}
@@ -985,7 +986,7 @@ class GitContext:
             lambda x: GitLogEntry(hash=FullCommitHash(x.split(":", 2)[0]),
                                   short_hash=ShortCommitHash(x.split(":", 2)[1]),
                                   subject=x.split(":", 2)[2]),
-            utils.get_non_empty_lines(self._popen_git("log", "--format=%H:%h:%s", f"^{earliest_exclusive}", latest_inclusive, "--").stdout)
+            utils.get_non_empty_lines(self._popen_git("log", "--no-show-signature", "--format=%H:%h:%s", f"^{earliest_exclusive}", latest_inclusive, "--").stdout)
         ))))
 
     def get_relation_to_remote_counterpart(self, branch: LocalBranchShortName, remote_branch: RemoteBranchShortName) -> int:
@@ -1015,7 +1016,7 @@ class GitContext:
         # %gd - reflog selector (HEAD@{<unix-timestamp> <time-zone>} for `--date=raw`;
         #   `--date=unix` is not available on some older versions of git)
         # %gs - reflog subject
-        output = self._popen_git("reflog", "show", "--format=%gd:%gs", "--date=raw").stdout
+        output = self._popen_git("reflog", "show", "--no-show-signature", "--format=%gd:%gs", "--date=raw").stdout
         for entry in utils.get_non_empty_lines(output):
             pattern = "^HEAD@\\{([0-9]+) .+\\}:checkout: moving from (.+) to (.+)$"  # noqa: FS003
             match = re.search(pattern, entry)
@@ -1036,10 +1037,10 @@ class GitContext:
                 f"Retrieving {pattern} from commit is not supported. "
                 f"The currently supported patterns are: {', '.join(GitFormatPatterns._member_names_)}.")
 
-        return self._popen_git("log", "-1", f"--format={pattern.value}", commit).stdout.strip()
+        return self._popen_git("log", "--no-show-signature", "-1", f"--format={pattern.value}", commit).stdout.strip()
 
     def display_branch_history_from_fork_point(self, branch: LocalBranchFullName, fork_point: FullCommitHash) -> int:
-        return self._run_git("log", f"^{fork_point}", branch, flush_caches=False)
+        return self._run_git("log", "--no-show-signature", f"^{fork_point}", branch, flush_caches=False)
 
     def commit_tree_with_given_parent_and_message_and_env(
             self, parent_revision: AnyRevision, msg: str, env: Dict[str, str]) -> FullCommitHash:
