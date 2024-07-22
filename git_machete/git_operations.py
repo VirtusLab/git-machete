@@ -180,6 +180,16 @@ class BranchPair(NamedTuple):
 
 HEAD = AnyRevision.of("HEAD")
 
+# For simplicity, explicitly suppress showing GPG signatures in `git log`
+# operations to simplify log parsing. This option must be passed as a
+# configuration parameter because the `git log` command's `--no-show-signature`
+# flag does not exist prior to `git` version 2.10.0; `git` does not emit an
+# error if it is passed via the `-c` flag a configuration setting that does not
+# exist, so compatibility with `git` versions earlier than version 2.10.0 is
+# preserved, even though the `log.showSignature` setting also does not exist
+# prior to version 2.10.0. Fixes a bug documented in GitHub issue #1286.
+GIT_EXEC = ("git", "-c", "log.showSignature=false")
+
 
 class GitContext:
 
@@ -224,7 +234,7 @@ class GitContext:
         self.__short_commit_hash_by_revision_cached = {}
 
     def _run_git(self, git_cmd: str, *args: str, flush_caches: bool, allow_non_zero: bool = False) -> int:
-        exit_code = utils.run_cmd("git", git_cmd, *args)
+        exit_code = utils.run_cmd(*GIT_EXEC, git_cmd, *args)
         if flush_caches:
             self.flush_caches()
         if not allow_non_zero and exit_code != 0:
@@ -234,7 +244,7 @@ class GitContext:
 
     def _popen_git(self, git_cmd: str, *args: str,
                    allow_non_zero: bool = False, env: Optional[Dict[str, str]] = None, input: Optional[str] = None) -> CommandResult:
-        exit_code, stdout, stderr = utils.popen_cmd("git", git_cmd, *args, env=env, input=input)
+        exit_code, stdout, stderr = utils.popen_cmd(*GIT_EXEC, git_cmd, *args, env=env, input=input)
         if not allow_non_zero and exit_code != 0:
             exit_code_msg: str = fmt(f"`{utils.get_cmd_shell_repr('git', git_cmd, *args, env=env)}` returned {exit_code}\n")
             stdout_msg: str = f"\n{utils.bold('stdout')}:\n{utils.dim(stdout)}" if stdout else ""
@@ -594,7 +604,7 @@ class GitContext:
 
     def __get_log_hashes(self, revision: AnyRevision, max_count: Optional[int]) -> List[FullCommitHash]:
         opts = ([f"--max-count={str(max_count)}"] if max_count else []) + ["--format=%H", revision.full_name()]
-        return list(map(FullCommitHash.of, utils.get_non_empty_lines(self._popen_git("-c", "log.showSignature=0", "log", *opts).stdout)))
+        return list(map(FullCommitHash.of, utils.get_non_empty_lines(self._popen_git("log", *opts).stdout)))
 
     # Since getting the full history of a branch can be an expensive operation for large repositories
     # (compared to all other underlying git operations), there are two optimizations in place:
@@ -631,8 +641,6 @@ class GitContext:
 
         # The trailing '--' is necessary to avoid ambiguity in case there is a file called just exactly like one of the branches.
         entries = utils.get_non_empty_lines(self._popen_git(
-            "-c",
-            "log.showSignature=0",
             "reflog",
             "show",
             "--format=%gD\t%H\t%gs",
@@ -674,8 +682,6 @@ class GitContext:
                                                              # The trailing '--' is necessary to avoid ambiguity in case there is a file
                                                              # called just exactly like the branch 'branch'.
                                                              self._popen_git(
-                                                                 "-c",
-                                                                 "log.showSignature=0",
                                                                  "reflog",
                                                                  "show",
                                                                  "--format=%H:%gs",
@@ -835,8 +841,6 @@ class GitContext:
         # shows all commits reachable from reachable_from_commit_hash but NOT from equivalent_to_commit_hash
         tree_hashes_for_reachable_from = utils.get_non_empty_lines(
             self._popen_git(
-                "-c",
-                "log.showSignature=0",
                 "log",
                 "--format=%T",  # full commit's tree hash
                 "^" + equivalent_to_commit_hash,
@@ -901,8 +905,6 @@ class GitContext:
             self, earliest_exclusive: AnyRevision, latest_inclusive: AnyRevision, max_commits: int
     ) -> Dict[FullCommitHash, FullPatchId]:
         patches = self._popen_git(
-            "-c",
-            "log.showSignature=0",
             "log",
             "--patch",
             f"^{earliest_exclusive}",
@@ -1012,8 +1014,6 @@ class GitContext:
                                   short_hash=ShortCommitHash(x.split(":", 2)[1]),
                                   subject=x.split(":", 2)[2]),
             utils.get_non_empty_lines(self._popen_git(
-                "-c",
-                "log.showSignature=0",
                 "log", "--format=%H:%h:%s",
                 f"^{earliest_exclusive}",
                 latest_inclusive,
@@ -1048,7 +1048,7 @@ class GitContext:
         # %gd - reflog selector (HEAD@{<unix-timestamp> <time-zone>} for `--date=raw`;
         #   `--date=unix` is not available on some older versions of git)
         # %gs - reflog subject
-        output = self._popen_git("-c", "log.showSignature=0", "reflog", "show", "--format=%gd:%gs", "--date=raw").stdout
+        output = self._popen_git("reflog", "show", "--format=%gd:%gs", "--date=raw").stdout
         for entry in utils.get_non_empty_lines(output):
             pattern = "^HEAD@\\{([0-9]+) .+\\}:checkout: moving from (.+) to (.+)$"  # noqa: FS003
             match = re.search(pattern, entry)
@@ -1069,10 +1069,10 @@ class GitContext:
                 f"Retrieving {pattern} from commit is not supported. "
                 f"The currently supported patterns are: {', '.join(GitFormatPatterns._member_names_)}.")
 
-        return self._popen_git("-c", "log.showSignature=0", "log", "-1", f"--format={pattern.value}", commit).stdout.strip()
+        return self._popen_git("log", "-1", f"--format={pattern.value}", commit).stdout.strip()
 
     def display_branch_history_from_fork_point(self, branch: LocalBranchFullName, fork_point: FullCommitHash) -> int:
-        return self._run_git("-c", "log.showSignature=0", "log", f"^{fork_point}", branch, flush_caches=False)
+        return self._run_git("log", f"^{fork_point}", branch, flush_caches=False)
 
     def commit_tree_with_given_parent_and_message_and_env(
             self, parent_revision: AnyRevision, msg: str, env: Dict[str, str]) -> FullCommitHash:
