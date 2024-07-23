@@ -640,12 +640,7 @@ class GitContext:
         all_branches: List[str] = local_branches + counterpart_branches
 
         # The trailing '--' is necessary to avoid ambiguity in case there is a file called just exactly like one of the branches.
-        entries = utils.get_non_empty_lines(self._popen_git(
-            "reflog",
-            "show",
-            "--format=%gD\t%H\t%gs",
-            *(all_branches + ["--"])
-        ).stdout)
+        entries = utils.get_non_empty_lines(self._popen_git("reflog", "show", "--format=%gD\t%H\t%gs", *(all_branches + ["--"])).stdout)
         self.__reflogs_cached = {}
         for entry in entries:
             values = entry.split("\t")
@@ -681,13 +676,7 @@ class GitContext:
                                                          [entry.split(":", 1) for entry in utils.get_non_empty_lines(
                                                              # The trailing '--' is necessary to avoid ambiguity in case there is a file
                                                              # called just exactly like the branch 'branch'.
-                                                             self._popen_git(
-                                                                 "reflog",
-                                                                 "show",
-                                                                 "--format=%H:%gs",
-                                                                 branch,
-                                                                 "--"
-                                                             ).stdout)]
+                                                             self._popen_git("reflog", "show", "--format=%H:%gs", branch, "--").stdout)]
                                                          ))
             return self.__reflogs_cached[branch]
 
@@ -904,14 +893,7 @@ class GitContext:
     def __get_patch_ids_for_commits_between(
             self, earliest_exclusive: AnyRevision, latest_inclusive: AnyRevision, max_commits: int
     ) -> Dict[FullCommitHash, FullPatchId]:
-        patches = self._popen_git(
-            "log",
-            "--patch",
-            f"^{earliest_exclusive}",
-            latest_inclusive,
-            f"-{max_commits}",
-            "--"
-        ).stdout
+        patches = self._popen_git("log", "--patch", f"^{earliest_exclusive}", latest_inclusive, f"-{max_commits}", "--").stdout
         patch_ids = self._popen_git("patch-id", input=patches).stdout
 
         patch_id_for_commit: Dict[FullCommitHash, FullPatchId] = {}
@@ -1013,12 +995,7 @@ class GitContext:
             lambda x: GitLogEntry(hash=FullCommitHash(x.split(":", 2)[0]),
                                   short_hash=ShortCommitHash(x.split(":", 2)[1]),
                                   subject=x.split(":", 2)[2]),
-            utils.get_non_empty_lines(self._popen_git(
-                "log", "--format=%H:%h:%s",
-                f"^{earliest_exclusive}",
-                latest_inclusive,
-                "--"
-            ).stdout)
+            utils.get_non_empty_lines(self._popen_git("log", "--format=%H:%h:%s", f"^{earliest_exclusive}", latest_inclusive, "--").stdout)
         ))))
 
     def get_relation_to_remote_counterpart(self, branch: LocalBranchShortName, remote_branch: RemoteBranchShortName) -> int:
