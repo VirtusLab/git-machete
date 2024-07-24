@@ -1,6 +1,7 @@
 
-from git_machete.git_operations import (AnyRevision, FullCommitHash,
-                                        GitContext, LocalBranchShortName)
+from git_machete.git_operations import (AnyBranchName, AnyRevision,
+                                        FullCommitHash, GitContext,
+                                        LocalBranchShortName)
 
 from .base_test import BaseTest
 
@@ -169,3 +170,20 @@ class TestGitOperations(BaseTest):
         self.repo_sandbox.write_to_file(".git/config", '[foo]\n  bar = "hello\\nworld"')
         git = GitContext()
         assert git.get_config_attr_or_none("foo.bar") == "hello\nworld"
+
+    def test_get_reflog_when_log_showsignature_is_true(self) -> None:
+        (
+            self.repo_sandbox.new_branch("master")
+                .commit("master first commit")
+                .new_branch("feature")
+                .commit("feature commit")
+                .check_out("master")
+                .commit("extra commit")
+        )
+        self.repo_sandbox.set_git_config_key("log.showSignature", "true")
+
+        git = GitContext()
+
+        # If the bug reported in GitHub issue #1286 is not fixed, this method call
+        # should raise an UnexpectedMacheteException.
+        git.get_reflog(AnyBranchName.of("feature"))

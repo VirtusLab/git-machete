@@ -4,6 +4,7 @@
 
 - improved: performance of listing commits for red-edge branches on large repos
 - improved: message in case of missing `.git/machete` file suggests to use `git machete git{hub,lab} checkout-{prs,mrs}`
+- fixed: pass `-c log.showSignature=false` to all `git` invocations to hide GPG signatures in logs; if `log.showSignature` were set to a value equivalent to `true` in a user's `git` configuration, the GPG signatures shown in logs would cause errors in `git log` and `git reflog` parsing internal to `git machete` (reported and contributed by @goxberry)
 
 ## New in git-machete 3.26.2
 
