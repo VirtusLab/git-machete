@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.26.4
+
 ## New in git-machete 3.26.3
 
 - improved: performance of listing commits for red-edge branches on large repos
