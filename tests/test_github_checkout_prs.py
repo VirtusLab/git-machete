@@ -119,7 +119,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-hotfix/add-trigger
               |
-              o-ignore-trailing  PR #3 (some_other_user) rebase=no push=no
+              o-ignore-trailing
                 |
                 o-chore/fields
 
@@ -145,7 +145,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-hotfix/add-trigger
               |
-              o-ignore-trailing  PR #3 (some_other_user) rebase=no push=no
+              o-ignore-trailing
                 |
                 o-chore/fields
 
@@ -178,7 +178,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             |
             o-hotfix/add-trigger
               |
-              o-ignore-trailing  PR #3 (some_other_user) rebase=no push=no
+              o-ignore-trailing
                 |
                 o-chore/fields
 

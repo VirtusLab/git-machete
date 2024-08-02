@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.26.4
 
+- improved: `git machete git{hub,lab} checkout-{prs,mrs}` only adds annotations to affected branches (and not to every branch)
+
 ## New in git-machete 3.26.3
 
 - improved: performance of listing commits for red-edge branches on large repos

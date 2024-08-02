@@ -2132,7 +2132,7 @@ class MacheteClient:
         debug(f'organization is {org_repo_remote.organization}, repository is {org_repo_remote.repository}')
         self.__git.fetch_remote(org_repo_remote.remote)
 
-        pr: Optional[PullRequest] = None
+        prs_to_annotate = set(applicable_prs)
         for pr in sorted(applicable_prs, key=lambda x: x.number):
             head_org_repo_and_git_url = code_hosting_client.get_org_repo_and_git_url_by_repo_id_or_none(pr.head_repo_id)
             if head_org_repo_and_git_url:
@@ -2164,18 +2164,19 @@ class MacheteClient:
                 warn(f'{pr.display_text()} is already closed.')
             debug(f'found {pr}')
 
-            path: List[PullRequest] = self.__get_path_from_pr_chain(spec, pr, all_open_prs)
-            reversed_path: List[PullRequest] = path[::-1]  # need to add from root downwards
-            if reversed_path[0].base not in self.managed_branches:
+            pr_path: List[PullRequest] = self.__get_path_from_pr_chain(spec, pr, all_open_prs)
+            prs_to_annotate.update(pr_path)
+            reversed_pr_path: List[PullRequest] = pr_path[::-1]  # need to add from root downwards
+            if reversed_pr_path[0].base not in self.managed_branches:
                 self.add(
-                    branch=LocalBranchShortName.of(reversed_path[0].base),
+                    branch=LocalBranchShortName.of(reversed_pr_path[0].base),
                     opt_as_first_child=False,
                     opt_as_root=True,
                     opt_onto=None,
                     opt_yes=True,
                     verbose=False,
                     switch_head_if_new_branch=False)
-            for pr_on_path in reversed_path:
+            for pr_on_path in reversed_pr_path:
                 if pr_on_path.head not in self.managed_branches:
                     self.add(
                         branch=LocalBranchShortName.of(pr_on_path.head),
@@ -2188,9 +2189,10 @@ class MacheteClient:
                     print(fmt(f"{pr_on_path.display_text()} checked out at local branch {bold(pr_on_path.head)}"))
 
         debug(f'Current {spec.display_name} user is ' + (current_user or '<none>'))
-        self.__sync_annotations_to_branch_layout_file(spec, all_open_prs, current_user=current_user, include_urls=False, verbose=False)
+        self.__sync_annotations_to_branch_layout_file(spec, list(prs_to_annotate),
+                                                      current_user=current_user, include_urls=False, verbose=False)
         if len(applicable_prs) == 1:
-            self.__git.checkout(LocalBranchShortName.of(pr.head))
+            self.__git.checkout(LocalBranchShortName.of(applicable_prs[0].head))
 
     @staticmethod
     def __get_path_from_pr_chain(spec: CodeHostingSpec, original_pr: PullRequest, all_open_prs: List[PullRequest]) -> List[PullRequest]:
