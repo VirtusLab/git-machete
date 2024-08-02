@@ -2,6 +2,7 @@
 
 ## New in git-machete 3.26.4
 
+- fixed: avoid detecting a cycle when there's a PR/MR from `main` or `master` in a fork to the original repo (reported by @Joibel)
 - improved: `git machete git{hub,lab} checkout-{prs,mrs}` only adds annotations to affected branches (and not to every branch)
 
 ## New in git-machete 3.26.3

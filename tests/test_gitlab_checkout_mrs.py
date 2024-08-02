@@ -631,3 +631,36 @@ class TestGitLabCheckoutMRs(BaseTest):
             'Checking for open GitLab MRs... OK\n'
             'MR !18 checked out at local branch develop\n'
         )
+
+    @staticmethod
+    def mrs_for_test_checkout_mrs_main_to_main_pr() -> List[Dict[str, Any]]:
+        return [
+            mock_mr_json(head='fix-10341', base='main', number=2),
+            mock_mr_json(head='main', base='main', number=1, repo_id=2)
+        ]
+
+    def test_gitlab_checkout_mrs_main_to_main_mr(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.git_operations.GitContext.fetch_remote', lambda _self, _remote: None)
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
+        second_remote_path = self.repo_sandbox.create_repo("second-remote", bare=True)
+        gitlab_api_state = MockGitLabAPIState(
+            self.projects_for_test_gitlab_checkout_prs(second_remote_path),
+            *self.mrs_for_test_checkout_mrs_main_to_main_pr())
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
+
+        (
+            self.repo_sandbox
+            .new_branch("main")
+            .commit()
+            .push()
+            .new_branch("fix-10341")
+            .commit()
+            .push()
+        )
+
+        assert_success(
+            ['gitlab', 'checkout-mrs', '2'],
+            'Checking for open GitLab MRs... OK\n'
+            'MR !2 checked out at local branch fix-10341\n'
+        )

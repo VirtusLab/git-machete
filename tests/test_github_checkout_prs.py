@@ -630,3 +630,36 @@ class TestGitHubCheckoutPRs(BaseTest):
             'Checking for open GitHub PRs... OK\n'
             'PR #18 checked out at local branch develop\n'
         )
+
+    @staticmethod
+    def prs_for_test_checkout_prs_main_to_main_pr() -> List[Dict[str, Any]]:
+        return [
+            mock_pr_json(head='fix-10341', base='main', number=2),
+            mock_pr_json(head='main', base='main', number=1, repo_id=2)
+        ]
+
+    def test_github_checkout_prs_main_to_main_pr(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.git_operations.GitContext.fetch_remote', lambda _self, _remote: None)
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
+        second_remote_path = self.repo_sandbox.create_repo("second-remote", bare=True)
+        github_api_state = MockGitHubAPIState(
+            self.repositories_for_test_github_checkout_prs(second_remote_path),
+            *self.prs_for_test_checkout_prs_main_to_main_pr())
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
+
+        (
+            self.repo_sandbox
+            .new_branch("main")
+            .commit()
+            .push()
+            .new_branch("fix-10341")
+            .commit()
+            .push()
+        )
+
+        assert_success(
+            ['github', 'checkout-prs', '2'],
+            'Checking for open GitHub PRs... OK\n'
+            'PR #2 checked out at local branch fix-10341\n'
+        )

@@ -2200,6 +2200,11 @@ class MacheteClient:
         path: List[PullRequest] = [original_pr]
         pr_base: Optional[str] = original_pr.base
         while pr_base:
+            # The chain needs to stop at main/master branches
+            # to avoid false-positive cycles when there's a PR from main in fork to main in the original repo.
+            # See https://github.com/VirtusLab/git-machete/issues/1276
+            if pr_base in ('main', 'master'):
+                return path
             if pr_base in visited_head_branches:
                 raise MacheteException(f"There is a cycle between {spec.display_name} {spec.pr_short_name}s: " +
                                        " -> ".join(visited_head_branches + [pr_base]))
