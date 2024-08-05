@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Aug 02, 2024" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Aug 05, 2024" "" "git-machete"
 .SH NAME
 git-machete \- git-machete 3.26.4
 .sp
@@ -133,11 +133,9 @@ Print version and exit.
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 git machete add [\-o|\-\-onto=<target\-upstream\-branch>] [\-R|\-\-as\-root] [\-y|\-\-yes] [<branch>]
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -182,11 +180,9 @@ Don\(aqt ask for confirmation whether to create the branch or whether to add ont
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 git machete advance [\-y|\-\-yes]
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -210,8 +206,7 @@ As an example, if \fBgit machete status \-\-color=never \-\-list\-commits\fP is 
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 master
 |
 m\-develop *
@@ -221,8 +216,7 @@ m\-develop *
     |
     | Add support and sample for machete\-post\-slide\-out hook
     o\-feature/post\-slide\-out\-hook
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -232,8 +226,7 @@ After \fBadvance\fP completes, \fBstatus\fP will show:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 master
 |
 | Enable adding remote branch in the manner similar to git checkout
@@ -241,8 +234,7 @@ o\-develop *
   |
   | Add support and sample for machete\-post\-slide\-out hook
   o\-feature/post\-slide\-out\-hook
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -265,13 +257,11 @@ Fails if the current branch has more than one green\-edge downstream branch.
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 git machete anno [\-b|\-\-branch=<branch>] [<annotation text>]
 git machete anno \-H|\-\-sync\-github\-prs
 git machete anno \-L|\-\-sync\-gitlab\-mrs
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -282,11 +272,9 @@ If invoked with a single empty string <annotation text>, like:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 $ git machete anno \(aq\(aq
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -436,22 +424,20 @@ whether \fBtraverse\fP suggests to slide out the branch.
 .TP
 .B \fBmachete.status.extraSpaceBeforeBranchName\fP:
 To make it easier to select branch name from the \fBstatus\fP output on certain terminals
-(like \fI\%Alacritty\fP), you can add an extra space between └─ and \fBbranch name\fP
+(like \X'tty: link https://github.com/alacritty/alacritty'\fI\%Alacritty\fP\X'tty: link'), you can add an extra space between └─ and \fBbranch name\fP
 by setting \fBgit config machete.status.extraSpaceBeforeBranchName true\fP\&.
 .sp
 For example, by default the status is displayed as:
 .INDENT 7.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 develop
 │
 ├─feature_branch1
 │
 └─feature_branch2
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -459,15 +445,13 @@ With \fBmachete.status.extraSpaceBeforeBranchName\fP config set to \fBtrue\fP:
 .INDENT 7.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 develop
 │
 ├─ feature_branch1
 │
 └─ feature_branch2
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .TP
@@ -508,11 +492,9 @@ Used to store GitLab API token. Used by commands such as \fBanno \-\-sync\-gitla
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 git machete clean [\-c|\-\-checkout\-my\-github\-prs] [\-y|\-\-yes]
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -563,11 +545,9 @@ GitHub API token.
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 git machete completion <shell>
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -583,12 +563,10 @@ Put the following into \fB~/.bashrc\fP or \fB~/.bash_profile\fP:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 eval \(dq$(git machete completion bash)\(dq  # or, if it doesn\(aqt work:
 source <(git machete completion bash)
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -598,11 +576,9 @@ Put the following into \fB~/.config/fish/config.fish\fP:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 git machete completion fish | source
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -612,12 +588,10 @@ Put the following into \fB~/.zshrc\fP:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 eval \(dq$(git machete completion zsh)\(dq  # or, if it doesn\(aqt work:
 source <(git machete completion zsh)
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .SH DELETE-UNMANAGED
@@ -626,11 +600,9 @@ source <(git machete completion zsh)
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 git machete delete\-unmanaged [\-y|\-\-yes]
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -654,11 +626,9 @@ Don\(aqt ask for confirmation.
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 git machete d[iff] [\-s|\-\-stat] [<branch>]
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -680,11 +650,9 @@ Makes \fBgit machete diff\fP pass \fB\-\-stat\fP option to \fBgit diff\fP, so th
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 git machete discover [\-C|\-\-checked\-out\-since=<date>] [\-l|\-\-list\-commits] [\-r|\-\-roots=<branch1>,<branch2>,...] [\-y|\-\-yes]
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -722,11 +690,9 @@ Mostly useful in scripts; not recommended for manual use.
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 git machete e[dit]
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -772,11 +738,9 @@ Name of the editor executable.
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 git machete file
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -806,13 +770,11 @@ if \fBgit machete\fP is executed from a \fBsubmodule\fP, this file is located in
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 git machete fork\-point [\-\-inferred] [<branch>]
 git machete fork\-point \-\-override\-to=<revision>|\-\-override\-to\-inferred|\-\-override\-to\-parent [<branch>]
 git machete fork\-point \-\-unset\-override [<branch>]
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -874,8 +836,7 @@ The format of the branch layout file should be as follows:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 develop
     adjust\-reads\-prec PR #234 rebase=no push=no
         block\-cancel\-order PR #235 rebase=no
@@ -886,8 +847,7 @@ develop
     grep\-errors\-script
 master
     hotfix/receipt\-trigger PR #236
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -907,11 +867,9 @@ It\(aqs only important to use indentation characters consistently between all li
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 git machete github <subcommand>
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -923,7 +881,7 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 .INDENT 0.0
 .INDENT 3.5
 To allow GitHub API access for private repositories (and also to perform side\-effecting actions like opening a PR,
-even in case of public repositories), a GitHub API token with \fBrepo\fP scope is required, see \fI\%https://github.com/settings/tokens\fP\&.
+even in case of public repositories), a GitHub API token with \fBrepo\fP scope is required, see \X'tty: link https://github.com/settings/tokens'\fI\%https://github.com/settings/tokens\fP\X'tty: link'\&.
 This will be resolved from the first of:
 .INDENT 0.0
 .IP 1. 3
@@ -946,13 +904,11 @@ GitHub Enterprise domains are supported.
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 ghp_mytoken_for_github_com
 ghp_myothertoken_for_git_example_org git.example.org
 ghp_yetanothertoken_for_git_example_com git.example.com
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .UNINDENT
@@ -1049,7 +1005,7 @@ The branch is (force\-)pushed into remote.
 If the PR has been converted to draft in step 1, it\(aqs reverted to ready for review state.
 .UNINDENT
 .sp
-The drafting/undrafting is useful in case the GitHub repository has set up \fI\%CODEOWNERS\fP\&.
+The drafting/undrafting is useful in case the GitHub repository has set up \X'tty: link https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners'\fI\%CODEOWNERS\fP\X'tty: link'\&.
 Draft PRs don\(aqt get code owners automatically added as reviewers.
 .TP
 .B \fBretarget\-pr [\-b|\-\-branch=<branch>] [\-\-ignore\-if\-missing]\fP:
@@ -1135,11 +1091,9 @@ GitHub API token.
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 git machete gitlab <subcommand>
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -1151,7 +1105,7 @@ Creates, checks out and manages GitLab MRs while keeping them reflected in branc
 .INDENT 0.0
 .INDENT 3.5
 To allow GitLab API access for private repositories (and also to perform side\-effecting actions like opening a PR,
-even in case of public projects), a GitLab API token with \fBapi\fP scope is required, see \fI\%https://gitlab.com/\-/user_settings/personal_access_tokens\fP\&.
+even in case of public projects), a GitLab API token with \fBapi\fP scope is required, see \X'tty: link https://gitlab.com/-/user_settings/personal_access_tokens'\fI\%https://gitlab.com/\-/user_settings/personal_access_tokens\fP\X'tty: link'\&.
 This will be resolved from the first of:
 .INDENT 0.0
 .IP 1. 3
@@ -1172,13 +1126,11 @@ Self\-managed GitLab domains are supported.
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 glpat\-mytoken_for_gitlab_com
 glpat\-myothertoken_for_git_example_org git.example.org
 glpat\-yetanothertoken_for_git_example_com git.example.com
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .UNINDENT
@@ -1277,7 +1229,7 @@ The branch is (force\-)pushed into remote.
 If the MR has been converted to draft in step 1, it\(aqs reverted to ready for review state.
 .UNINDENT
 .sp
-The drafting/undrafting is useful in case the GitLab project has set up \fI\%code owners\fP\&.
+The drafting/undrafting is useful in case the GitLab project has set up \X'tty: link https://docs.gitlab.com/ee/user/project/codeowners/'\fI\%code owners\fP\X'tty: link'\&.
 Draft MRs don\(aqt get code owners automatically added as reviewers.
 .TP
 .B \fBretarget\-mr [\-b|\-\-branch=<branch>] [\-\-ignore\-if\-missing]\fP:
@@ -1349,11 +1301,9 @@ GitLab API token.
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 git machete g[o] <direction>
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -1388,11 +1338,9 @@ Roughly equivalent to \fBgit checkout $(git machete show <direction>)\fP\&.
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 git machete help [<command>]
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -1475,7 +1423,7 @@ If \fBstatus\fP runs in ASCII\-only mode (if \fB\-\-color=auto\fP and stdout is 
 then \fBASCII_ONLY=true\fP, otherwise \fBASCII_ONLY=false\fP\&.
 .UNINDENT
 .sp
-Please see \fI\%hook_samples\fP directory in git\-machete project for examples.
+Please see \X'tty: link https://github.com/VirtusLab/git-machete/tree/master/hook_samples'\fI\%hook_samples\fP\X'tty: link' directory in git\-machete project for examples.
 An example of using the standard git \fBpost\-commit hook\fP to \fBgit machete add\fP branches automatically is also included.
 .SH IS-MANAGED
 .sp
@@ -1483,11 +1431,9 @@ An example of using the standard git \fBpost\-commit hook\fP to \fBgit machete a
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 git machete is\-managed [<branch>]
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -1508,11 +1454,9 @@ the <branch> isn\(aqt provided and there\(aqs no current branch (detached HEAD).
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 git machete list <category>
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -1545,11 +1489,9 @@ This command is generally not meant for a day\-to\-day use, it\(aqs mostly neede
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 git machete l[og] [<branch>]
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -1563,11 +1505,9 @@ Note: the branch in question does not need to occur in the branch layout file.
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 git machete reapply [\-f|\-\-fork\-point=<fork\-point\-commit>]
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -1601,11 +1541,9 @@ Example: \fBGIT_MACHETE_REBASE_OPTS=\(dq\-\-keep\-empty \-\-rebase\-merges\(dq g
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 git machete show <direction> [<branch>]
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -1641,14 +1579,12 @@ since all branches are usually meant to be ultimately merged to one of those.
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 git machete slide\-out \-\-removed\-from\-remote [\-\-delete]
 git machete slide\-out [\-d|\-\-down\-fork\-point=<down\-fork\-point\-commit>] [\-\-delete]
                       [\-M|\-\-merge] [\-n|\-\-no\-edit\-merge|\-\-no\-interactive\-rebase]
                       [<branch> [<branch> [<branch> ...]]]
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -1664,16 +1600,14 @@ For example, let\(aqs assume the following dependency tree:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 develop
     adjust\-reads\-prec
         block\-cancel\-order
             change\-table
                 drop\-location\-type
             add\-notification
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -1681,14 +1615,12 @@ After running \fBgit machete slide\-out adjust\-reads\-prec block\-cancel\-order
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 develop
     change\-table
         drop\-location\-type
     add\-notification
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -1769,11 +1701,9 @@ Example: \fBGIT_MACHETE_REBASE_OPTS=\(dq\-\-keep\-empty \-\-rebase\-merges\(dq g
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 git machete squash [\-f|\-\-fork\-point=<fork\-point\-commit>]
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -1801,13 +1731,11 @@ Specifies the alternative fork point commit after which the squashed part of his
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 git machete s[tatus] [\-\-color=WHEN]
                      [\-l|\-\-list\-commits] [\-L|\-\-list\-commits\-with\-hashes]
                      [\-\-squash\-merge\-detection=MODE]
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -1857,8 +1785,7 @@ When colors are disabled, relation between branches is represented in the follow
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 <branch0>
 |
 o\-<branch1> *   # green (in sync with parent; asterisk for the current branch)
@@ -1868,28 +1795,25 @@ o\-<branch1> *   # green (in sync with parent; asterisk for the current branch)
 |   ?\-<branch3> # yellow (in sync with parent, but parent is not the fork point)
 |
 m\-<branch4>     # grey (merged to parent)
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
 To make it easier to select branch name from the \fBstatus\fP output on certain terminals
-(like \fI\%Alacritty\fP), you can add an extra space between └─ and \fBbranch name\fP
+(like \X'tty: link https://github.com/alacritty/alacritty'\fI\%Alacritty\fP\X'tty: link'), you can add an extra space between └─ and \fBbranch name\fP
 by setting \fBgit config machete.status.extraSpaceBeforeBranchName true\fP\&.
 .sp
 For example, by default the status is displayed as:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 develop
 │
 ├─feature_branch1
 │
 └─feature_branch2
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -1897,15 +1821,13 @@ With \fBmachete.status.extraSpaceBeforeBranchName\fP config set to \fBtrue\fP:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 develop
 │
 ├─ feature_branch1
 │
 └─ feature_branch2
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -1959,7 +1881,7 @@ whether \fBtraverse\fP suggests to slide out the branch.
 .TP
 .B \fBmachete.status.extraSpaceBeforeBranchName\fP
 To make it easier to select branch name from the \fBstatus\fP output on certain terminals
-(like \fI\%Alacritty\fP), you can add an extra space between └─ and \fBbranch name\fP
+(like \X'tty: link https://github.com/alacritty/alacritty'\fI\%Alacritty\fP\X'tty: link'), you can add an extra space between └─ and \fBbranch name\fP
 by setting \fBgit config machete.status.extraSpaceBeforeBranchName true\fP\&.
 .UNINDENT
 .SH TRAVERSE
@@ -1968,14 +1890,12 @@ by setting \fBgit config machete.status.extraSpaceBeforeBranchName true\fP\&.
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 git machete t[raverse] [\-F|\-\-fetch] [\-l|\-\-list\-commits] [\-M|\-\-merge]
                        [\-n|\-\-no\-edit\-merge|\-\-no\-interactive\-rebase] [\-\-[no\-]push] [\-\-[no\-]push\-untracked]
                        [\-\-return\-to=WHERE] [\-\-start\-from=WHERE] [\-\-squash\-merge\-detection=MODE]
                        [\-w|\-\-whole] [\-W] [\-y|\-\-yes]
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -2044,15 +1964,13 @@ Example machete file with branch qualifiers:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 master
   develop  rebase=no slide\-out=no
     my\-branch  PR #123
     someone\-elses\-branch  PR #124 rebase=no push=no
     branch\-for\-local\-experiments  push=no
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -2176,11 +2094,9 @@ Configuration key value can be overridden by the presence of the \fB\-\-push\fP 
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 git machete update [\-f|\-\-fork\-point=<fork\-point\-commit>] [\-M|\-\-merge] [\-n|\-\-no\-edit\-merge|\-\-no\-interactive\-rebase]
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -2229,11 +2145,9 @@ Example: \fBGIT_MACHETE_REBASE_OPTS=\(dq\-\-keep\-empty \-\-rebase\-merges\(dq g
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 git machete version
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
