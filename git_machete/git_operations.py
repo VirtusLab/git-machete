@@ -4,8 +4,8 @@ import re
 import string
 import sys
 from pathlib import Path
-from typing import (Any, Dict, Iterator, List, Match, NamedTuple, Optional,
-                    Set, Tuple)
+from typing import (Any, Dict, Iterable, Iterator, List, Match, NamedTuple,
+                    Optional, Set, Tuple)
 
 from . import utils
 from .constants import (MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION,
@@ -1048,8 +1048,9 @@ class GitContext:
 
         return self._popen_git("log", "-1", f"--format={pattern.value}", commit).stdout.strip()
 
-    def display_branch_history_from_fork_point(self, branch: LocalBranchFullName, fork_point: FullCommitHash) -> int:
-        return self._run_git("log", f"^{fork_point}", branch, flush_caches=False)
+    def display_branch_history_from_fork_point(
+            self, branch: LocalBranchFullName, fork_point: FullCommitHash, *, extra_git_args: Iterable[str]) -> int:
+        return self._run_git("log", f"^{fork_point}", branch, *extra_git_args, flush_caches=False)
 
     def commit_tree_with_given_parent_and_message_and_env(
             self, parent_revision: AnyRevision, msg: str, env: Dict[str, str]) -> FullCommitHash:

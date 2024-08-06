@@ -1431,9 +1431,14 @@ class MacheteClient:
             fork_point=fork_point,
             format_with_stat=opt_stat)
 
-    def log(self, branch: LocalBranchShortName) -> None:
+    def log(self, branch: LocalBranchShortName, *, max_count: int | None = None, show_patch: bool = False) -> None:
         fork_point = self.fork_point(branch, use_overrides=True)
-        self.__git.display_branch_history_from_fork_point(branch.full_name(), fork_point)
+        extra_git_args = []
+        if max_count is not None:
+            extra_git_args.append(f"--max-count={max_count}")
+        if show_patch:
+            extra_git_args.append("--patch")
+        self.__git.display_branch_history_from_fork_point(branch.full_name(), fork_point, extra_git_args=extra_git_args)
 
     def down(self, branch: LocalBranchShortName, pick_mode: bool) -> List[LocalBranchShortName]:
         self.expect_in_managed_branches(branch)
