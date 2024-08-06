@@ -121,6 +121,29 @@ class MacheteHelpAction(argparse.Action):
         parser.exit(status=ExitCode.SUCCESS)
 
 
+# Inspired by an answer at https://stackoverflow.com/questions/10027242/python-argparse-to-handle-arbitrary-numeric-options-like-head1.
+class UpdateCount(argparse.Action):
+    """Helper to support -N style options."""
+
+    def __call__(
+            self,
+            parser: argparse.ArgumentParser,  # noqa: U100
+            namespace: argparse.Namespace,
+            values: Union[str, Sequence[Any], None],  # noqa: F841, U100
+            option_string: Optional[str] = None  # noqa: index, F841, U100
+    ) -> None:
+        if not option_string:
+            return
+        digit = option_string[1]
+        increment = int(digit)
+        previous = getattr(namespace, self.dest)
+        if previous is None:
+            previous = 0
+        else:
+            previous *= 10
+        setattr(namespace, self.dest, previous + increment)
+
+
 def create_cli_parser() -> argparse.ArgumentParser:
     common_args_parser = argparse.ArgumentParser(
         prog='git machete',
@@ -312,6 +335,11 @@ def create_cli_parser() -> argparse.ArgumentParser:
         add_help=False,
         parents=[common_args_parser])
     log_parser.add_argument('branch', nargs='?', default=argparse.SUPPRESS)
+    max_count_group = log_parser.add_mutually_exclusive_group()
+    max_count_group.add_argument('-n', '--max-count', dest='max_count', type=int, action='store', default=None)
+    max_count_group.add_argument('-0', '-1', '-2', '-3', '-4', '-5', '-6', '-7', '-8', '-9',
+                                 dest='max_count', default=None, nargs=0, action=UpdateCount, help=argparse.SUPPRESS)
+    log_parser.add_argument('-p', '--patch', action='store_true', default=False)
 
     reapply_parser = subparsers.add_parser(
         'reapply',
@@ -516,6 +544,10 @@ def update_cli_options_using_parsed_args(
             cli_opts.opt_with_urls = True
         elif opt == "yes":
             cli_opts.opt_yes = True
+        elif opt == "max_count":
+            cli_opts.opt_max_count = arg
+        elif opt == "patch":
+            cli_opts.opt_show_patch = True
 
     if cli_opts.opt_n or cli_opts.opt_yes:
         # Set no-edit-merge as the default, as some branches might have a merge strategy even without --merge set
@@ -822,7 +854,7 @@ def launch(orig_args: List[str]) -> None:
         elif cmd in {"log", alias_by_command["log"]}:
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             branch = get_local_branch_short_name_from_arg_or_current_branch(cli_opts.opt_branch, git)
-            machete_client.log(branch)
+            machete_client.log(branch, max_count=cli_opts.opt_max_count, show_patch=cli_opts.opt_show_patch)
         elif cmd == "reapply":
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             git.expect_no_operation_in_progress()

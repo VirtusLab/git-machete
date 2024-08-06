@@ -42,6 +42,8 @@ class CommandLineOptions:
         self.opt_unset_override: bool = False
         self.opt_with_urls: bool = False
         self.opt_yes: bool = False
+        self.opt_show_patch: bool = False
+        self.opt_max_count: int | None = None
 
     def validate(self) -> None:
         if self.opt_as_root and self.opt_onto:
