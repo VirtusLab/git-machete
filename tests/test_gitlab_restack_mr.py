@@ -226,23 +226,43 @@ class TestGitLabRestackMR(BaseTest):
             .push()
             .commit()
         )
+
         body: str = \
             """
             master
                 feature push=no
             """
         rewrite_branch_layout_file(body)
+        assert_failure(
+            ['gitlab', 'restack-mr'],
+            """
+            Branch feature is marked as push=no; aborting the restack.
+            Did you want to just use git machete gitlab retarget-mr?
+            """
+        )
 
+        body = \
+            """
+            master
+                feature
+            """
+        rewrite_branch_layout_file(body)
         assert_success(
             ['gitlab', 'restack-mr'],
             """
-            Warn: Branch feature is marked as push=no; skipping the push.
-            Did you want to just use git machete gitlab retarget-mr?
-
+            MR !15 has been temporarily marked as draft
             Target branch of MR !15 has been switched to master
             Description of MR !15 has been updated
+            Pushing feature to origin...
+
+              master (untracked)
+              |
+              o-feature *  MR !15 (some_other_user)
+
+            MR !15 has been marked as ready for review again
             """
         )
+
         mr = gitlab_api_state.get_mr_by_number(15)
         assert mr is not None
         assert mr['draft'] is False

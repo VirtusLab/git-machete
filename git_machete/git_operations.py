@@ -8,8 +8,8 @@ from typing import (Any, Dict, Iterator, List, Match, NamedTuple, Optional,
                     Set, Tuple)
 
 from . import utils
-from .constants import (MAX_COUNT_FOR_INITIAL_LOG, GitFormatPatterns,
-                        SyncToRemoteStatuses)
+from .constants import (MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION,
+                        GitFormatPatterns, SyncToRemoteStatuses)
 from .exceptions import UnderlyingGitException, UnexpectedMacheteException
 from .utils import (AnsiEscapeCodes, CommandResult, colored, debug, fmt,
                     hex_repr)
@@ -148,6 +148,15 @@ class FullTreeHash(str):
         return FullTreeHash(value)
 
 
+class FullPatchId(str):
+    @staticmethod
+    def of(value: str) -> Optional["FullPatchId"]:
+        if not value:
+            raise UnexpectedMacheteException(
+                f'FullPatchId.of should not accept {value} as a param.')
+        return FullPatchId(value)
+
+
 class ForkPointOverrideData:
     def __init__(self, to_hash: FullCommitHash):
         self.to_hash: FullCommitHash = to_hash
@@ -171,6 +180,16 @@ class BranchPair(NamedTuple):
 
 HEAD = AnyRevision.of("HEAD")
 
+# For simplicity, explicitly suppress showing GPG signatures in `git log`
+# operations to simplify log parsing. This option must be passed as a
+# configuration parameter because the `git log` command's `--no-show-signature`
+# flag does not exist prior to `git` version 2.10.0; `git` does not emit an
+# error if it is passed via the `-c` flag a configuration setting that does not
+# exist, so compatibility with `git` versions earlier than version 2.10.0 is
+# preserved, even though the `log.showSignature` setting also does not exist
+# prior to version 2.10.0. Fixes a bug documented in GitHub issue #1286.
+GIT_EXEC = ("git", "-c", "log.showSignature=false")
+
 
 class GitContext:
 
@@ -188,6 +207,7 @@ class GitContext:
         self.__counterparts_for_fetching_cached: Optional[Dict[LocalBranchShortName, Optional[RemoteBranchShortName]]] = None
         self.__fetch_done_for: Set[str] = set()
         self.__initial_log_hashes_cached: Dict[FullCommitHash, List[FullCommitHash]] = {}
+        self.__is_equivalent_patch_reachable_cached: Dict[Tuple[FullCommitHash, FullCommitHash], bool] = {}
         self.__is_equivalent_tree_reachable_cached: Dict[Tuple[FullCommitHash, FullCommitHash], bool] = {}
         self.__local_branches_cached: Optional[List[LocalBranchShortName]] = None
         self.__merge_base_cached: Dict[Tuple[FullCommitHash, FullCommitHash], Optional[FullCommitHash]] = {}
@@ -214,7 +234,7 @@ class GitContext:
         self.__short_commit_hash_by_revision_cached = {}
 
     def _run_git(self, git_cmd: str, *args: str, flush_caches: bool, allow_non_zero: bool = False) -> int:
-        exit_code = utils.run_cmd("git", git_cmd, *args)
+        exit_code = utils.run_cmd(*GIT_EXEC, git_cmd, *args)
         if flush_caches:
             self.flush_caches()
         if not allow_non_zero and exit_code != 0:
@@ -223,8 +243,8 @@ class GitContext:
         return exit_code
 
     def _popen_git(self, git_cmd: str, *args: str,
-                   allow_non_zero: bool = False, env: Optional[Dict[str, str]] = None) -> CommandResult:
-        exit_code, stdout, stderr = utils.popen_cmd("git", git_cmd, *args, env=env)
+                   allow_non_zero: bool = False, env: Optional[Dict[str, str]] = None, input: Optional[str] = None) -> CommandResult:
+        exit_code, stdout, stderr = utils.popen_cmd(*GIT_EXEC, git_cmd, *args, env=env, input=input)
         if not allow_non_zero and exit_code != 0:
             exit_code_msg: str = fmt(f"`{utils.get_cmd_shell_repr('git', git_cmd, *args, env=env)}` returned {exit_code}\n")
             stdout_msg: str = f"\n{utils.bold('stdout')}:\n{utils.dim(stdout)}" if stdout else ""
@@ -292,13 +312,15 @@ class GitContext:
     def __ensure_config_loaded(self) -> None:
         if self.__config_cached is None:
             self.__config_cached = {}
-            for config_line in utils.get_non_empty_lines(self._popen_git("config", "--list").stdout):
-                k_v = config_line.split("=", 1)
-                if len(k_v) == 2:
-                    k, v = k_v
-                    self.__config_cached[k.lower()] = v
+            git_config_stdout = self._popen_git("config", "--list", "--null").stdout
+            for config_entry in filter(None, git_config_stdout.split("\0")):
+                # Apparently, even on Windows, this command uses just \n (and not \r\n) to separate config key from value.
+                key_and_value_lines = config_entry.split('\n', 1)
+                if len(key_and_value_lines) == 2:
+                    key, value_lines = key_and_value_lines
+                    self.__config_cached[key.lower()] = value_lines
                 else:
-                    raise UnexpectedMacheteException(f"Cannot parse config line: {config_line}.")
+                    raise UnexpectedMacheteException(f"Cannot parse config entry: {config_entry}.")
 
     def get_config_attr_or_none(self, key: str) -> Optional[str]:
         self.__ensure_config_loaded()
@@ -585,18 +607,20 @@ class GitContext:
         return list(map(FullCommitHash.of, utils.get_non_empty_lines(self._popen_git("log", *opts).stdout)))
 
     # Since getting the full history of a branch can be an expensive operation for large repositories
-    # (compared to all other underlying git operations), there's a simple optimization in place:
-    # we first fetch only a couple of first commits in the history, and only fetch the rest if needed.
-    def spoonfeed_log_hashes(self, branch_full_hash: FullCommitHash) -> Iterator[FullCommitHash]:
+    # (compared to all other underlying git operations), there are two optimizations in place:
+    # 1. we first fetch only a couple of first commits in the history,
+    # 2. if these first commits aren't enough for the purpose, we fetch more, but only up to the hard limit,
+    #    to avoid time-unbounded operations on really large repos.
+    def spoonfeed_log_hashes(self, branch_full_hash: FullCommitHash, initial_count: int, total_count: int) -> Iterator[FullCommitHash]:
         if branch_full_hash not in self.__initial_log_hashes_cached:
-            self.__initial_log_hashes_cached[branch_full_hash] = self.__get_log_hashes(branch_full_hash,
-                                                                                       max_count=MAX_COUNT_FOR_INITIAL_LOG)
+            self.__initial_log_hashes_cached[branch_full_hash] = \
+                self.__get_log_hashes(branch_full_hash, max_count=initial_count)
         for hash in self.__initial_log_hashes_cached[branch_full_hash]:
             yield FullCommitHash.of(hash)
 
         if branch_full_hash not in self.__remaining_log_hashes_cached:
-            self.__remaining_log_hashes_cached[branch_full_hash] = self.__get_log_hashes(branch_full_hash,
-                                                                                         max_count=None)[MAX_COUNT_FOR_INITIAL_LOG:]
+            self.__remaining_log_hashes_cached[branch_full_hash] = \
+                self.__get_log_hashes(branch_full_hash, max_count=total_count)[initial_count:]
         for hash in self.__remaining_log_hashes_cached[branch_full_hash]:
             yield FullCommitHash.of(hash)
 
@@ -790,6 +814,8 @@ class GitContext:
         equivalent_to_commit_hash = self.get_commit_hash_by_revision(equivalent_to)
         reachable_from_commit_hash = self.get_commit_hash_by_revision(reachable_from)
         if not equivalent_to_commit_hash or not reachable_from_commit_hash:
+            # Case not covered by tests, unlikely to be reached by an actual execution.
+            # Mostly here to satisfy mypy.
             return False
 
         if equivalent_to_commit_hash == reachable_from_commit_hash:
@@ -798,11 +824,11 @@ class GitContext:
         if (equivalent_to_commit_hash, reachable_from_commit_hash) in self.__is_equivalent_tree_reachable_cached:
             return self.__is_equivalent_tree_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash]
 
-        earlier_tree_hash = self.get_tree_hash_by_commit_hash(equivalent_to_commit_hash)
+        tree_hash_for_equivalent_to = self.get_tree_hash_by_commit_hash(equivalent_to_commit_hash)
 
         # `git log ^equivalent_to_commit_hash reachable_from_commit_hash`
         # shows all commits reachable from reachable_from_commit_hash but NOT from equivalent_to_commit_hash
-        intermediate_tree_hashes = utils.get_non_empty_lines(
+        tree_hashes_for_reachable_from = utils.get_non_empty_lines(
             self._popen_git(
                 "log",
                 "--format=%T",  # full commit's tree hash
@@ -811,10 +837,71 @@ class GitContext:
             ).stdout
         )
 
-        result = earlier_tree_hash in intermediate_tree_hashes
-        debug(f"result = {result}")
+        result = tree_hash_for_equivalent_to in tree_hashes_for_reachable_from
+        debug(f"tree_hash_for_equivalent_to in tree_hashes_for_reachable_from = {result}")
         self.__is_equivalent_tree_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash] = result
         return result
+
+    def is_equivalent_patch_reachable(
+            self,
+            equivalent_to: AnyRevision,
+            reachable_from: AnyRevision
+    ) -> bool:
+        equivalent_to_commit_hash = self.get_commit_hash_by_revision(equivalent_to)
+        reachable_from_commit_hash = self.get_commit_hash_by_revision(reachable_from)
+        if not equivalent_to_commit_hash or not reachable_from_commit_hash:
+            # Case not covered by tests, unlikely to be reached by an actual execution.
+            # Mostly here to satisfy mypy.
+            return False
+
+        if equivalent_to_commit_hash == reachable_from_commit_hash:
+            return True
+
+        if (equivalent_to_commit_hash, reachable_from_commit_hash) in self.__is_equivalent_patch_reachable_cached:
+            return self.__is_equivalent_patch_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash]
+
+        common_ancestor = self.get_merge_base(reachable_from_commit_hash, equivalent_to_commit_hash)
+        if not common_ancestor:
+            return False
+
+        changes_of_equivalent_to = self._popen_git(
+            "diff",
+            common_ancestor,
+            equivalent_to_commit_hash
+        ).stdout
+        if changes_of_equivalent_to.strip() == '':
+            # Empty changeset means the branches are identical, so the tree is equivalent.
+            self.__is_equivalent_patch_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash] = True
+            return True
+
+        patch_id_for_changes_of_equivalent_to: Optional[FullPatchId] = self.__get_patch_id_for_diff(changes_of_equivalent_to)
+        patch_ids_for_commits_of_reachable_from: Set[FullPatchId] = set(self.__get_patch_ids_for_commits_between(
+            common_ancestor, reachable_from_commit_hash, MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION).values())
+        result = patch_id_for_changes_of_equivalent_to in patch_ids_for_commits_of_reachable_from
+        debug(f"patch_id_for_changes_of_equivalent_to in patch_ids_for_commits_of_reachable_from = {result}")
+        self.__is_equivalent_patch_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash] = result
+        return result
+
+    def __get_patch_id_for_diff(self, patch_contents: str) -> Optional[FullPatchId]:
+        out = utils.get_non_empty_lines(self._popen_git("patch-id", input=patch_contents).stdout)
+
+        if len(out) == 0:
+            # Line uncovered as we actually always pass a non-empty patch to this method.
+            return None
+        return FullPatchId.of(out[0].split(' ')[0])  # patch-id output is "<patch-id> <commit-hash>", we only care about the patch-id
+
+    def __get_patch_ids_for_commits_between(
+            self, earliest_exclusive: AnyRevision, latest_inclusive: AnyRevision, max_commits: int
+    ) -> Dict[FullCommitHash, FullPatchId]:
+        patches = self._popen_git("log", "--patch", f"^{earliest_exclusive}", latest_inclusive, f"-{max_commits}", "--").stdout
+        patch_ids = self._popen_git("patch-id", input=patches).stdout
+
+        patch_id_for_commit: Dict[FullCommitHash, FullPatchId] = {}
+        for line in patch_ids.splitlines():
+            patch_id, commit_hash = line.strip().split(" ", 1)
+            patch_id_for_commit[FullCommitHash.of(commit_hash)] = FullPatchId(patch_id)
+
+        return patch_id_for_commit
 
     def get_sole_remote_branch(self, branch: LocalBranchShortName) -> Optional[RemoteBranchShortName]:
         remote_branches = self.get_remote_branches()

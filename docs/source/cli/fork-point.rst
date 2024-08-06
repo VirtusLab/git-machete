@@ -29,9 +29,9 @@ Fork point of the given ``<branch>`` is the commit at which the history of the `
 Fork point is assumed by many ``git machete`` commands as the place where the unique history of the ``<branch>`` starts.
 The range of commits between the fork point and the tip of the given branch is, for instance:
 
-    * listed for each branch by ``git machete status --list-commits``
-    * passed to ``git rebase`` by ``git machete`` ``reapply``/``slide-out``/``traverse``/``update``
-    * provided to ``git diff``/``log`` by ``git machete`` ``diff``/``log``.
+* listed for each branch by ``git machete status --list-commits``
+* passed to ``git rebase`` by ``git machete`` ``reapply``/``slide-out``/``traverse``/``update``
+* provided to ``git diff``/``log`` by ``git machete`` ``diff``/``log``.
 
 ``git machete`` assumes fork point of ``<branch>`` is the most recent commit in the log of ``<branch>`` that has NOT been introduced on that very branch,
 but instead occurs on a reflog (see help for ``git reflog``) of some other branch.

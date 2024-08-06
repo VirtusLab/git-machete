@@ -142,7 +142,7 @@ class TestGitHubCreatePR(BaseTest):
                 |
                 x-drop-constraint (untracked)
 
-            Checking if base branch ignore-trailing exists on origin remote... YES
+            Checking if base branch ignore-trailing exists in origin remote... YES
             Creating a draft PR from chore/fields to ignore-trailing... OK, see www.github.com
             Checking for open GitHub PRs (to determine PR chain)... OK
             Updating description of PR #5 to include the chain of PRs... OK
@@ -161,8 +161,10 @@ class TestGitHubCreatePR(BaseTest):
 
             ## Full chain of PRs as of 2023-12-31
 
-            * PR #5: `chore/fields` ➔ `ignore-trailing`
-            * PR #3: `ignore-trailing` ➔ `hotfix/add-trigger`
+            * PR #5:
+              `chore/fields` ➔ `ignore-trailing`
+            * PR #3:
+              `ignore-trailing` ➔ `hotfix/add-trigger`
 
             <!-- end git-machete generated -->
 
@@ -289,7 +291,7 @@ class TestGitHubCreatePR(BaseTest):
               |
               o-testing/endpoints
 
-            Checking if base branch develop exists on origin remote... YES
+            Checking if base branch develop exists in origin remote... YES
             Creating a PR from allow-ownership-link to develop... OK, see www.github.com
             Setting milestone of PR #7 to 42... OK
             Adding github_user as assignee to PR #7... OK
@@ -364,9 +366,12 @@ class TestGitHubCreatePR(BaseTest):
 
             ## Full chain of PRs as of 2023-12-31
 
-            * PR #3: `call-ws` ➔ `build-chain`
-            * PR #2: `build-chain` ➔ `allow-ownership-link`
-            * PR #1: `allow-ownership-link` ➔ `develop`
+            * PR #3:
+              `call-ws` ➔ `build-chain`
+            * PR #2:
+              `build-chain` ➔ `allow-ownership-link`
+            * PR #1:
+              `allow-ownership-link` ➔ `develop`
 
             <!-- end git-machete generated -->
         ''')[1:]
@@ -383,10 +388,14 @@ class TestGitHubCreatePR(BaseTest):
 
             ## Full chain of PRs as of 2023-12-31
 
-            * PR #4: `drop-constraint` ➔ `call-ws`
-            * PR #3: `call-ws` ➔ `build-chain`
-            * PR #2: `build-chain` ➔ `allow-ownership-link`
-            * PR #1: `allow-ownership-link` ➔ `develop`
+            * PR #4:
+              `drop-constraint` ➔ `call-ws`
+            * PR #3:
+              `call-ws` ➔ `build-chain`
+            * PR #2:
+              `build-chain` ➔ `allow-ownership-link`
+            * PR #1:
+              `allow-ownership-link` ➔ `develop`
 
             <!-- end git-machete generated -->
 
@@ -428,7 +437,7 @@ class TestGitHubCreatePR(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        expected_msg = ("Checking if base branch feature/api_handling exists on origin remote... NO\n"
+        expected_msg = ("Checking if base branch feature/api_handling exists in origin remote... NO\n"
                         "Pushing untracked branch feature/api_handling to origin...\n"
                         "Creating a PR from feature/api_exception_handling to feature/api_handling... OK, see www.github.com\n")
 
@@ -561,7 +570,7 @@ class TestGitHubCreatePR(BaseTest):
             |
             o-feature *
 
-        Checking if base branch branch-1 exists on origin_1 remote... YES
+        Checking if base branch branch-1 exists in origin_1 remote... YES
         Creating a PR from feature to branch-1... OK, see www.github.com
         Checking for open GitHub PRs (to determine PR chain)... OK
         Updating description of PR #16 to include the chain of PRs... OK
@@ -582,8 +591,10 @@ class TestGitHubCreatePR(BaseTest):
 
             ## Full chain of PRs as of 2023-12-31
 
-            * PR #16: `feature` ➔ `branch-1`
-            * PR #15: `branch-1` ➔ `root`
+            * PR #16:
+              `feature` ➔ `branch-1`
+            * PR #15:
+              `branch-1` ➔ `root`
 
             <!-- end git-machete generated -->
 
@@ -612,7 +623,7 @@ class TestGitHubCreatePR(BaseTest):
         expected_result = """
         Add feature_1 onto the inferred upstream (parent) branch feature? (y, N)
         Added branch feature_1 onto feature
-        Checking if base branch feature exists on origin_2 remote... YES
+        Checking if base branch feature exists in origin_2 remote... YES
         Creating a PR from feature_1 to feature... OK, see www.github.com
         Checking for open GitHub PRs (to determine PR chain)... OK
         Updating description of PR #17 to include the chain of PRs... OK
@@ -650,7 +661,7 @@ class TestGitHubCreatePR(BaseTest):
               |
               o-feature_2 *
 
-        Checking if base branch feature exists on origin_1 remote... YES
+        Checking if base branch feature exists in origin_1 remote... YES
         Creating a PR from feature_2 to feature... OK, see www.github.com
         Checking for open GitHub PRs (to determine PR chain)... OK
         Updating description of PR #18 to include the chain of PRs... OK
@@ -672,7 +683,7 @@ class TestGitHubCreatePR(BaseTest):
         expected_result = """
         Add feature_3 onto the inferred upstream (parent) branch feature_2? (y, N)
         Added branch feature_3 onto feature_2
-        Checking if base branch feature_2 exists on origin_1 remote... YES
+        Checking if base branch feature_2 exists in origin_1 remote... YES
         Creating a PR from feature_3 to feature_2... OK, see www.github.com
         Checking for open GitHub PRs (to determine PR chain)... OK
         Updating description of PR #19 to include the chain of PRs... OK
@@ -694,7 +705,7 @@ class TestGitHubCreatePR(BaseTest):
         expected_result = """
         Add feature_4 onto the inferred upstream (parent) branch feature_3? (y, N)
         Added branch feature_4 onto feature_3
-        Checking if base branch feature_3 exists on origin_2 remote... NO
+        Checking if base branch feature_3 exists in origin_2 remote... NO
         Push untracked branch feature_3 to origin_2? (y, Q)
         Creating a PR from feature_4 to feature_3... OK, see www.github.com
         """
@@ -716,7 +727,7 @@ class TestGitHubCreatePR(BaseTest):
         expected_result = """
         Add feature_5 onto the inferred upstream (parent) branch feature_3? (y, N)
         Added branch feature_5 onto feature_3
-        Checking if base branch feature_3 exists on origin remote... NO
+        Checking if base branch feature_3 exists in origin remote... NO
         Push untracked branch feature_3 to origin? (y, Q)
         Creating a PR from feature_5 to feature_3... OK, see www.github.com
         """
@@ -741,7 +752,7 @@ class TestGitHubCreatePR(BaseTest):
         assert_success(
             ['github', 'create-pr'],
             """
-            Checking if base branch master exists on origin remote... YES
+            Checking if base branch master exists in origin remote... YES
             Creating a PR from develop to master... OK, see www.github.com
             """
         )
@@ -786,7 +797,7 @@ class TestGitHubCreatePR(BaseTest):
             """
             Warn: Branch develop is behind its remote counterpart. Consider using git pull.
             Proceed with creating pull request? (y, Q)
-            Checking if base branch master exists on origin remote... YES
+            Checking if base branch master exists in origin remote... YES
             Creating a PR from develop to master... OK, see www.github.com
             """
         )
@@ -846,7 +857,7 @@ class TestGitHubCreatePR(BaseTest):
             """
             Warn: Branch develop is diverged from and older than its remote counterpart. Consider using git reset --keep.
             Proceed with creating pull request? (y, Q)
-            Checking if base branch master exists on origin remote... YES
+            Checking if base branch master exists in origin remote... YES
             Creating a PR from develop to master... OK, see www.github.com
             """
         )
@@ -873,7 +884,7 @@ class TestGitHubCreatePR(BaseTest):
         assert_success(
             ['github', 'create-pr'],
             """
-            Checking if base branch develop exists on origin remote... NO
+            Checking if base branch develop exists in origin remote... NO
             Push untracked branch develop to origin? (y, Q)
             Creating a PR from feature to develop... OK, see www.github.com
             """
@@ -895,7 +906,7 @@ class TestGitHubCreatePR(BaseTest):
         assert_success(
             ['github', 'create-pr'],
             """
-            Checking if base branch develop exists on origin remote... YES
+            Checking if base branch develop exists in origin remote... YES
             Creating a PR from feature to develop... OK, see www.github.com
             """
         )

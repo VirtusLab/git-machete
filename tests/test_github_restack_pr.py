@@ -222,21 +222,40 @@ class TestGitHubRestackPR(BaseTest):
             .push()
             .commit()
         )
+
         body: str = \
             """
             master
                 feature push=no
             """
         rewrite_branch_layout_file(body)
+        assert_failure(
+            ['github', 'restack-pr'],
+            """
+            Branch feature is marked as push=no; aborting the restack.
+            Did you want to just use git machete github retarget-pr?
+            """
+        )
 
+        body = \
+            """
+            master
+                feature
+            """
+        rewrite_branch_layout_file(body)
         assert_success(
             ['github', 'restack-pr'],
             """
-            Warn: Branch feature is marked as push=no; skipping the push.
-            Did you want to just use git machete github retarget-pr?
-
+            PR #15 has been temporarily marked as draft
             Base branch of PR #15 has been switched to master
             Description of PR #15 has been updated
+            Pushing feature to origin...
+
+              master (untracked)
+              |
+              o-feature *  PR #15 (some_other_user)
+
+            PR #15 has been marked as ready for review again
             """
         )
         pr = github_api_state.get_pull_by_number(15)

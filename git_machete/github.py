@@ -253,7 +253,7 @@ class GitHubClient(CodeHostingClient):
                 if self.__token:
                     raise MacheteException(
                         first_line + f'Make sure that the GitHub API token provided by {self.__token.provider} '
-                                     f'is valid and allows for access to `{method.upper()}` `{url_prefix}{path}`.\n' + last_line)
+                        f'is valid and allows for access to `{method.upper()}` `{url_prefix}{path}`.\n' + last_line)
                 else:
                     raise MacheteException(
                         first_line + 'You might not have the required permissions for this repository.\n'
@@ -295,6 +295,9 @@ class GitHubClient(CodeHostingClient):
                      f'New organization is {bold(new_org)} and new repository is {bold(new_repo)}.\n'
                      'You can update your remote repository via: `git remote set-url <remote_name> <new_repository_url>`.')
                 return result
+            elif err.code >= 500:
+                raise MacheteException(f'GitHub API returned `{err.code}` '
+                                       f'HTTP status with error message: `{err.reason}`.')  # pragma: no cover
             else:
                 raise UnexpectedMacheteException(f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`.')
         except OSError as e:  # pragma: no cover

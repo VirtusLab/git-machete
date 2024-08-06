@@ -191,7 +191,7 @@ class GitLabClient(CodeHostingClient):
                 if self.__token:
                     raise MacheteException(
                         first_line + f'Make sure that the GitLab API token provided by {self.__token.provider} '
-                                     f'is valid and allows for access to `{method.upper()}` `{url_prefix}{path}`.\n' + last_line)
+                        f'is valid and allows for access to `{method.upper()}` `{url_prefix}{path}`.\n' + last_line)
                 else:
                     raise MacheteException(
                         first_line + 'You might not have the required permissions for this project.\n'
@@ -217,6 +217,9 @@ class GitLabClient(CodeHostingClient):
                 else:
                     UnexpectedMacheteException(
                         f'GitLab API returned 405 (Method Not Allowed) HTTP status with error message: `{err.reason}`.')
+            elif err.code >= 500:
+                raise MacheteException(f'GitLab API returned `{err.code}` '
+                                       f'HTTP status with error message: `{err.reason}`.')  # pragma: no cover
             else:
                 raise UnexpectedMacheteException(f'GitLab API returned `{err.code}` HTTP status with error message: `{err.reason}`.')
         except OSError as e:  # pragma: no cover

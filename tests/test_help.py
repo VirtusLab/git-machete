@@ -16,7 +16,7 @@ class TestHelp(BaseTest):
             launch_command()
         assert ExitCode.ARGUMENT_ERROR == e.value.code
 
-        launch_command("help")
+        assert "--verbose" in launch_command("help")
 
         with pytest.raises(SystemExit) as e:
             launch_command("help", "no-such-command")
@@ -30,7 +30,7 @@ class TestHelp(BaseTest):
 
             if command not in help_topics:
                 with pytest.raises(SystemExit) as e:
-                    launch_command(command, "--help")
+                    assert "Usage:" in launch_command(command, "--help")
                 assert ExitCode.SUCCESS == e.value.code
             else:
                 with pytest.raises(SystemExit) as e:
@@ -41,3 +41,8 @@ class TestHelp(BaseTest):
         for command in commands_and_aliases:
             help_output = launch_command('help', command)
             assert '\033' not in help_output
+
+    def test_help_succeeds_despite_invalid_git_config_key(self) -> None:
+        self.repo_sandbox.set_git_config_key("machete.squashMergeDetection", "invalid")
+        help_output = launch_command('help')
+        assert "Usage:" in help_output

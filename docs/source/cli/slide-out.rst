@@ -7,7 +7,9 @@ slide-out
 .. code-block:: shell
 
     git machete slide-out --removed-from-remote [--delete]
-    git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [--delete] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase] [<branch> [<branch> [<branch> ...]]]
+    git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [--delete]
+                          [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase]
+                          [<branch> [<branch> [<branch> ...]]]
 
 Removes the given branch (or multiple branches) from the branch layout.
 If no branch has been specified, current branch is slid out.
@@ -75,10 +77,10 @@ See help for :ref:`traverse` for more details on the qualifiers.
 --removed-from-remote                             Slide out managed branches whose remote tracking branches have been deleted and that have no downstreams.
                                                   In other words, this deletes all branches except:
 
-                                                      * those that are unmanaged,
-                                                      * those that have no remote tracking branch set (unpushed),
-                                                      * those whose remote tracking branches still exist (not deleted remotely),
-                                                      * those that have at least one downstream (child) branch.
+                                                  * those that are unmanaged,
+                                                  * those that have no remote tracking branch set (unpushed),
+                                                  * those whose remote tracking branches still exist (not deleted remotely),
+                                                  * those that have at least one downstream (child) branch.
 
 **Environment variables:**
 

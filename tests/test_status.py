@@ -306,7 +306,7 @@ class TestStatus(BaseTest):
         )
         assert_success(['status'], expected_status_output)
 
-    def test_squashed_branch_recognized_as_merged_with_traverse(self) -> None:
+    def test_status_squashed_branch_recognized_as_merged_with_traverse(self) -> None:
 
         (
             self.repo_sandbox.new_branch("root")
@@ -378,10 +378,8 @@ class TestStatus(BaseTest):
             """,
         )
 
-        # but under --no-detect-squash-merges, feature is detected as "x" (behind) develop
-        assert_success(
-            ["status", "-l", "--no-detect-squash-merges"],
-            """
+        # under --squash-merge-detection=none, feature is detected as "x" (out of sync) with develop
+        expected_output_detection_none = """
             root
             |
             | develop
@@ -395,8 +393,27 @@ class TestStatus(BaseTest):
                 | child_1
                 | child_2
                 o-child *
-            """,
+            """
+        assert_success(
+            ["status", "-l", "--no-detect-squash-merges"],
+            "          Warn: --no-detect-squash-merges is deprecated, "
+            "use --squash-merge-detection=none instead\n" + expected_output_detection_none
         )
+        assert_success(
+            ["status", "-l", "--squash-merge-detection=none"],
+            expected_output_detection_none
+        )
+        self.repo_sandbox.set_git_config_key('machete.squashMergeDetection', 'none')
+        assert_success(
+            ["status", "-l"],
+            expected_output_detection_none
+        )
+        self.repo_sandbox.set_git_config_key('machete.squashMergeDetection', 'lolxd')
+        assert_failure(
+            ["status", "-l"],
+            "Invalid value for machete.squashMergeDetection git config key: lolxd. Valid values are none, simple, exact"
+        )
+        self.repo_sandbox.unset_git_config_key('machete.squashMergeDetection')
 
         # traverse then slide out the feature branch
         launch_command("traverse", "-w", "-y")
@@ -457,6 +474,55 @@ class TestStatus(BaseTest):
             o-develop *
             """,
         )
+
+    def test_status_for_squash_merge_and_commits_in_between(self) -> None:
+        (
+            self.repo_sandbox
+            .new_branch("master")
+            .remove_remote("origin")
+            .commit("master first commit")
+            .new_branch("feature")
+            .commit("feature commit")
+            .check_out("master")
+            .commit("extra commit")
+            .execute("git merge --squash feature")
+            .execute("git commit -m squashed")
+        )
+
+        body: str = \
+            """
+            master
+                feature
+            """
+        rewrite_branch_layout_file(body)
+
+        # Here the simple method will not detect the squash merge, as there are commits in master before we merged feature so
+        # there's no tree hash in master that matches the tree hash of feature
+        expected_status_output_simple = (
+            """
+            master *
+            |
+            x-feature
+            """
+        )
+        assert_success(['status'], expected_status_output_simple)
+        assert_success(['status', '--squash-merge-detection=simple'], expected_status_output_simple)
+        expected_status_output_exact = (
+            """
+            master *
+            |
+            m-feature
+            """
+        )
+        assert_success(['status', '--squash-merge-detection=exact'], expected_status_output_exact)
+        self.repo_sandbox.set_git_config_key('machete.squashMergeDetection', 'exact')
+        assert_success(['status'], expected_status_output_exact)
+
+    def test_status_invalid_squash_merge_detection(self) -> None:
+        assert_failure(["status", "--squash-merge-detection=invalid"],
+                       "Invalid value for --squash-merge-detection flag: invalid. Valid values are none, simple, exact")
+        assert_failure(["status", "--squash-merge-detection=none", "--squash-merge-detection=invalid"],
+                       "Invalid value for --squash-merge-detection flag: invalid. Valid values are none, simple, exact")
 
     def test_status_inferring_counterpart_for_fetching_of_branch(self) -> None:
         origin_1_remote_path = self.repo_sandbox.create_repo("remote-1", bare=True)
