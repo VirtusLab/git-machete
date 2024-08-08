@@ -165,7 +165,7 @@ class GitLabClient(CodeHostingClient):
               f'bearer token and request body {compact_dict(request_body) if request_body else "<none>"}')
 
         try:
-            with urllib.request.urlopen(http_request) as response:
+            with urllib.request.urlopen(http_request, context=self.ssl_context) as response:
                 parsed_response_body: Any = json.loads(response.read().decode())
                 # https://docs.gitlab.com/ee/api/rest/#pagination-link-header
                 link_header: str = response.info()["link"]

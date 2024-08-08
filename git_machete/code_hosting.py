@@ -1,8 +1,9 @@
 import re
+import ssl
 from abc import ABCMeta, abstractmethod
 from typing import Dict, List, NamedTuple, Optional
 
-from git_machete.git_operations import LocalBranchShortName
+from git_machete.git_operations import GitContext, LocalBranchShortName
 from git_machete.utils import bold
 
 
@@ -125,7 +126,17 @@ class CodeHostingClient(metaclass=ABCMeta):  # pragma: no cover
         self.domain: str = domain
         self.organization: str = organization
         self.repository: str = repository
+        self.ssl_context = self.__create_ssl_context()
         self.__org_repo_and_git_url_by_repo_id: Dict[int, Optional[OrganizationAndRepositoryAndGitUrl]] = {}
+
+    @staticmethod
+    def __create_ssl_context() -> ssl.SSLContext:
+        ctx = ssl.create_default_context()
+        ssl_verify = GitContext().get_boolean_config_attr_or_none("http.sslVerify")
+        if not ssl_verify:
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+        return ctx
 
     @abstractmethod
     def create_pull_request(self, head: str, head_org_repo: OrganizationAndRepository,

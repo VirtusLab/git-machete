@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.27.0
+
+- added: git config key `http.sslVerify` is honored when connecting to GitHub and GitLab APIs (suggested by @scamden)
+
 ## New in git-machete 3.26.4
 
 - fixed: avoid detecting a cycle when there's a PR/MR from `main` or `master` in a fork to the original repo (reported by @Joibel)

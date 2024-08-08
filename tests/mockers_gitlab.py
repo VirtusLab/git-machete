@@ -1,5 +1,6 @@
 import json
 import re
+import ssl
 import urllib
 from contextlib import AbstractContextManager, contextmanager
 from http import HTTPStatus
@@ -94,9 +95,10 @@ class MockGitLabAPIState:
 
 
 # Not including [MockGitLabAPIResponse] type argument to maintain compatibility with Python <= 3.8
-def mock_urlopen(gitlab_api_state: MockGitLabAPIState) -> Callable[[Request], AbstractContextManager]:  # type: ignore[type-arg]
+def mock_urlopen(gitlab_api_state: MockGitLabAPIState,
+                 _context: Optional[ssl.SSLContext] = None) -> Callable[[Request], AbstractContextManager]:  # type: ignore[type-arg]
     @contextmanager
-    def inner(request: Request) -> Iterator[MockAPIResponse]:
+    def inner(request: Request, **_kwargs: Any) -> Iterator[MockAPIResponse]:
         yield __mock_urlopen_impl(gitlab_api_state, request)
     return inner
 

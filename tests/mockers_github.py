@@ -1,5 +1,6 @@
 import json
 import re
+import ssl
 from contextlib import AbstractContextManager, contextmanager
 from http import HTTPStatus
 from typing import Any, Callable, Dict, Iterator, List, Optional
@@ -79,9 +80,10 @@ class MockGitHubAPIState:
 
 
 # Not including [MockAPIResponse] type argument to maintain compatibility with Python <= 3.8
-def mock_urlopen(github_api_state: MockGitHubAPIState) -> Callable[[Request], AbstractContextManager]:  # type: ignore[type-arg]
+def mock_urlopen(github_api_state: MockGitHubAPIState,
+                 _context: Optional[ssl.SSLContext] = None) -> Callable[[Request], AbstractContextManager]:  # type: ignore[type-arg]
     @contextmanager
-    def inner(request: Request) -> Iterator[MockAPIResponse]:
+    def inner(request: Request, **_kwargs: Any) -> Iterator[MockAPIResponse]:
         yield __mock_urlopen_impl(github_api_state, request)
     return inner
 

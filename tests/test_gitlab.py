@@ -84,6 +84,7 @@ class TestGitLab(BaseTest):
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState.with_mrs()))
 
+        self.repo_sandbox.set_git_config_key('http.sslVerify', 'false')
         self.repo_sandbox.set_git_config_key('machete.gitlab.domain', '403.example.org')
 
         expected_error_message = (
