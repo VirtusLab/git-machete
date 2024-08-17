@@ -1421,19 +1421,16 @@ class MacheteClient:
         except MacheteException:
             return None
 
-    def diff(self, *, branch: Optional[LocalBranchShortName], opt_stat: bool) -> None:
+    def display_diff(self, *, branch: Optional[LocalBranchShortName], opt_stat: bool, extra_git_diff_args: List[str]) -> None:
         diff_branch = branch or self.__git.get_current_branch()
         fork_point = self.fork_point(diff_branch, use_overrides=True)
 
-        self.__git.display_diff(
-            # In case no param has been supplied, we want to diff against the current working directory, not the current branch.
-            branch=branch,
-            fork_point=fork_point,
-            format_with_stat=opt_stat)
+        self.__git.display_diff(branch=branch, against=fork_point, opt_stat=opt_stat, extra_git_diff_args=extra_git_diff_args)
 
-    def log(self, branch: LocalBranchShortName) -> None:
+    def display_log(self, branch: LocalBranchShortName, extra_git_log_args: List[str]) -> None:
         fork_point = self.fork_point(branch, use_overrides=True)
-        self.__git.display_branch_history_from_fork_point(branch.full_name(), fork_point)
+        self.__git.display_log_between(from_inclusive=branch.full_name(), until_exclusive=fork_point,
+                                       extra_git_log_args=extra_git_log_args)
 
     def down(self, branch: LocalBranchShortName, pick_mode: bool) -> List[LocalBranchShortName]:
         self.expect_in_managed_branches(branch)

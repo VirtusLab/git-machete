@@ -54,7 +54,18 @@ class TestDiff(BaseTest):
         assert_success(["diff", "refs/heads/develop"], expected_status_output)
 
         assert_success(
-            ["diff", "--stat", "refs/heads/develop"],
+            ["diff", "--stat", "refs/heads/develop", "--"],
             "develop_file_name.txt | 1 +\n"
             "1 file changed, 1 insertion(+)\n"
+        )
+
+        assert_success(
+            ["diff", "--", "--name-only"],
+            "develop_file_name.txt\n"
+            "file_name.txt\n"
+        )
+
+        assert_success(
+            ["diff", "develop", "--", "--name-only"],
+            "develop_file_name.txt\n"
         )

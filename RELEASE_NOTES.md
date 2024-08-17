@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.28.0
+
+- added: ability to specify pass-through flags in `diff` and `log`, for example `git machete diff -- file.txt`, `git machete log -- --patch` (partly contributed by @tdyas)
+
 ## New in git-machete 3.27.0
 
 - added: git config key `http.sslVerify` is honored when connecting to GitHub and GitLab APIs (suggested by @scamden)

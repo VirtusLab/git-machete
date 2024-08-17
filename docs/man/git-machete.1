@@ -27,9 +27,9 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Aug 08, 2024" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Aug 17, 2024" "" "git-machete"
 .SH NAME
-git-machete \- git-machete 3.27.0
+git-machete \- git-machete 3.28.0
 .sp
 git machete is a robust tool that \fBsimplifies your git workflows\fP\&.
 .sp
@@ -627,7 +627,7 @@ Don\(aqt ask for confirmation.
 .INDENT 3.5
 .sp
 .EX
-git machete d[iff] [\-s|\-\-stat] [<branch>]
+git machete d[iff] [\-s|\-\-stat] [<branch>] [\-\- <pass\-through\-arguments>]
 .EE
 .UNINDENT
 .UNINDENT
@@ -639,11 +639,9 @@ See help for \fI\%fork\-point\fP for more details on the meaning of \fIfork poin
 Note: the branch in question does not need to occur in the branch layout file.
 .sp
 \fBOptions:\fP
-.INDENT 0.0
-.TP
-.B  \-s\fP,\fB  \-\-stat
-Makes \fBgit machete diff\fP pass \fB\-\-stat\fP option to \fBgit diff\fP, so that only summary (diffstat) is printed.
-.UNINDENT
+.sp
+\-\- <pass\-through\-arguments>    Arguments to pass directly to the underlying \fBgit diff\fP, for example \fBgit machete diff \-\- \-\-name\-only\fP\&.
+\-s, \-\-stat                     Makes \fBgit machete diff\fP pass \fB\-\-stat\fP option to \fBgit diff\fP, so that only summary (diffstat) is printed.
 .SH DISCOVER
 .sp
 \fBUsage:\fP
@@ -1490,7 +1488,7 @@ This command is generally not meant for a day\-to\-day use, it\(aqs mostly neede
 .INDENT 3.5
 .sp
 .EX
-git machete l[og] [<branch>]
+git machete l[og] [<branch>] [\-\- <pass\-through\-arguments>]
 .EE
 .UNINDENT
 .UNINDENT
@@ -1499,6 +1497,10 @@ Runs \fBgit log\fP for the range of commits from tip of the given branch (or cur
 See help for \fI\%fork\-point\fP for more details on meaning of the \fIfork point\fP\&.
 .sp
 Note: the branch in question does not need to occur in the branch layout file.
+.sp
+\fBOptions:\fP
+.sp
+\-\- <pass\-through\-arguments>    Arguments to pass directly to the underlying \fBgit log\fP, for example \fBgit machete log \-\- \-\-patch\fP\&.
 .SH REAPPLY
 .sp
 \fBUsage:\fP

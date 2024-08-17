@@ -1048,8 +1048,9 @@ class GitContext:
 
         return self._popen_git("log", "-1", f"--format={pattern.value}", commit).stdout.strip()
 
-    def display_branch_history_from_fork_point(self, branch: LocalBranchFullName, fork_point: FullCommitHash) -> int:
-        return self._run_git("log", f"^{fork_point}", branch, flush_caches=False)
+    def display_log_between(self, from_inclusive: LocalBranchFullName,
+                            until_exclusive: FullCommitHash, extra_git_log_args: List[str]) -> int:
+        return self._run_git("log", f"^{until_exclusive}", from_inclusive, *extra_git_log_args, flush_caches=False)
 
     def commit_tree_with_given_parent_and_message_and_env(
             self, parent_revision: AnyRevision, msg: str, env: Dict[str, str]) -> FullCommitHash:
@@ -1064,14 +1065,18 @@ class GitContext:
     def delete_remote_branch(self, branch_name: RemoteBranchShortName) -> int:
         return self._run_git('branch', '-d', '-r', branch_name, flush_caches=True)
 
-    def display_diff(self, fork_point: AnyRevision, format_with_stat: bool, branch: Optional[LocalBranchShortName] = None) -> int:
+    def display_diff(self, branch: Optional[LocalBranchShortName], against: AnyRevision,
+                     opt_stat: bool, extra_git_diff_args: List[str]) -> int:
         params = []
-        if format_with_stat:
+        if opt_stat:
             params.append("--stat")
-        params.append(fork_point)
+        params.append(against)
         if branch:
             params.append(branch.full_name())
-        params.append("--")
+        if extra_git_diff_args:
+            params += extra_git_diff_args
+        else:
+            params.append("--")
 
         return self._run_git("diff", *params, flush_caches=False)
 

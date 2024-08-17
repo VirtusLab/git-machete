@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import itertools
 import os
 import pkgutil
 import re
@@ -567,8 +568,10 @@ def launch(orig_args: List[str]) -> None:
         cli_opts = git_machete.options.CommandLineOptions()
         git = GitContext()
 
+        direct_args = list(itertools.takewhile(lambda arg: arg != "--", orig_args))
+        pass_through_args = list(itertools.dropwhile(lambda arg: arg != "--", orig_args))
         cli_parser: argparse.ArgumentParser = create_cli_parser()
-        parsed_cli: argparse.Namespace = cli_parser.parse_args(orig_args)
+        parsed_cli: argparse.Namespace = cli_parser.parse_args(direct_args)
         parsed_cli_as_dict: Dict[str, Any] = vars(parsed_cli)
 
         # Let's set up options like debug/verbose before we first start reading `git config`.
@@ -577,11 +580,17 @@ def launch(orig_args: List[str]) -> None:
         update_cli_options_using_parsed_args(cli_opts, parsed_cli)
         cli_opts.validate()
 
-        if not orig_args:
+        if not direct_args:
             print(get_help_description(display_help_topics=False))
             sys.exit(ExitCode.ARGUMENT_ERROR)
 
         cmd = parsed_cli.command
+
+        if cmd not in ("d", "diff", "l", "log") and pass_through_args:
+            print(fmt("Extra arguments after `--` are only allowed after `diff` and `log`"))
+            sys.exit(ExitCode.ARGUMENT_ERROR)
+        if pass_through_args and pass_through_args[0] == "--":
+            pass_through_args = pass_through_args[1:]
 
         if cmd == "completion":
             completion_shell = parsed_cli.shell
@@ -670,7 +679,7 @@ def launch(orig_args: List[str]) -> None:
         elif cmd in {"diff", alias_by_command["diff"]}:
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             diff_branch = get_local_branch_short_name_from_arg(cli_opts.opt_branch) if (cli_opts.opt_branch is not None) else None
-            machete_client.diff(branch=diff_branch, opt_stat=cli_opts.opt_stat)
+            machete_client.display_diff(branch=diff_branch, opt_stat=cli_opts.opt_stat, extra_git_diff_args=pass_through_args)
         elif cmd == "discover":
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             machete_client.discover_tree(
@@ -822,7 +831,7 @@ def launch(orig_args: List[str]) -> None:
         elif cmd in {"log", alias_by_command["log"]}:
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             branch = get_local_branch_short_name_from_arg_or_current_branch(cli_opts.opt_branch, git)
-            machete_client.log(branch)
+            machete_client.display_log(branch, extra_git_log_args=pass_through_args)
         elif cmd == "reapply":
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             git.expect_no_operation_in_progress()

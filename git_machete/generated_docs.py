@@ -375,7 +375,7 @@ long_docs: Dict[str, str] = {
    """,
     "diff": """
         <b>Usage:</b><b>
-           git machete d[iff] [-s|--stat] [<branch>]</b>
+           git machete d[iff] [-s|--stat] [<branch>] [-- <pass-through-arguments>]</b>
 
         Runs `git diff` of the given branch tip against its fork point or, if none specified,
         of the current working tree against the fork point of the currently checked out branch.
@@ -384,8 +384,9 @@ long_docs: Dict[str, str] = {
         Note: the branch in question does not need to occur in the branch layout file.
 
         <b>Options:</b>
-           <b>-s</b>, <b>--stat</b>
-              Makes `git machete diff` pass `--stat` option to `git diff`, so that only summary (diffstat) is printed.
+
+        -- <pass-through-arguments>    Arguments to pass directly to the underlying `git diff`, for example `git machete diff -- --name-only`.
+        -s, --stat                     Makes `git machete diff` pass `--stat` option to `git diff`, so that only summary (diffstat) is printed.
    """,
     "discover": """
         <b>Usage:</b><b>
@@ -1020,12 +1021,16 @@ long_docs: Dict[str, str] = {
    """,
     "log": """
         <b>Usage:</b><b>
-           git machete l[og] [<branch>]</b>
+           git machete l[og] [<branch>] [-- <pass-through-arguments>]</b>
 
         Runs `git log` for the range of commits from tip of the given branch (or current branch, if none specified) back to its fork point.
         See help for `fork-point` for more details on meaning of the fork point.
 
         Note: the branch in question does not need to occur in the branch layout file.
+
+        <b>Options:</b>
+
+        -- <pass-through-arguments>    Arguments to pass directly to the underlying `git log`, for example `git machete log -- --patch`.
    """,
     "reapply": """
         <b>Usage:</b><b>
