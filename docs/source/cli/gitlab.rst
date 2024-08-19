@@ -113,10 +113,10 @@ Creates, checks out and manages GitLab MRs while keeping them reflected in branc
 ``retarget-mr [-b|--branch=<branch>] [--ignore-if-missing]``:
     Sets the target of the current (or specified) branch's MR to upstream (parent) branch, as seen by git machete (see ``git machete show up``).
 
-    If after changing the target the MR ends up stacked atop another MR, the MR description posted to GitLab will be prepended with a section
-    listing the entire related chain of MRs.
+    If after changing the target the MR ends up stacked atop another MR, the MR description posted to GitLab will be prepended
+    with an intro section listing the entire related chain of MRs.
 
-    This header will be updated or removed accordingly with the subsequent runs of ``retarget-mr``.
+    This header will be updated or removed accordingly with the subsequent runs of ``retarget-mr``, even if the target branch is already up to date.
 
     **Options:**
 
@@ -134,6 +134,9 @@ Creates, checks out and manages GitLab MRs while keeping them reflected in branc
 
 ``machete.gitlab.forceDescriptionFromCommitMessage`` (``create-mr`` only):
   .. include:: git-config-keys/gitlab_forceDescriptionFromCommitMessage.rst
+
+``machete.gitlab.mrDescriptionIntroStyle`` (``create-mr``, ``restack-mr`` and ``retarget-mr``):
+  .. include:: git-config-keys/github_prDescriptionIntroStyle.rst
 
 **Environment variables (all subcommands):**
 

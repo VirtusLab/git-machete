@@ -127,8 +127,6 @@ nix-env -i git-machete
 The latest released version, however, is generally available in the unstable channel.
 Stable channels may lag behind; see [repology](https://repology.org/project/git-machete/versions) for the current channel-package mapping.
 
-<br/>
-
 ### Using Pex
 
 The [Pex tool](https://github.com/pex-tool/pex) (short for Python EXecutable) allows you to build "pex" files which are executable Python environments in a single file.
@@ -140,6 +138,8 @@ pex git-machete -m git_machete.bin:main -o git-machete
 ```
 
 Then put the produced `git-machete` file somewhere on your `PATH`.
+
+<br/>
 
 ## Quick start
 

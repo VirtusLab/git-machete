@@ -19,7 +19,6 @@ class TestGitLabRetargetMR(BaseTest):
             mock_mr_json(head='feature_2', base='master', number=25, body=None),
             mock_mr_json(head='feature_3', base='master', number=30),
             mock_mr_json(head='feature_4', base='feature', number=35),
-            # Let's include another MR for `feature_2`, but with a different target branch
             mock_mr_json(head='feature_4', base='feature', number=40),
         )
 
@@ -271,12 +270,13 @@ class TestGitLabRetargetMR(BaseTest):
 
             # Based on MR !15
 
-            ## Full chain of MRs as of 2023-12-31
+            ## Chain of upstream MRs as of 2023-12-31
 
-            * MR !20:
-              `feature_1` ➔ `feature`
             * MR !15:
-              `feature` ➔ `master`
+              `master` ← `feature`
+
+              * **MR !20 (THIS ONE)**:
+                `feature` ← `feature_1`
 
             <!-- end git-machete generated -->
             # Summary''')[1:]
@@ -320,12 +320,13 @@ class TestGitLabRetargetMR(BaseTest):
 
             # Based on MR !15
 
-            ## Full chain of MRs as of 2023-12-31
+            ## Chain of upstream MRs as of 2023-12-31
 
-            * MR !25:
-              `feature_2` ➔ `feature`
             * MR !15:
-              `feature` ➔ `master`
+              `master` ← `feature`
+
+              * **MR !25 (THIS ONE)**:
+                `feature` ← `feature_2`
 
             <!-- end git-machete generated -->''')[1:]
 
@@ -362,14 +363,16 @@ class TestGitLabRetargetMR(BaseTest):
 
             # Based on MR !25
 
-            ## Full chain of MRs as of 2023-12-31
+            ## Chain of upstream MRs as of 2023-12-31
 
-            * MR !30:
-              `feature_3` ➔ `feature_2`
-            * MR !25:
-              `feature_2` ➔ `feature`
             * MR !15:
-              `feature` ➔ `master`
+              `master` ← `feature`
+
+              * MR !25:
+                `feature` ← `feature_2`
+
+                * **MR !30 (THIS ONE)**:
+                  `feature_2` ← `feature_3`
 
             <!-- end git-machete generated -->
             # Summary''')[1:]
@@ -399,12 +402,13 @@ class TestGitLabRetargetMR(BaseTest):
 
             # Based on MR !15
 
-            ## Full chain of MRs as of 2023-12-31
+            ## Chain of upstream MRs as of 2023-12-31
 
-            * MR !30:
-              `feature_3` ➔ `feature`
             * MR !15:
-              `feature` ➔ `master`
+              `master` ← `feature`
+
+              * **MR !30 (THIS ONE)**:
+                `feature` ← `feature_3`
 
             <!-- end git-machete generated -->
             # Summary''')[1:]

@@ -18,6 +18,9 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 ``machete.github.forceDescriptionFromCommitMessage``:
   .. include:: git-config-keys/github_forceDescriptionFromCommitMessage.rst
 
+``machete.github.prDescriptionIntroStyle``:
+  .. include:: git-config-keys/github_prDescriptionIntroStyle.rst
+
 ``machete.gitlab.{domain,remote,namespace,project}``:
   .. include:: git-config-keys/gitlab_access.rst
       :start-line: 3
@@ -27,6 +30,9 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 
 ``machete.gitlab.forceDescriptionFromCommitMessage``:
   .. include:: git-config-keys/gitlab_forceDescriptionFromCommitMessage.rst
+
+``machete.gitlab.mrDescriptionIntroStyle``:
+  .. include:: git-config-keys/gitlab_mrDescriptionIntroStyle.rst
 
 ``machete.overrideForkPoint.<branch>.to``:
     Executing ``git machete fork-point --override-to[-parent|-inferred|=<revision>] [<branch>]`` sets up a fork point override for ``<branch>``.

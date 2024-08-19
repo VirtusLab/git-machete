@@ -134,6 +134,7 @@ class GitLabClient(CodeHostingClient):
                 remote='machete.gitlab.remote',
                 annotate_with_urls='machete.gitlab.annotateWithUrls',
                 force_description_from_commit_message='machete.gitlab.forceDescriptionFromCommitMessage',
+                pr_description_intro_style='machete.gitlab.mrDescriptionIntroStyle',
             )
         )
 

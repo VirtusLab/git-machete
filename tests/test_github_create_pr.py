@@ -159,12 +159,13 @@ class TestGitHubCreatePR(BaseTest):
 
             # Based on PR #3
 
-            ## Full chain of PRs as of 2023-12-31
+            ## Chain of upstream PRs as of 2023-12-31
 
-            * PR #5:
-              `chore/fields` ➔ `ignore-trailing`
             * PR #3:
-              `ignore-trailing` ➔ `hotfix/add-trigger`
+              `hotfix/add-trigger` ← `ignore-trailing`
+
+              * **PR #5 (THIS ONE)**:
+                `ignore-trailing` ← `chore/fields`
 
             <!-- end git-machete generated -->
 
@@ -364,14 +365,16 @@ class TestGitHubCreatePR(BaseTest):
 
             # Based on PR #2
 
-            ## Full chain of PRs as of 2023-12-31
+            ## Chain of upstream PRs as of 2023-12-31
 
-            * PR #3:
-              `call-ws` ➔ `build-chain`
-            * PR #2:
-              `build-chain` ➔ `allow-ownership-link`
             * PR #1:
-              `allow-ownership-link` ➔ `develop`
+              `develop` ← `allow-ownership-link`
+
+              * PR #2:
+                `allow-ownership-link` ← `build-chain`
+
+                * **PR #3 (THIS ONE)**:
+                  `build-chain` ← `call-ws`
 
             <!-- end git-machete generated -->
         ''')[1:]
@@ -386,16 +389,19 @@ class TestGitHubCreatePR(BaseTest):
 
             # Based on PR #3
 
-            ## Full chain of PRs as of 2023-12-31
+            ## Chain of upstream PRs as of 2023-12-31
 
-            * PR #4:
-              `drop-constraint` ➔ `call-ws`
-            * PR #3:
-              `call-ws` ➔ `build-chain`
-            * PR #2:
-              `build-chain` ➔ `allow-ownership-link`
             * PR #1:
-              `allow-ownership-link` ➔ `develop`
+              `develop` ← `allow-ownership-link`
+
+              * PR #2:
+                `allow-ownership-link` ← `build-chain`
+
+                * PR #3:
+                  `build-chain` ← `call-ws`
+
+                  * **PR #4 (THIS ONE)**:
+                    `call-ws` ← `drop-constraint`
 
             <!-- end git-machete generated -->
 
@@ -598,12 +604,13 @@ class TestGitHubCreatePR(BaseTest):
 
             # Based on PR #15
 
-            ## Full chain of PRs as of 2023-12-31
+            ## Chain of upstream PRs as of 2023-12-31
 
-            * PR #16:
-              `feature` ➔ `branch-1`
             * PR #15:
-              `branch-1` ➔ `root`
+              `root` ← `branch-1`
+
+              * **PR #16 (THIS ONE)**:
+                `branch-1` ← `feature`
 
             <!-- end git-machete generated -->
 

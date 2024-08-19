@@ -158,12 +158,13 @@ class TestGitLabCreateMR(BaseTest):
 
             # Based on MR !3
 
-            ## Full chain of MRs as of 2023-12-31
+            ## Chain of upstream MRs as of 2023-12-31
 
-            * MR !5:
-              `chore/fields` ➔ `ignore-trailing`
             * MR !3:
-              `ignore-trailing` ➔ `hotfix/add-trigger`
+              `hotfix/add-trigger` ← `ignore-trailing`
+
+              * **MR !5 (THIS ONE)**:
+                `ignore-trailing` ← `chore/fields`
 
             <!-- end git-machete generated -->
 
@@ -350,47 +351,37 @@ class TestGitLabCreateMR(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
+        self.repo_sandbox.check_out("drop-constraint")
+        launch_command("gitlab", "create-mr", "--yes")
+        pr = gitlab_api_state.get_mr_by_number(3)
+        assert pr is not None
+        assert pr['description'] == ''  # no chain at this moment
+
+        self.repo_sandbox.write_to_file(".gitlab/merge_request_templates/Default.md", "# MR title\n## Summary\n## Test plan\n")
+        self.repo_sandbox.set_git_config_key("machete.gitlab.mrDescriptionIntroStyle", "full")
+
         self.repo_sandbox.check_out("call-ws")
         launch_command("gitlab", "create-mr")
-        pr = gitlab_api_state.get_mr_by_number(3)
+        pr = gitlab_api_state.get_mr_by_number(4)
         assert pr is not None
         assert pr['description'] == textwrap.dedent('''
             <!-- start git-machete generated -->
 
             # Based on MR !2
 
-            ## Full chain of MRs as of 2023-12-31
+            ## Chain of upstream MRs & tree of downstream MRs as of 2023-12-31
 
-            * MR !3:
-              `call-ws` ➔ `build-chain`
-            * MR !2:
-              `build-chain` ➔ `allow-ownership-link`
             * MR !1:
-              `allow-ownership-link` ➔ `develop`
+              `develop` ← `allow-ownership-link`
 
-            <!-- end git-machete generated -->
-        ''')[1:]
+              * MR !2:
+                `allow-ownership-link` ← `build-chain`
 
-        self.repo_sandbox.write_to_file(".gitlab/merge_request_templates/Default.md", "# MR title\n## Summary\n## Test plan\n")
-        self.repo_sandbox.check_out("drop-constraint")
-        launch_command("gitlab", "create-mr", "--yes")
-        pr = gitlab_api_state.get_mr_by_number(4)
-        assert pr is not None
-        assert pr['description'] == textwrap.dedent('''
-            <!-- start git-machete generated -->
+                * **MR !4 (THIS ONE)**:
+                  `build-chain` ← `call-ws`
 
-            # Based on MR !3
-
-            ## Full chain of MRs as of 2023-12-31
-
-            * MR !4:
-              `drop-constraint` ➔ `call-ws`
-            * MR !3:
-              `call-ws` ➔ `build-chain`
-            * MR !2:
-              `build-chain` ➔ `allow-ownership-link`
-            * MR !1:
-              `allow-ownership-link` ➔ `develop`
+                    * MR !3:
+                      `call-ws` ← `drop-constraint`
 
             <!-- end git-machete generated -->
 
@@ -593,12 +584,13 @@ class TestGitLabCreateMR(BaseTest):
 
             # Based on MR !15
 
-            ## Full chain of MRs as of 2023-12-31
+            ## Chain of upstream MRs as of 2023-12-31
 
-            * MR !16:
-              `feature` ➔ `branch-1`
             * MR !15:
-              `branch-1` ➔ `root`
+              `root` ← `branch-1`
+
+              * **MR !16 (THIS ONE)**:
+                `branch-1` ← `feature`
 
             <!-- end git-machete generated -->
 

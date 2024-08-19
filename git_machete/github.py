@@ -179,6 +179,7 @@ class GitHubClient(CodeHostingClient):
                 remote='machete.github.remote',
                 annotate_with_urls='machete.github.annotateWithUrls',
                 force_description_from_commit_message='machete.github.forceDescriptionFromCommitMessage',
+                pr_description_intro_style='machete.github.prDescriptionIntroStyle',
             )
         )
 

@@ -344,6 +344,10 @@ class GitContext:
                 else:
                     raise UnexpectedMacheteException(f"Cannot parse config entry: {config_entry}.")
 
+    def get_config_attr(self, key: str, default_value: str) -> str:
+        value = self.get_config_attr_or_none(key)
+        return default_value if value is None else value
+
     def get_config_attr_or_none(self, key: str) -> Optional[str]:
         self.__ensure_config_loaded()
         assert self.__config_cached is not None

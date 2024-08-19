@@ -8,7 +8,7 @@ import sys
 import textwrap
 from collections import OrderedDict
 from enum import Enum, auto
-from typing import (Callable, Dict, Iterator, List, Optional, Tuple, Type,
+from typing import (Callable, Dict, Iterator, List, Optional, Set, Tuple, Type,
                     TypeVar)
 
 from . import git_config_keys, utils
@@ -63,14 +63,21 @@ class ParsableEnum(Enum):
         try:
             return cls[value.upper().replace("-", "_")]
         except KeyError:
-            valid_values = ', '.join(e.name.lower().replace("_", "-") for e in cls)
+            valid_values = ', '.join('`' + e.name.lower().replace("_", "-") + '`' for e in cls)
             prefix = f"Invalid value for {from_where}" if from_where else "Invalid value"
-            raise MacheteException(f"{prefix}: `{value}`. Valid values are `{valid_values}`")
+            printed_value = value or '<empty>'
+            raise MacheteException(f"{prefix}: `{printed_value}`. Valid values are {valid_values}")
 
 
 class PickRoot(Enum):
     FIRST = auto()
     LAST = auto()
+
+
+class PRDescriptionIntroStyle(ParsableEnum):
+    FULL = auto()
+    UP_ONLY = auto()
+    NONE = auto()
 
 
 class SquashMergeDetection(ParsableEnum):
@@ -2220,7 +2227,7 @@ class MacheteClient:
                 warn(f'{pr.display_text()} is already closed.')
             debug(f'found {pr}')
 
-            pr_path: List[PullRequest] = self.__get_path_from_pr_chain(spec, pr, all_open_prs)
+            pr_path: List[PullRequest] = self.__get_upwards_path_including_pr(spec, pr, all_open_prs)
             prs_to_annotate.update(pr_path)
             reversed_pr_path: List[PullRequest] = pr_path[::-1]  # need to add from root downwards
             if reversed_pr_path[0].base not in self.managed_branches:
@@ -2251,7 +2258,24 @@ class MacheteClient:
             self.__git.checkout(LocalBranchShortName.of(applicable_prs[0].head))
 
     @staticmethod
-    def __get_path_from_pr_chain(spec: CodeHostingSpec, original_pr: PullRequest, all_open_prs: List[PullRequest]) -> List[PullRequest]:
+    def __get_downwards_tree_excluding_pr(original_pr: PullRequest,
+                                          all_open_prs: List[PullRequest]) -> List[Tuple[PullRequest, int]]:
+        """Returns pairs of (PR, level below the given PR)"""
+
+        visited_head_branches: Set[str] = set([])
+
+        def reverse_pr_dfs(pr: PullRequest, depth: int) -> Iterator[Tuple[PullRequest, int]]:
+            visited_head_branches.add(pr.head)
+            down_prs = filter(lambda x: x.base == pr.head, all_open_prs)
+            for down_pr in sorted(down_prs, key=lambda x: x.number):
+                if down_pr.head not in visited_head_branches:
+                    yield (down_pr, depth + 1)
+                    yield from reverse_pr_dfs(down_pr, depth + 1)
+        return list(reverse_pr_dfs(original_pr, 0))
+
+    @staticmethod
+    def __get_upwards_path_including_pr(spec: CodeHostingSpec, original_pr: PullRequest,
+                                        all_open_prs: List[PullRequest]) -> List[PullRequest]:
         visited_head_branches: List[str] = [original_pr.head]
         path: List[PullRequest] = [original_pr]
         pr_base: Optional[str] = original_pr.base
@@ -2432,7 +2456,8 @@ class MacheteClient:
             return list(itertools.dropwhile(lambda line: line.strip() == '', strs))
 
         lines = skip_leading_empty(old_description.splitlines()) if old_description else []
-        text_to_prepend = self.__generate_text_to_prepend_to_pr_description(code_hosting_client, pr)
+        style = self.__get_pr_description_into_style_from_config(code_hosting_client._spec)
+        text_to_prepend = self.__generate_pr_description_intro(code_hosting_client, pr, style)
         lines_to_prepend = text_to_prepend.splitlines() if text_to_prepend else []
         if self.START_GIT_MACHETE_GENERATED_COMMENT in lines and self.END_GIT_MACHETE_GENERATED_COMMENT in lines:
             start_index = lines.index(self.START_GIT_MACHETE_GENERATED_COMMENT)
@@ -2592,31 +2617,70 @@ class MacheteClient:
     START_GIT_MACHETE_GENERATED_COMMENT = '<!-- start git-machete generated -->'
     END_GIT_MACHETE_GENERATED_COMMENT = '<!-- end git-machete generated -->'
 
-    def __generate_text_to_prepend_to_pr_description(self, code_hosting_client: CodeHostingClient, pr: PullRequest) -> str:
+    def __get_pr_description_into_style_from_config(self, spec: CodeHostingSpec) -> PRDescriptionIntroStyle:
+        config_key = spec.git_config_keys.pr_description_intro_style
+        return PRDescriptionIntroStyle.from_string(
+            value=self.__git.get_config_attr(key=config_key, default_value="up-only"),
+            from_where=f"`{config_key}` git config key"
+        )
 
-        prs_for_base_branch = code_hosting_client.get_open_pull_requests_by_head(LocalBranchShortName(pr.base))
-        if len(prs_for_base_branch) < 1:
+    def __generate_pr_description_intro(self, code_hosting_client: CodeHostingClient,
+                                        pr: PullRequest, style: PRDescriptionIntroStyle) -> str:
+        if style == PRDescriptionIntroStyle.NONE:
             return ''
+
         # For determining the PR chain, we need to fetch all PRs from the repo.
         # We could just fetch them straight away... but this list can be quite long for commercial monorepos,
-        # esp. given that GitHub and GitLab limit the single page to 100 PRs (so multiple HTTP requests would be needed).
-        # As a slight optimization, let's fetch the full PR list only if the current PR has a base PR at all.
-        config = code_hosting_client._spec
-        display_name = config.display_name
-        pr_short_name = config.pr_short_name
-        print(f'Checking for open {display_name} {pr_short_name}s (to determine {pr_short_name} chain)... ', end='', flush=True)
+        # esp. given that GitHub and GitLab limit the single page to 100 PRs (so multiple HTTP requests may be needed).
+        # As a slight optimization, in the default UP_ONLY style,
+        # let's fetch the full PR list only if the current PR has a base PR at all.
+        # In FULL style, we need to check for downstream PRs as well, so the full PR list needs to be fetched anyway.
+        # That's also the performance reason behind selecting UP_ONLY and not FULL as the default style.
+        prs_for_base_branch = code_hosting_client.get_open_pull_requests_by_head(LocalBranchShortName(pr.base))
+        if style == PRDescriptionIntroStyle.UP_ONLY and len(prs_for_base_branch) == 0:
+            return ''
+        spec = code_hosting_client._spec
+        display_name = spec.display_name
+        pr_short_name = spec.pr_short_name
+        determine_what = 'chain' if style == PRDescriptionIntroStyle.UP_ONLY else 'tree'
+        print(f'Checking for open {display_name} {pr_short_name}s (to determine {pr_short_name} {determine_what})... ', end='', flush=True)
         all_open_prs: List[PullRequest] = code_hosting_client.get_open_pull_requests()
         print(fmt('<green><b>OK</b></green>'))
-        pr_path = self.__get_path_from_pr_chain(config, pr, all_open_prs)
+        pr_up_path = reversed(self.__get_upwards_path_including_pr(spec, pr, all_open_prs))
+        if style == PRDescriptionIntroStyle.FULL:
+            pr_down_tree = self.__get_downwards_tree_excluding_pr(pr, all_open_prs)
+        else:
+            pr_down_tree = []
 
         prepend = f'{self.START_GIT_MACHETE_GENERATED_COMMENT}\n\n'
-        prepend += f'# Based on {prs_for_base_branch[0].display_text(fmt=False)}\n\n'
+        # In FULL mode, we're likely to generate the intro even when there are NO upstream PRs above
+        if len(prs_for_base_branch) >= 1:
+            prepend += f'# Based on {prs_for_base_branch[0].display_text(fmt=False)}\n\n'
+
+        if pr_down_tree:
+            prepend += f'## Chain of upstream {pr_short_name}s & tree of downstream {pr_short_name}s'
+        else:
+            prepend += f'## Chain of upstream {pr_short_name}s'
         current_date = utils.get_current_date()
-        prepend += f'## Full chain of {pr_short_name}s as of {current_date}\n\n'
-        for ancestor_pr in pr_path:
-            prepend += f'* {ancestor_pr.display_text(fmt=False)}:\n'
-            prepend += f'  `{ancestor_pr.head}` ➔ `{ancestor_pr.base}`\n'
-        prepend += '\n'
+        prepend += f' as of {current_date}\n\n'
+
+        def pr_entry(_pr: PullRequest, _depth: int) -> str:
+            result = '  ' * _depth
+            display_text = _pr.display_text(fmt=False)
+            if _pr.number == pr.number:
+                result += f'* **{display_text} (THIS ONE)**:\n'
+            else:
+                result += f'* {display_text}:\n'
+            result += '  ' * _depth
+            result += f'  `{_pr.base}` ← `{_pr.head}`\n\n'
+            return result
+
+        base_depth = 0
+        for up_pr in pr_up_path:
+            prepend += pr_entry(up_pr, base_depth)
+            base_depth += 1
+        for (down_pr, depth) in pr_down_tree:
+            prepend += pr_entry(down_pr, base_depth + depth)
         prepend += f'{self.END_GIT_MACHETE_GENERATED_COMMENT}\n'
         return prepend
 
@@ -2721,12 +2785,14 @@ class MacheteClient:
             title=title, description=description, draft=opt_draft)
         print(fmt(f'{ok_str}, see `{pr.html_url}`'))
 
+        style = self.__get_pr_description_into_style_from_config(spec)
         # If base branch has NOT originally been found on the remote,
-        # we can be sure that a longer chain of PRs above the newly-created PR does NOT exist
-        if base_branch_found_on_remote:
+        # we can be sure that a longer chain of PRs above the newly-created PR does NOT exist.
+        # So in the default UP_ONLY mode, we can skip generating the intro completely.
+        if base_branch_found_on_remote or style == PRDescriptionIntroStyle.FULL:
             # As the description may include the reference to this PR itself (in case of a chain of >=2 PRs),
             # let's update the PR description after it's already created (so that we know the current PR's number).
-            text_to_prepend = self.__generate_text_to_prepend_to_pr_description(code_hosting_client, pr)
+            text_to_prepend = self.__generate_pr_description_intro(code_hosting_client, pr, style)
             if text_to_prepend:
                 if description:
                     text_to_prepend += '\n'

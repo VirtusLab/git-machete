@@ -89,6 +89,7 @@ class CodeHostingGitConfigKeys(NamedTuple):
     remote: str
     annotate_with_urls: str
     force_description_from_commit_message: str
+    pr_description_intro_style: str
 
     def for_locating_repo_message(self) -> str:
         return f"`{self.domain}`, `{self.organization}`, `{self.repository}`, `{self.remote}`"

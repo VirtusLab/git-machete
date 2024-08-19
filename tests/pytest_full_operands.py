@@ -23,8 +23,8 @@ def pytest_assertrepr_compare(config, op: str, left, right):
             return [''] + ['  ' + x for x in arg.splitlines()] + ['']
         return [
             'Comparing values:',
-            'left:', *lines_for(left),
-            'right:', *lines_for(right)
+            'left (typically meaning actual):', *lines_for(left),
+            'right (typically meaning expected):', *lines_for(right)
         ]
 
 

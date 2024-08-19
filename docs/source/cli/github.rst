@@ -112,10 +112,10 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 ``retarget-pr [-b|--branch=<branch>] [--ignore-if-missing]``:
     Sets the base of the current (or specified) branch's PR to upstream (parent) branch, as seen by git machete (see ``git machete show up``).
 
-    If after changing the base the PR ends up stacked atop another PR, the PR description posted to GitHub will be prepended with a section
-    listing the entire related chain of PRs.
+    If after changing the base the PR ends up stacked atop another PR, the PR description posted to GitHub will be prepended
+    with an intro section listing the entire related chain of PRs.
 
-    This header will be updated or removed accordingly with the subsequent runs of ``retarget-pr``.
+    This header will be updated or removed accordingly with the subsequent runs of ``retarget-pr``, even if the base branch is already up to date.
 
     **Options:**
 
@@ -143,6 +143,9 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 
 ``machete.github.forceDescriptionFromCommitMessage`` (``create-pr`` only):
   .. include:: git-config-keys/github_forceDescriptionFromCommitMessage.rst
+
+``machete.github.prDescriptionIntroStyle`` (``create-pr``, ``restack-pr`` and ``retarget-pr``):
+  .. include:: git-config-keys/github_prDescriptionIntroStyle.rst
 
 **Environment variables (all subcommands):**
 

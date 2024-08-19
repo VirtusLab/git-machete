@@ -27,9 +27,9 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Aug 22, 2024" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Aug 23, 2024" "" "git-machete"
 .SH NAME
-git-machete \- git-machete 3.28.1
+git-machete \- git-machete 3.29.0
 .sp
 git machete is a robust tool that \fBsimplifies your git workflows\fP\&.
 .sp
@@ -360,6 +360,12 @@ but also \fBgithub checkout\-prs\fP, \fBgithub create\-pr\fP, \fBgithub retarget
 Setting this config key to \fBtrue\fP will force \fBgit machete github create\-pr\fP to take PR description
 from the message body of the first unique commit of the branch, even if \fB\&.git/info/description\fP and/or \fB\&.github/pull_request_template.md\fP is present.
 .TP
+.B \fBmachete.github.prDescriptionIntroStyle\fP:
+Select the style of the intro prepended to PR description:
+* \fBfull\fP    \-\-\- include both a chain of upstream PRs (typically leading to \fBmain\fP, \fBmaster\fP, \fBdevelop\fP etc.) and a tree of downstream PRs
+* \fBup\-only\fP \-\-\- default, include only a chain of upstream PRs
+* \fBnone\fP    \-\-\- prepend no intro to the PR description at all
+.TP
 .B \fBmachete.gitlab.{domain,remote,namespace,project}\fP:
 .INDENT 7.0
 .INDENT 3.5
@@ -391,6 +397,12 @@ but also \fBgitlab checkout\-mrs\fP, \fBgitlab create\-mr\fP, \fBgitlab retarget
 .B \fBmachete.gitlab.forceDescriptionFromCommitMessage\fP:
 Setting this config key to \fBtrue\fP will force \fBgit machete gitlab create\-mr\fP to take MR description
 from the message body of the first unique commit of the branch, even if \fB\&.git/info/description\fP and/or \fB\&.gitlab/merge_request_templates/Default.md\fP is present.
+.TP
+.B \fBmachete.gitlab.mrDescriptionIntroStyle\fP:
+Select the style of the intro prepended to MR description:
+* \fBfull\fP    \-\-\- include both a chain of upstream MRs (typically leading to \fBmain\fP, \fBmaster\fP, \fBdevelop\fP etc.) and a tree of downstream MRs
+* \fBup\-only\fP \-\-\- default, include only a chain of upstream MRs
+* \fBnone\fP    \-\-\- prepend no intro to the MR description at all
 .TP
 .B \fBmachete.overrideForkPoint.<branch>.to\fP:
 Executing \fBgit machete fork\-point \-\-override\-to[\-parent|\-inferred|=<revision>] [<branch>]\fP sets up a fork point override for \fB<branch>\fP\&.
@@ -1009,10 +1021,10 @@ Draft PRs don\(aqt get code owners automatically added as reviewers.
 .B \fBretarget\-pr [\-b|\-\-branch=<branch>] [\-\-ignore\-if\-missing]\fP:
 Sets the base of the current (or specified) branch\(aqs PR to upstream (parent) branch, as seen by git machete (see \fBgit machete show up\fP).
 .sp
-If after changing the base the PR ends up stacked atop another PR, the PR description posted to GitHub will be prepended with a section
-listing the entire related chain of PRs.
+If after changing the base the PR ends up stacked atop another PR, the PR description posted to GitHub will be prepended
+with an intro section listing the entire related chain of PRs.
 .sp
-This header will be updated or removed accordingly with the subsequent runs of \fBretarget\-pr\fP\&.
+This header will be updated or removed accordingly with the subsequent runs of \fBretarget\-pr\fP, even if the base branch is already up to date.
 .sp
 \fBOptions:\fP
 .INDENT 7.0
@@ -1075,6 +1087,12 @@ but also \fBgithub checkout\-prs\fP, \fBgithub create\-pr\fP, \fBgithub retarget
 .B \fBmachete.github.forceDescriptionFromCommitMessage\fP (\fBcreate\-pr\fP only):
 Setting this config key to \fBtrue\fP will force \fBgit machete github create\-pr\fP to take PR description
 from the message body of the first unique commit of the branch, even if \fB\&.git/info/description\fP and/or \fB\&.github/pull_request_template.md\fP is present.
+.TP
+.B \fBmachete.github.prDescriptionIntroStyle\fP (\fBcreate\-pr\fP, \fBrestack\-pr\fP and \fBretarget\-pr\fP):
+Select the style of the intro prepended to PR description:
+* \fBfull\fP    \-\-\- include both a chain of upstream PRs (typically leading to \fBmain\fP, \fBmaster\fP, \fBdevelop\fP etc.) and a tree of downstream PRs
+* \fBup\-only\fP \-\-\- default, include only a chain of upstream PRs
+* \fBnone\fP    \-\-\- prepend no intro to the PR description at all
 .UNINDENT
 .sp
 \fBEnvironment variables (all subcommands):\fP
@@ -1233,10 +1251,10 @@ Draft MRs don\(aqt get code owners automatically added as reviewers.
 .B \fBretarget\-mr [\-b|\-\-branch=<branch>] [\-\-ignore\-if\-missing]\fP:
 Sets the target of the current (or specified) branch\(aqs MR to upstream (parent) branch, as seen by git machete (see \fBgit machete show up\fP).
 .sp
-If after changing the target the MR ends up stacked atop another MR, the MR description posted to GitLab will be prepended with a section
-listing the entire related chain of MRs.
+If after changing the target the MR ends up stacked atop another MR, the MR description posted to GitLab will be prepended
+with an intro section listing the entire related chain of MRs.
 .sp
-This header will be updated or removed accordingly with the subsequent runs of \fBretarget\-mr\fP\&.
+This header will be updated or removed accordingly with the subsequent runs of \fBretarget\-mr\fP, even if the target branch is already up to date.
 .sp
 \fBOptions:\fP
 .INDENT 7.0
@@ -1285,6 +1303,12 @@ but also \fBgitlab checkout\-mrs\fP, \fBgitlab create\-mr\fP, \fBgitlab retarget
 .B \fBmachete.gitlab.forceDescriptionFromCommitMessage\fP (\fBcreate\-mr\fP only):
 Setting this config key to \fBtrue\fP will force \fBgit machete gitlab create\-mr\fP to take MR description
 from the message body of the first unique commit of the branch, even if \fB\&.git/info/description\fP and/or \fB\&.gitlab/merge_request_templates/Default.md\fP is present.
+.TP
+.B \fBmachete.gitlab.mrDescriptionIntroStyle\fP (\fBcreate\-mr\fP, \fBrestack\-mr\fP and \fBretarget\-mr\fP):
+Select the style of the intro prepended to PR description:
+* \fBfull\fP    \-\-\- include both a chain of upstream PRs (typically leading to \fBmain\fP, \fBmaster\fP, \fBdevelop\fP etc.) and a tree of downstream PRs
+* \fBup\-only\fP \-\-\- default, include only a chain of upstream PRs
+* \fBnone\fP    \-\-\- prepend no intro to the PR description at all
 .UNINDENT
 .sp
 \fBEnvironment variables (all subcommands):\fP
