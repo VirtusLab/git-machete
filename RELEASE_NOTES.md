@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.28.1
+
 ## New in git-machete 3.28.0
 
 - added: ability to specify pass-through flags in `diff` and `log`, for example `git machete diff -- file.txt`, `git machete log -- --patch` (partly contributed by @tdyas)
