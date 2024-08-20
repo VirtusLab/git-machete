@@ -14,7 +14,8 @@ from git_machete import __version__, git_config_keys, utils
 from git_machete.github import GitHubClient
 from git_machete.gitlab import GitLabClient
 
-from .client import MacheteClient, SquashMergeDetection, TraverseStartFrom
+from .client import (MacheteClient, SquashMergeDetection, TraverseReturnTo,
+                     TraverseStartFrom)
 from .exceptions import (ExitCode, InteractionStopped, MacheteException,
                          UnderlyingGitException, UnexpectedMacheteException)
 from .generated_docs import long_docs, short_docs
@@ -900,6 +901,7 @@ def launch(orig_args: List[str]) -> None:
             if cli_opts.opt_start_from not in {"here", "root", "first-root"}:
                 raise MacheteException(f"Invalid value for `--start-from` flag: `{cli_opts.opt_start_from}`. "
                                        "Valid values are here, root, first-root")
+            opt_return_to = TraverseReturnTo.from_string(cli_opts.opt_return_to, "`--return-to` flag")
             opt_squash_merge_detection = SquashMergeDetection.from_string(
                 cli_opts.opt_squash_merge_detection_string, cli_opts.opt_squash_merge_detection_origin)
             opt_start_from = TraverseStartFrom.from_string(cli_opts.opt_start_from, "`--start-from` flag")
@@ -914,7 +916,7 @@ def launch(orig_args: List[str]) -> None:
                 opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
                 opt_push_tracked=cli_opts.opt_push_tracked,
                 opt_push_untracked=cli_opts.opt_push_untracked,
-                opt_return_to=cli_opts.opt_return_to,
+                opt_return_to=opt_return_to,
                 opt_squash_merge_detection=opt_squash_merge_detection,
                 opt_start_from=opt_start_from,
                 opt_yes=cli_opts.opt_yes)

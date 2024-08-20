@@ -79,10 +79,16 @@ class SquashMergeDetection(ParsableEnum):
     EXACT = auto()
 
 
+class TraverseReturnTo(ParsableEnum):
+    HERE = auto()
+    NEAREST_REMAINING = auto()
+    STAY = auto()  # noqa: F841
+
+
 class TraverseStartFrom(ParsableEnum):
-    HERE = "here"
-    ROOT = "root"
-    FIRST_ROOT = "first-root"
+    HERE = auto()
+    ROOT = auto()
+    FIRST_ROOT = auto()
 
 
 class MacheteClient:
@@ -748,7 +754,7 @@ class MacheteClient:
             opt_no_interactive_rebase: bool,
             opt_push_tracked: bool,
             opt_push_untracked: bool,
-            opt_return_to: str,
+            opt_return_to: TraverseReturnTo,
             opt_squash_merge_detection: SquashMergeDetection,
             opt_start_from: TraverseStartFrom,
             opt_yes: bool
@@ -992,11 +998,11 @@ class MacheteClient:
                 except InteractionStopped:
                     return
 
-        if opt_return_to == "here":
+        if opt_return_to == TraverseReturnTo.HERE:
             self.__git.checkout(initial_branch)
-        elif opt_return_to == "nearest-remaining":
+        elif opt_return_to == TraverseReturnTo.NEAREST_REMAINING:
             self.__git.checkout(nearest_remaining_branch)
-        # otherwise opt_return_to == "stay", so no action is needed
+        # otherwise opt_return_to == TraverseReturnTo.STAY, so no action is needed
 
         self.__print_new_line(False)
         self.status(
@@ -1014,10 +1020,10 @@ class MacheteClient:
             print(fmt("Tip: `traverse` by default starts from the current branch, "
                       "use flags (`--start-from=`, `--whole` or `-w`, `-W`) to change this behavior.\n"
                       "Further info under `git machete traverse --help`."))
-        if opt_return_to == "here" or (
-                opt_return_to == "nearest-remaining" and nearest_remaining_branch == initial_branch):
+        if opt_return_to == TraverseReturnTo.HERE or (
+                opt_return_to == TraverseReturnTo.NEAREST_REMAINING and nearest_remaining_branch == initial_branch):
             print(f"Returned to the initial branch {bold(initial_branch)}")
-        elif opt_return_to == "nearest-remaining" and nearest_remaining_branch != initial_branch:
+        elif opt_return_to == TraverseReturnTo.NEAREST_REMAINING and nearest_remaining_branch != initial_branch:
             print(
                 f"The initial branch {bold(initial_branch)} has been slid out. "
                 f"Returned to nearest remaining managed branch {bold(nearest_remaining_branch)}")
