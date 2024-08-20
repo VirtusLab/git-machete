@@ -11,11 +11,10 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, TypeVar, Union
 
 import git_machete.options
 from git_machete import __version__, git_config_keys, utils
-from git_machete.constants import SquashMergeDetection
 from git_machete.github import GitHubClient
 from git_machete.gitlab import GitLabClient
 
-from .client import MacheteClient
+from .client import MacheteClient, SquashMergeDetection, TraverseStartFrom
 from .exceptions import (ExitCode, InteractionStopped, MacheteException,
                          UnderlyingGitException, UnexpectedMacheteException)
 from .generated_docs import long_docs, short_docs
@@ -903,6 +902,7 @@ def launch(orig_args: List[str]) -> None:
                                        "Valid values are here, root, first-root")
             opt_squash_merge_detection = SquashMergeDetection.from_string(
                 cli_opts.opt_squash_merge_detection_string, cli_opts.opt_squash_merge_detection_origin)
+            opt_start_from = TraverseStartFrom.from_string(cli_opts.opt_start_from, "`--start-from` flag")
 
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             git.expect_no_operation_in_progress()
@@ -916,7 +916,7 @@ def launch(orig_args: List[str]) -> None:
                 opt_push_untracked=cli_opts.opt_push_untracked,
                 opt_return_to=cli_opts.opt_return_to,
                 opt_squash_merge_detection=opt_squash_merge_detection,
-                opt_start_from=cli_opts.opt_start_from,
+                opt_start_from=opt_start_from,
                 opt_yes=cli_opts.opt_yes)
         elif cmd == "update":
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)

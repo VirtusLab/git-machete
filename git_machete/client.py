@@ -8,7 +8,8 @@ import sys
 import textwrap
 from collections import OrderedDict
 from enum import Enum, auto
-from typing import Callable, Dict, Iterator, List, Optional, Tuple
+from typing import (Callable, Dict, Iterator, List, Optional, Tuple, Type,
+                    TypeVar)
 
 from . import git_config_keys, utils
 from .annotation import Annotation
@@ -18,7 +19,7 @@ from .code_hosting import (CodeHostingClient, CodeHostingSpec,
                            is_matching_remote_url)
 from .constants import (DISCOVER_DEFAULT_FRESH_BRANCH_COUNT,
                         INITIAL_COMMIT_COUNT_FOR_LOG,
-                        TOTAL_COMMIT_COUNT_FOR_LOG, SquashMergeDetection)
+                        TOTAL_COMMIT_COUNT_FOR_LOG)
 from .exceptions import (InteractionStopped, MacheteException,
                          UnexpectedMacheteException)
 from .git_operations import (HEAD, AnyBranchName, AnyRevision, BranchPair,
@@ -53,9 +54,35 @@ sync_to_parent_status_to_junction_ascii_only_map: Dict[SyncToParentStatus, str] 
 }
 
 
+E = TypeVar('E', bound='Enum')
+
+
+class ParsableEnum(Enum):
+    @classmethod
+    def from_string(cls: Type[E], value: str, from_where: Optional[str]) -> E:
+        try:
+            return cls[value.upper().replace("-", "_")]
+        except KeyError:
+            valid_values = ', '.join(e.name.lower().replace("_", "-") for e in cls)
+            prefix = f"Invalid value for {from_where}" if from_where else "Invalid value"
+            raise MacheteException(f"{prefix}: `{value}`. Valid values are `{valid_values}`")
+
+
 class PickRoot(Enum):
     FIRST = auto()
     LAST = auto()
+
+
+class SquashMergeDetection(ParsableEnum):
+    NONE = auto()
+    SIMPLE = auto()
+    EXACT = auto()
+
+
+class TraverseStartFrom(ParsableEnum):
+    HERE = "here"
+    ROOT = "root"
+    FIRST_ROOT = "first-root"
 
 
 class MacheteClient:
@@ -723,7 +750,7 @@ class MacheteClient:
             opt_push_untracked: bool,
             opt_return_to: str,
             opt_squash_merge_detection: SquashMergeDetection,
-            opt_start_from: str,
+            opt_start_from: TraverseStartFrom,
             opt_yes: bool
     ) -> None:
         self.expect_at_least_one_managed_branch()
@@ -740,20 +767,20 @@ class MacheteClient:
 
         initial_branch = nearest_remaining_branch = self.__git.get_current_branch()
 
-        if opt_start_from == "root":
+        if opt_start_from == TraverseStartFrom.ROOT:
             dest = self.root_branch(self.__git.get_current_branch(), if_unmanaged=PickRoot.FIRST)
             self.__print_new_line(False)
             print(f"Checking out the root branch ({bold(dest)})")
             self.__git.checkout(dest)
             current_branch = dest
-        elif opt_start_from == "first-root":
+        elif opt_start_from == TraverseStartFrom.FIRST_ROOT:
             # Note that we already ensured that there is at least one managed branch.
             dest = self.managed_branches[0]
             self.__print_new_line(False)
             print(f"Checking out the first root branch ({bold(dest)})")
             self.__git.checkout(dest)
             current_branch = dest
-        else:  # cli_opts.opt_start_from == "here"
+        else:  # cli_opts.opt_start_from == TraverseStartFrom.HERE
             current_branch = self.__git.get_current_branch()
             self.expect_in_managed_branches(current_branch)
 
