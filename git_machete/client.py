@@ -8,7 +8,8 @@ import sys
 import textwrap
 from collections import OrderedDict
 from enum import Enum, auto
-from typing import Callable, Dict, Iterator, List, Optional, Tuple
+from typing import (Callable, Dict, Iterator, List, Optional, Tuple, Type,
+                    TypeVar)
 
 from . import git_config_keys, utils
 from .annotation import Annotation
@@ -17,19 +18,77 @@ from .code_hosting import (CodeHostingClient, CodeHostingSpec,
                            OrganizationAndRepositoryAndRemote, PullRequest,
                            is_matching_remote_url)
 from .constants import (DISCOVER_DEFAULT_FRESH_BRANCH_COUNT,
-                        INITIAL_COMMIT_COUNT_FOR_LOG, PICK_FIRST_ROOT,
-                        PICK_LAST_ROOT, TOTAL_COMMIT_COUNT_FOR_LOG,
-                        GitFormatPatterns, SquashMergeDetection,
-                        SyncToRemoteStatuses)
+                        INITIAL_COMMIT_COUNT_FOR_LOG,
+                        TOTAL_COMMIT_COUNT_FOR_LOG)
 from .exceptions import (InteractionStopped, MacheteException,
                          UnexpectedMacheteException)
 from .git_operations import (HEAD, AnyBranchName, AnyRevision, BranchPair,
                              ForkPointOverrideData, FullCommitHash, GitContext,
-                             GitLogEntry, LocalBranchShortName,
-                             RemoteBranchShortName)
+                             GitFormatPatterns, GitLogEntry,
+                             LocalBranchShortName, RemoteBranchShortName,
+                             SyncToRemoteStatus)
 from .utils import (AnsiEscapeCodes, PopenResult, bold, colored, debug, dim,
                     excluding, flat_map, fmt, get_pretty_choices, get_second,
                     tupled, underline, warn)
+
+
+class SyncToParentStatus(Enum):
+    InSync = auto()
+    MergedToParent = auto()
+    InSyncButForkPointOff = auto()
+    OutOfSync = auto()
+
+
+sync_to_parent_status_to_edge_color_map: Dict[SyncToParentStatus, str] = {
+    SyncToParentStatus.MergedToParent: AnsiEscapeCodes.DIM,
+    SyncToParentStatus.InSync: AnsiEscapeCodes.GREEN,
+    SyncToParentStatus.InSyncButForkPointOff: AnsiEscapeCodes.YELLOW,
+    SyncToParentStatus.OutOfSync: AnsiEscapeCodes.RED
+}
+
+sync_to_parent_status_to_junction_ascii_only_map: Dict[SyncToParentStatus, str] = {
+    SyncToParentStatus.MergedToParent: "m-",
+    SyncToParentStatus.InSync: "o-",
+    SyncToParentStatus.InSyncButForkPointOff: "?-",
+    SyncToParentStatus.OutOfSync: "x-"
+}
+
+
+E = TypeVar('E', bound='Enum')
+
+
+class ParsableEnum(Enum):
+    @classmethod
+    def from_string(cls: Type[E], value: str, from_where: Optional[str]) -> E:
+        try:
+            return cls[value.upper().replace("-", "_")]
+        except KeyError:
+            valid_values = ', '.join(e.name.lower().replace("_", "-") for e in cls)
+            prefix = f"Invalid value for {from_where}" if from_where else "Invalid value"
+            raise MacheteException(f"{prefix}: `{value}`. Valid values are `{valid_values}`")
+
+
+class PickRoot(Enum):
+    FIRST = auto()
+    LAST = auto()
+
+
+class SquashMergeDetection(ParsableEnum):
+    NONE = auto()
+    SIMPLE = auto()
+    EXACT = auto()
+
+
+class TraverseReturnTo(ParsableEnum):
+    HERE = auto()
+    NEAREST_REMAINING = auto()
+    STAY = auto()  # noqa: F841
+
+
+class TraverseStartFrom(ParsableEnum):
+    HERE = auto()
+    ROOT = auto()
+    FIRST_ROOT = auto()
 
 
 class MacheteClient:
@@ -695,9 +754,9 @@ class MacheteClient:
             opt_no_interactive_rebase: bool,
             opt_push_tracked: bool,
             opt_push_untracked: bool,
-            opt_return_to: str,
+            opt_return_to: TraverseReturnTo,
             opt_squash_merge_detection: SquashMergeDetection,
-            opt_start_from: str,
+            opt_start_from: TraverseStartFrom,
             opt_yes: bool
     ) -> None:
         self.expect_at_least_one_managed_branch()
@@ -714,20 +773,20 @@ class MacheteClient:
 
         initial_branch = nearest_remaining_branch = self.__git.get_current_branch()
 
-        if opt_start_from == "root":
-            dest = self.root_branch(self.__git.get_current_branch(), if_unmanaged=PICK_FIRST_ROOT)
+        if opt_start_from == TraverseStartFrom.ROOT:
+            dest = self.root_branch(self.__git.get_current_branch(), if_unmanaged=PickRoot.FIRST)
             self.__print_new_line(False)
             print(f"Checking out the root branch ({bold(dest)})")
             self.__git.checkout(dest)
             current_branch = dest
-        elif opt_start_from == "first-root":
+        elif opt_start_from == TraverseStartFrom.FIRST_ROOT:
             # Note that we already ensured that there is at least one managed branch.
             dest = self.managed_branches[0]
             self.__print_new_line(False)
             print(f"Checking out the first root branch ({bold(dest)})")
             self.__git.checkout(dest)
             current_branch = dest
-        else:  # cli_opts.opt_start_from == "here"
+        else:  # cli_opts.opt_start_from == TraverseStartFrom.HERE
             current_branch = self.__git.get_current_branch()
             self.expect_in_managed_branches(current_branch)
 
@@ -741,13 +800,13 @@ class MacheteClient:
                 needs_slide_out = self.annotations[branch].qualifiers.slide_out
             s, remote = self.__git.get_combined_remote_sync_status(branch)
             if s in (
-                    SyncToRemoteStatuses.BEHIND_REMOTE,
-                    SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE):
+                    SyncToRemoteStatus.BEHIND_REMOTE,
+                    SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE):
                 needs_remote_sync = True
             elif s in (
-                    SyncToRemoteStatuses.UNTRACKED,
-                    SyncToRemoteStatuses.AHEAD_OF_REMOTE,
-                    SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE):
+                    SyncToRemoteStatus.UNTRACKED,
+                    SyncToRemoteStatus.AHEAD_OF_REMOTE,
+                    SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE):
                 needs_remote_sync = True
                 if branch in self.annotations:
                     needs_remote_sync = self.annotations[branch].qualifiers.push
@@ -763,7 +822,7 @@ class MacheteClient:
                 # branch qualifies for slide out;
                 # neither rebase nor merge will be suggested in such case anyway.
                 needs_parent_sync: bool = False
-            elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
+            elif s == SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
                 # Avoid unnecessary fork point check if we already know that the
                 # branch qualifies for resetting to remote counterpart;
                 # neither rebase nor merge will be suggested in such case anyway.
@@ -878,8 +937,8 @@ class MacheteClient:
 
                     s, remote = self.__git.get_combined_remote_sync_status(branch)
                     if s in (
-                            SyncToRemoteStatuses.BEHIND_REMOTE,
-                            SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE):
+                            SyncToRemoteStatus.BEHIND_REMOTE,
+                            SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE):
                         # This case is extremely unlikely in practice.
                         #
                         # For a freshly rebased/merged branch to be behind its remote, would require a specially crafted scenario
@@ -891,9 +950,9 @@ class MacheteClient:
                         # is still considered "logically newer" than the "physically newer" rebased/merge commit).
                         needs_remote_sync = True
                     elif s in (
-                            SyncToRemoteStatuses.UNTRACKED,
-                            SyncToRemoteStatuses.AHEAD_OF_REMOTE,
-                            SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE):
+                            SyncToRemoteStatus.UNTRACKED,
+                            SyncToRemoteStatus.AHEAD_OF_REMOTE,
+                            SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE):
                         needs_remote_sync = True
                         if branch in self.annotations:
                             needs_remote_sync = self.annotations[branch].qualifiers.push
@@ -906,10 +965,10 @@ class MacheteClient:
             if needs_remote_sync:
                 any_action_suggested = True
                 try:
-                    if s == SyncToRemoteStatuses.BEHIND_REMOTE:
+                    if s == SyncToRemoteStatus.BEHIND_REMOTE:
                         assert remote is not None
                         self.__handle_behind_state(current_branch, remote, opt_yes=opt_yes)
-                    elif s == SyncToRemoteStatuses.AHEAD_OF_REMOTE:
+                    elif s == SyncToRemoteStatus.AHEAD_OF_REMOTE:
                         assert remote is not None
                         self.__handle_ahead_state(
                             current_branch=current_branch,
@@ -917,16 +976,16 @@ class MacheteClient:
                             is_called_from_traverse=True,
                             opt_push_tracked=opt_push_tracked,
                             opt_yes=opt_yes)
-                    elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
+                    elif s == SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
                         self.__handle_diverged_and_older_state(current_branch, opt_yes=opt_yes)
-                    elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
+                    elif s == SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
                         assert remote is not None
                         self.__handle_diverged_and_newer_state(
                             current_branch=current_branch,
                             remote=remote,
                             opt_push_tracked=opt_push_tracked,
                             opt_yes=opt_yes)
-                    elif s == SyncToRemoteStatuses.UNTRACKED:
+                    elif s == SyncToRemoteStatus.UNTRACKED:
                         self.__handle_untracked_state(
                             branch=current_branch,
                             is_called_from_traverse=True,
@@ -939,11 +998,11 @@ class MacheteClient:
                 except InteractionStopped:
                     return
 
-        if opt_return_to == "here":
+        if opt_return_to == TraverseReturnTo.HERE:
             self.__git.checkout(initial_branch)
-        elif opt_return_to == "nearest-remaining":
+        elif opt_return_to == TraverseReturnTo.NEAREST_REMAINING:
             self.__git.checkout(nearest_remaining_branch)
-        # otherwise opt_return_to == "stay", so no action is needed
+        # otherwise opt_return_to == TraverseReturnTo.STAY, so no action is needed
 
         self.__print_new_line(False)
         self.status(
@@ -961,10 +1020,10 @@ class MacheteClient:
             print(fmt("Tip: `traverse` by default starts from the current branch, "
                       "use flags (`--start-from=`, `--whole` or `-w`, `-W`) to change this behavior.\n"
                       "Further info under `git machete traverse --help`."))
-        if opt_return_to == "here" or (
-                opt_return_to == "nearest-remaining" and nearest_remaining_branch == initial_branch):
+        if opt_return_to == TraverseReturnTo.HERE or (
+                opt_return_to == TraverseReturnTo.NEAREST_REMAINING and nearest_remaining_branch == initial_branch):
             print(f"Returned to the initial branch {bold(initial_branch)}")
-        elif opt_return_to == "nearest-remaining" and nearest_remaining_branch != initial_branch:
+        elif opt_return_to == TraverseReturnTo.NEAREST_REMAINING and nearest_remaining_branch != initial_branch:
             print(
                 f"The initial branch {bold(initial_branch)} has been slid out. "
                 f"Returned to nearest remaining managed branch {bold(nearest_remaining_branch)}")
@@ -1123,18 +1182,18 @@ class MacheteClient:
 
             s, remote = self.__git.get_combined_remote_sync_status(branch)
             sync_status = {
-                SyncToRemoteStatuses.NO_REMOTES: "",
-                SyncToRemoteStatuses.UNTRACKED: colored(" (untracked)", AnsiEscapeCodes.ORANGE),
-                SyncToRemoteStatuses.IN_SYNC_WITH_REMOTE: "",
-                SyncToRemoteStatuses.BEHIND_REMOTE:
+                SyncToRemoteStatus.NO_REMOTES: "",
+                SyncToRemoteStatus.UNTRACKED: colored(" (untracked)", AnsiEscapeCodes.ORANGE),
+                SyncToRemoteStatus.IN_SYNC_WITH_REMOTE: "",
+                SyncToRemoteStatus.BEHIND_REMOTE:
                     colored(f" (behind {bold(remote)})", AnsiEscapeCodes.RED),  # type: ignore [arg-type]
-                SyncToRemoteStatuses.AHEAD_OF_REMOTE:
+                SyncToRemoteStatus.AHEAD_OF_REMOTE:
                     colored(f" (ahead of {bold(remote)})", AnsiEscapeCodes.RED),  # type: ignore [arg-type]
-                SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
+                SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
                     colored(f" (diverged from & older than {bold(remote)})", AnsiEscapeCodes.RED),  # type: ignore [arg-type]
-                SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
+                SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
                     colored(f" (diverged from {bold(remote)})", AnsiEscapeCodes.RED)  # type: ignore [arg-type]
-            }[SyncToRemoteStatuses(s)]
+            }[SyncToRemoteStatus(s)]
 
             hook_output = ""
             if hook_executable:
@@ -1445,12 +1504,12 @@ class MacheteClient:
             return dbs
 
     def first_branch(self, branch: LocalBranchShortName) -> LocalBranchShortName:
-        root = self.root_branch(branch, if_unmanaged=PICK_FIRST_ROOT)
+        root = self.root_branch(branch, if_unmanaged=PickRoot.FIRST)
         root_dbs = self.__down_branches.get(root)
         return root_dbs[0] if root_dbs else root
 
     def last_branch(self, branch: LocalBranchShortName) -> LocalBranchShortName:
-        destination = self.root_branch(branch, if_unmanaged=PICK_LAST_ROOT)
+        destination = self.root_branch(branch, if_unmanaged=PickRoot.LAST)
         while self.__down_branches.get(destination):
             destination = self.__down_branches[destination][-1]
         return destination
@@ -1469,15 +1528,15 @@ class MacheteClient:
             raise MacheteException(f"Branch {bold(branch)} has no predecessor")
         return self.managed_branches[index]
 
-    def root_branch(self, branch: LocalBranchShortName, if_unmanaged: int) -> LocalBranchShortName:
+    def root_branch(self, branch: LocalBranchShortName, if_unmanaged: PickRoot) -> LocalBranchShortName:
         if branch not in self.managed_branches:
             if self.__roots:
-                if if_unmanaged == PICK_FIRST_ROOT:
+                if if_unmanaged == PickRoot.FIRST:
                     warn(
                         f"{bold(branch)} is not a managed branch, assuming "
                         f"{self.__roots[0]} (the first root) instead as root")
                     return self.__roots[0]
-                else:  # if_unmanaged == PICK_LAST_ROOT
+                else:  # if_unmanaged == PickRoot.LAST
                     warn(
                         f"{bold(branch)} is not a managed branch, assuming "
                         f"{self.__roots[-1]} (the last root) instead as root")
@@ -1712,7 +1771,7 @@ class MacheteClient:
         elif param in ("p", "prev"):
             return [self.prev_branch(branch)]
         elif param in ("r", "root"):
-            return [self.root_branch(branch, if_unmanaged=PICK_FIRST_ROOT)]
+            return [self.root_branch(branch, if_unmanaged=PickRoot.FIRST)]
         elif param in ("u", "up"):
             return [self.up(branch, prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)]
         else:  # an unknown direction is handled by argparse
@@ -1946,69 +2005,69 @@ class MacheteClient:
                     raise InteractionStopped
                 return
 
-        relation: int = self.__git.get_relation_to_remote_counterpart(branch, remote_branch)
+        relation = self.__git.get_relation_to_remote_counterpart(branch, remote_branch)
 
         message: str = {
-            SyncToRemoteStatuses.IN_SYNC_WITH_REMOTE:
+            SyncToRemoteStatus.IN_SYNC_WITH_REMOTE:
                 f"Branch {bold(branch)} is untracked, but its remote counterpart candidate {bold(remote_branch)} "
                 f"already exists and both branches point to the same commit.",
-            SyncToRemoteStatuses.BEHIND_REMOTE:
+            SyncToRemoteStatus.BEHIND_REMOTE:
                 f"Branch {bold(branch)} is untracked, but its remote counterpart candidate {bold(remote_branch)} "
                 f"already exists and is ahead of {bold(branch)}.",
-            SyncToRemoteStatuses.AHEAD_OF_REMOTE:
+            SyncToRemoteStatus.AHEAD_OF_REMOTE:
                 f"Branch {bold(branch)} is untracked, but its remote counterpart candidate {bold(remote_branch)} "
                 f"already exists and is behind {bold(branch)}.",
-            SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
+            SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
                 f"Branch {bold(branch)} is untracked, it diverged from its remote counterpart candidate {bold(remote_branch)}, "
                 f"and has {bold('older')} commits than {bold(remote_branch)}.",
-            SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
+            SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
                 f"Branch {bold(branch)} is untracked, it diverged from its remote counterpart candidate {bold(remote_branch)}, "
                 f"and has {bold('newer')} commits than {bold(remote_branch)}."
-        }[SyncToRemoteStatuses(relation)]
+        }[SyncToRemoteStatus(relation)]
 
         ask_message, ask_opt_yes_message = {
-            SyncToRemoteStatuses.IN_SYNC_WITH_REMOTE: (
+            SyncToRemoteStatus.IN_SYNC_WITH_REMOTE: (
                 f"Set the remote of {bold(branch)} to {bold(new_remote)} without pushing or pulling?" +
                 get_pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
                 f"Setting the remote of {bold(branch)} to {bold(new_remote)}..."
             ),
-            SyncToRemoteStatuses.BEHIND_REMOTE: (
+            SyncToRemoteStatus.BEHIND_REMOTE: (
                 f"Pull {bold(branch)} (fast-forward only) from {bold(new_remote)}?" + get_pretty_choices('y', 'N', 'q', 'yq',
                                                                                                          other_remote_choice),
                 f"Pulling {bold(branch)} (fast-forward only) from {bold(new_remote)}..."
             ),
-            SyncToRemoteStatuses.AHEAD_OF_REMOTE: (
+            SyncToRemoteStatus.AHEAD_OF_REMOTE: (
                 f"Push branch {bold(branch)} to {bold(new_remote)}?" + get_pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
                 f"Pushing branch {bold(branch)} to {bold(new_remote)}..."
             ),
-            SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: (
+            SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: (
                 f"Reset branch {bold(branch)} to the commit pointed by {bold(remote_branch)}?" + get_pretty_choices('y', 'N', 'q', 'yq',
                                                                                                                     other_remote_choice),
                 f"Resetting branch {bold(branch)} to the commit pointed by {bold(remote_branch)}..."
             ),
-            SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: (
+            SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: (
                 f"Push branch {bold(branch)} with force-with-lease to {bold(new_remote)}?" + get_pretty_choices('y', 'N', 'q', 'yq',
                                                                                                                 other_remote_choice),
                 f"Pushing branch {bold(branch)} with force-with-lease to {bold(new_remote)}..."
             )
-        }[SyncToRemoteStatuses(relation)]
+        }[SyncToRemoteStatus(relation)]
 
         override_answer: Optional[str] = {
-            SyncToRemoteStatuses.IN_SYNC_WITH_REMOTE: None,
-            SyncToRemoteStatuses.BEHIND_REMOTE: None,
-            SyncToRemoteStatuses.AHEAD_OF_REMOTE: None if opt_push_tracked else "N",
-            SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: None,
-            SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: None if opt_push_tracked else "N",
-        }[SyncToRemoteStatuses(relation)]
+            SyncToRemoteStatus.IN_SYNC_WITH_REMOTE: None,
+            SyncToRemoteStatus.BEHIND_REMOTE: None,
+            SyncToRemoteStatus.AHEAD_OF_REMOTE: None if opt_push_tracked else "N",
+            SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: None,
+            SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: None if opt_push_tracked else "N",
+        }[SyncToRemoteStatus(relation)]
 
         yes_action: Callable[[], None] = {
-            SyncToRemoteStatuses.IN_SYNC_WITH_REMOTE: lambda: self.__git.set_upstream_to(remote_branch),
-            SyncToRemoteStatuses.BEHIND_REMOTE: lambda: self.__git.pull_ff_only(new_remote, remote_branch),
-            SyncToRemoteStatuses.AHEAD_OF_REMOTE: lambda: self.__git.push(new_remote, branch),
-            SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: lambda: self.__git.reset_keep(remote_branch),
-            SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: lambda: self.__git.push(
+            SyncToRemoteStatus.IN_SYNC_WITH_REMOTE: lambda: self.__git.set_upstream_to(remote_branch),
+            SyncToRemoteStatus.BEHIND_REMOTE: lambda: self.__git.pull_ff_only(new_remote, remote_branch),
+            SyncToRemoteStatus.AHEAD_OF_REMOTE: lambda: self.__git.push(new_remote, branch),
+            SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: lambda: self.__git.reset_keep(remote_branch),
+            SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: lambda: self.__git.push(
                 new_remote, branch, force_with_lease=True)
-        }[SyncToRemoteStatuses(relation)]
+        }[SyncToRemoteStatus(relation)]
 
         print(message)
         ans = self.ask_if(ask_message, ask_opt_yes_message, override_answer=override_answer, opt_yes=opt_yes)
@@ -2298,9 +2357,9 @@ class MacheteClient:
         current_branch = self.__git.get_current_branch()
         s, remote = self.__git.get_combined_remote_sync_status(current_branch)
         statuses_to_push = (
-            SyncToRemoteStatuses.UNTRACKED,
-            SyncToRemoteStatuses.AHEAD_OF_REMOTE,
-            SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE)
+            SyncToRemoteStatus.UNTRACKED,
+            SyncToRemoteStatus.AHEAD_OF_REMOTE,
+            SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE)
         if s in statuses_to_push:
             if current_branch in self.annotations and not self.annotations[current_branch].qualifiers.push:
                 subcommand = "retarget-" + spec.pr_short_name.lower()
@@ -2315,7 +2374,7 @@ class MacheteClient:
             # Note that retarget should happen BEFORE push, see issue #1222
             self.retarget_pr(spec, head, ignore_if_missing=False)
 
-            if s == SyncToRemoteStatuses.AHEAD_OF_REMOTE:
+            if s == SyncToRemoteStatus.AHEAD_OF_REMOTE:
                 assert remote is not None
                 self.__handle_ahead_state(
                     current_branch=current_branch,
@@ -2323,7 +2382,7 @@ class MacheteClient:
                     is_called_from_traverse=False,
                     opt_push_tracked=True,
                     opt_yes=True)
-            elif s == SyncToRemoteStatuses.UNTRACKED:
+            elif s == SyncToRemoteStatus.UNTRACKED:
                 self.__handle_untracked_state(
                     branch=current_branch,
                     is_called_from_traverse=False,
@@ -2331,7 +2390,7 @@ class MacheteClient:
                     opt_push_tracked=True,
                     opt_push_untracked=True,
                     opt_yes=True)
-            elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
+            elif s == SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
                 assert remote is not None
                 self.__handle_diverged_and_newer_state(
                     current_branch=current_branch,
@@ -2355,12 +2414,12 @@ class MacheteClient:
                 print(f'{pr.display_text()} has been marked as ready for review again')
 
         else:
-            if s == SyncToRemoteStatuses.BEHIND_REMOTE:
+            if s == SyncToRemoteStatus.BEHIND_REMOTE:
                 warn(f"Branch {bold(current_branch)} is behind its remote counterpart. Consider using `git pull`.\n")
-            elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
+            elif s == SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
                 warn(f"Branch {bold(current_branch)} is diverged from and older than its remote counterpart. "
                      "Consider using `git reset --keep`.\n")
-            elif s == SyncToRemoteStatuses.IN_SYNC_WITH_REMOTE:
+            elif s == SyncToRemoteStatus.IN_SYNC_WITH_REMOTE:
                 pass
             else:  # case handled elsewhere
                 raise UnexpectedMacheteException(f"Could not retarget {spec.pr_full_name}: invalid sync-to-remote status `{s}`.")
@@ -2869,12 +2928,12 @@ class MacheteClient:
 
         s, remote = self.__git.get_combined_remote_sync_status(current_branch)
         statuses_to_push = (
-            SyncToRemoteStatuses.UNTRACKED,
-            SyncToRemoteStatuses.AHEAD_OF_REMOTE,
-            SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE)
+            SyncToRemoteStatus.UNTRACKED,
+            SyncToRemoteStatus.AHEAD_OF_REMOTE,
+            SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE)
         if s in statuses_to_push:
             if current_branch not in self.annotations or self.annotations[current_branch].qualifiers.push:
-                if s == SyncToRemoteStatuses.AHEAD_OF_REMOTE:
+                if s == SyncToRemoteStatus.AHEAD_OF_REMOTE:
                     assert remote is not None
                     self.__handle_ahead_state(
                         current_branch=current_branch,
@@ -2882,7 +2941,7 @@ class MacheteClient:
                         is_called_from_traverse=False,
                         opt_push_tracked=True,
                         opt_yes=opt_yes)
-                elif s == SyncToRemoteStatuses.UNTRACKED:
+                elif s == SyncToRemoteStatus.UNTRACKED:
                     self.__handle_untracked_state(
                         branch=current_branch,
                         is_called_from_traverse=False,
@@ -2890,7 +2949,7 @@ class MacheteClient:
                         opt_push_tracked=True,
                         opt_push_untracked=True,
                         opt_yes=opt_yes)
-                elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
+                elif s == SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
                     assert remote is not None
                     self.__handle_diverged_and_newer_state(
                         current_branch=current_branch,
@@ -2910,18 +2969,18 @@ class MacheteClient:
                 self.__print_new_line(False)
 
         else:
-            if s == SyncToRemoteStatuses.BEHIND_REMOTE:
+            if s == SyncToRemoteStatus.BEHIND_REMOTE:
                 warn(f"Branch {bold(current_branch)} is behind its remote counterpart. Consider using `git pull`.")
                 self.__print_new_line(False)
                 ans = self.ask_if(f"Proceed with creating {spec.pr_full_name}?" + get_pretty_choices('y', 'Q'),
                                   f"Proceeding with {spec.pr_full_name} creation...", opt_yes=opt_yes)
-            elif s == SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
+            elif s == SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
                 warn(f"Branch {bold(current_branch)} is diverged from and older than its remote counterpart. "
                      "Consider using `git reset --keep`.")
                 self.__print_new_line(False)
                 ans = self.ask_if(f"Proceed with creating {spec.pr_full_name}?" + get_pretty_choices('y', 'Q'),
                                   f"Proceeding with {spec.pr_full_name} creation...", opt_yes=opt_yes)
-            elif s == SyncToRemoteStatuses.NO_REMOTES:
+            elif s == SyncToRemoteStatus.NO_REMOTES:
                 raise MacheteException(
                     f"Could not create {spec.pr_full_name} - there are no remote repositories!")
             else:
@@ -2936,7 +2995,7 @@ class MacheteClient:
         branches_to_delete: List[LocalBranchShortName] = []
         for branch in self.managed_branches.copy():
             status, _ = self.__git.get_combined_remote_sync_status(branch)
-            if status == SyncToRemoteStatuses.UNTRACKED and not self.__down_branches.get(branch):
+            if status == SyncToRemoteStatus.UNTRACKED and not self.__down_branches.get(branch):
                 branches_to_delete.append(branch)
 
         self.__remove_branches_from_layout(branches_to_delete)
@@ -2977,25 +3036,3 @@ class MacheteClient:
     def should_perform_interactive_slide_out(cmd: str) -> bool:
         interactive_slide_out_safe_commands = {'traverse', 'status'}
         return MacheteClient.is_stdout_a_tty() and cmd in interactive_slide_out_safe_commands
-
-
-class SyncToParentStatus(Enum):
-    InSync = auto()
-    MergedToParent = auto()
-    InSyncButForkPointOff = auto()
-    OutOfSync = auto()
-
-
-sync_to_parent_status_to_edge_color_map: Dict[SyncToParentStatus, str] = {
-    SyncToParentStatus.MergedToParent: AnsiEscapeCodes.DIM,
-    SyncToParentStatus.InSync: AnsiEscapeCodes.GREEN,
-    SyncToParentStatus.InSyncButForkPointOff: AnsiEscapeCodes.YELLOW,
-    SyncToParentStatus.OutOfSync: AnsiEscapeCodes.RED
-}
-
-sync_to_parent_status_to_junction_ascii_only_map: Dict[SyncToParentStatus, str] = {
-    SyncToParentStatus.MergedToParent: "m-",
-    SyncToParentStatus.InSync: "o-",
-    SyncToParentStatus.InSyncButForkPointOff: "?-",
-    SyncToParentStatus.OutOfSync: "x-"
-}

@@ -3,13 +3,13 @@ import os
 import re
 import string
 import sys
+from enum import Enum, auto
 from pathlib import Path
 from typing import (Any, Dict, Iterator, List, Match, NamedTuple, Optional,
                     Set, Tuple)
 
 from . import utils
-from .constants import (MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION,
-                        GitFormatPatterns, SyncToRemoteStatuses)
+from .constants import MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION
 from .exceptions import UnderlyingGitException, UnexpectedMacheteException
 from .utils import (AnsiEscapeCodes, CommandResult, colored, debug, fmt,
                     hex_repr)
@@ -189,6 +189,28 @@ HEAD = AnyRevision.of("HEAD")
 # preserved, even though the `log.showSignature` setting also does not exist
 # prior to version 2.10.0. Fixes a bug documented in GitHub issue #1286.
 GIT_EXEC = ("git", "-c", "log.showSignature=false")
+
+
+class SyncToRemoteStatus(Enum):
+    NO_REMOTES = auto()
+    UNTRACKED = auto()
+    IN_SYNC_WITH_REMOTE = auto()
+    BEHIND_REMOTE = auto()
+    AHEAD_OF_REMOTE = auto()
+    DIVERGED_FROM_AND_OLDER_THAN_REMOTE = auto()
+    DIVERGED_FROM_AND_NEWER_THAN_REMOTE = auto()
+
+
+class GitFormatPatterns(Enum):
+    # %ai for ISO-8601 format
+    AUTHOR_DATE = "%ai"
+    # %aE/%aN (rather than %ae/%an) for respecting .mailmap; see `git rev-list --help`
+    AUTHOR_EMAIL = "%aE"
+    AUTHOR_NAME = "%aN"
+    # subject and body
+    FULL_MESSAGE = "%B"
+    # subject NOT included
+    MESSAGE_BODY = "%b"
 
 
 class GitContext:
@@ -998,25 +1020,25 @@ class GitContext:
             utils.get_non_empty_lines(self._popen_git("log", "--format=%H:%h:%s", f"^{earliest_exclusive}", latest_inclusive, "--").stdout)
         ))))
 
-    def get_relation_to_remote_counterpart(self, branch: LocalBranchShortName, remote_branch: RemoteBranchShortName) -> int:
+    def get_relation_to_remote_counterpart(self, branch: LocalBranchShortName, remote_branch: RemoteBranchShortName) -> SyncToRemoteStatus:
         b_is_ancestor_of_rb = self.is_ancestor_or_equal(branch.full_name(), remote_branch.full_name())
         rb_is_ancestor_of_b = self.is_ancestor_or_equal(remote_branch.full_name(), branch.full_name())
         if b_is_ancestor_of_rb:
-            return SyncToRemoteStatuses.IN_SYNC_WITH_REMOTE if rb_is_ancestor_of_b else SyncToRemoteStatuses.BEHIND_REMOTE
+            return SyncToRemoteStatus.IN_SYNC_WITH_REMOTE if rb_is_ancestor_of_b else SyncToRemoteStatus.BEHIND_REMOTE
         elif rb_is_ancestor_of_b:
-            return SyncToRemoteStatuses.AHEAD_OF_REMOTE
+            return SyncToRemoteStatus.AHEAD_OF_REMOTE
         else:
             b_t = self.get_committer_unix_timestamp_by_revision(branch)
             rb_t = self.get_committer_unix_timestamp_by_revision(remote_branch)
-            return SyncToRemoteStatuses.DIVERGED_FROM_AND_OLDER_THAN_REMOTE if b_t < rb_t else \
-                SyncToRemoteStatuses.DIVERGED_FROM_AND_NEWER_THAN_REMOTE
+            return SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE if b_t < rb_t else \
+                SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE
 
-    def get_combined_remote_sync_status(self, branch: LocalBranchShortName) -> Tuple[int, Optional[str]]:
+    def get_combined_remote_sync_status(self, branch: LocalBranchShortName) -> Tuple[SyncToRemoteStatus, Optional[str]]:
         if not self.get_remotes():
-            return SyncToRemoteStatuses.NO_REMOTES, None
+            return SyncToRemoteStatus.NO_REMOTES, None
         remote_branch = self.get_combined_counterpart_for_fetching_of_branch(branch)
         if not remote_branch:
-            return SyncToRemoteStatuses.UNTRACKED, None
+            return SyncToRemoteStatus.UNTRACKED, None
         return self.get_relation_to_remote_counterpart(branch, remote_branch), self.get_combined_remote_for_fetching_of_branch(branch)
 
     def get_latest_checkout_timestamps(self) -> Dict[str, int]:  # TODO (#110): default dict with 0
