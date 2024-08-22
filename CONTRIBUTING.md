@@ -32,9 +32,14 @@ Install `fish` and `shellcheck` for `run-all-checks.sh` to pass successfully.
 
 ## Run tests locally
 
-To run tests in terminal, it is required to have at least one Python interpreter version installed with `tox`, available versions are 3.{6-11}.
-To run all tests, execute `tox` (requires each Python 3.X version previously specified), to run selected test environment execute `tox -e test_env_name` ---
-the name of the `test_env_name` can specify Python version of the environment, e.g. `py37`, if the `tox` can't discover version from the name, the highest version currently installed will be used.
+```shell
+tox -e py
+```
+
+To display full operands in failed assertions (rather than just diffs), use
+```shell
+tox -e py -- -k github --full-operands
+```
 
 ## Install locally for development purposes
 
