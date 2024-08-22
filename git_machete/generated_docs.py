@@ -728,7 +728,7 @@ long_docs: Dict[str, str] = {
 
         Creates, checks out and manages GitLab MRs while keeping them reflected in branch layout file.
 
-        To allow GitLab API access for private repositories (and also to perform side-effecting actions like opening a PR,
+        To allow GitLab API access for private projects (and also to perform side-effecting actions like opening a MR,
         even in case of public projects), a GitLab API token with `api` scope is required, see https://gitlab.com/-/user_settings/personal_access_tokens.
         This will be resolved from the first of:
            * `GITLAB_TOKEN` env var,
@@ -765,9 +765,9 @@ long_docs: Dict[str, str] = {
 
            `checkout-mrs [--all | --by=<gitlab-login> | --mine | <MR-number-1> ... <MR-number-N>]`:
  
-              Check out the source branch of the given pull requests (specified by numbers or by a flag),
-              also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally.
-              Once the specified pull requests are checked out locally, annotate local branches with corresponding pull request numbers.
+              Check out the source branch of the given merge requests (specified by numbers or by a flag),
+              also traverse chain of merge requests upwards, adding branches one by one to git-machete and check them out locally.
+              Once the specified merge requests are checked out locally, annotate local branches with corresponding merge request numbers.
               If only one MR has been checked out, then switch the local repository's HEAD to its source branch.
 
               When the current user is NOT the author of the MR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
@@ -787,7 +787,7 @@ long_docs: Dict[str, str] = {
 
               <b>Parameters:</b>
 
-              `<MR-number-1> ... <MR-number-N>`    Pull request numbers to checkout.
+              `<MR-number-1> ... <MR-number-N>`    Merge request numbers to checkout.
 
            `create-mr [--draft] [--title=<title>] [--yes]`:
  

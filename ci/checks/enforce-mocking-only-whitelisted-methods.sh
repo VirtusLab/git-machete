@@ -2,8 +2,6 @@
 
 set -e -o pipefail -u
 
-self_dir=$(cd "$(dirname "$0")" &>/dev/null; pwd -P)
-source "$self_dir"/utils.sh
 self_name=$(basename "$0")
 
 whitelisted_methods="\
@@ -30,6 +28,7 @@ actual_methods=$(git grep -Pho "(?<=self\.patch_symbol\(mocker, ['\"]).*?(?=['\"
 # `grep ''` to check if the output is non-empty (true if non-empty, false if empty)
 if comm -13 <(echo "$whitelisted_methods") <(echo "$actual_methods") | grep ''; then
   echo
-  error "The above properties/methods are mocked in at least one test method, but are NOT whitelisted in $self_name."
-  die   "While it is possible to add new whitelisted properties/methods, consider redesigning the test(s) first."
+  echo "The above properties/methods are mocked in at least one test method, but are NOT whitelisted in $self_name."
+  echo "While it is possible to add new whitelisted properties/methods, consider redesigning the test(s) first."
+  exit 1
 fi

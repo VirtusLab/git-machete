@@ -40,14 +40,14 @@ class TestGitLab(BaseTest):
             assert org_and_repo.organization == organization
             assert org_and_repo.repository == repository
 
-    PR_COUNT_FOR_TEST_GITLAB_API_PAGINATION = 12
+    MR_COUNT_FOR_TEST_GITLAB_API_PAGINATION = 12
 
     @staticmethod
     def gitlab_api_state_for_test_gitlab_api_pagination() -> MockGitLabAPIState:
         return MockGitLabAPIState.with_mrs(*[
             mock_mr_json(
                 head=f'feature_{i:02d}', base='develop', number=i
-            ) for i in range(TestGitLab.PR_COUNT_FOR_TEST_GITLAB_API_PAGINATION)])
+            ) for i in range(TestGitLab.MR_COUNT_FOR_TEST_GITLAB_API_PAGINATION)])
 
     def test_gitlab_api_pagination(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
@@ -61,14 +61,14 @@ class TestGitLab(BaseTest):
             .commit("first commit")
             .push()
         )
-        for i in range(self.PR_COUNT_FOR_TEST_GITLAB_API_PAGINATION):
+        for i in range(self.MR_COUNT_FOR_TEST_GITLAB_API_PAGINATION):
             self.repo_sandbox.check_out('develop').new_branch(f'feature_{i:02d}').commit().push()
         self.repo_sandbox.check_out('develop')
-        body: str = 'develop *\n' + '\n'.join([f'feature_{i:02d}' for i in range(self.PR_COUNT_FOR_TEST_GITLAB_API_PAGINATION)]) + '\n'
+        body: str = 'develop *\n' + '\n'.join([f'feature_{i:02d}' for i in range(self.MR_COUNT_FOR_TEST_GITLAB_API_PAGINATION)]) + '\n'
         rewrite_branch_layout_file(body)
 
         self.repo_sandbox.check_out('develop')
-        for i in range(self.PR_COUNT_FOR_TEST_GITLAB_API_PAGINATION):
+        for i in range(self.MR_COUNT_FOR_TEST_GITLAB_API_PAGINATION):
             self.repo_sandbox.delete_branch(f"feature_{i:02d}")
         body = 'develop *\n'
         rewrite_branch_layout_file(body)
@@ -76,7 +76,7 @@ class TestGitLab(BaseTest):
         launch_command('gitlab', 'checkout-mrs', '--all')
         launch_command('discover', '--checked-out-since=1 day ago')
         expected_status_output = 'develop *\n' + '\n'.join([f'|\no-feature_{i:02d}  rebase=no push=no'
-                                                            for i in range(self.PR_COUNT_FOR_TEST_GITLAB_API_PAGINATION)]) + '\n'
+                                                            for i in range(self.MR_COUNT_FOR_TEST_GITLAB_API_PAGINATION)]) + '\n'
         assert_success(['status'], expected_status_output)
 
     def test_gitlab_enterprise_domain_unauthorized_without_token(self, mocker: MockerFixture) -> None:

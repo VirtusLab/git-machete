@@ -215,7 +215,7 @@ class GitLabClient(CodeHostingClient):
                         f"ended up in `{error_response.get('message')}` response from GitLab.\n"
                         "Please report this error as a comment under `https://github.com/VirtusLab/git-machete/issues/1212`.\n"
                         "As a workaround for now, please check `git remote -v`.\n"
-                        "Most likely you use an old URL of a repository that has been moved since.\n"
+                        "Most likely you use an old URL of a project that has been moved since.\n"
                         "Use `git remote set-url <remote> <URL>` to update the URL.")
                 else:
                     UnexpectedMacheteException(

@@ -32,6 +32,8 @@ prohibit-fork-point-in-git-context.sh
 prohibit-id-est-in-rst.sh
 prohibit-double-backticks-in-python.sh
 prohibit-markdown-links-in-rst.sh
+prohibit-mrs-in-github-files.sh
+prohibit-prs-in-gitlab-files.sh
 prohibit-single-backtick-in-rst.sh
 prohibit-split-backslash-n.sh
 prohibit-strings-split-without-delimiter.sh

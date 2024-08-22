@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Aug 20, 2024" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Aug 22, 2024" "" "git-machete"
 .SH NAME
 git-machete \- git-machete 3.28.1
 .sp
@@ -1102,7 +1102,7 @@ Creates, checks out and manages GitLab MRs while keeping them reflected in branc
 \fBNOTE:\fP
 .INDENT 0.0
 .INDENT 3.5
-To allow GitLab API access for private repositories (and also to perform side\-effecting actions like opening a PR,
+To allow GitLab API access for private projects (and also to perform side\-effecting actions like opening a MR,
 even in case of public projects), a GitLab API token with \fBapi\fP scope is required, see \X'tty: link https://gitlab.com/-/user_settings/personal_access_tokens'\fI\%https://gitlab.com/\-/user_settings/personal_access_tokens\fP\X'tty: link'\&.
 This will be resolved from the first of:
 .INDENT 0.0
@@ -1160,9 +1160,9 @@ Also include full MR URLs in the annotations (rather than just MR number).
 .UNINDENT
 .TP
 .B \fBcheckout\-mrs [\-\-all | \-\-by=<gitlab\-login> | \-\-mine | <MR\-number\-1> ... <MR\-number\-N>]\fP:
-Check out the source branch of the given pull requests (specified by numbers or by a flag),
-also traverse chain of pull requests upwards, adding branches one by one to git\-machete and check them out locally.
-Once the specified pull requests are checked out locally, annotate local branches with corresponding pull request numbers.
+Check out the source branch of the given merge requests (specified by numbers or by a flag),
+also traverse chain of merge requests upwards, adding branches one by one to git\-machete and check them out locally.
+Once the specified merge requests are checked out locally, annotate local branches with corresponding merge request numbers.
 If only one MR has been checked out, then switch the local repository\(aqs HEAD to its source branch.
 .sp
 When the current user is NOT the author of the MR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
@@ -1183,7 +1183,7 @@ Checkout open MRs for the current user associated with the GitLab token.
 .sp
 \fBParameters:\fP
 .sp
-\fB<MR\-number\-1> ... <MR\-number\-N>\fP    Pull request numbers to checkout.
+\fB<MR\-number\-1> ... <MR\-number\-N>\fP    Merge request numbers to checkout.
 .TP
 .B \fBcreate\-mr [\-\-draft] [\-\-title=<title>] [\-\-yes]\fP:
 Creates a MR for the current branch, using the upstream (parent) branch as the MR source branch.

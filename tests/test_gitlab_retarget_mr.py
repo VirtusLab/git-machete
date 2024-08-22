@@ -75,7 +75,7 @@ class TestGitLabRetargetMR(BaseTest):
             ended up in Non GET methods are not allowed for moved projects response from GitLab.
             Please report this error as a comment under https://github.com/VirtusLab/git-machete/issues/1212.
             As a workaround for now, please check git remote -v.
-            Most likely you use an old URL of a repository that has been moved since.
+            Most likely you use an old URL of a project that has been moved since.
             Use git remote set-url <remote> <URL> to update the URL."""
         )
 

@@ -28,7 +28,7 @@ def mock_mr_json(head: str, base: str, number: int,
                  draft: bool = False
                  ) -> Dict[str, Any]:
     return {
-        'title': 'Draft: PR title' if draft else 'PR title',
+        'title': 'Draft: MR title' if draft else 'MR title',
         'source_branch': head,
         'source_project_id': repo_id,
         'target_branch': base,
@@ -143,7 +143,7 @@ def __mock_urlopen_impl(gitlab_api_state: MockGitLabAPIState, request: Request) 
             head: Optional[str] = query_params.get('source_branch')
             if head:
                 mrs = gitlab_api_state.get_open_mrs_by_head(head)
-                # If no matching PRs are found, the real GitLab returns 200 OK with an empty JSON array - not 404.
+                # If no matching MRs are found, the real GitLab returns 200 OK with an empty JSON array - not 404.
                 return MockAPIResponse(HTTPStatus.OK, mrs)
             else:
                 mrs = gitlab_api_state.get_open_mrs()

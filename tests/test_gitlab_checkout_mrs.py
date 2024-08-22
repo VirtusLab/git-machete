@@ -112,7 +112,7 @@ class TestGitLabCheckoutMRs(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        # not broken chain of pull requests (root found in dependency tree)
+        # not broken chain of merge requests (root found in dependency tree)
         launch_command('gitlab', 'checkout-mrs', '18')
         assert_success(
             ["status"],
@@ -138,7 +138,7 @@ class TestGitLabCheckoutMRs(BaseTest):
                     o-chore/redundant_checks *  MR !18 (some_other_user) rebase=no push=no
             """
         )
-        # broken chain of pull requests (add new root)
+        # broken chain of merge requests (add new root)
         launch_command('gitlab', 'checkout-mrs', '24')
         assert_success(
             ["status"],
@@ -171,7 +171,7 @@ class TestGitLabCheckoutMRs(BaseTest):
             """
         )
 
-        # broken chain of pull requests (branches already added)
+        # broken chain of merge requests (branches already added)
         launch_command('gitlab', 'checkout-mrs', '24')
         assert_success(
             ["status"],
@@ -253,7 +253,7 @@ class TestGitLabCheckoutMRs(BaseTest):
         expected_msg = "Checking for open GitLab MRs... OK\n"
         assert_success(['gitlab', 'checkout-mrs', '--by', 'some_other_user'], expected_msg)
 
-        # Check against closed pull request with source branch deleted from remote
+        # Check against closed merge request with source branch deleted from remote
         self.repo_sandbox.create_repo("other-local", bare=False, switch_dir_to_new_repo=True)
         (
             self.repo_sandbox
