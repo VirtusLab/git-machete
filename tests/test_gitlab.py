@@ -166,7 +166,7 @@ class TestGitLab(BaseTest):
                     'but no remote seems to correspond to example-org/example-repo (namespace/project) on GitLab.\n'
                     'Consider pointing to the remote via machete.gitlab.remote config key')
 
-        self.repo_sandbox.add_remote("new-origin", "https://github.com/example-org/example-repo.git")  # not a valid GitLab repo URL
+        self.repo_sandbox.add_remote("new-origin", "https://github.com/example-org/example-repo.git")  # not a valid GitLab project URL
         with git_config_key('machete.gitlab.remote', "new-origin"):
             assert_failure(
                 ['gitlab', 'checkout-mrs', '--all'],

@@ -248,7 +248,7 @@ class GitHubClient(CodeHostingClient):
                          "Skipped adding reviewers to the pull request.")
                 else:
                     raise UnexpectedMacheteException(
-                        f'GitLab API returned 422 (Unprocessable Entity) HTTP status with error message: `{error_reason}`.')
+                        f'GitHub API returned 422 (Unprocessable Entity) HTTP status with error message: `{error_reason}`.')
             elif err.code in (http.HTTPStatus.UNAUTHORIZED, http.HTTPStatus.FORBIDDEN):
                 first_line = f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`\n'
                 last_line = 'You can also use a different token provider - see `git machete help github` for details.'

@@ -116,7 +116,7 @@ Creates, checks out and manages GitLab MRs while keeping them reflected in branc
     If after changing the target the MR ends up stacked atop another MR, the MR description posted to GitLab will be prepended
     with an intro section listing the entire related chain of MRs.
 
-    This header will be updated or removed accordingly with the subsequent runs of ``retarget-mr``, even if the target branch is already up to date.
+    This intro will be updated or removed accordingly with the subsequent runs of ``retarget-mr``, even if the target branch is already up to date.
 
     **Options:**
 
@@ -136,7 +136,7 @@ Creates, checks out and manages GitLab MRs while keeping them reflected in branc
   .. include:: git-config-keys/gitlab_forceDescriptionFromCommitMessage.rst
 
 ``machete.gitlab.mrDescriptionIntroStyle`` (``create-mr``, ``restack-mr`` and ``retarget-mr``):
-  .. include:: git-config-keys/github_prDescriptionIntroStyle.rst
+  .. include:: git-config-keys/gitlab_mrDescriptionIntroStyle.rst
 
 **Environment variables (all subcommands):**
 

@@ -3,8 +3,8 @@
 ## New in git-machete 3.29.0
 
 - added: git config keys `machete.github.prDescriptionIntroStyle` and `machete.gitlab.mrDescriptionIntroStyle`
-- added: ability to turn off PR/MR description intro completely by setting the git config keys to `none` (suggested by @tir38)
-- added: ability to also include downstream PRs/MRs in PR/MR description intro (suggested by @aouaki)
+- added: ability to turn off PR/MR description intro completely by setting the git config key to `none` (suggested by @tir38)
+- added: ability to include downstream PRs/MRs in PR/MR description intro by setting the git config key to `full` (suggested by @aouaki)
 - changed: layout and ordering of PRs/MRs in PR/MR description intro to better match `git machete status`
 
 ## New in git-machete 3.28.0

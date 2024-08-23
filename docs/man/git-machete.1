@@ -361,10 +361,18 @@ Setting this config key to \fBtrue\fP will force \fBgit machete github create\-p
 from the message body of the first unique commit of the branch, even if \fB\&.git/info/description\fP and/or \fB\&.github/pull_request_template.md\fP is present.
 .TP
 .B \fBmachete.github.prDescriptionIntroStyle\fP:
-Select the style of the intro prepended to PR description:
-* \fBfull\fP    \-\-\- include both a chain of upstream PRs (typically leading to \fBmain\fP, \fBmaster\fP, \fBdevelop\fP etc.) and a tree of downstream PRs
-* \fBup\-only\fP \-\-\- default, include only a chain of upstream PRs
-* \fBnone\fP    \-\-\- prepend no intro to the PR description at all
+.INDENT 7.0
+.TP
+.B Select the style of the intro prepended to PR description:
+.INDENT 7.0
+.IP \(bu 2
+\fBfull\fP    \-\-\- include both a chain of upstream PRs (typically leading to \fBmain\fP, \fBmaster\fP, \fBdevelop\fP etc.) and a tree of downstream PRs
+.IP \(bu 2
+\fBup\-only\fP \-\-\- default, include only a chain of upstream PRs
+.IP \(bu 2
+\fBnone\fP    \-\-\- prepend no intro to the PR description at all
+.UNINDENT
+.UNINDENT
 .TP
 .B \fBmachete.gitlab.{domain,remote,namespace,project}\fP:
 .INDENT 7.0
@@ -399,10 +407,18 @@ Setting this config key to \fBtrue\fP will force \fBgit machete gitlab create\-m
 from the message body of the first unique commit of the branch, even if \fB\&.git/info/description\fP and/or \fB\&.gitlab/merge_request_templates/Default.md\fP is present.
 .TP
 .B \fBmachete.gitlab.mrDescriptionIntroStyle\fP:
-Select the style of the intro prepended to MR description:
-* \fBfull\fP    \-\-\- include both a chain of upstream MRs (typically leading to \fBmain\fP, \fBmaster\fP, \fBdevelop\fP etc.) and a tree of downstream MRs
-* \fBup\-only\fP \-\-\- default, include only a chain of upstream MRs
-* \fBnone\fP    \-\-\- prepend no intro to the MR description at all
+.INDENT 7.0
+.TP
+.B Select the style of the intro prepended to MR description:
+.INDENT 7.0
+.IP \(bu 2
+\fBfull\fP    \-\-\- include both a chain of upstream MRs (typically leading to \fBmain\fP, \fBmaster\fP, \fBdevelop\fP etc.) and a tree of downstream MRs
+.IP \(bu 2
+\fBup\-only\fP \-\-\- default, include only a chain of upstream MRs
+.IP \(bu 2
+\fBnone\fP    \-\-\- prepend no intro to the MR description at all
+.UNINDENT
+.UNINDENT
 .TP
 .B \fBmachete.overrideForkPoint.<branch>.to\fP:
 Executing \fBgit machete fork\-point \-\-override\-to[\-parent|\-inferred|=<revision>] [<branch>]\fP sets up a fork point override for \fB<branch>\fP\&.
@@ -1024,7 +1040,7 @@ Sets the base of the current (or specified) branch\(aqs PR to upstream (parent) 
 If after changing the base the PR ends up stacked atop another PR, the PR description posted to GitHub will be prepended
 with an intro section listing the entire related chain of PRs.
 .sp
-This header will be updated or removed accordingly with the subsequent runs of \fBretarget\-pr\fP, even if the base branch is already up to date.
+This intro will be updated or removed accordingly with the subsequent runs of \fBretarget\-pr\fP, even if the base branch is already up to date.
 .sp
 \fBOptions:\fP
 .INDENT 7.0
@@ -1089,10 +1105,18 @@ Setting this config key to \fBtrue\fP will force \fBgit machete github create\-p
 from the message body of the first unique commit of the branch, even if \fB\&.git/info/description\fP and/or \fB\&.github/pull_request_template.md\fP is present.
 .TP
 .B \fBmachete.github.prDescriptionIntroStyle\fP (\fBcreate\-pr\fP, \fBrestack\-pr\fP and \fBretarget\-pr\fP):
-Select the style of the intro prepended to PR description:
-* \fBfull\fP    \-\-\- include both a chain of upstream PRs (typically leading to \fBmain\fP, \fBmaster\fP, \fBdevelop\fP etc.) and a tree of downstream PRs
-* \fBup\-only\fP \-\-\- default, include only a chain of upstream PRs
-* \fBnone\fP    \-\-\- prepend no intro to the PR description at all
+.INDENT 7.0
+.TP
+.B Select the style of the intro prepended to PR description:
+.INDENT 7.0
+.IP \(bu 2
+\fBfull\fP    \-\-\- include both a chain of upstream PRs (typically leading to \fBmain\fP, \fBmaster\fP, \fBdevelop\fP etc.) and a tree of downstream PRs
+.IP \(bu 2
+\fBup\-only\fP \-\-\- default, include only a chain of upstream PRs
+.IP \(bu 2
+\fBnone\fP    \-\-\- prepend no intro to the PR description at all
+.UNINDENT
+.UNINDENT
 .UNINDENT
 .sp
 \fBEnvironment variables (all subcommands):\fP
@@ -1254,7 +1278,7 @@ Sets the target of the current (or specified) branch\(aqs MR to upstream (parent
 If after changing the target the MR ends up stacked atop another MR, the MR description posted to GitLab will be prepended
 with an intro section listing the entire related chain of MRs.
 .sp
-This header will be updated or removed accordingly with the subsequent runs of \fBretarget\-mr\fP, even if the target branch is already up to date.
+This intro will be updated or removed accordingly with the subsequent runs of \fBretarget\-mr\fP, even if the target branch is already up to date.
 .sp
 \fBOptions:\fP
 .INDENT 7.0
@@ -1305,10 +1329,18 @@ Setting this config key to \fBtrue\fP will force \fBgit machete gitlab create\-m
 from the message body of the first unique commit of the branch, even if \fB\&.git/info/description\fP and/or \fB\&.gitlab/merge_request_templates/Default.md\fP is present.
 .TP
 .B \fBmachete.gitlab.mrDescriptionIntroStyle\fP (\fBcreate\-mr\fP, \fBrestack\-mr\fP and \fBretarget\-mr\fP):
-Select the style of the intro prepended to PR description:
-* \fBfull\fP    \-\-\- include both a chain of upstream PRs (typically leading to \fBmain\fP, \fBmaster\fP, \fBdevelop\fP etc.) and a tree of downstream PRs
-* \fBup\-only\fP \-\-\- default, include only a chain of upstream PRs
-* \fBnone\fP    \-\-\- prepend no intro to the PR description at all
+.INDENT 7.0
+.TP
+.B Select the style of the intro prepended to MR description:
+.INDENT 7.0
+.IP \(bu 2
+\fBfull\fP    \-\-\- include both a chain of upstream MRs (typically leading to \fBmain\fP, \fBmaster\fP, \fBdevelop\fP etc.) and a tree of downstream MRs
+.IP \(bu 2
+\fBup\-only\fP \-\-\- default, include only a chain of upstream MRs
+.IP \(bu 2
+\fBnone\fP    \-\-\- prepend no intro to the MR description at all
+.UNINDENT
+.UNINDENT
 .UNINDENT
 .sp
 \fBEnvironment variables (all subcommands):\fP

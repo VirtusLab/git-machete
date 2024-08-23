@@ -115,7 +115,7 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
     If after changing the base the PR ends up stacked atop another PR, the PR description posted to GitHub will be prepended
     with an intro section listing the entire related chain of PRs.
 
-    This header will be updated or removed accordingly with the subsequent runs of ``retarget-pr``, even if the base branch is already up to date.
+    This intro will be updated or removed accordingly with the subsequent runs of ``retarget-pr``, even if the base branch is already up to date.
 
     **Options:**
 

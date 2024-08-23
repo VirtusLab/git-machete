@@ -2260,7 +2260,7 @@ class MacheteClient:
     @staticmethod
     def __get_downwards_tree_excluding_pr(original_pr: PullRequest,
                                           all_open_prs: List[PullRequest]) -> List[Tuple[PullRequest, int]]:
-        """Returns pairs of (PR, level below the given PR)"""
+        """Returns pairs of (PR, depth below the given PR)"""
 
         visited_head_branches: Set[str] = set([])
 
@@ -2631,11 +2631,9 @@ class MacheteClient:
 
         # For determining the PR chain, we need to fetch all PRs from the repo.
         # We could just fetch them straight away... but this list can be quite long for commercial monorepos,
-        # esp. given that GitHub and GitLab limit the single page to 100 PRs (so multiple HTTP requests may be needed).
+        # esp. given that GitHub and GitLab limit the single page to 100 PRs/MRs (so multiple HTTP requests may be needed).
         # As a slight optimization, in the default UP_ONLY style,
         # let's fetch the full PR list only if the current PR has a base PR at all.
-        # In FULL style, we need to check for downstream PRs as well, so the full PR list needs to be fetched anyway.
-        # That's also the performance reason behind selecting UP_ONLY and not FULL as the default style.
         prs_for_base_branch = code_hosting_client.get_open_pull_requests_by_head(LocalBranchShortName(pr.base))
         if style == PRDescriptionIntroStyle.UP_ONLY and len(prs_for_base_branch) == 0:
             return ''

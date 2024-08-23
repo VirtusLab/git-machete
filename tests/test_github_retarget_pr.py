@@ -118,20 +118,20 @@ class TestGitHubRetargetPR(BaseTest):
         branch_second_commit_msg = "Second commit on branch."
         (
             self.repo_sandbox.new_branch("root")
-            .commit("First commit on root.")
-            .new_branch("branch-1")
-            .commit(branch_first_commit_msg)
-            .commit(branch_second_commit_msg)
-            .push()
-            .new_branch('feature')
-            .commit('introduce feature')
-            .push()
-            .check_out('root')
-            .new_branch('branch-without-pr')
-            .commit('branch-without-pr')
-            .push()
-            .add_remote('new_origin', 'https://github.com/user/repo.git')
-            .check_out('root')
+                .commit("First commit on root.")
+                .new_branch("branch-1")
+                .commit(branch_first_commit_msg)
+                .commit(branch_second_commit_msg)
+                .push()
+                .new_branch('feature')
+                .commit('introduce feature')
+                .push()
+                .check_out('root')
+                .new_branch('branch-without-pr')
+                .commit('branch-without-pr')
+                .push()
+                .add_remote('new_origin', 'https://github.com/user/repo.git')
+                .check_out('root')
         )
 
         body: str = \
@@ -200,21 +200,21 @@ class TestGitHubRetargetPR(BaseTest):
         # branch feature present in each remote, no branch tracking data
         (
             self.repo_sandbox.remove_remote()
-            .new_branch("root")
-            .add_remote('origin_1', origin_1_remote_path)
-            .add_remote('origin_2', origin_2_remote_path)
-            .commit("First commit on root.")
-            .push(remote='origin_1')
-            .push(remote='origin_2')
-            .new_branch("branch-1")
-            .commit(branch_first_commit_msg)
-            .commit(branch_second_commit_msg)
-            .push(remote='origin_1')
-            .push(remote='origin_2')
-            .new_branch('feature')
-            .commit('introduce feature')
-            .push(remote='origin_1', set_upstream=False)
-            .push(remote='origin_2', set_upstream=False)
+                .new_branch("root")
+                .add_remote('origin_1', origin_1_remote_path)
+                .add_remote('origin_2', origin_2_remote_path)
+                .commit("First commit on root.")
+                .push(remote='origin_1')
+                .push(remote='origin_2')
+                .new_branch("branch-1")
+                .commit(branch_first_commit_msg)
+                .commit(branch_second_commit_msg)
+                .push(remote='origin_1')
+                .push(remote='origin_2')
+                .new_branch('feature')
+                .commit('introduce feature')
+                .push(remote='origin_1', set_upstream=False)
+                .push(remote='origin_2', set_upstream=False)
         )
 
         body: str = \
@@ -235,10 +235,10 @@ class TestGitHubRetargetPR(BaseTest):
         # branch feature_1 present in each remote, tracking data present
         (
             self.repo_sandbox.check_out('feature')
-            .new_branch('feature_1')
-            .commit('introduce feature 1')
-            .push(remote='origin_1')
-            .push(remote='origin_2')
+                .new_branch('feature_1')
+                .commit('introduce feature 1')
+                .push(remote='origin_1')
+                .push(remote='origin_2')
         )
 
         body = \
@@ -314,9 +314,9 @@ class TestGitHubRetargetPR(BaseTest):
         # branch feature_3 present in only one remote: origin_1 and has tracking data
         (
             self.repo_sandbox.check_out('feature_2')
-            .new_branch('feature_3')
-            .commit('introduce feature 3')
-            .push(remote='origin_1')
+                .new_branch('feature_3')
+                .commit('introduce feature 3')
+                .push(remote='origin_1')
         )
 
         body = \
