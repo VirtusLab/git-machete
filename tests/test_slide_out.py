@@ -461,7 +461,7 @@ class TestSlideOut(BaseTest):
 
         assert_success(
             ['slide-out', '--removed-from-remote', '--delete'],
-            "Sliding out should_be_pruned\nDeleting branch should_be_pruned (unmerged to HEAD)...\n")
+            "Sliding out should_be_pruned\nDeleting branch should_be_pruned...\n")
 
         assert read_branch_layout_file() == "main\n    unpushed\n    not_deleted_remotely\n    has_downstream\n        downstream\n"
 

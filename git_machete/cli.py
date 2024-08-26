@@ -671,11 +671,13 @@ def launch(orig_args: List[str]) -> None:
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             if 'checkout_my_github_prs' in parsed_cli:
                 machete_client.checkout_pull_requests(GitHubClient.spec(), pr_numbers=[], mine=True)
-            machete_client.delete_unmanaged(opt_yes=cli_opts.opt_yes)
+            machete_client.delete_unmanaged(opt_squash_merge_detection=SquashMergeDetection.NONE, opt_yes=cli_opts.opt_yes)
             machete_client.delete_untracked(opt_yes=cli_opts.opt_yes)
         elif cmd == "delete-unmanaged":
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
-            machete_client.delete_unmanaged(opt_yes=cli_opts.opt_yes)
+            opt_squash_merge_detection = SquashMergeDetection.from_string(
+                cli_opts.opt_squash_merge_detection_string, cli_opts.opt_squash_merge_detection_origin)
+            machete_client.delete_unmanaged(opt_squash_merge_detection=opt_squash_merge_detection, opt_yes=cli_opts.opt_yes)
         elif cmd in {"diff", alias_by_command["diff"]}:
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             diff_branch = get_local_branch_short_name_from_arg(cli_opts.opt_branch) if (cli_opts.opt_branch is not None) else None
@@ -778,7 +780,7 @@ def launch(orig_args: List[str]) -> None:
                 machete_client.retarget_pr(config, head=branch, ignore_if_missing=ignore_if_missing)
             elif subcommand == "sync":  # GitHub only
                 machete_client.checkout_pull_requests(config, pr_numbers=[], mine=True)
-                machete_client.delete_unmanaged(opt_yes=False)
+                machete_client.delete_unmanaged(opt_squash_merge_detection=SquashMergeDetection.NONE, opt_yes=False)
                 machete_client.delete_untracked(opt_yes=cli_opts.opt_yes)
             else:  # an unknown subcommand is handled by argparse
                 raise UnexpectedMacheteException(f"Unknown subcommand: `{subcommand}`")

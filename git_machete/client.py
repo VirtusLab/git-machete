@@ -673,7 +673,8 @@ class MacheteClient:
                     opt_no_interactive_rebase)
 
         if opt_delete:
-            self.__delete_branches(branches_to_delete=branches_to_slide_out, opt_yes=False)
+            self.__delete_branches(branches_to_delete=branches_to_slide_out,
+                                   opt_squash_merge_detection=SquashMergeDetection.NONE, opt_yes=False)
 
     def advance(self, *, branch: LocalBranchShortName, opt_yes: bool) -> None:
         down_branches = self.__down_branches.get(branch)
@@ -1283,46 +1284,47 @@ class MacheteClient:
         else:
             self.__git.rebase(onto, from_exclusive, branch, opt_no_interactive_rebase, extra_rebase_opts)
 
-    def delete_unmanaged(self, *, opt_yes: bool) -> None:
+    def delete_unmanaged(self, *, opt_squash_merge_detection: SquashMergeDetection, opt_yes: bool) -> None:
         print('Checking for unmanaged branches...')
-        branches_to_delete = excluding(self.__git.get_local_branches(), self.managed_branches)
-        self.__delete_branches(branches_to_delete=branches_to_delete, opt_yes=opt_yes)
+        branches_to_delete = sorted(excluding(self.__git.get_local_branches(), self.managed_branches))
+        self.__delete_branches(branches_to_delete=branches_to_delete,
+                               opt_squash_merge_detection=opt_squash_merge_detection, opt_yes=opt_yes)
 
-    def __delete_branches(self, branches_to_delete: List[LocalBranchShortName], opt_yes: bool) -> None:
+    def __delete_branches(self, branches_to_delete: List[LocalBranchShortName],
+                          opt_squash_merge_detection: SquashMergeDetection, opt_yes: bool) -> None:
         current_branch = self.__git.get_current_branch_or_none()
         if current_branch and current_branch in branches_to_delete:
             branches_to_delete = excluding(branches_to_delete, [current_branch])
             print(f"Skipping current branch {bold(current_branch)}")
-        if branches_to_delete:
-            branches_merged_to_head = self.__git.get_merged_local_branches()
+        if not branches_to_delete:
+            print("No branches to delete")
+            return
 
-            branches_to_delete_merged_to_head = [branch for branch in branches_to_delete if branch in branches_merged_to_head]
-            for branch in branches_to_delete_merged_to_head:
-                remote_branch = self.__git.get_strict_counterpart_for_fetching_of_branch(branch)
-                is_merged_to_remote = self.__git.is_ancestor_or_equal(branch.full_name(),
-                                                                      remote_branch.full_name()) if remote_branch else True
-                msg_core_suffix = '' if is_merged_to_remote else f', but not merged to {bold(remote_branch)}'  # type: ignore[arg-type]
-                msg_core = f"{bold(branch)} (merged to HEAD{msg_core_suffix})"
+        if opt_yes:
+            for branch in branches_to_delete:
+                print(f"Deleting branch {bold(branch)}...")
+                self.__git.delete_branch(branch, force=True)
+        else:
+            for branch in branches_to_delete:
+                if self.is_merged_to(branch.full_name(), AnyBranchName('HEAD'), opt_squash_merge_detection):
+                    remote_branch = self.__git.get_strict_counterpart_for_fetching_of_branch(branch)
+                    if remote_branch:
+                        is_merged_to_remote = self.is_merged_to(branch.full_name(), remote_branch.full_name(), opt_squash_merge_detection)
+                    else:
+                        is_merged_to_remote = True
+                    if is_merged_to_remote:
+                        msg_core_suffix = ''
+                    else:
+                        msg_core_suffix = f', but not merged to {bold(str(remote_branch))}'
+                    msg_core = f"{bold(branch)} (merged to HEAD{msg_core_suffix})"
+                else:
+                    msg_core = f"{bold(branch)} (unmerged to HEAD)"
                 msg = f"Delete branch {msg_core}?" + get_pretty_choices('y', 'N', 'q')
-                opt_yes_msg = f"Deleting branch {msg_core}..."
-                ans = self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes)
-                if ans in ('y', 'yes'):
-                    self.__git.delete_branch(branch, force=is_merged_to_remote)
-                elif ans in ('q', 'quit'):
-                    return
-
-            branches_to_delete_unmerged_to_head = [branch for branch in branches_to_delete if branch not in branches_merged_to_head]
-            for branch in branches_to_delete_unmerged_to_head:
-                msg_core = f"{bold(branch)} (unmerged to HEAD)"
-                msg = f"Delete branch {msg_core}?" + get_pretty_choices('y', 'N', 'q')
-                opt_yes_msg = f"Deleting branch {msg_core}..."
-                ans = self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes)
+                ans = self.ask_if(msg, opt_yes_msg=None, opt_yes=False)
                 if ans in ('y', 'yes'):
                     self.__git.delete_branch(branch, force=True)
                 elif ans in ('q', 'quit'):
                     return
-        else:
-            print("No branches to delete")
 
     def edit(self) -> int:
         default_editor_with_args: List[str] = self.__get_editor_with_args()
@@ -2087,7 +2089,7 @@ class MacheteClient:
 
     def is_merged_to(
             self,
-            branch: LocalBranchShortName,
+            branch: AnyBranchName,
             upstream: AnyBranchName,
             opt_squash_merge_detection: SquashMergeDetection
     ) -> bool:
@@ -3063,7 +3065,7 @@ class MacheteClient:
                 branches_to_delete.append(branch)
 
         self.__remove_branches_from_layout(branches_to_delete)
-        self.__delete_branches(branches_to_delete, opt_yes)
+        self.__delete_branches(branches_to_delete, opt_squash_merge_detection=SquashMergeDetection.NONE, opt_yes=opt_yes)
 
     def slide_out_removed_from_remote(self, opt_delete: bool) -> None:
         slid_out_branches: List[LocalBranchShortName] = []
@@ -3074,7 +3076,7 @@ class MacheteClient:
 
         self.__remove_branches_from_layout(slid_out_branches)
         if opt_delete:
-            self.__delete_branches(slid_out_branches, opt_yes=True)
+            self.__delete_branches(slid_out_branches, opt_squash_merge_detection=SquashMergeDetection.NONE, opt_yes=True)
 
     def __remove_branches_from_layout(self, branches_to_delete: List[LocalBranchShortName]) -> None:
         for branch in branches_to_delete:

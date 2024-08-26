@@ -802,8 +802,6 @@ class GitContext:
             self.__merge_base_cached[hash1, hash2] = FullCommitHash.of(merge_base) if merge_base else None
         return self.__merge_base_cached[hash1, hash2]
 
-    # Note: the 'git rev-parse --verify' validation is not performed in case for either of earlier/later
-    # if the corresponding prefix is empty AND the revision is a 40 hex digit hash.
     def is_ancestor_or_equal(self, earlier_revision: AnyRevision, later_revision: AnyRevision) -> bool:
         earlier_hash = self.get_commit_hash_by_revision(earlier_revision)
         later_hash = self.get_commit_hash_by_revision(later_revision)
@@ -933,19 +931,6 @@ class GitContext:
         remote_branches = self.get_remote_branches()
         matching_remotes = [remote for remote in self.get_remotes() if (remote + "/" + branch) in remote_branches]
         return RemoteBranchShortName(matching_remotes[0] + "/" + branch) if len(matching_remotes) == 1 else None
-
-    def get_merged_local_branches(self) -> List[LocalBranchShortName]:
-        if self.get_git_version() >= (2, 7, 6):  # earliest version of git to support 'for-each-ref --merged'
-            return list(
-                map(lambda branch: LocalBranchFullName.of(branch).to_short_name(),
-                    utils.get_non_empty_lines(
-                        self._popen_git("for-each-ref", "--format=%(refname)", "--merged", "HEAD", "refs/heads").stdout)))
-        else:
-            return list(
-                filter(lambda branch: self.is_ancestor_or_equal(branch, AnyRevision.of('HEAD')),
-                       map(lambda branch: LocalBranchFullName.of(branch).to_short_name(),
-                           utils.get_non_empty_lines(
-                               self._popen_git("for-each-ref", "--format=%(refname)", "refs/heads").stdout))))
 
     def get_hook_path(self, hook_name: str) -> str:
         hook_dir: str = self.get_config_attr_or_none("core.hooksPath") or self.get_main_git_subpath("hooks")

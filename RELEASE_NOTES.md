@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.29.1
 
+- improved: `git-machete delete-unmanaged` uses the same algorithm as `status` and `traverse` to recognize merged branches (suggested by @cinnamennen)
+
 ## New in git-machete 3.29.0
 
 - added: git config keys `machete.github.prDescriptionIntroStyle` and `machete.gitlab.mrDescriptionIntroStyle`
