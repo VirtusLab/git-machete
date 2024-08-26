@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.29.1
+
 ## New in git-machete 3.29.0
 
 - added: git config keys `machete.github.prDescriptionIntroStyle` and `machete.gitlab.mrDescriptionIntroStyle`
