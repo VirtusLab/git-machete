@@ -29,6 +29,9 @@ jobs:
           # language=sh
           command: |
             set -x
+            python --version
+
+            pip3 install tox
 
             # For completion tests
 
@@ -42,8 +45,6 @@ jobs:
 
             sudo apt-get install zsh
 
-            pip3 install tox
-
             # For enforce-shell-scripts-pass-shellcheck.sh
             sudo apt-get install shellcheck
 
@@ -52,6 +53,15 @@ jobs:
       - run:
           name: Perform general checks
           command: ci/checks/run-all-checks.sh
+      - run:
+          name: Check code style
+          command: tox -e isort-check,pep8-check,typos-check,vulture-check
+      - run:
+          name: Verify docs
+          command: tox -e py-docs-check,sphinx-man-check,sphinx-html
+      - store_artifacts:
+          path: docs/html/
+          destination: docs
       - run:
           name: Test shell completions
           command: tox -e test-completions -- -vv
@@ -111,22 +121,13 @@ jobs:
           root: .
           paths: [ .coverage.* ]
 
-  # Note that there is no particular reason for the below assignment
-  # of PEP8/docs checks to Python version, other than:
-  #  - Python 3.6 being EOLed and hence not supporting the versions of packages used for the checks,
-  #  - https://github.com/VirtusLab/git-machete/issues/936 apparently forcing the use of Python 3.11 for Sphinx HTML docs.
-  # Each of these checks needs to be run against just one Python version
-  # (since there's very little chance that they pass under one version but fail under another),
-  # so let's spread these checks evenly across versions to reduce CI execution time
-  # (when compared to the scenario where all checks are executed under the same Python version).
-
-  "pep8 and python 3_10 git 2_33_1":
+  "python 3_10 git 2_33_1":
     executor: ubuntu_executor
     steps:
       - checkout
       - run:
-          name: Run tests against Python 3.10 and git 2.33.1 (with isort/PEP8/vulture check)
-          command: PYTHON_VERSION=3.10 GIT_VERSION=2.33.1 CHECK_PEP8=true  bash ci/tox/ci-run.sh
+          name: Run tests against Python 3.10 and git 2.33.1
+          command: PYTHON_VERSION=3.10 GIT_VERSION=2.33.1  bash ci/tox/ci-run.sh
       - store_test_results:
           path: test-results/
       - persist_to_workspace:
@@ -136,21 +137,18 @@ jobs:
   # Note that if docs are ever to be built under a different Python version in CI,
   # this change needs to be reflected in tox.ini and .readthedocs.yaml as well
   # to avoid errors like https://github.com/VirtusLab/git-machete/issues/936.
-  "docs and python 3_11 git 2_38_1":
+  "python 3_11 git 2_38_1":
     executor: ubuntu_executor
     steps:
       - checkout
       - run:
-          name: Run tests against Python 3.11 and git 2.38.1 (with building docs)
-          command: PYTHON_VERSION=3.11 GIT_VERSION=2.38.1 BUILD_SPHINX_HTML=true CHECK_DOCS_UP_TO_DATE=true  bash ci/tox/ci-run.sh
+          name: Run tests against Python 3.11 and git 2.38.1
+          command: PYTHON_VERSION=3.11 GIT_VERSION=2.38.1  bash ci/tox/ci-run.sh
       - store_test_results:
           path: test-results/
       - persist_to_workspace:
           root: .
           paths: [ .coverage.* ]
-      - store_artifacts:
-          path: docs/html/
-          destination: docs
 
   "python 3_12 git 2_42_0":
     executor: ubuntu_executor
@@ -206,10 +204,6 @@ jobs:
           command: bash ci/pypi/ci-deploy.sh --dry-run
 
       - run:
-          name: '[Dry run] Publish image to Docker Hub'
-          command: bash ci/docker/ci-deploy.sh --dry-run
-
-      - run:
           name: '[Dry run] Build & upload deb package to PPA'
           # Side effects: potentially pushes a regenerated Docker image
           command: bash ci/deb-ppa-upload/ci-deploy.sh --dry-run
@@ -237,14 +231,6 @@ jobs:
       - run:
           name: 'Deploy to PyPI'
           command: bash ci/pypi/ci-deploy.sh
-
-  "publish image to docker hub":
-    executor: ubuntu_executor
-    steps:
-      - checkout
-      - run:
-          name: 'Publish image to Docker Hub'
-          command: bash ci/docker/ci-deploy.sh
 
   "build and upload deb package to ppa":
     executor: ubuntu_executor
@@ -289,8 +275,8 @@ test_jobs: &test_jobs
   - python 3_7 git 2_7_6
   - python 3_8 git 2_25_0
   - python 3_9 git 2_30_1
-  - pep8 and python 3_10 git 2_33_1
-  - docs and python 3_11 git 2_38_1
+  - python 3_10 git 2_33_1
+  - python 3_11 git 2_38_1
   - python 3_12 git 2_42_0
   - windows tests
 
@@ -308,8 +294,8 @@ workflows:
       - python 3_7 git 2_7_6
       - python 3_8 git 2_25_0
       - python 3_9 git 2_30_1
-      - pep8 and python 3_10 git 2_33_1
-      - docs and python 3_11 git 2_38_1
+      - python 3_10 git 2_33_1
+      - python 3_11 git 2_38_1
       - python 3_12 git 2_42_0
       - windows tests
       - coverage upload:
@@ -328,12 +314,8 @@ workflows:
             *test_jobs
 
       # Let's keep each deployment in a separate job (rather than in separate step of a single job),
-      # so that CircleCI allows for re-running just the failed deployments in case of transient failure.
+      # so that CircleCI allows for re-running just the failed deployments in case of a transient failure.
       - deploy to pypi:
-          <<: *only_master
-          requires:
-            - dry run deploy
-      - publish image to docker hub:
           <<: *only_master
           requires:
             - dry run deploy
@@ -351,7 +333,6 @@ workflows:
           <<: *only_master
           requires:
             - deploy to pypi
-            - publish image to docker hub
             - build and upload deb package to ppa
             - publish snap to the stable channel
 

@@ -4,5 +4,5 @@ prune tests/
 
 # sdist could work with just these entries in MANIFEST.in;
 # bdist_wheel requires both these entries AND including them in `packages` in setup.py
-recursive-include completion/ *
-include           docs/man/git-machete.1
+include completion/*
+include docs/man/git-machete.1

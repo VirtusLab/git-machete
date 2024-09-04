@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.29.2
+
+- changed: no longer publish Docker images
+
 ## New in git-machete 3.29.1
 
 - improved: `git-machete delete-unmanaged` uses the same algorithm as `status` and `traverse` to recognize merged branches (suggested by @cinnamennen)
