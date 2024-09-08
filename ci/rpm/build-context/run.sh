@@ -7,6 +7,7 @@ if ! ( [ -f setup.py ] && grep -q "name='git-machete'" setup.py ); then
   exit 1
 fi
 
+# Leaving setup.py invocation as it's hard to build RPM package otherwise
 python3 setup.py bdist_rpm
 rpm -i dist/git-machete-*.rpm
 git machete version

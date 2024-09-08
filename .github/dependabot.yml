@@ -4,7 +4,9 @@
 version: 2
 updates:
   - package-ecosystem: "pip"
-    directory: "/requirements/"
+    directories:
+      - /requirements
+      - /ci/tox/build-context
     schedule:
       interval: weekly
     reviewers:
@@ -13,4 +15,5 @@ updates:
     groups:
       deps:
         patterns:
+          # To lump all updated dependencies together into a single PR (instead of PR-per-dependency)
           - "*"

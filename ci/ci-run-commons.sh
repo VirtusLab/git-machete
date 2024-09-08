@@ -4,7 +4,7 @@ set -e -o pipefail -u
 
 function retry() {
   attempts=$1
-  interval=10
+  interval=5
   for i in $(seq 1 $attempts); do
     if "${@:2}"; then break; fi
 

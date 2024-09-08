@@ -13,7 +13,7 @@ set -x
 
 tox -e mypy,coverage
 
-$PYTHON setup.py sdist bdist_wheel
+$PYTHON -m build
 
 ls -l dist/
 # Name of the generated tar.gz changed in a certain setuptools/Python version from git-machete-... to git_machete-...,
@@ -22,8 +22,6 @@ tar tvf dist/git*machete-*.tar.gz | grep docs/man/git-machete.1
 unzip -v dist/git_machete-*.whl   | grep docs/man/git-machete.1
 
 $PYTHON -m venv venv/sdist/
-$PYTHON -m venv venv/bdist_wheel/
-
 . venv/sdist/bin/activate
 pip install dist/git*machete-*.tar.gz
 git machete version
@@ -32,6 +30,7 @@ if ! git machete completion fish | grep 'complete -c git-machete'; then
   exit 1
 fi
 
+$PYTHON -m venv venv/bdist_wheel/
 . venv/bdist_wheel/bin/activate
 pip install dist/git_machete-*.whl
 git machete version

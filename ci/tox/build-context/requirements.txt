@@ -1,0 +1,11 @@
+build==0.9.0; python_version <= '3.6'
+build==1.1.1; python_version >= '3.7' and python_version < '3.8'
+build==1.2.2; python_version >= '3.8'
+
+setuptools==59.6.0; python_version <= '3.6'
+setuptools==68.0.0; python_version >= '3.7' and python_version < '3.8'
+setuptools==74.1.2; python_version >= '3.8'
+
+tox==3.28.0; python_version <= '3.6'
+tox==4.8.0; python_version >= '3.7' and python_version < '3.8'
+tox==4.18.1; python_version >= '3.8'
