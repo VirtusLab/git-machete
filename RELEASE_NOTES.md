@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.29.3
+
 ## New in git-machete 3.29.2
 
 - changed: no longer publish Docker images
