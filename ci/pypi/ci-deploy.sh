@@ -17,6 +17,6 @@ password = $token
 EOF
 
 set -x
-pip3 install -r requirements/pypi-deploy.txt
+pip3 install -r requirements/pypi-publish.txt
 python3 -m build
 python3 -m twine upload --repository $repository --skip-existing dist/*

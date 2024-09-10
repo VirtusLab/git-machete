@@ -105,11 +105,6 @@ sudo apt-get update
 sudo apt-get install -y python3-git-machete
 ```
 
-### Using rpm (Fedora/RHEL/CentOS/openSUSE...)
-
-Download the rpm package from the [latest release](https://github.com/VirtusLab/git-machete/releases/latest)
-and install either by opening it in your desktop environment or with `rpm -i git-machete-*.noarch.rpm`.
-
 ### Using Alpine, Arch, Gentoo & other Linux distro-specific package managers
 
 Check [Repology](https://repology.org/project/git-machete/versions) for the available distro-specific packages.
