@@ -1,4 +1,4 @@
 build==1.2.2
-setuptools==74.1.2
+setuptools==75.0.0
 twine==5.1.1
 wheel==0.44.0
