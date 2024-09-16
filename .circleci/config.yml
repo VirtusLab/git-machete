@@ -204,6 +204,11 @@ jobs:
           command: bash ci/pypi/ci-deploy.sh --dry-run
 
       - run:
+          name: '[Dry run] Build Arch Linux package'
+          # Side effects: potentially pushes a regenerated Docker image
+          command: bash ci/aur/ci-run.sh --dry-run
+
+      - run:
           name: '[Dry run] Build & upload deb package to PPA'
           # Side effects: potentially pushes a regenerated Docker image
           command: bash ci/deb-ppa-upload/ci-deploy.sh --dry-run

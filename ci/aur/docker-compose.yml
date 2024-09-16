@@ -1,6 +1,6 @@
 services:
-  nixpkgs-build:
-    image: gitmachete/ci-nixpkgs-build:${DIRECTORY_HASH:-unspecified}
+  aur:
+    image: gitmachete/ci-aur:${DIRECTORY_HASH:-unspecified}
     platform: linux/amd64
     build:
       context: build-context

@@ -1,7 +1,7 @@
-version: '3'
 services:
   tox:
     image: gitmachete/ci-tox:git${GIT_VERSION}-python${PYTHON_VERSION}-${DIRECTORY_HASH:-unspecified}
+    platform: linux/amd64
     build:
       context: build-context
       dockerfile: ../Dockerfile # relative to build-context

@@ -1,7 +1,7 @@
-version: '3'
 services:
   deb-ppa-upload:
     image: gitmachete/ci-deb-ppa-upload:${DIRECTORY_HASH:-unspecified}
+    platform: linux/amd64
     build:
       context: build-context
       dockerfile: ../Dockerfile # relative to build-context
