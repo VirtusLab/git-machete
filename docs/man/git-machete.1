@@ -363,7 +363,7 @@ from the message body of the first unique commit of the branch, even if \fB\&.gi
 .B \fBmachete.github.prDescriptionIntroStyle\fP:
 .INDENT 7.0
 .TP
-.B Select the style of the intro prepended to PR description:
+.B Select the style of the generated section (\(dqintro\(dq) added to the PR description:
 .INDENT 7.0
 .IP \(bu 2
 \fBfull\fP    \-\-\- include both a chain of upstream PRs (typically leading to \fBmain\fP, \fBmaster\fP, \fBdevelop\fP etc.) and a tree of downstream PRs
@@ -409,7 +409,7 @@ from the message body of the first unique commit of the branch, even if \fB\&.gi
 .B \fBmachete.gitlab.mrDescriptionIntroStyle\fP:
 .INDENT 7.0
 .TP
-.B Select the style of the intro prepended to MR description:
+.B Select the style of the generated section (\(dqintro\(dq) added to the MR description:
 .INDENT 7.0
 .IP \(bu 2
 \fBfull\fP    \-\-\- include both a chain of upstream MRs (typically leading to \fBmain\fP, \fBmaster\fP, \fBdevelop\fP etc.) and a tree of downstream MRs
@@ -999,11 +999,13 @@ If \fB\&.git/info/milestone\fP file is present, its contents (a single number \-
 If \fB\&.git/info/reviewers\fP file is present, its contents (one GitHub login per line) are used to set reviewers.
 .sp
 The subject of the first unique commit of the branch is used as PR title.
-If \fB\&.git/info/description\fP or \fB\&.github/pull_request_template.md\fP file is present, its contents are used as PR description.
+If \fB\&.git/info/description\fP or \fB\&.github/pull_request_template.md\fP template is present, its contents are used as PR description.
 Otherwise (or if \fBmachete.github.forceDescriptionFromCommitMessage\fP is set), PR description is taken from message body of the first unique commit of the branch.
 .sp
-If the newly\-created PR is stacked atop another PR, the actual PR description posted to GitHub will be prepended with a section
-listing the entire related chain of PRs.
+If the newly\-created PR is stacked atop another PR, the actual PR description posted to GitHub will include a generated section (\(dqintro\(dq)
+listing the entire related chain of PRs. This section will be delimited with \fB<!\-\- start git\-machete generated \-\->\fP
+and \fB<!\-\- end git\-machete generated \-\->\fP comments in Markdown. If a PR template file exists and contains these comments already,
+the generated section will be placed between them; otherwise, it will be placed at the beginning.
 .sp
 \fBOptions:\fP
 .INDENT 7.0
@@ -1037,8 +1039,8 @@ Draft PRs don\(aqt get code owners automatically added as reviewers.
 .B \fBretarget\-pr [\-b|\-\-branch=<branch>] [\-\-ignore\-if\-missing]\fP:
 Sets the base of the current (or specified) branch\(aqs PR to upstream (parent) branch, as seen by git machete (see \fBgit machete show up\fP).
 .sp
-If after changing the base the PR ends up stacked atop another PR, the PR description posted to GitHub will be prepended
-with an intro section listing the entire related chain of PRs.
+If after changing the base the PR ends up stacked atop another PR, the PR description posted to GitHub will include
+a generated section (\(dqintro\(dq) listing the entire related chain of PRs.
 .sp
 This intro will be updated or removed accordingly with the subsequent runs of \fBretarget\-pr\fP, even if the base branch is already up to date.
 .sp
@@ -1107,7 +1109,7 @@ from the message body of the first unique commit of the branch, even if \fB\&.gi
 .B \fBmachete.github.prDescriptionIntroStyle\fP (\fBcreate\-pr\fP, \fBrestack\-pr\fP and \fBretarget\-pr\fP):
 .INDENT 7.0
 .TP
-.B Select the style of the intro prepended to PR description:
+.B Select the style of the generated section (\(dqintro\(dq) added to the PR description:
 .INDENT 7.0
 .IP \(bu 2
 \fBfull\fP    \-\-\- include both a chain of upstream PRs (typically leading to \fBmain\fP, \fBmaster\fP, \fBdevelop\fP etc.) and a tree of downstream PRs
@@ -1237,11 +1239,13 @@ Note that you need to use a global (not per\-project) milestone id. Look for som
 If \fB\&.git/info/reviewers\fP file is present, its contents (one GitLab login per line) are used to set reviewers.
 .sp
 The subject of the first unique commit of the branch is used as MR title.
-If \fB\&.git/info/description\fP or \fB\&.gitlab/merge_request_templates/Default.md\fP file is present, its contents are used as MR description.
+If \fB\&.git/info/description\fP or \fB\&.gitlab/merge_request_templates/Default.md\fP template is present, its contents are used as MR description.
 Otherwise (or if \fBmachete.gitlab.forceDescriptionFromCommitMessage\fP is set), MR description is taken from message body of the first unique commit of the branch.
 .sp
-If the newly\-created MR is stacked atop another MR, the actual MR description posted to GitLab will be prepended with a section
-listing the entire related chain of MRs.
+If the newly\-created MR is stacked atop another MR, the actual MR description posted to GitLab will include a generated section (\(dqintro\(dq)
+listing the entire related chain of MRs. This section will be delimited with \fB<!\-\- start git\-machete generated \-\->\fP
+and \fB<!\-\- end git\-machete generated \-\->\fP comments in Markdown. If an MR template file exists and contains these comments already,
+the generated section will be placed between them; otherwise, it will be placed at the beginning.
 .sp
 \fBOptions:\fP
 .INDENT 7.0
@@ -1275,8 +1279,8 @@ Draft MRs don\(aqt get code owners automatically added as reviewers.
 .B \fBretarget\-mr [\-b|\-\-branch=<branch>] [\-\-ignore\-if\-missing]\fP:
 Sets the target of the current (or specified) branch\(aqs MR to upstream (parent) branch, as seen by git machete (see \fBgit machete show up\fP).
 .sp
-If after changing the target the MR ends up stacked atop another MR, the MR description posted to GitLab will be prepended
-with an intro section listing the entire related chain of MRs.
+If after changing the base the MR ends up stacked atop another MR, the MR description posted to GitLab will include
+a generated section (\(dqintro\(dq) listing the entire related chain of MRs.
 .sp
 This intro will be updated or removed accordingly with the subsequent runs of \fBretarget\-mr\fP, even if the target branch is already up to date.
 .sp
@@ -1331,7 +1335,7 @@ from the message body of the first unique commit of the branch, even if \fB\&.gi
 .B \fBmachete.gitlab.mrDescriptionIntroStyle\fP (\fBcreate\-mr\fP, \fBrestack\-mr\fP and \fBretarget\-mr\fP):
 .INDENT 7.0
 .TP
-.B Select the style of the intro prepended to MR description:
+.B Select the style of the generated section (\(dqintro\(dq) added to the MR description:
 .INDENT 7.0
 .IP \(bu 2
 \fBfull\fP    \-\-\- include both a chain of upstream MRs (typically leading to \fBmain\fP, \fBmaster\fP, \fBdevelop\fP etc.) and a tree of downstream MRs

@@ -84,11 +84,13 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
     If ``.git/info/reviewers`` file is present, its contents (one GitHub login per line) are used to set reviewers.
 
     The subject of the first unique commit of the branch is used as PR title.
-    If ``.git/info/description`` or ``.github/pull_request_template.md`` file is present, its contents are used as PR description.
+    If ``.git/info/description`` or ``.github/pull_request_template.md`` template is present, its contents are used as PR description.
     Otherwise (or if ``machete.github.forceDescriptionFromCommitMessage`` is set), PR description is taken from message body of the first unique commit of the branch.
 
-    If the newly-created PR is stacked atop another PR, the actual PR description posted to GitHub will be prepended with a section
-    listing the entire related chain of PRs.
+    If the newly-created PR is stacked atop another PR, the actual PR description posted to GitHub will include a generated section ("intro")
+    listing the entire related chain of PRs. This section will be delimited with ``<!-- start git-machete generated -->``
+    and ``<!-- end git-machete generated -->`` comments in Markdown. If a PR template file exists and contains these comments already,
+    the generated section will be placed between them; otherwise, it will be placed at the beginning.
 
     **Options:**
 
@@ -112,8 +114,8 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 ``retarget-pr [-b|--branch=<branch>] [--ignore-if-missing]``:
     Sets the base of the current (or specified) branch's PR to upstream (parent) branch, as seen by git machete (see ``git machete show up``).
 
-    If after changing the base the PR ends up stacked atop another PR, the PR description posted to GitHub will be prepended
-    with an intro section listing the entire related chain of PRs.
+    If after changing the base the PR ends up stacked atop another PR, the PR description posted to GitHub will include
+    a generated section ("intro") listing the entire related chain of PRs.
 
     This intro will be updated or removed accordingly with the subsequent runs of ``retarget-pr``, even if the base branch is already up to date.
 

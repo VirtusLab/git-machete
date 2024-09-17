@@ -273,6 +273,7 @@ class TestGitHubRetargetPR(BaseTest):
                 `feature` ← `feature_1`
 
             <!-- end git-machete generated -->
+
             # Summary''')[1:]
 
         # branch feature_2 is not present in any of the remotes
@@ -357,6 +358,7 @@ class TestGitHubRetargetPR(BaseTest):
                   `feature_2` ← `feature_3`
 
             <!-- end git-machete generated -->
+
             # Summary''')[1:]
 
         body = \
@@ -393,6 +395,7 @@ class TestGitHubRetargetPR(BaseTest):
                 `feature` ← `feature_3`
 
             <!-- end git-machete generated -->
+
             # Summary''')[1:]
 
         body = \
@@ -447,6 +450,7 @@ class TestGitHubRetargetPR(BaseTest):
                   `feature` ← `feature_4`
 
             <!-- end git-machete generated -->
+
             # Summary''')[1:]
 
     @staticmethod

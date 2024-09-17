@@ -117,7 +117,8 @@ class TestGitLabCreateMR(BaseTest):
 
         self.repo_sandbox.write_to_file(".git/info/milestone", "42")
         self.repo_sandbox.write_to_file(".git/info/reviewers", "foo\n\nbar")
-        self.repo_sandbox.write_to_file(".gitlab/merge_request_templates/Default.md", "# MR title\n## Summary\n## Test plan\n")
+        template = "# MR title\n## Summary\n## Test plan\n\n<!-- start git-machete generated -->\n<!-- end git-machete generated -->\n"
+        self.repo_sandbox.write_to_file(".gitlab/merge_request_templates/Default.md", template)
         assert_success(
             ["gitlab", "create-mr", "--draft"],
             """
@@ -154,6 +155,10 @@ class TestGitLabCreateMR(BaseTest):
         assert pr is not None
         assert pr['title'] == 'Draft: remove outdated fields'
         assert pr['description'] == textwrap.dedent('''
+            # MR title
+            ## Summary
+            ## Test plan
+
             <!-- start git-machete generated -->
 
             # Based on MR !3
@@ -166,12 +171,7 @@ class TestGitLabCreateMR(BaseTest):
               * **MR !5 (THIS ONE)**:
                 `ignore-trailing` ← `chore/fields`
 
-            <!-- end git-machete generated -->
-
-            # MR title
-            ## Summary
-            ## Test plan
-        ''')[1:]
+            <!-- end git-machete generated -->''')[1:]
         assert pr['milestone_id'] == '42'
         assert pr['assignee_ids'] == [123456]
         assert pr['reviewer_ids'] == [123, 456]
@@ -387,8 +387,7 @@ class TestGitLabCreateMR(BaseTest):
 
             # MR title
             ## Summary
-            ## Test plan
-        ''')[1:]
+            ## Test plan''')[1:]
 
     @staticmethod
     def gitlab_api_state_for_test_create_mr_missing_base_branch_on_remote() -> MockGitLabAPIState:

@@ -2465,11 +2465,12 @@ class MacheteClient:
             start_index = lines.index(self.START_GIT_MACHETE_GENERATED_COMMENT)
             end_index = lines.index(self.END_GIT_MACHETE_GENERATED_COMMENT)
             lines = lines[:start_index] + lines_to_prepend + lines[end_index + 1:]
+            lines = skip_leading_empty(lines)
         else:
             # For compatibility with pre-v3.23.0 format; only affects GitHub
             if lines and '# Based on PR #' in lines[0]:
-                lines = skip_leading_empty(lines[1:])
-            lines = lines_to_prepend + lines
+                lines = lines[1:]
+            lines = lines_to_prepend + ([''] if lines_to_prepend else []) + skip_leading_empty(lines)
         return '\n'.join(lines)
 
     def retarget_pr(self, spec: CodeHostingSpec, head: LocalBranchShortName, ignore_if_missing: bool) -> None:
@@ -2792,14 +2793,11 @@ class MacheteClient:
         if base_branch_found_on_remote or style == PRDescriptionIntroStyle.FULL:
             # As the description may include the reference to this PR itself (in case of a chain of >=2 PRs),
             # let's update the PR description after it's already created (so that we know the current PR's number).
-            text_to_prepend = self.__generate_pr_description_intro(code_hosting_client, pr, style)
-            if text_to_prepend:
-                if description:
-                    text_to_prepend += '\n'
-                description = text_to_prepend + description
+            new_description = self.__get_updated_pull_request_description(code_hosting_client, pr, description)
+            if new_description.strip() != description.strip():
                 print(f'Updating description of {pr.display_text()} to include '
                       f'the chain of {spec.pr_short_name}s... ', end='', flush=True)
-                code_hosting_client.set_description_of_pull_request(pr.number, description)
+                code_hosting_client.set_description_of_pull_request(pr.number, new_description)
                 print(fmt(ok_str))
 
         milestone_path: str = self.__git.get_main_git_subpath('info', 'milestone')

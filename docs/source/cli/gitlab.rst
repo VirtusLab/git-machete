@@ -85,11 +85,13 @@ Creates, checks out and manages GitLab MRs while keeping them reflected in branc
     If ``.git/info/reviewers`` file is present, its contents (one GitLab login per line) are used to set reviewers.
 
     The subject of the first unique commit of the branch is used as MR title.
-    If ``.git/info/description`` or ``.gitlab/merge_request_templates/Default.md`` file is present, its contents are used as MR description.
+    If ``.git/info/description`` or ``.gitlab/merge_request_templates/Default.md`` template is present, its contents are used as MR description.
     Otherwise (or if ``machete.gitlab.forceDescriptionFromCommitMessage`` is set), MR description is taken from message body of the first unique commit of the branch.
 
-    If the newly-created MR is stacked atop another MR, the actual MR description posted to GitLab will be prepended with a section
-    listing the entire related chain of MRs.
+    If the newly-created MR is stacked atop another MR, the actual MR description posted to GitLab will include a generated section ("intro")
+    listing the entire related chain of MRs. This section will be delimited with ``<!-- start git-machete generated -->``
+    and ``<!-- end git-machete generated -->`` comments in Markdown. If an MR template file exists and contains these comments already,
+    the generated section will be placed between them; otherwise, it will be placed at the beginning.
 
     **Options:**
 
@@ -113,8 +115,8 @@ Creates, checks out and manages GitLab MRs while keeping them reflected in branc
 ``retarget-mr [-b|--branch=<branch>] [--ignore-if-missing]``:
     Sets the target of the current (or specified) branch's MR to upstream (parent) branch, as seen by git machete (see ``git machete show up``).
 
-    If after changing the target the MR ends up stacked atop another MR, the MR description posted to GitLab will be prepended
-    with an intro section listing the entire related chain of MRs.
+    If after changing the base the MR ends up stacked atop another MR, the MR description posted to GitLab will include
+    a generated section ("intro") listing the entire related chain of MRs.
 
     This intro will be updated or removed accordingly with the subsequent runs of ``retarget-mr``, even if the target branch is already up to date.
 

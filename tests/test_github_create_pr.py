@@ -118,7 +118,8 @@ class TestGitHubCreatePR(BaseTest):
 
         self.repo_sandbox.write_to_file(".git/info/milestone", "42")
         self.repo_sandbox.write_to_file(".git/info/reviewers", "foo\n\nbar")
-        self.repo_sandbox.write_to_file(".github/pull_request_template.md", "# PR title\n## Summary\n## Test plan\n")
+        template = "# PR title\n## Summary\n## Test plan\n\n<!-- start git-machete generated -->\n<!-- end git-machete generated -->\n"
+        self.repo_sandbox.write_to_file(".github/pull_request_template.md", template)
         assert_success(
             ["github", "create-pr", "--draft"],
             """
@@ -155,6 +156,10 @@ class TestGitHubCreatePR(BaseTest):
         assert pr is not None
         assert pr['title'] == 'remove outdated fields'
         assert pr['body'] == textwrap.dedent('''
+            # PR title
+            ## Summary
+            ## Test plan
+
             <!-- start git-machete generated -->
 
             # Based on PR #3
@@ -167,12 +172,7 @@ class TestGitHubCreatePR(BaseTest):
               * **PR #5 (THIS ONE)**:
                 `ignore-trailing` ← `chore/fields`
 
-            <!-- end git-machete generated -->
-
-            # PR title
-            ## Summary
-            ## Test plan
-        ''')[1:]
+            <!-- end git-machete generated -->''')[1:]
         assert pr['draft'] is True
         assert pr['milestone'] == '42'
         assert pr['assignees'] == ['github_user']
@@ -407,8 +407,7 @@ class TestGitHubCreatePR(BaseTest):
 
             # PR title
             ## Summary
-            ## Test plan
-        ''')[1:]
+            ## Test plan''')[1:]
 
     @staticmethod
     def github_api_state_for_test_create_pr_missing_base_branch_on_remote() -> MockGitHubAPIState:

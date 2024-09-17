@@ -251,7 +251,7 @@ long_docs: Dict[str, str] = {
 
            `machete.github.prDescriptionIntroStyle`:
 
-                 Select the style of the intro prepended to PR description:
+                 Select the style of the generated section ("intro") added to the PR description:
 
                  * `full`    — include both a chain of upstream PRs (typically leading to `main`, `master`, `develop` etc.) and a tree of downstream PRs
 
@@ -288,7 +288,7 @@ long_docs: Dict[str, str] = {
 
            `machete.gitlab.mrDescriptionIntroStyle`:
 
-                 Select the style of the intro prepended to MR description:
+                 Select the style of the generated section ("intro") added to the MR description:
 
                  * `full`    — include both a chain of upstream MRs (typically leading to `main`, `master`, `develop` etc.) and a tree of downstream MRs
 
@@ -639,11 +639,13 @@ long_docs: Dict[str, str] = {
               If `.git/info/reviewers` file is present, its contents (one GitHub login per line) are used to set reviewers.
 
               The subject of the first unique commit of the branch is used as PR title.
-              If `.git/info/description` or `.github/pull_request_template.md` file is present, its contents are used as PR description.
+              If `.git/info/description` or `.github/pull_request_template.md` template is present, its contents are used as PR description.
               Otherwise (or if `machete.github.forceDescriptionFromCommitMessage` is set), PR description is taken from message body of the first unique commit of the branch.
 
-              If the newly-created PR is stacked atop another PR, the actual PR description posted to GitHub will be prepended with a section
-              listing the entire related chain of PRs.
+              If the newly-created PR is stacked atop another PR, the actual PR description posted to GitHub will include a generated section ("intro")
+              listing the entire related chain of PRs. This section will be delimited with `<!-- start git-machete generated -->`
+              and `<!-- end git-machete generated -->` comments in Markdown. If a PR template file exists and contains these comments already,
+              the generated section will be placed between them; otherwise, it will be placed at the beginning.
 
               <b>Options:</b>
 
@@ -676,8 +678,8 @@ long_docs: Dict[str, str] = {
  
               Sets the base of the current (or specified) branch's PR to upstream (parent) branch, as seen by git machete (see `git machete show up`).
 
-              If after changing the base the PR ends up stacked atop another PR, the PR description posted to GitHub will be prepended
-              with an intro section listing the entire related chain of PRs.
+              If after changing the base the PR ends up stacked atop another PR, the PR description posted to GitHub will include
+              a generated section ("intro") listing the entire related chain of PRs.
 
               This intro will be updated or removed accordingly with the subsequent runs of `retarget-pr`, even if the base branch is already up to date.
 
@@ -737,7 +739,7 @@ long_docs: Dict[str, str] = {
 
            `machete.github.prDescriptionIntroStyle` (`create-pr`, `restack-pr` and `retarget-pr`):
 
-                 Select the style of the intro prepended to PR description:
+                 Select the style of the generated section ("intro") added to the PR description:
 
                  * `full`    — include both a chain of upstream PRs (typically leading to `main`, `master`, `develop` etc.) and a tree of downstream PRs
 
@@ -830,11 +832,13 @@ long_docs: Dict[str, str] = {
               If `.git/info/reviewers` file is present, its contents (one GitLab login per line) are used to set reviewers.
 
               The subject of the first unique commit of the branch is used as MR title.
-              If `.git/info/description` or `.gitlab/merge_request_templates/Default.md` file is present, its contents are used as MR description.
+              If `.git/info/description` or `.gitlab/merge_request_templates/Default.md` template is present, its contents are used as MR description.
               Otherwise (or if `machete.gitlab.forceDescriptionFromCommitMessage` is set), MR description is taken from message body of the first unique commit of the branch.
 
-              If the newly-created MR is stacked atop another MR, the actual MR description posted to GitLab will be prepended with a section
-              listing the entire related chain of MRs.
+              If the newly-created MR is stacked atop another MR, the actual MR description posted to GitLab will include a generated section ("intro")
+              listing the entire related chain of MRs. This section will be delimited with `<!-- start git-machete generated -->`
+              and `<!-- end git-machete generated -->` comments in Markdown. If an MR template file exists and contains these comments already,
+              the generated section will be placed between them; otherwise, it will be placed at the beginning.
 
               <b>Options:</b>
 
@@ -867,8 +871,8 @@ long_docs: Dict[str, str] = {
  
               Sets the target of the current (or specified) branch's MR to upstream (parent) branch, as seen by git machete (see `git machete show up`).
 
-              If after changing the target the MR ends up stacked atop another MR, the MR description posted to GitLab will be prepended
-              with an intro section listing the entire related chain of MRs.
+              If after changing the base the MR ends up stacked atop another MR, the MR description posted to GitLab will include
+              a generated section ("intro") listing the entire related chain of MRs.
 
               This intro will be updated or removed accordingly with the subsequent runs of `retarget-mr`, even if the target branch is already up to date.
 
@@ -915,7 +919,7 @@ long_docs: Dict[str, str] = {
 
            `machete.gitlab.mrDescriptionIntroStyle` (`create-mr`, `restack-mr` and `retarget-mr`):
 
-                 Select the style of the intro prepended to MR description:
+                 Select the style of the generated section ("intro") added to the MR description:
 
                  * `full`    — include both a chain of upstream MRs (typically leading to `main`, `master`, `develop` etc.) and a tree of downstream MRs
 

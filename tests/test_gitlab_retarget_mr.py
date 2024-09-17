@@ -279,6 +279,7 @@ class TestGitLabRetargetMR(BaseTest):
                 `feature` ← `feature_1`
 
             <!-- end git-machete generated -->
+
             # Summary''')[1:]
 
         # branch feature_2 is not present in any of the remotes
@@ -328,7 +329,8 @@ class TestGitLabRetargetMR(BaseTest):
               * **MR !25 (THIS ONE)**:
                 `feature` ← `feature_2`
 
-            <!-- end git-machete generated -->''')[1:]
+            <!-- end git-machete generated -->
+        ''')[1:]
 
         # branch feature_3 present in only one remote: origin_1 and has tracking data
         (
@@ -375,6 +377,7 @@ class TestGitLabRetargetMR(BaseTest):
                   `feature_2` ← `feature_3`
 
             <!-- end git-machete generated -->
+
             # Summary''')[1:]
 
         body = \
@@ -411,6 +414,7 @@ class TestGitLabRetargetMR(BaseTest):
                 `feature` ← `feature_3`
 
             <!-- end git-machete generated -->
+
             # Summary''')[1:]
 
         body = \
