@@ -907,23 +907,33 @@ class GitContext:
         return result
 
     def __get_patch_id_for_diff(self, patch_contents: str) -> Optional[FullPatchId]:
-        out = utils.get_non_empty_lines(self._popen_git("patch-id", input=patch_contents).stdout)
+        lines = utils.get_non_empty_lines(self._popen_git("patch-id", input=patch_contents).stdout)
 
-        if len(out) == 0:
-            # Line uncovered as we actually always pass a non-empty patch to this method.
+        if len(lines) == 0:
+            # Line uncovered by tests as we actually always pass a non-empty patch to this method.
             return None
-        return FullPatchId.of(out[0].split(' ')[0])  # patch-id output is "<patch-id> <commit-hash>", we only care about the patch-id
+        # The output of patch-id is "<patch-id> <commit-hash>".
+        # Here the bug introduced in git patch-id v2.46.1 (#1329) doesn't affect us as we only care about the patch-id, not commit-hash.
+        return FullPatchId.of(lines[0].split(' ')[0])
 
     def __get_patch_ids_for_commits_between(
             self, earliest_exclusive: AnyRevision, latest_inclusive: AnyRevision, max_commits: int
     ) -> Dict[FullCommitHash, FullPatchId]:
         patches = self._popen_git("log", "--patch", f"^{earliest_exclusive}", latest_inclusive, f"-{max_commits}", "--").stdout
-        patch_ids = self._popen_git("patch-id", input=patches).stdout
+        patch_id_output = self._popen_git("patch-id", input=patches).stdout
 
         patch_id_for_commit: Dict[FullCommitHash, FullPatchId] = {}
-        for line in patch_ids.splitlines():
-            patch_id, commit_hash = line.strip().split(" ", 1)
-            patch_id_for_commit[FullCommitHash.of(commit_hash)] = FullPatchId(patch_id)
+        # TODO (#1329): impose an upper bound on git versions once the underlying issue is fixed
+        if self.get_git_version() <= (2, 46, 0):
+            for line in patch_id_output.splitlines():
+                patch_id, commit_hash = line.strip().split(" ", 1)
+                patch_id_for_commit[FullCommitHash.of(commit_hash)] = FullPatchId(patch_id)
+        else:
+            commit_hashes = [line.replace('commit ', '') for line in patches.splitlines()
+                             if re.fullmatch('commit [0-9a-f]{40}', line)]  # noqa: FS003
+            for line, commit_hash in zip(patch_id_output.splitlines(), commit_hashes):
+                patch_id, _ = line.strip().split(" ", 1)
+                patch_id_for_commit[FullCommitHash.of(commit_hash)] = FullPatchId(patch_id)
 
         return patch_id_for_commit
 

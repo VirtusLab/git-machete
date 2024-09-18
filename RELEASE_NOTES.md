@@ -3,6 +3,7 @@
 ## New in git-machete 3.29.3
 
 - changed: no longer publish RPM files with GitHub releases
+- fixed: work around the parsing bug in `git patch-id` v2.46.1
 
 ## New in git-machete 3.29.2
 

@@ -150,13 +150,13 @@ jobs:
           root: .
           paths: [ .coverage.* ]
 
-  "python 3_12 git 2_42_0":
+  "python 3_12 git 2_46_1":
     executor: ubuntu_executor
     steps:
       - checkout
       - run:
-          name: Run tests against Python 3.12 and git 2.42.0
-          command: PYTHON_VERSION=3.12 GIT_VERSION=2.42.0  bash ci/tox/ci-run.sh
+          name: Run tests against Python 3.12 and git 2.46.1
+          command: PYTHON_VERSION=3.12 GIT_VERSION=2.46.1  bash ci/tox/ci-run.sh
       - store_test_results:
           path: test-results/
       - persist_to_workspace:
@@ -265,7 +265,7 @@ test_jobs: &test_jobs
   - python 3_9 git 2_30_1
   - python 3_10 git 2_33_1
   - python 3_11 git 2_38_1
-  - python 3_12 git 2_42_0
+  - python 3_12 git 2_46_1
   - windows tests
 
 only_master: &only_master
@@ -284,7 +284,7 @@ workflows:
       - python 3_9 git 2_30_1
       - python 3_10 git 2_33_1
       - python 3_11 git 2_38_1
-      - python 3_12 git 2_42_0
+      - python 3_12 git 2_46_1
       - windows tests
       - coverage upload:
           requires:
