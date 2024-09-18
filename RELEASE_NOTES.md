@@ -1,6 +1,6 @@
 # Release notes
 
-## New in git-machete 3.29.3
+## New in git-machete 3.29.4
 
 - changed: no longer publish RPM files with GitHub releases
 - fixed: work around the parsing bug in `git patch-id` v2.46.1 (reported by @ilai-deutel)
