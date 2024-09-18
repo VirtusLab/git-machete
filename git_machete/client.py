@@ -496,7 +496,7 @@ class MacheteClient:
                 non_root_fixed_branches_by_last_checkout_timestamps[-c:]
             stale_non_root_fixed_branches = [LocalBranchShortName.of(branch) for (timestamp, branch) in stale]
             if stale:
-                threshold_date = datetime.datetime.utcfromtimestamp(fresh[0][0]).strftime("%Y-%m-%d")
+                threshold_date = datetime.datetime.fromtimestamp(fresh[0][0], tz=datetime.timezone.utc).strftime("%Y-%m-%d")
                 warn(
                     f"to keep the size of the discovered tree reasonable (ca. {c} branches), "
                     f"only branches checked out at or after ca. <b>{threshold_date}</b> are included.\n"
