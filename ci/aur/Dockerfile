@@ -1,6 +1,7 @@
 
 FROM archlinux:base-devel
-RUN pacman -Sy --noconfirm git
+# https://wiki.archlinux.org/title/System_maintenance#Partial_upgrades_are_unsupported
+RUN pacman -Syu --noconfirm git
 
 RUN useradd -m builder && \
     echo "builder ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/builder && \
