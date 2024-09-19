@@ -13,6 +13,10 @@ class BaseTest:
     def setup_method(self) -> None:
         self.repo_sandbox = GitRepositorySandbox()
         self.expected_mock_methods: Set[str] = set()
+        # So that env vars coming from outside don't interfere with the tests.
+        # Note that this is only relevant in plain `pytest` invocations as `tox` doesn't pass env vars from the outside env by default.
+        for env_var in ["GIT_MACHETE_EDITOR", "GIT_MACHETE_REBASE_OPTS", "GITHUB_TOKEN", "GITLAB_TOKEN"]:
+            os.environ.pop(env_var, None)
 
     def patch_symbol(self, mocker: MockerFixture, symbol: str, target: Any) -> None:
         if callable(target):
