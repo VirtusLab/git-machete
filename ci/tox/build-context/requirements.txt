@@ -8,4 +8,4 @@ setuptools==75.1.0; python_version >= '3.8'
 
 tox==3.28.0; python_version <= '3.6'
 tox==4.8.0; python_version >= '3.7' and python_version < '3.8'
-tox==4.19.0; python_version >= '3.8'
+tox==4.20.0; python_version >= '3.8'
