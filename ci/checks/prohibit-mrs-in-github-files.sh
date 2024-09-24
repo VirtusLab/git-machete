@@ -2,9 +2,7 @@
 
 set -e -o pipefail -u
 
-self_name=$(basename "$0")
-
-if git grep -EIn 'MR|-mr|[mM]erge [rR]equest' -- '*github*' :!**/$self_name; then
+if git grep -EIn 'MR|-mr|[mM]erge [rR]equest' -- '*github*' :!ci/checks/; then
   echo
   echo "GitHub uses *pull* requests rather than *merge* requests, please fix"
   exit 1

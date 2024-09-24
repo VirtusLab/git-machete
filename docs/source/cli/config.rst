@@ -72,4 +72,4 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
     Used to store GitHub API token. Used by commands such as ``anno --sync-github-prs`` and ``github``.
 
 ``GITLAB_TOKEN``
-    Used to store GitLab API token. Used by commands such as ``anno --sync-gitlab-prs`` and ``gitlab``.
+    Used to store GitLab API token. Used by commands such as ``anno --sync-gitlab-mrs`` and ``gitlab``.
