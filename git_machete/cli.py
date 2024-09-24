@@ -380,21 +380,23 @@ def create_cli_parser() -> argparse.ArgumentParser:
         add_help=False,
         parents=[common_args_parser])
     traverse_parser.add_argument('-F', '--fetch', action='store_true')
+    traverse_parser.add_argument('-H', '--sync-github-prs', action='store_true')
     traverse_parser.add_argument('-l', '--list-commits', action='store_true')
+    traverse_parser.add_argument('-L', '--sync-gitlab-mrs', action='store_true')
     traverse_parser.add_argument('-M', '--merge', action='store_true')
     traverse_parser.add_argument('-n', action='store_true')
+    traverse_parser.add_argument('--no-detect-squash-merges', action='store_true')
     traverse_parser.add_argument('--no-edit-merge', action='store_true')
     traverse_parser.add_argument('--no-interactive-rebase', action='store_true')
-    traverse_parser.add_argument('--no-detect-squash-merges', action='store_true')
-    traverse_parser.add_argument('--squash-merge-detection')
-    traverse_parser.add_argument('--push', action='store_true')
     traverse_parser.add_argument('--no-push', action='store_true')
-    traverse_parser.add_argument('--push-untracked', action='store_true')
     traverse_parser.add_argument('--no-push-untracked', action='store_true')
+    traverse_parser.add_argument('--push', action='store_true')
+    traverse_parser.add_argument('--push-untracked', action='store_true')
     traverse_parser.add_argument('--return-to')
+    traverse_parser.add_argument('--squash-merge-detection')
     traverse_parser.add_argument('--start-from')
-    traverse_parser.add_argument('-w', '--whole', action='store_true')
     traverse_parser.add_argument('-W', action='store_true')
+    traverse_parser.add_argument('-w', '--whole', action='store_true')
     traverse_parser.add_argument('-y', '--yes', action='store_true')
 
     update_parser = subparsers.add_parser(
@@ -960,6 +962,8 @@ def launch(orig_args: List[str]) -> None:
                 opt_return_to=opt_return_to,
                 opt_squash_merge_detection=opt_squash_merge_detection,
                 opt_start_from=opt_start_from,
+                opt_sync_github_prs=cli_opts.opt_sync_github_prs,
+                opt_sync_gitlab_mrs=cli_opts.opt_sync_gitlab_mrs,
                 opt_yes=cli_opts.opt_yes)
         elif cmd == "update":
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)

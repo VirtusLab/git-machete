@@ -27,6 +27,8 @@ from .git_operations import (HEAD, AnyBranchName, AnyRevision, BranchPair,
                              GitFormatPatterns, GitLogEntry,
                              LocalBranchShortName, RemoteBranchShortName,
                              SyncToRemoteStatus)
+from .github import GitHubClient
+from .gitlab import GitLabClient
 from .utils import (AnsiEscapeCodes, PopenResult, bold, colored, debug, dim,
                     excluding, flat_map, fmt, get_pretty_choices,
                     get_right_arrow, get_second, tupled, underline, warn)
@@ -780,6 +782,8 @@ class MacheteClient:
             opt_return_to: TraverseReturnTo,
             opt_squash_merge_detection: SquashMergeDetection,
             opt_start_from: TraverseStartFrom,
+            opt_sync_github_prs: bool,
+            opt_sync_gitlab_mrs: bool,
             opt_yes: bool
     ) -> None:
         self.expect_at_least_one_managed_branch()
@@ -794,6 +798,12 @@ class MacheteClient:
                     self.__git.fetch_remote(rem)
             if self.__git.get_remotes():
                 print("")
+
+        current_user: Optional[str] = None
+        if opt_sync_github_prs or opt_sync_gitlab_mrs:
+            spec = GitHubClient.spec() if opt_sync_github_prs else GitLabClient.spec()
+            self.__init_code_hosting_client(spec)
+            current_user = self.code_hosting_client.get_current_user_login()
 
         initial_branch = nearest_remaining_branch = self.__git.get_current_branch()
 
@@ -839,6 +849,18 @@ class MacheteClient:
             else:
                 needs_remote_sync = False
 
+            if opt_sync_github_prs or opt_sync_gitlab_mrs:
+                prs = list(filter(lambda pr: pr.head == branch, self.get_all_open_prs()))
+                if len(prs) > 1:
+                    spec = self.code_hosting_client._spec
+                    raise MacheteException(
+                        f"Multiple {spec.pr_short_name}s have <b>{branch}</b> as its {spec.head_branch_name} branch: " +
+                        ", ".join(_pr.short_display_text() for _pr in prs))
+                pr = prs[0] if prs else None
+                needs_retarget_pr = pr and upstream and pr.base != upstream
+            else:
+                needs_retarget_pr = False
+
             use_merge = opt_merge or (branch in self.annotations and self.annotations[branch].qualifiers.update_with_merge)
 
             if needs_slide_out:
@@ -864,7 +886,7 @@ class MacheteClient:
                 if needs_parent_sync and branch in self.annotations:
                     needs_parent_sync = self.annotations[branch].qualifiers.rebase
 
-            if branch != current_branch and (needs_slide_out or needs_parent_sync or needs_remote_sync):
+            if branch != current_branch and (needs_slide_out or needs_parent_sync or needs_remote_sync or needs_retarget_pr):
                 self.__print_new_line(False)
                 print(f"Checking out {bold(branch)}")
                 self.__git.checkout(branch)
@@ -982,6 +1004,36 @@ class MacheteClient:
                             needs_remote_sync = self.annotations[branch].qualifiers.push
                     else:
                         needs_remote_sync = False
+
+                elif ans in ('q', 'quit'):
+                    return
+
+            if needs_retarget_pr:
+                any_action_suggested = True
+                assert pr is not None
+                assert upstream is not None
+                spec = self.code_hosting_client._spec
+                ans_intro = f"Branch {bold(str(branch))} has a different {spec.pr_short_name} {spec.base_branch_name} ({bold(pr.base)}) " \
+                    f"in {spec.display_name} than in machete file ({bold(str(upstream))}).\n"
+                ans = self.ask_if(
+                    ans_intro + f"Retarget {pr.display_text()} to {bold(str(upstream))}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
+                    ans_intro + f"Retargeting {pr.display_text()} to {bold(str(upstream))}...",
+                    opt_yes=opt_yes)
+                if ans in ('y', 'yes', 'yq'):
+                    self.code_hosting_client.set_base_of_pull_request(pr.number, base=upstream)
+                    print(f'{spec.base_branch_name.capitalize()} branch of {pr.display_text()} has been switched to {bold(str(upstream))}')
+                    pr.base = upstream
+
+                    new_description = self.__get_updated_pull_request_description(pr)
+                    if pr.description != new_description:
+                        self.code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
+                        print(f'Description of {pr.display_text()} has been updated')
+                        pr.description = new_description
+
+                    anno = self.__annotations.get(branch)
+                    self.__annotations[branch] = Annotation(self.__pull_request_annotation(spec, pr, current_user),
+                                                            anno.qualifiers if anno else Qualifiers())
+                    self.save_branch_layout_file()
 
                 elif ans in ('q', 'quit'):
                     return

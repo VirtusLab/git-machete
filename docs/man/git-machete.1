@@ -29,7 +29,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 ..
 .TH "GIT-MACHETE" "1" "Dec 17, 2024" "" "git-machete"
 .SH NAME
-git-machete \- git-machete 3.31.2
+git-machete \- git-machete 3.32.0
 .sp
 git machete is a robust tool that \fBsimplifies your git workflows\fP\&.
 .sp
@@ -2032,6 +2032,7 @@ by setting \fBgit config machete.status.extraSpaceBeforeBranchName true\fP\&.
 git machete t[raverse] [\-F|\-\-fetch] [\-l|\-\-list\-commits] [\-M|\-\-merge]
                        [\-n|\-\-no\-edit\-merge|\-\-no\-interactive\-rebase] [\-\-[no\-]push] [\-\-[no\-]push\-untracked]
                        [\-\-return\-to=WHERE] [\-\-start\-from=WHERE] [\-\-squash\-merge\-detection=MODE]
+                       [\-H|\-\-sync\-github\-prs|\-L|\-\-sync\-gitlab\-mrs]
                        [\-w|\-\-whole] [\-W] [\-y|\-\-yes]
 .EE
 .UNINDENT
@@ -2078,6 +2079,13 @@ otherwise, if the branch is behind its remote counterpart:
 asks the user whether to \fBpull\fP the branch;
 .UNINDENT
 .IP \(bu 2
+if \fB\-H\fP/\fB\-\-sync\-github\-prs\fP or \fB\-L\fP/\fB\-\-sync\-gitlab\-mrs\fP option is present:
+.INDENT 2.0
+.IP \(bu 2
+retargets the PR/MR if it exists for the given branch and has a different base/target branch in GitHub/GitLab than the upstream in machete file,
+just as \fBgit machete github retarget\-pr\fP and \fBgit machete gitlab retarget\-mr\fP would do;
+.UNINDENT
+.IP \(bu 2
 and finally, if any of the above operations has been successfully completed:
 .INDENT 2.0
 .IP \(bu 2
@@ -2121,6 +2129,14 @@ when the current user is NOT the author of the PR/MR associated with that branch
 .TP
 .B  \-F\fP,\fB  \-\-fetch
 Fetch the remotes of all managed branches at the beginning of traversal (no \fBgit pull\fP involved, only \fBgit fetch\fP).
+.TP
+.B  \-H\fP,\fB  \-\-sync\-github\-prs
+Retarget the PR if it exists for the given branch and has a different base branch in GitHub than the upstream in machete file,
+just as \fBgit machete github retarget\-pr\fP would do
+.TP
+.B  \-L\fP,\fB  \-\-sync\-gitlab\-mrs
+Retarget the MR if it exists for the given branch and has a different target branch in GitLab than the upstream in machete file,
+just as \fBgit machete gitlab retarget\-mr\fP would do
 .TP
 .B  \-l\fP,\fB  \-\-list\-commits
 When printing the status, additionally list the messages of commits introduced on each branch.

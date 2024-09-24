@@ -1436,6 +1436,7 @@ long_docs: Dict[str, str] = {
            git machete t[raverse] [-F|--fetch] [-l|--list-commits] [-M|--merge]
                                   [-n|--no-edit-merge|--no-interactive-rebase] [--[no-]push] [--[no-]push-untracked]
                                   [--return-to=WHERE] [--start-from=WHERE] [--squash-merge-detection=MODE]
+                                  [-H|--sync-github-prs|-L|--sync-gitlab-mrs]
                                   [-w|--whole] [-W] [-y|--yes]</b>
 
         Traverses the branches in the order as they occur in branch layout file.
@@ -1456,6 +1457,9 @@ long_docs: Dict[str, str] = {
               - asks the user whether to <b>reset</b> (`git reset --keep`) the branch to its remote counterpart
            * otherwise, if the branch is behind its remote counterpart:
               - asks the user whether to <b>pull</b> the branch;
+           * if `-H`/`--sync-github-prs` or `-L`/`--sync-gitlab-mrs` option is present:
+              - retargets the PR/MR if it exists for the given branch and has a different base/target branch in GitHub/GitLab than the upstream in machete file,
+                just as `git machete github retarget-pr` and `git machete gitlab retarget-mr` would do;
            * and finally, if any of the above operations has been successfully completed:
               - prints the updated `status`.
 
@@ -1488,6 +1492,12 @@ long_docs: Dict[str, str] = {
         <b>Options:</b>
            <b>-F</b>, <b>--fetch</b>
               Fetch the remotes of all managed branches at the beginning of traversal (no `git pull` involved, only `git fetch`).
+           <b>-H</b>, <b>--sync-github-prs</b>
+              Retarget the PR if it exists for the given branch and has a different base branch in GitHub than the upstream in machete file,
+              just as `git machete github retarget-pr` would do
+           <b>-L</b>, <b>--sync-gitlab-mrs</b>
+              Retarget the MR if it exists for the given branch and has a different target branch in GitLab than the upstream in machete file,
+              just as `git machete gitlab retarget-mr` would do
            <b>-l</b>, <b>--list-commits</b>
               When printing the status, additionally list the messages of commits introduced on each branch.
            <b>-M</b>, <b>--merge</b>

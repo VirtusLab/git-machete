@@ -17,7 +17,7 @@ _git_machete() {
   local common_opts="--debug -h --help -v --verbose"
   local add_opts="-f --as-first-child -o --onto= -R --as-root -y --yes"
   local advance_opts="-y --yes"
-  local anno_opts="-b --branch= -H -L --sync-github-prs --sync-gitlab-mrs"
+  local anno_opts="-b --branch= -H --sync-github-prs -L --sync-gitlab-mrs"
   local delete_unmanaged_opts="-y --yes"
   local diff_opts="-s --stat"
   local discover_opts="-C --checked-out-since= -l --list-commits -r --roots= -y --yes"
@@ -32,7 +32,7 @@ _git_machete() {
   local slide_out_opts="-d --down-fork-point= --delete -M --merge -n --no-edit-merge --no-interactive-rebase --removed-from-remote"
   local squash_opts="-f --fork-point="
   local status_opts="--color= -L --list-commits-with-hashes -l --list-commits --no-detect-squash-merges"
-  local traverse_opts="-F --fetch -l --list-commits -M --merge -n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase --no-push --no-push-untracked --push --push-untracked --return-to= --start-from= -w --whole -W -y --yes"
+  local traverse_opts="-F --fetch -H --sync-github-prs -L --sync-gitlab-mrs -l --list-commits -M --merge -n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase --no-push --no-push-untracked --push --push-untracked --return-to= --start-from= -w --whole -W -y --yes"
   local update_opts="-f --fork-point= -M --merge -n --no-edit-merge --no-interactive-rebase"
 
   cur=${COMP_WORDS[$COMP_CWORD]}
