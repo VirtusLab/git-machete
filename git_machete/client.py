@@ -27,9 +27,11 @@ from .git_operations import (HEAD, AnyBranchName, AnyRevision, BranchPair,
                              GitFormatPatterns, GitLogEntry,
                              LocalBranchShortName, RemoteBranchShortName,
                              SyncToRemoteStatus)
+from .github import GitHubClient
+from .gitlab import GitLabClient
 from .utils import (AnsiEscapeCodes, PopenResult, bold, colored, debug, dim,
-                    excluding, flat_map, fmt, get_pretty_choices, get_second,
-                    tupled, underline, warn)
+                    excluding, find_or_none, flat_map, fmt, get_pretty_choices,
+                    get_second, tupled, underline, warn)
 
 
 class SyncToParentStatus(Enum):
@@ -52,7 +54,6 @@ sync_to_parent_status_to_junction_ascii_only_map: Dict[SyncToParentStatus, str] 
     SyncToParentStatus.InSyncButForkPointOff: "?-",
     SyncToParentStatus.OutOfSync: "x-"
 }
-
 
 E = TypeVar('E', bound='Enum')
 
@@ -718,9 +719,9 @@ class MacheteClient:
         anno = self.annotations.get(branch)
         if remote and (not anno or anno.qualifiers.push):
             push_msg = f"\nBranch {bold(branch)} is now fast-forwarded to match {bold(down_branch)}. " \
-                f"Push {bold(branch)} to {bold(remote)}?" + get_pretty_choices('y', 'N')
+                       f"Push {bold(branch)} to {bold(remote)}?" + get_pretty_choices('y', 'N')
             opt_yes_push_msg = f"\nBranch {bold(branch)} is now fast-forwarded to match {bold(down_branch)}. " \
-                f"Pushing {bold(branch)} to {bold(remote)}..."
+                               f"Pushing {bold(branch)} to {bold(remote)}..."
             ans = self.ask_if(push_msg, opt_yes_push_msg, opt_yes=opt_yes)
             if ans in ('y', 'yes'):
                 self.__git.push(remote, branch)
@@ -765,6 +766,8 @@ class MacheteClient:
             opt_return_to: TraverseReturnTo,
             opt_squash_merge_detection: SquashMergeDetection,
             opt_start_from: TraverseStartFrom,
+            opt_sync_github_prs: bool,
+            opt_sync_gitlab_mrs: bool,
             opt_yes: bool
     ) -> None:
         self.expect_at_least_one_managed_branch()
@@ -778,6 +781,21 @@ class MacheteClient:
                 self.__git.fetch_remote(rem)
             if self.__git.get_remotes():
                 print("")
+
+        code_hosting_client: Optional[CodeHostingClient] = None
+        current_user: Optional[str] = None
+        all_open_prs: Dict[int, PullRequest] = {}
+        if opt_sync_github_prs or opt_sync_gitlab_mrs:
+            spec = GitHubClient.spec() if opt_sync_github_prs else GitLabClient.spec()
+            domain = self.__derive_code_hosting_domain(spec)
+            org_repo_remote = self.__derive_org_repo_and_remote(spec, domain=domain)
+            code_hosting_client = spec.create_client(
+                domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
+            print(f'Checking for open {spec.display_name} {spec.pr_short_name}s... ', end='', flush=True)
+            current_user = code_hosting_client.get_current_user_login()
+            debug(f'Current {spec.display_name} user is ' + (bold(current_user or '<none>')))
+            all_open_prs = {pr.number: pr for pr in code_hosting_client.get_open_pull_requests()}
+            print(fmt('<green><b>OK</b></green>'))
 
         initial_branch = nearest_remaining_branch = self.__git.get_current_branch()
 
@@ -823,6 +841,17 @@ class MacheteClient:
             else:
                 needs_remote_sync = False
 
+            prs = list(filter(lambda pr: pr.head == branch, all_open_prs.values()))
+            if len(prs) > 1:
+                assert code_hosting_client is not None
+                spec = code_hosting_client._spec
+                raise MacheteException(
+                    f"Multiple {spec.pr_short_name}s have <b>{branch}</b> as its {spec.head_branch_name} branch: " +
+                    ", ".join(_pr.short_display_text() for _pr in prs))
+            pr = prs[0] if prs else None
+            # If neither -L and -H flag is passed, then `all_open_prs` is empty, so `pr` is None and `needs_retarget_pr` is False
+            needs_retarget_pr = pr and upstream and pr.base != upstream
+
             use_merge = opt_merge or (branch in self.annotations and self.annotations[branch].qualifiers.update_with_merge)
 
             if needs_slide_out:
@@ -848,7 +877,7 @@ class MacheteClient:
                 if needs_parent_sync and branch in self.annotations:
                     needs_parent_sync = self.annotations[branch].qualifiers.rebase
 
-            if branch != current_branch and (needs_slide_out or needs_parent_sync or needs_remote_sync):
+            if branch != current_branch and (needs_slide_out or needs_parent_sync or needs_remote_sync or needs_retarget_pr):
                 self.__print_new_line(False)
                 print(f"Checking out {bold(branch)}")
                 self.__git.checkout(branch)
@@ -966,6 +995,42 @@ class MacheteClient:
                             needs_remote_sync = self.annotations[branch].qualifiers.push
                     else:
                         needs_remote_sync = False
+
+                elif ans in ('q', 'quit'):
+                    return
+
+            if needs_retarget_pr:
+                any_action_suggested = True
+                assert pr is not None
+                assert upstream is not None
+                assert code_hosting_client is not None
+                spec = code_hosting_client._spec
+                ans_intro = f"Branch {bold(str(branch))} has a different {spec.pr_short_name} {spec.base_branch_name} ({bold(pr.base)}) " \
+                            f"in {spec.display_name} than in machete file ({bold(str(upstream))}). "
+                ans = self.ask_if(
+                    ans_intro + f"Retarget {pr.display_text()} to {bold(str(upstream))}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
+                    ans_intro + f"Retargeting {pr.display_text()} to {bold(str(upstream))}...",
+                    opt_yes=opt_yes)
+                if ans in ('y', 'yes', 'yq'):
+                    code_hosting_client.set_base_of_pull_request(pr.number, base=upstream)
+                    print(f'{spec.base_branch_name.capitalize()} branch of {pr.display_text()} has been switched to {bold(str(upstream))}')
+                    pr = pr._replace(base=upstream)
+                    all_open_prs[pr.number] = pr
+
+                    new_description = self.__get_updated_pull_request_description(
+                        code_hosting_client, pr, all_open_prs_preloaded=list(all_open_prs.values()))
+                    if pr.description != new_description:
+                        code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
+                        print(f'Description of {pr.display_text()} has been updated')
+                        pr = pr._replace(description=new_description)
+                        all_open_prs[pr.number] = pr
+
+                    if self.__annotations.get(branch) and self.__annotations[branch].qualifiers_text:
+                        self.__annotations[branch] = Annotation(self.__pull_request_annotation(spec, pr, current_user) + ' ' +
+                                                                self.__annotations[branch].qualifiers_text)
+                    else:
+                        self.__annotations[branch] = Annotation(self.__pull_request_annotation(spec, pr, current_user))
+                    self.save_branch_layout_file()
 
                 elif ans in ('q', 'quit'):
                     return
@@ -1138,8 +1203,8 @@ class MacheteClient:
                             right_arrow = colored(utils.get_right_arrow(), AnsiEscapeCodes.RED)
                             fork_point_str = colored("fork point ???", AnsiEscapeCodes.RED)
                             fp_suffix: str = f' {right_arrow} {fork_point_str} ' + \
-                                ("this commit" if opt_list_commits_with_hashes else f"commit {commit.short_hash}") + \
-                                f' seems to be a part of the unique history of {fp_branches_formatted}'
+                                             ("this commit" if opt_list_commits_with_hashes else f"commit {commit.short_hash}") + \
+                                             f' seems to be a part of the unique history of {fp_branches_formatted}'
                         else:
                             fp_suffix = ''
                         print_line_prefix(branch, utils.get_vertical_bar())
@@ -1232,7 +1297,7 @@ class MacheteClient:
             else:
                 affected_branches = ", ".join(map(bold, branches_in_sync_but_fork_point_off))
                 first_part = f"yellow edges indicate that fork points for {affected_branches} are probably incorrectly inferred,\n" \
-                    "or that some extra branch should be added between each of these branches and its parent"
+                             "or that some extra branch should be added between each of these branches and its parent"
 
             if not opt_list_commits:
                 second_part = "Run `git machete status --list-commits` or " \
@@ -1941,11 +2006,11 @@ class MacheteClient:
         print("\n".join(f"[{index + 1}] {rem}" for index, rem in enumerate(rems)))
         if is_called_from_traverse:
             msg = f"Select number 1..{len(rems)} to specify the destination remote " \
-                "repository, or 'n' to skip this branch, or " \
-                "'q' to quit the traverse: "
+                  "repository, or 'n' to skip this branch, or " \
+                  "'q' to quit the traverse: "
         else:
             msg = f"Select number 1..{len(rems)} to specify the destination remote " \
-                "repository, or 'q' to quit the operation: "
+                  "repository, or 'q' to quit the operation: "
 
         ans = input(msg).lower()
         if ans in ('q', 'quit'):
@@ -2273,6 +2338,7 @@ class MacheteClient:
                 if down_pr.head not in visited_head_branches:
                     yield (down_pr, depth + 1)
                     yield from reverse_pr_dfs(down_pr, depth + 1)
+
         return list(reverse_pr_dfs(original_pr, 0))
 
     @staticmethod
@@ -2452,14 +2518,14 @@ class MacheteClient:
 
             self.retarget_pr(spec, head, ignore_if_missing=False)
 
-    def __get_updated_pull_request_description(self, code_hosting_client: CodeHostingClient,
-                                               pr: PullRequest, old_description: Optional[str]) -> str:
+    def __get_updated_pull_request_description(self, code_hosting_client: CodeHostingClient, pr: PullRequest,
+                                               all_open_prs_preloaded: Optional[List[PullRequest]]) -> str:
         def skip_leading_empty(strs: List[str]) -> List[str]:
             return list(itertools.dropwhile(lambda line: line.strip() == '', strs))
 
-        lines = skip_leading_empty(old_description.splitlines()) if old_description else []
+        lines = skip_leading_empty(pr.description.splitlines()) if pr.description else []
         style = self.__get_pr_description_into_style_from_config(code_hosting_client._spec)
-        text_to_prepend = self.__generate_pr_description_intro(code_hosting_client, pr, style)
+        text_to_prepend = self.__generate_pr_description_intro(code_hosting_client, pr, style, all_open_prs_preloaded)
         lines_to_prepend = text_to_prepend.splitlines() if text_to_prepend else []
         if self.START_GIT_MACHETE_GENERATED_COMMENT in lines and self.END_GIT_MACHETE_GENERATED_COMMENT in lines:
             start_index = lines.index(self.START_GIT_MACHETE_GENERATED_COMMENT)
@@ -2512,14 +2578,14 @@ class MacheteClient:
         else:
             print(f'{spec.base_branch_name.capitalize()} branch of {pr.display_text()} is already {bold(new_base)}')
 
-        new_description = self.__get_updated_pull_request_description(code_hosting_client, pr, pr.description)
+        new_description = self.__get_updated_pull_request_description(code_hosting_client, pr, all_open_prs_preloaded=None)
         if pr.description != new_description:
             code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
             print(f'Description of {pr.display_text()} has been updated')
 
         current_user: Optional[str] = code_hosting_client.get_current_user_login()
         if self.__annotations.get(head) and self.__annotations[head].qualifiers_text:
-            self.__annotations[head] = Annotation(f'{self.__pull_request_annotation(spec, pr, current_user)} ' +
+            self.__annotations[head] = Annotation(self.__pull_request_annotation(spec, pr, current_user) + ' ' +
                                                   self.__annotations[head].qualifiers_text)
         else:
             self.__annotations[head] = Annotation(self.__pull_request_annotation(spec, pr, current_user))
@@ -2628,25 +2694,34 @@ class MacheteClient:
         )
 
     def __generate_pr_description_intro(self, code_hosting_client: CodeHostingClient,
-                                        pr: PullRequest, style: PRDescriptionIntroStyle) -> str:
+                                        pr: PullRequest, style: PRDescriptionIntroStyle,
+                                        all_open_prs_preloaded: Optional[List[PullRequest]]) -> str:
         if style == PRDescriptionIntroStyle.NONE:
             return ''
 
-        # For determining the PR chain, we need to fetch all PRs from the repo.
-        # We could just fetch them straight away... but this list can be quite long for commercial monorepos,
-        # esp. given that GitHub and GitLab limit the single page to 100 PRs/MRs (so multiple HTTP requests may be needed).
-        # As a slight optimization, in the default UP_ONLY style,
-        # let's fetch the full PR list only if the current PR has a base PR at all.
-        prs_for_base_branch = code_hosting_client.get_open_pull_requests_by_head(LocalBranchShortName(pr.base))
+        if all_open_prs_preloaded is not None:
+            prs_for_base_branch = list(filter(lambda _pr: _pr.head == pr.base, all_open_prs_preloaded))
+        else:
+            # For determining the PR chain, we need to fetch all PRs from the repo.
+            # We could just fetch them straight away... but this list can be quite long for commercial monorepos,
+            # esp. given that GitHub and GitLab limit the single page to 100 PRs/MRs (so multiple HTTP requests may be needed).
+            # As a slight optimization, in the default UP_ONLY style,
+            # let's fetch the full PR list only if the current PR has a base PR at all.
+            prs_for_base_branch = code_hosting_client.get_open_pull_requests_by_head(LocalBranchShortName(pr.base))
         if style == PRDescriptionIntroStyle.UP_ONLY and len(prs_for_base_branch) == 0:
             return ''
         spec = code_hosting_client._spec
-        display_name = spec.display_name
         pr_short_name = spec.pr_short_name
-        determine_what = 'chain' if style == PRDescriptionIntroStyle.UP_ONLY else 'tree'
-        print(f'Checking for open {display_name} {pr_short_name}s (to determine {pr_short_name} {determine_what})... ', end='', flush=True)
-        all_open_prs: List[PullRequest] = code_hosting_client.get_open_pull_requests()
-        print(fmt('<green><b>OK</b></green>'))
+        if all_open_prs_preloaded is not None:
+            all_open_prs = all_open_prs_preloaded
+        else:
+            display_name = spec.display_name
+            determine_what = 'chain' if style == PRDescriptionIntroStyle.UP_ONLY else 'tree'
+            print(f'Checking for open {display_name} {pr_short_name}s '
+                  f'(to determine {pr_short_name} {determine_what})... ', end='', flush=True)
+            all_open_prs = code_hosting_client.get_open_pull_requests()
+            print(fmt('<green><b>OK</b></green>'))
+
         pr_up_path = reversed(self.__get_upwards_path_including_pr(spec, pr, all_open_prs))
         if style == PRDescriptionIntroStyle.FULL:
             pr_down_tree = self.__get_downwards_tree_excluding_pr(pr, all_open_prs)
@@ -2793,7 +2868,7 @@ class MacheteClient:
         if base_branch_found_on_remote or style == PRDescriptionIntroStyle.FULL:
             # As the description may include the reference to this PR itself (in case of a chain of >=2 PRs),
             # let's update the PR description after it's already created (so that we know the current PR's number).
-            new_description = self.__get_updated_pull_request_description(code_hosting_client, pr, description)
+            new_description = self.__get_updated_pull_request_description(code_hosting_client, pr, all_open_prs_preloaded=None)
             if new_description.strip() != description.strip():
                 print(f'Updating description of {pr.display_text()} to include '
                       f'the chain of {spec.pr_short_name}s... ', end='', flush=True)

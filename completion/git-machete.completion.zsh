@@ -140,6 +140,8 @@ _git-machete() {
         (t|traverse)
           _arguments \
             '(-F --fetch)'{-F,--fetch}'[Fetch the remotes of all managed branches at the beginning of traversal]' \
+            '(-H --sync-github-prs)'{-H,--sync-github-prs}'[Retarget GitHub PR when its base branch is different than in machete file]' \
+            '(-L --sync-gitlab-mrs)'{-L,--sync-gitlab-mrs}'[Retarget GitLab MR when its target branch is different than in machete file]' \
             '(-l --list-commits)'{-l,--list-commits}'[List the messages of commits introduced on each branch]' \
             '(-M --merge)'{-M,--merge}'[Update by merge rather than by rebase]' \
             '(-n)'-n'[If updating by rebase, equivalent to --no-interactive-rebase. If updating by merge, equivalent to --no-edit-merge]' \
