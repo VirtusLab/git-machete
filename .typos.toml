@@ -1,5 +1,6 @@
 [files]
 extend-exclude = [
+  "ci/checks/*",
   "graphics/*.cast",
   "graphics/generate-asciinema-gif",
 ]
