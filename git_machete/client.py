@@ -28,8 +28,8 @@ from .git_operations import (HEAD, AnyBranchName, AnyRevision, BranchPair,
                              LocalBranchShortName, RemoteBranchShortName,
                              SyncToRemoteStatus)
 from .utils import (AnsiEscapeCodes, PopenResult, bold, colored, debug, dim,
-                    excluding, flat_map, fmt, get_pretty_choices, get_second,
-                    tupled, underline, warn)
+                    excluding, flat_map, fmt, get_pretty_choices,
+                    get_right_arrow, get_second, tupled, underline, warn)
 
 
 class SyncToParentStatus(Enum):
@@ -2162,6 +2162,42 @@ class MacheteClient:
                 f"Fork point {bold(fork_point_hash)} is not ancestor of or the tip "
                 f"of the {bold(branch)} branch.")
 
+    def update_pull_request_descriptions(self,
+                                         spec: CodeHostingSpec,
+                                         *,
+                                         all: bool = False,
+                                         mine: bool = False,
+                                         related: bool = False,
+                                         ) -> None:
+        domain = self.__derive_code_hosting_domain(spec)
+        org_repo_remote = self.__derive_org_repo_and_remote(spec, domain=domain)
+        code_hosting_client = spec.create_client(domain=domain, organization=org_repo_remote.organization,
+                                                 repository=org_repo_remote.repository)
+
+        current_user: Optional[str] = code_hosting_client.get_current_user_login()
+        if not current_user and mine:
+            msg = (f"Could not determine current user name, please check that the {spec.display_name} API token provided by one of the: "
+                   f"{spec.token_providers_message}is valid.")
+            raise MacheteException(msg)
+        print(f'Checking for open {spec.display_name} {spec.pr_short_name}s... ', end='', flush=True)
+        all_open_prs: List[PullRequest] = code_hosting_client.get_open_pull_requests()
+        print(fmt('<green><b>OK</b></green>'))
+
+        if related:
+            head = self.__git.get_current_branch()
+            current_pr = self.__get_sole_pull_request_for_head(code_hosting_client, head, ignore_if_missing=False)
+        else:
+            current_pr = None
+        applicable_prs: List[PullRequest] = self.__get_applicable_pull_requests(
+            pr_numbers=[], all_opened_prs=all_open_prs, code_hosting_client=code_hosting_client,
+            all=all, mine=mine, by=None, related_to=current_pr, user=current_user)
+
+        for pr in applicable_prs:
+            new_description = self.__get_updated_pull_request_description(code_hosting_client, pr, all_open_prs_preloaded=all_open_prs)
+            if pr.description != new_description:
+                code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
+                print(fmt(f'Description of {pr.display_text()} (<b>{pr.head} {get_right_arrow()} {pr.base}</b>) has been updated'))
+
     def checkout_pull_requests(self,
                                spec: CodeHostingSpec,
                                pr_numbers: Optional[List[int]],
@@ -2191,7 +2227,7 @@ class MacheteClient:
 
         applicable_prs: List[PullRequest] = self.__get_applicable_pull_requests(
             pr_numbers, all_opened_prs=all_open_prs, code_hosting_client=code_hosting_client,
-            all=all, mine=mine, by=by, user=current_user)
+            all=all, mine=mine, by=by, related_to=None, user=current_user)
 
         debug(f'organization is {org_repo_remote.organization}, repository is {org_repo_remote.repository}')
         self.__git.fetch_remote(org_repo_remote.remote)
@@ -2296,13 +2332,14 @@ class MacheteClient:
             pr_base = pr.base if pr else None
         return path
 
-    @staticmethod
     def __get_applicable_pull_requests(
+            self,
             pr_numbers: Optional[List[int]],
             all_opened_prs: List[PullRequest],
             code_hosting_client: CodeHostingClient,
             all: bool,
             mine: bool,
+            related_to: Optional[PullRequest],
             by: Optional[str],
             user: Optional[str]
     ) -> List[PullRequest]:
@@ -2343,6 +2380,14 @@ class MacheteClient:
                      f"{bold(code_hosting_client.organization)}/{bold(code_hosting_client.repository)}")
                 return []
             return result
+        elif related_to:
+            style = self.__get_pr_description_into_style_from_config(spec)
+            result = []
+            if style == PRDescriptionIntroStyle.FULL:
+                result += reversed(self.__get_upwards_path_including_pr(spec, related_to, all_opened_prs))
+            result += [pr_ for pr_, _ in self.__get_downwards_tree_excluding_pr(related_to, all_opened_prs)]
+            return result
+
         raise UnexpectedMacheteException("All params passed to __get_applicable_pull_requests are empty.")
 
     def __get_url_for_remote(self) -> Dict[str, str]:
@@ -2367,15 +2412,8 @@ class MacheteClient:
         code_hosting_client = spec.create_client(
             domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
 
-        prs: List[PullRequest] = code_hosting_client.get_open_pull_requests_by_head(head)
-        if not prs:
-            raise MacheteException(f"No {spec.pr_short_name}s in <b>{org_repo_remote.extract_org_and_repo()}</b> "
-                                   f"have <b>{head}</b> as its {spec.head_branch_name} branch")
-        if len(prs) > 1:
-            raise MacheteException(f"Multiple {spec.pr_short_name}s in <b>{org_repo_remote.extract_org_and_repo()}</b> "
-                                   f"have <b>{head}</b> as its {spec.head_branch_name} branch: " +
-                                   ", ".join(_pr.short_display_text() for _pr in prs))
-        pr = prs[0]
+        pr: Optional[PullRequest] = self.__get_sole_pull_request_for_head(code_hosting_client, head, ignore_if_missing=False)
+        assert pr is not None
 
         self.__git.fetch_remote(org_repo_remote.remote)
 
@@ -2436,7 +2474,7 @@ class MacheteClient:
             self.__print_new_line(False)
 
             if converted_to_draft:
-                code_hosting_client.set_draft_status_of_pull_request(prs[0].number, target_draft_status=False)
+                code_hosting_client.set_draft_status_of_pull_request(pr.number, target_draft_status=False)
                 print(f'{pr.display_text()} has been marked as ready for review again')
 
         else:
@@ -2479,23 +2517,9 @@ class MacheteClient:
         code_hosting_client = spec.create_client(
             domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
 
-        debug(f'organization is {org_repo_remote.organization}, repository is {org_repo_remote.repository}')
-
-        prs: List[PullRequest] = code_hosting_client.get_open_pull_requests_by_head(head)
-        if not prs:
-            if ignore_if_missing:
-                warn(f"no {spec.pr_short_name}s in <b>{org_repo_remote.extract_org_and_repo()}</b> "
-                     f"have <b>{head}</b> as its {spec.head_branch_name} branch")
-                return
-            else:
-                raise MacheteException(f"No {spec.pr_short_name}s in <b>{org_repo_remote.extract_org_and_repo()}</b> "
-                                       f"have <b>{head}</b> as its {spec.head_branch_name} branch")
-        if len(prs) > 1:
-            raise MacheteException(f"Multiple {spec.pr_short_name}s in <b>{org_repo_remote.extract_org_and_repo()}</b> "
-                                   f"have <b>{head}</b> as its {spec.head_branch_name} branch: " +
-                                   ", ".join(_pr.short_display_text() for _pr in prs))
-        pr = prs[0]
-        debug(f'found {pr}')
+        pr: Optional[PullRequest] = self.__get_sole_pull_request_for_head(code_hosting_client, head, ignore_if_missing=ignore_if_missing)
+        if pr is None:
+            return
 
         new_base: Optional[LocalBranchShortName] = self.__up_branch.get(LocalBranchShortName.of(head))
         if not new_base:
@@ -2620,6 +2644,30 @@ class MacheteClient:
     START_GIT_MACHETE_GENERATED_COMMENT = '<!-- start git-machete generated -->'
     END_GIT_MACHETE_GENERATED_COMMENT = '<!-- end git-machete generated -->'
 
+    @staticmethod
+    def __get_sole_pull_request_for_head(
+            code_hosting_client: CodeHostingClient,
+            head: LocalBranchShortName,
+            ignore_if_missing: bool
+    ) -> Optional[PullRequest]:
+        prs: List[PullRequest] = code_hosting_client.get_open_pull_requests_by_head(head)
+        spec = code_hosting_client._spec
+        if not prs:
+            if ignore_if_missing:
+                warn(f"no {spec.pr_short_name}s in <b>{code_hosting_client.get_org_and_repo()}</b> "
+                     f"have <b>{head}</b> as its {spec.head_branch_name} branch")
+                return None
+            else:
+                raise MacheteException(f"No {spec.pr_short_name}s in <b>{code_hosting_client.get_org_and_repo()}</b> "
+                                       f"have <b>{head}</b> as its {spec.head_branch_name} branch")
+        if len(prs) > 1:
+            raise MacheteException(f"Multiple {spec.pr_short_name}s in <b>{code_hosting_client.get_org_and_repo()}</b> "
+                                   f"have <b>{head}</b> as its {spec.head_branch_name} branch: " +
+                                   ", ".join(_pr.short_display_text() for _pr in prs))
+        pr = prs[0]
+        debug(f'found {pr}')
+        return pr
+
     def __get_pr_description_into_style_from_config(self, spec: CodeHostingSpec) -> PRDescriptionIntroStyle:
         config_key = spec.git_config_keys.pr_description_intro_style
         return PRDescriptionIntroStyle.from_string(
@@ -2663,7 +2711,7 @@ class MacheteClient:
             pr_down_tree = []
 
         prepend = f'{self.START_GIT_MACHETE_GENERATED_COMMENT}\n\n'
-        # In FULL mode, we're likely to generate the intro even when there are NO upstream PRs above
+        # In FULL mode, we're likely to generate a non-empty intro even when there are NO upstream PRs above
         if len(prs_for_base_branch) >= 1:
             prepend += f'# Based on {prs_for_base_branch[0].display_text(fmt=False)}\n\n'
 

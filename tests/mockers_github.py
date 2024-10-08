@@ -146,7 +146,7 @@ def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) 
                 return MockAPIResponse(HTTPStatus.OK, pull)
             raise error_404()
         elif url_path_matches('/user'):
-            return MockAPIResponse(HTTPStatus.OK, {'login': 'github_user', 'type': 'User', 'company': 'VirtusLab'})
+            return MockAPIResponse(HTTPStatus.OK, {'login': 'github_user', 'type': 'User'})
         else:
             raise error_404()
 

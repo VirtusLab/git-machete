@@ -6,8 +6,8 @@ _git_machete() {
 
   local categories="addable childless managed slidable slidable-after unmanaged with-overridden-fork-point"
   local directions="down first last next prev root up"
-  local github_subcommands="anno-prs checkout-prs create-pr restack-pr retarget-pr"
-  local gitlab_subcommands="anno-mrs checkout-mrs create-mr restack-mr retarget-mr"
+  local github_subcommands="anno-prs checkout-prs create-pr restack-pr retarget-pr update-pr-descriptions"
+  local gitlab_subcommands="anno-mrs checkout-mrs create-mr restack-mr retarget-mr update-mr-descriptions"
   local locations="current $directions"
   local opt_color_args="always auto never"
   local opt_return_to_args="here nearest-remaining stay"
@@ -22,14 +22,11 @@ _git_machete() {
   local diff_opts="-s --stat"
   local discover_opts="-C --checked-out-since= -l --list-commits -r --roots= -y --yes"
   local fork_point_opts="--inferred --override-to= --override-to-inferred --override-to-parent --unset-override"
-  local github_anno_prs_opts="--with-urls"
-  local github_create_pr_opts="--draft --title= --yes"
-  local github_checkout_prs_opts="--all --by= --mine"
-  local github_retarget_pr_opts="-b --branch= --ignore-if-missing"
-  local gitlab_anno_mrs_opts="--with-urls"
-  local gitlab_create_mr_opts="--draft --title= --yes"
-  local gitlab_checkout_mrs_opts="--all --by= --mine"
-  local gitlab_retarget_mr_opts="-b --branch= --ignore-if-missing"
+  local githublab_anno_opts="--with-urls"
+  local githublab_create_opts="--draft --title= --yes"
+  local githublab_checkout_opts="--all --by= --mine"
+  local githublab_retarget_opts="-b --branch= --ignore-if-missing"
+  local githublab_update_descriptions_opts="--all --mine --related"
   local reapply_opts="-f --fork-point="
   local slide_out_opts="-d --down-fork-point= --delete -M --merge -n --no-edit-merge --no-interactive-rebase --removed-from-remote"
   local squash_opts="-f --fork-point="
@@ -57,25 +54,29 @@ _git_machete() {
         fork-point) __gitcomp "$common_opts $fork_point_opts" ;;
         github)
           if [[ ${COMP_WORDS[3]} == "anno-prs" ]]; then
-            __gitcomp "$common_opts $github_anno_prs_opts"
+            __gitcomp "$common_opts $githublab_anno_opts"
           elif [[ ${COMP_WORDS[3]} == "create-pr" ]]; then
-            __gitcomp "$common_opts $github_create_pr_opts"
+            __gitcomp "$common_opts $githublab_create_opts"
           elif [[ ${COMP_WORDS[3]} == "checkout-prs" ]]; then
-            __gitcomp "$common_opts $github_checkout_prs_opts"
+            __gitcomp "$common_opts $githublab_checkout_opts"
           elif [[ ${COMP_WORDS[3]} == "retarget-pr" ]]; then
-            __gitcomp "$common_opts $github_retarget_pr_opts"
+            __gitcomp "$common_opts $githublab_retarget_opts"
+          elif [[ ${COMP_WORDS[3]} == "update-pr-descriptions" ]]; then
+            __gitcomp "$common_opts $githublab_update_descriptions_opts"
           else
             __gitcomp "$common_opts"
           fi ;;
         gitlab)
           if [[ ${COMP_WORDS[3]} == "anno-mrs" ]]; then
-            __gitcomp "$common_opts $gitlab_anno_mrs_opts"
+            __gitcomp "$common_opts $githublab_anno_opts"
           elif [[ ${COMP_WORDS[3]} == "create-mr" ]]; then
-            __gitcomp "$common_opts $gitlab_create_mr_opts"
+            __gitcomp "$common_opts $githublab_create_opts"
           elif [[ ${COMP_WORDS[3]} == "checkout-mrs" ]]; then
-            __gitcomp "$common_opts $gitlab_checkout_mrs_opts"
+            __gitcomp "$common_opts $githublab_checkout_opts"
           elif [[ ${COMP_WORDS[3]} == "retarget-mr" ]]; then
-            __gitcomp "$common_opts $gitlab_retarget_mr_opts"
+            __gitcomp "$common_opts $githublab_retarget_opts"
+          elif [[ ${COMP_WORDS[3]} == "update-mr-descriptions" ]]; then
+            __gitcomp "$common_opts $githublab_update_descriptions_opts"
           else
             __gitcomp "$common_opts"
           fi ;;
@@ -133,13 +134,15 @@ _git_machete() {
                 if [[ $COMP_CWORD -eq 3 ]]; then
                   __gitcomp "$github_subcommands"
                 elif [[ ${COMP_WORDS[3]} == "anno-prs" ]]; then
-                  __gitcomp "$common_opts $github_anno_prs_opts"
+                  __gitcomp "$common_opts $githublab_anno_opts"
                 elif [[ ${COMP_WORDS[3]} == "create-pr" ]]; then
-                  __gitcomp "$common_opts $github_create_pr_opts"
+                  __gitcomp "$common_opts $githublab_create_opts"
                 elif [[ ${COMP_WORDS[3]} == "checkout-prs" ]]; then
-                  __gitcomp "$common_opts $github_checkout_prs_opts"
+                  __gitcomp "$common_opts $githublab_checkout_opts"
                 elif [[ ${COMP_WORDS[3]} == "retarget-pr" ]]; then
-                  __gitcomp "$common_opts $github_retarget_pr_opts"
+                  __gitcomp "$common_opts $githublab_retarget_opts"
+                elif [[ ${COMP_WORDS[3]} == "update-pr-descriptions" ]]; then
+                  __gitcomp "$common_opts $githublab_update_descriptions_opts"
                 else
                   COMPREPLY=('')
                 fi ;;
@@ -147,13 +150,15 @@ _git_machete() {
                 if [[ $COMP_CWORD -eq 3 ]]; then
                   __gitcomp "$gitlab_subcommands"
                 elif [[ ${COMP_WORDS[3]} == "anno-mrs" ]]; then
-                  __gitcomp "$common_opts $gitlab_anno_mrs_opts"
+                  __gitcomp "$common_opts $githublab_anno_opts"
                 elif [[ ${COMP_WORDS[3]} == "create-mr" ]]; then
-                  __gitcomp "$common_opts $gitlab_create_mr_opts"
+                  __gitcomp "$common_opts $githublab_create_opts"
                 elif [[ ${COMP_WORDS[3]} == "checkout-mrs" ]]; then
-                  __gitcomp "$common_opts $gitlab_checkout_mrs_opts"
+                  __gitcomp "$common_opts $githublab_checkout_opts"
                 elif [[ ${COMP_WORDS[3]} == "retarget-mr" ]]; then
-                  __gitcomp "$common_opts $gitlab_retarget_mr_opts"
+                  __gitcomp "$common_opts $githublab_retarget_opts"
+                elif [[ ${COMP_WORDS[3]} == "update-mr-descriptions" ]]; then
+                  __gitcomp "$common_opts $githublab_update_descriptions_opts"
                 else
                   COMPREPLY=('')
                 fi ;;

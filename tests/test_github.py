@@ -335,9 +335,9 @@ class TestGitHub(BaseTest):
         assert_failure(["github", "anno-prs", "--draft"],
                        "--draft option is only valid with create-pr subcommand.")
         assert_failure(["github", "anno-prs", "--mine"],
-                       "--mine option is only valid with checkout-prs subcommand.")
+                       "--mine option is only valid with checkout-prs and update-pr-descriptions subcommands.")
         assert_failure(["github", "retarget-pr", "123"],
-                       "request_id option is only valid with checkout-prs subcommand.")
+                       "PR number is only valid with checkout-prs subcommand.")
         assert_failure(["github", "checkout-prs", "-b", "foo"],
                        "--branch option is only valid with retarget-pr subcommand.")
         assert_failure(["github", "create-pr", "--ignore-if-missing"],
@@ -350,3 +350,9 @@ class TestGitHub(BaseTest):
                        "--with-urls option is only valid with anno-prs subcommand.")
         assert_failure(["github", "restack-pr", "--yes"],
                        "--yes option is only valid with create-pr subcommand.")
+        assert_failure(["github", "update-pr-descriptions", "--by=other-user"],
+                       "--by option is only valid with checkout-prs subcommand.")
+        assert_failure(["github", "checkout-prs", "--related"],
+                       "--related option is only valid with update-pr-descriptions subcommand.")
+        assert_failure(["github", "update-pr-descriptions", "--all", "--related"],
+                       "update-pr-descriptions subcommand must take exactly one of the following options: --all, --mine, --related")

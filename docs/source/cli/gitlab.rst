@@ -84,7 +84,7 @@ Creates, checks out and manages GitLab MRs while keeping them reflected in branc
 
     If ``.git/info/reviewers`` file is present, its contents (one GitLab login per line) are used to set reviewers.
 
-    The subject of the first unique commit of the branch is used as MR title.
+    Unless ``--title`` is provided, the subject of the first unique commit of the branch is used as MR title.
     If ``.git/info/description`` or ``.gitlab/merge_request_templates/Default.md`` template is present, its contents are used as MR description.
     Otherwise (or if ``machete.gitlab.forceDescriptionFromCommitMessage`` is set), MR description is taken from message body of the first unique commit of the branch.
 
@@ -125,6 +125,20 @@ Creates, checks out and manages GitLab MRs while keeping them reflected in branc
     -b, --branch=<branch>     Specify the branch for which the associated MR source branch will be set to its upstream (parent) branch. The current branch is used if the option is absent.
 
     --ignore-if-missing       Ignore errors and quietly terminate execution if there is no MR opened for current (or specified) branch.
+
+``update-mr-descriptions``:
+    Updates the generated sections ("intros") of MR descriptions that list the upstream and/or downstream MRs
+    (depending on ``machete.gitlab.mrDescriptionIntroStyle`` git config key).
+
+    **Options:**
+
+    --all         Update MR descriptions for all MRs in the project.
+
+    --mine        Update MR descriptions for all MRs opened by the current user associated with the GitLab token.
+
+    --related     Update MR descriptions for all MRs that are upstream and/or downstream of the MR for the current branch.
+                  If ``machete.gitlab.mrDescriptionIntroStyle`` is ``up-only`` (default), then only downstream MR descriptions are updated.
+                  If ``machete.gitlab.mrDescriptionIntroStyle`` is ``full``, then both downstream and upstream MR descriptions are updated.
 
 **Git config keys:**
 

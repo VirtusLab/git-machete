@@ -564,7 +564,7 @@ long_docs: Dict[str, str] = {
         <b>Usage:</b><b>
            git machete github <subcommand></b>
 
-        where `<subcommand>` is one of: `anno-prs`, `checkout-prs`, `create-pr`, `retarget-pr` or `restack-pr`.
+        where `<subcommand>` is one of: `anno-prs`, `checkout-prs`, `create-pr`, `retarget-pr`, `restack-pr` or `update-pr-descriptions`.
 
         Creates, checks out and manages GitHub PRs while keeping them reflected in branch layout file.
 
@@ -638,7 +638,7 @@ long_docs: Dict[str, str] = {
               If `.git/info/milestone` file is present, its contents (a single number — milestone id) are used as milestone.
               If `.git/info/reviewers` file is present, its contents (one GitHub login per line) are used to set reviewers.
 
-              The subject of the first unique commit of the branch is used as PR title.
+              Unless `--title` is provided, the subject of the first unique commit of the branch is used as PR title.
               If `.git/info/description` or `.github/pull_request_template.md` template is present, its contents are used as PR description.
               Otherwise (or if `machete.github.forceDescriptionFromCommitMessage` is set), PR description is taken from message body of the first unique commit of the branch.
 
@@ -705,6 +705,24 @@ long_docs: Dict[str, str] = {
                  * deletes unmanaged branches,
 
                  * deletes untracked managed branches that have no downstream branch.
+
+           `update-pr-descriptions`:
+ 
+              Updates the generated sections ("intros") of PR descriptions that list the upstream and/or downstream PRs
+              (depending on `machete.github.prDescriptionIntroStyle` git config key).
+
+              <b>Options:</b>
+
+                 <b>--all</b>
+              Update PR descriptions for all PRs in the repository.
+
+                 <b>--mine</b>
+              Update PR descriptions for all PRs opened by the current user associated with the GitHub token.
+
+                 <b>--related</b>
+              Update PR descriptions for all PRs that are upstream and/or downstream of the PR for the current branch.
+              If `machete.github.prDescriptionIntroStyle` is `up-only` (default), then only downstream PR descriptions are updated.
+              If `machete.github.prDescriptionIntroStyle` is `full`, then both downstream and upstream PR descriptions are updated.
 
         <b>Git config keys:</b>
            `machete.github.{domain,remote,organization,repository}` (all subcommands):
@@ -831,7 +849,7 @@ long_docs: Dict[str, str] = {
 
               If `.git/info/reviewers` file is present, its contents (one GitLab login per line) are used to set reviewers.
 
-              The subject of the first unique commit of the branch is used as MR title.
+              Unless `--title` is provided, the subject of the first unique commit of the branch is used as MR title.
               If `.git/info/description` or `.gitlab/merge_request_templates/Default.md` template is present, its contents are used as MR description.
               Otherwise (or if `machete.gitlab.forceDescriptionFromCommitMessage` is set), MR description is taken from message body of the first unique commit of the branch.
 
@@ -885,6 +903,24 @@ long_docs: Dict[str, str] = {
                  <b>--ignore-if-missing</b>
 
               Ignore errors and quietly terminate execution if there is no MR opened for current (or specified) branch.
+
+           `update-mr-descriptions`:
+ 
+              Updates the generated sections ("intros") of MR descriptions that list the upstream and/or downstream MRs
+              (depending on `machete.gitlab.mrDescriptionIntroStyle` git config key).
+
+              <b>Options:</b>
+
+                 <b>--all</b>
+              Update MR descriptions for all MRs in the project.
+
+                 <b>--mine</b>
+              Update MR descriptions for all MRs opened by the current user associated with the GitLab token.
+
+                 <b>--related</b>
+              Update MR descriptions for all MRs that are upstream and/or downstream of the MR for the current branch.
+              If `machete.gitlab.mrDescriptionIntroStyle` is `up-only` (default), then only downstream MR descriptions are updated.
+              If `machete.gitlab.mrDescriptionIntroStyle` is `full`, then both downstream and upstream MR descriptions are updated.
 
         <b>Git config keys:</b>
            `machete.gitlab.{domain,remote,namespace,project}` (all subcommands):

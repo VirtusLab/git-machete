@@ -27,9 +27,9 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Oct 15, 2024" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Oct 26, 2024" "" "git-machete"
 .SH NAME
-git-machete \- git-machete 3.30.1
+git-machete \- git-machete 3.31.0
 .sp
 git machete is a robust tool that \fBsimplifies your git workflows\fP\&.
 .sp
@@ -899,7 +899,7 @@ git machete github <subcommand>
 .UNINDENT
 .UNINDENT
 .sp
-where \fB<subcommand>\fP is one of: \fBanno\-prs\fP, \fBcheckout\-prs\fP, \fBcreate\-pr\fP, \fBretarget\-pr\fP or \fBrestack\-pr\fP\&.
+where \fB<subcommand>\fP is one of: \fBanno\-prs\fP, \fBcheckout\-prs\fP, \fBcreate\-pr\fP, \fBretarget\-pr\fP, \fBrestack\-pr\fP or \fBupdate\-pr\-descriptions\fP\&.
 .sp
 Creates, checks out and manages GitHub PRs while keeping them reflected in branch layout file.
 .sp
@@ -998,7 +998,7 @@ Once the PR is successfully created, annotates the current branch with the new P
 If \fB\&.git/info/milestone\fP file is present, its contents (a single number \-\-\- milestone id) are used as milestone.
 If \fB\&.git/info/reviewers\fP file is present, its contents (one GitHub login per line) are used to set reviewers.
 .sp
-The subject of the first unique commit of the branch is used as PR title.
+Unless \fB\-\-title\fP is provided, the subject of the first unique commit of the branch is used as PR title.
 If \fB\&.git/info/description\fP or \fB\&.github/pull_request_template.md\fP template is present, its contents are used as PR description.
 Otherwise (or if \fBmachete.github.forceDescriptionFromCommitMessage\fP is set), PR description is taken from message body of the first unique commit of the branch.
 .sp
@@ -1066,6 +1066,25 @@ adding branches one by one to git\-machete and checks them out locally as well,
 deletes unmanaged branches,
 .IP 3. 3
 deletes untracked managed branches that have no downstream branch.
+.UNINDENT
+.TP
+.B \fBupdate\-pr\-descriptions\fP:
+Updates the generated sections (\(dqintros\(dq) of PR descriptions that list the upstream and/or downstream PRs
+(depending on \fBmachete.github.prDescriptionIntroStyle\fP git config key).
+.sp
+\fBOptions:\fP
+.INDENT 7.0
+.TP
+.B  \-\-all
+Update PR descriptions for all PRs in the repository.
+.TP
+.B  \-\-mine
+Update PR descriptions for all PRs opened by the current user associated with the GitHub token.
+.TP
+.B  \-\-related
+Update PR descriptions for all PRs that are upstream and/or downstream of the PR for the current branch.
+If \fBmachete.github.prDescriptionIntroStyle\fP is \fBup\-only\fP (default), then only downstream PR descriptions are updated.
+If \fBmachete.github.prDescriptionIntroStyle\fP is \fBfull\fP, then both downstream and upstream PR descriptions are updated.
 .UNINDENT
 .UNINDENT
 .sp
@@ -1238,7 +1257,7 @@ Note that you need to use a global (not per\-project) milestone id. Look for som
 .sp
 If \fB\&.git/info/reviewers\fP file is present, its contents (one GitLab login per line) are used to set reviewers.
 .sp
-The subject of the first unique commit of the branch is used as MR title.
+Unless \fB\-\-title\fP is provided, the subject of the first unique commit of the branch is used as MR title.
 If \fB\&.git/info/description\fP or \fB\&.gitlab/merge_request_templates/Default.md\fP template is present, its contents are used as MR description.
 Otherwise (or if \fBmachete.gitlab.forceDescriptionFromCommitMessage\fP is set), MR description is taken from message body of the first unique commit of the branch.
 .sp
@@ -1292,6 +1311,25 @@ Specify the branch for which the associated MR source branch will be set to its 
 .TP
 .B  \-\-ignore\-if\-missing
 Ignore errors and quietly terminate execution if there is no MR opened for current (or specified) branch.
+.UNINDENT
+.TP
+.B \fBupdate\-mr\-descriptions\fP:
+Updates the generated sections (\(dqintros\(dq) of MR descriptions that list the upstream and/or downstream MRs
+(depending on \fBmachete.gitlab.mrDescriptionIntroStyle\fP git config key).
+.sp
+\fBOptions:\fP
+.INDENT 7.0
+.TP
+.B  \-\-all
+Update MR descriptions for all MRs in the project.
+.TP
+.B  \-\-mine
+Update MR descriptions for all MRs opened by the current user associated with the GitLab token.
+.TP
+.B  \-\-related
+Update MR descriptions for all MRs that are upstream and/or downstream of the MR for the current branch.
+If \fBmachete.gitlab.mrDescriptionIntroStyle\fP is \fBup\-only\fP (default), then only downstream MR descriptions are updated.
+If \fBmachete.gitlab.mrDescriptionIntroStyle\fP is \fBfull\fP, then both downstream and upstream MR descriptions are updated.
 .UNINDENT
 .UNINDENT
 .sp

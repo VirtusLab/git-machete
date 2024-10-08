@@ -59,7 +59,7 @@ test_cases: Dict[str, str] = {
     "git machete fork-point --unset-override ":
         "develop",
     "git machete github ":
-        "anno-prs checkout-prs create-pr restack-pr retarget-pr",
+        "anno-prs checkout-prs create-pr restack-pr retarget-pr update-pr-descriptions",
     "git machete github anno-prs -":
         "--debug -h --help -v --verbose --with-urls",
     "git machete github checkout-prs -":
@@ -70,8 +70,10 @@ test_cases: Dict[str, str] = {
         "--branch --debug --help --ignore-if-missing --verbose",
     "git machete github retarget-pr -b ":
         "develop master",
+    "git machete github update-pr-descriptions -":
+        "--all --debug -h --help --mine --related -v --verbose",
     "git machete gitlab ":
-        "anno-mrs checkout-mrs create-mr restack-mr retarget-mr",
+        "anno-mrs checkout-mrs create-mr restack-mr retarget-mr update-mr-descriptions",
     "git machete gitlab anno-mrs -":
         "--debug -h --help -v --verbose --with-urls",
     "git machete gitlab checkout-mrs -":
@@ -82,6 +84,8 @@ test_cases: Dict[str, str] = {
         "--branch --debug --help --ignore-if-missing --verbose",
     "git machete gitlab retarget-mr -b ":
         "develop master",
+    "git machete gitlab update-mr-descriptions -":
+        "--all --debug -h --help --mine --related -v --verbose",
     "git machete g ":
         "down first last next prev root up",
     "git machete go ":

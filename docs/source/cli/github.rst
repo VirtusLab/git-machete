@@ -8,7 +8,7 @@ github
 
     git machete github <subcommand>
 
-where ``<subcommand>`` is one of: ``anno-prs``, ``checkout-prs``, ``create-pr``, ``retarget-pr`` or ``restack-pr``.
+where ``<subcommand>`` is one of: ``anno-prs``, ``checkout-prs``, ``create-pr``, ``retarget-pr``, ``restack-pr`` or ``update-pr-descriptions``.
 
 Creates, checks out and manages GitHub PRs while keeping them reflected in branch layout file.
 
@@ -83,7 +83,7 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
     If ``.git/info/milestone`` file is present, its contents (a single number --- milestone id) are used as milestone.
     If ``.git/info/reviewers`` file is present, its contents (one GitHub login per line) are used to set reviewers.
 
-    The subject of the first unique commit of the branch is used as PR title.
+    Unless ``--title`` is provided, the subject of the first unique commit of the branch is used as PR title.
     If ``.git/info/description`` or ``.github/pull_request_template.md`` template is present, its contents are used as PR description.
     Otherwise (or if ``machete.github.forceDescriptionFromCommitMessage`` is set), PR description is taken from message body of the first unique commit of the branch.
 
@@ -94,11 +94,11 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 
     **Options:**
 
-    --draft            Create the new PR as a draft.
+    --draft                            Create the new PR as a draft.
 
-    --title=<title>    Set the PR title explicitly (the default is to use the first included commit's message as the title).
+    --title=<title>                    Set the PR title explicitly (the default is to use the first included commit's message as the title).
 
-    --yes              Do not ask for confirmation whether to push the branch.
+    --yes                              Do not ask for confirmation whether to push the branch.
 
 ``restack-pr``:
     Perform the following sequence of actions:
@@ -121,9 +121,9 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 
     **Options:**
 
-    -b, --branch=<branch>     Specify the branch for which the associated PR base will be set to its upstream (parent) branch. The current branch is used if the option is absent.
+    -b, --branch=<branch>              Specify the branch for which the associated PR base will be set to its upstream (parent) branch. The current branch is used if the option is absent.
 
-    --ignore-if-missing       Ignore errors and quietly terminate execution if there is no PR opened for current (or specified) branch.
+    --ignore-if-missing                Ignore errors and quietly terminate execution if there is no PR opened for current (or specified) branch.
 
 ``sync``:
     **Deprecated.** Use ``github checkout-prs --mine``, ``delete-unmanaged`` and ``slide-out --removed-from-remote``.
@@ -134,6 +134,20 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
        adding branches one by one to git-machete and checks them out locally as well,
     #. deletes unmanaged branches,
     #. deletes untracked managed branches that have no downstream branch.
+
+``update-pr-descriptions``:
+    Updates the generated sections ("intros") of PR descriptions that list the upstream and/or downstream PRs
+    (depending on ``machete.github.prDescriptionIntroStyle`` git config key).
+
+    **Options:**
+
+    --all         Update PR descriptions for all PRs in the repository.
+
+    --mine        Update PR descriptions for all PRs opened by the current user associated with the GitHub token.
+
+    --related     Update PR descriptions for all PRs that are upstream and/or downstream of the PR for the current branch.
+                  If ``machete.github.prDescriptionIntroStyle`` is ``up-only`` (default), then only downstream PR descriptions are updated.
+                  If ``machete.github.prDescriptionIntroStyle`` is ``full``, then both downstream and upstream PR descriptions are updated.
 
 **Git config keys:**
 

@@ -254,6 +254,7 @@ __git_machete_github_subcommands() {
         'create-pr:create a PR for the current branch, using the upstream (parent) branch as the PR base'
         'restack-pr:(force-)push and retarget the PR, without adding code owners as reviewers in the process'
         'retarget-pr:set the base of the current branch PR to upstream (parent) branch'
+        'update-pr-descriptions:update the generated sections of PR descriptions that lists the upstream and/or downstream PRs'
       )
       _describe 'subcommand' github_subcommands
       ;;
@@ -271,7 +272,7 @@ __git_machete_github_subcommands() {
           _arguments \
             '(--all)'--all'[Checkout all open PRs]' \
             '(--by)'--by='[Checkout open PRs authored by the given GitHub user]' \
-            '(--mine)'--mine='[Checkout open PRs for the current user associated with the GitHub token]' \
+            '(--mine)'--mine'[Checkout open PRs for the current user associated with the GitHub token]' \
             "${common_flags[@]}"
         ;;
 
@@ -287,6 +288,14 @@ __git_machete_github_subcommands() {
           _arguments \
             '(-b --branch)'{-b,--branch=}'[Specify the branch for which the associated PR base will be set to its upstream (parent) branch]: :__git_machete_list_managed' \
             '(--ignore-if-missing)'--ignore-if-missing'[Ignore errors and quietly terminate execution if there is no PR opened for current (or specified) branch]' \
+            "${common_flags[@]}"
+        ;;
+
+        (update-pr-descriptions)
+          _arguments \
+            '(--all)'--all'[Update PR descriptions for all PRs in the repository]' \
+            '(--mine)'--mine'[Update PR descriptions for all PRs opened by the current user associated with the GitHub token]' \
+            '(--related)'--related'[Update PR descriptions for all PRs that are upstream and/or downstream of the PR for the current branch]' \
             "${common_flags[@]}"
         ;;
       esac
@@ -312,6 +321,7 @@ __git_machete_gitlab_subcommands() {
         'create-mr:create a MR for the current branch, using the upstream (parent) branch as the MR source branch'
         'restack-mr:(force-)push and retarget the MR, without adding code owners as reviewers in the process'
         'retarget-mr:set the source branch of the current branch MR to upstream (parent) branch'
+        'update-mr-descriptions:update the generated sections of MR descriptions that list the upstream and/or downstream MRs'
       )
       _describe 'subcommand' gitlab_subcommands
       ;;
@@ -329,7 +339,7 @@ __git_machete_gitlab_subcommands() {
           _arguments \
             '(--all)'--all'[Checkout all open MRs]' \
             '(--by)'--by='[Checkout open MRs authored by the given GitLab user]' \
-            '(--mine)'--mine='[Checkout open MRs for the current user associated with the GitLab token]' \
+            '(--mine)'--mine'[Checkout open MRs for the current user associated with the GitLab token]' \
             "${common_flags[@]}"
         ;;
 
@@ -345,6 +355,14 @@ __git_machete_gitlab_subcommands() {
           _arguments \
             '(-b --branch)'{-b,--branch=}'[Specify the branch for which the associated MR source branch will be set to its upstream (parent) branch]: :__git_machete_list_managed' \
             '(--ignore-if-missing)'--ignore-if-missing'[Ignore errors and quietly terminate execution if there is no MR opened for current (or specified) branch]' \
+            "${common_flags[@]}"
+        ;;
+
+        (update-mr-descriptions)
+          _arguments \
+            '(--all)'--all'[Update MR descriptions for all MRs in the project]' \
+            '(--mine)'--mine'[Update MR descriptions for all MRs opened by the current user associated with the GitLab token]' \
+            '(--related)'--related'[Update MR descriptions for all MRs that are upstream and/or downstream of the MR for the current branch]' \
             "${common_flags[@]}"
         ;;
       esac

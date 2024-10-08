@@ -139,6 +139,9 @@ class CodeHostingClient(metaclass=ABCMeta):  # pragma: no cover
             ctx.verify_mode = ssl.CERT_NONE
         return ctx
 
+    def get_org_and_repo(self) -> OrganizationAndRepository:
+        return OrganizationAndRepository(self.organization, self.repository)
+
     @abstractmethod
     def create_pull_request(self, head: str, head_org_repo: OrganizationAndRepository,
                             base: str, title: str, description: str, draft: bool) -> PullRequest:

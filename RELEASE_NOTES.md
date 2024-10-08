@@ -1,6 +1,8 @@
 # Release notes
 
-## New in git-machete 3.30.1
+## New in git-machete 3.31.0
+
+- added: `git machete git{hub,lab} update-{pr,mr}-descriptions` subcommands
 
 ## New in git-machete 3.30.0
 

@@ -285,9 +285,9 @@ class TestGitLab(BaseTest):
         assert_failure(["gitlab", "anno-mrs", "--draft"],
                        "--draft option is only valid with create-mr subcommand.")
         assert_failure(["gitlab", "anno-mrs", "--mine"],
-                       "--mine option is only valid with checkout-mrs subcommand.")
+                       "--mine option is only valid with checkout-mrs and update-mr-descriptions subcommands.")
         assert_failure(["gitlab", "retarget-mr", "123"],
-                       "request_id option is only valid with checkout-mrs subcommand.")
+                       "MR number is only valid with checkout-mrs subcommand.")
         assert_failure(["gitlab", "checkout-mrs", "-b", "foo"],
                        "--branch option is only valid with retarget-mr subcommand.")
         assert_failure(["gitlab", "create-mr", "--ignore-if-missing"],
@@ -300,3 +300,9 @@ class TestGitLab(BaseTest):
                        "--with-urls option is only valid with anno-mrs subcommand.")
         assert_failure(["gitlab", "restack-mr", "--yes"],
                        "--yes option is only valid with create-mr subcommand.")
+        assert_failure(["gitlab", "update-mr-descriptions", "--by=other-user"],
+                       "--by option is only valid with checkout-mrs subcommand.")
+        assert_failure(["gitlab", "checkout-mrs", "--related"],
+                       "--related option is only valid with update-mr-descriptions subcommand.")
+        assert_failure(["gitlab", "update-mr-descriptions", "--all", "--related"],
+                       "update-mr-descriptions subcommand must take exactly one of the following options: --all, --mine, --related")

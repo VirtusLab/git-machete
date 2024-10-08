@@ -240,7 +240,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
     fork_point_exclusive_optional_args.add_argument('--override-to-parent', action='store_true')
     fork_point_exclusive_optional_args.add_argument('--unset-override', action='store_true')
 
-    def add_code_hosting_parser(command: str, subcommand_suffix: str, include_sync: bool) -> Any:
+    def add_code_hosting_parser(command: str, pr_or_mr: str, include_sync: bool) -> Any:
         parser = subparsers.add_parser(
             command,
             argument_default=argparse.SUPPRESS,
@@ -248,11 +248,12 @@ def create_cli_parser() -> argparse.ArgumentParser:
             add_help=False,
             parents=[common_args_parser])
         parser.add_argument('subcommand', choices=[
-            f'anno-{subcommand_suffix}s',
-            f'checkout-{subcommand_suffix}s',
-            f'create-{subcommand_suffix}',
-            f'restack-{subcommand_suffix}',
-            f'retarget-{subcommand_suffix}'
+            f'anno-{pr_or_mr}s',
+            f'checkout-{pr_or_mr}s',
+            f'create-{pr_or_mr}',
+            f'restack-{pr_or_mr}',
+            f'retarget-{pr_or_mr}',
+            f'update-{pr_or_mr}-descriptions'
         ] + (['sync'] if include_sync else []))
         parser.add_argument('request_id', nargs='*', type=int)
         parser.add_argument('-b', '--branch')
@@ -261,9 +262,11 @@ def create_cli_parser() -> argparse.ArgumentParser:
         parser.add_argument('--draft', action='store_true')
         parser.add_argument('--ignore-if-missing', action='store_true')
         parser.add_argument('--mine', action='store_true')
+        parser.add_argument('--related', action='store_true')
         parser.add_argument('--title')
         parser.add_argument('--with-urls', action='store_true')
         parser.add_argument('--yes', action='store_true')
+
     add_code_hosting_parser('github', 'pr', include_sync=True)
     add_code_hosting_parser('gitlab', 'mr', include_sync=False)
 
@@ -461,9 +464,6 @@ def update_cli_options_using_parsed_args(
         elif opt == "no_detect_squash_merges":
             warn("`--no-detect-squash-merges` is deprecated, use `--squash-merge-detection=none` instead", end="\n\n")
             cli_opts.opt_squash_merge_detection_string = "none"
-        elif opt == "squash_merge_detection" and arg is not None:  # if no arg is passed, argparse will fail anyway
-            cli_opts.opt_squash_merge_detection_string = arg
-            cli_opts.opt_squash_merge_detection_origin = "`--squash-merge-detection` flag"
         elif opt == "no_edit_merge":
             cli_opts.opt_no_edit_merge = True
         elif opt == "no_interactive_rebase":
@@ -492,6 +492,9 @@ def update_cli_options_using_parsed_args(
             cli_opts.opt_return_to = arg
         elif opt == "roots":
             cli_opts.opt_roots = list(map(LocalBranchShortName.of, filter(None, arg.split(","))))
+        elif opt == "squash_merge_detection" and arg is not None:  # if no arg is passed, argparse will fail anyway
+            cli_opts.opt_squash_merge_detection_string = arg
+            cli_opts.opt_squash_merge_detection_origin = "`--squash-merge-detection` flag"
         elif opt == "start_from":
             cli_opts.opt_start_from = arg
         elif opt == "stat":
@@ -727,61 +730,78 @@ def launch(orig_args: List[str]) -> None:
                 git.checkout(dest)
         elif cmd in ("github", "gitlab"):
             subcommand = parsed_cli.subcommand
-            config = GitHubClient.spec() if cmd == "github" else GitLabClient.spec()
-            subcommand_suffix = "pr" if cmd == "github" else "mr"
+            spec = GitHubClient.spec() if cmd == "github" else GitLabClient.spec()
+            pr_or_mr = spec.pr_short_name.lower()
 
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
 
-            if 'request_id' in parsed_cli and subcommand != f'checkout-{subcommand_suffix}s':
-                raise MacheteException(f"`request_id` option is only valid with `checkout-{subcommand_suffix}s` subcommand.")
-            for command in ('all', 'by', 'mine'):
-                if command in parsed_cli and subcommand != f"checkout-{subcommand_suffix}s":
-                    raise MacheteException(f"`--{command}` option is only valid with `checkout-{subcommand_suffix}s` subcommand.")
-            if "branch" in parsed_cli and subcommand != f"retarget-{subcommand_suffix}":
-                raise MacheteException(f"`--branch` option is only valid with `retarget-{subcommand_suffix}` subcommand.")
-            if "draft" in parsed_cli and subcommand != f"create-{subcommand_suffix}":
-                raise MacheteException(f"`--draft` option is only valid with `create-{subcommand_suffix}` subcommand.")
-            if "ignore_if_missing" in parsed_cli and subcommand != f"retarget-{subcommand_suffix}":
-                raise MacheteException(f"`--ignore-if-missing` option is only valid with `retarget-{subcommand_suffix}` subcommand.")
-            if "title" in parsed_cli and subcommand != f"create-{subcommand_suffix}":
-                raise MacheteException(f"`--title` option is only valid with `create-{subcommand_suffix}` subcommand.")
-            if "with_urls" in parsed_cli and subcommand != f"anno-{subcommand_suffix}s":
-                raise MacheteException(f"`--with-urls` option is only valid with `anno-{subcommand_suffix}s` subcommand.")
-            if "yes" in parsed_cli and subcommand != f"create-{subcommand_suffix}":
-                raise MacheteException(f"`--yes` option is only valid with `create-{subcommand_suffix}` subcommand.")
+            if "request_id" in parsed_cli and subcommand != f"checkout-{pr_or_mr}s":
+                raise MacheteException(f"{spec.pr_short_name} number is only valid with `checkout-{pr_or_mr}s` subcommand.")
+            for option in ("all", "mine"):
+                if option in parsed_cli and subcommand not in (f"checkout-{pr_or_mr}s", f"update-{pr_or_mr}-descriptions"):
+                    raise MacheteException(f"`--{option}` option is only valid with "
+                                           f"`checkout-{pr_or_mr}s` and `update-{pr_or_mr}-descriptions` subcommands.")
+            if "branch" in parsed_cli and subcommand != f"retarget-{pr_or_mr}":
+                raise MacheteException(f"`--branch` option is only valid with `retarget-{pr_or_mr}` subcommand.")
+            if "by" in parsed_cli and subcommand != f"checkout-{pr_or_mr}s":
+                raise MacheteException(f"`--by` option is only valid with `checkout-{pr_or_mr}s` subcommand.")
+            if "draft" in parsed_cli and subcommand != f"create-{pr_or_mr}":
+                raise MacheteException(f"`--draft` option is only valid with `create-{pr_or_mr}` subcommand.")
+            if "ignore_if_missing" in parsed_cli and subcommand != f"retarget-{pr_or_mr}":
+                raise MacheteException(f"`--ignore-if-missing` option is only valid with `retarget-{pr_or_mr}` subcommand.")
+            if "related" in parsed_cli and subcommand != f"update-{pr_or_mr}-descriptions":
+                raise MacheteException(f"`--related` option is only valid with `update-{pr_or_mr}-descriptions` subcommand.")
+            if "title" in parsed_cli and subcommand != f"create-{pr_or_mr}":
+                raise MacheteException(f"`--title` option is only valid with `create-{pr_or_mr}` subcommand.")
+            if "with_urls" in parsed_cli and subcommand != f"anno-{pr_or_mr}s":
+                raise MacheteException(f"`--with-urls` option is only valid with `anno-{pr_or_mr}s` subcommand.")
+            if "yes" in parsed_cli and subcommand != f"create-{pr_or_mr}":
+                raise MacheteException(f"`--yes` option is only valid with `create-{pr_or_mr}` subcommand.")
 
-            if subcommand == f"anno-{subcommand_suffix}s":
-                machete_client.sync_annotations_to_prs(config, include_urls=cli_opts.opt_with_urls)
-            elif subcommand == f"checkout-{subcommand_suffix}s":
+            if subcommand == f"anno-{pr_or_mr}s":
+                machete_client.sync_annotations_to_prs(spec, include_urls=cli_opts.opt_with_urls)
+            elif subcommand == f"checkout-{pr_or_mr}s":
                 if len(set(parsed_cli_as_dict.keys()).intersection({'all', 'by', 'mine', 'request_id'})) != 1:
-                    raise MacheteException(f"`checkout-{subcommand_suffix}s` subcommand must take exactly one of the following options: " +
-                                           ', '.join(['--all', '--by=...', '--mine', f'{subcommand_suffix}-number(s)']))
-                machete_client.checkout_pull_requests(config,
-                                                      pr_numbers=parsed_cli.request_id if 'request_id' in parsed_cli else [],
-                                                      all=parsed_cli.all if 'all' in parsed_cli else False,
-                                                      mine=parsed_cli.mine if 'mine' in parsed_cli else False,
-                                                      by=parsed_cli.by if 'by' in parsed_cli else None,
-                                                      fail_on_missing_current_user_for_my_opened_prs=True)
-            elif subcommand == f"create-{subcommand_suffix}":
+                    raise MacheteException(
+                        f"`checkout-{pr_or_mr}s` subcommand must take exactly one of the following options: "
+                        f'`--all`, `--by=...`, `--mine`, `{pr_or_mr}-number(s)`')
+                machete_client.checkout_pull_requests(
+                    spec,
+                    pr_numbers=parsed_cli.request_id if 'request_id' in parsed_cli else [],
+                    all=parsed_cli.all if 'all' in parsed_cli else False,
+                    mine=parsed_cli.mine if 'mine' in parsed_cli else False,
+                    by=parsed_cli.by if 'by' in parsed_cli else None,
+                    fail_on_missing_current_user_for_my_opened_prs=True)
+            elif subcommand == f"create-{pr_or_mr}":
                 current_branch = git.get_current_branch()
                 machete_client.create_pull_request(
-                    config,
+                    spec,
                     head=current_branch,
                     opt_draft=cli_opts.opt_draft,
                     opt_onto=cli_opts.opt_onto,
                     opt_title=cli_opts.opt_title,
                     opt_yes=cli_opts.opt_yes)
-            elif subcommand == f"restack-{subcommand_suffix}":
-                machete_client.restack_pull_request(config)
-            elif subcommand == f"retarget-{subcommand_suffix}":
+            elif subcommand == f"restack-{pr_or_mr}":
+                machete_client.restack_pull_request(spec)
+            elif subcommand == f"retarget-{pr_or_mr}":
                 branch = parsed_cli.branch if 'branch' in parsed_cli else git.get_current_branch()
                 machete_client.expect_in_managed_branches(branch)
                 ignore_if_missing = parsed_cli.ignore_if_missing if 'ignore_if_missing' in parsed_cli else False
-                machete_client.retarget_pr(config, head=branch, ignore_if_missing=ignore_if_missing)
+                machete_client.retarget_pr(spec, head=branch, ignore_if_missing=ignore_if_missing)
             elif subcommand == "sync":  # GitHub only
-                machete_client.checkout_pull_requests(config, pr_numbers=[], mine=True)
+                machete_client.checkout_pull_requests(spec, pr_numbers=[], mine=True)
                 machete_client.delete_unmanaged(opt_squash_merge_detection=SquashMergeDetection.NONE, opt_yes=False)
                 machete_client.delete_untracked(opt_yes=cli_opts.opt_yes)
+            elif subcommand == f"update-{pr_or_mr}-descriptions":
+                if len(set(parsed_cli_as_dict.keys()).intersection({'all', 'related', 'mine'})) != 1:
+                    raise MacheteException(
+                        f"`update-{pr_or_mr}-descriptions` subcommand must take exactly one of the following options: "
+                        '`--all`, `--mine`, `--related`')
+                machete_client.update_pull_request_descriptions(
+                    spec,
+                    all=parsed_cli.all if 'all' in parsed_cli else False,
+                    mine=parsed_cli.mine if 'mine' in parsed_cli else False,
+                    related=parsed_cli.related if 'related' in parsed_cli else False)
             else:  # an unknown subcommand is handled by argparse
                 raise UnexpectedMacheteException(f"Unknown subcommand: `{subcommand}`")
         elif cmd == "is-managed":
