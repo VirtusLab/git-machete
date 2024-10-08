@@ -924,7 +924,7 @@ class GitContext:
 
         patch_id_for_commit: Dict[FullCommitHash, FullPatchId] = {}
         # TODO (#1329): impose an upper bound on git versions once the underlying issue is fixed
-        if self.get_git_version() <= (2, 46, 0):
+        if self.get_git_version() <= (2, 46, 0) or self.get_git_version() >= (2, 46, 2):
             for line in patch_id_output.splitlines():
                 patch_id, commit_hash = line.strip().split(" ", 1)
                 patch_id_for_commit[FullCommitHash.of(commit_hash)] = FullPatchId(patch_id)
