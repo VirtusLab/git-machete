@@ -564,7 +564,7 @@ long_docs: Dict[str, str] = {
         <b>Usage:</b><b>
            git machete github <subcommand></b>
 
-        where `<subcommand>` is one of: `anno-prs`, `checkout-prs`, `create-pr`, `retarget-pr` or `restack-pr`.
+        where `<subcommand>` is one of: `anno-prs`, `checkout-prs`, `create-pr`, `retarget-pr`, `restack-pr` or `update-pr-descriptions`.
 
         Creates, checks out and manages GitHub PRs while keeping them reflected in branch layout file.
 
@@ -638,7 +638,7 @@ long_docs: Dict[str, str] = {
               If `.git/info/milestone` file is present, its contents (a single number — milestone id) are used as milestone.
               If `.git/info/reviewers` file is present, its contents (one GitHub login per line) are used to set reviewers.
 
-              The subject of the first unique commit of the branch is used as PR title.
+              Unless `--title` is provided, the subject of the first unique commit of the branch is used as PR title.
               If `.git/info/description` or `.github/pull_request_template.md` template is present, its contents are used as PR description.
               Otherwise (or if `machete.github.forceDescriptionFromCommitMessage` is set), PR description is taken from message body of the first unique commit of the branch.
 
@@ -655,6 +655,11 @@ long_docs: Dict[str, str] = {
                  <b>--title=<title></b>
 
               Set the PR title explicitly (the default is to use the first included commit's message as the title).
+
+                 <b>-U</b>, <b>--update-related-descriptions</b>
+
+              Update the generated sections in related PR descriptions.
+              See help for `update-pr-descriptions --related` below for extra considerations.
 
                  <b>--yes</b>
               Do not ask for confirmation whether to push the branch.
@@ -673,6 +678,13 @@ long_docs: Dict[str, str] = {
 
               The drafting/undrafting is useful in case the GitHub repository has set up CODEOWNERS.
               Draft PRs don't get code owners automatically added as reviewers.
+
+              <b>Options:</b>
+
+                 <b>-U</b>, <b>--update-related-descriptions</b>
+
+              Update the generated sections in related PR descriptions.
+              See help for `update-pr-descriptions --related` below for extra considerations.
 
            `retarget-pr [-b|--branch=<branch>] [--ignore-if-missing]`:
  
@@ -693,6 +705,11 @@ long_docs: Dict[str, str] = {
 
               Ignore errors and quietly terminate execution if there is no PR opened for current (or specified) branch.
 
+                 <b>-U</b>, <b>--update-related-descriptions</b>
+
+              Update the generated sections in related PR descriptions.
+              See help for `update-pr-descriptions --related` below for extra considerations.
+
            `sync`:
  
               <b>Deprecated.</b> Use `github checkout-prs --mine`, `delete-unmanaged` and `slide-out --removed-from-remote`.
@@ -705,6 +722,17 @@ long_docs: Dict[str, str] = {
                  * deletes unmanaged branches,
 
                  * deletes untracked managed branches that have no downstream branch.
+
+        `update-pr-descriptions`:
+
+        Updates the generated sections ("intro") of PR descriptions that lists the upstream and/or downstream PRs
+        (depending on `machete.github.prDescriptionIntroStyle` git config key).
+
+        <b>Options:</b>—all         Update PR descriptions for all PRs in the repository.
+           <b>--mine</b>
+              Update PR descriptions for all PRs opened by the current user associated with the GitHub token.—related     Update PR descriptions for all PRs that are upstream and/or downstream of the PR for the current branch.
+        If `machete.github.prDescriptionIntroStyle` is `up-only` (default), then only downstream PR descriptions are updated.
+        If `machete.github.prDescriptionIntroStyle` is `full`, then both downstream and upstream PR descriptions are updated.
 
         <b>Git config keys:</b>
            `machete.github.{domain,remote,organization,repository}` (all subcommands):
