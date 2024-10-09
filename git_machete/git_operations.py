@@ -924,16 +924,16 @@ class GitContext:
         patch_id_output = self._popen_git("patch-id", input=patches).stdout
 
         patch_id_for_commit: Dict[FullCommitHash, FullPatchId] = {}
-        # See issue #1329 for why git v2.46.1 (but not even v2.46.0 or v2.46.2) needs a special treatment
-        if self.get_git_version() != (2, 46, 1):
-            for line in patch_id_output.splitlines():
-                patch_id, commit_hash = line.strip().split(" ", 1)
-                patch_id_for_commit[FullCommitHash.of(commit_hash)] = FullPatchId(patch_id)
-        else:
+        # See issue #1329 for why git v2.46.1 (but not <=2.46.0 or >=2.46.2) needs a special treatment
+        if self.get_git_version() == (2, 46, 1):
             commit_hashes = [line.replace('commit ', '') for line in patches.splitlines()
                              if re.fullmatch('commit [0-9a-f]{40}', line)]  # noqa: FS003
             for line, commit_hash in zip(patch_id_output.splitlines(), commit_hashes):
                 patch_id, _ = line.strip().split(" ", 1)
+                patch_id_for_commit[FullCommitHash.of(commit_hash)] = FullPatchId(patch_id)
+        else:
+            for line in patch_id_output.splitlines():
+                patch_id, commit_hash = line.strip().split(" ", 1)
                 patch_id_for_commit[FullCommitHash.of(commit_hash)] = FullPatchId(patch_id)
 
         return patch_id_for_commit
