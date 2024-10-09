@@ -913,7 +913,8 @@ class GitContext:
             # Line uncovered by tests as we actually always pass a non-empty patch to this method.
             return None
         # The output of patch-id is "<patch-id> <commit-hash>".
-        # Here the bug introduced in git patch-id v2.46.1 (#1329) doesn't affect us as we only care about the patch-id, not commit-hash.
+        # Here the bug introduced in git patch-id v2.46.1 (issue #1329) doesn't affect us
+        # as we only care about the patch-id, not commit-hash.
         return FullPatchId.of(lines[0].split(' ')[0])
 
     def __get_patch_ids_for_commits_between(
@@ -923,8 +924,8 @@ class GitContext:
         patch_id_output = self._popen_git("patch-id", input=patches).stdout
 
         patch_id_for_commit: Dict[FullCommitHash, FullPatchId] = {}
-        # TODO (#1329): impose an upper bound on git versions once the underlying issue is fixed
-        if self.get_git_version() <= (2, 46, 0) or self.get_git_version() >= (2, 46, 2):
+        # See issue #1329 for why git v2.46.1 (but not even v2.46.0 or v2.46.2) needs a special treatment
+        if self.get_git_version() != (2, 46, 1):
             for line in patch_id_output.splitlines():
                 patch_id, commit_hash = line.strip().split(" ", 1)
                 patch_id_for_commit[FullCommitHash.of(commit_hash)] = FullPatchId(patch_id)
