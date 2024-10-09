@@ -150,6 +150,7 @@ jobs:
           root: .
           paths: [ .coverage.* ]
 
+  # v2.46.1 needs to be covered as it introduced a bug in `git patch-id` (see issue #1329), already fixed in v2.46.2
   "python 3_12 git 2_46_1":
     executor: ubuntu_executor
     steps:
@@ -157,6 +158,19 @@ jobs:
       - run:
           name: Run tests against Python 3.12 and git 2.46.1
           command: PYTHON_VERSION=3.12 GIT_VERSION=2.46.1  bash ci/tox/ci-run.sh
+      - store_test_results:
+          path: test-results/
+      - persist_to_workspace:
+          root: .
+          paths: [ .coverage.* ]
+
+  "python 3_13 git 2_47_0":
+    executor: ubuntu_executor
+    steps:
+      - checkout
+      - run:
+          name: Run tests against Python 3.13 and git 2.47.0
+          command: PYTHON_VERSION=3.13 GIT_VERSION=2.47.0  bash ci/tox/ci-run.sh
       - store_test_results:
           path: test-results/
       - persist_to_workspace:
@@ -271,6 +285,7 @@ test_jobs: &test_jobs
   - python 3_10 git 2_33_1
   - python 3_11 git 2_38_1
   - python 3_12 git 2_46_1
+  - python 3_13 git 2_47_0
   - windows tests
 
 only_master: &only_master
@@ -290,6 +305,7 @@ workflows:
       - python 3_10 git 2_33_1
       - python 3_11 git 2_38_1
       - python 3_12 git 2_46_1
+      - python 3_13 git 2_47_0
       - windows tests
       - coverage upload:
           requires:

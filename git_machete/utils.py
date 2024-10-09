@@ -107,7 +107,11 @@ def compact_dict(d: Dict[str, Any]) -> Dict[str, str]:
 def debug(msg: str) -> None:
     if debug_mode:
         function_name = bold(inspect.stack()[1].function)
-        args, _, _, values = inspect.getargvalues(inspect.stack()[1].frame)
+        args, _, _, values_original = inspect.getargvalues(inspect.stack()[1].frame)
+        # Do not write over the original values!
+        # Since Python 3.13, this keeps a map of local variables that the code actually sees,
+        # so overwriting a key in values_original actually changes the local variable.
+        values = dict(values_original)
 
         args_to_be_redacted = {'access_token', 'password', 'secret', 'token'}
         for arg, value in values.items():
