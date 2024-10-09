@@ -8,7 +8,7 @@ github
 
     git machete github <subcommand>
 
-where ``<subcommand>`` is one of: ``anno-prs``, ``checkout-prs``, ``create-pr``, ``retarget-pr`` or ``restack-pr``.
+where ``<subcommand>`` is one of: ``anno-prs``, ``checkout-prs``, ``create-pr``, ``retarget-pr``, ``restack-pr`` or ``update-pr-descriptions``.
 
 Creates, checks out and manages GitHub PRs while keeping them reflected in branch layout file.
 
@@ -134,6 +134,19 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
        adding branches one by one to git-machete and checks them out locally as well,
     #. deletes unmanaged branches,
     #. deletes untracked managed branches that have no downstream branch.
+
+``update-pr-descriptions``:
+
+    **Options:**
+
+    --all         Update PR descriptions for all PRs in the repository.
+
+    --downstream  Update PR descriptions for all PRs that are downstream of the PR for the current branch.
+
+    --mine        Update PR descriptions for all PRs opened by the current user associated with the GitHub token.
+
+    --related     Update PR descriptions for all PRs that are downstream or upstream of the PR for the current branch.
+                  Use when ``machete.github.prDescriptionIntroStyle`` is ``full`.
 
 **Git config keys:**
 
