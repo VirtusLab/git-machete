@@ -141,9 +141,6 @@ jobs:
           root: .
           paths: [ .coverage.* ]
 
-  # Note that if docs are ever to be built under a different Python version in CI,
-  # this change needs to be reflected in tox.ini and .readthedocs.yaml as well
-  # to avoid errors like https://github.com/VirtusLab/git-machete/issues/936.
   "python 3_11 git 2_38_1":
     executor: ubuntu_executor
     steps:
