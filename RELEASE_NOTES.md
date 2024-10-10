@@ -2,7 +2,7 @@
 
 ## New in git-machete 3.30.0
 
-- added: support for Python 3.13 (earlier versions of git-machete should work on earlier Python versions outside of certain rare cases when in `--debug` mode)
+- added: support for Python 3.13 (earlier versions of git-machete should also work on Python 3.13 outside certain rare cases when in `--debug` mode)
 
 ## New in git-machete 3.29.3
 
