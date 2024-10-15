@@ -2756,8 +2756,12 @@ class MacheteClient:
         fork_point = self.fork_point(head, use_overrides=True)
         commits: List[GitLogEntry] = self.__git.get_commits_between(fork_point, head)
 
+        pr_title_file_path = self.__git.get_main_git_subpath('info', 'title')
+        is_pr_title_file = os.path.isfile(pr_title_file_path)
         if opt_title:
             title = opt_title
+        elif is_pr_title_file:
+            title = utils.slurp_file(pr_title_file_path)
         else:
             # git-machete can still see an empty range of unique commits (e.g. in case of yellow edge)
             # even though code hosting may see a non-empty range.
