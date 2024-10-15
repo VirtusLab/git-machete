@@ -53,7 +53,6 @@ sync_to_parent_status_to_junction_ascii_only_map: Dict[SyncToParentStatus, str] 
     SyncToParentStatus.OutOfSync: "x-"
 }
 
-
 E = TypeVar('E', bound='Enum')
 
 
@@ -2273,6 +2272,7 @@ class MacheteClient:
                 if down_pr.head not in visited_head_branches:
                     yield (down_pr, depth + 1)
                     yield from reverse_pr_dfs(down_pr, depth + 1)
+
         return list(reverse_pr_dfs(original_pr, 0))
 
     @staticmethod
@@ -2452,14 +2452,14 @@ class MacheteClient:
 
             self.retarget_pr(spec, head, ignore_if_missing=False)
 
-    def __get_updated_pull_request_description(self, code_hosting_client: CodeHostingClient,
-                                               pr: PullRequest, old_description: Optional[str]) -> str:
+    def __get_updated_pull_request_description(self, code_hosting_client: CodeHostingClient, pr: PullRequest,
+                                               all_open_prs_preloaded: Optional[List[PullRequest]]) -> str:
         def skip_leading_empty(strs: List[str]) -> List[str]:
             return list(itertools.dropwhile(lambda line: line.strip() == '', strs))
 
-        lines = skip_leading_empty(old_description.splitlines()) if old_description else []
+        lines = skip_leading_empty(pr.description.splitlines()) if pr.description else []
         style = self.__get_pr_description_into_style_from_config(code_hosting_client._spec)
-        text_to_prepend = self.__generate_pr_description_intro(code_hosting_client, pr, style)
+        text_to_prepend = self.__generate_pr_description_intro(code_hosting_client, pr, style, all_open_prs_preloaded)
         lines_to_prepend = text_to_prepend.splitlines() if text_to_prepend else []
         if self.START_GIT_MACHETE_GENERATED_COMMENT in lines and self.END_GIT_MACHETE_GENERATED_COMMENT in lines:
             start_index = lines.index(self.START_GIT_MACHETE_GENERATED_COMMENT)
@@ -2512,14 +2512,14 @@ class MacheteClient:
         else:
             print(f'{spec.base_branch_name.capitalize()} branch of {pr.display_text()} is already {bold(new_base)}')
 
-        new_description = self.__get_updated_pull_request_description(code_hosting_client, pr, pr.description)
+        new_description = self.__get_updated_pull_request_description(code_hosting_client, pr, all_open_prs_preloaded=None)
         if pr.description != new_description:
             code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
             print(f'Description of {pr.display_text()} has been updated')
 
         current_user: Optional[str] = code_hosting_client.get_current_user_login()
         if self.__annotations.get(head) and self.__annotations[head].qualifiers_text:
-            self.__annotations[head] = Annotation(f'{self.__pull_request_annotation(spec, pr, current_user)} ' +
+            self.__annotations[head] = Annotation(self.__pull_request_annotation(spec, pr, current_user) + ' ' +
                                                   self.__annotations[head].qualifiers_text)
         else:
             self.__annotations[head] = Annotation(self.__pull_request_annotation(spec, pr, current_user))
@@ -2628,25 +2628,34 @@ class MacheteClient:
         )
 
     def __generate_pr_description_intro(self, code_hosting_client: CodeHostingClient,
-                                        pr: PullRequest, style: PRDescriptionIntroStyle) -> str:
+                                        pr: PullRequest, style: PRDescriptionIntroStyle,
+                                        all_open_prs_preloaded: Optional[List[PullRequest]]) -> str:
         if style == PRDescriptionIntroStyle.NONE:
             return ''
 
-        # For determining the PR chain, we need to fetch all PRs from the repo.
-        # We could just fetch them straight away... but this list can be quite long for commercial monorepos,
-        # esp. given that GitHub and GitLab limit the single page to 100 PRs/MRs (so multiple HTTP requests may be needed).
-        # As a slight optimization, in the default UP_ONLY style,
-        # let's fetch the full PR list only if the current PR has a base PR at all.
-        prs_for_base_branch = code_hosting_client.get_open_pull_requests_by_head(LocalBranchShortName(pr.base))
+        if all_open_prs_preloaded is not None:
+            prs_for_base_branch = list(filter(lambda _pr: _pr.head == pr.base, all_open_prs_preloaded))
+        else:
+            # For determining the PR chain, we need to fetch all PRs from the repo.
+            # We could just fetch them straight away... but this list can be quite long for commercial monorepos,
+            # esp. given that GitHub and GitLab limit the single page to 100 PRs/MRs (so multiple HTTP requests may be needed).
+            # As a slight optimization, in the default UP_ONLY style,
+            # let's fetch the full PR list only if the current PR has a base PR at all.
+            prs_for_base_branch = code_hosting_client.get_open_pull_requests_by_head(LocalBranchShortName(pr.base))
         if style == PRDescriptionIntroStyle.UP_ONLY and len(prs_for_base_branch) == 0:
             return ''
         spec = code_hosting_client._spec
-        display_name = spec.display_name
         pr_short_name = spec.pr_short_name
-        determine_what = 'chain' if style == PRDescriptionIntroStyle.UP_ONLY else 'tree'
-        print(f'Checking for open {display_name} {pr_short_name}s (to determine {pr_short_name} {determine_what})... ', end='', flush=True)
-        all_open_prs: List[PullRequest] = code_hosting_client.get_open_pull_requests()
-        print(fmt('<green><b>OK</b></green>'))
+        if all_open_prs_preloaded is not None:
+            all_open_prs = all_open_prs_preloaded
+        else:
+            display_name = spec.display_name
+            determine_what = 'chain' if style == PRDescriptionIntroStyle.UP_ONLY else 'tree'
+            print(f'Checking for open {display_name} {pr_short_name}s '
+                  f'(to determine {pr_short_name} {determine_what})... ', end='', flush=True)
+            all_open_prs = code_hosting_client.get_open_pull_requests()
+            print(fmt('<green><b>OK</b></green>'))
+
         pr_up_path = reversed(self.__get_upwards_path_including_pr(spec, pr, all_open_prs))
         if style == PRDescriptionIntroStyle.FULL:
             pr_down_tree = self.__get_downwards_tree_excluding_pr(pr, all_open_prs)
@@ -2797,7 +2806,7 @@ class MacheteClient:
         if base_branch_found_on_remote or style == PRDescriptionIntroStyle.FULL:
             # As the description may include the reference to this PR itself (in case of a chain of >=2 PRs),
             # let's update the PR description after it's already created (so that we know the current PR's number).
-            new_description = self.__get_updated_pull_request_description(code_hosting_client, pr, description)
+            new_description = self.__get_updated_pull_request_description(code_hosting_client, pr, all_open_prs_preloaded=None)
             if new_description.strip() != description.strip():
                 print(f'Updating description of {pr.display_text()} to include '
                       f'the chain of {spec.pr_short_name}s... ', end='', flush=True)
