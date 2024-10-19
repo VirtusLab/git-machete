@@ -83,11 +83,7 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
     If ``.git/info/milestone`` file is present, its contents (a single number --- milestone id) are used as milestone.
     If ``.git/info/reviewers`` file is present, its contents (one GitHub login per line) are used to set reviewers.
 
-    The PR title is determined in the following order of priority:
-    1. If the `--title` option is provided, its value is used as the PR title.
-    2. If the `.git/info/title` file is present, its contents (a single line) are used as the PR title.
-    3. If neither the `--title` option is provided nor the `.git/info/title` file is present, the PR title defaults to the subject of the first unique commit on the branch.
-
+    The subject of the first unique commit of the branch is used as PR title.
     If ``.git/info/description`` or ``.github/pull_request_template.md`` template is present, its contents are used as PR description.
     Otherwise (or if ``machete.github.forceDescriptionFromCommitMessage`` is set), PR description is taken from message body of the first unique commit of the branch.
 

@@ -84,11 +84,7 @@ Creates, checks out and manages GitLab MRs while keeping them reflected in branc
 
     If ``.git/info/reviewers`` file is present, its contents (one GitLab login per line) are used to set reviewers.
 
-    The MR title is determined in the following order of priority:
-    1. If the `--title` option is provided, its value is used as the MR title.
-    2. If the `.git/info/title` file is present, its contents (a single line) are used as the MR title.
-    3. If neither the `--title` option is provided nor the `.git/info/title` file is present, the MR title defaults to the subject of the first unique commit on the branch.
-
+    The subject of the first unique commit of the branch is used as MR title.
     If ``.git/info/description`` or ``.gitlab/merge_request_templates/Default.md`` template is present, its contents are used as MR description.
     Otherwise (or if ``machete.gitlab.forceDescriptionFromCommitMessage`` is set), MR description is taken from message body of the first unique commit of the branch.
 
