@@ -954,3 +954,35 @@ class TestGitHubCreatePR(BaseTest):
             Creating a PR from feature to develop... OK, see www.github.com
             """
         )
+
+    def test_github_create_pr_with_title_from_file(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
+        github_api_state = MockGitHubAPIState.with_prs()
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
+
+        (
+            self.repo_sandbox
+            .new_branch("develop").commit("Some commit").push()
+            .new_branch("feature").commit("Add feature").push()
+        )
+
+        rewrite_branch_layout_file("develop\n\tfeature")
+
+        pr_title = "Feature Implementation"
+        self.repo_sandbox.write_to_file(".git/info/title", pr_title)
+
+        launch_command("github", "create-pr")
+
+        pr = github_api_state.get_pull_by_number(1)
+        assert pr is not None
+        assert pr['title'] == pr_title
+
+        assert_success(
+            ['status'],
+            """
+            develop
+            |
+            o-feature *  PR #1 (some_other_user)
+            """,
+        )
