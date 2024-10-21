@@ -986,4 +986,3 @@ class TestGitHubCreatePR(BaseTest):
             o-feature *  PR #1 (some_other_user)
             """,
         )
-
