@@ -1,13 +1,13 @@
 pytest==7.0.1; python_version == '3.6'
-pytest==7.4.4; python_version == '3.7'
+pytest==8.3.3; python_version == '3.7'
 pytest==8.3.3; python_version >= '3.8'
 
 pytest-clarity==1.0.1
 
 pytest-mock==3.6.1; python_version == '3.6'
-pytest-mock==3.11.1; python_version == '3.7'
+pytest-mock==3.14.0; python_version == '3.7'
 pytest-mock==3.14.0; python_version >= '3.8'
 
 pytest-xdist==2.4.0; python_version == '3.6'
-pytest-xdist==3.5.0; python_version == '3.7'
+pytest-xdist==3.6.1; python_version == '3.7'
 pytest-xdist==3.6.1; python_version >= '3.8'
