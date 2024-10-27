@@ -3,6 +3,7 @@
 ## New in git-machete 3.31.0
 
 - added: `git machete git{hub,lab} update-{pr,mr}-descriptions` subcommands
+- added: `git machete gith{hub,lab} create-{pr,mr} --update-related-descriptions` flags
 
 ## New in git-machete 3.30.0
 

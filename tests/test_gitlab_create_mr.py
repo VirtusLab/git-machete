@@ -206,29 +206,65 @@ class TestGitLabCreateMR(BaseTest):
         )
 
         # diverged from and newer than origin
-        launch_command("gitlab", "create-mr")
         assert_success(
-            ['status'],
+            ["gitlab", "create-mr", "--update-related-descriptions"],
             """
-            master
-            |
-            o-hotfix/add-trigger *  MR !6 (some_other_user)
-              |
-              x-ignore-trailing  MR !3 (diverged from & older than origin)
-                |
-                o-chore/fields  MR !5 (some_other_user)
+            Branch hotfix/add-trigger diverged from (and has newer commits than) its remote counterpart origin/hotfix/add-trigger.
+            Push hotfix/add-trigger with force-with-lease to origin? (y, N, q)
 
-            develop
-            |
-            x-allow-ownership-link (ahead of origin)
-            | |
-            | x-build-chain (untracked)
-            |
-            o-call-ws  MR !4 (some_other_user)
+              master
               |
-              x-drop-constraint (untracked)
-            """,
-        )
+              o-hotfix/add-trigger *
+                |
+                x-ignore-trailing  MR !3 (diverged from & older than origin)
+                  |
+                  o-chore/fields  MR !5 (some_other_user)
+
+              develop
+              |
+              x-allow-ownership-link (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              o-call-ws  MR !4 (some_other_user)
+                |
+                x-drop-constraint (untracked)
+
+            Checking if target branch master exists in origin remote... YES
+            Creating a MR from hotfix/add-trigger to master... OK, see www.gitlab.com
+            Checking for open GitLab MRs... OK
+            Updating description of MR !6 to include the chain of MRs... OK
+            Setting milestone of MR !6 to 42... OK
+            Adding gitlab_user as assignee to MR !6... OK
+            Adding foo, bar as reviewers to MR !6... OK
+            Updating descriptions of other MRs...
+            Description of MR !3 (ignore-trailing -> hotfix/add-trigger) has been updated
+            Description of MR !5 (chore/fields -> ignore-trailing) has been updated
+        """)
+        mr5 = gitlab_api_state.get_mr_by_number(5)
+        assert mr5 is not None
+        assert mr5["description"] == textwrap.dedent("""
+            # MR title
+            ## Summary
+            ## Test plan
+
+            <!-- start git-machete generated -->
+
+            # Based on MR !3
+
+            ## Chain of upstream MRs as of 2023-12-31
+
+            * MR !6:
+              `master` ← `hotfix/add-trigger`
+
+              * MR !3:
+                `hotfix/add-trigger` ← `ignore-trailing`
+
+                * **MR !5 (THIS ONE)**:
+                  `ignore-trailing` ← `chore/fields`
+
+            <!-- end git-machete generated -->""")[1:]
+
         expected_error_message = "Another open merge request already exists for this source branch: !6"
         assert_failure(["gitlab", "create-mr"], expected_error_message)
 

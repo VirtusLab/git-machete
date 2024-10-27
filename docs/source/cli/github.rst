@@ -76,7 +76,7 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 
     ``<PR-number-1> ... <PR-number-N>``    Pull request numbers to checkout.
 
-``create-pr [--draft] [--title=<title>] [--yes]``:
+``create-pr [--draft] [--title=<title>] [-U|--update-related-descriptions] [--yes]``:
     Creates a PR for the current branch, using the upstream (parent) branch as the PR base.
     Once the PR is successfully created, annotates the current branch with the new PR's number.
 
@@ -97,6 +97,9 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
     --draft                            Create the new PR as a draft.
 
     --title=<title>                    Set the PR title explicitly (the default is to use the first included commit's message as the title).
+
+    -U, --update-related-descriptions  Update the generated sections ("intros") of PR descriptions that list the upstream and/or downstream PRs.
+                                       See help for ``git machete github update-pr-descriptions --related`` for details.
 
     --yes                              Do not ask for confirmation whether to push the branch.
 

@@ -2164,6 +2164,7 @@ class MacheteClient:
 
     def update_pull_request_descriptions(self,
                                          spec: CodeHostingSpec,
+                                         all_open_prs_preloaded: Optional[List[PullRequest]],
                                          *,
                                          all: bool = False,
                                          mine: bool = False,
@@ -2179,9 +2180,12 @@ class MacheteClient:
             msg = (f"Could not determine current user name, please check that the {spec.display_name} API token provided by one of the: "
                    f"{spec.token_providers_message}is valid.")
             raise MacheteException(msg)
-        print(f'Checking for open {spec.display_name} {spec.pr_short_name}s... ', end='', flush=True)
-        all_open_prs: List[PullRequest] = code_hosting_client.get_open_pull_requests()
-        print(fmt('<green><b>OK</b></green>'))
+        if all_open_prs_preloaded is not None:
+            all_open_prs = all_open_prs_preloaded
+        else:
+            print(f'Checking for open {spec.display_name} {spec.pr_short_name}s... ', end='', flush=True)
+            all_open_prs = code_hosting_client.get_open_pull_requests()
+            print(fmt('<green><b>OK</b></green>'))
 
         if related:
             head = self.__git.get_current_branch()
@@ -2750,6 +2754,7 @@ class MacheteClient:
             opt_draft: bool,
             opt_onto: Optional[LocalBranchShortName],
             opt_title: Optional[str],
+            opt_update_related_descriptions: bool,
             opt_yes: bool
     ) -> None:
         # first make sure that head branch is synced with remote
@@ -2851,10 +2856,15 @@ class MacheteClient:
         # If base branch has NOT originally been found on the remote,
         # we can be sure that a longer chain of PRs above the newly-created PR does NOT exist.
         # So in the default UP_ONLY mode, we can skip generating the intro completely.
+        all_open_prs = None
         if base_branch_found_on_remote or style == PRDescriptionIntroStyle.FULL:
+            if opt_update_related_descriptions:
+                print(f'Checking for open {spec.display_name} {spec.pr_short_name}s... ', end='', flush=True)
+                all_open_prs = code_hosting_client.get_open_pull_requests()
+                print(fmt('<green><b>OK</b></green>'))
             # As the description may include the reference to this PR itself (in case of a chain of >=2 PRs),
             # let's update the PR description after it's already created (so that we know the current PR's number).
-            new_description = self.__get_updated_pull_request_description(code_hosting_client, pr, all_open_prs_preloaded=None)
+            new_description = self.__get_updated_pull_request_description(code_hosting_client, pr, all_open_prs_preloaded=all_open_prs)
             if new_description.strip() != description.strip():
                 print(f'Updating description of {pr.display_text()} to include '
                       f'the chain of {spec.pr_short_name}s... ', end='', flush=True)
@@ -2890,6 +2900,10 @@ class MacheteClient:
 
         self.__annotations[head] = Annotation(self.__pull_request_annotation(spec, pr, current_user))
         self.save_branch_layout_file()
+
+        if opt_update_related_descriptions:
+            print(f"Updating descriptions of other {spec.pr_short_name}s...")
+            self.update_pull_request_descriptions(spec, all_open_prs_preloaded=all_open_prs, related=True)
 
     def __handle_diverged_and_newer_state(
             self,

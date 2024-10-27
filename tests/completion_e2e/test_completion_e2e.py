@@ -65,7 +65,7 @@ test_cases: Dict[str, str] = {
     "git machete github checkout-prs -":
         "--all --by --debug -h --help --mine -v --verbose",
     "git machete github create-pr -":
-        "--debug --draft -h --help --title -v --verbose --yes",
+        "-U --debug --draft -h --help --title --update-related-descriptions -v --verbose --yes",
     "git machete github retarget-pr --":
         "--branch --debug --help --ignore-if-missing --verbose",
     "git machete github retarget-pr -b ":
@@ -79,7 +79,7 @@ test_cases: Dict[str, str] = {
     "git machete gitlab checkout-mrs -":
         "--all --by --debug -h --help --mine -v --verbose",
     "git machete gitlab create-mr -":
-        "--debug --draft -h --help --title -v --verbose --yes",
+        "-U --debug --draft -h --help --title --update-related-descriptions -v --verbose --yes",
     "git machete gitlab retarget-mr --":
         "--branch --debug --help --ignore-if-missing --verbose",
     "git machete gitlab retarget-mr -b ":

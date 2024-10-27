@@ -208,29 +208,66 @@ class TestGitHubCreatePR(BaseTest):
         )
 
         # diverged from and newer than origin
-        launch_command("github", "create-pr")
         assert_success(
-            ['status'],
+            ["github", "create-pr", "-U"],
             """
-            master
-            |
-            o-hotfix/add-trigger *  PR #6 (some_other_user)
-              |
-              x-ignore-trailing  PR #3 (diverged from & older than origin)
-                |
-                o-chore/fields  PR #5 (some_other_user)
+            Branch hotfix/add-trigger diverged from (and has newer commits than) its remote counterpart origin/hotfix/add-trigger.
+            Push hotfix/add-trigger with force-with-lease to origin? (y, N, q)
 
-            develop
-            |
-            x-allow-ownership-link (ahead of origin)
-            | |
-            | x-build-chain (untracked)
-            |
-            o-call-ws  PR #4 (some_other_user)
+              master
               |
-              x-drop-constraint (untracked)
-            """,
+              o-hotfix/add-trigger *
+                |
+                x-ignore-trailing  PR #3 (diverged from & older than origin)
+                  |
+                  o-chore/fields  PR #5 (some_other_user)
+
+              develop
+              |
+              x-allow-ownership-link (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              o-call-ws  PR #4 (some_other_user)
+                |
+                x-drop-constraint (untracked)
+
+            Checking if base branch master exists in origin remote... YES
+            Creating a PR from hotfix/add-trigger to master... OK, see www.github.com
+            Checking for open GitHub PRs... OK
+            Updating description of PR #6 to include the chain of PRs... OK
+            Setting milestone of PR #6 to 42... OK
+            Adding github_user as assignee to PR #6... OK
+            Adding foo, bar as reviewers to PR #6... OK
+            Updating descriptions of other PRs...
+            Description of PR #3 (ignore-trailing -> hotfix/add-trigger) has been updated
+            Description of PR #5 (chore/fields -> ignore-trailing) has been updated
+            """
         )
+        pr5 = github_api_state.get_pull_by_number(5)
+        assert pr5 is not None
+        assert pr5["body"] == textwrap.dedent("""
+            # PR title
+            ## Summary
+            ## Test plan
+
+            <!-- start git-machete generated -->
+
+            # Based on PR #3
+
+            ## Chain of upstream PRs as of 2023-12-31
+
+            * PR #6:
+              `master` ← `hotfix/add-trigger`
+
+              * PR #3:
+                `hotfix/add-trigger` ← `ignore-trailing`
+
+                * **PR #5 (THIS ONE)**:
+                  `ignore-trailing` ← `chore/fields`
+
+            <!-- end git-machete generated -->""")[1:]
+
         expected_error_message = "A pull request already exists for test_repo:hotfix/add-trigger."
         assert_failure(["github", "create-pr"], expected_error_message)
 

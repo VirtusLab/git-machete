@@ -1,3 +1,4 @@
+import textwrap
 from typing import Any, Dict, List
 
 from pytest_mock import MockerFixture
@@ -32,6 +33,7 @@ class TestGitHubUpdatePRDescriptions(BaseTest):
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         github_api_state = MockGitHubAPIState.with_prs(*self.prs_for_test_update_pr_descriptions())
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
+        self.patch_symbol(mocker, 'git_machete.utils.get_current_date', lambda: '2023-12-31')
 
         (
             self.repo_sandbox.new_branch("root")
@@ -134,6 +136,31 @@ class TestGitHubUpdatePRDescriptions(BaseTest):
             Description of PR #3 (ignore-trailing -> hotfix/add-trigger) has been updated
             """
         )
+
+        pr = github_api_state.get_pull_by_number(12)
+        assert pr is not None
+        assert pr['body'] == textwrap.dedent("""
+            <!-- start git-machete generated -->
+
+            # Based on PR #6
+
+            ## Chain of upstream PRs & tree of downstream PRs as of 2023-12-31
+
+            * PR #6:
+              `enhance/feature` ← `bugfix/feature`
+
+              * **PR #12 (THIS ONE)**:
+                `bugfix/feature` ← `allow-ownership-link`
+
+                  * PR #17:
+                    `allow-ownership-link` ← `restrict_access`
+
+                    * PR #18:
+                      `restrict_access` ← `chore/redundant_checks`
+
+            <!-- end git-machete generated -->
+
+            # Summary""")[1:]
 
     def test_github_update_pr_descriptions_misc_failures_and_warns(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)

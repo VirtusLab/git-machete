@@ -23,7 +23,7 @@ _git_machete() {
   local discover_opts="-C --checked-out-since= -l --list-commits -r --roots= -y --yes"
   local fork_point_opts="--inferred --override-to= --override-to-inferred --override-to-parent --unset-override"
   local githublab_anno_opts="--with-urls"
-  local githublab_create_opts="--draft --title= --yes"
+  local githublab_create_opts="--draft --title= -U --update-related-descriptions --yes"
   local githublab_checkout_opts="--all --by= --mine"
   local githublab_retarget_opts="-b --branch= --ignore-if-missing"
   local githublab_update_descriptions_opts="--all --mine --related"

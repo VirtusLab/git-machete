@@ -280,6 +280,7 @@ __git_machete_github_subcommands() {
           _arguments \
             '(--draft)'--draft'[Create the new PR as draft]' \
             '(--title)'--title='[Set the title for new PR explicitly]' \
+            '(-U --update-related-descriptions)'{-U,--update-related-descriptions}'[Update the generated sections of PR descriptions that list the upstream and/or downstream PRs]' \
             '(--yes)'--yes'[Do not ask for confirmation whether to push the branch]' \
             "${common_flags[@]}"
         ;;
@@ -347,6 +348,7 @@ __git_machete_gitlab_subcommands() {
           _arguments \
             '(--draft)'--draft'[Create the new MR as draft]' \
             '(--title)'--title='[Set the title for new MR explicitly]' \
+            '(-U --update-related-descriptions)'{-U,--update-related-descriptions}'[Update the generated sections of MR descriptions that list the upstream and/or downstream MRs]' \
             '(--yes)'--yes'[Do not ask for confirmation whether to push the branch]' \
             "${common_flags[@]}"
         ;;

@@ -264,6 +264,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
         parser.add_argument('--mine', action='store_true')
         parser.add_argument('--related', action='store_true')
         parser.add_argument('--title')
+        parser.add_argument('-U', '--update-related-descriptions', action='store_true')
         parser.add_argument('--with-urls', action='store_true')
         parser.add_argument('--yes', action='store_true')
 
@@ -517,6 +518,8 @@ def update_cli_options_using_parsed_args(
             cli_opts.opt_title = arg
         elif opt == "unset_override":
             cli_opts.opt_unset_override = True
+        elif opt == "update_related_descriptions":
+            cli_opts.opt_update_related_descriptions = True
         elif opt == "W":
             cli_opts.opt_fetch = True
             cli_opts.opt_start_from = "first-root"
@@ -763,6 +766,8 @@ def launch(orig_args: List[str]) -> None:
                 raise MacheteException(f"`--related` option is only valid with `update-{pr_or_mr}-descriptions` subcommand.")
             if cli_opts.opt_title is not None and subcommand != f"create-{pr_or_mr}":
                 raise MacheteException(f"`--title` option is only valid with `create-{pr_or_mr}` subcommand.")
+            if cli_opts.opt_update_related_descriptions and subcommand != f"create-{pr_or_mr}":
+                raise MacheteException(f"`--update-related-descriptions` option is only valid with `create-{pr_or_mr}` subcommand.")
             if cli_opts.opt_with_urls and subcommand != f"anno-{pr_or_mr}s":
                 raise MacheteException(f"`--with-urls` option is only valid with `anno-{pr_or_mr}s` subcommand.")
             if cli_opts.opt_yes and subcommand != f"create-{pr_or_mr}":
@@ -790,6 +795,7 @@ def launch(orig_args: List[str]) -> None:
                     opt_draft=cli_opts.opt_draft,
                     opt_onto=cli_opts.opt_onto,
                     opt_title=cli_opts.opt_title,
+                    opt_update_related_descriptions=cli_opts.opt_update_related_descriptions,
                     opt_yes=cli_opts.opt_yes)
             elif subcommand == f"restack-{pr_or_mr}":
                 machete_client.restack_pull_request(spec)
@@ -808,7 +814,7 @@ def launch(orig_args: List[str]) -> None:
                         f"`update-{pr_or_mr}-descriptions` subcommand must take exactly one of the following options: "
                         '`--all`, `--mine`, `--related`')
                 machete_client.update_pull_request_descriptions(
-                    spec, all=cli_opts.opt_all, mine=cli_opts.opt_mine, related=cli_opts.opt_related)
+                    spec, all_open_prs_preloaded=None, all=cli_opts.opt_all, mine=cli_opts.opt_mine, related=cli_opts.opt_related)
             else:  # an unknown subcommand is handled by argparse
                 raise UnexpectedMacheteException(f"Unknown subcommand: `{subcommand}`")
         elif cmd == "is-managed":

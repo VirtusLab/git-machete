@@ -356,3 +356,5 @@ class TestGitHub(BaseTest):
                        "--related option is only valid with update-pr-descriptions subcommand.")
         assert_failure(["github", "update-pr-descriptions", "--all", "--related"],
                        "update-pr-descriptions subcommand must take exactly one of the following options: --all, --mine, --related")
+        assert_failure(["github", "update-pr-descriptions", "--update-related-descriptions"],
+                       "--update-related-descriptions option is only valid with create-pr subcommand.")

@@ -1,3 +1,4 @@
+import textwrap
 from typing import Any, Dict, List
 
 from pytest_mock import MockerFixture
@@ -134,6 +135,31 @@ class TestGitLabUpdateMRDescriptions(BaseTest):
             Description of MR !3 (ignore-trailing -> hotfix/add-trigger) has been updated
             """
         )
+
+        mr = gitlab_api_state.get_mr_by_number(12)
+        assert mr is not None
+        assert mr['description'] == textwrap.dedent("""
+            <!-- start git-machete generated -->
+
+            # Based on MR !6
+
+            ## Chain of upstream MRs & tree of downstream MRs as of 2024-10-31
+
+            * MR !6:
+              `enhance/feature` ← `bugfix/feature`
+
+              * **MR !12 (THIS ONE)**:
+                `bugfix/feature` ← `allow-ownership-link`
+
+                  * MR !17:
+                    `allow-ownership-link` ← `restrict_access`
+
+                    * MR !18:
+                      `restrict_access` ← `chore/redundant_checks`
+
+            <!-- end git-machete generated -->
+
+            # Summary""")[1:]
 
     def test_gitlab_update_mr_descriptions_misc_failures_and_warns(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
