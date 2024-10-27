@@ -2189,7 +2189,7 @@ class MacheteClient:
         else:
             current_pr = None
         applicable_prs: List[PullRequest] = self.__get_applicable_pull_requests(
-            pr_numbers=[], all_opened_prs=all_open_prs, code_hosting_client=code_hosting_client,
+            pr_numbers=[], all_open_prs=all_open_prs, code_hosting_client=code_hosting_client,
             all=all, mine=mine, by=None, related_to=current_pr, user=current_user)
 
         for pr in applicable_prs:
@@ -2205,7 +2205,7 @@ class MacheteClient:
                                all: bool = False,
                                mine: bool = False,
                                by: Optional[str] = None,
-                               fail_on_missing_current_user_for_my_opened_prs: bool = False
+                               fail_on_missing_current_user_for_my_open_prs: bool = False
                                ) -> None:
         domain = self.__derive_code_hosting_domain(spec)
         org_repo_remote = self.__derive_org_repo_and_remote(spec, domain=domain)
@@ -2216,7 +2216,7 @@ class MacheteClient:
         if not current_user and mine:
             msg = (f"Could not determine current user name, please check that the {spec.display_name} API token provided by one of the: "
                    f"{spec.token_providers_message}is valid.")
-            if fail_on_missing_current_user_for_my_opened_prs:
+            if fail_on_missing_current_user_for_my_open_prs:
                 raise MacheteException(msg)
             else:
                 warn(msg)
@@ -2226,7 +2226,7 @@ class MacheteClient:
         print(fmt('<green><b>OK</b></green>'))
 
         applicable_prs: List[PullRequest] = self.__get_applicable_pull_requests(
-            pr_numbers, all_opened_prs=all_open_prs, code_hosting_client=code_hosting_client,
+            pr_numbers, all_open_prs=all_open_prs, code_hosting_client=code_hosting_client,
             all=all, mine=mine, by=by, related_to=None, user=current_user)
 
         debug(f'organization is {org_repo_remote.organization}, repository is {org_repo_remote.repository}')
@@ -2335,7 +2335,7 @@ class MacheteClient:
     def __get_applicable_pull_requests(
             self,
             pr_numbers: Optional[List[int]],
-            all_opened_prs: List[PullRequest],
+            all_open_prs: List[PullRequest],
             code_hosting_client: CodeHostingClient,
             all: bool,
             mine: bool,
@@ -2347,7 +2347,7 @@ class MacheteClient:
         spec = code_hosting_client._spec
         if pr_numbers:
             for pr_number in pr_numbers:
-                pr: Optional[PullRequest] = utils.find_or_none(lambda x: x.number == pr_number, all_opened_prs)
+                pr: Optional[PullRequest] = utils.find_or_none(lambda x: x.number == pr_number, all_open_prs)
                 if pr:
                     result.append(pr)
                 else:
@@ -2361,20 +2361,20 @@ class MacheteClient:
                                                f"{bold(code_hosting_client.organization)}/{bold(code_hosting_client.repository)}")
             return result
         if all:
-            if not all_opened_prs:
+            if not all_open_prs:
                 warn(f"Currently there are no {spec.pr_full_name}s opened in {spec.repository_name} "
                      f"{bold(code_hosting_client.organization)}/{bold(code_hosting_client.repository)}")
                 return []
-            return all_opened_prs
+            return all_open_prs
         elif mine and user:
-            result = [pr for pr in all_opened_prs if pr.user == user]
+            result = [pr for pr in all_open_prs if pr.user == user]
             if not result:
                 warn(f"Current user {bold(user)} has no open {spec.pr_full_name} in {spec.repository_name} "
                      f"{bold(code_hosting_client.organization)}/{bold(code_hosting_client.repository)}")
                 return []
             return result
         elif by:
-            result = [pr for pr in all_opened_prs if pr.user == by]
+            result = [pr for pr in all_open_prs if pr.user == by]
             if not result:
                 warn(f"User {bold(by)} has no open {spec.pr_full_name} in {spec.repository_name} "
                      f"{bold(code_hosting_client.organization)}/{bold(code_hosting_client.repository)}")
@@ -2384,8 +2384,8 @@ class MacheteClient:
             style = self.__get_pr_description_into_style_from_config(spec)
             result = []
             if style == PRDescriptionIntroStyle.FULL:
-                result += reversed(self.__get_upwards_path_including_pr(spec, related_to, all_opened_prs))
-            result += [pr_ for pr_, _ in self.__get_downwards_tree_excluding_pr(related_to, all_opened_prs)]
+                result += reversed(self.__get_upwards_path_including_pr(spec, related_to, all_open_prs))
+            result += [pr_ for pr_, _ in self.__get_downwards_tree_excluding_pr(related_to, all_open_prs)]
             return result
 
         raise UnexpectedMacheteException("All params passed to __get_applicable_pull_requests are empty.")

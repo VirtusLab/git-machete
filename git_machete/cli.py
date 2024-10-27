@@ -781,7 +781,7 @@ def launch(orig_args: List[str]) -> None:
                     all=cli_opts.opt_all,
                     mine=cli_opts.opt_mine,
                     by=cli_opts.opt_by,
-                    fail_on_missing_current_user_for_my_opened_prs=True)
+                    fail_on_missing_current_user_for_my_open_prs=True)
             elif subcommand == f"create-{pr_or_mr}":
                 current_branch = git.get_current_branch()
                 machete_client.create_pull_request(
