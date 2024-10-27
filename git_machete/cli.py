@@ -433,12 +433,16 @@ def update_cli_options_using_parsed_args(
 
     for opt, arg in vars(parsed_args).items():
         # --color, --debug and --verbose are handled outside this method
-        if opt == "as_first_child":
+        if opt == "all":
+            cli_opts.opt_all = True
+        elif opt == "as_first_child":
             cli_opts.opt_as_first_child = True
         elif opt == "as_root":
             cli_opts.opt_as_root = True
         elif opt == "branch":
             cli_opts.opt_branch = AnyBranchName.of(arg) if arg else None
+        elif opt == "by":
+            cli_opts.opt_by = arg
         elif opt == "checked_out_since":
             cli_opts.opt_checked_out_since = arg
         elif opt == "delete":
@@ -451,6 +455,8 @@ def update_cli_options_using_parsed_args(
             cli_opts.opt_fetch = True
         elif opt == "fork_point":
             cli_opts.opt_fork_point = AnyRevision.of(arg) if arg else None
+        elif opt == "ignore_if_missing":
+            cli_opts.opt_ignore_if_missing = True
         elif opt == "inferred":
             cli_opts.opt_inferred = True
         elif opt == "list_commits":
@@ -459,6 +465,8 @@ def update_cli_options_using_parsed_args(
             cli_opts.opt_list_commits = cli_opts.opt_list_commits_with_hashes = True
         elif opt == "merge":
             cli_opts.opt_merge = True
+        elif opt == "mine":
+            cli_opts.opt_mine = True
         elif opt == "n":
             cli_opts.opt_n = True
         elif opt == "no_detect_squash_merges":
@@ -486,6 +494,8 @@ def update_cli_options_using_parsed_args(
             cli_opts.opt_push_untracked = True
         elif opt == "push_untracked":
             cli_opts.opt_push_untracked = True
+        elif opt == "related":
+            cli_opts.opt_related = True
         elif opt == "removed_from_remote":
             cli_opts.opt_removed_from_remote = True
         elif opt == "return_to":
@@ -737,25 +747,25 @@ def launch(orig_args: List[str]) -> None:
 
             if "request_id" in parsed_cli and subcommand != f"checkout-{pr_or_mr}s":
                 raise MacheteException(f"{spec.pr_short_name} number is only valid with `checkout-{pr_or_mr}s` subcommand.")
-            for option in ("all", "mine"):
-                if option in parsed_cli and subcommand not in (f"checkout-{pr_or_mr}s", f"update-{pr_or_mr}-descriptions"):
-                    raise MacheteException(f"`--{option}` option is only valid with "
+            for name, value in (("all", cli_opts.opt_all), ("mine", cli_opts.opt_mine)):
+                if value and subcommand not in (f"checkout-{pr_or_mr}s", f"update-{pr_or_mr}-descriptions"):
+                    raise MacheteException(f"`--{name}` option is only valid with "
                                            f"`checkout-{pr_or_mr}s` and `update-{pr_or_mr}-descriptions` subcommands.")
-            if "branch" in parsed_cli and subcommand != f"retarget-{pr_or_mr}":
+            if cli_opts.opt_branch is not None and subcommand != f"retarget-{pr_or_mr}":
                 raise MacheteException(f"`--branch` option is only valid with `retarget-{pr_or_mr}` subcommand.")
-            if "by" in parsed_cli and subcommand != f"checkout-{pr_or_mr}s":
+            if cli_opts.opt_by is not None and subcommand != f"checkout-{pr_or_mr}s":
                 raise MacheteException(f"`--by` option is only valid with `checkout-{pr_or_mr}s` subcommand.")
-            if "draft" in parsed_cli and subcommand != f"create-{pr_or_mr}":
+            if cli_opts.opt_draft and subcommand != f"create-{pr_or_mr}":
                 raise MacheteException(f"`--draft` option is only valid with `create-{pr_or_mr}` subcommand.")
-            if "ignore_if_missing" in parsed_cli and subcommand != f"retarget-{pr_or_mr}":
+            if cli_opts.opt_ignore_if_missing and subcommand != f"retarget-{pr_or_mr}":
                 raise MacheteException(f"`--ignore-if-missing` option is only valid with `retarget-{pr_or_mr}` subcommand.")
-            if "related" in parsed_cli and subcommand != f"update-{pr_or_mr}-descriptions":
+            if cli_opts.opt_related and subcommand != f"update-{pr_or_mr}-descriptions":
                 raise MacheteException(f"`--related` option is only valid with `update-{pr_or_mr}-descriptions` subcommand.")
-            if "title" in parsed_cli and subcommand != f"create-{pr_or_mr}":
+            if cli_opts.opt_title is not None and subcommand != f"create-{pr_or_mr}":
                 raise MacheteException(f"`--title` option is only valid with `create-{pr_or_mr}` subcommand.")
-            if "with_urls" in parsed_cli and subcommand != f"anno-{pr_or_mr}s":
+            if cli_opts.opt_with_urls and subcommand != f"anno-{pr_or_mr}s":
                 raise MacheteException(f"`--with-urls` option is only valid with `anno-{pr_or_mr}s` subcommand.")
-            if "yes" in parsed_cli and subcommand != f"create-{pr_or_mr}":
+            if cli_opts.opt_yes and subcommand != f"create-{pr_or_mr}":
                 raise MacheteException(f"`--yes` option is only valid with `create-{pr_or_mr}` subcommand.")
 
             if subcommand == f"anno-{pr_or_mr}s":
@@ -768,9 +778,9 @@ def launch(orig_args: List[str]) -> None:
                 machete_client.checkout_pull_requests(
                     spec,
                     pr_numbers=parsed_cli.request_id if 'request_id' in parsed_cli else [],
-                    all=parsed_cli.all if 'all' in parsed_cli else False,
-                    mine=parsed_cli.mine if 'mine' in parsed_cli else False,
-                    by=parsed_cli.by if 'by' in parsed_cli else None,
+                    all=cli_opts.opt_all,
+                    mine=cli_opts.opt_mine,
+                    by=cli_opts.opt_by,
                     fail_on_missing_current_user_for_my_opened_prs=True)
             elif subcommand == f"create-{pr_or_mr}":
                 current_branch = git.get_current_branch()
@@ -786,7 +796,7 @@ def launch(orig_args: List[str]) -> None:
             elif subcommand == f"retarget-{pr_or_mr}":
                 branch = parsed_cli.branch if 'branch' in parsed_cli else git.get_current_branch()
                 machete_client.expect_in_managed_branches(branch)
-                ignore_if_missing = parsed_cli.ignore_if_missing if 'ignore_if_missing' in parsed_cli else False
+                ignore_if_missing = cli_opts.opt_ignore_if_missing
                 machete_client.retarget_pr(spec, head=branch, ignore_if_missing=ignore_if_missing)
             elif subcommand == "sync":  # GitHub only
                 machete_client.checkout_pull_requests(spec, pr_numbers=[], mine=True)
@@ -798,10 +808,7 @@ def launch(orig_args: List[str]) -> None:
                         f"`update-{pr_or_mr}-descriptions` subcommand must take exactly one of the following options: "
                         '`--all`, `--mine`, `--related`')
                 machete_client.update_pull_request_descriptions(
-                    spec,
-                    all=parsed_cli.all if 'all' in parsed_cli else False,
-                    mine=parsed_cli.mine if 'mine' in parsed_cli else False,
-                    related=parsed_cli.related if 'related' in parsed_cli else False)
+                    spec, all=cli_opts.opt_all, mine=cli_opts.opt_mine, related=cli_opts.opt_related)
             else:  # an unknown subcommand is handled by argparse
                 raise UnexpectedMacheteException(f"Unknown subcommand: `{subcommand}`")
         elif cmd == "is-managed":
@@ -811,9 +818,9 @@ def launch(orig_args: List[str]) -> None:
                 sys.exit(ExitCode.MACHETE_EXCEPTION)
         elif cmd == "list":
             category = parsed_cli.category
-            if category == 'slidable-after' and 'branch' not in parsed_cli_as_dict:
+            if category == 'slidable-after' and 'branch' not in parsed_cli:
                 raise MacheteException(f"`git machete list {category}` requires an extra <branch> argument")
-            elif category != 'slidable-after' and 'branch' in parsed_cli_as_dict:
+            elif category != 'slidable-after' and 'branch' in parsed_cli:
                 raise MacheteException(f"`git machete list {category}` does not expect extra arguments")
 
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
@@ -858,7 +865,7 @@ def launch(orig_args: List[str]) -> None:
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             git.expect_no_operation_in_progress()
             current_branch = git.get_current_branch()
-            if "fork_point" in parsed_cli and cli_opts.opt_fork_point:
+            if cli_opts.opt_fork_point is not None:
                 machete_client.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
                     fork_point_hash=cli_opts.opt_fork_point, branch=current_branch)
 
@@ -892,7 +899,7 @@ def launch(orig_args: List[str]) -> None:
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             git.expect_no_operation_in_progress()
             current_branch = git.get_current_branch()
-            if "fork_point" in parsed_cli and cli_opts.opt_fork_point:
+            if cli_opts.opt_fork_point is not None:
                 machete_client.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
                     fork_point_hash=cli_opts.opt_fork_point, branch=current_branch)
 
@@ -945,7 +952,7 @@ def launch(orig_args: List[str]) -> None:
         elif cmd == "update":
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             git.expect_no_operation_in_progress()
-            if "fork_point" in parsed_cli and cli_opts.opt_fork_point:
+            if cli_opts.opt_fork_point is not None:
                 machete_client.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
                     fork_point_hash=cli_opts.opt_fork_point, branch=git.get_current_branch())
             machete_client.update(
