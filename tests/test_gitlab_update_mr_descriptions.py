@@ -33,6 +33,7 @@ class TestGitLabUpdateMRDescriptions(BaseTest):
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
         gitlab_api_state = MockGitLabAPIState.with_mrs(*self.mrs_for_test_update_mr_descriptions())
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
+        self.patch_symbol(mocker, 'git_machete.utils.get_current_date', lambda: '2023-12-31')
 
         (
             self.repo_sandbox.new_branch("root")
@@ -129,12 +130,33 @@ class TestGitLabUpdateMRDescriptions(BaseTest):
             ['gitlab', 'update-mr-descriptions', '--all'],
             """
             Checking for open GitLab MRs... OK
-            Description of MR !19 (enhance/add_user -> develop) has been updated
             Description of MR !22 (testing/add_user -> bugfix/add_user) has been updated
             Description of MR !24 (chore/comments -> testing/add_user) has been updated
-            Description of MR !3 (ignore-trailing -> hotfix/add-trigger) has been updated
             """
         )
+
+        mr = gitlab_api_state.get_mr_by_number(6)
+        assert mr is not None
+        assert mr['description'] == textwrap.dedent("""
+            <!-- start git-machete generated -->
+
+            ## Tree of downstream MRs as of 2023-12-31
+
+            * **MR !6 (THIS ONE)**:
+              `enhance/feature` ← `bugfix/feature`
+
+                * MR !12:
+                  `bugfix/feature` ← `allow-ownership-link`
+
+                  * MR !17:
+                    `allow-ownership-link` ← `restrict_access`
+
+                    * MR !18:
+                      `restrict_access` ← `chore/redundant_checks`
+
+            <!-- end git-machete generated -->
+
+            # Summary""")[1:]
 
         mr = gitlab_api_state.get_mr_by_number(12)
         assert mr is not None
@@ -143,7 +165,7 @@ class TestGitLabUpdateMRDescriptions(BaseTest):
 
             # Based on MR !6
 
-            ## Chain of upstream MRs & tree of downstream MRs as of 2024-10-31
+            ## Chain of upstream MRs & tree of downstream MRs as of 2023-12-31
 
             * MR !6:
               `enhance/feature` ← `bugfix/feature`
@@ -160,6 +182,10 @@ class TestGitLabUpdateMRDescriptions(BaseTest):
             <!-- end git-machete generated -->
 
             # Summary""")[1:]
+
+        mr = gitlab_api_state.get_mr_by_number(19)
+        assert mr is not None
+        assert mr['description'] == "# Summary"
 
     def test_gitlab_update_mr_descriptions_misc_failures_and_warns(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)

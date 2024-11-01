@@ -130,12 +130,33 @@ class TestGitHubUpdatePRDescriptions(BaseTest):
             ['github', 'update-pr-descriptions', '--all'],
             """
             Checking for open GitHub PRs... OK
-            Description of PR #19 (enhance/add_user -> develop) has been updated
             Description of PR #22 (testing/add_user -> bugfix/add_user) has been updated
             Description of PR #24 (chore/comments -> testing/add_user) has been updated
-            Description of PR #3 (ignore-trailing -> hotfix/add-trigger) has been updated
             """
         )
+
+        pr = github_api_state.get_pull_by_number(6)
+        assert pr is not None
+        assert pr['body'] == textwrap.dedent("""
+            <!-- start git-machete generated -->
+
+            ## Tree of downstream PRs as of 2023-12-31
+
+            * **PR #6 (THIS ONE)**:
+              `enhance/feature` ← `bugfix/feature`
+
+                * PR #12:
+                  `bugfix/feature` ← `allow-ownership-link`
+
+                  * PR #17:
+                    `allow-ownership-link` ← `restrict_access`
+
+                    * PR #18:
+                      `restrict_access` ← `chore/redundant_checks`
+
+            <!-- end git-machete generated -->
+
+            # Summary""")[1:]
 
         pr = github_api_state.get_pull_by_number(12)
         assert pr is not None
@@ -161,6 +182,10 @@ class TestGitHubUpdatePRDescriptions(BaseTest):
             <!-- end git-machete generated -->
 
             # Summary""")[1:]
+
+        pr = github_api_state.get_pull_by_number(19)
+        assert pr is not None
+        assert pr['body'] == "# Summary"
 
     def test_github_update_pr_descriptions_misc_failures_and_warns(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)

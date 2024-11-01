@@ -435,7 +435,7 @@ class TestGitHubRetargetPR(BaseTest):
         assert pr15['body'] == textwrap.dedent('''
             <!-- start git-machete generated -->
 
-            ## Chain of upstream PRs & tree of downstream PRs as of 2023-12-31
+            ## Tree of downstream PRs as of 2023-12-31
 
             * **PR #15 (THIS ONE)**:
               `branch-1` ← `feature`

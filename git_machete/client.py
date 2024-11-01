@@ -2708,19 +2708,23 @@ class MacheteClient:
             all_open_prs = code_hosting_client.get_open_pull_requests()
             print(fmt('<green><b>OK</b></green>'))
 
-        pr_up_path = reversed(self.__get_upwards_path_including_pr(spec, pr, all_open_prs))
+        pr_up_path = list(reversed(self.__get_upwards_path_including_pr(spec, pr, all_open_prs)))
         if style == PRDescriptionIntroStyle.FULL:
             pr_down_tree = self.__get_downwards_tree_excluding_pr(pr, all_open_prs)
         else:
             pr_down_tree = []
+        if len(pr_up_path) == 1 and pr_down_tree == []:
+            return ''
 
         prepend = f'{self.START_GIT_MACHETE_GENERATED_COMMENT}\n\n'
         # In FULL mode, we're likely to generate a non-empty intro even when there are NO upstream PRs above
         if len(prs_for_base_branch) >= 1:
             prepend += f'# Based on {prs_for_base_branch[0].display_text(fmt=False)}\n\n'
 
-        if pr_down_tree:
+        if pr_down_tree and len(pr_up_path) > 1:
             prepend += f'## Chain of upstream {pr_short_name}s & tree of downstream {pr_short_name}s'
+        elif pr_down_tree:
+            prepend += f'## Tree of downstream {pr_short_name}s'
         else:
             prepend += f'## Chain of upstream {pr_short_name}s'
         current_date = utils.get_current_date()
