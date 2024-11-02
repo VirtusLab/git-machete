@@ -66,8 +66,10 @@ test_cases: Dict[str, str] = {
         "--all --by --debug -h --help --mine -v --verbose",
     "git machete github create-pr -":
         "-U --debug --draft -h --help --title --update-related-descriptions -v --verbose --yes",
+    "git machete github restack-pr -":
+        "-U --debug -h --help --update-related-descriptions -v --verbose",
     "git machete github retarget-pr --":
-        "--branch --debug --help --ignore-if-missing --verbose",
+        "--branch --debug --help --ignore-if-missing --update-related-descriptions --verbose",
     "git machete github retarget-pr -b ":
         "develop master",
     "git machete github update-pr-descriptions -":
@@ -80,8 +82,10 @@ test_cases: Dict[str, str] = {
         "--all --by --debug -h --help --mine -v --verbose",
     "git machete gitlab create-mr -":
         "-U --debug --draft -h --help --title --update-related-descriptions -v --verbose --yes",
+    "git machete gitlab restack-mr -":
+        "-U --debug -h --help --update-related-descriptions -v --verbose",
     "git machete gitlab retarget-mr --":
-        "--branch --debug --help --ignore-if-missing --verbose",
+        "--branch --debug --help --ignore-if-missing --update-related-descriptions --verbose",
     "git machete gitlab retarget-mr -b ":
         "develop master",
     "git machete gitlab update-mr-descriptions -":

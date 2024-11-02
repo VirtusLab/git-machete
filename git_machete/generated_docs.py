@@ -670,7 +670,7 @@ long_docs: Dict[str, str] = {
                  <b>--yes</b>
               Do not ask for confirmation whether to push the branch.
 
-           `restack-pr`:
+           `restack-pr [-U|--update-related-descriptions]`:
  
               Perform the following sequence of actions:
 
@@ -685,7 +685,14 @@ long_docs: Dict[str, str] = {
               The drafting/undrafting is useful in case the GitHub repository has set up CODEOWNERS.
               Draft PRs don't get code owners automatically added as reviewers.
 
-           `retarget-pr [-b|--branch=<branch>] [--ignore-if-missing]`:
+              <b>Options:</b>
+
+                 <b>-U</b>, <b>--update-related-descriptions</b>
+
+              Update the generated sections ("intros") of PR descriptions that list the upstream and/or downstream PRs.
+              See help for `git machete github update-pr-descriptions --related` for details.
+
+           `retarget-pr [-b|--branch=<branch>] [--ignore-if-missing] [-U|--update-related-descriptions]`:
  
               Sets the base of the current (or specified) branch's PR to upstream (parent) branch, as seen by git machete (see `git machete show up`).
 
@@ -703,6 +710,11 @@ long_docs: Dict[str, str] = {
                  <b>--ignore-if-missing</b>
 
               Ignore errors and quietly terminate execution if there is no PR opened for current (or specified) branch.
+
+                 <b>-U</b>, <b>--update-related-descriptions</b>
+
+              Update the generated sections ("intros") of PR descriptions that list the upstream and/or downstream PRs.
+              See help for `git machete github update-pr-descriptions --related` for details.
 
            `sync`:
  
@@ -785,7 +797,7 @@ long_docs: Dict[str, str] = {
         <b>Usage:</b><b>
            git machete gitlab <subcommand></b>
 
-        where `<subcommand>` is one of: `anno-mrs`, `checkout-mrs`, `create-mr`, `retarget-mr` or `restack-mr`.
+        where `<subcommand>` is one of: `anno-mrs`, `checkout-mrs`, `create-mr`, `retarget-mr`, `restack-mr` or `update-mr-descriptions`.
 
         Creates, checks out and manages GitLab MRs while keeping them reflected in branch layout file.
 
@@ -886,7 +898,7 @@ long_docs: Dict[str, str] = {
                  <b>--yes</b>
               Do not ask for confirmation whether to push the branch.
 
-           `restack-mr`:
+           `restack-mr [-U|--update-related-descriptions]`:
  
               Perform the following sequence of actions:
 
@@ -901,7 +913,14 @@ long_docs: Dict[str, str] = {
               The drafting/undrafting is useful in case the GitLab project has set up code owners.
               Draft MRs don't get code owners automatically added as reviewers.
 
-           `retarget-mr [-b|--branch=<branch>] [--ignore-if-missing]`:
+              <b>Options:</b>
+
+                 <b>-U</b>, <b>--update-related-descriptions</b>
+
+              Update the generated sections ("intros") of MR descriptions that list the upstream and/or downstream MRs.
+              See help for `git machete gitlab update-mr-descriptions --related` for details.
+
+           `retarget-mr [-b|--branch=<branch>] [--ignore-if-missing] [-U|--update-related-descriptions]`:
  
               Sets the target of the current (or specified) branch's MR to upstream (parent) branch, as seen by git machete (see `git machete show up`).
 
@@ -919,6 +938,11 @@ long_docs: Dict[str, str] = {
                  <b>--ignore-if-missing</b>
 
               Ignore errors and quietly terminate execution if there is no MR opened for current (or specified) branch.
+
+                 <b>-U</b>, <b>--update-related-descriptions</b>
+
+              Update the generated sections ("intros") of MR descriptions that list the upstream and/or downstream MRs.
+              See help for `git machete gitlab update-mr-descriptions --related` for details.
 
            `update-mr-descriptions`:
  

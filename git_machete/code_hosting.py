@@ -20,6 +20,19 @@ class PullRequest:
         self.__description = description
         self.__html_url = html_url
 
+    def copy(self) -> "PullRequest":
+        return PullRequest(
+            number=self.__number,
+            display_prefix=self.__display_prefix,
+            user=self.__user,
+            base=self.__base,
+            head=self.__head,
+            head_repo_id=self.__head_repo_id,
+            state=self.__state,
+            description=self.__description,
+            html_url=self.__html_url
+        )
+
     @property
     def number(self) -> int:
         return self.__number
@@ -55,6 +68,10 @@ class PullRequest:
     @property
     def description(self) -> Optional[str]:
         return self.__description
+
+    @description.setter
+    def description(self, description: str) -> None:
+        self.__description = description
 
     @property
     def html_url(self) -> str:

@@ -766,8 +766,10 @@ def launch(orig_args: List[str]) -> None:
                 raise MacheteException(f"`--related` option is only valid with `update-{pr_or_mr}-descriptions` subcommand.")
             if cli_opts.opt_title is not None and subcommand != f"create-{pr_or_mr}":
                 raise MacheteException(f"`--title` option is only valid with `create-{pr_or_mr}` subcommand.")
-            if cli_opts.opt_update_related_descriptions and subcommand != f"create-{pr_or_mr}":
-                raise MacheteException(f"`--update-related-descriptions` option is only valid with `create-{pr_or_mr}` subcommand.")
+            if (cli_opts.opt_update_related_descriptions and
+                    subcommand not in (f"create-{pr_or_mr}", f"restack-{pr_or_mr}", f"retarget-{pr_or_mr}")):
+                raise MacheteException(f"`--update-related-descriptions` option is only valid "
+                                       f"with `create-{pr_or_mr}`, `restack-{pr_or_mr}` and `retarget-{pr_or_mr}` subcommands.")
             if cli_opts.opt_with_urls and subcommand != f"anno-{pr_or_mr}s":
                 raise MacheteException(f"`--with-urls` option is only valid with `anno-{pr_or_mr}s` subcommand.")
             if cli_opts.opt_yes and subcommand != f"create-{pr_or_mr}":
@@ -798,12 +800,16 @@ def launch(orig_args: List[str]) -> None:
                     opt_update_related_descriptions=cli_opts.opt_update_related_descriptions,
                     opt_yes=cli_opts.opt_yes)
             elif subcommand == f"restack-{pr_or_mr}":
-                machete_client.restack_pull_request(spec)
+                machete_client.restack_pull_request(spec, opt_update_related_descriptions=cli_opts.opt_update_related_descriptions)
             elif subcommand == f"retarget-{pr_or_mr}":
                 branch = parsed_cli.branch if 'branch' in parsed_cli else git.get_current_branch()
                 machete_client.expect_in_managed_branches(branch)
-                ignore_if_missing = cli_opts.opt_ignore_if_missing
-                machete_client.retarget_pr(spec, head=branch, ignore_if_missing=ignore_if_missing)
+                machete_client.retarget_pull_request(
+                    spec,
+                    head=branch,
+                    opt_ignore_if_missing=cli_opts.opt_ignore_if_missing,
+                    opt_update_related_descriptions=cli_opts.opt_update_related_descriptions
+                )
             elif subcommand == "sync":  # GitHub only
                 machete_client.checkout_pull_requests(spec, pr_numbers=[], mine=True)
                 machete_client.delete_unmanaged(opt_squash_merge_detection=SquashMergeDetection.NONE, opt_yes=False)

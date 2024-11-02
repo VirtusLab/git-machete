@@ -25,7 +25,8 @@ _git_machete() {
   local githublab_anno_opts="--with-urls"
   local githublab_create_opts="--draft --title= -U --update-related-descriptions --yes"
   local githublab_checkout_opts="--all --by= --mine"
-  local githublab_retarget_opts="-b --branch= --ignore-if-missing"
+  local githublab_restack_opts="-U --update-related-descriptions"
+  local githublab_retarget_opts="-b --branch= --ignore-if-missing -U --update-related-descriptions"
   local githublab_update_descriptions_opts="--all --mine --related"
   local reapply_opts="-f --fork-point="
   local slide_out_opts="-d --down-fork-point= --delete -M --merge -n --no-edit-merge --no-interactive-rebase --removed-from-remote"
@@ -53,33 +54,25 @@ _git_machete() {
         discover) __gitcomp "$common_opts $discover_opts" ;;
         fork-point) __gitcomp "$common_opts $fork_point_opts" ;;
         github)
-          if [[ ${COMP_WORDS[3]} == "anno-prs" ]]; then
-            __gitcomp "$common_opts $githublab_anno_opts"
-          elif [[ ${COMP_WORDS[3]} == "create-pr" ]]; then
-            __gitcomp "$common_opts $githublab_create_opts"
-          elif [[ ${COMP_WORDS[3]} == "checkout-prs" ]]; then
-            __gitcomp "$common_opts $githublab_checkout_opts"
-          elif [[ ${COMP_WORDS[3]} == "retarget-pr" ]]; then
-            __gitcomp "$common_opts $githublab_retarget_opts"
-          elif [[ ${COMP_WORDS[3]} == "update-pr-descriptions" ]]; then
-            __gitcomp "$common_opts $githublab_update_descriptions_opts"
-          else
-            __gitcomp "$common_opts"
-          fi ;;
+          case ${COMP_WORDS[3]} in
+            "anno-prs") __gitcomp "$common_opts $githublab_anno_opts" ;;
+            "create-pr") __gitcomp "$common_opts $githublab_create_opts" ;;
+            "checkout-prs") __gitcomp "$common_opts $githublab_checkout_opts" ;;
+            "restack-pr") __gitcomp "$common_opts $githublab_restack_opts" ;;
+            "retarget-pr") __gitcomp "$common_opts $githublab_retarget_opts" ;;
+            "update-pr-descriptions") __gitcomp "$common_opts $githublab_update_descriptions_opts" ;;
+            *) __gitcomp "$common_opts" ;;
+          esac ;;
         gitlab)
-          if [[ ${COMP_WORDS[3]} == "anno-mrs" ]]; then
-            __gitcomp "$common_opts $githublab_anno_opts"
-          elif [[ ${COMP_WORDS[3]} == "create-mr" ]]; then
-            __gitcomp "$common_opts $githublab_create_opts"
-          elif [[ ${COMP_WORDS[3]} == "checkout-mrs" ]]; then
-            __gitcomp "$common_opts $githublab_checkout_opts"
-          elif [[ ${COMP_WORDS[3]} == "retarget-mr" ]]; then
-            __gitcomp "$common_opts $githublab_retarget_opts"
-          elif [[ ${COMP_WORDS[3]} == "update-mr-descriptions" ]]; then
-            __gitcomp "$common_opts $githublab_update_descriptions_opts"
-          else
-            __gitcomp "$common_opts"
-          fi ;;
+          case ${COMP_WORDS[3]} in
+            "anno-mrs") __gitcomp "$common_opts $githublab_anno_opts" ;;
+            "create-mr") __gitcomp "$common_opts $githublab_create_opts" ;;
+            "checkout-mrs") __gitcomp "$common_opts $githublab_checkout_opts" ;;
+            "restack-mr") __gitcomp "$common_opts $githublab_restack_opts" ;;
+            "retarget-mr") __gitcomp "$common_opts $githublab_retarget_opts" ;;
+            "update-mr-descriptions") __gitcomp "$common_opts $githublab_update_descriptions_opts" ;;
+            *) __gitcomp "$common_opts" ;;
+          esac ;;
         reapply) __gitcomp "$common_opts $reapply_opts" ;;
         slide-out) __gitcomp "$common_opts $slide_out_opts" ;;
         squash) __gitcomp "$common_opts $squash_opts" ;;
@@ -133,34 +126,30 @@ _git_machete() {
               github)
                 if [[ $COMP_CWORD -eq 3 ]]; then
                   __gitcomp "$github_subcommands"
-                elif [[ ${COMP_WORDS[3]} == "anno-prs" ]]; then
-                  __gitcomp "$common_opts $githublab_anno_opts"
-                elif [[ ${COMP_WORDS[3]} == "create-pr" ]]; then
-                  __gitcomp "$common_opts $githublab_create_opts"
-                elif [[ ${COMP_WORDS[3]} == "checkout-prs" ]]; then
-                  __gitcomp "$common_opts $githublab_checkout_opts"
-                elif [[ ${COMP_WORDS[3]} == "retarget-pr" ]]; then
-                  __gitcomp "$common_opts $githublab_retarget_opts"
-                elif [[ ${COMP_WORDS[3]} == "update-pr-descriptions" ]]; then
-                  __gitcomp "$common_opts $githublab_update_descriptions_opts"
                 else
-                  COMPREPLY=('')
+                  case ${COMP_WORDS[3]} in
+                    "anno-prs") __gitcomp "$common_opts $githublab_anno_opts" ;;
+                    "create-pr") __gitcomp "$common_opts $githublab_create_opts" ;;
+                    "checkout-prs") __gitcomp "$common_opts $githublab_checkout_opts" ;;
+                    "restack-pr") __gitcomp "$common_opts $githublab_restack_opts" ;;
+                    "retarget-pr") __gitcomp "$common_opts $githublab_retarget_opts" ;;
+                    "update-pr-descriptions") __gitcomp "$common_opts $githublab_update_descriptions_opts" ;;
+                    *) COMPREPLY=('') ;;
+                  esac
                 fi ;;
               gitlab)
                 if [[ $COMP_CWORD -eq 3 ]]; then
                   __gitcomp "$gitlab_subcommands"
-                elif [[ ${COMP_WORDS[3]} == "anno-mrs" ]]; then
-                  __gitcomp "$common_opts $githublab_anno_opts"
-                elif [[ ${COMP_WORDS[3]} == "create-mr" ]]; then
-                  __gitcomp "$common_opts $githublab_create_opts"
-                elif [[ ${COMP_WORDS[3]} == "checkout-mrs" ]]; then
-                  __gitcomp "$common_opts $githublab_checkout_opts"
-                elif [[ ${COMP_WORDS[3]} == "retarget-mr" ]]; then
-                  __gitcomp "$common_opts $githublab_retarget_opts"
-                elif [[ ${COMP_WORDS[3]} == "update-mr-descriptions" ]]; then
-                  __gitcomp "$common_opts $githublab_update_descriptions_opts"
                 else
-                  COMPREPLY=('')
+                  case ${COMP_WORDS[3]} in
+                    "anno-mrs") __gitcomp "$common_opts $githublab_anno_opts" ;;
+                    "create-mr") __gitcomp "$common_opts $githublab_create_opts" ;;
+                    "checkout-mrs") __gitcomp "$common_opts $githublab_checkout_opts" ;;
+                    "restack-mr") __gitcomp "$common_opts $githublab_restack_opts" ;;
+                    "retarget-mr") __gitcomp "$common_opts $githublab_retarget_opts" ;;
+                    "update-mr-descriptions") __gitcomp "$common_opts $githublab_update_descriptions_opts" ;;
+                    *) COMPREPLY=('') ;;
+                  esac
                 fi ;;
               help)
                 if [[ $COMP_CWORD -eq 3 ]]; then

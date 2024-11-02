@@ -103,7 +103,7 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 
     --yes                              Do not ask for confirmation whether to push the branch.
 
-``restack-pr``:
+``restack-pr [-U|--update-related-descriptions]``:
     Perform the following sequence of actions:
 
     #. If the PR for the current branch is ready for review, it gets converted to a draft.
@@ -114,7 +114,12 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
     The drafting/undrafting is useful in case the GitHub repository has set up `CODEOWNERS <https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners>`_.
     Draft PRs don't get code owners automatically added as reviewers.
 
-``retarget-pr [-b|--branch=<branch>] [--ignore-if-missing]``:
+    **Options:**
+
+    -U, --update-related-descriptions  Update the generated sections ("intros") of PR descriptions that list the upstream and/or downstream PRs.
+                                       See help for ``git machete github update-pr-descriptions --related`` for details.
+
+``retarget-pr [-b|--branch=<branch>] [--ignore-if-missing] [-U|--update-related-descriptions]``:
     Sets the base of the current (or specified) branch's PR to upstream (parent) branch, as seen by git machete (see ``git machete show up``).
 
     If after changing the base the PR ends up stacked atop another PR, the PR description posted to GitHub will include
@@ -127,6 +132,9 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
     -b, --branch=<branch>              Specify the branch for which the associated PR base will be set to its upstream (parent) branch. The current branch is used if the option is absent.
 
     --ignore-if-missing                Ignore errors and quietly terminate execution if there is no PR opened for current (or specified) branch.
+
+    -U, --update-related-descriptions  Update the generated sections ("intros") of PR descriptions that list the upstream and/or downstream PRs.
+                                       See help for ``git machete github update-pr-descriptions --related`` for details.
 
 ``sync``:
     **Deprecated.** Use ``github checkout-prs --mine``, ``delete-unmanaged`` and ``slide-out --removed-from-remote``.

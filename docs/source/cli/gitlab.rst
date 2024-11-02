@@ -8,7 +8,7 @@ gitlab
 
     git machete gitlab <subcommand>
 
-where ``<subcommand>`` is one of: ``anno-mrs``, ``checkout-mrs``, ``create-mr``, ``retarget-mr`` or ``restack-mr``.
+where ``<subcommand>`` is one of: ``anno-mrs``, ``checkout-mrs``, ``create-mr``, ``retarget-mr``, ``restack-mr`` or ``update-mr-descriptions``.
 
 Creates, checks out and manages GitLab MRs while keeping them reflected in branch layout file.
 
@@ -104,7 +104,7 @@ Creates, checks out and manages GitLab MRs while keeping them reflected in branc
 
     --yes                              Do not ask for confirmation whether to push the branch.
 
-``restack-mr``:
+``restack-mr [-U|--update-related-descriptions]``:
     Perform the following sequence of actions:
 
     #. If the MR for the current branch is ready for review, it gets converted to a draft.
@@ -115,7 +115,12 @@ Creates, checks out and manages GitLab MRs while keeping them reflected in branc
     The drafting/undrafting is useful in case the GitLab project has set up `code owners <https://docs.gitlab.com/ee/user/project/codeowners/>`_.
     Draft MRs don't get code owners automatically added as reviewers.
 
-``retarget-mr [-b|--branch=<branch>] [--ignore-if-missing]``:
+    **Options:**
+
+    -U, --update-related-descriptions  Update the generated sections ("intros") of MR descriptions that list the upstream and/or downstream MRs.
+                                       See help for ``git machete gitlab update-mr-descriptions --related`` for details.
+
+``retarget-mr [-b|--branch=<branch>] [--ignore-if-missing] [-U|--update-related-descriptions]``:
     Sets the target of the current (or specified) branch's MR to upstream (parent) branch, as seen by git machete (see ``git machete show up``).
 
     If after changing the base the MR ends up stacked atop another MR, the MR description posted to GitLab will include
@@ -125,9 +130,12 @@ Creates, checks out and manages GitLab MRs while keeping them reflected in branc
 
     **Options:**
 
-    -b, --branch=<branch>     Specify the branch for which the associated MR source branch will be set to its upstream (parent) branch. The current branch is used if the option is absent.
+    -b, --branch=<branch>              Specify the branch for which the associated MR source branch will be set to its upstream (parent) branch. The current branch is used if the option is absent.
 
-    --ignore-if-missing       Ignore errors and quietly terminate execution if there is no MR opened for current (or specified) branch.
+    --ignore-if-missing                Ignore errors and quietly terminate execution if there is no MR opened for current (or specified) branch.
+
+    -U, --update-related-descriptions  Update the generated sections ("intros") of MR descriptions that list the upstream and/or downstream MRs.
+                                       See help for ``git machete gitlab update-mr-descriptions --related`` for details.
 
 ``update-mr-descriptions``:
     Updates the generated sections ("intros") of MR descriptions that list the upstream and/or downstream MRs

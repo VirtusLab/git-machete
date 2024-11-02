@@ -285,10 +285,17 @@ __git_machete_github_subcommands() {
             "${common_flags[@]}"
         ;;
 
+        (restack-pr)
+          _arguments \
+            '(-U --update-related-descriptions)'{-U,--update-related-descriptions}'[Update the generated sections of PR descriptions that list the upstream and/or downstream PRs]' \
+            "${common_flags[@]}"
+        ;;
+
         (retarget-pr)
           _arguments \
             '(-b --branch)'{-b,--branch=}'[Specify the branch for which the associated PR base will be set to its upstream (parent) branch]: :__git_machete_list_managed' \
             '(--ignore-if-missing)'--ignore-if-missing'[Ignore errors and quietly terminate execution if there is no PR opened for current (or specified) branch]' \
+            '(-U --update-related-descriptions)'{-U,--update-related-descriptions}'[Update the generated sections of PR descriptions that list the upstream and/or downstream PRs]' \
             "${common_flags[@]}"
         ;;
 
@@ -353,10 +360,17 @@ __git_machete_gitlab_subcommands() {
             "${common_flags[@]}"
         ;;
 
+        (restack-mr)
+          _arguments \
+            '(-U --update-related-descriptions)'{-U,--update-related-descriptions}'[Update the generated sections of MR descriptions that list the upstream and/or downstream MRs]' \
+            "${common_flags[@]}"
+        ;;
+
         (retarget-mr)
           _arguments \
             '(-b --branch)'{-b,--branch=}'[Specify the branch for which the associated MR source branch will be set to its upstream (parent) branch]: :__git_machete_list_managed' \
             '(--ignore-if-missing)'--ignore-if-missing'[Ignore errors and quietly terminate execution if there is no MR opened for current (or specified) branch]' \
+            '(-U --update-related-descriptions)'{-U,--update-related-descriptions}'[Update the generated sections of MR descriptions that list the upstream and/or downstream MRs]' \
             "${common_flags[@]}"
         ;;
 

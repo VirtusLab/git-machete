@@ -1030,7 +1030,7 @@ See help for \fBgit machete github update\-pr\-descriptions \-\-related\fP for d
 Do not ask for confirmation whether to push the branch.
 .UNINDENT
 .TP
-.B \fBrestack\-pr\fP:
+.B \fBrestack\-pr [\-U|\-\-update\-related\-descriptions]\fP:
 Perform the following sequence of actions:
 .INDENT 7.0
 .IP 1. 3
@@ -1045,8 +1045,16 @@ If the PR has been converted to draft in step 1, it\(aqs reverted to ready for r
 .sp
 The drafting/undrafting is useful in case the GitHub repository has set up \X'tty: link https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners'\fI\%CODEOWNERS\fP\X'tty: link'\&.
 Draft PRs don\(aqt get code owners automatically added as reviewers.
+.sp
+\fBOptions:\fP
+.INDENT 7.0
 .TP
-.B \fBretarget\-pr [\-b|\-\-branch=<branch>] [\-\-ignore\-if\-missing]\fP:
+.B  \-U\fP,\fB  \-\-update\-related\-descriptions
+Update the generated sections (\(dqintros\(dq) of PR descriptions that list the upstream and/or downstream PRs.
+See help for \fBgit machete github update\-pr\-descriptions \-\-related\fP for details.
+.UNINDENT
+.TP
+.B \fBretarget\-pr [\-b|\-\-branch=<branch>] [\-\-ignore\-if\-missing] [\-U|\-\-update\-related\-descriptions]\fP:
 Sets the base of the current (or specified) branch\(aqs PR to upstream (parent) branch, as seen by git machete (see \fBgit machete show up\fP).
 .sp
 If after changing the base the PR ends up stacked atop another PR, the PR description posted to GitHub will include
@@ -1062,6 +1070,10 @@ Specify the branch for which the associated PR base will be set to its upstream 
 .TP
 .B  \-\-ignore\-if\-missing
 Ignore errors and quietly terminate execution if there is no PR opened for current (or specified) branch.
+.TP
+.B  \-U\fP,\fB  \-\-update\-related\-descriptions
+Update the generated sections (\(dqintros\(dq) of PR descriptions that list the upstream and/or downstream PRs.
+See help for \fBgit machete github update\-pr\-descriptions \-\-related\fP for details.
 .UNINDENT
 .TP
 .B \fBsync\fP:
@@ -1168,7 +1180,7 @@ git machete gitlab <subcommand>
 .UNINDENT
 .UNINDENT
 .sp
-where \fB<subcommand>\fP is one of: \fBanno\-mrs\fP, \fBcheckout\-mrs\fP, \fBcreate\-mr\fP, \fBretarget\-mr\fP or \fBrestack\-mr\fP\&.
+where \fB<subcommand>\fP is one of: \fBanno\-mrs\fP, \fBcheckout\-mrs\fP, \fBcreate\-mr\fP, \fBretarget\-mr\fP, \fBrestack\-mr\fP or \fBupdate\-mr\-descriptions\fP\&.
 .sp
 Creates, checks out and manages GitLab MRs while keeping them reflected in branch layout file.
 .sp
@@ -1293,7 +1305,7 @@ See help for \fBgit machete gitlab update\-mr\-descriptions \-\-related\fP for d
 Do not ask for confirmation whether to push the branch.
 .UNINDENT
 .TP
-.B \fBrestack\-mr\fP:
+.B \fBrestack\-mr [\-U|\-\-update\-related\-descriptions]\fP:
 Perform the following sequence of actions:
 .INDENT 7.0
 .IP 1. 3
@@ -1308,8 +1320,16 @@ If the MR has been converted to draft in step 1, it\(aqs reverted to ready for r
 .sp
 The drafting/undrafting is useful in case the GitLab project has set up \X'tty: link https://docs.gitlab.com/ee/user/project/codeowners/'\fI\%code owners\fP\X'tty: link'\&.
 Draft MRs don\(aqt get code owners automatically added as reviewers.
+.sp
+\fBOptions:\fP
+.INDENT 7.0
 .TP
-.B \fBretarget\-mr [\-b|\-\-branch=<branch>] [\-\-ignore\-if\-missing]\fP:
+.B  \-U\fP,\fB  \-\-update\-related\-descriptions
+Update the generated sections (\(dqintros\(dq) of MR descriptions that list the upstream and/or downstream MRs.
+See help for \fBgit machete gitlab update\-mr\-descriptions \-\-related\fP for details.
+.UNINDENT
+.TP
+.B \fBretarget\-mr [\-b|\-\-branch=<branch>] [\-\-ignore\-if\-missing] [\-U|\-\-update\-related\-descriptions]\fP:
 Sets the target of the current (or specified) branch\(aqs MR to upstream (parent) branch, as seen by git machete (see \fBgit machete show up\fP).
 .sp
 If after changing the base the MR ends up stacked atop another MR, the MR description posted to GitLab will include
@@ -1325,6 +1345,10 @@ Specify the branch for which the associated MR source branch will be set to its 
 .TP
 .B  \-\-ignore\-if\-missing
 Ignore errors and quietly terminate execution if there is no MR opened for current (or specified) branch.
+.TP
+.B  \-U\fP,\fB  \-\-update\-related\-descriptions
+Update the generated sections (\(dqintros\(dq) of MR descriptions that list the upstream and/or downstream MRs.
+See help for \fBgit machete gitlab update\-mr\-descriptions \-\-related\fP for details.
 .UNINDENT
 .TP
 .B \fBupdate\-mr\-descriptions\fP:

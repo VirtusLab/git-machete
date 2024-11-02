@@ -307,4 +307,4 @@ class TestGitLab(BaseTest):
         assert_failure(["gitlab", "update-mr-descriptions", "--all", "--related"],
                        "update-mr-descriptions subcommand must take exactly one of the following options: --all, --mine, --related")
         assert_failure(["gitlab", "update-mr-descriptions", "--update-related-descriptions"],
-                       "--update-related-descriptions option is only valid with create-mr subcommand.")
+                       "--update-related-descriptions option is only valid with create-mr, restack-mr and retarget-mr subcommands.")

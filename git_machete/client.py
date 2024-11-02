@@ -2198,16 +2198,17 @@ class MacheteClient:
 
         if related:
             head = self.__git.get_current_branch()
-            current_pr = self.__get_sole_pull_request_for_head(head, ignore_if_missing=False)
+            related_to = self.__get_sole_pull_request_for_head(head, ignore_if_missing=False)
         else:
-            current_pr = None
+            related_to = None
         applicable_prs: List[PullRequest] = self.__get_applicable_pull_requests(
-            pr_numbers=[], all=all, mine=mine, by=None, related_to=current_pr, user=current_user)
+            all=all, mine=mine, related_to=related_to, user=current_user)
 
         for pr in applicable_prs:
             new_description = self.__get_updated_pull_request_description(pr)
             if pr.description != new_description:
                 self.code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
+                pr.description = new_description
                 print(fmt(f'Description of {pr.display_text()} (<b>{pr.head} {get_right_arrow()} {pr.base}</b>) has been updated'))
 
     def checkout_pull_requests(self,
@@ -2232,7 +2233,7 @@ class MacheteClient:
                 return
 
         applicable_prs: List[PullRequest] = self.__get_applicable_pull_requests(
-            pr_numbers, all=all, mine=mine, by=by, related_to=None, user=current_user)
+            pr_numbers=pr_numbers, all=all, mine=mine, by=by, user=current_user)
 
         debug(f'organization is {org_repo_remote.organization}, repository is {org_repo_remote.repository}')
         self.__git.fetch_remote(org_repo_remote.remote)
@@ -2336,12 +2337,13 @@ class MacheteClient:
 
     def __get_applicable_pull_requests(
             self,
-            pr_numbers: Optional[List[int]],
-            all: bool,
-            mine: bool,
-            related_to: Optional[PullRequest],
-            by: Optional[str],
-            user: Optional[str]
+            *,
+            pr_numbers: Optional[List[int]] = None,
+            all: bool = False,
+            mine: bool = False,
+            related_to: Optional[PullRequest] = None,
+            by: Optional[str] = None,
+            user: Optional[str] = None
     ) -> List[PullRequest]:
         result: List[PullRequest] = []
         spec = self.code_hosting_spec
@@ -2403,7 +2405,7 @@ class MacheteClient:
                 return remote
         return None
 
-    def restack_pull_request(self, spec: CodeHostingSpec) -> None:
+    def restack_pull_request(self, spec: CodeHostingSpec, opt_update_related_descriptions: bool) -> None:
         head = self.__git.get_current_branch()
         _, org_repo_remote = self.__init_code_hosting_client(spec, branch_used_for_tracking_data=head)
 
@@ -2431,7 +2433,8 @@ class MacheteClient:
                 print(f'{pr.display_text()} has been temporarily marked as draft')
 
             # Note that retarget should happen BEFORE push, see issue #1222
-            self.retarget_pr(spec, head, ignore_if_missing=False)
+            self.retarget_pull_request(spec, head, opt_ignore_if_missing=False,
+                                       opt_update_related_descriptions=opt_update_related_descriptions)
 
             if s == SyncToRemoteStatus.AHEAD_OF_REMOTE:
                 assert remote is not None
@@ -2483,7 +2486,8 @@ class MacheteClient:
             else:  # case handled elsewhere
                 raise UnexpectedMacheteException(f"Could not retarget {spec.pr_full_name}: invalid sync-to-remote status `{s}`.")
 
-            self.retarget_pr(spec, head, ignore_if_missing=False)
+            self.retarget_pull_request(spec, head, opt_ignore_if_missing=False,
+                                       opt_update_related_descriptions=opt_update_related_descriptions)
 
     def __get_updated_pull_request_description(self, pr: PullRequest) -> str:
         def skip_leading_empty(strs: List[str]) -> List[str]:
@@ -2505,11 +2509,13 @@ class MacheteClient:
             lines = lines_to_prepend + ([''] if lines_to_prepend else []) + skip_leading_empty(lines)
         return '\n'.join(lines)
 
-    def retarget_pr(self, spec: CodeHostingSpec, head: LocalBranchShortName, ignore_if_missing: bool) -> None:
+    def retarget_pull_request(self, spec: CodeHostingSpec, head: LocalBranchShortName,
+                              opt_ignore_if_missing: bool, opt_update_related_descriptions: bool) -> None:
         if self.__code_hosting_client is None:
             self.__init_code_hosting_client(spec, branch_used_for_tracking_data=head)
 
-        pr: Optional[PullRequest] = self.__get_sole_pull_request_for_head(head, ignore_if_missing=ignore_if_missing)
+        pr: Optional[PullRequest] = self.__get_sole_pull_request_for_head(
+            head, ignore_if_missing=opt_ignore_if_missing)
         if pr is None:
             return
 
@@ -2521,6 +2527,7 @@ class MacheteClient:
                 'Consider modifying the branch layout file (`git machete edit`)'
                 f' so that {bold(head)} is a child of {bold(pr.base)}.')
 
+        pr_with_original_base = pr.copy()
         if pr.base != new_base:
             self.code_hosting_client.set_base_of_pull_request(pr.number, base=new_base)
             print(f'{spec.base_branch_name.capitalize()} branch of {pr.display_text()} has been switched to {bold(new_base)}')
@@ -2540,6 +2547,19 @@ class MacheteClient:
         else:
             self.__annotations[head] = Annotation(self.__pull_request_annotation(spec, pr, current_user))
         self.save_branch_layout_file()
+
+        if opt_update_related_descriptions:
+            print(f"Updating descriptions of other {spec.pr_short_name}s...")
+            applicable_prs: List[PullRequest] = self.__get_applicable_pull_requests(related_to=pr_with_original_base) \
+                + self.__get_applicable_pull_requests(related_to=pr)
+            applicable_prs = [pr_ for pr_ in applicable_prs if pr_.number != pr.number]
+
+            for pr in applicable_prs:
+                new_description = self.__get_updated_pull_request_description(pr)
+                if (pr.description or '').rstrip() != new_description.rstrip():
+                    self.code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
+                    pr.description = new_description
+                    print(fmt(f'Description of {pr.display_text()} (<b>{pr.head} {get_right_arrow()} {pr.base}</b>) has been updated'))
 
     def __derive_code_hosting_domain(self, spec: CodeHostingSpec) -> str:
         return self.__git.get_config_attr_or_none(key=spec.git_config_keys.domain) or spec.default_domain
@@ -2752,7 +2772,7 @@ class MacheteClient:
     ) -> None:
         # first make sure that head branch is synced with remote
         try:
-            self.__sync_before_creating_pr(spec, opt_onto=opt_onto, opt_yes=opt_yes)
+            self.__sync_before_creating_pull_request(spec, opt_onto=opt_onto, opt_yes=opt_yes)
         except InteractionStopped:
             return
 
@@ -3018,7 +3038,8 @@ class MacheteClient:
         elif ans in ('q', 'quit'):
             raise InteractionStopped
 
-    def __sync_before_creating_pr(self, spec: CodeHostingSpec, *, opt_onto: Optional[LocalBranchShortName], opt_yes: bool) -> None:
+    def __sync_before_creating_pull_request(self, spec: CodeHostingSpec, *,
+                                            opt_onto: Optional[LocalBranchShortName], opt_yes: bool) -> None:
 
         self.expect_at_least_one_managed_branch()
         self.__empty_line_status = True
