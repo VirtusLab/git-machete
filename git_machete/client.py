@@ -773,8 +773,9 @@ class MacheteClient:
 
         if opt_fetch:
             for rem in self.__git.get_remotes():
-                print(f"Fetching {bold(rem)}...")
-                self.__git.fetch_remote(rem)
+                if self.remote_enabled_for_traverse_fetch(rem):
+                    print(f"Fetching {bold(rem)}...")
+                    self.__git.fetch_remote(rem)
             if self.__git.get_remotes():
                 print("")
 
@@ -1868,6 +1869,9 @@ class MacheteClient:
                 else:
                     debug(f"upstream candidate {candidate} rejected ({reject_reason_message})")
         return None
+
+    def remote_enabled_for_traverse_fetch(self, remote: str) -> bool:
+        return self.__git.get_boolean_config_attr(git_config_keys.traverse_remote_fetch(remote), True)
 
     # Also includes config that is invalid (corresponding to a non-existent/GCed commit etc.).
     def has_any_fork_point_override_config(self, branch: LocalBranchShortName) -> bool:
