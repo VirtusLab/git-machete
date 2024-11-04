@@ -353,6 +353,9 @@ long_docs: Dict[str, str] = {
 
               Configuration key value can be overridden by the presence of the `--push` or `--push-untracked` flags.
 
+           `machete.traverse.fetch.<remote>`:
+              Configures the behavior of `git machete traverse` command for the given remote when --fetch flag is used. If set to `false`, this remote will not fetched before the traversal. The default value of this configuration is `true`.
+
            `machete.worktree.useTopLevelMacheteFile`:
  
               The default value of this key is `true`, which means that the path to branch layout file will be `.git/machete`

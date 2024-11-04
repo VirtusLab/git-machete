@@ -51,6 +51,9 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 ``machete.traverse.push``:
     .. include:: git-config-keys/traverse_push.rst
 
+``machete.traverse.fetch.<remote>``:
+    Configures the behavior of ``git machete traverse`` command for the given remote when --fetch flag is used. If set to ``false``, this remote will not fetched before the traversal. The default value of this configuration is ``true``.
+
 ``machete.worktree.useTopLevelMacheteFile``:
     The default value of this key is ``true``, which means that the path to branch layout file will be ``.git/machete``
     for both regular directory and worktree.
