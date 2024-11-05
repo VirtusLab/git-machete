@@ -147,5 +147,8 @@ when the current user is NOT the author of the PR/MR associated with that branch
 ``machete.squashMergeDetection``:
     .. include:: git-config-keys/squashMergeDetection.rst
 
+``machete.traverse.fetch.<remote>``:
+    .. include:: git-config-keys/traverse_fetch_remote.rst
+
 ``machete.traverse.push``
     .. include:: git-config-keys/traverse_push.rst

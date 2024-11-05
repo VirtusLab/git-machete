@@ -346,15 +346,18 @@ long_docs: Dict[str, str] = {
               │
               └─ feature_branch2
 
+           `machete.traverse.fetch.<remote>`:
+              Configures the behavior of `git machete traverse` command for the given remote when `--fetch` flag is used.
+              If set to `false`, this remote will not be fetched before the traversal.
+              The default value of this configuration is `true`.
+              This is useful for excluding remotes that are temporarily offline, or take a long time to respond.
+
            `machete.traverse.push`:
  
               To change the behavior of `git machete traverse` command so that it doesn't push branches by default,
               you need to set config key `git config machete.traverse.push false`.
 
               Configuration key value can be overridden by the presence of the `--push` or `--push-untracked` flags.
-
-           `machete.traverse.fetch.<remote>`:
-              Configures the behavior of `git machete traverse` command for the given remote when --fetch flag is used. If set to `false`, this remote will not fetched before the traversal. The default value of this configuration is `true`.
 
            `machete.worktree.useTopLevelMacheteFile`:
  
@@ -1534,6 +1537,12 @@ long_docs: Dict[str, str] = {
                  * whether a grey edge is displayed in `status`,
 
                  * whether `traverse` suggests to slide out the branch.
+
+           `machete.traverse.fetch.<remote>`:
+              Configures the behavior of `git machete traverse` command for the given remote when `--fetch` flag is used.
+              If set to `false`, this remote will not be fetched before the traversal.
+              The default value of this configuration is `true`.
+              This is useful for excluding remotes that are temporarily offline, or take a long time to respond.
 
            `machete.traverse.push`
  

@@ -11,5 +11,6 @@ def override_fork_point_to(branch: str) -> str:
 def override_fork_point_while_descendant_of(branch: str) -> str:
     return f'machete.overrideForkPoint.{branch}.whileDescendantOf'
 
+
 def traverse_remote_fetch(remote: str) -> str:
     return f'machete.traverse.fetch.{remote}'
