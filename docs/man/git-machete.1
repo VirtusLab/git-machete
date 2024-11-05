@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Nov 01, 2024" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Nov 05, 2024" "" "git-machete"
 .SH NAME
 git-machete \- git-machete 3.31.0
 .sp
@@ -482,6 +482,12 @@ develop
 .EE
 .UNINDENT
 .UNINDENT
+.TP
+.B \fBmachete.traverse.fetch.<remote>\fP:
+Configures the behavior of \fBgit machete traverse\fP command for the given remote when \fB\-\-fetch\fP flag is used.
+If set to \fBfalse\fP, this remote will not be fetched before the traversal.
+The default value of this configuration is \fBtrue\fP\&.
+This is useful for excluding remotes that are temporarily offline, or take a long time to respond.
 .TP
 .B \fBmachete.traverse.push\fP:
 To change the behavior of \fBgit machete traverse\fP command so that it doesn\(aqt push branches by default,
@@ -2189,6 +2195,12 @@ whether a grey edge is displayed in \fBstatus\fP,
 .IP \(bu 2
 whether \fBtraverse\fP suggests to slide out the branch.
 .UNINDENT
+.TP
+.B \fBmachete.traverse.fetch.<remote>\fP:
+Configures the behavior of \fBgit machete traverse\fP command for the given remote when \fB\-\-fetch\fP flag is used.
+If set to \fBfalse\fP, this remote will not be fetched before the traversal.
+The default value of this configuration is \fBtrue\fP\&.
+This is useful for excluding remotes that are temporarily offline, or take a long time to respond.
 .TP
 .B \fBmachete.traverse.push\fP
 To change the behavior of \fBgit machete traverse\fP command so that it doesn\(aqt push branches by default,

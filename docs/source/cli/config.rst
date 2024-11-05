@@ -48,6 +48,9 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 ``machete.status.extraSpaceBeforeBranchName``:
     .. include:: git-config-keys/status_extraSpaceBeforeBranchName.rst
 
+``machete.traverse.fetch.<remote>``:
+    .. include:: git-config-keys/traverse_fetch_remote.rst
+
 ``machete.traverse.push``:
     .. include:: git-config-keys/traverse_push.rst
 

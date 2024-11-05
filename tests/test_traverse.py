@@ -1167,8 +1167,8 @@ class TestTraverse(BaseTest):
         (
             self.repo_sandbox
             .remove_remote("origin")
-            .add_remote("origin_1", origin_1_remote_path)
-            .add_remote("origin_2", origin_2_remote_path)
+            .add_remote("origin-1", origin_1_remote_path)
+            .add_remote("origin-2", origin_2_remote_path)
         )
 
         self.repo_sandbox.new_branch("master").commit()
@@ -1176,11 +1176,14 @@ class TestTraverse(BaseTest):
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("xd"))
         assert_success(
-            ["traverse"],
+            ["traverse", "--fetch"],
             """
+            Fetching origin-1...
+            Fetching origin-2...
+
             Branch master is untracked and there's no origin remote.
-            [1] origin_1
-            [2] origin_2
+            [1] origin-1
+            [2] origin-2
             Select number 1..2 to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse:
 
               master * (untracked)
@@ -1190,18 +1193,21 @@ class TestTraverse(BaseTest):
         )
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("1", "o", "2", "yq"))
+        self.repo_sandbox.set_git_config_key("machete.traverse.fetch.origin-2", "false")
         assert_success(
-            ["traverse"],
+            ["traverse", "--fetch"],
             """
+            Fetching origin-1...
+
             Branch master is untracked and there's no origin remote.
-            [1] origin_1
-            [2] origin_2
+            [1] origin-1
+            [2] origin-2
             Select number 1..2 to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse:
-            Push untracked branch master to origin_1? (y, N, q, yq, o[ther-remote])
-            [1] origin_1
-            [2] origin_2
+            Push untracked branch master to origin-1? (y, N, q, yq, o[ther-remote])
+            [1] origin-1
+            [2] origin-2
             Select number 1..2 to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse:
-            Push untracked branch master to origin_2? (y, N, q, yq, o[ther-remote])
+            Push untracked branch master to origin-2? (y, N, q, yq, o[ther-remote])
             """
         )
 
