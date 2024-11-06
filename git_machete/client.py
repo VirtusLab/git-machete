@@ -1727,10 +1727,7 @@ class MacheteClient:
         return self.__all_open_prs
 
     def sync_annotations_to_prs(self, spec: CodeHostingSpec, include_urls: bool) -> None:
-        domain = self.__derive_code_hosting_domain(spec)
-        org_repo_remote = self.__derive_org_repo_and_remote(spec, domain=domain)
-        self.code_hosting_client = spec.create_client(
-            domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
+        self.__init_code_hosting_client(spec)
         current_user: Optional[str] = self.code_hosting_client.get_current_user_login()
         debug(f'Current {spec.display_name} user is ' + (bold(current_user or '<none>')))
         all_open_prs = self.get_all_open_prs()
@@ -2189,11 +2186,9 @@ class MacheteClient:
                 f"of the {bold(branch)} branch.")
 
     def update_pull_request_descriptions(self, spec: CodeHostingSpec,
-                                         *, all: bool = False, mine: bool = False, related: bool = False,) -> None:
-        domain = self.__derive_code_hosting_domain(spec)
-        org_repo_remote = self.__derive_org_repo_and_remote(spec, domain=domain)
-        self.code_hosting_client = spec.create_client(domain=domain, organization=org_repo_remote.organization,
-                                                      repository=org_repo_remote.repository)
+                                         *, all: bool = False, mine: bool = False, related: bool = False) -> None:
+        if self.__code_hosting_client is None:
+            self.__init_code_hosting_client(spec)
 
         current_user: Optional[str] = self.code_hosting_client.get_current_user_login()
         if not current_user and mine:
@@ -2224,10 +2219,7 @@ class MacheteClient:
                                by: Optional[str] = None,
                                fail_on_missing_current_user_for_my_open_prs: bool = False
                                ) -> None:
-        domain = self.__derive_code_hosting_domain(spec)
-        org_repo_remote = self.__derive_org_repo_and_remote(spec, domain=domain)
-        self.code_hosting_client = spec.create_client(domain=domain, organization=org_repo_remote.organization,
-                                                      repository=org_repo_remote.repository)
+        domain, org_repo_remote = self.__init_code_hosting_client(spec)
 
         current_user: Optional[str] = self.code_hosting_client.get_current_user_login()
         if not current_user and mine:
@@ -2412,11 +2404,8 @@ class MacheteClient:
         return None
 
     def restack_pull_request(self, spec: CodeHostingSpec) -> None:
-        domain = self.__derive_code_hosting_domain(spec)
         head = self.__git.get_current_branch()
-        org_repo_remote = self.__derive_org_repo_and_remote(spec, domain=domain, branch_used_for_tracking_data=head)
-        self.code_hosting_client = spec.create_client(
-            domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
+        _, org_repo_remote = self.__init_code_hosting_client(spec, branch_used_for_tracking_data=head)
 
         pr: Optional[PullRequest] = self.__get_sole_pull_request_for_head(head, ignore_if_missing=False)
         assert pr is not None
@@ -2517,10 +2506,7 @@ class MacheteClient:
         return '\n'.join(lines)
 
     def retarget_pr(self, spec: CodeHostingSpec, head: LocalBranchShortName, ignore_if_missing: bool) -> None:
-        domain = self.__derive_code_hosting_domain(spec)
-        org_repo_remote = self.__derive_org_repo_and_remote(spec, domain=domain, branch_used_for_tracking_data=head)
-        self.code_hosting_client = spec.create_client(
-            domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
+        self.__init_code_hosting_client(spec, branch_used_for_tracking_data=head)
 
         pr: Optional[PullRequest] = self.__get_sole_pull_request_for_head(head, ignore_if_missing=ignore_if_missing)
         if pr is None:
@@ -2645,6 +2631,16 @@ class MacheteClient:
             f'{", ".join(remote_and_organization_and_repository_from_urls.keys())} -> aborting. \n'
             f'You can select the {spec.repository_name} by providing some or all of git config keys:\n'
             f'{spec.git_config_keys.for_locating_repo_message()}\n')
+
+    def __init_code_hosting_client(self, spec: CodeHostingSpec,
+                                   branch_used_for_tracking_data: Optional[LocalBranchShortName] = None
+                                   ) -> Tuple[str, OrganizationAndRepositoryAndRemote]:
+        domain = self.__derive_code_hosting_domain(spec)
+        org_repo_remote = self.__derive_org_repo_and_remote(
+            spec, domain=domain, branch_used_for_tracking_data=branch_used_for_tracking_data)
+        self.code_hosting_client = spec.create_client(
+            domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
+        return domain, org_repo_remote
 
     START_GIT_MACHETE_GENERATED_COMMENT = '<!-- start git-machete generated -->'
     END_GIT_MACHETE_GENERATED_COMMENT = '<!-- end git-machete generated -->'
