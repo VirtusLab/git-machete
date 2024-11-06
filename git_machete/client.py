@@ -121,6 +121,21 @@ class MacheteClient:
         self.__empty_line_status: Optional[bool] = None
         self.__branch_pairs_by_hash_in_reflog: Optional[Dict[FullCommitHash, List[BranchPair]]] = None
         self.__all_open_prs: Optional[List[PullRequest]] = None
+        self.__code_hosting_client: Optional[CodeHostingClient] = None
+
+    @property
+    def code_hosting_spec(self) -> CodeHostingSpec:
+        return self.code_hosting_client._spec
+
+    @property
+    def code_hosting_client(self) -> CodeHostingClient:
+        if self.__code_hosting_client is None:
+            raise UnexpectedMacheteException("Code hosting client has not been initialized, this is an unexpected state.")
+        return self.__code_hosting_client
+
+    @code_hosting_client.setter
+    def code_hosting_client(self, value: CodeHostingClient) -> None:
+        self.__code_hosting_client = value
 
     @property
     def branch_layout_file_path(self) -> str:
@@ -1703,22 +1718,22 @@ class MacheteClient:
               f"and branch reset events irrelevant for fork point/upstream inference): {reflog}")
         return result
 
-    def get_all_open_prs(self, code_hosting_client: CodeHostingClient) -> List[PullRequest]:
+    def get_all_open_prs(self) -> List[PullRequest]:
         if self.__all_open_prs is None:
-            spec = code_hosting_client._spec
+            spec = self.code_hosting_spec
             print(f'Checking for open {spec.display_name} {spec.pr_short_name}s... ', end='', flush=True)
-            self.__all_open_prs = code_hosting_client.get_open_pull_requests()
+            self.__all_open_prs = self.code_hosting_client.get_open_pull_requests()
             print(fmt('<green><b>OK</b></green>'))
         return self.__all_open_prs
 
     def sync_annotations_to_prs(self, spec: CodeHostingSpec, include_urls: bool) -> None:
         domain = self.__derive_code_hosting_domain(spec)
         org_repo_remote = self.__derive_org_repo_and_remote(spec, domain=domain)
-        code_hosting_client = spec.create_client(
+        self.code_hosting_client = spec.create_client(
             domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
-        current_user: Optional[str] = code_hosting_client.get_current_user_login()
+        current_user: Optional[str] = self.code_hosting_client.get_current_user_login()
         debug(f'Current {spec.display_name} user is ' + (bold(current_user or '<none>')))
-        all_open_prs = self.get_all_open_prs(code_hosting_client)
+        all_open_prs = self.get_all_open_prs()
         self.__sync_annotations_to_branch_layout_file(spec, all_open_prs, current_user, include_urls=include_urls, verbose=True)
 
     def __pull_request_annotation(self, spec: CodeHostingSpec,
@@ -2177,10 +2192,10 @@ class MacheteClient:
                                          *, all: bool = False, mine: bool = False, related: bool = False,) -> None:
         domain = self.__derive_code_hosting_domain(spec)
         org_repo_remote = self.__derive_org_repo_and_remote(spec, domain=domain)
-        code_hosting_client = spec.create_client(domain=domain, organization=org_repo_remote.organization,
-                                                 repository=org_repo_remote.repository)
+        self.code_hosting_client = spec.create_client(domain=domain, organization=org_repo_remote.organization,
+                                                      repository=org_repo_remote.repository)
 
-        current_user: Optional[str] = code_hosting_client.get_current_user_login()
+        current_user: Optional[str] = self.code_hosting_client.get_current_user_login()
         if not current_user and mine:
             msg = (f"Could not determine current user name, please check that the {spec.display_name} API token provided by one of the: "
                    f"{spec.token_providers_message}is valid.")
@@ -2188,17 +2203,16 @@ class MacheteClient:
 
         if related:
             head = self.__git.get_current_branch()
-            current_pr = self.__get_sole_pull_request_for_head(code_hosting_client, head, ignore_if_missing=False)
+            current_pr = self.__get_sole_pull_request_for_head(head, ignore_if_missing=False)
         else:
             current_pr = None
         applicable_prs: List[PullRequest] = self.__get_applicable_pull_requests(
-            pr_numbers=[], code_hosting_client=code_hosting_client,
-            all=all, mine=mine, by=None, related_to=current_pr, user=current_user)
+            pr_numbers=[], all=all, mine=mine, by=None, related_to=current_pr, user=current_user)
 
         for pr in applicable_prs:
-            new_description = self.__get_updated_pull_request_description(code_hosting_client, pr)
+            new_description = self.__get_updated_pull_request_description(pr)
             if pr.description != new_description:
-                code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
+                self.code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
                 print(fmt(f'Description of {pr.display_text()} (<b>{pr.head} {get_right_arrow()} {pr.base}</b>) has been updated'))
 
     def checkout_pull_requests(self,
@@ -2212,10 +2226,10 @@ class MacheteClient:
                                ) -> None:
         domain = self.__derive_code_hosting_domain(spec)
         org_repo_remote = self.__derive_org_repo_and_remote(spec, domain=domain)
-        code_hosting_client = spec.create_client(domain=domain, organization=org_repo_remote.organization,
-                                                 repository=org_repo_remote.repository)
+        self.code_hosting_client = spec.create_client(domain=domain, organization=org_repo_remote.organization,
+                                                      repository=org_repo_remote.repository)
 
-        current_user: Optional[str] = code_hosting_client.get_current_user_login()
+        current_user: Optional[str] = self.code_hosting_client.get_current_user_login()
         if not current_user and mine:
             msg = (f"Could not determine current user name, please check that the {spec.display_name} API token provided by one of the: "
                    f"{spec.token_providers_message}is valid.")
@@ -2226,15 +2240,14 @@ class MacheteClient:
                 return
 
         applicable_prs: List[PullRequest] = self.__get_applicable_pull_requests(
-            pr_numbers, code_hosting_client=code_hosting_client,
-            all=all, mine=mine, by=by, related_to=None, user=current_user)
+            pr_numbers, all=all, mine=mine, by=by, related_to=None, user=current_user)
 
         debug(f'organization is {org_repo_remote.organization}, repository is {org_repo_remote.repository}')
         self.__git.fetch_remote(org_repo_remote.remote)
 
         prs_to_annotate = set(applicable_prs)
         for pr in sorted(applicable_prs, key=lambda x: x.number):
-            head_org_repo_and_git_url = code_hosting_client.get_org_repo_and_git_url_by_repo_id_or_none(pr.head_repo_id)
+            head_org_repo_and_git_url = self.code_hosting_client.get_org_repo_and_git_url_by_repo_id_or_none(pr.head_repo_id)
             if head_org_repo_and_git_url:
                 head_org = head_org_repo_and_git_url.organization  # explicit access to attributes to satisfy vulture
                 head_repo = head_org_repo_and_git_url.repository
@@ -2257,14 +2270,14 @@ class MacheteClient:
             else:
                 warn(f'{pr.display_text()} comes from fork and its {spec.repository_name} is already deleted. '
                      f'No remote tracking data will be set up for {bold(pr.head)} branch.')
-                refspec = f'{code_hosting_client.get_ref_name_for_pull_request(pr.number)}:{pr.head}'
+                refspec = f'{self.code_hosting_client.get_ref_name_for_pull_request(pr.number)}:{pr.head}'
                 self.__git.fetch_refspec(org_repo_remote.remote, refspec)
                 self.__git.checkout(LocalBranchShortName.of(pr.head))
             if pr.state in ('closed', 'merged'):
                 warn(f'{pr.display_text()} is already closed.')
             debug(f'found {pr}')
 
-            pr_path: List[PullRequest] = self.__get_upwards_path_including_pr(code_hosting_client, pr)
+            pr_path: List[PullRequest] = self.__get_upwards_path_including_pr(pr)
             prs_to_annotate.update(pr_path)
             reversed_pr_path: List[PullRequest] = pr_path[::-1]  # need to add from root downwards
             if reversed_pr_path[0].base not in self.managed_branches:
@@ -2294,15 +2307,14 @@ class MacheteClient:
         if len(applicable_prs) == 1:
             self.__git.checkout(LocalBranchShortName.of(applicable_prs[0].head))
 
-    def __get_downwards_tree_excluding_pr(self, code_hosting_client: CodeHostingClient,
-                                          original_pr: PullRequest) -> List[Tuple[PullRequest, int]]:
+    def __get_downwards_tree_excluding_pr(self, original_pr: PullRequest) -> List[Tuple[PullRequest, int]]:
         """Returns pairs of (PR, depth below the given PR)"""
 
         visited_head_branches: Set[str] = set([])
 
         def reverse_pr_dfs(pr: PullRequest, depth: int) -> Iterator[Tuple[PullRequest, int]]:
             visited_head_branches.add(pr.head)
-            down_prs = filter(lambda x: x.base == pr.head, self.get_all_open_prs(code_hosting_client))
+            down_prs = filter(lambda x: x.base == pr.head, self.get_all_open_prs())
             for down_pr in sorted(down_prs, key=lambda x: x.number):
                 if down_pr.head not in visited_head_branches:
                     yield (down_pr, depth + 1)
@@ -2310,8 +2322,7 @@ class MacheteClient:
 
         return list(reverse_pr_dfs(original_pr, 0))
 
-    def __get_upwards_path_including_pr(self, code_hosting_client: CodeHostingClient,
-                                        original_pr: PullRequest) -> List[PullRequest]:
+    def __get_upwards_path_including_pr(self, original_pr: PullRequest) -> List[PullRequest]:
         visited_head_branches: List[str] = [original_pr.head]
         path: List[PullRequest] = [original_pr]
         pr_base: Optional[str] = original_pr.base
@@ -2322,11 +2333,11 @@ class MacheteClient:
             if pr_base in ('main', 'master'):
                 return path
             if pr_base in visited_head_branches:
-                spec = code_hosting_client._spec
+                spec = self.code_hosting_spec
                 raise MacheteException(f"There is a cycle between {spec.display_name} {spec.pr_short_name}s: " +
                                        " -> ".join(visited_head_branches + [pr_base]))
             visited_head_branches += [pr_base]
-            pr = utils.find_or_none(lambda x: x.head == pr_base, self.get_all_open_prs(code_hosting_client))
+            pr = utils.find_or_none(lambda x: x.head == pr_base, self.get_all_open_prs())
             path = (path + [pr]) if pr else path
             pr_base = pr.base if pr else None
         return path
@@ -2334,7 +2345,6 @@ class MacheteClient:
     def __get_applicable_pull_requests(
             self,
             pr_numbers: Optional[List[int]],
-            code_hosting_client: CodeHostingClient,
             all: bool,
             mine: bool,
             related_to: Optional[PullRequest],
@@ -2342,49 +2352,46 @@ class MacheteClient:
             user: Optional[str]
     ) -> List[PullRequest]:
         result: List[PullRequest] = []
-        spec = code_hosting_client._spec
-        all_open_prs = self.get_all_open_prs(code_hosting_client)
+        spec = self.code_hosting_spec
+        all_open_prs = self.get_all_open_prs()
+        repo_pretty = f"{spec.repository_name} {bold(self.code_hosting_client.organization)}/{bold(self.code_hosting_client.repository)}"
         if pr_numbers:
             for pr_number in pr_numbers:
                 pr: Optional[PullRequest] = utils.find_or_none(lambda x: x.number == pr_number, all_open_prs)
                 if pr:
                     result.append(pr)
                 else:
-                    pr = code_hosting_client.get_pull_request_by_number_or_none(pr_number)
+                    pr = self.code_hosting_client.get_pull_request_by_number_or_none(pr_number)
                     if pr:
                         result.append(pr)
                     else:
 
-                        raise MacheteException(f"{spec.pr_short_name} {spec.pr_ordinal_char}{bold(str(pr_number))} "
-                                               f"is not found in {spec.repository_name} "
-                                               f"{bold(code_hosting_client.organization)}/{bold(code_hosting_client.repository)}")
+                        raise MacheteException(
+                            f"{spec.pr_short_name} {spec.pr_ordinal_char}{bold(str(pr_number))} is not found in {repo_pretty}")
             return result
         if all:
             if not all_open_prs:
-                warn(f"Currently there are no {spec.pr_full_name}s opened in {spec.repository_name} "
-                     f"{bold(code_hosting_client.organization)}/{bold(code_hosting_client.repository)}")
+                warn(f"Currently there are no {spec.pr_full_name}s opened in {repo_pretty}")
                 return []
             return all_open_prs
         elif mine and user:
             result = [pr for pr in all_open_prs if pr.user == user]
             if not result:
-                warn(f"Current user {bold(user)} has no open {spec.pr_full_name} in {spec.repository_name} "
-                     f"{bold(code_hosting_client.organization)}/{bold(code_hosting_client.repository)}")
+                warn(f"Current user {bold(user)} has no open {spec.pr_full_name} in {repo_pretty}")
                 return []
             return result
         elif by:
             result = [pr for pr in all_open_prs if pr.user == by]
             if not result:
-                warn(f"User {bold(by)} has no open {spec.pr_full_name} in {spec.repository_name} "
-                     f"{bold(code_hosting_client.organization)}/{bold(code_hosting_client.repository)}")
+                warn(f"User {bold(by)} has no open {spec.pr_full_name} in {repo_pretty}")
                 return []
             return result
         elif related_to:
-            style = self.__get_pr_description_into_style_from_config(spec)
+            style = self.__get_pr_description_into_style_from_config()
             result = []
             if style == PRDescriptionIntroStyle.FULL:
-                result += reversed(self.__get_upwards_path_including_pr(code_hosting_client, related_to))
-            result += [pr_ for pr_, _ in self.__get_downwards_tree_excluding_pr(code_hosting_client, related_to)]
+                result += reversed(self.__get_upwards_path_including_pr(related_to))
+            result += [pr_ for pr_, _ in self.__get_downwards_tree_excluding_pr(related_to)]
             return result
 
         raise UnexpectedMacheteException("All params passed to __get_applicable_pull_requests are empty.")
@@ -2408,10 +2415,10 @@ class MacheteClient:
         domain = self.__derive_code_hosting_domain(spec)
         head = self.__git.get_current_branch()
         org_repo_remote = self.__derive_org_repo_and_remote(spec, domain=domain, branch_used_for_tracking_data=head)
-        code_hosting_client = spec.create_client(
+        self.code_hosting_client = spec.create_client(
             domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
 
-        pr: Optional[PullRequest] = self.__get_sole_pull_request_for_head(code_hosting_client, head, ignore_if_missing=False)
+        pr: Optional[PullRequest] = self.__get_sole_pull_request_for_head(head, ignore_if_missing=False)
         assert pr is not None
 
         self.__git.fetch_remote(org_repo_remote.remote)
@@ -2430,7 +2437,7 @@ class MacheteClient:
                     f'Branch <b>{current_branch}</b> is marked as `push=no`; aborting the restack.\n'
                     f'Did you want to just use `git machete {spec.git_machete_command} {subcommand}`?\n')
 
-            converted_to_draft = code_hosting_client.set_draft_status_of_pull_request(pr.number, target_draft_status=True)
+            converted_to_draft = self.code_hosting_client.set_draft_status_of_pull_request(pr.number, target_draft_status=True)
             if converted_to_draft:
                 print(f'{pr.display_text()} has been temporarily marked as draft')
 
@@ -2473,7 +2480,7 @@ class MacheteClient:
             self.__print_new_line(False)
 
             if converted_to_draft:
-                code_hosting_client.set_draft_status_of_pull_request(pr.number, target_draft_status=False)
+                self.code_hosting_client.set_draft_status_of_pull_request(pr.number, target_draft_status=False)
                 print(f'{pr.display_text()} has been marked as ready for review again')
 
         else:
@@ -2489,13 +2496,13 @@ class MacheteClient:
 
             self.retarget_pr(spec, head, ignore_if_missing=False)
 
-    def __get_updated_pull_request_description(self, code_hosting_client: CodeHostingClient, pr: PullRequest) -> str:
+    def __get_updated_pull_request_description(self, pr: PullRequest) -> str:
         def skip_leading_empty(strs: List[str]) -> List[str]:
             return list(itertools.dropwhile(lambda line: line.strip() == '', strs))
 
         lines = skip_leading_empty(pr.description.splitlines()) if pr.description else []
-        style = self.__get_pr_description_into_style_from_config(code_hosting_client._spec)
-        text_to_prepend = self.__generate_pr_description_intro(code_hosting_client, pr, style)
+        style = self.__get_pr_description_into_style_from_config()
+        text_to_prepend = self.__generate_pr_description_intro(pr, style)
         lines_to_prepend = text_to_prepend.splitlines() if text_to_prepend else []
         if self.START_GIT_MACHETE_GENERATED_COMMENT in lines and self.END_GIT_MACHETE_GENERATED_COMMENT in lines:
             start_index = lines.index(self.START_GIT_MACHETE_GENERATED_COMMENT)
@@ -2512,10 +2519,10 @@ class MacheteClient:
     def retarget_pr(self, spec: CodeHostingSpec, head: LocalBranchShortName, ignore_if_missing: bool) -> None:
         domain = self.__derive_code_hosting_domain(spec)
         org_repo_remote = self.__derive_org_repo_and_remote(spec, domain=domain, branch_used_for_tracking_data=head)
-        code_hosting_client = spec.create_client(
+        self.code_hosting_client = spec.create_client(
             domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
 
-        pr: Optional[PullRequest] = self.__get_sole_pull_request_for_head(code_hosting_client, head, ignore_if_missing=ignore_if_missing)
+        pr: Optional[PullRequest] = self.__get_sole_pull_request_for_head(head, ignore_if_missing=ignore_if_missing)
         if pr is None:
             return
 
@@ -2528,18 +2535,18 @@ class MacheteClient:
                 f' so that {bold(head)} is a child of {bold(pr.base)}.')
 
         if pr.base != new_base:
-            code_hosting_client.set_base_of_pull_request(pr.number, base=new_base)
+            self.code_hosting_client.set_base_of_pull_request(pr.number, base=new_base)
             print(f'{spec.base_branch_name.capitalize()} branch of {pr.display_text()} has been switched to {bold(new_base)}')
             pr = pr._replace(base=new_base)
         else:
             print(f'{spec.base_branch_name.capitalize()} branch of {pr.display_text()} is already {bold(new_base)}')
 
-        new_description = self.__get_updated_pull_request_description(code_hosting_client, pr)
+        new_description = self.__get_updated_pull_request_description(pr)
         if pr.description != new_description:
-            code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
+            self.code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
             print(f'Description of {pr.display_text()} has been updated')
 
-        current_user: Optional[str] = code_hosting_client.get_current_user_login()
+        current_user: Optional[str] = self.code_hosting_client.get_current_user_login()
         if self.__annotations.get(head) and self.__annotations[head].qualifiers_text:
             self.__annotations[head] = Annotation(self.__pull_request_annotation(spec, pr, current_user) + ' ' +
                                                   self.__annotations[head].qualifiers_text)
@@ -2642,39 +2649,38 @@ class MacheteClient:
     START_GIT_MACHETE_GENERATED_COMMENT = '<!-- start git-machete generated -->'
     END_GIT_MACHETE_GENERATED_COMMENT = '<!-- end git-machete generated -->'
 
-    @staticmethod
     def __get_sole_pull_request_for_head(
-            code_hosting_client: CodeHostingClient,
+            self,
             head: LocalBranchShortName,
             ignore_if_missing: bool
     ) -> Optional[PullRequest]:
-        prs: List[PullRequest] = code_hosting_client.get_open_pull_requests_by_head(head)
-        spec = code_hosting_client._spec
+        prs: List[PullRequest] = self.code_hosting_client.get_open_pull_requests_by_head(head)
+        spec = self.code_hosting_spec
+        org_and_repo = self.code_hosting_client.get_org_and_repo()
         if not prs:
             if ignore_if_missing:
-                warn(f"no {spec.pr_short_name}s in <b>{code_hosting_client.get_org_and_repo()}</b> "
+                warn(f"no {spec.pr_short_name}s in <b>{org_and_repo}</b> "
                      f"have <b>{head}</b> as its {spec.head_branch_name} branch")
                 return None
             else:
-                raise MacheteException(f"No {spec.pr_short_name}s in <b>{code_hosting_client.get_org_and_repo()}</b> "
+                raise MacheteException(f"No {spec.pr_short_name}s in <b>{org_and_repo}</b> "
                                        f"have <b>{head}</b> as its {spec.head_branch_name} branch")
         if len(prs) > 1:
-            raise MacheteException(f"Multiple {spec.pr_short_name}s in <b>{code_hosting_client.get_org_and_repo()}</b> "
+            raise MacheteException(f"Multiple {spec.pr_short_name}s in <b>{org_and_repo}</b> "
                                    f"have <b>{head}</b> as its {spec.head_branch_name} branch: " +
                                    ", ".join(_pr.short_display_text() for _pr in prs))
         pr = prs[0]
         debug(f'found {pr}')
         return pr
 
-    def __get_pr_description_into_style_from_config(self, spec: CodeHostingSpec) -> PRDescriptionIntroStyle:
-        config_key = spec.git_config_keys.pr_description_intro_style
+    def __get_pr_description_into_style_from_config(self) -> PRDescriptionIntroStyle:
+        config_key = self.code_hosting_spec.git_config_keys.pr_description_intro_style
         return PRDescriptionIntroStyle.from_string(
             value=self.__git.get_config_attr(key=config_key, default_value="up-only"),
             from_where=f"`{config_key}` git config key"
         )
 
-    def __generate_pr_description_intro(self, code_hosting_client: CodeHostingClient,
-                                        pr: PullRequest, style: PRDescriptionIntroStyle) -> str:
+    def __generate_pr_description_intro(self, pr: PullRequest, style: PRDescriptionIntroStyle) -> str:
         if style == PRDescriptionIntroStyle.NONE:
             return ''
 
@@ -2686,15 +2692,15 @@ class MacheteClient:
             # esp. given that GitHub and GitLab limit the single page to 100 PRs/MRs (so multiple HTTP requests may be needed).
             # As a slight optimization, in the default UP_ONLY style,
             # let's fetch the full PR list only if the current PR has a base PR at all.
-            prs_for_base_branch = code_hosting_client.get_open_pull_requests_by_head(LocalBranchShortName(pr.base))
+            prs_for_base_branch = self.code_hosting_client.get_open_pull_requests_by_head(LocalBranchShortName(pr.base))
         if style == PRDescriptionIntroStyle.UP_ONLY and len(prs_for_base_branch) == 0:
             return ''
-        spec = code_hosting_client._spec
+        spec = self.code_hosting_spec
         pr_short_name = spec.pr_short_name
 
-        pr_up_path = list(reversed(self.__get_upwards_path_including_pr(code_hosting_client, pr)))
+        pr_up_path = list(reversed(self.__get_upwards_path_including_pr(pr)))
         if style == PRDescriptionIntroStyle.FULL:
-            pr_down_tree = self.__get_downwards_tree_excluding_pr(code_hosting_client, pr)
+            pr_down_tree = self.__get_downwards_tree_excluding_pr(pr)
         else:
             pr_down_tree = []
         if len(pr_up_path) == 1 and pr_down_tree == []:
@@ -2797,9 +2803,9 @@ class MacheteClient:
                 opt_push_untracked=True,
                 opt_yes=opt_yes)
 
-        code_hosting_client = spec.create_client(domain=domain, organization=base_org_repo_remote.organization,
-                                                 repository=base_org_repo_remote.repository)
-        current_user: Optional[str] = code_hosting_client.get_current_user_login()
+        self.code_hosting_client = spec.create_client(domain=domain, organization=base_org_repo_remote.organization,
+                                                      repository=base_org_repo_remote.repository)
+        current_user: Optional[str] = self.code_hosting_client.get_current_user_login()
         debug(f'organization is {base_org_repo_remote.organization}, repository is {base_org_repo_remote.repository}')
         debug(f'current {spec.display_name} user is ' + (current_user or '<none>'))
 
@@ -2835,23 +2841,23 @@ class MacheteClient:
         ok_str = '<green><b>OK</b></green>'
         print(f'Creating a {"draft " if opt_draft else ""}{spec.pr_short_name} from {bold(head)} to {bold(base)}... ', end='', flush=True)
 
-        pr: PullRequest = code_hosting_client.create_pull_request(
+        pr: PullRequest = self.code_hosting_client.create_pull_request(
             head=head, head_org_repo=head_org_repo, base=base,
             title=title, description=description, draft=opt_draft)
         print(fmt(f'{ok_str}, see `{pr.html_url}`'))
 
-        style = self.__get_pr_description_into_style_from_config(spec)
+        style = self.__get_pr_description_into_style_from_config()
         # If base branch has NOT originally been found on the remote,
         # we can be sure that a longer chain of PRs above the newly-created PR does NOT exist.
         # So in the default UP_ONLY mode, we can skip generating the intro completely.
         if base_branch_found_on_remote or style == PRDescriptionIntroStyle.FULL:
             # As the description may include the reference to this PR itself (in case of a chain of >=2 PRs),
             # let's update the PR description after it's already created (so that we know the current PR's number).
-            new_description = self.__get_updated_pull_request_description(code_hosting_client, pr)
+            new_description = self.__get_updated_pull_request_description(pr)
             if new_description.strip() != description.strip():
                 print(f'Updating description of {pr.display_text()} to include '
                       f'the chain of {spec.pr_short_name}s... ', end='', flush=True)
-                code_hosting_client.set_description_of_pull_request(pr.number, new_description)
+                self.code_hosting_client.set_description_of_pull_request(pr.number, new_description)
                 print(fmt(ok_str))
 
         milestone_path: str = self.__git.get_main_git_subpath('info', 'milestone')
@@ -2861,12 +2867,12 @@ class MacheteClient:
             milestone = None
         if milestone:
             print(f'Setting milestone of {pr.display_text()} to {bold(milestone)}... ', end='', flush=True)
-            code_hosting_client.set_milestone_of_pull_request(pr.number, milestone=milestone)
+            self.code_hosting_client.set_milestone_of_pull_request(pr.number, milestone=milestone)
             print(fmt(ok_str))
 
         if current_user:
             print(f'Adding {bold(current_user)} as assignee to {pr.display_text()}... ', end='', flush=True)
-            code_hosting_client.add_assignees_to_pull_request(pr.number, [current_user])
+            self.code_hosting_client.add_assignees_to_pull_request(pr.number, [current_user])
             print(fmt(ok_str))
 
         reviewers_path = self.__git.get_main_git_subpath('info', 'reviewers')
@@ -2878,7 +2884,7 @@ class MacheteClient:
             print(f'Adding {", ".join(bold(reviewer) for reviewer in reviewers)} '
                   f'as reviewer{"s" if len(reviewers) > 1 else ""} to {pr.display_text()}... ',
                   end='', flush=True)
-            code_hosting_client.add_reviewers_to_pull_request(pr.number, reviewers)
+            self.code_hosting_client.add_reviewers_to_pull_request(pr.number, reviewers)
             print(fmt(ok_str))
 
         self.__annotations[head] = Annotation(self.__pull_request_annotation(spec, pr, current_user))
