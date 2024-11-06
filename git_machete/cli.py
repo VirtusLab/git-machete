@@ -814,7 +814,7 @@ def launch(orig_args: List[str]) -> None:
                         f"`update-{pr_or_mr}-descriptions` subcommand must take exactly one of the following options: "
                         '`--all`, `--mine`, `--related`')
                 machete_client.update_pull_request_descriptions(
-                    spec, all_open_prs_preloaded=None, all=cli_opts.opt_all, mine=cli_opts.opt_mine, related=cli_opts.opt_related)
+                    spec, all=cli_opts.opt_all, mine=cli_opts.opt_mine, related=cli_opts.opt_related)
             else:  # an unknown subcommand is handled by argparse
                 raise UnexpectedMacheteException(f"Unknown subcommand: `{subcommand}`")
         elif cmd == "is-managed":

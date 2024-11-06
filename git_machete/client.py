@@ -120,6 +120,7 @@ class MacheteClient:
         self.__annotations: Dict[LocalBranchShortName, Annotation] = {}
         self.__empty_line_status: Optional[bool] = None
         self.__branch_pairs_by_hash_in_reflog: Optional[Dict[FullCommitHash, List[BranchPair]]] = None
+        self.__all_open_prs: Optional[List[PullRequest]] = None
 
     @property
     def branch_layout_file_path(self) -> str:
@@ -1702,16 +1703,22 @@ class MacheteClient:
               f"and branch reset events irrelevant for fork point/upstream inference): {reflog}")
         return result
 
+    def get_all_open_prs(self, code_hosting_client: CodeHostingClient) -> List[PullRequest]:
+        if self.__all_open_prs is None:
+            spec = code_hosting_client._spec
+            print(f'Checking for open {spec.display_name} {spec.pr_short_name}s... ', end='', flush=True)
+            self.__all_open_prs = code_hosting_client.get_open_pull_requests()
+            print(fmt('<green><b>OK</b></green>'))
+        return self.__all_open_prs
+
     def sync_annotations_to_prs(self, spec: CodeHostingSpec, include_urls: bool) -> None:
         domain = self.__derive_code_hosting_domain(spec)
         org_repo_remote = self.__derive_org_repo_and_remote(spec, domain=domain)
         code_hosting_client = spec.create_client(
             domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
-        print(f'Checking for open {spec.display_name} {spec.pr_short_name}s... ', end='', flush=True)
         current_user: Optional[str] = code_hosting_client.get_current_user_login()
         debug(f'Current {spec.display_name} user is ' + (bold(current_user or '<none>')))
-        all_open_prs: List[PullRequest] = code_hosting_client.get_open_pull_requests()
-        print(fmt('<green><b>OK</b></green>'))
+        all_open_prs = self.get_all_open_prs(code_hosting_client)
         self.__sync_annotations_to_branch_layout_file(spec, all_open_prs, current_user, include_urls=include_urls, verbose=True)
 
     def __pull_request_annotation(self, spec: CodeHostingSpec,
@@ -2166,14 +2173,8 @@ class MacheteClient:
                 f"Fork point {bold(fork_point_hash)} is not ancestor of or the tip "
                 f"of the {bold(branch)} branch.")
 
-    def update_pull_request_descriptions(self,
-                                         spec: CodeHostingSpec,
-                                         all_open_prs_preloaded: Optional[List[PullRequest]],
-                                         *,
-                                         all: bool = False,
-                                         mine: bool = False,
-                                         related: bool = False,
-                                         ) -> None:
+    def update_pull_request_descriptions(self, spec: CodeHostingSpec,
+                                         *, all: bool = False, mine: bool = False, related: bool = False,) -> None:
         domain = self.__derive_code_hosting_domain(spec)
         org_repo_remote = self.__derive_org_repo_and_remote(spec, domain=domain)
         code_hosting_client = spec.create_client(domain=domain, organization=org_repo_remote.organization,
@@ -2184,12 +2185,6 @@ class MacheteClient:
             msg = (f"Could not determine current user name, please check that the {spec.display_name} API token provided by one of the: "
                    f"{spec.token_providers_message}is valid.")
             raise MacheteException(msg)
-        if all_open_prs_preloaded is not None:
-            all_open_prs = all_open_prs_preloaded
-        else:
-            print(f'Checking for open {spec.display_name} {spec.pr_short_name}s... ', end='', flush=True)
-            all_open_prs = code_hosting_client.get_open_pull_requests()
-            print(fmt('<green><b>OK</b></green>'))
 
         if related:
             head = self.__git.get_current_branch()
@@ -2197,11 +2192,11 @@ class MacheteClient:
         else:
             current_pr = None
         applicable_prs: List[PullRequest] = self.__get_applicable_pull_requests(
-            pr_numbers=[], all_open_prs=all_open_prs, code_hosting_client=code_hosting_client,
+            pr_numbers=[], code_hosting_client=code_hosting_client,
             all=all, mine=mine, by=None, related_to=current_pr, user=current_user)
 
         for pr in applicable_prs:
-            new_description = self.__get_updated_pull_request_description(code_hosting_client, pr, all_open_prs_preloaded=all_open_prs)
+            new_description = self.__get_updated_pull_request_description(code_hosting_client, pr)
             if pr.description != new_description:
                 code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
                 print(fmt(f'Description of {pr.display_text()} (<b>{pr.head} {get_right_arrow()} {pr.base}</b>) has been updated'))
@@ -2229,12 +2224,9 @@ class MacheteClient:
             else:
                 warn(msg)
                 return
-        print(f'Checking for open {spec.display_name} {spec.pr_short_name}s... ', end='', flush=True)
-        all_open_prs: List[PullRequest] = code_hosting_client.get_open_pull_requests()
-        print(fmt('<green><b>OK</b></green>'))
 
         applicable_prs: List[PullRequest] = self.__get_applicable_pull_requests(
-            pr_numbers, all_open_prs=all_open_prs, code_hosting_client=code_hosting_client,
+            pr_numbers, code_hosting_client=code_hosting_client,
             all=all, mine=mine, by=by, related_to=None, user=current_user)
 
         debug(f'organization is {org_repo_remote.organization}, repository is {org_repo_remote.repository}')
@@ -2272,7 +2264,7 @@ class MacheteClient:
                 warn(f'{pr.display_text()} is already closed.')
             debug(f'found {pr}')
 
-            pr_path: List[PullRequest] = self.__get_upwards_path_including_pr(spec, pr, all_open_prs)
+            pr_path: List[PullRequest] = self.__get_upwards_path_including_pr(code_hosting_client, pr)
             prs_to_annotate.update(pr_path)
             reversed_pr_path: List[PullRequest] = pr_path[::-1]  # need to add from root downwards
             if reversed_pr_path[0].base not in self.managed_branches:
@@ -2302,16 +2294,15 @@ class MacheteClient:
         if len(applicable_prs) == 1:
             self.__git.checkout(LocalBranchShortName.of(applicable_prs[0].head))
 
-    @staticmethod
-    def __get_downwards_tree_excluding_pr(original_pr: PullRequest,
-                                          all_open_prs: List[PullRequest]) -> List[Tuple[PullRequest, int]]:
+    def __get_downwards_tree_excluding_pr(self, code_hosting_client: CodeHostingClient,
+                                          original_pr: PullRequest) -> List[Tuple[PullRequest, int]]:
         """Returns pairs of (PR, depth below the given PR)"""
 
         visited_head_branches: Set[str] = set([])
 
         def reverse_pr_dfs(pr: PullRequest, depth: int) -> Iterator[Tuple[PullRequest, int]]:
             visited_head_branches.add(pr.head)
-            down_prs = filter(lambda x: x.base == pr.head, all_open_prs)
+            down_prs = filter(lambda x: x.base == pr.head, self.get_all_open_prs(code_hosting_client))
             for down_pr in sorted(down_prs, key=lambda x: x.number):
                 if down_pr.head not in visited_head_branches:
                     yield (down_pr, depth + 1)
@@ -2319,9 +2310,8 @@ class MacheteClient:
 
         return list(reverse_pr_dfs(original_pr, 0))
 
-    @staticmethod
-    def __get_upwards_path_including_pr(spec: CodeHostingSpec, original_pr: PullRequest,
-                                        all_open_prs: List[PullRequest]) -> List[PullRequest]:
+    def __get_upwards_path_including_pr(self, code_hosting_client: CodeHostingClient,
+                                        original_pr: PullRequest) -> List[PullRequest]:
         visited_head_branches: List[str] = [original_pr.head]
         path: List[PullRequest] = [original_pr]
         pr_base: Optional[str] = original_pr.base
@@ -2332,10 +2322,11 @@ class MacheteClient:
             if pr_base in ('main', 'master'):
                 return path
             if pr_base in visited_head_branches:
+                spec = code_hosting_client._spec
                 raise MacheteException(f"There is a cycle between {spec.display_name} {spec.pr_short_name}s: " +
                                        " -> ".join(visited_head_branches + [pr_base]))
             visited_head_branches += [pr_base]
-            pr = utils.find_or_none(lambda x: x.head == pr_base, all_open_prs)
+            pr = utils.find_or_none(lambda x: x.head == pr_base, self.get_all_open_prs(code_hosting_client))
             path = (path + [pr]) if pr else path
             pr_base = pr.base if pr else None
         return path
@@ -2343,7 +2334,6 @@ class MacheteClient:
     def __get_applicable_pull_requests(
             self,
             pr_numbers: Optional[List[int]],
-            all_open_prs: List[PullRequest],
             code_hosting_client: CodeHostingClient,
             all: bool,
             mine: bool,
@@ -2353,6 +2343,7 @@ class MacheteClient:
     ) -> List[PullRequest]:
         result: List[PullRequest] = []
         spec = code_hosting_client._spec
+        all_open_prs = self.get_all_open_prs(code_hosting_client)
         if pr_numbers:
             for pr_number in pr_numbers:
                 pr: Optional[PullRequest] = utils.find_or_none(lambda x: x.number == pr_number, all_open_prs)
@@ -2392,8 +2383,8 @@ class MacheteClient:
             style = self.__get_pr_description_into_style_from_config(spec)
             result = []
             if style == PRDescriptionIntroStyle.FULL:
-                result += reversed(self.__get_upwards_path_including_pr(spec, related_to, all_open_prs))
-            result += [pr_ for pr_, _ in self.__get_downwards_tree_excluding_pr(related_to, all_open_prs)]
+                result += reversed(self.__get_upwards_path_including_pr(code_hosting_client, related_to))
+            result += [pr_ for pr_, _ in self.__get_downwards_tree_excluding_pr(code_hosting_client, related_to)]
             return result
 
         raise UnexpectedMacheteException("All params passed to __get_applicable_pull_requests are empty.")
@@ -2498,14 +2489,13 @@ class MacheteClient:
 
             self.retarget_pr(spec, head, ignore_if_missing=False)
 
-    def __get_updated_pull_request_description(self, code_hosting_client: CodeHostingClient, pr: PullRequest,
-                                               all_open_prs_preloaded: Optional[List[PullRequest]]) -> str:
+    def __get_updated_pull_request_description(self, code_hosting_client: CodeHostingClient, pr: PullRequest) -> str:
         def skip_leading_empty(strs: List[str]) -> List[str]:
             return list(itertools.dropwhile(lambda line: line.strip() == '', strs))
 
         lines = skip_leading_empty(pr.description.splitlines()) if pr.description else []
         style = self.__get_pr_description_into_style_from_config(code_hosting_client._spec)
-        text_to_prepend = self.__generate_pr_description_intro(code_hosting_client, pr, style, all_open_prs_preloaded)
+        text_to_prepend = self.__generate_pr_description_intro(code_hosting_client, pr, style)
         lines_to_prepend = text_to_prepend.splitlines() if text_to_prepend else []
         if self.START_GIT_MACHETE_GENERATED_COMMENT in lines and self.END_GIT_MACHETE_GENERATED_COMMENT in lines:
             start_index = lines.index(self.START_GIT_MACHETE_GENERATED_COMMENT)
@@ -2544,7 +2534,7 @@ class MacheteClient:
         else:
             print(f'{spec.base_branch_name.capitalize()} branch of {pr.display_text()} is already {bold(new_base)}')
 
-        new_description = self.__get_updated_pull_request_description(code_hosting_client, pr, all_open_prs_preloaded=None)
+        new_description = self.__get_updated_pull_request_description(code_hosting_client, pr)
         if pr.description != new_description:
             code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
             print(f'Description of {pr.display_text()} has been updated')
@@ -2684,13 +2674,12 @@ class MacheteClient:
         )
 
     def __generate_pr_description_intro(self, code_hosting_client: CodeHostingClient,
-                                        pr: PullRequest, style: PRDescriptionIntroStyle,
-                                        all_open_prs_preloaded: Optional[List[PullRequest]]) -> str:
+                                        pr: PullRequest, style: PRDescriptionIntroStyle) -> str:
         if style == PRDescriptionIntroStyle.NONE:
             return ''
 
-        if all_open_prs_preloaded is not None:
-            prs_for_base_branch = list(filter(lambda _pr: _pr.head == pr.base, all_open_prs_preloaded))
+        if self.__all_open_prs is not None:
+            prs_for_base_branch = list(filter(lambda _pr: _pr.head == pr.base, self.__all_open_prs))
         else:
             # For determining the PR chain, we need to fetch all PRs from the repo.
             # We could just fetch them straight away... but this list can be quite long for commercial monorepos,
@@ -2702,19 +2691,10 @@ class MacheteClient:
             return ''
         spec = code_hosting_client._spec
         pr_short_name = spec.pr_short_name
-        if all_open_prs_preloaded is not None:
-            all_open_prs = all_open_prs_preloaded
-        else:
-            display_name = spec.display_name
-            determine_what = 'chain' if style == PRDescriptionIntroStyle.UP_ONLY else 'tree'
-            print(f'Checking for open {display_name} {pr_short_name}s '
-                  f'(to determine {pr_short_name} {determine_what})... ', end='', flush=True)
-            all_open_prs = code_hosting_client.get_open_pull_requests()
-            print(fmt('<green><b>OK</b></green>'))
 
-        pr_up_path = list(reversed(self.__get_upwards_path_including_pr(spec, pr, all_open_prs)))
+        pr_up_path = list(reversed(self.__get_upwards_path_including_pr(code_hosting_client, pr)))
         if style == PRDescriptionIntroStyle.FULL:
-            pr_down_tree = self.__get_downwards_tree_excluding_pr(pr, all_open_prs)
+            pr_down_tree = self.__get_downwards_tree_excluding_pr(code_hosting_client, pr)
         else:
             pr_down_tree = []
         if len(pr_up_path) == 1 and pr_down_tree == []:
@@ -2864,15 +2844,10 @@ class MacheteClient:
         # If base branch has NOT originally been found on the remote,
         # we can be sure that a longer chain of PRs above the newly-created PR does NOT exist.
         # So in the default UP_ONLY mode, we can skip generating the intro completely.
-        all_open_prs = None
         if base_branch_found_on_remote or style == PRDescriptionIntroStyle.FULL:
-            if opt_update_related_descriptions:
-                print(f'Checking for open {spec.display_name} {spec.pr_short_name}s... ', end='', flush=True)
-                all_open_prs = code_hosting_client.get_open_pull_requests()
-                print(fmt('<green><b>OK</b></green>'))
             # As the description may include the reference to this PR itself (in case of a chain of >=2 PRs),
             # let's update the PR description after it's already created (so that we know the current PR's number).
-            new_description = self.__get_updated_pull_request_description(code_hosting_client, pr, all_open_prs_preloaded=all_open_prs)
+            new_description = self.__get_updated_pull_request_description(code_hosting_client, pr)
             if new_description.strip() != description.strip():
                 print(f'Updating description of {pr.display_text()} to include '
                       f'the chain of {spec.pr_short_name}s... ', end='', flush=True)
@@ -2911,7 +2886,7 @@ class MacheteClient:
 
         if opt_update_related_descriptions:
             print(f"Updating descriptions of other {spec.pr_short_name}s...")
-            self.update_pull_request_descriptions(spec, all_open_prs_preloaded=all_open_prs, related=True)
+            self.update_pull_request_descriptions(spec, related=True)
 
     def __handle_diverged_and_newer_state(
             self,

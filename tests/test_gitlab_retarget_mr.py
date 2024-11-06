@@ -259,7 +259,7 @@ class TestGitLabRetargetMR(BaseTest):
         assert_success(
             ['gitlab', 'retarget-mr'],
             'Target branch of MR !20 has been switched to feature\n'
-            'Checking for open GitLab MRs (to determine MR chain)... OK\n'
+            'Checking for open GitLab MRs... OK\n'
             'Description of MR !20 has been updated\n'
         )
         mr20 = gitlab_api_state.get_mr_by_number(20)
@@ -310,7 +310,7 @@ class TestGitLabRetargetMR(BaseTest):
         assert_success(
             ['gitlab', 'retarget-mr'],
             'Target branch of MR !25 has been switched to feature\n'
-            'Checking for open GitLab MRs (to determine MR chain)... OK\n'
+            'Checking for open GitLab MRs... OK\n'
             'Description of MR !25 has been updated\n'
         )
         mr25 = gitlab_api_state.get_mr_by_number(25)
@@ -354,7 +354,7 @@ class TestGitLabRetargetMR(BaseTest):
         assert_success(
             ['gitlab', 'retarget-mr'],
             'Target branch of MR !30 has been switched to feature_2\n'
-            'Checking for open GitLab MRs (to determine MR chain)... OK\n'
+            'Checking for open GitLab MRs... OK\n'
             'Description of MR !30 has been updated\n'
         )
         mr30 = gitlab_api_state.get_mr_by_number(30)
@@ -394,7 +394,7 @@ class TestGitLabRetargetMR(BaseTest):
         assert_success(
             ['gitlab', 'retarget-mr'],
             'Target branch of MR !30 has been switched to feature\n'
-            'Checking for open GitLab MRs (to determine MR chain)... OK\n'
+            'Checking for open GitLab MRs... OK\n'
             'Description of MR !30 has been updated\n'
         )
         mr30 = gitlab_api_state.get_mr_by_number(30)

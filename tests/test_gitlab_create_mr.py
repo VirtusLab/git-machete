@@ -144,7 +144,7 @@ class TestGitLabCreateMR(BaseTest):
 
             Checking if target branch ignore-trailing exists in origin remote... YES
             Creating a draft MR from chore/fields to ignore-trailing... OK, see www.gitlab.com
-            Checking for open GitLab MRs (to determine MR chain)... OK
+            Checking for open GitLab MRs... OK
             Updating description of MR !5 to include the chain of MRs... OK
             Setting milestone of MR !5 to 42... OK
             Adding gitlab_user as assignee to MR !5... OK
@@ -232,12 +232,12 @@ class TestGitLabCreateMR(BaseTest):
 
             Checking if target branch master exists in origin remote... YES
             Creating a MR from hotfix/add-trigger to master... OK, see www.gitlab.com
-            Checking for open GitLab MRs... OK
             Updating description of MR !6 to include the chain of MRs... OK
             Setting milestone of MR !6 to 42... OK
             Adding gitlab_user as assignee to MR !6... OK
             Adding foo, bar as reviewers to MR !6... OK
             Updating descriptions of other MRs...
+            Checking for open GitLab MRs... OK
             Description of MR !3 (ignore-trailing -> hotfix/add-trigger) has been updated
             Description of MR !5 (chore/fields -> ignore-trailing) has been updated
         """)
@@ -602,7 +602,7 @@ class TestGitLabCreateMR(BaseTest):
 
         Checking if target branch branch-1 exists in origin_2 remote... YES
         Creating a MR from feature to branch-1... OK, see www.gitlab.com
-        Checking for open GitLab MRs (to determine MR chain)... OK
+        Checking for open GitLab MRs... OK
         Updating description of MR !16 to include the chain of MRs... OK
         """  # noqa: E501
 
@@ -665,7 +665,7 @@ class TestGitLabCreateMR(BaseTest):
 
         Checking if target branch feature exists in origin_1 remote... YES
         Creating a MR from feature_1 to feature... OK, see www.gitlab.com
-        Checking for open GitLab MRs (to determine MR chain)... OK
+        Checking for open GitLab MRs... OK
         Updating description of MR !17 to include the chain of MRs... OK
         """
         assert_success(
@@ -703,7 +703,7 @@ class TestGitLabCreateMR(BaseTest):
 
         Checking if target branch feature exists in origin_1 remote... YES
         Creating a MR from feature_2 to feature... OK, see www.gitlab.com
-        Checking for open GitLab MRs (to determine MR chain)... OK
+        Checking for open GitLab MRs... OK
         Updating description of MR !18 to include the chain of MRs... OK
         """
         assert_success(
@@ -725,7 +725,7 @@ class TestGitLabCreateMR(BaseTest):
         Added branch feature_3 onto feature_2
         Checking if target branch feature_2 exists in origin_1 remote... YES
         Creating a MR from feature_3 to feature_2... OK, see www.gitlab.com
-        Checking for open GitLab MRs (to determine MR chain)... OK
+        Checking for open GitLab MRs... OK
         Updating description of MR !19 to include the chain of MRs... OK
         """  # noqa: E501
         assert_success(
@@ -756,7 +756,7 @@ class TestGitLabCreateMR(BaseTest):
 
         Checking if target branch feature_3 exists in origin_1 remote... YES
         Creating a MR from feature_4 to feature_3... OK, see www.gitlab.com
-        Checking for open GitLab MRs (to determine MR chain)... OK
+        Checking for open GitLab MRs... OK
         Updating description of MR !20 to include the chain of MRs... OK
         """
         assert_success(
@@ -788,7 +788,7 @@ class TestGitLabCreateMR(BaseTest):
 
         Checking if target branch feature_3 exists in origin_1 remote... YES
         Creating a MR from feature_5 to feature_3... OK, see www.gitlab.com
-        Checking for open GitLab MRs (to determine MR chain)... OK
+        Checking for open GitLab MRs... OK
         Updating description of MR !21 to include the chain of MRs... OK
         """
         assert_success(
