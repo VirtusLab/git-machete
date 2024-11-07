@@ -2506,7 +2506,8 @@ class MacheteClient:
         return '\n'.join(lines)
 
     def retarget_pr(self, spec: CodeHostingSpec, head: LocalBranchShortName, ignore_if_missing: bool) -> None:
-        self.__init_code_hosting_client(spec, branch_used_for_tracking_data=head)
+        if self.__code_hosting_client is None:
+            self.__init_code_hosting_client(spec, branch_used_for_tracking_data=head)
 
         pr: Optional[PullRequest] = self.__get_sole_pull_request_for_head(head, ignore_if_missing=ignore_if_missing)
         if pr is None:
@@ -2523,7 +2524,7 @@ class MacheteClient:
         if pr.base != new_base:
             self.code_hosting_client.set_base_of_pull_request(pr.number, base=new_base)
             print(f'{spec.base_branch_name.capitalize()} branch of {pr.display_text()} has been switched to {bold(new_base)}')
-            pr = pr._replace(base=new_base)
+            pr.base = new_base
         else:
             print(f'{spec.base_branch_name.capitalize()} branch of {pr.display_text()} is already {bold(new_base)}')
 
@@ -2635,6 +2636,8 @@ class MacheteClient:
     def __init_code_hosting_client(self, spec: CodeHostingSpec,
                                    branch_used_for_tracking_data: Optional[LocalBranchShortName] = None
                                    ) -> Tuple[str, OrganizationAndRepositoryAndRemote]:
+        if self.__code_hosting_client is not None:
+            raise UnexpectedMacheteException("Code hosting client has already been initialized.")
         domain = self.__derive_code_hosting_domain(spec)
         org_repo_remote = self.__derive_org_repo_and_remote(
             spec, domain=domain, branch_used_for_tracking_data=branch_used_for_tracking_data)

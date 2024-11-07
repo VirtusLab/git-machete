@@ -7,16 +7,58 @@ from git_machete.git_operations import GitContext, LocalBranchShortName
 from git_machete.utils import bold
 
 
-class PullRequest(NamedTuple):
-    number: int
-    display_prefix: str
-    user: str
-    base: str
-    head: str
-    head_repo_id: int
-    state: str
-    description: Optional[str]
-    html_url: str
+class PullRequest:
+    def __init__(self, number: int, display_prefix: str, user: str, base: str, head: str, head_repo_id: int,
+                 state: str, description: Optional[str], html_url: str):
+        self.__number = number
+        self.__display_prefix = display_prefix
+        self.__user = user
+        self.__base = base
+        self.__head = head
+        self.__head_repo_id = head_repo_id
+        self.__state = state
+        self.__description = description
+        self.__html_url = html_url
+
+    @property
+    def number(self) -> int:
+        return self.__number
+
+    @property
+    def display_prefix(self) -> str:
+        return self.__display_prefix
+
+    @property
+    def user(self) -> str:
+        return self.__user
+
+    @property
+    def base(self) -> str:
+        return self.__base
+
+    @base.setter
+    def base(self, base: str) -> None:
+        self.__base = base
+
+    @property
+    def head(self) -> str:
+        return self.__head
+
+    @property
+    def head_repo_id(self) -> int:
+        return self.__head_repo_id
+
+    @property
+    def state(self) -> str:
+        return self.__state
+
+    @property
+    def description(self) -> Optional[str]:
+        return self.__description
+
+    @property
+    def html_url(self) -> str:
+        return self.__html_url
 
     def short_display_text(self, fmt: bool = True) -> str:
         return self.display_text(fmt).split(" ")[1]
