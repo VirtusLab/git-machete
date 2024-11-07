@@ -523,7 +523,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             ["github", "checkout-prs", "--mine"],
             """
             Checking for open GitHub PRs... OK
-            Warn: Current user github_user has no open pull request in repository example-org/example-repo
+            Warn: User github_user has no open pull request in repository example-org/example-repo
             """
         )
 

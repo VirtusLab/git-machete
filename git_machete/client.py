@@ -2202,7 +2202,7 @@ class MacheteClient:
         else:
             related_to = None
         applicable_prs: List[PullRequest] = self.__get_applicable_pull_requests(
-            all=all, mine=mine, related_to=related_to, user=current_user)
+            all=all, by=current_user if mine else None, related_to=related_to)
 
         for pr in applicable_prs:
             new_description = self.__get_updated_pull_request_description(pr)
@@ -2231,9 +2231,11 @@ class MacheteClient:
             else:
                 warn(msg)
                 return
+        if mine:
+            by = current_user
 
         applicable_prs: List[PullRequest] = self.__get_applicable_pull_requests(
-            pr_numbers=pr_numbers, all=all, mine=mine, by=by, user=current_user)
+            pr_numbers=pr_numbers, all=all, by=by)
 
         debug(f'organization is {org_repo_remote.organization}, repository is {org_repo_remote.repository}')
         self.__git.fetch_remote(org_repo_remote.remote)
@@ -2340,10 +2342,8 @@ class MacheteClient:
             *,
             pr_numbers: Optional[List[int]] = None,
             all: bool = False,
-            mine: bool = False,
-            related_to: Optional[PullRequest] = None,
             by: Optional[str] = None,
-            user: Optional[str] = None
+            related_to: Optional[PullRequest] = None
     ) -> List[PullRequest]:
         result: List[PullRequest] = []
         spec = self.code_hosting_spec
@@ -2368,12 +2368,6 @@ class MacheteClient:
                 warn(f"Currently there are no {spec.pr_full_name}s opened in {repo_pretty}")
                 return []
             return all_open_prs
-        elif mine and user:
-            result = [pr for pr in all_open_prs if pr.user == user]
-            if not result:
-                warn(f"Current user {bold(user)} has no open {spec.pr_full_name} in {repo_pretty}")
-                return []
-            return result
         elif by:
             result = [pr for pr in all_open_prs if pr.user == by]
             if not result:

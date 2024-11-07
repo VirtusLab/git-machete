@@ -215,6 +215,6 @@ class TestGitLabUpdateMRDescriptions(BaseTest):
             ["gitlab", "update-mr-descriptions", "--mine"],
             """
             Checking for open GitLab MRs... OK
-            Warn: Current user gitlab_user has no open merge request in project example-org/example-repo
+            Warn: User gitlab_user has no open merge request in project example-org/example-repo
             """
         )

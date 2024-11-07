@@ -524,7 +524,7 @@ class TestGitLabCheckoutMRs(BaseTest):
             ["gitlab", "checkout-mrs", "--mine"],
             """
             Checking for open GitLab MRs... OK
-            Warn: Current user gitlab_user has no open merge request in project example-org/example-repo
+            Warn: User gitlab_user has no open merge request in project example-org/example-repo
             """
         )
 
