@@ -438,6 +438,59 @@ class TestGitLabRetargetMR(BaseTest):
         assert mr30['target_branch'] == 'root'
         assert mr30['description'] == '# Summary'
 
+        self.repo_sandbox.check_out('feature')
+        self.repo_sandbox.remove_remote('origin_2')
+
+        assert_success(
+            ['gitlab', 'retarget-mr', '-U'],
+            """
+            Target branch of MR !15 has been switched to branch-1
+            Updating descriptions of other MRs...
+            Checking for open GitLab MRs... OK
+            Description of MR !20 (feature_1 -> feature) has been updated
+            Description of MR !25 (feature_2 -> feature) has been updated
+            Description of MR !35 (feature_4 -> feature) has been updated
+            """
+        )
+        mr15 = gitlab_api_state.get_mr_by_number(15)
+        assert mr15 is not None
+        assert mr15['target_branch'] == 'branch-1'
+        assert mr15['description'] == '# Summary'
+
+        self.repo_sandbox.set_git_config_key("machete.gitlab.mrDescriptionIntroStyle", "full")
+        assert_success(
+            ['gitlab', 'retarget-mr', '-U'],
+            """
+            Target branch of MR !15 is already branch-1
+            Checking for open GitLab MRs... OK
+            Description of MR !15 has been updated
+            Updating descriptions of other MRs...
+            """
+        )
+        mr15 = gitlab_api_state.get_mr_by_number(15)
+        assert mr15 is not None
+        assert mr15['target_branch'] == 'branch-1'
+        assert mr15['description'] == textwrap.dedent('''
+            <!-- start git-machete generated -->
+
+            ## Tree of downstream MRs as of 2023-12-31
+
+            * **MR !15 (THIS ONE)**:
+              `branch-1` ← `feature`
+
+                * MR !20:
+                  `feature` ← `feature_1`
+
+                * MR !25:
+                  `feature` ← `feature_2`
+
+                * MR !35:
+                  `feature` ← `feature_4`
+
+            <!-- end git-machete generated -->
+
+            # Summary''')[1:]
+
     @staticmethod
     def gitlab_api_state_for_test_retarget_mr_root_branch() -> MockGitLabAPIState:
         return MockGitLabAPIState.with_mrs(
