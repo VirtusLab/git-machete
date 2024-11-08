@@ -1,11 +1,13 @@
 # Release notes
 
+## New in git-machete 3.31.1
+
 ## New in git-machete 3.31.0
 
 - added: `git machete git{hub,lab} update-{pr,mr}-descriptions` subcommands
-- added: `git machete gith{hub,lab} create-{pr,mr} --update-related-descriptions` flags
-- added: `git machete gith{hub,lab} restack-{pr,mr} --update-related-descriptions` flags
-- added: `git machete gith{hub,lab} retarget-{pr,mr} --update-related-descriptions` flags
+- added: `git machete git{hub,lab} create-{pr,mr} --update-related-descriptions` flags
+- added: `git machete git{hub,lab} restack-{pr,mr} --update-related-descriptions` flags
+- added: `git machete git{hub,lab} retarget-{pr,mr} --update-related-descriptions` flags
 - added: `machete.traverse.fetch.<remote>` git config key to selectively exclude remotes from `git machete traverse --fetch` (contributed by @gjulianm)
 
 ## New in git-machete 3.30.0
