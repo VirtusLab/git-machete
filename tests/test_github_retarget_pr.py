@@ -421,18 +421,31 @@ class TestGitHubRetargetPR(BaseTest):
 
         self.repo_sandbox.check_out('feature')
         self.repo_sandbox.remove_remote('origin_2')
-        self.repo_sandbox.set_git_config_key("machete.github.prDescriptionIntroStyle", "full")
 
         assert_success(
             ['github', 'retarget-pr', '-U'],
             """
             Base branch of PR #15 has been switched to branch-1
-            Checking for open GitHub PRs... OK
-            Description of PR #15 has been updated
             Updating descriptions of other PRs...
+            Checking for open GitHub PRs... OK
             Description of PR #20 (feature_1 -> feature) has been updated
             Description of PR #25 (feature_2 -> feature) has been updated
             Description of PR #35 (feature_4 -> feature) has been updated
+            """
+        )
+        pr15 = github_api_state.get_pull_by_number(15)
+        assert pr15 is not None
+        assert pr15['base']['ref'] == 'branch-1'
+        assert pr15['body'] == '# Summary'
+
+        self.repo_sandbox.set_git_config_key("machete.github.prDescriptionIntroStyle", "full")
+        assert_success(
+            ['github', 'retarget-pr', '-U'],
+            """
+            Base branch of PR #15 is already branch-1
+            Checking for open GitHub PRs... OK
+            Description of PR #15 has been updated
+            Updating descriptions of other PRs...
             """
         )
         pr15 = github_api_state.get_pull_by_number(15)
