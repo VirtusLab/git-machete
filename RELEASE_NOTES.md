@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.31.1
 
+- fixed: AUR package installation (reported by @jan-san)
+
 ## New in git-machete 3.31.0
 
 - added: `git machete git{hub,lab} update-{pr,mr}-descriptions` subcommands

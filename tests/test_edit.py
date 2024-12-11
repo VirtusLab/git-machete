@@ -49,8 +49,6 @@ class TestEdit(BaseTest):
         self.repo_sandbox.set_git_config_key("core.editor", "lolxd-this-doesnt-exist")
 
         with overridden_environment(GIT_MACHETE_EDITOR="  ", GIT_EDITOR="lolxd-this-doesnt-exist", VISUAL="", EDITOR=dummy_editor):
-            import git_machete
-            git_machete.cli.launch(["edit", "--debug"])
             assert_success(["edit"], "")
         assert self.repo_sandbox.read_file(".git/machete").strip() == "foo"
 
