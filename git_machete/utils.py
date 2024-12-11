@@ -254,9 +254,7 @@ def popen_cmd(cmd: str, *args: str, cwd: Optional[str] = None,
 
 def get_cmd_shell_repr(cmd: str, *args: str, env: Optional[Dict[str, str]]) -> str:
     def shell_escape(arg: str) -> str:
-        return arg.replace("(", "\\(") \
-            .replace(")", "\\)") \
-            .replace(" ", "\\ ") \
+        return re.sub("[() <>$]", r"\\\g<0>", arg) \
             .replace("\t", "$'\\t'") \
             .replace("\n", "$'\\n'")
 

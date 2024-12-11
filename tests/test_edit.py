@@ -44,11 +44,11 @@ class TestEdit(BaseTest):
             )
         assert self.repo_sandbox.read_file(".git/machete").strip() == "foo"
 
-    def test_edit_git_config_core_editor(self) -> None:
+    def test_edit_editor(self) -> None:
         self.repo_sandbox.set_git_config_key("advice.macheteEditorSelection", "false")
 
         with overridden_environment(GIT_MACHETE_EDITOR="  ", GIT_EDITOR="lolxd-this-doesnt-exist", VISUAL="", EDITOR=dummy_editor):
-            assert_success(["edit"], "")
+            assert_success(["edit", "--debug"], "")
         assert self.repo_sandbox.read_file(".git/machete").strip() == "foo"
 
     def test_edit_no_variant_matches(self, mocker: MockerFixture) -> None:
