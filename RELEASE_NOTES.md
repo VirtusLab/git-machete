@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.31.2
+
 ## New in git-machete 3.31.1
 
 - fixed: AUR package installation (reported by @jan-san)

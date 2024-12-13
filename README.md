@@ -6,7 +6,6 @@
 [![PyPI package monthly downloads](https://img.shields.io/pypi/dm/git-machete.svg)](https://pypistats.org/packages/git-machete)
 [![Conda package](https://img.shields.io/conda/vn/conda-forge/git-machete.svg)](https://anaconda.org/conda-forge/git-machete)
 [![Conda downloads](https://img.shields.io/conda/dn/conda-forge/git-machete.svg)](https://anaconda.org/conda-forge/git-machete)
-[![Snap](https://snapcraft.io/git-machete/badge.svg)](https://snapcraft.io/git-machete)
 <br/>
 [![Read the Docs](https://readthedocs.org/projects/git-machete/badge/?version=latest)](https://git-machete.readthedocs.io/en/stable)
 [![License: MIT](https://img.shields.io/github/license/VirtusLab/git-machete)](https://github.com/VirtusLab/git-machete/blob/master/LICENSE)
