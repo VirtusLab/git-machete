@@ -129,11 +129,15 @@ test_cases: Dict[str, str] = {
     "git machete status --color=":
         "always auto never",
     "git machete t -":
-        "-F -M -W --debug --fetch -h --help -l --list-commits --merge -n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase "
-        "--no-push --no-push-untracked --push --push-untracked --return-to --start-from -v --verbose -w --whole -y --yes",
+        "-F -H -L -M -W --debug --fetch -h --help -l --list-commits --merge "
+        "-n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase "
+        "--no-push --no-push-untracked --push --push-untracked --return-to --start-from "
+        "--sync-github-prs --sync-gitlab-mrs -v --verbose -w --whole -y --yes",
     "git machete traverse -":
-        "-F -M -W --debug --fetch -h --help -l --list-commits --merge -n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase "
-        "--no-push --no-push-untracked --push --push-untracked --return-to --start-from -v --verbose -w --whole -y --yes",
+        "-F -H -L -M -W --debug --fetch -h --help -l --list-commits --merge "
+        "-n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase "
+        "--no-push --no-push-untracked --push --push-untracked --return-to --start-from "
+        "--sync-github-prs --sync-gitlab-mrs -v --verbose -w --whole -y --yes",
     "git machete update -":
         "-M --debug -f --fork-point -h --help --merge -n --no-edit-merge --no-interactive-rebase -v --verbose",
     "git machete update -f ":
