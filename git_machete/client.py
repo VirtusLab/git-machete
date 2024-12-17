@@ -12,7 +12,7 @@ from typing import (Callable, Dict, Iterator, List, Optional, Set, Tuple, Type,
                     TypeVar)
 
 from . import git_config_keys, utils
-from .annotation import Annotation
+from .annotation import Annotation, Qualifiers
 from .code_hosting import (CodeHostingClient, CodeHostingSpec,
                            OrganizationAndRepository,
                            OrganizationAndRepositoryAndRemote, PullRequest,
@@ -199,7 +199,7 @@ class MacheteClient:
                                                                        line.strip().split(" ", 1)]
             branch = branch_and_maybe_annotation[0]
             if len(branch_and_maybe_annotation) > 1:
-                self.__annotations[branch] = Annotation(branch_and_maybe_annotation[1])
+                self.__annotations[branch] = Annotation.parse(branch_and_maybe_annotation[1])
             if branch in self.managed_branches:
                 raise MacheteException(
                     f"{self.__branch_layout_file_path}, line {index + 1}: branch "
@@ -298,7 +298,7 @@ class MacheteClient:
             self.__indent = "  "
 
         def render_dfs(branch: LocalBranchShortName, depth: int) -> List[str]:
-            annotation = self.__annotations[branch].get_unformatted_text() if branch in self.__annotations else ""
+            annotation = (" " + self.__annotations[branch].unformatted_full_text) if branch in self.__annotations else ""
             assert self.__indent is not None
             res: List[str] = [depth * self.__indent + branch + annotation]
             for down_branch in self.__down_branches.get(branch) or []:
@@ -424,12 +424,12 @@ class MacheteClient:
         if branch in self.__annotations and words == ['']:
             del self.__annotations[branch]
         else:
-            self.__annotations[branch] = Annotation(" ".join(words))
+            self.__annotations[branch] = Annotation.parse(" ".join(words))
         self.save_branch_layout_file()
 
     def print_annotation(self, branch: LocalBranchShortName) -> None:
         if branch in self.__annotations:
-            print(self.__annotations[branch].text)
+            print(self.__annotations[branch].text_without_qualifiers)
 
     def update(
             self, *, opt_merge: bool, opt_no_edit_merge: bool,
@@ -486,7 +486,7 @@ class MacheteClient:
         self.__up_branch = {}
         self.__indent = "  "
         for branch in self.annotations.keys():
-            self.annotations[branch].text_without_qualifiers = ''
+            self.annotations[branch] = self.annotations[branch]._replace(text_without_qualifiers='')
 
         root_of = dict((branch, branch) for branch in all_local_branches)
 
@@ -1201,8 +1201,8 @@ class MacheteClient:
                 current = bold(branch)
 
             anno: str = ''
-            if branch in self.__annotations:
-                anno = self.__annotations[branch].get_formatted_text()
+            if branch in self.__annotations and self.__annotations[branch].formatted_full_text:
+                anno = '  ' + self.__annotations[branch].formatted_full_text
 
             s, remote = self.__git.get_combined_remote_sync_status(branch)
             sync_status = {
@@ -1761,20 +1761,21 @@ class MacheteClient:
                          f'than in machete file ({bold(upstream) if upstream else "<none, is a root>"})')
                     anno += (f" WRONG {spec.pr_short_name} {spec.base_branch_name.upper()} or MACHETE PARENT? "
                              f"{spec.pr_short_name} has {pr.base}")
-                old_annotation_text, old_annotation_qualifiers_text = '', ''
+                old_annotation_text = ''
+                old_annotation_qualifiers = Qualifiers()
                 if LocalBranchShortName.of(pr.head) in self.__annotations:
-                    old_annotation_text = self.__annotations[LocalBranchShortName.of(pr.head)].text_without_qualifiers
-                    old_annotation_qualifiers_text = self.__annotations[LocalBranchShortName.of(pr.head)].qualifiers_text
+                    old_annotation = self.__annotations[LocalBranchShortName.of(pr.head)]
+                    old_annotation_text = old_annotation.text_without_qualifiers
+                    old_annotation_qualifiers = old_annotation.qualifiers
 
-                if pr.user != current_user and old_annotation_qualifiers_text == '':
+                if pr.user != current_user and old_annotation_qualifiers.is_default():
                     if verbose:
                         print(fmt(f'Annotating {bold(pr.head)} as `{anno} rebase=no push=no`'))
-                    self.__annotations[LocalBranchShortName.of(pr.head)] = Annotation(f'{anno} rebase=no push=no')
+                    self.__annotations[LocalBranchShortName.of(pr.head)] = Annotation(anno, Qualifiers(rebase=False, push=False))
                 elif old_annotation_text != anno:
                     if verbose:
                         print(fmt(f'Annotating {bold(pr.head)} as `{anno}`'))
-                    self.__annotations[LocalBranchShortName.of(pr.head)] = Annotation(f'{anno} {old_annotation_qualifiers_text}') \
-                        if old_annotation_text is not None else Annotation(anno)
+                    self.__annotations[LocalBranchShortName.of(pr.head)] = Annotation(anno, old_annotation_qualifiers)
             else:
                 debug(f'{pr} does NOT correspond to a managed branch')
         self.save_branch_layout_file()
@@ -2535,11 +2536,9 @@ class MacheteClient:
             print(f'Description of {pr.display_text()} has been updated')
 
         current_user: Optional[str] = self.code_hosting_client.get_current_user_login()
-        if self.__annotations.get(head) and self.__annotations[head].qualifiers_text:
-            self.__annotations[head] = Annotation(self.__pull_request_annotation(spec, pr, current_user) + ' ' +
-                                                  self.__annotations[head].qualifiers_text)
-        else:
-            self.__annotations[head] = Annotation(self.__pull_request_annotation(spec, pr, current_user))
+        anno = self.__annotations.get(head)
+        self.__annotations[head] = Annotation(self.__pull_request_annotation(
+            spec, pr, current_user), anno.qualifiers if anno else Qualifiers())
         self.save_branch_layout_file()
 
         if opt_update_related_descriptions:
@@ -2900,7 +2899,7 @@ class MacheteClient:
             self.code_hosting_client.add_reviewers_to_pull_request(pr.number, reviewers)
             print(fmt(ok_str))
 
-        self.__annotations[head] = Annotation(self.__pull_request_annotation(spec, pr, current_user))
+        self.__annotations[head] = Annotation(self.__pull_request_annotation(spec, pr, current_user), qualifiers=Qualifiers())
         self.save_branch_layout_file()
 
         if opt_update_related_descriptions:
