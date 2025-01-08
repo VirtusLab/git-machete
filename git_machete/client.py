@@ -1013,6 +1013,7 @@ class MacheteClient:
                 assert pr is not None
                 assert upstream is not None
                 spec = self.code_hosting_client._spec
+                self.__print_new_line(False)
                 ans_intro = f"Branch {bold(str(branch))} has a different {spec.pr_short_name} {spec.base_branch_name} ({bold(pr.base)}) " \
                     f"in {spec.display_name} than in machete file ({bold(str(upstream))}).\n"
                 ans = self.ask_if(
@@ -1024,16 +1025,25 @@ class MacheteClient:
                     print(f'{spec.base_branch_name.capitalize()} branch of {pr.display_text()} has been switched to {bold(str(upstream))}')
                     pr.base = upstream
 
+                    anno = self.__annotations.get(branch)
+                    self.__annotations[branch] = Annotation(self.__pull_request_annotation(spec, pr, current_user),
+                                                            anno.qualifiers if anno else Qualifiers())
+                    self.save_branch_layout_file()
+
                     new_description = self.__get_updated_pull_request_description(pr)
                     if pr.description != new_description:
                         self.code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
                         print(f'Description of {pr.display_text()} has been updated')
                         pr.description = new_description
 
-                    anno = self.__annotations.get(branch)
-                    self.__annotations[branch] = Annotation(self.__pull_request_annotation(spec, pr, current_user),
-                                                            anno.qualifiers if anno else Qualifiers())
-                    self.save_branch_layout_file()
+                    applicable_prs: List[PullRequest] = self.__get_applicable_pull_requests(related_to=pr)
+                    for pr in applicable_prs:
+                        new_description = self.__get_updated_pull_request_description(pr)
+                        if pr.description != new_description:
+                            self.code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
+                            pr.description = new_description
+                            print(fmt(f'Description of {pr.display_text()} '
+                                      f'(<b>{pr.head} {get_right_arrow()} {pr.base}</b>) has been updated'))
 
                 elif ans in ('q', 'quit'):
                     return
