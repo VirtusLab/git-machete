@@ -4,14 +4,14 @@ executors:
   macos_executor:
     macos:
       # https://circleci.com/docs/using-macos/#supported-xcode-versions
-      xcode: 16.1.0
+      xcode: 16.2.0
     # https://circleci.com/docs/using-macos/#available-resource-classes
     # https://circleci.com/pricing/#comparison-table
     resource_class: macos.m1.medium.gen1
   ubuntu_executor:
     machine:
       # https://circleci.com/developer/images?imageType=machine
-      image: ubuntu-2204:2024.01.1
+      image: ubuntu-2404:2024.11.1
     environment:
       # Needed to avoid warning: https://superuser.com/questions/575844/warning-terminal-is-not-fully-functional
       TERM: ansi
@@ -19,7 +19,7 @@ executors:
   windows_executor:
     machine:
       # https://circleci.com/developer/images?imageType=machine
-      image: windows-server-2022-gui:2024.01.1
+      image: windows-server-2022-gui:2024.12.1
       shell: bash.exe
     resource_class: windows.large
 
