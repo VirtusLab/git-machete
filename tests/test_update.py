@@ -108,7 +108,7 @@ class TestUpdate(BaseTest):
                 with fixed_author_and_committer_date_in_past():
                     expected_error_message = "git rebase --interactive --onto refs/heads/level-0-branch " \
                                              "c0306cdd500fc39869505592200258055407bcc6 level-1-branch returned 1"
-                    assert_failure(["update"], expected_error_message, expected_exception=UnderlyingGitException)
+                    assert_failure(["update"], expected_error_message, expected_type=UnderlyingGitException)
                 self.repo_sandbox.execute("git rebase --continue")
 
         new_fork_point_hash = launch_command("fork-point").strip()
@@ -341,7 +341,7 @@ class TestUpdate(BaseTest):
         assert_failure(["update"],
                        "git am session in progress. Conclude git am first "
                        "with git am --continue or git am --abort.",
-                       expected_exception=UnderlyingGitException)
+                       expected_type=UnderlyingGitException)
 
         self.repo_sandbox.execute("git am --abort")
 
@@ -352,7 +352,7 @@ class TestUpdate(BaseTest):
         assert_failure(["update"],
                        "Cherry pick in progress. Conclude the cherry pick first with "
                        "git cherry-pick --continue or git cherry-pick --abort.",
-                       expected_exception=UnderlyingGitException)
+                       expected_type=UnderlyingGitException)
 
         self.repo_sandbox.execute("git cherry-pick --abort")
 
@@ -363,7 +363,7 @@ class TestUpdate(BaseTest):
         assert_failure(["update"],
                        "Merge in progress. Conclude the merge first with "
                        "git merge --continue or git merge --abort.",
-                       expected_exception=UnderlyingGitException)
+                       expected_type=UnderlyingGitException)
 
         self.repo_sandbox.execute("git merge --abort")
 
@@ -375,7 +375,7 @@ class TestUpdate(BaseTest):
         assert_failure(["update"],
                        "Rebase of develop in progress. Conclude the rebase first with "
                        "git rebase --continue or git rebase --abort.",
-                       expected_exception=UnderlyingGitException)
+                       expected_type=UnderlyingGitException)
 
         self.repo_sandbox.execute("git rebase --abort")
 
@@ -386,6 +386,6 @@ class TestUpdate(BaseTest):
         assert_failure(["update"],
                        "Revert in progress. Conclude the revert first with "
                        "git revert --continue or git revert --abort.",
-                       expected_exception=UnderlyingGitException)
+                       expected_type=UnderlyingGitException)
 
         self.repo_sandbox.execute("git revert --abort")

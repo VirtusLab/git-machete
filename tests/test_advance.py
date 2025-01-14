@@ -28,7 +28,7 @@ class TestAdvance(BaseTest):
         rewrite_branch_layout_file("master\n  develop")
         self.repo_sandbox.check_out("HEAD~")
 
-        assert_failure(["advance"], "Not currently on any branch", expected_exception=UnderlyingGitException)
+        assert_failure(["advance"], "Not currently on any branch", expected_type=UnderlyingGitException)
 
     def test_advance_for_no_applicable_downstream_branches(self) -> None:
         (

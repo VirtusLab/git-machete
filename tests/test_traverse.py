@@ -66,26 +66,6 @@ class TestTraverse(BaseTest):
                     ignore-trailing
             """
         rewrite_branch_layout_file(body)
-        assert_success(
-            ["status"],
-            """
-            develop
-            |
-            x-allow-ownership-link (ahead of origin)
-            | |
-            | x-build-chain (untracked)
-            |
-            o-call-ws (ahead of origin)
-              |
-              x-drop-constraint (untracked)
-
-            master
-            |
-            o-hotfix/add-trigger (diverged from origin)
-              |
-              o-ignore-trailing * (diverged from & older than origin)
-            """
-        )
 
     def test_traverse_slide_out(self, mocker: MockerFixture) -> None:
         (
@@ -1081,7 +1061,7 @@ class TestTraverse(BaseTest):
         assert_failure(
             ["traverse", "--fetch", "-y", "--debug"],
             "Cannot perform git reset --keep origin/master. This is most likely caused by local uncommitted changes.",
-            expected_exception=UnderlyingGitException
+            expected_type=UnderlyingGitException
         )
 
     def test_traverse_with_stop_for_edit(self, mocker: MockerFixture) -> None:

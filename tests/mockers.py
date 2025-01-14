@@ -58,19 +58,19 @@ def assert_success(cmd_and_args: Iterable[str], expected_result: str) -> None:
     assert actual_result == expected_result
 
 
-def assert_failure(cmd_and_args: Iterable[str], expected_result: str, expected_exception: Type[Exception] = MacheteException) -> None:
-    if expected_result.startswith("\n"):
+def assert_failure(cmd_and_args: Iterable[str], expected_message: str, expected_type: Type[Exception] = MacheteException) -> None:
+    if expected_message.startswith("\n"):
         # removeprefix is only available since Python 3.9
-        expected_result = expected_result[1:]
-    expected_result = textwrap.dedent(expected_result)
+        expected_message = expected_message[1:]
+    expected_message = textwrap.dedent(expected_message)
 
-    with pytest.raises(expected_exception) as e:
+    with pytest.raises(expected_type) as e:
         launch_command(*cmd_and_args)
     error_message = e.value.msg  # type: ignore[attr-defined]
     error_message = re.sub(" +$", "", error_message, flags=re.MULTILINE)
     if sys.platform == 'win32':
         error_message = error_message.replace('.git\\machete', '.git/machete')
-    assert error_message == expected_result
+    assert error_message == expected_message
 
 
 def read_branch_layout_file() -> str:
