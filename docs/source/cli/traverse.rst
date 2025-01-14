@@ -55,8 +55,9 @@ For each branch, the command:
 
 * if ``-H``/``--sync-github-prs`` or ``-L``/``--sync-gitlab-mrs`` option is present:
 
-  - retargets the PR/MR if it exists for the given branch and has a different base/target branch in GitHub/GitLab than the upstream in machete file,
-    just as ``git machete github retarget-pr`` and ``git machete gitlab retarget-mr`` would do;
+  - asks the user whether to **retarget** the PR/MR if it exists for the given branch,
+    and its base/target branch in GitHub/GitLab is different than the upstream in machete file
+    (just as ``git machete github retarget-pr`` and ``git machete gitlab retarget-mr`` would do);
 
 * and finally, if any of the above operations has been successfully completed:
 
@@ -94,11 +95,9 @@ when the current user is NOT the author of the PR/MR associated with that branch
 
 -F, --fetch                    Fetch the remotes of all managed branches at the beginning of traversal (no ``git pull`` involved, only ``git fetch``).
 
--H, --sync-github-prs          Retarget the PR if it exists for the given branch and has a different base branch in GitHub than the upstream in machete file,
-                               just as ``git machete github retarget-pr`` would do
+-H, --sync-github-prs          Retarget the PR if it exists for the given branch and its base branch in GitHub is different than the upstream in machete file
 
--L, --sync-gitlab-mrs          Retarget the MR if it exists for the given branch and has a different target branch in GitLab than the upstream in machete file,
-                               just as ``git machete gitlab retarget-mr`` would do
+-L, --sync-gitlab-mrs          Retarget the MR if it exists for the given branch and its target branch in GitLab is different than the upstream in machete file
 
 -l, --list-commits             When printing the status, additionally list the messages of commits introduced on each branch.
 

@@ -2082,8 +2082,9 @@ asks the user whether to \fBpull\fP the branch;
 if \fB\-H\fP/\fB\-\-sync\-github\-prs\fP or \fB\-L\fP/\fB\-\-sync\-gitlab\-mrs\fP option is present:
 .INDENT 2.0
 .IP \(bu 2
-retargets the PR/MR if it exists for the given branch and has a different base/target branch in GitHub/GitLab than the upstream in machete file,
-just as \fBgit machete github retarget\-pr\fP and \fBgit machete gitlab retarget\-mr\fP would do;
+asks the user whether to \fBretarget\fP the PR/MR if it exists for the given branch,
+and its base/target branch in GitHub/GitLab is different than the upstream in machete file
+(just as \fBgit machete github retarget\-pr\fP and \fBgit machete gitlab retarget\-mr\fP would do);
 .UNINDENT
 .IP \(bu 2
 and finally, if any of the above operations has been successfully completed:
@@ -2131,12 +2132,10 @@ when the current user is NOT the author of the PR/MR associated with that branch
 Fetch the remotes of all managed branches at the beginning of traversal (no \fBgit pull\fP involved, only \fBgit fetch\fP).
 .TP
 .B  \-H\fP,\fB  \-\-sync\-github\-prs
-Retarget the PR if it exists for the given branch and has a different base branch in GitHub than the upstream in machete file,
-just as \fBgit machete github retarget\-pr\fP would do
+Retarget the PR if it exists for the given branch and its base branch in GitHub is different than the upstream in machete file
 .TP
 .B  \-L\fP,\fB  \-\-sync\-gitlab\-mrs
-Retarget the MR if it exists for the given branch and has a different target branch in GitLab than the upstream in machete file,
-just as \fBgit machete gitlab retarget\-mr\fP would do
+Retarget the MR if it exists for the given branch and its target branch in GitLab is different than the upstream in machete file
 .TP
 .B  \-l\fP,\fB  \-\-list\-commits
 When printing the status, additionally list the messages of commits introduced on each branch.

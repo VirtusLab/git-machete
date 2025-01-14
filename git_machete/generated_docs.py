@@ -1458,8 +1458,9 @@ long_docs: Dict[str, str] = {
            * otherwise, if the branch is behind its remote counterpart:
               - asks the user whether to <b>pull</b> the branch;
            * if `-H`/`--sync-github-prs` or `-L`/`--sync-gitlab-mrs` option is present:
-              - retargets the PR/MR if it exists for the given branch and has a different base/target branch in GitHub/GitLab than the upstream in machete file,
-                just as `git machete github retarget-pr` and `git machete gitlab retarget-mr` would do;
+              - asks the user whether to <b>retarget</b> the PR/MR if it exists for the given branch,
+                and its base/target branch in GitHub/GitLab is different than the upstream in machete file
+                (just as `git machete github retarget-pr` and `git machete gitlab retarget-mr` would do);
            * and finally, if any of the above operations has been successfully completed:
               - prints the updated `status`.
 
@@ -1493,11 +1494,9 @@ long_docs: Dict[str, str] = {
            <b>-F</b>, <b>--fetch</b>
               Fetch the remotes of all managed branches at the beginning of traversal (no `git pull` involved, only `git fetch`).
            <b>-H</b>, <b>--sync-github-prs</b>
-              Retarget the PR if it exists for the given branch and has a different base branch in GitHub than the upstream in machete file,
-              just as `git machete github retarget-pr` would do
+              Retarget the PR if it exists for the given branch and its base branch in GitHub is different than the upstream in machete file
            <b>-L</b>, <b>--sync-gitlab-mrs</b>
-              Retarget the MR if it exists for the given branch and has a different target branch in GitLab than the upstream in machete file,
-              just as `git machete gitlab retarget-mr` would do
+              Retarget the MR if it exists for the given branch and its target branch in GitLab is different than the upstream in machete file
            <b>-l</b>, <b>--list-commits</b>
               When printing the status, additionally list the messages of commits introduced on each branch.
            <b>-M</b>, <b>--merge</b>
