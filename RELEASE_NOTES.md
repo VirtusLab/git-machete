@@ -3,6 +3,7 @@
 ## New in git-machete 3.32.0
 
 - added: flags `-H`/`--sync-github-prs` and `-L`/`--sync-gitlab-mrs` to `traverse` to suggest retargeting PRs/MRs when traversing (suggested by @chriscz)
+- removed: no longer release new packages to Ubuntu PPA
 
 ## New in git-machete 3.31.1
 

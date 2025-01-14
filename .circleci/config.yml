@@ -239,11 +239,6 @@ jobs:
           command: bash ci/aur/ci-run.sh --dry-run
 
       - run:
-          name: '[Dry run] Build & upload deb package to PPA'
-          # Side effects: potentially pushes a regenerated Docker image
-          command: bash ci/deb-ppa-upload/ci-deploy.sh --dry-run
-
-      - run:
           name: '[Dry run] Build Nix package'
           # Side effects: potentially pushes a regenerated Docker image
           # Other than that, it just builds the package without publishing anything; there's no special dry-run mode
@@ -260,14 +255,6 @@ jobs:
       - run:
           name: 'Publish to PyPI'
           command: bash ci/pypi/ci-deploy.sh
-
-  "build and upload deb package to ppa":
-    executor: ubuntu_executor
-    steps:
-      - checkout
-      - run:
-          name: 'Build & upload deb package to PPA'
-          command: bash ci/deb-ppa-upload/ci-deploy.sh
 
   "publish snap to the stable channel":
     executor: ubuntu_executor
@@ -343,10 +330,6 @@ workflows:
       # Let's keep each release in a separate job (rather than in separate step of a single job),
       # so that CircleCI allows for re-running just the failed releases in case of a transient failure.
       - publish to pypi:
-          <<: *only_master
-          requires:
-            - dry run releases
-      - build and upload deb package to ppa:
           <<: *only_master
           requires:
             - dry run releases

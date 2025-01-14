@@ -94,16 +94,6 @@ It can also be installed via Ubuntu Software (simply search for `git-machete`).
 
 **Note:** classic confinement is necessary to ensure access to the editor installed in the system (to edit e.g. `.git/machete` file or rebase TODO list).
 
-### Using apt-get via PPA (Ubuntu)
-
-**Tip:** run `sudo apt-get install -y software-properties-common` first if `add-apt-repository` is not available on your system.
-
-```shell script
-sudo add-apt-repository ppa:virtuslab/git-machete
-sudo apt-get update
-sudo apt-get install -y python3-git-machete
-```
-
 ### Using Alpine, Arch, Gentoo & other Linux distro-specific package managers
 
 Check [Repology](https://repology.org/project/git-machete/versions) for the available distro-specific packages.
