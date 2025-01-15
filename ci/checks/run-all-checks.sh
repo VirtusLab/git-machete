@@ -26,6 +26,7 @@ enforce-newline-at-eof.sh
 enforce-release-notes-up-to-date.sh
 enforce-shell-scripts-pass-shellcheck.sh
 prohibit-bash-usages-from-python.sh
+prohibit-current-date-in-tests.sh
 prohibit-deploy-step-in-circleci.sh
 prohibit-exempli-gratia-in-rst.sh
 prohibit-fork-point-in-git-context.sh

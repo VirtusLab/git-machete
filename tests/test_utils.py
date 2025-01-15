@@ -1,3 +1,5 @@
+import re
+
 from git_machete import utils
 
 
@@ -25,6 +27,9 @@ class TestUtils:
         ansi_string = utils.fmt(input_string)
 
         assert ansi_string == expected_ansi_string
+
+    def test_get_current_date(self) -> None:
+        assert re.fullmatch("20[0-9][0-9]-[0-1][0-9]-[0-3][0-9]", utils.get_current_date())
 
     def test_hex_repr(self) -> None:
         assert utils.hex_repr("Hello, world!") == "48:65:6c:6c:6f:2c:20:77:6f:72:6c:64:21"

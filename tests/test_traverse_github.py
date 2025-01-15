@@ -53,6 +53,7 @@ class TestTraverseGitHub(BaseTest):
         )
 
     def test_traverse_sync_github_prs(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.utils.get_current_date', lambda: '2023-12-31')
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         github_api_state = self.github_api_state_for_test_traverse_sync_github_prs()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
@@ -156,7 +157,7 @@ class TestTraverseGitHub(BaseTest):
 
             # Based on PR #1
 
-            ## Chain of upstream PRs as of 2025-01-14
+            ## Chain of upstream PRs as of 2023-12-31
 
             * PR #1:
               `develop` ← `allow-ownership-link`
@@ -175,7 +176,7 @@ class TestTraverseGitHub(BaseTest):
 
             # Based on PR #2
 
-            ## Chain of upstream PRs as of 2025-01-14
+            ## Chain of upstream PRs as of 2023-12-31
 
             * PR #1:
               `develop` ← `allow-ownership-link`
