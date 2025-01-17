@@ -7,7 +7,7 @@ import pkgutil
 import re
 import sys
 import textwrap
-from typing import Any, Dict, List, Optional, Sequence, Tuple, TypeVar, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, TypeVar, Union, Iterable
 
 import git_machete.options
 from git_machete import __version__, git_config_keys, utils
@@ -504,7 +504,8 @@ def update_cli_options_using_parsed_args(
         elif opt == "return_to":
             cli_opts.opt_return_to = arg
         elif opt == "roots":
-            cli_opts.opt_roots = [LocalBranchShortName.of(root) for root in filter(None, arg.split(","))]
+            roots: Iterable[str] = filter(None, arg.split(","))
+            cli_opts.opt_roots = [LocalBranchShortName.of(root) for root in roots]
         elif opt == "squash_merge_detection" and arg is not None:  # if no arg is passed, argparse will fail anyway
             cli_opts.opt_squash_merge_detection_string = arg
             cli_opts.opt_squash_merge_detection_origin = "`--squash-merge-detection` flag"
