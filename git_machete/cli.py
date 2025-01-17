@@ -7,7 +7,8 @@ import pkgutil
 import re
 import sys
 import textwrap
-from typing import Any, Dict, List, Optional, Sequence, Tuple, TypeVar, Union, Iterable
+from typing import (Any, Dict, Iterable, List, Optional, Sequence, Tuple,
+                    TypeVar, Union)
 
 import git_machete.options
 from git_machete import __version__, git_config_keys, utils
