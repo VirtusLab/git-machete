@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.32.1
+
 ## New in git-machete 3.32.0
 
 - added: flags `-H`/`--sync-github-prs` and `-L`/`--sync-gitlab-mrs` to `traverse` to suggest retargeting PRs/MRs when traversing (suggested by @chriscz)
