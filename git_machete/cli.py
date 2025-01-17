@@ -903,7 +903,8 @@ def launch(orig_args: List[str]) -> None:
                 machete_client.slide_out_removed_from_remote(opt_delete=cli_opts.opt_delete)
             else:
                 machete_client.slide_out(
-                    branches_to_slide_out=[LocalBranchShortName.of(branch) for branch in branches_to_slide_out or [git.get_current_branch()]],
+                    branches_to_slide_out=[LocalBranchShortName.of(branch)
+                                           for branch in (branches_to_slide_out or [git.get_current_branch()])],
                     opt_delete=cli_opts.opt_delete,
                     opt_down_fork_point=cli_opts.opt_down_fork_point,
                     opt_merge=cli_opts.opt_merge,
