@@ -261,7 +261,7 @@ def get_cmd_shell_repr(cmd: str, *args: str, env: Optional[Dict[str, str]]) -> s
     env = env if env is not None else {}
     # We don't want to include the env vars that are inherited from the environment of git-machete process
     env_repr = [k + "=" + shell_escape(v) for k, v in env.items() if k not in os.environ]
-    return " ".join(env_repr + [cmd] + list(map(shell_escape, args)))
+    return " ".join(env_repr + [cmd] + [shell_escape(arg) for arg in args])
 
 
 def warn(msg: str, apply_fmt: bool = True, end: str = '\n') -> None:
