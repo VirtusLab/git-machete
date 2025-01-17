@@ -7,7 +7,8 @@ import pkgutil
 import re
 import sys
 import textwrap
-from typing import Any, Dict, List, Optional, Sequence, Tuple, TypeVar, Union
+from typing import (Any, Dict, Iterable, List, Optional, Sequence, Tuple,
+                    TypeVar, Union)
 
 import git_machete.options
 from git_machete import __version__, git_config_keys, utils
@@ -504,7 +505,8 @@ def update_cli_options_using_parsed_args(
         elif opt == "return_to":
             cli_opts.opt_return_to = arg
         elif opt == "roots":
-            cli_opts.opt_roots = list(map(LocalBranchShortName.of, filter(None, arg.split(","))))
+            roots: Iterable[str] = filter(None, arg.split(","))
+            cli_opts.opt_roots = [LocalBranchShortName.of(root) for root in roots]
         elif opt == "squash_merge_detection" and arg is not None:  # if no arg is passed, argparse will fail anyway
             cli_opts.opt_squash_merge_detection_string = arg
             cli_opts.opt_squash_merge_detection_origin = "`--squash-merge-detection` flag"
@@ -848,8 +850,8 @@ def launch(orig_args: List[str]) -> None:
                     git.get_local_branches())
                 qualifying_remote_branches: List[RemoteBranchShortName] = \
                     excluding(git.get_remote_branches(), remote_counterparts_of_local_branches)
-                res = excluding(git.get_local_branches(), machete_client.managed_branches) + list(
-                    map(strip_remote_name, qualifying_remote_branches))
+                res = excluding(git.get_local_branches(), machete_client.managed_branches) + [
+                    strip_remote_name(branch) for branch in qualifying_remote_branches]
             elif category == "childless":
                 res = machete_client.get_childless_managed_branches()
             elif category == "managed":
@@ -903,7 +905,8 @@ def launch(orig_args: List[str]) -> None:
                 machete_client.slide_out_removed_from_remote(opt_delete=cli_opts.opt_delete)
             else:
                 machete_client.slide_out(
-                    branches_to_slide_out=list(map(LocalBranchShortName.of, branches_to_slide_out or [git.get_current_branch()])),
+                    branches_to_slide_out=[LocalBranchShortName.of(branch)
+                                           for branch in (branches_to_slide_out or [git.get_current_branch()])],
                     opt_delete=cli_opts.opt_delete,
                     opt_down_fork_point=cli_opts.opt_down_fork_point,
                     opt_merge=cli_opts.opt_merge,

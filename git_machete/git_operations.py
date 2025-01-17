@@ -630,7 +630,7 @@ class GitContext:
 
     def __get_log_hashes(self, revision: AnyRevision, max_count: Optional[int]) -> List[FullCommitHash]:
         opts = ([f"--max-count={str(max_count)}"] if max_count else []) + ["--format=%H", revision.full_name()]
-        return list(map(FullCommitHash.of, utils.get_non_empty_lines(self._popen_git("log", *opts).stdout)))
+        return [FullCommitHash.of(line) for line in utils.get_non_empty_lines(self._popen_git("log", *opts).stdout)]
 
     # Since getting the full history of a branch can be an expensive operation for large repositories
     # (compared to all other underlying git operations), there are two optimizations in place:
@@ -698,12 +698,12 @@ class GitContext:
             if branch not in self.__reflogs_cached:
                 # %H - full hash
                 # %gs - reflog subject
-                self.__reflogs_cached[branch] = list(map(lambda x: GitReflogEntry(hash=FullCommitHash(x[0]), reflog_subject=x[1]),
-                                                         [entry.split(":", 1) for entry in utils.get_non_empty_lines(
-                                                             # The trailing '--' is necessary to avoid ambiguity in case there is a file
-                                                             # called just exactly like the branch 'branch'.
-                                                             self._popen_git("reflog", "show", "--format=%H:%gs", branch, "--").stdout)]
-                                                         ))
+                self.__reflogs_cached[branch] = [GitReflogEntry(hash=FullCommitHash(x[0]), reflog_subject=x[1]) for x in
+                                                 [entry.split(":", 1) for entry in utils.get_non_empty_lines(
+                                                     # The trailing '--' is necessary to avoid ambiguity in case there is a file
+                                                     # called just exactly like the branch 'branch'.
+                                                     self._popen_git("reflog", "show", "--format=%H:%gs", branch, "--").stdout)]
+                                                 ]
             return self.__reflogs_cached[branch]
 
     def create_branch(self, branch: LocalBranchShortName, out_of_revision: AnyRevision, switch_head: bool) -> None:
@@ -1013,12 +1013,12 @@ class GitContext:
 
     def get_commits_between(self, earliest_exclusive: AnyRevision, latest_inclusive: AnyRevision) -> List[GitLogEntry]:
         # Reverse the list, since `git log` by default returns the commits from the latest to earliest.
-        return list(reversed(list(map(
-            lambda x: GitLogEntry(hash=FullCommitHash(x.split(":", 2)[0]),
-                                  short_hash=ShortCommitHash(x.split(":", 2)[1]),
-                                  subject=x.split(":", 2)[2]),
+        return list(reversed([
+            GitLogEntry(hash=FullCommitHash(x.split(":", 2)[0]),
+                        short_hash=ShortCommitHash(x.split(":", 2)[1]),
+                        subject=x.split(":", 2)[2]) for x in
             utils.get_non_empty_lines(self._popen_git("log", "--format=%H:%h:%s", f"^{earliest_exclusive}", latest_inclusive, "--").stdout)
-        ))))
+        ]))
 
     def get_relation_to_remote_counterpart(self, branch: LocalBranchShortName, remote_branch: RemoteBranchShortName) -> SyncToRemoteStatus:
         b_is_ancestor_of_rb = self.is_ancestor_or_equal(branch.full_name(), remote_branch.full_name())

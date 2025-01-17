@@ -474,7 +474,7 @@ class MacheteClient:
         for root in opt_roots:
             self.expect_in_local_branches(root)
         if opt_roots:
-            self.__roots = list(map(LocalBranchShortName.of, opt_roots))
+            self.__roots = [LocalBranchShortName.of(opt_root) for opt_root in opt_roots]
         else:
             self.__roots = []
             if "master" in self.__git.get_local_branches():
