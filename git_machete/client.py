@@ -35,24 +35,24 @@ from .utils import (AnsiEscapeCodes, PopenResult, bold, colored, debug, dim,
 
 
 class SyncToParentStatus(Enum):
-    InSync = auto()
-    MergedToParent = auto()
-    InSyncButForkPointOff = auto()
-    OutOfSync = auto()
+    IN_SYNC = auto()
+    IN_SYNC_BUT_FORK_POINT_OFF = auto()
+    OUT_OF_SYNC = auto()
+    MERGED_TO_PARENT = auto()
 
 
 sync_to_parent_status_to_edge_color_map: Dict[SyncToParentStatus, str] = {
-    SyncToParentStatus.MergedToParent: AnsiEscapeCodes.DIM,
-    SyncToParentStatus.InSync: AnsiEscapeCodes.GREEN,
-    SyncToParentStatus.InSyncButForkPointOff: AnsiEscapeCodes.YELLOW,
-    SyncToParentStatus.OutOfSync: AnsiEscapeCodes.RED
+    SyncToParentStatus.IN_SYNC: AnsiEscapeCodes.GREEN,
+    SyncToParentStatus.IN_SYNC_BUT_FORK_POINT_OFF: AnsiEscapeCodes.YELLOW,
+    SyncToParentStatus.OUT_OF_SYNC: AnsiEscapeCodes.RED,
+    SyncToParentStatus.MERGED_TO_PARENT: AnsiEscapeCodes.DIM
 }
 
 sync_to_parent_status_to_junction_ascii_only_map: Dict[SyncToParentStatus, str] = {
-    SyncToParentStatus.MergedToParent: "m-",
-    SyncToParentStatus.InSync: "o-",
-    SyncToParentStatus.InSyncButForkPointOff: "?-",
-    SyncToParentStatus.OutOfSync: "x-"
+    SyncToParentStatus.IN_SYNC: "o-",
+    SyncToParentStatus.IN_SYNC_BUT_FORK_POINT_OFF: "?-",
+    SyncToParentStatus.OUT_OF_SYNC: "x-",
+    SyncToParentStatus.MERGED_TO_PARENT: "m-"
 }
 
 E = TypeVar('E', bound='Enum')
@@ -1161,14 +1161,14 @@ class MacheteClient:
                     branch=branch,
                     upstream=parent_branch,
                     opt_squash_merge_detection=opt_squash_merge_detection):
-                sync_to_parent_status[branch] = SyncToParentStatus.MergedToParent
+                sync_to_parent_status[branch] = SyncToParentStatus.MERGED_TO_PARENT
             elif not self.__git.is_ancestor_or_equal(parent_branch.full_name(), branch.full_name()):
-                sync_to_parent_status[branch] = SyncToParentStatus.OutOfSync
+                sync_to_parent_status[branch] = SyncToParentStatus.OUT_OF_SYNC
             elif self.__get_overridden_fork_point(branch) or \
                     self.__git.get_commit_hash_by_revision(parent_branch) == fork_point_hash(branch):
-                sync_to_parent_status[branch] = SyncToParentStatus.InSync
+                sync_to_parent_status[branch] = SyncToParentStatus.IN_SYNC
             else:
-                sync_to_parent_status[branch] = SyncToParentStatus.InSyncButForkPointOff
+                sync_to_parent_status[branch] = SyncToParentStatus.IN_SYNC_BUT_FORK_POINT_OFF
 
         currently_rebased_branch = self.__git.get_currently_rebased_branch_or_none()
         currently_checked_out_branch = self.__git.get_currently_checked_out_branch_or_none()
@@ -1198,9 +1198,9 @@ class MacheteClient:
                     if not fork_point:
                         # Rare case, but can happen e.g. due to reflog expiry.
                         commits: List[GitLogEntry] = []
-                    elif sync_to_parent_status[branch] == SyncToParentStatus.MergedToParent:
+                    elif sync_to_parent_status[branch] == SyncToParentStatus.MERGED_TO_PARENT:
                         commits = []
-                    elif sync_to_parent_status[branch] == SyncToParentStatus.InSyncButForkPointOff:
+                    elif sync_to_parent_status[branch] == SyncToParentStatus.IN_SYNC_BUT_FORK_POINT_OFF:
                         upstream = self.__up_branch[branch]
                         assert upstream is not None
                         commits = self.__git.get_commits_between(upstream.full_name(), branch.full_name())
@@ -1269,7 +1269,8 @@ class MacheteClient:
             s, remote = self.__git.get_combined_remote_sync_status(branch)
             sync_status = {
                 SyncToRemoteStatus.NO_REMOTES: "",
-                SyncToRemoteStatus.UNTRACKED: colored(" (untracked)", AnsiEscapeCodes.ORANGE),
+                SyncToRemoteStatus.UNTRACKED:
+                    colored(" (untracked)", AnsiEscapeCodes.ORANGE),
                 SyncToRemoteStatus.IN_SYNC_WITH_REMOTE: "",
                 SyncToRemoteStatus.BEHIND_REMOTE:
                     colored(f" (behind {bold(remote)})", AnsiEscapeCodes.RED),  # type: ignore [arg-type]
@@ -1300,7 +1301,8 @@ class MacheteClient:
         sys.stdout.write(out.getvalue())
         out.close()
 
-        branches_in_sync_but_fork_point_off = [k for k, v in sync_to_parent_status.items() if v == SyncToParentStatus.InSyncButForkPointOff]
+        branches_in_sync_but_fork_point_off = [k for k, v in sync_to_parent_status.items() if v ==
+                                               SyncToParentStatus.IN_SYNC_BUT_FORK_POINT_OFF]
         if branches_in_sync_but_fork_point_off and warn_when_branch_in_sync_but_fork_point_off:
             yellow_edge_branch: LocalBranchShortName = branches_in_sync_but_fork_point_off[0]
             if len(branches_in_sync_but_fork_point_off) == 1:
@@ -3207,7 +3209,7 @@ class MacheteClient:
     def slide_out_removed_from_remote(self, opt_delete: bool) -> None:
         slid_out_branches: List[LocalBranchShortName] = []
         for branch in self.managed_branches.copy():
-            if self.__git.is_missing_tracking_branch(branch) and not self.__down_branches.get(branch):
+            if self.__git.is_removed_from_remote(branch) and not self.__down_branches.get(branch):
                 print(fmt(f"Sliding out <b>{branch}</b>"))
                 slid_out_branches.append(branch)
 

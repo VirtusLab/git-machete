@@ -864,3 +864,16 @@ class TestStatus(BaseTest):
             x-develop *
             """
         )
+
+    def test_status_removed_from_remote(self) -> None:
+        (
+            self.repo_sandbox.new_branch('main')
+            .commit()
+            .push()
+            .delete_remote_branch('origin/main')
+        )
+        rewrite_branch_layout_file("main")
+        assert_success(
+            ["status"],
+            "main * (untracked)\n"
+        )
