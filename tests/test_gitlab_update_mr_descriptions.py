@@ -3,10 +3,11 @@ from typing import Any, Dict, List
 
 from pytest_mock import MockerFixture
 
-from tests.base_test import BaseTest, GitRepositorySandbox
+from tests.base_test import BaseTest
 from tests.mockers import (assert_failure, assert_success,
                            rewrite_branch_layout_file)
 from tests.mockers_code_hosting import mock_from_url
+from tests.mockers_git_repo_sandbox import GitRepositorySandbox
 from tests.mockers_gitlab import (MockGitLabAPIState,
                                   mock_gitlab_token_for_domain_fake,
                                   mock_gitlab_token_for_domain_none,

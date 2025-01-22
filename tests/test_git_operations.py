@@ -3,7 +3,8 @@ from git_machete.git_operations import (AnyBranchName, AnyRevision,
                                         FullCommitHash, GitContext,
                                         LocalBranchShortName)
 
-from .base_test import BaseTest, GitRepositorySandbox
+from .base_test import BaseTest
+from .mockers_git_repo_sandbox import GitRepositorySandbox
 
 
 class TestGitOperations(BaseTest):

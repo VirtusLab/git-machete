@@ -1,7 +1,8 @@
 import pytest
 
-from .base_test import BaseTest, GitRepositorySandbox
+from .base_test import BaseTest
 from .mockers import launch_command, rewrite_branch_layout_file
+from .mockers_git_repo_sandbox import GitRepositorySandbox
 
 
 class TestIsManaged(BaseTest):

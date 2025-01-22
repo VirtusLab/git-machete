@@ -1,8 +1,9 @@
 from pytest_mock import MockerFixture
 
-from .base_test import BaseTest, GitRepositorySandbox
+from .base_test import BaseTest
 from .mockers import (assert_success, fixed_author_and_committer_date_in_past,
                       launch_command, mock__run_cmd_and_forward_stdout)
+from .mockers_git_repo_sandbox import GitRepositorySandbox
 
 
 class TestLog(BaseTest):

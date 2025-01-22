@@ -1,8 +1,9 @@
 from pytest_mock import MockerFixture
 
-from .base_test import BaseTest, GitRepositorySandbox
+from .base_test import BaseTest
 from .mockers import (assert_success, launch_command, mock_input_returning_y,
                       read_branch_layout_file, rewrite_branch_layout_file)
+from .mockers_git_repo_sandbox import GitRepositorySandbox
 from .mockers_github import mock_github_token_for_domain_none
 
 

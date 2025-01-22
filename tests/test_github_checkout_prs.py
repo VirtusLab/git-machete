@@ -4,10 +4,11 @@ from pytest_mock import MockerFixture
 
 from git_machete.code_hosting import OrganizationAndRepository
 from git_machete.github import GitHubClient
-from tests.base_test import BaseTest, GitRepositorySandbox
+from tests.base_test import BaseTest
 from tests.mockers import (assert_failure, assert_success, launch_command,
                            rewrite_branch_layout_file)
 from tests.mockers_code_hosting import mock_from_url
+from tests.mockers_git_repo_sandbox import GitRepositorySandbox
 from tests.mockers_github import (MockGitHubAPIState,
                                   mock_github_token_for_domain_fake,
                                   mock_github_token_for_domain_none,

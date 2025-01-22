@@ -2,10 +2,11 @@ import textwrap
 
 from pytest_mock import MockerFixture
 
-from .base_test import BaseTest, GitRepositorySandbox
+from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, mock_input_returning,
                       rewrite_branch_layout_file)
 from .mockers_code_hosting import mock_from_url
+from .mockers_git_repo_sandbox import GitRepositorySandbox
 from .mockers_github import MockGitHubAPIState, mock_pr_json, mock_urlopen
 
 

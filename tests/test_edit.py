@@ -3,9 +3,10 @@ import sys
 import pytest
 from pytest_mock import MockerFixture
 
-from .base_test import BaseTest, GitRepositorySandbox
+from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
                       overridden_environment)
+from .mockers_git_repo_sandbox import GitRepositorySandbox
 
 dummy_editor = "sh -c 'echo foo > $1' 'ignored_$0'"
 

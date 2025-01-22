@@ -4,8 +4,9 @@ from git_machete.annotation import Annotation
 from git_machete.client import MacheteClient
 from git_machete.git_operations import GitContext, LocalBranchShortName
 
-from .base_test import BaseTest, GitRepositorySandbox
+from .base_test import BaseTest
 from .mockers import rewrite_branch_layout_file
+from .mockers_git_repo_sandbox import GitRepositorySandbox
 
 
 class TestClient(BaseTest):

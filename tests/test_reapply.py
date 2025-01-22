@@ -1,7 +1,8 @@
-from .base_test import BaseTest, GitRepositorySandbox
+from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success,
                       fixed_author_and_committer_date_in_past, launch_command,
                       overridden_environment, rewrite_branch_layout_file)
+from .mockers_git_repo_sandbox import GitRepositorySandbox
 
 
 class TestReapply(BaseTest):

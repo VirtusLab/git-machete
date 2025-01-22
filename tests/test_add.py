@@ -1,9 +1,10 @@
 from pytest_mock import MockerFixture
 
-from .base_test import BaseTest, GitRepositorySandbox
+from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, mock_input_returning,
                       mock_input_returning_y, read_branch_layout_file,
                       rewrite_branch_layout_file)
+from .mockers_git_repo_sandbox import GitRepositorySandbox
 
 
 class TestAdd(BaseTest):

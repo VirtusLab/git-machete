@@ -3,8 +3,8 @@ from typing import Dict
 
 import pytest
 
-from tests.base_test import GitRepositorySandbox
 from tests.mockers import rewrite_branch_layout_file
+from tests.mockers_git_repo_sandbox import GitRepositorySandbox
 
 test_cases: Dict[str, str] = {
     "git machete ":
