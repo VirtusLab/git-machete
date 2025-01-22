@@ -11,7 +11,6 @@ from pytest_mock import MockerFixture
 
 class BaseTest:
     def setup_method(self) -> None:
-        self.repo_sandbox = GitRepositorySandbox()
         self.expected_mock_methods: Set[str] = set()
         # So that env vars coming from outside don't interfere with the tests.
         # Note that this is only relevant in plain `pytest` invocations as `tox` doesn't pass env vars from the outside env by default.

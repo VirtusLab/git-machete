@@ -7,7 +7,7 @@ from pytest_mock import MockerFixture
 
 from git_machete.code_hosting import OrganizationAndRepository
 from git_machete.gitlab import GitLabClient, GitLabToken
-from tests.base_test import BaseTest
+from tests.base_test import BaseTest, GitRepositorySandbox
 from tests.mockers import (assert_failure, assert_success, launch_command,
                            mock__popen_cmd_with_fixed_results,
                            mock_input_returning_y, overridden_environment,
@@ -56,20 +56,21 @@ class TestGitLab(BaseTest):
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.gitlab_api_state_for_test_gitlab_api_pagination()))
 
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox.new_branch("develop")
+            repo_sandbox.new_branch("develop")
             .commit("first commit")
             .push()
         )
         for i in range(self.MR_COUNT_FOR_TEST_GITLAB_API_PAGINATION):
-            self.repo_sandbox.check_out('develop').new_branch(f'feature_{i:02d}').commit().push()
-        self.repo_sandbox.check_out('develop')
+            repo_sandbox.check_out('develop').new_branch(f'feature_{i:02d}').commit().push()
+        repo_sandbox.check_out('develop')
         body: str = 'develop *\n' + '\n'.join([f'feature_{i:02d}' for i in range(self.MR_COUNT_FOR_TEST_GITLAB_API_PAGINATION)]) + '\n'
         rewrite_branch_layout_file(body)
 
-        self.repo_sandbox.check_out('develop')
+        repo_sandbox.check_out('develop')
         for i in range(self.MR_COUNT_FOR_TEST_GITLAB_API_PAGINATION):
-            self.repo_sandbox.delete_branch(f"feature_{i:02d}")
+            repo_sandbox.delete_branch(f"feature_{i:02d}")
         body = 'develop *\n'
         rewrite_branch_layout_file(body)
 
@@ -84,8 +85,9 @@ class TestGitLab(BaseTest):
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState.with_mrs()))
 
-        self.repo_sandbox.set_git_config_key('http.sslVerify', 'false')
-        self.repo_sandbox.set_git_config_key('machete.gitlab.domain', '403.example.org')
+        repo_sandbox = GitRepositorySandbox()
+        repo_sandbox.set_git_config_key('http.sslVerify', 'false')
+        repo_sandbox.set_git_config_key('machete.gitlab.domain', '403.example.org')
 
         expected_error_message = (
             "GitLab API returned 403 HTTP status with error message: Forbidden\n"
@@ -100,7 +102,7 @@ class TestGitLab(BaseTest):
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState.with_mrs()))
 
-        self.repo_sandbox.set_git_config_key('machete.gitlab.domain', '403.example.org')
+        GitRepositorySandbox().set_git_config_key('machete.gitlab.domain', '403.example.org')
 
         expected_error_message = (
             "GitLab API returned 403 HTTP status with error message: Forbidden\n"
@@ -122,7 +124,8 @@ class TestGitLab(BaseTest):
 
         gitlab_enterprise_domain = 'git.example.org'
         (
-            self.repo_sandbox.new_branch("develop")
+            GitRepositorySandbox()
+            .new_branch("develop")
             .commit("first commit")
             .push()
             .new_branch("snickers")
@@ -135,11 +138,13 @@ class TestGitLab(BaseTest):
         launch_command('gitlab', 'checkout-mrs', '--all')
 
     def test_gitlab_invalid_config(self) -> None:
+        repo_sandbox = GitRepositorySandbox()
+
         @contextmanager
         def git_config_key(key: str, value: str) -> Iterator[None]:
-            self.repo_sandbox.set_git_config_key(key, value)
+            repo_sandbox.set_git_config_key(key, value)
             yield
-            self.repo_sandbox.unset_git_config_key(key)
+            repo_sandbox.unset_git_config_key(key)
 
         with git_config_key('machete.gitlab.namespace', "example-org"):
             assert_failure(
@@ -166,7 +171,7 @@ class TestGitLab(BaseTest):
                     'but no remote seems to correspond to example-org/example-repo (namespace/project) on GitLab.\n'
                     'Consider pointing to the remote via machete.gitlab.remote config key')
 
-        self.repo_sandbox.add_remote("new-origin", "https://github.com/example-org/example-repo.git")  # not a valid GitLab project URL
+        repo_sandbox.add_remote("new-origin", "https://github.com/example-org/example-repo.git")  # not a valid GitLab project URL
         with git_config_key('machete.gitlab.remote', "new-origin"):
             assert_failure(
                 ['gitlab', 'checkout-mrs', '--all'],
@@ -180,14 +185,15 @@ class TestGitLab(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.gitlab_api_state_for_test_gitlab_enterprise_domain()))
 
         (
-            self.repo_sandbox.new_branch("develop")
-                .commit("first commit")
-                .push()
-                .new_branch("snickers")
-                .commit("first commit")
-                .push()
-                .check_out("develop")
-                .delete_branch("snickers")
+            GitRepositorySandbox()
+            .new_branch("develop")
+            .commit("first commit")
+            .push()
+            .new_branch("snickers")
+            .commit("first commit")
+            .push()
+            .check_out("develop")
+            .delete_branch("snickers")
         )
 
         expected_output = ["__get_token_from_env(cls=<class 'git_machete.gitlab.GitLabToken'>): "

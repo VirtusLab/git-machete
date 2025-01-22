@@ -1,5 +1,5 @@
 
-from .base_test import BaseTest
+from .base_test import BaseTest, GitRepositorySandbox
 from .mockers import (assert_failure, assert_success,
                       fixed_author_and_committer_date_in_past, launch_command,
                       rewrite_branch_layout_file)
@@ -10,12 +10,13 @@ class TestForkPoint(BaseTest):
     def test_fork_point_get(self) -> None:
         with fixed_author_and_committer_date_in_past():
             (
-                self.repo_sandbox.new_branch("master")
-                    .commit(message="master commit.")
-                    .new_branch("develop")
-                    .commit(message="develop commit.")
-                    .new_branch("feature")
-                    .commit('feature commit.')
+                GitRepositorySandbox()
+                .new_branch("master")
+                .commit(message="master commit.")
+                .new_branch("develop")
+                .commit(message="develop commit.")
+                .new_branch("feature")
+                .commit('feature commit.')
             )
 
         body: str = \
@@ -38,7 +39,7 @@ class TestForkPoint(BaseTest):
 
     def test_fork_point_override_for_invalid_branch(self) -> None:
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .new_branch("master")
             .commit()
         )
@@ -51,7 +52,7 @@ class TestForkPoint(BaseTest):
     def test_fork_point_override_to_non_ancestor_commit(self) -> None:
         with fixed_author_and_committer_date_in_past():
             (
-                self.repo_sandbox
+                GitRepositorySandbox()
                 .new_branch("master")
                 .commit()
                 .new_branch("develop")
@@ -66,14 +67,16 @@ class TestForkPoint(BaseTest):
         )
 
     def test_fork_point_override_to_commit(self) -> None:
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox.new_branch("master")
-                .commit("master first commit")
+            repo_sandbox
+            .new_branch("master")
+            .commit("master first commit")
         )
-        master_branch_first_commit_hash = self.repo_sandbox.get_current_commit_hash()
-        self.repo_sandbox.commit("master second commit")
-        develop_branch_fork_point = self.repo_sandbox.get_current_commit_hash()
-        self.repo_sandbox.new_branch("develop").commit("develop commit")
+        master_branch_first_commit_hash = repo_sandbox.get_current_commit_hash()
+        repo_sandbox.commit("master second commit")
+        develop_branch_fork_point = repo_sandbox.get_current_commit_hash()
+        repo_sandbox.new_branch("develop").commit("develop commit")
         body: str = \
             """
             master
@@ -82,22 +85,22 @@ class TestForkPoint(BaseTest):
         rewrite_branch_layout_file(body)
 
         # invalid fork point with length not equal to 40
-        self.repo_sandbox.set_git_config_key('machete.overrideForkPoint.develop.to', 39 * 'a')
+        repo_sandbox.set_git_config_key('machete.overrideForkPoint.develop.to', 39 * 'a')
         assert launch_command('fork-point').strip() == develop_branch_fork_point
 
         # invalid, non-hexadecimal alphanumeric characters present in the fork point
-        self.repo_sandbox.set_git_config_key('machete.overrideForkPoint.develop.to', 20 * 'g1')
+        repo_sandbox.set_git_config_key('machete.overrideForkPoint.develop.to', 20 * 'g1')
         assert launch_command('fork-point').strip() == develop_branch_fork_point
 
         # invalid, non-hexadecimal special characters present in the fork point
-        self.repo_sandbox.set_git_config_key('machete.overrideForkPoint.develop.to', 40 * '#')
+        repo_sandbox.set_git_config_key('machete.overrideForkPoint.develop.to', 40 * '#')
         assert launch_command('fork-point').strip() == develop_branch_fork_point
 
         # invalid fork-point override revision
         assert_failure(['fork-point', '--override-to=no-such-commit'], "Cannot find revision no-such-commit")
 
         # valid commit hash but not present in the repository
-        self.repo_sandbox.set_git_config_key('machete.overrideForkPoint.develop.to', 40 * 'a')
+        repo_sandbox.set_git_config_key('machete.overrideForkPoint.develop.to', 40 * 'a')
         assert launch_command('fork-point').strip() == (
                "Warn: since branch develop is no longer a descendant of commit aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, the fork point override to this commit no longer applies.\n"  # noqa: E501
                "Consider running:\n"
@@ -118,7 +121,7 @@ class TestForkPoint(BaseTest):
     def test_fork_point_override_to_parent_and_inferred(self) -> None:
         with fixed_author_and_committer_date_in_past():
             (
-                self.repo_sandbox
+                GitRepositorySandbox()
                 .new_branch("master")
                 .commit("master  commit")
                 .new_branch("in-between")
@@ -183,9 +186,10 @@ class TestForkPoint(BaseTest):
         )
 
     def test_fork_point_overridden_to_non_descendant_of_parent_while_branch_descendant_of_parent(self) -> None:
+        repo_sandbox = GitRepositorySandbox()
         with fixed_author_and_committer_date_in_past():
             (
-                self.repo_sandbox
+                repo_sandbox
                 .new_branch("branch-0")
                 .commit()
                 .new_branch("branch-1")
@@ -202,11 +206,11 @@ class TestForkPoint(BaseTest):
         rewrite_branch_layout_file(body)
         launch_command('fork-point', '--override-to=branch-0')
 
-        assert launch_command("fork-point").strip() == self.repo_sandbox.get_commit_hash("branch-1")
+        assert launch_command("fork-point").strip() == repo_sandbox.get_commit_hash("branch-1")
 
     def test_fork_point_while_parent_unrelated_to_child(self) -> None:
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .new_branch("branch-1")
             .commit()
             .new_orphan_branch("branch-2")
@@ -227,7 +231,7 @@ class TestForkPoint(BaseTest):
 
     def test_fork_point_when_no_other_branches(self) -> None:
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .new_branch("branch-1")
             .commit()
         )
@@ -244,14 +248,15 @@ class TestForkPoint(BaseTest):
         )
 
     def test_fork_point_covering_reflog_of_remote_branch(self) -> None:
+        repo_sandbox = GitRepositorySandbox()
         with fixed_author_and_committer_date_in_past():
             (
-                self.repo_sandbox
+                repo_sandbox
                 .new_branch("master").commit().push()
                 .new_branch("develop").commit().push()  # commit dcd2db5
-                .chdir(self.repo_sandbox.remote_path)
+                .chdir(repo_sandbox.remote_path)
                 .execute("git update-ref refs/heads/master develop")
-                .chdir(self.repo_sandbox.local_path)
+                .chdir(repo_sandbox.local_path)
                 .check_out("master").pull().check_out("develop")
             )
 
@@ -262,36 +267,37 @@ class TestForkPoint(BaseTest):
 
         # Let's remove reflogs for local branches.
         # Fork point should be inferred based on reflog of origin/master.
-        self.repo_sandbox.remove_directory(".git/logs/refs/heads/")
+        repo_sandbox.remove_directory(".git/logs/refs/heads/")
         assert_success(
             ["fork-point"],
             "dcd2db55125a1b67b367565e890a604639949a51\n"
         )
 
     def test_fork_point_reachable_from_master_but_not_on_its_reflog(self) -> None:
-        other_local_path = self.repo_sandbox.create_repo("other-local", bare=False)
+        repo_sandbox = GitRepositorySandbox()
+        other_local_path = repo_sandbox.create_repo("other-local", bare=False)
 
         with fixed_author_and_committer_date_in_past():
             (
-                self.repo_sandbox
+                repo_sandbox
                 .new_branch("master").commit().push()
             )
-            first_master_commit = self.repo_sandbox.get_current_commit_hash()
+            first_master_commit = repo_sandbox.get_current_commit_hash()
             (
-                self.repo_sandbox
+                repo_sandbox
                 .chdir(other_local_path)
-                .add_remote("origin", self.repo_sandbox.remote_path)
+                .add_remote("origin", repo_sandbox.remote_path)
                 .fetch()
                 .check_out("master").commit().push()
             )
-            second_master_commit = self.repo_sandbox.get_current_commit_hash()
+            second_master_commit = repo_sandbox.get_current_commit_hash()
             (
-                self.repo_sandbox
+                repo_sandbox
                 .new_branch("feature").commit().push()
                 .check_out("master").commit().push()
             )
             (
-                self.repo_sandbox.chdir(self.repo_sandbox.local_path)
+                repo_sandbox.chdir(repo_sandbox.local_path)
                 .check_out("master").pull()
                 .check_out("feature")
             )
@@ -305,7 +311,7 @@ class TestForkPoint(BaseTest):
         # when there's no merge base between `feature` branch and a branch containing its un-improved fork point.
         with fixed_author_and_committer_date_in_past():
             (
-                self.repo_sandbox
+                repo_sandbox
                 .new_orphan_branch("develop").commit()
                 .check_out("master").reset_to("develop")
                 .check_out("feature")
@@ -317,14 +323,15 @@ class TestForkPoint(BaseTest):
         )
 
     def test_fork_point_fallback_to_parent(self) -> None:
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox
+            repo_sandbox
             .new_branch("master").commit().push()
             .new_branch("develop").commit().push()
             .delete_branch("master")
             .check_out("master")  # out of remote branch
         )
         rewrite_branch_layout_file("master\n\tdevelop")
-        master_commit = self.repo_sandbox.get_commit_hash("master")
+        master_commit = repo_sandbox.get_commit_hash("master")
         develop_fork_point = launch_command("fork-point", "develop").rstrip()
         assert develop_fork_point == master_commit

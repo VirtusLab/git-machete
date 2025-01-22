@@ -3,7 +3,7 @@ import textwrap
 
 from pytest_mock import MockerFixture
 
-from tests.base_test import BaseTest
+from tests.base_test import BaseTest, GitRepositorySandbox
 from tests.mockers import (assert_failure, assert_success,
                            fixed_author_and_committer_date_in_past,
                            launch_command, mock_input_returning,
@@ -31,48 +31,50 @@ class TestGitHubCreatePR(BaseTest):
         github_api_state = self.github_api_state_for_test_create_pr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox.new_branch("root")
-                .commit("initial commit")
-                .new_branch("develop")
-                .commit("first commit")
-                .new_branch("allow-ownership-link")
-                .commit("Enable ownership links")
-                .push()
-                .new_branch("build-chain")
-                .commit("Build arbitrarily long chains of PRs")
-                .check_out("allow-ownership-link")
-                .commit("fixes")
-                .check_out("develop")
-                .commit("Other develop commit")
-                .push()
-                .new_branch("call-ws")
-                .commit("Call web service")
-                .commit("1st round of fixes")
-                .push()
-                .new_branch("drop-constraint")
-                .commit("Drop unneeded SQL constraints")
-                .check_out("call-ws")
-                .commit("2nd round of fixes")
-                .check_out("root")
-                .new_branch("master")
-                .commit("Master commit")
-                .push()
-                .new_branch("hotfix/add-trigger")
-                .commit("HOTFIX Add the trigger")
-                .push()
-                .amend_commit("HOTFIX Add the trigger (amended)")
-                .new_branch("ignore-trailing")
-                .commit("Ignore trailing data")
-                .sleep(1)
-                .amend_commit("Ignore trailing data (amended)")
-                .push()
-                .reset_to("ignore-trailing@{1}")  # noqa: FS003
-                .delete_branch("root")
-                .new_branch('chore/fields')
-                .commit("remove outdated fields")
-                .check_out("call-ws")
-                .add_remote('new_origin', 'https://github.com/user/repo.git')
+            repo_sandbox
+            .new_branch("root")
+            .commit("initial commit")
+            .new_branch("develop")
+            .commit("first commit")
+            .new_branch("allow-ownership-link")
+            .commit("Enable ownership links")
+            .push()
+            .new_branch("build-chain")
+            .commit("Build arbitrarily long chains of PRs")
+            .check_out("allow-ownership-link")
+            .commit("fixes")
+            .check_out("develop")
+            .commit("Other develop commit")
+            .push()
+            .new_branch("call-ws")
+            .commit("Call web service")
+            .commit("1st round of fixes")
+            .push()
+            .new_branch("drop-constraint")
+            .commit("Drop unneeded SQL constraints")
+            .check_out("call-ws")
+            .commit("2nd round of fixes")
+            .check_out("root")
+            .new_branch("master")
+            .commit("Master commit")
+            .push()
+            .new_branch("hotfix/add-trigger")
+            .commit("HOTFIX Add the trigger")
+            .push()
+            .amend_commit("HOTFIX Add the trigger (amended)")
+            .new_branch("ignore-trailing")
+            .commit("Ignore trailing data")
+            .sleep(1)
+            .amend_commit("Ignore trailing data (amended)")
+            .push()
+            .reset_to("ignore-trailing@{1}")  # noqa: FS003
+            .delete_branch("root")
+            .new_branch('chore/fields')
+            .commit("remove outdated fields")
+            .check_out("call-ws")
+            .add_remote('new_origin', 'https://github.com/user/repo.git')
         )
         body: str = \
             """
@@ -114,12 +116,12 @@ class TestGitHubCreatePR(BaseTest):
         )
 
         # untracked state (can only create PR when branch is pushed)
-        self.repo_sandbox.check_out('chore/fields')
+        repo_sandbox.check_out('chore/fields')
 
-        self.repo_sandbox.write_to_file(".git/info/milestone", "42")
-        self.repo_sandbox.write_to_file(".git/info/reviewers", "foo\n\nbar")
+        repo_sandbox.write_to_file(".git/info/milestone", "42")
+        repo_sandbox.write_to_file(".git/info/reviewers", "foo\n\nbar")
         template = "# PR title\n## Summary\n## Test plan\n\n<!-- start git-machete generated -->\n<!-- end git-machete generated -->\n"
-        self.repo_sandbox.write_to_file(".github/pull_request_template.md", template)
+        repo_sandbox.write_to_file(".github/pull_request_template.md", template)
         assert_success(
             ["github", "create-pr", "--draft"],
             """
@@ -202,9 +204,10 @@ class TestGitHubCreatePR(BaseTest):
         )
 
         (
-            self.repo_sandbox.check_out('hotfix/add-trigger')
-                .commit('trigger released')
-                .commit('minor changes applied')
+            repo_sandbox
+            .check_out('hotfix/add-trigger')
+            .commit('trigger released')
+            .commit('minor changes applied')
         )
 
         # diverged from and newer than origin
@@ -273,9 +276,9 @@ class TestGitHubCreatePR(BaseTest):
 
         # check against head branch is ancestor or equal to base branch
         (
-            self.repo_sandbox.check_out('develop')
-                .new_branch('testing/endpoints')
-                .push()
+            repo_sandbox.check_out('develop')
+            .new_branch('testing/endpoints')
+            .push()
         )
         body = \
             """
@@ -296,14 +299,14 @@ class TestGitHubCreatePR(BaseTest):
                                  "Cannot create pull request."
         assert_failure(["github", "create-pr"], expected_error_message)
 
-        self.repo_sandbox.check_out('develop')
+        repo_sandbox.check_out('develop')
         expected_error_message = "Branch develop does not have a parent branch (it is a root), " \
                                  "base branch for the PR cannot be established."
         assert_failure(["github", "create-pr"], expected_error_message)
 
-        self.repo_sandbox.write_to_file(".git/info/reviewers", "invalid-user")
-        self.repo_sandbox.write_to_file(".git/info/description", "# PR title\n")
-        self.repo_sandbox.check_out("allow-ownership-link")
+        repo_sandbox.write_to_file(".git/info/reviewers", "invalid-user")
+        repo_sandbox.write_to_file(".git/info/description", "# PR title\n")
+        repo_sandbox.check_out("allow-ownership-link")
         assert_success(
             ["github", "create-pr", "--title=PR title set explicitly"],
             f"""
@@ -345,7 +348,7 @@ class TestGitHubCreatePR(BaseTest):
         assert pr['title'] == 'PR title set explicitly'
 
     def test_github_create_pr_for_root_branch(self) -> None:
-        self.repo_sandbox.new_branch("master").commit()
+        GitRepositorySandbox().new_branch("master").commit()
         rewrite_branch_layout_file("master")
         assert_failure(
             ["github", "create-pr"],
@@ -366,8 +369,9 @@ class TestGitHubCreatePR(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
         self.patch_symbol(mocker, 'git_machete.utils.get_current_date', lambda: '2023-12-31')
 
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox
+            repo_sandbox
             .new_branch("develop")
             .commit("first commit")
             .new_branch("allow-ownership-link")
@@ -393,7 +397,7 @@ class TestGitHubCreatePR(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        self.repo_sandbox.check_out("call-ws")
+        repo_sandbox.check_out("call-ws")
         launch_command("github", "create-pr")
         pr = github_api_state.get_pull_by_number(3)
         assert pr is not None
@@ -416,8 +420,8 @@ class TestGitHubCreatePR(BaseTest):
             <!-- end git-machete generated -->
         ''')[1:]
 
-        self.repo_sandbox.write_to_file(".github/pull_request_template.md", "# PR title\n## Summary\n## Test plan\n")
-        self.repo_sandbox.check_out("drop-constraint")
+        repo_sandbox.write_to_file(".github/pull_request_template.md", "# PR title\n## Summary\n## Test plan\n")
+        repo_sandbox.check_out("drop-constraint")
         launch_command("github", "create-pr", "--yes")
         pr = github_api_state.get_pull_by_number(4)
         assert pr is not None
@@ -458,18 +462,19 @@ class TestGitHubCreatePR(BaseTest):
         github_api_state = self.github_api_state_for_test_create_pr_missing_base_branch_on_remote()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox.new_branch("root")
-                .commit("initial commit")
-                .new_branch("develop")
-                .commit("first commit on develop")
-                .push()
-                .new_branch("feature/api_handling")
-                .commit("Introduce GET and POST methods on API")
-                .new_branch("feature/api_exception_handling")
-                .commit("catch exceptions coming from API\n\ncommit body\nanother line")
-                .push()
-                .delete_branch("root")
+            repo_sandbox.new_branch("root")
+            .commit("initial commit")
+            .new_branch("develop")
+            .commit("first commit on develop")
+            .push()
+            .new_branch("feature/api_handling")
+            .commit("Introduce GET and POST methods on API")
+            .new_branch("feature/api_exception_handling")
+            .commit("catch exceptions coming from API\n\ncommit body\nanother line")
+            .push()
+            .delete_branch("root")
         )
         body: str = \
             """
@@ -483,7 +488,7 @@ class TestGitHubCreatePR(BaseTest):
                         "Pushing untracked branch feature/api_handling to origin...\n"
                         "Creating a PR from feature/api_exception_handling to feature/api_handling... OK, see www.github.com\n")
 
-        self.repo_sandbox.set_git_config_key("machete.github.annotateWithUrls", "true")
+        repo_sandbox.set_git_config_key("machete.github.annotateWithUrls", "true")
         assert_success(['github', 'create-pr', '--yes'], expected_msg)
         assert_success(
             ['status'],
@@ -512,27 +517,28 @@ class TestGitHubCreatePR(BaseTest):
         github_api_state = self.github_api_state_for_test_github_create_pr_with_multiple_non_origin_remotes()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
-        origin_1_remote_path = self.repo_sandbox.create_repo("remote-1", bare=True)
-        origin_2_remote_path = self.repo_sandbox.create_repo("remote-2", bare=True)
+        repo_sandbox = GitRepositorySandbox()
+        origin_1_remote_path = repo_sandbox.create_repo("remote-1", bare=True)
+        origin_2_remote_path = repo_sandbox.create_repo("remote-2", bare=True)
 
         # branch feature present in each of the remotes, no branch tracking data, remote origin_1 picked manually
         (
-            self.repo_sandbox
-                .remove_remote('origin')
-                .new_branch("root")
-                .add_remote('origin_1', origin_1_remote_path)
-                .add_remote('origin_2', origin_2_remote_path)
-                .commit("First commit on root.")
-                .push(remote='origin_1')
-                .push(remote='origin_2')
-                .new_branch("branch-1")
-                .commit('First commit on branch-1.')
-                .push(remote='origin_1')
-                .push(remote='origin_2')
-                .new_branch('feature')
-                .commit('introduce feature\n\ncommit body')
-                .push(remote='origin_1', set_upstream=False)
-                .push(remote='origin_2', set_upstream=False)
+            repo_sandbox
+            .remove_remote('origin')
+            .new_branch("root")
+            .add_remote('origin_1', origin_1_remote_path)
+            .add_remote('origin_2', origin_2_remote_path)
+            .commit("First commit on root.")
+            .push(remote='origin_1')
+            .push(remote='origin_2')
+            .new_branch("branch-1")
+            .commit('First commit on branch-1.')
+            .push(remote='origin_1')
+            .push(remote='origin_2')
+            .new_branch('feature')
+            .commit('introduce feature\n\ncommit body')
+            .push(remote='origin_1', set_upstream=False)
+            .push(remote='origin_2', set_upstream=False)
         )
         body: str = \
             """
@@ -595,7 +601,7 @@ class TestGitHubCreatePR(BaseTest):
             expected_result
         )
 
-        self.repo_sandbox.execute("git branch --unset-upstream feature")
+        repo_sandbox.execute("git branch --unset-upstream feature")
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('1', 'y'))
         expected_result = """
@@ -627,8 +633,8 @@ class TestGitHubCreatePR(BaseTest):
         Updating description of PR #16 to include the chain of PRs... OK
         """  # noqa: E501
 
-        self.repo_sandbox.write_to_file(".git/info/description", "overridden description")
-        self.repo_sandbox.set_git_config_key("machete.github.forceDescriptionFromCommitMessage", "true")
+        repo_sandbox.write_to_file(".git/info/description", "overridden description")
+        repo_sandbox.set_git_config_key("machete.github.forceDescriptionFromCommitMessage", "true")
         assert_success(
             ['github', 'create-pr'],
             expected_result
@@ -654,11 +660,11 @@ class TestGitHubCreatePR(BaseTest):
 
         # branch feature_1 present in each of the remotes, tracking data present
         (
-            self.repo_sandbox.check_out('feature')
-                .new_branch('feature_1')
-                .commit('introduce feature 1')
-                .push(remote='origin_1')
-                .push(remote='origin_2')
+            repo_sandbox.check_out('feature')
+            .new_branch('feature_1')
+            .commit('introduce feature 1')
+            .push(remote='origin_1')
+            .push(remote='origin_2')
         )
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('n'))
@@ -696,9 +702,9 @@ class TestGitHubCreatePR(BaseTest):
 
         # branch feature_2 not present in any of the remotes, remote origin_1 picked manually via mock_input()
         (
-            self.repo_sandbox.check_out('feature')
-                .new_branch('feature_2')
-                .commit('introduce feature 2')
+            repo_sandbox.check_out('feature')
+            .new_branch('feature_2')
+            .commit('introduce feature 2')
         )
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('y', '1', 'y'))
@@ -734,10 +740,10 @@ class TestGitHubCreatePR(BaseTest):
 
         # branch feature_2 present in only one remote: origin_1, no tracking data
         (
-            self.repo_sandbox.check_out('feature_2')
-                .new_branch('feature_3')
-                .commit('introduce feature 3')
-                .push(remote='origin_1', set_upstream=False)
+            repo_sandbox.check_out('feature_2')
+            .new_branch('feature_3')
+            .commit('introduce feature 3')
+            .push(remote='origin_1', set_upstream=False)
         )
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('y'))
@@ -756,10 +762,10 @@ class TestGitHubCreatePR(BaseTest):
 
         # branch feature_3 present in only one remote: origin_2, tracking data present
         (
-            self.repo_sandbox.check_out('feature_3')
-                .new_branch('feature_4')
-                .commit('introduce feature 4')
-                .push(remote='origin_2')
+            repo_sandbox.check_out('feature_3')
+            .new_branch('feature_4')
+            .commit('introduce feature 4')
+            .push(remote='origin_2')
         )
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('y', 'y'))
@@ -787,11 +793,11 @@ class TestGitHubCreatePR(BaseTest):
 
         # branch feature_3 present in only one remote: origin_2 with tracking data, origin remote present - takes priority
         (
-            self.repo_sandbox.add_remote('origin', self.repo_sandbox.remote_path)
-                .check_out('feature_3')
-                .new_branch('feature_5')
-                .commit('introduce feature 5')
-                .push(remote='origin_2')
+            repo_sandbox.add_remote('origin', repo_sandbox.remote_path)
+            .check_out('feature_3')
+            .new_branch('feature_5')
+            .commit('introduce feature 5')
+            .push(remote='origin_2')
         )
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('y', 'y'))
@@ -823,7 +829,7 @@ class TestGitHubCreatePR(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState.with_prs()))
 
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .new_branch("master").commit().push()
             .new_branch("develop").commit()
         )
@@ -840,7 +846,7 @@ class TestGitHubCreatePR(BaseTest):
 
     def test_github_create_pr_for_no_remotes(self) -> None:
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .remove_remote()
             .new_branch("master").commit()
             .new_branch("develop").commit()
@@ -859,7 +865,7 @@ class TestGitHubCreatePR(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState.with_prs()))
 
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .new_branch("master").commit().push()
             .new_branch("develop").commit().commit().push().reset_to("HEAD~")
         )
@@ -885,7 +891,7 @@ class TestGitHubCreatePR(BaseTest):
 
     def test_github_create_pr_for_untracked_branch(self, mocker: MockerFixture) -> None:
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .new_branch("master").commit().push()
             .new_branch("develop").commit()
         )
@@ -900,7 +906,7 @@ class TestGitHubCreatePR(BaseTest):
 
     def test_github_create_pr_for_branch_diverged_from_and_newer_than_remote(self, mocker: MockerFixture) -> None:
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .new_branch("master").commit().push()
             .new_branch("develop").commit().push()
             .amend_commit("Different commit message")
@@ -922,13 +928,14 @@ class TestGitHubCreatePR(BaseTest):
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState.with_prs()))
 
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox
+            repo_sandbox
             .new_branch("master").commit().push()
             .new_branch("develop").commit().push()
         )
         with fixed_author_and_committer_date_in_past():
-            self.repo_sandbox.amend_commit()
+            repo_sandbox.amend_commit()
 
         rewrite_branch_layout_file("master\n\tdevelop")
 
@@ -948,16 +955,17 @@ class TestGitHubCreatePR(BaseTest):
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState.with_prs()))
 
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox
+            repo_sandbox
             .new_branch("develop").commit().push()
             .new_branch("feature").commit().push()
         )
         (
-            self.repo_sandbox
-            .chdir(self.repo_sandbox.remote_path)
+            repo_sandbox
+            .chdir(repo_sandbox.remote_path)
             .delete_branch("develop")
-            .chdir(self.repo_sandbox.local_path)
+            .chdir(repo_sandbox.local_path)
         )
 
         rewrite_branch_layout_file("develop\n\tfeature")
@@ -977,7 +985,7 @@ class TestGitHubCreatePR(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState.with_prs()))
 
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .new_branch("develop").commit().push()
             .delete_remote_branch("origin/develop")
             .new_branch("feature").commit().push()
@@ -998,8 +1006,9 @@ class TestGitHubCreatePR(BaseTest):
         github_api_state = MockGitHubAPIState.with_prs()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox
+            repo_sandbox
             .new_branch("develop").commit("Some commit").push()
             .new_branch("feature").commit("Add feature").push()
         )
@@ -1007,7 +1016,7 @@ class TestGitHubCreatePR(BaseTest):
         rewrite_branch_layout_file("develop\n\tfeature")
 
         pr_title = "Feature Implementation"
-        self.repo_sandbox.write_to_file(".git/info/title", pr_title)
+        repo_sandbox.write_to_file(".git/info/title", pr_title)
 
         launch_command("github", "create-pr")
 

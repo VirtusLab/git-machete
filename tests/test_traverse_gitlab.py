@@ -2,7 +2,7 @@ import textwrap
 
 from pytest_mock import MockerFixture
 
-from .base_test import BaseTest
+from .base_test import BaseTest, GitRepositorySandbox
 from .mockers import (assert_failure, assert_success, mock_input_returning,
                       rewrite_branch_layout_file)
 from .mockers_code_hosting import mock_from_url
@@ -24,7 +24,7 @@ class TestTraverseGitLab(BaseTest):
             self.gitlab_api_state_for_test_traverse_sync_gitlab_mrs_multiple_same_source()))
 
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .new_branch("develop")
             .commit()
             .new_branch("allow-ownership-link")
@@ -58,8 +58,9 @@ class TestTraverseGitLab(BaseTest):
         gitlab_api_state = self.gitlab_api_state_for_test_traverse_sync_gitlab_mrs()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
 
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox
+            repo_sandbox
             .new_branch("develop")
             .commit()
             .push()
@@ -82,7 +83,7 @@ class TestTraverseGitLab(BaseTest):
                         call-ws
             """
         rewrite_branch_layout_file(body)
-        self.repo_sandbox.check_out("build-chain")
+        repo_sandbox.check_out("build-chain")
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
         assert_success(
@@ -194,7 +195,7 @@ class TestTraverseGitLab(BaseTest):
         # Let's cover the case where the descriptions don't need to be updated after retargeting.
 
         mr2['target_branch'] = 'develop'
-        self.repo_sandbox.check_out("build-chain")
+        repo_sandbox.check_out("build-chain")
         assert_success(
             ["traverse", "-LWy"],
             """

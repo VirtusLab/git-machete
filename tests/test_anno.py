@@ -1,7 +1,7 @@
 from pytest_mock import MockerFixture
 
 from . import mockers_github, mockers_gitlab
-from .base_test import BaseTest
+from .base_test import BaseTest, GitRepositorySandbox
 from .mockers import (assert_failure, assert_success, launch_command,
                       rewrite_branch_layout_file)
 from .mockers_github import (MockGitHubAPIState,
@@ -18,14 +18,15 @@ class TestAnno(BaseTest):
         """
 
         (
-            self.repo_sandbox.new_branch("master")
-                .commit("master commit.")
-                .new_branch("develop")
-                .commit("develop commit.")
-                .new_branch("feature")
-                .commit("feature commit.")
-                .check_out("develop")
-                .commit("New commit on develop")
+            GitRepositorySandbox()
+            .new_branch("master")
+            .commit("master commit.")
+            .new_branch("develop")
+            .commit("develop commit.")
+            .new_branch("feature")
+            .commit("feature commit.")
+            .check_out("develop")
+            .commit("New commit on develop")
         )
         body: str = \
             """
@@ -127,7 +128,7 @@ class TestAnno(BaseTest):
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mockers_github.mock_urlopen(self.github_api_state_for_test_anno_prs()))
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .new_branch("master")
             .commit()
             .new_branch("develop")
@@ -175,7 +176,7 @@ class TestAnno(BaseTest):
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mockers_gitlab.mock_urlopen(self.gitlab_api_state_for_test_anno_mrs()))
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .new_branch("master")
             .commit()
             .new_branch("develop")

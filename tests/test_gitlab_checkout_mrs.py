@@ -4,7 +4,7 @@ from pytest_mock import MockerFixture
 
 from git_machete.code_hosting import OrganizationAndRepository
 from git_machete.gitlab import GitLabClient
-from tests.base_test import BaseTest
+from tests.base_test import BaseTest, GitRepositorySandbox
 from tests.mockers import (assert_failure, assert_success, launch_command,
                            rewrite_branch_layout_file)
 from tests.mockers_code_hosting import mock_from_url
@@ -41,14 +41,15 @@ class TestGitLabCheckoutMRs(BaseTest):
     def test_gitlab_checkout_mrs(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
-        second_remote_path = self.repo_sandbox.create_repo("second-remote", bare=True)
+        repo_sandbox = GitRepositorySandbox()
+        second_remote_path = repo_sandbox.create_repo("second-remote", bare=True)
         gitlab_api_state = MockGitLabAPIState(
             self.projects_for_test_gitlab_checkout_prs(second_remote_path),
             *self.mrs_for_test_checkout_mrs())
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
 
         (
-            self.repo_sandbox.new_branch("root")
+            repo_sandbox.new_branch("root")
             .commit("initial commit")
             .new_branch("develop")
             .commit("first commit")
@@ -99,7 +100,7 @@ class TestGitLabCheckoutMRs(BaseTest):
         )
         for branch in ('chore/redundant_checks', 'restrict_access', 'allow-ownership-link', 'bugfix/feature', 'enhance/add_user',
                        'testing/add_user', 'chore/comments', 'bugfix/add_user'):
-            self.repo_sandbox.delete_branch(branch)
+            repo_sandbox.delete_branch(branch)
 
         body: str = \
             """
@@ -242,7 +243,7 @@ class TestGitLabCheckoutMRs(BaseTest):
         # check against wrong MR number
         org_repo = OrganizationAndRepository.from_url(
             domain=GitLabClient.DEFAULT_GITLAB_DOMAIN,
-            url=self.repo_sandbox.remote_path)
+            url=repo_sandbox.remote_path)
 
         assert org_repo is not None
         expected_error_message = f"MR !100 is not found in project {org_repo.organization}/{org_repo.repository}"
@@ -254,9 +255,9 @@ class TestGitLabCheckoutMRs(BaseTest):
         assert_success(['gitlab', 'checkout-mrs', '--by', 'some_other_user'], expected_msg)
 
         # Check against closed merge request with source branch deleted from remote
-        self.repo_sandbox.create_repo("other-local", bare=False, switch_dir_to_new_repo=True)
+        repo_sandbox.create_repo("other-local", bare=False, switch_dir_to_new_repo=True)
         (
-            self.repo_sandbox
+            repo_sandbox
             .add_remote("origin", second_remote_path)
             .new_branch('main')
             .commit('initial commit')
@@ -269,11 +270,11 @@ class TestGitLabCheckoutMRs(BaseTest):
 
         # Check against MR coming from fork
         (
-            self.repo_sandbox
+            repo_sandbox
             .new_branch('bugfix/remove-n-option')
             .commit('first commit')
             .push()
-            .chdir(self.repo_sandbox.local_path)
+            .chdir(repo_sandbox.local_path)
         )
 
         expected_msg = ("Checking for open GitLab MRs... OK\n"
@@ -297,8 +298,9 @@ class TestGitLabCheckoutMRs(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen',
                           mock_urlopen(self.gitlab_api_state_for_test_gitlab_checkout_mrs_from_fork_with_deleted_repo()))
 
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox.new_branch("root")
+            repo_sandbox.new_branch("root")
             .commit('initial master commit')
             .push()
             .new_branch('develop')
@@ -306,10 +308,10 @@ class TestGitLabCheckoutMRs(BaseTest):
             .push()
         )
 
-        self.repo_sandbox \
-            .chdir(self.repo_sandbox.remote_path)\
+        repo_sandbox \
+            .chdir(repo_sandbox.remote_path)\
             .execute("git branch merge-requests/2/head develop")\
-            .chdir(self.repo_sandbox.local_path)
+            .chdir(repo_sandbox.local_path)
 
         body: str = \
             """
@@ -351,8 +353,9 @@ class TestGitLabCheckoutMRs(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen',
                           mock_urlopen(self.gitlab_api_state_for_test_gitlab_checkout_mrs_of_current_user_and_other_users()))
 
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox.new_branch("root")
+            repo_sandbox.new_branch("root")
             .commit("initial commit")
             .new_branch("develop")
             .commit("first commit")
@@ -403,7 +406,7 @@ class TestGitLabCheckoutMRs(BaseTest):
         )
         for branch in ('chore/redundant_checks', 'restrict_access', 'allow-ownership-link', 'bugfix/feature', 'enhance/add_user',
                        'testing/add_user', 'chore/comments', 'bugfix/add_user'):
-            self.repo_sandbox.delete_branch(branch)
+            repo_sandbox.delete_branch(branch)
 
         body: str = \
             """
@@ -493,6 +496,7 @@ class TestGitLabCheckoutMRs(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState.with_mrs()))
 
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
+        _ = GitRepositorySandbox()
         assert_success(
             ["gitlab", "checkout-mrs", "--all"],
             """
@@ -542,7 +546,7 @@ class TestGitLabCheckoutMRs(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.gitlab_api_state_with_mr_cycle()))
 
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .new_branch("bugfix/feature")
             .commit("bugs removed")
             .push()
@@ -574,7 +578,7 @@ class TestGitLabCheckoutMRs(BaseTest):
         gitlab_api_state = self.gitlab_api_state_for_test_gitlab_checkout_mrs_single_mr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .remove_remote("origin")
             .add_remote("origin-1", gitlab_api_state.projects[1]['http_url_to_repo'])
         )
@@ -588,15 +592,16 @@ class TestGitLabCheckoutMRs(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(
             self.gitlab_api_state_for_test_gitlab_checkout_mrs_single_mr()))
 
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox
+            repo_sandbox
             .new_branch("master").commit()
             .new_branch("develop").commit().push()
         )
 
-        self.repo_sandbox.set_remote_url("origin", "https://gitlab.com/example-org/example-repo.git")
-        self.repo_sandbox.set_git_config_key('machete.gitlab.organization', "example-org")
-        self.repo_sandbox.set_git_config_key('machete.gitlab.repository', "example-repo")
+        repo_sandbox.set_remote_url("origin", "https://gitlab.com/example-org/example-repo.git")
+        repo_sandbox.set_git_config_key('machete.gitlab.organization', "example-org")
+        repo_sandbox.set_git_config_key('machete.gitlab.repository', "example-repo")
         assert_success(
             ['gitlab', 'checkout-mrs', '--all'],
             'Checking for open GitLab MRs... OK\n'
@@ -608,14 +613,15 @@ class TestGitLabCheckoutMRs(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(
             self.gitlab_api_state_for_test_gitlab_checkout_mrs_single_mr()))
 
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox
+            repo_sandbox
             .new_branch("master").commit()
             .new_branch("develop").commit().push()
         )
 
-        self.repo_sandbox.set_remote_url("origin", "https://gitlab.com/example-org/example-repo.git")
-        self.repo_sandbox.set_git_config_key('machete.gitlab.remote', "origin")
+        repo_sandbox.set_remote_url("origin", "https://gitlab.com/example-org/example-repo.git")
+        repo_sandbox.set_git_config_key('machete.gitlab.remote', "origin")
         assert_success(
             ['gitlab', 'checkout-mrs', '--all'],
             'Checking for open GitLab MRs... OK\n'
@@ -633,14 +639,15 @@ class TestGitLabCheckoutMRs(BaseTest):
         self.patch_symbol(mocker, 'git_machete.git_operations.GitContext.fetch_remote', lambda _self, _remote: None)
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
-        second_remote_path = self.repo_sandbox.create_repo("second-remote", bare=True)
+        repo_sandbox = GitRepositorySandbox()
+        second_remote_path = repo_sandbox.create_repo("second-remote", bare=True)
         gitlab_api_state = MockGitLabAPIState(
             self.projects_for_test_gitlab_checkout_prs(second_remote_path),
             *self.mrs_for_test_checkout_mrs_main_to_main_pr())
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
 
         (
-            self.repo_sandbox
+            repo_sandbox
             .new_branch("main")
             .commit()
             .push()

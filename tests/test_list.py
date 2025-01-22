@@ -2,7 +2,7 @@ import pytest
 
 from git_machete.exceptions import ExitCode
 
-from .base_test import BaseTest
+from .base_test import BaseTest, GitRepositorySandbox
 from .mockers import (assert_failure, assert_success, launch_command,
                       rewrite_branch_layout_file)
 
@@ -14,23 +14,24 @@ class TestList(BaseTest):
         Verify behaviour of a 'git machete list' command.
         """
 
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox.new_branch("master")
-                .commit("master commit.")
-                .new_branch("develop")
-                .commit("develop commit.")
-                .new_branch("feature_0")
-                .commit("feature_0 commit.")
-                .new_branch("feature_0_0")
-                .commit("feature_0_0 commit.")
-                .new_branch("feature_0_0_0")
-                .commit("feature_0_0_0 commit.")
-                .check_out("feature_0")
-                .new_branch("feature_0_1")
-                .commit("feature_0_1 commit.")
-                .check_out("develop")
-                .new_branch("feature_1")
-                .commit("feature_1 commit.")
+            repo_sandbox.new_branch("master")
+            .commit("master commit.")
+            .new_branch("develop")
+            .commit("develop commit.")
+            .new_branch("feature_0")
+            .commit("feature_0 commit.")
+            .new_branch("feature_0_0")
+            .commit("feature_0_0 commit.")
+            .new_branch("feature_0_0_0")
+            .commit("feature_0_0_0 commit.")
+            .check_out("feature_0")
+            .new_branch("feature_0_1")
+            .commit("feature_0_1 commit.")
+            .check_out("develop")
+            .new_branch("feature_1")
+            .commit("feature_1 commit.")
         )
 
         body: str = \
@@ -46,14 +47,14 @@ class TestList(BaseTest):
         rewrite_branch_layout_file(body)
 
         (
-            self.repo_sandbox
-                .check_out("develop")
-                .new_branch("feature_2")
-                .commit("feature_2 commit.")
-                .new_branch("feature_3")
-                .push()
-                .check_out("feature_2")
-                .delete_branch("feature_3")
+            repo_sandbox
+            .check_out("develop")
+            .new_branch("feature_2")
+            .commit("feature_2 commit.")
+            .new_branch("feature_3")
+            .push()
+            .check_out("feature_2")
+            .delete_branch("feature_3")
         )
 
         expected_output = """
@@ -120,7 +121,7 @@ class TestList(BaseTest):
             "feature_2\n"
         )
 
-        self.repo_sandbox.check_out("feature_1")
+        repo_sandbox.check_out("feature_1")
         launch_command('fork-point', '--override-to-inferred')
         assert_success(
             ['list', 'with-overridden-fork-point'],

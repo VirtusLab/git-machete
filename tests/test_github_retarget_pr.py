@@ -2,7 +2,7 @@ import textwrap
 
 from pytest_mock import MockerFixture
 
-from tests.base_test import BaseTest
+from tests.base_test import BaseTest, GitRepositorySandbox
 from tests.mockers import (assert_failure, assert_success, launch_command,
                            rewrite_branch_layout_file)
 from tests.mockers_code_hosting import mock_from_url
@@ -25,8 +25,9 @@ class TestGitHubRetargetPR(BaseTest):
     def test_github_retarget_pr(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_retarget_pr()))
 
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox.new_branch("master")
+            repo_sandbox.new_branch("master")
             .commit()
             .new_branch("develop")
             .commit()
@@ -97,7 +98,7 @@ class TestGitHubRetargetPR(BaseTest):
             'Base branch of PR #15 is already develop\n'
         )
 
-        self.repo_sandbox.check_out("feature_4")
+        repo_sandbox.check_out("feature_4")
 
         assert_failure(
             ['github', 'retarget-pr'],
@@ -117,21 +118,22 @@ class TestGitHubRetargetPR(BaseTest):
         branch_first_commit_msg = "First commit on branch."
         branch_second_commit_msg = "Second commit on branch."
         (
-            self.repo_sandbox.new_branch("root")
-                .commit("First commit on root.")
-                .new_branch("branch-1")
-                .commit(branch_first_commit_msg)
-                .commit(branch_second_commit_msg)
-                .push()
-                .new_branch('feature')
-                .commit('introduce feature')
-                .push()
-                .check_out('root')
-                .new_branch('branch-without-pr')
-                .commit('branch-without-pr')
-                .push()
-                .add_remote('new_origin', 'https://github.com/user/repo.git')
-                .check_out('root')
+            GitRepositorySandbox()
+            .new_branch("root")
+            .commit("First commit on root.")
+            .new_branch("branch-1")
+            .commit(branch_first_commit_msg)
+            .commit(branch_second_commit_msg)
+            .push()
+            .new_branch('feature')
+            .commit('introduce feature')
+            .push()
+            .check_out('root')
+            .new_branch('branch-without-pr')
+            .commit('branch-without-pr')
+            .push()
+            .add_remote('new_origin', 'https://github.com/user/repo.git')
+            .check_out('root')
         )
 
         body: str = \
@@ -194,27 +196,28 @@ class TestGitHubRetargetPR(BaseTest):
         branch_first_commit_msg = "First commit on branch."
         branch_second_commit_msg = "Second commit on branch."
 
-        origin_1_remote_path = self.repo_sandbox.create_repo("remote-1", bare=True)
-        origin_2_remote_path = self.repo_sandbox.create_repo("remote-2", bare=True)
+        repo_sandbox = GitRepositorySandbox()
+        origin_1_remote_path = repo_sandbox.create_repo("remote-1", bare=True)
+        origin_2_remote_path = repo_sandbox.create_repo("remote-2", bare=True)
 
         # branch feature present in each remote, no branch tracking data
         (
-            self.repo_sandbox.remove_remote()
-                .new_branch("root")
-                .add_remote('origin_1', origin_1_remote_path)
-                .add_remote('origin_2', origin_2_remote_path)
-                .commit("First commit on root.")
-                .push(remote='origin_1')
-                .push(remote='origin_2')
-                .new_branch("branch-1")
-                .commit(branch_first_commit_msg)
-                .commit(branch_second_commit_msg)
-                .push(remote='origin_1')
-                .push(remote='origin_2')
-                .new_branch('feature')
-                .commit('introduce feature')
-                .push(remote='origin_1', set_upstream=False)
-                .push(remote='origin_2', set_upstream=False)
+            repo_sandbox.remove_remote()
+            .new_branch("root")
+            .add_remote('origin_1', origin_1_remote_path)
+            .add_remote('origin_2', origin_2_remote_path)
+            .commit("First commit on root.")
+            .push(remote='origin_1')
+            .push(remote='origin_2')
+            .new_branch("branch-1")
+            .commit(branch_first_commit_msg)
+            .commit(branch_second_commit_msg)
+            .push(remote='origin_1')
+            .push(remote='origin_2')
+            .new_branch('feature')
+            .commit('introduce feature')
+            .push(remote='origin_1', set_upstream=False)
+            .push(remote='origin_2', set_upstream=False)
         )
 
         body: str = \
@@ -234,11 +237,11 @@ class TestGitHubRetargetPR(BaseTest):
 
         # branch feature_1 present in each remote, tracking data present
         (
-            self.repo_sandbox.check_out('feature')
-                .new_branch('feature_1')
-                .commit('introduce feature 1')
-                .push(remote='origin_1')
-                .push(remote='origin_2')
+            repo_sandbox.check_out('feature')
+            .new_branch('feature_1')
+            .commit('introduce feature 1')
+            .push(remote='origin_1')
+            .push(remote='origin_2')
         )
 
         body = \
@@ -278,7 +281,7 @@ class TestGitHubRetargetPR(BaseTest):
 
         # branch feature_2 is not present in any of the remotes
         (
-            self.repo_sandbox.check_out('feature')
+            repo_sandbox.check_out('feature')
             .new_branch('feature_2')
             .commit('introduce feature 2')
         )
@@ -297,11 +300,11 @@ class TestGitHubRetargetPR(BaseTest):
 
         # branch feature_2 present in only one remote: origin_1 and there is no tracking data available -> infer the remote
         (
-            self.repo_sandbox.check_out('feature_2')
+            repo_sandbox.check_out('feature_2')
             .push(remote='origin_1', set_upstream=False)
         )
 
-        self.repo_sandbox.set_git_config_key("machete.github.prDescriptionIntroStyle", "none")
+        repo_sandbox.set_git_config_key("machete.github.prDescriptionIntroStyle", "none")
         assert_success(
             ['github', 'retarget-pr'],
             'Base branch of PR #25 has been switched to feature\n'
@@ -314,10 +317,10 @@ class TestGitHubRetargetPR(BaseTest):
 
         # branch feature_3 present in only one remote: origin_1 and has tracking data
         (
-            self.repo_sandbox.check_out('feature_2')
-                .new_branch('feature_3')
-                .commit('introduce feature 3')
-                .push(remote='origin_1')
+            repo_sandbox.check_out('feature_2')
+            .new_branch('feature_3')
+            .commit('introduce feature 3')
+            .push(remote='origin_1')
         )
 
         body = \
@@ -331,7 +334,7 @@ class TestGitHubRetargetPR(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        self.repo_sandbox.unset_git_config_key("machete.github.prDescriptionIntroStyle")
+        repo_sandbox.unset_git_config_key("machete.github.prDescriptionIntroStyle")
         assert_success(
             ['github', 'retarget-pr'],
             'Base branch of PR #30 has been switched to feature_2\n'
@@ -419,8 +422,8 @@ class TestGitHubRetargetPR(BaseTest):
         assert pr30['base']['ref'] == 'root'
         assert pr30['body'] == '# Summary'
 
-        self.repo_sandbox.check_out('feature')
-        self.repo_sandbox.remove_remote('origin_2')
+        repo_sandbox.check_out('feature')
+        repo_sandbox.remove_remote('origin_2')
 
         assert_success(
             ['github', 'retarget-pr', '-U'],
@@ -438,7 +441,7 @@ class TestGitHubRetargetPR(BaseTest):
         assert pr15['base']['ref'] == 'branch-1'
         assert pr15['body'] == '# Summary'
 
-        self.repo_sandbox.set_git_config_key("machete.github.prDescriptionIntroStyle", "full")
+        repo_sandbox.set_git_config_key("machete.github.prDescriptionIntroStyle", "full")
         assert_success(
             ['github', 'retarget-pr', '-U'],
             """
@@ -482,7 +485,7 @@ class TestGitHubRetargetPR(BaseTest):
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_retarget_pr_root_branch()))
 
-        self.repo_sandbox.new_branch("master").commit()
+        GitRepositorySandbox().new_branch("master").commit()
         rewrite_branch_layout_file("master")
 
         assert_failure(

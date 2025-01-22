@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 
 from pytest_mock import MockerFixture
 
-from tests.base_test import BaseTest
+from tests.base_test import BaseTest, GitRepositorySandbox
 from tests.mockers import (assert_failure, assert_success,
                            rewrite_branch_layout_file)
 from tests.mockers_code_hosting import mock_from_url
@@ -35,8 +35,9 @@ class TestGitHubUpdatePRDescriptions(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
         self.patch_symbol(mocker, 'git_machete.utils.get_current_date', lambda: '2023-12-31')
 
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox.new_branch("root")
+            repo_sandbox.new_branch("root")
             .commit("initial commit")
             .new_branch("develop")
             .commit("first commit")
@@ -115,7 +116,7 @@ class TestGitHubUpdatePRDescriptions(BaseTest):
             Description of PR #18 (chore/redundant_checks -> restrict_access) has been updated
             """
         )
-        self.repo_sandbox.set_git_config_key("machete.github.prDescriptionIntroStyle", "full")
+        repo_sandbox.set_git_config_key("machete.github.prDescriptionIntroStyle", "full")
         assert_success(
             ['github', 'update-pr-descriptions', '--related'],
             """

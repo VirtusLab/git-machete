@@ -1,7 +1,7 @@
 import pytest
 from pytest_mock import MockerFixture
 
-from .base_test import BaseTest
+from .base_test import BaseTest, GitRepositorySandbox
 from .mockers import (assert_failure, assert_success,
                       fixed_author_and_committer_date_in_past, launch_command,
                       mock_input_returning_y, read_branch_layout_file,
@@ -11,8 +11,9 @@ from .mockers import (assert_failure, assert_success,
 class TestSlideOut(BaseTest):
 
     def test_slide_out(self, mocker: MockerFixture) -> None:
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox.new_branch("develop")
+            repo_sandbox.new_branch("develop")
             .commit("develop commit")
             .push()
             .new_branch("slide_root")
@@ -141,13 +142,13 @@ class TestSlideOut(BaseTest):
         # Slide-out and delete a terminal branch (child_d).
         # This just slices the branch off the tree.
         launch_command("go", "down")
-        assert "child_d" in self.repo_sandbox.get_local_branches()
+        assert "child_d" in repo_sandbox.get_local_branches()
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
         assert_success(
             ["slide-out", "-n", "--delete"],
             "Delete branch child_d (unmerged to HEAD)? (y, N, q)\n"
         )
-        assert "child_d" not in self.repo_sandbox.get_local_branches()
+        assert "child_d" not in repo_sandbox.get_local_branches()
 
         assert_success(
             ["status", "-l"],
@@ -165,8 +166,9 @@ class TestSlideOut(BaseTest):
         )
 
     def test_slide_out_with_post_slide_out_hook(self) -> None:
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox.new_branch('branch-0')
+            repo_sandbox.new_branch('branch-0')
             .commit()
             .new_branch('branch-1')
             .commit()
@@ -182,18 +184,19 @@ class TestSlideOut(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        self.repo_sandbox.write_to_file(".git/hooks/machete-post-slide-out", '#!/bin/sh\necho "$@" > machete-post-slide-out-output')
-        self.repo_sandbox.set_file_executable(".git/hooks/machete-post-slide-out")
+        repo_sandbox.write_to_file(".git/hooks/machete-post-slide-out", '#!/bin/sh\necho "$@" > machete-post-slide-out-output')
+        repo_sandbox.set_file_executable(".git/hooks/machete-post-slide-out")
         launch_command("slide-out", "-n", "branch-1")
-        assert "branch-0 branch-1 branch-2" == self.repo_sandbox.read_file("machete-post-slide-out-output").strip()
+        assert "branch-0 branch-1 branch-2" == repo_sandbox.read_file("machete-post-slide-out-output").strip()
 
-        self.repo_sandbox.write_to_file(".git/hooks/machete-post-slide-out", "#!/bin/sh\nexit 1")
+        repo_sandbox.write_to_file(".git/hooks/machete-post-slide-out", "#!/bin/sh\nexit 1")
         assert_failure(["slide-out", "-n", "branch-2"], "The machete-post-slide-out hook exited with 1, aborting.")
 
     def test_slide_out_with_invalid_down_fork_point(self) -> None:
+        repo_sandbox = GitRepositorySandbox()
         with fixed_author_and_committer_date_in_past():
             (
-                self.repo_sandbox.new_branch('branch-0')
+                repo_sandbox.new_branch('branch-0')
                 .commit()
                 .new_branch('branch-1')
                 .commit()
@@ -204,7 +207,7 @@ class TestSlideOut(BaseTest):
                 .check_out('branch-2')
                 .commit('Commit that is not ancestor of branch-3.')
             )
-        hash_of_commit_that_is_not_ancestor_of_branch_2 = self.repo_sandbox.get_current_commit_hash()
+        hash_of_commit_that_is_not_ancestor_of_branch_2 = repo_sandbox.get_current_commit_hash()
 
         body: str = \
             """
@@ -222,7 +225,7 @@ class TestSlideOut(BaseTest):
 
     def test_slide_out_with_down_fork_point_and_no_child_of_last_branch(self) -> None:
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .new_branch('branch-0')
             .commit()
             .new_branch('branch-1')
@@ -242,8 +245,9 @@ class TestSlideOut(BaseTest):
         )
 
     def test_slide_out_with_down_fork_point_and_single_child_of_last_branch(self) -> None:
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox.new_branch('branch-0')
+            repo_sandbox.new_branch('branch-0')
             .commit()
             .new_branch('branch-1')
             .commit()
@@ -253,8 +257,8 @@ class TestSlideOut(BaseTest):
             .commit()
             .commit('Second commit on branch-3.')
         )
-        hash_of_second_commit_on_branch_3 = self.repo_sandbox.get_current_commit_hash()
-        self.repo_sandbox.commit("Third commit on branch-3.")
+        hash_of_second_commit_on_branch_3 = repo_sandbox.get_current_commit_hash()
+        repo_sandbox.commit("Third commit on branch-3.")
 
         body: str = \
             """
@@ -281,7 +285,7 @@ class TestSlideOut(BaseTest):
 
     def test_slide_out_with_rebase_no_qualifier(self, mocker: MockerFixture) -> None:
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .remove_remote('origin')
             .new_branch('branch-0')
             .commit()
@@ -319,7 +323,7 @@ class TestSlideOut(BaseTest):
 
     def test_slide_out_with_slide_out_no_qualifier(self) -> None:
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .remove_remote('origin')
             .new_branch('branch-0')
             .commit()
@@ -343,8 +347,9 @@ class TestSlideOut(BaseTest):
         )
 
     def test_slide_out_with_down_fork_point_and_multiple_children_of_last_branch(self) -> None:
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox.new_branch('branch-0')
+            repo_sandbox.new_branch('branch-0')
             .commit()
             .new_branch('branch-1')
             .commit()
@@ -355,7 +360,7 @@ class TestSlideOut(BaseTest):
             .commit()
         )
 
-        hash_of_only_commit_on_branch_2b = self.repo_sandbox.get_current_commit_hash()
+        hash_of_only_commit_on_branch_2b = repo_sandbox.get_current_commit_hash()
 
         body: str = \
             """
@@ -373,7 +378,8 @@ class TestSlideOut(BaseTest):
 
     def test_slide_out_with_invalid_sequence_of_branches(self) -> None:
         (
-            self.repo_sandbox.new_branch('branch-0')
+            GitRepositorySandbox()
+            .new_branch('branch-0')
             .commit()
             .new_branch('branch-1')
             .commit()
@@ -420,8 +426,9 @@ class TestSlideOut(BaseTest):
         )
 
     def test_slide_out_removed_from_remote(self) -> None:
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox.new_branch('main')
+            repo_sandbox.new_branch('main')
             .commit()
             .push()
             .new_branch('unmanaged')
@@ -480,18 +487,18 @@ class TestSlideOut(BaseTest):
         )
         assert_success(['status'], expected_status_output)
 
-        branches = self.repo_sandbox.get_local_branches()
+        branches = repo_sandbox.get_local_branches()
         assert 'unmanaged' in branches
         assert 'unpushed' in branches
         assert 'not_deleted_remotely' in branches
         assert 'has_downstream' in branches
         assert 'should_be_pruned' not in branches
 
-        self.repo_sandbox.delete_remote_branch('origin/not_deleted_remotely')
+        repo_sandbox.delete_remote_branch('origin/not_deleted_remotely')
         launch_command('slide-out', '--removed-from-remote', '--verbose')
 
         assert read_branch_layout_file() == "main\n    unpushed\n    has_downstream\n        downstream\n"
-        branches = self.repo_sandbox.get_local_branches()
+        branches = repo_sandbox.get_local_branches()
         assert 'not_deleted_remotely' in branches
 
     @pytest.mark.parametrize('extra_arg', ['foo', '-d=foo', '--down-fork-point=foo', '-M', '--merge', '-n', '--no-interactive-rebase'])

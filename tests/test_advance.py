@@ -3,7 +3,7 @@ from pytest_mock import MockerFixture
 
 from git_machete.exceptions import UnderlyingGitException
 
-from .base_test import BaseTest
+from .base_test import BaseTest, GitRepositorySandbox
 from .mockers import (assert_failure, assert_success, launch_command,
                       mock_input_returning, mock_input_returning_y,
                       rewrite_branch_layout_file)
@@ -12,27 +12,28 @@ from .mockers import (assert_failure, assert_success, launch_command,
 class TestAdvance(BaseTest):
 
     def test_advance_for_no_downstream_branches(self) -> None:
-        self.repo_sandbox.new_branch("root").commit()
+        GitRepositorySandbox().new_branch("root").commit()
         rewrite_branch_layout_file("root")
 
         assert_failure(["advance"], "root does not have any downstream (child) branches to advance towards")
 
     def test_advance_when_detached_head(self) -> None:
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox
+            repo_sandbox
             .new_branch("master")
             .commit()
             .new_branch("develop")
             .commit()
         )
         rewrite_branch_layout_file("master\n  develop")
-        self.repo_sandbox.check_out("HEAD~")
+        repo_sandbox.check_out("HEAD~")
 
         assert_failure(["advance"], "Not currently on any branch", expected_type=UnderlyingGitException)
 
     def test_advance_for_no_applicable_downstream_branches(self) -> None:
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .new_branch("master")
             .commit()
             .new_branch("develop")
@@ -46,7 +47,7 @@ class TestAdvance(BaseTest):
 
     def test_advance_with_immediate_cancel(self, mocker: MockerFixture) -> None:
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .new_branch("master")
             .commit()
             .new_branch("develop")
@@ -65,9 +66,9 @@ class TestAdvance(BaseTest):
         pushes the current branch and slides out child branches of the downstream branch.
         Also, it modifies the branch layout to reflect new dependencies.
         """
-
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox.new_branch("root")
+            repo_sandbox.new_branch("root")
             .commit()
             .new_branch("level-1-branch")
             .commit()
@@ -78,14 +79,14 @@ class TestAdvance(BaseTest):
                 level-1-branch
             """
         rewrite_branch_layout_file(body)
-        level_1_commit_hash = self.repo_sandbox.get_current_commit_hash()
+        level_1_commit_hash = repo_sandbox.get_current_commit_hash()
 
-        self.repo_sandbox.check_out("root")
-        self.repo_sandbox.push()
+        repo_sandbox.check_out("root")
+        repo_sandbox.push()
         launch_command("advance", "-y")
 
-        root_commit_hash = self.repo_sandbox.get_current_commit_hash()
-        origin_root_commit_hash = self.repo_sandbox.get_commit_hash("origin/root")
+        root_commit_hash = repo_sandbox.get_current_commit_hash()
+        origin_root_commit_hash = repo_sandbox.get_commit_hash("origin/root")
 
         assert level_1_commit_hash == root_commit_hash, \
             ("Verify that when there is only one, rebased downstream branch of a "
@@ -101,9 +102,9 @@ class TestAdvance(BaseTest):
              "tree is updated.")
 
     def test_advance_without_push_for_one_downstream_branch(self) -> None:
-
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox
+            repo_sandbox
             .remove_remote()
             .new_branch("root")
             .commit()
@@ -125,10 +126,10 @@ class TestAdvance(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        self.repo_sandbox.check_out("root")
+        repo_sandbox.check_out("root")
         launch_command("advance", "-y")
 
-        assert self.repo_sandbox.get_commit_hash("level-1-branch") == self.repo_sandbox.get_commit_hash("root")
+        assert repo_sandbox.get_commit_hash("level-1-branch") == repo_sandbox.get_commit_hash("root")
 
         assert_success(
             ["status", "-l"],
@@ -150,7 +151,8 @@ class TestAdvance(BaseTest):
         """
 
         (
-            self.repo_sandbox.new_branch("root")
+            GitRepositorySandbox()
+            .new_branch("root")
             .commit()
             .push()
             .new_branch("level-1a-branch")
@@ -213,7 +215,7 @@ class TestAdvance(BaseTest):
 
     def test_advance_when_push_no_qualifier_present(self, mocker: MockerFixture) -> None:
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .new_branch("root")
             .commit()
             .push()
@@ -248,7 +250,7 @@ class TestAdvance(BaseTest):
 
     def test_advance_when_slide_out_no_qualifier_present(self, mocker: MockerFixture) -> None:
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .new_branch("root")
             .commit()
             .push()

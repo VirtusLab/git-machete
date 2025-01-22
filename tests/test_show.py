@@ -1,5 +1,5 @@
 
-from .base_test import BaseTest
+from .base_test import BaseTest, GitRepositorySandbox
 from .mockers import (assert_failure, assert_success, launch_command,
                       rewrite_branch_layout_file)
 
@@ -8,7 +8,8 @@ class TestShow(BaseTest):
 
     def setup_standard_tree(self) -> None:
         (
-            self.repo_sandbox.new_branch("root")
+            GitRepositorySandbox()
+            .new_branch("root")
             .commit("root")
             .new_branch("develop")
             .commit("develop commit")
@@ -100,7 +101,8 @@ class TestShow(BaseTest):
         root tree.
         """
         (
-            self.repo_sandbox.new_branch("level-0-branch")
+            GitRepositorySandbox()
+            .new_branch("level-0-branch")
             .commit()
             .new_branch("level-1-branch")
             .commit()
@@ -120,13 +122,14 @@ class TestShow(BaseTest):
              "branch one above current one.")
 
     def test_show_up_inference_using_reflog_of_remote_branch(self) -> None:
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox
+            repo_sandbox
             .new_branch("master").commit().push()
             .new_branch("develop").commit().push()
-            .chdir(self.repo_sandbox.remote_path)
+            .chdir(repo_sandbox.remote_path)
             .execute("git update-ref refs/heads/master develop")
-            .chdir(self.repo_sandbox.local_path)
+            .chdir(repo_sandbox.local_path)
             .check_out("master").pull().check_out("develop")
         )
 
@@ -136,7 +139,7 @@ class TestShow(BaseTest):
             "master\n"
         )
 
-        self.repo_sandbox.remove_directory(".git/logs/refs/heads/")
+        repo_sandbox.remove_directory(".git/logs/refs/heads/")
 
         assert_success(
             ["show", "up"],
@@ -151,7 +154,7 @@ class TestShow(BaseTest):
         child/downstream branch one below current one.
         """
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .new_branch("level-0-branch")
             .commit()
             .new_branch("level-1a-branch")
@@ -182,7 +185,8 @@ class TestShow(BaseTest):
         branch has any downstream branches.
         """
         (
-            self.repo_sandbox.new_branch("level-0-branch")
+            GitRepositorySandbox()
+            .new_branch("level-0-branch")
             .commit()
             .new_branch("level-1a-branch")
             .commit()
@@ -233,7 +237,8 @@ class TestShow(BaseTest):
 
         """
         (
-            self.repo_sandbox.new_branch("level-0-branch")
+            GitRepositorySandbox()
+            .new_branch("level-0-branch")
             .commit()
             .new_branch("level-1a-branch")
             .commit()
@@ -278,7 +283,8 @@ class TestShow(BaseTest):
 
         """
         (
-            self.repo_sandbox.new_branch("level-0-branch")
+            GitRepositorySandbox()
+            .new_branch("level-0-branch")
             .commit()
             .new_branch("level-1a-branch")
             .commit()
@@ -311,7 +317,8 @@ class TestShow(BaseTest):
 
         """
         (
-            self.repo_sandbox.new_branch("level-0-branch")
+            GitRepositorySandbox()
+            .new_branch("level-0-branch")
             .commit()
             .new_branch("level-1a-branch")
             .commit()
@@ -341,7 +348,8 @@ class TestShow(BaseTest):
         the current branch.
         """
         (
-            self.repo_sandbox.new_branch("level-0-branch")
+            GitRepositorySandbox()
+            .new_branch("level-0-branch")
             .commit()
             .new_branch("level-1a-branch")
             .commit()

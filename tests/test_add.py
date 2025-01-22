@@ -1,6 +1,6 @@
 from pytest_mock import MockerFixture
 
-from .base_test import BaseTest
+from .base_test import BaseTest, GitRepositorySandbox
 from .mockers import (assert_failure, assert_success, mock_input_returning,
                       mock_input_returning_y, read_branch_layout_file,
                       rewrite_branch_layout_file)
@@ -9,17 +9,18 @@ from .mockers import (assert_failure, assert_success, mock_input_returning,
 class TestAdd(BaseTest):
 
     def test_add(self, mocker: MockerFixture) -> None:
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox
-                .remove_remote("origin")
-                .new_branch("master")
-                .commit("master commit.")
-                .new_branch("develop")
-                .commit("develop commit.")
-                .new_branch("feature")
-                .commit("feature commit.")
-                .check_out("develop")
-                .commit("New commit on develop")
+            repo_sandbox
+            .remove_remote("origin")
+            .new_branch("master")
+            .commit("master commit.")
+            .new_branch("develop")
+            .commit("develop commit.")
+            .new_branch("feature")
+            .commit("feature commit.")
+            .check_out("develop")
+            .commit("New commit on develop")
         )
         body: str = \
             """
@@ -29,7 +30,7 @@ class TestAdd(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        self.repo_sandbox.new_branch("bugfix/feature_fail")
+        repo_sandbox.new_branch("bugfix/feature_fail")
 
         # Test `git machete add` without providing the branch name
         self.patch_symbol(mocker, "builtins.input", mock_input_returning("n"))
@@ -43,16 +44,16 @@ class TestAdd(BaseTest):
             'Added branch bugfix/feature_fail onto develop\n'
         )
 
-        self.repo_sandbox.check_out('develop')
-        self.repo_sandbox.new_branch("bugfix/some_feature")
+        repo_sandbox.check_out('develop')
+        repo_sandbox.new_branch("bugfix/some_feature")
         assert_success(
             ['add', '-y', 'bugfix/some_feature'],
             'Adding bugfix/some_feature onto the inferred upstream (parent) branch develop\n'
             'Added branch bugfix/some_feature onto develop\n'
         )
 
-        self.repo_sandbox.check_out('develop')
-        self.repo_sandbox.new_branch("bugfix/another_feature")
+        repo_sandbox.check_out('develop')
+        repo_sandbox.new_branch("bugfix/another_feature")
         assert_success(
             ['add', '--as-first-child', '-y', 'refs/heads/bugfix/another_feature'],
             'Adding bugfix/another_feature onto the inferred upstream (parent) branch develop\n'
@@ -60,7 +61,7 @@ class TestAdd(BaseTest):
         )
 
         # test with --onto option
-        self.repo_sandbox.new_branch("chore/remove_indentation")
+        repo_sandbox.new_branch("chore/remove_indentation")
 
         assert_success(
             ['add', '--onto=feature'],
@@ -89,7 +90,8 @@ class TestAdd(BaseTest):
         """
 
         (
-            self.repo_sandbox.new_branch("master")
+            GitRepositorySandbox()
+            .new_branch("master")
             .commit("master commit.")
             .new_branch("feature/foo")
             .push()
@@ -126,7 +128,8 @@ class TestAdd(BaseTest):
 
     def test_add_new_branch_onto_managed_current_branch(self, mocker: MockerFixture) -> None:
         (
-            self.repo_sandbox.new_branch("master")
+            GitRepositorySandbox()
+            .new_branch("master")
             .commit()
         )
 
@@ -141,7 +144,8 @@ class TestAdd(BaseTest):
 
     def test_add_new_branch_when_cannot_infer_parent(self, mocker: MockerFixture) -> None:
         (
-            self.repo_sandbox.new_branch("master")
+            GitRepositorySandbox()
+            .new_branch("master")
             .commit()
             .new_branch("develop")
             .commit()
@@ -163,7 +167,8 @@ class TestAdd(BaseTest):
 
     def test_add_already_managed_branch(self) -> None:
         (
-            self.repo_sandbox.new_branch("master")
+            GitRepositorySandbox()
+            .new_branch("master")
             .commit("master commit.")
             .new_branch("develop")
             .commit("develop commit.")
@@ -175,7 +180,8 @@ class TestAdd(BaseTest):
 
     def test_add_onto_non_existent_branch(self) -> None:
         (
-            self.repo_sandbox.new_branch("master")
+            GitRepositorySandbox()
+            .new_branch("master")
             .commit("master commit.")
             .new_branch("develop")
             .commit("develop commit.")
@@ -190,7 +196,7 @@ class TestAdd(BaseTest):
         )
 
     def test_add_new_branch_onto_master_for_fresh_start_with_yes(self) -> None:
-        self.repo_sandbox.new_branch("master").commit("master commit.")
+        GitRepositorySandbox().new_branch("master").commit("master commit.")
         assert_success(
             ['add', '--yes', 'foo'],
             """
@@ -201,9 +207,12 @@ class TestAdd(BaseTest):
         assert read_branch_layout_file() == "master\n  foo\n"
 
     def test_add_new_branch_with_onto(self) -> None:
-        self.repo_sandbox\
-            .new_branch("master").commit()\
+        repo_sandbox = GitRepositorySandbox()
+        (
+            repo_sandbox
+            .new_branch("master").commit()
             .new_branch("develop").commit()
+        )
 
         body: str = \
             """
@@ -219,11 +228,12 @@ class TestAdd(BaseTest):
             Added branch foo onto master
             """)
         assert read_branch_layout_file() == "master\n  develop\n  foo\n"
-        assert self.repo_sandbox.get_commit_hash("master") == self.repo_sandbox.get_commit_hash("foo")
+        assert repo_sandbox.get_commit_hash("master") == repo_sandbox.get_commit_hash("foo")
 
     def test_add_new_branch_when_detached_head_for_fresh_start(self) -> None:
-        self.repo_sandbox.new_branch("master").commit("master commit.")\
-            .check_out(self.repo_sandbox.get_current_commit_hash())
+        repo_sandbox = GitRepositorySandbox()
+        GitRepositorySandbox().new_branch("master").commit("master commit.")\
+            .check_out(repo_sandbox.get_current_commit_hash())
         assert_success(
             ['add', '--yes', 'foo'],
             """
@@ -233,7 +243,7 @@ class TestAdd(BaseTest):
         assert read_branch_layout_file() == "foo\n"
 
     def test_add_new_branch_onto_master_for_fresh_start_without_yes(self, mocker: MockerFixture) -> None:
-        self.repo_sandbox.new_branch("master").commit("master commit.")
+        GitRepositorySandbox().new_branch("master").commit("master commit.")
 
         self.patch_symbol(mocker, "builtins.input", mock_input_returning_y)
         assert_success(

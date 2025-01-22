@@ -1,4 +1,4 @@
-from .base_test import BaseTest
+from .base_test import BaseTest, GitRepositorySandbox
 from .mockers import (assert_failure, assert_success,
                       fixed_author_and_committer_date_in_past, launch_command,
                       overridden_environment, rewrite_branch_layout_file)
@@ -12,9 +12,10 @@ class TestReapply(BaseTest):
         'git rebase' to the fork point of the current branch.
         """
 
+        repo_sandbox = GitRepositorySandbox()
         with fixed_author_and_committer_date_in_past():
             (
-                self.repo_sandbox
+                repo_sandbox
                 .remove_remote()
                 .new_branch("level-0-branch")
                 .commit("Basic commit.")
@@ -38,7 +39,7 @@ class TestReapply(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        self.repo_sandbox.check_out("level-1-branch")
+        repo_sandbox.check_out("level-1-branch")
         assert_success(
             ["status", "-L"],
             """
@@ -78,7 +79,7 @@ class TestReapply(BaseTest):
         )
         assert launch_command("fork-point", "level-1-branch").strip() == "c0306cdd500fc39869505592200258055407bcc6"
 
-        self.repo_sandbox.check_out("level-2-branch")
+        repo_sandbox.check_out("level-2-branch")
         assert launch_command("fork-point", "level-2-branch").strip() == "1b657a15fa4c619fcb4e871176d1471cdbce9093"
         with overridden_environment(GIT_SEQUENCE_EDITOR="sed -i.bak '2s/^pick /fixup /'"):
             with fixed_author_and_committer_date_in_past():
@@ -101,7 +102,7 @@ class TestReapply(BaseTest):
 
     def test_reapply_with_rebase_no_qualifier(self) -> None:
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .remove_remote()
             .new_branch("level-0-branch")
             .commit("Basic commit.")

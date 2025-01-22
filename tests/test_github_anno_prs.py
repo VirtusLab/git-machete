@@ -1,6 +1,6 @@
 from pytest_mock import MockerFixture
 
-from tests.base_test import BaseTest
+from tests.base_test import BaseTest, GitRepositorySandbox
 from tests.mockers import (assert_failure, assert_success, launch_command,
                            rewrite_branch_layout_file)
 from tests.mockers_github import (MockGitHubAPIState,
@@ -23,45 +23,47 @@ class TestGitHubAnnoPRs(BaseTest):
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_anno_prs()))
 
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox.new_branch("root")
-                .commit("root")
-                .new_branch("develop")
-                .commit("develop commit")
-                .new_branch("allow-ownership-link")
-                .commit("Allow ownership links")
-                .push()
-                .new_branch("build-chain")
-                .commit("Build arbitrarily long chains")
-                .check_out("allow-ownership-link")
-                .commit("1st round of fixes")
-                .check_out("develop")
-                .commit("Other develop commit")
-                .push()
-                .new_branch("call-ws")
-                .commit("Call web service")
-                .commit("1st round of fixes")
-                .push()
-                .new_branch("drop-constraint")
-                .commit("Drop unneeded SQL constraints")
-                .check_out("call-ws")
-                .commit("2nd round of fixes")
-                .check_out("root")
-                .new_branch("master")
-                .commit("Master commit")
-                .push()
-                .new_branch("hotfix/add-trigger")
-                .commit("HOTFIX Add the trigger")
-                .push()
-                .amend_commit("HOTFIX Add the trigger (amended)")
-                .new_branch("ignore-trailing")
-                .commit("Ignore trailing data")
-                .sleep(1)
-                .amend_commit("Ignore trailing data (amended)")
-                .push()
-                .reset_to("ignore-trailing@{1}")  # noqa: FS003
-                .delete_branch("root")
-                .add_remote('new_origin', 'https://github.com/user/repo.git')
+            repo_sandbox
+            .new_branch("root")
+            .commit("root")
+            .new_branch("develop")
+            .commit("develop commit")
+            .new_branch("allow-ownership-link")
+            .commit("Allow ownership links")
+            .push()
+            .new_branch("build-chain")
+            .commit("Build arbitrarily long chains")
+            .check_out("allow-ownership-link")
+            .commit("1st round of fixes")
+            .check_out("develop")
+            .commit("Other develop commit")
+            .push()
+            .new_branch("call-ws")
+            .commit("Call web service")
+            .commit("1st round of fixes")
+            .push()
+            .new_branch("drop-constraint")
+            .commit("Drop unneeded SQL constraints")
+            .check_out("call-ws")
+            .commit("2nd round of fixes")
+            .check_out("root")
+            .new_branch("master")
+            .commit("Master commit")
+            .push()
+            .new_branch("hotfix/add-trigger")
+            .commit("HOTFIX Add the trigger")
+            .push()
+            .amend_commit("HOTFIX Add the trigger (amended)")
+            .new_branch("ignore-trailing")
+            .commit("Ignore trailing data")
+            .sleep(1)
+            .amend_commit("Ignore trailing data (amended)")
+            .push()
+            .reset_to("ignore-trailing@{1}")  # noqa: FS003
+            .delete_branch("root")
+            .add_remote('new_origin', 'https://github.com/user/repo.git')
         )
         body: str = \
             """
@@ -104,11 +106,11 @@ class TestGitHubAnnoPRs(BaseTest):
 
         # Test anno-prs using custom remote URL provided by git config keys
         (
-            self.repo_sandbox
-                .remove_remote('new_origin')
-                .set_git_config_key('machete.github.remote', 'origin')
-                .set_git_config_key('machete.github.organization', 'custom_user')
-                .set_git_config_key('machete.github.repository', 'custom_repo')
+            repo_sandbox
+            .remove_remote('new_origin')
+            .set_git_config_key('machete.github.remote', 'origin')
+            .set_git_config_key('machete.github.organization', 'custom_user')
+            .set_git_config_key('machete.github.repository', 'custom_repo')
         )
 
         launch_command('github', 'anno-prs')
@@ -145,7 +147,8 @@ class TestGitHubAnnoPRs(BaseTest):
                           mock_urlopen(self.github_api_state_for_test_local_branch_name_different_than_tracking_branch_name()))
 
         (
-            self.repo_sandbox.new_branch("root")
+            GitRepositorySandbox()
+            .new_branch("root")
             .commit("First commit on root.")
             .push()
             .new_branch('feature_repo')
@@ -183,6 +186,7 @@ class TestGitHubAnnoPRs(BaseTest):
         )
 
     def test_github_anno_prs_no_remotes(self) -> None:
+        repo_sandbox = GitRepositorySandbox()
         assert_failure(
             ["github", "anno-prs"],
             """
@@ -193,12 +197,12 @@ class TestGitHubAnnoPRs(BaseTest):
             """
         )
 
-        self.repo_sandbox.remove_remote()
+        repo_sandbox.remove_remote()
         assert_failure(["github", "anno-prs"], "No remotes defined for this repository (see git remote)")
 
     def test_github_anno_prs_multiple_non_origin_github_remotes(self) -> None:
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .remove_remote("origin")
             .add_remote("origin-1", "https://github.com/tester/repo_sandbox-1.git")
             .add_remote("origin-2", "https://github.com/tester/repo_sandbox-2.git")

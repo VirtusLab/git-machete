@@ -4,7 +4,7 @@ from pytest_mock import MockerFixture
 
 from git_machete.exceptions import UnderlyingGitException
 
-from .base_test import BaseTest
+from .base_test import BaseTest, GitRepositorySandbox
 from .mockers import (assert_failure, assert_success,
                       fixed_author_and_committer_date_in_past, launch_command,
                       mock_input_returning, mock_input_returning_y,
@@ -13,9 +13,9 @@ from .mockers import (assert_failure, assert_success,
 
 class TestTraverse(BaseTest):
 
-    def setup_standard_tree(self) -> None:
+    def setup_standard_tree(self, repo_sandbox: GitRepositorySandbox) -> None:
         (
-            self.repo_sandbox.new_branch("root")
+            repo_sandbox.new_branch("root")
             .commit("root")
             .new_branch("develop")
             .commit("develop commit")
@@ -68,8 +68,9 @@ class TestTraverse(BaseTest):
         rewrite_branch_layout_file(body)
 
     def test_traverse_slide_out(self, mocker: MockerFixture) -> None:
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox
+            repo_sandbox
             .remove_remote()
             .new_branch("master")
             .commit()
@@ -124,7 +125,7 @@ class TestTraverse(BaseTest):
             """
         )
 
-        self.repo_sandbox.check_out("master").merge("feature").check_out("feature")
+        repo_sandbox.check_out("master").merge("feature").check_out("feature")
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("y"))
         assert_success(
             ["traverse"],
@@ -138,8 +139,9 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_no_remotes(self) -> None:
-        self.setup_standard_tree()
-        self.repo_sandbox.remove_remote()
+        repo_sandbox = GitRepositorySandbox()
+        self.setup_standard_tree(repo_sandbox)
+        repo_sandbox.remove_remote()
 
         launch_command("traverse", "-Wy")
         assert_success(
@@ -173,7 +175,8 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_no_push(self) -> None:
-        self.setup_standard_tree()
+        repo_sandbox = GitRepositorySandbox()
+        self.setup_standard_tree(repo_sandbox)
 
         launch_command("traverse", "-Wy", "--no-push")
         assert_success(
@@ -207,8 +210,9 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_no_push_override(self) -> None:
-        self.setup_standard_tree()
-        self.repo_sandbox.check_out("hotfix/add-trigger")
+        repo_sandbox = GitRepositorySandbox()
+        self.setup_standard_tree(repo_sandbox)
+        repo_sandbox.check_out("hotfix/add-trigger")
         launch_command("t", "-Wy", "--no-push", "--push", "--start-from=here")
         assert_success(
             ["status", "-l"],
@@ -239,8 +243,8 @@ class TestTraverse(BaseTest):
               o-ignore-trailing
             """,
         )
-        self.repo_sandbox.check_out("ignore-trailing")
-        self.repo_sandbox.set_git_config_key("machete.traverse.push", "false")
+        repo_sandbox.check_out("ignore-trailing")
+        repo_sandbox.set_git_config_key("machete.traverse.push", "false")
         launch_command("t", "-Wy")
         assert_success(
             ["status"],
@@ -285,7 +289,7 @@ class TestTraverse(BaseTest):
             """,
         )
 
-        self.repo_sandbox.set_git_config_key("machete.traverse.push", "true")
+        repo_sandbox.set_git_config_key("machete.traverse.push", "true")
         launch_command("t", "-Wy", "--no-push-untracked")
         assert_success(
             ["status"],
@@ -309,7 +313,7 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_ahead_of_remote_responses(self, mocker: MockerFixture) -> None:
-        self.repo_sandbox.new_branch("master").commit().push().commit()
+        GitRepositorySandbox().new_branch("master").commit().push().commit()
         rewrite_branch_layout_file("master")
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
@@ -331,7 +335,7 @@ class TestTraverse(BaseTest):
         assert_success(["traverse"], "Push master to origin? (y, N, q, yq)\n")
 
     def test_traverse_behind_remote_responses(self, mocker: MockerFixture) -> None:
-        self.repo_sandbox.new_branch("master")\
+        GitRepositorySandbox().new_branch("master")\
             .commit().commit().push()\
             .reset_to("HEAD~")
         rewrite_branch_layout_file("master")
@@ -368,7 +372,7 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_diverged_from_and_newer_responses(self, mocker: MockerFixture) -> None:
-        self.repo_sandbox.new_branch("master").commit().push().amend_commit("Different commit message")
+        GitRepositorySandbox().new_branch("master").commit().push().amend_commit("Different commit message")
         rewrite_branch_layout_file("master")
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
@@ -403,9 +407,10 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_diverged_from_and_older_responses(self, mocker: MockerFixture) -> None:
-        self.repo_sandbox.new_branch("master").commit().push()
+        repo_sandbox = GitRepositorySandbox()
+        repo_sandbox.new_branch("master").commit().push()
         with fixed_author_and_committer_date_in_past():
-            self.repo_sandbox.amend_commit()
+            repo_sandbox.amend_commit()
         rewrite_branch_layout_file("master")
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
@@ -440,7 +445,8 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_no_push_untracked(self) -> None:
-        self.setup_standard_tree()
+        repo_sandbox = GitRepositorySandbox()
+        self.setup_standard_tree(repo_sandbox)
 
         launch_command("traverse", "-Wy", "--no-push-untracked")
         assert_success(
@@ -474,8 +480,9 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_push_config_key(self) -> None:
-        self.setup_standard_tree()
-        self.repo_sandbox.set_git_config_key('machete.traverse.push', 'false')
+        repo_sandbox = GitRepositorySandbox()
+        self.setup_standard_tree(repo_sandbox)
+        repo_sandbox.set_git_config_key('machete.traverse.push', 'false')
         launch_command("traverse", "-Wy")
         assert_success(
             ["status", "-l"],
@@ -509,28 +516,29 @@ class TestTraverse(BaseTest):
 
     def test_traverse_no_push_no_checkout(self) -> None:
         (
-            self.repo_sandbox.new_branch("root")
-                .commit("root")
-                .new_branch("develop")
-                .commit("develop commit")
-                .commit("Other develop commit")
-                .push()
-                .new_branch("allow-ownership-link")
-                .commit("Allow ownership links")
-                .push()
-                .check_out("allow-ownership-link")
-                .commit("1st round of fixes")
-                .new_branch("build-chain")
-                .commit("Build arbitrarily long chains")
-                .check_out("root")
-                .new_branch("master")
-                .commit("Master commit")
-                .push()
-                .new_branch("hotfix/add-trigger")
-                .commit("HOTFIX Add the trigger")
-                .push()
-                .amend_commit("HOTFIX Add the trigger (amended)")
-                .delete_branch("root")
+            GitRepositorySandbox()
+            .new_branch("root")
+            .commit("root")
+            .new_branch("develop")
+            .commit("develop commit")
+            .commit("Other develop commit")
+            .push()
+            .new_branch("allow-ownership-link")
+            .commit("Allow ownership links")
+            .push()
+            .check_out("allow-ownership-link")
+            .commit("1st round of fixes")
+            .new_branch("build-chain")
+            .commit("Build arbitrarily long chains")
+            .check_out("root")
+            .new_branch("master")
+            .commit("Master commit")
+            .push()
+            .new_branch("hotfix/add-trigger")
+            .commit("HOTFIX Add the trigger")
+            .push()
+            .amend_commit("HOTFIX Add the trigger (amended)")
+            .delete_branch("root")
         )
 
         body: str = \
@@ -581,9 +589,10 @@ class TestTraverse(BaseTest):
                        expected_result)
 
     def test_traverse_and_squash(self) -> None:
-        self.setup_standard_tree()
+        repo_sandbox = GitRepositorySandbox()
+        self.setup_standard_tree(repo_sandbox)
 
-        self.repo_sandbox.check_out("hotfix/add-trigger")
+        repo_sandbox.check_out("hotfix/add-trigger")
         launch_command("traverse", "--fetch", "--start-from=root", "--return-to=here", "-y")
         assert_success(
             ["status", "-l"],
@@ -614,7 +623,7 @@ class TestTraverse(BaseTest):
               o-ignore-trailing
             """,
         )
-        assert self.repo_sandbox.get_current_branch() == "hotfix/add-trigger"
+        assert repo_sandbox.get_current_branch() == "hotfix/add-trigger"
 
         launch_command("traverse", "-wy")
         assert_success(
@@ -681,7 +690,7 @@ class TestTraverse(BaseTest):
 
     def test_traverse_with_merge(self, mocker: MockerFixture) -> None:
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .remove_remote()
             .new_branch("develop")
             .commit()
@@ -727,7 +736,8 @@ class TestTraverse(BaseTest):
 
     def test_traverse_with_merge_annotation(self, mocker: MockerFixture) -> None:
         (
-            self.repo_sandbox.remove_remote()
+            GitRepositorySandbox()
+            .remove_remote()
             .new_branch("develop")
             .commit()
             .new_branch("mars")
@@ -771,7 +781,8 @@ class TestTraverse(BaseTest):
 
     def test_traverse_with_merge_annotation_and_yes_option(self) -> None:
         (
-            self.repo_sandbox.remove_remote()
+            GitRepositorySandbox()
+            .remove_remote()
             .new_branch("develop")
             .commit()
             .new_branch("mars")
@@ -807,7 +818,8 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_qualifiers_no_push(self) -> None:
-        self.setup_standard_tree()
+        repo_sandbox = GitRepositorySandbox()
+        self.setup_standard_tree(repo_sandbox)
 
         body: str = \
             """
@@ -845,7 +857,8 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_qualifiers_no_rebase(self) -> None:
-        self.setup_standard_tree()
+        repo_sandbox = GitRepositorySandbox()
+        self.setup_standard_tree(repo_sandbox)
 
         body: str = \
             """
@@ -883,7 +896,8 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_qualifiers_no_rebase_no_push(self) -> None:
-        self.setup_standard_tree()
+        repo_sandbox = GitRepositorySandbox()
+        self.setup_standard_tree(repo_sandbox)
 
         body: str = \
             """
@@ -921,7 +935,8 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_qualifiers_no_slide_out(self) -> None:
-        self.setup_standard_tree()
+        repo_sandbox = GitRepositorySandbox()
+        self.setup_standard_tree(repo_sandbox)
 
         body: str = \
             """
@@ -935,7 +950,7 @@ class TestTraverse(BaseTest):
             \t\tignore-trailing
             """
         rewrite_branch_layout_file(body)
-        self.repo_sandbox.check_out('develop').merge('call-ws')
+        repo_sandbox.check_out('develop').merge('call-ws')
 
         launch_command("traverse", "-Wy")
         assert_success(
@@ -960,6 +975,7 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_no_managed_branches(self) -> None:
+        _ = GitRepositorySandbox()
 
         expected_error_message = """
           No branches listed in .git/machete. Consider one of:
@@ -978,8 +994,9 @@ class TestTraverse(BaseTest):
                        "Invalid value for --start-from flag: nowhere. Valid values are here, root, first-root")
 
     def test_traverse_removes_current_directory(self) -> None:
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox
+            repo_sandbox
             .new_branch("master")
             .commit()
             .new_branch("with-directory")
@@ -1027,7 +1044,7 @@ class TestTraverse(BaseTest):
 
             Reached branch without-directory which has no successor; nothing left to update
             """
-        if self.repo_sandbox.get_git_version() >= (2, 35, 0):
+        if repo_sandbox.get_git_version() >= (2, 35, 0):
             # See https://github.com/git/git/blob/master/Documentation/RelNotes/2.35.0.txt#L81 for the fix
             assert_success(
                 ["traverse", "-y"],
@@ -1038,14 +1055,14 @@ class TestTraverse(BaseTest):
             assert_success(
                 ["traverse", "-y"],
                 common_expected_output +
-                f"Warn: current directory {self.repo_sandbox.local_path}/directory no longer exists, " +
-                f"the nearest existing parent directory is {self.repo_sandbox.local_path}\n"
+                f"Warn: current directory {repo_sandbox.local_path}/directory no longer exists, " +
+                f"the nearest existing parent directory is {repo_sandbox.local_path}\n"
             )
             assert os.path.split(os.getcwd())[-1] != "directory"
 
     def test_traverse_reset_keep_failing(self) -> None:
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .new_branch("master")
             .add_file_and_commit(file_path="foo.txt", file_content="1")
             .sleep(1)
@@ -1067,7 +1084,7 @@ class TestTraverse(BaseTest):
     def test_traverse_with_stop_for_edit(self, mocker: MockerFixture) -> None:
 
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .remove_remote()
             .new_branch("branch-0")
             .commit()
@@ -1095,7 +1112,7 @@ class TestTraverse(BaseTest):
         """Very unlikely case; can happen only in case of divergence of clocks between local and remote
         (which is simulated in this test)."""
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .new_branch("branch-0")
             .commit()
             .push()
@@ -1133,7 +1150,7 @@ class TestTraverse(BaseTest):
             )
 
     def test_traverse_quit_on_pushing_untracked(self, mocker: MockerFixture) -> None:
-        self.repo_sandbox.new_branch("master").commit()
+        GitRepositorySandbox().new_branch("master").commit()
         rewrite_branch_layout_file("master")
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
         assert_success(
@@ -1142,16 +1159,17 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_multiple_remotes(self, mocker: MockerFixture) -> None:
-        origin_1_remote_path = self.repo_sandbox.create_repo("remote-1", bare=True)
-        origin_2_remote_path = self.repo_sandbox.create_repo("remote-2", bare=True)
+        repo_sandbox = GitRepositorySandbox()
+        origin_1_remote_path = repo_sandbox.create_repo("remote-1", bare=True)
+        origin_2_remote_path = repo_sandbox.create_repo("remote-2", bare=True)
         (
-            self.repo_sandbox
+            repo_sandbox
             .remove_remote("origin")
             .add_remote("origin-1", origin_1_remote_path)
             .add_remote("origin-2", origin_2_remote_path)
         )
 
-        self.repo_sandbox.new_branch("master").commit()
+        repo_sandbox.new_branch("master").commit()
         rewrite_branch_layout_file("master")
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("xd"))
@@ -1173,7 +1191,7 @@ class TestTraverse(BaseTest):
         )
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("1", "o", "2", "yq"))
-        self.repo_sandbox.set_git_config_key("machete.traverse.fetch.origin-2", "false")
+        repo_sandbox.set_git_config_key("machete.traverse.fetch.origin-2", "false")
         assert_success(
             ["traverse", "--fetch"],
             """
@@ -1193,7 +1211,7 @@ class TestTraverse(BaseTest):
 
     def test_traverse_yellow_edges(self, mocker: MockerFixture) -> None:
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .remove_remote()
             .new_branch("master")
             .commit()

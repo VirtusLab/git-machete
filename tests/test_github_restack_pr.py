@@ -2,7 +2,7 @@ import textwrap
 
 from pytest_mock import MockerFixture
 
-from tests.base_test import BaseTest
+from tests.base_test import BaseTest, GitRepositorySandbox
 from tests.mockers import (assert_failure, assert_success,
                            fixed_author_and_committer_date_in_past,
                            rewrite_branch_layout_file)
@@ -35,14 +35,15 @@ class TestGitHubRestackPR(BaseTest):
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_restack_pr()))
 
-        self.repo_sandbox.new_branch("develop").commit()
+        repo_sandbox = GitRepositorySandbox()
+        repo_sandbox.new_branch("develop").commit()
 
         assert_failure(
             ['github', 'restack-pr'],
             "No PRs in example-org/example-repo have develop as its head branch"
         )
 
-        self.repo_sandbox.new_branch("multiple-pr-branch").commit()
+        repo_sandbox.new_branch("multiple-pr-branch").commit()
         assert_failure(
             ['github', 'restack-pr'],
             "Multiple PRs in example-org/example-repo have multiple-pr-branch as its head branch: #16, #17"
@@ -55,7 +56,8 @@ class TestGitHubRestackPR(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
         (
-            self.repo_sandbox.new_branch("master")
+            GitRepositorySandbox()
+            .new_branch("master")
             .commit()
             .new_branch("develop")
             .commit()
@@ -93,7 +95,8 @@ class TestGitHubRestackPR(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
         (
-            self.repo_sandbox.new_branch("master")
+            GitRepositorySandbox()
+            .new_branch("master")
             .commit()
             .new_branch('feature_1')
             .commit()
@@ -129,15 +132,16 @@ class TestGitHubRestackPR(BaseTest):
         github_api_state = self.github_api_state_for_test_restack_pr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
+        repo_sandbox = GitRepositorySandbox()
         with fixed_author_and_committer_date_in_past():
             (
-                self.repo_sandbox.new_branch("master")
+                repo_sandbox.new_branch("master")
                 .commit()
                 .new_branch('feature')
                 .commit()
                 .push()
             )
-        self.repo_sandbox.amend_commit()
+        repo_sandbox.amend_commit()
         body: str = \
             """
             master
@@ -173,7 +177,8 @@ class TestGitHubRestackPR(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
         (
-            self.repo_sandbox.new_branch("master")
+            GitRepositorySandbox()
+            .new_branch("master")
             .commit()
             .new_branch('feature')
             .commit()
@@ -215,7 +220,8 @@ class TestGitHubRestackPR(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
         (
-            self.repo_sandbox.new_branch("master")
+            GitRepositorySandbox()
+            .new_branch("master")
             .commit()
             .new_branch('feature')
             .commit()
@@ -269,7 +275,8 @@ class TestGitHubRestackPR(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_restack_pr()))
 
         (
-            self.repo_sandbox.new_branch("master")
+            GitRepositorySandbox()
+            .new_branch("master")
             .commit()
             .new_branch('feature')
             .commit()
@@ -299,15 +306,16 @@ class TestGitHubRestackPR(BaseTest):
         github_api_state = self.github_api_state_for_test_restack_pr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox.new_branch("master")
+            repo_sandbox.new_branch("master")
             .commit()
             .new_branch('feature')
             .commit()
             .push()
         )
         with fixed_author_and_committer_date_in_past():
-            self.repo_sandbox.amend_commit()
+            repo_sandbox.amend_commit()
 
         body: str = \
             """

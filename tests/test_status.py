@@ -5,7 +5,7 @@ import textwrap
 import pytest
 from pytest_mock import MockerFixture
 
-from .base_test import BaseTest
+from .base_test import BaseTest, GitRepositorySandbox
 from .mockers import (assert_failure, assert_success,
                       fixed_author_and_committer_date_in_past, launch_command,
                       mock_input_returning, mock_input_returning_y,
@@ -58,8 +58,9 @@ class TestStatus(BaseTest):
     def test_single_invalid_branch_interactive_slide_out(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, "git_machete.client.MacheteClient.is_stdout_a_tty", lambda: True)
 
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox
+            repo_sandbox
             .remove_remote()
             .new_branch('master')
             .commit()
@@ -80,7 +81,7 @@ class TestStatus(BaseTest):
         assert_success(["status"], expected_output)
 
         self.patch_symbol(mocker, "builtins.input", mock_input_returning("e"))
-        self.repo_sandbox.set_git_config_key("advice.macheteEditorSelection", "false")
+        repo_sandbox.set_git_config_key("advice.macheteEditorSelection", "false")
         with overridden_environment(GIT_EDITOR="sed -i.bak '/foo/ d'"):
             assert_success(["status"], expected_output)
 
@@ -88,7 +89,7 @@ class TestStatus(BaseTest):
         self.patch_symbol(mocker, "git_machete.client.MacheteClient.is_stdout_a_tty", lambda: True)
 
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .remove_remote()
             .new_branch('master')
             .commit()
@@ -122,7 +123,7 @@ class TestStatus(BaseTest):
 
     def test_single_invalid_branch_non_interactive_slide_out(self) -> None:
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .remove_remote()
             .new_branch('master')
             .commit()
@@ -141,7 +142,7 @@ class TestStatus(BaseTest):
 
     def test_multiple_invalid_branches_non_interactive_slide_out(self) -> None:
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .remove_remote()
             .new_branch('master')
             .commit()
@@ -173,8 +174,9 @@ class TestStatus(BaseTest):
 
     @pytest.mark.skipif(sys.platform == "win32", reason="Windows doesn't distinguish between executable and non-executable files")
     def test_status_advice_ignored_non_executable_hook(self) -> None:
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox
+            repo_sandbox
             .remove_remote()
             .new_branch('master')
             .commit()
@@ -189,7 +191,7 @@ class TestStatus(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        self.repo_sandbox.write_to_file(".git/hooks/machete-status-branch", "#!/bin/sh\ngit ls-tree $1 | wc -l | sed 's/ *//'")
+        repo_sandbox.write_to_file(".git/hooks/machete-status-branch", "#!/bin/sh\ngit ls-tree $1 | wc -l | sed 's/ *//'")
         assert_success(
             ["status"],
             """
@@ -201,7 +203,7 @@ class TestStatus(BaseTest):
             """
         )
 
-        self.repo_sandbox.set_git_config_key("advice.ignoredHook", "false")
+        repo_sandbox.set_git_config_key("advice.ignoredHook", "false")
         assert_success(
             ["status"],
             """
@@ -212,8 +214,9 @@ class TestStatus(BaseTest):
         )
 
     def test_status_branch_hook_output(self) -> None:
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox
+            repo_sandbox
             .remove_remote()
             .new_branch('master')
             .commit()
@@ -229,8 +232,8 @@ class TestStatus(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        self.repo_sandbox.write_to_file(".git/hooks/machete-status-branch", "#!/bin/sh\ngit ls-tree $1 | wc -l | sed 's/ *//'")
-        self.repo_sandbox.set_file_executable(".git/hooks/machete-status-branch")
+        repo_sandbox.write_to_file(".git/hooks/machete-status-branch", "#!/bin/sh\ngit ls-tree $1 | wc -l | sed 's/ *//'")
+        repo_sandbox.set_file_executable(".git/hooks/machete-status-branch")
         assert_success(
             ["status"],
             """
@@ -240,7 +243,7 @@ class TestStatus(BaseTest):
             """
         )
 
-        self.repo_sandbox.write_to_file(".git/hooks/machete-status-branch", "#!/bin/sh\necho '    '")
+        repo_sandbox.write_to_file(".git/hooks/machete-status-branch", "#!/bin/sh\necho '    '")
         assert_success(
             ["status"],
             """
@@ -250,7 +253,7 @@ class TestStatus(BaseTest):
             """
         )
 
-        self.repo_sandbox.write_to_file(".git/hooks/machete-status-branch", "#!/bin/sh\nexit 1")
+        repo_sandbox.write_to_file(".git/hooks/machete-status-branch", "#!/bin/sh\nexit 1")
         assert_success(
             ["status"],
             """
@@ -261,18 +264,19 @@ class TestStatus(BaseTest):
         )
 
     def test_extra_space_before_branch_name(self) -> None:
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox
-                .new_branch('master')
-                .commit()
-                .push()
-                .new_branch('bar')
-                .commit()
-                .push()
-                .new_branch('foo')
-                .commit()
-                .push()
-                .set_git_config_key('machete.status.extraSpaceBeforeBranchName', 'true')
+            repo_sandbox
+            .new_branch('master')
+            .commit()
+            .push()
+            .new_branch('bar')
+            .commit()
+            .push()
+            .new_branch('foo')
+            .commit()
+            .push()
+            .set_git_config_key('machete.status.extraSpaceBeforeBranchName', 'true')
         )
         body: str = \
             """
@@ -293,7 +297,7 @@ class TestStatus(BaseTest):
         )
         assert_success(['status'], expected_status_output)
 
-        self.repo_sandbox.set_git_config_key('machete.status.extraSpaceBeforeBranchName', 'false')
+        repo_sandbox.set_git_config_key('machete.status.extraSpaceBeforeBranchName', 'false')
 
         expected_status_output = (
             """
@@ -308,8 +312,9 @@ class TestStatus(BaseTest):
 
     def test_status_squashed_branch_recognized_as_merged_with_traverse(self) -> None:
 
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox.new_branch("root")
+            repo_sandbox.new_branch("root")
             .commit("root")
             .push()
             .new_branch("develop")
@@ -354,7 +359,7 @@ class TestStatus(BaseTest):
 
         # squash-merge feature onto develop
         (
-            self.repo_sandbox.check_out("develop")
+            repo_sandbox.check_out("develop")
             .execute("git merge --squash feature")
             .execute("git commit -m squash_feature")
             .check_out("child")
@@ -403,17 +408,17 @@ class TestStatus(BaseTest):
             ["status", "-l", "--squash-merge-detection=none"],
             expected_output_detection_none
         )
-        self.repo_sandbox.set_git_config_key('machete.squashMergeDetection', 'none')
+        repo_sandbox.set_git_config_key('machete.squashMergeDetection', 'none')
         assert_success(
             ["status", "-l"],
             expected_output_detection_none
         )
-        self.repo_sandbox.set_git_config_key('machete.squashMergeDetection', 'lolxd')
+        repo_sandbox.set_git_config_key('machete.squashMergeDetection', 'lolxd')
         assert_failure(
             ["status", "-l"],
             "Invalid value for machete.squashMergeDetection git config key: lolxd. Valid values are none, simple, exact"
         )
-        self.repo_sandbox.unset_git_config_key('machete.squashMergeDetection')
+        repo_sandbox.unset_git_config_key('machete.squashMergeDetection')
 
         # traverse then slide out the feature branch
         launch_command("traverse", "-w", "-y")
@@ -435,7 +440,7 @@ class TestStatus(BaseTest):
 
         # simulate an upstream squash-merge of the child branch
         (
-            self.repo_sandbox.check_out("develop")
+            repo_sandbox.check_out("develop")
             .new_branch("upstream_squash")
             .execute("git merge --squash child")
             .execute("git commit -m squash_child")
@@ -476,8 +481,9 @@ class TestStatus(BaseTest):
         )
 
     def test_status_for_squash_merge_and_commits_in_between(self) -> None:
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox
+            repo_sandbox
             .new_branch("master")
             .remove_remote("origin")
             .commit("master first commit")
@@ -515,7 +521,7 @@ class TestStatus(BaseTest):
             """
         )
         assert_success(['status', '--squash-merge-detection=exact'], expected_status_output_exact)
-        self.repo_sandbox.set_git_config_key('machete.squashMergeDetection', 'exact')
+        repo_sandbox.set_git_config_key('machete.squashMergeDetection', 'exact')
         assert_success(['status'], expected_status_output_exact)
 
     def test_status_invalid_squash_merge_detection(self) -> None:
@@ -525,27 +531,28 @@ class TestStatus(BaseTest):
                        "Invalid value for --squash-merge-detection flag: invalid. Valid values are none, simple, exact")
 
     def test_status_inferring_counterpart_for_fetching_of_branch(self) -> None:
-        origin_1_remote_path = self.repo_sandbox.create_repo("remote-1", bare=True)
+        repo_sandbox = GitRepositorySandbox()
+        origin_1_remote_path = repo_sandbox.create_repo("remote-1", bare=True)
         (
-            self.repo_sandbox
-                .add_remote('origin_1', origin_1_remote_path)
-                .new_branch('master')
-                .commit()
-                .push()
-                .new_branch('bar')
-                .commit()
-                .push()
-                .new_branch('foo')
-                .commit()
-                .push(set_upstream=False)
-                .push(remote='origin_1', set_upstream=False)
-                .new_branch('snickers')
-                .commit()
-                .push(remote='origin_1', set_upstream=False)
-                .new_branch('mars')
-                .commit_n_times(15)
-                .push()
-                .push(remote='origin_1')
+            repo_sandbox
+            .add_remote('origin_1', origin_1_remote_path)
+            .new_branch('master')
+            .commit()
+            .push()
+            .new_branch('bar')
+            .commit()
+            .push()
+            .new_branch('foo')
+            .commit()
+            .push(set_upstream=False)
+            .push(remote='origin_1', set_upstream=False)
+            .new_branch('snickers')
+            .commit()
+            .push(remote='origin_1', set_upstream=False)
+            .new_branch('mars')
+            .commit_n_times(15)
+            .push()
+            .push(remote='origin_1')
         )
         body: str = \
             """
@@ -573,7 +580,8 @@ class TestStatus(BaseTest):
 
     def test_status_when_child_branch_is_pushed_immediately_after_creation(self) -> None:
         (
-            self.repo_sandbox.new_branch("master")
+            GitRepositorySandbox()
+            .new_branch("master")
             .commit("master")
             .push()
             .new_branch("foo")
@@ -601,8 +609,9 @@ class TestStatus(BaseTest):
         assert_success(['status'], expected_status_output)
 
     def test_status_fork_point_without_reflogs(self) -> None:
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox
+            repo_sandbox
             .remove_remote()
             .new_branch("master")
             .commit()
@@ -618,7 +627,7 @@ class TestStatus(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        self.repo_sandbox.remove_directory(".git/logs/")
+        repo_sandbox.remove_directory(".git/logs/")
 
         expected_status_output = (
             """
@@ -633,7 +642,7 @@ class TestStatus(BaseTest):
     def test_status_yellow_edges(self) -> None:
         with fixed_author_and_committer_date_in_past():
             (
-                self.repo_sandbox
+                GitRepositorySandbox()
                 .remove_remote()
                 .new_branch("master")
                 .commit()
@@ -692,7 +701,7 @@ class TestStatus(BaseTest):
 
     def test_status_non_ascii_junctions(self) -> None:
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .remove_remote()
             .new_branch("develop")
             .commit()
@@ -725,7 +734,7 @@ class TestStatus(BaseTest):
 
     def test_status_during_rebase(self) -> None:
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .remove_remote()
             .new_branch("master")
             .commit()
@@ -754,8 +763,9 @@ class TestStatus(BaseTest):
         assert_success(['status', '-l'], expected_status_output)
 
     def test_status_during_side_effecting_operations(self) -> None:
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox
+            repo_sandbox
             .remove_remote()
             .new_branch("master")
             .commit()
@@ -776,8 +786,8 @@ class TestStatus(BaseTest):
 
         # AM
 
-        patch_path = self.repo_sandbox.popen("git format-patch feature")
-        self.repo_sandbox.execute_ignoring_exit_code(f"git am {patch_path}")
+        patch_path = repo_sandbox.popen("git format-patch feature")
+        repo_sandbox.execute_ignoring_exit_code(f"git am {patch_path}")
 
         expected_status_output = (
             """
@@ -789,11 +799,11 @@ class TestStatus(BaseTest):
         )
         assert_success(['status', '-l'], expected_status_output)
 
-        self.repo_sandbox.execute("git am --abort")
+        repo_sandbox.execute("git am --abort")
 
         # CHERRY-PICK
 
-        self.repo_sandbox.execute_ignoring_exit_code("git cherry-pick feature")
+        repo_sandbox.execute_ignoring_exit_code("git cherry-pick feature")
 
         expected_status_output = (
             """
@@ -805,11 +815,11 @@ class TestStatus(BaseTest):
         )
         assert_success(['status', '-l'], expected_status_output)
 
-        self.repo_sandbox.execute("git cherry-pick --abort")
+        repo_sandbox.execute("git cherry-pick --abort")
 
         # MERGE
 
-        self.repo_sandbox.execute_ignoring_exit_code("git merge feature")
+        repo_sandbox.execute_ignoring_exit_code("git merge feature")
 
         expected_status_output = (
             """
@@ -821,11 +831,11 @@ class TestStatus(BaseTest):
         )
         assert_success(['status', '-l'], expected_status_output)
 
-        self.repo_sandbox.execute("git merge --abort")
+        repo_sandbox.execute("git merge --abort")
 
         # REVERT
 
-        self.repo_sandbox.execute("git revert --no-commit HEAD")
+        repo_sandbox.execute("git revert --no-commit HEAD")
 
         expected_status_output = (
             """
@@ -837,11 +847,11 @@ class TestStatus(BaseTest):
         )
         assert_success(['status', '-l'], expected_status_output)
 
-        self.repo_sandbox.execute("git revert --abort")
+        repo_sandbox.execute("git revert --abort")
 
     def test_status_no_fork_point_for_child_branch(self) -> None:
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .remove_remote()
             .new_branch("master")
             .commit()

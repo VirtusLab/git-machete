@@ -1,6 +1,6 @@
 from pytest_mock import MockerFixture
 
-from .base_test import BaseTest
+from .base_test import BaseTest, GitRepositorySandbox
 from .mockers import (assert_success, launch_command, mock_input_returning_y,
                       read_branch_layout_file, rewrite_branch_layout_file)
 from .mockers_github import mock_github_token_for_domain_none
@@ -10,29 +10,31 @@ class TestClean(BaseTest):
 
     def test_clean(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox.new_branch('master')
-                .commit()
-                .push()
-                .new_branch('bar')
-                .commit()
-                .new_branch('bar2')
-                .commit()
-                .check_out('master')
-                .new_branch('foo')
-                .commit()
-                .push()
-                .new_branch('foo2')
-                .commit()
-                .check_out('master')
-                .new_branch('moo')
-                .commit()
-                .new_branch('moo2')
-                .commit()
-                .check_out('master')
-                .new_branch('mars')
-                .commit()
-                .check_out('master')
+            repo_sandbox
+            .new_branch('master')
+            .commit()
+            .push()
+            .new_branch('bar')
+            .commit()
+            .new_branch('bar2')
+            .commit()
+            .check_out('master')
+            .new_branch('foo')
+            .commit()
+            .push()
+            .new_branch('foo2')
+            .commit()
+            .check_out('master')
+            .new_branch('moo')
+            .commit()
+            .new_branch('moo2')
+            .commit()
+            .check_out('master')
+            .new_branch('mars')
+            .commit()
+            .check_out('master')
         )
 
         body: str = \
@@ -65,13 +67,13 @@ class TestClean(BaseTest):
         )
         assert_success(['status'], expected_status_output)
 
-        branches = self.repo_sandbox.get_local_branches()
+        branches = repo_sandbox.get_local_branches()
         assert 'foo' in branches
         assert 'mars' not in branches
 
     def test_clean_with_checkout_my_github_prs(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
-        self.repo_sandbox.remove_remote("origin").add_remote("new_origin", "https://github.com/user/repo.git")
+        GitRepositorySandbox().remove_remote("origin").add_remote("new_origin", "https://github.com/user/repo.git")
         assert_success(
             ["clean", "--checkout-my-github-prs"],
             """

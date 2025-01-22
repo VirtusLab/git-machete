@@ -1,6 +1,6 @@
 from pytest_mock import MockerFixture
 
-from .base_test import BaseTest
+from .base_test import BaseTest, GitRepositorySandbox
 from .mockers import (assert_success, fixed_author_and_committer_date_in_past,
                       launch_command, mock__run_cmd_and_forward_stdout)
 
@@ -10,16 +10,17 @@ class TestLog(BaseTest):
     def test_log(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.utils._run_cmd', mock__run_cmd_and_forward_stdout)
 
+        repo_sandbox = GitRepositorySandbox()
         with fixed_author_and_committer_date_in_past():
-            self.repo_sandbox.new_branch('root')
-            self.repo_sandbox.commit()
-            roots_only_commit_hash = self.repo_sandbox.get_current_commit_hash()
+            repo_sandbox.new_branch('root')
+            repo_sandbox.commit()
+            roots_only_commit_hash = repo_sandbox.get_current_commit_hash()
 
-            self.repo_sandbox.new_branch('child')
-            self.repo_sandbox.commit()
-            child_first_commit_hash = self.repo_sandbox.get_current_commit_hash()
-            self.repo_sandbox.commit()
-            child_second_commit_hash = self.repo_sandbox.get_current_commit_hash()
+            repo_sandbox.new_branch('child')
+            repo_sandbox.commit()
+            child_first_commit_hash = repo_sandbox.get_current_commit_hash()
+            repo_sandbox.commit()
+            child_second_commit_hash = repo_sandbox.get_current_commit_hash()
 
         log_contents = [launch_command('log'), launch_command('log', 'child'), launch_command('log', 'refs/heads/child')]
 

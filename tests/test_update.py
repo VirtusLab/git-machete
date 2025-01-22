@@ -2,7 +2,7 @@ from pytest_mock import MockerFixture
 
 from git_machete.exceptions import UnderlyingGitException
 
-from .base_test import BaseTest
+from .base_test import BaseTest, GitRepositorySandbox
 from .mockers import (assert_failure, assert_success,
                       fixed_author_and_committer_date_in_past, launch_command,
                       mock_input_returning, mock_input_returning_y,
@@ -17,8 +17,9 @@ class TestUpdate(BaseTest):
         'git rebase' to the parent branch of the current branch.
         """
 
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox.new_branch("level-0-branch")
+            repo_sandbox.new_branch("level-0-branch")
             .commit("Basic commit.")
             .new_branch("level-1-branch")
             .commit("Only level-1 commit.")
@@ -35,8 +36,8 @@ class TestUpdate(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        parents_new_commit_hash = self.repo_sandbox.get_current_commit_hash()
-        self.repo_sandbox.check_out("level-1-branch")
+        parents_new_commit_hash = repo_sandbox.get_current_commit_hash()
+        repo_sandbox.check_out("level-1-branch")
         launch_command("update", "--no-interactive-rebase")
         new_fork_point_hash = launch_command("fork-point").strip()
 
@@ -47,8 +48,9 @@ class TestUpdate(BaseTest):
 
     def test_update_by_merge(self) -> None:
 
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox.new_branch("level-0-branch")
+            repo_sandbox.new_branch("level-0-branch")
             .commit("Basic commit.")
             .new_branch("level-1-branch")
             .commit("Only level-1 commit.")
@@ -65,21 +67,22 @@ class TestUpdate(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        self.repo_sandbox.check_out("level-1-branch")
-        old_level_1_commit_hash = self.repo_sandbox.get_current_commit_hash()
+        repo_sandbox.check_out("level-1-branch")
+        old_level_1_commit_hash = repo_sandbox.get_current_commit_hash()
         launch_command("update", "--merge", "--no-edit-merge")
 
-        assert self.repo_sandbox.is_ancestor_or_equal(old_level_1_commit_hash, "level-1-branch")
-        assert self.repo_sandbox.is_ancestor_or_equal("level-0-branch", "level-1-branch")
+        assert repo_sandbox.is_ancestor_or_equal(old_level_1_commit_hash, "level-1-branch")
+        assert repo_sandbox.is_ancestor_or_equal("level-0-branch", "level-1-branch")
 
     def test_update_drops_empty_commits(self) -> None:
         """
         Verify that 'git machete update' drops effectively-empty commits if the underlying git supports that behavior.
         """
 
+        repo_sandbox = GitRepositorySandbox()
         with fixed_author_and_committer_date_in_past():
             (
-                self.repo_sandbox.new_branch("level-0-branch")
+                repo_sandbox.new_branch("level-0-branch")
                 .commit("Basic commit.")
                 .new_branch("level-1-branch")
                 .commit("level-1 commit")
@@ -95,26 +98,26 @@ class TestUpdate(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        parents_new_commit_hash = self.repo_sandbox.get_current_commit_hash()
-        self.repo_sandbox.check_out("level-1-branch")
+        parents_new_commit_hash = repo_sandbox.get_current_commit_hash()
+        repo_sandbox.check_out("level-1-branch")
         # Note that `--empty=drop` is the default in NON-interactive mode.
         # We want to check if effectively empty commits are dropped in interactive mode as well.
         # Let's substitute the editor opened by git for interactive rebase to-do list
         # so that the test can run in a fully automated manner.
         with overridden_environment(GIT_SEQUENCE_EDITOR=":"):
-            if self.repo_sandbox.get_git_version() >= (2, 26, 0):
+            if repo_sandbox.get_git_version() >= (2, 26, 0):
                 launch_command("update")
             else:
                 with fixed_author_and_committer_date_in_past():
                     expected_error_message = "git rebase --interactive --onto refs/heads/level-0-branch " \
                                              "c0306cdd500fc39869505592200258055407bcc6 level-1-branch returned 1"
                     assert_failure(["update"], expected_error_message, expected_type=UnderlyingGitException)
-                self.repo_sandbox.execute("git rebase --continue")
+                repo_sandbox.execute("git rebase --continue")
 
         new_fork_point_hash = launch_command("fork-point").strip()
         assert parents_new_commit_hash == new_fork_point_hash, \
             "Verify that 'git machete update' drops effectively-empty commits."
-        branch_history = self.repo_sandbox.popen('git log level-0-branch..level-1-branch')
+        branch_history = repo_sandbox.popen('git log level-0-branch..level-1-branch')
         assert "level-1 commit" in branch_history
         assert "level-1 commit... but to be cherry-picked onto level-0-branch" not in branch_history
 
@@ -127,21 +130,22 @@ class TestUpdate(BaseTest):
 
         branch_first_commit_msg = "First commit on branch."
         branch_second_commit_msg = "Second commit on branch."
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox.new_branch("root")
+            repo_sandbox.new_branch("root")
             .commit("First commit on root.")
             .new_branch("branch-1")
             .commit(branch_first_commit_msg)
             .commit(branch_second_commit_msg)
         )
-        branch_second_commit_hash = self.repo_sandbox.get_current_commit_hash()
+        branch_second_commit_hash = repo_sandbox.get_current_commit_hash()
         (
-            self.repo_sandbox.commit("Third commit on branch.")
+            repo_sandbox.commit("Third commit on branch.")
             .check_out("root")
             .commit("Second commit on root.")
         )
-        roots_second_commit_hash = self.repo_sandbox.get_current_commit_hash()
-        self.repo_sandbox.check_out("branch-1")
+        roots_second_commit_hash = repo_sandbox.get_current_commit_hash()
+        repo_sandbox.check_out("branch-1")
         body: str = \
             """
             root
@@ -152,7 +156,7 @@ class TestUpdate(BaseTest):
         launch_command(
             "update", "--no-interactive-rebase", "-f", branch_second_commit_hash)
         new_fork_point_hash = launch_command("fork-point").strip()
-        branch_history = self.repo_sandbox.popen('git log -10 --oneline')
+        branch_history = repo_sandbox.popen('git log -10 --oneline')
 
         assert roots_second_commit_hash == new_fork_point_hash, \
             ("Verify that 'git machete update --no-interactive-rebase -f "
@@ -167,16 +171,17 @@ class TestUpdate(BaseTest):
              "specified by the option '-f' from the current branch.")
 
     def test_update_with_invalid_fork_point(self) -> None:
+        repo_sandbox = GitRepositorySandbox()
         with fixed_author_and_committer_date_in_past():
             (
-                self.repo_sandbox.new_branch('branch-0')
+                repo_sandbox.new_branch('branch-0')
                 .commit("Commit on branch-0.")
                 .new_branch("branch-1a")
                 .commit("Commit on branch-1a.")
             )
-            branch_1a_hash = self.repo_sandbox.get_current_commit_hash()
+            branch_1a_hash = repo_sandbox.get_current_commit_hash()
             (
-                self.repo_sandbox.check_out('branch-0')
+                repo_sandbox.check_out('branch-0')
                 .new_branch("branch-1b")
                 .commit("Commit on branch-1b.")
             )
@@ -194,9 +199,10 @@ class TestUpdate(BaseTest):
         assert_failure(['update', '-f', branch_1a_hash], expected_error_message)
 
     def test_update_with_rebase_no_qualifier(self) -> None:
+        repo_sandbox = GitRepositorySandbox()
         with fixed_author_and_committer_date_in_past():
             (
-                self.repo_sandbox.new_branch('branch-0')
+                repo_sandbox.new_branch('branch-0')
                 .commit("Commit on branch-0.")
                 .new_branch("branch-1")
                 .commit("Commit on branch-1.")
@@ -217,8 +223,9 @@ class TestUpdate(BaseTest):
 
     def test_update_with_stop_for_edit(self) -> None:
 
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox
+            repo_sandbox
             .new_branch('branch-0')
             .commit()
             .new_branch("branch-1")
@@ -230,15 +237,16 @@ class TestUpdate(BaseTest):
             launch_command("update")
         # See https://github.com/VirtusLab/git-machete/issues/935, which can only be reproduced on Windows
         # when some file is staged before `git rebase --continue` is executed.
-        self.repo_sandbox.execute("touch bar.txt")
-        self.repo_sandbox.execute("git add bar.txt")
+        repo_sandbox.execute("touch bar.txt")
+        repo_sandbox.execute("git add bar.txt")
         with overridden_environment(GIT_EDITOR="cat"):
-            self.repo_sandbox.execute("git rebase --continue")
+            repo_sandbox.execute("git rebase --continue")
 
     def test_update_unmanaged_branch(self, mocker: MockerFixture) -> None:
 
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox
+            repo_sandbox
             .new_branch('branch-0')
             .commit()
             .new_branch("branch-1")
@@ -249,21 +257,21 @@ class TestUpdate(BaseTest):
         )
         rewrite_branch_layout_file("branch-0")
 
-        original_branch_1_hash = self.repo_sandbox.get_commit_hash("branch-1")
+        original_branch_1_hash = repo_sandbox.get_commit_hash("branch-1")
         self.patch_symbol(mocker, "builtins.input", mock_input_returning(""))
         assert_failure(["update", "--no-interactive-rebase"], "Aborting.")
-        assert self.repo_sandbox.get_commit_hash("branch-1") == original_branch_1_hash
+        assert repo_sandbox.get_commit_hash("branch-1") == original_branch_1_hash
 
         self.patch_symbol(mocker, "builtins.input", mock_input_returning_y)
         assert_success(
             ["update", "--no-interactive-rebase"],
             "Branch branch-1 not found in the tree of branch dependencies. "
             "Rebase onto the inferred upstream branch-0? (y, N)\n")
-        assert self.repo_sandbox.is_ancestor_or_equal("branch-0", "branch-1")
+        assert repo_sandbox.is_ancestor_or_equal("branch-0", "branch-1")
 
     def test_update_unmanaged_branch_when_parent_cannot_be_inferred(self) -> None:
         (
-            self.repo_sandbox
+            GitRepositorySandbox()
             .new_branch('branch-0')
             .commit()
             .new_orphan_branch("branch-1")
@@ -276,9 +284,10 @@ class TestUpdate(BaseTest):
         )
 
     def test_update_with_pre_rebase_hook(self) -> None:
+        repo_sandbox = GitRepositorySandbox()
         with fixed_author_and_committer_date_in_past():
             (
-                self.repo_sandbox.new_branch('branch-0')
+                repo_sandbox.new_branch('branch-0')
                 .commit()
                 .new_branch('branch-1')
                 .commit()
@@ -291,13 +300,13 @@ class TestUpdate(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        self.repo_sandbox.write_to_file(".git/hooks/machete-pre-rebase", '#!/bin/sh\necho "$@" > machete-pre-rebase-output')
-        self.repo_sandbox.set_file_executable(".git/hooks/machete-pre-rebase")
+        repo_sandbox.write_to_file(".git/hooks/machete-pre-rebase", '#!/bin/sh\necho "$@" > machete-pre-rebase-output')
+        repo_sandbox.set_file_executable(".git/hooks/machete-pre-rebase")
         launch_command("update", "-n")
-        assert self.repo_sandbox.read_file("machete-pre-rebase-output").strip() == \
+        assert repo_sandbox.read_file("machete-pre-rebase-output").strip() == \
             "refs/heads/branch-0 e6e38425289e69c1c47dc955fdf7f4e8836aa7c4 branch-1"
 
-        self.repo_sandbox.write_to_file(".git/hooks/machete-pre-rebase", "#!/bin/sh\nexit 1")
+        repo_sandbox.write_to_file(".git/hooks/machete-pre-rebase", "#!/bin/sh\nexit 1")
         assert_failure(["update", "-n"], "The machete-pre-rebase hook refused to rebase. Error code: 1")
 
     def test_update_no_interactive_rebase_with_merge(self) -> None:
@@ -313,8 +322,9 @@ class TestUpdate(BaseTest):
         )
 
     def test_update_during_side_effecting_operations(self) -> None:
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox
+            repo_sandbox
             .remove_remote()
             .new_branch("master")
             .commit()
@@ -335,37 +345,37 @@ class TestUpdate(BaseTest):
 
         # AM
 
-        patch_path = self.repo_sandbox.popen("git format-patch feature")
-        self.repo_sandbox.execute_ignoring_exit_code(f"git am {patch_path}")
+        patch_path = repo_sandbox.popen("git format-patch feature")
+        repo_sandbox.execute_ignoring_exit_code(f"git am {patch_path}")
 
         assert_failure(["update"],
                        "git am session in progress. Conclude git am first "
                        "with git am --continue or git am --abort.",
                        expected_type=UnderlyingGitException)
 
-        self.repo_sandbox.execute("git am --abort")
+        repo_sandbox.execute("git am --abort")
 
         # CHERRY-PICK
 
-        self.repo_sandbox.execute_ignoring_exit_code("git cherry-pick feature")
+        repo_sandbox.execute_ignoring_exit_code("git cherry-pick feature")
 
         assert_failure(["update"],
                        "Cherry pick in progress. Conclude the cherry pick first with "
                        "git cherry-pick --continue or git cherry-pick --abort.",
                        expected_type=UnderlyingGitException)
 
-        self.repo_sandbox.execute("git cherry-pick --abort")
+        repo_sandbox.execute("git cherry-pick --abort")
 
         # MERGE
 
-        self.repo_sandbox.execute_ignoring_exit_code("git merge feature")
+        repo_sandbox.execute_ignoring_exit_code("git merge feature")
 
         assert_failure(["update"],
                        "Merge in progress. Conclude the merge first with "
                        "git merge --continue or git merge --abort.",
                        expected_type=UnderlyingGitException)
 
-        self.repo_sandbox.execute("git merge --abort")
+        repo_sandbox.execute("git merge --abort")
 
         # REBASE
 
@@ -377,15 +387,15 @@ class TestUpdate(BaseTest):
                        "git rebase --continue or git rebase --abort.",
                        expected_type=UnderlyingGitException)
 
-        self.repo_sandbox.execute("git rebase --abort")
+        repo_sandbox.execute("git rebase --abort")
 
         # REVERT
 
-        self.repo_sandbox.execute("git revert --no-commit HEAD")
+        repo_sandbox.execute("git revert --no-commit HEAD")
 
         assert_failure(["update"],
                        "Revert in progress. Conclude the revert first with "
                        "git revert --continue or git revert --abort.",
                        expected_type=UnderlyingGitException)
 
-        self.repo_sandbox.execute("git revert --abort")
+        repo_sandbox.execute("git revert --abort")

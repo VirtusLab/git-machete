@@ -8,7 +8,7 @@ from pytest_mock import MockerFixture
 
 from git_machete.code_hosting import OrganizationAndRepository
 from git_machete.github import GitHubClient, GitHubToken
-from tests.base_test import BaseTest
+from tests.base_test import BaseTest, GitRepositorySandbox
 from tests.mockers import (assert_failure, assert_success, launch_command,
                            mock__popen_cmd_with_fixed_results,
                            mock_input_returning_y, overridden_environment,
@@ -57,20 +57,21 @@ class TestGitHub(BaseTest):
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_github_api_pagination()))
 
+        repo_sandbox = GitRepositorySandbox()
         (
-            self.repo_sandbox.new_branch("develop")
+            repo_sandbox.new_branch("develop")
             .commit("first commit")
             .push()
         )
         for i in range(self.PR_COUNT_FOR_TEST_GITHUB_API_PAGINATION):
-            self.repo_sandbox.check_out('develop').new_branch(f'feature_{i:02d}').commit().push()
-        self.repo_sandbox.check_out('develop')
+            repo_sandbox.check_out('develop').new_branch(f'feature_{i:02d}').commit().push()
+        repo_sandbox.check_out('develop')
         body: str = 'develop *\n' + '\n'.join([f'feature_{i:02d}' for i in range(self.PR_COUNT_FOR_TEST_GITHUB_API_PAGINATION)]) + '\n'
         rewrite_branch_layout_file(body)
 
-        self.repo_sandbox.check_out('develop')
+        repo_sandbox.check_out('develop')
         for i in range(self.PR_COUNT_FOR_TEST_GITHUB_API_PAGINATION):
-            self.repo_sandbox.delete_branch(f"feature_{i:02d}")
+            repo_sandbox.delete_branch(f"feature_{i:02d}")
         body = 'develop *\n'
         rewrite_branch_layout_file(body)
 
@@ -85,7 +86,7 @@ class TestGitHub(BaseTest):
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState.with_prs()))
 
-        self.repo_sandbox.set_git_config_key('machete.github.domain', '403.example.org')
+        GitRepositorySandbox().set_git_config_key('machete.github.domain', '403.example.org')
 
         expected_error_message = (
             "GitHub API returned 403 HTTP status with error message: Forbidden\n"
@@ -100,7 +101,7 @@ class TestGitHub(BaseTest):
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState.with_prs()))
 
-        self.repo_sandbox.set_git_config_key('machete.github.domain', '403.example.org')
+        GitRepositorySandbox().set_git_config_key('machete.github.domain', '403.example.org')
 
         expected_error_message = (
             "GitHub API returned 403 HTTP status with error message: Forbidden\n"
@@ -122,7 +123,8 @@ class TestGitHub(BaseTest):
 
         github_enterprise_domain = 'git.example.org'
         (
-            self.repo_sandbox.new_branch("develop")
+            GitRepositorySandbox()
+            .new_branch("develop")
             .commit("first commit")
             .push()
             .new_branch("snickers")
@@ -135,11 +137,13 @@ class TestGitHub(BaseTest):
         launch_command('github', 'checkout-prs', '--all')
 
     def test_github_invalid_config(self) -> None:
+        repo_sandbox = GitRepositorySandbox()
+
         @contextmanager
         def git_config_key(key: str, value: str) -> Iterator[None]:
-            self.repo_sandbox.set_git_config_key(key, value)
+            repo_sandbox.set_git_config_key(key, value)
             yield
-            self.repo_sandbox.unset_git_config_key(key)
+            repo_sandbox.unset_git_config_key(key)
 
         with git_config_key('machete.github.organization', "example-org"):
             assert_failure(
@@ -166,7 +170,7 @@ class TestGitHub(BaseTest):
                     'but no remote seems to correspond to example-org/example-repo (organization/repository) on GitHub.\n'
                     'Consider pointing to the remote via machete.github.remote config key')
 
-        self.repo_sandbox.add_remote("new-origin", "https://gitlab.com/example-org/example-repo.git")  # not a valid GitHub repo URL
+        repo_sandbox.add_remote("new-origin", "https://gitlab.com/example-org/example-repo.git")  # not a valid GitHub repo URL
         with git_config_key('machete.github.remote', "new-origin"):
             assert_failure(
                 ['github', 'checkout-prs', '--all'],
@@ -180,14 +184,15 @@ class TestGitHub(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_github_enterprise_domain()))
 
         (
-            self.repo_sandbox.new_branch("develop")
-                .commit("first commit")
-                .push()
-                .new_branch("snickers")
-                .commit("first commit")
-                .push()
-                .check_out("develop")
-                .delete_branch("snickers")
+            GitRepositorySandbox()
+            .new_branch("develop")
+            .commit("first commit")
+            .push()
+            .new_branch("snickers")
+            .commit("first commit")
+            .push()
+            .check_out("develop")
+            .delete_branch("snickers")
         )
 
         expected_output = ["__get_token_from_env(cls=<class 'git_machete.github.GitHubToken'>): "
@@ -332,6 +337,7 @@ class TestGitHub(BaseTest):
         assert github_token.value == 'ghp_myothertoken_for_git_example_org'
 
     def test_github_invalid_flag_combinations(self) -> None:
+        _ = GitRepositorySandbox()
         assert_failure(["github", "anno-prs", "--draft"],
                        "--draft option is only valid with create-pr subcommand.")
         assert_failure(["github", "anno-prs", "--mine"],
