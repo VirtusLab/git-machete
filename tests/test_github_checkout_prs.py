@@ -1,3 +1,4 @@
+import os
 from typing import Any, Dict, List
 
 from pytest_mock import MockerFixture
@@ -5,10 +6,14 @@ from pytest_mock import MockerFixture
 from git_machete.code_hosting import OrganizationAndRepository
 from git_machete.github import GitHubClient
 from tests.base_test import BaseTest
-from tests.mockers import (assert_failure, assert_success, launch_command,
-                           rewrite_branch_layout_file)
+from tests.mockers import (assert_failure, assert_success, execute,
+                           launch_command, rewrite_branch_layout_file)
 from tests.mockers_code_hosting import mock_from_url
-from tests.mockers_git_repo_sandbox import GitRepositorySandbox
+from tests.mockers_git_repository import (add_remote, check_out, commit,
+                                          create_repo, create_repo_with_remote,
+                                          delete_branch, new_branch, push,
+                                          remove_remote, set_git_config_key,
+                                          set_remote_url)
 from tests.mockers_github import (MockGitHubAPIState,
                                   mock_github_token_for_domain_fake,
                                   mock_github_token_for_domain_none,
@@ -40,66 +45,65 @@ class TestGitHubCheckoutPRs(BaseTest):
     def test_github_checkout_prs(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
-        repo_sandbox = GitRepositorySandbox()
-        second_remote_path = repo_sandbox.create_repo("second-remote", bare=True)
+        (local_path, remote_path) = create_repo_with_remote()
+        second_remote_path = create_repo("second-remote", bare=True, switch_dir_to_new_repo=False)
         github_api_state = MockGitHubAPIState(
             self.repositories_for_test_github_checkout_prs(second_remote_path),
             *self.prs_for_test_checkout_prs())
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
-        (
-            repo_sandbox.new_branch("root")
-            .commit("initial commit")
-            .new_branch("develop")
-            .commit("first commit")
-            .push()
-            .new_branch("enhance/feature")
-            .commit("introduce feature")
-            .push()
-            .new_branch("bugfix/feature")
-            .commit("bugs removed")
-            .push()
-            .new_branch("allow-ownership-link")
-            .commit("fixes")
-            .push()
-            .new_branch('restrict_access')
-            .commit('authorized users only')
-            .push()
-            .new_branch("chore/redundant_checks")
-            .commit('remove some checks')
-            .push()
-            .check_out("root")
-            .new_branch("master")
-            .commit("Master commit")
-            .push()
-            .new_branch("hotfix/add-trigger")
-            .commit("HOTFIX Add the trigger")
-            .push()
-            .new_branch("ignore-trailing")
-            .commit("Ignore trailing data")
-            .push()
-            .delete_branch("root")
-            .new_branch('chore/fields')
-            .commit("remove outdated fields")
-            .push()
-            .check_out('develop')
-            .new_branch('enhance/add_user')
-            .commit('allow externals to add users')
-            .push()
-            .new_branch('bugfix/add_user')
-            .commit('first round of fixes')
-            .push()
-            .new_branch('testing/add_user')
-            .commit('add test set for add_user feature')
-            .push()
-            .new_branch('chore/comments')
-            .commit('code maintenance')
-            .push()
-            .check_out('master')
-        )
+        new_branch("root")
+        commit("initial commit")
+        new_branch("develop")
+        commit("first commit")
+        push()
+        new_branch("enhance/feature")
+        commit("introduce feature")
+        push()
+        new_branch("bugfix/feature")
+        commit("bugs removed")
+        push()
+        new_branch("allow-ownership-link")
+        commit("fixes")
+        push()
+        new_branch('restrict_access')
+        commit('authorized users only')
+        push()
+        new_branch("chore/redundant_checks")
+        commit('remove some checks')
+        push()
+        check_out("root")
+        new_branch("master")
+        commit("Master commit")
+        push()
+        new_branch("hotfix/add-trigger")
+        commit("HOTFIX Add the trigger")
+        push()
+        new_branch("ignore-trailing")
+        commit("Ignore trailing data")
+        push()
+        delete_branch("root")
+        new_branch('chore/fields')
+        commit("remove outdated fields")
+        push()
+        check_out('develop')
+        new_branch('enhance/add_user')
+        commit('allow externals to add users')
+        push()
+        new_branch('bugfix/add_user')
+        commit('first round of fixes')
+        push()
+        new_branch('testing/add_user')
+        commit('add test set for add_user feature')
+        push()
+        new_branch('chore/comments')
+        commit('code maintenance')
+        push()
+        check_out('master')
+
         for branch in ('chore/redundant_checks', 'restrict_access', 'allow-ownership-link', 'bugfix/feature', 'enhance/add_user',
                        'testing/add_user', 'chore/comments', 'bugfix/add_user'):
-            repo_sandbox.delete_branch(branch)
+            delete_branch(branch)
 
         body: str = \
             """
@@ -242,7 +246,7 @@ class TestGitHubCheckoutPRs(BaseTest):
         # check against wrong PR number
         org_repo = OrganizationAndRepository.from_url(
             domain=GitHubClient.DEFAULT_GITHUB_DOMAIN,
-            url=repo_sandbox.remote_path)
+            url=remote_path)
 
         assert org_repo is not None
         expected_error_message = f"PR #100 is not found in repository {org_repo.organization}/{org_repo.repository}"
@@ -254,27 +258,22 @@ class TestGitHubCheckoutPRs(BaseTest):
         assert_success(['github', 'checkout-prs', '--by', 'some_other_user'], expected_msg)
 
         # Check against closed pull request with head branch deleted from remote
-        repo_sandbox.create_repo("other-local", bare=False, switch_dir_to_new_repo=True)
-        (
-            repo_sandbox
-            .add_remote("origin", second_remote_path)
-            .new_branch('main')
-            .commit('initial commit')
-            .push()
-        )
+        create_repo("other-local", bare=False, switch_dir_to_new_repo=True)
+
+        add_remote("origin", second_remote_path)
+        new_branch('main')
+        commit('initial commit')
+        push()
 
         expected_error_message = "Could not check out PR #5 because branch bugfix/remove-n-option " \
                                  "is already deleted from tester."
         assert_failure(['github', 'checkout-prs', '5'], expected_error_message)
 
         # Check against PR coming from fork
-        (
-            repo_sandbox
-            .new_branch('bugfix/remove-n-option')
-            .commit('first commit')
-            .push()
-            .chdir(repo_sandbox.local_path)
-        )
+        new_branch('bugfix/remove-n-option')
+        commit('first commit')
+        push()
+        os.chdir(local_path)
 
         expected_msg = ("Checking for open GitHub PRs... OK\n"
                         "Warn: PR #5 is already closed.\n"
@@ -297,20 +296,17 @@ class TestGitHubCheckoutPRs(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen',
                           mock_urlopen(self.github_api_state_for_test_github_checkout_prs_from_fork_with_deleted_repo()))
 
-        repo_sandbox = GitRepositorySandbox()
-        (
-            repo_sandbox.new_branch("root")
-            .commit('initial master commit')
-            .push()
-            .new_branch('develop')
-            .commit('initial develop commit')
-            .push()
-        )
+        (local_path, remote_path) = create_repo_with_remote()
+        new_branch("root")
+        commit('initial master commit')
+        push()
+        new_branch('develop')
+        commit('initial develop commit')
+        push()
 
-        repo_sandbox \
-            .chdir(repo_sandbox.remote_path)\
-            .execute("git branch pull/2/head develop")\
-            .chdir(repo_sandbox.local_path)
+        os.chdir(remote_path)
+        execute("git branch pull/2/head develop")
+        os.chdir(local_path)
 
         body: str = \
             """
@@ -352,60 +348,59 @@ class TestGitHubCheckoutPRs(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen',
                           mock_urlopen(self.github_api_state_for_test_github_checkout_prs_of_current_user_and_other_users()))
 
-        repo_sandbox = GitRepositorySandbox()
-        (
-            repo_sandbox.new_branch("root")
-            .commit("initial commit")
-            .new_branch("develop")
-            .commit("first commit")
-            .push()
-            .new_branch("enhance/feature")
-            .commit("introduce feature")
-            .push()
-            .new_branch("bugfix/feature")
-            .commit("bugs removed")
-            .push()
-            .new_branch("allow-ownership-link")
-            .commit("fixes")
-            .push()
-            .new_branch('restrict_access')
-            .commit('authorized users only')
-            .push()
-            .new_branch("chore/redundant_checks")
-            .commit('remove some checks')
-            .push()
-            .check_out("root")
-            .new_branch("master")
-            .commit("Master commit")
-            .push()
-            .new_branch("hotfix/add-trigger")
-            .commit("HOTFIX Add the trigger")
-            .push()
-            .new_branch("ignore-trailing")
-            .commit("Ignore trailing data")
-            .push()
-            .delete_branch("root")
-            .new_branch('chore/fields')
-            .commit("remove outdated fields")
-            .push()
-            .check_out('develop')
-            .new_branch('enhance/add_user')
-            .commit('allow externals to add users')
-            .push()
-            .new_branch('bugfix/add_user')
-            .commit('first round of fixes')
-            .push()
-            .new_branch('testing/add_user')
-            .commit('add test set for add_user feature')
-            .push()
-            .new_branch('chore/comments')
-            .commit('code maintenance')
-            .push()
-            .check_out('master')
-        )
+        create_repo_with_remote()
+        new_branch("root")
+        commit("initial commit")
+        new_branch("develop")
+        commit("first commit")
+        push()
+        new_branch("enhance/feature")
+        commit("introduce feature")
+        push()
+        new_branch("bugfix/feature")
+        commit("bugs removed")
+        push()
+        new_branch("allow-ownership-link")
+        commit("fixes")
+        push()
+        new_branch('restrict_access')
+        commit('authorized users only')
+        push()
+        new_branch("chore/redundant_checks")
+        commit('remove some checks')
+        push()
+        check_out("root")
+        new_branch("master")
+        commit("Master commit")
+        push()
+        new_branch("hotfix/add-trigger")
+        commit("HOTFIX Add the trigger")
+        push()
+        new_branch("ignore-trailing")
+        commit("Ignore trailing data")
+        push()
+        delete_branch("root")
+        new_branch('chore/fields')
+        commit("remove outdated fields")
+        push()
+        check_out('develop')
+        new_branch('enhance/add_user')
+        commit('allow externals to add users')
+        push()
+        new_branch('bugfix/add_user')
+        commit('first round of fixes')
+        push()
+        new_branch('testing/add_user')
+        commit('add test set for add_user feature')
+        push()
+        new_branch('chore/comments')
+        commit('code maintenance')
+        push()
+        check_out('master')
+
         for branch in ('chore/redundant_checks', 'restrict_access', 'allow-ownership-link', 'bugfix/feature', 'enhance/add_user',
                        'testing/add_user', 'chore/comments', 'bugfix/add_user'):
-            repo_sandbox.delete_branch(branch)
+            delete_branch(branch)
 
         body: str = \
             """
@@ -544,22 +539,19 @@ class TestGitHubCheckoutPRs(BaseTest):
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_with_pr_cycle()))
 
-        repo_sandbox = GitRepositorySandbox()
-        (
-            repo_sandbox
-            .new_branch("bugfix/feature")
-            .commit("bugs removed")
-            .push()
-            .new_branch("allow-ownership-link")
-            .commit("fixes")
-            .push()
-            .new_branch('restrict_access')
-            .commit('authorized users only')
-            .push()
-            .new_branch("chore/redundant_checks")
-            .commit('remove some checks')
-            .push()
-        )
+        create_repo_with_remote()
+        new_branch("bugfix/feature")
+        commit("bugs removed")
+        push()
+        new_branch("allow-ownership-link")
+        commit("fixes")
+        push()
+        new_branch('restrict_access')
+        commit('authorized users only')
+        push()
+        new_branch("chore/redundant_checks")
+        commit('remove some checks')
+        push()
 
         assert_failure(
             ['github', 'checkout-prs', '--all'],
@@ -577,22 +569,17 @@ class TestGitHubCheckoutPRs(BaseTest):
         self.patch_symbol(mocker, 'git_machete.git_operations.GitContext.fetch_remote', lambda _self, _remote: None)
         github_api_state = self.github_api_state_for_test_github_checkout_prs_single_pr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
-        repo_sandbox = GitRepositorySandbox()
-        (
-            repo_sandbox
-            .remove_remote("origin")
-            .add_remote("origin-1", github_api_state.repositories[1]['clone_url'])
-        )
+        create_repo()
+        add_remote("origin-1", github_api_state.repositories[1]['clone_url'])
+
         assert_failure(
             ["github", "checkout-prs", "--all"],
             "Could not check out PR #18 because branch develop is already deleted from origin-1."
         )
 
-        (
-            repo_sandbox
-            .remove_remote("origin-1")
-            .add_remote("tester", 'https://github.com/tester/lolxd.git')
-        )
+        remove_remote("origin-1")
+        add_remote("tester", 'https://github.com/tester/lolxd.git')
+
         assert_failure(
             ["github", "checkout-prs", "--all"],
             "Could not check out PR #18 because branch develop is already deleted from tester."
@@ -603,16 +590,17 @@ class TestGitHubCheckoutPRs(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(
             self.github_api_state_for_test_github_checkout_prs_single_pr()))
 
-        repo_sandbox = GitRepositorySandbox()
-        (
-            repo_sandbox
-            .new_branch("master").commit()
-            .new_branch("develop").commit().push()
-        )
+        create_repo_with_remote()
+        new_branch("master")
+        commit()
 
-        repo_sandbox.set_remote_url("origin", "https://github.com/example-org/example-repo.git")
-        repo_sandbox.set_git_config_key('machete.github.organization', "example-org")
-        repo_sandbox.set_git_config_key('machete.github.repository', "example-repo")
+        new_branch("develop")
+        commit()
+        push()
+
+        set_remote_url("origin", "https://github.com/example-org/example-repo.git")
+        set_git_config_key('machete.github.organization', "example-org")
+        set_git_config_key('machete.github.repository', "example-repo")
         assert_success(
             ['github', 'checkout-prs', '--all'],
             'Checking for open GitHub PRs... OK\n'
@@ -624,15 +612,16 @@ class TestGitHubCheckoutPRs(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(
             self.github_api_state_for_test_github_checkout_prs_single_pr()))
 
-        repo_sandbox = GitRepositorySandbox()
-        (
-            repo_sandbox
-            .new_branch("master").commit()
-            .new_branch("develop").commit().push()
-        )
+        create_repo_with_remote()
+        new_branch("master")
+        commit()
 
-        repo_sandbox.set_remote_url("origin", "https://github.com/example-org/example-repo.git")
-        repo_sandbox.set_git_config_key('machete.github.remote', "origin")
+        new_branch("develop")
+        commit()
+        push()
+
+        set_remote_url("origin", "https://github.com/example-org/example-repo.git")
+        set_git_config_key('machete.github.remote', "origin")
         assert_success(
             ['github', 'checkout-prs', '--all'],
             'Checking for open GitHub PRs... OK\n'
@@ -650,22 +639,20 @@ class TestGitHubCheckoutPRs(BaseTest):
         self.patch_symbol(mocker, 'git_machete.git_operations.GitContext.fetch_remote', lambda _self, _remote: None)
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
-        repo_sandbox = GitRepositorySandbox()
-        second_remote_path = repo_sandbox.create_repo("second-remote", bare=True)
+
+        create_repo_with_remote()
+        second_remote_path = create_repo("second-remote", bare=True, switch_dir_to_new_repo=False)
         github_api_state = MockGitHubAPIState(
             self.repositories_for_test_github_checkout_prs(second_remote_path),
             *self.prs_for_test_checkout_prs_main_to_main_pr())
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
-        (
-            repo_sandbox
-            .new_branch("main")
-            .commit()
-            .push()
-            .new_branch("fix-10341")
-            .commit()
-            .push()
-        )
+        new_branch("main")
+        commit()
+        push()
+        new_branch("fix-10341")
+        commit()
+        push()
 
         assert_success(
             ['github', 'checkout-prs', '2'],

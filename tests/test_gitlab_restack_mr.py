@@ -7,7 +7,9 @@ from tests.mockers import (assert_failure, assert_success,
                            fixed_author_and_committer_date_in_past,
                            rewrite_branch_layout_file)
 from tests.mockers_code_hosting import mock_from_url
-from tests.mockers_git_repo_sandbox import GitRepositorySandbox
+from tests.mockers_git_repository import (amend_commit, commit,
+                                          create_repo_with_remote, new_branch,
+                                          push, reset_to, set_git_config_key)
 from tests.mockers_gitlab import (MockGitLabAPIState,
                                   mock_gitlab_token_for_domain_fake,
                                   mock_mr_json, mock_urlopen)
@@ -36,15 +38,17 @@ class TestGitLabRestackMR(BaseTest):
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.gitlab_api_state_for_test_restack_mr()))
 
-        repo_sandbox = GitRepositorySandbox()
-        repo_sandbox.new_branch("develop").commit()
+        create_repo_with_remote()
+        new_branch("develop")
+        commit()
 
         assert_failure(
             ['gitlab', 'restack-mr'],
             "No MRs in example-org/example-repo have develop as its source branch"
         )
 
-        repo_sandbox.new_branch("multiple-mr-branch").commit()
+        new_branch("multiple-mr-branch")
+        commit()
         assert_failure(
             ['gitlab', 'restack-mr'],
             "Multiple MRs in example-org/example-repo have multiple-mr-branch as its source branch: !16, !17"
@@ -56,18 +60,17 @@ class TestGitLabRestackMR(BaseTest):
         gitlab_api_state = self.gitlab_api_state_for_test_restack_mr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
 
-        (
-            GitRepositorySandbox()
-            .new_branch("master")
-            .commit()
-            .new_branch("develop")
-            .commit()
-            .commit()
-            .push()
-            .new_branch('feature')
-            .commit()
-            .push()
-        )
+        create_repo_with_remote()
+        new_branch("master")
+        commit()
+        new_branch("develop")
+        commit()
+        commit()
+        push()
+        new_branch('feature')
+        commit()
+        push()
+
         body: str = \
             """
             master
@@ -95,13 +98,12 @@ class TestGitLabRestackMR(BaseTest):
         gitlab_api_state = self.gitlab_api_state_for_test_restack_mr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
 
-        (
-            GitRepositorySandbox()
-            .new_branch("master")
-            .commit()
-            .new_branch('feature_1')
-            .commit()
-        )
+        create_repo_with_remote()
+        new_branch("master")
+        commit()
+        new_branch('feature_1')
+        commit()
+
         body: str = \
             """
             master
@@ -134,15 +136,14 @@ class TestGitLabRestackMR(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
 
         with fixed_author_and_committer_date_in_past():
-            repo_sandbox = GitRepositorySandbox()
-            (
-                repo_sandbox.new_branch("master")
-                .commit()
-                .new_branch('feature')
-                .commit()
-                .push()
-            )
-        repo_sandbox.amend_commit()
+            create_repo_with_remote()
+            new_branch("master")
+            commit()
+            new_branch('feature')
+            commit()
+            push()
+
+        amend_commit()
         body: str = \
             """
             master
@@ -181,16 +182,15 @@ class TestGitLabRestackMR(BaseTest):
         gitlab_api_state = self.gitlab_api_state_for_test_restack_mr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
 
-        (
-            GitRepositorySandbox()
-            .new_branch("master")
-            .commit()
-            .new_branch('feature')
-            .commit()
-            .push()
-            .commit()
-            .set_git_config_key('machete.gitlab.domain', 'git.example.org')
-        )
+        create_repo_with_remote()
+        new_branch("master")
+        commit()
+        new_branch('feature')
+        commit()
+        push()
+        commit()
+        set_git_config_key('machete.gitlab.domain', 'git.example.org')
+
         body: str = \
             """
             master
@@ -224,15 +224,13 @@ class TestGitLabRestackMR(BaseTest):
         gitlab_api_state = self.gitlab_api_state_for_test_restack_mr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
 
-        (
-            GitRepositorySandbox()
-            .new_branch("master")
-            .commit()
-            .new_branch('feature')
-            .commit()
-            .push()
-            .commit()
-        )
+        create_repo_with_remote()
+        new_branch("master")
+        commit()
+        new_branch('feature')
+        commit()
+        push()
+        commit()
 
         body: str = \
             """
@@ -280,15 +278,14 @@ class TestGitLabRestackMR(BaseTest):
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.gitlab_api_state_for_test_restack_mr()))
 
-        (
-            GitRepositorySandbox()
-            .new_branch("master")
-            .commit()
-            .new_branch('feature')
-            .commit()
-            .push()
-            .reset_to("HEAD~")
-        )
+        create_repo_with_remote()
+        new_branch("master")
+        commit()
+        new_branch('feature')
+        commit()
+        push()
+        reset_to("HEAD~")
+
         body: str = \
             """
             master
@@ -312,16 +309,15 @@ class TestGitLabRestackMR(BaseTest):
         gitlab_api_state = self.gitlab_api_state_for_test_restack_mr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
 
-        repo_sandbox = GitRepositorySandbox()
-        (
-            repo_sandbox.new_branch("master")
-            .commit()
-            .new_branch('feature')
-            .commit()
-            .push()
-        )
+        create_repo_with_remote()
+        new_branch("master")
+        commit()
+        new_branch('feature')
+        commit()
+        push()
+
         with fixed_author_and_committer_date_in_past():
-            repo_sandbox.amend_commit()
+            amend_commit()
 
         body: str = \
             """

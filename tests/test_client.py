@@ -6,7 +6,8 @@ from git_machete.git_operations import GitContext, LocalBranchShortName
 
 from .base_test import BaseTest
 from .mockers import rewrite_branch_layout_file
-from .mockers_git_repo_sandbox import GitRepositorySandbox
+from .mockers_git_repository import (check_out, commit,
+                                     create_repo_with_remote, new_branch, push)
 
 
 class TestClient(BaseTest):
@@ -15,34 +16,32 @@ class TestClient(BaseTest):
         """
         Verify behaviour of a 'MacheteClient.read_branch_layout_file()' method
         """
-        (
-            GitRepositorySandbox()
-            .new_branch('master')
-            .commit()
-            .push()
-            .new_branch('feature1')
-            .commit()
-            .new_branch('feature2')
-            .commit()
-            .check_out("master")
-            .new_branch('feature3')
-            .commit()
-            .push()
-            .new_branch('feature4')
-            .commit()
-            .check_out("master")
-            .new_branch('feature5')
-            .commit()
-            .check_out("master")
-            .new_branch('feature6')
-            .commit()
-            .check_out("master")
-            .new_branch('feature7')
-            .commit()
-            .check_out("master")
-            .new_branch('feature8')
-            .commit()
-        )
+        create_repo_with_remote()
+        new_branch('master')
+        commit()
+        push()
+        new_branch('feature1')
+        commit()
+        new_branch('feature2')
+        commit()
+        check_out("master")
+        new_branch('feature3')
+        commit()
+        push()
+        new_branch('feature4')
+        commit()
+        check_out("master")
+        new_branch('feature5')
+        commit()
+        check_out("master")
+        new_branch('feature6')
+        commit()
+        check_out("master")
+        new_branch('feature7')
+        commit()
+        check_out("master")
+        new_branch('feature8')
+        commit()
 
         body: str = \
             """

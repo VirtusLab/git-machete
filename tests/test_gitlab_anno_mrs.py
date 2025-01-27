@@ -2,8 +2,13 @@ from pytest_mock import MockerFixture
 
 from tests.base_test import BaseTest
 from tests.mockers import (assert_failure, assert_success, launch_command,
-                           rewrite_branch_layout_file)
-from tests.mockers_git_repo_sandbox import GitRepositorySandbox
+                           rewrite_branch_layout_file, sleep)
+from tests.mockers_git_repository import (add_remote, amend_commit, check_out,
+                                          commit, create_repo,
+                                          create_repo_with_remote,
+                                          delete_branch, new_branch, push,
+                                          remove_remote, reset_to,
+                                          set_git_config_key)
 from tests.mockers_gitlab import (MockGitLabAPIState,
                                   mock_gitlab_token_for_domain_fake,
                                   mock_mr_json, mock_urlopen)
@@ -24,48 +29,46 @@ class TestGitLabAnnoMRs(BaseTest):
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.gitlab_api_state_for_test_anno_mrs()))
 
-        repo_sandbox = GitRepositorySandbox()
-        (
-            repo_sandbox
-            .new_branch("root")
-            .commit("root")
-            .new_branch("develop")
-            .commit("develop commit")
-            .new_branch("allow-ownership-link")
-            .commit("Allow ownership links")
-            .push()
-            .new_branch("build-chain")
-            .commit("Build arbitrarily long chains")
-            .check_out("allow-ownership-link")
-            .commit("1st round of fixes")
-            .check_out("develop")
-            .commit("Other develop commit")
-            .push()
-            .new_branch("call-ws")
-            .commit("Call web service")
-            .commit("1st round of fixes")
-            .push()
-            .new_branch("drop-constraint")
-            .commit("Drop unneeded SQL constraints")
-            .check_out("call-ws")
-            .commit("2nd round of fixes")
-            .check_out("root")
-            .new_branch("master")
-            .commit("Master commit")
-            .push()
-            .new_branch("hotfix/add-trigger")
-            .commit("HOTFIX Add the trigger")
-            .push()
-            .amend_commit("HOTFIX Add the trigger (amended)")
-            .new_branch("ignore-trailing")
-            .commit("Ignore trailing data")
-            .sleep(1)
-            .amend_commit("Ignore trailing data (amended)")
-            .push()
-            .reset_to("ignore-trailing@{1}")  # noqa: FS003
-            .delete_branch("root")
-            .add_remote('new_origin', 'https://gitlab.com/user/repo.git')
-        )
+        create_repo_with_remote()
+        new_branch("root")
+        commit("root")
+        new_branch("develop")
+        commit("develop commit")
+        new_branch("allow-ownership-link")
+        commit("Allow ownership links")
+        push()
+        new_branch("build-chain")
+        commit("Build arbitrarily long chains")
+        check_out("allow-ownership-link")
+        commit("1st round of fixes")
+        check_out("develop")
+        commit("Other develop commit")
+        push()
+        new_branch("call-ws")
+        commit("Call web service")
+        commit("1st round of fixes")
+        push()
+        new_branch("drop-constraint")
+        commit("Drop unneeded SQL constraints")
+        check_out("call-ws")
+        commit("2nd round of fixes")
+        check_out("root")
+        new_branch("master")
+        commit("Master commit")
+        push()
+        new_branch("hotfix/add-trigger")
+        commit("HOTFIX Add the trigger")
+        push()
+        amend_commit("HOTFIX Add the trigger (amended)")
+        new_branch("ignore-trailing")
+        commit("Ignore trailing data")
+        sleep(1)
+        amend_commit("Ignore trailing data (amended)")
+        push()
+        reset_to("ignore-trailing@{1}")  # noqa: FS003
+        delete_branch("root")
+        add_remote('new_origin', 'https://gitlab.com/user/repo.git')
+
         body: str = \
             """
             master
@@ -106,13 +109,10 @@ class TestGitLabAnnoMRs(BaseTest):
         )
 
         # Test anno-mrs using custom remote URL provided by git config keys
-        (
-            repo_sandbox
-            .remove_remote('new_origin')
-            .set_git_config_key('machete.gitlab.remote', 'origin')
-            .set_git_config_key('machete.gitlab.namespace', 'custom_user')
-            .set_git_config_key('machete.gitlab.project', 'custom_repo')
-        )
+        remove_remote('new_origin')
+        set_git_config_key('machete.gitlab.remote', 'origin')
+        set_git_config_key('machete.gitlab.namespace', 'custom_user')
+        set_git_config_key('machete.gitlab.project', 'custom_repo')
 
         launch_command('gitlab', 'anno-mrs')
         assert_success(
@@ -147,23 +147,21 @@ class TestGitLabAnnoMRs(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen',
                           mock_urlopen(self.gitlab_api_state_for_test_local_branch_name_different_than_tracking_branch_name()))
 
-        (
-            GitRepositorySandbox()
-            .new_branch("root")
-            .commit("First commit on root.")
-            .push()
-            .new_branch('feature_repo')
-            .commit('introduce feature')
-            .push()
-            .new_branch('feature')
-            .commit('introduce feature')
-            .push(tracking_branch='feature_repo')
-            .new_branch('feature_1')
-            .commit('introduce feature')
-            .push()
-            .delete_branch('feature_repo')
-            .add_remote('new_origin', 'https://gitlab.com/user/repo.git')
-        )
+        create_repo_with_remote()
+        new_branch("root")
+        commit("First commit on root.")
+        push()
+        new_branch('feature_repo')
+        commit('introduce feature 1')
+        push()
+        new_branch('feature')
+        commit('introduce feature 2')
+        push(tracking_branch='feature_repo')
+        new_branch('feature_1')
+        commit('introduce feature 3')
+        push()
+        delete_branch('feature_repo')
+        add_remote('new_origin', 'https://gitlab.com/user/repo.git')
 
         body: str = \
             """
@@ -187,7 +185,7 @@ class TestGitLabAnnoMRs(BaseTest):
         )
 
     def test_gitlab_anno_mrs_no_remotes(self) -> None:
-        repo_sandbox = GitRepositorySandbox()
+        create_repo_with_remote()
         assert_failure(
             ["gitlab", "anno-mrs"],
             """
@@ -198,16 +196,14 @@ class TestGitLabAnnoMRs(BaseTest):
             """
         )
 
-        repo_sandbox.remove_remote()
+        remove_remote()
         assert_failure(["gitlab", "anno-mrs"], "No remotes defined for this repository (see git remote)")
 
     def test_gitlab_anno_mrs_multiple_non_origin_gitlab_remotes(self) -> None:
-        (
-            GitRepositorySandbox()
-            .remove_remote("origin")
-            .add_remote("origin-1", "https://gitlab.com/tester/repo_sandbox-1.git")
-            .add_remote("origin-2", "https://gitlab.com/tester/repo_sandbox-2.git")
-        )
+        create_repo()
+        add_remote("origin-1", "https://gitlab.com/tester/repo_sandbox-1.git")
+        add_remote("origin-2", "https://gitlab.com/tester/repo_sandbox-2.git")
+
         assert_failure(
             ["gitlab", "anno-mrs"],
             """

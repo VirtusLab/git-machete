@@ -3,8 +3,10 @@ from typing import Dict
 
 import pytest
 
-from tests.mockers import rewrite_branch_layout_file
-from tests.mockers_git_repo_sandbox import GitRepositorySandbox
+from tests.mockers import popen, rewrite_branch_layout_file
+from tests.mockers_git_repository import (check_out, commit, create_repo,
+                                          get_current_commit_hash, new_branch,
+                                          set_git_config_key)
 
 test_cases: Dict[str, str] = {
     "git machete ":
@@ -150,28 +152,25 @@ test_cases: Dict[str, str] = {
 @pytest.mark.completion_e2e
 class TestCompletionEndToEnd:
 
-    repo_sandbox = GitRepositorySandbox()
+    create_repo()
 
     @classmethod
     def setup_class(cls) -> None:
-        (
-            cls.repo_sandbox
-            .new_branch("master")
-            .commit()
-            .new_branch("develop")
-            .commit()
-            .set_git_config_key("machete.overrideForkPoint.develop.to", cls.repo_sandbox.get_current_commit_hash())
-            .commit()
-            .new_branch("feature")
-            .commit()
-            .check_out("master")
-        )
+        new_branch("master")
+        commit()
+        new_branch("develop")
+        commit()
+        set_git_config_key("machete.overrideForkPoint.develop.to", get_current_commit_hash())
+        commit()
+        new_branch("feature")
+        commit()
+        check_out("master")
         rewrite_branch_layout_file("master\n\tdevelop")
 
     @pytest.mark.parametrize("input,expected_result", test_cases.items(), ids=lambda x: x if x.startswith('git machete') else '')
     @pytest.mark.parametrize("script_name", ["complete-bash.sh", "complete-fish.fish", "complete-zsh.zsh"])
     def test_completion(self, input: str, expected_result: str, script_name: str) -> None:
         script = pathlib.Path(__file__).parent.joinpath(script_name).absolute()
-        output_tokens = self.repo_sandbox.popen(f"'{script}' '{input}'").split()
+        output_tokens = popen(f"'{script}' '{input}'").split()
         result = " ".join(sorted(output_tokens, key=lambda s: ''.join([c for c in s if c.isalpha()])))
         assert result == expected_result, f"for '{input}'"

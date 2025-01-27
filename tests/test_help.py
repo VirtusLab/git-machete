@@ -7,7 +7,7 @@ from git_machete.exceptions import ExitCode
 
 from .base_test import BaseTest
 from .mockers import launch_command
-from .mockers_git_repo_sandbox import GitRepositorySandbox
+from .mockers_git_repository import create_repo, set_git_config_key
 
 
 class TestHelp(BaseTest):
@@ -44,6 +44,7 @@ class TestHelp(BaseTest):
             assert '\033' not in help_output
 
     def test_help_succeeds_despite_invalid_git_config_key(self) -> None:
-        GitRepositorySandbox().set_git_config_key("machete.squashMergeDetection", "invalid")
+        create_repo()
+        set_git_config_key("machete.squashMergeDetection", "invalid")
         help_output = launch_command('help')
         assert "Usage:" in help_output

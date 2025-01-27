@@ -2,7 +2,7 @@ import pytest
 
 from .base_test import BaseTest
 from .mockers import launch_command, rewrite_branch_layout_file
-from .mockers_git_repo_sandbox import GitRepositorySandbox
+from .mockers_git_repository import check_out, commit, create_repo, new_branch
 
 
 class TestIsManaged(BaseTest):
@@ -11,17 +11,17 @@ class TestIsManaged(BaseTest):
         """
         Verify behaviour of a 'git machete is-managed' command.
         """
-        (
-            GitRepositorySandbox()
-            .new_branch("master")
-            .commit("master commit.")
-            .new_branch("develop")
-            .commit("develop commit.")
-            .new_branch("feature")
-            .commit("feature commit.")
-            .check_out("develop")
-            .commit("New commit on develop")
-        )
+
+        create_repo()
+        new_branch("master")
+        commit("master commit.")
+        new_branch("develop")
+        commit("develop commit.")
+        new_branch("feature")
+        commit("feature commit.")
+        check_out("develop")
+        commit("New commit on develop")
+
         body: str = \
             """
             master
