@@ -89,12 +89,21 @@ class TestUpdate(BaseTest):
         with fixed_author_and_committer_date_in_past():
             new_branch("level-0-branch")
             commit("Basic commit.")
+            hash1 = get_current_commit_hash()
             new_branch("level-1-branch")
             commit("level-1 commit")
+            hash2 = get_current_commit_hash()
             commit("level-1 commit... but to be cherry-picked onto level-0-branch")
+            hash3 = get_current_commit_hash()
             check_out("level-0-branch")
             commit("New commit on level-0-branch")
+            hash4 = get_current_commit_hash()
             execute("git cherry-pick level-1-branch")
+
+        print(hash1)
+        print(hash2)
+        print(hash3)
+        print(hash4)
 
         body: str = \
             """
@@ -115,7 +124,7 @@ class TestUpdate(BaseTest):
             else:
                 with fixed_author_and_committer_date_in_past():
                     expected_error_message = "git rebase --interactive --onto refs/heads/level-0-branch " \
-                                             "c0306cdd500fc39869505592200258055407bcc6 level-1-branch returned 1"
+                                             "5420e4e155024d8c9181df47ecaeb983c667ce9b level-1-branch returned 1"
                     assert_failure(["update"], expected_error_message, expected_type=UnderlyingGitException)
                 execute("git rebase --continue")
 
