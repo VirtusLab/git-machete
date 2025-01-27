@@ -486,6 +486,7 @@ class TestGitHubCheckoutPRs(BaseTest):
         )
 
     def test_github_checkout_prs_misc_failures_and_warns(self, mocker: MockerFixture) -> None:
+        create_repo_with_remote()
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState.with_prs()))
 
