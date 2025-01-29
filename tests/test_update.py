@@ -89,21 +89,12 @@ class TestUpdate(BaseTest):
         with fixed_author_and_committer_date_in_past():
             new_branch("level-0-branch")
             commit("Basic commit.")
-            hash1 = get_current_commit_hash()
             new_branch("level-1-branch")
             commit("level-1 commit")
-            hash2 = get_current_commit_hash()
             commit("level-1 commit... but to be cherry-picked onto level-0-branch")
-            hash3 = get_current_commit_hash()
             check_out("level-0-branch")
             commit("New commit on level-0-branch")
-            hash4 = get_current_commit_hash()
             execute("git cherry-pick level-1-branch")
-
-        print(hash1)
-        print(hash2)
-        print(hash3)
-        print(hash4)
 
         body: str = \
             """
