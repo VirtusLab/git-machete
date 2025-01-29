@@ -7,6 +7,9 @@ from tests.mockers import (assert_failure, assert_success,
                            fixed_author_and_committer_date_in_past,
                            rewrite_branch_layout_file)
 from tests.mockers_code_hosting import mock_from_url
+from tests.mockers_git_repository import (amend_commit, commit,
+                                          create_repo_with_remote, new_branch,
+                                          push, reset_to, set_git_config_key)
 from tests.mockers_github import (MockGitHubAPIState,
                                   mock_github_token_for_domain_fake,
                                   mock_pr_json, mock_urlopen)
@@ -35,14 +38,18 @@ class TestGitHubRestackPR(BaseTest):
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_restack_pr()))
 
-        self.repo_sandbox.new_branch("develop").commit()
+        create_repo_with_remote()
+        new_branch("develop")
+        commit()
 
         assert_failure(
             ['github', 'restack-pr'],
             "No PRs in example-org/example-repo have develop as its head branch"
         )
 
-        self.repo_sandbox.new_branch("multiple-pr-branch").commit()
+        new_branch("multiple-pr-branch")
+        commit()
+
         assert_failure(
             ['github', 'restack-pr'],
             "Multiple PRs in example-org/example-repo have multiple-pr-branch as its head branch: #16, #17"
@@ -54,17 +61,17 @@ class TestGitHubRestackPR(BaseTest):
         github_api_state = self.github_api_state_for_test_restack_pr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
-        (
-            self.repo_sandbox.new_branch("master")
-            .commit()
-            .new_branch("develop")
-            .commit()
-            .commit()
-            .push()
-            .new_branch('feature')
-            .commit()
-            .push()
-        )
+        create_repo_with_remote()
+        new_branch("master")
+        commit()
+        new_branch("develop")
+        commit()
+        commit()
+        push()
+        new_branch('feature')
+        commit()
+        push()
+
         body: str = \
             """
             master
@@ -92,12 +99,12 @@ class TestGitHubRestackPR(BaseTest):
         github_api_state = self.github_api_state_for_test_restack_pr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
-        (
-            self.repo_sandbox.new_branch("master")
-            .commit()
-            .new_branch('feature_1')
-            .commit()
-        )
+        create_repo_with_remote()
+        new_branch("master")
+        commit()
+        new_branch('feature_1')
+        commit()
+
         body: str = \
             """
             master
@@ -129,15 +136,15 @@ class TestGitHubRestackPR(BaseTest):
         github_api_state = self.github_api_state_for_test_restack_pr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
+        create_repo_with_remote()
         with fixed_author_and_committer_date_in_past():
-            (
-                self.repo_sandbox.new_branch("master")
-                .commit()
-                .new_branch('feature')
-                .commit()
-                .push()
-            )
-        self.repo_sandbox.amend_commit()
+            new_branch("master")
+            commit()
+            new_branch('feature')
+            commit()
+            push()
+
+        amend_commit()
         body: str = \
             """
             master
@@ -172,15 +179,15 @@ class TestGitHubRestackPR(BaseTest):
         github_api_state = self.github_api_state_for_test_restack_pr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
-        (
-            self.repo_sandbox.new_branch("master")
-            .commit()
-            .new_branch('feature')
-            .commit()
-            .push()
-            .commit()
-            .set_git_config_key('machete.github.domain', 'git.example.org')
-        )
+        create_repo_with_remote()
+        new_branch("master")
+        commit()
+        new_branch('feature')
+        commit()
+        push()
+        commit()
+        set_git_config_key('machete.github.domain', 'git.example.org')
+
         body: str = \
             """
             master
@@ -214,14 +221,13 @@ class TestGitHubRestackPR(BaseTest):
         github_api_state = self.github_api_state_for_test_restack_pr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
-        (
-            self.repo_sandbox.new_branch("master")
-            .commit()
-            .new_branch('feature')
-            .commit()
-            .push()
-            .commit()
-        )
+        create_repo_with_remote()
+        new_branch("master")
+        commit()
+        new_branch('feature')
+        commit()
+        push()
+        commit()
 
         body: str = \
             """
@@ -268,14 +274,14 @@ class TestGitHubRestackPR(BaseTest):
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_restack_pr()))
 
-        (
-            self.repo_sandbox.new_branch("master")
-            .commit()
-            .new_branch('feature')
-            .commit()
-            .push()
-            .reset_to("HEAD~")
-        )
+        create_repo_with_remote()
+        new_branch("master")
+        commit()
+        new_branch('feature')
+        commit()
+        push()
+        reset_to("HEAD~")
+
         body: str = \
             """
             master
@@ -299,15 +305,15 @@ class TestGitHubRestackPR(BaseTest):
         github_api_state = self.github_api_state_for_test_restack_pr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
-        (
-            self.repo_sandbox.new_branch("master")
-            .commit()
-            .new_branch('feature')
-            .commit()
-            .push()
-        )
+        create_repo_with_remote()
+        new_branch("master")
+        commit()
+        new_branch('feature')
+        commit()
+        push()
+
         with fixed_author_and_committer_date_in_past():
-            self.repo_sandbox.amend_commit()
+            amend_commit()
 
         body: str = \
             """

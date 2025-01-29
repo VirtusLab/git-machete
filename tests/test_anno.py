@@ -4,6 +4,9 @@ from . import mockers_github, mockers_gitlab
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
                       rewrite_branch_layout_file)
+from .mockers_git_repository import (add_remote, check_out, commit,
+                                     create_repo, create_repo_with_remote,
+                                     new_branch)
 from .mockers_github import (MockGitHubAPIState,
                              mock_github_token_for_domain_fake)
 from .mockers_gitlab import (MockGitLabAPIState,
@@ -17,16 +20,16 @@ class TestAnno(BaseTest):
         Verify behaviour of a 'git machete anno' command.
         """
 
-        (
-            self.repo_sandbox.new_branch("master")
-                .commit("master commit.")
-                .new_branch("develop")
-                .commit("develop commit.")
-                .new_branch("feature")
-                .commit("feature commit.")
-                .check_out("develop")
-                .commit("New commit on develop")
-        )
+        create_repo_with_remote()
+        new_branch("master")
+        commit("master commit.")
+        new_branch("develop")
+        commit("develop commit.")
+        new_branch("feature")
+        commit("feature commit.")
+        check_out("develop")
+        commit("New commit on develop")
+
         body: str = \
             """
             master
@@ -126,14 +129,13 @@ class TestAnno(BaseTest):
     def test_anno_sync_github_prs(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mockers_github.mock_urlopen(self.github_api_state_for_test_anno_prs()))
-        (
-            self.repo_sandbox
-            .new_branch("master")
-            .commit()
-            .new_branch("develop")
-            .new_branch("feature")
-            .add_remote('new_origin', 'https://github.com/user/repo.git')
-        )
+        create_repo()
+        new_branch("master")
+        commit()
+        new_branch("develop")
+        new_branch("feature")
+        add_remote('new_origin', 'https://github.com/user/repo.git')
+
         body: str = \
             """
             master
@@ -174,14 +176,13 @@ class TestAnno(BaseTest):
     def test_anno_sync_gitlab_mrs(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mockers_gitlab.mock_urlopen(self.gitlab_api_state_for_test_anno_mrs()))
-        (
-            self.repo_sandbox
-            .new_branch("master")
-            .commit()
-            .new_branch("develop")
-            .new_branch("feature")
-            .add_remote('new_origin', 'https://gitlab.com/user/repo.git')
-        )
+        create_repo()
+        new_branch("master")
+        commit()
+        new_branch("develop")
+        new_branch("feature")
+        add_remote('new_origin', 'https://gitlab.com/user/repo.git')
+
         body: str = \
             """
             master

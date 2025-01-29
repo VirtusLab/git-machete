@@ -1,13 +1,21 @@
+import os
 import textwrap
 
 from pytest_mock import MockerFixture
 
 from tests.base_test import BaseTest
-from tests.mockers import (assert_failure, assert_success,
+from tests.mockers import (assert_failure, assert_success, execute,
                            fixed_author_and_committer_date_in_past,
                            launch_command, mock_input_returning,
-                           mock_input_returning_y, rewrite_branch_layout_file)
+                           mock_input_returning_y, rewrite_branch_layout_file,
+                           sleep, write_to_file)
 from tests.mockers_code_hosting import mock_from_url
+from tests.mockers_git_repository import (add_remote, amend_commit, check_out,
+                                          commit, create_repo,
+                                          create_repo_with_remote,
+                                          delete_branch, delete_remote_branch,
+                                          new_branch, push, remove_remote,
+                                          reset_to, set_git_config_key)
 from tests.mockers_gitlab import (MockGitLabAPIState,
                                   mock_gitlab_token_for_domain_fake,
                                   mock_gitlab_token_for_domain_none,
@@ -30,49 +38,49 @@ class TestGitLabCreateMR(BaseTest):
         gitlab_api_state = self.gitlab_api_state_for_test_create_mr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
 
-        (
-            self.repo_sandbox.new_branch("root")
-                .commit("initial commit")
-                .new_branch("develop")
-                .commit("first commit")
-                .new_branch("allow-ownership-link")
-                .commit("Enable ownership links")
-                .push()
-                .new_branch("build-chain")
-                .commit("Build arbitrarily long chains of MRs")
-                .check_out("allow-ownership-link")
-                .commit("fixes")
-                .check_out("develop")
-                .commit("Other develop commit")
-                .push()
-                .new_branch("call-ws")
-                .commit("Call web service")
-                .commit("1st round of fixes")
-                .push()
-                .new_branch("drop-constraint")
-                .commit("Drop unneeded SQL constraints")
-                .check_out("call-ws")
-                .commit("2nd round of fixes")
-                .check_out("root")
-                .new_branch("master")
-                .commit("Master commit")
-                .push()
-                .new_branch("hotfix/add-trigger")
-                .commit("HOTFIX Add the trigger")
-                .push()
-                .amend_commit("HOTFIX Add the trigger (amended)")
-                .new_branch("ignore-trailing")
-                .commit("Ignore trailing data")
-                .sleep(1)
-                .amend_commit("Ignore trailing data (amended)")
-                .push()
-                .reset_to("ignore-trailing@{1}")  # noqa: FS003
-                .delete_branch("root")
-                .new_branch('chore/fields')
-                .commit("remove outdated fields")
-                .check_out("call-ws")
-                .add_remote('new_origin', 'https://gitlab.com/user/repo.git')
-        )
+        create_repo_with_remote()
+        new_branch("root")
+        commit("initial commit")
+        new_branch("develop")
+        commit("first commit")
+        new_branch("allow-ownership-link")
+        commit("Enable ownership links")
+        push()
+        new_branch("build-chain")
+        commit("Build arbitrarily long chains of MRs")
+        check_out("allow-ownership-link")
+        commit("fixes")
+        check_out("develop")
+        commit("Other develop commit")
+        push()
+        new_branch("call-ws")
+        commit("Call web service")
+        commit("1st round of fixes")
+        push()
+        new_branch("drop-constraint")
+        commit("Drop unneeded SQL constraints")
+        check_out("call-ws")
+        commit("2nd round of fixes")
+        check_out("root")
+        new_branch("master")
+        commit("Master commit")
+        push()
+        new_branch("hotfix/add-trigger")
+        commit("HOTFIX Add the trigger")
+        push()
+        amend_commit("HOTFIX Add the trigger (amended)")
+        new_branch("ignore-trailing")
+        commit("Ignore trailing data")
+        sleep(1)
+        amend_commit("Ignore trailing data (amended)")
+        push()
+        reset_to("ignore-trailing@{1}")  # noqa: FS003
+        delete_branch("root")
+        new_branch('chore/fields')
+        commit("remove outdated fields")
+        check_out("call-ws")
+        add_remote('new_origin', 'https://gitlab.com/user/repo.git')
+
         body: str = \
             """
             master
@@ -113,12 +121,12 @@ class TestGitLabCreateMR(BaseTest):
         )
 
         # untracked state (can only create MR when branch is pushed)
-        self.repo_sandbox.check_out('chore/fields')
+        check_out('chore/fields')
 
-        self.repo_sandbox.write_to_file(".git/info/milestone", "42")
-        self.repo_sandbox.write_to_file(".git/info/reviewers", "foo\n\nbar")
+        write_to_file(".git/info/milestone", "42")
+        write_to_file(".git/info/reviewers", "foo\n\nbar")
         template = "# MR title\n## Summary\n## Test plan\n\n<!-- start git-machete generated -->\n<!-- end git-machete generated -->\n"
-        self.repo_sandbox.write_to_file(".gitlab/merge_request_templates/Default.md", template)
+        write_to_file(".gitlab/merge_request_templates/Default.md", template)
         assert_success(
             ["gitlab", "create-mr", "--draft"],
             """
@@ -199,11 +207,9 @@ class TestGitLabCreateMR(BaseTest):
             """,
         )
 
-        (
-            self.repo_sandbox.check_out('hotfix/add-trigger')
-                .commit('trigger released')
-                .commit('minor changes applied')
-        )
+        check_out('hotfix/add-trigger')
+        commit('trigger released')
+        commit('minor changes applied')
 
         # diverged from and newer than origin
         assert_success(
@@ -269,11 +275,10 @@ class TestGitLabCreateMR(BaseTest):
         assert_failure(["gitlab", "create-mr"], expected_error_message)
 
         # check against source branch is ancestor or equal to target branch
-        (
-            self.repo_sandbox.check_out('develop')
-                .new_branch('testing/endpoints')
-                .push()
-        )
+        check_out('develop')
+        new_branch('testing/endpoints')
+        push()
+
         body = \
             """
             master
@@ -293,14 +298,14 @@ class TestGitLabCreateMR(BaseTest):
                                  "Cannot create merge request."
         assert_failure(["gitlab", "create-mr"], expected_error_message)
 
-        self.repo_sandbox.check_out('develop')
+        check_out('develop')
         expected_error_message = "Branch develop does not have a parent branch (it is a root), " \
                                  "target branch for the MR cannot be established."
         assert_failure(["gitlab", "create-mr"], expected_error_message)
 
-        self.repo_sandbox.write_to_file(".git/info/reviewers", "invalid-user")
-        self.repo_sandbox.write_to_file(".git/info/description", "# MR title\n")
-        self.repo_sandbox.check_out("allow-ownership-link")
+        write_to_file(".git/info/reviewers", "invalid-user")
+        write_to_file(".git/info/description", "# MR title\n")
+        check_out("allow-ownership-link")
         assert_success(
             ["gitlab", "create-mr", "--title=MR title set explicitly"],
             """
@@ -339,7 +344,10 @@ class TestGitLabCreateMR(BaseTest):
         assert pr['title'] == 'MR title set explicitly'
 
     def test_gitlab_create_mr_for_root_branch(self) -> None:
-        self.repo_sandbox.new_branch("master").commit()
+        create_repo()
+        new_branch("master")
+        commit()
+
         rewrite_branch_layout_file("master")
         assert_failure(
             ["gitlab", "create-mr"],
@@ -360,23 +368,22 @@ class TestGitLabCreateMR(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
         self.patch_symbol(mocker, 'git_machete.utils.get_current_date', lambda: '2023-12-31')
 
-        (
-            self.repo_sandbox
-            .new_branch("develop")
-            .commit("first commit")
-            .new_branch("allow-ownership-link")
-            .commit("Enable ownership links")
-            .push()
-            .new_branch("build-chain")
-            .commit("Build arbitrarily long chains of MRs")
-            .push()
-            .new_branch("call-ws")
-            .commit("Call web service")
-            .push()
-            .new_branch("drop-constraint")
-            .commit("Drop unneeded SQL constraints")
-            .push()
-        )
+        create_repo_with_remote()
+        new_branch("develop")
+        commit("first commit")
+        new_branch("allow-ownership-link")
+        commit("Enable ownership links")
+        push()
+        new_branch("build-chain")
+        commit("Build arbitrarily long chains of MRs")
+        push()
+        new_branch("call-ws")
+        commit("Call web service")
+        push()
+        new_branch("drop-constraint")
+        commit("Drop unneeded SQL constraints")
+        push()
+
         body: str = \
             """
             develop
@@ -387,16 +394,16 @@ class TestGitLabCreateMR(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        self.repo_sandbox.check_out("drop-constraint")
+        check_out("drop-constraint")
         launch_command("gitlab", "create-mr", "--yes")
         pr = gitlab_api_state.get_mr_by_number(3)
         assert pr is not None
         assert pr['description'] == ''  # no chain at this moment
 
-        self.repo_sandbox.write_to_file(".gitlab/merge_request_templates/Default.md", "# MR title\n## Summary\n## Test plan\n")
-        self.repo_sandbox.set_git_config_key("machete.gitlab.mrDescriptionIntroStyle", "full")
+        write_to_file(".gitlab/merge_request_templates/Default.md", "# MR title\n## Summary\n## Test plan\n")
+        set_git_config_key("machete.gitlab.mrDescriptionIntroStyle", "full")
 
-        self.repo_sandbox.check_out("call-ws")
+        check_out("call-ws")
         launch_command("gitlab", "create-mr")
         pr = gitlab_api_state.get_mr_by_number(4)
         assert pr is not None
@@ -437,19 +444,19 @@ class TestGitLabCreateMR(BaseTest):
         gitlab_api_state = self.gitlab_api_state_for_test_create_mr_missing_base_branch_on_remote()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
 
-        (
-            self.repo_sandbox.new_branch("root")
-                .commit("initial commit")
-                .new_branch("develop")
-                .commit("first commit on develop")
-                .push()
-                .new_branch("feature/api_handling")
-                .commit("Introduce GET and POST methods on API")
-                .new_branch("feature/api_exception_handling")
-                .commit("catch exceptions coming from API\n\ncommit body\nanother line")
-                .push()
-                .delete_branch("root")
-        )
+        create_repo_with_remote()
+        new_branch("root")
+        commit("initial commit")
+        new_branch("develop")
+        commit("first commit on develop")
+        push()
+        new_branch("feature/api_handling")
+        commit("Introduce GET and POST methods on API")
+        new_branch("feature/api_exception_handling")
+        commit("catch exceptions coming from API\n\ncommit body\nanother line")
+        push()
+        delete_branch("root")
+
         body: str = \
             """
             develop
@@ -462,7 +469,7 @@ class TestGitLabCreateMR(BaseTest):
                         "Pushing untracked branch feature/api_handling to origin...\n"
                         "Creating a MR from feature/api_exception_handling to feature/api_handling... OK, see www.gitlab.com\n")
 
-        self.repo_sandbox.set_git_config_key("machete.gitlab.annotateWithUrls", "true")
+        set_git_config_key("machete.gitlab.annotateWithUrls", "true")
         assert_success(['gitlab', 'create-mr', '--yes'], expected_msg)
         assert_success(
             ['status'],
@@ -491,28 +498,27 @@ class TestGitLabCreateMR(BaseTest):
         gitlab_api_state = self.gitlab_api_state_for_test_gitlab_create_mr_with_multiple_non_origin_remotes()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
 
-        origin_1_remote_path = self.repo_sandbox.create_repo("remote-1", bare=True)
-        origin_2_remote_path = self.repo_sandbox.create_repo("remote-2", bare=True)
+        (_, remote_path) = create_repo_with_remote()
+        origin_1_remote_path = create_repo("remote-1", bare=True, switch_dir_to_new_repo=False)
+        origin_2_remote_path = create_repo("remote-2", bare=True, switch_dir_to_new_repo=False)
 
         # branch feature present in each of the remotes, no branch tracking data, remote origin_1 picked manually
-        (
-            self.repo_sandbox
-                .remove_remote('origin')
-                .new_branch("root")
-                .add_remote('origin_1', origin_1_remote_path)
-                .add_remote('origin_2', origin_2_remote_path)
-                .commit("First commit on root.")
-                .push(remote='origin_1')
-                .push(remote='origin_2')
-                .new_branch("branch-1")
-                .commit('First commit on branch-1.')
-                .push(remote='origin_1')
-                .push(remote='origin_2')
-                .new_branch('feature')
-                .commit('introduce feature\n\ncommit body')
-                .push(remote='origin_1', set_upstream=False)
-                .push(remote='origin_2', set_upstream=False)
-        )
+        remove_remote()
+        new_branch("root")
+        add_remote('origin_1', origin_1_remote_path)
+        add_remote('origin_2', origin_2_remote_path)
+        commit("First commit on root.")
+        push(remote='origin_1')
+        push(remote='origin_2')
+        new_branch("branch-1")
+        commit('First commit on branch-1.')
+        push(remote='origin_1')
+        push(remote='origin_2')
+        new_branch('feature')
+        commit('introduce feature\n\ncommit body')
+        push(remote='origin_1', set_upstream=False)
+        push(remote='origin_2', set_upstream=False)
+
         body: str = \
             """
             root
@@ -574,7 +580,7 @@ class TestGitLabCreateMR(BaseTest):
             expected_result
         )
 
-        self.repo_sandbox.execute("git branch --unset-upstream feature")
+        execute("git branch --unset-upstream feature")
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('1', 'y'))
         expected_result = """
@@ -606,8 +612,8 @@ class TestGitLabCreateMR(BaseTest):
         Updating description of MR !16 to include the chain of MRs... OK
         """  # noqa: E501
 
-        self.repo_sandbox.write_to_file(".git/info/description", "overridden description")
-        self.repo_sandbox.set_git_config_key("machete.gitlab.forceDescriptionFromCommitMessage", "true")
+        write_to_file(".git/info/description", "overridden description")
+        set_git_config_key("machete.gitlab.forceDescriptionFromCommitMessage", "true")
         assert_success(
             ['gitlab', 'create-mr'],
             expected_result
@@ -632,13 +638,11 @@ class TestGitLabCreateMR(BaseTest):
             commit body''')[1:]
 
         # branch feature_1 present in each of the remotes, tracking data present
-        (
-            self.repo_sandbox.check_out('feature')
-                .new_branch('feature_1')
-                .commit('introduce feature 1')
-                .push(remote='origin_1')
-                .push(remote='origin_2')
-        )
+        check_out('feature')
+        new_branch('feature_1')
+        commit('introduce feature 1')
+        push(remote='origin_1')
+        push(remote='origin_2')
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('n'))
         assert_failure(
@@ -674,11 +678,9 @@ class TestGitLabCreateMR(BaseTest):
         )
 
         # branch feature_2 not present in any of the remotes, remote origin_1 picked manually via mock_input()
-        (
-            self.repo_sandbox.check_out('feature')
-                .new_branch('feature_2')
-                .commit('introduce feature 2')
-        )
+        check_out('feature')
+        new_branch('feature_2')
+        commit('introduce feature 2')
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('y', '1', 'y'))
 
@@ -712,12 +714,10 @@ class TestGitLabCreateMR(BaseTest):
         )
 
         # branch feature_2 present in only one remote: origin_1, no tracking data
-        (
-            self.repo_sandbox.check_out('feature_2')
-                .new_branch('feature_3')
-                .commit('introduce feature 3')
-                .push(remote='origin_1', set_upstream=False)
-        )
+        check_out('feature_2')
+        new_branch('feature_3')
+        commit('introduce feature 3')
+        push(remote='origin_1', set_upstream=False)
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('y'))
         expected_result = """
@@ -734,12 +734,10 @@ class TestGitLabCreateMR(BaseTest):
         )
 
         # branch feature_3 present in only one remote: origin_2, tracking data present
-        (
-            self.repo_sandbox.check_out('feature_3')
-                .new_branch('feature_4')
-                .commit('introduce feature 4')
-                .push(remote='origin_2')
-        )
+        check_out('feature_3')
+        new_branch('feature_4')
+        commit('introduce feature 4')
+        push(remote='origin_2')
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('y', 'y'))
         expected_result = """
@@ -765,13 +763,11 @@ class TestGitLabCreateMR(BaseTest):
         )
 
         # branch feature_3 present in only one remote: origin_2 with tracking data, origin remote present - takes priority
-        (
-            self.repo_sandbox.add_remote('origin', self.repo_sandbox.remote_path)
-                .check_out('feature_3')
-                .new_branch('feature_5')
-                .commit('introduce feature 5')
-                .push(remote='origin_2')
-        )
+        add_remote('origin', remote_path)
+        check_out('feature_3')
+        new_branch('feature_5')
+        commit('introduce feature 5')
+        push(remote='origin_2')
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('y', 'y'))
         expected_result = """
@@ -801,11 +797,14 @@ class TestGitLabCreateMR(BaseTest):
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState.with_mrs()))
 
-        (
-            self.repo_sandbox
-            .new_branch("master").commit().push()
-            .new_branch("develop").commit()
-        )
+        create_repo_with_remote()
+
+        new_branch("master")
+        commit()
+        push()
+
+        new_branch("develop")
+        commit()
 
         rewrite_branch_layout_file("master\n\tdevelop push=no")
 
@@ -818,12 +817,11 @@ class TestGitLabCreateMR(BaseTest):
         )
 
     def test_gitlab_create_mr_for_no_remotes(self) -> None:
-        (
-            self.repo_sandbox
-            .remove_remote()
-            .new_branch("master").commit()
-            .new_branch("develop").commit()
-        )
+        create_repo()
+        new_branch("master")
+        commit()
+        new_branch("develop")
+        commit()
 
         rewrite_branch_layout_file("master\n\tdevelop")
 
@@ -837,11 +835,17 @@ class TestGitLabCreateMR(BaseTest):
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState.with_mrs()))
 
-        (
-            self.repo_sandbox
-            .new_branch("master").commit().push()
-            .new_branch("develop").commit().commit().push().reset_to("HEAD~")
-        )
+        create_repo_with_remote()
+        new_branch("master")
+        commit()
+        push()
+
+        new_branch("develop")
+        commit()
+        commit()
+        push()
+
+        reset_to("HEAD~")
 
         rewrite_branch_layout_file("master\n\tdevelop")
 
@@ -863,11 +867,14 @@ class TestGitLabCreateMR(BaseTest):
         )
 
     def test_gitlab_create_mr_for_untracked_branch(self, mocker: MockerFixture) -> None:
-        (
-            self.repo_sandbox
-            .new_branch("master").commit().push()
-            .new_branch("develop").commit()
-        )
+        create_repo_with_remote()
+
+        new_branch("master")
+        commit()
+        push()
+
+        new_branch("develop")
+        commit()
 
         rewrite_branch_layout_file("master\n\tdevelop")
 
@@ -878,12 +885,17 @@ class TestGitLabCreateMR(BaseTest):
         )
 
     def test_gitlab_create_mr_for_branch_diverged_from_and_newer_than_remote(self, mocker: MockerFixture) -> None:
-        (
-            self.repo_sandbox
-            .new_branch("master").commit().push()
-            .new_branch("develop").commit().push()
-            .amend_commit("Different commit message")
-        )
+        create_repo_with_remote()
+
+        new_branch("master")
+        commit()
+        push()
+
+        new_branch("develop")
+        commit()
+        push()
+
+        amend_commit("Different commit message")
 
         rewrite_branch_layout_file("master\n\tdevelop")
 
@@ -901,13 +913,17 @@ class TestGitLabCreateMR(BaseTest):
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState.with_mrs()))
 
-        (
-            self.repo_sandbox
-            .new_branch("master").commit().push()
-            .new_branch("develop").commit().push()
-        )
+        create_repo_with_remote()
+        new_branch("master")
+        commit()
+        push()
+
+        new_branch("develop")
+        commit()
+        push()
+
         with fixed_author_and_committer_date_in_past():
-            self.repo_sandbox.amend_commit()
+            amend_commit()
 
         rewrite_branch_layout_file("master\n\tdevelop")
 
@@ -927,17 +943,19 @@ class TestGitLabCreateMR(BaseTest):
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState.with_mrs()))
 
-        (
-            self.repo_sandbox
-            .new_branch("develop").commit().push()
-            .new_branch("feature").commit().push()
-        )
-        (
-            self.repo_sandbox
-            .chdir(self.repo_sandbox.remote_path)
-            .delete_branch("develop")
-            .chdir(self.repo_sandbox.local_path)
-        )
+        (local_path, remote_path) = create_repo_with_remote()
+
+        new_branch("develop")
+        commit()
+        push()
+        new_branch("feature")
+
+        commit()
+        push()
+
+        os.chdir(remote_path)
+        delete_branch("develop")
+        os.chdir(local_path)
 
         rewrite_branch_layout_file("develop\n\tfeature")
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('y'))
@@ -955,12 +973,17 @@ class TestGitLabCreateMR(BaseTest):
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState.with_mrs()))
 
-        (
-            self.repo_sandbox
-            .new_branch("develop").commit().push()
-            .delete_remote_branch("origin/develop")
-            .new_branch("feature").commit().push()
-        )
+        create_repo_with_remote()
+
+        new_branch("develop")
+        commit()
+        push()
+
+        delete_remote_branch("origin/develop")
+
+        new_branch("feature")
+        commit()
+        push()
 
         rewrite_branch_layout_file("develop\n\tfeature")
         assert_success(
@@ -977,16 +1000,20 @@ class TestGitLabCreateMR(BaseTest):
         gitlab_api_state = MockGitLabAPIState.with_mrs()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
 
-        (
-            self.repo_sandbox
-            .new_branch("develop").commit("Some commit").push()
-            .new_branch("feature").commit("Add feature").push()
-        )
+        create_repo_with_remote()
+
+        new_branch("develop")
+        commit("Some commit")
+        push()
+
+        new_branch("feature")
+        commit("Add feature")
+        push()
 
         rewrite_branch_layout_file("develop\n\tfeature")
 
         pr_title = "Feature Implementation"
-        self.repo_sandbox.write_to_file(".git/info/title", pr_title)
+        write_to_file(".git/info/title", pr_title)
 
         launch_command("gitlab", "create-mr")
 

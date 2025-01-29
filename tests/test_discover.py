@@ -6,31 +6,32 @@ from pytest_mock import MockerFixture
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
-                      mock_input_returning, overridden_environment,
+                      mock_input_returning, overridden_environment, read_file,
                       rewrite_branch_layout_file)
+from .mockers_git_repository import (check_out, commit, create_repo,
+                                     create_repo_with_remote, merge,
+                                     new_branch, push)
 
 
 class TestDiscover(BaseTest):
 
     def test_discover(self) -> None:
+        create_repo_with_remote()
         assert_failure(['discover'], "No local branches found")
 
-        (
-            self.repo_sandbox
-                .new_branch('master')
-                .commit()
-                .push()
-                .new_branch('feature1')
-                .commit()
-                .new_branch('feature2')
-                .commit()
-                .check_out("master")
-                .new_branch('feature3')
-                .commit()
-                .push()
-                .new_branch('feature4')
-                .commit()
-        )
+        new_branch('master')
+        commit()
+        push()
+        new_branch('feature1')
+        commit()
+        new_branch('feature2')
+        commit()
+        check_out("master")
+        new_branch('feature3')
+        commit()
+        push()
+        new_branch('feature4')
+        commit()
 
         body: str = \
             """
@@ -81,17 +82,13 @@ class TestDiscover(BaseTest):
         assert_failure(['discover', '--roots=feature1,lolxd'], "lolxd is not a local branch")
 
     def test_discover_main_branch_and_edit(self, mocker: MockerFixture) -> None:
-
-        (
-            self.repo_sandbox
-            .remove_remote()
-            .new_branch('feature1')
-            .commit()
-            .new_branch('main')
-            .commit()
-            .new_branch('feature2')
-            .commit()
-        )
+        create_repo()
+        new_branch('feature1')
+        commit()
+        new_branch('main')
+        commit()
+        new_branch('feature2')
+        commit()
 
         expected_status_output = (
             """
@@ -123,11 +120,9 @@ class TestDiscover(BaseTest):
         )
 
     def test_discover_checked_out_since_in_future(self) -> None:
-        (
-            self.repo_sandbox
-            .new_branch("root")
-            .commit()
-        )
+        create_repo()
+        new_branch("root")
+        commit()
 
         assert_success(
             ["discover", "--checked-out-since=tomorrow"],
@@ -136,9 +131,12 @@ class TestDiscover(BaseTest):
         )
 
     def test_discover_with_stale_branches(self) -> None:
-        self.repo_sandbox.remove_remote().new_branch("develop").commit()
+        create_repo()
+        new_branch("develop")
+        commit()
         for i in range(20):
-            self.repo_sandbox.new_branch(f"branch-{i:02d}").commit()
+            new_branch(f"branch-{i:02d}")
+            commit()
         actual_output = launch_command("discover", "-y")
         assert re.sub("\\d{4}-\\d{2}-\\d{2}", "YYYY-MM-DD", actual_output, count=1) == textwrap.dedent(  # noqa: FS003
             "            Warn: to keep the size of the discovered tree reasonable (ca. 10 branches), "
@@ -175,23 +173,20 @@ class TestDiscover(BaseTest):
         )
 
     def test_discover_with_merged_branches(self, mocker: MockerFixture) -> None:
-        (
-            self.repo_sandbox
-            .remove_remote()
-            .new_branch("master")
-            .commit()
-            .new_branch("feature1")
-            .commit()
-            .check_out("master")
-            .new_branch("feature2")
-            .commit()
-            .check_out("master")
-            .merge("feature1")
-        )
+        create_repo()
+        new_branch("master")
+        commit()
+        new_branch("feature1")
+        commit()
+        check_out("master")
+        new_branch("feature2")
+        commit()
+        check_out("master")
+        merge("feature1")
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning('n'))
         launch_command("discover")
-        assert self.repo_sandbox.read_file(".git/machete") == ""
+        assert read_file(".git/machete") == ""
 
         rewrite_branch_layout_file("master\n  feature1")
 
@@ -213,4 +208,4 @@ class TestDiscover(BaseTest):
                 """
             )
 
-        assert self.repo_sandbox.read_file(".git/machete~") == "master\n  feature1"
+        assert read_file(".git/machete~") == "master\n  feature1"
