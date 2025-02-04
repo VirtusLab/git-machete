@@ -36,7 +36,7 @@ class TestGitLab(BaseTest):
         urls = [f'https://tester@gitlab.com/{organization}/{repository}',
                 f'https://gitlab.com/{organization}/{repository}',
                 f'git@gitlab.com:{organization}/{repository}',
-                f'ssh://git@gitlab.com/{organization}/{repository}']
+                f'ssh://foo-3@gitlab.com/{organization}/{repository}']
         urls = urls + [url + '.git' for url in urls]
 
         for url in urls:

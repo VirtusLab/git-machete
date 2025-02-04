@@ -36,13 +36,13 @@ class TestGitHub(BaseTest):
         repository = 'repo_sandbox'
         urls = [f'https://tester@github.com/{organization}/{repository}',
                 f'https://github.com/{organization}/{repository}',
-                f'git@github.com:{organization}/{repository}',
+                f'foo-1@github.com:{organization}/{repository}',
                 f'ssh://git@github.com/{organization}/{repository}']
         urls = urls + [url + '.git' for url in urls]
 
         for url in urls:
             org_and_repo = OrganizationAndRepository.from_url(domain=GitHubClient.DEFAULT_GITHUB_DOMAIN, url=url)
-            assert org_and_repo is not None
+            assert org_and_repo is not None, f"for {url}"
             assert org_and_repo.organization == organization
             assert org_and_repo.repository == repository
 

@@ -28,7 +28,7 @@ def html2txt(html_: str):
         tag.decompose()
 
     # remove comments
-    for comment in html_elements.findAll(string=lambda string: isinstance(string, Comment)):
+    for comment in html_elements.find_all(string=lambda string: isinstance(string, Comment)):
         comment.extract()
 
     # remove non-breaking spaces
