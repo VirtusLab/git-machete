@@ -4,16 +4,20 @@ from git_machete.git_operations import (AnyBranchName, AnyRevision,
                                         LocalBranchShortName)
 
 from .base_test import BaseTest
+from .mockers import write_to_file
+from .mockers_git_repository import (check_out, commit, create_repo,
+                                     get_current_commit_hash,
+                                     is_ancestor_or_equal, new_branch,
+                                     new_orphan_branch, set_git_config_key)
 
 
 class TestGitOperations(BaseTest):
 
     def test_run_git(self) -> None:
-        (
-            self.repo_sandbox.new_branch("master")
-                .commit("master first commit")
-        )
-        master_branch_first_commit_hash = self.repo_sandbox.get_current_commit_hash()
+        create_repo()
+        new_branch("master")
+        commit("master first commit")
+        master_branch_first_commit_hash = get_current_commit_hash()
 
         git = GitContext()
         assert git._run_git("rev-parse", "--verify", "--quiet",
@@ -21,17 +25,15 @@ class TestGitOperations(BaseTest):
         assert git._run_git("rev-parse", "HEAD", flush_caches=False) == 0
 
     def test_popen_git(self) -> None:
-        (
-            self.repo_sandbox.new_branch("master")
-                .commit("master first commit")
-        )
-        master_branch_first_commit_hash = self.repo_sandbox.get_current_commit_hash()
-        (
-            self.repo_sandbox.new_branch("develop")
-                .commit("develop commit")
-                .new_branch("feature")
-                .commit("feature commit")
-        )
+        create_repo()
+        new_branch("master")
+        commit("master first commit")
+        master_branch_first_commit_hash = get_current_commit_hash()
+
+        new_branch("develop")
+        commit("develop commit")
+        new_branch("feature")
+        commit("feature commit")
 
         git = GitContext()
 
@@ -42,19 +44,18 @@ class TestGitOperations(BaseTest):
         assert is_commit_present_in_repository(revision=FullCommitHash(40 * 'a')) is False
         assert is_commit_present_in_repository(revision=AnyRevision(master_branch_first_commit_hash)) is True
 
-        assert self.repo_sandbox.is_ancestor_or_equal(earlier=LocalBranchShortName('feature'),
-                                                      later=LocalBranchShortName('master')) is False
-        assert self.repo_sandbox.is_ancestor_or_equal(earlier=LocalBranchShortName('develop'),
-                                                      later=LocalBranchShortName('feature')) is True
+        assert is_ancestor_or_equal(earlier=LocalBranchShortName('feature'),
+                                    later=LocalBranchShortName('master')) is False
+        assert is_ancestor_or_equal(earlier=LocalBranchShortName('develop'),
+                                    later=LocalBranchShortName('feature')) is True
 
     def test_is_equivalent_tree_or_patch_reachable_with_squash_merge(self) -> None:
-        (
-            self.repo_sandbox.new_branch("master")
-                .commit("master first commit")
-                .new_branch("feature")
-                .commit("feature commit")
-                .check_out("master")
-        )
+        create_repo()
+        new_branch("master")
+        commit("master first commit")
+        new_branch("feature")
+        commit("feature commit")
+        check_out("master")
 
         git = GitContext()
         assert git._run_git("merge", "--squash", "feature", flush_caches=False) == 0
@@ -68,14 +69,13 @@ class TestGitOperations(BaseTest):
         assert git.is_equivalent_patch_reachable(equivalent_to=feature, reachable_from=master) is True
 
     def test_is_equivalent_tree_or_patch_reachable_with_squash_merge_and_commits_in_between(self) -> None:
-        (
-            self.repo_sandbox.new_branch("master")
-                .commit("master first commit")
-                .new_branch("feature")
-                .commit("feature commit")
-                .check_out("master")
-                .commit("extra commit")
-        )
+        create_repo()
+        new_branch("master")
+        commit("master first commit")
+        new_branch("feature")
+        commit("feature commit")
+        check_out("master")
+        commit("extra commit")
 
         git = GitContext()
         assert git._run_git("merge", "--squash", "feature", flush_caches=False) == 0
@@ -89,20 +89,20 @@ class TestGitOperations(BaseTest):
         assert git.is_equivalent_tree_reachable(equivalent_to=feature, reachable_from=master) is False
         assert git.is_equivalent_patch_reachable(equivalent_to=feature, reachable_from=master) is True
 
-        self.repo_sandbox.check_out("master").commit("another master commit")
+        check_out("master")
+        commit("another master commit")
         git.flush_caches()  # so that the old position of `master` isn't remembered
 
         assert git.is_equivalent_tree_reachable(equivalent_to=feature, reachable_from=master) is False
         assert git.is_equivalent_patch_reachable(equivalent_to=feature, reachable_from=master) is True
 
     def test_is_equivalent_tree_or_patch_reachable_with_rebase(self) -> None:
-        (
-            self.repo_sandbox.new_branch("master")
-                .commit("master first commit")
-                .new_branch("feature")
-                .commit("feature commit")
-                .check_out("master")
-        )
+        create_repo()
+        new_branch("master")
+        commit("master first commit")
+        new_branch("feature")
+        commit("feature commit")
+        check_out("master")
 
         git = GitContext()
         assert git._run_git("rebase", "feature", flush_caches=False) == 0
@@ -114,7 +114,8 @@ class TestGitOperations(BaseTest):
         assert git.is_equivalent_tree_reachable(equivalent_to=feature, reachable_from=master) is True
         assert git.is_equivalent_patch_reachable(equivalent_to=feature, reachable_from=master) is True
 
-        self.repo_sandbox.check_out("master").commit("another master commit")
+        check_out("master")
+        commit("another master commit")
         git.flush_caches()  # so that the old position of `master` isn't remembered
 
         # Simple method fails if there are commits after the rebase, as this case is covered by the "is ancestor"
@@ -123,14 +124,13 @@ class TestGitOperations(BaseTest):
         assert git.is_equivalent_patch_reachable(equivalent_to=feature, reachable_from=master) is True
 
     def test_is_equivalent_tree_or_patch_reachable_with_rebase_and_commits_in_between(self) -> None:
-        (
-            self.repo_sandbox.new_branch("master")
-                .commit("master first commit")
-                .new_branch("feature")
-                .commit("feature commit")
-                .check_out("master")
-                .commit("extra commit")
-        )
+        create_repo()
+        new_branch("master")
+        commit("master first commit")
+        new_branch("feature")
+        commit("feature commit")
+        check_out("master")
+        commit("extra commit")
 
         git = GitContext()
         assert git._run_git("rebase", "feature", flush_caches=False) == 0
@@ -143,7 +143,8 @@ class TestGitOperations(BaseTest):
         assert git.is_equivalent_tree_reachable(equivalent_to=feature, reachable_from=master) is False
         assert git.is_equivalent_patch_reachable(equivalent_to=feature, reachable_from=master) is True
 
-        self.repo_sandbox.check_out("master").commit("another master commit")
+        check_out("master")
+        commit("another master commit")
         git.flush_caches()  # so that the old position of `master` isn't remembered
 
         assert git.is_equivalent_tree_reachable(equivalent_to=feature, reachable_from=master) is False
@@ -152,12 +153,11 @@ class TestGitOperations(BaseTest):
         assert git.is_equivalent_patch_reachable(equivalent_to=feature, reachable_from=master) is True
 
     def test_is_equivalent_tree_or_patch_reachable_when_no_common_ancestor(self) -> None:
-        (
-            self.repo_sandbox.new_branch("master")
-            .commit("master first commit")
-            .new_orphan_branch("feature")
-            .commit("feature commit")
-        )
+        create_repo()
+        new_branch("master")
+        commit("master first commit")
+        new_orphan_branch("feature")
+        commit("feature commit")
 
         git = GitContext()
         feature = AnyRevision("feature")
@@ -167,20 +167,20 @@ class TestGitOperations(BaseTest):
         assert git.is_equivalent_patch_reachable(equivalent_to=feature, reachable_from=master) is False
 
     def test_git_config_with_newlines(self) -> None:
-        self.repo_sandbox.write_to_file(".git/config", '[foo]\n  bar = "hello\\nworld"')
+        create_repo()
+        write_to_file(".git/config", '[foo]\n  bar = "hello\\nworld"')
         git = GitContext()
         assert git.get_config_attr_or_none("foo.bar") == "hello\nworld"
 
     def test_get_reflog_when_log_showsignature_is_true(self) -> None:
-        (
-            self.repo_sandbox.new_branch("master")
-                .commit("master first commit")
-                .new_branch("feature")
-                .commit("feature commit")
-                .check_out("master")
-                .commit("extra commit")
-        )
-        self.repo_sandbox.set_git_config_key("log.showSignature", "true")
+        create_repo()
+        new_branch("master")
+        commit("master first commit")
+        new_branch("feature")
+        commit("feature commit")
+        check_out("master")
+        commit("extra commit")
+        set_git_config_key("log.showSignature", "true")
 
         git = GitContext()
 

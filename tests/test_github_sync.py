@@ -4,6 +4,9 @@ from tests.base_test import BaseTest
 from tests.mockers import (assert_success, launch_command,
                            mock_input_returning_y, rewrite_branch_layout_file)
 from tests.mockers_code_hosting import mock_from_url
+from tests.mockers_git_repository import (check_out, commit,
+                                          create_repo_with_remote,
+                                          get_local_branches, new_branch, push)
 from tests.mockers_github import (MockGitHubAPIState,
                                   mock_github_token_for_domain_fake,
                                   mock_pr_json, mock_urlopen)
@@ -23,30 +26,29 @@ class TestGitHubSync(BaseTest):
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_github_sync()))
 
-        (
-            self.repo_sandbox
-                .new_branch('master')
-                .commit()
-                .push()
-                .new_branch('bar')
-                .commit()
-                .new_branch('bar2')
-                .commit()
-                .check_out("master")
-                .new_branch('foo')
-                .commit()
-                .push()
-                .new_branch('foo2')
-                .commit()
-                .check_out("master")
-                .new_branch('moo')
-                .commit()
-                .new_branch('moo2')
-                .commit()
-                .check_out("master")
-                .new_branch('snickers')
-                .push()
-        )
+        create_repo_with_remote()
+        new_branch('master')
+        commit()
+        push()
+        new_branch('bar')
+        commit()
+        new_branch('bar2')
+        commit()
+        check_out("master")
+        new_branch('foo')
+        commit()
+        push()
+        new_branch('foo2')
+        commit()
+        check_out("master")
+        new_branch('moo')
+        commit()
+        new_branch('moo2')
+        commit()
+        check_out("master")
+        new_branch('snickers')
+        push()
+
         body: str = \
             """
             master
@@ -60,13 +62,11 @@ class TestGitHubSync(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        (
-            self.repo_sandbox
-                .check_out("master")
-                .new_branch('mars')
-                .commit()
-                .check_out("master")
-        )
+        check_out("master")
+        new_branch('mars')
+        commit()
+        check_out("master")
+
         launch_command('github', 'sync')
 
         expected_status_output = (
@@ -84,6 +84,6 @@ class TestGitHubSync(BaseTest):
         )
         assert_success(['status'], expected_status_output)
 
-        branches = self.repo_sandbox.get_local_branches()
+        branches = get_local_branches()
         assert 'foo' in branches
         assert 'mars' not in branches

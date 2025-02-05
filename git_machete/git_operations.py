@@ -233,11 +233,11 @@ class GitContext:
         self.__is_equivalent_tree_reachable_cached: Dict[Tuple[FullCommitHash, FullCommitHash], bool] = {}
         self.__local_branches_cached: Optional[List[LocalBranchShortName]] = None
         self.__merge_base_cached: Dict[Tuple[FullCommitHash, FullCommitHash], Optional[FullCommitHash]] = {}
-        self.__missing_tracking_branch: Optional[Set[str]] = None
         self.__reflogs_cached: Optional[Dict[AnyBranchName, List[GitReflogEntry]]] = None
         self.__remaining_log_hashes_cached: Dict[FullCommitHash, List[FullCommitHash]] = {}
         self.__remote_branches_cached: Optional[List[RemoteBranchShortName]] = None
         self.__remotes_cached: Optional[List[str]] = None
+        self.__removed_from_remote: Optional[Set[str]] = None
         self.__short_commit_hash_by_revision_cached: Dict[AnyRevision, Optional[ShortCommitHash]] = {}
         self.__tree_hash_by_commit_hash_cached: Optional[Dict[FullCommitHash, Optional[FullTreeHash]]] = None
 
@@ -249,10 +249,10 @@ class GitContext:
         self.__config_cached = None
         self.__counterparts_for_fetching_cached = None
         self.__local_branches_cached = None
-        self.__missing_tracking_branch = None
         self.__reflogs_cached = None
         self.__remote_branches_cached = None
         self.__remotes_cached = None
+        self.__removed_from_remote = None
         self.__short_commit_hash_by_revision_cached = {}
 
     def _run_git(self, git_cmd: str, *args: str, flush_caches: bool, allow_non_zero: bool = False) -> int:
@@ -537,11 +537,11 @@ class GitContext:
         # we try to infer the remote if the tracking data is missing.
         return self.get_strict_counterpart_for_fetching_of_branch(branch) or self.__get_inferred_counterpart_for_fetching_of_branch(branch)
 
-    def is_missing_tracking_branch(self, branch: LocalBranchShortName) -> bool:
-        if self.__missing_tracking_branch is None:
+    def is_removed_from_remote(self, branch: LocalBranchShortName) -> bool:
+        if self.__removed_from_remote is None:
             self.__load_branches()
-        assert self.__missing_tracking_branch is not None
-        return branch in self.__missing_tracking_branch
+        assert self.__removed_from_remote is not None
+        return branch in self.__removed_from_remote
 
     # Note that rebase/cherry-pick/merge/revert all happen on per-worktree basis,
     # so we need to check .git/worktrees/<worktree>/<file> rather than .git/<file>
@@ -579,7 +579,7 @@ class GitContext:
         self.__committer_unix_timestamp_by_revision_cached = {}
         self.__counterparts_for_fetching_cached = {}
         self.__local_branches_cached = []
-        self.__missing_tracking_branch = set()
+        self.__removed_from_remote = set()
         self.__remote_branches_cached = []
         self.__tree_hash_by_commit_hash_cached = {}
 
@@ -626,11 +626,11 @@ class GitContext:
             if fetch_counterpart_stripped in self.__remote_branches_cached:
                 self.__counterparts_for_fetching_cached[b_stripped_local] = fetch_counterpart_stripped
             elif fetch_counterpart_stripped is not None:
-                self.__missing_tracking_branch.add(b_stripped_local)
+                self.__removed_from_remote.add(b_stripped_local)
 
     def __get_log_hashes(self, revision: AnyRevision, max_count: Optional[int]) -> List[FullCommitHash]:
         opts = ([f"--max-count={str(max_count)}"] if max_count else []) + ["--format=%H", revision.full_name()]
-        return list(map(FullCommitHash.of, utils.get_non_empty_lines(self._popen_git("log", *opts).stdout)))
+        return [FullCommitHash.of(line) for line in utils.get_non_empty_lines(self._popen_git("log", *opts).stdout)]
 
     # Since getting the full history of a branch can be an expensive operation for large repositories
     # (compared to all other underlying git operations), there are two optimizations in place:
@@ -698,12 +698,12 @@ class GitContext:
             if branch not in self.__reflogs_cached:
                 # %H - full hash
                 # %gs - reflog subject
-                self.__reflogs_cached[branch] = list(map(lambda x: GitReflogEntry(hash=FullCommitHash(x[0]), reflog_subject=x[1]),
-                                                         [entry.split(":", 1) for entry in utils.get_non_empty_lines(
-                                                             # The trailing '--' is necessary to avoid ambiguity in case there is a file
-                                                             # called just exactly like the branch 'branch'.
-                                                             self._popen_git("reflog", "show", "--format=%H:%gs", branch, "--").stdout)]
-                                                         ))
+                self.__reflogs_cached[branch] = [GitReflogEntry(hash=FullCommitHash(x[0]), reflog_subject=x[1]) for x in
+                                                 [entry.split(":", 1) for entry in utils.get_non_empty_lines(
+                                                     # The trailing '--' is necessary to avoid ambiguity in case there is a file
+                                                     # called just exactly like the branch 'branch'.
+                                                     self._popen_git("reflog", "show", "--format=%H:%gs", branch, "--").stdout)]
+                                                 ]
             return self.__reflogs_cached[branch]
 
     def create_branch(self, branch: LocalBranchShortName, out_of_revision: AnyRevision, switch_head: bool) -> None:
@@ -1013,12 +1013,12 @@ class GitContext:
 
     def get_commits_between(self, earliest_exclusive: AnyRevision, latest_inclusive: AnyRevision) -> List[GitLogEntry]:
         # Reverse the list, since `git log` by default returns the commits from the latest to earliest.
-        return list(reversed(list(map(
-            lambda x: GitLogEntry(hash=FullCommitHash(x.split(":", 2)[0]),
-                                  short_hash=ShortCommitHash(x.split(":", 2)[1]),
-                                  subject=x.split(":", 2)[2]),
+        return list(reversed([
+            GitLogEntry(hash=FullCommitHash(x.split(":", 2)[0]),
+                        short_hash=ShortCommitHash(x.split(":", 2)[1]),
+                        subject=x.split(":", 2)[2]) for x in
             utils.get_non_empty_lines(self._popen_git("log", "--format=%H:%h:%s", f"^{earliest_exclusive}", latest_inclusive, "--").stdout)
-        ))))
+        ]))
 
     def get_relation_to_remote_counterpart(self, branch: LocalBranchShortName, remote_branch: RemoteBranchShortName) -> SyncToRemoteStatus:
         b_is_ancestor_of_rb = self.is_ancestor_or_equal(branch.full_name(), remote_branch.full_name())

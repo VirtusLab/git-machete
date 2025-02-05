@@ -1,3 +1,4 @@
+import os
 from typing import Any, Dict, List
 
 from pytest_mock import MockerFixture
@@ -5,9 +6,13 @@ from pytest_mock import MockerFixture
 from git_machete.code_hosting import OrganizationAndRepository
 from git_machete.gitlab import GitLabClient
 from tests.base_test import BaseTest
-from tests.mockers import (assert_failure, assert_success, launch_command,
-                           rewrite_branch_layout_file)
+from tests.mockers import (assert_failure, assert_success, execute,
+                           launch_command, rewrite_branch_layout_file)
 from tests.mockers_code_hosting import mock_from_url
+from tests.mockers_git_repository import (add_remote, check_out, commit,
+                                          create_repo, create_repo_with_remote,
+                                          delete_branch, new_branch, push,
+                                          set_git_config_key, set_remote_url)
 from tests.mockers_gitlab import (MockGitLabAPIState,
                                   mock_gitlab_token_for_domain_fake,
                                   mock_gitlab_token_for_domain_none,
@@ -41,65 +46,66 @@ class TestGitLabCheckoutMRs(BaseTest):
     def test_gitlab_checkout_mrs(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
-        second_remote_path = self.repo_sandbox.create_repo("second-remote", bare=True)
+
+        (local_path, remote_path) = create_repo_with_remote()
+        second_remote_path = create_repo("second-remote", bare=True, switch_dir_to_new_repo=False)
         gitlab_api_state = MockGitLabAPIState(
             self.projects_for_test_gitlab_checkout_prs(second_remote_path),
             *self.mrs_for_test_checkout_mrs())
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
 
-        (
-            self.repo_sandbox.new_branch("root")
-            .commit("initial commit")
-            .new_branch("develop")
-            .commit("first commit")
-            .push()
-            .new_branch("enhance/feature")
-            .commit("introduce feature")
-            .push()
-            .new_branch("bugfix/feature")
-            .commit("bugs removed")
-            .push()
-            .new_branch("allow-ownership-link")
-            .commit("fixes")
-            .push()
-            .new_branch('restrict_access')
-            .commit('authorized users only')
-            .push()
-            .new_branch("chore/redundant_checks")
-            .commit('remove some checks')
-            .push()
-            .check_out("root")
-            .new_branch("master")
-            .commit("Master commit")
-            .push()
-            .new_branch("hotfix/add-trigger")
-            .commit("HOTFIX Add the trigger")
-            .push()
-            .new_branch("ignore-trailing")
-            .commit("Ignore trailing data")
-            .push()
-            .delete_branch("root")
-            .new_branch('chore/fields')
-            .commit("remove outdated fields")
-            .push()
-            .check_out('develop')
-            .new_branch('enhance/add_user')
-            .commit('allow externals to add users')
-            .push()
-            .new_branch('bugfix/add_user')
-            .commit('first round of fixes')
-            .push()
-            .new_branch('testing/add_user')
-            .commit('add test set for add_user feature')
-            .push()
-            .new_branch('chore/comments')
-            .commit('code maintenance')
-            .push()
-            .check_out('master')
-        )
+        new_branch("root")
+        commit("initial commit")
+        new_branch("develop")
+        commit("first commit")
+        push()
+        new_branch("enhance/feature")
+        commit("introduce feature")
+        push()
+        new_branch("bugfix/feature")
+        commit("bugs removed")
+        push()
+        new_branch("allow-ownership-link")
+        commit("fixes")
+        push()
+        new_branch('restrict_access')
+        commit('authorized users only')
+        push()
+        new_branch("chore/redundant_checks")
+        commit('remove some checks')
+        push()
+        check_out("root")
+        new_branch("master")
+        commit("Master commit")
+        push()
+        new_branch("hotfix/add-trigger")
+        commit("HOTFIX Add the trigger")
+        push()
+        new_branch("ignore-trailing")
+        commit("Ignore trailing data")
+        push()
+        delete_branch("root")
+        new_branch('chore/fields')
+        commit("remove outdated fields")
+        push()
+        check_out('develop')
+        new_branch('enhance/add_user')
+        commit('allow externals to add users')
+        push()
+        new_branch('bugfix/add_user')
+        commit('first round of fixes')
+        push()
+        new_branch('testing/add_user')
+        commit('add test set for add_user feature')
+        push()
+        new_branch('chore/comments')
+        commit('code maintenance')
+        push()
+        check_out('master')
+
         for branch in ('chore/redundant_checks', 'restrict_access', 'allow-ownership-link', 'bugfix/feature', 'enhance/add_user',
                        'testing/add_user', 'chore/comments', 'bugfix/add_user'):
-            self.repo_sandbox.delete_branch(branch)
+            delete_branch(branch)
 
         body: str = \
             """
@@ -242,7 +248,7 @@ class TestGitLabCheckoutMRs(BaseTest):
         # check against wrong MR number
         org_repo = OrganizationAndRepository.from_url(
             domain=GitLabClient.DEFAULT_GITLAB_DOMAIN,
-            url=self.repo_sandbox.remote_path)
+            url=remote_path)
 
         assert org_repo is not None
         expected_error_message = f"MR !100 is not found in project {org_repo.organization}/{org_repo.repository}"
@@ -254,27 +260,21 @@ class TestGitLabCheckoutMRs(BaseTest):
         assert_success(['gitlab', 'checkout-mrs', '--by', 'some_other_user'], expected_msg)
 
         # Check against closed merge request with source branch deleted from remote
-        self.repo_sandbox.create_repo("other-local", bare=False, switch_dir_to_new_repo=True)
-        (
-            self.repo_sandbox
-            .add_remote("origin", second_remote_path)
-            .new_branch('main')
-            .commit('initial commit')
-            .push()
-        )
+        create_repo("other-local", bare=False, switch_dir_to_new_repo=True)
+        add_remote("origin", second_remote_path)
+        new_branch('main')
+        commit('initial commit')
+        push()
 
         expected_error_message = "Could not check out MR !5 because branch bugfix/remove-n-option " \
                                  "is already deleted from tester."
         assert_failure(['gitlab', 'checkout-mrs', '5'], expected_error_message)
 
         # Check against MR coming from fork
-        (
-            self.repo_sandbox
-            .new_branch('bugfix/remove-n-option')
-            .commit('first commit')
-            .push()
-            .chdir(self.repo_sandbox.local_path)
-        )
+        new_branch('bugfix/remove-n-option')
+        commit('first commit')
+        push()
+        os.chdir(local_path)
 
         expected_msg = ("Checking for open GitLab MRs... OK\n"
                         "Warn: MR !5 is already closed.\n"
@@ -297,19 +297,17 @@ class TestGitLabCheckoutMRs(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen',
                           mock_urlopen(self.gitlab_api_state_for_test_gitlab_checkout_mrs_from_fork_with_deleted_repo()))
 
-        (
-            self.repo_sandbox.new_branch("root")
-            .commit('initial master commit')
-            .push()
-            .new_branch('develop')
-            .commit('initial develop commit')
-            .push()
-        )
+        (local_path, remote_path) = create_repo_with_remote()
+        new_branch("root")
+        commit('initial master commit')
+        push()
+        new_branch('develop')
+        commit('initial develop commit')
+        push()
 
-        self.repo_sandbox \
-            .chdir(self.repo_sandbox.remote_path)\
-            .execute("git branch merge-requests/2/head develop")\
-            .chdir(self.repo_sandbox.local_path)
+        os.chdir(remote_path)
+        execute("git branch merge-requests/2/head develop")
+        os.chdir(local_path)
 
         body: str = \
             """
@@ -351,59 +349,59 @@ class TestGitLabCheckoutMRs(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen',
                           mock_urlopen(self.gitlab_api_state_for_test_gitlab_checkout_mrs_of_current_user_and_other_users()))
 
-        (
-            self.repo_sandbox.new_branch("root")
-            .commit("initial commit")
-            .new_branch("develop")
-            .commit("first commit")
-            .push()
-            .new_branch("enhance/feature")
-            .commit("introduce feature")
-            .push()
-            .new_branch("bugfix/feature")
-            .commit("bugs removed")
-            .push()
-            .new_branch("allow-ownership-link")
-            .commit("fixes")
-            .push()
-            .new_branch('restrict_access')
-            .commit('authorized users only')
-            .push()
-            .new_branch("chore/redundant_checks")
-            .commit('remove some checks')
-            .push()
-            .check_out("root")
-            .new_branch("master")
-            .commit("Master commit")
-            .push()
-            .new_branch("hotfix/add-trigger")
-            .commit("HOTFIX Add the trigger")
-            .push()
-            .new_branch("ignore-trailing")
-            .commit("Ignore trailing data")
-            .push()
-            .delete_branch("root")
-            .new_branch('chore/fields')
-            .commit("remove outdated fields")
-            .push()
-            .check_out('develop')
-            .new_branch('enhance/add_user')
-            .commit('allow externals to add users')
-            .push()
-            .new_branch('bugfix/add_user')
-            .commit('first round of fixes')
-            .push()
-            .new_branch('testing/add_user')
-            .commit('add test set for add_user feature')
-            .push()
-            .new_branch('chore/comments')
-            .commit('code maintenance')
-            .push()
-            .check_out('master')
-        )
+        create_repo_with_remote()
+        new_branch("root")
+        commit("initial commit")
+        new_branch("develop")
+        commit("first commit")
+        push()
+        new_branch("enhance/feature")
+        commit("introduce feature")
+        push()
+        new_branch("bugfix/feature")
+        commit("bugs removed")
+        push()
+        new_branch("allow-ownership-link")
+        commit("fixes")
+        push()
+        new_branch('restrict_access')
+        commit('authorized users only')
+        push()
+        new_branch("chore/redundant_checks")
+        commit('remove some checks')
+        push()
+        check_out("root")
+        new_branch("master")
+        commit("Master commit")
+        push()
+        new_branch("hotfix/add-trigger")
+        commit("HOTFIX Add the trigger")
+        push()
+        new_branch("ignore-trailing")
+        commit("Ignore trailing data")
+        push()
+        delete_branch("root")
+        new_branch('chore/fields')
+        commit("remove outdated fields")
+        push()
+        check_out('develop')
+        new_branch('enhance/add_user')
+        commit('allow externals to add users')
+        push()
+        new_branch('bugfix/add_user')
+        commit('first round of fixes')
+        push()
+        new_branch('testing/add_user')
+        commit('add test set for add_user feature')
+        push()
+        new_branch('chore/comments')
+        commit('code maintenance')
+        push()
+        check_out('master')
+
         for branch in ('chore/redundant_checks', 'restrict_access', 'allow-ownership-link', 'bugfix/feature', 'enhance/add_user',
                        'testing/add_user', 'chore/comments', 'bugfix/add_user'):
-            self.repo_sandbox.delete_branch(branch)
+            delete_branch(branch)
 
         body: str = \
             """
@@ -493,6 +491,7 @@ class TestGitLabCheckoutMRs(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState.with_mrs()))
 
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
+        create_repo_with_remote()
         assert_success(
             ["gitlab", "checkout-mrs", "--all"],
             """
@@ -541,21 +540,19 @@ class TestGitLabCheckoutMRs(BaseTest):
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.gitlab_api_state_with_mr_cycle()))
 
-        (
-            self.repo_sandbox
-            .new_branch("bugfix/feature")
-            .commit("bugs removed")
-            .push()
-            .new_branch("allow-ownership-link")
-            .commit("fixes")
-            .push()
-            .new_branch('restrict_access')
-            .commit('authorized users only')
-            .push()
-            .new_branch("chore/redundant_checks")
-            .commit('remove some checks')
-            .push()
-        )
+        create_repo_with_remote()
+        new_branch("bugfix/feature")
+        commit("bugs removed")
+        push()
+        new_branch("allow-ownership-link")
+        commit("fixes")
+        push()
+        new_branch('restrict_access')
+        commit('authorized users only')
+        push()
+        new_branch("chore/redundant_checks")
+        commit('remove some checks')
+        push()
 
         assert_failure(
             ['gitlab', 'checkout-mrs', '--all'],
@@ -573,11 +570,9 @@ class TestGitLabCheckoutMRs(BaseTest):
         self.patch_symbol(mocker, 'git_machete.git_operations.GitContext.fetch_remote', lambda _self, _remote: None)
         gitlab_api_state = self.gitlab_api_state_for_test_gitlab_checkout_mrs_single_mr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
-        (
-            self.repo_sandbox
-            .remove_remote("origin")
-            .add_remote("origin-1", gitlab_api_state.projects[1]['http_url_to_repo'])
-        )
+        create_repo()
+        add_remote("origin-1", gitlab_api_state.projects[1]['http_url_to_repo'])
+
         assert_failure(
             ["gitlab", "checkout-mrs", "--all"],
             "Could not check out MR !18 because branch develop is already deleted from tester/tester/repo_sandbox."
@@ -588,15 +583,18 @@ class TestGitLabCheckoutMRs(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(
             self.gitlab_api_state_for_test_gitlab_checkout_mrs_single_mr()))
 
-        (
-            self.repo_sandbox
-            .new_branch("master").commit()
-            .new_branch("develop").commit().push()
-        )
+        create_repo_with_remote()
 
-        self.repo_sandbox.set_remote_url("origin", "https://gitlab.com/example-org/example-repo.git")
-        self.repo_sandbox.set_git_config_key('machete.gitlab.organization', "example-org")
-        self.repo_sandbox.set_git_config_key('machete.gitlab.repository', "example-repo")
+        new_branch("master")
+        commit()
+
+        new_branch("develop")
+        commit()
+        push()
+
+        set_remote_url("origin", "https://gitlab.com/example-org/example-repo.git")
+        set_git_config_key('machete.gitlab.organization', "example-org")
+        set_git_config_key('machete.gitlab.repository', "example-repo")
         assert_success(
             ['gitlab', 'checkout-mrs', '--all'],
             'Checking for open GitLab MRs... OK\n'
@@ -608,14 +606,17 @@ class TestGitLabCheckoutMRs(BaseTest):
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(
             self.gitlab_api_state_for_test_gitlab_checkout_mrs_single_mr()))
 
-        (
-            self.repo_sandbox
-            .new_branch("master").commit()
-            .new_branch("develop").commit().push()
-        )
+        create_repo_with_remote()
 
-        self.repo_sandbox.set_remote_url("origin", "https://gitlab.com/example-org/example-repo.git")
-        self.repo_sandbox.set_git_config_key('machete.gitlab.remote', "origin")
+        new_branch("master")
+        commit()
+
+        new_branch("develop")
+        commit()
+        push()
+
+        set_remote_url("origin", "https://gitlab.com/example-org/example-repo.git")
+        set_git_config_key('machete.gitlab.remote', "origin")
         assert_success(
             ['gitlab', 'checkout-mrs', '--all'],
             'Checking for open GitLab MRs... OK\n'
@@ -633,21 +634,21 @@ class TestGitLabCheckoutMRs(BaseTest):
         self.patch_symbol(mocker, 'git_machete.git_operations.GitContext.fetch_remote', lambda _self, _remote: None)
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
-        second_remote_path = self.repo_sandbox.create_repo("second-remote", bare=True)
+
+        create_repo_with_remote()
+
+        second_remote_path = create_repo("second-remote", bare=True, switch_dir_to_new_repo=False)
         gitlab_api_state = MockGitLabAPIState(
             self.projects_for_test_gitlab_checkout_prs(second_remote_path),
             *self.mrs_for_test_checkout_mrs_main_to_main_pr())
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
 
-        (
-            self.repo_sandbox
-            .new_branch("main")
-            .commit()
-            .push()
-            .new_branch("fix-10341")
-            .commit()
-            .push()
-        )
+        new_branch("main")
+        commit()
+        push()
+        new_branch("fix-10341")
+        commit()
+        push()
 
         assert_success(
             ['gitlab', 'checkout-mrs', '2'],

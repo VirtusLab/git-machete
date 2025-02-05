@@ -128,11 +128,14 @@ def remote_url_patterns(domain: str) -> List[str]:
     # Note that these regexes work for both GitLab and GitHub.
     # The difference is only that the organization (or rather, "namespace") in GitLab might contain multiple `/`-separated segments.
     domain_regex = re.escape(domain)
+    org_repo_regex = "(.+)/([^/]+)"
     return [
-        f"^https://.*@{domain_regex}/(.*)/([^/]*)$",
-        f"^https://{domain_regex}/(.*)/([^/]*)$",
-        f"^git@{domain_regex}:(.*)/([^/]*)$",
-        f"^ssh://git@{domain_regex}/(.*)/([^/]*)$"
+        # (?:...) is a non-capturing group
+        f"^https://(?:.+@)?{domain_regex}/{org_repo_regex}$",
+        # A very rare way to express SSH URL
+        f"^ssh://.+@{domain_regex}/{org_repo_regex}$",
+        # The below is way more common for SSH; the user before `@` is typically called `git`, but doesn't need to be so
+        f"^[^:/]+@{domain_regex}:{org_repo_regex}$",
     ]
 
 
