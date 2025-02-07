@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.32.2
+
 ## New in git-machete 3.32.1
 
 - fixed: `git machete github` and `gitlab` recognize SSH URLs with any user before `@`, not just `git`
