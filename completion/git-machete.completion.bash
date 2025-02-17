@@ -27,7 +27,7 @@ _git_machete() {
   local githublab_checkout_opts="--all --by= --mine"
   local githublab_restack_opts="-U --update-related-descriptions"
   local githublab_retarget_opts="-b --branch= --ignore-if-missing -U --update-related-descriptions"
-  local githublab_update_descriptions_opts="--all --mine --related"
+  local githublab_update_descriptions_opts="--all --by= --mine --related"
   local reapply_opts="-f --fork-point="
   local slide_out_opts="-d --down-fork-point= --delete -M --merge -n --no-edit-merge --no-interactive-rebase --removed-from-remote"
   local squash_opts="-f --fork-point="

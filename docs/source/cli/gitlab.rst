@@ -137,19 +137,21 @@ Creates, checks out and manages GitLab MRs while keeping them reflected in branc
     -U, --update-related-descriptions  Update the generated sections ("intros") of MR descriptions that list the upstream and/or downstream MRs.
                                        See help for ``git machete gitlab update-mr-descriptions --related`` for details.
 
-``update-mr-descriptions``:
+``update-mr-descriptions [--all | --by=<gitlab-login> | --mine | --related]``:
     Updates the generated sections ("intros") of MR descriptions that list the upstream and/or downstream MRs
     (depending on ``machete.gitlab.mrDescriptionIntroStyle`` git config key).
 
     **Options:**
 
-    --all         Update MR descriptions for all MRs in the project.
+    --all                Update MR descriptions for all MRs in the project.
 
-    --mine        Update MR descriptions for all MRs opened by the current user associated with the GitLab token.
+    --by=<gitlab-login>  Update MR descriptions for all MRs authored by the given GitLab user, where ``<gitlab-login>`` is the GitLab account name.
 
-    --related     Update MR descriptions for all MRs that are upstream and/or downstream of the MR for the current branch.
-                  If ``machete.gitlab.mrDescriptionIntroStyle`` is ``up-only`` (default), then only downstream MR descriptions are updated.
-                  If ``machete.gitlab.mrDescriptionIntroStyle`` is ``full``, then both downstream and upstream MR descriptions are updated.
+    --mine               Update MR descriptions for all MRs opened by the current user associated with the GitLab token.
+
+    --related            Update MR descriptions for all MRs that are upstream and/or downstream of the MR for the current branch.
+                         If ``machete.gitlab.mrDescriptionIntroStyle`` is ``up-only`` (default), then only downstream MR descriptions are updated.
+                         If ``machete.gitlab.mrDescriptionIntroStyle`` is ``full``, then both downstream and upstream MR descriptions are updated.
 
 **Git config keys:**
 

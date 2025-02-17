@@ -27,9 +27,9 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Feb 07, 2025" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Feb 18, 2025" "" "git-machete"
 .SH NAME
-git-machete \- git-machete 3.32.2
+git-machete \- git-machete 3.33.0
 .sp
 git machete is a robust tool that \fBsimplifies your git workflows\fP\&.
 .sp
@@ -1090,7 +1090,7 @@ deletes unmanaged branches,
 deletes untracked managed branches that have no downstream branch.
 .UNINDENT
 .TP
-.B \fBupdate\-pr\-descriptions\fP:
+.B \fBupdate\-pr\-descriptions [\-\-all | \-\-by=<github\-login> | \-\-mine | \-\-related]\fP:
 Updates the generated sections (\(dqintros\(dq) of PR descriptions that list the upstream and/or downstream PRs
 (depending on \fBmachete.github.prDescriptionIntroStyle\fP git config key).
 .sp
@@ -1099,6 +1099,9 @@ Updates the generated sections (\(dqintros\(dq) of PR descriptions that list the
 .TP
 .B  \-\-all
 Update PR descriptions for all PRs in the repository.
+.TP
+.BI \-\-by\fB= <github\-login>
+Update PR descriptions for all PRs authored by the given GitHub user, where \fB<github\-login>\fP is the GitHub account name.
 .TP
 .B  \-\-mine
 Update PR descriptions for all PRs opened by the current user associated with the GitHub token.
@@ -1351,7 +1354,7 @@ Update the generated sections (\(dqintros\(dq) of MR descriptions that list the 
 See help for \fBgit machete gitlab update\-mr\-descriptions \-\-related\fP for details.
 .UNINDENT
 .TP
-.B \fBupdate\-mr\-descriptions\fP:
+.B \fBupdate\-mr\-descriptions [\-\-all | \-\-by=<gitlab\-login> | \-\-mine | \-\-related]\fP:
 Updates the generated sections (\(dqintros\(dq) of MR descriptions that list the upstream and/or downstream MRs
 (depending on \fBmachete.gitlab.mrDescriptionIntroStyle\fP git config key).
 .sp
@@ -1360,6 +1363,9 @@ Updates the generated sections (\(dqintros\(dq) of MR descriptions that list the
 .TP
 .B  \-\-all
 Update MR descriptions for all MRs in the project.
+.TP
+.BI \-\-by\fB= <gitlab\-login>
+Update MR descriptions for all MRs authored by the given GitLab user, where \fB<gitlab\-login>\fP is the GitLab account name.
 .TP
 .B  \-\-mine
 Update MR descriptions for all MRs opened by the current user associated with the GitLab token.

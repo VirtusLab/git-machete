@@ -729,7 +729,7 @@ long_docs: Dict[str, str] = {
 
                  * deletes untracked managed branches that have no downstream branch.
 
-           `update-pr-descriptions`:
+           `update-pr-descriptions [--all | --by=<github-login> | --mine | --related]`:
  
               Updates the generated sections ("intros") of PR descriptions that list the upstream and/or downstream PRs
               (depending on `machete.github.prDescriptionIntroStyle` git config key).
@@ -738,6 +738,10 @@ long_docs: Dict[str, str] = {
 
                  <b>--all</b>
               Update PR descriptions for all PRs in the repository.
+
+                 <b>--by=<github-login></b>
+
+              Update PR descriptions for all PRs authored by the given GitHub user, where `<github-login>` is the GitHub account name.
 
                  <b>--mine</b>
               Update PR descriptions for all PRs opened by the current user associated with the GitHub token.
@@ -944,7 +948,7 @@ long_docs: Dict[str, str] = {
               Update the generated sections ("intros") of MR descriptions that list the upstream and/or downstream MRs.
               See help for `git machete gitlab update-mr-descriptions --related` for details.
 
-           `update-mr-descriptions`:
+           `update-mr-descriptions [--all | --by=<gitlab-login> | --mine | --related]`:
  
               Updates the generated sections ("intros") of MR descriptions that list the upstream and/or downstream MRs
               (depending on `machete.gitlab.mrDescriptionIntroStyle` git config key).
@@ -953,6 +957,10 @@ long_docs: Dict[str, str] = {
 
                  <b>--all</b>
               Update MR descriptions for all MRs in the project.
+
+                 <b>--by=<gitlab-login></b>
+
+              Update MR descriptions for all MRs authored by the given GitLab user, where `<gitlab-login>` is the GitLab account name.
 
                  <b>--mine</b>
               Update MR descriptions for all MRs opened by the current user associated with the GitLab token.

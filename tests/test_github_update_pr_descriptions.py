@@ -23,7 +23,7 @@ class TestGitHubUpdatePRDescriptions(BaseTest):
         return [
             mock_pr_json(head='chore/redundant_checks', base='restrict_access', number=18),
             mock_pr_json(head='restrict_access', base='allow-ownership-link', number=17, user='github_user'),
-            mock_pr_json(head='allow-ownership-link', base='bugfix/feature', number=12),
+            mock_pr_json(head='allow-ownership-link', base='bugfix/feature', number=12, user='other_user'),
             mock_pr_json(head='bugfix/feature', base='enhance/feature', number=6),
             mock_pr_json(head='enhance/add_user', base='develop', number=19),
             mock_pr_json(head='testing/add_user', base='bugfix/add_user', number=22),
@@ -112,6 +112,14 @@ class TestGitHubUpdatePRDescriptions(BaseTest):
         )
 
         assert_success(
+            ['github', 'update-pr-descriptions', '--by=other_user'],
+            """
+            Checking for open GitHub PRs... OK
+            Description of PR #12 (allow-ownership-link -> bugfix/feature) has been updated
+            """
+        )
+
+        assert_success(
             ['github', 'update-pr-descriptions', '--related'],
             """
             Checking for open GitHub PRs... OK
@@ -193,8 +201,10 @@ class TestGitHubUpdatePRDescriptions(BaseTest):
     def test_github_update_pr_descriptions_misc_failures_and_warns(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState.with_prs()))
-
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
+
+        create_repo_with_remote()
+
         assert_success(
             ["github", "update-pr-descriptions", "--all"],
             """

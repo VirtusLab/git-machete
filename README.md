@@ -255,6 +255,16 @@ However, we still recommend using merge for the narrow case of [backporting hotf
 
 <br/>
 
+#### In what order should I merge stacked PRs?
+
+We recommend merging PRs from the top-most (closest to the root branch, typically `main` or `master`).
+In other words, PR should only be merged when its base is a root branch.
+
+This way, you don't end up with a big-ball-of-code PR at the end.
+Avoid such balls is one of the main reasons for opening small PRs in the first place.
+
+<br/>
+
 #### Sometimes when I run `update` or `traverse`, too many commits are taken into the rebase... how to fix that?
 
 Contrary to the popular misconception, git doesn't have a notion of

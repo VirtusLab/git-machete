@@ -2251,7 +2251,8 @@ class MacheteClient:
                 f"of the {bold(branch)} branch.")
 
     def update_pull_request_descriptions(self, spec: CodeHostingSpec,
-                                         *, all: bool = False, mine: bool = False, related: bool = False) -> None:
+                                         *, all: bool = False, by: Optional[str] = None, mine: bool = False, related: bool = False
+                                         ) -> None:
         if self.__code_hosting_client is None:
             self.__init_code_hosting_client(spec)
 
@@ -2267,7 +2268,7 @@ class MacheteClient:
         else:
             related_to = None
         applicable_prs: List[PullRequest] = self.__get_applicable_pull_requests(
-            all=all, by=current_user if mine else None, related_to=related_to)
+            all=all, by=current_user if mine else by, related_to=related_to)
 
         for pr in applicable_prs:
             new_description = self.__get_updated_pull_request_description(pr)

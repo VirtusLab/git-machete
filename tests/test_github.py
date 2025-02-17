@@ -354,18 +354,20 @@ class TestGitHub(BaseTest):
         assert_failure(["github", "create-pr", "--ignore-if-missing"],
                        "--ignore-if-missing option is only valid with retarget-pr subcommand.")
         assert_failure(["github", "checkout-prs", "--all", "--mine"],
-                       "checkout-prs subcommand must take exactly one of the following options: --all, --by=..., --mine, pr-number(s)")
+                       "checkout-prs subcommand must take exactly one "
+                       "of the following options: --all, --by=..., --mine, pr-number(s)")
         assert_failure(["github", "checkout-prs", "--title=foo"],
                        "--title option is only valid with create-pr subcommand.")
         assert_failure(["github", "restack-pr", "--with-urls"],
                        "--with-urls option is only valid with anno-prs subcommand.")
         assert_failure(["github", "restack-pr", "--yes"],
                        "--yes option is only valid with create-pr subcommand.")
-        assert_failure(["github", "update-pr-descriptions", "--by=other-user"],
-                       "--by option is only valid with checkout-prs subcommand.")
+        assert_failure(["github", "create-pr", "--by=other-user"],
+                       "--by option is only valid with checkout-prs and update-pr-descriptions subcommands.")
         assert_failure(["github", "checkout-prs", "--related"],
                        "--related option is only valid with update-pr-descriptions subcommand.")
         assert_failure(["github", "update-pr-descriptions", "--all", "--related"],
-                       "update-pr-descriptions subcommand must take exactly one of the following options: --all, --mine, --related")
+                       "update-pr-descriptions subcommand must take exactly one "
+                       "of the following options: --all, --by=..., --mine, --related")
         assert_failure(["github", "update-pr-descriptions", "--update-related-descriptions"],
                        "--update-related-descriptions option is only valid with create-pr, restack-pr and retarget-pr subcommands.")

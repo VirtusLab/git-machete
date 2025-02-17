@@ -75,7 +75,7 @@ test_cases: Dict[str, str] = {
     "git machete github retarget-pr -b ":
         "develop master",
     "git machete github update-pr-descriptions -":
-        "--all --debug -h --help --mine --related -v --verbose",
+        "--all --by --debug -h --help --mine --related -v --verbose",
     "git machete gitlab ":
         "anno-mrs checkout-mrs create-mr restack-mr retarget-mr update-mr-descriptions",
     "git machete gitlab anno-mrs -":
@@ -91,7 +91,7 @@ test_cases: Dict[str, str] = {
     "git machete gitlab retarget-mr -b ":
         "develop master",
     "git machete gitlab update-mr-descriptions -":
-        "--all --debug -h --help --mine --related -v --verbose",
+        "--all --by --debug -h --help --mine --related -v --verbose",
     "git machete g ":
         "down first last next prev root up",
     "git machete go ":

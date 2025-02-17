@@ -760,8 +760,9 @@ def launch(orig_args: List[str]) -> None:
                                            f"`checkout-{pr_or_mr}s` and `update-{pr_or_mr}-descriptions` subcommands.")
             if cli_opts.opt_branch is not None and subcommand != f"retarget-{pr_or_mr}":
                 raise MacheteException(f"`--branch` option is only valid with `retarget-{pr_or_mr}` subcommand.")
-            if cli_opts.opt_by is not None and subcommand != f"checkout-{pr_or_mr}s":
-                raise MacheteException(f"`--by` option is only valid with `checkout-{pr_or_mr}s` subcommand.")
+            if cli_opts.opt_by is not None and subcommand not in (f"checkout-{pr_or_mr}s", f"update-{pr_or_mr}-descriptions"):
+                raise MacheteException(f"`--by` option is only valid with "
+                                       f"`checkout-{pr_or_mr}s` and `update-{pr_or_mr}-descriptions` subcommands.")
             if cli_opts.opt_draft and subcommand != f"create-{pr_or_mr}":
                 raise MacheteException(f"`--draft` option is only valid with `create-{pr_or_mr}` subcommand.")
             if cli_opts.opt_ignore_if_missing and subcommand != f"retarget-{pr_or_mr}":
@@ -819,12 +820,12 @@ def launch(orig_args: List[str]) -> None:
                 machete_client.delete_unmanaged(opt_squash_merge_detection=SquashMergeDetection.NONE, opt_yes=False)
                 machete_client.delete_untracked(opt_yes=cli_opts.opt_yes)
             elif subcommand == f"update-{pr_or_mr}-descriptions":
-                if len(set(parsed_cli_as_dict.keys()).intersection({'all', 'related', 'mine'})) != 1:
+                if len(set(parsed_cli_as_dict.keys()).intersection({'all', 'by', 'mine', 'related'})) != 1:
                     raise MacheteException(
                         f"`update-{pr_or_mr}-descriptions` subcommand must take exactly one of the following options: "
-                        '`--all`, `--mine`, `--related`')
+                        '`--all`, `--by=...`, `--mine`, `--related`')
                 machete_client.update_pull_request_descriptions(
-                    spec, all=cli_opts.opt_all, mine=cli_opts.opt_mine, related=cli_opts.opt_related)
+                    spec, all=cli_opts.opt_all, by=cli_opts.opt_by, mine=cli_opts.opt_mine, related=cli_opts.opt_related)
             else:  # an unknown subcommand is handled by argparse
                 raise UnexpectedMacheteException(f"Unknown subcommand: `{subcommand}`")
         elif cmd == "is-managed":

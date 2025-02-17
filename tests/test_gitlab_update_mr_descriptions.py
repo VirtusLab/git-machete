@@ -23,7 +23,7 @@ class TestGitLabUpdateMRDescriptions(BaseTest):
         return [
             mock_mr_json(head='chore/redundant_checks', base='restrict_access', number=18),
             mock_mr_json(head='restrict_access', base='allow-ownership-link', number=17, user='gitlab_user'),
-            mock_mr_json(head='allow-ownership-link', base='bugfix/feature', number=12),
+            mock_mr_json(head='allow-ownership-link', base='bugfix/feature', number=12, user='other_user'),
             mock_mr_json(head='bugfix/feature', base='enhance/feature', number=6),
             mock_mr_json(head='enhance/add_user', base='develop', number=19),
             mock_mr_json(head='testing/add_user', base='bugfix/add_user', number=22),
@@ -112,6 +112,14 @@ class TestGitLabUpdateMRDescriptions(BaseTest):
         )
 
         assert_success(
+            ['gitlab', 'update-mr-descriptions', '--by=other_user'],
+            """
+            Checking for open GitLab MRs... OK
+            Description of MR !12 (allow-ownership-link -> bugfix/feature) has been updated
+            """
+        )
+
+        assert_success(
             ['gitlab', 'update-mr-descriptions', '--related'],
             """
             Checking for open GitLab MRs... OK
@@ -193,9 +201,10 @@ class TestGitLabUpdateMRDescriptions(BaseTest):
     def test_gitlab_update_mr_descriptions_misc_failures_and_warns(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState.with_mrs()))
+        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
 
         create_repo_with_remote()
-        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
+
         assert_success(
             ["gitlab", "update-mr-descriptions", "--all"],
             """

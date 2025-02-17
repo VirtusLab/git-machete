@@ -305,18 +305,20 @@ class TestGitLab(BaseTest):
         assert_failure(["gitlab", "create-mr", "--ignore-if-missing"],
                        "--ignore-if-missing option is only valid with retarget-mr subcommand.")
         assert_failure(["gitlab", "checkout-mrs", "--all", "--mine"],
-                       "checkout-mrs subcommand must take exactly one of the following options: --all, --by=..., --mine, mr-number(s)")
+                       "checkout-mrs subcommand must take exactly one "
+                       "of the following options: --all, --by=..., --mine, mr-number(s)")
         assert_failure(["gitlab", "checkout-mrs", "--title=foo"],
                        "--title option is only valid with create-mr subcommand.")
         assert_failure(["gitlab", "restack-mr", "--with-urls"],
                        "--with-urls option is only valid with anno-mrs subcommand.")
         assert_failure(["gitlab", "restack-mr", "--yes"],
                        "--yes option is only valid with create-mr subcommand.")
-        assert_failure(["gitlab", "update-mr-descriptions", "--by=other-user"],
-                       "--by option is only valid with checkout-mrs subcommand.")
+        assert_failure(["gitlab", "create-mr", "--by=other-user"],
+                       "--by option is only valid with checkout-mrs and update-mr-descriptions subcommands.")
         assert_failure(["gitlab", "checkout-mrs", "--related"],
                        "--related option is only valid with update-mr-descriptions subcommand.")
         assert_failure(["gitlab", "update-mr-descriptions", "--all", "--related"],
-                       "update-mr-descriptions subcommand must take exactly one of the following options: --all, --mine, --related")
+                       "update-mr-descriptions subcommand must take exactly one "
+                       "of the following options: --all, --by=..., --mine, --related")
         assert_failure(["gitlab", "update-mr-descriptions", "--update-related-descriptions"],
                        "--update-related-descriptions option is only valid with create-mr, restack-mr and retarget-mr subcommands.")

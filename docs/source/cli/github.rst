@@ -146,19 +146,21 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
     #. deletes unmanaged branches,
     #. deletes untracked managed branches that have no downstream branch.
 
-``update-pr-descriptions``:
+``update-pr-descriptions [--all | --by=<github-login> | --mine | --related]``:
     Updates the generated sections ("intros") of PR descriptions that list the upstream and/or downstream PRs
     (depending on ``machete.github.prDescriptionIntroStyle`` git config key).
 
     **Options:**
 
-    --all         Update PR descriptions for all PRs in the repository.
+    --all                Update PR descriptions for all PRs in the repository.
 
-    --mine        Update PR descriptions for all PRs opened by the current user associated with the GitHub token.
+    --by=<github-login>  Update PR descriptions for all PRs authored by the given GitHub user, where ``<github-login>`` is the GitHub account name.
 
-    --related     Update PR descriptions for all PRs that are upstream and/or downstream of the PR for the current branch.
-                  If ``machete.github.prDescriptionIntroStyle`` is ``up-only`` (default), then only downstream PR descriptions are updated.
-                  If ``machete.github.prDescriptionIntroStyle`` is ``full``, then both downstream and upstream PR descriptions are updated.
+    --mine               Update PR descriptions for all PRs opened by the current user associated with the GitHub token.
+
+    --related            Update PR descriptions for all PRs that are upstream and/or downstream of the PR for the current branch.
+                         If ``machete.github.prDescriptionIntroStyle`` is ``up-only`` (default), then only downstream PR descriptions are updated.
+                         If ``machete.github.prDescriptionIntroStyle`` is ``full``, then both downstream and upstream PR descriptions are updated.
 
 **Git config keys:**
 

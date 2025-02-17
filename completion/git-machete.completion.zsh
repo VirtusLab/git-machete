@@ -304,6 +304,7 @@ __git_machete_github_subcommands() {
         (update-pr-descriptions)
           _arguments \
             '(--all)'--all'[Update PR descriptions for all PRs in the repository]' \
+            '(--by)'--by='[Update PR descriptions for all PRs authored by the given GitHub user]' \
             '(--mine)'--mine'[Update PR descriptions for all PRs opened by the current user associated with the GitHub token]' \
             '(--related)'--related'[Update PR descriptions for all PRs that are upstream and/or downstream of the PR for the current branch]' \
             "${common_flags[@]}"
@@ -379,6 +380,7 @@ __git_machete_gitlab_subcommands() {
         (update-mr-descriptions)
           _arguments \
             '(--all)'--all'[Update MR descriptions for all MRs in the project]' \
+            '(--by)'--by='[Update MR descriptions for all MRs authored by the given GitLab user]' \
             '(--mine)'--mine'[Update MR descriptions for all MRs opened by the current user associated with the GitLab token]' \
             '(--related)'--related'[Update MR descriptions for all MRs that are upstream and/or downstream of the MR for the current branch]' \
             "${common_flags[@]}"
