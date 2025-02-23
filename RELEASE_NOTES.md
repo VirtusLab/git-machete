@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.33.1
+
 ## New in git-machete 3.33.0
 
 - added: `--by=...` flag to `git machete git{hub,lab} update-{pr,mr}-descriptions`
