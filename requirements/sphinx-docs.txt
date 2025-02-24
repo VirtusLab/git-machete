@@ -4,4 +4,4 @@
 pydata-sphinx-theme==0.16.1
 
 sphinx==8.2.1
-sphinx-book-theme==1.1.4
+sphinx-book-theme==1.1.3
