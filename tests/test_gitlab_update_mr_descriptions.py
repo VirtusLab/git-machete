@@ -23,8 +23,8 @@ class TestGitLabUpdateMRDescriptions(BaseTest):
         return [
             mock_mr_json(head='chore/redundant_checks', base='restrict_access', number=18),
             mock_mr_json(head='restrict_access', base='allow-ownership-link', number=17, user='gitlab_user'),
-            mock_mr_json(head='allow-ownership-link', base='bugfix/feature', number=12, user='other_user'),
-            mock_mr_json(head='bugfix/feature', base='enhance/feature', number=6),
+            mock_mr_json(head='allow-ownership-link', base='bugfix/feature', number=12, user='other_user', body="# Summary\n\n"),
+            mock_mr_json(head='bugfix/feature', base='enhance/feature', number=6, body="# Summary\n"),
             mock_mr_json(head='enhance/add_user', base='develop', number=19),
             mock_mr_json(head='testing/add_user', base='bugfix/add_user', number=22),
             mock_mr_json(head='chore/comments', base='testing/add_user', number=24),
@@ -167,7 +167,8 @@ class TestGitLabUpdateMRDescriptions(BaseTest):
 
             <!-- end git-machete generated -->
 
-            # Summary""")[1:]
+            # Summary
+        """)[1:]
 
         mr = gitlab_api_state.get_mr_by_number(12)
         assert mr is not None
@@ -192,7 +193,9 @@ class TestGitLabUpdateMRDescriptions(BaseTest):
 
             <!-- end git-machete generated -->
 
-            # Summary""")[1:]
+            # Summary
+
+        """)[1:]
 
         mr = gitlab_api_state.get_mr_by_number(19)
         assert mr is not None

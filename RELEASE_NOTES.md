@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.33.1
 
+- fixed: preserve trailing lines when updating PR/MR descriptions
+
 ## New in git-machete 3.33.0
 
 - added: `--by=...` flag to `git machete git{hub,lab} update-{pr,mr}-descriptions`
