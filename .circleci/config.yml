@@ -192,7 +192,8 @@ jobs:
       - run: brew install fish zsh
       - run: pip install tox
       # TODO (#1005): make zsh completion tests pass on macOS machine on CI
-      - run: tox -e test-completions -- -vv -k "not zsh"
+      # TODO (#1407): restore fish completion tests on macOS once fish-shell#11205 is resolved
+      - run: tox -e test-completions -- -vv -k "not zsh and not fish"
       - run: PYTHON_VERSION=3-macos  tox -e coverage -- -vv
       - store_test_results:
           path: test-results/
