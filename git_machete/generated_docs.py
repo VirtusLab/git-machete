@@ -1214,7 +1214,8 @@ long_docs: Dict[str, str] = {
 
         Removes the given branch (or multiple branches) from the branch layout.
         If no branch has been specified, current branch is slid out.
-        If `--removed-from-remote` is specified, all branches that have been removed from the remote are slid out instead.
+        If `--removed-from-remote` is specified, all branches that have been removed from the remote
+        and do <b>not</b> have a child branch are slid out instead.
 
         Also, if the last branch in the specified chain of `[<branch> [<branch>]]` had any children,
         these children are synced to the parent of the first specified branch.

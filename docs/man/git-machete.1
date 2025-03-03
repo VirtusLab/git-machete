@@ -1734,7 +1734,8 @@ git machete slide\-out [\-d|\-\-down\-fork\-point=<down\-fork\-point\-commit>] [
 .sp
 Removes the given branch (or multiple branches) from the branch layout.
 If no branch has been specified, current branch is slid out.
-If \fB\-\-removed\-from\-remote\fP is specified, all branches that have been removed from the remote are slid out instead.
+If \fB\-\-removed\-from\-remote\fP is specified, all branches that have been removed from the remote
+and do \fBnot\fP have a child branch are slid out instead.
 .sp
 Also, if the last branch in the specified chain of \fB[<branch> [<branch>]]\fP had any children,
 these children are synced to the parent of the first specified branch.

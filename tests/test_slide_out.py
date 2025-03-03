@@ -442,6 +442,7 @@ class TestSlideOut(BaseTest):
         commit()
         push()
         delete_remote_branch('origin/should_be_pruned')
+        delete_remote_branch('origin/has_downstream')
         check_out('main')
 
         body: str = \
@@ -469,7 +470,7 @@ class TestSlideOut(BaseTest):
               |
               o-not_deleted_remotely
               |
-              o-has_downstream
+              o-has_downstream (untracked)
                 |
                 o-downstream (untracked)
             """
