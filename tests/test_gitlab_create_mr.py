@@ -179,7 +179,8 @@ class TestGitLabCreateMR(BaseTest):
               * **MR !5 (THIS ONE)**:
                 `ignore-trailing` ← `chore/fields`
 
-            <!-- end git-machete generated -->''')[1:]
+            <!-- end git-machete generated -->
+        ''')[1:]
         assert pr['milestone_id'] == '42'
         assert pr['assignee_ids'] == [123456]
         assert pr['reviewer_ids'] == [123, 456]
@@ -269,7 +270,8 @@ class TestGitLabCreateMR(BaseTest):
                 * **MR !5 (THIS ONE)**:
                   `ignore-trailing` ← `chore/fields`
 
-            <!-- end git-machete generated -->""")[1:]
+            <!-- end git-machete generated -->
+        """)[1:]
 
         expected_error_message = "Another open merge request already exists for this source branch: !6"
         assert_failure(["gitlab", "create-mr"], expected_error_message)
@@ -430,7 +432,8 @@ class TestGitLabCreateMR(BaseTest):
 
             # MR title
             ## Summary
-            ## Test plan''')[1:]
+            ## Test plan
+        ''')[1:]
 
     @staticmethod
     def gitlab_api_state_for_test_create_mr_missing_base_branch_on_remote() -> MockGitLabAPIState:

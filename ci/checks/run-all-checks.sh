@@ -28,13 +28,13 @@ enforce-shell-scripts-pass-shellcheck.sh
 prohibit-bash-usages-from-python.sh
 prohibit-current-date-in-tests.sh
 prohibit-deploy-step-in-circleci.sh
+prohibit-double-backticks-in-python.sh
 prohibit-exempli-gratia-in-rst.sh
 prohibit-fork-point-in-git-context.sh
-prohibit-id-est-in-rst.sh
-prohibit-double-backticks-in-python.sh
 prohibit-github-in-gitlab-files.sh
 prohibit-github-mr-or-gitlab-pr.sh
 prohibit-gitlab-in-github-files.sh
+prohibit-id-est-in-rst.sh
 prohibit-markdown-links-in-rst.sh
 prohibit-mrs-in-github-files.sh
 prohibit-prs-in-gitlab-files.sh

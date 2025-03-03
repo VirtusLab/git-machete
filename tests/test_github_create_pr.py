@@ -179,7 +179,8 @@ class TestGitHubCreatePR(BaseTest):
               * **PR #5 (THIS ONE)**:
                 `ignore-trailing` ← `chore/fields`
 
-            <!-- end git-machete generated -->''')[1:]
+            <!-- end git-machete generated -->
+        ''')[1:]
         assert pr['draft'] is True
         assert pr['milestone'] == '42'
         assert pr['assignees'] == ['github_user']
@@ -271,7 +272,8 @@ class TestGitHubCreatePR(BaseTest):
                 * **PR #5 (THIS ONE)**:
                   `ignore-trailing` ← `chore/fields`
 
-            <!-- end git-machete generated -->""")[1:]
+            <!-- end git-machete generated -->
+        """)[1:]
 
         expected_error_message = "A pull request already exists for test_repo:hotfix/add-trigger."
         assert_failure(["github", "create-pr"], expected_error_message)
@@ -450,7 +452,8 @@ class TestGitHubCreatePR(BaseTest):
 
             # PR title
             ## Summary
-            ## Test plan''')[1:]
+            ## Test plan
+        ''')[1:]
 
     @staticmethod
     def github_api_state_for_test_create_pr_missing_base_branch_on_remote() -> MockGitHubAPIState:

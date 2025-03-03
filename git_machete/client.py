@@ -2553,7 +2553,8 @@ class MacheteClient:
         def skip_leading_empty(strs: List[str]) -> List[str]:
             return list(itertools.dropwhile(lambda line: line.strip() == '', strs))
 
-        lines = skip_leading_empty(pr.description.splitlines()) if pr.description else []
+        original_trailing_newlines = ''.join(itertools.takewhile(lambda c: c == '\n', reversed(pr.description or '')))
+        lines = pr.description.strip().splitlines() if pr.description else []
         style = self.__get_pr_description_into_style_from_config()
         text_to_prepend = self.__generate_pr_description_intro(pr, style)
         lines_to_prepend = text_to_prepend.splitlines() if text_to_prepend else []
@@ -2567,7 +2568,7 @@ class MacheteClient:
             if lines and '# Based on PR #' in lines[0]:
                 lines = lines[1:]
             lines = lines_to_prepend + ([''] if lines_to_prepend else []) + skip_leading_empty(lines)
-        return '\n'.join(lines)
+        return '\n'.join(lines) + original_trailing_newlines
 
     def retarget_pull_request(self, spec: CodeHostingSpec, head: LocalBranchShortName,
                               opt_ignore_if_missing: bool, opt_update_related_descriptions: bool) -> None:
