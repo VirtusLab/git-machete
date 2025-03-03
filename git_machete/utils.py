@@ -5,18 +5,11 @@ import re
 import subprocess
 import sys
 import time
-from typing import (Any, Callable, Dict, Iterable, List, NamedTuple, NoReturn,
-                    Optional, Set, Tuple, TypeVar)
+from typing import (Any, Callable, Dict, Iterable, List, NamedTuple, Optional,
+                    Set, Tuple, TypeVar)
 
 T = TypeVar('T')
 U = TypeVar('U')
-
-Never = NoReturn  # express the intent more clearly, see https://typing.readthedocs.io/en/latest/guides/unreachable.html#never-and-noreturn
-
-
-def assert_never(arg: Never) -> NoReturn:  # noqa: U100
-    raise AssertionError(f"Expected code to be unreachable: value is {arg}")
-
 
 # To avoid displaying the same warning multiple times during a single run.
 displayed_warnings: Set[str] = set()

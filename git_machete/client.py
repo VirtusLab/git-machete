@@ -29,8 +29,8 @@ from .git_operations import (HEAD, AnyBranchName, AnyRevision, BranchPair,
                              SyncToRemoteStatus)
 from .github import GitHubClient
 from .gitlab import GitLabClient
-from .utils import (AnsiEscapeCodes, PopenResult, assert_never, bold, colored,
-                    debug, dim, excluding, flat_map, fmt, get_pretty_choices,
+from .utils import (AnsiEscapeCodes, PopenResult, bold, colored, debug, dim,
+                    excluding, flat_map, fmt, get_pretty_choices,
                     get_right_arrow, get_second, tupled, underline, warn)
 
 
@@ -820,11 +820,9 @@ class MacheteClient:
             print(f"Checking out the first root branch ({bold(dest)})")
             self.__git.checkout(dest)
             current_branch = dest
-        elif opt_start_from == TraverseStartFrom.HERE:
+        else:  # cli_opts.opt_start_from == TraverseStartFrom.HERE
             current_branch = self.__git.get_current_branch()
             self.expect_in_managed_branches(current_branch)
-        else:
-            assert_never(opt_start_from)
 
         branch: LocalBranchShortName
         for branch in itertools.dropwhile(lambda x: x != current_branch, self.managed_branches.copy()):
@@ -2201,8 +2199,8 @@ class MacheteClient:
             # Let's try another way, a little more complex but takes into account the possibility
             # that there were other commits between the common ancestor of the two branches and the squashed merge.
             return self.__git.is_equivalent_tree_reachable(branch, upstream) or self.__git.is_equivalent_patch_reachable(branch, upstream)
-        else:
-            assert_never(opt_squash_merge_detection)
+        else:  # pragma: no cover
+            raise UnexpectedMacheteException(f"Invalid squash merged detection mode: {opt_squash_merge_detection}.")
 
     @staticmethod
     def ask_if(
