@@ -161,8 +161,10 @@ class GitHubClient(CodeHostingClient):
             organization_name='organization',
             # https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/creating-a-pull-request-template-for-your-repository
             pr_description_path=['.github', 'pull_request_template.md'],
-            pr_ordinal_char='#',
             pr_full_name='pull request',
+            pr_intro_br_before_branches=False,
+            pr_intro_explicit_title=False,
+            pr_ordinal_char='#',
             pr_short_name='PR',
             pr_short_name_article='a',
             repository_name='repository',
@@ -197,6 +199,7 @@ class GitHubClient(CodeHostingClient):
             head_repo_id=pr_json['head']['repo']['id'],
             html_url=pr_json['html_url'],
             state=pr_json['state'],
+            title=pr_json['title'],
             description=pr_json['body'])
 
     def __fire_github_api_request(self, method: str, path: str, request_body: Optional[Dict[str, Any]] = None) -> Any:

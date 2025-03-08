@@ -2775,6 +2775,7 @@ class MacheteClient:
             return ''
         spec = self.code_hosting_spec
         pr_short_name = spec.pr_short_name
+        br_before_branches = ' <br>' if spec.pr_intro_br_before_branches else ''
 
         pr_up_path = list(reversed(self.__get_upwards_path_including_pr(pr)))
         if style == PRDescriptionIntroStyle.FULL:
@@ -2801,10 +2802,11 @@ class MacheteClient:
         def pr_entry(_pr: PullRequest, _depth: int) -> str:
             result = '  ' * _depth
             display_text = _pr.display_text(fmt=False)
+            explicit_title = f' _{_pr.title}_' if spec.pr_intro_explicit_title else ''
             if _pr.number == pr.number:
-                result += f'* **{display_text} (THIS ONE)**:\n'
+                result += f'* **{display_text}{explicit_title} (THIS ONE)**:{br_before_branches}\n'
             else:
-                result += f'* {display_text}:\n'
+                result += f'* {display_text}{explicit_title}:{br_before_branches}\n'
             result += '  ' * _depth
             result += f'  `{_pr.base}` ← `{_pr.head}`\n\n'
             return result

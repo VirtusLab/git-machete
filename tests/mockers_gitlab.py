@@ -28,13 +28,13 @@ def mock_mr_json(head: str, base: str, number: int,
                  draft: bool = False
                  ) -> Dict[str, Any]:
     return {
-        'title': 'Draft: MR title' if draft else 'MR title',
         'source_branch': head,
         'source_project_id': repo_id,
         'target_branch': base,
         'author': {'username': user},
         'iid': str(number),
         'web_url': html_url,
+        'title': 'Draft: MR title' if draft else 'MR title',
         'description': body,
         'state': state,
         'draft': draft

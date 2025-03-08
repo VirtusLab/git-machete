@@ -9,7 +9,7 @@ from git_machete.utils import bold
 
 class PullRequest:
     def __init__(self, number: int, display_prefix: str, user: str, base: str, head: str, head_repo_id: int,
-                 state: str, description: Optional[str], html_url: str):
+                 state: str, title: str, description: Optional[str], html_url: str):
         self.__number = number
         self.__display_prefix = display_prefix
         self.__user = user
@@ -17,6 +17,7 @@ class PullRequest:
         self.__head = head
         self.__head_repo_id = head_repo_id
         self.__state = state
+        self.__title = title
         self.__description = description
         self.__html_url = html_url
 
@@ -29,6 +30,7 @@ class PullRequest:
             head=self.__head,
             head_repo_id=self.__head_repo_id,
             state=self.__state,
+            title=self.__title,
             description=self.__description,
             html_url=self.__html_url
         )
@@ -64,6 +66,10 @@ class PullRequest:
     @property
     def state(self) -> str:
         return self.__state
+
+    @property
+    def title(self) -> str:
+        return self.__title
 
     @property
     def description(self) -> Optional[str]:
@@ -167,6 +173,8 @@ class CodeHostingSpec(NamedTuple):
     organization_name: str
     pr_description_path: List[str]
     pr_full_name: str
+    pr_intro_br_before_branches: bool
+    pr_intro_explicit_title: bool
     pr_ordinal_char: str
     pr_short_name_article: str
     pr_short_name: str

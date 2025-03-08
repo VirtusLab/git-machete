@@ -173,10 +173,10 @@ class TestGitLabCreateMR(BaseTest):
 
             ## Chain of upstream MRs as of 2023-12-31
 
-            * MR !3:
+            * MR !3 _MR title_: <br>
               `hotfix/add-trigger` ← `ignore-trailing`
 
-              * **MR !5 (THIS ONE)**:
+              * **MR !5 _Draft: remove outdated fields_ (THIS ONE)**: <br>
                 `ignore-trailing` ← `chore/fields`
 
             <!-- end git-machete generated -->
@@ -261,13 +261,13 @@ class TestGitLabCreateMR(BaseTest):
 
             ## Chain of upstream MRs as of 2023-12-31
 
-            * MR !6:
+            * MR !6 _HOTFIX Add the trigger (amended)_: <br>
               `master` ← `hotfix/add-trigger`
 
-              * MR !3:
+              * MR !3 _MR title_: <br>
                 `hotfix/add-trigger` ← `ignore-trailing`
 
-                * **MR !5 (THIS ONE)**:
+                * **MR !5 _Draft: remove outdated fields_ (THIS ONE)**: <br>
                   `ignore-trailing` ← `chore/fields`
 
             <!-- end git-machete generated -->
@@ -416,16 +416,16 @@ class TestGitLabCreateMR(BaseTest):
 
             ## Chain of upstream MRs & tree of downstream MRs as of 2023-12-31
 
-            * MR !1:
+            * MR !1 _MR title_: <br>
               `develop` ← `allow-ownership-link`
 
-              * MR !2:
+              * MR !2 _MR title_: <br>
                 `allow-ownership-link` ← `build-chain`
 
-                * **MR !4 (THIS ONE)**:
+                * **MR !4 _Call web service_ (THIS ONE)**: <br>
                   `build-chain` ← `call-ws`
 
-                    * MR !3:
+                    * MR !3 _Drop unneeded SQL constraints_: <br>
                       `call-ws` ← `drop-constraint`
 
             <!-- end git-machete generated -->
@@ -630,10 +630,10 @@ class TestGitLabCreateMR(BaseTest):
 
             ## Chain of upstream MRs as of 2023-12-31
 
-            * MR !15:
+            * MR !15 _MR title_: <br>
               `root` ← `branch-1`
 
-              * **MR !16 (THIS ONE)**:
+              * **MR !16 _introduce feature_ (THIS ONE)**: <br>
                 `branch-1` ← `feature`
 
             <!-- end git-machete generated -->

@@ -157,10 +157,10 @@ class TestTraverseGitLab(BaseTest):
 
             ## Chain of upstream MRs as of 2023-12-31
 
-            * MR !1:
+            * MR !1 _MR title_: <br>
               `develop` ← `allow-ownership-link`
 
-              * **MR !2 (THIS ONE)**:
+              * **MR !2 _MR title_ (THIS ONE)**: <br>
                 `allow-ownership-link` ← `build-chain`
 
             <!-- end git-machete generated -->
@@ -176,13 +176,13 @@ class TestTraverseGitLab(BaseTest):
 
             ## Chain of upstream MRs as of 2023-12-31
 
-            * MR !1:
+            * MR !1 _MR title_: <br>
               `develop` ← `allow-ownership-link`
 
-              * MR !2:
+              * MR !2 _MR title_: <br>
                 `allow-ownership-link` ← `build-chain`
 
-                * **MR !3 (THIS ONE)**:
+                * **MR !3 _MR title_ (THIS ONE)**: <br>
                   `build-chain` ← `call-ws`
 
             <!-- end git-machete generated -->

@@ -26,6 +26,7 @@ def mock_pr_json(head: str, base: str, number: int,
         'base': {'ref': base},
         'number': str(number),
         'html_url': html_url,
+        'title': 'PR title',
         'body': body,
         'state': state,
         'draft': draft

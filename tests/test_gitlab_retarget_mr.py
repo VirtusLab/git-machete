@@ -272,10 +272,10 @@ class TestGitLabRetargetMR(BaseTest):
 
             ## Chain of upstream MRs as of 2023-12-31
 
-            * MR !15:
+            * MR !15 _MR title_: <br>
               `master` ← `feature`
 
-              * **MR !20 (THIS ONE)**:
+              * **MR !20 _MR title_ (THIS ONE)**: <br>
                 `feature` ← `feature_1`
 
             <!-- end git-machete generated -->
@@ -319,10 +319,10 @@ class TestGitLabRetargetMR(BaseTest):
 
             ## Chain of upstream MRs as of 2023-12-31
 
-            * MR !15:
+            * MR !15 _MR title_: <br>
               `master` ← `feature`
 
-              * **MR !25 (THIS ONE)**:
+              * **MR !25 _MR title_ (THIS ONE)**: <br>
                 `feature` ← `feature_2`
 
             <!-- end git-machete generated -->
@@ -361,13 +361,13 @@ class TestGitLabRetargetMR(BaseTest):
 
             ## Chain of upstream MRs as of 2023-12-31
 
-            * MR !15:
+            * MR !15 _MR title_: <br>
               `master` ← `feature`
 
-              * MR !25:
+              * MR !25 _MR title_: <br>
                 `feature` ← `feature_2`
 
-                * **MR !30 (THIS ONE)**:
+                * **MR !30 _MR title_ (THIS ONE)**: <br>
                   `feature_2` ← `feature_3`
 
             <!-- end git-machete generated -->
@@ -401,10 +401,10 @@ class TestGitLabRetargetMR(BaseTest):
 
             ## Chain of upstream MRs as of 2023-12-31
 
-            * MR !15:
+            * MR !15 _MR title_: <br>
               `master` ← `feature`
 
-              * **MR !30 (THIS ONE)**:
+              * **MR !30 _MR title_ (THIS ONE)**: <br>
                 `feature` ← `feature_3`
 
             <!-- end git-machete generated -->
@@ -469,16 +469,16 @@ class TestGitLabRetargetMR(BaseTest):
 
             ## Tree of downstream MRs as of 2023-12-31
 
-            * **MR !15 (THIS ONE)**:
+            * **MR !15 _MR title_ (THIS ONE)**: <br>
               `branch-1` ← `feature`
 
-                * MR !20:
+                * MR !20 _MR title_: <br>
                   `feature` ← `feature_1`
 
-                * MR !25:
+                * MR !25 _MR title_: <br>
                   `feature` ← `feature_2`
 
-                * MR !35:
+                * MR !35 _MR title_: <br>
                   `feature` ← `feature_4`
 
             <!-- end git-machete generated -->

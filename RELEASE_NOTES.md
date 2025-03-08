@@ -3,6 +3,7 @@
 ## New in git-machete 3.33.1
 
 - fixed: preserve trailing lines when updating PR/MR descriptions
+- fixed: generated sections of GitLab MRs include MR titles (as in GitHub PRs)
 
 ## New in git-machete 3.33.0
 

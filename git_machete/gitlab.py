@@ -118,6 +118,8 @@ class GitLabClient(CodeHostingClient):
             # To keep things simple, we'll only support the "Default.md" template for now.
             pr_description_path=['.gitlab', 'merge_request_templates', 'Default.md'],
             pr_full_name='merge request',
+            pr_intro_br_before_branches=True,
+            pr_intro_explicit_title=True,
             pr_ordinal_char='!',
             pr_short_name='MR',
             pr_short_name_article='an',
@@ -149,6 +151,7 @@ class GitLabClient(CodeHostingClient):
             head_repo_id=int(mr_json['source_project_id']),
             html_url=mr_json['web_url'],
             state=mr_json['state'],
+            title=mr_json['title'],
             description=mr_json['description'])
 
     def __fire_gitlab_api_request(self, method: str, path: str, request_body: Optional[Dict[str, Any]] = None) -> Any:

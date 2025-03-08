@@ -153,16 +153,16 @@ class TestGitLabUpdateMRDescriptions(BaseTest):
 
             ## Tree of downstream MRs as of 2023-12-31
 
-            * **MR !6 (THIS ONE)**:
+            * **MR !6 _MR title_ (THIS ONE)**: <br>
               `enhance/feature` ← `bugfix/feature`
 
-                * MR !12:
+                * MR !12 _MR title_: <br>
                   `bugfix/feature` ← `allow-ownership-link`
 
-                  * MR !17:
+                  * MR !17 _MR title_: <br>
                     `allow-ownership-link` ← `restrict_access`
 
-                    * MR !18:
+                    * MR !18 _MR title_: <br>
                       `restrict_access` ← `chore/redundant_checks`
 
             <!-- end git-machete generated -->
@@ -179,16 +179,16 @@ class TestGitLabUpdateMRDescriptions(BaseTest):
 
             ## Chain of upstream MRs & tree of downstream MRs as of 2023-12-31
 
-            * MR !6:
+            * MR !6 _MR title_: <br>
               `enhance/feature` ← `bugfix/feature`
 
-              * **MR !12 (THIS ONE)**:
+              * **MR !12 _MR title_ (THIS ONE)**: <br>
                 `bugfix/feature` ← `allow-ownership-link`
 
-                  * MR !17:
+                  * MR !17 _MR title_: <br>
                     `allow-ownership-link` ← `restrict_access`
 
-                    * MR !18:
+                    * MR !18 _MR title_: <br>
                       `restrict_access` ← `chore/redundant_checks`
 
             <!-- end git-machete generated -->
