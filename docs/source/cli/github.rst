@@ -159,8 +159,8 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
     --mine               Update PR descriptions for all PRs opened by the current user associated with the GitHub token.
 
     --related            Update PR descriptions for all PRs that are upstream and/or downstream of the PR for the current branch.
-                         If ``machete.github.prDescriptionIntroStyle`` is ``up-only`` (default), then only downstream PR descriptions are updated.
-                         If ``machete.github.prDescriptionIntroStyle`` is ``full``, then both downstream and upstream PR descriptions are updated.
+                         If ``machete.github.prDescriptionIntroStyle`` is ``up-only`` (default) or ``up-only-no-branches``, then only downstream PR descriptions are updated.
+                         If ``machete.github.prDescriptionIntroStyle`` is ``full`` or ``full-no-branches``, then both downstream and upstream PR descriptions are updated.
 
 **Git config keys:**
 

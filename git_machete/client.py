@@ -77,7 +77,9 @@ class PickRoot(Enum):
 
 class PRDescriptionIntroStyle(ParsableEnum):
     FULL = auto()
+    FULL_NO_BRANCHES = auto()
     UP_ONLY = auto()
+    UP_ONLY_NO_BRANCHES = auto()
     NONE = auto()
 
 
@@ -2443,7 +2445,7 @@ class MacheteClient:
         elif related_to:
             style = self.__get_pr_description_into_style_from_config()
             result = []
-            if style == PRDescriptionIntroStyle.FULL:
+            if style in (PRDescriptionIntroStyle.FULL, PRDescriptionIntroStyle.FULL_NO_BRANCHES):
                 result += reversed(self.__get_upwards_path_including_pr(related_to))
             result += [pr_ for pr_, _ in self.__get_downwards_tree_excluding_pr(related_to)]
             return result
@@ -2771,14 +2773,14 @@ class MacheteClient:
             # As a slight optimization, in the default UP_ONLY style,
             # let's fetch the full PR list only if the current PR has a base PR at all.
             prs_for_base_branch = self.code_hosting_client.get_open_pull_requests_by_head(LocalBranchShortName(pr.base))
-        if style == PRDescriptionIntroStyle.UP_ONLY and len(prs_for_base_branch) == 0:
+        if style in (PRDescriptionIntroStyle.UP_ONLY, PRDescriptionIntroStyle.UP_ONLY_NO_BRANCHES) and len(prs_for_base_branch) == 0:
             return ''
         spec = self.code_hosting_spec
         pr_short_name = spec.pr_short_name
         br_before_branches = ' <br>' if spec.pr_intro_br_before_branches else ''
 
         pr_up_path = list(reversed(self.__get_upwards_path_including_pr(pr)))
-        if style == PRDescriptionIntroStyle.FULL:
+        if style in (PRDescriptionIntroStyle.FULL, PRDescriptionIntroStyle.FULL_NO_BRANCHES):
             pr_down_tree = self.__get_downwards_tree_excluding_pr(pr)
         else:
             pr_down_tree = []
@@ -2803,12 +2805,18 @@ class MacheteClient:
             result = '  ' * _depth
             display_text = _pr.display_text(fmt=False)
             explicit_title = f' _{_pr.title}_' if spec.pr_intro_explicit_title else ''
-            if _pr.number == pr.number:
-                result += f'* **{display_text}{explicit_title} (THIS ONE)**:{br_before_branches}\n'
+            if style in (PRDescriptionIntroStyle.UP_ONLY, PRDescriptionIntroStyle.FULL):
+                if _pr.number == pr.number:
+                    result += f'* **{display_text}{explicit_title} (THIS ONE)**:{br_before_branches}\n'
+                else:
+                    result += f'* {display_text}{explicit_title}:{br_before_branches}\n'
+                result += '  ' * _depth
+                result += f'  `{_pr.base}` ← `{_pr.head}`\n\n'
             else:
-                result += f'* {display_text}{explicit_title}:{br_before_branches}\n'
-            result += '  ' * _depth
-            result += f'  `{_pr.base}` ← `{_pr.head}`\n\n'
+                if _pr.number == pr.number:
+                    result += f'* **{display_text}{explicit_title} (THIS ONE)**\n\n'
+                else:
+                    result += f'* {display_text}{explicit_title}\n\n'
             return result
 
         base_depth = 0
@@ -2930,7 +2938,7 @@ class MacheteClient:
         # If base branch has NOT originally been found on the remote,
         # we can be sure that a longer chain of PRs above the newly-created PR does NOT exist.
         # So in the default UP_ONLY mode, we can skip generating the intro completely.
-        if base_branch_found_on_remote or style == PRDescriptionIntroStyle.FULL:
+        if base_branch_found_on_remote or style in (PRDescriptionIntroStyle.FULL, PRDescriptionIntroStyle.FULL_NO_BRANCHES):
             # As the description may include the reference to this PR itself (in case of a chain of >=2 PRs),
             # let's update the PR description after it's already created (so that we know the current PR's number).
             new_description = self.__get_updated_pull_request_description(pr)

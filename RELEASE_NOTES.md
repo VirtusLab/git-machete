@@ -1,7 +1,8 @@
 # Release notes
 
-## New in git-machete 3.33.1
+## New in git-machete 3.34.0
 
+- added: new `full-no-branches` and `up-only-no-branches` values to `machete.github.prDescriptionIntroStyle` and `machete.gitlab.mrDescriptionIntroStyle` git config keys
 - fixed: preserve trailing lines when updating PR/MR descriptions
 - fixed: generated sections of GitLab MRs include MR titles (as in GitHub PRs)
 

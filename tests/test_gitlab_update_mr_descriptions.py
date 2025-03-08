@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 from pytest_mock import MockerFixture
 
 from tests.base_test import BaseTest
-from tests.mockers import (assert_failure, assert_success,
+from tests.mockers import (assert_failure, assert_success, launch_command,
                            rewrite_branch_layout_file)
 from tests.mockers_code_hosting import mock_from_url
 from tests.mockers_git_repository import (check_out, commit,
@@ -200,6 +200,54 @@ class TestGitLabUpdateMRDescriptions(BaseTest):
         mr = gitlab_api_state.get_mr_by_number(19)
         assert mr is not None
         assert mr['description'] == "# Summary"
+
+        set_git_config_key("machete.gitlab.mrDescriptionIntroStyle", "up-only-no-branches")
+
+        launch_command('gitlab', 'update-mr-descriptions', '--all')
+        mr = gitlab_api_state.get_mr_by_number(12)
+        assert mr is not None
+        assert mr['description'] == textwrap.dedent("""
+            <!-- start git-machete generated -->
+
+            # Based on MR !6
+
+            ## Chain of upstream MRs as of 2023-12-31
+
+            * MR !6 _MR title_
+
+              * **MR !12 _MR title_ (THIS ONE)**
+
+            <!-- end git-machete generated -->
+
+            # Summary
+
+        """)[1:]
+
+        set_git_config_key("machete.gitlab.mrDescriptionIntroStyle", "full-no-branches")
+
+        launch_command('gitlab', 'update-mr-descriptions', '--all')
+        mr = gitlab_api_state.get_mr_by_number(12)
+        assert mr is not None
+        assert mr['description'] == textwrap.dedent("""
+            <!-- start git-machete generated -->
+
+            # Based on MR !6
+
+            ## Chain of upstream MRs & tree of downstream MRs as of 2023-12-31
+
+            * MR !6 _MR title_
+
+              * **MR !12 _MR title_ (THIS ONE)**
+
+                  * MR !17 _MR title_
+
+                    * MR !18 _MR title_
+
+            <!-- end git-machete generated -->
+
+            # Summary
+
+        """)[1:]
 
     def test_gitlab_update_mr_descriptions_misc_failures_and_warns(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)

@@ -27,9 +27,9 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Mar 08, 2025" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Mar 27, 2025" "" "git-machete"
 .SH NAME
-git-machete \- git-machete 3.33.1
+git-machete \- git-machete 3.34.0
 .sp
 git machete is a robust tool that \fBsimplifies your git workflows\fP\&.
 .sp
@@ -366,11 +366,15 @@ from the message body of the first unique commit of the branch, even if \fB\&.gi
 .B Select the style of the generated section (\(dqintro\(dq) added to the PR description:
 .INDENT 7.0
 .IP \(bu 2
-\fBfull\fP    \-\-\- include both a chain of upstream PRs (typically leading to \fBmain\fP, \fBmaster\fP, \fBdevelop\fP etc.) and a tree of downstream PRs
+\fBfull\fP                \-\-\- include both a chain of upstream PRs (typically leading to \fBmain\fP, \fBmaster\fP, \fBdevelop\fP etc.) and a tree of downstream PRs
 .IP \(bu 2
-\fBup\-only\fP \-\-\- default, include only a chain of upstream PRs
+\fBfull\-no\-branches\fP    \-\-\- same as \fBfull\fP, but no branch names are included (only PR numbers & titles)
 .IP \(bu 2
-\fBnone\fP    \-\-\- prepend no intro to the PR description at all
+\fBup\-only\fP             \-\-\- default, include only a chain of upstream PRs
+.IP \(bu 2
+\fBup\-only\-no\-branches\fP \-\-\- same as \fBup\-only\fP, but no branch names are included (only PR numbers & titles)
+.IP \(bu 2
+\fBnone\fP                \-\-\- prepend no intro to the PR description at all
 .UNINDENT
 .UNINDENT
 .TP
@@ -412,11 +416,15 @@ from the message body of the first unique commit of the branch, even if \fB\&.gi
 .B Select the style of the generated section (\(dqintro\(dq) added to the MR description:
 .INDENT 7.0
 .IP \(bu 2
-\fBfull\fP    \-\-\- include both a chain of upstream MRs (typically leading to \fBmain\fP, \fBmaster\fP, \fBdevelop\fP etc.) and a tree of downstream MRs
+\fBfull\fP                \-\-\- include both a chain of upstream MRs (typically leading to \fBmain\fP, \fBmaster\fP, \fBdevelop\fP etc.) and a tree of downstream MRs
 .IP \(bu 2
-\fBup\-only\fP \-\-\- default, include only a chain of upstream MRs
+\fBfull\-no\-branches\fP    \-\-\- same as \fBfull\fP, but no branch names are included (only MR numbers & titles)
 .IP \(bu 2
-\fBnone\fP    \-\-\- prepend no intro to the MR description at all
+\fBup\-only\fP             \-\-\- default, include only a chain of upstream MRs
+.IP \(bu 2
+\fBup\-only\-no\-branches\fP \-\-\- same as \fBup\-only\fP, but no branch names are included (only MR numbers & titles)
+.IP \(bu 2
+\fBnone\fP                \-\-\- prepend no intro to the MR description at all
 .UNINDENT
 .UNINDENT
 .TP
@@ -1108,8 +1116,8 @@ Update PR descriptions for all PRs opened by the current user associated with th
 .TP
 .B  \-\-related
 Update PR descriptions for all PRs that are upstream and/or downstream of the PR for the current branch.
-If \fBmachete.github.prDescriptionIntroStyle\fP is \fBup\-only\fP (default), then only downstream PR descriptions are updated.
-If \fBmachete.github.prDescriptionIntroStyle\fP is \fBfull\fP, then both downstream and upstream PR descriptions are updated.
+If \fBmachete.github.prDescriptionIntroStyle\fP is \fBup\-only\fP (default) or \fBup\-only\-no\-branches\fP, then only downstream PR descriptions are updated.
+If \fBmachete.github.prDescriptionIntroStyle\fP is \fBfull\fP or \fBfull\-no\-branches\fP, then both downstream and upstream PR descriptions are updated.
 .UNINDENT
 .UNINDENT
 .sp
@@ -1156,11 +1164,15 @@ from the message body of the first unique commit of the branch, even if \fB\&.gi
 .B Select the style of the generated section (\(dqintro\(dq) added to the PR description:
 .INDENT 7.0
 .IP \(bu 2
-\fBfull\fP    \-\-\- include both a chain of upstream PRs (typically leading to \fBmain\fP, \fBmaster\fP, \fBdevelop\fP etc.) and a tree of downstream PRs
+\fBfull\fP                \-\-\- include both a chain of upstream PRs (typically leading to \fBmain\fP, \fBmaster\fP, \fBdevelop\fP etc.) and a tree of downstream PRs
 .IP \(bu 2
-\fBup\-only\fP \-\-\- default, include only a chain of upstream PRs
+\fBfull\-no\-branches\fP    \-\-\- same as \fBfull\fP, but no branch names are included (only PR numbers & titles)
 .IP \(bu 2
-\fBnone\fP    \-\-\- prepend no intro to the PR description at all
+\fBup\-only\fP             \-\-\- default, include only a chain of upstream PRs
+.IP \(bu 2
+\fBup\-only\-no\-branches\fP \-\-\- same as \fBup\-only\fP, but no branch names are included (only PR numbers & titles)
+.IP \(bu 2
+\fBnone\fP                \-\-\- prepend no intro to the PR description at all
 .UNINDENT
 .UNINDENT
 .UNINDENT
@@ -1420,11 +1432,15 @@ from the message body of the first unique commit of the branch, even if \fB\&.gi
 .B Select the style of the generated section (\(dqintro\(dq) added to the MR description:
 .INDENT 7.0
 .IP \(bu 2
-\fBfull\fP    \-\-\- include both a chain of upstream MRs (typically leading to \fBmain\fP, \fBmaster\fP, \fBdevelop\fP etc.) and a tree of downstream MRs
+\fBfull\fP                \-\-\- include both a chain of upstream MRs (typically leading to \fBmain\fP, \fBmaster\fP, \fBdevelop\fP etc.) and a tree of downstream MRs
 .IP \(bu 2
-\fBup\-only\fP \-\-\- default, include only a chain of upstream MRs
+\fBfull\-no\-branches\fP    \-\-\- same as \fBfull\fP, but no branch names are included (only MR numbers & titles)
 .IP \(bu 2
-\fBnone\fP    \-\-\- prepend no intro to the MR description at all
+\fBup\-only\fP             \-\-\- default, include only a chain of upstream MRs
+.IP \(bu 2
+\fBup\-only\-no\-branches\fP \-\-\- same as \fBup\-only\fP, but no branch names are included (only MR numbers & titles)
+.IP \(bu 2
+\fBnone\fP                \-\-\- prepend no intro to the MR description at all
 .UNINDENT
 .UNINDENT
 .UNINDENT

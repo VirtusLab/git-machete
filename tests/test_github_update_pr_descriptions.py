@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 from pytest_mock import MockerFixture
 
 from tests.base_test import BaseTest
-from tests.mockers import (assert_failure, assert_success,
+from tests.mockers import (assert_failure, assert_success, launch_command,
                            rewrite_branch_layout_file)
 from tests.mockers_code_hosting import mock_from_url
 from tests.mockers_git_repository import (check_out, commit,
@@ -200,6 +200,54 @@ class TestGitHubUpdatePRDescriptions(BaseTest):
         pr = github_api_state.get_pull_by_number(19)
         assert pr is not None
         assert pr['body'] == "# Summary"
+
+        set_git_config_key("machete.github.prDescriptionIntroStyle", "up-only-no-branches")
+
+        launch_command('github', 'update-pr-descriptions', '--all')
+        pr = github_api_state.get_pull_by_number(12)
+        assert pr is not None
+        assert pr['body'] == textwrap.dedent("""
+            <!-- start git-machete generated -->
+
+            # Based on PR #6
+
+            ## Chain of upstream PRs as of 2023-12-31
+
+            * PR #6
+
+              * **PR #12 (THIS ONE)**
+
+            <!-- end git-machete generated -->
+
+            # Summary
+
+        """)[1:]
+
+        set_git_config_key("machete.github.prDescriptionIntroStyle", "full-no-branches")
+
+        launch_command('github', 'update-pr-descriptions', '--all')
+        pr = github_api_state.get_pull_by_number(12)
+        assert pr is not None
+        assert pr['body'] == textwrap.dedent("""
+            <!-- start git-machete generated -->
+
+            # Based on PR #6
+
+            ## Chain of upstream PRs & tree of downstream PRs as of 2023-12-31
+
+            * PR #6
+
+              * **PR #12 (THIS ONE)**
+
+                  * PR #17
+
+                    * PR #18
+
+            <!-- end git-machete generated -->
+
+            # Summary
+
+        """)[1:]
 
     def test_github_update_pr_descriptions_misc_failures_and_warns(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)

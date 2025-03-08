@@ -253,11 +253,15 @@ long_docs: Dict[str, str] = {
 
                  Select the style of the generated section ("intro") added to the PR description:
 
-                 * `full`    — include both a chain of upstream PRs (typically leading to `main`, `master`, `develop` etc.) and a tree of downstream PRs
+                 * `full`                — include both a chain of upstream PRs (typically leading to `main`, `master`, `develop` etc.) and a tree of downstream PRs
 
-                 * `up-only` — default, include only a chain of upstream PRs
+                 * `full-no-branches`    — same as `full`, but no branch names are included (only PR numbers & titles)
 
-                 * `none`    — prepend no intro to the PR description at all
+                 * `up-only`             — default, include only a chain of upstream PRs
+
+                 * `up-only-no-branches` — same as `up-only`, but no branch names are included (only PR numbers & titles)
+
+                 * `none`                — prepend no intro to the PR description at all
 
            `machete.gitlab.{domain,remote,namespace,project}`:
 
@@ -290,11 +294,15 @@ long_docs: Dict[str, str] = {
 
                  Select the style of the generated section ("intro") added to the MR description:
 
-                 * `full`    — include both a chain of upstream MRs (typically leading to `main`, `master`, `develop` etc.) and a tree of downstream MRs
+                 * `full`                — include both a chain of upstream MRs (typically leading to `main`, `master`, `develop` etc.) and a tree of downstream MRs
 
-                 * `up-only` — default, include only a chain of upstream MRs
+                 * `full-no-branches`    — same as `full`, but no branch names are included (only MR numbers & titles)
 
-                 * `none`    — prepend no intro to the MR description at all
+                 * `up-only`             — default, include only a chain of upstream MRs
+
+                 * `up-only-no-branches` — same as `up-only`, but no branch names are included (only MR numbers & titles)
+
+                 * `none`                — prepend no intro to the MR description at all
 
            `machete.overrideForkPoint.<branch>.to`:
  
@@ -748,8 +756,8 @@ long_docs: Dict[str, str] = {
 
                  <b>--related</b>
               Update PR descriptions for all PRs that are upstream and/or downstream of the PR for the current branch.
-              If `machete.github.prDescriptionIntroStyle` is `up-only` (default), then only downstream PR descriptions are updated.
-              If `machete.github.prDescriptionIntroStyle` is `full`, then both downstream and upstream PR descriptions are updated.
+              If `machete.github.prDescriptionIntroStyle` is `up-only` (default) or `up-only-no-branches`, then only downstream PR descriptions are updated.
+              If `machete.github.prDescriptionIntroStyle` is `full` or `full-no-branches`, then both downstream and upstream PR descriptions are updated.
 
         <b>Git config keys:</b>
            `machete.github.{domain,remote,organization,repository}` (all subcommands):
@@ -786,11 +794,15 @@ long_docs: Dict[str, str] = {
 
                  Select the style of the generated section ("intro") added to the PR description:
 
-                 * `full`    — include both a chain of upstream PRs (typically leading to `main`, `master`, `develop` etc.) and a tree of downstream PRs
+                 * `full`                — include both a chain of upstream PRs (typically leading to `main`, `master`, `develop` etc.) and a tree of downstream PRs
 
-                 * `up-only` — default, include only a chain of upstream PRs
+                 * `full-no-branches`    — same as `full`, but no branch names are included (only PR numbers & titles)
 
-                 * `none`    — prepend no intro to the PR description at all
+                 * `up-only`             — default, include only a chain of upstream PRs
+
+                 * `up-only-no-branches` — same as `up-only`, but no branch names are included (only PR numbers & titles)
+
+                 * `none`                — prepend no intro to the PR description at all
 
         <b>Environment variables (all subcommands):</b>
            `GITHUB_TOKEN`
@@ -1005,11 +1017,15 @@ long_docs: Dict[str, str] = {
 
                  Select the style of the generated section ("intro") added to the MR description:
 
-                 * `full`    — include both a chain of upstream MRs (typically leading to `main`, `master`, `develop` etc.) and a tree of downstream MRs
+                 * `full`                — include both a chain of upstream MRs (typically leading to `main`, `master`, `develop` etc.) and a tree of downstream MRs
 
-                 * `up-only` — default, include only a chain of upstream MRs
+                 * `full-no-branches`    — same as `full`, but no branch names are included (only MR numbers & titles)
 
-                 * `none`    — prepend no intro to the MR description at all
+                 * `up-only`             — default, include only a chain of upstream MRs
+
+                 * `up-only-no-branches` — same as `up-only`, but no branch names are included (only MR numbers & titles)
+
+                 * `none`                — prepend no intro to the MR description at all
 
         <b>Environment variables (all subcommands):</b>
            `GITLAB_TOKEN`
