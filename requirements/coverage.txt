@@ -1,7 +1,7 @@
 coverage==6.2; python_version <= '3.6'
 coverage==7.2.7; python_version >= '3.7' and python_version < '3.8'
 coverage==7.6.1; python_version >= '3.8' and python_version < '3.9'
-coverage==7.6.12; python_version >= '3.9'
+coverage==7.7.0; python_version >= '3.9'
 
 pytest-cov==4.0.0; python_version <= '3.6'
 pytest-cov==4.1.0; python_version >= '3.7' and python_version < '3.8'
