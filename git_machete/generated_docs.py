@@ -979,8 +979,8 @@ long_docs: Dict[str, str] = {
 
                  <b>--related</b>
               Update MR descriptions for all MRs that are upstream and/or downstream of the MR for the current branch.
-              If `machete.gitlab.mrDescriptionIntroStyle` is `up-only` (default), then only downstream MR descriptions are updated.
-              If `machete.gitlab.mrDescriptionIntroStyle` is `full`, then both downstream and upstream MR descriptions are updated.
+              If `machete.gitlab.mrDescriptionIntroStyle` is `up-only` (default) or `up-only-no-branches`, then only downstream MR descriptions are updated.
+              If `machete.gitlab.mrDescriptionIntroStyle` is `full` or `full-no-branches`, then both downstream and upstream MR descriptions are updated.
 
         <b>Git config keys:</b>
            `machete.gitlab.{domain,remote,namespace,project}` (all subcommands):
