@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.34.1
+
 ## New in git-machete 3.34.0
 
 - added: new `full-no-branches` and `up-only-no-branches` values to `machete.github.prDescriptionIntroStyle` and `machete.gitlab.mrDescriptionIntroStyle` git config keys
