@@ -120,7 +120,7 @@ class MacheteClientWithCodeHosting(MacheteClient):
                 return remote
         return None
 
-    def __sync_before_creating_pull_request(self, *, opt_onto: Optional[LocalBranchShortName], opt_yes: bool) -> None:
+    def __sync_before_creating_pull_request(self, *, opt_yes: bool) -> None:
         spec = self.code_hosting_spec
         self.expect_at_least_one_managed_branch()
         self._set_empty_line_status()
@@ -128,7 +128,7 @@ class MacheteClientWithCodeHosting(MacheteClient):
         current_branch = self._git.get_current_branch()
         if current_branch not in self.managed_branches:
             self.add(branch=current_branch,
-                     opt_onto=opt_onto,
+                     opt_onto=None,
                      opt_as_first_child=False,
                      opt_as_root=False,
                      opt_yes=opt_yes,
@@ -231,16 +231,15 @@ class MacheteClientWithCodeHosting(MacheteClient):
             *,
             head: LocalBranchShortName,
             opt_draft: bool,
-            opt_onto: Optional[LocalBranchShortName],
             opt_title: Optional[str],
             opt_update_related_descriptions: bool,
             opt_yes: bool
-    ) -> None:
+    ) -> Optional[PullRequest]:
         # first make sure that head branch is synced with remote
         try:
-            self.__sync_before_creating_pull_request(opt_onto=opt_onto, opt_yes=opt_yes)
+            self.__sync_before_creating_pull_request(opt_yes=opt_yes)
         except InteractionStopped:
-            return
+            return None
 
         base: Optional[LocalBranchShortName] = self.up_branch_for(LocalBranchShortName.of(head))
         spec = self.code_hosting_spec
@@ -379,6 +378,8 @@ class MacheteClientWithCodeHosting(MacheteClient):
         if opt_update_related_descriptions:
             print(f"Updating descriptions of other {spec.pr_short_name}s...")
             self.update_pull_request_descriptions(related=True)
+
+        return pr
 
     def restack_pull_request(self, *, opt_update_related_descriptions: bool) -> None:
         spec = self.code_hosting_spec
@@ -745,8 +746,13 @@ class MacheteClientWithCodeHosting(MacheteClient):
         prepend += f'{self.END_GIT_MACHETE_GENERATED_COMMENT}\n'
         return prepend
 
-    def update_pull_request_descriptions(self, *, all: bool = False, by: Optional[str] = None, mine: bool = False, related: bool = False
-                                         ) -> None:
+    def update_pull_request_descriptions(
+        self, *,
+            all: bool = False,
+            by: Optional[str] = None,
+            mine: bool = False,
+            related: bool = False
+    ) -> None:
         spec = self.code_hosting_spec
         if self.__code_hosting_client is None:
             self._init_code_hosting_client()
@@ -772,14 +778,15 @@ class MacheteClientWithCodeHosting(MacheteClient):
                 pr.description = new_description
                 print(fmt(f'Description of {pr.display_text()} (<b>{pr.head} {get_right_arrow()} {pr.base}</b>) has been updated'))
 
-    def checkout_pull_requests(self,
-                               pr_numbers: Optional[List[int]],
-                               *,
-                               all: bool = False,
-                               mine: bool = False,
-                               by: Optional[str] = None,
-                               fail_on_missing_current_user_for_my_open_prs: bool = False
-                               ) -> None:
+    def checkout_pull_requests(
+        self,
+            pr_numbers: Optional[List[int]],
+            *,
+            all: bool = False,
+            by: Optional[str] = None,
+            mine: bool = False,
+            fail_on_missing_current_user_for_my_open_prs: bool = False
+    ) -> None:
         spec = self.code_hosting_spec
         domain, org_repo_remote = self._init_code_hosting_client()
 
