@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.34.1
 
+- fixed: `yq` answer to retargeting a PR/MR in `traverse` was treated just as `y`/`yes` (no quitting)
+
 ## New in git-machete 3.34.0
 
 - added: new `full-no-branches` and `up-only-no-branches` values to `machete.github.prDescriptionIntroStyle` and `machete.gitlab.mrDescriptionIntroStyle` git config keys

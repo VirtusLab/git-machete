@@ -193,8 +193,9 @@ class TestTraverseGitLab(BaseTest):
 
         mr2['target_branch'] = 'develop'
         check_out("build-chain")
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("yq"))
         assert_success(
-            ["traverse", "-LWy"],
+            ["traverse", "-LW"],
             """
             Fetching origin...
 
@@ -212,17 +213,6 @@ class TestTraverseGitLab(BaseTest):
                   o-call-ws
 
             Branch build-chain has a different MR target (develop) in GitLab than in machete file (allow-ownership-link).
-            Retargeting MR !2 to allow-ownership-link...
+            Retarget MR !2 to allow-ownership-link? (y, N, q, yq)
             Target branch of MR !2 has been switched to allow-ownership-link
-
-              develop
-              |
-              o-allow-ownership-link
-                |
-                o-build-chain *  MR !2 (some_other_user)
-                  |
-                  o-call-ws
-
-            No successor of build-chain needs to be slid out or synced with upstream branch or remote; nothing left to update
-            Returned to the initial branch build-chain
             """)

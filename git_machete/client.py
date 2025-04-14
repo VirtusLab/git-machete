@@ -1047,6 +1047,8 @@ class MacheteClient:
                             print(fmt(f'Description of {pr.display_text()} '
                                       f'(<b>{pr.head} {get_right_arrow()} {pr.base}</b>) has been updated'))
 
+                    if ans == 'yq':
+                        return
                 elif ans in ('q', 'quit'):
                     return
 

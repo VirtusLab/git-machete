@@ -25,6 +25,7 @@ enforce-mocking-only-whitelisted-methods.sh
 enforce-newline-at-eof.sh
 enforce-release-notes-up-to-date.sh
 enforce-shell-scripts-pass-shellcheck.sh
+enforce-yq-check-for-each-y-yes-yq-check.sh
 prohibit-bash-usages-from-python.sh
 prohibit-current-date-in-tests.sh
 prohibit-deploy-step-in-circleci.sh
