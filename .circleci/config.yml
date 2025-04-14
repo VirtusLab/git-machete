@@ -298,6 +298,14 @@ only_master: &only_master
     branches:
       only: "master"
 
+only_special_branches: &only_special_branches
+  filters:
+    branches:
+      only:
+        - "/.*(ci|dependabot.pip|deploy|dry.run|hotfix|publish|release|windows).*/"
+        - "develop"
+        - "master"
+
 workflows:
   version: 2
   build:
@@ -312,19 +320,15 @@ workflows:
       - python 3_12 git 2_46_1
       - python 3_13 git 2_47_0
       - macos tests
-      - windows tests
+      - windows tests:
+          # Windows tests take a relatively long time on critical path,
+          # and fail very rarely when other tests don't fail
+          <<: *only_special_branches
       - coverage upload:
           requires:
             *test_jobs
       - dry run releases:
-          filters:
-            branches:
-              only:
-                - "/.*(ci|deploy|dry-run|publish|release).*/"
-                - "/dependabot.pip.*/"
-                - "develop"
-                - "/hotfix.*/"
-                - "master"
+          <<: *only_special_branches
           requires:
             *test_jobs
 
