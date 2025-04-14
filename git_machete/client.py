@@ -851,6 +851,7 @@ class MacheteClient:
             else:
                 needs_remote_sync = False
 
+            needs_retarget_pr = False
             if opt_sync_github_prs or opt_sync_gitlab_mrs:
                 prs = list(filter(lambda pr: pr.head == branch, self.get_all_open_prs()))
                 if len(prs) > 1:
@@ -860,8 +861,13 @@ class MacheteClient:
                         ", ".join(_pr.short_display_text() for _pr in prs))
                 pr = prs[0] if prs else None
                 needs_retarget_pr = pr and upstream and pr.base != upstream
-            else:
-                needs_retarget_pr = False
+
+            needs_create_pr = False
+            if opt_sync_github_prs or opt_sync_gitlab_mrs:
+                if upstream and s == SyncToRemoteStatus.UNTRACKED and not self.__git.is_removed_from_remote(branch):
+                    prs = list(filter(lambda pr: pr.head == branch, self.get_all_open_prs()))
+                    if not prs:
+                        needs_create_pr = True
 
             use_merge = opt_merge or (branch in self.annotations and self.annotations[branch].qualifiers.update_with_merge)
 
@@ -1006,6 +1012,45 @@ class MacheteClient:
                             needs_remote_sync = self.annotations[branch].qualifiers.push
                     else:
                         needs_remote_sync = False
+
+                elif ans in ('q', 'quit'):
+                    return
+
+            if needs_create_pr:
+                any_action_suggested = True
+                spec = self.code_hosting_client._spec
+                self.__print_new_line(False)
+                ans_intro = f"Branch {bold(str(branch))} does not have {spec.pr_short_name_article} {spec.pr_short_name}" \
+                            f" in {spec.display_name}.\n"
+                ans = self.ask_if(
+                    ans_intro + f"Create {spec.pr_short_name_article} {spec.pr_short_name} "
+                                f"from {bold(str(branch))} to {bold(str(upstream))}?" + get_pretty_choices('y', 'd[raft]', 'N', 'q', 'yq'),
+                    ans_intro + f"Retargeting {pr.display_text()} to {bold(str(upstream))}...",
+                    opt_yes=opt_yes)
+                if ans in ('y', 'yes', 'yq'):
+                    self.code_hosting_client.set_base_of_pull_request(pr.number, base=upstream)
+                    print(f'{spec.base_branch_name.capitalize()} branch of {pr.display_text()} has been switched to {bold(str(upstream))}')
+                    pr.base = upstream
+
+                    anno = self.__annotations.get(branch)
+                    self.__annotations[branch] = Annotation(self.__pull_request_annotation(spec, pr, current_user),
+                                                            anno.qualifiers if anno else Qualifiers())
+                    self.save_branch_layout_file()
+
+                    new_description = self.__get_updated_pull_request_description(pr)
+                    if pr.description != new_description:
+                        self.code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
+                        print(f'Description of {pr.display_text()} has been updated')
+                        pr.description = new_description
+
+                    applicable_prs: List[PullRequest] = self.__get_applicable_pull_requests(related_to=pr)
+                    for pr in applicable_prs:
+                        new_description = self.__get_updated_pull_request_description(pr)
+                        if pr.description != new_description:
+                            self.code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
+                            pr.description = new_description
+                            print(fmt(f'Description of {pr.display_text()} '
+                                      f'(<b>{pr.head} {get_right_arrow()} {pr.base}</b>) has been updated'))
 
                 elif ans in ('q', 'quit'):
                     return

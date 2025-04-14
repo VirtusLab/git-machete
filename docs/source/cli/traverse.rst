@@ -55,6 +55,8 @@ For each branch, the command:
 
 * if ``-H``/``--sync-github-prs`` or ``-L``/``--sync-gitlab-mrs`` option is present:
 
+  - asks the user whether to **create** a PR/MR for the given branch if it's untracked,
+
   - asks the user whether to **retarget** the PR/MR if it exists for the given branch,
     and its base/target branch in GitHub/GitLab is different than the upstream in machete file
     (just as ``git machete github retarget-pr`` and ``git machete gitlab retarget-mr`` would do);
