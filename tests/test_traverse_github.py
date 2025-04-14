@@ -7,7 +7,8 @@ from .mockers import (assert_failure, assert_success, mock_input_returning,
                       rewrite_branch_layout_file)
 from .mockers_code_hosting import mock_from_url
 from .mockers_git_repository import (check_out, commit,
-                                     create_repo_with_remote, new_branch, push)
+                                     create_repo_with_remote,
+                                     delete_remote_branch, new_branch, push)
 from .mockers_github import (MockGitHubAPIState,
                              mock_github_token_for_domain_fake, mock_pr_json,
                              mock_urlopen)
@@ -55,7 +56,7 @@ class TestTraverseGitHub(BaseTest):
             mock_pr_json(head='call-ws', base='build-chain', number=3),
         )
 
-    def test_traverse_sync_github_prs(self, mocker: MockerFixture) -> None:
+    def test_traverse_sync_retarget_github_prs(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, "git_machete.github.GitHubToken.for_domain", mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'git_machete.utils.get_current_date', lambda: '2023-12-31')
@@ -230,3 +231,118 @@ class TestTraverseGitHub(BaseTest):
             No successor of build-chain needs to be slid out or synced with upstream branch or remote; nothing left to update
             Returned to the initial branch build-chain
             """)
+
+    def test_traverse_sync_create_github_prs(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
+        github_api_state = MockGitHubAPIState.with_prs()
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
+
+        create_repo_with_remote()
+        new_branch("develop")
+        commit()
+        new_branch("allow-ownership-link")
+        commit()
+        new_branch("build-chain")
+        commit()
+        new_branch("call-ws")
+        commit()
+
+        body: str = \
+            """
+            develop
+                allow-ownership-link
+                    build-chain
+                        call-ws
+            """
+        rewrite_branch_layout_file(body)
+        check_out("develop")
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("y", "y", "q"))
+        assert_success(
+            ["traverse", "--sync-github-prs"],
+            """
+            Checking for open GitHub PRs... OK
+            Push untracked branch develop to origin? (y, N, q, yq)
+
+            Checking out allow-ownership-link
+
+              develop
+              |
+              o-allow-ownership-link * (untracked)
+                |
+                o-build-chain (untracked)
+                  |
+                  o-call-ws (untracked)
+
+            Push untracked branch allow-ownership-link to origin? (y, N, q, yq)
+
+            Branch allow-ownership-link does not have a PR in GitHub.
+            Create a PR from allow-ownership-link to develop? (y, d[raft], N, q, yq)
+            """
+        )
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("yq"))
+        assert_success(
+            ["traverse", "--sync-github-prs"],
+            """
+            Checking for open GitHub PRs... OK
+            Branch allow-ownership-link does not have a PR in GitHub.
+            Create a PR from allow-ownership-link to develop? (y, d[raft], N, q, yq)
+            Checking if base branch develop exists in origin remote... YES
+            Creating a PR from allow-ownership-link to develop... OK, see www.github.com
+            Adding github_user as assignee to PR #1... OK
+            Updating descriptions of other PRs...
+            """
+        )
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("y", "", "y", "draft"))
+        assert_success(
+            ["traverse", "--sync-github-prs"],
+            """
+            Checking for open GitHub PRs... OK
+            Checking out build-chain
+
+              develop
+              |
+              o-allow-ownership-link  PR #1 (some_other_user)
+                |
+                o-build-chain * (untracked)
+                  |
+                  o-call-ws (untracked)
+
+            Push untracked branch build-chain to origin? (y, N, q, yq)
+
+            Branch build-chain does not have a PR in GitHub.
+            Create a PR from build-chain to allow-ownership-link? (y, d[raft], N, q, yq)
+
+            Checking out call-ws
+
+              develop
+              |
+              o-allow-ownership-link  PR #1 (some_other_user)
+                |
+                o-build-chain
+                  |
+                  o-call-ws * (untracked)
+
+            Push untracked branch call-ws to origin? (y, N, q, yq)
+
+            Branch call-ws does not have a PR in GitHub.
+            Create a PR from call-ws to build-chain? (y, d[raft], N, q, yq)
+            Checking if base branch build-chain exists in origin remote... YES
+            Creating a draft PR from call-ws to build-chain... OK, see www.github.com
+            Adding github_user as assignee to PR #2... OK
+            Updating descriptions of other PRs...
+
+              develop
+              |
+              o-allow-ownership-link  PR #1 (some_other_user)
+                |
+                o-build-chain
+                  |
+                  o-call-ws *  PR #2 (some_other_user)
+
+            Reached branch call-ws which has no successor; nothing left to update
+            """
+        )

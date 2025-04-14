@@ -36,9 +36,14 @@ Install `fish` and `shellcheck` for `run-all-checks.sh` to pass successfully.
 tox -e py
 ```
 
+To display rich diff when tests fail, use
+```shell
+tox -e py -- -k github -vv  # also, use -k for tests whose names contain a specific string
+```
+
 To display full operands in failed assertions (rather than just diffs), use
 ```shell
-tox -e py -- -k github --full-operands
+tox -e py -- -k "hub or lab" --full-operands  # logical expressions are also allowed in -k
 ```
 
 ## Install locally for development purposes

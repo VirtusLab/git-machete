@@ -20,12 +20,13 @@ def pytest_addoption(parser):
 def pytest_assertrepr_compare(config, op: str, left, right):
     if op == "==" and config.getoption(OPTION):
         def lines_for(arg):
-            return [''] + ['  ' + x for x in arg.splitlines()] + ['']
+            return [''] + ['    ' + x for x in arg.splitlines()] + ['']
         return [
             'Comparing values:',
-            'left (typically meaning actual):', *lines_for(left),
-            'right (typically meaning expected):', *lines_for(right)
+            'LEFT (typically means actual):', *lines_for(left),
+            'RIGHT (typically means expected):', *lines_for(right)
         ]
+    return None
 
 
 def pytest_configure(config):

@@ -94,6 +94,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             else:
                 needs_remote_sync = False
 
+            needs_retarget_pr = False
             if opt_sync_github_prs or opt_sync_gitlab_mrs:
                 prs = list(filter(lambda pr: pr.head == branch, self._get_all_open_prs()))
                 if len(prs) > 1:
@@ -102,9 +103,14 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                         f"Multiple {spec.pr_short_name}s have <b>{branch}</b> as its {spec.head_branch_name} branch: " +
                         ", ".join(_pr.short_display_text() for _pr in prs))
                 pr = prs[0] if prs else None
-                needs_retarget_pr = pr and upstream and pr.base != upstream
-            else:
-                needs_retarget_pr = False
+                needs_retarget_pr = pr is not None and upstream is not None and pr.base != upstream
+
+            needs_create_pr = False
+            if opt_sync_github_prs or opt_sync_gitlab_mrs:
+                if upstream:
+                    prs = [_pr for _pr in self._get_all_open_prs() if _pr.head == branch]
+                    if not prs:
+                        needs_create_pr = True
 
             use_merge = opt_merge or (branch in self.annotations and self.annotations[branch].qualifiers.update_with_merge)
 
@@ -261,15 +267,15 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                 assert upstream is not None
                 spec = self.code_hosting_spec
                 self._print_new_line(False)
-                ans_intro = f"Branch {bold(str(branch))} has a different {spec.pr_short_name} {spec.base_branch_name} ({bold(pr.base)}) " \
-                    f"in {spec.display_name} than in machete file ({bold(str(upstream))}).\n"
+                ans_intro = f"Branch {bold(branch)} has a different {spec.pr_short_name} {spec.base_branch_name} ({bold(pr.base)}) " \
+                    f"in {spec.display_name} than in machete file ({bold(upstream)}).\n"
                 ans = self.ask_if(
-                    ans_intro + f"Retarget {pr.display_text()} to {bold(str(upstream))}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
-                    ans_intro + f"Retargeting {pr.display_text()} to {bold(str(upstream))}...",
+                    ans_intro + f"Retarget {pr.display_text()} to {bold(upstream)}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
+                    ans_intro + f"Retargeting {pr.display_text()} to {bold(upstream)}...",
                     opt_yes=opt_yes)
                 if ans in ('y', 'yes', 'yq'):
                     self.code_hosting_client.set_base_of_pull_request(pr.number, base=upstream)
-                    print(f'{spec.base_branch_name.capitalize()} branch of {pr.display_text()} has been switched to {bold(str(upstream))}')
+                    print(f'{spec.base_branch_name.capitalize()} branch of {pr.display_text()} has been switched to {bold(upstream)}')
                     pr.base = upstream
 
                     anno = self._state.annotations.get(branch)
@@ -331,6 +337,31 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                     else:
                         raise UnexpectedMacheteException(f"Unexpected SyncToRemoteStatus: {s}.")
                 except InteractionStopped:
+                    return
+
+            if needs_create_pr:
+                any_action_suggested = True
+                assert upstream is not None
+                spec = self.code_hosting_spec
+                self._print_new_line(False)
+                ans_intro = f"Branch {bold(branch)} does not have {spec.pr_short_name_article} {spec.pr_short_name}" \
+                    f" in {spec.display_name}.\n"
+                ans = self.ask_if(
+                    ans_intro + f"Create {spec.pr_short_name_article} {spec.pr_short_name} "
+                    f"from {bold(branch)} to {bold(upstream)}?" + get_pretty_choices('y', 'd[raft]', 'N', 'q', 'yq'),
+                    ans_intro + f"Creating {spec.pr_short_name_article} {spec.pr_short_name} "
+                    f"from {bold(branch)} to {bold(upstream)}...",
+                    opt_yes=opt_yes)
+                if ans in ('y', 'yes', 'yq', 'd', 'draft'):
+                    self.create_pull_request(
+                        head=current_branch,
+                        opt_draft=(ans in ('d', 'draft')),
+                        opt_title=None,
+                        opt_update_related_descriptions=True,
+                        opt_yes=opt_yes)
+                    if ans == 'yq':
+                        return
+                elif ans in ('q', 'quit'):
                     return
 
         if opt_return_to == TraverseReturnTo.HERE:

@@ -29,7 +29,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 ..
 .TH "GIT-MACHETE" "1" "May 13, 2025" "" "git-machete"
 .SH NAME
-git-machete \- git-machete 3.34.2
+git-machete \- git-machete 3.35.0
 .sp
 git machete is a robust tool that \fBsimplifies your git workflows\fP\&.
 .sp
@@ -2104,6 +2104,8 @@ asks the user whether to \fBpull\fP the branch;
 .IP \(bu 2
 if \fB\-H\fP/\fB\-\-sync\-github\-prs\fP or \fB\-L\fP/\fB\-\-sync\-gitlab\-mrs\fP option is present:
 .INDENT 2.0
+.IP \(bu 2
+asks the user whether to \fBcreate\fP a PR/MR for the given branch if it\(aqs untracked,
 .IP \(bu 2
 asks the user whether to \fBretarget\fP the PR/MR if it exists for the given branch,
 and its base/target branch in GitHub/GitLab is different than the upstream in machete file

@@ -799,10 +799,13 @@ def launch(orig_args: List[str]) -> None:
                     fail_on_missing_current_user_for_my_open_prs=True)
             elif subcommand == f"create-{pr_or_mr}":
                 current_branch = git.get_current_branch()
+                try:
+                    github_or_gitlab_client.sync_before_creating_pull_request(opt_yes=cli_opts.opt_yes)
+                except InteractionStopped:
+                    return
                 github_or_gitlab_client.create_pull_request(
                     head=current_branch,
                     opt_draft=cli_opts.opt_draft,
-                    opt_onto=cli_opts.opt_onto,
                     opt_title=cli_opts.opt_title,
                     opt_update_related_descriptions=cli_opts.opt_update_related_descriptions,
                     opt_yes=cli_opts.opt_yes)
@@ -1001,9 +1004,9 @@ def launch(orig_args: List[str]) -> None:
 def main() -> None:
     try:
         launch(sys.argv[1:])
-    except EOFError:
+    except EOFError:  # pragma: no cover
         sys.exit(ExitCode.END_OF_FILE_SIGNAL)
-    except KeyboardInterrupt:
+    except KeyboardInterrupt:  # pragma: no cover
         sys.exit(ExitCode.KEYBOARD_INTERRUPT)
     except (MacheteException, UnderlyingGitException) as e:
         print(e, file=sys.stderr)
