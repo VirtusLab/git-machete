@@ -1483,6 +1483,7 @@ long_docs: Dict[str, str] = {
            * otherwise, if the branch is behind its remote counterpart:
               - asks the user whether to <b>pull</b> the branch;
            * if `-H`/`--sync-github-prs` or `-L`/`--sync-gitlab-mrs` option is present:
+              - asks the user whether to <b>create</b> a PR/MR for the given branch if it's untracked,
               - asks the user whether to <b>retarget</b> the PR/MR if it exists for the given branch,
                 and its base/target branch in GitHub/GitLab is different than the upstream in machete file
                 (just as `git machete github retarget-pr` and `git machete gitlab retarget-mr` would do);
