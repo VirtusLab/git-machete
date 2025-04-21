@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.34.2
+
 ## New in git-machete 3.34.1
 
 - fixed: `yq` answer to retargeting a PR/MR in `traverse` was treated just as `y`/`yes` (no quitting)
