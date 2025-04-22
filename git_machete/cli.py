@@ -14,6 +14,8 @@ import git_machete.options
 from git_machete import __version__, git_config_keys, utils
 from git_machete.github import GitHubClient
 from git_machete.gitlab import GitLabClient
+from git_machete.sub.advance import AdvanceMacheteClient
+from git_machete.sub.squash import SquashMacheteClient
 
 from .client import (MacheteClient, SquashMergeDetection, TraverseReturnTo,
                      TraverseStartFrom)
@@ -668,11 +670,12 @@ def launch(orig_args: List[str]) -> None:
                 verbose=True,
                 switch_head_if_new_branch=True)
         elif cmd == "advance":
-            machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
+            advance_client = AdvanceMacheteClient(git)
+            advance_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             git.expect_no_operation_in_progress()
             current_branch = git.get_current_branch()
-            machete_client.expect_in_managed_branches(current_branch)
-            machete_client.advance(branch=current_branch, opt_yes=cli_opts.opt_yes)
+            advance_client.expect_in_managed_branches(current_branch)
+            advance_client.advance(branch=current_branch, opt_yes=cli_opts.opt_yes)
         elif cmd == "anno":
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out,
                                                    verify_branches=False)
@@ -914,14 +917,15 @@ def launch(orig_args: List[str]) -> None:
                     opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
                     opt_no_edit_merge=cli_opts.opt_no_edit_merge)
         elif cmd == "squash":
-            machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
+            squash_client = SquashMacheteClient(git)
+            squash_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             git.expect_no_operation_in_progress()
             current_branch = git.get_current_branch()
             if cli_opts.opt_fork_point is not None:
-                machete_client.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
+                squash_client.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
                     fork_point_hash=cli_opts.opt_fork_point, branch=current_branch)
 
-            squash_fork_point = cli_opts.opt_fork_point or machete_client.fork_point_or_none(branch=current_branch, use_overrides=True)
+            squash_fork_point = cli_opts.opt_fork_point or squash_client.fork_point_or_none(branch=current_branch, use_overrides=True)
             if squash_fork_point is None:
                 raise MacheteException(
                     f"git-machete cannot determine the range of commits unique to branch <b>{current_branch}</b>.\n"
@@ -929,7 +933,7 @@ def launch(orig_args: List[str]) -> None:
                     f"after which the commits of <b>{current_branch}</b> start.\n"
                     "For example, if you want to squash 3 latest commits, use `git machete squash --fork-point=HEAD~3`."
                 )
-            machete_client.squash(current_branch=current_branch, opt_fork_point=squash_fork_point)
+            squash_client.squash(current_branch=current_branch, opt_fork_point=squash_fork_point)
         elif cmd in {"status", alias_by_command["status"]}:
             opt_squash_merge_detection = SquashMergeDetection.from_string(
                 cli_opts.opt_squash_merge_detection_string, cli_opts.opt_squash_merge_detection_origin)
