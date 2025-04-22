@@ -19,6 +19,7 @@ from git_machete.sub.anno import AnnoMacheteClient
 from git_machete.sub.diff import DiffMacheteClient
 from git_machete.sub.discover import DiscoverMacheteClient
 from git_machete.sub.fork_point import ForkPointMacheteClient
+from git_machete.sub.go_show import GoShowMacheteClient
 from git_machete.sub.log import LogMacheteClient
 from git_machete.sub.slide_out import SlideOutMacheteClient
 from git_machete.sub.squash import SquashMacheteClient
@@ -759,7 +760,7 @@ def launch(orig_args: List[str]) -> None:
             else:
                 print(fork_point_client.fork_point(branch=branch, use_overrides=True))
         elif cmd in {"go", alias_by_command["go"]}:
-            go_client = MacheteClient(git)
+            go_client = GoShowMacheteClient(git)
             go_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             git.expect_no_operation_in_progress()
             current_branch = git.get_current_branch()
@@ -916,7 +917,7 @@ def launch(orig_args: List[str]) -> None:
             reapply_fork_point = cli_opts.opt_fork_point or reapply_client.fork_point(branch=current_branch, use_overrides=True)
             reapply_client.rebase(reapply_fork_point, reapply_fork_point, current_branch, cli_opts.opt_no_interactive_rebase)
         elif cmd == "show":
-            show_client = MacheteClient(git)
+            show_client = GoShowMacheteClient(git)
             direction = parsed_cli.direction
             if direction == "current" and "branch" in parsed_cli:
                 raise MacheteException('`show current` with a `<branch>` argument does not make sense')
