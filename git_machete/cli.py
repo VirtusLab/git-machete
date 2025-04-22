@@ -689,7 +689,7 @@ def launch(orig_args: List[str]) -> None:
         elif cmd == "anno":
             anno_client = AnnoMacheteClient(git)
             anno_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out,
-                                                   verify_branches=False)
+                                                verify_branches=False)
             if cli_opts.opt_sync_github_prs:
                 anno_client.sync_annotations_to_prs(GitHubClient.spec(), include_urls=False)
             elif cli_opts.opt_sync_gitlab_mrs:
@@ -922,7 +922,7 @@ def launch(orig_args: List[str]) -> None:
                 raise MacheteException('`show current` with a `<branch>` argument does not make sense')
             branch = get_local_branch_short_name_from_arg_or_current_branch(cli_opts.opt_branch, git)
             show_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out,
-                                                   verify_branches=False)
+                                                verify_branches=False)
             print('\n'.join(show_client.parse_direction(direction, branch, allow_current=True, down_pick_mode=False)))
         elif cmd == "slide-out":
             slide_out_client = SlideOutMacheteClient(git)

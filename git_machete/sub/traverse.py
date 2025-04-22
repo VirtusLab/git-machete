@@ -2,7 +2,7 @@ import itertools
 from typing import List, Optional
 
 from git_machete.annotation import Annotation, Qualifiers
-from git_machete.client import (MacheteClient, PickRoot, SquashMergeDetection,
+from git_machete.client import (PickRoot, SquashMergeDetection,
                                 TraverseReturnTo, TraverseStartFrom)
 from git_machete.code_hosting import PullRequest
 from git_machete.exceptions import (InteractionStopped, MacheteException,

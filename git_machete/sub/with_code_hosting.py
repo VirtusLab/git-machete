@@ -1,16 +1,23 @@
 import itertools
 import os
-from typing import Optional, List, Dict, Tuple, Set, Iterator
+from typing import Dict, Iterator, List, Optional, Set, Tuple
 
 from git_machete import utils
 from git_machete.annotation import Annotation, Qualifiers
-
-from git_machete.client import MacheteClient, SquashMergeDetection, PRDescriptionIntroStyle
-from git_machete.code_hosting import CodeHostingClient, CodeHostingSpec, PullRequest, OrganizationAndRepository, is_matching_remote_url, \
-    OrganizationAndRepositoryAndRemote
-from git_machete.exceptions import MacheteException, UnexpectedMacheteException, InteractionStopped
-from git_machete.git_operations import LocalBranchShortName, SyncToRemoteStatus, RemoteBranchShortName, GitLogEntry, GitFormatPatterns, GitContext
-from git_machete.utils import bold, debug, get_pretty_choices, warn, get_right_arrow, fmt
+from git_machete.client import (MacheteClient, PRDescriptionIntroStyle,
+                                SquashMergeDetection)
+from git_machete.code_hosting import (CodeHostingClient, CodeHostingSpec,
+                                      OrganizationAndRepository,
+                                      OrganizationAndRepositoryAndRemote,
+                                      PullRequest, is_matching_remote_url)
+from git_machete.exceptions import (InteractionStopped, MacheteException,
+                                    UnexpectedMacheteException)
+from git_machete.git_operations import (GitContext, GitFormatPatterns,
+                                        GitLogEntry, LocalBranchShortName,
+                                        RemoteBranchShortName,
+                                        SyncToRemoteStatus)
+from git_machete.utils import (bold, debug, fmt, get_pretty_choices,
+                               get_right_arrow, warn)
 
 
 class MacheteClientWithCodeHosting(MacheteClient):
@@ -495,7 +502,7 @@ class MacheteClientWithCodeHosting(MacheteClient):
         if opt_update_related_descriptions:
             print(f"Updating descriptions of other {spec.pr_short_name}s...")
             applicable_prs: List[PullRequest] = self._get_applicable_pull_requests(related_to=pr_with_original_base) \
-                                                + self._get_applicable_pull_requests(related_to=pr)
+                + self._get_applicable_pull_requests(related_to=pr)
             applicable_prs = [pr_ for pr_ in applicable_prs if pr_.number != pr.number]
 
             for pr in applicable_prs:

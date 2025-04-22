@@ -1,4 +1,3 @@
-import datetime
 import io
 import itertools
 import os
@@ -8,28 +7,22 @@ import sys
 import textwrap
 from collections import OrderedDict
 from enum import Enum, auto
-from typing import (Callable, Dict, Iterator, List, Optional, Set, Tuple, Type,
+from typing import (Callable, Dict, Iterator, List, Optional, Tuple, Type,
                     TypeVar)
 
 from . import git_config_keys, utils
-from .annotation import Annotation, Qualifiers
-from .code_hosting import (CodeHostingClient, CodeHostingSpec,
-                           OrganizationAndRepository,
-                           OrganizationAndRepositoryAndRemote, PullRequest,
-                           is_matching_remote_url)
-from .constants import (DISCOVER_DEFAULT_FRESH_BRANCH_COUNT,
-                        INITIAL_COMMIT_COUNT_FOR_LOG,
-                        TOTAL_COMMIT_COUNT_FOR_LOG)
+from .annotation import Annotation
+from .code_hosting import CodeHostingClient, CodeHostingSpec
+from .constants import INITIAL_COMMIT_COUNT_FOR_LOG, TOTAL_COMMIT_COUNT_FOR_LOG
 from .exceptions import (InteractionStopped, MacheteException,
                          UnexpectedMacheteException)
 from .git_operations import (HEAD, AnyBranchName, AnyRevision, BranchPair,
                              ForkPointOverrideData, FullCommitHash, GitContext,
-                             GitFormatPatterns, GitLogEntry,
-                             LocalBranchShortName, RemoteBranchShortName,
-                             SyncToRemoteStatus)
+                             GitLogEntry, LocalBranchShortName,
+                             RemoteBranchShortName, SyncToRemoteStatus)
 from .utils import (AnsiEscapeCodes, PopenResult, bold, colored, debug, dim,
-                    excluding, flat_map, fmt, get_pretty_choices,
-                    get_right_arrow, get_second, tupled, underline, warn)
+                    excluding, flat_map, fmt, get_pretty_choices, get_second,
+                    tupled, underline, warn)
 
 
 class SyncToParentStatus(Enum):

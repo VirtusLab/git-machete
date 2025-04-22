@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import List, Optional
 
 from git_machete.client import MacheteClient
 from git_machete.git_operations import LocalBranchShortName

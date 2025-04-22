@@ -1,23 +1,8 @@
 from git_machete import git_config_keys
-
 from git_machete.client import MacheteClient
-from git_machete.git_operations import LocalBranchShortName, AnyRevision
-
-import itertools
-from typing import List, Optional
-
-from git_machete.annotation import Annotation, Qualifiers
-from git_machete.client import (MacheteClient, PickRoot, SquashMergeDetection,
-                                TraverseReturnTo, TraverseStartFrom)
-from git_machete.code_hosting import PullRequest
-from git_machete.exceptions import (InteractionStopped, MacheteException,
-                                    UnexpectedMacheteException)
-from git_machete.git_operations import LocalBranchShortName, SyncToRemoteStatus
-from git_machete.github import GitHubClient
-from git_machete.gitlab import GitLabClient
-from git_machete.sub.with_code_hosting import MacheteClientWithCodeHosting
-from git_machete.utils import (bold, flat_map, fmt, get_pretty_choices,
-                               get_right_arrow)
+from git_machete.exceptions import MacheteException
+from git_machete.git_operations import AnyRevision, LocalBranchShortName
+from git_machete.utils import bold, fmt
 
 
 class ForkPointMacheteClient(MacheteClient):
