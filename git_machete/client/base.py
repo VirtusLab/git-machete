@@ -10,19 +10,23 @@ from enum import Enum, auto
 from typing import (Callable, Dict, Iterator, List, Optional, Tuple, Type,
                     TypeVar)
 
-from . import git_config_keys, utils
-from .annotation import Annotation
-from .code_hosting import CodeHostingClient, CodeHostingSpec
-from .constants import INITIAL_COMMIT_COUNT_FOR_LOG, TOTAL_COMMIT_COUNT_FOR_LOG
-from .exceptions import (InteractionStopped, MacheteException,
-                         UnexpectedMacheteException)
-from .git_operations import (HEAD, AnyBranchName, AnyRevision, BranchPair,
-                             ForkPointOverrideData, FullCommitHash, GitContext,
-                             GitLogEntry, LocalBranchShortName,
-                             RemoteBranchShortName, SyncToRemoteStatus)
-from .utils import (AnsiEscapeCodes, PopenResult, bold, colored, debug, dim,
-                    excluding, flat_map, fmt, get_pretty_choices, get_second,
-                    tupled, underline, warn)
+from git_machete import git_config_keys, utils
+from git_machete.annotation import Annotation
+from git_machete.code_hosting import CodeHostingClient, CodeHostingSpec
+from git_machete.constants import (INITIAL_COMMIT_COUNT_FOR_LOG,
+                                   TOTAL_COMMIT_COUNT_FOR_LOG)
+from git_machete.exceptions import (InteractionStopped, MacheteException,
+                                    UnexpectedMacheteException)
+from git_machete.git_operations import (HEAD, AnyBranchName, AnyRevision,
+                                        BranchPair, ForkPointOverrideData,
+                                        FullCommitHash, GitContext,
+                                        GitLogEntry, LocalBranchShortName,
+                                        RemoteBranchShortName,
+                                        SyncToRemoteStatus)
+from git_machete.utils import (AnsiEscapeCodes, PopenResult, bold, colored,
+                               debug, dim, excluding, flat_map, fmt,
+                               get_pretty_choices, get_second, tupled,
+                               underline, warn)
 
 
 class SyncToParentStatus(Enum):
@@ -64,14 +68,6 @@ class ParsableEnum(Enum):
 class PickRoot(Enum):
     FIRST = auto()
     LAST = auto()
-
-
-class PRDescriptionIntroStyle(ParsableEnum):
-    FULL = auto()
-    FULL_NO_BRANCHES = auto()
-    UP_ONLY = auto()
-    UP_ONLY_NO_BRANCHES = auto()
-    NONE = auto()
 
 
 class SquashMergeDetection(ParsableEnum):

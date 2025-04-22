@@ -1,4 +1,4 @@
-from git_machete.client import MacheteClient, SquashMergeDetection
+from git_machete.client.base import MacheteClient, SquashMergeDetection
 from git_machete.exceptions import MacheteException
 from git_machete.git_operations import GitContext, LocalBranchShortName
 from git_machete.utils import bold, flat_map, get_pretty_choices

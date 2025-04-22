@@ -4,7 +4,7 @@ import itertools
 import os
 from typing import List, Optional, Tuple
 
-from git_machete.client import MacheteClient, SquashMergeDetection
+from git_machete.client.base import MacheteClient, SquashMergeDetection
 from git_machete.constants import DISCOVER_DEFAULT_FRESH_BRANCH_COUNT
 from git_machete.exceptions import MacheteException
 from git_machete.git_operations import LocalBranchShortName

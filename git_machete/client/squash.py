@@ -1,7 +1,7 @@
 import os
 from typing import List
 
-from git_machete.client import MacheteClient
+from git_machete.client.base import MacheteClient
 from git_machete.exceptions import MacheteException
 from git_machete.git_operations import (AnyRevision, FullCommitHash,
                                         GitFormatPatterns, GitLogEntry,

@@ -2,15 +2,15 @@ import itertools
 from typing import List, Optional
 
 from git_machete.annotation import Annotation, Qualifiers
-from git_machete.client import (PickRoot, SquashMergeDetection,
-                                TraverseReturnTo, TraverseStartFrom)
+from git_machete.client.base import (PickRoot, SquashMergeDetection,
+                                     TraverseReturnTo, TraverseStartFrom)
+from git_machete.client.with_code_hosting import MacheteClientWithCodeHosting
 from git_machete.code_hosting import PullRequest
 from git_machete.exceptions import (InteractionStopped, MacheteException,
                                     UnexpectedMacheteException)
 from git_machete.git_operations import LocalBranchShortName, SyncToRemoteStatus
 from git_machete.github import GitHubClient
 from git_machete.gitlab import GitLabClient
-from git_machete.sub.with_code_hosting import MacheteClientWithCodeHosting
 from git_machete.utils import (bold, flat_map, fmt, get_pretty_choices,
                                get_right_arrow)
 

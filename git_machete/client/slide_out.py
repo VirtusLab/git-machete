@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from git_machete.client import MacheteClient, SquashMergeDetection
+from git_machete.client.base import MacheteClient, SquashMergeDetection
 from git_machete.exceptions import MacheteException
 from git_machete.git_operations import AnyRevision, LocalBranchShortName
 from git_machete.utils import bold, fmt

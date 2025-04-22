@@ -1,7 +1,7 @@
 from typing import Dict
 
 from git_machete.annotation import Annotation
-from git_machete.client import MacheteClient
+from git_machete.client.base import MacheteClient
 from git_machete.git_operations import GitContext, LocalBranchShortName
 
 from .base_test import BaseTest

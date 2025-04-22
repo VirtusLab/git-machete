@@ -1,6 +1,6 @@
 from typing import List
 
-from git_machete.client import MacheteClient, PickRoot
+from git_machete.client.base import MacheteClient, PickRoot
 from git_machete.exceptions import UnexpectedMacheteException
 from git_machete.git_operations import LocalBranchShortName
 

@@ -1,11 +1,12 @@
 import itertools
 import os
+from enum import auto
 from typing import Dict, Iterator, List, Optional, Set, Tuple
 
 from git_machete import utils
 from git_machete.annotation import Annotation, Qualifiers
-from git_machete.client import (MacheteClient, PRDescriptionIntroStyle,
-                                SquashMergeDetection)
+from git_machete.client.base import (MacheteClient, ParsableEnum,
+                                     SquashMergeDetection)
 from git_machete.code_hosting import (CodeHostingClient, CodeHostingSpec,
                                       OrganizationAndRepository,
                                       OrganizationAndRepositoryAndRemote,
@@ -18,6 +19,14 @@ from git_machete.git_operations import (GitContext, GitFormatPatterns,
                                         SyncToRemoteStatus)
 from git_machete.utils import (bold, debug, fmt, get_pretty_choices,
                                get_right_arrow, warn)
+
+
+class PRDescriptionIntroStyle(ParsableEnum):
+    FULL = auto()
+    FULL_NO_BRANCHES = auto()
+    UP_ONLY = auto()
+    UP_ONLY_NO_BRANCHES = auto()
+    NONE = auto()
 
 
 class MacheteClientWithCodeHosting(MacheteClient):

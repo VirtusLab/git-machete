@@ -1,5 +1,5 @@
 from git_machete import git_config_keys
-from git_machete.client import MacheteClient
+from git_machete.client.base import MacheteClient
 from git_machete.exceptions import MacheteException
 from git_machete.git_operations import AnyRevision, LocalBranchShortName
 from git_machete.utils import bold, fmt

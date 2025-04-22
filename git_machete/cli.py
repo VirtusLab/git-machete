@@ -12,23 +12,23 @@ from typing import (Any, Dict, Iterable, List, Optional, Sequence, Tuple,
 
 import git_machete.options
 from git_machete import __version__, git_config_keys, utils
+from git_machete.client.advance import AdvanceMacheteClient
+from git_machete.client.anno import AnnoMacheteClient
+from git_machete.client.base import (MacheteClient, SquashMergeDetection,
+                                     TraverseReturnTo, TraverseStartFrom)
+from git_machete.client.diff import DiffMacheteClient
+from git_machete.client.discover import DiscoverMacheteClient
+from git_machete.client.fork_point import ForkPointMacheteClient
+from git_machete.client.go_show import GoShowMacheteClient
+from git_machete.client.log import LogMacheteClient
+from git_machete.client.slide_out import SlideOutMacheteClient
+from git_machete.client.squash import SquashMacheteClient
+from git_machete.client.traverse import TraverseMacheteClient
+from git_machete.client.update import UpdateMacheteClient
+from git_machete.client.with_code_hosting import MacheteClientWithCodeHosting
 from git_machete.github import GitHubClient
 from git_machete.gitlab import GitLabClient
-from git_machete.sub.advance import AdvanceMacheteClient
-from git_machete.sub.anno import AnnoMacheteClient
-from git_machete.sub.diff import DiffMacheteClient
-from git_machete.sub.discover import DiscoverMacheteClient
-from git_machete.sub.fork_point import ForkPointMacheteClient
-from git_machete.sub.go_show import GoShowMacheteClient
-from git_machete.sub.log import LogMacheteClient
-from git_machete.sub.slide_out import SlideOutMacheteClient
-from git_machete.sub.squash import SquashMacheteClient
-from git_machete.sub.traverse import TraverseMacheteClient
-from git_machete.sub.update import UpdateMacheteClient
-from git_machete.sub.with_code_hosting import MacheteClientWithCodeHosting
 
-from .client import (MacheteClient, SquashMergeDetection, TraverseReturnTo,
-                     TraverseStartFrom)
 from .exceptions import (ExitCode, InteractionStopped, MacheteException,
                          UnderlyingGitException, UnexpectedMacheteException)
 from .generated_docs import long_docs, short_docs

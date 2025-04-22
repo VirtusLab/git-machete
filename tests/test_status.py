@@ -65,7 +65,7 @@ class TestStatus(BaseTest):
         assert_failure(['status'], expected_error_message)
 
     def test_single_invalid_branch_interactive_slide_out(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, "git_machete.client.MacheteClient.is_stdout_a_tty", lambda: True)
+        self.patch_symbol(mocker, "git_machete.client.base.MacheteClient.is_stdout_a_tty", lambda: True)
 
         create_repo()
         new_branch('master')
@@ -92,7 +92,7 @@ class TestStatus(BaseTest):
             assert_success(["status"], expected_output)
 
     def test_multiple_invalid_branches_interactive_slide_out(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, "git_machete.client.MacheteClient.is_stdout_a_tty", lambda: True)
+        self.patch_symbol(mocker, "git_machete.client.base.MacheteClient.is_stdout_a_tty", lambda: True)
 
         create_repo()
         new_branch('master')
