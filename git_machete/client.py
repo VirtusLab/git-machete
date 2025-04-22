@@ -982,17 +982,6 @@ class MacheteClient:
         except MacheteException:
             return None
 
-    def display_diff(self, *, branch: Optional[LocalBranchShortName], opt_stat: bool, extra_git_diff_args: List[str]) -> None:
-        diff_branch = branch or self._git.get_current_branch()
-        fork_point = self.fork_point(diff_branch, use_overrides=True)
-
-        self._git.display_diff(branch=branch, against=fork_point, opt_stat=opt_stat, extra_git_diff_args=extra_git_diff_args)
-
-    def display_log(self, branch: LocalBranchShortName, extra_git_log_args: List[str]) -> None:
-        fork_point = self.fork_point(branch, use_overrides=True)
-        self._git.display_log_between(from_inclusive=branch.full_name(), until_exclusive=fork_point,
-                                      extra_git_log_args=extra_git_log_args)
-
     def down(self, branch: LocalBranchShortName, pick_mode: bool) -> List[LocalBranchShortName]:
         self.expect_in_managed_branches(branch)
         dbs = self.down_branches_for(branch)
@@ -1290,32 +1279,6 @@ class MacheteClient:
             return None
         debug(f"since branch {branch} is descendant of {to}, fork point of {branch} is overridden to {to}")
         return to
-
-    def unset_fork_point_override(self, branch: LocalBranchShortName) -> None:
-        self._git.unset_config_attr(git_config_keys.override_fork_point_to(branch))
-        # Note that we still unset the now-deprecated `whileDescendantOf` key.
-        self._git.unset_config_attr(git_config_keys.override_fork_point_while_descendant_of(branch))
-
-    def set_fork_point_override(self, branch: LocalBranchShortName, to_revision: AnyRevision) -> None:
-        to_hash = self._git.get_commit_hash_by_revision(to_revision)
-        if not to_hash:
-            raise MacheteException(f"Cannot find revision {bold(to_revision)}")
-        if not self._git.is_ancestor_or_equal(to_hash.full_name(), branch.full_name()):
-            raise MacheteException(
-                f"Cannot override fork point: {bold(self._git.get_revision_repr(to_revision))} is not an ancestor of {bold(branch)}")
-
-        to_key = git_config_keys.override_fork_point_to(branch)
-        self._git.set_config_attr(to_key, to_hash)
-
-        # Let's still set the now-deprecated `whileDescendantOf` key to maintain compatibility with older git-machete clients
-        # that still require that key for an override to apply.
-        while_descendant_of_key = git_config_keys.override_fork_point_while_descendant_of(branch)
-        self._git.set_config_attr(while_descendant_of_key, to_hash)
-
-        print(fmt(f"Fork point for <b>{branch}</b> is overridden to {self._git.get_revision_repr(to_revision)}.\n",
-                  f"This applies as long as <b>{branch}</b> is a descendant of commit <b>{to_hash}</b>.\n\n"
-                  f"This information is stored under `{to_key}` git config key.\n\n"
-                  f"To unset this override, use:\n  `git machete fork-point --unset-override {branch}`"))
 
     def __pick_remote(
             self,
