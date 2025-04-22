@@ -102,7 +102,23 @@ class MacheteClient:
     def __init__(self, git: GitContext) -> None:
         self._git: GitContext = git
         git.owner = self
+
         self._branch_layout_file_path: str = self.__get_git_machete_branch_layout_file_path()
+        if not os.path.exists(self._branch_layout_file_path):
+            # We're opening in "append" and not "write" mode to avoid a race condition:
+            # if other process writes to the file between we check the
+            # result of `os.path.exists` and call `open`,
+            # then open(..., "w") would result in us clearing up the file
+            # contents, while open(..., "a") has no effect.
+            with open(self._branch_layout_file_path, "a"):
+                pass
+        elif os.path.isdir(self._branch_layout_file_path):
+            # Extremely unlikely case, basically checking if anybody
+            # tampered with the repository.
+            raise MacheteException(
+                f"{self._branch_layout_file_path} is a directory "
+                "rather than a regular file, aborting")
+
         self.__init_state()
 
     def __get_git_machete_branch_layout_file_path(self) -> str:
