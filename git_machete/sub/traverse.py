@@ -10,11 +10,12 @@ from git_machete.exceptions import (InteractionStopped, MacheteException,
 from git_machete.git_operations import LocalBranchShortName, SyncToRemoteStatus
 from git_machete.github import GitHubClient
 from git_machete.gitlab import GitLabClient
+from git_machete.sub.with_code_hosting import MacheteClientWithCodeHosting
 from git_machete.utils import (bold, flat_map, fmt, get_pretty_choices,
                                get_right_arrow)
 
 
-class TraverseMacheteClient(MacheteClient):
+class TraverseMacheteClient(MacheteClientWithCodeHosting):
     def traverse(
             self,
             *,
@@ -96,7 +97,7 @@ class TraverseMacheteClient(MacheteClient):
                 needs_remote_sync = False
 
             if opt_sync_github_prs or opt_sync_gitlab_mrs:
-                prs = list(filter(lambda pr: pr.head == branch, self.get_all_open_prs()))
+                prs = list(filter(lambda pr: pr.head == branch, self._get_all_open_prs()))
                 if len(prs) > 1:
                     spec = self.code_hosting_client._spec
                     raise MacheteException(

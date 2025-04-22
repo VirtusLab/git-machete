@@ -697,11 +697,12 @@ def launch(orig_args: List[str]) -> None:
                 else:
                     anno_client.print_annotation(branch)
         elif cmd == "clean":
-            machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
+            clean_client = MacheteClientWithCodeHosting(git)
+            clean_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             if 'checkout_my_github_prs' in parsed_cli:
-                machete_client.checkout_pull_requests(GitHubClient.spec(), pr_numbers=[], mine=True)
-            machete_client.delete_unmanaged(opt_squash_merge_detection=SquashMergeDetection.NONE, opt_yes=cli_opts.opt_yes)
-            machete_client.delete_untracked(opt_yes=cli_opts.opt_yes)
+                clean_client.checkout_pull_requests(GitHubClient.spec(), pr_numbers=[], mine=True)
+            clean_client.delete_unmanaged(opt_squash_merge_detection=SquashMergeDetection.NONE, opt_yes=cli_opts.opt_yes)
+            clean_client.delete_untracked(opt_yes=cli_opts.opt_yes)
         elif cmd == "delete-unmanaged":
             machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             opt_squash_merge_detection = SquashMergeDetection.from_string(
