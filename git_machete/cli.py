@@ -18,6 +18,7 @@ from git_machete.sub.advance import AdvanceMacheteClient
 from git_machete.sub.discover import DiscoverMacheteClient
 from git_machete.sub.squash import SquashMacheteClient
 from git_machete.sub.traverse import TraverseMacheteClient
+from git_machete.sub.update import UpdateMacheteClient
 
 from .client import (MacheteClient, SquashMergeDetection, TraverseReturnTo,
                      TraverseStartFrom)
@@ -978,12 +979,13 @@ def launch(orig_args: List[str]) -> None:
                 opt_sync_gitlab_mrs=cli_opts.opt_sync_gitlab_mrs,
                 opt_yes=cli_opts.opt_yes)
         elif cmd == "update":
-            machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
+            update_client = UpdateMacheteClient(git)
+            update_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             git.expect_no_operation_in_progress()
             if cli_opts.opt_fork_point is not None:
-                machete_client.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
+                update_client.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
                     fork_point_hash=cli_opts.opt_fork_point, branch=git.get_current_branch())
-            machete_client.update(
+            update_client.update(
                 opt_merge=cli_opts.opt_merge,
                 opt_no_edit_merge=cli_opts.opt_no_edit_merge,
                 opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
