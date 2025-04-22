@@ -20,6 +20,7 @@ from git_machete.sub.diff import DiffMacheteClient
 from git_machete.sub.discover import DiscoverMacheteClient
 from git_machete.sub.fork_point import ForkPointMacheteClient
 from git_machete.sub.log import LogMacheteClient
+from git_machete.sub.slide_out import SlideOutMacheteClient
 from git_machete.sub.squash import SquashMacheteClient
 from git_machete.sub.traverse import TraverseMacheteClient
 from git_machete.sub.update import UpdateMacheteClient
@@ -732,8 +733,8 @@ def launch(orig_args: List[str]) -> None:
             edit_client.edit()
         elif cmd == "file":
             # No need to read branch layout file.
-            machete_client = MacheteClient(git)
-            print(os.path.abspath(machete_client.branch_layout_file_path))
+            file_client = MacheteClient(git)
+            print(os.path.abspath(file_client.branch_layout_file_path))
         elif cmd == "fork-point":
             fork_point_client = ForkPointMacheteClient(git)
             fork_point_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
@@ -744,7 +745,7 @@ def launch(orig_args: List[str]) -> None:
             elif cli_opts.opt_override_to:
                 fork_point_client.set_fork_point_override(branch, AnyRevision.of(cli_opts.opt_override_to))
             elif cli_opts.opt_override_to_inferred:
-                fork_point = machete_client.fork_point(branch=branch, use_overrides=False)
+                fork_point = fork_point_client.fork_point(branch=branch, use_overrides=False)
                 fork_point_client.set_fork_point_override(branch, fork_point)
             elif cli_opts.opt_override_to_parent:
                 upstream = fork_point_client.up_branch_for(branch)
@@ -924,15 +925,16 @@ def launch(orig_args: List[str]) -> None:
                                                    verify_branches=False)
             print('\n'.join(show_client.parse_direction(direction, branch, allow_current=True, down_pick_mode=False)))
         elif cmd == "slide-out":
-            machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
+            slide_out_client = SlideOutMacheteClient(git)
+            slide_out_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             git.expect_no_operation_in_progress()
             branches_to_slide_out: Optional[List[str]] = parsed_cli_as_dict.get('branches')
             if cli_opts.opt_removed_from_remote:
                 if branches_to_slide_out or cli_opts.opt_down_fork_point or cli_opts.opt_merge or cli_opts.opt_no_interactive_rebase:
                     raise MacheteException("Only `--delete` can be passed with `--removed-from-remote`")
-                machete_client.slide_out_removed_from_remote(opt_delete=cli_opts.opt_delete)
+                slide_out_client.slide_out_removed_from_remote(opt_delete=cli_opts.opt_delete)
             else:
-                machete_client.slide_out(
+                slide_out_client.slide_out(
                     branches_to_slide_out=[LocalBranchShortName.of(branch)
                                            for branch in (branches_to_slide_out or [git.get_current_branch()])],
                     opt_delete=cli_opts.opt_delete,
@@ -959,12 +961,13 @@ def launch(orig_args: List[str]) -> None:
                 )
             squash_client.squash(current_branch=current_branch, opt_fork_point=squash_fork_point)
         elif cmd in {"status", alias_by_command["status"]}:
+            status_client = MacheteClient(git)
             opt_squash_merge_detection = SquashMergeDetection.from_string(
                 cli_opts.opt_squash_merge_detection_string, cli_opts.opt_squash_merge_detection_origin)
 
-            machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
-            machete_client.expect_at_least_one_managed_branch()
-            machete_client.status(
+            status_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
+            status_client.expect_at_least_one_managed_branch()
+            status_client.status(
                 warn_when_branch_in_sync_but_fork_point_off=True,
                 opt_list_commits=cli_opts.opt_list_commits,
                 opt_list_commits_with_hashes=cli_opts.opt_list_commits_with_hashes,
