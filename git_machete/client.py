@@ -677,11 +677,11 @@ class MacheteClient:
     def delete_unmanaged(self, *, opt_squash_merge_detection: SquashMergeDetection, opt_yes: bool) -> None:
         print('Checking for unmanaged branches...')
         branches_to_delete = sorted(excluding(self._git.get_local_branches(), self.managed_branches))
-        self.__delete_branches(branches_to_delete=branches_to_delete,
-                               opt_squash_merge_detection=opt_squash_merge_detection, opt_yes=opt_yes)
+        self._delete_branches(branches_to_delete=branches_to_delete,
+                              opt_squash_merge_detection=opt_squash_merge_detection, opt_yes=opt_yes)
 
-    def __delete_branches(self, branches_to_delete: List[LocalBranchShortName],
-                          opt_squash_merge_detection: SquashMergeDetection, opt_yes: bool) -> None:
+    def _delete_branches(self, branches_to_delete: List[LocalBranchShortName],
+                         opt_squash_merge_detection: SquashMergeDetection, opt_yes: bool) -> None:
         current_branch = self._git.get_current_branch_or_none()
         if current_branch and current_branch in branches_to_delete:
             branches_to_delete = excluding(branches_to_delete, [current_branch])
@@ -1520,10 +1520,10 @@ class MacheteClient:
             if status == SyncToRemoteStatus.UNTRACKED and not self.down_branches_for(branch):
                 branches_to_delete.append(branch)
 
-        self.__remove_branches_from_layout(branches_to_delete)
-        self.__delete_branches(branches_to_delete, opt_squash_merge_detection=SquashMergeDetection.NONE, opt_yes=opt_yes)
+        self._remove_branches_from_layout(branches_to_delete)
+        self._delete_branches(branches_to_delete, opt_squash_merge_detection=SquashMergeDetection.NONE, opt_yes=opt_yes)
 
-    def __remove_branches_from_layout(self, branches_to_delete: List[LocalBranchShortName]) -> None:
+    def _remove_branches_from_layout(self, branches_to_delete: List[LocalBranchShortName]) -> None:
         for branch in branches_to_delete:
             self.managed_branches.remove(branch)
             if branch in self._state.annotations:

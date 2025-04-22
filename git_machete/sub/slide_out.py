@@ -100,8 +100,8 @@ class SlideOutMacheteClient(MacheteClient):
                     opt_no_interactive_rebase)
 
         if opt_delete:
-            self.__delete_branches(branches_to_delete=branches_to_slide_out,
-                                   opt_squash_merge_detection=SquashMergeDetection.NONE, opt_yes=False)
+            self._delete_branches(branches_to_delete=branches_to_slide_out,
+                                  opt_squash_merge_detection=SquashMergeDetection.NONE, opt_yes=False)
 
     def slide_out_removed_from_remote(self, opt_delete: bool) -> None:
         slid_out_branches: List[LocalBranchShortName] = []
@@ -110,6 +110,6 @@ class SlideOutMacheteClient(MacheteClient):
                 print(fmt(f"Sliding out <b>{branch}</b>"))
                 slid_out_branches.append(branch)
 
-        self.__remove_branches_from_layout(slid_out_branches)
+        self._remove_branches_from_layout(slid_out_branches)
         if opt_delete:
-            self.__delete_branches(slid_out_branches, opt_squash_merge_detection=SquashMergeDetection.NONE, opt_yes=True)
+            self._delete_branches(slid_out_branches, opt_squash_merge_detection=SquashMergeDetection.NONE, opt_yes=True)
