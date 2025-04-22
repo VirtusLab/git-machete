@@ -425,17 +425,6 @@ class MacheteClient:
         self._state.managed_branches += [branch]
         self.save_branch_layout_file()
 
-    def annotate(self, branch: LocalBranchShortName, words: List[str]) -> None:
-        if branch in self._state.annotations and words == ['']:
-            del self._state.annotations[branch]
-        else:
-            self._state.annotations[branch] = Annotation.parse(" ".join(words))
-        self.save_branch_layout_file()
-
-    def print_annotation(self, branch: LocalBranchShortName) -> None:
-        if branch in self._state.annotations:
-            print(self._state.annotations[branch].text_without_qualifiers)
-
     def slide_out(self,
                   *,
                   branches_to_slide_out: List[LocalBranchShortName],
@@ -1168,12 +1157,6 @@ class MacheteClient:
             print(fmt('<green><b>OK</b></green>'))
         return self.__all_open_prs
 
-    def sync_annotations_to_prs(self, spec: CodeHostingSpec, include_urls: bool) -> None:
-        self._init_code_hosting_client(spec)
-        current_user: Optional[str] = self.code_hosting_client.get_current_user_login()
-        debug(f'Current {spec.display_name} user is ' + (bold(current_user or '<none>')))
-        all_open_prs = self.get_all_open_prs()
-        self.__sync_annotations_to_branch_layout_file(spec, all_open_prs, current_user, include_urls=include_urls, verbose=True)
 
     def _pull_request_annotation(self, spec: CodeHostingSpec,
                                  pr: PullRequest, current_user: Optional[str], include_url: bool = False) -> str:
@@ -1185,8 +1168,8 @@ class MacheteClient:
             anno += f" {pr.html_url}"
         return anno
 
-    def __sync_annotations_to_branch_layout_file(self, spec: CodeHostingSpec, prs: List[PullRequest], current_user: Optional[str],
-                                                 include_urls: bool, verbose: bool) -> None:
+    def _sync_annotations_to_branch_layout_file(self, spec: CodeHostingSpec, prs: List[PullRequest], current_user: Optional[str],
+                                                include_urls: bool, verbose: bool) -> None:
         for pr in prs:
             if LocalBranchShortName.of(pr.head) in self.managed_branches:
                 debug(f'{pr} corresponds to a managed branch')
@@ -1741,8 +1724,8 @@ class MacheteClient:
                     print(fmt(f"{pr_on_path.display_text()} checked out at local branch {bold(pr_on_path.head)}"))
 
         debug(f'Current {spec.display_name} user is ' + (current_user or '<none>'))
-        self.__sync_annotations_to_branch_layout_file(spec, list(prs_to_annotate),
-                                                      current_user=current_user, include_urls=False, verbose=False)
+        self._sync_annotations_to_branch_layout_file(spec, list(prs_to_annotate),
+                                                     current_user=current_user, include_urls=False, verbose=False)
         if len(applicable_prs) == 1:
             self._git.checkout(LocalBranchShortName.of(applicable_prs[0].head))
 
