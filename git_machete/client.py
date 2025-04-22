@@ -27,8 +27,6 @@ from .git_operations import (HEAD, AnyBranchName, AnyRevision, BranchPair,
                              GitFormatPatterns, GitLogEntry,
                              LocalBranchShortName, RemoteBranchShortName,
                              SyncToRemoteStatus)
-from .github import GitHubClient
-from .gitlab import GitLabClient
 from .utils import (AnsiEscapeCodes, PopenResult, bold, colored, debug, dim,
                     excluding, flat_map, fmt, get_pretty_choices,
                     get_right_arrow, get_second, tupled, underline, warn)
@@ -698,357 +696,13 @@ class MacheteClient:
             self.__delete_branches(branches_to_delete=branches_to_slide_out,
                                    opt_squash_merge_detection=SquashMergeDetection.NONE, opt_yes=False)
 
-    def __print_new_line(self, new_status: bool) -> None:
+    def _set_empty_line_status(self) -> None:
+        self.__empty_line_status = True
+
+    def _print_new_line(self, new_status: bool) -> None:
         if not self.__empty_line_status:
             print("")
         self.__empty_line_status = new_status
-
-    def traverse(
-            self,
-            *,
-            opt_fetch: bool,
-            opt_list_commits: bool,
-            opt_merge: bool,
-            opt_no_edit_merge: bool,
-            opt_no_interactive_rebase: bool,
-            opt_push_tracked: bool,
-            opt_push_untracked: bool,
-            opt_return_to: TraverseReturnTo,
-            opt_squash_merge_detection: SquashMergeDetection,
-            opt_start_from: TraverseStartFrom,
-            opt_sync_github_prs: bool,
-            opt_sync_gitlab_mrs: bool,
-            opt_yes: bool
-    ) -> None:
-        self.expect_at_least_one_managed_branch()
-
-        self.__empty_line_status = True
-        any_action_suggested: bool = False
-
-        if opt_fetch:
-            for rem in self._git.get_remotes():
-                if self.remote_enabled_for_traverse_fetch(rem):
-                    print(f"Fetching {bold(rem)}...")
-                    self._git.fetch_remote(rem)
-            if self._git.get_remotes():
-                print("")
-
-        current_user: Optional[str] = None
-        if opt_sync_github_prs or opt_sync_gitlab_mrs:
-            spec = GitHubClient.spec() if opt_sync_github_prs else GitLabClient.spec()
-            self.__init_code_hosting_client(spec)
-            current_user = self.code_hosting_client.get_current_user_login()
-
-        initial_branch = nearest_remaining_branch = self._git.get_current_branch()
-
-        if opt_start_from == TraverseStartFrom.ROOT:
-            dest = self.root_branch_for(self._git.get_current_branch(), if_unmanaged=PickRoot.FIRST)
-            self.__print_new_line(False)
-            print(f"Checking out the root branch ({bold(dest)})")
-            self._git.checkout(dest)
-            current_branch = dest
-        elif opt_start_from == TraverseStartFrom.FIRST_ROOT:
-            # Note that we already ensured that there is at least one managed branch.
-            dest = self.managed_branches[0]
-            self.__print_new_line(False)
-            print(f"Checking out the first root branch ({bold(dest)})")
-            self._git.checkout(dest)
-            current_branch = dest
-        else:  # cli_opts.opt_start_from == TraverseStartFrom.HERE
-            current_branch = self._git.get_current_branch()
-            self.expect_in_managed_branches(current_branch)
-
-        branch: LocalBranchShortName
-        for branch in itertools.dropwhile(lambda x: x != current_branch, self.managed_branches.copy()):
-            upstream = self.up_branch_for(branch)
-
-            needs_slide_out: bool = self._is_merged_to_upstream(
-                branch, opt_squash_merge_detection=opt_squash_merge_detection)
-            if needs_slide_out and branch in self.annotations:
-                needs_slide_out = self.annotations[branch].qualifiers.slide_out
-            s, remote = self._git.get_combined_remote_sync_status(branch)
-            if s in (
-                    SyncToRemoteStatus.BEHIND_REMOTE,
-                    SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE):
-                needs_remote_sync = True
-            elif s in (
-                    SyncToRemoteStatus.UNTRACKED,
-                    SyncToRemoteStatus.AHEAD_OF_REMOTE,
-                    SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE):
-                needs_remote_sync = True
-                if branch in self.annotations:
-                    needs_remote_sync = self.annotations[branch].qualifiers.push
-                if not opt_push_tracked and not opt_push_untracked:
-                    needs_remote_sync = False
-            else:
-                needs_remote_sync = False
-
-            if opt_sync_github_prs or opt_sync_gitlab_mrs:
-                prs = list(filter(lambda pr: pr.head == branch, self.get_all_open_prs()))
-                if len(prs) > 1:
-                    spec = self.code_hosting_client._spec
-                    raise MacheteException(
-                        f"Multiple {spec.pr_short_name}s have <b>{branch}</b> as its {spec.head_branch_name} branch: " +
-                        ", ".join(_pr.short_display_text() for _pr in prs))
-                pr = prs[0] if prs else None
-                needs_retarget_pr = pr and upstream and pr.base != upstream
-            else:
-                needs_retarget_pr = False
-
-            use_merge = opt_merge or (branch in self.annotations and self.annotations[branch].qualifiers.update_with_merge)
-
-            if needs_slide_out:
-                # Avoid unnecessary fork point check if we already know that the
-                # branch qualifies for slide out;
-                # neither rebase nor merge will be suggested in such case anyway.
-                needs_parent_sync: bool = False
-            elif s == SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
-                # Avoid unnecessary fork point check if we already know that the
-                # branch qualifies for resetting to remote counterpart;
-                # neither rebase nor merge will be suggested in such case anyway.
-                needs_parent_sync = False
-            elif use_merge:
-                needs_parent_sync = bool(
-                    upstream and not self._git.is_ancestor_or_equal(upstream.full_name(), branch.full_name()))
-            else:  # using rebase
-                needs_parent_sync = bool(
-                    upstream and
-                    not (self._git.is_ancestor_or_equal(upstream.full_name(), branch.full_name()) and
-                         (self._git.get_commit_hash_by_revision(upstream) ==
-                          self.fork_point(branch, use_overrides=True)))
-                )
-                if needs_parent_sync and branch in self.annotations:
-                    needs_parent_sync = self.annotations[branch].qualifiers.rebase
-
-            if branch != current_branch and (needs_slide_out or needs_parent_sync or needs_remote_sync or needs_retarget_pr):
-                self.__print_new_line(False)
-                print(f"Checking out {bold(branch)}")
-                self._git.checkout(branch)
-                current_branch = branch
-                self.__print_new_line(False)
-                self.status(
-                    warn_when_branch_in_sync_but_fork_point_off=True,
-                    opt_list_commits=opt_list_commits,
-                    opt_list_commits_with_hashes=False,
-                    opt_squash_merge_detection=opt_squash_merge_detection)
-                self.__print_new_line(True)
-            if needs_slide_out:
-                any_action_suggested = True
-                self.__print_new_line(False)
-                assert upstream is not None
-                ans: str = self.ask_if(f"Branch {bold(branch)} is merged into {bold(upstream)}. "
-                                       f"Slide {bold(branch)} out of the tree of branch dependencies?" +
-                                       get_pretty_choices('y', 'N', 'q', 'yq'),
-                                       f"Branch {bold(branch)} is merged into {bold(upstream)}. "
-                                       f"Sliding {bold(branch)} out of the tree of branch dependencies...",
-                                       opt_yes=opt_yes)
-                if ans in ('y', 'yes', 'yq'):
-                    dbb = self.down_branches_for(branch) or []
-                    if nearest_remaining_branch == branch:
-                        if dbb:
-                            nearest_remaining_branch = dbb[0]
-                        else:
-                            nearest_remaining_branch = upstream
-                    for down_branch in dbb:
-                        self._state.up_branch_for[down_branch] = upstream
-                    self._state.down_branches_for[upstream] = flat_map(
-                        lambda ud: dbb if ud == branch else [ud],
-                        self._state.down_branches_for[upstream] or [])
-                    if branch in self._state.annotations:
-                        del self._state.annotations[branch]
-                    self.save_branch_layout_file()
-                    self._run_post_slide_out_hook(upstream, branch, dbb)
-                    if ans == 'yq':
-                        return
-                    else:
-                        # No need to sync branch 'branch' with remote since it just got removed from the tree of dependencies.
-                        continue  # pragma: no cover; this line is actually covered, it just doesn't show up due to bug in coverage tooling
-                elif ans in ('q', 'quit'):
-                    return
-                # If user answered 'no', we don't try to rebase/merge but still
-                # suggest to sync with remote (if needed; very rare in practice).
-            elif needs_parent_sync:
-                any_action_suggested = True
-                self.__print_new_line(False)
-                assert upstream is not None
-                if use_merge:
-                    ans = self.ask_if(f"Merge {bold(upstream)} into {bold(branch)}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
-                                      f"Merging {bold(upstream)} into {bold(branch)}...", opt_yes=opt_yes)
-                else:
-                    ans = self.ask_if(f"Rebase {bold(branch)} onto {bold(upstream)}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
-                                      f"Rebasing {bold(branch)} onto {bold(upstream)}...", opt_yes=opt_yes)
-                if ans in ('y', 'yes', 'yq'):
-                    if use_merge:
-                        self._git.merge(upstream, branch, opt_no_edit_merge)
-                        # It's clearly possible that merge can be in progress
-                        # after 'git merge' returned non-zero exit code;
-                        # this happens most commonly in case of conflicts.
-                        # As for now, we're not aware of any case when merge can
-                        # be still in progress after 'git merge' returns zero,
-                        # at least not with the options that git-machete passes
-                        # to merge; this happens though in case of 'git merge
-                        # --no-commit' (which we don't ever invoke).
-                        # It's still better, however, to be on the safe side.
-                        if self._git.is_merge_in_progress():
-                            print("\nMerge in progress; stopping the traversal")
-                            return
-                    else:
-                        fork_point = self.fork_point(branch, use_overrides=True)
-
-                        self.rebase(
-                            LocalBranchShortName.of(upstream).full_name(), fork_point,
-                            branch, opt_no_interactive_rebase)
-                        # It's clearly possible that rebase can be in progress
-                        # after 'git rebase' returned non-zero exit code;
-                        # this happens most commonly in case of conflicts,
-                        # regardless of whether the rebase is interactive or not.
-                        # But for interactive rebases, it's still possible that
-                        # even if 'git rebase' returned zero, the rebase is still
-                        # in progress; e.g. when interactive rebase gets to 'edit'
-                        # command, it will exit returning zero, but the rebase
-                        # will be still in progress, waiting for user edits and
-                        # a subsequent 'git rebase --continue'.
-                        rebased_branch = self._git.get_currently_rebased_branch_or_none()
-                        if rebased_branch:  # 'rebased_branch' should be equal to 'branch' at this point anyway
-                            print(fmt(f"\nRebase of {bold(rebased_branch)} in progress; stopping the traversal"))
-                            return
-                    if ans == 'yq':
-                        return
-
-                    s, remote = self._git.get_combined_remote_sync_status(branch)
-                    if s in (
-                            SyncToRemoteStatus.BEHIND_REMOTE,
-                            SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE):
-                        # This case is extremely unlikely in practice.
-                        #
-                        # For a freshly rebased/merged branch to be behind its remote, would require a specially crafted scenario
-                        # (so that author/commit dates in the resulting rebased/merge commit align perfectly
-                        # with the commits already present in remote).
-                        #
-                        # For a freshly rebased/merged branch to be diverged from and older than remote,
-                        # would require a divergence in clocks between local and remote (so that the "physically older" commit in remote
-                        # is still considered "logically newer" than the "physically newer" rebased/merge commit).
-                        needs_remote_sync = True
-                    elif s in (
-                            SyncToRemoteStatus.UNTRACKED,
-                            SyncToRemoteStatus.AHEAD_OF_REMOTE,
-                            SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE):
-                        needs_remote_sync = True
-                        if branch in self.annotations:
-                            needs_remote_sync = self.annotations[branch].qualifiers.push
-                    else:
-                        needs_remote_sync = False
-
-                elif ans in ('q', 'quit'):
-                    return
-
-            if needs_retarget_pr:
-                any_action_suggested = True
-                assert pr is not None
-                assert upstream is not None
-                spec = self.code_hosting_client._spec
-                self.__print_new_line(False)
-                ans_intro = f"Branch {bold(str(branch))} has a different {spec.pr_short_name} {spec.base_branch_name} ({bold(pr.base)}) " \
-                    f"in {spec.display_name} than in machete file ({bold(str(upstream))}).\n"
-                ans = self.ask_if(
-                    ans_intro + f"Retarget {pr.display_text()} to {bold(str(upstream))}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
-                    ans_intro + f"Retargeting {pr.display_text()} to {bold(str(upstream))}...",
-                    opt_yes=opt_yes)
-                if ans in ('y', 'yes', 'yq'):
-                    self.code_hosting_client.set_base_of_pull_request(pr.number, base=upstream)
-                    print(f'{spec.base_branch_name.capitalize()} branch of {pr.display_text()} has been switched to {bold(str(upstream))}')
-                    pr.base = upstream
-
-                    anno = self._state.annotations.get(branch)
-                    self._state.annotations[branch] = Annotation(self.__pull_request_annotation(spec, pr, current_user),
-                                                                 anno.qualifiers if anno else Qualifiers())
-                    self.save_branch_layout_file()
-
-                    new_description = self.__get_updated_pull_request_description(pr)
-                    if pr.description != new_description:
-                        self.code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
-                        print(f'Description of {pr.display_text()} has been updated')
-                        pr.description = new_description
-
-                    applicable_prs: List[PullRequest] = self.__get_applicable_pull_requests(related_to=pr)
-                    for pr in applicable_prs:
-                        new_description = self.__get_updated_pull_request_description(pr)
-                        if pr.description != new_description:
-                            self.code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
-                            pr.description = new_description
-                            print(fmt(f'Description of {pr.display_text()} '
-                                      f'(<b>{pr.head} {get_right_arrow()} {pr.base}</b>) has been updated'))
-
-                    if ans == 'yq':
-                        return
-                elif ans in ('q', 'quit'):
-                    return
-
-            if needs_remote_sync:
-                any_action_suggested = True
-                try:
-                    if s == SyncToRemoteStatus.BEHIND_REMOTE:
-                        assert remote is not None
-                        self.__handle_behind_state(current_branch, remote, opt_yes=opt_yes)
-                    elif s == SyncToRemoteStatus.AHEAD_OF_REMOTE:
-                        assert remote is not None
-                        self.__handle_ahead_state(
-                            current_branch=current_branch,
-                            remote=remote,
-                            is_called_from_traverse=True,
-                            opt_push_tracked=opt_push_tracked,
-                            opt_yes=opt_yes)
-                    elif s == SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
-                        self.__handle_diverged_and_older_state(current_branch, opt_yes=opt_yes)
-                    elif s == SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
-                        assert remote is not None
-                        self.__handle_diverged_and_newer_state(
-                            current_branch=current_branch,
-                            remote=remote,
-                            opt_push_tracked=opt_push_tracked,
-                            opt_yes=opt_yes)
-                    elif s == SyncToRemoteStatus.UNTRACKED:
-                        self.__handle_untracked_state(
-                            branch=current_branch,
-                            is_called_from_traverse=True,
-                            is_called_from_code_hosting=False,
-                            opt_push_untracked=opt_push_untracked,
-                            opt_push_tracked=opt_push_tracked,
-                            opt_yes=opt_yes)
-                    else:
-                        raise UnexpectedMacheteException(f"Unexpected SyncToRemoteStatus: {s}.")
-                except InteractionStopped:
-                    return
-
-        if opt_return_to == TraverseReturnTo.HERE:
-            self._git.checkout(initial_branch)
-        elif opt_return_to == TraverseReturnTo.NEAREST_REMAINING:
-            self._git.checkout(nearest_remaining_branch)
-        # otherwise opt_return_to == TraverseReturnTo.STAY, so no action is needed
-
-        self.__print_new_line(False)
-        self.status(
-            warn_when_branch_in_sync_but_fork_point_off=True,
-            opt_list_commits=opt_list_commits,
-            opt_list_commits_with_hashes=False,
-            opt_squash_merge_detection=opt_squash_merge_detection)
-        print("")
-        if current_branch == self.managed_branches[-1]:
-            msg: str = f"Reached branch {bold(current_branch)} which has no successor"
-        else:
-            msg = f"No successor of {bold(current_branch)} needs to be slid out or synced with upstream branch or remote"
-        print(f"{msg}; nothing left to update")
-        if not any_action_suggested and initial_branch not in self._state.roots:
-            print(fmt("Tip: `traverse` by default starts from the current branch, "
-                      "use flags (`--start-from=`, `--whole` or `-w`, `-W`) to change this behavior.\n"
-                      "Further info under `git machete traverse --help`."))
-        if opt_return_to == TraverseReturnTo.HERE or (
-                opt_return_to == TraverseReturnTo.NEAREST_REMAINING and nearest_remaining_branch == initial_branch):
-            print(f"Returned to the initial branch {bold(initial_branch)}")
-        elif opt_return_to == TraverseReturnTo.NEAREST_REMAINING and nearest_remaining_branch != initial_branch:
-            print(
-                f"The initial branch {bold(initial_branch)} has been slid out. "
-                f"Returned to nearest remaining managed branch {bold(nearest_remaining_branch)}")
 
     def status(
             self,
@@ -1679,14 +1333,14 @@ class MacheteClient:
         return self.__all_open_prs
 
     def sync_annotations_to_prs(self, spec: CodeHostingSpec, include_urls: bool) -> None:
-        self.__init_code_hosting_client(spec)
+        self._init_code_hosting_client(spec)
         current_user: Optional[str] = self.code_hosting_client.get_current_user_login()
         debug(f'Current {spec.display_name} user is ' + (bold(current_user or '<none>')))
         all_open_prs = self.get_all_open_prs()
         self.__sync_annotations_to_branch_layout_file(spec, all_open_prs, current_user, include_urls=include_urls, verbose=True)
 
-    def __pull_request_annotation(self, spec: CodeHostingSpec,
-                                  pr: PullRequest, current_user: Optional[str], include_url: bool = False) -> str:
+    def _pull_request_annotation(self, spec: CodeHostingSpec,
+                                 pr: PullRequest, current_user: Optional[str], include_url: bool = False) -> str:
         anno = pr.display_text(fmt=False)
         if current_user != pr.user:
             anno += f" ({pr.user})"
@@ -1700,7 +1354,7 @@ class MacheteClient:
         for pr in prs:
             if LocalBranchShortName.of(pr.head) in self.managed_branches:
                 debug(f'{pr} corresponds to a managed branch')
-                anno: str = self.__pull_request_annotation(spec, pr, current_user, include_urls)
+                anno: str = self._pull_request_annotation(spec, pr, current_user, include_urls)
                 upstream: Optional[LocalBranchShortName] = self.up_branch_for(LocalBranchShortName.of(pr.head))
                 if upstream is not None:
                     counterpart = self._git.get_combined_counterpart_for_fetching_of_branch(upstream)
@@ -1929,7 +1583,7 @@ class MacheteClient:
             index = int(ans) - 1
             if index not in range(len(rems)):
                 raise MacheteException(f"Invalid index: {index + 1}")
-            self.__handle_untracked_branch(
+            self._handle_untracked_branch(
                 new_remote=rems[index],
                 branch=branch,
                 is_called_from_traverse=is_called_from_traverse,
@@ -1941,7 +1595,7 @@ class MacheteClient:
             if is_called_from_code_hosting:
                 raise MacheteException('Could not establish remote repository, operation interrupted.')
 
-    def __handle_untracked_branch(
+    def _handle_untracked_branch(
             self,
             *,
             new_remote: str,
@@ -2142,7 +1796,7 @@ class MacheteClient:
                                          *, all: bool = False, by: Optional[str] = None, mine: bool = False, related: bool = False
                                          ) -> None:
         if self.__code_hosting_client is None:
-            self.__init_code_hosting_client(spec)
+            self._init_code_hosting_client(spec)
 
         current_user: Optional[str] = self.code_hosting_client.get_current_user_login()
         if not current_user and mine:
@@ -2155,11 +1809,11 @@ class MacheteClient:
             related_to = self.__get_sole_pull_request_for_head(head, ignore_if_missing=False)
         else:
             related_to = None
-        applicable_prs: List[PullRequest] = self.__get_applicable_pull_requests(
+        applicable_prs: List[PullRequest] = self._get_applicable_pull_requests(
             all=all, by=current_user if mine else by, related_to=related_to)
 
         for pr in applicable_prs:
-            new_description = self.__get_updated_pull_request_description(pr)
+            new_description = self._get_updated_pull_request_description(pr)
             if pr.description != new_description:
                 self.code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
                 pr.description = new_description
@@ -2174,7 +1828,7 @@ class MacheteClient:
                                by: Optional[str] = None,
                                fail_on_missing_current_user_for_my_open_prs: bool = False
                                ) -> None:
-        domain, org_repo_remote = self.__init_code_hosting_client(spec)
+        domain, org_repo_remote = self._init_code_hosting_client(spec)
 
         current_user: Optional[str] = self.code_hosting_client.get_current_user_login()
         if not current_user and mine:
@@ -2188,7 +1842,7 @@ class MacheteClient:
         if mine:
             by = current_user
 
-        applicable_prs: List[PullRequest] = self.__get_applicable_pull_requests(
+        applicable_prs: List[PullRequest] = self._get_applicable_pull_requests(
             pr_numbers=pr_numbers, all=all, by=by)
 
         debug(f'organization is {org_repo_remote.organization}, repository is {org_repo_remote.repository}')
@@ -2291,7 +1945,7 @@ class MacheteClient:
             pr_base = pr.base if pr else None
         return path
 
-    def __get_applicable_pull_requests(
+    def _get_applicable_pull_requests(
             self,
             *,
             pr_numbers: Optional[List[int]] = None,
@@ -2355,7 +2009,7 @@ class MacheteClient:
 
     def restack_pull_request(self, spec: CodeHostingSpec, opt_update_related_descriptions: bool) -> None:
         head = self._git.get_current_branch()
-        _, org_repo_remote = self.__init_code_hosting_client(spec, branch_used_for_tracking_data=head)
+        _, org_repo_remote = self._init_code_hosting_client(spec, branch_used_for_tracking_data=head)
 
         pr: Optional[PullRequest] = self.__get_sole_pull_request_for_head(head, ignore_if_missing=False)
         assert pr is not None
@@ -2386,14 +2040,14 @@ class MacheteClient:
 
             if s == SyncToRemoteStatus.AHEAD_OF_REMOTE:
                 assert remote is not None
-                self.__handle_ahead_state(
+                self._handle_ahead_state(
                     current_branch=current_branch,
                     remote=remote,
                     is_called_from_traverse=False,
                     opt_push_tracked=True,
                     opt_yes=True)
             elif s == SyncToRemoteStatus.UNTRACKED:
-                self.__handle_untracked_state(
+                self._handle_untracked_state(
                     branch=current_branch,
                     is_called_from_traverse=False,
                     is_called_from_code_hosting=True,
@@ -2402,7 +2056,7 @@ class MacheteClient:
                     opt_yes=True)
             elif s == SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
                 assert remote is not None
-                self.__handle_diverged_and_newer_state(
+                self._handle_diverged_and_newer_state(
                     current_branch=current_branch,
                     remote=remote,
                     is_called_from_traverse=False,
@@ -2411,13 +2065,13 @@ class MacheteClient:
             else:
                 raise UnexpectedMacheteException(f"Invalid sync to remote status: {s}.")
 
-            self.__print_new_line(False)
+            self._print_new_line(False)
             self.status(
                 warn_when_branch_in_sync_but_fork_point_off=True,
                 opt_list_commits=False,
                 opt_list_commits_with_hashes=False,
                 opt_squash_merge_detection=SquashMergeDetection.NONE)
-            self.__print_new_line(False)
+            self._print_new_line(False)
 
             if converted_to_draft:
                 self.code_hosting_client.set_draft_status_of_pull_request(pr.number, target_draft_status=False)
@@ -2437,7 +2091,7 @@ class MacheteClient:
             self.retarget_pull_request(spec, head, opt_ignore_if_missing=False,
                                        opt_update_related_descriptions=opt_update_related_descriptions)
 
-    def __get_updated_pull_request_description(self, pr: PullRequest) -> str:
+    def _get_updated_pull_request_description(self, pr: PullRequest) -> str:
         def skip_leading_empty(strs: List[str]) -> List[str]:
             return list(itertools.dropwhile(lambda line: line.strip() == '', strs))
 
@@ -2461,7 +2115,7 @@ class MacheteClient:
     def retarget_pull_request(self, spec: CodeHostingSpec, head: LocalBranchShortName,
                               opt_ignore_if_missing: bool, opt_update_related_descriptions: bool) -> None:
         if self.__code_hosting_client is None:
-            self.__init_code_hosting_client(spec, branch_used_for_tracking_data=head)
+            self._init_code_hosting_client(spec, branch_used_for_tracking_data=head)
 
         pr: Optional[PullRequest] = self.__get_sole_pull_request_for_head(
             head, ignore_if_missing=opt_ignore_if_missing)
@@ -2484,25 +2138,25 @@ class MacheteClient:
         else:
             print(f'{spec.base_branch_name.capitalize()} branch of {pr.display_text()} is already {bold(new_base)}')
 
-        new_description = self.__get_updated_pull_request_description(pr)
+        new_description = self._get_updated_pull_request_description(pr)
         if pr.description != new_description:
             self.code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
             print(f'Description of {pr.display_text()} has been updated')
 
         current_user: Optional[str] = self.code_hosting_client.get_current_user_login()
         anno = self._state.annotations.get(head)
-        self._state.annotations[head] = Annotation(self.__pull_request_annotation(
+        self._state.annotations[head] = Annotation(self._pull_request_annotation(
             spec, pr, current_user), anno.qualifiers if anno else Qualifiers())
         self.save_branch_layout_file()
 
         if opt_update_related_descriptions:
             print(f"Updating descriptions of other {spec.pr_short_name}s...")
-            applicable_prs: List[PullRequest] = self.__get_applicable_pull_requests(related_to=pr_with_original_base) \
-                + self.__get_applicable_pull_requests(related_to=pr)
+            applicable_prs: List[PullRequest] = self._get_applicable_pull_requests(related_to=pr_with_original_base) \
+                + self._get_applicable_pull_requests(related_to=pr)
             applicable_prs = [pr_ for pr_ in applicable_prs if pr_.number != pr.number]
 
             for pr in applicable_prs:
-                new_description = self.__get_updated_pull_request_description(pr)
+                new_description = self._get_updated_pull_request_description(pr)
                 if (pr.description or '').rstrip() != new_description.rstrip():
                     self.code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
                     pr.description = new_description
@@ -2600,9 +2254,9 @@ class MacheteClient:
             f'You can select the {spec.repository_name} by providing some or all of git config keys:\n'
             f'{spec.git_config_keys.for_locating_repo_message()}\n')
 
-    def __init_code_hosting_client(self, spec: CodeHostingSpec,
-                                   branch_used_for_tracking_data: Optional[LocalBranchShortName] = None
-                                   ) -> Tuple[str, OrganizationAndRepositoryAndRemote]:
+    def _init_code_hosting_client(self, spec: CodeHostingSpec,
+                                  branch_used_for_tracking_data: Optional[LocalBranchShortName] = None
+                                  ) -> Tuple[str, OrganizationAndRepositoryAndRemote]:
         if self.__code_hosting_client is not None:
             raise UnexpectedMacheteException("Code hosting client has already been initialized.")
         domain = self.__derive_code_hosting_domain(spec)
@@ -2768,7 +2422,7 @@ class MacheteClient:
             self._git.delete_remote_branch(base_remote_branch)
 
         if not base_branch_found_on_remote:
-            self.__handle_untracked_branch(
+            self._handle_untracked_branch(
                 branch=base,
                 new_remote=base_org_repo_remote.remote,
                 is_called_from_traverse=False,
@@ -2827,7 +2481,7 @@ class MacheteClient:
         if base_branch_found_on_remote or style in (PRDescriptionIntroStyle.FULL, PRDescriptionIntroStyle.FULL_NO_BRANCHES):
             # As the description may include the reference to this PR itself (in case of a chain of >=2 PRs),
             # let's update the PR description after it's already created (so that we know the current PR's number).
-            new_description = self.__get_updated_pull_request_description(pr)
+            new_description = self._get_updated_pull_request_description(pr)
             if new_description.strip() != description.strip():
                 print(f'Updating description of {pr.display_text()} to include '
                       f'the chain of {spec.pr_short_name}s... ', end='', flush=True)
@@ -2861,14 +2515,14 @@ class MacheteClient:
             self.code_hosting_client.add_reviewers_to_pull_request(pr.number, reviewers)
             print(fmt(ok_str))
 
-        self._state.annotations[head] = Annotation(self.__pull_request_annotation(spec, pr, current_user), qualifiers=Qualifiers())
+        self._state.annotations[head] = Annotation(self._pull_request_annotation(spec, pr, current_user), qualifiers=Qualifiers())
         self.save_branch_layout_file()
 
         if opt_update_related_descriptions:
             print(f"Updating descriptions of other {spec.pr_short_name}s...")
             self.update_pull_request_descriptions(spec, related=True)
 
-    def __handle_diverged_and_newer_state(
+    def _handle_diverged_and_newer_state(
             self,
             *,
             current_branch: LocalBranchShortName,
@@ -2877,7 +2531,7 @@ class MacheteClient:
             opt_push_tracked: bool,
             opt_yes: bool
     ) -> None:
-        self.__print_new_line(False)
+        self._print_new_line(False)
         remote_branch = self._git.get_combined_counterpart_for_fetching_of_branch(current_branch)
         assert remote_branch is not None
         choices = get_pretty_choices(*('y', 'N', 'q', 'yq') if is_called_from_traverse else ('y', 'N', 'q'))
@@ -2894,7 +2548,7 @@ class MacheteClient:
         elif ans in ('q', 'quit'):
             raise InteractionStopped
 
-    def __handle_untracked_state(
+    def _handle_untracked_state(
             self,
             *,
             branch: LocalBranchShortName,
@@ -2905,9 +2559,9 @@ class MacheteClient:
             opt_yes: bool
     ) -> None:
         remotes: List[str] = self._git.get_remotes()
-        self.__print_new_line(False)
+        self._print_new_line(False)
         if len(remotes) == 1:
-            self.__handle_untracked_branch(
+            self._handle_untracked_branch(
                 new_remote=remotes[0],
                 branch=branch,
                 is_called_from_traverse=is_called_from_traverse,
@@ -2916,7 +2570,7 @@ class MacheteClient:
                 opt_push_tracked=opt_push_tracked,
                 opt_yes=opt_yes)
         elif "origin" in remotes:
-            self.__handle_untracked_branch(
+            self._handle_untracked_branch(
                 new_remote="origin",
                 branch=branch,
                 is_called_from_traverse=is_called_from_traverse,
@@ -2935,7 +2589,7 @@ class MacheteClient:
                 opt_push_tracked=opt_push_tracked,
                 opt_yes=opt_yes)
 
-    def __handle_ahead_state(
+    def _handle_ahead_state(
             self,
             *,
             current_branch: LocalBranchShortName,
@@ -2944,7 +2598,7 @@ class MacheteClient:
             opt_push_tracked: bool,
             opt_yes: bool
     ) -> None:
-        self.__print_new_line(False)
+        self._print_new_line(False)
         choices = get_pretty_choices(*('y', 'N', 'q', 'yq') if is_called_from_traverse else ('y', 'N', 'q'))
         ans = self.ask_if(
             f"Push {bold(current_branch)} to {bold(remote)}?" + choices,
@@ -2959,8 +2613,8 @@ class MacheteClient:
         elif ans in ('q', 'quit'):
             raise InteractionStopped
 
-    def __handle_diverged_and_older_state(self, branch: LocalBranchShortName, opt_yes: bool) -> None:
-        self.__print_new_line(False)
+    def _handle_diverged_and_older_state(self, branch: LocalBranchShortName, opt_yes: bool) -> None:
+        self._print_new_line(False)
         remote_branch = self._git.get_combined_counterpart_for_fetching_of_branch(branch)
         assert remote_branch is not None
         ans = self.ask_if(
@@ -2976,8 +2630,8 @@ class MacheteClient:
         elif ans in ('q', 'quit'):
             raise InteractionStopped
 
-    def __handle_behind_state(self, branch: LocalBranchShortName, remote: str, opt_yes: bool) -> None:
-        self.__print_new_line(False)
+    def _handle_behind_state(self, branch: LocalBranchShortName, remote: str, opt_yes: bool) -> None:
+        self._print_new_line(False)
         remote_branch = self._git.get_combined_counterpart_for_fetching_of_branch(branch)
         assert remote_branch is not None
         ans = self.ask_if(
@@ -3038,14 +2692,14 @@ class MacheteClient:
             if current_branch not in self.annotations or self.annotations[current_branch].qualifiers.push:
                 if s == SyncToRemoteStatus.AHEAD_OF_REMOTE:
                     assert remote is not None
-                    self.__handle_ahead_state(
+                    self._handle_ahead_state(
                         current_branch=current_branch,
                         remote=remote,
                         is_called_from_traverse=False,
                         opt_push_tracked=True,
                         opt_yes=opt_yes)
                 elif s == SyncToRemoteStatus.UNTRACKED:
-                    self.__handle_untracked_state(
+                    self._handle_untracked_state(
                         branch=current_branch,
                         is_called_from_traverse=False,
                         is_called_from_code_hosting=True,
@@ -3054,7 +2708,7 @@ class MacheteClient:
                         opt_yes=opt_yes)
                 elif s == SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
                     assert remote is not None
-                    self.__handle_diverged_and_newer_state(
+                    self._handle_diverged_and_newer_state(
                         current_branch=current_branch,
                         remote=remote,
                         is_called_from_traverse=False,
@@ -3063,24 +2717,24 @@ class MacheteClient:
                 else:
                     raise UnexpectedMacheteException(f"Invalid sync to remote status: `{s}`.")
 
-                self.__print_new_line(False)
+                self._print_new_line(False)
                 self.status(
                     warn_when_branch_in_sync_but_fork_point_off=True,
                     opt_list_commits=False,
                     opt_list_commits_with_hashes=False,
                     opt_squash_merge_detection=SquashMergeDetection.NONE)
-                self.__print_new_line(False)
+                self._print_new_line(False)
 
         else:
             if s == SyncToRemoteStatus.BEHIND_REMOTE:
                 warn(f"Branch {bold(current_branch)} is behind its remote counterpart. Consider using `git pull`.")
-                self.__print_new_line(False)
+                self._print_new_line(False)
                 ans = self.ask_if(f"Proceed with creating {spec.pr_full_name}?" + get_pretty_choices('y', 'Q'),
                                   f"Proceeding with {spec.pr_full_name} creation...", opt_yes=opt_yes)
             elif s == SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
                 warn(f"Branch {bold(current_branch)} is diverged from and older than its remote counterpart. "
                      "Consider using `git reset --keep`.")
-                self.__print_new_line(False)
+                self._print_new_line(False)
                 ans = self.ask_if(f"Proceed with creating {spec.pr_full_name}?" + get_pretty_choices('y', 'Q'),
                                   f"Proceeding with {spec.pr_full_name} creation...", opt_yes=opt_yes)
             elif s == SyncToRemoteStatus.NO_REMOTES:

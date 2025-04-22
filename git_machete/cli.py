@@ -16,6 +16,7 @@ from git_machete.github import GitHubClient
 from git_machete.gitlab import GitLabClient
 from git_machete.sub.advance import AdvanceMacheteClient
 from git_machete.sub.squash import SquashMacheteClient
+from git_machete.sub.traverse import TraverseMacheteClient
 
 from .client import (MacheteClient, SquashMergeDetection, TraverseReturnTo,
                      TraverseStartFrom)
@@ -957,9 +958,10 @@ def launch(orig_args: List[str]) -> None:
                 cli_opts.opt_squash_merge_detection_string, cli_opts.opt_squash_merge_detection_origin)
             opt_start_from = TraverseStartFrom.from_string(cli_opts.opt_start_from, "`--start-from` flag")
 
-            machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
+            traverse_client = TraverseMacheteClient(git)
+            traverse_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             git.expect_no_operation_in_progress()
-            machete_client.traverse(
+            traverse_client.traverse(
                 opt_fetch=cli_opts.opt_fetch,
                 opt_list_commits=cli_opts.opt_list_commits,
                 opt_merge=cli_opts.opt_merge,
