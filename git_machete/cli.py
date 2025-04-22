@@ -15,6 +15,7 @@ from git_machete import __version__, git_config_keys, utils
 from git_machete.github import GitHubClient
 from git_machete.gitlab import GitLabClient
 from git_machete.sub.advance import AdvanceMacheteClient
+from git_machete.sub.discover import DiscoverMacheteClient
 from git_machete.sub.squash import SquashMacheteClient
 from git_machete.sub.traverse import TraverseMacheteClient
 
@@ -707,8 +708,9 @@ def launch(orig_args: List[str]) -> None:
             diff_branch = get_local_branch_short_name_from_arg(cli_opts.opt_branch) if (cli_opts.opt_branch is not None) else None
             machete_client.display_diff(branch=diff_branch, opt_stat=cli_opts.opt_stat, extra_git_diff_args=pass_through_args)
         elif cmd == "discover":
-            machete_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
-            machete_client.discover_tree(
+            discover_client = DiscoverMacheteClient(git)
+            discover_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
+            discover_client.discover(
                 opt_checked_out_since=cli_opts.opt_checked_out_since,
                 opt_list_commits=cli_opts.opt_list_commits,
                 opt_roots=cli_opts.opt_roots,
