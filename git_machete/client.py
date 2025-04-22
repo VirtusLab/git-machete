@@ -101,6 +101,15 @@ class TraverseStartFrom(ParsableEnum):
     FIRST_ROOT = auto()
 
 
+class MacheteState:
+    def __init__(self) -> None:
+        self.managed_branches: List[LocalBranchShortName] = []
+        self.roots: List[LocalBranchShortName] = []
+        self.up_branch_for: Dict[LocalBranchShortName, LocalBranchShortName] = {}
+        self.down_branches_for: Dict[LocalBranchShortName, List[LocalBranchShortName]] = {}
+        self.annotations: Dict[LocalBranchShortName, Annotation] = {}
+
+
 class MacheteClient:
 
     def __init__(self, git: GitContext) -> None:
@@ -116,16 +125,12 @@ class MacheteClient:
         return os.path.join(machete_file_directory, 'machete')
 
     def __init_state(self) -> None:
-        self.__managed_branches: List[LocalBranchShortName] = []
-        self.__up_branch: Dict[LocalBranchShortName, LocalBranchShortName] = {}
-        self.__down_branches: Dict[LocalBranchShortName, List[LocalBranchShortName]] = {}
+        self.__state = MacheteState()
         self.__indent: Optional[str] = None
-        self.__roots: List[LocalBranchShortName] = []
-        self.__annotations: Dict[LocalBranchShortName, Annotation] = {}
         self.__empty_line_status: Optional[bool] = None
         self.__branch_pairs_by_hash_in_reflog: Optional[Dict[FullCommitHash, List[BranchPair]]] = None
-        self.__all_open_prs: Optional[List[PullRequest]] = None
         self.__code_hosting_client: Optional[CodeHostingClient] = None
+        self.__all_open_prs: Optional[List[PullRequest]] = None
 
     @property
     def code_hosting_spec(self) -> CodeHostingSpec:
@@ -147,17 +152,21 @@ class MacheteClient:
 
     @property
     def managed_branches(self) -> List[LocalBranchShortName]:
-        return self.__managed_branches
+        return self.__state.managed_branches
 
     @property
     def annotations(self) -> Dict[LocalBranchShortName, Annotation]:
-        return self.__annotations
+        return self.__state.annotations
 
     def up_branch_for(self, branch: LocalBranchShortName) -> Optional[LocalBranchShortName]:
-        return self.__up_branch.get(branch)
+        return self.__state.up_branch_for.get(branch)
 
-    def get_childless_managed_branches(self) -> List[LocalBranchShortName]:
-        parent_branches = [parent_branch for parent_branch, child_branches in self.__down_branches.items() if child_branches]
+    def down_branches_for(self, branch: LocalBranchShortName) -> Optional[List[LocalBranchShortName]]:
+        return self.__state.down_branches_for.get(branch)
+
+    @property
+    def childless_managed_branches(self) -> List[LocalBranchShortName]:
+        parent_branches = [parent_branch for parent_branch, child_branches in self.__state.down_branches_for.items() if child_branches]
         return excluding(self.managed_branches, parent_branches)
 
     def expect_in_managed_branches(self, branch: LocalBranchShortName) -> None:
@@ -171,7 +180,7 @@ class MacheteClient:
             raise MacheteException(f"{bold(branch)} is not a local branch")
 
     def expect_at_least_one_managed_branch(self) -> None:
-        if not self.__roots:
+        if not self.__state.roots:
             self.__raise_no_branches_error()
 
     def __raise_no_branches_error(self) -> None:
@@ -203,14 +212,14 @@ class MacheteClient:
                                                                        line.strip().split(" ", 1)]
             branch = branch_and_maybe_annotation[0]
             if len(branch_and_maybe_annotation) > 1:
-                self.__annotations[branch] = Annotation.parse(branch_and_maybe_annotation[1])
+                self.__state.annotations[branch] = Annotation.parse(branch_and_maybe_annotation[1])
             if branch in self.managed_branches:
                 raise MacheteException(
                     f"{self.__branch_layout_file_path}, line {index + 1}: branch "
                     f"{bold(branch)} re-appears in the branch layout. {hint}")
             if verify_branches and branch not in self.__git.get_local_branches():
                 invalid_branches += [branch]
-            self.__managed_branches += [branch]
+            self.__state.managed_branches += [branch]
 
             if prefix:
                 assert self.__indent is not None
@@ -236,13 +245,13 @@ class MacheteClient:
             at_depth[depth] = branch
             if depth:
                 p = at_depth[depth - 1]
-                self.__up_branch[branch] = p
-                if p in self.__down_branches:
-                    self.__down_branches[p] += [branch]
+                self.__state.up_branch_for[branch] = p
+                if p in self.__state.down_branches_for:
+                    self.__state.down_branches_for[p] += [branch]
                 else:
-                    self.__down_branches[p] = [branch]
+                    self.__state.down_branches_for[p] = [branch]
             else:
-                self.__roots += [branch]
+                self.__state.roots += [branch]
 
         if not invalid_branches:
             return
@@ -270,26 +279,26 @@ class MacheteClient:
 
         def recursive_slide_out_invalid_branches(branch_: LocalBranchShortName) -> List[LocalBranchShortName]:
             new_down_branches = flat_map(
-                recursive_slide_out_invalid_branches, self.__down_branches.get(branch_) or [])
+                recursive_slide_out_invalid_branches, self.down_branches_for(branch_) or [])
             if branch_ in invalid_branches:
-                if branch_ in self.__down_branches:
-                    del self.__down_branches[branch_]
-                if branch_ in self.__annotations:
-                    del self.__annotations[branch_]
-                if branch_ in self.__up_branch:
+                if branch_ in self.__state.down_branches_for:
+                    del self.__state.down_branches_for[branch_]
+                if branch_ in self.__state.annotations:
+                    del self.__state.annotations[branch_]
+                if branch_ in self.__state.up_branch_for:
                     for down_branch in new_down_branches:
-                        self.__up_branch[down_branch] = self.__up_branch[branch_]
-                    del self.__up_branch[branch_]
+                        self.__state.up_branch_for[down_branch] = self.__state.up_branch_for[branch_]
+                    del self.__state.up_branch_for[branch_]
                 else:
                     for down_branch in new_down_branches:
-                        del self.__up_branch[down_branch]
+                        del self.__state.up_branch_for[down_branch]
                 return new_down_branches
             else:
-                self.__down_branches[branch_] = new_down_branches
+                self.__state.down_branches_for[branch_] = new_down_branches
                 return [branch_]
 
-        self.__roots = flat_map(recursive_slide_out_invalid_branches, self.__roots)
-        self.__managed_branches = excluding(self.managed_branches, invalid_branches)
+        self.__state.roots = flat_map(recursive_slide_out_invalid_branches, self.__state.roots)
+        self.__state.managed_branches = excluding(self.managed_branches, invalid_branches)
         if ans in ('y', 'yes'):
             self.save_branch_layout_file()
         elif ans in ('e', 'edit'):
@@ -297,29 +306,25 @@ class MacheteClient:
             self.__init_state()
             self.read_branch_layout_file(verify_branches)
 
-    def render_tree(self) -> List[str]:
-        if not self.__indent:
-            self.__indent = "  "
-
+    def render_branch_layout_file(self, indent: str) -> List[str]:
         def render_dfs(branch: LocalBranchShortName, depth: int) -> List[str]:
-            annotation = (" " + self.__annotations[branch].unformatted_full_text) if branch in self.__annotations else ""
-            assert self.__indent is not None
-            res: List[str] = [depth * self.__indent + branch + annotation]
-            for down_branch in self.__down_branches.get(branch) or []:
+            annotation = (" " + self.annotations[branch].unformatted_full_text) if branch in self.annotations else ""
+            res: List[str] = [depth * indent + branch + annotation]
+            for down_branch in self.down_branches_for(branch) or []:
                 res += render_dfs(down_branch, depth + 1)
             return res
 
-        total: List[str] = []
-        for root in self.__roots:
-            total += render_dfs(root, depth=0)
-        return total
+        result: List[str] = []
+        for root in self.__state.roots:
+            result += render_dfs(root, depth=0)
+        return result
 
     def back_up_branch_layout_file(self) -> None:
         shutil.copyfile(self.__branch_layout_file_path, self.__branch_layout_file_path + "~")
 
     def save_branch_layout_file(self) -> None:
         with open(self.__branch_layout_file_path, "w") as file:
-            file.write("\n".join(self.render_tree()) + "\n")
+            file.write("\n".join(self.render_branch_layout_file(indent=self.__indent or "  ")) + "\n")
 
     def add(self,
             *,
@@ -332,8 +337,7 @@ class MacheteClient:
             switch_head_if_new_branch: bool
             ) -> None:
         if branch in self.managed_branches:
-            raise MacheteException(
-                f"Branch {bold(branch)} already exists in the tree of branch dependencies")
+            raise MacheteException(f"Branch {bold(branch)} already exists in the tree of branch dependencies")
 
         if opt_onto:
             self.expect_in_managed_branches(opt_onto)
@@ -364,7 +368,7 @@ class MacheteClient:
                     # assess if the current branch would be a good `onto`.
                     if not opt_onto:
                         current_branch = self.__git.get_current_branch_or_none()
-                        if self.__roots:
+                        if self.__state.roots:
                             if current_branch and current_branch in self.managed_branches:
                                 opt_onto = current_branch
                         else:
@@ -372,8 +376,8 @@ class MacheteClient:
                                 # In this case (empty .git/machete, creating a new branch with `git machete add`)
                                 # it's usually pretty obvious that the current branch needs to be added as root first.
                                 # Let's skip interactive questions so as not to confuse new users.
-                                self.__roots = [current_branch]
-                                self.__managed_branches = [current_branch]
+                                self.__state.roots = [current_branch]
+                                self.__state.managed_branches = [current_branch]
                                 # This section of code is only ever executed in verbose mode, but let's leave the `if` for consistency
                                 if verbose:  # pragma: no branch
                                     print(fmt(f"Added branch {bold(current_branch)} as a new root"))
@@ -382,8 +386,8 @@ class MacheteClient:
                 else:
                     return
 
-        if opt_as_root or not self.__roots:
-            self.__roots += [branch]
+        if opt_as_root or not self.__state.roots:
+            self.__state.roots += [branch]
             if verbose:
                 print(fmt(f"Added branch {bold(branch)} as a new root"))
         else:
@@ -409,31 +413,30 @@ class MacheteClient:
                     else:
                         return
 
-            self.__up_branch[branch] = opt_onto
+            self.__state.up_branch_for[branch] = opt_onto
 
-            existing_down_branches = self.__down_branches[opt_onto] if opt_onto in self.__down_branches else []
+            existing_down_branches = self.__state.down_branches_for[opt_onto] if opt_onto in self.__state.down_branches_for else []
             if opt_as_first_child:
                 down_branches = [branch] + existing_down_branches
             else:
                 down_branches = existing_down_branches + [branch]
-            self.__down_branches[opt_onto] = down_branches
+            self.__state.down_branches_for[opt_onto] = down_branches
             if verbose:
                 print(fmt(f"Added branch {bold(branch)} onto {bold(opt_onto)}"))
 
-        self.__managed_branches += [branch]
+        self.__state.managed_branches += [branch]
         self.save_branch_layout_file()
 
     def annotate(self, branch: LocalBranchShortName, words: List[str]) -> None:
-
-        if branch in self.__annotations and words == ['']:
-            del self.__annotations[branch]
+        if branch in self.__state.annotations and words == ['']:
+            del self.__state.annotations[branch]
         else:
-            self.__annotations[branch] = Annotation.parse(" ".join(words))
+            self.__state.annotations[branch] = Annotation.parse(" ".join(words))
         self.save_branch_layout_file()
 
     def print_annotation(self, branch: LocalBranchShortName) -> None:
-        if branch in self.__annotations:
-            print(self.__annotations[branch].text_without_qualifiers)
+        if branch in self.__state.annotations:
+            print(self.__state.annotations[branch].text_without_qualifiers)
 
     def update(
             self, *, opt_merge: bool, opt_no_edit_merge: bool,
@@ -441,7 +444,7 @@ class MacheteClient:
         current_branch = self.__git.get_current_branch()
         use_merge = opt_merge or (current_branch in self.annotations and self.annotations[current_branch].qualifiers.update_with_merge)
         if use_merge:
-            with_branch = self.up(
+            with_branch = self.get_or_infer_up_branch_for(
                 current_branch,
                 prompt_if_inferred_msg=("Branch <b>%s</b> not found in the tree of branch dependencies. "
                                         "Merge with the inferred upstream <b>%s</b>?" + get_pretty_choices('y', 'N')),
@@ -449,7 +452,7 @@ class MacheteClient:
                                                 "Merging with the inferred upstream <b>%s</b>..."))
             self.__git.merge(with_branch, current_branch, opt_no_edit_merge)
         else:
-            onto_branch = self.up(
+            onto_branch = self.get_or_infer_up_branch_for(
                 current_branch,
                 prompt_if_inferred_msg=("Branch <b>%s</b> not found in the tree of branch dependencies. "
                                         "Rebase onto the inferred upstream <b>%s</b>?" + get_pretty_choices('y', 'N')),
@@ -476,18 +479,18 @@ class MacheteClient:
         for root in opt_roots:
             self.expect_in_local_branches(root)
         if opt_roots:
-            self.__roots = [LocalBranchShortName.of(opt_root) for opt_root in opt_roots]
+            self.__state.roots = [LocalBranchShortName.of(opt_root) for opt_root in opt_roots]
         else:
-            self.__roots = []
+            self.__state.roots = []
             if "master" in self.__git.get_local_branches():
-                self.__roots += [LocalBranchShortName.of("master")]
+                self.__state.roots += [LocalBranchShortName.of("master")]
             elif "main" in self.__git.get_local_branches():
                 # See https://github.com/github/renaming
-                self.__roots += [LocalBranchShortName.of("main")]
+                self.__state.roots += [LocalBranchShortName.of("main")]
             if "develop" in self.__git.get_local_branches():
-                self.__roots += [LocalBranchShortName.of("develop")]
-        self.__down_branches = {}
-        self.__up_branch = {}
+                self.__state.roots += [LocalBranchShortName.of("develop")]
+        self.__state.down_branches_for = {}
+        self.__state.up_branch_for = {}
         self.__indent = "  "
         for branch in self.annotations.keys():
             self.annotations[branch] = self.annotations[branch]._replace(text_without_qualifiers='')
@@ -499,7 +502,7 @@ class MacheteClient:
                 root_of[branch] = get_root_of(root_of[branch])
             return root_of[branch]
 
-        non_root_fixed_branches = excluding(all_local_branches, self.__roots)
+        non_root_fixed_branches = excluding(all_local_branches, self.__state.roots)
         last_checkout_timestamps = self.__git.get_latest_checkout_timestamps()
         non_root_fixed_branches_by_last_checkout_timestamps: List[Tuple[int, LocalBranchShortName]] = sorted(
             (last_checkout_timestamps.get(branch, 0), branch) for branch in non_root_fixed_branches)
@@ -521,7 +524,7 @@ class MacheteClient:
                     f"only branches checked out at or after ca. <b>{threshold_date}</b> are included.\n"
                     "Use `git machete discover --checked-out-since=<date>` (where <date> can be e.g. `'2 weeks ago'` or `2020-06-01`) "
                     "to change this threshold so that less or more branches are included.\n")
-        self.__managed_branches = excluding(all_local_branches, stale_non_root_fixed_branches)
+        self.__state.managed_branches = excluding(all_local_branches, stale_non_root_fixed_branches)
         if opt_checked_out_since and not self.managed_branches:
             warn(
                 "no branches satisfying the criteria. Try moving the value of "
@@ -536,21 +539,21 @@ class MacheteClient:
                                        "cycle in the resulting graph or the candidate is a stale branch"))
             if upstream:
                 debug(f"inferred upstream of {branch} is {upstream}, attaching {branch} as a child of {upstream}")
-                self.__up_branch[branch] = upstream
+                self.__state.up_branch_for[branch] = upstream
                 root_of[branch] = upstream
-                if upstream in self.__down_branches:
-                    self.__down_branches[upstream] += [branch]
+                if upstream in self.__state.down_branches_for:
+                    self.__state.down_branches_for[upstream] += [branch]
                 else:
-                    self.__down_branches[upstream] = [branch]
+                    self.__state.down_branches_for[upstream] = [branch]
             else:
                 debug(f"inferred no upstream for {branch}, attaching {branch} as a new root")
-                self.__roots += [branch]
+                self.__state.roots += [branch]
 
         # Let's remove merged branches for which no downstream branch have been found.
         merged_branches_to_skip = []
         for branch in self.managed_branches:
-            upstream = self.__up_branch.get(branch)
-            if upstream and not self.__down_branches.get(branch):
+            upstream = self.up_branch_for(branch)
+            if upstream and not self.down_branches_for(branch):
                 if self.is_merged_to(
                         branch=branch,
                         upstream=upstream,
@@ -565,11 +568,11 @@ class MacheteClient:
                 "have any downstream branches.\n"
                 % (", ".join(bold(branch) for branch in merged_branches_to_skip),
                    "it's" if len(merged_branches_to_skip) == 1 else "they're"))
-            self.__managed_branches = excluding(self.managed_branches, merged_branches_to_skip)
+            self.__state.managed_branches = excluding(self.managed_branches, merged_branches_to_skip)
             for branch in merged_branches_to_skip:
-                upstream = self.__up_branch[branch]
-                self.__down_branches[upstream] = excluding(self.__down_branches[upstream], [branch])
-                del self.__up_branch[branch]
+                upstream = self.__state.up_branch_for[branch]
+                self.__state.down_branches_for[upstream] = excluding(self.__state.down_branches_for[upstream], [branch])
+                del self.__state.up_branch_for[branch]
             # We're NOT applying the removal process recursively,
             # so it's theoretically possible that some merged branches became childless
             # after removing the outer layer of childless merged branches.
@@ -615,13 +618,13 @@ class MacheteClient:
             if anno and not anno.qualifiers.slide_out:
                 raise MacheteException(f"Branch {bold(branch)} is annotated with `slide-out=no` qualifier, aborting.\n"
                                        f"Remove the qualifier using `git machete anno` or edit branch layout file directly.")
-            new_upstream = self.__up_branch.get(branch)
+            new_upstream = self.up_branch_for(branch)
             if not new_upstream:
                 raise MacheteException(f"No upstream branch defined for {bold(branch)}, cannot slide out")
 
         if opt_down_fork_point:
             last_branch_to_slide_out = branches_to_slide_out[-1]
-            children_of_the_last_branch_to_slide_out = self.__down_branches.get(last_branch_to_slide_out)
+            children_of_the_last_branch_to_slide_out = self.down_branches_for(last_branch_to_slide_out)
 
             if children_of_the_last_branch_to_slide_out and len(children_of_the_last_branch_to_slide_out) > 1:
                 raise MacheteException("Last branch to slide out can't have more than one child branch "
@@ -637,7 +640,7 @@ class MacheteClient:
 
         # Verify that all "interior" slide-out branches have a single downstream pointing to the next slide-out
         for bu, bd in zip(branches_to_slide_out[:-1], branches_to_slide_out[1:]):
-            dbs = self.__down_branches.get(bu)
+            dbs = self.down_branches_for(bu)
             if not dbs or len(dbs) == 0:
                 raise MacheteException(f"No downstream branch defined for {bold(bu)}, cannot slide out")
             elif len(dbs) > 1:
@@ -648,25 +651,25 @@ class MacheteClient:
                 raise MacheteException(f"{bold(bd)} is not downstream of {bold(bu)}, cannot slide out")
 
         # Get new branches
-        new_upstream = self.__up_branch[branches_to_slide_out[0]]
-        new_downstreams = self.__down_branches.get(branches_to_slide_out[-1]) or []
+        new_upstream = self.__state.up_branch_for[branches_to_slide_out[0]]
+        new_downstreams = self.down_branches_for(branches_to_slide_out[-1]) or []
 
         # Remove the slid-out branches from the tree
         for branch in branches_to_slide_out:
-            del self.__up_branch[branch]
-            if branch in self.__down_branches:
-                del self.__down_branches[branch]
+            del self.__state.up_branch_for[branch]
+            if branch in self.__state.down_branches_for:
+                del self.__state.down_branches_for[branch]
             self.managed_branches.remove(branch)
 
         assert new_upstream is not None
-        self.__down_branches[new_upstream] = [
-            branch for branch in (self.__down_branches.get(new_upstream) or [])
+        self.__state.down_branches_for[new_upstream] = [
+            branch for branch in (self.down_branches_for(new_upstream) or [])
             if branch != branches_to_slide_out[0]]
 
         # Reconnect the downstreams to the new upstream in the tree
         for new_downstream in new_downstreams:
-            self.__up_branch[new_downstream] = new_upstream
-            self.__down_branches[new_upstream] += [new_downstream]
+            self.__state.up_branch_for[new_downstream] = new_upstream
+            self.__state.down_branches_for[new_upstream] += [new_downstream]
 
         # Update definition, fire post-hook, and perform the branch update
         self.save_branch_layout_file()
@@ -696,7 +699,7 @@ class MacheteClient:
                                    opt_squash_merge_detection=SquashMergeDetection.NONE, opt_yes=False)
 
     def advance(self, *, branch: LocalBranchShortName, opt_yes: bool) -> None:
-        down_branches = self.__down_branches.get(branch)
+        down_branches = self.down_branches_for(branch)
         if not down_branches:
             raise MacheteException(
                 f"{bold(branch)} does not have any downstream (child) branches to advance towards")
@@ -757,12 +760,12 @@ class MacheteClient:
                                      "of the tree of branch dependencies...")
             ans = self.ask_if(slide_out_msg, slide_out_opt_yes_msg, opt_yes=opt_yes)
             if ans in ('y', 'yes'):
-                dds = self.__down_branches.get(LocalBranchShortName.of(down_branch)) or []
+                dds = self.down_branches_for(LocalBranchShortName.of(down_branch)) or []
                 for dd in dds:
-                    self.__up_branch[dd] = branch
-                self.__down_branches[branch] = flat_map(
+                    self.__state.up_branch_for[dd] = branch
+                self.__state.down_branches_for[branch] = flat_map(
                     lambda bd: dds if bd == down_branch else [bd],
-                    self.__down_branches.get(branch) or [])
+                    self.down_branches_for(branch) or [])
                 self.save_branch_layout_file()
                 self.__run_post_slide_out_hook(branch, down_branch, dds)
 
@@ -810,7 +813,7 @@ class MacheteClient:
         initial_branch = nearest_remaining_branch = self.__git.get_current_branch()
 
         if opt_start_from == TraverseStartFrom.ROOT:
-            dest = self.root_branch(self.__git.get_current_branch(), if_unmanaged=PickRoot.FIRST)
+            dest = self.root_branch_for(self.__git.get_current_branch(), if_unmanaged=PickRoot.FIRST)
             self.__print_new_line(False)
             print(f"Checking out the root branch ({bold(dest)})")
             self.__git.checkout(dest)
@@ -828,7 +831,7 @@ class MacheteClient:
 
         branch: LocalBranchShortName
         for branch in itertools.dropwhile(lambda x: x != current_branch, self.managed_branches.copy()):
-            upstream = self.__up_branch.get(branch)
+            upstream = self.up_branch_for(branch)
 
             needs_slide_out: bool = self.__is_merged_to_upstream(
                 branch, opt_squash_merge_detection=opt_squash_merge_detection)
@@ -911,19 +914,19 @@ class MacheteClient:
                                        f"Sliding {bold(branch)} out of the tree of branch dependencies...",
                                        opt_yes=opt_yes)
                 if ans in ('y', 'yes', 'yq'):
-                    dbb = self.__down_branches.get(branch) or []
+                    dbb = self.down_branches_for(branch) or []
                     if nearest_remaining_branch == branch:
                         if dbb:
                             nearest_remaining_branch = dbb[0]
                         else:
                             nearest_remaining_branch = upstream
                     for down_branch in dbb:
-                        self.__up_branch[down_branch] = upstream
-                    self.__down_branches[upstream] = flat_map(
+                        self.__state.up_branch_for[down_branch] = upstream
+                    self.__state.down_branches_for[upstream] = flat_map(
                         lambda ud: dbb if ud == branch else [ud],
-                        self.__down_branches[upstream] or [])
-                    if branch in self.__annotations:
-                        del self.__annotations[branch]
+                        self.__state.down_branches_for[upstream] or [])
+                    if branch in self.__state.annotations:
+                        del self.__state.annotations[branch]
                     self.save_branch_layout_file()
                     self.__run_post_slide_out_hook(upstream, branch, dbb)
                     if ans == 'yq':
@@ -1027,9 +1030,9 @@ class MacheteClient:
                     print(f'{spec.base_branch_name.capitalize()} branch of {pr.display_text()} has been switched to {bold(str(upstream))}')
                     pr.base = upstream
 
-                    anno = self.__annotations.get(branch)
-                    self.__annotations[branch] = Annotation(self.__pull_request_annotation(spec, pr, current_user),
-                                                            anno.qualifiers if anno else Qualifiers())
+                    anno = self.__state.annotations.get(branch)
+                    self.__state.annotations[branch] = Annotation(self.__pull_request_annotation(spec, pr, current_user),
+                                                                  anno.qualifiers if anno else Qualifiers())
                     self.save_branch_layout_file()
 
                     new_description = self.__get_updated_pull_request_description(pr)
@@ -1106,7 +1109,7 @@ class MacheteClient:
         else:
             msg = f"No successor of {bold(current_branch)} needs to be slid out or synced with upstream branch or remote"
         print(f"{msg}; nothing left to update")
-        if not any_action_suggested and initial_branch not in self.__roots:
+        if not any_action_suggested and initial_branch not in self.__state.roots:
             print(fmt("Tip: `traverse` by default starts from the current branch, "
                       "use flags (`--start-from=`, `--whole` or `-w`, `-W`) to change this behavior.\n"
                       "Further info under `git machete traverse --help`."))
@@ -1130,13 +1133,13 @@ class MacheteClient:
 
         def prefix_dfs(parent: LocalBranchShortName, accumulated_path_: List[Optional[LocalBranchShortName]]) -> None:
             next_sibling_of_ancestor_by_branch[parent] = accumulated_path_
-            children = self.__down_branches.get(parent)
+            children = self.down_branches_for(parent)
             if children:
                 shifted_children: List[Optional[LocalBranchShortName]] = children[1:]  # type: ignore[assignment]
                 for (v, nv) in zip(children, shifted_children + [None]):
                     prefix_dfs(v, accumulated_path_ + [nv])
 
-        for root in self.__roots:
+        for root in self.__state.roots:
             prefix_dfs(root, accumulated_path_=[])
 
         out = io.StringIO()
@@ -1158,8 +1161,8 @@ class MacheteClient:
         # Edge colors need to be precomputed
         # in order to render the leading parts of lines properly.
         branch: LocalBranchShortName
-        for branch in self.__up_branch:
-            parent_branch = self.__up_branch[branch]
+        for branch in self.__state.up_branch_for:
+            parent_branch = self.__state.up_branch_for[branch]
             assert parent_branch is not None
             if self.is_merged_to(
                     branch=branch,
@@ -1195,7 +1198,7 @@ class MacheteClient:
 
         next_sibling_of_ancestor: List[Optional[LocalBranchShortName]]
         for branch, next_sibling_of_ancestor in next_sibling_of_ancestor_by_branch.items():
-            if branch in self.__up_branch:
+            if branch in self.__state.up_branch_for:
                 print_line_prefix(branch, f"{utils.get_vertical_bar()}\n")
                 if opt_list_commits:
                     fork_point = fork_point_hash(branch)
@@ -1205,7 +1208,7 @@ class MacheteClient:
                     elif sync_to_parent_status[branch] == SyncToParentStatus.MERGED_TO_PARENT:
                         commits = []
                     elif sync_to_parent_status[branch] == SyncToParentStatus.IN_SYNC_BUT_FORK_POINT_OFF:
-                        upstream = self.__up_branch[branch]
+                        upstream = self.__state.up_branch_for[branch]
                         assert upstream is not None
                         commits = self.__git.get_commits_between(upstream.full_name(), branch.full_name())
                     else:  # (SyncToParentStatus.OutOfSync, SyncToParentStatus.InSync):
@@ -1244,7 +1247,7 @@ class MacheteClient:
                         junction = "└─"
                 print_line_prefix(branch, junction + maybe_space_before_branch_name)
             else:
-                if branch != self.__roots[0]:
+                if branch != self.__state.roots[0]:
                     out.write("\n")
                 out.write("  " + maybe_space_before_branch_name)
 
@@ -1267,8 +1270,8 @@ class MacheteClient:
                 current = bold(branch)
 
             anno: str = ''
-            if branch in self.__annotations and self.__annotations[branch].formatted_full_text:
-                anno = '  ' + self.__annotations[branch].formatted_full_text
+            if branch in self.__state.annotations and self.__state.annotations[branch].formatted_full_text:
+                anno = '  ' + self.__state.annotations[branch].formatted_full_text
 
             s, remote = self.__git.get_combined_remote_sync_status(branch)
             sync_status = {
@@ -1312,7 +1315,7 @@ class MacheteClient:
             if len(branches_in_sync_but_fork_point_off) == 1:
                 first_part = (f"yellow edge indicates that fork point for {bold(str(yellow_edge_branch))} "
                               f"is probably incorrectly inferred,\nor that some extra branch should be between "
-                              f"{bold(str(self.__up_branch[yellow_edge_branch]))} and {bold(str(yellow_edge_branch))}")
+                              f"{bold(str(self.__state.up_branch_for[yellow_edge_branch]))} and {bold(str(yellow_edge_branch))}")
             else:
                 affected_branches = ", ".join(map(bold, branches_in_sync_but_fork_point_off))
                 first_part = f"yellow edges indicate that fork points for {affected_branches} are probably incorrectly inferred,\n" \
@@ -1474,7 +1477,7 @@ class MacheteClient:
                                                  branch: LocalBranchShortName,
                                                  use_overrides: bool
                                                  ) -> Tuple[FullCommitHash, List[BranchPair]]:
-        upstream = self.__up_branch.get(branch)
+        upstream = self.up_branch_for(branch)
         upstream_hash = self.__git.get_commit_hash_by_revision(upstream) if upstream else None
 
         if use_overrides:
@@ -1586,7 +1589,7 @@ class MacheteClient:
 
     def down(self, branch: LocalBranchShortName, pick_mode: bool) -> List[LocalBranchShortName]:
         self.expect_in_managed_branches(branch)
-        dbs = self.__down_branches.get(branch)
+        dbs = self.down_branches_for(branch)
         if not dbs:
             raise MacheteException(f"Branch {bold(branch)} has no downstream branch")
         elif len(dbs) == 1:
@@ -1596,56 +1599,58 @@ class MacheteClient:
         else:
             return dbs
 
-    def first_branch(self, branch: LocalBranchShortName) -> LocalBranchShortName:
-        root = self.root_branch(branch, if_unmanaged=PickRoot.FIRST)
-        root_dbs = self.__down_branches.get(root)
+    def first_branch_for(self, branch: LocalBranchShortName) -> LocalBranchShortName:
+        root = self.root_branch_for(branch, if_unmanaged=PickRoot.FIRST)
+        root_dbs = self.down_branches_for(root)
         return root_dbs[0] if root_dbs else root
 
-    def last_branch(self, branch: LocalBranchShortName) -> LocalBranchShortName:
-        destination = self.root_branch(branch, if_unmanaged=PickRoot.LAST)
-        while self.__down_branches.get(destination):
-            destination = self.__down_branches[destination][-1]
+    def last_branch_for(self, branch: LocalBranchShortName) -> LocalBranchShortName:
+        destination = self.root_branch_for(branch, if_unmanaged=PickRoot.LAST)
+        while self.down_branches_for(destination):
+            destination = self.__state.down_branches_for[destination][-1]
         return destination
 
-    def next_branch(self, branch: LocalBranchShortName) -> LocalBranchShortName:
+    def next_branch_for(self, branch: LocalBranchShortName) -> LocalBranchShortName:
         self.expect_in_managed_branches(branch)
         index: int = self.managed_branches.index(branch) + 1
         if index == len(self.managed_branches):
             raise MacheteException(f"Branch {bold(branch)} has no successor")
         return self.managed_branches[index]
 
-    def prev_branch(self, branch: LocalBranchShortName) -> LocalBranchShortName:
+    def prev_branch_for(self, branch: LocalBranchShortName) -> LocalBranchShortName:
         self.expect_in_managed_branches(branch)
         index: int = self.managed_branches.index(branch) - 1
         if index == -1:
             raise MacheteException(f"Branch {bold(branch)} has no predecessor")
         return self.managed_branches[index]
 
-    def root_branch(self, branch: LocalBranchShortName, if_unmanaged: PickRoot) -> LocalBranchShortName:
+    def root_branch_for(self, branch: LocalBranchShortName, if_unmanaged: PickRoot) -> LocalBranchShortName:
         if branch not in self.managed_branches:
-            if self.__roots:
+            if self.__state.roots:
                 if if_unmanaged == PickRoot.FIRST:
                     warn(
                         f"{bold(branch)} is not a managed branch, assuming "
-                        f"{self.__roots[0]} (the first root) instead as root")
-                    return self.__roots[0]
+                        f"{self.__state.roots[0]} (the first root) instead as root")
+                    return self.__state.roots[0]
                 else:  # if_unmanaged == PickRoot.LAST
                     warn(
                         f"{bold(branch)} is not a managed branch, assuming "
-                        f"{self.__roots[-1]} (the last root) instead as root")
-                    return self.__roots[-1]
+                        f"{self.__state.roots[-1]} (the last root) instead as root")
+                    return self.__state.roots[-1]
             else:
                 self.__raise_no_branches_error()
-        upstream = self.__up_branch.get(branch)
+        upstream = self.up_branch_for(branch)
         while upstream:
             branch = upstream
-            upstream = self.__up_branch.get(branch)
+            upstream = self.up_branch_for(branch)
         return branch
 
-    def up(self, branch: LocalBranchShortName, prompt_if_inferred_msg: Optional[str],
-           prompt_if_inferred_yes_opt_msg: Optional[str]) -> LocalBranchShortName:
+    def get_or_infer_up_branch_for(self,
+                                   branch: LocalBranchShortName,
+                                   prompt_if_inferred_msg: Optional[str],
+                                   prompt_if_inferred_yes_opt_msg: Optional[str]) -> LocalBranchShortName:
         if branch in self.managed_branches:
-            upstream = self.__up_branch.get(branch)
+            upstream = self.up_branch_for(branch)
             if upstream:
                 return upstream
             else:
@@ -1671,19 +1676,20 @@ class MacheteClient:
                     f"Branch {bold(branch)} not found in the tree of branch "
                     f"dependencies and its upstream could not be inferred")
 
-    def get_slidable_branches(self) -> List[LocalBranchShortName]:
-        return [branch for branch in self.managed_branches if branch in self.__up_branch]
+    @property
+    def slidable_branches(self) -> List[LocalBranchShortName]:
+        return [branch for branch in self.managed_branches if branch in self.__state.up_branch_for]
 
     def get_slidable_after(self, branch: LocalBranchShortName) -> List[LocalBranchShortName]:
-        if branch in self.__up_branch:
-            dbs = self.__down_branches.get(branch)
+        if branch in self.__state.up_branch_for:
+            dbs = self.down_branches_for(branch)
             if dbs and len(dbs) == 1:
                 return dbs
         return []
 
     def __is_merged_to_upstream(
             self, branch: LocalBranchShortName, *, opt_squash_merge_detection: SquashMergeDetection) -> bool:
-        upstream = self.__up_branch.get(branch)
+        upstream = self.up_branch_for(branch)
         if not upstream:
             return False
         return self.is_merged_to(branch, upstream, opt_squash_merge_detection=opt_squash_merge_detection)
@@ -1817,7 +1823,7 @@ class MacheteClient:
             if LocalBranchShortName.of(pr.head) in self.managed_branches:
                 debug(f'{pr} corresponds to a managed branch')
                 anno: str = self.__pull_request_annotation(spec, pr, current_user, include_urls)
-                upstream: Optional[LocalBranchShortName] = self.__up_branch.get(LocalBranchShortName.of(pr.head))
+                upstream: Optional[LocalBranchShortName] = self.up_branch_for(LocalBranchShortName.of(pr.head))
                 if upstream is not None:
                     counterpart = self.__git.get_combined_counterpart_for_fetching_of_branch(upstream)
                 else:
@@ -1831,19 +1837,19 @@ class MacheteClient:
                              f"{spec.pr_short_name} has {pr.base}")
                 old_annotation_text = ''
                 old_annotation_qualifiers = Qualifiers()
-                if LocalBranchShortName.of(pr.head) in self.__annotations:
-                    old_annotation = self.__annotations[LocalBranchShortName.of(pr.head)]
+                if LocalBranchShortName.of(pr.head) in self.__state.annotations:
+                    old_annotation = self.__state.annotations[LocalBranchShortName.of(pr.head)]
                     old_annotation_text = old_annotation.text_without_qualifiers
                     old_annotation_qualifiers = old_annotation.qualifiers
 
                 if pr.user != current_user and old_annotation_qualifiers.is_default():
                     if verbose:
                         print(fmt(f'Annotating {bold(pr.head)} as `{anno} rebase=no push=no`'))
-                    self.__annotations[LocalBranchShortName.of(pr.head)] = Annotation(anno, Qualifiers(rebase=False, push=False))
+                    self.__state.annotations[LocalBranchShortName.of(pr.head)] = Annotation(anno, Qualifiers(rebase=False, push=False))
                 elif old_annotation_text != anno:
                     if verbose:
                         print(fmt(f'Annotating {bold(pr.head)} as `{anno}`'))
-                    self.__annotations[LocalBranchShortName.of(pr.head)] = Annotation(anno, old_annotation_qualifiers)
+                    self.__state.annotations[LocalBranchShortName.of(pr.head)] = Annotation(anno, old_annotation_qualifiers)
             else:
                 debug(f'{pr} does NOT correspond to a managed branch')
         self.save_branch_layout_file()
@@ -1860,17 +1866,17 @@ class MacheteClient:
         elif param in ("d", "down"):
             return self.down(branch, pick_mode=down_pick_mode)
         elif param in ("f", "first"):
-            return [self.first_branch(branch)]
+            return [self.first_branch_for(branch)]
         elif param in ("l", "last"):
-            return [self.last_branch(branch)]
+            return [self.last_branch_for(branch)]
         elif param in ("n", "next"):
-            return [self.next_branch(branch)]
+            return [self.next_branch_for(branch)]
         elif param in ("p", "prev"):
-            return [self.prev_branch(branch)]
+            return [self.prev_branch_for(branch)]
         elif param in ("r", "root"):
-            return [self.root_branch(branch, if_unmanaged=PickRoot.FIRST)]
+            return [self.root_branch_for(branch, if_unmanaged=PickRoot.FIRST)]
         elif param in ("u", "up"):
-            return [self.up(branch, prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)]
+            return [self.get_or_infer_up_branch_for(branch, prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)]
         else:  # an unknown direction is handled by argparse
             raise UnexpectedMacheteException(f"Invalid direction: `{param}`.")
 
@@ -2584,7 +2590,7 @@ class MacheteClient:
         if pr is None:
             return
 
-        new_base: Optional[LocalBranchShortName] = self.__up_branch.get(LocalBranchShortName.of(head))
+        new_base: Optional[LocalBranchShortName] = self.up_branch_for(LocalBranchShortName.of(head))
         if not new_base:
             raise MacheteException(
                 f'Branch {bold(head)} does not have a parent branch (it is a root) '
@@ -2606,8 +2612,8 @@ class MacheteClient:
             print(f'Description of {pr.display_text()} has been updated')
 
         current_user: Optional[str] = self.code_hosting_client.get_current_user_login()
-        anno = self.__annotations.get(head)
-        self.__annotations[head] = Annotation(self.__pull_request_annotation(
+        anno = self.__state.annotations.get(head)
+        self.__state.annotations[head] = Annotation(self.__pull_request_annotation(
             spec, pr, current_user), anno.qualifiers if anno else Qualifiers())
         self.save_branch_layout_file()
 
@@ -2847,7 +2853,7 @@ class MacheteClient:
         except InteractionStopped:
             return
 
-        base: Optional[LocalBranchShortName] = self.__up_branch.get(LocalBranchShortName.of(head))
+        base: Optional[LocalBranchShortName] = self.up_branch_for(LocalBranchShortName.of(head))
         if not base:
             raise UnexpectedMacheteException(f'Could not determine {spec.base_branch_name} branch for {spec.pr_short_name}. '
                                              f'Branch {bold(head)} is a root branch.')
@@ -2977,7 +2983,7 @@ class MacheteClient:
             self.code_hosting_client.add_reviewers_to_pull_request(pr.number, reviewers)
             print(fmt(ok_str))
 
-        self.__annotations[head] = Annotation(self.__pull_request_annotation(spec, pr, current_user), qualifiers=Qualifiers())
+        self.__state.annotations[head] = Annotation(self.__pull_request_annotation(spec, pr, current_user), qualifiers=Qualifiers())
         self.save_branch_layout_file()
 
         if opt_update_related_descriptions:
@@ -3134,7 +3140,7 @@ class MacheteClient:
                     "`discover` or `edit` or agree on adding the branch to the "
                     f"branch layout file during the execution of `{subcommand}` subcommand.")
 
-        up_branch: Optional[LocalBranchShortName] = self.__up_branch.get(current_branch)
+        up_branch: Optional[LocalBranchShortName] = self.up_branch_for(current_branch)
         if not up_branch:
             raise MacheteException(
                 f'Branch {bold(current_branch)} does not have a parent branch (it is a root), '
@@ -3214,7 +3220,7 @@ class MacheteClient:
         branches_to_delete: List[LocalBranchShortName] = []
         for branch in self.managed_branches.copy():
             status, _ = self.__git.get_combined_remote_sync_status(branch)
-            if status == SyncToRemoteStatus.UNTRACKED and not self.__down_branches.get(branch):
+            if status == SyncToRemoteStatus.UNTRACKED and not self.down_branches_for(branch):
                 branches_to_delete.append(branch)
 
         self.__remove_branches_from_layout(branches_to_delete)
@@ -3223,7 +3229,7 @@ class MacheteClient:
     def slide_out_removed_from_remote(self, opt_delete: bool) -> None:
         slid_out_branches: List[LocalBranchShortName] = []
         for branch in self.managed_branches.copy():
-            if self.__git.is_removed_from_remote(branch) and not self.__down_branches.get(branch):
+            if self.__git.is_removed_from_remote(branch) and not self.down_branches_for(branch):
                 print(fmt(f"Sliding out <b>{branch}</b>"))
                 slid_out_branches.append(branch)
 
@@ -3234,16 +3240,16 @@ class MacheteClient:
     def __remove_branches_from_layout(self, branches_to_delete: List[LocalBranchShortName]) -> None:
         for branch in branches_to_delete:
             self.managed_branches.remove(branch)
-            if branch in self.__annotations:
-                del self.__annotations[branch]
-            if branch in self.__up_branch:
-                upstream = self.__up_branch[branch]
-                del self.__up_branch[branch]
-                self.__down_branches[upstream] = [
-                    b for b in (self.__down_branches.get(upstream) or []) if b != branch
+            if branch in self.__state.annotations:
+                del self.__state.annotations[branch]
+            if branch in self.__state.up_branch_for:
+                upstream = self.__state.up_branch_for[branch]
+                del self.__state.up_branch_for[branch]
+                self.__state.down_branches_for[upstream] = [
+                    b for b in (self.down_branches_for(upstream) or []) if b != branch
                 ]
             else:
-                self.__roots.remove(branch)
+                self.__state.roots.remove(branch)
 
         self.save_branch_layout_file()
 

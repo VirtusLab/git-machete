@@ -854,11 +854,11 @@ def launch(orig_args: List[str]) -> None:
                 res = excluding(git.get_local_branches(), machete_client.managed_branches) + [
                     strip_remote_name(branch) for branch in qualifying_remote_branches]
             elif category == "childless":
-                res = machete_client.get_childless_managed_branches()
+                res = machete_client.childless_managed_branches
             elif category == "managed":
                 res = machete_client.managed_branches
             elif category == "slidable":
-                res = machete_client.get_slidable_branches()
+                res = machete_client.slidable_branches
             elif category == "slidable-after":
                 machete_client.expect_in_managed_branches(parsed_cli.branch)
                 res = machete_client.get_slidable_after(parsed_cli.branch)
