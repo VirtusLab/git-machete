@@ -435,7 +435,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
 def update_cli_options_using_parsed_args(
         cli_opts: git_machete.options.CommandLineOptions,
         parsed_args: argparse.Namespace) -> None:
-    # Warning: In mypy, Arguments that come from untyped functions/variables are silently treated by mypy as Any.
+    # Warning: in mypy, arguments that come from untyped functions/variables are silently treated by mypy as Any.
     # Since argparse is not typed, everything that comes from argparse.Namespace will be taken as Any :(
     # Even if we add type=LocalBranchShortName into argument parser for branch,
     # python debugger will see branch as LocalBranchShortName but mypy always will see it as Any,
@@ -649,10 +649,9 @@ def launch(orig_args: List[str]) -> None:
             version()
             return
 
-        should_perform_interactive_slide_out = MacheteClient.should_perform_interactive_slide_out(cmd)
         if cmd == "add":
             add_client = MacheteClient(git)
-            add_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
+            add_client.read_branch_layout_file()
             branch = get_local_branch_short_name_from_arg_or_current_branch(cli_opts.opt_branch, git)
             add_client.add(
                 branch=branch,
@@ -664,12 +663,11 @@ def launch(orig_args: List[str]) -> None:
                 switch_head_if_new_branch=True)
         elif cmd == "advance":
             advance_client = AdvanceMacheteClient(git)
-            advance_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
+            advance_client.read_branch_layout_file()
             advance_client.advance(opt_yes=cli_opts.opt_yes)
         elif cmd == "anno":
             anno_client = AnnoMacheteClient(git)
-            anno_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out,
-                                                verify_branches=False)
+            anno_client.read_branch_layout_file(verify_branches=False)
             if cli_opts.opt_sync_github_prs:
                 anno_client.sync_annotations_to_prs(GitHubClient.spec(), include_urls=False)
             elif cli_opts.opt_sync_gitlab_mrs:
@@ -683,25 +681,25 @@ def launch(orig_args: List[str]) -> None:
                     anno_client.print_annotation(branch)
         elif cmd == "clean":
             clean_client = MacheteClientWithCodeHosting(git)
-            clean_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
+            clean_client.read_branch_layout_file()
             if 'checkout_my_github_prs' in parsed_cli:
                 clean_client.checkout_pull_requests(GitHubClient.spec(), pr_numbers=[], mine=True)
             clean_client.delete_unmanaged(opt_squash_merge_detection=SquashMergeDetection.NONE, opt_yes=cli_opts.opt_yes)
             clean_client.delete_untracked(opt_yes=cli_opts.opt_yes)
         elif cmd == "delete-unmanaged":
             delete_unmanaged_client = MacheteClient(git)
-            delete_unmanaged_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
+            delete_unmanaged_client.read_branch_layout_file()
             opt_squash_merge_detection = SquashMergeDetection.from_string(
                 cli_opts.opt_squash_merge_detection_string, cli_opts.opt_squash_merge_detection_origin)
             delete_unmanaged_client.delete_unmanaged(opt_squash_merge_detection=opt_squash_merge_detection, opt_yes=cli_opts.opt_yes)
         elif cmd in {"diff", alias_by_command["diff"]}:
             diff_client = DiffMacheteClient(git)
-            diff_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
+            diff_client.read_branch_layout_file()
             diff_branch = get_local_branch_short_name_from_arg(cli_opts.opt_branch) if (cli_opts.opt_branch is not None) else None
             diff_client.display_diff(branch=diff_branch, opt_stat=cli_opts.opt_stat, extra_git_diff_args=pass_through_args)
         elif cmd == "discover":
             discover_client = DiscoverMacheteClient(git)
-            discover_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
+            discover_client.read_branch_layout_file()
             discover_client.discover(
                 opt_checked_out_since=cli_opts.opt_checked_out_since,
                 opt_list_commits=cli_opts.opt_list_commits,
@@ -717,7 +715,7 @@ def launch(orig_args: List[str]) -> None:
             print(os.path.abspath(file_client.branch_layout_file_path))
         elif cmd == "fork-point":
             fork_point_client = ForkPointMacheteClient(git)
-            fork_point_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
+            fork_point_client.read_branch_layout_file()
             branch = get_local_branch_short_name_from_arg_or_current_branch(cli_opts.opt_branch, git)
             fork_point_client.expect_in_local_branches(branch)
             if cli_opts.opt_inferred:
@@ -740,7 +738,7 @@ def launch(orig_args: List[str]) -> None:
                 print(fork_point_client.fork_point(branch=branch, use_overrides=True))
         elif cmd in {"go", alias_by_command["go"]}:
             go_client = GoShowMacheteClient(git)
-            go_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
+            go_client.read_branch_layout_file()
             git.expect_no_operation_in_progress()
             current_branch = git.get_current_branch()
             dest = go_client.parse_direction(parsed_cli.direction, current_branch, allow_current=False, down_pick_mode=True)[0]
@@ -753,7 +751,7 @@ def launch(orig_args: List[str]) -> None:
             pr_or_mr = spec.pr_short_name.lower()
 
             github_or_gitlab_client = MacheteClientWithCodeHosting(git)
-            github_or_gitlab_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
+            github_or_gitlab_client.read_branch_layout_file()
 
             if "request_id" in parsed_cli and subcommand != f"checkout-{pr_or_mr}s":
                 raise MacheteException(f"{spec.pr_short_name} number is only valid with `checkout-{pr_or_mr}s` subcommand.")
@@ -833,7 +831,7 @@ def launch(orig_args: List[str]) -> None:
                 raise UnexpectedMacheteException(f"Unknown subcommand: `{subcommand}`")
         elif cmd == "is-managed":
             is_managed_client = MacheteClient(git)
-            is_managed_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
+            is_managed_client.read_branch_layout_file()
             branch = get_local_branch_short_name_from_arg_or_current_branch(cli_opts.opt_branch, git)
             if branch is None or branch not in is_managed_client.managed_branches:
                 sys.exit(ExitCode.MACHETE_EXCEPTION)
@@ -845,7 +843,7 @@ def launch(orig_args: List[str]) -> None:
             elif category != 'slidable-after' and 'branch' in parsed_cli:
                 raise MacheteException(f"`git machete list {category}` does not expect extra arguments")
 
-            list_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
+            list_client.read_branch_layout_file()
             res = []
             if category == "addable":
                 res = list_client.addable_branches
@@ -869,12 +867,12 @@ def launch(orig_args: List[str]) -> None:
                 print("\n".join(res))
         elif cmd in {"log", alias_by_command["log"]}:
             log_client = LogMacheteClient(git)
-            log_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
+            log_client.read_branch_layout_file()
             branch = get_local_branch_short_name_from_arg_or_current_branch(cli_opts.opt_branch, git)
             log_client.display_log(branch, extra_git_log_args=pass_through_args)
         elif cmd == "reapply":
             reapply_client = MacheteClient(git)
-            reapply_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
+            reapply_client.read_branch_layout_file()
             current_branch = git.get_current_branch()
             if cli_opts.opt_fork_point is not None:
                 reapply_client.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
@@ -888,12 +886,11 @@ def launch(orig_args: List[str]) -> None:
             if direction == "current" and "branch" in parsed_cli:
                 raise MacheteException('`show current` with a `<branch>` argument does not make sense')
             branch = get_local_branch_short_name_from_arg_or_current_branch(cli_opts.opt_branch, git)
-            show_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out,
-                                                verify_branches=False)
+            show_client.read_branch_layout_file(verify_branches=False)
             print('\n'.join(show_client.parse_direction(direction, branch, allow_current=True, down_pick_mode=False)))
         elif cmd == "slide-out":
             slide_out_client = SlideOutMacheteClient(git)
-            slide_out_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
+            slide_out_client.read_branch_layout_file()
             branches_to_slide_out: Optional[List[str]] = parsed_cli_as_dict.get('branches')
             if cli_opts.opt_removed_from_remote:
                 if branches_to_slide_out or cli_opts.opt_down_fork_point or cli_opts.opt_merge or cli_opts.opt_no_interactive_rebase:
@@ -910,7 +907,7 @@ def launch(orig_args: List[str]) -> None:
                     opt_no_edit_merge=cli_opts.opt_no_edit_merge)
         elif cmd == "squash":
             squash_client = SquashMacheteClient(git)
-            squash_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
+            squash_client.read_branch_layout_file()
             current_branch = git.get_current_branch()
             if cli_opts.opt_fork_point is not None:
                 squash_client.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
@@ -930,7 +927,7 @@ def launch(orig_args: List[str]) -> None:
             opt_squash_merge_detection = SquashMergeDetection.from_string(
                 cli_opts.opt_squash_merge_detection_string, cli_opts.opt_squash_merge_detection_origin)
 
-            status_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
+            status_client.read_branch_layout_file(interactively_slide_out_invalid_branches=sys.stdout.isatty())
             status_client.expect_at_least_one_managed_branch()
             status_client.status(
                 warn_when_branch_in_sync_but_fork_point_off=True,
@@ -950,7 +947,7 @@ def launch(orig_args: List[str]) -> None:
             opt_start_from = TraverseStartFrom.from_string(cli_opts.opt_start_from, "`--start-from` flag")
 
             traverse_client = TraverseMacheteClient(git)
-            traverse_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
+            traverse_client.read_branch_layout_file(interactively_slide_out_invalid_branches=sys.stdout.isatty())
             traverse_client.traverse(
                 opt_fetch=cli_opts.opt_fetch,
                 opt_list_commits=cli_opts.opt_list_commits,
@@ -967,7 +964,7 @@ def launch(orig_args: List[str]) -> None:
                 opt_yes=cli_opts.opt_yes)
         elif cmd == "update":
             update_client = UpdateMacheteClient(git)
-            update_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
+            update_client.read_branch_layout_file()
             if cli_opts.opt_fork_point is not None:
                 update_client.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
                     fork_point_hash=cli_opts.opt_fork_point, branch=git.get_current_branch())

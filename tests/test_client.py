@@ -57,7 +57,7 @@ class TestClient(BaseTest):
             """
         rewrite_branch_layout_file(body)
         machete_client = MacheteClient(GitContext())
-        machete_client.read_branch_layout_file(perform_interactive_slide_out=False)
+        machete_client.read_branch_layout_file(interactively_slide_out_invalid_branches=False)
         annotations: Dict[LocalBranchShortName, Annotation] = machete_client.annotations
 
         feature_2_branch = LocalBranchShortName.of('feature2')

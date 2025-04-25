@@ -215,7 +215,7 @@ class MacheteClient:
                 * `git machete github checkout-prs --mine`
                 * `git machete gitlab checkout-mrs --mine`"""[1:]))
 
-    def read_branch_layout_file(self, perform_interactive_slide_out: bool, verify_branches: bool = True) -> None:
+    def read_branch_layout_file(self, *, interactively_slide_out_invalid_branches: bool = False, verify_branches: bool = True) -> None:
         with open(self._branch_layout_file_path) as file:
             lines: List[str] = [line.rstrip() for line in file.readlines()]
 
@@ -279,7 +279,7 @@ class MacheteClient:
         if not invalid_branches:
             return
 
-        if perform_interactive_slide_out:
+        if interactively_slide_out_invalid_branches:
             if len(invalid_branches) == 1:
                 ans: str = self.ask_if(
                     f"Skipping {bold(invalid_branches[0])} " +
@@ -327,7 +327,7 @@ class MacheteClient:
         elif ans in ('e', 'edit'):
             self.edit()
             self.__init_state()
-            self.read_branch_layout_file(verify_branches)
+            self.read_branch_layout_file(verify_branches=verify_branches)
 
     def render_branch_layout_file(self, indent: str) -> List[str]:
         def render_dfs(branch: LocalBranchShortName, depth: int) -> List[str]:
@@ -1574,12 +1574,3 @@ class MacheteClient:
                 self._state.roots.remove(branch)
 
         self.save_branch_layout_file()
-
-    @staticmethod
-    def is_stdout_a_tty() -> bool:
-        return sys.stdout.isatty()
-
-    @staticmethod
-    def should_perform_interactive_slide_out(cmd: str) -> bool:
-        interactive_slide_out_safe_commands = {'traverse', 'status'}
-        return MacheteClient.is_stdout_a_tty() and cmd in interactive_slide_out_safe_commands
