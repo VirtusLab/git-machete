@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 from .exceptions import MacheteException
-from .git_operations import AnyBranchName, AnyRevision, LocalBranchShortName
+from .git_operations import AnyRevision, LocalBranchShortName
 
 
 class CommandLineOptions:
@@ -10,7 +10,7 @@ class CommandLineOptions:
         self.opt_all: bool = False
         self.opt_as_first_child: bool = False
         self.opt_as_root: bool = False
-        self.opt_branch: Optional[AnyBranchName] = None
+        self.opt_branch: Optional[LocalBranchShortName] = None
         self.opt_by: Optional[str] = None
         self.opt_checked_out_since: Optional[str] = None
         self.opt_delete: bool = False
