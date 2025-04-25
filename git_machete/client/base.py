@@ -1,6 +1,7 @@
 import io
 import itertools
 import os
+import re
 import shlex
 import shutil
 import sys
@@ -156,6 +157,32 @@ class MacheteClient:
         return self._state.managed_branches
 
     @property
+    def addable_branches(self) -> List[LocalBranchShortName]:
+        def strip_remote_name(remote_branch: RemoteBranchShortName) -> LocalBranchShortName:
+            return LocalBranchShortName.of(re.sub("^[^/]+/", "", remote_branch))
+
+        remote_counterparts_of_local_branches = utils.map_truthy_only(
+            self._git.get_combined_counterpart_for_fetching_of_branch,
+            self._git.get_local_branches())
+        qualifying_remote_branches: List[RemoteBranchShortName] = \
+            excluding(self._git.get_remote_branches(), remote_counterparts_of_local_branches)
+        return excluding(self._git.get_local_branches(), self.managed_branches) + [
+            strip_remote_name(branch) for branch in qualifying_remote_branches]
+
+    @property
+    def unmanaged_branches(self) -> List[LocalBranchShortName]:
+        return excluding(self._git.get_local_branches(), self.managed_branches)
+
+    @property
+    def childless_managed_branches(self) -> List[LocalBranchShortName]:
+        parent_branches = [parent_branch for parent_branch, child_branches in self._state.down_branches_for.items() if child_branches]
+        return excluding(self.managed_branches, parent_branches)
+
+    @property
+    def branches_with_overridden_fork_point(self) -> List[LocalBranchShortName]:
+        return [branch for branch in self._git.get_local_branches() if self.has_any_fork_point_override_config(branch)]
+
+    @property
     def annotations(self) -> Dict[LocalBranchShortName, Annotation]:
         return self._state.annotations
 
@@ -164,11 +191,6 @@ class MacheteClient:
 
     def down_branches_for(self, branch: LocalBranchShortName) -> Optional[List[LocalBranchShortName]]:
         return self._state.down_branches_for.get(branch)
-
-    @property
-    def childless_managed_branches(self) -> List[LocalBranchShortName]:
-        parent_branches = [parent_branch for parent_branch, child_branches in self._state.down_branches_for.items() if child_branches]
-        return excluding(self.managed_branches, parent_branches)
 
     def expect_in_managed_branches(self, branch: LocalBranchShortName) -> None:
         if branch not in self.managed_branches:
@@ -667,6 +689,8 @@ class MacheteClient:
             return utils.run_cmd(*args, cwd=cwd)
 
     def rebase(self, onto: AnyRevision, from_exclusive: AnyRevision, branch: LocalBranchShortName, opt_no_interactive_rebase: bool) -> None:
+        self._git.expect_no_operation_in_progress()
+
         anno = self.annotations.get(branch)
         if anno and not anno.qualifiers.rebase:
             raise MacheteException(f"Branch {bold(branch)} is annotated with `rebase=no` qualifier, aborting.\n"

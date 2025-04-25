@@ -9,6 +9,7 @@ class UpdateMacheteClient(MacheteClient):
     def update(
             self, *, opt_merge: bool, opt_no_edit_merge: bool,
             opt_no_interactive_rebase: bool, opt_fork_point: Optional[AnyRevision]) -> None:
+        self._git.expect_no_operation_in_progress()
         current_branch = self._git.get_current_branch()
         use_merge = opt_merge or (current_branch in self.annotations and self.annotations[current_branch].qualifiers.update_with_merge)
         if use_merge:

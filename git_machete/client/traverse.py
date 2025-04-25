@@ -33,6 +33,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             opt_sync_gitlab_mrs: bool,
             opt_yes: bool
     ) -> None:
+        self._git.expect_no_operation_in_progress()
         self.expect_at_least_one_managed_branch()
 
         self._set_empty_line_status()

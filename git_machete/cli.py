@@ -4,7 +4,6 @@ import argparse
 import itertools
 import os
 import pkgutil
-import re
 import sys
 import textwrap
 from typing import (Any, Dict, Iterable, List, Optional, Sequence, Tuple,
@@ -33,8 +32,8 @@ from .exceptions import (ExitCode, InteractionStopped, MacheteException,
                          UnderlyingGitException, UnexpectedMacheteException)
 from .generated_docs import long_docs, short_docs
 from .git_operations import (AnyBranchName, AnyRevision, GitContext,
-                             LocalBranchShortName, RemoteBranchShortName)
-from .utils import bold, excluding, fmt, underline, warn
+                             LocalBranchShortName)
+from .utils import bold, fmt, underline, warn
 
 T = TypeVar('T')
 
@@ -585,8 +584,8 @@ def set_utils_global_variables(parsed_args: argparse.Namespace) -> None:
 
 
 def get_local_branch_short_name_from_arg_or_current_branch(
-        branch_from_arg: Optional[AnyBranchName], git_context: GitContext) -> LocalBranchShortName:
-    return get_local_branch_short_name_from_arg(branch_from_arg) if branch_from_arg else git_context.get_current_branch()
+        branch_from_arg: Optional[AnyBranchName], git: GitContext) -> LocalBranchShortName:
+    return get_local_branch_short_name_from_arg(branch_from_arg) if branch_from_arg else git.get_current_branch()
 
 
 def get_local_branch_short_name_from_arg(branch_from_arg: AnyBranchName) -> LocalBranchShortName:
@@ -666,10 +665,7 @@ def launch(orig_args: List[str]) -> None:
         elif cmd == "advance":
             advance_client = AdvanceMacheteClient(git)
             advance_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
-            git.expect_no_operation_in_progress()
-            current_branch = git.get_current_branch()
-            advance_client.expect_in_managed_branches(current_branch)
-            advance_client.advance(branch=current_branch, opt_yes=cli_opts.opt_yes)
+            advance_client.advance(opt_yes=cli_opts.opt_yes)
         elif cmd == "anno":
             anno_client = AnnoMacheteClient(git)
             anno_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out,
@@ -852,16 +848,7 @@ def launch(orig_args: List[str]) -> None:
             list_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
             res = []
             if category == "addable":
-                def strip_remote_name(remote_branch: RemoteBranchShortName) -> LocalBranchShortName:
-                    return LocalBranchShortName.of(re.sub("^[^/]+/", "", remote_branch))
-
-                remote_counterparts_of_local_branches = utils.map_truthy_only(
-                    git.get_combined_counterpart_for_fetching_of_branch,
-                    git.get_local_branches())
-                qualifying_remote_branches: List[RemoteBranchShortName] = \
-                    excluding(git.get_remote_branches(), remote_counterparts_of_local_branches)
-                res = excluding(git.get_local_branches(), list_client.managed_branches) + [
-                    strip_remote_name(branch) for branch in qualifying_remote_branches]
+                res = list_client.addable_branches
             elif category == "childless":
                 res = list_client.childless_managed_branches
             elif category == "managed":
@@ -872,12 +859,9 @@ def launch(orig_args: List[str]) -> None:
                 list_client.expect_in_managed_branches(parsed_cli.branch)
                 res = list_client.get_slidable_after(parsed_cli.branch)
             elif category == "unmanaged":
-                res = excluding(git.get_local_branches(), list_client.managed_branches)
+                res = list_client.unmanaged_branches
             elif category == "with-overridden-fork-point":
-                res = list(
-                    filter(
-                        lambda _branch: list_client.has_any_fork_point_override_config(_branch),
-                        git.get_local_branches()))
+                res = list_client.branches_with_overridden_fork_point
             else:  # an unknown category is handled by argparse
                 raise UnexpectedMacheteException(f"Invalid category: `{category}`")
 
@@ -891,7 +875,6 @@ def launch(orig_args: List[str]) -> None:
         elif cmd == "reapply":
             reapply_client = MacheteClient(git)
             reapply_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
-            git.expect_no_operation_in_progress()
             current_branch = git.get_current_branch()
             if cli_opts.opt_fork_point is not None:
                 reapply_client.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
@@ -911,7 +894,6 @@ def launch(orig_args: List[str]) -> None:
         elif cmd == "slide-out":
             slide_out_client = SlideOutMacheteClient(git)
             slide_out_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
-            git.expect_no_operation_in_progress()
             branches_to_slide_out: Optional[List[str]] = parsed_cli_as_dict.get('branches')
             if cli_opts.opt_removed_from_remote:
                 if branches_to_slide_out or cli_opts.opt_down_fork_point or cli_opts.opt_merge or cli_opts.opt_no_interactive_rebase:
@@ -929,7 +911,6 @@ def launch(orig_args: List[str]) -> None:
         elif cmd == "squash":
             squash_client = SquashMacheteClient(git)
             squash_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
-            git.expect_no_operation_in_progress()
             current_branch = git.get_current_branch()
             if cli_opts.opt_fork_point is not None:
                 squash_client.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
@@ -970,7 +951,6 @@ def launch(orig_args: List[str]) -> None:
 
             traverse_client = TraverseMacheteClient(git)
             traverse_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
-            git.expect_no_operation_in_progress()
             traverse_client.traverse(
                 opt_fetch=cli_opts.opt_fetch,
                 opt_list_commits=cli_opts.opt_list_commits,
@@ -988,7 +968,6 @@ def launch(orig_args: List[str]) -> None:
         elif cmd == "update":
             update_client = UpdateMacheteClient(git)
             update_client.read_branch_layout_file(perform_interactive_slide_out=should_perform_interactive_slide_out)
-            git.expect_no_operation_in_progress()
             if cli_opts.opt_fork_point is not None:
                 update_client.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
                     fork_point_hash=cli_opts.opt_fork_point, branch=git.get_current_branch())

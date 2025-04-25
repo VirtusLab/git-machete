@@ -8,7 +8,12 @@ class AdvanceMacheteClient(MacheteClient):
     def __init__(self, git: GitContext) -> None:
         super().__init__(git)
 
-    def advance(self, *, branch: LocalBranchShortName, opt_yes: bool) -> None:
+    def advance(self, opt_yes: bool) -> None:
+        self._git.expect_no_operation_in_progress()
+
+        branch = self._git.get_current_branch()
+        self.expect_in_managed_branches(branch)
+
         down_branches = self.down_branches_for(branch)
         if not down_branches:
             raise MacheteException(

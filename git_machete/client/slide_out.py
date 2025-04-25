@@ -16,6 +16,8 @@ class SlideOutMacheteClient(MacheteClient):
                   opt_no_interactive_rebase: bool,
                   opt_no_edit_merge: bool
                   ) -> None:
+        self._git.expect_no_operation_in_progress()
+
         # Verify that all branches exist, are managed, have an upstream and are NOT annotated with slide-out=no qualifier.
         for branch in branches_to_slide_out:
             self.expect_in_managed_branches(branch)
@@ -104,6 +106,8 @@ class SlideOutMacheteClient(MacheteClient):
                                   opt_squash_merge_detection=SquashMergeDetection.NONE, opt_yes=False)
 
     def slide_out_removed_from_remote(self, opt_delete: bool) -> None:
+        self._git.expect_no_operation_in_progress()
+
         slid_out_branches: List[LocalBranchShortName] = []
         for branch in self.managed_branches.copy():
             if self._git.is_removed_from_remote(branch) and not self.down_branches_for(branch):

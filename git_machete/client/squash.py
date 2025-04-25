@@ -11,6 +11,8 @@ from git_machete.utils import bold, fmt
 
 class SquashMacheteClient(MacheteClient):
     def squash(self, *, current_branch: LocalBranchShortName, opt_fork_point: AnyRevision) -> None:
+        self._git.expect_no_operation_in_progress()
+
         commits: List[GitLogEntry] = self._git.get_commits_between(opt_fork_point, current_branch)
         if not commits:
             raise MacheteException(
