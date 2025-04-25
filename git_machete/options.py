@@ -1,6 +1,5 @@
 from typing import List, Optional
 
-from .exceptions import MacheteException
 from .git_operations import AnyRevision, LocalBranchShortName
 
 
@@ -48,29 +47,6 @@ class CommandLineOptions:
         self.opt_update_related_descriptions: bool = False
         self.opt_with_urls: bool = False
         self.opt_yes: bool = False
-
-    def validate(self) -> None:
-        if self.opt_as_root and self.opt_onto:
-            raise MacheteException(
-                "Option `-R/--as-root` cannot be specified together with `-o/--onto`.")
-        if self.opt_as_root and self.opt_as_first_child:
-            raise MacheteException(
-                "Option `-R/--as-root` cannot be specified together with `-f/--as-first-child`.")
-        if self.opt_no_interactive_rebase and self.opt_merge:
-            raise MacheteException(
-                "Option `--no-interactive-rebase` only makes sense when using "
-                "rebase and cannot be specified together with `-M/--merge`.")
-        if self.opt_down_fork_point and self.opt_merge:
-            raise MacheteException(
-                "Option `-d/--down-fork-point` only makes sense when using "
-                "rebase and cannot be specified together with `-M/--merge`.")
-        if self.opt_fork_point and self.opt_merge:
-            raise MacheteException(
-                "Option `-f/--fork-point` only makes sense when using rebase and"
-                " cannot be specified together with `-M/--merge`.")
-        if self.opt_sync_github_prs and self.opt_sync_gitlab_mrs:
-            raise MacheteException(
-                "Option `-H/--sync-github-prs` cannot be specified together with `-L/--sync-gitlab-mrs`.")
 
     def __repr__(self) -> str:  # pragma: no cover; debug only
         attrs = ", ".join(f"{k}={v!r}" for k, v in self.__dict__.items())

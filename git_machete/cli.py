@@ -599,7 +599,18 @@ def launch(orig_args: List[str]) -> None:
         set_utils_global_variables(parsed_cli)
         update_cli_options_using_config_keys(cli_opts, git)
         update_cli_options_using_parsed_args(cli_opts, parsed_cli)
-        cli_opts.validate()
+
+        if cli_opts.opt_no_interactive_rebase and cli_opts.opt_merge:
+            raise MacheteException(
+                "Option `--no-interactive-rebase` only makes sense when using "
+                "rebase and cannot be specified together with `-M/--merge`.")
+        if cli_opts.opt_fork_point and cli_opts.opt_merge:
+            raise MacheteException(
+                "Option `-f/--fork-point` only makes sense when using rebase and"
+                " cannot be specified together with `-M/--merge`.")
+        if cli_opts.opt_sync_github_prs and cli_opts.opt_sync_gitlab_mrs:
+            raise MacheteException(
+                "Option `-H/--sync-github-prs` cannot be specified together with `-L/--sync-gitlab-mrs`.")
 
         if not direct_args:
             print(get_help_description(display_help_topics=False))
@@ -640,6 +651,10 @@ def launch(orig_args: List[str]) -> None:
             return
 
         if cmd == "add":
+            if cli_opts.opt_as_root and cli_opts.opt_onto:
+                raise MacheteException("Option `-R/--as-root` cannot be specified together with `-o/--onto`.")
+            if cli_opts.opt_as_root and cli_opts.opt_as_first_child:
+                raise MacheteException("Option `-R/--as-root` cannot be specified together with `-f/--as-first-child`.")
             add_client = MacheteClient(git)
             add_client.read_branch_layout_file()
             branch = cli_opts.opt_branch or git.get_current_branch()
@@ -878,6 +893,11 @@ def launch(orig_args: List[str]) -> None:
             show_client.read_branch_layout_file(verify_branches=False)
             print('\n'.join(show_client.parse_direction(direction, branch, allow_current=True, down_pick_mode=False)))
         elif cmd == "slide-out":
+            if cli_opts.opt_down_fork_point and cli_opts.opt_merge:
+                raise MacheteException(
+                    "Option `-d/--down-fork-point` only makes sense when using "
+                    "rebase and cannot be specified together with `-M/--merge`.")
+
             slide_out_client = SlideOutMacheteClient(git)
             slide_out_client.read_branch_layout_file()
             branches_to_slide_out: Optional[List[str]] = parsed_cli_as_dict.get('branches')
