@@ -149,44 +149,8 @@ class GitHubClient(CodeHostingClient):
     # As of Dec 2022, GitHub API never returns more than 100 PRs, even if per_page query param is above 100.
     MAX_PULLS_PER_PAGE_COUNT = 100
 
-    @classmethod
-    def spec(cls) -> CodeHostingSpec:
-        return CodeHostingSpec(
-            base_branch_name='base',
-            client_class=cls,
-            default_domain=cls.DEFAULT_GITHUB_DOMAIN,
-            display_name='GitHub',
-            git_machete_command='github',
-            head_branch_name='head',
-            organization_name='organization',
-            # https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/creating-a-pull-request-template-for-your-repository
-            pr_description_path=['.github', 'pull_request_template.md'],
-            pr_full_name='pull request',
-            pr_intro_br_before_branches=False,
-            pr_intro_explicit_title=False,
-            pr_ordinal_char='#',
-            pr_short_name='PR',
-            pr_short_name_article='a',
-            repository_name='repository',
-            token_providers_message=(
-                f'\n\t1. `{GITHUB_TOKEN_ENV_VAR}` environment variable\n'
-                '\t2. Content of the `~/.github-token` file\n'
-                '\t3. Current auth token from the `gh` GitHub CLI\n'
-                '\t4. Current auth token from the `hub` GitHub CLI\n'
-            ),
-            git_config_keys=CodeHostingGitConfigKeys(
-                domain='machete.github.domain',
-                organization='machete.github.organization',
-                repository='machete.github.repository',
-                remote='machete.github.remote',
-                annotate_with_urls='machete.github.annotateWithUrls',
-                force_description_from_commit_message='machete.github.forceDescriptionFromCommitMessage',
-                pr_description_intro_style='machete.github.prDescriptionIntroStyle',
-            )
-        )
-
-    def __init__(self, spec: CodeHostingSpec, domain: str, organization: str, repository: str) -> None:
-        super().__init__(spec, domain, organization, repository)
+    def __init__(self, domain: str, organization: str, repository: str) -> None:
+        super().__init__(domain, organization, repository)
         self.__token: Optional[GitHubToken] = GitHubToken.for_domain(domain)
 
     def __get_pull_request_from_json(self, pr_json: Dict[str, Any]) -> "PullRequest":
@@ -268,7 +232,7 @@ class GitHubClient(CodeHostingClient):
                 # TODO (#164): make a dedicated exception here
                 raise MacheteException(
                     f'`{method} {url}` request ended up in 404 response from GitHub. A valid GitHub API token is required.\n'
-                    f'Provide a GitHub API token with `repo` access via one of the: {self._spec.token_providers_message} '
+                    f'Provide a GitHub API token with `repo` access via one of the: {GITHUB_CLIENT_SPEC.token_providers_message} '
                     f'Visit `https://{self.domain}/settings/tokens` to generate a new one.')
             # See https://stackoverflow.com/a/62385184 for why 307 for POST/PATCH isn't automatically followed by urllib,
             # unlike 307 for GET, or 301/302 for all HTTP methods.
@@ -451,3 +415,38 @@ class GitHubClient(CodeHostingClient):
     def get_ref_name_for_pull_request(self, pr_number: int) -> str:
         # See `git ls-remote` for any GitHub remote.
         return f"pull/{pr_number}/head"
+
+
+GITHUB_CLIENT_SPEC = CodeHostingSpec(
+    base_branch_name='base',
+    client_class=GitHubClient,
+    default_domain=GitHubClient.DEFAULT_GITHUB_DOMAIN,
+    display_name='GitHub',
+    git_machete_command='github',
+    head_branch_name='head',
+    organization_name='organization',
+    # https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/creating-a-pull-request-template-for-your-repository
+    pr_description_path=['.github', 'pull_request_template.md'],
+    pr_full_name='pull request',
+    pr_intro_br_before_branches=False,
+    pr_intro_explicit_title=False,
+    pr_ordinal_char='#',
+    pr_short_name='PR',
+    pr_short_name_article='a',
+    repository_name='repository',
+    token_providers_message=(
+        f'\n\t1. `{GITHUB_TOKEN_ENV_VAR}` environment variable\n'
+        '\t2. Content of the `~/.github-token` file\n'
+        '\t3. Current auth token from the `gh` GitHub CLI\n'
+        '\t4. Current auth token from the `hub` GitHub CLI\n'
+    ),
+    git_config_keys=CodeHostingGitConfigKeys(
+        domain='machete.github.domain',
+        organization='machete.github.organization',
+        repository='machete.github.repository',
+        remote='machete.github.remote',
+        annotate_with_urls='machete.github.annotateWithUrls',
+        force_description_from_commit_message='machete.github.forceDescriptionFromCommitMessage',
+        pr_description_intro_style='machete.github.prDescriptionIntroStyle',
+    )
+)

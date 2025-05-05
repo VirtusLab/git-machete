@@ -97,7 +97,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             if opt_sync_github_prs or opt_sync_gitlab_mrs:
                 prs = list(filter(lambda pr: pr.head == branch, self._get_all_open_prs()))
                 if len(prs) > 1:
-                    spec = self.code_hosting_client._spec
+                    spec = self.code_hosting_spec
                     raise MacheteException(
                         f"Multiple {spec.pr_short_name}s have <b>{branch}</b> as its {spec.head_branch_name} branch: " +
                         ", ".join(_pr.short_display_text() for _pr in prs))
@@ -257,7 +257,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                 any_action_suggested = True
                 assert pr is not None
                 assert upstream is not None
-                spec = self.code_hosting_client._spec
+                spec = self.code_hosting_spec
                 self._print_new_line(False)
                 ans_intro = f"Branch {bold(str(branch))} has a different {spec.pr_short_name} {spec.base_branch_name} ({bold(pr.base)}) " \
                     f"in {spec.display_name} than in machete file ({bold(str(upstream))}).\n"

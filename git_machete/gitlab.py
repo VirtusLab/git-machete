@@ -97,48 +97,9 @@ class GitLabClient(CodeHostingClient):
     DEFAULT_GITLAB_DOMAIN = "gitlab.com"
     MAX_PULLS_PER_PAGE_COUNT = 100
 
-    def __init__(self, spec: CodeHostingSpec, domain: str, organization: str, repository: str) -> None:
-        super().__init__(spec, domain, organization, repository)
+    def __init__(self, domain: str, organization: str, repository: str) -> None:
+        super().__init__(domain, organization, repository)
         self.__token: Optional[GitLabToken] = GitLabToken.for_domain(domain)
-
-    @classmethod
-    def spec(cls) -> CodeHostingSpec:
-        return CodeHostingSpec(
-            base_branch_name='target',
-            client_class=cls,
-            default_domain=cls.DEFAULT_GITLAB_DOMAIN,
-            display_name='GitLab',
-            git_machete_command='gitlab',
-            head_branch_name='source',
-            organization_name='namespace',
-            # https://docs.gitlab.com/ee/user/project/description_templates.html#create-a-merge-request-template
-            # https://docs.gitlab.com/ee/user/project/description_templates.html#set-a-default-template-for-merge-requests-and-issues
-            # Actual MR template resolution for GitLab has a complex hierarchy of templates, including
-            # project-level, group-level and instance-level templates - and also the ability to "choose" a template.
-            # To keep things simple, we'll only support the "Default.md" template for now.
-            pr_description_path=['.gitlab', 'merge_request_templates', 'Default.md'],
-            pr_full_name='merge request',
-            pr_intro_br_before_branches=True,
-            pr_intro_explicit_title=True,
-            pr_ordinal_char='!',
-            pr_short_name='MR',
-            pr_short_name_article='an',
-            repository_name='project',
-            token_providers_message=(
-                f'\n\t1. `{GITLAB_TOKEN_ENV_VAR}` environment variable\n'
-                '\t2. Content of the `~/.gitlab-token` file\n'
-                '\t3. Current auth token from the `glab` GitLab CLI\n'
-            ),
-            git_config_keys=CodeHostingGitConfigKeys(
-                domain='machete.gitlab.domain',
-                organization='machete.gitlab.namespace',
-                repository='machete.gitlab.project',
-                remote='machete.gitlab.remote',
-                annotate_with_urls='machete.gitlab.annotateWithUrls',
-                force_description_from_commit_message='machete.gitlab.forceDescriptionFromCommitMessage',
-                pr_description_intro_style='machete.gitlab.mrDescriptionIntroStyle',
-            )
-        )
 
     @staticmethod
     def __get_merge_request_from_json(mr_json: Dict[str, Any]) -> PullRequest:
@@ -209,7 +170,7 @@ class GitLabClient(CodeHostingClient):
                 # TODO (#164): make a dedicated exception here
                 raise MacheteException(
                     f'`{method} {url}` request ended up in 404 response from GitLab. A valid GitLab API token is required.\n'
-                    f'Provide a GitLab API token with `api` access via one of the: {self._spec.token_providers_message} '
+                    f'Provide a GitLab API token with `api` access via one of the: {GITLAB_CLIENT_SPEC.token_providers_message} '
                     f'Visit `https://{self.domain}/-/user_settings/personal_access_tokens` to generate a new one.')
             elif err.code == http.HTTPStatus.METHOD_NOT_ALLOWED:
                 error_response = json.loads(err.read().decode())
@@ -360,3 +321,41 @@ class GitLabClient(CodeHostingClient):
     def get_ref_name_for_pull_request(self, mr_number: int) -> str:
         # See `git ls-remote` for any GitLab remote.
         return f"merge-requests/{mr_number}/head"
+
+
+GITLAB_CLIENT_SPEC = CodeHostingSpec(
+    base_branch_name='target',
+    client_class=GitLabClient,
+    default_domain=GitLabClient.DEFAULT_GITLAB_DOMAIN,
+    display_name='GitLab',
+    git_machete_command='gitlab',
+    head_branch_name='source',
+    organization_name='namespace',
+    # https://docs.gitlab.com/ee/user/project/description_templates.html#create-a-merge-request-template
+    # https://docs.gitlab.com/ee/user/project/description_templates.html#set-a-default-template-for-merge-requests-and-issues
+    # Actual MR template resolution for GitLab has a complex hierarchy of templates, including
+    # project-level, group-level and instance-level templates - and also the ability to "choose" a template.
+    # To keep things simple, we'll only support the "Default.md" template for now.
+    pr_description_path=['.gitlab', 'merge_request_templates', 'Default.md'],
+    pr_full_name='merge request',
+    pr_intro_br_before_branches=True,
+    pr_intro_explicit_title=True,
+    pr_ordinal_char='!',
+    pr_short_name='MR',
+    pr_short_name_article='an',
+    repository_name='project',
+    token_providers_message=(
+        f'\n\t1. `{GITLAB_TOKEN_ENV_VAR}` environment variable\n'
+        '\t2. Content of the `~/.gitlab-token` file\n'
+        '\t3. Current auth token from the `glab` GitLab CLI\n'
+    ),
+    git_config_keys=CodeHostingGitConfigKeys(
+        domain='machete.gitlab.domain',
+        organization='machete.gitlab.namespace',
+        repository='machete.gitlab.project',
+        remote='machete.gitlab.remote',
+        annotate_with_urls='machete.gitlab.annotateWithUrls',
+        force_description_from_commit_message='machete.gitlab.forceDescriptionFromCommitMessage',
+        pr_description_intro_style='machete.gitlab.mrDescriptionIntroStyle',
+    )
+)
