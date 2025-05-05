@@ -13,7 +13,6 @@ from typing import (Callable, Dict, Iterator, List, Optional, Tuple, Type,
 
 from git_machete import git_config_keys, utils
 from git_machete.annotation import Annotation
-from git_machete.code_hosting import CodeHostingClient, CodeHostingSpec
 from git_machete.constants import (INITIAL_COMMIT_COUNT_FOR_LOG,
                                    TOTAL_COMMIT_COUNT_FOR_LOG)
 from git_machete.exceptions import (InteractionStopped, MacheteException,
@@ -133,20 +132,6 @@ class MacheteClient:
         self.__indent: Optional[str] = None
         self.__empty_line_status: Optional[bool] = None
         self.__branch_pairs_by_hash_in_reflog: Optional[Dict[FullCommitHash, List[BranchPair]]] = None
-
-    @property
-    def code_hosting_spec(self) -> CodeHostingSpec:
-        return self.code_hosting_client._spec
-
-    @property
-    def code_hosting_client(self) -> CodeHostingClient:
-        if self.__code_hosting_client is None:
-            raise UnexpectedMacheteException("Code hosting client has not been initialized, this is an unexpected state.")
-        return self.__code_hosting_client
-
-    @code_hosting_client.setter
-    def code_hosting_client(self, value: CodeHostingClient) -> None:
-        self.__code_hosting_client = value
 
     @property
     def branch_layout_file_path(self) -> str:

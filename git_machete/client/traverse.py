@@ -9,8 +9,6 @@ from git_machete.code_hosting import PullRequest
 from git_machete.exceptions import (InteractionStopped, MacheteException,
                                     UnexpectedMacheteException)
 from git_machete.git_operations import LocalBranchShortName, SyncToRemoteStatus
-from git_machete.github import GitHubClient
-from git_machete.gitlab import GitLabClient
 from git_machete.utils import (bold, flat_map, fmt, get_pretty_choices,
                                get_right_arrow)
 
@@ -49,8 +47,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
 
         current_user: Optional[str] = None
         if opt_sync_github_prs or opt_sync_gitlab_mrs:
-            spec = GitHubClient.spec() if opt_sync_github_prs else GitLabClient.spec()
-            self._init_code_hosting_client(spec)
+            self._init_code_hosting_client()
             current_user = self.code_hosting_client.get_current_user_login()
 
         initial_branch = nearest_remaining_branch = self._git.get_current_branch()
@@ -274,7 +271,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                     pr.base = upstream
 
                     anno = self._state.annotations.get(branch)
-                    self._state.annotations[branch] = Annotation(self._pull_request_annotation(spec, pr, current_user),
+                    self._state.annotations[branch] = Annotation(self._pull_request_annotation(pr, current_user),
                                                                  anno.qualifiers if anno else Qualifiers())
                     self.save_branch_layout_file()
 

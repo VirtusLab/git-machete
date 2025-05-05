@@ -30,10 +30,25 @@ class PRDescriptionIntroStyle(ParsableEnum):
 
 
 class MacheteClientWithCodeHosting(MacheteClient):
-    def __init__(self, git: GitContext):
+    def __init__(self, git: GitContext, spec: CodeHostingSpec):
         super().__init__(git)
+        self.__code_hosting_spec: CodeHostingSpec = spec
         self.__code_hosting_client: Optional[CodeHostingClient] = None
         self.__all_open_prs: Optional[List[PullRequest]] = None
+
+    @property
+    def code_hosting_spec(self) -> CodeHostingSpec:
+        return self.__code_hosting_spec
+
+    @property
+    def code_hosting_client(self) -> CodeHostingClient:
+        if self.__code_hosting_client is None:
+            raise UnexpectedMacheteException("Code hosting client has not been initialized, this is an unexpected state.")
+        return self.__code_hosting_client
+
+    @code_hosting_client.setter
+    def code_hosting_client(self, value: CodeHostingClient) -> None:
+        self.__code_hosting_client = value
 
     def _get_all_open_prs(self) -> List[PullRequest]:
         if self.__all_open_prs is None:
@@ -43,22 +58,22 @@ class MacheteClientWithCodeHosting(MacheteClient):
             print(fmt('<green><b>OK</b></green>'))
         return self.__all_open_prs
 
-    def _pull_request_annotation(self, spec: CodeHostingSpec,
-                                 pr: PullRequest, current_user: Optional[str], include_url: bool = False) -> str:
+    def _pull_request_annotation(self, pr: PullRequest, current_user: Optional[str], include_url: bool = False) -> str:
         anno = pr.display_text(fmt=False)
         if current_user != pr.user:
             anno += f" ({pr.user})"
-        config_key = spec.git_config_keys.annotate_with_urls
+        config_key = self.code_hosting_spec.git_config_keys.annotate_with_urls
         if include_url or self._git.get_boolean_config_attr(key=config_key, default_value=False):
             anno += f" {pr.html_url}"
         return anno
 
-    def __sync_annotations_to_branch_layout_file(self, spec: CodeHostingSpec, prs: List[PullRequest], current_user: Optional[str],
+    def __sync_annotations_to_branch_layout_file(self, prs: List[PullRequest], current_user: Optional[str],
                                                  include_urls: bool, verbose: bool) -> None:
+        spec = self.code_hosting_spec
         for pr in prs:
             if LocalBranchShortName.of(pr.head) in self.managed_branches:
                 debug(f'{pr} corresponds to a managed branch')
-                anno: str = self._pull_request_annotation(spec, pr, current_user, include_urls)
+                anno: str = self._pull_request_annotation(pr, current_user, include_urls)
                 upstream: Optional[LocalBranchShortName] = self.up_branch_for(LocalBranchShortName.of(pr.head))
                 if upstream is not None:
                     counterpart = self._git.get_combined_counterpart_for_fetching_of_branch(upstream)
@@ -105,9 +120,8 @@ class MacheteClientWithCodeHosting(MacheteClient):
                 return remote
         return None
 
-    def __sync_before_creating_pull_request(self, spec: CodeHostingSpec, *,
-                                            opt_onto: Optional[LocalBranchShortName], opt_yes: bool) -> None:
-
+    def __sync_before_creating_pull_request(self, *, opt_onto: Optional[LocalBranchShortName], opt_yes: bool) -> None:
+        spec = self.code_hosting_spec
         self.expect_at_least_one_managed_branch()
         self._set_empty_line_status()
 
@@ -205,16 +219,15 @@ class MacheteClientWithCodeHosting(MacheteClient):
                 return
             raise MacheteException(f'Interrupted creating {spec.pr_full_name}.')
 
-    def sync_annotations_to_prs(self, spec: CodeHostingSpec, include_urls: bool) -> None:
-        self._init_code_hosting_client(spec)
+    def sync_annotations_to_prs(self, include_urls: bool) -> None:
+        self._init_code_hosting_client()
         current_user: Optional[str] = self.code_hosting_client.get_current_user_login()
-        debug(f'Current {spec.display_name} user is ' + (bold(current_user or '<none>')))
+        debug(f'Current {self.code_hosting_spec.display_name} user is ' + (bold(current_user or '<none>')))
         all_open_prs = self._get_all_open_prs()
-        self.__sync_annotations_to_branch_layout_file(spec, all_open_prs, current_user, include_urls=include_urls, verbose=True)
+        self.__sync_annotations_to_branch_layout_file(all_open_prs, current_user, include_urls=include_urls, verbose=True)
 
     def create_pull_request(
             self,
-            spec: CodeHostingSpec,
             *,
             head: LocalBranchShortName,
             opt_draft: bool,
@@ -225,18 +238,19 @@ class MacheteClientWithCodeHosting(MacheteClient):
     ) -> None:
         # first make sure that head branch is synced with remote
         try:
-            self.__sync_before_creating_pull_request(spec, opt_onto=opt_onto, opt_yes=opt_yes)
+            self.__sync_before_creating_pull_request(opt_onto=opt_onto, opt_yes=opt_yes)
         except InteractionStopped:
             return
 
         base: Optional[LocalBranchShortName] = self.up_branch_for(LocalBranchShortName.of(head))
+        spec = self.code_hosting_spec
         if not base:
             raise UnexpectedMacheteException(f'Could not determine {spec.base_branch_name} branch for {spec.pr_short_name}. '
                                              f'Branch {bold(head)} is a root branch.')
 
-        domain = self.__derive_code_hosting_domain(spec)
-        head_org_repo_remote = self.__derive_org_repo_and_remote(spec, domain=domain, branch_used_for_tracking_data=head)
-        base_org_repo_remote = self.__derive_org_repo_and_remote(spec, domain=domain, branch_used_for_tracking_data=base)
+        domain = self.__derive_code_hosting_domain()
+        head_org_repo_remote = self.__derive_org_repo_and_remote(domain=domain, branch_used_for_tracking_data=head)
+        base_org_repo_remote = self.__derive_org_repo_and_remote(domain=domain, branch_used_for_tracking_data=base)
         debug(f"head_org_repo_remote={head_org_repo_remote}, base_org_repo_remote={base_org_repo_remote}")
 
         base_org_repo = base_org_repo_remote.extract_org_and_repo()
@@ -359,16 +373,17 @@ class MacheteClientWithCodeHosting(MacheteClient):
             self.code_hosting_client.add_reviewers_to_pull_request(pr.number, reviewers)
             print(fmt(ok_str))
 
-        self._state.annotations[head] = Annotation(self._pull_request_annotation(spec, pr, current_user), qualifiers=Qualifiers())
+        self._state.annotations[head] = Annotation(self._pull_request_annotation(pr, current_user), qualifiers=Qualifiers())
         self.save_branch_layout_file()
 
         if opt_update_related_descriptions:
             print(f"Updating descriptions of other {spec.pr_short_name}s...")
-            self.update_pull_request_descriptions(spec, related=True)
+            self.update_pull_request_descriptions(related=True)
 
-    def restack_pull_request(self, spec: CodeHostingSpec, opt_update_related_descriptions: bool) -> None:
+    def restack_pull_request(self, opt_update_related_descriptions: bool) -> None:
+        spec = self.code_hosting_spec
         head = self._git.get_current_branch()
-        _, org_repo_remote = self._init_code_hosting_client(spec, branch_used_for_tracking_data=head)
+        _, org_repo_remote = self._init_code_hosting_client(branch_used_for_tracking_data=head)
 
         pr: Optional[PullRequest] = self.__get_sole_pull_request_for_head(head, ignore_if_missing=False)
         assert pr is not None
@@ -394,7 +409,7 @@ class MacheteClientWithCodeHosting(MacheteClient):
                 print(f'{pr.display_text()} has been temporarily marked as draft')
 
             # Note that retarget should happen BEFORE push, see issue #1222
-            self.retarget_pull_request(spec, head, opt_ignore_if_missing=False,
+            self.retarget_pull_request(head, opt_ignore_if_missing=False,
                                        opt_update_related_descriptions=opt_update_related_descriptions)
 
             if s == SyncToRemoteStatus.AHEAD_OF_REMOTE:
@@ -447,7 +462,7 @@ class MacheteClientWithCodeHosting(MacheteClient):
             else:  # case handled elsewhere
                 raise UnexpectedMacheteException(f"Could not retarget {spec.pr_full_name}: invalid sync-to-remote status `{s}`.")
 
-            self.retarget_pull_request(spec, head, opt_ignore_if_missing=False,
+            self.retarget_pull_request(head, opt_ignore_if_missing=False,
                                        opt_update_related_descriptions=opt_update_related_descriptions)
 
     def _get_updated_pull_request_description(self, pr: PullRequest) -> str:
@@ -471,10 +486,11 @@ class MacheteClientWithCodeHosting(MacheteClient):
             lines = lines_to_prepend + ([''] if lines_to_prepend else []) + skip_leading_empty(lines)
         return '\n'.join(lines) + original_trailing_newlines
 
-    def retarget_pull_request(self, spec: CodeHostingSpec, head: LocalBranchShortName,
+    def retarget_pull_request(self, head: LocalBranchShortName, *,
                               opt_ignore_if_missing: bool, opt_update_related_descriptions: bool) -> None:
+        spec = self.code_hosting_spec
         if self.__code_hosting_client is None:
-            self._init_code_hosting_client(spec, branch_used_for_tracking_data=head)
+            self._init_code_hosting_client(branch_used_for_tracking_data=head)
 
         pr: Optional[PullRequest] = self.__get_sole_pull_request_for_head(
             head, ignore_if_missing=opt_ignore_if_missing)
@@ -504,8 +520,8 @@ class MacheteClientWithCodeHosting(MacheteClient):
 
         current_user: Optional[str] = self.code_hosting_client.get_current_user_login()
         anno = self._state.annotations.get(head)
-        self._state.annotations[head] = Annotation(self._pull_request_annotation(
-            spec, pr, current_user), anno.qualifiers if anno else Qualifiers())
+        qualifiers = anno.qualifiers if anno else Qualifiers()
+        self._state.annotations[head] = Annotation(self._pull_request_annotation(pr, current_user), qualifiers)
         self.save_branch_layout_file()
 
         if opt_update_related_descriptions:
@@ -521,15 +537,16 @@ class MacheteClientWithCodeHosting(MacheteClient):
                     pr.description = new_description
                     print(fmt(f'Description of {pr.display_text()} (<b>{pr.head} {get_right_arrow()} {pr.base}</b>) has been updated'))
 
-    def __derive_code_hosting_domain(self, spec: CodeHostingSpec) -> str:
+    def __derive_code_hosting_domain(self) -> str:
+        spec = self.code_hosting_spec
         return self._git.get_config_attr_or_none(key=spec.git_config_keys.domain) or spec.default_domain
 
     def __derive_org_repo_and_remote(
             self,
-            spec: CodeHostingSpec,
             domain: str,
             branch_used_for_tracking_data: Optional[LocalBranchShortName] = None
     ) -> OrganizationAndRepositoryAndRemote:
+        spec = self.code_hosting_spec
         remote_config_key = spec.git_config_keys.remote
         organization_config_key = spec.git_config_keys.organization
         repository_config_key = spec.git_config_keys.repository
@@ -613,15 +630,15 @@ class MacheteClientWithCodeHosting(MacheteClient):
             f'You can select the {spec.repository_name} by providing some or all of git config keys:\n'
             f'{spec.git_config_keys.for_locating_repo_message()}\n')
 
-    def _init_code_hosting_client(self, spec: CodeHostingSpec,
+    def _init_code_hosting_client(self,
                                   branch_used_for_tracking_data: Optional[LocalBranchShortName] = None
                                   ) -> Tuple[str, OrganizationAndRepositoryAndRemote]:
         if self.__code_hosting_client is not None:
             raise UnexpectedMacheteException("Code hosting client has already been initialized.")
-        domain = self.__derive_code_hosting_domain(spec)
+        domain = self.__derive_code_hosting_domain()
         org_repo_remote = self.__derive_org_repo_and_remote(
-            spec, domain=domain, branch_used_for_tracking_data=branch_used_for_tracking_data)
-        self.code_hosting_client = spec.create_client(
+            domain=domain, branch_used_for_tracking_data=branch_used_for_tracking_data)
+        self.code_hosting_client = self.code_hosting_spec.create_client(
             domain=domain, organization=org_repo_remote.organization, repository=org_repo_remote.repository)
         return domain, org_repo_remote
 
@@ -727,11 +744,11 @@ class MacheteClientWithCodeHosting(MacheteClient):
         prepend += f'{self.END_GIT_MACHETE_GENERATED_COMMENT}\n'
         return prepend
 
-    def update_pull_request_descriptions(self, spec: CodeHostingSpec,
-                                         *, all: bool = False, by: Optional[str] = None, mine: bool = False, related: bool = False
+    def update_pull_request_descriptions(self, *, all: bool = False, by: Optional[str] = None, mine: bool = False, related: bool = False
                                          ) -> None:
+        spec = self.code_hosting_spec
         if self.__code_hosting_client is None:
-            self._init_code_hosting_client(spec)
+            self._init_code_hosting_client()
 
         current_user: Optional[str] = self.code_hosting_client.get_current_user_login()
         if not current_user and mine:
@@ -755,7 +772,6 @@ class MacheteClientWithCodeHosting(MacheteClient):
                 print(fmt(f'Description of {pr.display_text()} (<b>{pr.head} {get_right_arrow()} {pr.base}</b>) has been updated'))
 
     def checkout_pull_requests(self,
-                               spec: CodeHostingSpec,
                                pr_numbers: Optional[List[int]],
                                *,
                                all: bool = False,
@@ -763,7 +779,8 @@ class MacheteClientWithCodeHosting(MacheteClient):
                                by: Optional[str] = None,
                                fail_on_missing_current_user_for_my_open_prs: bool = False
                                ) -> None:
-        domain, org_repo_remote = self._init_code_hosting_client(spec)
+        spec = self.code_hosting_spec
+        domain, org_repo_remote = self._init_code_hosting_client()
 
         current_user: Optional[str] = self.code_hosting_client.get_current_user_login()
         if not current_user and mine:
@@ -840,8 +857,7 @@ class MacheteClientWithCodeHosting(MacheteClient):
                     print(fmt(f"{pr_on_path.display_text()} checked out at local branch {bold(pr_on_path.head)}"))
 
         debug(f'Current {spec.display_name} user is ' + (current_user or '<none>'))
-        self.__sync_annotations_to_branch_layout_file(spec, list(prs_to_annotate),
-                                                      current_user=current_user, include_urls=False, verbose=False)
+        self.__sync_annotations_to_branch_layout_file(list(prs_to_annotate), current_user=current_user, include_urls=False, verbose=False)
         if len(applicable_prs) == 1:
             self._git.checkout(LocalBranchShortName.of(applicable_prs[0].head))
 

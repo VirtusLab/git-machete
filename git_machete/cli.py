@@ -671,12 +671,11 @@ def launch(orig_args: List[str]) -> None:
             advance_client.read_branch_layout_file()
             advance_client.advance(opt_yes=cli_opts.opt_yes)
         elif cmd == "anno":
-            anno_client = AnnoMacheteClient(git)
+            spec = GitHubClient.spec() if cli_opts.opt_sync_github_prs else GitLabClient.spec()
+            anno_client = AnnoMacheteClient(git, spec)
             anno_client.read_branch_layout_file(verify_branches=False)
-            if cli_opts.opt_sync_github_prs:
-                anno_client.sync_annotations_to_prs(GitHubClient.spec(), include_urls=False)
-            elif cli_opts.opt_sync_gitlab_mrs:
-                anno_client.sync_annotations_to_prs(GitLabClient.spec(), include_urls=False)
+            if cli_opts.opt_sync_github_prs or cli_opts.opt_sync_gitlab_mrs:
+                anno_client.sync_annotations_to_prs(include_urls=False)
             else:
                 branch = cli_opts.opt_branch or git.get_current_branch()
                 anno_client.expect_in_managed_branches(branch)
@@ -685,10 +684,10 @@ def launch(orig_args: List[str]) -> None:
                 else:
                     anno_client.print_annotation(branch)
         elif cmd == "clean":
-            clean_client = MacheteClientWithCodeHosting(git)
+            clean_client = MacheteClientWithCodeHosting(git, GitHubClient.spec())
             clean_client.read_branch_layout_file()
             if 'checkout_my_github_prs' in parsed_cli:
-                clean_client.checkout_pull_requests(GitHubClient.spec(), pr_numbers=[], mine=True)
+                clean_client.checkout_pull_requests(pr_numbers=[], mine=True)
             clean_client.delete_unmanaged(opt_squash_merge_detection=SquashMergeDetection.NONE, opt_yes=cli_opts.opt_yes)
             clean_client.delete_untracked(opt_yes=cli_opts.opt_yes)
         elif cmd == "delete-unmanaged":
@@ -754,7 +753,7 @@ def launch(orig_args: List[str]) -> None:
             spec = GitHubClient.spec() if cmd == "github" else GitLabClient.spec()
             pr_or_mr = spec.pr_short_name.lower()
 
-            github_or_gitlab_client = MacheteClientWithCodeHosting(git)
+            github_or_gitlab_client = MacheteClientWithCodeHosting(git, spec)
             github_or_gitlab_client.read_branch_layout_file()
 
             if "request_id" in parsed_cli and subcommand != f"checkout-{pr_or_mr}s":
@@ -786,14 +785,13 @@ def launch(orig_args: List[str]) -> None:
                 raise MacheteException(f"`--yes` option is only valid with `create-{pr_or_mr}` subcommand.")
 
             if subcommand == f"anno-{pr_or_mr}s":
-                github_or_gitlab_client.sync_annotations_to_prs(spec, include_urls=cli_opts.opt_with_urls)
+                github_or_gitlab_client.sync_annotations_to_prs(include_urls=cli_opts.opt_with_urls)
             elif subcommand == f"checkout-{pr_or_mr}s":
                 if len(set(parsed_cli_as_dict.keys()).intersection({'all', 'by', 'mine', 'request_id'})) != 1:
                     raise MacheteException(
                         f"`checkout-{pr_or_mr}s` subcommand must take exactly one of the following options: "
                         f'`--all`, `--by=...`, `--mine`, `{pr_or_mr}-number(s)`')
                 github_or_gitlab_client.checkout_pull_requests(
-                    spec,
                     pr_numbers=parsed_cli.request_id if 'request_id' in parsed_cli else [],
                     all=cli_opts.opt_all,
                     mine=cli_opts.opt_mine,
@@ -802,7 +800,6 @@ def launch(orig_args: List[str]) -> None:
             elif subcommand == f"create-{pr_or_mr}":
                 current_branch = git.get_current_branch()
                 github_or_gitlab_client.create_pull_request(
-                    spec,
                     head=current_branch,
                     opt_draft=cli_opts.opt_draft,
                     opt_onto=cli_opts.opt_onto,
@@ -810,18 +807,17 @@ def launch(orig_args: List[str]) -> None:
                     opt_update_related_descriptions=cli_opts.opt_update_related_descriptions,
                     opt_yes=cli_opts.opt_yes)
             elif subcommand == f"restack-{pr_or_mr}":
-                github_or_gitlab_client.restack_pull_request(spec, opt_update_related_descriptions=cli_opts.opt_update_related_descriptions)
+                github_or_gitlab_client.restack_pull_request(opt_update_related_descriptions=cli_opts.opt_update_related_descriptions)
             elif subcommand == f"retarget-{pr_or_mr}":
                 branch = cli_opts.opt_branch or git.get_current_branch()
                 github_or_gitlab_client.expect_in_managed_branches(branch)
                 github_or_gitlab_client.retarget_pull_request(
-                    spec,
                     head=branch,
                     opt_ignore_if_missing=cli_opts.opt_ignore_if_missing,
                     opt_update_related_descriptions=cli_opts.opt_update_related_descriptions
                 )
             elif subcommand == "sync":  # GitHub only
-                github_or_gitlab_client.checkout_pull_requests(spec, pr_numbers=[], mine=True)
+                github_or_gitlab_client.checkout_pull_requests(pr_numbers=[], mine=True)
                 github_or_gitlab_client.delete_unmanaged(opt_squash_merge_detection=SquashMergeDetection.NONE, opt_yes=False)
                 github_or_gitlab_client.delete_untracked(opt_yes=cli_opts.opt_yes)
             elif subcommand == f"update-{pr_or_mr}-descriptions":
@@ -830,7 +826,7 @@ def launch(orig_args: List[str]) -> None:
                         f"`update-{pr_or_mr}-descriptions` subcommand must take exactly one of the following options: "
                         '`--all`, `--by=...`, `--mine`, `--related`')
                 github_or_gitlab_client.update_pull_request_descriptions(
-                    spec, all=cli_opts.opt_all, by=cli_opts.opt_by, mine=cli_opts.opt_mine, related=cli_opts.opt_related)
+                    all=cli_opts.opt_all, by=cli_opts.opt_by, mine=cli_opts.opt_mine, related=cli_opts.opt_related)
             else:  # an unknown subcommand is handled by argparse
                 raise UnexpectedMacheteException(f"Unknown subcommand: `{subcommand}`")
         elif cmd == "is-managed":
@@ -955,7 +951,8 @@ def launch(orig_args: List[str]) -> None:
                 cli_opts.opt_squash_merge_detection_string, cli_opts.opt_squash_merge_detection_origin)
             opt_start_from = TraverseStartFrom.from_string(cli_opts.opt_start_from, "`--start-from` flag")
 
-            traverse_client = TraverseMacheteClient(git)
+            spec = GitHubClient.spec() if cli_opts.opt_sync_github_prs else GitLabClient.spec()
+            traverse_client = TraverseMacheteClient(git, spec)
             traverse_client.read_branch_layout_file(interactively_slide_out_invalid_branches=utils.is_stdout_a_tty())
             traverse_client.traverse(
                 opt_fetch=cli_opts.opt_fetch,
