@@ -802,7 +802,6 @@ def launch(orig_args: List[str]) -> None:
                 github_or_gitlab_client.create_pull_request(
                     head=current_branch,
                     opt_draft=cli_opts.opt_draft,
-                    opt_onto=cli_opts.opt_onto,
                     opt_title=cli_opts.opt_title,
                     opt_update_related_descriptions=cli_opts.opt_update_related_descriptions,
                     opt_yes=cli_opts.opt_yes)

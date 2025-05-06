@@ -379,7 +379,7 @@ def get_pretty_choices(*choices: str) -> str:
         else:
             return colored(c, AnsiEscapeCodes.ORANGE)
 
-    return f" ({', '.join(map_truthy_only(format_choice, choices))}) "
+    return " (" + (", ".join(map_truthy_only(format_choice, choices))) + ") "
 
 
 def get_current_date() -> str:
