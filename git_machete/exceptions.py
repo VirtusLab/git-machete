@@ -11,7 +11,7 @@ class InteractionStopped(Exception):
 
 
 class UnderlyingGitException(Exception):
-    def __init__(self, msg: str, apply_fmt: bool = True) -> None:
+    def __init__(self, msg: str, *, apply_fmt: bool = True) -> None:
         self.msg: str = utils.fmt(msg) if apply_fmt else msg
 
     def __str__(self) -> str:
@@ -19,7 +19,7 @@ class UnderlyingGitException(Exception):
 
 
 class MacheteException(Exception):
-    def __init__(self, msg: str, apply_fmt: bool = True) -> None:
+    def __init__(self, msg: str, *, apply_fmt: bool = True) -> None:
         self.msg: str = utils.fmt(msg) if apply_fmt else msg
 
     def __str__(self) -> str:
@@ -27,7 +27,7 @@ class MacheteException(Exception):
 
 
 class UnexpectedMacheteException(MacheteException):
-    def __init__(self, msg: str, apply_fmt: bool = True) -> None:
+    def __init__(self, msg: str, *, apply_fmt: bool = True) -> None:
         super().__init__(f"{msg}\n\nConsider posting an issue at `{NEW_ISSUE_LINK}`", apply_fmt=apply_fmt)
 
 

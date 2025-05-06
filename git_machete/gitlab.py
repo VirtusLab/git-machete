@@ -97,7 +97,7 @@ class GitLabClient(CodeHostingClient):
     DEFAULT_GITLAB_DOMAIN = "gitlab.com"
     MAX_PULLS_PER_PAGE_COUNT = 100
 
-    def __init__(self, domain: str, organization: str, repository: str) -> None:
+    def __init__(self, *, domain: str, organization: str, repository: str) -> None:
         super().__init__(domain, organization, repository)
         self.__token: Optional[GitLabToken] = GitLabToken.for_domain(domain)
 
@@ -115,7 +115,7 @@ class GitLabClient(CodeHostingClient):
             title=mr_json['title'],
             description=mr_json['description'])
 
-    def __fire_gitlab_api_request(self, method: str, path: str, request_body: Optional[Dict[str, Any]] = None) -> Any:
+    def __fire_gitlab_api_request(self, method: str, path: str, request_body: Optional[Dict[str, Any]] = None) -> Any:  # noqa: KW
         headers: Dict[str, str] = {
             "Content-Type": "application/json"
         }
@@ -194,10 +194,15 @@ class GitLabClient(CodeHostingClient):
             raise MacheteException(f'Could not connect to {url_prefix}: {e}')
 
     @staticmethod
-    def __url_encode_project_name(organization: str, repository: str) -> str:
+    def __url_encode_project_name(organization: str, repository: str) -> str:  # noqa: KW
         return urllib.parse.quote(f"{organization}/{repository}", safe='')  # `safe` empty, so that `/` is encoded as well
 
-    def __fire_gitlab_api_project_request(self, method: str, path_suffix: str, request_body: Optional[Dict[str, Any]] = None) -> Any:
+    def __fire_gitlab_api_project_request(  # noqa: KW
+            self,
+            method: str,
+            path_suffix: str,
+            request_body: Optional[Dict[str, Any]] = None
+    ) -> Any:
         project = self.__url_encode_project_name(self.organization, self.repository)
         path = f'/projects/{project}{path_suffix}'
         return self.__fire_gitlab_api_request(method=method, path=path, request_body=request_body)
@@ -217,7 +222,7 @@ class GitLabClient(CodeHostingClient):
         return int(self.__fire_gitlab_api_request(method='GET', path=f'/projects/{project}')['id'])  # cast to int to satisfy mypy
 
     def create_pull_request(self, head: str, head_org_repo: OrganizationAndRepository,
-                            base: str, title: str, description: str, draft: bool) -> PullRequest:
+                            *, base: str, title: str, description: str, draft: bool) -> PullRequest:
         # The GitLab API for creating MRs across projects is somewhat confusing:
         # URL path needs to point to the source project, but the MR is still created in the target project,
         # which needs to pointed to by `target_project_id` JSON property.
@@ -262,7 +267,7 @@ class GitLabClient(CodeHostingClient):
         request_body: Dict[str, str] = {'milestone_id': milestone}
         self.__fire_gitlab_api_project_request(method='PUT', path_suffix=f'/merge_requests/{number}', request_body=request_body)
 
-    def set_draft_status_of_pull_request(self, number: int, target_draft_status: bool) -> bool:
+    def set_draft_status_of_pull_request(self, number: int, *, target_draft_status: bool) -> bool:
         mr = self.__fire_gitlab_api_project_request(method='GET', path_suffix=f'/merge_requests/{number}')
         is_draft = bool(mr["draft"])  # bool(...) to satisfy mypy
         if is_draft and target_draft_status is True:

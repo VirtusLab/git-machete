@@ -189,7 +189,7 @@ class CodeHostingSpec(NamedTuple):
         return self.client_class(domain=domain, organization=organization, repository=repository)  # type: ignore[no-any-return]
 
 
-# flake8: noqa
+# flake8: noqa U100
 # So that flake8 doesn't complain about unused params in abstract class.
 class CodeHostingClient(metaclass=ABCMeta):  # pragma: no cover
     def __init__(self, domain: str, organization: str, repository: str) -> None:
@@ -213,7 +213,7 @@ class CodeHostingClient(metaclass=ABCMeta):  # pragma: no cover
 
     @abstractmethod
     def create_pull_request(self, head: str, head_org_repo: OrganizationAndRepository,
-                            base: str, title: str, description: str, draft: bool) -> PullRequest:
+                            *, base: str, title: str, description: str, draft: bool) -> PullRequest:
         pass
 
     @abstractmethod
@@ -237,7 +237,7 @@ class CodeHostingClient(metaclass=ABCMeta):  # pragma: no cover
         pass
 
     @abstractmethod
-    def set_draft_status_of_pull_request(self, number: int, target_draft_status: bool) -> bool:
+    def set_draft_status_of_pull_request(self, number: int, *, target_draft_status: bool) -> bool:
         """Returns true if PR had a different draft status, and draft status has been toggled.
         Returns false if PR already had the desired draft status, and hence draft status has NOT been toggled."""
 

@@ -28,7 +28,7 @@ class TestGitLab(BaseTest):
 
     def test_gitlab_client_constructor(self) -> None:
         # This is solely to make mypy check if the class correctly implements abstract methods from CodeHostingClient.
-        GitLabClient("gitlab.com", "my-org", "my-repo")
+        GitLabClient(domain="gitlab.com", organization="my-org", repository="my-repo")
 
     def test_gitlab_remote_patterns(self) -> None:
         organization = 'virtuslab'

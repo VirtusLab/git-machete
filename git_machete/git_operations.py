@@ -344,7 +344,7 @@ class GitContext:
                 else:
                     raise UnexpectedMacheteException(f"Cannot parse config entry: {config_entry}.")
 
-    def get_config_attr(self, key: str, default_value: str) -> str:
+    def get_config_attr(self, key: str, *, default_value: str) -> str:
         value = self.get_config_attr_or_none(key)
         return default_value if value is None else value
 
@@ -353,7 +353,7 @@ class GitContext:
         assert self.__config_cached is not None
         return self.__config_cached.get(key.lower())
 
-    def get_boolean_config_attr(self, key: str, default_value: bool) -> bool:
+    def get_boolean_config_attr(self, key: str, *, default_value: bool) -> bool:
         value = self.get_boolean_config_attr_or_none(key)
         return value if value is not None else default_value
 
@@ -364,7 +364,7 @@ class GitContext:
             return self.__config_cached.get(key.lower()) == 'true'
         return None
 
-    def set_config_attr(self, key: str, value: str) -> None:
+    def set_config_attr(self, key: str, value: str) -> None:  # noqa: KW
         self._run_git("config", "--", key, value, flush_caches=False)
         self.__ensure_config_loaded()
         assert self.__config_cached is not None
@@ -377,7 +377,7 @@ class GitContext:
             self._run_git("config", "--unset", key, flush_caches=False)
             del self.__config_cached[key.lower()]
 
-    def add_remote(self, name: str, url: str) -> None:
+    def add_remote(self, name: str, url: str) -> None:  # noqa: KW
         self._run_git('remote', 'add', name, url, flush_caches=True)
 
     def get_remotes(self) -> List[str]:
@@ -395,10 +395,10 @@ class GitContext:
             self._run_git("fetch", remote, "--prune", flush_caches=True)
             self.__fetch_done_for.add(remote)
 
-    def fetch_refspec(self, remote: str, refspec: str) -> int:
+    def fetch_refspec(self, remote: str, refspec: str) -> int:  # noqa: KW
         return self._run_git("fetch", "--prune", remote, refspec, flush_caches=True)
 
-    def does_remote_branch_exist(self, remote: str, branch: LocalBranchShortName) -> bool:
+    def does_remote_branch_exist(self, remote: str, branch: LocalBranchShortName) -> bool:  # noqa: KW
         # `--heads` is passed here to avoid checking for `refs/pulls/...`,
         # which can take a lot of time in large repos (since they're present even for closed PRs).
         # Even when a branch name or glob is passed to `git ls-remote`,
@@ -416,7 +416,7 @@ class GitContext:
             raise UnderlyingGitException(
                 f"Cannot perform `git reset --keep {to_revision}`. This is most likely caused by local uncommitted changes.")
 
-    def push(self, remote: str, branch: LocalBranchShortName, force_with_lease: bool = False) -> None:
+    def push(self, remote: str, branch: LocalBranchShortName, *, force_with_lease: bool = False) -> None:  # noqa: KW
         if not force_with_lease:
             opt_force = []
         elif self.get_git_version() >= (2, 30, 0):  # earliest version of git to support 'push --force-with-lease --force-if-includes'
@@ -428,7 +428,7 @@ class GitContext:
         args = [remote, branch]
         self._run_git("push", "--set-upstream", *(opt_force + args), flush_caches=True)
 
-    def pull_ff_only(self, remote: str, remote_branch: RemoteBranchShortName) -> None:
+    def pull_ff_only(self, remote: str, remote_branch: RemoteBranchShortName) -> None:  # noqa: KW
         self.fetch_remote(remote)
         self._run_git("merge", "--ff-only", remote_branch, flush_caches=True)
         # There's apparently no way to set remote automatically when doing 'git pull' (as opposed to 'git push'),
@@ -637,7 +637,7 @@ class GitContext:
     # 1. we first fetch only a couple of first commits in the history,
     # 2. if these first commits aren't enough for the purpose, we fetch more, but only up to the hard limit,
     #    to avoid time-unbounded operations on really large repos.
-    def spoonfeed_log_hashes(self, branch_full_hash: FullCommitHash, initial_count: int, total_count: int) -> Iterator[FullCommitHash]:
+    def spoonfeed_log_hashes(self, branch_full_hash: FullCommitHash, *, initial_count: int, total_count: int) -> Iterator[FullCommitHash]:
         if branch_full_hash not in self.__initial_log_hashes_cached:
             self.__initial_log_hashes_cached[branch_full_hash] = \
                 self.__get_log_hashes(branch_full_hash, max_count=initial_count)
@@ -706,7 +706,7 @@ class GitContext:
                                                  ]
             return self.__reflogs_cached[branch]
 
-    def create_branch(self, branch: LocalBranchShortName, out_of_revision: AnyRevision, switch_head: bool) -> None:
+    def create_branch(self, branch: LocalBranchShortName, out_of_revision: AnyRevision, *, switch_head: bool) -> None:  # noqa: KW101
         self._run_git("branch", branch, out_of_revision, flush_caches=True)
         if switch_head:
             self._run_git("checkout", branch, flush_caches=True)
@@ -779,7 +779,7 @@ class GitContext:
             raise UnderlyingGitException("Not currently on any branch")
         return result
 
-    def __get_merge_base_for_commit_hashes(self, hash1: FullCommitHash, hash2: FullCommitHash) -> Optional[FullCommitHash]:
+    def __get_merge_base_for_commit_hashes(self, hash1: FullCommitHash, hash2: FullCommitHash) -> Optional[FullCommitHash]:  # noqa: KW
         # This if statement is not changing the outcome of the later return, but
         # it enhances the efficiency of the script. If both hashes are the same,
         # there is no point running git merge-base.
@@ -802,21 +802,21 @@ class GitContext:
             self.__merge_base_cached[hash1, hash2] = FullCommitHash.of(merge_base) if merge_base else None
         return self.__merge_base_cached[hash1, hash2]
 
-    def is_ancestor_or_equal(self, earlier_revision: AnyRevision, later_revision: AnyRevision) -> bool:
+    def is_ancestor_or_equal(self, earlier_revision: AnyRevision, later_revision: AnyRevision) -> bool:  # noqa: KW
         earlier_hash = self.get_commit_hash_by_revision(earlier_revision)
         later_hash = self.get_commit_hash_by_revision(later_revision)
         if not earlier_hash or not later_hash:
             return False
         return self.__get_merge_base_for_commit_hashes(earlier_hash, later_hash) == earlier_hash
 
-    def is_ancestor(self, earlier_revision: AnyRevision, later_revision: AnyRevision) -> bool:
+    def is_ancestor(self, earlier_revision: AnyRevision, later_revision: AnyRevision) -> bool:  # noqa: KW
         earlier_hash = self.get_commit_hash_by_revision(earlier_revision)
         later_hash = self.get_commit_hash_by_revision(later_revision)
         if not earlier_hash or not later_hash or earlier_hash == later_hash:
             return False
         return self.is_ancestor_or_equal(earlier_hash, later_hash)
 
-    def get_merge_base(
+    def get_merge_base(  # noqa: KW
             self,
             earlier_revision: AnyRevision,
             later_revision: AnyRevision,
@@ -832,6 +832,7 @@ class GitContext:
     # reachable_from contains a rebase or squash merge of equivalent_to.
     def is_equivalent_tree_reachable(
             self,
+            *,
             equivalent_to: AnyRevision,
             reachable_from: AnyRevision,
     ) -> bool:
@@ -868,6 +869,7 @@ class GitContext:
 
     def is_equivalent_patch_reachable(
             self,
+            *,
             equivalent_to: AnyRevision,
             reachable_from: AnyRevision
     ) -> bool:
@@ -899,8 +901,12 @@ class GitContext:
             return True
 
         patch_id_for_changes_of_equivalent_to: Optional[FullPatchId] = self.__get_patch_id_for_diff(changes_of_equivalent_to)
-        patch_ids_for_commits_of_reachable_from: Set[FullPatchId] = set(self.__get_patch_ids_for_commits_between(
-            common_ancestor, reachable_from_commit_hash, MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION).values())
+        patch_ids_for_commits_of_reachable_from: Set[FullPatchId] = set(
+            self.__get_patch_ids_for_commits_between(
+                earliest_exclusive=common_ancestor,
+                latest_inclusive=reachable_from_commit_hash,
+                max_commits=MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION
+            ).values())
         result = patch_id_for_changes_of_equivalent_to in patch_ids_for_commits_of_reachable_from
         debug(f"patch_id_for_changes_of_equivalent_to in patch_ids_for_commits_of_reachable_from = {result}")
         self.__is_equivalent_patch_reachable_cached[equivalent_to_commit_hash, reachable_from_commit_hash] = result
@@ -918,7 +924,7 @@ class GitContext:
         return FullPatchId.of(lines[0].split(' ')[0])
 
     def __get_patch_ids_for_commits_between(
-            self, earliest_exclusive: AnyRevision, latest_inclusive: AnyRevision, max_commits: int
+            self, *, earliest_exclusive: AnyRevision, latest_inclusive: AnyRevision, max_commits: int
     ) -> Dict[FullCommitHash, FullPatchId]:
         patches = self._popen_git("log", "--patch", f"^{earliest_exclusive}", latest_inclusive, f"-{max_commits}", "--").stdout
         patch_id_output = self._popen_git("patch-id", input=patches).stdout
@@ -962,10 +968,13 @@ class GitContext:
         else:
             return True
 
-    def merge(self, branch: LocalBranchShortName,
-              into: LocalBranchShortName,
-              opt_no_edit_merge: bool
-              ) -> None:
+    def merge(
+        self,
+        *,
+        branch: LocalBranchShortName,
+        into: LocalBranchShortName,
+        opt_no_edit_merge: bool
+    ) -> None:
         extra_params = ["--no-edit"] if opt_no_edit_merge else ["--edit"]
         # We need to specify the message explicitly to avoid 'refs/heads/' prefix getting into the message...
         commit_message = f"Merge branch '{branch}' into {into}"
@@ -975,8 +984,8 @@ class GitContext:
     def merge_fast_forward_only(self, branch: LocalBranchShortName) -> None:  # refs/heads/ prefix is assumed for 'branch'
         self._run_git("merge", "--ff-only", branch.full_name(), flush_caches=True)
 
-    def rebase(self, onto: AnyRevision, from_exclusive: AnyRevision, branch: LocalBranchShortName,
-               opt_no_interactive_rebase: bool, extra_rebase_opts: List[str]) -> None:
+    def rebase(self, onto: AnyRevision, from_exclusive: AnyRevision, branch: LocalBranchShortName,  # noqa: KW101
+               *, opt_no_interactive_rebase: bool, extra_rebase_opts: List[str]) -> None:
         rebase_opts = list(extra_rebase_opts)
         try:
             if not opt_no_interactive_rebase:
@@ -1011,7 +1020,7 @@ class GitContext:
                 # See https://github.com/VirtusLab/git-machete/issues/935 for why author-script needs to be saved in this manner
                 io.open(author_script, "w", newline="").write("".join(fixed_lines))
 
-    def get_commits_between(self, earliest_exclusive: AnyRevision, latest_inclusive: AnyRevision) -> List[GitLogEntry]:
+    def get_commits_between(self, earliest_exclusive: AnyRevision, latest_inclusive: AnyRevision) -> List[GitLogEntry]:  # noqa: KW
         # Reverse the list, since `git log` by default returns the commits from the latest to earliest.
         return list(reversed([
             GitLogEntry(hash=FullCommitHash(x.split(":", 2)[0]),
@@ -1020,7 +1029,11 @@ class GitContext:
             utils.get_non_empty_lines(self._popen_git("log", "--format=%H:%h:%s", f"^{earliest_exclusive}", latest_inclusive, "--").stdout)
         ]))
 
-    def get_relation_to_remote_counterpart(self, branch: LocalBranchShortName, remote_branch: RemoteBranchShortName) -> SyncToRemoteStatus:
+    def get_relation_to_remote_counterpart(  # noqa: KW
+        self,
+        branch: LocalBranchShortName,
+        remote_branch: RemoteBranchShortName
+    ) -> SyncToRemoteStatus:
         b_is_ancestor_of_rb = self.is_ancestor_or_equal(branch.full_name(), remote_branch.full_name())
         rb_is_ancestor_of_b = self.is_ancestor_or_equal(remote_branch.full_name(), branch.full_name())
         if b_is_ancestor_of_rb:
@@ -1070,17 +1083,22 @@ class GitContext:
 
         return self._popen_git("log", "-1", f"--format={pattern.value}", commit).stdout.strip()
 
-    def display_log_between(self, from_inclusive: LocalBranchFullName,
-                            until_exclusive: FullCommitHash, extra_git_log_args: List[str]) -> int:
+    def display_log_between(
+            self,
+            *,
+            from_inclusive: LocalBranchFullName,
+            until_exclusive: FullCommitHash,
+            extra_git_log_args: List[str]
+    ) -> int:
         return self._run_git("log", f"^{until_exclusive}", from_inclusive, *extra_git_log_args, flush_caches=False)
 
-    def commit_tree_with_given_parent_and_message_and_env(
+    def commit_tree_with_given_parent_and_message_and_env(  # noqa: KW
             self, parent_revision: AnyRevision, msg: str, env: Dict[str, str]) -> FullCommitHash:
         # returns hash of the new commit
         return FullCommitHash.of(self._popen_git(
             "commit-tree", "HEAD^{tree}", "-p", parent_revision, "-m", msg, env=env).stdout.strip())  # noqa: FS003
 
-    def delete_branch(self, branch_name: LocalBranchShortName, force: bool) -> int:
+    def delete_branch(self, branch_name: LocalBranchShortName, *, force: bool) -> int:
         delete_option = '-D' if force else '-d'
         return self._run_git('branch', delete_option, branch_name, flush_caches=True)
 
@@ -1088,7 +1106,7 @@ class GitContext:
         return self._run_git('branch', '-d', '-r', branch_name, flush_caches=True)
 
     def display_diff(self, branch: Optional[LocalBranchShortName], against: AnyRevision,
-                     opt_stat: bool, extra_git_diff_args: List[str]) -> int:
+                     *, opt_stat: bool, extra_git_diff_args: List[str]) -> int:
         params = []
         if opt_stat:
             params.append("--stat")
@@ -1102,5 +1120,5 @@ class GitContext:
 
         return self._run_git("diff", *params, flush_caches=False)
 
-    def update_head_ref_to_new_hash_with_reflog_subject(self, hash: FullCommitHash, reflog_subject: str) -> int:
+    def update_head_ref_to_new_hash_with_reflog_subject(self, hash: FullCommitHash, reflog_subject: str) -> int:  # noqa: KW
         return self._run_git("update-ref", "HEAD", hash, "-m", reflog_subject, flush_caches=True)

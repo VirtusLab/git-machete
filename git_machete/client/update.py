@@ -19,7 +19,7 @@ class UpdateMacheteClient(MacheteClient):
                                         "Merge with the inferred upstream <b>%s</b>?" + get_pretty_choices('y', 'N')),
                 prompt_if_inferred_yes_opt_msg=("Branch <b>%s</b> not found in the tree of branch dependencies. "
                                                 "Merging with the inferred upstream <b>%s</b>..."))
-            self._git.merge(with_branch, current_branch, opt_no_edit_merge)
+            self._git.merge(branch=with_branch, into=current_branch, opt_no_edit_merge=opt_no_edit_merge)
         else:
             onto_branch = self.get_or_infer_up_branch_for(
                 current_branch,
@@ -30,6 +30,7 @@ class UpdateMacheteClient(MacheteClient):
             rebase_fork_point = opt_fork_point or self.fork_point(current_branch, use_overrides=True)
 
             self.rebase(
-                LocalBranchShortName.of(onto_branch).full_name(),
-                rebase_fork_point,
-                current_branch, opt_no_interactive_rebase)
+                onto=LocalBranchShortName.of(onto_branch).full_name(),
+                from_exclusive=rebase_fork_point,
+                branch=current_branch,
+                opt_no_interactive_rebase=opt_no_interactive_rebase)

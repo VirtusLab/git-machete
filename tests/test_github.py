@@ -29,7 +29,7 @@ class TestGitHub(BaseTest):
 
     def test_github_client_constructor(self) -> None:
         # This is solely to make mypy check if the class correctly implements abstract methods from CodeHostingClient.
-        GitHubClient("github.com", "my-org", "my-repo")
+        GitHubClient(domain="github.com", organization="my-org", repository="my-repo")
 
     def test_github_remote_patterns(self) -> None:
         organization = 'virtuslab'

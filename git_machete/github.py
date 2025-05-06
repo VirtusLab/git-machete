@@ -149,7 +149,7 @@ class GitHubClient(CodeHostingClient):
     # As of Dec 2022, GitHub API never returns more than 100 PRs, even if per_page query param is above 100.
     MAX_PULLS_PER_PAGE_COUNT = 100
 
-    def __init__(self, domain: str, organization: str, repository: str) -> None:
+    def __init__(self, *, domain: str, organization: str, repository: str) -> None:
         super().__init__(domain, organization, repository)
         self.__token: Optional[GitHubToken] = GitHubToken.for_domain(domain)
 
@@ -166,7 +166,7 @@ class GitHubClient(CodeHostingClient):
             title=pr_json['title'],
             description=pr_json['body'])
 
-    def __fire_github_api_request(self, method: str, path: str, request_body: Optional[Dict[str, Any]] = None) -> Any:
+    def __fire_github_api_request(self, method: str, path: str, request_body: Optional[Dict[str, Any]] = None) -> Any:  # noqa: KW
         headers: Dict[str, str] = {
             'Content-type': 'application/json',
             'User-Agent': 'git-machete',
@@ -272,7 +272,12 @@ class GitHubClient(CodeHostingClient):
         except OSError as e:  # pragma: no cover
             raise MacheteException(f'Could not connect to {url_prefix}: {e}')
 
-    def __fire_github_api_repo_request(self, method: str, path_suffix: str, request_body: Optional[Dict[str, Any]] = None) -> Any:
+    def __fire_github_api_repo_request(  # noqa: KW
+            self,
+            method: str,
+            path_suffix: str,
+            request_body: Optional[Dict[str, Any]] = None
+    ) -> Any:
         path = f'/repos/{self.organization}/{self.repository}{path_suffix}'
         return self.__fire_github_api_request(method=method, path=path, request_body=request_body)
 
@@ -295,7 +300,7 @@ class GitHubClient(CodeHostingClient):
         else:
             return str(response)
 
-    def create_pull_request(self, head: str, head_org_repo: OrganizationAndRepository,
+    def create_pull_request(self, head: str, head_org_repo: OrganizationAndRepository, *,
                             base: str, title: str, description: str, draft: bool) -> PullRequest:
         request_body: Dict[str, Any] = {
             'head': head,
@@ -339,7 +344,7 @@ class GitHubClient(CodeHostingClient):
     # See https://docs.github.com/en/rest/pulls/pulls?apiVersion=2022-11-28#update-a-pull-request
     # and https://github.com/orgs/community/discussions/45174.
     # GraphQL (v4) API mutation needs to be used for that purpose.
-    def set_draft_status_of_pull_request(self, number: int, target_draft_status: bool) -> bool:
+    def set_draft_status_of_pull_request(self, number: int, *, target_draft_status: bool) -> bool:
         """Returns true if PR had a different draft status, and draft status has been toggled.
         Returns false if PR already had the desired draft status, and hence draft status has NOT been toggled."""
 

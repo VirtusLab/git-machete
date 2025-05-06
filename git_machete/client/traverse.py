@@ -168,7 +168,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                     if branch in self._state.annotations:
                         del self._state.annotations[branch]
                     self.save_branch_layout_file()
-                    self._run_post_slide_out_hook(upstream, branch, dbb)
+                    self._run_post_slide_out_hook(new_upstream=upstream, slid_out_branch=branch, new_downstreams=dbb)
                     if ans == 'yq':
                         return
                     else:
@@ -190,7 +190,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                                       f"Rebasing {bold(branch)} onto {bold(upstream)}...", opt_yes=opt_yes)
                 if ans in ('y', 'yes', 'yq'):
                     if use_merge:
-                        self._git.merge(upstream, branch, opt_no_edit_merge)
+                        self._git.merge(branch=upstream, into=branch, opt_no_edit_merge=opt_no_edit_merge)
                         # It's clearly possible that merge can be in progress
                         # after 'git merge' returned non-zero exit code;
                         # this happens most commonly in case of conflicts.
@@ -207,8 +207,10 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                         fork_point = self.fork_point(branch, use_overrides=True)
 
                         self.rebase(
-                            LocalBranchShortName.of(upstream).full_name(), fork_point,
-                            branch, opt_no_interactive_rebase)
+                            onto=LocalBranchShortName.of(upstream).full_name(),
+                            from_exclusive=fork_point,
+                            branch=branch,
+                            opt_no_interactive_rebase=opt_no_interactive_rebase)
                         # It's clearly possible that rebase can be in progress
                         # after 'git rebase' returned non-zero exit code;
                         # this happens most commonly in case of conflicts,
@@ -300,7 +302,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                 try:
                     if s == SyncToRemoteStatus.BEHIND_REMOTE:
                         assert remote is not None
-                        self._handle_behind_state(current_branch, remote, opt_yes=opt_yes)
+                        self._handle_behind_state(branch=current_branch, remote=remote, opt_yes=opt_yes)
                     elif s == SyncToRemoteStatus.AHEAD_OF_REMOTE:
                         assert remote is not None
                         self._handle_ahead_state(

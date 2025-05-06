@@ -58,7 +58,7 @@ class MacheteClientWithCodeHosting(MacheteClient):
             print(fmt('<green><b>OK</b></green>'))
         return self.__all_open_prs
 
-    def _pull_request_annotation(self, pr: PullRequest, current_user: Optional[str], include_url: bool = False) -> str:
+    def _pull_request_annotation(self, pr: PullRequest, current_user: Optional[str], *, include_url: bool = False) -> str:
         anno = pr.display_text(fmt=False)
         if current_user != pr.user:
             anno += f" ({pr.user})"
@@ -68,12 +68,12 @@ class MacheteClientWithCodeHosting(MacheteClient):
         return anno
 
     def __sync_annotations_to_branch_layout_file(self, prs: List[PullRequest], current_user: Optional[str],
-                                                 include_urls: bool, verbose: bool) -> None:
+                                                 *, include_urls: bool, verbose: bool) -> None:
         spec = self.code_hosting_spec
         for pr in prs:
             if LocalBranchShortName.of(pr.head) in self.managed_branches:
                 debug(f'{pr} corresponds to a managed branch')
-                anno: str = self._pull_request_annotation(pr, current_user, include_urls)
+                anno: str = self._pull_request_annotation(pr, current_user, include_url=include_urls)
                 upstream: Optional[LocalBranchShortName] = self.up_branch_for(LocalBranchShortName.of(pr.head))
                 if upstream is not None:
                     counterpart = self._git.get_combined_counterpart_for_fetching_of_branch(upstream)
@@ -219,7 +219,7 @@ class MacheteClientWithCodeHosting(MacheteClient):
                 return
             raise MacheteException(f'Interrupted creating {spec.pr_full_name}.')
 
-    def sync_annotations_to_prs(self, include_urls: bool) -> None:
+    def sync_annotations_to_prs(self, *, include_urls: bool) -> None:
         self._init_code_hosting_client()
         current_user: Optional[str] = self.code_hosting_client.get_current_user_login()
         debug(f'Current {self.code_hosting_spec.display_name} user is ' + (bold(current_user or '<none>')))
@@ -380,7 +380,7 @@ class MacheteClientWithCodeHosting(MacheteClient):
             print(f"Updating descriptions of other {spec.pr_short_name}s...")
             self.update_pull_request_descriptions(related=True)
 
-    def restack_pull_request(self, opt_update_related_descriptions: bool) -> None:
+    def restack_pull_request(self, *, opt_update_related_descriptions: bool) -> None:
         spec = self.code_hosting_spec
         head = self._git.get_current_branch()
         _, org_repo_remote = self._init_code_hosting_client(branch_used_for_tracking_data=head)
@@ -648,6 +648,7 @@ class MacheteClientWithCodeHosting(MacheteClient):
     def __get_sole_pull_request_for_head(
             self,
             head: LocalBranchShortName,
+            *,
             ignore_if_missing: bool
     ) -> Optional[PullRequest]:
         prs: List[PullRequest] = self.code_hosting_client.get_open_pull_requests_by_head(head)

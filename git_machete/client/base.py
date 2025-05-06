@@ -270,13 +270,13 @@ class MacheteClient:
                     f"Skipping {bold(invalid_branches[0])} " +
                     "which is not a local branch (perhaps it has been deleted?).\n" +
                     "Slide it out from the branch layout file?" +
-                    get_pretty_choices("y", "e[dit]", "N"), opt_yes_msg=None, opt_yes=False)
+                    get_pretty_choices("y", "e[dit]", "N"), msg_if_opt_yes=None, opt_yes=False)
             else:
                 ans = self.ask_if(
                     f"Skipping {', '.join(bold(branch) for branch in invalid_branches)}"
                     " which are not local branches (perhaps they have been deleted?).\n"
                     "Slide them out from the branch layout file?" + get_pretty_choices("y", "e[dit]", "N"),
-                    opt_yes_msg=None, opt_yes=False)
+                    msg_if_opt_yes=None, opt_yes=False)
         else:
             if len(invalid_branches) == 1:
                 what = f"invalid branch {bold(invalid_branches[0])}"
@@ -438,7 +438,7 @@ class MacheteClient:
     def _set_empty_line_status(self) -> None:
         self.__empty_line_status = True
 
-    def _print_new_line(self, new_status: bool) -> None:
+    def _print_new_line(self, new_status: bool) -> None:  # noqa: KW
         if not self.__empty_line_status:
             print("")
         self.__empty_line_status = new_status
@@ -673,7 +673,13 @@ class MacheteClient:
         else:
             return utils.run_cmd(*args, cwd=cwd)
 
-    def rebase(self, onto: AnyRevision, from_exclusive: AnyRevision, branch: LocalBranchShortName, opt_no_interactive_rebase: bool) -> None:
+    def rebase(
+            self, *,
+            onto: AnyRevision,
+            from_exclusive: AnyRevision,
+            branch: LocalBranchShortName,
+            opt_no_interactive_rebase: bool
+    ) -> None:
         self._git.expect_no_operation_in_progress()
 
         anno = self.annotations.get(branch)
@@ -688,12 +694,18 @@ class MacheteClient:
             debug(f"running machete-pre-rebase hook ({hook_path})")
             exit_code = self.__run_hook(hook_path, onto, from_exclusive, branch, cwd=self._git.get_root_dir())
             if exit_code == 0:
-                self._git.rebase(onto, from_exclusive, branch, opt_no_interactive_rebase, extra_rebase_opts)
+                self._git.rebase(
+                    onto, from_exclusive, branch,
+                    opt_no_interactive_rebase=opt_no_interactive_rebase,
+                    extra_rebase_opts=extra_rebase_opts)
             else:
                 raise MacheteException(
                     f"The machete-pre-rebase hook refused to rebase. Error code: {exit_code}")
         else:
-            self._git.rebase(onto, from_exclusive, branch, opt_no_interactive_rebase, extra_rebase_opts)
+            self._git.rebase(
+                onto, from_exclusive, branch,
+                opt_no_interactive_rebase=opt_no_interactive_rebase,
+                extra_rebase_opts=extra_rebase_opts)
 
     def delete_unmanaged(self, *, opt_squash_merge_detection: SquashMergeDetection, opt_yes: bool) -> None:
         print('Checking for unmanaged branches...')
@@ -701,8 +713,13 @@ class MacheteClient:
         self._delete_branches(branches_to_delete=branches_to_delete,
                               opt_squash_merge_detection=opt_squash_merge_detection, opt_yes=opt_yes)
 
-    def _delete_branches(self, branches_to_delete: List[LocalBranchShortName],
-                         opt_squash_merge_detection: SquashMergeDetection, opt_yes: bool) -> None:
+    def _delete_branches(
+        self,
+        branches_to_delete: List[LocalBranchShortName],
+        *,
+        opt_squash_merge_detection: SquashMergeDetection,
+        opt_yes: bool
+    ) -> None:
         current_branch = self._git.get_current_branch_or_none()
         if current_branch and current_branch in branches_to_delete:
             branches_to_delete = excluding(branches_to_delete, [current_branch])
@@ -717,10 +734,13 @@ class MacheteClient:
                 self._git.delete_branch(branch, force=True)
         else:
             for branch in branches_to_delete:
-                if self.is_merged_to(branch.full_name(), AnyBranchName('HEAD'), opt_squash_merge_detection):
+                if self.is_merged_to(branch=branch, upstream=AnyBranchName('HEAD'), opt_squash_merge_detection=opt_squash_merge_detection):
                     remote_branch = self._git.get_strict_counterpart_for_fetching_of_branch(branch)
                     if remote_branch:
-                        is_merged_to_remote = self.is_merged_to(branch.full_name(), remote_branch.full_name(), opt_squash_merge_detection)
+                        is_merged_to_remote = self.is_merged_to(
+                            branch=branch,
+                            upstream=remote_branch,
+                            opt_squash_merge_detection=opt_squash_merge_detection)
                     else:
                         is_merged_to_remote = True
                     if is_merged_to_remote:
@@ -731,7 +751,7 @@ class MacheteClient:
                 else:
                     msg_core = f"{bold(branch)} (unmerged to HEAD)"
                 msg = f"Delete branch {msg_core}?" + get_pretty_choices('y', 'N', 'q')
-                ans = self.ask_if(msg, opt_yes_msg=None, opt_yes=False)
+                ans = self.ask_if(msg, msg_if_opt_yes=None, opt_yes=False)
                 if ans in ('y', 'yes'):
                     self._git.delete_branch(branch, force=True)
                 elif ans in ('q', 'quit'):
@@ -797,10 +817,12 @@ class MacheteClient:
         # This case is extremely unlikely on a modern Unix-like system.
         return []
 
-    def __fork_point_and_containing_branch_pairs(self,
-                                                 branch: LocalBranchShortName,
-                                                 use_overrides: bool
-                                                 ) -> Tuple[FullCommitHash, List[BranchPair]]:
+    def __fork_point_and_containing_branch_pairs(
+        self,
+        branch: LocalBranchShortName,
+        *,
+        use_overrides: bool
+    ) -> Tuple[FullCommitHash, List[BranchPair]]:
         upstream = self.up_branch_for(branch)
         upstream_hash = self._git.get_commit_hash_by_revision(upstream) if upstream else None
 
@@ -890,24 +912,24 @@ class MacheteClient:
                 debug(f"effective fork point of {branch} is {improved_fork_point}")
                 return improved_fork_point, improved_containing_branch_pairs
 
-    def fork_point(self, branch: LocalBranchShortName, use_overrides: bool) -> FullCommitHash:
-        hash, containing_branch_pairs = self.__fork_point_and_containing_branch_pairs(branch, use_overrides)
+    def fork_point(self, branch: LocalBranchShortName, *, use_overrides: bool) -> FullCommitHash:
+        hash, containing_branch_pairs = self.__fork_point_and_containing_branch_pairs(branch, use_overrides=use_overrides)
         return FullCommitHash.of(hash)
 
-    def fork_point_or_none(self, branch: LocalBranchShortName, use_overrides: bool) -> Optional[FullCommitHash]:
+    def fork_point_or_none(self, branch: LocalBranchShortName, *, use_overrides: bool) -> Optional[FullCommitHash]:
         try:
-            return self.fork_point(branch, use_overrides)
+            return self.fork_point(branch, use_overrides=use_overrides)
         except MacheteException:
             return None
 
-    def get_or_pick_down_branch_for(self, branch: LocalBranchShortName, pick_mode: bool) -> List[LocalBranchShortName]:
+    def get_or_pick_down_branch_for(self, branch: LocalBranchShortName, *, pick_if_multiple: bool) -> List[LocalBranchShortName]:
         self.expect_in_managed_branches(branch)
         dbs = self.down_branches_for(branch)
         if not dbs:
             raise MacheteException(f"Branch {bold(branch)} has no downstream branch")
         elif len(dbs) == 1:
             return [dbs[0]]
-        elif pick_mode:
+        elif pick_if_multiple:
             return [self.pick(dbs, "downstream branch")]
         else:
             return dbs
@@ -1005,10 +1027,15 @@ class MacheteClient:
         upstream = self.up_branch_for(branch)
         if not upstream:
             return False
-        return self.is_merged_to(branch, upstream, opt_squash_merge_detection=opt_squash_merge_detection)
+        return self.is_merged_to(branch=branch, upstream=upstream, opt_squash_merge_detection=opt_squash_merge_detection)
 
-    def _run_post_slide_out_hook(self, new_upstream: LocalBranchShortName, slid_out_branch: LocalBranchShortName,
-                                 new_downstreams: List[LocalBranchShortName]) -> None:
+    def _run_post_slide_out_hook(
+        self,
+        *,
+        new_upstream: LocalBranchShortName,
+        slid_out_branch: LocalBranchShortName,
+        new_downstreams: List[LocalBranchShortName]
+    ) -> None:
         hook_path = self._git.get_hook_path("machete-post-slide-out")
         if self._git.check_hook_executable(hook_path):
             debug(f"running machete-post-slide-out hook ({hook_path})")
@@ -1122,6 +1149,7 @@ class MacheteClient:
     def _infer_upstream(self,
                         branch: LocalBranchShortName,
                         condition: Callable[[LocalBranchShortName], bool] = lambda upstream: True,
+                        *,
                         reject_reason_message: str = ""
                         ) -> Optional[LocalBranchShortName]:
         for hash, containing_branch_pairs in self.__match_log_to_filtered_reflogs(branch):
@@ -1139,7 +1167,7 @@ class MacheteClient:
         return None
 
     def remote_enabled_for_traverse_fetch(self, remote: str) -> bool:
-        return self._git.get_boolean_config_attr(git_config_keys.traverse_remote_fetch(remote), True)
+        return self._git.get_boolean_config_attr(git_config_keys.traverse_remote_fetch(remote), default_value=True)
 
     # Also includes config that is invalid (corresponding to a non-existent/GCed commit etc.).
     def has_any_fork_point_override_config(self, branch: LocalBranchShortName) -> bool:
@@ -1334,6 +1362,7 @@ class MacheteClient:
 
     def is_merged_to(
             self,
+            *,
             branch: AnyBranchName,
             upstream: AnyBranchName,
             opt_squash_merge_detection: SquashMergeDetection
@@ -1352,18 +1381,20 @@ class MacheteClient:
             # In the default mode.
             # If a commit with an identical tree state to branch is reachable from upstream,
             # then branch may have been squashed or rebase-merged into upstream.
-            return self._git.is_equivalent_tree_reachable(branch, upstream)
+            return self._git.is_equivalent_tree_reachable(equivalent_to=branch, reachable_from=upstream)
         elif opt_squash_merge_detection == SquashMergeDetection.EXACT:
             # Let's try another way, a little more complex but takes into account the possibility
             # that there were other commits between the common ancestor of the two branches and the squashed merge.
-            return self._git.is_equivalent_tree_reachable(branch, upstream) or self._git.is_equivalent_patch_reachable(branch, upstream)
+            return self._git.is_equivalent_tree_reachable(equivalent_to=branch, reachable_from=upstream) or \
+                self._git.is_equivalent_patch_reachable(equivalent_to=branch, reachable_from=upstream)
         else:  # pragma: no cover
             raise UnexpectedMacheteException(f"Invalid squash merged detection mode: {opt_squash_merge_detection}.")
 
     @staticmethod
     def ask_if(
             msg: str,
-            opt_yes_msg: Optional[str],
+            msg_if_opt_yes: Optional[str],
+            *,
             opt_yes: bool,
             override_answer: Optional[str] = None,
             apply_fmt: bool = True,
@@ -1371,9 +1402,9 @@ class MacheteClient:
     ) -> str:
         if override_answer:
             return override_answer
-        if opt_yes and opt_yes_msg:
+        if opt_yes and msg_if_opt_yes:
             if verbose:
-                print(fmt(opt_yes_msg) if apply_fmt else opt_yes_msg)
+                print(fmt(msg_if_opt_yes) if apply_fmt else msg_if_opt_yes)
             return 'y'
         try:
             ans: str = input(fmt(msg) if apply_fmt else msg).lower()
@@ -1382,7 +1413,7 @@ class MacheteClient:
         return ans
 
     @staticmethod
-    def pick(choices: List[LocalBranchShortName], name: str, apply_fmt: bool = True) -> LocalBranchShortName:
+    def pick(choices: List[LocalBranchShortName], name: str, *, apply_fmt: bool = True) -> LocalBranchShortName:
         xs: str = "".join(f"[{index + 1}] {x}\n" for index, x in enumerate(choices))
         msg: str = xs + f"Specify {name} or hit <return> to skip: "
         try:
@@ -1400,12 +1431,12 @@ class MacheteClient:
         self.__branch_pairs_by_hash_in_reflog = None
 
     def check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
-            self, fork_point_hash: AnyRevision, branch: AnyBranchName) -> None:
+            self, *, fork_point: AnyRevision, branch: AnyBranchName) -> None:
         if not self._git.is_ancestor_or_equal(
-                earlier_revision=fork_point_hash.full_name(),
+                earlier_revision=fork_point.full_name(),
                 later_revision=branch.full_name()):
             raise MacheteException(
-                f"Fork point {bold(fork_point_hash)} is not ancestor of or the tip "
+                f"Fork point {bold(fork_point)} is not ancestor of or the tip "
                 f"of the {bold(branch)} branch.")
 
     def _handle_diverged_and_newer_state(
@@ -1499,7 +1530,7 @@ class MacheteClient:
         elif ans in ('q', 'quit'):
             raise InteractionStopped
 
-    def _handle_diverged_and_older_state(self, branch: LocalBranchShortName, opt_yes: bool) -> None:
+    def _handle_diverged_and_older_state(self, branch: LocalBranchShortName, *, opt_yes: bool) -> None:
         self._print_new_line(False)
         remote_branch = self._git.get_combined_counterpart_for_fetching_of_branch(branch)
         assert remote_branch is not None
@@ -1516,7 +1547,7 @@ class MacheteClient:
         elif ans in ('q', 'quit'):
             raise InteractionStopped
 
-    def _handle_behind_state(self, branch: LocalBranchShortName, remote: str, opt_yes: bool) -> None:
+    def _handle_behind_state(self, *, branch: LocalBranchShortName, remote: str, opt_yes: bool) -> None:
         self._print_new_line(False)
         remote_branch = self._git.get_combined_counterpart_for_fetching_of_branch(branch)
         assert remote_branch is not None
@@ -1533,7 +1564,7 @@ class MacheteClient:
         elif ans in ('q', 'quit'):
             raise InteractionStopped
 
-    def delete_untracked(self, opt_yes: bool) -> None:
+    def delete_untracked(self, *, opt_yes: bool) -> None:
         print(bold('Checking for untracked managed branches with no downstream...'))
         branches_to_delete: List[LocalBranchShortName] = []
         for branch in self.managed_branches.copy():

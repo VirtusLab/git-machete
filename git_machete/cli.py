@@ -65,7 +65,7 @@ command_groups: List[Tuple[str, List[str]]] = [
 commands_and_aliases = list(long_docs.keys()) + list(command_by_alias.keys())
 
 
-def get_help_description(display_help_topics: bool, command: Optional[str] = None) -> str:
+def get_help_description(*, display_help_topics: bool, command: Optional[str] = None) -> str:
     usage_str = ''
     if command in long_docs:
         usage_str += fmt(textwrap.dedent(long_docs[command]))
@@ -106,7 +106,7 @@ def version() -> None:
 
 
 class MacheteHelpAction(argparse.Action):
-    def __init__(
+    def __init__(  # noqa: KW101
             self,
             option_strings: str,
             dest: str = argparse.SUPPRESS,
@@ -120,7 +120,7 @@ class MacheteHelpAction(argparse.Action):
             nargs=0,
             help=help)
 
-    def __call__(
+    def __call__(  # noqa: KW101
             self,
             parser: argparse.ArgumentParser,
             namespace: argparse.Namespace,  # noqa: F841, U100
@@ -744,8 +744,8 @@ def launch(orig_args: List[str]) -> None:
             go_client.read_branch_layout_file()
             git.expect_no_operation_in_progress()
             current_branch = git.get_current_branch()
-            dest = go_client.parse_direction(parsed_cli.direction, current_branch, allow_current=False, down_pick_mode=True)[0]
-            # with down_pick_mode=True there is only one element in list allowed
+            # with pick_if_multiple=True, there returned list will have exactly one element
+            dest = go_client.parse_direction(parsed_cli.direction, branch=current_branch, allow_current=False, pick_if_multiple=True)[0]
             if dest != current_branch:
                 git.checkout(dest)
         elif cmd in ("github", "gitlab"):
@@ -876,10 +876,14 @@ def launch(orig_args: List[str]) -> None:
             current_branch = git.get_current_branch()
             if cli_opts.opt_fork_point is not None:
                 reapply_client.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
-                    fork_point_hash=cli_opts.opt_fork_point, branch=current_branch)
+                    fork_point=cli_opts.opt_fork_point, branch=current_branch)
 
             reapply_fork_point = cli_opts.opt_fork_point or reapply_client.fork_point(branch=current_branch, use_overrides=True)
-            reapply_client.rebase(reapply_fork_point, reapply_fork_point, current_branch, cli_opts.opt_no_interactive_rebase)
+            reapply_client.rebase(
+                onto=reapply_fork_point,
+                from_exclusive=reapply_fork_point,
+                branch=current_branch,
+                opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase)
         elif cmd == "show":
             show_client = GoShowMacheteClient(git)
             direction = parsed_cli.direction
@@ -887,7 +891,7 @@ def launch(orig_args: List[str]) -> None:
                 raise MacheteException('`show current` with a `<branch>` argument does not make sense')
             branch = cli_opts.opt_branch or git.get_current_branch()
             show_client.read_branch_layout_file(verify_branches=False)
-            print('\n'.join(show_client.parse_direction(direction, branch, allow_current=True, down_pick_mode=False)))
+            print('\n'.join(show_client.parse_direction(direction, branch=branch, allow_current=True, pick_if_multiple=False)))
         elif cmd == "slide-out":
             if cli_opts.opt_down_fork_point and cli_opts.opt_merge:
                 raise MacheteException(
@@ -916,7 +920,7 @@ def launch(orig_args: List[str]) -> None:
             current_branch = git.get_current_branch()
             if cli_opts.opt_fork_point is not None:
                 squash_client.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
-                    fork_point_hash=cli_opts.opt_fork_point, branch=current_branch)
+                    fork_point=cli_opts.opt_fork_point, branch=current_branch)
 
             squash_fork_point = cli_opts.opt_fork_point or squash_client.fork_point_or_none(branch=current_branch, use_overrides=True)
             if squash_fork_point is None:
@@ -973,7 +977,7 @@ def launch(orig_args: List[str]) -> None:
             update_client.read_branch_layout_file()
             if cli_opts.opt_fork_point is not None:
                 update_client.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
-                    fork_point_hash=cli_opts.opt_fork_point, branch=git.get_current_branch())
+                    fork_point=cli_opts.opt_fork_point, branch=git.get_current_branch())
             update_client.update(
                 opt_merge=cli_opts.opt_merge,
                 opt_no_edit_merge=cli_opts.opt_no_edit_merge,

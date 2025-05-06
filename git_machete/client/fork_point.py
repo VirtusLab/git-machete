@@ -11,7 +11,7 @@ class ForkPointMacheteClient(MacheteClient):
         # Note that we still unset the now-deprecated `whileDescendantOf` key.
         self._git.unset_config_attr(git_config_keys.override_fork_point_while_descendant_of(branch))
 
-    def set_fork_point_override(self, branch: LocalBranchShortName, to_revision: AnyRevision) -> None:
+    def set_fork_point_override(self, branch: LocalBranchShortName, to_revision: AnyRevision) -> None:  # noqa: KW
         to_hash = self._git.get_commit_hash_by_revision(to_revision)
         if not to_hash:
             raise MacheteException(f"Cannot find revision {bold(to_revision)}")

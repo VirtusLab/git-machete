@@ -268,7 +268,7 @@ def get_cmd_shell_repr(cmd: str, *args: str, env: Optional[Dict[str, str]]) -> s
     return " ".join(env_repr + [cmd] + [shell_escape(arg) for arg in args])
 
 
-def warn(msg: str, apply_fmt: bool = True, end: str = '\n') -> None:
+def warn(msg: str, *, apply_fmt: bool = True, end: str = '\n') -> None:
     if msg not in displayed_warnings:
         print(colored("Warn: ", AnsiEscapeCodes.ORANGE) + (fmt(msg) if apply_fmt else msg), file=sys.stderr, end=end)
         displayed_warnings.add(msg)
@@ -326,7 +326,7 @@ def dim(s: str) -> str:
     return s if ascii_only or not s else AnsiEscapeCodes.DIM + s + AnsiEscapeCodes.ENDC_BOLD_DIM
 
 
-def underline(s: str, star_if_ascii_only: bool = False) -> str:
+def underline(s: str, *, star_if_ascii_only: bool = False) -> str:
     if s and not ascii_only:
         return AnsiEscapeCodes.UNDERLINE + s + AnsiEscapeCodes.ENDC_UNDERLINE
     elif s and star_if_ascii_only:
@@ -335,7 +335,7 @@ def underline(s: str, star_if_ascii_only: bool = False) -> str:
         return s
 
 
-def colored(s: str, color: str) -> str:
+def colored(s: str, color: str) -> str:  # noqa: KW
     return s if ascii_only or not s else color + s + AnsiEscapeCodes.ENDC
 
 

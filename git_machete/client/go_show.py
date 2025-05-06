@@ -6,16 +6,18 @@ from git_machete.git_operations import LocalBranchShortName
 
 
 class GoShowMacheteClient(MacheteClient):
-    def parse_direction(self,
-                        param: str,
-                        branch: LocalBranchShortName,
-                        allow_current: bool,
-                        down_pick_mode: bool
-                        ) -> List[LocalBranchShortName]:
+    def parse_direction(
+        self,
+        param: str,
+        *,
+        branch: LocalBranchShortName,
+        allow_current: bool,
+        pick_if_multiple: bool
+    ) -> List[LocalBranchShortName]:
         if param in ("c", "current") and allow_current:
             return [self._git.get_current_branch()]  # throws in case of detached HEAD, as in the spec
         elif param in ("d", "down"):
-            return self.get_or_pick_down_branch_for(branch, pick_mode=down_pick_mode)
+            return self.get_or_pick_down_branch_for(branch, pick_if_multiple=pick_if_multiple)
         elif param in ("f", "first"):
             return [self.first_branch_for(branch)]
         elif param in ("l", "last"):

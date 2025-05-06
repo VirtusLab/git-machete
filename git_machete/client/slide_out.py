@@ -39,7 +39,7 @@ class SlideOutMacheteClient(MacheteClient):
 
             if children_of_the_last_branch_to_slide_out:
                 self.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
-                    fork_point_hash=opt_down_fork_point,
+                    fork_point=opt_down_fork_point,
                     branch=children_of_the_last_branch_to_slide_out[0])
             else:
                 raise MacheteException("Last branch to slide out must have a child branch "
@@ -80,7 +80,10 @@ class SlideOutMacheteClient(MacheteClient):
 
         # Update definition, fire post-hook, and perform the branch update
         self.save_branch_layout_file()
-        self._run_post_slide_out_hook(new_upstream, branches_to_slide_out[-1], new_downstreams)
+        self._run_post_slide_out_hook(
+            new_upstream=new_upstream,
+            slid_out_branch=branches_to_slide_out[-1],
+            new_downstreams=new_downstreams)
 
         self._git.checkout(new_upstream)
         for new_downstream in new_downstreams:
@@ -91,21 +94,24 @@ class SlideOutMacheteClient(MacheteClient):
                 self._git.checkout(new_downstream)
             if use_merge:
                 print(f"Merging {bold(new_upstream)} into {bold(new_downstream)}...")
-                self._git.merge(new_upstream, new_downstream, opt_no_edit_merge)
+                self._git.merge(
+                    branch=new_upstream,
+                    into=new_downstream,
+                    opt_no_edit_merge=opt_no_edit_merge)
             elif use_rebase:
                 print(f"Rebasing {bold(new_downstream)} onto {bold(new_upstream)}...")
                 down_fork_point = opt_down_fork_point or self.fork_point(new_downstream, use_overrides=True)
                 self.rebase(
-                    new_upstream.full_name(),
-                    down_fork_point,
-                    new_downstream,
-                    opt_no_interactive_rebase)
+                    onto=new_upstream.full_name(),
+                    from_exclusive=down_fork_point,
+                    branch=new_downstream,
+                    opt_no_interactive_rebase=opt_no_interactive_rebase)
 
         if opt_delete:
             self._delete_branches(branches_to_delete=branches_to_slide_out,
                                   opt_squash_merge_detection=SquashMergeDetection.NONE, opt_yes=False)
 
-    def slide_out_removed_from_remote(self, opt_delete: bool) -> None:
+    def slide_out_removed_from_remote(self, *, opt_delete: bool) -> None:
         self._git.expect_no_operation_in_progress()
 
         slid_out_branches: List[LocalBranchShortName] = []

@@ -8,7 +8,7 @@ class AdvanceMacheteClient(MacheteClient):
     def __init__(self, git: GitContext) -> None:
         super().__init__(git)
 
-    def advance(self, opt_yes: bool) -> None:
+    def advance(self, *, opt_yes: bool) -> None:
         self._git.expect_no_operation_in_progress()
 
         branch = self._git.get_current_branch()
@@ -82,4 +82,4 @@ class AdvanceMacheteClient(MacheteClient):
                     lambda bd: dds if bd == down_branch else [bd],
                     self.down_branches_for(branch) or [])
                 self.save_branch_layout_file()
-                self._run_post_slide_out_hook(branch, down_branch, dds)
+                self._run_post_slide_out_hook(new_upstream=branch, slid_out_branch=down_branch, new_downstreams=dds)
