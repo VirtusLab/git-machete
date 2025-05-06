@@ -62,7 +62,7 @@ jobs:
           command: ci/checks/run-all-checks.sh
       - run:
           name: Check code style
-          command: tox -e isort-check,pep8-check,typos-check,vulture-check
+          command: tox -e isort-check,flake8-check,typos-check,vulture-check
       - run:
           name: Verify docs
           command: tox -e py-docs-check,sphinx-man-check,sphinx-html
