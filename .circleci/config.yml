@@ -318,12 +318,14 @@ workflows:
       - python 3_11 git 2_38_1
       - python 3_12 git 2_46_1
       - python 3_13 git 2_47_0
-      - macos tests
+      # MacOS and esp. Windows tests take a relatively long time on critical path,
+      # and fail very rarely in isolation (i.e. in cases when tests on Linux don't fail).
+      - macos tests:
+          <<: *only_special_branches
       - windows tests:
-          # Windows tests take a relatively long time on critical path,
-          # and fail very rarely when other tests don't fail
           <<: *only_special_branches
       - coverage upload:
+          # Note that the jobs that were skipped due to the `filter` are apparently not treated as required.
           requires:
             *test_jobs
       - dry run releases:
@@ -341,11 +343,11 @@ workflows:
           <<: *only_master
           requires:
             - dry run releases
-      # Let's perform a GitHub release even if some of the preceding release steps failed,
+      # Let's create a GitHub release even if some of the other release steps failed,
       # to keep GitHub release history consistent
       - create github release:
           <<: *only_master
           requires:
             - dry run releases
 
-      # Note: there are also releases happening outside of our CI, see PACKAGES.md
+      # Note: most releases happen outside of our CI, see PACKAGES.md

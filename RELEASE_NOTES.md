@@ -2,7 +2,7 @@
 
 ## New in git-machete 3.35.0
 
-- added: `git machete traverse --sync-github-prs`/`--sync-gitlab-mrs` suggests creating PRs/MRs for untracked branches (suggested by @bradneuman and @tir38)
+- added: `git machete traverse --sync-github-prs`/`--sync-gitlab-mrs` suggests creating PRs/MRs for branches without one (suggested by @bradneuman and @tir38)
 
 ## New in git-machete 3.34.1
 
