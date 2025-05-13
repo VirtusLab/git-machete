@@ -21,10 +21,12 @@ executors:
       # https://circleci.com/developer/images?imageType=machine
       image: windows-server-2022-gui:2024.12.1
       shell: bash.exe
+    # https://circleci.com/docs/using-windows/#available-resource-classes
+    # https://circleci.com/pricing/#comparison-table
     resource_class: windows.large
 
 orbs:
-  codecov: codecov/codecov@4.0.1
+  codecov: codecov/codecov@5.3.0
 
 jobs:
   "general checks":
@@ -221,7 +223,7 @@ jobs:
       - run: pip3 install tox
       - run: tox -e coverage-combine
       - codecov/upload:
-          file: coverage.xml
+          flags: "-f coverage.xml"
 
   "dry run releases":
     executor: ubuntu_executor

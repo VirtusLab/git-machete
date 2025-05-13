@@ -2,7 +2,7 @@
 
 set -e -o pipefail -u -x
 
-source "$(git rev-parse --show-toplevel)"/ci/local-run-commons.sh aur
+source "$(git rev-parse --show-toplevel)"/ci/local-run-commons.sh
 
 export_directory_hash aur
 cd "$(git rev-parse --show-toplevel)"/ci/aur/

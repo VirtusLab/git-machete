@@ -130,7 +130,7 @@ cp .env-sample .env  # and optionally edit if needed to change git/python versio
 ```shell script
 # ... skipped ...
 
-source ../local-run-commons.sh tox
+source ../local-run-commons.sh
 
 export_directory_hash tox
 cd "$(git rev-parse --show-toplevel)"/ci/tox/
