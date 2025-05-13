@@ -10,7 +10,9 @@ from tests.mockers_git_repository import (add_remote, check_out, commit,
                                           create_repo, create_repo_with_remote,
                                           new_branch, push, remove_remote,
                                           set_git_config_key, set_remote_url)
-from tests.mockers_gitlab import MockGitLabAPIState, mock_mr_json, mock_urlopen
+from tests.mockers_gitlab import (MockGitLabAPIState,
+                                  mock_gitlab_token_for_domain_fake,
+                                  mock_mr_json, mock_urlopen)
 
 
 class TestGitLabRetargetMR(BaseTest):
@@ -27,6 +29,7 @@ class TestGitLabRetargetMR(BaseTest):
         )
 
     def test_gitlab_retarget_mr(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.gitlab_api_state_for_test_retarget_mr()))
 
         create_repo_with_remote()
@@ -121,6 +124,7 @@ class TestGitLabRetargetMR(BaseTest):
         )
 
     def test_gitlab_retarget_mr_explicit_branch(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
         self.patch_symbol(mocker, 'urllib.request.urlopen',
                           mock_urlopen(self.gitlab_api_state_for_test_gitlab_retarget_mr_explicit_branch()))
 
@@ -197,9 +201,10 @@ class TestGitLabRetargetMR(BaseTest):
 
     def test_gitlab_retarget_mr_multiple_non_origin_remotes(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
+        self.patch_symbol(mocker, 'git_machete.utils.get_current_date', lambda: '2023-12-31')
         gitlab_api_state = self.gitlab_api_state_for_test_retarget_mr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
-        self.patch_symbol(mocker, 'git_machete.utils.get_current_date', lambda: '2023-12-31')
 
         branch_first_commit_msg = "First commit on branch."
         branch_second_commit_msg = "Second commit on branch."

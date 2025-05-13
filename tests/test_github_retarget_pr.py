@@ -11,7 +11,9 @@ from tests.mockers_git_repository import (add_remote, check_out, commit,
                                           new_branch, push, remove_remote,
                                           set_git_config_key,
                                           unset_git_config_key)
-from tests.mockers_github import MockGitHubAPIState, mock_pr_json, mock_urlopen
+from tests.mockers_github import (MockGitHubAPIState,
+                                  mock_github_token_for_domain_fake,
+                                  mock_pr_json, mock_urlopen)
 
 
 class TestGitHubRetargetPR(BaseTest):
@@ -28,6 +30,7 @@ class TestGitHubRetargetPR(BaseTest):
         )
 
     def test_github_retarget_pr(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, "git_machete.github.GitHubToken.for_domain", mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_retarget_pr()))
 
         create_repo_with_remote()
@@ -116,6 +119,7 @@ class TestGitHubRetargetPR(BaseTest):
         )
 
     def test_github_retarget_pr_explicit_branch(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, "git_machete.github.GitHubToken.for_domain", mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'urllib.request.urlopen',
                           mock_urlopen(self.github_api_state_for_test_github_retarget_pr_explicit_branch()))
 
@@ -192,9 +196,10 @@ class TestGitHubRetargetPR(BaseTest):
 
     def test_github_retarget_pr_multiple_non_origin_remotes(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, "git_machete.github.GitHubToken.for_domain", mock_github_token_for_domain_fake)
+        self.patch_symbol(mocker, 'git_machete.utils.get_current_date', lambda: '2023-12-31')
         github_api_state = self.github_api_state_for_test_retarget_pr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
-        self.patch_symbol(mocker, 'git_machete.utils.get_current_date', lambda: '2023-12-31')
 
         branch_first_commit_msg = "First commit on branch."
         branch_second_commit_msg = "Second commit on branch."

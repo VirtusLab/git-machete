@@ -8,7 +8,9 @@ from .mockers import (assert_failure, assert_success, mock_input_returning,
 from .mockers_code_hosting import mock_from_url
 from .mockers_git_repository import (check_out, commit,
                                      create_repo_with_remote, new_branch, push)
-from .mockers_gitlab import MockGitLabAPIState, mock_mr_json, mock_urlopen
+from .mockers_gitlab import (MockGitLabAPIState,
+                             mock_gitlab_token_for_domain_fake, mock_mr_json,
+                             mock_urlopen)
 
 
 class TestTraverseGitLab(BaseTest):
@@ -22,6 +24,7 @@ class TestTraverseGitLab(BaseTest):
 
     def test_traverse_sync_gitlab_mrs_multiple_same_source(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(
             self.gitlab_api_state_for_test_traverse_sync_gitlab_mrs_multiple_same_source()))
 
@@ -53,8 +56,9 @@ class TestTraverseGitLab(BaseTest):
         )
 
     def test_traverse_sync_gitlab_mrs(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.utils.get_current_date', lambda: '2023-12-31')
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
+        self.patch_symbol(mocker, 'git_machete.utils.get_current_date', lambda: '2023-12-31')
         gitlab_api_state = self.gitlab_api_state_for_test_traverse_sync_gitlab_mrs()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
 

@@ -167,7 +167,11 @@ def __mock_urlopen_impl(gitlab_api_state: MockGitLabAPIState, request: Request) 
                 return MockAPIResponse(HTTPStatus.OK, mr)
             raise error_404()
         elif url_path_matches('/user'):
-            return MockAPIResponse(HTTPStatus.OK, {'username': 'gitlab_user'})
+            token = request.get_header('Authorization', default='').replace('Bearer ', '')
+            if token == 'glpat-dummy-token':
+                return MockAPIResponse(HTTPStatus.OK, {'username': 'gitlab_user'})
+            else:
+                raise Exception('Invalid token (did you forget mocking git_machete.gitlab.GitLabToken.for_domain?): <REDACTED>')
         elif url_path_matches('/users'):
             username = query_params["username"]
             if username in mock_user_ids:

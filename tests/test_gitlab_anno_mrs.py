@@ -144,6 +144,7 @@ class TestGitLabAnnoMRs(BaseTest):
         )
 
     def test_gitlab_anno_mrs_local_branch_name_different_than_tracking_branch_name(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
         self.patch_symbol(mocker, 'urllib.request.urlopen',
                           mock_urlopen(self.gitlab_api_state_for_test_local_branch_name_different_than_tracking_branch_name()))
 

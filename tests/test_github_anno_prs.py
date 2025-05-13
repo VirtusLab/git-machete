@@ -144,6 +144,7 @@ class TestGitHubAnnoPRs(BaseTest):
         )
 
     def test_github_anno_prs_local_branch_name_different_than_tracking_branch_name(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, "git_machete.github.GitHubToken.for_domain", mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'urllib.request.urlopen',
                           mock_urlopen(self.github_api_state_for_test_local_branch_name_different_than_tracking_branch_name()))
 

@@ -293,6 +293,7 @@ class TestGitHubCheckoutPRs(BaseTest):
 
     def test_github_checkout_prs_from_fork_with_deleted_repo(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, "git_machete.github.GitHubToken.for_domain", mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'urllib.request.urlopen',
                           mock_urlopen(self.github_api_state_for_test_github_checkout_prs_from_fork_with_deleted_repo()))
 
@@ -538,6 +539,7 @@ class TestGitHubCheckoutPRs(BaseTest):
 
     def test_github_checkout_prs_forming_a_cycle(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, "git_machete.github.GitHubToken.for_domain", mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_with_pr_cycle()))
 
         create_repo_with_remote()
@@ -568,8 +570,10 @@ class TestGitHubCheckoutPRs(BaseTest):
 
     def test_github_checkout_prs_remote_already_added(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.git_operations.GitContext.fetch_remote', lambda _self, _remote: None)
+        self.patch_symbol(mocker, "git_machete.github.GitHubToken.for_domain", mock_github_token_for_domain_fake)
         github_api_state = self.github_api_state_for_test_github_checkout_prs_single_pr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
+
         create_repo()
         add_remote("origin-1", github_api_state.repositories[1]['clone_url'])
 
@@ -588,6 +592,7 @@ class TestGitHubCheckoutPRs(BaseTest):
 
     def test_github_checkout_prs_org_and_repo_from_config(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.git_operations.GitContext.fetch_remote', lambda _self, _remote: None)
+        self.patch_symbol(mocker, "git_machete.github.GitHubToken.for_domain", mock_github_token_for_domain_none)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(
             self.github_api_state_for_test_github_checkout_prs_single_pr()))
 
@@ -610,6 +615,7 @@ class TestGitHubCheckoutPRs(BaseTest):
 
     def test_github_checkout_prs_remote_from_config(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.git_operations.GitContext.fetch_remote', lambda _self, _remote: None)
+        self.patch_symbol(mocker, "git_machete.github.GitHubToken.for_domain", mock_github_token_for_domain_none)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(
             self.github_api_state_for_test_github_checkout_prs_single_pr()))
 

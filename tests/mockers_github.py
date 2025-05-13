@@ -147,7 +147,11 @@ def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) 
                 return MockAPIResponse(HTTPStatus.OK, pull)
             raise error_404()
         elif url_path_matches('/user'):
-            return MockAPIResponse(HTTPStatus.OK, {'login': 'github_user', 'type': 'User'})
+            token = request.get_header('Authorization', default='').replace('Bearer ', '')
+            if token == 'ghp_dummy_token':
+                return MockAPIResponse(HTTPStatus.OK, {'login': 'github_user', 'type': 'User'})
+            else:
+                raise Exception('Invalid token (did you forget mocking git_machete.github.GitHubToken.for_domain?): <REDACTED>')
         else:
             raise error_404()
 
