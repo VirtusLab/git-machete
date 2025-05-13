@@ -7,8 +7,7 @@ from .mockers import (assert_failure, assert_success, mock_input_returning,
                       rewrite_branch_layout_file)
 from .mockers_code_hosting import mock_from_url
 from .mockers_git_repository import (check_out, commit,
-                                     create_repo_with_remote,
-                                     delete_remote_branch, new_branch, push)
+                                     create_repo_with_remote, new_branch, push)
 from .mockers_github import (MockGitHubAPIState,
                              mock_github_token_for_domain_fake, mock_pr_json,
                              mock_urlopen)
@@ -235,36 +234,38 @@ class TestTraverseGitHub(BaseTest):
     def test_traverse_sync_create_github_prs(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
-        github_api_state = MockGitHubAPIState.with_prs()
+        github_api_state = MockGitHubAPIState.with_prs(mock_pr_json(head='call-ws', base='build-chain', number=1))
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 
         create_repo_with_remote()
         new_branch("develop")
         commit()
+        push()
         new_branch("allow-ownership-link")
         commit()
         new_branch("build-chain")
         commit()
         new_branch("call-ws")
         commit()
+        push()
+        new_branch("drop-constraint")
 
         body: str = \
             """
             develop
                 allow-ownership-link
                     build-chain
-                        call-ws
+                        call-ws  PR #1
+                            drop-constraint
             """
         rewrite_branch_layout_file(body)
         check_out("develop")
 
-        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("y", "y", "q"))
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("y", "q"))
         assert_success(
             ["traverse", "--sync-github-prs"],
             """
             Checking for open GitHub PRs... OK
-            Push untracked branch develop to origin? (y, N, q, yq)
-
             Checking out allow-ownership-link
 
               develop
@@ -273,7 +274,9 @@ class TestTraverseGitHub(BaseTest):
                 |
                 o-build-chain (untracked)
                   |
-                  o-call-ws (untracked)
+                  o-call-ws  PR #1
+                    |
+                    o-drop-constraint (untracked)
 
             Push untracked branch allow-ownership-link to origin? (y, N, q, yq)
 
@@ -291,7 +294,7 @@ class TestTraverseGitHub(BaseTest):
             Create a PR from allow-ownership-link to develop? (y, d[raft], N, q, yq)
             Checking if base branch develop exists in origin remote... YES
             Creating a PR from allow-ownership-link to develop... OK, see www.github.com
-            Adding github_user as assignee to PR #1... OK
+            Adding github_user as assignee to PR #2... OK
             Updating descriptions of other PRs...
             """
         )
@@ -305,44 +308,51 @@ class TestTraverseGitHub(BaseTest):
 
               develop
               |
-              o-allow-ownership-link  PR #1 (some_other_user)
+              o-allow-ownership-link  PR #2 (some_other_user)
                 |
                 o-build-chain * (untracked)
                   |
-                  o-call-ws (untracked)
+                  o-call-ws  PR #1
+                    |
+                    o-drop-constraint (untracked)
 
             Push untracked branch build-chain to origin? (y, N, q, yq)
 
             Branch build-chain does not have a PR in GitHub.
             Create a PR from build-chain to allow-ownership-link? (y, d[raft], N, q, yq)
 
-            Checking out call-ws
+            Checking out drop-constraint
 
               develop
               |
-              o-allow-ownership-link  PR #1 (some_other_user)
+              o-allow-ownership-link  PR #2 (some_other_user)
                 |
                 o-build-chain
                   |
-                  o-call-ws * (untracked)
+                  o-call-ws  PR #1
+                    |
+                    o-drop-constraint * (untracked)
 
-            Push untracked branch call-ws to origin? (y, N, q, yq)
+            Push untracked branch drop-constraint to origin? (y, N, q, yq)
 
-            Branch call-ws does not have a PR in GitHub.
-            Create a PR from call-ws to build-chain? (y, d[raft], N, q, yq)
-            Checking if base branch build-chain exists in origin remote... YES
-            Creating a draft PR from call-ws to build-chain... OK, see www.github.com
-            Adding github_user as assignee to PR #2... OK
+            Branch drop-constraint does not have a PR in GitHub.
+            Create a PR from drop-constraint to call-ws? (y, d[raft], N, q, yq)
+            Checking if base branch call-ws exists in origin remote... YES
+            Creating a draft PR from drop-constraint to call-ws... OK, see www.github.com
+            Updating description of PR #3 to include the chain of PRs... OK
+            Adding github_user as assignee to PR #3... OK
             Updating descriptions of other PRs...
 
               develop
               |
-              o-allow-ownership-link  PR #1 (some_other_user)
+              o-allow-ownership-link  PR #2 (some_other_user)
                 |
                 o-build-chain
                   |
-                  o-call-ws *  PR #2 (some_other_user)
+                  o-call-ws  PR #1
+                    |
+                    o-drop-constraint *  PR #3 (some_other_user)
 
-            Reached branch call-ws which has no successor; nothing left to update
+            Reached branch drop-constraint which has no successor; nothing left to update
             """
         )
